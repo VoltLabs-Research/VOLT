@@ -1,6 +1,7 @@
 from opendxa.parser import LammpstrjParser
 from opendxa.neighbors import HybridNeighborFinder
 from opendxa.export import DislocationExporter
+from opendxa.utils.ptm_templates import get_ptm_templates
 from opendxa.classification import (
     PTMLocalClassifier,
     SurfaceFilter,
@@ -8,8 +9,7 @@ from opendxa.classification import (
     DisplacementFieldAnalyzer,
     BurgersCircuitEvaluator,
     ClassificationEngine,
-    DislocationLineBuilder,
-    get_ptm_templates
+    DislocationLineBuilder
 )
 
 import argparse
