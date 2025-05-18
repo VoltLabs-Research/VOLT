@@ -1,5 +1,5 @@
 from numba import cuda, float32
-from utils.cuda import get_cuda_launch_config
+from opendxa.utils.cuda import get_cuda_launch_config
 import numpy as np
 
 @cuda.jit

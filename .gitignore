@@ -1,3 +1,5 @@
 *.lammpstrj
 venv/
 dislocations.json
+
+__pycache__

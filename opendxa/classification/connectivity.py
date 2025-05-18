@@ -1,5 +1,5 @@
 import numpy as np
-from utils.cuda import quaternion_to_matrix
+from opendxa.utils.cuda import quaternion_to_matrix
 
 class LatticeConnectivityGraph:
     def __init__(

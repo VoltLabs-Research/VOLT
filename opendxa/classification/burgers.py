@@ -1,7 +1,6 @@
 from numba import cuda
-from utils.cuda import get_cuda_launch_config
+from opendxa.utils.cuda import get_cuda_launch_config
 import numpy as np
-import math
 
 # CUDA kernel to compute Burgers vector for loops
 @cuda.jit
