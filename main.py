@@ -3,6 +3,7 @@ from core.hybrid_neighbor_finder import HybridNeighborFinder
 from core.ptm_local_classifier import PTMLocalClassifier, get_ptm_templates
 from core.surface_filter import SurfaceFilter
 from core.lattice_connectivity_graph import LatticeConnectivityGraph
+from core.displacement_field_analyzer import DisplacementFieldAnalyzer
 
 parser = LammpstrjParser('./nanoparticle.lammpstrj')
 
@@ -66,5 +67,23 @@ for data in parser.iter_timesteps():
         tolerance=0.2
     )
     connectivity = lattice_graph.build_graph()
+
+    dfa = DisplacementFieldAnalyzer(
+        positions=filtered_data['positions'],
+        connectivity=connectivity,
+        ptm_types=filtered_data['ptm_types'],
+        quaternions=filtered_data['quaternions'],
+        templates=templates,
+        template_sizes=template_sizes,
+        box_bounds=box_bounds
+    )
+
+    disp_vectors, avg_mags = dfa.compute_displacement_field()
+
+    for i, avg_mag in enumerate(avg_mags):
+        if avg_mag == 0.0: continue
+        print(f'Avg displacement magnitude of atom {i}:', avg_mags[i])
+        print(f'Displacement vectors for atom {i}:\n', disp_vectors.get(i))
+        break
 
     break
