@@ -6,6 +6,9 @@ from core.lattice_connectivity_graph import LatticeConnectivityGraph
 from core.displacement_field_analyzer import DisplacementFieldAnalyzer
 from core.burgers_circuit_evaluator import BurgersCircuitEvaluator
 from core.dislocation_line_builder import DislocationLineBuilder
+from core.classification_engine import ClassificationEngine
+from core.dislocation_exporter import DislocationExporter
+import matplotlib.pyplot as plt
 
 parser = LammpstrjParser('./nanoparticle.lammpstrj')
 
@@ -110,4 +113,23 @@ for data in parser.iter_timesteps():
     print('Number of dislocation lines:', len(lines))
     print('First line points:\n', lines[0])
 
-    break
+    lines = builder.build_lines()
+    burgers = evaluator.calculate_burgers()
+
+    # Classify each line
+    engine = ClassificationEngine(
+        positions=filtered_data['positions'],
+        loops=builder.loops,
+        burgers_vectors=burgers
+    )
+    line_types = engine.classify()
+
+    exporter = DislocationExporter(
+        positions=filtered_data['positions'],
+        loops=builder.loops,
+        burgers=burgers,
+        line_types=line_types
+    )
+    exporter.to_json('dislocations.json')
+    ax = exporter.plot_lines()
+    # plt.show()
