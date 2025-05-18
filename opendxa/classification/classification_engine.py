@@ -1,46 +1,7 @@
 from numba import cuda
 from opendxa.utils.cuda import get_cuda_launch_config
+from opendxa.utils.kernels import classify_line_kernel
 import numpy as np
-
-@cuda.jit
-def classify_line_kernel(
-    positions, loops_arr, loop_lens, burgers, types_out
-):
-    idx = cuda.grid(1)
-    n_loops = loops_arr.shape[0]
-    if idx >= n_loops:
-        return
-    # Original loop length
-    length = loop_lens[idx]
-    if length < 2:
-        types_out[idx] = -1
-        return
-    # load Burgers vector
-    bx = burgers[idx,0]; by = burgers[idx,1]; bz = burgers[idx,2]
-    # get first segment for tangent
-    i0 = loops_arr[idx,0]
-    j0 = loops_arr[idx,1]
-    tx = positions[j0,0] - positions[i0,0]
-    ty = positions[j0,1] - positions[i0,1]
-    tz = positions[j0,2] - positions[i0,2]
-    # normalize tangent
-    mag = (tx*tx + ty*ty + tz*tz)**0.5
-    if mag > 0:
-        tx /= mag; ty /= mag; tz /= mag
-    # Burgers dot tangent
-    dot = bx*tx + by*ty + bz*tz
-    bmag = (bx*bx + by*by + bz*bz)**0.5
-    if bmag == 0:
-        types_out[idx] = -1
-        return
-    frac = abs(dot) / bmag
-    # thresholds
-    if frac > 0.8:
-        types_out[idx] = 1  # screw
-    elif frac < 0.2:
-        types_out[idx] = 0  # edge
-    else:
-        types_out[idx] = 2  # mixed
 
 class ClassificationEngine:
     """
