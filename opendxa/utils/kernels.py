@@ -224,6 +224,29 @@ def burgers_kernel(
     box_bounds,
     burgers_out
 ):
+    '''
+    Compute Burgers vector for each closed loop (circuit) on the GPU.
+
+    Each thread handles one loop "idx":
+        - Reads the loop of atom indices (length = loop_lengthds[idx])
+        - For each edge (i -> j) in that loop:
+            - Retrieves the local crystal orientation at i (from quaternion)
+            - Transforms each template neighbor position to global coords
+            - Finds the closest actual neighbor j to that template direction
+            - Accumulate the displacement difference into the Burgers sum
+        - Stores the resulting 3-component Burgers vector in burgers_out[idx]
+
+    Args:
+        positions (float32[:, 3]): Filtered atom coordinates.
+        quaternions (float32[:, 4]): Local orientation quaternions.
+        ptm_types (int32[:]): PTM types per atom.
+        templates (float32[M, Kmax, 3]): Template neighbor coords.
+        template_sizes (int32[M]): Number of neighbors per template.
+        loops (int32[n_loops, Lmax]): Padded loop index arrays.
+        loop_lengths (int32[n_loops]): Actual lengths of each loop.
+        box_bounds (float32[3, 2]): Periodic box dims.
+        burgers_out (float32[n_loops, 3]): Output Burgers vectors.
+    '''
     idx = cuda.grid(1)
     number_of_loops = loops.shape[0]
     if idx >= number_of_loops:
@@ -341,6 +364,22 @@ def classify_line_kernel(
     burgers,
     types_out
 ):
+    '''
+    Classify each dislocation loop as edge, screw or mixed.
+
+    For loop "idx":
+        - Compute the loops tangent using its first segment.
+        - Normalize that tangent vector.
+        - Compute fraction `|b·t| / |b|`.
+        - If fraction > 0.8 -> screw, < 0.2 -> edge, else mixed.
+
+    Args:
+        positions (float32[:, 3]): Atom coordinates.
+        loops_arr (int32[n, Lmax]): Padded loops of atom indices.
+        loop_lens (int32[n]): Actual loop lengths.
+        burgers (float32[n, 3]): Burgers vectors per loop.
+        types_out (int32[n]): Output loop type (0=edge,1=screw,2=mixed,-1=undef).
+    '''
     idx = cuda.grid(1)
     number_of_loops = loops_arr.shape[0]
     if idx >= number_of_loops:
