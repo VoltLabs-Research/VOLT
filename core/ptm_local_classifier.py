@@ -1,7 +1,6 @@
 from numba import cuda, float32
-
+from utils.cuda import get_cuda_launch_config
 import numpy as np
-import math
 
 @cuda.jit
 def ptm_kernel(
@@ -268,12 +267,7 @@ class PTMLocalClassifier:
         d_types = cuda.device_array(self.N, dtype=np.int32)
         d_quat = cuda.device_array((self.N, 4), dtype=np.float32)
         # Launch kernel
-        threads_per_block = 256
-        sms = cuda.get_current_device().MULTIPROCESSOR_COUNT
-        # launch at least 16 blocks per SM, but also enough to cover N atoms
-        min_blocks = sms * 16
-        data_blocks = math.ceil(self.N / threads_per_block)
-        blocks = max(min_blocks, data_blocks)
+        blocks, threads_per_block = get_cuda_launch_config(self.N)
         ptm_kernel[blocks, threads_per_block](
             d_pos, d_neigh, d_box,
             d_templates, d_tmpl_sz, self.M,

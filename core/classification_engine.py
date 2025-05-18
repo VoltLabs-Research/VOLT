@@ -1,6 +1,6 @@
 from numba import cuda
+from utils.cuda import get_cuda_launch_config
 import numpy as np
-import math
 
 @cuda.jit
 def classify_line_kernel(
@@ -75,10 +75,7 @@ class ClassificationEngine:
         d_out  = cuda.device_array(self.M, dtype=np.int32)
         # TODO: DUPLICATED CODE!
         threads_per_block = 256
-        sms = cuda.get_current_device().MULTIPROCESSOR_COUNT
-        min_blocks = sms * 16
-        data_blocks = math.ceil(self.M / threads_per_block)
-        blocks = max(min_blocks, data_blocks)
+        blocks, threads_per_block = get_cuda_launch_config(self.M)
         classify_line_kernel[blocks, threads_per_block](
             d_pos, d_loops, d_lens, d_burg, d_out
         )

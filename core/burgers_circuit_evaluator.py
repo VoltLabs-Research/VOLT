@@ -1,5 +1,5 @@
 from numba import cuda
-
+from utils.cuda import get_cuda_launch_config
 import numpy as np
 import math
 
@@ -130,12 +130,7 @@ class BurgersCircuitEvaluator:
         d_len = cuda.to_device(lens)
         d_box = cuda.to_device(self.box)
         d_out = cuda.device_array((n_loops,3), dtype=np.float32)
-        # TODO: DUPLICATED CODE!
-        threads_per_block = 256
-        sms = cuda.get_current_device().MULTIPROCESSOR_COUNT
-        min_blocks = sms * 16
-        data_blocks = math.ceil(self.N / threads_per_block)
-        blocks = max(min_blocks, data_blocks)
+        blocks, threads_per_block = get_cuda_launch_config(self.N)
         burgers_kernel[blocks, threads_per_block](
             d_pos, d_quat, d_pt,
             d_tpl, d_tsz,
