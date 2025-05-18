@@ -2,6 +2,7 @@ from core.lammpstrj_parser import LammpstrjParser
 from core.hybrid_neighbor_finder import HybridNeighborFinder
 from core.ptm_local_classifier import PTMLocalClassifier, get_ptm_templates
 from core.surface_filter import SurfaceFilter
+from core.lattice_connectivity_graph import LatticeConnectivityGraph
 
 parser = LammpstrjParser('./nanoparticle.lammpstrj')
 
@@ -53,5 +54,17 @@ for data in parser.iter_timesteps():
     print(filtered_data['ptm_types'])
     print('\nFiltered orientation quaternions (first 5):')
     print(filtered_data['quaternions'][:5])
-    
+
+    lattice_graph = LatticeConnectivityGraph(
+        positions=filtered_data['positions'],
+        ids=filtered_data['ids'],
+        neighbors=filtered_data['neighbors'],
+        ptm_types=filtered_data['ptm_types'],
+        quaternions=filtered_data['quaternions'],
+        templates=templates,
+        template_sizes=template_sizes,
+        tolerance=0.2
+    )
+    connectivity = lattice_graph.build_graph()
+
     break

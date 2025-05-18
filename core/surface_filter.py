@@ -55,7 +55,7 @@ class SurfaceFilter:
         old2new = {old: new for new, old in enumerate(interior)}
         # filter positions and ids
         out_positions = positions[interior]
-        out_ids       = ids[interior]
+        out_ids = ids[interior]
         # filter neighbors
         out_neighbors = {}
         for old in interior:
