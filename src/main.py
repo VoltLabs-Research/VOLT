@@ -1,14 +1,16 @@
-from core.lammpstrj_parser import LammpstrjParser
-from core.hybrid_neighbor_finder import HybridNeighborFinder
-from core.ptm_local_classifier import PTMLocalClassifier, get_ptm_templates
-from core.surface_filter import SurfaceFilter
-from core.lattice_connectivity_graph import LatticeConnectivityGraph
-from core.displacement_field_analyzer import DisplacementFieldAnalyzer
-from core.burgers_circuit_evaluator import BurgersCircuitEvaluator
-from core.dislocation_line_builder import DislocationLineBuilder
-from core.classification_engine import ClassificationEngine
-from core.dislocation_exporter import DislocationExporter
-import matplotlib.pyplot as plt
+from parser import LammpstrjParser
+from neighbors import HybridNeighborFinder
+from export import DislocationExporter
+from classification import (
+    PTMLocalClassifier,
+    SurfaceFilter,
+    LatticeConnectivityGraph,
+    DisplacementFieldAnalyzer,
+    BurgersCircuitEvaluator,
+    ClassificationEngine,
+    DislocationLineBuilder,
+    get_ptm_templates
+)
 
 parser = LammpstrjParser('./nanoparticle.lammpstrj')
 
