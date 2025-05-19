@@ -1,3 +1,4 @@
+from opendxa.utils.burgers import match_to_fcc_basis
 import numpy as np
 import matplotlib.pyplot as plt
 import json
@@ -32,17 +33,14 @@ class DislocationExporter:
             points = self.positions[loop].tolist()
             burger_vector = self.burgers[idx].tolist()
             line_type = int(self.line_types[idx])
-            output['loop_index'] = idx
-
-        for idx, loop in enumerate(self.loops):
-            points = self.positions[loop].tolist()
-            burger_vector = self.burgers[idx].tolist()
-            line_type = int(self.line_types[idx])
+            matched_burgers, alignment = match_to_fcc_basis(burger_vector)
             output['dislocations'].append({
                 'loop_index': idx,
                 'type': line_type,
                 'burgers': burger_vector,
-                'points': points
+                'points': points,
+                'matched_burgers': matched_burgers.tolist(),
+                'alignment': float(alignment)
             })
 
         with open(filename, 'w') as file:
