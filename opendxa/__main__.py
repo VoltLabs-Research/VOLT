@@ -60,7 +60,6 @@ def analyze_timestep(data, arguments):
     # Surface filtering
     surface = SurfaceFilter(min_neighbors=arguments.min_neighbors)
     interior_idxs = surface.filter_indices(neighbors, ptm_types=types)
-    print('Interior atom count:', len(interior_idxs))
 
     data_filtered = surface.filter_data(
         positions=positions,
@@ -69,19 +68,6 @@ def analyze_timestep(data, arguments):
         ptm_types=types,
         quaternions=quaternions
     )
-
-    print('\n--- Filtered Data ---')
-    print('Filtered positions (first 5):')
-    print(data_filtered['positions'][:5])
-    print('\nFiltered IDs:')
-    print(data_filtered['ids'])
-    print('\nFiltered neighbor lists (first 5):')
-    for i in range(min(5, len(data_filtered['ids']))):
-        print(f'  atom {data_filtered["ids"][i]} →', data_filtered['neighbors'][i])
-    print('\nFiltered PTM types:')
-    print(data_filtered['ptm_types'])
-    print('\nFiltered orientation quaternions (first 5):')
-    print(data_filtered['quaternions'][:5])
 
     # Connectivity graph
     connectivity_graph = LatticeConnectivityGraph(
@@ -131,8 +117,6 @@ def analyze_timestep(data, arguments):
         threshold=0.1
     )
     lines = builder.build_lines()
-    print('Number of dislocation lines:', len(lines))
-    print('First line points:\n', lines[0])
 
     # Classify each line
     engine = ClassificationEngine(
@@ -178,17 +162,16 @@ def main():
     logging.info(f'Using "{arguments.lammpstrj}"')
     logging.info(f'Loading lammpstrj file "{arguments.lammpstrj}"')
 
-    lammpstrj = LammpstrjParser(arguments.lammpstrj)
     templates, templates_size = get_ptm_templates()
     
-    tasks = []
-    for data in lammpstrj.iter_timesteps():
-        timestep = data['timestep']
-        if arguments.timestep is not None and timestep != arguments.timestep:
-            continue
-        tasks.append(data)
-    
-    logging.info(f'Local timesteps to process: {len(tasks)}')
+    def filter_timesteps(iterable, timestep=None):
+        for data in iterable:
+            if timestep is not None and data['timestep'] != timestep:
+                continue
+            yield data
+
+    lammpstrj = LammpstrjParser(arguments.lammpstrj)
+    timesteps_iter = filter_timesteps(lammpstrj.iter_timesteps(), arguments.timestep)
 
     with ProcessPoolExecutor(
         max_workers=arguments.workers,
@@ -197,8 +180,9 @@ def main():
     ) as executor:
         executor.map(
             partial(analyze_timestep, arguments=arguments),
-            tasks
+            timesteps_iter
         )
+
         
 if __name__ == '__main__':
     main()
