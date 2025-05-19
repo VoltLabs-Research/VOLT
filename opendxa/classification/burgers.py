@@ -1,6 +1,7 @@
 from numba import cuda
 from opendxa.utils.cuda import get_cuda_launch_config
 from opendxa.utils.kernels import burgers_kernel
+from opendxa.utils.burgers import compute_local_scales
 import numpy as np
 
 class BurgersCircuitEvaluator:
@@ -21,6 +22,8 @@ class BurgersCircuitEvaluator:
             self.box = np.asarray(box_bounds, dtype=np.float32)
         else:
             self.box = np.zeros((0,2), dtype=np.float32)
+        self.scales = compute_local_scales(positions, connectivity, box_bounds=box_bounds)
+        self.d_scales = cuda.to_device(self.scales)
         # pre-store loops
         self.loops = self._find_loops()
 
@@ -66,6 +69,7 @@ class BurgersCircuitEvaluator:
             d_tpl, d_tsz,
             d_loops, d_len,
             d_box,
+            self.d_scales,
             d_out
         )
         res = d_out.copy_to_host()

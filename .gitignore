@@ -3,3 +3,4 @@ venv/
 dislocations.json
 
 __pycache__
+dislocations/

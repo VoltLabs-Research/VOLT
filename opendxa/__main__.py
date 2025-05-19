@@ -172,6 +172,7 @@ def main():
             positions=data_filtered['positions'],
             loops=builder.loops,
             burgers=burgers,
+            timestep=timestep,
             line_types=line_types
         )
         exporter.to_json(arguments.output)

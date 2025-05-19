@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 from numba import njit, prange
 
 @njit
@@ -155,14 +156,17 @@ class HybridNeighborFinder:
         for i in range(n):
             cand = pool[i]
             if len(cand) < num_neighbors:
-                raise ValueError(
-                    f"Atom {i}: only {len(cand)} candidates, need {num_neighbors}"
+                warnings.warn(
+                    f"[HybridNeighborFinder] Atom {i}: only {len(cand)} "
+                    f"candidates (<{num_neighbors}), using all available."
                 )
-            # sort by squared distance
-            d2 = [(j, np.sum((positions[j]-positions[i])**2)) for j in cand]
-            d2.sort(key=lambda x: x[1])
-            sel = [j for j,_ in d2[:num_neighbors]]
-            neigh[i] = sel
+                sel = cand.copy()
+            else:
+                # sort by squared distance
+                d2 = [(j, np.sum((positions[j]-positions[i])**2)) for j in cand]
+                d2.sort(key=lambda x: x[1])
+                sel = [j for j,_ in d2[:num_neighbors]]
+                neigh[i] = sel
         # symmetrize
         for i in range(n):
             for j in neigh[i]:

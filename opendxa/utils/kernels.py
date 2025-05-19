@@ -222,6 +222,7 @@ def burgers_kernel(
     loops,
     loop_lengths,
     box_bounds,
+    local_scales,
     burgers_out
 ):
     '''
@@ -275,7 +276,8 @@ def burgers_kernel(
         K = templates_sizes[ptm_type]
 
         # TODO: Assume scale 1.0 or precomputed
-        scale = 1.0
+        scale = local_scales[i]
+        # print('Local Scale:', scale, 'for', i)
         
         # Inline quaternion -> R
         q0 = quaternions[i, 0]
