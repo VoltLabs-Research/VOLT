@@ -45,7 +45,7 @@ class DislocationExporter:
                 'points': points
             })
 
-        with open(filename, 'a') as file:
+        with open(filename, 'w') as file:
             json.dump(output, file, indent=2)
 
     def plot_lines(self, ax=None):

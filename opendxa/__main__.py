@@ -157,9 +157,6 @@ def main():
         print('Number of dislocation lines:', len(lines))
         print('First line points:\n', lines[0])
 
-        lines = builder.build_lines()
-        burgers = burgers_circuits.calculate_burgers()
-
         # Classify each line
         engine = ClassificationEngine(
             positions=data_filtered['positions'],

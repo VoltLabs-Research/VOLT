@@ -20,7 +20,7 @@ def compute_local_scales(positions, connectivity, box_bounds=None):
         if not nbrs:
             scales[i] = 1.0
             continue
-        diffs = pos[nbrs] - pos[i]  # shape (k,3)
+        diffs = pos[nbrs] - pos[i]
 
         # apply PBC if requested
         if box is not None:

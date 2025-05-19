@@ -4,7 +4,7 @@ import math
 
 def quaternion_to_matrix(quaternion):
     w, x, y, z = quaternion
-    ww = w * x
+    ww = w * w
     xx = x * x
     yy = y * y
     zz = z * z
