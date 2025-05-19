@@ -1,3 +1,6 @@
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
+
 from opendxa.parser import LammpstrjParser
 from opendxa.neighbors import HybridNeighborFinder
 from opendxa.export import DislocationExporter
@@ -15,6 +18,135 @@ from opendxa.classification import (
 import argparse
 import logging
 
+def analyze_timestep(data, arguments, templates, template_sizes):
+    timestep = data['timestep']
+        
+    positions = data['positions']
+    box = data['box']
+    ids = data['ids']
+    number_of_atoms = len(positions)
+
+    logging.info(f'Analyzing timestep {timestep} ({number_of_atoms} atoms)')
+
+    neighbor_finder = HybridNeighborFinder(
+        positions=positions,
+        cutoff=arguments.cutoff,
+        num_neighbors=arguments.num_neighbors,
+        voronoi_factor=arguments.voronoi_factor,
+        max_neighbors=arguments.num_neighbors * 2,
+        box_bounds=box
+    )
+
+    logging.info('Finding neighbors...')
+    neighbors = neighbor_finder.find_neighbors()
+
+    # Local structure classification
+    ptm_classifier = PTMLocalClassifier(
+        positions=positions,
+        box_bounds=box,
+        neighbor_dict=neighbors,
+        templates=templates,
+        template_sizes=template_sizes,
+        max_neighbors=template_sizes.max()
+    )
+
+    types, quaternions = ptm_classifier.classify()
+
+    # Surface filtering
+    surface = SurfaceFilter(min_neighbors=arguments.min_neighbors)
+    interior_idxs = surface.filter_indices(neighbors, ptm_types=types)
+    print('Interior atom count:', len(interior_idxs))
+
+    data_filtered = surface.filter_data(
+        positions=positions,
+        ids=ids,
+        neighbors=neighbors,
+        ptm_types=types,
+        quaternions=quaternions
+    )
+
+    print('\n--- Filtered Data ---')
+    print('Filtered positions (first 5):')
+    print(data_filtered['positions'][:5])
+    print('\nFiltered IDs:')
+    print(data_filtered['ids'])
+    print('\nFiltered neighbor lists (first 5):')
+    for i in range(min(5, len(data_filtered['ids']))):
+        print(f'  atom {data_filtered["ids"][i]} →', data_filtered['neighbors'][i])
+    print('\nFiltered PTM types:')
+    print(data_filtered['ptm_types'])
+    print('\nFiltered orientation quaternions (first 5):')
+    print(data_filtered['quaternions'][:5])
+
+    # Connectivity graph
+    connectivity_graph = LatticeConnectivityGraph(
+        positions=data_filtered['positions'],
+        ids=data_filtered['ids'],
+        neighbors=data_filtered['neighbors'],
+        ptm_types=data_filtered['ptm_types'],
+        quaternions=data_filtered['quaternions'],
+        templates=templates,
+        template_sizes=template_sizes,
+        tolerance=arguments.tolerance
+    )
+
+    connectivity = connectivity_graph.build_graph()
+
+    # Displacement field
+    displacement_field_analyzer = DisplacementFieldAnalyzer(
+        positions=data_filtered['positions'],
+        connectivity=connectivity,
+        ptm_types=data_filtered['ptm_types'],
+        quaternions=data_filtered['quaternions'],
+        templates=templates,
+        template_sizes=template_sizes,
+        box_bounds=box
+    )
+
+    disp_vecs, avg_mags = displacement_field_analyzer.compute_displacement_field()
+    
+    # Burgers circuits
+    burgers_circuits = BurgersCircuitEvaluator(
+        connectivity=connectivity,
+        positions=data_filtered['positions'],
+        ptm_types=data_filtered['ptm_types'],
+        quaternions=data_filtered['quaternions'],
+        templates=templates,
+        template_sizes=template_sizes,
+        box_bounds=box
+    )
+
+    # TODO: max_length=arguments.max_loop_length
+    burgers = burgers_circuits.calculate_burgers()
+
+    builder = DislocationLineBuilder(
+        positions=data_filtered['positions'],
+        loops=burgers_circuits.loops,
+        burgers=burgers,
+        threshold=0.1
+    )
+    lines = builder.build_lines()
+    print('Number of dislocation lines:', len(lines))
+    print('First line points:\n', lines[0])
+
+    # Classify each line
+    engine = ClassificationEngine(
+        positions=data_filtered['positions'],
+        loops=builder.loops,
+        burgers_vectors=burgers
+    )
+    line_types = engine.classify()
+
+    exporter = DislocationExporter(
+        positions=data_filtered['positions'],
+        loops=builder.loops,
+        burgers=burgers,
+        timestep=timestep,
+        line_types=line_types
+    )
+    exporter.to_json(arguments.output)
+    logging.info(f'Exported dislocations to "{arguments.output}"')
+      
 def parse_call_arguments():
     parser = argparse.ArgumentParser(
         description='Open Source Dislocation Extraction Algorithm'
@@ -36,144 +168,23 @@ def parse_call_arguments():
 
 def main():
     arguments = parse_call_arguments()
-    logging.basicConfig(
-        level=logging.DEBUG if arguments.verbose else logging.INFO
-    )
-
+    logging.basicConfig(level=logging.DEBUG if arguments.verbose else logging.INFO)
     logging.info(f'Loading lammpstrj file "{arguments.lammpstrj}"')
+
     lammpstrj = LammpstrjParser(arguments.lammpstrj)
+    templates, templates_size = get_ptm_templates()
     
+    tasks = []
     for data in lammpstrj.iter_timesteps():
         timestep = data['timestep']
         if arguments.timestep is not None and timestep != arguments.timestep:
             continue
-            
-        positions = data['positions']
-        box = data['box']
-        ids = data['ids']
-        number_of_atoms = len(positions)
+        tasks.append(data)
+    
+    logging.info(f'Local timesteps to process: {len(tasks)}')
 
-        logging.info(f'Analyzing timestep {timestep} ({number_of_atoms} atoms)')
-
-        neighbor_finder = HybridNeighborFinder(
-            positions=positions,
-            cutoff=arguments.cutoff,
-            num_neighbors=arguments.num_neighbors,
-            voronoi_factor=arguments.voronoi_factor,
-            max_neighbors=arguments.num_neighbors * 2,
-            box_bounds=box
-        )
-
-        logging.info('Finding neighbors...')
-        neighbors = neighbor_finder.find_neighbors()
-
-        # Local structure classification
-        templates, template_sizes = get_ptm_templates()
-        ptm_classifier = PTMLocalClassifier(
-            positions=positions,
-            box_bounds=box,
-            neighbor_dict=neighbors,
-            templates=templates,
-            template_sizes=template_sizes,
-            max_neighbors=template_sizes.max()
-        )
-
-        types, quaternions = ptm_classifier.classify()
-
-        # Surface filtering
-        surface = SurfaceFilter(min_neighbors=arguments.min_neighbors)
-        interior_idxs = surface.filter_indices(neighbors, ptm_types=types)
-        print('Interior atom count:', len(interior_idxs))
-
-        data_filtered = surface.filter_data(
-            positions=positions,
-            ids=ids,
-            neighbors=neighbors,
-            ptm_types=types,
-            quaternions=quaternions
-        )
-
-        print('\n--- Filtered Data ---')
-        print('Filtered positions (first 5):')
-        print(data_filtered['positions'][:5])
-        print('\nFiltered IDs:')
-        print(data_filtered['ids'])
-        print('\nFiltered neighbor lists (first 5):')
-        for i in range(min(5, len(data_filtered['ids']))):
-            print(f'  atom {data_filtered["ids"][i]} →', data_filtered['neighbors'][i])
-        print('\nFiltered PTM types:')
-        print(data_filtered['ptm_types'])
-        print('\nFiltered orientation quaternions (first 5):')
-        print(data_filtered['quaternions'][:5])
-
-        # Connectivity graph
-        connectivity_graph = LatticeConnectivityGraph(
-            positions=data_filtered['positions'],
-            ids=data_filtered['ids'],
-            neighbors=data_filtered['neighbors'],
-            ptm_types=data_filtered['ptm_types'],
-            quaternions=data_filtered['quaternions'],
-            templates=templates,
-            template_sizes=template_sizes,
-            tolerance=arguments.tolerance
-        )
-
-        connectivity = connectivity_graph.build_graph()
-
-        # Displacement field
-        displacement_field_analyzer = DisplacementFieldAnalyzer(
-            positions=data_filtered['positions'],
-            connectivity=connectivity,
-            ptm_types=data_filtered['ptm_types'],
-            quaternions=data_filtered['quaternions'],
-            templates=templates,
-            template_sizes=template_sizes,
-            box_bounds=box
-        )
-
-        disp_vecs, avg_mags = displacement_field_analyzer.compute_displacement_field()
-        
-        # Burgers circuits
-        burgers_circuits = BurgersCircuitEvaluator(
-            connectivity=connectivity,
-            positions=data_filtered['positions'],
-            ptm_types=data_filtered['ptm_types'],
-            quaternions=data_filtered['quaternions'],
-            templates=templates,
-            template_sizes=template_sizes,
-            box_bounds=box
-        )
-
-        # TODO: max_length=arguments.max_loop_length
-        burgers = burgers_circuits.calculate_burgers()
-
-        builder = DislocationLineBuilder(
-            positions=data_filtered['positions'],
-            loops=burgers_circuits.loops,
-            burgers=burgers,
-            threshold=0.1
-        )
-        lines = builder.build_lines()
-        print('Number of dislocation lines:', len(lines))
-        print('First line points:\n', lines[0])
-
-        # Classify each line
-        engine = ClassificationEngine(
-            positions=data_filtered['positions'],
-            loops=builder.loops,
-            burgers_vectors=burgers
-        )
-        line_types = engine.classify()
-
-        exporter = DislocationExporter(
-            positions=data_filtered['positions'],
-            loops=builder.loops,
-            burgers=burgers,
-            timestep=timestep,
-            line_types=line_types
-        )
-        exporter.to_json(arguments.output)
-        logging.info(f'Exported dislocations to "{arguments.output}"')
+    with ProcessPoolExecutor() as executor:
+        executor.map(partial(analyze_timestep, arguments=arguments, templates=templates, template_sizes=templates_size), tasks)
         
 if __name__ == '__main__':
     main()
