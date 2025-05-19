@@ -18,9 +18,10 @@ from opendxa.classification import (
 import argparse
 import logging
 
-def analyze_timestep(data, arguments, templates, template_sizes):
-    timestep = data['timestep']
-        
+def analyze_timestep(timestep, lammpstrj_path, arguments, templates, template_sizes):
+    parser = LammpstrjParser(lammpstrj_path)
+    data = parser.get_timestep(timestep)
+    
     positions = data['positions']
     box = data['box']
     ids = data['ids']
@@ -175,18 +176,23 @@ def main():
 
     lammpstrj = LammpstrjParser(arguments.lammpstrj)
     templates, templates_size = get_ptm_templates()
-    
-    tasks = []
+        
+    timesteps = []
     for data in lammpstrj.iter_timesteps():
-        timestep = data['timestep']
-        if arguments.timestep is not None and timestep != arguments.timestep:
+        ts = data['timestep']
+        if arguments.timestep is not None and ts != arguments.timestep:
             continue
-        tasks.append(data)
-    
-    logging.info(f'Local timesteps to process: {len(tasks)}')
-
+        timesteps.append(ts)
+        
     with ProcessPoolExecutor(max_workers=arguments.workers) as executor:
-        executor.map(partial(analyze_timestep, arguments=arguments, templates=templates, template_sizes=templates_size), tasks)
+        func = partial(
+            analyze_timestep,
+            lammpstrj_path=arguments.lammpstrj,
+            arguments=arguments,
+            templates=templates,
+            template_sizes=templates_size
+        )
+        executor.map(func, timesteps)
         
 if __name__ == '__main__':
     main()

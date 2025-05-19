@@ -48,6 +48,12 @@ class LammpstrjParser:
         indices = {key: header.index(key) for key in fields_of_interest}
         return header, indices
 
+    def get_timestep(self, target_timestep):
+        for data in self.iter_timesteps():
+            if data['timestep'] == target_timestep:
+                return data
+        raise ValueError(f'Timestep {target_timestep} not found')
+
     def _parse_atoms_data(self, file, number_of_atoms, indices):
         ids = []
         positions = []
