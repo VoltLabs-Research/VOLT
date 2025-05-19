@@ -18,10 +18,14 @@ from opendxa.classification import (
 import argparse
 import logging
 
-def analyze_timestep(timestep, lammpstrj_path, arguments, templates, template_sizes):
-    parser = LammpstrjParser(lammpstrj_path)
-    data = parser.get_timestep(timestep)
-    
+def init_worker(templates, template_sizes):
+    global TEMPLATES, TEMPLATE_SIZES
+    TEMPLATES = templates
+    TEMPLATE_SIZES = template_sizes
+
+def analyze_timestep(data, arguments):
+    timestep = data['timestep']
+        
     positions = data['positions']
     box = data['box']
     ids = data['ids']
@@ -46,9 +50,9 @@ def analyze_timestep(timestep, lammpstrj_path, arguments, templates, template_si
         positions=positions,
         box_bounds=box,
         neighbor_dict=neighbors,
-        templates=templates,
-        template_sizes=template_sizes,
-        max_neighbors=template_sizes.max()
+        templates=TEMPLATES,
+        template_sizes=TEMPLATE_SIZES,
+        max_neighbors=TEMPLATE_SIZES.max()
     )
 
     types, quaternions = ptm_classifier.classify()
@@ -86,8 +90,8 @@ def analyze_timestep(timestep, lammpstrj_path, arguments, templates, template_si
         neighbors=data_filtered['neighbors'],
         ptm_types=data_filtered['ptm_types'],
         quaternions=data_filtered['quaternions'],
-        templates=templates,
-        template_sizes=template_sizes,
+        templates=TEMPLATES,
+        template_sizes=TEMPLATE_SIZES,
         tolerance=arguments.tolerance
     )
 
@@ -99,8 +103,8 @@ def analyze_timestep(timestep, lammpstrj_path, arguments, templates, template_si
         connectivity=connectivity,
         ptm_types=data_filtered['ptm_types'],
         quaternions=data_filtered['quaternions'],
-        templates=templates,
-        template_sizes=template_sizes,
+        templates=TEMPLATES,
+        template_sizes=TEMPLATE_SIZES,
         box_bounds=box
     )
 
@@ -112,8 +116,8 @@ def analyze_timestep(timestep, lammpstrj_path, arguments, templates, template_si
         positions=data_filtered['positions'],
         ptm_types=data_filtered['ptm_types'],
         quaternions=data_filtered['quaternions'],
-        templates=templates,
-        template_sizes=template_sizes,
+        templates=TEMPLATES,
+        template_sizes=TEMPLATE_SIZES,
         box_bounds=box
     )
 
@@ -171,28 +175,30 @@ def parse_call_arguments():
 def main():
     arguments = parse_call_arguments()
     logging.basicConfig(level=logging.DEBUG if arguments.verbose else logging.INFO)
-    logging.info(f'Using "{arguments.workers}" workers')
+    logging.info(f'Using "{arguments.lammpstrj}"')
     logging.info(f'Loading lammpstrj file "{arguments.lammpstrj}"')
 
     lammpstrj = LammpstrjParser(arguments.lammpstrj)
     templates, templates_size = get_ptm_templates()
-        
-    timesteps = []
+    
+    tasks = []
     for data in lammpstrj.iter_timesteps():
-        ts = data['timestep']
-        if arguments.timestep is not None and ts != arguments.timestep:
+        timestep = data['timestep']
+        if arguments.timestep is not None and timestep != arguments.timestep:
             continue
-        timesteps.append(ts)
-        
-    with ProcessPoolExecutor(max_workers=arguments.workers) as executor:
-        func = partial(
-            analyze_timestep,
-            lammpstrj_path=arguments.lammpstrj,
-            arguments=arguments,
-            templates=templates,
-            template_sizes=templates_size
+        tasks.append(data)
+    
+    logging.info(f'Local timesteps to process: {len(tasks)}')
+
+    with ProcessPoolExecutor(
+        max_workers=arguments.workers,
+        initializer=init_worker,
+        initargs=(templates, templates_size)
+    ) as executor:
+        executor.map(
+            partial(analyze_timestep, arguments=arguments),
+            tasks
         )
-        executor.map(func, timesteps)
         
 if __name__ == '__main__':
     main()
