@@ -1,3 +1,6 @@
+import numpy as np
+import itertools
+
 class LammpstrjParser:
     def __init__(self, filename):
         self.filename = filename
@@ -55,12 +58,11 @@ class LammpstrjParser:
         raise ValueError(f'Timestep {target_timestep} not found')
 
     def _parse_atoms_data(self, file, number_of_atoms, indices):
-        ids = []
-        positions = []
-        for _ in range(number_of_atoms):
-            parts = file.readline().strip().split()
-            ids.append(int(parts[indices['id']]))
-            position = tuple(float(parts[indices[axis]]) for axis in ('x', 'y', 'z'))
-            positions.append(position)
+        lines = ''.join(itertools.islice(file, number_of_atoms))
+        arr = np.fromstring(lines, dtype=np.float64, sep=' ')
+        num_cols = len(indices)
+        arr = arr.reshape((number_of_atoms, -1))
+        ids = arr[:, indices['id']].astype(int).tolist()
+        positions = arr[:, [indices[ax] for ax in ('x','y','z')]].tolist()
         return ids, positions
-    
+        
