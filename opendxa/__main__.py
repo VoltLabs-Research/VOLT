@@ -153,6 +153,7 @@ def parse_call_arguments():
     )
 
     parser.add_argument('lammpstrj', help='Path to LAMMPS lammpstrj file')
+    parser.add_argument('--workers', type=int, default=4, help='Number of parallel workers')
     parser.add_argument('--timestep', type=int, default=None, help='Specific timestep to analyze (default: first)')
     parser.add_argument('--cutoff', type=float, default=3.5, help='Cutoff distance for neighbor search')
     parser.add_argument('--num-neighbors', type=int, default=12, help='Number of Voronoi neighbors')
@@ -169,6 +170,7 @@ def parse_call_arguments():
 def main():
     arguments = parse_call_arguments()
     logging.basicConfig(level=logging.DEBUG if arguments.verbose else logging.INFO)
+    logging.info(f'Using "{arguments.workers}" workers')
     logging.info(f'Loading lammpstrj file "{arguments.lammpstrj}"')
 
     lammpstrj = LammpstrjParser(arguments.lammpstrj)
@@ -183,7 +185,7 @@ def main():
     
     logging.info(f'Local timesteps to process: {len(tasks)}')
 
-    with ProcessPoolExecutor() as executor:
+    with ProcessPoolExecutor(max_workers=arguments.workers) as executor:
         executor.map(partial(analyze_timestep, arguments=arguments, templates=templates, template_sizes=templates_size), tasks)
         
 if __name__ == '__main__':
