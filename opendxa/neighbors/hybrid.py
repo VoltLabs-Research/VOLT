@@ -27,7 +27,7 @@ def build_cell_list(positions, box_bounds, cutoff, lx, ly, lz):
         nx, ny, nz, dx, dy, dz,
         d_head, d_linked
     )
-    cuda.synchronize()
+    # cuda.synchronize()
 
     return d_head, d_linked, nx, ny, nz, dx, dy, dz
 
