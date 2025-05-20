@@ -1,5 +1,4 @@
-from opendxa.core import Sequentials
-import opendxa.core.workflow_steps as workflow_steps
+from opendxa.core.workflow_steps import create_and_configure_workflow
 import psutil
 import logging
 import time
@@ -27,7 +26,7 @@ def analyze_timestep(data, args):
             f'(memory {memory_start:.1f} MiB)'
         )
 
-        context = {
+        ctx = {
             'data': data,
             'args': args,
             'templates': TEMPLATES,
@@ -35,17 +34,7 @@ def analyze_timestep(data, args):
             'logger': logger
         }
 
-        workflow = Sequentials(context)
-
-        workflow.register('neighbors', workflow_steps.step_neighbors)
-        workflow.register('ptm', workflow_steps.step_classify_ptm, depends_on=['neighbors'])
-        workflow.register('filtered', workflow_steps.step_surface_filter, depends_on=['ptm'])
-        workflow.register('connectivity', workflow_steps.step_graph, depends_on=['filtered'])
-        workflow.register('displacement', workflow_steps.step_displacement, depends_on=['connectivity', 'filtered'])
-        workflow.register('loops', workflow_steps.step_burgers_loops, depends_on=['connectivity', 'filtered'])
-        workflow.register('lines', workflow_steps.step_dislocation_lines, depends_on=['loops', 'filtered'])
-        workflow.register('export', workflow_steps.step_export, depends_on=['lines','loops','filtered'])
-
+        workflow = create_and_configure_workflow(ctx=ctx)
         workflow.run()
 
         total_time = time.perf_counter() - time_start

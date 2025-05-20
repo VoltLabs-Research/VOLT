@@ -1,6 +1,7 @@
 from opendxa.filters import FilteredLoopFinder, LoopGrouper, LoopCanonicalizer
 from opendxa.export import DislocationExporter
 from opendxa.neighbors import HybridNeighborFinder
+from opendxa.core.sequentials import Sequentials
 
 from opendxa.classification import (
     PTMLocalClassifier,
@@ -157,3 +158,17 @@ def step_export(ctx, lines, loops, filtered):
     )
     exporter.to_json(args.output)
     ctx['logger'].info(f'Exported to {args.output}')
+
+def create_and_configure_workflow(ctx):
+    workflow = Sequentials(ctx)
+
+    workflow.register('neighbors', step_neighbors)
+    workflow.register('ptm', step_classify_ptm, depends_on=['neighbors'])
+    workflow.register('filtered', step_surface_filter, depends_on=['ptm'])
+    workflow.register('connectivity', step_graph, depends_on=['filtered'])
+    workflow.register('displacement', step_displacement, depends_on=['connectivity', 'filtered'])
+    workflow.register('loops', step_burgers_loops, depends_on=['connectivity', 'filtered'])
+    workflow.register('lines', step_dislocation_lines, depends_on=['loops', 'filtered'])
+    workflow.register('export', step_export, depends_on=['lines','loops','filtered'])
+
+    return workflow
