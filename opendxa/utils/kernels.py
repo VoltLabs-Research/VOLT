@@ -431,3 +431,17 @@ def classify_line_kernel(
     else:
         # Mixed
         types_out[idx] = 2
+
+@cuda.jit
+def kernel_assign_cells(positions, box_bounds, dx, dy, dz, nx, ny, nz, cell_idx_array):
+    i = cuda.grid(1)
+    if i >= positions.shape[0]:
+        return
+
+    xi, yi, zi = positions[i][0], positions[i][1], positions[i][2]
+    cx = int((xi - box_bounds[0,0]) / dx) % nx
+    cy = int((yi - box_bounds[1,0]) / dy) % ny
+    cz = int((zi - box_bounds[2,0]) / dz) % nz
+    cell_idx = cx + cy * nx + cz * nx * ny
+
+    cell_idx_array[i] = cell_idx

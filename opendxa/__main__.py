@@ -18,6 +18,8 @@ from opendxa.classification import (
 import argparse
 import logging
 
+TEMPLATES, TEMPLATE_SIZES = get_ptm_templates()
+
 def init_worker(templates, template_sizes):
     global TEMPLATES, TEMPLATE_SIZES
     TEMPLATES = templates
@@ -173,6 +175,9 @@ def main():
     lammpstrj = LammpstrjParser(arguments.lammpstrj)
     timesteps_iter = filter_timesteps(lammpstrj.iter_timesteps(), arguments.timestep)
 
+    for ts in timesteps_iter:
+        analyze_timestep(ts, arguments)
+
     with ProcessPoolExecutor(
         max_workers=arguments.workers,
         initializer=init_worker,
@@ -183,6 +188,5 @@ def main():
             timesteps_iter
         )
 
-        
 if __name__ == '__main__':
     main()

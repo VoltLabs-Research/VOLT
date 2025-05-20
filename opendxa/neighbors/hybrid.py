@@ -1,11 +1,10 @@
+from opendxa.utils.kernels import kernel_assign_cells
+from numba import njit, prange, cuda
 import numpy as np
 import warnings
-from numba import njit, prange
 
-@njit
 def build_cell_list(positions, box_bounds, cutoff, lx, ly, lz):
     n = positions.shape[0]
-    # compute number of cells per dimension
     nx = max(1, int(lx // cutoff))
     ny = max(1, int(ly // cutoff))
     nz = max(1, int(lz // cutoff))
@@ -13,17 +12,28 @@ def build_cell_list(positions, box_bounds, cutoff, lx, ly, lz):
     dy = ly / ny
     dz = lz / nz
 
-    head   = -1 * np.ones(nx * ny * nz, np.int64)
-    linked = -1 * np.ones(n, np.int64)
+    cell_count = nx * ny * nz
+
+    head = -1 * np.ones(cell_count, dtype=np.int64)
+    linked = -1 * np.ones(n, dtype=np.int64)
+
+    d_positions = cuda.to_device(positions)
+    d_box_bounds = cuda.to_device(box_bounds)
+    d_cell_idx = cuda.device_array(n, dtype=np.int64)
+
+    threads_per_block = 128
+    blocks_per_grid = (n + threads_per_block - 1) // threads_per_block
+
+    kernel_assign_cells[blocks_per_grid, threads_per_block](
+        d_positions, d_box_bounds, dx, dy, dz, nx, ny, nz, d_cell_idx
+    )
+
+    cell_idx = d_cell_idx.copy_to_host()
 
     for i in range(n):
-        xi, yi, zi = positions[i]
-        cx = int((xi - box_bounds[0,0]) / dx) % nx
-        cy = int((yi - box_bounds[1,0]) / dy) % ny
-        cz = int((zi - box_bounds[2,0]) / dz) % nz
-        idx = cx + cy*nx + cz*nx*ny
+        idx = cell_idx[i]
         linked[i] = head[idx]
-        head[idx]   = i
+        head[idx] = i
 
     return head, linked, nx, ny, nz, dx, dy, dz
 
