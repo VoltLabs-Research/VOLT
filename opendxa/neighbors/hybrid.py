@@ -1,5 +1,5 @@
-from opendxa.utils.kernels import kernel_assign_cells
-from numba import njit, prange, cuda
+from opendxa.utils.kernels import kernel_assign_cells, cutoff_neighbors_kernel
+from numba import cuda
 import numpy as np
 import warnings
 
@@ -37,62 +37,56 @@ def build_cell_list(positions, box_bounds, cutoff, lx, ly, lz):
 
     return head, linked, nx, ny, nz, dx, dy, dz
 
-@njit
-def pbc_distance2(xi, yi, zi, xj, yj, zj, lx, ly, lz):
-    """
-    Compute squared distance with periodic boundaries.
-    """
-    dx = xj - xi
-    dy = yj - yi
-    dz = zj - zi
-    if dx >  0.5*lx: dx -= lx
-    elif dx < -0.5*lx: dx += lx
-    if dy >  0.5*ly: dy -= ly
-    elif dy < -0.5*ly: dy += ly
-    if dz >  0.5*lz: dz -= lz
-    elif dz < -0.5*lz: dz += lz
-    return dx*dx + dy*dy + dz*dz
-
-@njit(parallel=True)
 def cutoff_neighbors(
-    positions, box_bounds, cutoff,
-    head, linked, nx, ny, nz, dx, dy, dz,
-    lx, ly, lz, max_neighbors
+    # np.ndarray (n,3) float64
+    positions,
+    # np.ndarray (3,2) float64
+    box_bounds,
+    # float
+    cutoff,
+    # np.ndarray (ncells,) int64
+    head,
+    # np.ndarray (n,) int64
+    linked,
+    # int
+    nx, ny, nz,
+    # float
+    dx, dy, dz,
+    # float 
+    lx, ly, lz,
+    # int
+    max_neighbors
 ):
     n = positions.shape[0]
-    cutoff2 = cutoff*cutoff
+    cutoff2 = cutoff * cutoff
 
-    # Initialize output arrays
-    neigh_idx = -1 * np.ones((n, max_neighbors), np.int64)
-    counts    = np.zeros(n,         np.int64)
+    neigh_idx = -1 * np.ones((n, max_neighbors), dtype=np.int64)
+    counts = np.zeros(n, dtype=np.int64)
 
-    for i in prange(n):
-        xi, yi, zi = positions[i]
-        cx = int((xi - box_bounds[0,0]) / dx) % nx
-        cy = int((yi - box_bounds[1,0]) / dy) % ny
-        cz = int((zi - box_bounds[2,0]) / dz) % nz
+    d_pos = cuda.to_device(positions)
+    d_bounds = cuda.to_device(box_bounds)
+    d_head = cuda.to_device(head)
+    d_linked = cuda.to_device(linked)
+    d_neigh = cuda.to_device(neigh_idx)
+    d_counts = cuda.to_device(counts)
 
-        for ox in (-1, 0, 1):
-            for oy in (-1, 0, 1):
-                for oz in (-1, 0, 1):
-                    ncx = (cx+ox) % nx
-                    ncy = (cy+oy) % ny
-                    ncz = (cz+oz) % nz
-                    idx = ncx + ncy*nx + ncz*nx*ny
-                    j = head[idx]
-                    while j != -1:
-                        if j > i:
-                            dist2 = pbc_distance2(
-                                xi, yi, zi,
-                                positions[j,0], positions[j,1], positions[j,2],
-                                lx, ly, lz
-                            )
-                            if dist2 <= cutoff2:
-                                cnt = counts[i]
-                                if cnt < max_neighbors:
-                                    neigh_idx[i, cnt] = j
-                                    counts[i] += 1
-                        j = linked[j]
+    threads_per_block = 128
+    blocks = (n + threads_per_block - 1) // threads_per_block
+
+    cutoff_neighbors_kernel[blocks, threads_per_block](
+        d_pos, d_bounds, cutoff2,
+        d_head, d_linked,
+        nx, ny, nz,
+        dx, dy, dz,
+        lx, ly, lz,
+        max_neighbors,
+        d_neigh, d_counts
+    )
+    cuda.synchronize()
+
+    d_neigh.copy_to_host(neigh_idx)
+    d_counts.copy_to_host(counts)
+
     return neigh_idx, counts
 
 class HybridNeighborFinder:

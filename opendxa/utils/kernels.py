@@ -1,4 +1,5 @@
 from numba import cuda, float32
+from opendxa.utils.cuda import pbc_distance2
 
 @cuda.jit
 def ptm_kernel(
@@ -445,3 +446,65 @@ def kernel_assign_cells(positions, box_bounds, dx, dy, dz, nx, ny, nz, cell_idx_
     cell_idx = cx + cy * nx + cz * nx * ny
 
     cell_idx_array[i] = cell_idx
+
+@cuda.jit
+def cutoff_neighbors_kernel(
+    # float64[:,3]
+    positions,
+    # float64[3,2]
+    box_bounds,
+    # float64
+    cutoff2,
+    # int64[ ncells ]
+    head, 
+    # int64[ n ]
+    linked,
+    # int32
+    nx, ny, nz,
+    # float64 
+    dx, dy, dz,
+    # float64
+    lx, ly, lz, 
+    # int32
+    max_neighbors,
+    # int64[:, max_neighbors]
+    neigh_idx,
+    # int64[:]
+    counts
+):
+    i = cuda.grid(1)
+    n = positions.shape[0]
+    if i >= n:
+        return
+
+    xi = positions[i, 0]
+    yi = positions[i, 1]
+    zi = positions[i, 2]
+
+    cx = int((xi - box_bounds[0,0]) / dx) % nx
+    cy = int((yi - box_bounds[1,0]) / dy) % ny
+    cz = int((zi - box_bounds[2,0]) / dz) % nz
+    if cx < 0: cx += nx
+    if cy < 0: cy += ny
+    if cz < 0: cz += nz
+
+    cnt = 0
+    for ox in (-1, 0, 1):
+        ncx = (cx + ox + nx) % nx
+        for oy in (-1, 0, 1):
+            ncy = (cy + oy + ny) % ny
+            for oz in (-1, 0, 1):
+                ncz = (cz + oz + nz) % nz
+                idx = ncx + ncy*nx + ncz*(nx*ny)
+                j = head[idx]
+                while j != -1:
+                    if j > i:
+                        xj = positions[j, 0]
+                        yj = positions[j, 1]
+                        zj = positions[j, 2]
+                        d2 = pbc_distance2(xi, yi, zi, xj, yj, zj, lx, ly, lz)
+                        if d2 <= cutoff2 and cnt < max_neighbors:
+                            neigh_idx[i, cnt] = j
+                            cnt += 1
+                    j = linked[j]
+    counts[i] = cnt

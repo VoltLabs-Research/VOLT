@@ -175,8 +175,8 @@ def main():
     lammpstrj = LammpstrjParser(arguments.lammpstrj)
     timesteps_iter = filter_timesteps(lammpstrj.iter_timesteps(), arguments.timestep)
 
-    for ts in timesteps_iter:
-        analyze_timestep(ts, arguments)
+    #for ts in timesteps_iter:
+    #    analyze_timestep(ts, arguments)
 
     with ProcessPoolExecutor(
         max_workers=arguments.workers,
