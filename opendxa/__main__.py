@@ -34,6 +34,7 @@ def analyze_timestep(data, arguments):
     number_of_atoms = len(positions)
 
     logging.info(f'Analyzing timestep {timestep} ({number_of_atoms} atoms)')
+    logging.getLogger('numba.cuda.cudadrv.driver').setLevel(logging.WARNING)
 
     neighbor_finder = HybridNeighborFinder(
         positions=positions,

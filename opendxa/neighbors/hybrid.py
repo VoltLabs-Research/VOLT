@@ -1,4 +1,5 @@
 from opendxa.utils.kernels import kernel_assign_cells, cutoff_neighbors_kernel
+from opendxa.utils.cuda import get_cuda_launch_config
 from numba import cuda
 import numpy as np
 import warnings
@@ -21,10 +22,9 @@ def build_cell_list(positions, box_bounds, cutoff, lx, ly, lz):
     d_box_bounds = cuda.to_device(box_bounds)
     d_cell_idx = cuda.device_array(n, dtype=np.int64)
 
-    threads_per_block = 128
-    blocks_per_grid = (n + threads_per_block - 1) // threads_per_block
+    blocks, blocks_per_thread = get_cuda_launch_config()
 
-    kernel_assign_cells[blocks_per_grid, threads_per_block](
+    kernel_assign_cells[blocks, blocks_per_thread](
         d_positions, d_box_bounds, dx, dy, dz, nx, ny, nz, d_cell_idx
     )
 
@@ -70,10 +70,9 @@ def cutoff_neighbors(
     d_neigh = cuda.to_device(neigh_idx)
     d_counts = cuda.to_device(counts)
 
-    threads_per_block = 128
-    blocks = (n + threads_per_block - 1) // threads_per_block
+    blocks, blocks_per_thread = get_cuda_launch_config()
 
-    cutoff_neighbors_kernel[blocks, threads_per_block](
+    cutoff_neighbors_kernel[blocks, blocks_per_thread](
         d_pos, d_bounds, cutoff2,
         d_head, d_linked,
         nx, ny, nz,
