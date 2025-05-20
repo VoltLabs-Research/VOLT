@@ -508,3 +508,31 @@ def cutoff_neighbors_kernel(
                             cnt += 1
                     j = linked[j]
     counts[i] = cnt
+
+@cuda.jit
+def build_linked_list_kernel(
+    positions, 
+    box_bounds,
+    nx, ny, nz, dx, dy, dz,
+    head, 
+    linked
+):
+    i = cuda.grid(1)
+    if i >= positions.shape[0]:
+        return
+
+    xi, yi, zi = positions[i]
+
+    cx = int((xi - box_bounds[0,0]) / dx) % nx
+    cy = int((yi - box_bounds[1,0]) / dy) % ny
+    cz = int((zi - box_bounds[2,0]) / dz) % nz
+
+    if cx < 0: cx += nx
+    if cy < 0: cy += ny
+    if cz < 0: cz += nz
+
+    cell = cx + cy * nx + cz * nx * ny
+
+    old = cuda.atomic.exch(head, cell, i)
+    linked[i] = old
+

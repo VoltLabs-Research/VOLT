@@ -1,4 +1,4 @@
-from opendxa.utils.kernels import kernel_assign_cells, cutoff_neighbors_kernel
+from opendxa.utils.kernels import build_linked_list_kernel, cutoff_neighbors_kernel
 from opendxa.utils.cuda import get_cuda_launch_config
 from numba import cuda
 import numpy as np
@@ -15,27 +15,21 @@ def build_cell_list(positions, box_bounds, cutoff, lx, ly, lz):
 
     cell_count = nx * ny * nz
 
-    head = -1 * np.ones(cell_count, dtype=np.int64)
-    linked = -1 * np.ones(n, dtype=np.int64)
-
     d_positions = cuda.to_device(positions)
     d_box_bounds = cuda.to_device(box_bounds)
-    d_cell_idx = cuda.device_array(n, dtype=np.int64)
+    d_head = cuda.to_device(np.full(cell_count, -1, dtype=np.int64))
+    d_linked = cuda.to_device(np.full(n, -1, dtype=np.int64))
 
-    blocks, blocks_per_thread = get_cuda_launch_config(n)
+    blocks, threads_per_block = get_cuda_launch_config(n)
 
-    kernel_assign_cells[blocks, blocks_per_thread](
-        d_positions, d_box_bounds, dx, dy, dz, nx, ny, nz, d_cell_idx
+    build_linked_list_kernel[blocks, threads_per_block](
+        d_positions, d_box_bounds,
+        nx, ny, nz, dx, dy, dz,
+        d_head, d_linked
     )
+    cuda.synchronize()
 
-    cell_idx = d_cell_idx.copy_to_host()
-
-    for i in range(n):
-        idx = cell_idx[i]
-        linked[i] = head[idx]
-        head[idx] = i
-
-    return head, linked, nx, ny, nz, dx, dy, dz
+    return d_head, d_linked, nx, ny, nz, dx, dy, dz
 
 def cutoff_neighbors(
     # np.ndarray (n,3) float64
