@@ -5,6 +5,7 @@ from opendxa.parser import LammpstrjParser
 from opendxa.neighbors import HybridNeighborFinder
 from opendxa.export import DislocationExporter, DislocationTracker
 from opendxa.utils.ptm_templates import get_ptm_templates
+from opendxa.utils.logging import setup_logging
 from opendxa.filters import FilteredLoopFinder, LoopGrouper, LoopCanonicalizer
 from opendxa.classification import (
     PTMLocalClassifier,
@@ -18,18 +19,11 @@ from opendxa.classification import (
 
 import numpy as np
 import argparse
-import logging
 import time
 import psutil
+import logging
 
-handler = logging.StreamHandler()
-formatter = logging.Formatter(
-    '%(asctime)s %(processName)s %(levelname)s ▶ %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-handler.setFormatter(formatter)
 logger = logging.getLogger() 
-logger.addHandler(handler)
 
 # TEMPLATES, TEMPLATE_SIZES = get_ptm_templates()
 
@@ -56,8 +50,6 @@ def analyze_timestep(data, arguments):
             f'Timestep {timestep}: {number_of_atoms} atoms'
             f'(memory {memory_start:.1f} MiB)'
         )
-
-        logging.getLogger('numba.cuda.cudadrv.driver').setLevel(logging.WARNING)
 
         t0 = time.perf_counter()
         neighbor_finder = HybridNeighborFinder(
@@ -244,7 +236,7 @@ def parse_call_arguments():
 
 def main():
     arguments = parse_call_arguments()
-    logger.setLevel(logging.DEBUG if arguments.verbose else logging.INFO)
+    setup_logging(arguments.verbose)
 
     if arguments.track_dir:
         logger.info(f'Tracking dislocations from directory: {arguments.track_dir}')

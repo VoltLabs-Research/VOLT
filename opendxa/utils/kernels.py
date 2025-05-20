@@ -453,7 +453,6 @@ def assign_and_find_neighbors_kernel(
     yi = positions[i, 1]
     zi = positions[i, 2]
 
-    # Asignar a celda
     cx = int((xi - box_bounds[0,0]) / dx) % nx
     cy = int((yi - box_bounds[1,0]) / dy) % ny
     cz = int((zi - box_bounds[2,0]) / dz) % nz

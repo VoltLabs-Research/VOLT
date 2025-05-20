@@ -1,5 +1,6 @@
 from collections import defaultdict
 from fractions import Fraction
+from matplotlib.ticker import MaxNLocator
 import matplotlib.pyplot as plt
 import numpy as np
 import json
@@ -62,7 +63,6 @@ class DislocationTracker:
             print(f'  {k}: {v}')
 
     def plot_burgers_histogram(self):
-        from matplotlib.ticker import MaxNLocator
         burgers_hist = defaultdict(int)
         for dislocs in self.timesteps_data.values():
             for d in dislocs:
@@ -74,6 +74,7 @@ class DislocationTracker:
 
         fig, ax = plt.subplots()
         ax.bar(range(len(labels)), counts, tick_label=labels)
+        plt.rcParams.update({'font.size': 14, 'font.family': 'serif'})
         ax.set_title('Burgers Vector Histogram')
         ax.set_ylabel('Count')
         ax.set_xlabel('Burgers Vector')
