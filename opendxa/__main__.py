@@ -3,7 +3,7 @@ from functools import partial
 
 from opendxa.parser import LammpstrjParser
 from opendxa.neighbors import HybridNeighborFinder
-from opendxa.export import DislocationExporter
+from opendxa.export import DislocationExporter, DislocationTracker
 from opendxa.utils.ptm_templates import get_ptm_templates
 from opendxa.filters import FilteredLoopFinder, LoopGrouper, LoopCanonicalizer
 from opendxa.classification import (
@@ -238,6 +238,7 @@ def parse_call_arguments():
     parser.add_argument('--burgers-threshold', type=float, default=1e-3, help='Threshold magnitude to consider Burgers vectors non-zero')
     parser.add_argument('--output', '-o', default='dislocations.json', help='Output JSON file for dislocations')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
+    parser.add_argument('--track-dir', type=str, default=None, help='If set, perform dislocation tracking and statistics from this directory of JSON files')
 
     return parser.parse_args()
 
@@ -245,6 +246,15 @@ def main():
     arguments = parse_call_arguments()
     logger.setLevel(logging.DEBUG if arguments.verbose else logging.INFO)
 
+    if arguments.track_dir:
+        logger.info(f'Tracking dislocations from directory: {arguments.track_dir}')
+        tracker = DislocationTracker(arguments.track_dir)
+        tracker.load_all_timesteps()
+        tracker.compute_statistics()
+        tracker.plot_burgers_histogram()
+        tracker.track_dislocations()
+        return 
+    
     logger.info(f'Using "{arguments.lammpstrj}"')
     logger.info(f'Loading lammpstrj file "{arguments.lammpstrj}"')
 
