@@ -18,6 +18,15 @@ from opendxa.classification import (
 import argparse
 import logging
 
+handler = logging.StreamHandler()
+formatter = logging.Formatter(
+    '%(asctime)s %(levelname)s ▶ %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+handler.setFormatter(formatter)
+logger = logging.getLogger() 
+logger.addHandler(handler)
+
 TEMPLATES, TEMPLATE_SIZES = get_ptm_templates()
 
 def init_worker(templates, template_sizes):
@@ -33,7 +42,7 @@ def analyze_timestep(data, arguments):
     ids = data['ids']
     number_of_atoms = len(positions)
 
-    logging.info(f'Analyzing timestep {timestep} ({number_of_atoms} atoms)')
+    logger.info(f'Analyzing timestep {timestep} ({number_of_atoms} atoms)')
     logging.getLogger('numba.cuda.cudadrv.driver').setLevel(logging.WARNING)
 
     neighbor_finder = HybridNeighborFinder(
@@ -45,7 +54,7 @@ def analyze_timestep(data, arguments):
         box_bounds=box
     )
 
-    logging.info('Finding neighbors...')
+    logger.info('Finding neighbors...')
     neighbors = neighbor_finder.find_neighbors()
 
     # Local structure classification
@@ -137,7 +146,7 @@ def analyze_timestep(data, arguments):
         line_types=line_types
     )
     exporter.to_json(arguments.output)
-    logging.info(f'Exported dislocations to "{arguments.output}"')
+    logger.info(f'Exported dislocations to "{arguments.output}"')
       
 def parse_call_arguments():
     parser = argparse.ArgumentParser(
@@ -161,9 +170,10 @@ def parse_call_arguments():
 
 def main():
     arguments = parse_call_arguments()
-    logging.basicConfig(level=logging.DEBUG if arguments.verbose else logging.INFO)
-    logging.info(f'Using "{arguments.lammpstrj}"')
-    logging.info(f'Loading lammpstrj file "{arguments.lammpstrj}"')
+    logger.setLevel(logging.DEBUG if arguments.verbose else logging.INFO)
+
+    logger.info(f'Using "{arguments.lammpstrj}"')
+    logger.info(f'Loading lammpstrj file "{arguments.lammpstrj}"')
 
     templates, templates_size = get_ptm_templates()
     
@@ -176,8 +186,8 @@ def main():
     lammpstrj = LammpstrjParser(arguments.lammpstrj)
     timesteps_iter = filter_timesteps(lammpstrj.iter_timesteps(), arguments.timestep)
 
-    #for ts in timesteps_iter:
-    #    analyze_timestep(ts, arguments)
+    for ts in timesteps_iter:
+        analyze_timestep(ts, arguments)
 
     with ProcessPoolExecutor(
         max_workers=arguments.workers,

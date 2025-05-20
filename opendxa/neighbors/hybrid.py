@@ -22,7 +22,7 @@ def build_cell_list(positions, box_bounds, cutoff, lx, ly, lz):
     d_box_bounds = cuda.to_device(box_bounds)
     d_cell_idx = cuda.device_array(n, dtype=np.int64)
 
-    blocks, blocks_per_thread = get_cuda_launch_config()
+    blocks, blocks_per_thread = get_cuda_launch_config(n)
 
     kernel_assign_cells[blocks, blocks_per_thread](
         d_positions, d_box_bounds, dx, dy, dz, nx, ny, nz, d_cell_idx
@@ -70,7 +70,7 @@ def cutoff_neighbors(
     d_neigh = cuda.to_device(neigh_idx)
     d_counts = cuda.to_device(counts)
 
-    blocks, blocks_per_thread = get_cuda_launch_config()
+    blocks, blocks_per_thread = get_cuda_launch_config(n)
 
     cutoff_neighbors_kernel[blocks, blocks_per_thread](
         d_pos, d_bounds, cutoff2,
