@@ -15,19 +15,22 @@ from opendxa.classification import (
     DislocationLineBuilder
 )
 
+import numpy as np
 import argparse
 import logging
+import time
+import psutil
 
 handler = logging.StreamHandler()
 formatter = logging.Formatter(
-    '%(asctime)s %(levelname)s ▶ %(message)s',
+    '%(asctime)s %(processName)s %(levelname)s ▶ %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 handler.setFormatter(formatter)
 logger = logging.getLogger() 
 logger.addHandler(handler)
 
-TEMPLATES, TEMPLATE_SIZES = get_ptm_templates()
+# TEMPLATES, TEMPLATE_SIZES = get_ptm_templates()
 
 def init_worker(templates, template_sizes):
     global TEMPLATES, TEMPLATE_SIZES
@@ -35,16 +38,26 @@ def init_worker(templates, template_sizes):
     TEMPLATE_SIZES = template_sizes
 
 def analyze_timestep(data, arguments):
+    process = psutil.Process()
+
     timestep = data['timestep']
-        
     positions = data['positions']
     box = data['box']
     ids = data['ids']
     number_of_atoms = len(positions)
 
-    logger.info(f'Analyzing timestep {timestep} ({number_of_atoms} atoms)')
+    time_start = time.perf_counter()
+    memory_start = process.memory_info().rss / 1024 ** 2
+
+
+    logger.info(
+        f'Timestep {timestep}: {number_of_atoms} atoms'
+        f'(memory {memory_start:.1f} MiB)'
+    )
+
     logging.getLogger('numba.cuda.cudadrv.driver').setLevel(logging.WARNING)
 
+    t0 = time.perf_counter()
     neighbor_finder = HybridNeighborFinder(
         positions=positions,
         cutoff=arguments.cutoff,
@@ -53,11 +66,13 @@ def analyze_timestep(data, arguments):
         max_neighbors=arguments.num_neighbors * 2,
         box_bounds=box
     )
-
-    logger.info('Finding neighbors...')
     neighbors = neighbor_finder.find_neighbors()
+    dt = time.perf_counter() - t0
+    total_pairs = sum(len(v) for v in neighbors.values())
+    logger.info(f'Neighbors: {total_pairs} pairs found in {dt:.3f}s')
 
     # Local structure classification
+    t0 = time.perf_counter()
     ptm_classifier = PTMLocalClassifier(
         positions=positions,
         box_bounds=box,
@@ -66,13 +81,15 @@ def analyze_timestep(data, arguments):
         template_sizes=TEMPLATE_SIZES,
         max_neighbors=TEMPLATE_SIZES.max()
     )
-
     types, quaternions = ptm_classifier.classify()
+    dt = time.perf_counter() - t0
+    unique, counts = np.unique(types, return_counts=True)
+    type_stats = ', '.join(f'{u}:{c}' for u, c in zip(unique, counts))
+    logger.info(f'PTM classified in {dt:.3f}s: types {{{type_stats}}}')
 
     # Surface filtering
     surface = SurfaceFilter(min_neighbors=arguments.min_neighbors)
-    interior_idxs = surface.filter_indices(neighbors, ptm_types=types)
-
+    t0 = time.perf_counter()
     data_filtered = surface.filter_data(
         positions=positions,
         ids=ids,
@@ -80,8 +97,12 @@ def analyze_timestep(data, arguments):
         ptm_types=types,
         quaternions=quaternions
     )
+    dt = time.perf_counter() - t0
+    n_interior = data_filtered['positions'].shape[0]
+    logger.info(f'Surface Filter: {n_interior} interior atoms in {dt:.3f}s')
 
     # Connectivity graph
+    t0 = time.perf_counter()
     connectivity_graph = LatticeConnectivityGraph(
         positions=data_filtered['positions'],
         ids=data_filtered['ids'],
@@ -92,10 +113,13 @@ def analyze_timestep(data, arguments):
         template_sizes=TEMPLATE_SIZES,
         tolerance=arguments.tolerance
     )
-
     connectivity = connectivity_graph.build_graph()
+    dt = time.perf_counter() - t0
+    n_edges = sum(len(v) for v in connectivity.values())//2
+    logger.info(f'Graph: {n_edges} edges in {dt:.3f}s')
 
     # Displacement field
+    t0 = time.perf_counter()
     displacement_field_analyzer = DisplacementFieldAnalyzer(
         positions=data_filtered['positions'],
         connectivity=connectivity,
@@ -105,10 +129,15 @@ def analyze_timestep(data, arguments):
         template_sizes=TEMPLATE_SIZES,
         box_bounds=box
     )
-
     disp_vecs, avg_mags = displacement_field_analyzer.compute_displacement_field()
+    dt = time.perf_counter() - t0
+    logger.info(
+        f'Displacements: average of magnitudes '
+        f'{np.nanmean(avg_mags):.3f} in {dt:.3f}s'
+    )
     
     # Burgers circuits
+    t0 = time.perf_counter()
     burgers_circuits = BurgersCircuitEvaluator(
         connectivity=connectivity,
         positions=data_filtered['positions'],
@@ -129,6 +158,8 @@ def analyze_timestep(data, arguments):
         threshold=0.1
     )
     lines = builder.build_lines()
+    dt = time.perf_counter() - t0
+    logger.info(f'Burgers and lines: {len(lines)} lines in {dt:.3f}s')
 
     # Classify each line
     engine = ClassificationEngine(
@@ -138,6 +169,7 @@ def analyze_timestep(data, arguments):
     )
     line_types = engine.classify()
 
+    t0 = time.perf_counter()
     exporter = DislocationExporter(
         positions=data_filtered['positions'],
         loops=builder.loops,
@@ -146,8 +178,18 @@ def analyze_timestep(data, arguments):
         line_types=line_types
     )
     exporter.to_json(arguments.output)
-    logger.info(f'Exported dislocations to "{arguments.output}"')
-      
+    dt = time.perf_counter() - t0
+    logger.info(f'Export to "{arguments.output}" in {dt:.3f}s')
+
+    total_time = time.perf_counter() - time_start
+    memory_end = process.memory_info().rss / 1024 ** 2
+    total_memory = memory_end - memory_start
+
+    logger.info(
+        f'Timestep {timestep} completed in {total_time:.3f}s '
+        f'(Memory {memory_end:.1f} MiB, total: {total_memory:+.1f} MiB)\n'
+    )
+
 def parse_call_arguments():
     parser = argparse.ArgumentParser(
         description='Open Source Dislocation Extraction Algorithm'
@@ -186,8 +228,8 @@ def main():
     lammpstrj = LammpstrjParser(arguments.lammpstrj)
     timesteps_iter = filter_timesteps(lammpstrj.iter_timesteps(), arguments.timestep)
 
-    for ts in timesteps_iter:
-        analyze_timestep(ts, arguments)
+    # for ts in timesteps_iter:
+    #    analyze_timestep(ts, arguments)
 
     with ProcessPoolExecutor(
         max_workers=arguments.workers,
