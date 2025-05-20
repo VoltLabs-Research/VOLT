@@ -10,7 +10,7 @@ import logging
 
 logger = logging.getLogger() 
 
-def parse_call_arguments():
+def parse_call_args():
     parser = argparse.ArgumentParser(
         description='Open Source Dislocation Extraction Algorithm'
     )
@@ -32,20 +32,20 @@ def parse_call_arguments():
     return parser.parse_args()
 
 def main():
-    arguments = parse_call_arguments()
-    setup_logging(arguments.verbose)
+    args = parse_call_args()
+    setup_logging(args.verbose)
 
-    if arguments.track_dir:
-        logger.info(f'Tracking dislocations from directory: {arguments.track_dir}')
-        tracker = DislocationTracker(arguments.track_dir)
+    if args.track_dir:
+        logger.info(f'Tracking dislocations from directory: {args.track_dir}')
+        tracker = DislocationTracker(args.track_dir)
         tracker.load_all_timesteps()
         tracker.compute_statistics()
         tracker.plot_burgers_histogram()
         tracker.track_dislocations()
         return 
     
-    logger.info(f'Using "{arguments.lammpstrj}"')
-    logger.info(f'Loading lammpstrj file "{arguments.lammpstrj}"')
+    logger.info(f'Using "{args.lammpstrj}"')
+    logger.info(f'Loading lammpstrj file "{args.lammpstrj}"')
 
     templates, templates_size = get_ptm_templates()
     
@@ -55,16 +55,16 @@ def main():
                 continue
             yield data
 
-    lammpstrj = LammpstrjParser(arguments.lammpstrj)
-    timesteps_iter = filter_timesteps(lammpstrj.iter_timesteps(), arguments.timestep)
+    lammpstrj = LammpstrjParser(args.lammpstrj)
+    timesteps_iter = filter_timesteps(lammpstrj.iter_timesteps(), args.timestep)
 
     with ProcessPoolExecutor(
-        max_workers=arguments.workers,
+        max_workers=args.workers,
         initializer=init_worker,
         initargs=(templates, templates_size)
     ) as executor:
         executor.map(
-            partial(analyze_timestep, arguments=arguments),
+            partial(analyze_timestep, args=args),
             timesteps_iter
         )
 
