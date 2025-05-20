@@ -1,17 +1,21 @@
 from numpy.linalg import norm
 import numpy as np
 
+
 def match_to_fcc_basis(burgers_vector):
     fcc_basis = np.array([
         [ 1,  1,  2], [ 1, -1,  2], [-1,  1,  2], [-1, -1,  2],
         [ 1,  2,  1], [ 1, -2,  1], [-1,  2,  1], [-1, -2,  1],
-        [ 2,  1,  1], [ 2, -1,  1], [-2,  1,  1], [-2, -1,  1],
+        [ 2,  1,  1], [ 2, -1,  1], [-2,  1,  1], [-2, -1,  1]
     ]) / 6.0
     normed_basis = fcc_basis / norm(fcc_basis, axis=1, keepdims=True)
     burger_norm = burgers_vector / norm(burgers_vector)
     dots = normed_basis @ burger_norm
     i = np.argmax(np.abs(dots))
-    return fcc_basis[i], dots[i]
+    matched_burger = fcc_basis[i] * np.sign(dots[i])
+    alignment = dots[i]
+    return matched_burger, alignment
+
 
 def compute_local_scales(positions, connectivity, box_bounds=None):
     '''

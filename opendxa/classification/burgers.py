@@ -24,25 +24,7 @@ class BurgersCircuitEvaluator:
             self.box = np.zeros((0,2), dtype=np.float32)
         self.scales = compute_local_scales(positions, connectivity, box_bounds=box_bounds)
         self.d_scales = cuda.to_device(self.scales)
-        # pre-store loops
-        self.loops = self._find_loops()
-
-    def _find_loops(self, max_length=8):
-        loops = []
-        def dfs(start, current, path):
-            if len(path) > max_length: return
-            for nbr in self.conn.get(current, []):
-                if nbr == start and len(path) >= 3:
-                    loops.append(path.copy()); return
-                if nbr in path or nbr < start: continue
-                path.append(nbr); dfs(start, nbr, path); path.pop()
-        for i in range(self.N): dfs(i, i, [i])
-        # unique
-        unique=[]; seen=set()
-        for loop in loops:
-            key=tuple(sorted(loop))
-            if key not in seen: seen.add(key); unique.append(loop)
-        return unique
+        self.loops = []
 
     def calculate_burgers(self):
         loops = self.loops

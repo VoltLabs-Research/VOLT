@@ -1,8 +1,16 @@
 from opendxa.utils.burgers import match_to_fcc_basis
+from fractions import Fraction
 import numpy as np
 import matplotlib.pyplot as plt
 import json
 import os
+
+def burgers_to_string(bvec: list[float]) -> str:
+    fractions = [Fraction(b).limit_denominator(6) for b in bvec]
+    denominators = [f.denominator for f in fractions]
+    common_den = np.lcm.reduce(denominators)
+    numerators = [int(f * common_den) for f in fractions]
+    return f'1/{common_den}[{numerators[0]} {numerators[1]} {numerators[2]}]'
 
 class DislocationExporter:
     def __init__(self,
@@ -40,6 +48,7 @@ class DislocationExporter:
                 'burgers': burger_vector,
                 'points': points,
                 'matched_burgers': matched_burgers.tolist(),
+                'matched_burgers_str': burgers_to_string(matched_burgers),
                 'alignment': float(alignment)
             })
 
