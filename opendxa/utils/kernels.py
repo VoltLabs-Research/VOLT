@@ -162,7 +162,7 @@ def ptm_kernel(
 
         # Power iteration to find principal eigenvector of K
         q = cuda.local.array(4, float32)
-        q[0] = 1.0; 
+        q[0] = 1.0
         q[1] = q[2] = q[3] = 0.0
         for _ in range(0, 10):
             # y = K * q
@@ -298,14 +298,14 @@ def burgers_kernel(
         xz = q1 * q3
         yz = q2 * q3
 
-        R00 = ww + xx - yy - zz; 
-        R01 = 2 * (xy - wz); 
+        R00 = ww + xx - yy - zz
+        R01 = 2 * (xy - wz)
         R02 = 2 * (xz + wy)
-        R10 = 2 * (xy + wz);
-        R11 = ww - xx + yy - zz; 
+        R10 = 2 * (xy + wz)
+        R11 = ww - xx + yy - zz
         R12 = 2 * (yz - wx)
-        R20 = 2 * (xz - wy); 
-        R21 = 2 * (yz + wx); 
+        R20 = 2 * (xz - wy)
+        R21 = 2 * (yz + wx) 
         R22 = ww - xx - yy + zz
 
         # Search best match among template neighbors
@@ -321,8 +321,8 @@ def burgers_kernel(
             px = (R00 * Tx + R01 * Ty + R02 * Tz) * scale + positions[i,0]
             py = (R10 * Tx + R11 * Ty + R12 * Tz) * scale + positions[i,1]
             pz = (R20 * Tx + R21 * Ty + R22 * Tz) * scale + positions[i,2]
-            rx = positions[j,0]; 
-            ry = positions[j,1]; 
+            rx = positions[j,0]
+            ry = positions[j,1]
             rz = positions[j,2]
 
             # PBC adjustment

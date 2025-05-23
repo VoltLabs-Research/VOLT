@@ -2,6 +2,7 @@ from opendxa.filters import FilteredLoopFinder, LoopGrouper, LoopCanonicalizer
 from opendxa.export import DislocationExporter
 from opendxa.neighbors import HybridNeighborFinder
 from opendxa.core.sequentials import Sequentials
+from scipy.spatial.distance import cdist
 
 from opendxa.classification import (
     PTMLocalClassifier,
@@ -127,32 +128,107 @@ def step_burgers_loops(ctx, connectivity, filtered):
         final_loops.append(sorted(set(all_pts)))
         final_burgers[gid] = avg_burg
 
-    return {'loops': final_loops, 'burgers': final_burgers}
+    ctx['loops'] = {'loops': final_loops, 'burgers': final_burgers}
+    return ctx['loops']
 
-def step_dislocation_lines(ctx, loops, filtered):
+def step_nye_tensor(ctx, advanced_loops, filtered):
+    positions = filtered['positions']
+    burgers = advanced_loops['burgers']
+    volume = np.prod(filtered.get('box_lengths', [1, 1, 1]))
+    tensor = np.zeros((3, 3), dtype=np.float32)
+    for i, b in burgers.items():
+        loop = advanced_loops['loops'][i]
+        if len(loop) < 2:
+            continue
+        start = positions[loop[0]]
+        end = positions[loop[-1]]
+        lvec = end - start
+        tensor += np.outer(b, lvec)
+    if volume > 0:
+        tensor /= volume
+    ctx['logger'].info(f"Nye tensor computed:\n{tensor}")
+    return {'nye_tensor': tensor}
+
+def step_advanced_grouping(ctx, loops, filtered):
+    burgers = loops['burgers']
+    positions = filtered['positions']
+    loop_centers = [positions[loop].mean(axis=0) for loop in loops['loops']]
+    B = np.array([burgers[i] for i in range(len(loops['loops']))])
+    C = np.array(loop_centers)
+    dist_matrix = cdist(C, C)
+    angle_matrix = np.array([
+        [np.dot(B[i], B[j]) / (np.linalg.norm(B[i]) * np.linalg.norm(B[j]) + 1e-10)
+         for j in range(len(B))] for i in range(len(B))
+    ])
+    threshold_dist = 5.0
+    threshold_angle = 0.9
+    groups = []
+    used = set()
+    for i in range(len(B)):
+        if i in used:
+            continue
+        group = [i]
+        used.add(i)
+        for j in range(i + 1, len(B)):
+            if j in used:
+                continue
+            if dist_matrix[i, j] < threshold_dist and angle_matrix[i, j] > threshold_angle:
+                group.append(j)
+                used.add(j)
+        groups.append(group)
+    new_loops = []
+    new_burgers = {}
+    for gid, group in enumerate(groups):
+        merged = sorted(set([idx for i in group for idx in loops['loops'][i]]))
+        new_loops.append(merged)
+        avg_b = np.mean([burgers[i] for i in group], axis=0)
+        new_burgers[gid] = avg_b
+    ctx['logger'].info(f'Advanced grouping reduced to {len(new_loops)} lines')
+    ctx['advanced_loops'] = {'loops': new_loops, 'burgers': new_burgers}
+    return ctx['advanced_loops']
+
+def step_summary_report(ctx, validate):
+    loops = ctx['advanced_loops']
+    burgers_list = [loops['burgers'][i] for i in validate['valid']]
+    magnitudes = [np.linalg.norm(b) for b in burgers_list]
+    mean_mag = np.mean(magnitudes) if magnitudes else 0.0
+    ctx['logger'].info(f'Report: {len(validate["valid"])} valid dislocation loops')
+    ctx['logger'].info(f'Report: Avg Burgers magnitude: {mean_mag:.4f}')
+    return {'count': len(validate['valid']), 'avg_burgers': mean_mag}
+
+def step_validate_dislocations(ctx, advanced_loops):
+    validated = []
+    for i, burger_vector in advanced_loops['burgers'].items():
+        if np.linalg.norm(burger_vector) > 1e-5:
+            validated.append(i)
+    ctx['logger'].info(f'{len(validated)} valid loops detected')
+    ctx['validated_loops'] = validated
+    return {'valid': validated}
+
+def step_dislocation_lines(ctx, advanced_loops, filtered):
     builder = DislocationLineBuilder(
         positions=filtered['positions'],
-        loops=loops['loops'],
-        burgers=loops['burgers'],
+        loops=advanced_loops['loops'],
+        burgers=advanced_loops['burgers'],
         threshold=0.1
     )
     lines = builder.build_lines()
 
     engine = ClassificationEngine(
         positions=filtered['positions'],
-        loops=loops['loops'],
-        burgers_vectors=loops['burgers']    
+        loops=advanced_loops['loops'],
+        burgers_vectors=advanced_loops['burgers']    
     )
     line_types = engine.classify()
     return {'lines': lines, 'types': line_types}
 
-def step_export(ctx, lines, loops, filtered):
+def step_export(ctx, lines, advanced_loops, filtered):
     data = ctx['data']
     args = ctx['args']
     exporter = DislocationExporter(
         positions=filtered['positions'],
-        loops=loops['loops'],
-        burgers=loops['burgers'],
+        loops=advanced_loops['loops'],
+        burgers=advanced_loops['burgers'],
         timestep=data['timestep'],
         line_types=lines['types']
     )
@@ -168,7 +244,11 @@ def create_and_configure_workflow(ctx):
     workflow.register('connectivity', step_graph, depends_on=['filtered'])
     workflow.register('displacement', step_displacement, depends_on=['connectivity', 'filtered'])
     workflow.register('loops', step_burgers_loops, depends_on=['connectivity', 'filtered'])
-    workflow.register('lines', step_dislocation_lines, depends_on=['loops', 'filtered'])
-    workflow.register('export', step_export, depends_on=['lines','loops','filtered'])
+    workflow.register('advanced_loops', step_advanced_grouping, depends_on=['loops', 'filtered'])
+    workflow.register('validate', step_validate_dislocations, depends_on=['advanced_loops'])
+    workflow.register('lines', step_dislocation_lines, depends_on=['advanced_loops', 'filtered'])
+    workflow.register('nye', step_nye_tensor, depends_on=['advanced_loops', 'filtered'])
+    workflow.register('report', step_summary_report, depends_on=['validate'])
+    workflow.register('export', step_export, depends_on=['lines', 'advanced_loops', 'filtered'])
 
     return workflow
