@@ -2,6 +2,326 @@ from numba import cuda, float32, int32, types
 from opendxa.utils.cuda import get_cuda_launch_config
 import numpy as np
 
+@cuda.jit  
+def loop_grouping_kernel(
+    loops,
+    loop_lengths,
+    burgers_vectors,
+    positions,
+    spatial_threshold,
+    burgers_threshold,
+    group_assignments,
+    group_count
+):
+    loop_id = cuda.grid(1)
+    if loop_id >= loops.shape[0]:
+        return
+    
+    loop_len = loop_lengths[loop_id]
+    if loop_len <= 0:
+        return
+    
+    # Compute loop centroid
+    cx = cy = cz = 0.0
+    for i in range(loop_len):
+        atom_id = loops[loop_id, i]
+        cx += positions[atom_id, 0]
+        cy += positions[atom_id, 1] 
+        cz += positions[atom_id, 2]
+    
+    cx /= loop_len
+    cy /= loop_len
+    cz /= loop_len
+    
+    # Get this loop's Burgers vector
+    bx = burgers_vectors[loop_id, 0]
+    by = burgers_vectors[loop_id, 1]
+    bz = burgers_vectors[loop_id, 2]
+    b_mag = (bx*bx + by*by + bz*bz)**0.5
+    
+    # Find best group or create new one
+    best_group = -1
+    min_distance = float('inf')
+    
+    # Check against other loops
+    for other_loop in range(loops.shape[0]):
+        if other_loop == loop_id or loop_lengths[other_loop] <= 0:
+            continue
+            
+        # Compute other loop centroid
+        other_len = loop_lengths[other_loop]
+        ox = oy = oz = 0.0
+        for i in range(other_len):
+            atom_id = loops[other_loop, i]
+            ox += positions[atom_id, 0]
+            oy += positions[atom_id, 1]
+            oz += positions[atom_id, 2]
+        
+        ox /= other_len
+        oy /= other_len
+        oz /= other_len
+        
+        # Spatial distance
+        dx = cx - ox
+        dy = cy - oy
+        dz = cz - oz
+        spatial_dist = (dx*dx + dy*dy + dz*dz)**0.5
+        
+        if spatial_dist > spatial_threshold:
+            continue
+            
+        # Burgers vector similarity
+        obx = burgers_vectors[other_loop, 0]
+        oby = burgers_vectors[other_loop, 1]
+        obz = burgers_vectors[other_loop, 2]
+        ob_mag = (obx*obx + oby*oby + obz*obz)**0.5
+        
+        if b_mag > 0 and ob_mag > 0:
+            # Compute angle between Burgers vectors
+            dot_product = (bx*obx + by*oby + bz*obz) / (b_mag * ob_mag)
+            dot_product = max(-1.0, min(1.0, dot_product))
+            angle = cuda.libdevice.acos(abs(dot_product))
+            
+            if angle <= burgers_threshold:
+                # Found compatible loop
+                if spatial_dist < min_distance:
+                    min_distance = spatial_dist
+                    best_group = group_assignments[other_loop]
+    
+    # Assign to best group or create new group
+    if best_group >= 0:
+        group_assignments[loop_id] = best_group
+    else:
+        # Create new group
+        new_group = cuda.atomic.add(group_count, 0, 1)
+        group_assignments[loop_id] = new_group
+
+@cuda.jit
+def mesh_refinement_kernel(
+    positions,
+    connectivity,
+    max_neighbors,
+    displacement_field,
+    refinement_threshold,
+    refined_positions,
+    refinement_mask
+):
+    atom_id = cuda.grid(1)
+    if atom_id >= positions.shape[0]:
+        return
+    
+    # Calculate local displacement gradient magnitude
+    gradient_mag = 0.0
+    neighbor_count = 0
+    
+    # Get displacement for current atom
+    disp_x = displacement_field[atom_id, 0]
+    disp_y = displacement_field[atom_id, 1]
+    disp_z = displacement_field[atom_id, 2]
+    
+    # Compare with neighbors
+    for n_idx in range(max_neighbors):
+        neighbor = connectivity[atom_id, n_idx]
+        if neighbor < 0:
+            break
+            
+        # Neighbor displacement
+        ndisp_x = displacement_field[neighbor, 0]
+        ndisp_y = displacement_field[neighbor, 1]
+        ndisp_z = displacement_field[neighbor, 2]
+        
+        # Gradient contribution
+        gdx = abs(disp_x - ndisp_x)
+        gdy = abs(disp_y - ndisp_y)
+        gdz = abs(disp_z - ndisp_z)
+        
+        gradient_mag += (gdx*gdx + gdy*gdy + gdz*gdz)**0.5
+        neighbor_count += 1
+    
+    if neighbor_count > 0:
+        gradient_mag /= neighbor_count
+    
+    # Mark for refinement if gradient exceeds threshold
+    if gradient_mag > refinement_threshold:
+        refinement_mask[atom_id] = 1
+        
+        # Store refined position (could be interpolated)
+        refined_positions[atom_id, 0] = positions[atom_id, 0]
+        refined_positions[atom_id, 1] = positions[atom_id, 1]
+        refined_positions[atom_id, 2] = positions[atom_id, 2]
+    else:
+        refinement_mask[atom_id] = 0
+
+
+@cuda.jit
+def dislocation_threading_kernel(
+    loop_groups,
+    group_sizes,
+    loop_positions,
+    threading_result,
+    max_groups
+):
+    group_id = cuda.grid(1)
+    if group_id >= max_groups or group_sizes[group_id] <= 1:
+        return
+    
+    # Process loops in this group
+    group_size = group_sizes[group_id]
+    
+    # Simple nearest-neighbor threading for now
+    # More sophisticated algorithms can be implemented
+    visited = cuda.local.array(64, types.boolean)  # Assume max 64 loops per group
+    for i in range(64):
+        visited[i] = False
+    
+    if group_size > 64:
+        return  # Safety check
+    
+    # Start with first loop in group
+    current_loop = 0
+    threading_result[group_id, 0] = loop_groups[group_id, 0]
+    visited[0] = True
+    thread_length = 1
+    
+    # Thread remaining loops
+    for step in range(group_size - 1):
+        best_next = -1
+        min_distance = float('inf')
+        
+        current_pos_x = loop_positions[loop_groups[group_id, current_loop], 0]
+        current_pos_y = loop_positions[loop_groups[group_id, current_loop], 1]
+        current_pos_z = loop_positions[loop_groups[group_id, current_loop], 2]
+        
+        # Find closest unvisited loop
+        for candidate in range(group_size):
+            if visited[candidate]:
+                continue
+                
+            candidate_loop = loop_groups[group_id, candidate]
+            dx = loop_positions[candidate_loop, 0] - current_pos_x
+            dy = loop_positions[candidate_loop, 1] - current_pos_y
+            dz = loop_positions[candidate_loop, 2] - current_pos_z
+            
+            distance = (dx*dx + dy*dy + dz*dz)**0.5
+            
+            if distance < min_distance:
+                min_distance = distance
+                best_next = candidate
+        
+        if best_next >= 0:
+            threading_result[group_id, thread_length] = loop_groups[group_id, best_next]
+            visited[best_next] = True
+            current_loop = best_next
+            thread_length += 1
+
+
+@cuda.jit
+def strain_field_kernel(
+    positions,
+    connectivity,
+    max_neighbors,
+    reference_positions,
+    strain_tensor,
+    box_bounds
+):
+    atom_id = cuda.grid(1)
+    if atom_id >= positions.shape[0]:
+        return
+    
+    # Initialize local strain tensor
+    strain = cuda.local.array((3, 3), float32)
+    for i in range(3):
+        for j in range(3):
+            strain[i, j] = 0.0
+    
+    # Reference and current positions
+    ref_pos = cuda.local.array(3, float32)
+    curr_pos = cuda.local.array(3, float32)
+    
+    ref_pos[0] = reference_positions[atom_id, 0]
+    ref_pos[1] = reference_positions[atom_id, 1]
+    ref_pos[2] = reference_positions[atom_id, 2]
+    
+    curr_pos[0] = positions[atom_id, 0]
+    curr_pos[1] = positions[atom_id, 1]
+    curr_pos[2] = positions[atom_id, 2]
+    
+    # Process neighbors to compute strain
+    neighbor_count = 0
+    for n_idx in range(max_neighbors):
+        neighbor = connectivity[atom_id, n_idx]
+        if neighbor < 0:
+            break
+        
+        # Reference bond vector
+        ref_dx = reference_positions[neighbor, 0] - ref_pos[0]
+        ref_dy = reference_positions[neighbor, 1] - ref_pos[1]
+        ref_dz = reference_positions[neighbor, 2] - ref_pos[2]
+        
+        # Current bond vector  
+        curr_dx = positions[neighbor, 0] - curr_pos[0]
+        curr_dy = positions[neighbor, 1] - curr_pos[1]
+        curr_dz = positions[neighbor, 2] - curr_pos[2]
+        
+        # Apply PBC if needed
+        if box_bounds.shape[0] >= 3:
+            lx = box_bounds[0, 1] - box_bounds[0, 0]
+            ly = box_bounds[1, 1] - box_bounds[1, 0]
+            lz = box_bounds[2, 1] - box_bounds[2, 0]
+            
+            # PBC correction for current positions
+            if curr_dx > 0.5 * lx: curr_dx -= lx
+            elif curr_dx < -0.5 * lx: curr_dx += lx
+            if curr_dy > 0.5 * ly: curr_dy -= ly  
+            elif curr_dy < -0.5 * ly: curr_dy += ly
+            if curr_dz > 0.5 * lz: curr_dz -= lz
+            elif curr_dz < -0.5 * lz: curr_dz += lz
+            
+            # PBC correction for reference positions
+            if ref_dx > 0.5 * lx: ref_dx -= lx
+            elif ref_dx < -0.5 * lx: ref_dx += lx
+            if ref_dy > 0.5 * ly: ref_dy -= ly
+            elif ref_dy < -0.5 * ly: ref_dy += ly  
+            if ref_dz > 0.5 * lz: ref_dz -= lz
+            elif ref_dz < -0.5 * lz: ref_dz += lz
+        
+        # Contribution to strain tensor (simplified Green-Lagrange strain)
+        # ε_ij = 0.5 * (∂u_i/∂x_j + ∂u_j/∂x_i)
+        # Displacement u = current - reference
+        u_x = curr_dx - ref_dx
+        u_y = curr_dy - ref_dy
+        u_z = curr_dz - ref_dz
+        
+        # Approximate gradients using finite differences
+        if abs(ref_dx) > 1e-6:
+            strain[0, 0] += u_x / ref_dx
+            strain[1, 0] += u_y / ref_dx
+            strain[2, 0] += u_z / ref_dx
+        if abs(ref_dy) > 1e-6:
+            strain[0, 1] += u_x / ref_dy
+            strain[1, 1] += u_y / ref_dy  
+            strain[2, 1] += u_z / ref_dy
+        if abs(ref_dz) > 1e-6:
+            strain[0, 2] += u_x / ref_dz
+            strain[1, 2] += u_y / ref_dz
+            strain[2, 2] += u_z / ref_dz
+        
+        neighbor_count += 1
+    
+    # Average and symmetrize strain tensor
+    if neighbor_count > 0:
+        inv_count = 1.0 / neighbor_count
+        for i in range(3):
+            for j in range(3):
+                strain[i, j] *= inv_count
+                # Symmetrize: ε_ij = 0.5 * (ε_ij + ε_ji)
+                if i != j:
+                    avg_strain = 0.5 * (strain[i, j] + strain[j, i])
+                    strain_tensor[atom_id, i, j] = avg_strain
+                    strain_tensor[atom_id, j, i] = avg_strain
+                else:
+                    strain_tensor[atom_id, i, j] = strain[i, j]
+
 @cuda.jit
 def loop_detection_kernel(
     connectivity,
