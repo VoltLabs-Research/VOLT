@@ -3,6 +3,78 @@ from opendxa.utils.cuda import get_cuda_launch_config
 import numpy as np
 
 @cuda.jit
+def loop_detection_kernel(
+    connectivity,
+    max_neighbors,
+    visited,
+    loop_buffer,
+    loop_lengths,
+    max_loop_length,
+    atom_count
+):
+    start_atom = cuda.grid(1)
+    if start_atom >= atom_count:
+        return
+    
+    # Local stack for DFS
+    stack = cuda.local.array(256, int32)
+    # Current path
+    path = cuda.local.array(256, int32)
+    stack_size = 0
+    path_size = 0
+    
+    # Initialize with starting atom
+    if not visited[start_atom]:
+        stack[stack_size] = start_atom
+        stack_size += 1
+        path[path_size] = start_atom
+        path_size += 1
+        visited[start_atom] = True
+        
+        while stack_size > 0:
+            # Pop from stack
+            stack_size -= 1
+            current = stack[stack_size]
+            
+            # Check neighbors
+            for neighbor_idx in range(max_neighbors):
+                neighbor = connectivity[current, neighbor_idx]
+                if neighbor < 0:  # End of neighbor list
+                    break
+                
+                # Found loop closure
+                if neighbor == start_atom and path_size >= 3:
+                    # Store loop if within size limits
+                    if path_size <= max_loop_length:
+                        # Get next loop slot
+                        loop_id = cuda.atomic.add(loop_lengths, 0, 1)
+                        if loop_id < loop_buffer.shape[0]:
+                            for i in range(path_size):
+                                loop_buffer[loop_id, i] = path[i]
+                            # Store actual length
+                            loop_lengths[loop_id + 1] = path_size
+                    break
+                    
+                # Continue DFS if not visited and path not too long
+                elif not visited[neighbor] and path_size < max_loop_length:
+                    visited[neighbor] = True
+                    stack[stack_size] = neighbor
+                    stack_size += 1
+                    path[path_size] = neighbor
+                    path_size += 1
+                    
+                    # Stack overflow protection
+                    if stack_size >= 256 or path_size >= 256:
+                        break
+            
+            # Backtrack if we've explored all neighbors
+            if stack_size == 0 or (stack_size > 0 and stack[stack_size - 1] != current):
+                if path_size > 0:
+                    path_size -= 1
+                    if path_size > 0:
+                        visited[path[path_size]] = False
+
+@cuda.jit
 def spatial_hash_kernel(
     positions,
     box_bounds,
