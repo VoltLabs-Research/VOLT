@@ -1,6 +1,55 @@
-from numba import cuda, float32
+from numba import cuda, float32, int32, types
 from opendxa.utils.cuda import get_cuda_launch_config
 import numpy as np
+
+@cuda.jit
+def spatial_hash_kernel(
+    positions,
+    box_bounds,
+    grid_spacing,
+    nx,
+    ny,
+    nz,
+    atom_cells,
+    cell_counts
+):
+    i = cuda.grid(1)
+    if i >= positions.shape[0]:
+        return
+    
+    # Get box dimensions
+    lx = box_bounds[0, 1] - box_bounds[0, 0]
+    ly = box_bounds[1, 1] - box_bounds[1, 0] 
+    lz = box_bounds[2, 1] - box_bounds[2, 0]
+    
+    # Compute grid cell indices
+    x = positions[i, 0] - box_bounds[0, 0]
+    y = positions[i, 1] - box_bounds[1, 0]
+    z = positions[i, 2] - box_bounds[2, 0]
+    
+    # Handle PBC wrapping
+    x = x - lx * cuda.libdevice.floor(x / lx)
+    y = y - ly * cuda.libdevice.floor(y / ly)
+    z = z - lz * cuda.libdevice.floor(z / lz)
+    
+    # Grid indices
+    ix = int(x / grid_spacing)
+    iy = int(y / grid_spacing)
+    iz = int(z / grid_spacing)
+    
+    # Ensure within bounds
+    ix = max(0, min(ix, nx - 1))
+    iy = max(0, min(iy, ny - 1))
+    iz = max(0, min(iz, nz - 1))
+    
+    # Linear cell index
+    cell_id = ix + iy * nx + iz * nx * ny
+    
+    # Store atom->cell mapping
+    atom_cells[i] = cell_id
+    
+    # Atomically increment cell count
+    cuda.atomic.add(cell_counts, cell_id, 1)
 
 @cuda.jit
 def ptm_kernel(
