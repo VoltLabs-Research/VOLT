@@ -260,7 +260,6 @@ def step_elastic_mapping(ctx, connectivity, displacement, filtered):
     ctx['logger'].info(f'Elastic mapping on connectivity graph: {len(edge_burgers)} edges mapped')
     return {'edge_vectors': edge_vectors, 'edge_burgers': edge_burgers}
 
-
 def step_refine_lines(ctx, lines, filtered):
     args = ctx['args']
     data = ctx['data']
@@ -361,14 +360,62 @@ def step_refine_lines(ctx, lines, filtered):
 
 def step_burgers_loops(ctx, connectivity, filtered):
     data = ctx['data']
-    loop_finder = FilteredLoopFinder(connectivity, data['positions'], max_length=8)
+    args = ctx['args']
+    
+    # Convert connectivity sets to lists for components that need them
+    connectivity_lists = {}
+    for atom_id, neighbors in connectivity.items():
+        if isinstance(neighbors, set):
+            connectivity_lists[atom_id] = list(neighbors)
+        else:
+            connectivity_lists[atom_id] = neighbors
+    
+    # Filter connectivity for loop finding to avoid exponential explosion
+    # Only keep the N strongest connections per atom for loop finding
+    max_connections_per_atom = getattr(args, 'max_connections_per_atom', 8)
+    filtered_connectivity = {}
+    
+    for atom_id, neighbors in connectivity_lists.items():
+        if len(neighbors) <= max_connections_per_atom:
+            filtered_connectivity[atom_id] = neighbors
+        else:
+            # Keep only the closest neighbors for loop finding
+            atom_pos = filtered['positions'][atom_id]
+            neighbor_distances = []
+            for neighbor_id in neighbors:
+                neighbor_pos = filtered['positions'][neighbor_id]
+                dist = np.linalg.norm(neighbor_pos - atom_pos)
+                neighbor_distances.append((dist, neighbor_id))
+            
+            # Sort by distance and keep the closest ones
+            neighbor_distances.sort()
+            closest_neighbors = [neighbor_id for _, neighbor_id in neighbor_distances[:max_connections_per_atom]]
+            filtered_connectivity[atom_id] = closest_neighbors
+    
+    # Log the connectivity reduction
+    total_original = sum(len(v) for v in connectivity_lists.values()) // 2
+    total_filtered = sum(len(v) for v in filtered_connectivity.values()) // 2
+    ctx['logger'].info(f'Loop finding connectivity: {total_original} -> {total_filtered} edges (filtered for performance)')
+    
+    # Configure loop finder with higher limits
+    max_loop_length = getattr(args, 'max_loop_length', 12)
+    max_loops = getattr(args, 'max_loops', 5000)
+    timeout_seconds = getattr(args, 'loop_timeout', 600)
+    
+    loop_finder = FilteredLoopFinder(
+        filtered_connectivity, 
+        data['positions'], 
+        max_length=max_loop_length,
+        max_loops=max_loops,
+        timeout_seconds=timeout_seconds
+    )
     loops = loop_finder.find_minimal_loops()
 
     canonicalizer = LoopCanonicalizer(filtered['positions'], data['box'])
     canonical_loops = canonicalizer.canonicalize(loops)
 
     evaluator = BurgersCircuitEvaluator(
-        connectivity=connectivity,
+        connectivity=connectivity_lists,
         positions=filtered['positions'],
         ptm_types=filtered['ptm_types'],
         quaternions=filtered['quaternions'],
