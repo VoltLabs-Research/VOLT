@@ -37,7 +37,7 @@ def gpu_elastic_mapping_kernel(
         dx = jump_x - ideal_x
         dy = jump_y - ideal_y
         dz = jump_z - ideal_z
-        distance = math.sqrt(dx*dx + dy*dy + dz*dz)
+        distance = math.sqrt(dx * dx + dy * dy + dz * dz)
         
         if distance < min_distance and distance < tolerance:
             min_distance = distance
@@ -64,6 +64,54 @@ def gpu_elastic_mapping_kernel(
     mapping_results[edge_idx, 1] = best_vector_idx
     mapping_results[edge_idx, 2] = min_distance
 
+@cuda.jit
+def gpu_pbc_distance_kernel(pos1, pos2, box_bounds, pbc_flags, distances, num_pairs):
+    pair_idx = cuda.grid(1)
+    
+    if pair_idx >= num_pairs:
+        return
+    
+    # Get positions
+    x1 = pos1[pair_idx, 0]
+    y1 = pos1[pair_idx, 1]
+    z1 = pos1[pair_idx, 2]
+    x2 = pos2[pair_idx, 0]
+    y2 = pos2[pair_idx, 1]
+    z2 = pos2[pair_idx, 2]
+    
+    # Compute raw differences
+    dx = x2 - x1
+    dy = y2 - y1
+    dz = z2 - z1
+    
+    # Apply PBC corrections
+    # X direction
+    if pbc_flags[0]:
+        box_x = box_bounds[0, 1] - box_bounds[0, 0]
+        if dx > box_x * 0.5:
+            dx -= box_x
+        elif dx < -box_x * 0.5:
+            dx += box_x
+
+    # Y direction    
+    if pbc_flags[1]: 
+        box_y = box_bounds[1, 1] - box_bounds[1, 0]
+        if dy > box_y * 0.5:
+            dy -= box_y
+        elif dy < -box_y * 0.5:
+            dy += box_y
+    
+    # Z direction
+    if pbc_flags[2]:
+        box_z = box_bounds[2, 1] - box_bounds[2, 0]
+        if dz > box_z * 0.5:
+            dz -= box_z
+        elif dz < -box_z * 0.5:
+            dz += box_z
+    
+    # Compute distance
+    distances[pair_idx] = math.sqrt(dx * dx + dy * dy + dz * dz)
+    
 @cuda.jit
 def gpu_compute_displacement_field_kernel_pbc(
     positions, 
