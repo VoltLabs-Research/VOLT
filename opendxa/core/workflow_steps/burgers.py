@@ -65,6 +65,7 @@ def step_burgers_loops(ctx, connectivity, filtered):
 
     ctx['logger'].info(f'Optimized Burgers loops: {len(final_loops)} loops using centralized connectivity')
     ctx['loops'] = {'loops': final_loops, 'burgers': final_burgers}
+    return ctx['loops']
 
 def step_advanced_grouping(ctx, loops, filtered):
     burgers = loops['burgers']
