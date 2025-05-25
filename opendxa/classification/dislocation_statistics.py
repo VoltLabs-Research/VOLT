@@ -27,9 +27,10 @@ class DislocationStatisticsGenerator:
         system_volume_m3 = system_volume * 1e-30
         
         density_m_per_m3 = total_length_m / system_volume_m3 if system_volume_m3 > 0 else 0
-        
-        box_side_length_m = (system_volume_m3) ** (1/3)  # m
-        cross_sectional_area_m2 = box_side_length_m ** 2  # m²
+        # m        
+        box_side_length_m = (system_volume_m3) ** (1/3)
+        # m²
+        cross_sectional_area_m2 = box_side_length_m ** 2
         line_density_per_m2 = len(dislocation_lines) / cross_sectional_area_m2 if cross_sectional_area_m2 > 0 else 0
         
         statistics = {
