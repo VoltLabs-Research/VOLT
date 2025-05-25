@@ -1,7 +1,8 @@
 import numpy as np
 
 _NEAR_ZERO = 1e-6
-_HCP_TOLERANCE = 0.01  # allow ±1% distance variation
+# allow ±1% distance variation
+_HCP_TOLERANCE = 0.01
 _FLOAT = np.float32
 _INT = np.int32
 

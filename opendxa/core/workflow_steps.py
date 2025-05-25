@@ -331,7 +331,6 @@ def step_refine_lines(ctx, lines, filtered):
     magnitudes = [np.linalg.norm(b) for b in burgers_vectors.values()]
     mean_mag = np.mean(magnitudes) if magnitudes else 0.0
     
-    # Análisis físico de magnitudes de Burgers
     if magnitudes:
         min_mag = np.min(magnitudes)
         max_mag = np.max(magnitudes)
@@ -443,24 +442,6 @@ def step_burgers_loops(ctx, connectivity, filtered):
 
     ctx['loops'] = {'loops': final_loops, 'burgers': final_burgers}
     return ctx['loops']
-
-def step_nye_tensor(ctx, advanced_loops, filtered):
-    positions = filtered['positions']
-    burgers = advanced_loops['burgers']
-    volume = np.prod(filtered.get('box_lengths', [1, 1, 1]))
-    tensor = np.zeros((3, 3), dtype=np.float32)
-    for i, b in burgers.items():
-        loop = advanced_loops['loops'][i]
-        if len(loop) < 2:
-            continue
-        start = positions[loop[0]]
-        end = positions[loop[-1]]
-        lvec = end - start
-        tensor += np.outer(b, lvec)
-    if volume > 0:
-        tensor /= volume
-    ctx['logger'].info(f"Nye tensor computed:\n{tensor}")
-    return {'nye_tensor': tensor}
 
 def step_advanced_grouping(ctx, loops, filtered):
     burgers = loops['burgers']
