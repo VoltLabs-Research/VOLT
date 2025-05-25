@@ -5,3 +5,7 @@ from .displacement import *
 from .ptm import *
 from .surface import *
 from .dislocation_line_builder import *
+from .elastic_mapper import *
+from .dislocation_line_smoother import *
+from .delaunay_tesselattor import *
+from .dislocation_core_marker import *

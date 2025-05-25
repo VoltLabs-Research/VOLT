@@ -3,6 +3,12 @@ from opendxa.export import DislocationExporter
 from opendxa.neighbors import HybridNeighborFinder
 from opendxa.core.sequentials import Sequentials
 from scipy.spatial.distance import cdist
+from filters.burgers_normalizer import BurgersNormalizer, create_burgers_validation_report
+
+from opendxa.utils.pbc import (
+    unwrap_pbc_displacement,
+    compute_minimum_image_distance
+)
 
 from opendxa.classification import (
     PTMLocalClassifier,
@@ -11,7 +17,12 @@ from opendxa.classification import (
     DisplacementFieldAnalyzer,
     BurgersCircuitEvaluator,
     ClassificationEngine,
-    DislocationLineBuilder
+    DislocationLineBuilder,
+    DislocationCoreMarker,
+    DislocationStatisticsGenerator,
+    DislocationLineSmoother,
+    ElasticMapper,
+    DelaunayTessellator
 )
 
 import numpy as np

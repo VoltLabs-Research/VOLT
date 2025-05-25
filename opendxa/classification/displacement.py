@@ -1,5 +1,9 @@
-import numpy as np
 from opendxa.utils.cuda import quaternion_to_matrix
+from opendxa.core import GPUKernels
+import logging
+import numpy as np
+
+logger = logging.getLogger(__name__)
 
 class DisplacementFieldAnalyzer:
     def __init__(
@@ -25,42 +29,26 @@ class DisplacementFieldAnalyzer:
             self.box_bounds = np.asarray(box_bounds, dtype=np.float32)
         else:
             self.box_bounds = None
+        self.gpu_dxa = GPUKernels()
 
     def compute_displacement_field(self):
-        disp = {}
+        logger.info(f'Computing displacement field using GPU acceleration for {self.N} atoms')
+        disp_dict = self.gpu_dxa.compute_displacement_field_gpu(
+            self.positions,
+            self.connectivity,
+            self.ptm_types,
+            self.templates
+        )
+        
+        # Compute average magnitudes
         avg = np.zeros(self.N, dtype=np.float32)
-        # loop atoms
-        for i in range(self.N):
-            t = self.ptm_types[i]
-            if t < 0:
-                continue
-            nbrs = self.connectivity.get(i, [])
-            if not nbrs:
-                continue
-            # ideal template directions
-            Kt = self.template_sizes[t]
-            T = self.templates[t, :Kt, :]  # (Kt,3)
-            # local scale from real bonds
-            Pidx = np.array(nbrs, dtype=int)
-            Psub = self.positions[Pidx] - self.positions[i]
-            scales = np.linalg.norm(Psub, axis=1)
-            if scales.size == 0:
-                continue
-            scale = scales.mean()
-            # build ideal positions in global frame
-            R = quaternion_to_matrix(self.quaternions[i])
-            ideal = (R @ T.T).T * scale + self.positions[i]  # (Kt,3)
-            # now match each ideal to nearest real neighbor
-            displacements = []
-            for pred in ideal:
-                # compute squared distances to connectivity neighbors
-                diffs = self.positions[Pidx] - pred
-                d2 = np.sum(diffs**2, axis=1)
-                k = np.argmin(d2)
-                # displacement vector = real - ideal
-                disp_vec = (self.positions[Pidx[k]] - pred)
-                displacements.append(disp_vec)
-            D = np.vstack(displacements)  # (Kt,3)
-            disp[i] = D
-            avg[i] = np.linalg.norm(D, axis=1).mean()
-        return disp, avg
+        for atom_id, disp_vectors in disp_dict.items():
+            # Multiple displacement vectors
+            if disp_vectors.ndim == 2:
+                avg[atom_id] = np.linalg.norm(disp_vectors, axis=1).mean()
+            # Single displacement vector
+            else:
+                avg[atom_id] = np.linalg.norm(disp_vectors)
+        
+        logger.info(f'GPU displacement field computation completed')
+        return disp_dict, avg
