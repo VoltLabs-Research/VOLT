@@ -1,7 +1,6 @@
 from numpy.linalg import norm
 import numpy as np
 
-
 def match_to_fcc_basis(burgers_vector):
     fcc_basis = np.array([
         [ 1,  1,  2], [ 1, -1,  2], [-1,  1,  2], [-1, -1,  2],

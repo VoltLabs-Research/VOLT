@@ -77,16 +77,6 @@ def detect_pbc_from_box(
     box_bounds: np.ndarray, 
     positions: np.ndarray
 ) -> Tuple[bool, bool, bool]:
-    """
-    Detect if periodic boundary conditions are active based on atom positions
-    
-    Args:
-        box_bounds: Box bounds [[xlo, xhi], [ylo, yhi], [zlo, zhi]]
-        positions: Atomic positions
-        
-    Returns:
-        (pbc_x, pbc_y, pbc_z) indicating which dimensions have PBC
-    """
     pbc = [False, False, False]
     tolerance = 0.1  # Tolerance for detecting atoms near boundaries
     
