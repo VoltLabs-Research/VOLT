@@ -64,7 +64,7 @@ class ElasticMapper:
         
         # Compute displacement jumps
         displacement_jumps = {}
-        for edge, edge_vector in edge_vectors.items():
+        for edge in edge_vectors.keys():
             atom1, atom2 = edge
             disp1 = displacement_field.get(atom1, np.zeros(3))
             disp2 = displacement_field.get(atom2, np.zeros(3))

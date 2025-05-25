@@ -2,6 +2,8 @@ from opendxa.filters import FilteredLoopFinder, LoopGrouper, LoopCanonicalizer
 from opendxa.export import DislocationExporter
 from opendxa.neighbors import HybridNeighborFinder
 from opendxa.core.sequentials import Sequentials
+from opendxa.core.connectivity_manager import ConnectivityManager
+from opendxa.core.unified_burgers_validator import UnifiedBurgersValidator
 from scipy.spatial.distance import cdist
 from opendxa.filters.burgers_normalizer import BurgersNormalizer, create_burgers_validation_report
 
@@ -115,81 +117,28 @@ def step_graph(ctx, filtered, tessellation):
         template_sizes=ctx['template_sizes'],
         tolerance=args.tolerance
     )
-    connectivity = connectivity_graph.build_graph()
+    base_connectivity = connectivity_graph.build_graph()
     
-    # Enhance connectivity with tessellation data
-    tetrahedral_connectivity = tessellation['connectivity']
-    enhanced_connectivity = {}
+    # Initialize centralized connectivity manager
+    connectivity_manager = ConnectivityManager(base_connectivity)
     
-    # Convert connectivity to sets if they aren't already
-    for atom_id, neighbors in connectivity.items():
-        if isinstance(neighbors, list):
-            enhanced_connectivity[atom_id] = set(neighbors)
-        else:
-            enhanced_connectivity[atom_id] = neighbors.copy()
+    # Enhance with tessellation data
+    enhanced_connectivity = connectivity_manager.enhance_with_tessellation(
+        tessellation['connectivity'], 
+        len(filtered['positions'])
+    )
     
-    # Add tetrahedral connections that aren't already in the connectivity graph
-    for atom_id, tet_neighbors in tetrahedral_connectivity.items():
-        if atom_id not in enhanced_connectivity:
-            enhanced_connectivity[atom_id] = set()
-        for neighbor_id in tet_neighbors:
-            if neighbor_id < len(filtered['positions']):  # Only add connections within original atoms
-                enhanced_connectivity[atom_id].add(neighbor_id)
-                if neighbor_id not in enhanced_connectivity:
-                    enhanced_connectivity[neighbor_id] = set()
-                enhanced_connectivity[neighbor_id].add(atom_id)
+    # Store manager in context for use by other steps
+    ctx['connectivity_manager'] = connectivity_manager
     
-    n_edges = sum(len(v) for v in connectivity.values())//2
-    n_enhanced_edges = sum(len(v) for v in enhanced_connectivity.values())//2
+    n_base_edges = connectivity_manager.get_edge_count(use_enhanced=False)
+    n_enhanced_edges = connectivity_manager.get_edge_count(use_enhanced=True)
     
-    ctx['logger'].info(f'Graph: {n_edges} original edges, {n_enhanced_edges} with tessellation enhancement')
+    ctx['logger'].info(f'Connectivity centralized: {n_base_edges} base -> {n_enhanced_edges} enhanced edges')
     return enhanced_connectivity
 
-def step_displacement(ctx, connectivity, filtered):
-    data = ctx['data']
-    
-    box_bounds = np.array(data['box'], dtype=np.float64)
-    pbc_active = [True, True, True]
-    
-    ctx['pbc_active'] = pbc_active
-    ctx['logger'].info(f'PBC settings: x={pbc_active[0]}, y={pbc_active[1]}, z={pbc_active[2]}')
-    
-    connectivity_lists = {}
-    for atom_id, neighbors in connectivity.items():
-        if isinstance(neighbors, set):
-            connectivity_lists[atom_id] = list(neighbors)
-        else:
-            connectivity_lists[atom_id] = neighbors
-    
-    analyzer = DisplacementFieldAnalyzer(
-        positions=filtered['positions'],
-        connectivity=connectivity_lists,
-        ptm_types=filtered['ptm_types'],
-        quaternions=filtered['quaternions'],
-        templates=ctx['templates'],
-        template_sizes=ctx['template_sizes'],
-        box_bounds=data['box']
-    )
-    disp_vecs, avg_mags = analyzer.compute_displacement_field()
-    
-    # Apply PBC unwrapping to displacement vectors if PBC is detected
-    if any(pbc_active):
-        ctx['logger'].info(f'Applying PBC unwrapping for displacement field')
-        unwrapped_disp_vecs = {}
-        for atom_id, disp_vec in disp_vecs.items():
-            if not np.isnan(disp_vec).any():
-                unwrapped_disp_vecs[atom_id] = unwrap_pbc_displacement(disp_vec, box_bounds)
-            else:
-                unwrapped_disp_vecs[atom_id] = disp_vec
-        disp_vecs = unwrapped_disp_vecs
-    
-    ctx['logger'].info(f'Avg displacement magnitude: {np.nanmean(avg_mags):.3f}')
-    return {'vectors': disp_vecs, 'mags': avg_mags}
-
-def step_elastic_mapping(ctx, connectivity, displacement, filtered):
-    args = ctx['args']
-    data = ctx['data']
-    
+def estimate_lattice_parameter(ctx, filtered, data, args):
+    """Estimate lattice parameter from first neighbor distances"""
     box_bounds = np.array(data['box'], dtype=np.float64)
     pbc_active = getattr(args, 'pbc', [True, True, True])
     if isinstance(pbc_active, bool):
@@ -226,39 +175,59 @@ def step_elastic_mapping(ctx, connectivity, displacement, filtered):
         ctx['logger'].info(f'First neighbor distance: {first_shell_distance:.3f} Å')
         ctx['logger'].info(f'Estimated lattice parameter: {lattice_parameter:.3f} Å')
         ctx['lattice_parameter'] = lattice_parameter
-        ctx['crystal_type']      = getattr(args, 'crystal_type', 'fcc')
+        ctx['crystal_type'] = getattr(args, 'crystal_type', 'fcc')
+        
         if lattice_parameter < 2.0 or lattice_parameter > 6.0:
             ctx['logger'].warning(f'Lattice parameter {lattice_parameter:.3f} Å seems unrealistic, using default')
             lattice_parameter = 4.0
+            ctx['lattice_parameter'] = lattice_parameter
     else:
         lattice_parameter = 4.0 
+        ctx['lattice_parameter'] = lattice_parameter
+        ctx['crystal_type'] = getattr(args, 'crystal_type', 'fcc')
         ctx['logger'].warning('Could not estimate lattice parameter, using default 4.0 Å')
+
+def step_displacement(ctx, connectivity, filtered):
+    data = ctx['data']
+    args = ctx['args']
     
-    physical_tolerance = 0.10 * lattice_parameter
+    box_bounds = np.array(data['box'], dtype=np.float64)
+    pbc_active = [True, True, True]
     
-    displacement_magnitudes = [np.linalg.norm(v) for v in displacement['vectors'].values() if not np.isnan(v).any()]
-    if displacement_magnitudes:
-        displacement_std = np.std(displacement_magnitudes)
-        adaptive_tolerance = max(physical_tolerance, min(0.2 * lattice_parameter, displacement_std * 0.3))
-        ctx['logger'].info(f'Displacement std: {displacement_std:.3f}, adaptive tolerance: {adaptive_tolerance:.3f}')
-    else:
-        adaptive_tolerance = physical_tolerance
+    ctx['pbc_active'] = pbc_active
+    ctx['logger'].info(f'PBC settings: x={pbc_active[0]}, y={pbc_active[1]}, z={pbc_active[2]}')
     
-    mapper = ElasticMapper(
-        crystal_type=getattr(args, 'crystal_type', 'fcc'),
-        lattice_parameter=getattr(args, 'lattice_param', lattice_parameter),
-        tolerance=getattr(args, 'elastic_tolerance', adaptive_tolerance),
-        box_bounds=box_bounds,
-        pbc=pbc_active
+    # Estimate lattice parameter for later use in validation
+    estimate_lattice_parameter(ctx, filtered, data, args)
+    
+    # Use connectivity manager to get lists representation
+    connectivity_manager = ctx['connectivity_manager']
+    connectivity_lists = connectivity_manager.as_lists(use_enhanced=True)
+    
+    analyzer = DisplacementFieldAnalyzer(
+        positions=filtered['positions'],
+        connectivity=connectivity_lists,
+        ptm_types=filtered['ptm_types'],
+        quaternions=filtered['quaternions'],
+        templates=ctx['templates'],
+        template_sizes=ctx['template_sizes'],
+        box_bounds=data['box']
     )
+    disp_vecs, avg_mags = analyzer.compute_displacement_field()
     
-    ctx['logger'].info(f'Connectivity graph elastic mapping: lattice={mapper.lattice_param:.3f}, tolerance={mapper.tolerance:.3f}')
+    # Apply PBC unwrapping to displacement vectors if PBC is detected
+    if any(pbc_active):
+        ctx['logger'].info(f'Applying PBC unwrapping for displacement field')
+        unwrapped_disp_vecs = {}
+        for atom_id, disp_vec in disp_vecs.items():
+            if not np.isnan(disp_vec).any():
+                unwrapped_disp_vecs[atom_id] = unwrap_pbc_displacement(disp_vec, box_bounds)
+            else:
+                unwrapped_disp_vecs[atom_id] = disp_vec
+        disp_vecs = unwrapped_disp_vecs
     
-    edge_vectors = mapper.compute_edge_vectors(connectivity, filtered['positions'])
-    edge_burgers = mapper.map_edge_burgers(edge_vectors, displacement['vectors'])
-    
-    ctx['logger'].info(f'Elastic mapping on connectivity graph: {len(edge_burgers)} edges mapped')
-    return {'edge_vectors': edge_vectors, 'edge_burgers': edge_burgers}
+    ctx['logger'].info(f'Avg displacement magnitude: {np.nanmean(avg_mags):.3f}')
+    return {'vectors': disp_vecs, 'mags': avg_mags}
 
 def step_refine_lines(ctx, lines, filtered):
     args = ctx['args']
@@ -361,40 +330,14 @@ def step_burgers_loops(ctx, connectivity, filtered):
     data = ctx['data']
     args = ctx['args']
     
-    # Convert connectivity sets to lists for components that need them
-    connectivity_lists = {}
-    for atom_id, neighbors in connectivity.items():
-        if isinstance(neighbors, set):
-            connectivity_lists[atom_id] = list(neighbors)
-        else:
-            connectivity_lists[atom_id] = neighbors
-    
-    # Filter connectivity for loop finding to avoid exponential explosion
-    # Only keep the N strongest connections per atom for loop finding
+    # Use connectivity manager for optimized loop finding
+    connectivity_manager = ctx['connectivity_manager']
     max_connections_per_atom = getattr(args, 'max_connections_per_atom', 8)
-    filtered_connectivity = {}
     
-    for atom_id, neighbors in connectivity_lists.items():
-        if len(neighbors) <= max_connections_per_atom:
-            filtered_connectivity[atom_id] = neighbors
-        else:
-            # Keep only the closest neighbors for loop finding
-            atom_pos = filtered['positions'][atom_id]
-            neighbor_distances = []
-            for neighbor_id in neighbors:
-                neighbor_pos = filtered['positions'][neighbor_id]
-                dist = np.linalg.norm(neighbor_pos - atom_pos)
-                neighbor_distances.append((dist, neighbor_id))
-            
-            # Sort by distance and keep the closest ones
-            neighbor_distances.sort()
-            closest_neighbors = [neighbor_id for _, neighbor_id in neighbor_distances[:max_connections_per_atom]]
-            filtered_connectivity[atom_id] = closest_neighbors
-    
-    # Log the connectivity reduction
-    total_original = sum(len(v) for v in connectivity_lists.values()) // 2
-    total_filtered = sum(len(v) for v in filtered_connectivity.values()) // 2
-    ctx['logger'].info(f'Loop finding connectivity: {total_original} -> {total_filtered} edges (filtered for performance)')
+    # Get filtered connectivity directly from manager (eliminates redundant processing)
+    filtered_connectivity = connectivity_manager.filter_for_loop_finding(
+        filtered['positions'], max_connections_per_atom
+    )
     
     # Configure loop finder with higher limits
     max_loop_length = getattr(args, 'max_loop_length', 12)
@@ -413,6 +356,9 @@ def step_burgers_loops(ctx, connectivity, filtered):
     canonicalizer = LoopCanonicalizer(filtered['positions'], data['box'])
     canonical_loops = canonicalizer.canonicalize(loops)
 
+    # Use pre-computed connectivity lists from manager (eliminates conversion redundancy)
+    connectivity_lists = connectivity_manager.as_lists(use_enhanced=True)
+    
     evaluator = BurgersCircuitEvaluator(
         connectivity=connectivity_lists,
         positions=filtered['positions'],
@@ -440,6 +386,7 @@ def step_burgers_loops(ctx, connectivity, filtered):
         final_loops.append(sorted(set(all_pts)))
         final_burgers[gid] = avg_burg
 
+    ctx['logger'].info(f'Optimized Burgers loops: {len(final_loops)} loops using centralized connectivity')
     ctx['loops'] = {'loops': final_loops, 'burgers': final_burgers}
     return ctx['loops']
 
@@ -491,70 +438,67 @@ def step_summary_report(ctx, validate):
     return {'count': len(validate['valid']), 'avg_burgers': mean_mag}
 
 
-def step_validate_dislocations(ctx, advanced_loops):
-    # Get crystal parameters from context
-    lattice_parameter = ctx.get('lattice_parameter', 1.0)
+def step_unified_validation(ctx, advanced_loops, displacement, filtered):
+    """Unified validation using both Burgers circuits (primary) and elastic mapping (secondary)"""
+    data = ctx['data']
+    args = ctx['args']
+    
+    # Get parameters from context
+    lattice_parameter = ctx.get('lattice_parameter', 4.0)
     crystal_type = ctx.get('crystal_type', 'fcc')
     
-    # Initialize Burgers vector normalizer
-    normalizer = BurgersNormalizer(
+    # Setup elastic mapping parameters
+    box_bounds = np.array(data['box'], dtype=np.float64)
+    pbc_active = getattr(args, 'pbc', [True, True, True])
+    if isinstance(pbc_active, bool):
+        pbc_active = [pbc_active, pbc_active, pbc_active]
+    
+    # Get connectivity from manager (eliminates redundant processing)
+    connectivity_manager = ctx['connectivity_manager']
+    connectivity_dict = connectivity_manager.as_lists(use_enhanced=True)
+    
+    # Initialize unified validator with both methods
+    validator = UnifiedBurgersValidator(
         crystal_type=crystal_type,
         lattice_parameter=lattice_parameter,
-        tolerance=0.15
+        tolerance=getattr(args, 'validation_tolerance', 0.15),
+        box_bounds=box_bounds,
+        pbc=pbc_active
     )
     
-    # Normalize and validate Burgers vectors
-    validated = []
-    normalized_burgers = {}
-    validation_stats = {'perfect': 0, 'partial': 0, 'unmapped': 0, 'zero': 0}
+    # Perform unified validation combining circuits and elastic mapping
+    validation_result = validator.validate_burgers_vectors(
+        primary_burgers=advanced_loops['burgers'],
+        positions=filtered['positions'],
+        connectivity=connectivity_dict,
+        displacement_field=displacement['vectors'],
+        loops=advanced_loops['loops']
+    )
     
-    for i, burger_vector in advanced_loops['burgers'].items():
-        magnitude = np.linalg.norm(burger_vector)
-        
-        if magnitude > 1e-5:
-            # Normalize to crystallographic form
-            normalized, b_type, distance = normalizer.normalize_burgers_vector(burger_vector)
-            
-            # Store normalized vector
-            normalized_burgers[i] = normalized
-            validation_stats[b_type] += 1
-            
-            # Validate magnitude is physically reasonable
-            validation_metrics = normalizer.validate_burgers_magnitude(burger_vector)
-            
-            if (validation_metrics['is_realistic_perfect'] or 
-                validation_metrics['is_realistic_partial']):
-                validated.append(i)
-                
-                # Log normalized representation
-                burgers_string = normalizer.burgers_to_string(normalized)
-                ctx['logger'].debug(f"Loop {i}: |b|={magnitude:.3f} Å -> {burgers_string} ({b_type})")
-        else:
-            validation_stats['zero'] += 1
+    # Extract results from the correct structure
+    final_validation = validation_result['final_validation']
+    validated_indices = final_validation['valid_loops']
+    final_burgers = final_validation.get('normalized_burgers', advanced_loops['burgers'])
+    cross_validation_metrics = validation_result['consistency_metrics']
+    consistency_score = cross_validation_metrics['overall_consistency']
     
-    burgers_report = create_burgers_validation_report(advanced_loops['burgers'], normalizer)
-    
+    # Log comprehensive validation results
     total_loops = len(advanced_loops['burgers'])
-    ctx['logger'].info(f'Burgers vector validation: {len(validated)}/{total_loops} valid loops')
-    ctx['logger'].info(f'Classification: {validation_stats["perfect"]} perfect, '
-                      f'{validation_stats["partial"]} partial, '
-                      f'{validation_stats["unmapped"]} unmapped, '
-                      f'{validation_stats["zero"]} zero')
+    ctx['logger'].info(f'Unified validation: {len(validated_indices)}/{total_loops} loops validated')
+    ctx['logger'].info(f'Cross-validation consistency: {consistency_score:.3f}')
+    ctx['logger'].info(f'Consistent loops: {len(cross_validation_metrics["consistent_loops"])}')
+    ctx['logger'].info(f'Mean relative error: {cross_validation_metrics["mean_relative_error"]:.3f}')
     
-    if burgers_report['magnitude_stats']:
-        ctx['logger'].info(f'Magnitude stats: mean={burgers_report["magnitude_mean"]:.3f} Å, '
-                          f'std={burgers_report["magnitude_std"]:.3f} Å')
-    
-    ctx['validated_loops'] = validated
-    ctx['normalized_burgers'] = normalized_burgers
-    ctx['burgers_validation_report'] = burgers_report
-    ctx['validation_stats'] = validation_stats
+    # Store validation results in context
+    ctx['validated_loops'] = validated_indices
+    ctx['final_burgers'] = final_burgers
+    ctx['cross_validation_metrics'] = cross_validation_metrics
     
     return {
-        'valid': validated,
-        'normalized_burgers': normalized_burgers,
-        'validation_report': burgers_report,
-        'stats': validation_stats
+        'valid': validated_indices,
+        'final_burgers': final_burgers,
+        'cross_validation_metrics': cross_validation_metrics,
+        'consistency_score': consistency_score
     }
 
 def step_dislocation_lines(ctx, advanced_loops, filtered):
@@ -616,11 +560,13 @@ def create_and_configure_workflow(ctx):
     workflow.register('tessellation', step_delaunay_tessellation, depends_on=['filtered'])
     workflow.register('connectivity', step_graph, depends_on=['filtered', 'tessellation'])
     workflow.register('displacement', step_displacement, depends_on=['connectivity', 'filtered'])
-    workflow.register('elastic_mapping', step_elastic_mapping, depends_on=['connectivity', 'displacement', 'filtered'])
     
+    # Optimized workflow: eliminated redundant elastic_mapping step
     workflow.register('loops', step_burgers_loops, depends_on=['connectivity', 'filtered'])
     workflow.register('advanced_loops', step_advanced_grouping, depends_on=['loops', 'filtered'])
-    workflow.register('validate', step_validate_dislocations, depends_on=['advanced_loops'])
+    
+    # Unified validation replaces separate validation and elastic mapping
+    workflow.register('validate', step_unified_validation, depends_on=['advanced_loops', 'displacement', 'filtered'])
     workflow.register('lines', step_dislocation_lines, depends_on=['advanced_loops', 'filtered'])
     
     workflow.register('refinement', step_refine_lines, depends_on=['lines', 'filtered'])
