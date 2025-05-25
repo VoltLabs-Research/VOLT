@@ -37,8 +37,14 @@ class GPUKernels:
         blocks = math.ceil(num_edges / threads_per_block)
         
         gpu_elastic_mapping_kernel[blocks, threads_per_block](
-            None, d_jumps, d_perfect, d_partial, tolerance, d_results,
-            num_edges, len(perfect_vectors), len(partial_vectors)
+            d_jumps, 
+            d_perfect, 
+            d_partial, 
+            tolerance, 
+            d_results,
+            num_edges, 
+            len(perfect_vectors), 
+            len(partial_vectors)
         )
         
         # Copy result back

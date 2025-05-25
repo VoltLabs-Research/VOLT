@@ -11,7 +11,8 @@ def gpu_elastic_mapping_kernel(
     tolerance,
     mapping_results,
     num_edges, 
-    num_perfect, num_partial
+    num_perfect, 
+    num_partial
 ):
     edge_idx = cuda.grid(1)
     
@@ -153,7 +154,7 @@ def gpu_compute_displacement_field_kernel_pbc(
     xi = positions[atom_idx, 0]
     yi = positions[atom_idx, 1]
     zi = positions[atom_idx, 2]
-    qw = quaternions[atom_idx, 0], 
+    qw = quaternions[atom_idx, 0]
     qx = quaternions[atom_idx, 1]
     qy = quaternions[atom_idx, 2]
     qz = quaternions[atom_idx, 3]
