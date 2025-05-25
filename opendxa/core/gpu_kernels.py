@@ -5,7 +5,8 @@ from opendxa.utils.kernels import (
     strain_field_kernel,
     mesh_refinement_kernel,
     loop_grouping_kernel,
-    gpu_compute_displacement_field_kernel_pbc
+    gpu_compute_displacement_field_kernel_pbc,
+    gpu_elastic_mapping_kernel
 )
 
 import logging
@@ -17,10 +18,53 @@ class GPUKernels:
         self.logger = logging.getLogger(__name__)
         self.device = cuda.get_current_device()
 
-    def compute_displacement_field_gpu(self, positions, connectivity, ptm_types, templates):
-        if not self.gpu_available:
-            raise RuntimeError("GPU not available")
+    def elastic_mapping_gpu(self, displacement_jumps, ideal_vectors, tolerance):
+        num_edges = len(displacement_jumps)
         
+        # Prepare data
+        jump_array = np.array(list(displacement_jumps.values()), dtype=np.float32)
+        perfect_vectors = ideal_vectors['perfect'].astype(np.float32)
+        partial_vectors = ideal_vectors.get('partial', np.array([])).astype(np.float32)
+        
+        # Transfer to GPU
+        d_jumps = cuda.to_device(jump_array)
+        d_perfect = cuda.to_device(perfect_vectors)
+        d_partial = cuda.to_device(partial_vectors)
+        d_results = cuda.device_array((num_edges, 3), dtype=np.float32)
+        
+        # Launch kernel
+        threads_per_block = 256
+        blocks = math.ceil(num_edges / threads_per_block)
+        
+        gpu_elastic_mapping_kernel[blocks, threads_per_block](
+            None, d_jumps, d_perfect, d_partial, tolerance, d_results,
+            num_edges, len(perfect_vectors), len(partial_vectors)
+        )
+        
+        # Copy result back
+        results = d_results.copy_to_host()
+        
+        # Process results
+        mapping_stats = {'perfect': 0, 'partial': 0, 'unmapped': 0}
+        edge_burgers = {}
+        
+        for i, (edge, jump) in enumerate(displacement_jumps.items()):
+            mapping_type = int(results[i, 0])
+            vector_idx = int(results[i, 1])
+            
+            if mapping_type == 1:  # perfect
+                edge_burgers[edge] = perfect_vectors[vector_idx]
+                mapping_stats['perfect'] += 1
+            elif mapping_type == 2:  # partial
+                edge_burgers[edge] = partial_vectors[vector_idx]
+                mapping_stats['partial'] += 1
+            else:  # unmapped
+                edge_burgers[edge] = jump
+                mapping_stats['unmapped'] += 1
+        
+        return edge_burgers, mapping_stats
+    
+    def compute_displacement_field_gpu(self, positions, connectivity, ptm_types, templates):
         num_atoms = len(positions)
         
         # Prepare connectivity data in CSR format
