@@ -53,3 +53,22 @@ def unwrap_pbc_positions(
                 unwrapped_positions[i, dim] += box_length
     
     return unwrapped_positions
+
+def compute_minimum_image_distance(
+    pos1: np.ndarray, 
+    pos2: np.ndarray, 
+    box_bounds: np.ndarray
+) -> Tuple[float, np.ndarray]:
+    box_lengths = box_bounds[:, 1] - box_bounds[:, 0]
+    vector = pos2 - pos1
+    
+    # Apply minimum image convention
+    for dim in range(3):
+        box_length = box_lengths[dim]
+        if vector[dim] > box_length / 2:
+            vector[dim] -= box_length
+        elif vector[dim] <= -box_length / 2:
+            vector[dim] += box_length
+    
+    distance = np.linalg.norm(vector)
+    return distance, vector
