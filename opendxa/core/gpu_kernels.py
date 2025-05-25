@@ -4,15 +4,98 @@ from opendxa.utils.kernels import (
     loop_detection_kernel,
     strain_field_kernel,
     mesh_refinement_kernel,
-    loop_grouping_kernel
+    loop_grouping_kernel,
+    gpu_compute_displacement_field_kernel_pbc
 )
+
 import logging
 import numpy as np
+import math
 
 class GPUKernels:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self.device = cuda.get_current_device()
+
+    def compute_displacement_field_gpu(self, positions, connectivity, ptm_types, templates):
+        if not self.gpu_available:
+            raise RuntimeError("GPU not available")
         
+        num_atoms = len(positions)
+        
+        # Prepare connectivity data in CSR format
+        connectivity_data = []
+        connectivity_offsets = [0]
+        
+        for atom_id in range(num_atoms):
+            neighbors = connectivity.get(atom_id, [])
+            connectivity_data.extend(neighbors)
+            connectivity_offsets.append(len(connectivity_data))
+        
+        # Prepare arrays
+        positions_array = positions.astype(np.float32)
+        quaternions_array = np.zeros((num_atoms, 4), dtype=np.float32)
+        # Default to identity quaternion
+        quaternions_array[:, 0] = 1.0
+        
+        # Get template data (if available)
+        if templates is not None and hasattr(templates, 'shape'):
+            templates_array = templates.astype(np.float32)
+            template_sizes = np.array([templates.shape[1]] * templates.shape[0], dtype=np.int32)
+        else:
+            # Use FCC default template
+            fcc_template = np.array([
+                [0.5, 0.5, 0.0], [0.5, -0.5, 0.0], [0.5, 0.0, 0.5], [0.5, 0.0, -0.5],
+                [0.0, 0.5, 0.5], [0.0, 0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, -0.5, 0.0],
+                [-0.5, 0.0, 0.5], [-0.5, 0.0, -0.5], [0.0, -0.5, 0.5], [0.0, -0.5, -0.5]
+            ], dtype=np.float32)
+            templates_array = fcc_template.reshape(1, 12, 3)
+            template_sizes = np.array([12], dtype=np.int32)
+        
+        # Default box bounds and PBC
+        box_bounds = np.array([
+            [positions[:, 0].min() - 1, positions[:, 0].max() + 1],
+            [positions[:, 1].min() - 1, positions[:, 1].max() + 1],
+            [positions[:, 2].min() - 1, positions[:, 2].max() + 1]
+        ], dtype=np.float32)
+        pbc_flags = np.array([True, True, True], dtype=bool)
+        
+        # Transfer to GPU
+        d_positions = cuda.to_device(positions_array)
+        d_connectivity_data = cuda.to_device(np.array(connectivity_data, dtype=np.int32))
+        d_connectivity_offsets = cuda.to_device(np.array(connectivity_offsets, dtype=np.int32))
+        d_ptm_types = cuda.to_device(ptm_types.astype(np.int32))
+        d_quaternions = cuda.to_device(quaternions_array)
+        d_templates = cuda.to_device(templates_array)
+        d_template_sizes = cuda.to_device(template_sizes)
+        d_box_bounds = cuda.to_device(box_bounds)
+        d_pbc_flags = cuda.to_device(pbc_flags)
+        
+        # Output array
+        d_displacement_vectors = cuda.device_array((num_atoms, 3), dtype=np.float32)
+        
+        # Launch kernel
+        threads_per_block = 256
+        blocks = math.ceil(num_atoms / threads_per_block)
+        
+        gpu_compute_displacement_field_kernel_pbc[blocks, threads_per_block](
+            d_positions, d_connectivity_data, d_connectivity_offsets,
+            d_ptm_types, d_quaternions, d_templates, d_template_sizes,
+            d_box_bounds, d_pbc_flags, d_displacement_vectors,
+            num_atoms, 64
+        )
+        
+        # Copy result back
+        displacement_vectors = d_displacement_vectors.copy_to_host()
+        
+        # Convert to dictionary format
+        result = {}
+        for i in range(num_atoms):
+            if not np.isnan(displacement_vectors[i]).any():
+                result[i] = displacement_vectors[i]
+        
+        return result
+
     def spatial_hash_optimization(self, positions, box_bounds, grid_spacing=1.0):
         n_atoms = len(positions)
         
