@@ -607,15 +607,21 @@ def step_dislocation_lines(ctx, advanced_loops, filtered):
     ctx['logger'].info(f'Built {len(structured_lines)} structured dislocation lines')
     return structured_lines
 
-def step_export(ctx, lines, advanced_loops, filtered):
+def step_export(ctx, refinement):
     data = ctx['data']
     args = ctx['args']
+    
+    lines = refinement['refined_lines']
+    loops = [line['atoms'] for line in lines]
+    burgers = {i: line['burgers_vector'] for i, line in enumerate(lines)}
+    line_types = [line['type'] for line in lines]
+    
     exporter = DislocationExporter(
-        positions=filtered['positions'],
-        loops=advanced_loops['loops'],
-        burgers=advanced_loops['burgers'],
+        positions=ctx['data']['positions'],
+        loops=loops,
+        burgers=burgers,
         timestep=data['timestep'],
-        line_types=lines['types']
+        line_types=np.array(line_types)
     )
     exporter.to_json(args.output)
     ctx['logger'].info(f'Exported to {args.output}')
