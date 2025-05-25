@@ -6,10 +6,12 @@ logger = logging.getLogger(__name__)
 
 # Find closed loops in the connectivity network (DFS + simple rotational redundant elimination).
 class FilteredLoopFinder:
-    def __init__(self, connectivity, positions, max_length=8):
+    def __init__(self, connectivity, positions, max_length=8, max_loops=1000, timeout_seconds=300):
         self.connectivity = connectivity
         self.positions = np.asarray(positions, dtype=np.float32)
         self.max_length = max_length
+        self.max_loops = max_loops
+        self.timeout_seconds = timeout_seconds
         self.N = len(self.positions)
 
     def _normalize_loop(self, loop):
