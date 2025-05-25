@@ -1,6 +1,6 @@
 from typing import Dict, List, Tuple, Optional
-from opendxa.core.gpu_kernels import GPUKernels
 from opendxa.utils.pbc import compute_minimum_image_distance
+from opendxa.utils.cuda import elastic_mapping_gpu
 import numpy as np
 import logging
 
@@ -47,9 +47,6 @@ class ElasticMapper:
         for b_type, vectors in self.IDEAL_BURGERS[crystal_type].items():
             self.ideal_vectors[b_type] = vectors * lattice_parameter
         
-        # Initialize GPU acceleration
-        self.gpu_dxa = GPUKernels()
-        
         logger.info(f'ElasticMapper initialized:')
         logger.info(f'  Crystal type: {crystal_type}')
         logger.info(f'  Lattice parameter: {lattice_parameter:.6f}')
@@ -82,7 +79,7 @@ class ElasticMapper:
         
         if len(displacement_jumps) > 1000:
             logger.info(f"Computing elastic mapping using GPU acceleration for {len(displacement_jumps)} edges")
-            edge_burgers, mapping_stats = self.gpu_dxa.elastic_mapping_gpu(
+            edge_burgers, mapping_stats = elastic_mapping_gpu(
                 displacement_jumps, self.ideal_vectors, self.tolerance
             )
             logger.info(f'GPU elastic mapping: {mapping_stats}')

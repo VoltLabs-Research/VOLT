@@ -1,4 +1,4 @@
-from opendxa.core.gpu_kernels import GPUKernels
+from opendxa.utils.cuda import compute_displacement_field_gpu
 import logging
 import numpy as np
 
@@ -28,11 +28,10 @@ class DisplacementFieldAnalyzer:
             self.box_bounds = np.asarray(box_bounds, dtype=np.float32)
         else:
             self.box_bounds = None
-        self.gpu_dxa = GPUKernels()
 
     def compute_displacement_field(self):
         logger.info(f'Computing displacement field using GPU acceleration for {self.N} atoms')
-        disp_dict = self.gpu_dxa.compute_displacement_field_gpu(
+        disp_dict = compute_displacement_field_gpu(
             self.positions,
             self.connectivity,
             self.ptm_types,
