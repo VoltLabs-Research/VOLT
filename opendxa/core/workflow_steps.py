@@ -3,7 +3,7 @@ from opendxa.export import DislocationExporter
 from opendxa.neighbors import HybridNeighborFinder
 from opendxa.core.sequentials import Sequentials
 from scipy.spatial.distance import cdist
-from filters.burgers_normalizer import BurgersNormalizer, create_burgers_validation_report
+from opendxa.filters.burgers_normalizer import BurgersNormalizer, create_burgers_validation_report
 
 from opendxa.utils.pbc import (
     unwrap_pbc_displacement,
@@ -591,7 +591,21 @@ def step_dislocation_lines(ctx, advanced_loops, filtered):
         burgers_vectors=advanced_loops['burgers']    
     )
     line_types = engine.classify()
-    return {'lines': lines, 'types': line_types}
+    
+    structured_lines = []
+    for idx, line_points in enumerate(lines):
+        if idx in advanced_loops['burgers']:
+            structured_lines.append({
+                'id': idx,
+                'atoms': advanced_loops['loops'][idx],
+                'positions': line_points,
+                'burgers_vector': advanced_loops['burgers'][idx],
+                'type': line_types[idx] if idx < len(line_types) else -1,
+                'length': np.sum(np.linalg.norm(np.diff(line_points, axis=0), axis=1)) if len(line_points) > 1 else 0.0
+            })
+    
+    ctx['logger'].info(f'Built {len(structured_lines)} structured dislocation lines')
+    return structured_lines
 
 def step_export(ctx, lines, advanced_loops, filtered):
     data = ctx['data']
@@ -612,14 +626,17 @@ def create_and_configure_workflow(ctx):
     workflow.register('neighbors', step_neighbors)
     workflow.register('ptm', step_classify_ptm, depends_on=['neighbors'])
     workflow.register('filtered', step_surface_filter, depends_on=['ptm'])
-    workflow.register('connectivity', step_graph, depends_on=['filtered'])
+    workflow.register('tessellation', step_delaunay_tessellation, depends_on=['filtered'])
+    workflow.register('connectivity', step_graph, depends_on=['filtered', 'tessellation'])
     workflow.register('displacement', step_displacement, depends_on=['connectivity', 'filtered'])
+    workflow.register('elastic_mapping', step_elastic_mapping, depends_on=['connectivity', 'displacement', 'filtered'])
+    
     workflow.register('loops', step_burgers_loops, depends_on=['connectivity', 'filtered'])
     workflow.register('advanced_loops', step_advanced_grouping, depends_on=['loops', 'filtered'])
     workflow.register('validate', step_validate_dislocations, depends_on=['advanced_loops'])
     workflow.register('lines', step_dislocation_lines, depends_on=['advanced_loops', 'filtered'])
-    workflow.register('nye', step_nye_tensor, depends_on=['advanced_loops', 'filtered'])
-    workflow.register('report', step_summary_report, depends_on=['validate'])
-    workflow.register('export', step_export, depends_on=['lines', 'advanced_loops', 'filtered'])
+    
+    workflow.register('refinement', step_refine_lines, depends_on=['lines', 'filtered'])
+    workflow.register('export', step_export, depends_on=['refinement'])
 
     return workflow
