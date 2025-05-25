@@ -103,7 +103,7 @@ def step_surface_filter(ctx, ptm):
     ctx['logger'].info(f'Surface Filter: {n_interior} interior atoms')
     return data_filtered
 
-def step_graph(ctx, filtered):
+def step_graph(ctx, filtered, tessellation):
     args = ctx['args']
     connectivity_graph = LatticeConnectivityGraph(
         positions=filtered['positions'],
@@ -116,9 +116,34 @@ def step_graph(ctx, filtered):
         tolerance=args.tolerance
     )
     connectivity = connectivity_graph.build_graph()
+    
+    # Enhance connectivity with tessellation data
+    tetrahedral_connectivity = tessellation['connectivity']
+    enhanced_connectivity = {}
+    
+    # Convert connectivity to sets if they aren't already
+    for atom_id, neighbors in connectivity.items():
+        if isinstance(neighbors, list):
+            enhanced_connectivity[atom_id] = set(neighbors)
+        else:
+            enhanced_connectivity[atom_id] = neighbors.copy()
+    
+    # Add tetrahedral connections that aren't already in the connectivity graph
+    for atom_id, tet_neighbors in tetrahedral_connectivity.items():
+        if atom_id not in enhanced_connectivity:
+            enhanced_connectivity[atom_id] = set()
+        for neighbor_id in tet_neighbors:
+            if neighbor_id < len(filtered['positions']):  # Only add connections within original atoms
+                enhanced_connectivity[atom_id].add(neighbor_id)
+                if neighbor_id not in enhanced_connectivity:
+                    enhanced_connectivity[neighbor_id] = set()
+                enhanced_connectivity[neighbor_id].add(atom_id)
+    
     n_edges = sum(len(v) for v in connectivity.values())//2
-    ctx['logger'].info(f'Graph: {n_edges} edges')
-    return connectivity
+    n_enhanced_edges = sum(len(v) for v in enhanced_connectivity.values())//2
+    
+    ctx['logger'].info(f'Graph: {n_edges} original edges, {n_enhanced_edges} with tessellation enhancement')
+    return enhanced_connectivity
 
 def step_displacement(ctx, connectivity, filtered):
     data = ctx['data']
