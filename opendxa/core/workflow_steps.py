@@ -186,6 +186,179 @@ def step_displacement(ctx, connectivity, filtered):
     ctx['logger'].info(f'Avg displacement magnitude: {np.nanmean(avg_mags):.3f}')
     return {'vectors': disp_vecs, 'mags': avg_mags}
 
+def step_elastic_mapping(ctx, connectivity, displacement, filtered):
+    args = ctx['args']
+    data = ctx['data']
+    
+    box_bounds = np.array(data['box'], dtype=np.float64)
+    pbc_active = getattr(args, 'pbc', [True, True, True])
+    if isinstance(pbc_active, bool):
+        pbc_active = [pbc_active, pbc_active, pbc_active]
+
+    original_connectivity = {}
+    for atom_id, neighbors in filtered['neighbors'].items():
+        if isinstance(neighbors, list):
+            original_connectivity[atom_id] = neighbors
+        else:
+            original_connectivity[atom_id] = list(neighbors) if hasattr(neighbors, '__iter__') else []
+    
+    first_neighbor_distances = []
+    for atom_id, neighbors in original_connectivity.items():
+        if len(neighbors) > 0:
+            pos = filtered['positions'][atom_id]
+            neighbor_dists = []
+            for neighbor_id in neighbors:
+                if neighbor_id < len(filtered['positions']):
+                    neighbor_pos = filtered['positions'][neighbor_id]
+                    if any(pbc_active):
+                        dist, _ = compute_minimum_image_distance(pos, neighbor_pos, box_bounds)
+                    else:
+                        dist = np.linalg.norm(neighbor_pos - pos)
+                    neighbor_dists.append(dist)
+            
+            if neighbor_dists:
+                min_dist = min(neighbor_dists)
+                first_neighbor_distances.append(min_dist)
+    
+    if first_neighbor_distances:
+        first_shell_distance = np.median(first_neighbor_distances)  # Usar mediana para robustez
+        lattice_parameter = first_shell_distance * np.sqrt(2)
+        ctx['logger'].info(f'First neighbor distance: {first_shell_distance:.3f} Å')
+        ctx['logger'].info(f'Estimated lattice parameter: {lattice_parameter:.3f} Å')
+        ctx['lattice_parameter'] = lattice_parameter
+        ctx['crystal_type']      = getattr(args, 'crystal_type', 'fcc')
+        if lattice_parameter < 2.0 or lattice_parameter > 6.0:
+            ctx['logger'].warning(f'Lattice parameter {lattice_parameter:.3f} Å seems unrealistic, using default')
+            lattice_parameter = 4.0
+    else:
+        lattice_parameter = 4.0 
+        ctx['logger'].warning('Could not estimate lattice parameter, using default 4.0 Å')
+    
+    physical_tolerance = 0.10 * lattice_parameter
+    
+    displacement_magnitudes = [np.linalg.norm(v) for v in displacement['vectors'].values() if not np.isnan(v).any()]
+    if displacement_magnitudes:
+        displacement_std = np.std(displacement_magnitudes)
+        adaptive_tolerance = max(physical_tolerance, min(0.2 * lattice_parameter, displacement_std * 0.3))
+        ctx['logger'].info(f'Displacement std: {displacement_std:.3f}, adaptive tolerance: {adaptive_tolerance:.3f}')
+    else:
+        adaptive_tolerance = physical_tolerance
+    
+    mapper = ElasticMapper(
+        crystal_type=getattr(args, 'crystal_type', 'fcc'),
+        lattice_parameter=getattr(args, 'lattice_param', lattice_parameter),
+        tolerance=getattr(args, 'elastic_tolerance', adaptive_tolerance),
+        box_bounds=box_bounds,
+        pbc=pbc_active
+    )
+    
+    ctx['logger'].info(f'Connectivity graph elastic mapping: lattice={mapper.lattice_param:.3f}, tolerance={mapper.tolerance:.3f}')
+    
+    edge_vectors = mapper.compute_edge_vectors(connectivity, filtered['positions'])
+    edge_burgers = mapper.map_edge_burgers(edge_vectors, displacement['vectors'])
+    
+    ctx['logger'].info(f'Elastic mapping on connectivity graph: {len(edge_burgers)} edges mapped')
+    return {'edge_vectors': edge_vectors, 'edge_burgers': edge_burgers}
+
+
+def step_refine_lines(ctx, lines, filtered):
+    args = ctx['args']
+    data = ctx['data']
+    
+    # Core marking
+    core_marker = DislocationCoreMarker(
+        core_radius=getattr(args, 'core_radius', 2.0)
+    )
+    
+    dislocation_lines = [line['atoms'] for line in lines]
+    burgers_vectors = {i: line['burgers_vector'] for i, line in enumerate(lines)}
+    
+    core_classification = core_marker.mark_core_atoms(
+        dislocation_lines=dislocation_lines,
+        positions=filtered['positions'],
+        burgers_vectors=burgers_vectors
+    )
+    
+    # Line smoothing
+    smoother = DislocationLineSmoother(
+        smoothing_level=getattr(args, 'line_smoothing_level', 3),
+        point_interval=getattr(args, 'line_point_interval', 1.0)
+    )
+    
+    smoothed_positions = smoother.smooth_lines(
+        dislocation_lines=dislocation_lines,
+        positions=filtered['positions']
+    )
+    
+    # Combine results
+    refined_lines = []
+    for i, line in enumerate(lines):
+        refined_line = line.copy()
+        refined_line['smoothed_positions'] = smoothed_positions[i]
+        refined_lines.append(refined_line)
+    
+    # Calculate comprehensive statistics
+    box = np.array(data['box'])
+    volume = np.prod(box[:, 1] - box[:, 0])
+    
+    stats_generator = DislocationStatisticsGenerator()
+    statistics = stats_generator.generate_statistics(
+        dislocation_lines=refined_lines,
+        burgers_vectors=burgers_vectors,
+        core_atoms=core_classification,
+        system_volume=volume
+    )
+    
+    # Compute Nye tensor (en unidades de Å⁻¹)
+    positions = filtered['positions']
+    tensor = np.zeros((3, 3), dtype=np.float32)
+    for i, b in burgers_vectors.items():
+        loop = dislocation_lines[i]
+        if len(loop) < 2:
+            continue
+        start = positions[loop[0]]
+        end = positions[loop[-1]]
+        lvec = end - start
+        # Normalizar por la longitud del segmento para obtener densidad de Burgers
+        length = np.linalg.norm(lvec)
+        if length > 0:
+            direction = lvec / length
+            tensor += np.outer(b, direction) * (1.0 / volume)  # Densidad por unidad de volumen
+    
+    statistics['nye_tensor'] = tensor
+    statistics['nye_tensor_units'] = 'Å⁻¹'
+    
+    # Generate summary report
+    magnitudes = [np.linalg.norm(b) for b in burgers_vectors.values()]
+    mean_mag = np.mean(magnitudes) if magnitudes else 0.0
+    
+    # Análisis físico de magnitudes de Burgers
+    if magnitudes:
+        min_mag = np.min(magnitudes)
+        max_mag = np.max(magnitudes)
+        std_mag = np.std(magnitudes)
+        ctx['logger'].info(f'Burgers magnitudes: min={min_mag:.3f}, max={max_mag:.3f}, '
+                          f'mean={mean_mag:.3f}, std={std_mag:.3f} Å')
+    
+    statistics['summary'] = {
+        'count': len(refined_lines),
+        'avg_burgers_magnitude': mean_mag,
+        'min_burgers_magnitude': np.min(magnitudes) if magnitudes else 0.0,
+        'max_burgers_magnitude': np.max(magnitudes) if magnitudes else 0.0,
+        'std_burgers_magnitude': np.std(magnitudes) if magnitudes else 0.0,
+        'total_core_atoms': len(core_classification["core_atoms"])
+    }
+    
+    ctx['logger'].info(f'Line refinement: {len(core_classification["core_atoms"])} core atoms, {len(refined_lines)} smoothed lines')
+    ctx['logger'].info(f'Statistics: {len(refined_lines)} lines, avg Burgers: {mean_mag:.4f}')
+    ctx['logger'].info(f"Nye tensor computed:\n{tensor}")
+    
+    return {
+        'refined_lines': refined_lines,
+        'core_atoms': core_classification,
+        'statistics': statistics
+    }
+
 def step_burgers_loops(ctx, connectivity, filtered):
     data = ctx['data']
     loop_finder = FilteredLoopFinder(connectivity, data['positions'], max_length=8)
