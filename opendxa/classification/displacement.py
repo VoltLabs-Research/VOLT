@@ -1,5 +1,4 @@
-from opendxa.utils.cuda import quaternion_to_matrix
-from opendxa.core import GPUKernels
+from opendxa.core.gpu_kernels import GPUKernels
 import logging
 import numpy as np
 

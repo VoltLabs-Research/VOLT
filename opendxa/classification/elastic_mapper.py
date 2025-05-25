@@ -1,7 +1,6 @@
 from typing import Dict, List, Tuple, Optional
-from opendxa.core import GPUKernels
+from opendxa.core.gpu_kernels import GPUKernels
 from opendxa.utils.pbc import compute_minimum_image_distance
-from numba import jit
 import numpy as np
 import logging
 

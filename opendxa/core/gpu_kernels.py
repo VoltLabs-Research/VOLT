@@ -123,10 +123,17 @@ class GPUKernels:
         blocks = math.ceil(num_atoms / threads_per_block)
         
         gpu_compute_displacement_field_kernel_pbc[blocks, threads_per_block](
-            d_positions, d_connectivity_data, d_connectivity_offsets,
-            d_ptm_types, d_quaternions, d_templates, d_template_sizes,
-            d_box_bounds, d_pbc_flags, d_displacement_vectors,
-            num_atoms, 64
+            d_positions, 
+            d_connectivity_data, 
+            d_connectivity_offsets,
+            d_ptm_types, 
+            d_quaternions, 
+            d_templates, 
+            d_template_sizes,
+            d_box_bounds, 
+            d_pbc_flags, 
+            d_displacement_vectors,
+            num_atoms
         )
         
         # Copy result back
