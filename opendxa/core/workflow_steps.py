@@ -509,14 +509,72 @@ def step_summary_report(ctx, validate):
     ctx['logger'].info(f'Report: Avg Burgers magnitude: {mean_mag:.4f}')
     return {'count': len(validate['valid']), 'avg_burgers': mean_mag}
 
+
 def step_validate_dislocations(ctx, advanced_loops):
+    # Get crystal parameters from context
+    lattice_parameter = ctx.get('lattice_parameter', 1.0)
+    crystal_type = ctx.get('crystal_type', 'fcc')
+    
+    # Initialize Burgers vector normalizer
+    normalizer = BurgersNormalizer(
+        crystal_type=crystal_type,
+        lattice_parameter=lattice_parameter,
+        tolerance=0.15
+    )
+    
+    # Normalize and validate Burgers vectors
     validated = []
+    normalized_burgers = {}
+    validation_stats = {'perfect': 0, 'partial': 0, 'unmapped': 0, 'zero': 0}
+    
     for i, burger_vector in advanced_loops['burgers'].items():
-        if np.linalg.norm(burger_vector) > 1e-5:
-            validated.append(i)
-    ctx['logger'].info(f'{len(validated)} valid loops detected')
+        magnitude = np.linalg.norm(burger_vector)
+        
+        if magnitude > 1e-5:
+            # Normalize to crystallographic form
+            normalized, b_type, distance = normalizer.normalize_burgers_vector(burger_vector)
+            
+            # Store normalized vector
+            normalized_burgers[i] = normalized
+            validation_stats[b_type] += 1
+            
+            # Validate magnitude is physically reasonable
+            validation_metrics = normalizer.validate_burgers_magnitude(burger_vector)
+            
+            if (validation_metrics['is_realistic_perfect'] or 
+                validation_metrics['is_realistic_partial']):
+                validated.append(i)
+                
+                # Log normalized representation
+                burgers_string = normalizer.burgers_to_string(normalized)
+                ctx['logger'].debug(f"Loop {i}: |b|={magnitude:.3f} Å -> {burgers_string} ({b_type})")
+        else:
+            validation_stats['zero'] += 1
+    
+    burgers_report = create_burgers_validation_report(advanced_loops['burgers'], normalizer)
+    
+    total_loops = len(advanced_loops['burgers'])
+    ctx['logger'].info(f'Burgers vector validation: {len(validated)}/{total_loops} valid loops')
+    ctx['logger'].info(f'Classification: {validation_stats["perfect"]} perfect, '
+                      f'{validation_stats["partial"]} partial, '
+                      f'{validation_stats["unmapped"]} unmapped, '
+                      f'{validation_stats["zero"]} zero')
+    
+    if burgers_report['magnitude_stats']:
+        ctx['logger'].info(f'Magnitude stats: mean={burgers_report["magnitude_mean"]:.3f} Å, '
+                          f'std={burgers_report["magnitude_std"]:.3f} Å')
+    
     ctx['validated_loops'] = validated
-    return {'valid': validated}
+    ctx['normalized_burgers'] = normalized_burgers
+    ctx['burgers_validation_report'] = burgers_report
+    ctx['validation_stats'] = validation_stats
+    
+    return {
+        'valid': validated,
+        'normalized_burgers': normalized_burgers,
+        'validation_report': burgers_report,
+        'stats': validation_stats
+    }
 
 def step_dislocation_lines(ctx, advanced_loops, filtered):
     builder = DislocationLineBuilder(
