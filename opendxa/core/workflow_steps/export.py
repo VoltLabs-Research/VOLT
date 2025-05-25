@@ -19,3 +19,23 @@ def step_export(ctx, refinement):
     )
     exporter.to_json(args.output)
     ctx['logger'].info(f'Exported to {args.output}')
+
+
+def step_export_fast(ctx, advanced_loops):
+    data = ctx['data']
+    args = ctx['args']
+    
+    loops = advanced_loops['loops']
+    burgers = advanced_loops['burgers']
+    # Simple type assignment (no classification)
+    line_types = np.zeros(len(loops), dtype=int)
+    
+    exporter = DislocationExporter(
+        positions=data['positions'],
+        loops=loops,
+        burgers=burgers,
+        timestep=data['timestep'],
+        line_types=line_types
+    )
+    exporter.to_json(args.output)
+    ctx['logger'].info(f'Fast export to {args.output}')

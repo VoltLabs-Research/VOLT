@@ -2,6 +2,7 @@ from opendxa.filters import FilteredLoopFinder, LoopCanonicalizer, LoopGrouper
 from opendxa.classification import BurgersCircuitEvaluator
 from scipy.spatial.distance import cdist
 import numpy as np
+import time
 
 def step_burgers_loops(ctx, connectivity, filtered):
     data = ctx['data']
@@ -9,18 +10,21 @@ def step_burgers_loops(ctx, connectivity, filtered):
     
     # Use connectivity manager for optimized loop finding
     connectivity_manager = ctx['connectivity_manager']
-    max_connections_per_atom = getattr(args, 'max_connections_per_atom', 8)
+    max_connections_per_atom = getattr(args, 'max_connections_per_atom', 6)
     
     # Get filtered connectivity directly from manager (eliminates redundant processing)
+    start_time = time.perf_counter()
     filtered_connectivity = connectivity_manager.filter_for_loop_finding(
         filtered['positions'], max_connections_per_atom
     )
+    ctx['logger'].info(f'Connectivity filtering: {time.perf_counter() - start_time:.3f}s')
     
-    # Configure loop finder with higher limits
-    max_loop_length = getattr(args, 'max_loop_length', 12)
-    max_loops = getattr(args, 'max_loops', 5000)
-    timeout_seconds = getattr(args, 'loop_timeout', 600)
+    # Configure loop finder with aggressive optimization for speed
+    max_loop_length = getattr(args, 'max_loop_length', 6)
+    max_loops = getattr(args, 'max_loops', 1000)
+    timeout_seconds = getattr(args, 'loop_timeout', 60) 
     
+    start_time = time.perf_counter()
     loop_finder = FilteredLoopFinder(
         filtered_connectivity, 
         data['positions'], 
@@ -29,13 +33,17 @@ def step_burgers_loops(ctx, connectivity, filtered):
         timeout_seconds=timeout_seconds
     )
     loops = loop_finder.find_minimal_loops()
+    ctx['logger'].info(f'Loop finding: {time.perf_counter() - start_time:.3f}s, found {len(loops)} loops')
 
+    start_time = time.perf_counter()
     canonicalizer = LoopCanonicalizer(filtered['positions'], data['box'])
     canonical_loops = canonicalizer.canonicalize(loops)
+    ctx['logger'].info(f'Loop canonicalization: {time.perf_counter() - start_time:.3f}s')
 
     # Use pre-computed connectivity lists from manager (eliminates conversion redundancy)
     connectivity_lists = connectivity_manager.as_lists(use_enhanced=True)
     
+    start_time = time.perf_counter()
     evaluator = BurgersCircuitEvaluator(
         connectivity=connectivity_lists,
         positions=filtered['positions'],
@@ -47,10 +55,14 @@ def step_burgers_loops(ctx, connectivity, filtered):
     )
     evaluator.loops = canonical_loops
     raw_burgers = evaluator.calculate_burgers()
+    ctx['logger'].info(f'Burgers evaluation: {time.perf_counter() - start_time:.3f}s')
 
+    start_time = time.perf_counter()
     grouper = LoopGrouper(raw_burgers, canonical_loops, data['positions'])
     groups = grouper.group_loops()
+    ctx['logger'].info(f'Loop grouping: {time.perf_counter() - start_time:.3f}s')
 
+    start_time = time.perf_counter()
     final_loops = []
     final_burgers = {}
     for gid, group in enumerate(groups):
@@ -62,45 +74,91 @@ def step_burgers_loops(ctx, connectivity, filtered):
         avg_burg /= len(group)
         final_loops.append(sorted(set(all_pts)))
         final_burgers[gid] = avg_burg
+    ctx['logger'].info(f'Final loop processing: {time.perf_counter() - start_time:.3f}s')
 
     ctx['logger'].info(f'Optimized Burgers loops: {len(final_loops)} loops using centralized connectivity')
     ctx['loops'] = {'loops': final_loops, 'burgers': final_burgers}
     return ctx['loops']
 
 def step_advanced_grouping(ctx, loops, filtered):
+    start_time = time.perf_counter()
+    
     burgers = loops['burgers']
     positions = filtered['positions']
-    loop_centers = [positions[loop].mean(axis=0) for loop in loops['loops']]
+    
+    # Early exit if no loops
+    if not loops['loops']:
+        ctx['logger'].info('No loops to group, skipping advanced grouping')
+        result = {'loops': [], 'burgers': {}}
+        ctx['advanced_loops'] = result
+        return result
+    
+    # Optimize for small datasets - skip expensive grouping if few loops
+    if len(loops['loops']) < 10:
+        ctx['logger'].info(f'Small dataset ({len(loops["loops"])} loops), using simple grouping')
+        new_loops = loops['loops']
+        new_burgers = burgers
+        ctx['advanced_loops'] = {'loops': new_loops, 'burgers': new_burgers}
+        return ctx['advanced_loops']
+    
+    # Vectorized center calculation
+    loop_centers = np.array([positions[loop].mean(axis=0) for loop in loops['loops']])
     B = np.array([burgers[i] for i in range(len(loops['loops']))])
-    C = np.array(loop_centers)
-    dist_matrix = cdist(C, C)
-    angle_matrix = np.array([
-        [np.dot(B[i], B[j]) / (np.linalg.norm(B[i]) * np.linalg.norm(B[j]) + 1e-10)
-         for j in range(len(B))] for i in range(len(B))
-    ])
-    threshold_dist = 5.0
-    threshold_angle = 0.9
+    
+    # Use scipy.spatial.distance for optimized distance calculation
+    dist_matrix = cdist(loop_centers, loop_centers)
+    
+    # Vectorized angle calculation with better numerical stability
+    B_normalized = B / (np.linalg.norm(B, axis=1, keepdims=True) + 1e-10)
+    angle_matrix = np.dot(B_normalized, B_normalized.T)
+    
+    # More aggressive thresholds for speed
+    threshold_dist = getattr(ctx['args'], 'grouping_distance_threshold', 3.0)
+    threshold_angle = getattr(ctx['args'], 'grouping_angle_threshold', 0.95)
+    
+    ctx['logger'].info(f'Distance calculation: {time.perf_counter() - start_time:.3f}s')
+    
+    grouping_start = time.perf_counter()
     groups = []
     used = set()
+    
     for i in range(len(B)):
         if i in used:
             continue
         group = [i]
         used.add(i)
-        for j in range(i + 1, len(B)):
-            if j in used:
-                continue
-            if dist_matrix[i, j] < threshold_dist and angle_matrix[i, j] > threshold_angle:
+        
+        # Vectorized search for similar loops
+        candidates = np.where(
+            (dist_matrix[i] < threshold_dist) & 
+            (angle_matrix[i] > threshold_angle) & 
+            np.array([j not in used for j in range(len(B))])
+        )[0]
+        
+        for j in candidates:
+            if j > i and j not in used:  # Only check forward to avoid duplicates
                 group.append(j)
                 used.add(j)
         groups.append(group)
+    
+    ctx['logger'].info(f'Grouping logic: {time.perf_counter() - grouping_start:.3f}s')
+    
+    # Fast merging
+    merging_start = time.perf_counter()
     new_loops = []
     new_burgers = {}
     for gid, group in enumerate(groups):
-        merged = sorted(set([idx for i in group for idx in loops['loops'][i]]))
-        new_loops.append(merged)
-        avg_b = np.mean([burgers[i] for i in group], axis=0)
+        # Use set operations for faster merging
+        merged = set()
+        avg_b = np.zeros(3, dtype=np.float32)
+        for i in group:
+            merged.update(loops['loops'][i])
+            avg_b += burgers[i]
+        avg_b /= len(group)
+        new_loops.append(sorted(merged))
         new_burgers[gid] = avg_b
+    
+    ctx['logger'].info(f'Merging: {time.perf_counter() - merging_start:.3f}s')
     ctx['logger'].info(f'Advanced grouping reduced to {len(new_loops)} lines')
     ctx['advanced_loops'] = {'loops': new_loops, 'burgers': new_burgers}
     return ctx['advanced_loops']
