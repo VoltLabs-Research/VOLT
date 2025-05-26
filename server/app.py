@@ -162,3 +162,37 @@ async def root():
         'status': 'healthy'
     }
 
+@app.post('/upload', summary='Upload LAMMPS trajectory file')
+async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:
+    '''
+    Upload a LAMMPS trajectory file for analysis
+    '''
+    try:
+        # Save uploaded file
+        temp_dir = tempfile.gettempdir()
+        file_path = os.path.join(temp_dir, f'opendxa_{file.filename}')
+        with open(file_path, 'wb') as buffer:
+            content = await file.read()
+            buffer.write(content)
+        parser = LammpstrjParser(file_path)
+        timesteps = []
+        atoms_count = 0
+        for i, data in enumerate(parser.iter_timesteps()):
+            timesteps.append(data['timestep'])
+            if i == 0:
+                atoms_count = len(data['positions'])
+            # Limit to first 10 timesteps for info
+            if i >= 10:
+                break
+        # Store file info
+        uploaded_files[file.filename] = file_path
+        return {
+            'filename': file.filename,
+            'size': len(content),
+            'timesteps': timesteps,
+            'atoms_count': atoms_count,
+            'message': f'File {file.filename} uploaded successfully'
+        }
+    except Exception as e:
+        logger.error(f'Error uploading file: {e}')
+        raise HTTPException(status_code=500, detail=f'Error uploading file: {str(e)}')
