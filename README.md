@@ -2,7 +2,7 @@
 
 ![What's DXA?](/screenshots/Whats-DXA.png)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
 **OpenDXA** is a high-performance, open-source Python package for extracting, analyzing, and visualizing dislocation lines in atomistic simulations. Built with GPU acceleration and robust algorithms, it provides comprehensive analysis of crystal defects in FCC, BCC, and HCP structures from LAMMPS trajectory files.
