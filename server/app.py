@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
@@ -19,6 +19,7 @@ import logging
 import uvicorn
 import traceback
 import time
+import argparse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -340,3 +341,32 @@ async def get_status() -> Dict[str, Any]:
         'cached_results': len(analysis_cache),
         'version': '1.0.0'
     }
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='OpenDXA FastAPI Server')
+    parser.add_argument('--host', default='0.0.0.0', help='Host to bind to')
+    parser.add_argument('--port', type=int, default=8000, help='Port to bind to')
+    parser.add_argument('--reload', action='store_true', help='Enable auto-reload')
+    parser.add_argument('--workers', type=int, default=1, help='Number of workers')
+    args = parser.parse_args()
+
+    setup_logging()
+
+    print(f'''
+    🚀 OpenDXA API Server Starting...
+    
+    📍 URL: http://{args.host}:{args.port}
+    📖 Docs: http://{args.host}:{args.port}/docs
+    🔍 Interactive API: http://{args.host}:{args.port}/redoc
+    
+    📁 Upload files via POST /upload
+    🔬 Analyze via POST /analyze/{{filename}}  
+    ''')
+
+    uvicorn.run(
+        'api_server:app' if args.reload else app,
+        host=args.host,
+        port=args.port,
+        reload=args.reload,
+        workers=args.workers if not args.reload else 1
+    )
