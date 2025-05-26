@@ -321,3 +321,10 @@ async def delete_file(filename: str) -> Dict[str, str]:
     except Exception as e:
         logger.error(f'Error deleting file: {e}')
         raise HTTPException(status_code=500, detail=f'Error deleting file: {str(e)}')
+
+@app.get('/config/defaults', summary='Get default analysis configuration')
+async def get_default_config() -> AnalysisConfig:
+    '''
+    Get default analysis configuration
+    '''
+    return AnalysisConfig()
