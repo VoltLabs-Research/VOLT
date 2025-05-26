@@ -9,6 +9,8 @@ from opendxa.utils.logging import setup_logging
 from opendxa.core import analyze_timestep, init_worker
 from server.models.analysis_config import AnalysisConfig
 from server.models.file_info import FileInfo
+from server.models.analysis_request import AnalysisRequest
+from server.models.analysis_result import AnalysisResult
 
 import json
 import os
@@ -231,3 +233,49 @@ async def list_files() -> Dict[str, List[FileInfo]]:
     return {
         'files': files_info
     }
+
+@app.post('/analyze/{filename}', summary='Analyze specific timestep from file')
+async def analyze_file(
+    filename: str,
+    request: AnalysisRequest
+) -> AnalysisResult:
+    '''
+    Analyze a specific timestep from an uploaded file
+    '''
+    if filename not in uploaded_files:
+        raise HTTPException(status_code=404, detail=f'File {filename} not found')
+    file_path = uploaded_files[filename]
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail=f'File {filename} no longer exists')
+    try:
+        # Parse file and find requested timestep
+        parser = LammpstrjParser(file_path)
+        target_timestep = request.timestep
+        timestep_data = None
+        for data in parser.iter_timesteps():
+            if target_timestep is None or data['timestep'] == target_timestep:
+                timestep_data = data
+                break
+        if timestep_data is None:
+            available_timesteps = [data['timestep'] for data in parser.iter_timesteps()]
+            raise HTTPException(
+                status_code=400,
+                detail=f'Timestep {target_timestep} not found. Available: {available_timesteps[:10]}'
+            )
+        # Check cache
+        cache_key = f'{filename}_{timestep_data["timestep"]}_{hash(str(request.config.model_dump()))}'
+        if cache_key in analysis_cache:
+            logger.info(f'Returning cached result for {cache_key}')
+            return AnalysisResult(**analysis_cache[cache_key])
+        # Run analysis
+        logger.info(f'Analyzing timestep {timestep_data["timestep"]} from {filename}')
+        result = analyze_timestep_wrapper(timestep_data, request.config)
+        analysis_cache[cache_key] = result
+        return AnalysisResult(**result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f'Error analyzing file: {e}')
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f'Analysis error: {str(e)}')
+    
