@@ -150,3 +150,15 @@ def analyze_timestep_wrapper(data: Dict, config: AnalysisConfig) -> Dict:
             'execution_time': 0,
             'error': str(e)
         }
+    
+@app.get('/', summary='API Health Check')
+async def root():
+    '''
+    Health check endpoint
+    '''
+    return {
+        'message': 'OpenDXA API Server is running',
+        'version': '1.0.0',
+        'status': 'healthy'
+    }
+
