@@ -1,7 +1,7 @@
 from opendxa.core.unified_burgers_validator import UnifiedBurgersValidator
 import numpy as np
 
-def step_unified_validation(ctx, advanced_loops, displacement, filtered, elastic_map=None, interface_mesh=None):
+def step_unified_validation(ctx, advanced_loops, displacement, filtered, ptm=None, elastic_map=None, interface_mesh=None):
     """Enhanced unified validation using Burgers circuits, elastic mapping, and interface mesh"""
     data = ctx['data']
     args = ctx['args']
@@ -20,13 +20,25 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered, elastic
     connectivity_manager = ctx['connectivity_manager']
     connectivity_dict = connectivity_manager.as_lists(use_enhanced=True)
     
+    # Get PTM types for structure analysis
+    ptm_types = None
+    if ptm is not None and isinstance(ptm, dict):
+        ptm_types = ptm.get('types', None)
+        if ptm_types is not None:
+            ctx['logger'].info(f'Structure-aware validation enabled with {len(ptm_types)} atom classifications')
+        else:
+            ctx['logger'].debug('PTM data available but no types found')
+    else:
+        ctx['logger'].info('Using default structure assumption for validation')
+    
     # Initialize unified validator with enhanced capabilities
     validator = UnifiedBurgersValidator(
         crystal_type=crystal_type,
         lattice_parameter=lattice_parameter,
         tolerance=getattr(args, 'validation_tolerance', 0.15),
         box_bounds=box_bounds,
-        pbc=pbc_active
+        pbc=pbc_active,
+        allow_non_standard=getattr(args, 'allow_non_standard_burgers', True)
     )
     
     # Prepare enhanced validation data
@@ -35,7 +47,8 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered, elastic
         'positions': filtered['positions'],
         'connectivity': connectivity_dict,
         'displacement_field': displacement['vectors'],
-        'loops': advanced_loops['loops']
+        'loops': advanced_loops['loops'],
+        'ptm_types': ptm_types
     }
     
     # Add elastic mapping data if available

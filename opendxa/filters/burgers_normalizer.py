@@ -34,6 +34,17 @@ class BurgersNormalizer:
         [-1, -1, 1], [-1, 1, -1], [1, -1, -1], [-1, -1, -1]
     ]) * 0.5
 
+    # Standard HCP Burgers vectors
+    HCP_PERFECT_VECTORS = np.array([
+        # <10-10> perfect dislocations (basal slip)
+        [1, 0, 0], [-1/2, np.sqrt(3)/2, 0], [-1/2, -np.sqrt(3)/2, 0]
+    ])
+
+    HCP_PARTIAL_VECTORS = np.array([
+        # <10-10>/3 partial dislocations 
+        [1, 0, 0], [-1/2, np.sqrt(3)/2, 0], [-1/2, -np.sqrt(3)/2, 0]
+    ]) / 3.0
+
     def __init__(
         self,
         crystal_type: str = 'fcc',
@@ -52,6 +63,9 @@ class BurgersNormalizer:
             self.perfect_vectors = self.BCC_PERFECT_VECTORS * lattice_parameter
             # BCC doesn't have standard partials
             self.partial_vectors = np.array([])
+        elif self.crystal_type == 'hcp':
+            self.perfect_vectors = self.HCP_PERFECT_VECTORS * lattice_parameter
+            self.partial_vectors = self.HCP_PARTIAL_VECTORS * lattice_parameter
         else:
             raise ValueError(f'Unsupported crystal type: {crystal_type}')
         logger.info(f'Initialized Burgers normalizer for {crystal_type.upper()} with a={lattice_parameter:.3f} Å')
@@ -142,6 +156,11 @@ class BurgersNormalizer:
             perfect_magnitude = self.lattice_parameter * np.sqrt(3) / 2
             # No standard partials
             partial_magnitude = 0.0 
+        elif self.crystal_type == 'hcp':
+            # |<10-10>| (basal slip)
+            perfect_magnitude = self.lattice_parameter
+            # |<10-10>/3| (partial dislocations)
+            partial_magnitude = self.lattice_parameter / 3
         else:
             perfect_magnitude = partial_magnitude = 0.0
         

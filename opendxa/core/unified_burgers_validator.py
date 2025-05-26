@@ -14,12 +14,14 @@ class UnifiedBurgersValidator:
         tolerance: float = 0.15,
         validation_tolerance: float = 0.3,
         box_bounds: Optional[np.ndarray] = None,
-        pbc: List[bool] = [True, True, True]
+        pbc: List[bool] = [True, True, True],
+        allow_non_standard: bool = True
     ):
         self.crystal_type = crystal_type
         self.lattice_parameter = lattice_parameter
         self.tolerance = tolerance
         self.validation_tolerance = validation_tolerance
+        self.allow_non_standard = allow_non_standard
         
         # Initialize normalizer for primary validation
         self.normalizer = BurgersNormalizer(
@@ -37,8 +39,68 @@ class UnifiedBurgersValidator:
             pbc=pbc
         )
         
+        # Define standard Burgers vectors for different crystal structures
+        self._define_standard_burgers_vectors()
+        
         logger.info(f'UnifiedBurgersValidator initialized: {crystal_type}, '
-                   f'a={lattice_parameter:.3f} Å, tol={tolerance:.3f}')
+                   f'a={lattice_parameter:.3f} Å, tol={tolerance:.3f}, '
+                   f'allow_non_standard={allow_non_standard}')
+    
+    def _define_standard_burgers_vectors(self):
+        """Define standard Burgers vectors for different crystal structures"""
+        a = self.lattice_parameter
+        
+        self.standard_burgers = {
+            'fcc': {
+                'perfect': [
+                    a/2 * np.array([1, 1, 0]),
+                    a/2 * np.array([1, -1, 0]),
+                    a/2 * np.array([1, 0, 1]),
+                    a/2 * np.array([1, 0, -1]),
+                    a/2 * np.array([0, 1, 1]),
+                    a/2 * np.array([0, 1, -1])
+                ],
+                'partial': [
+                    a/6 * np.array([1, 1, 2]),
+                    a/6 * np.array([1, 1, -2]),
+                    a/6 * np.array([1, -1, 2]),
+                    a/6 * np.array([1, -1, -2]),
+                    a/6 * np.array([1, 2, 1]),
+                    a/6 * np.array([1, -2, 1]),
+                    a/6 * np.array([-1, 2, 1]),
+                    a/6 * np.array([-1, -2, 1]),
+                    a/6 * np.array([2, 1, 1]),
+                    a/6 * np.array([2, 1, -1]),
+                    a/6 * np.array([2, -1, 1]),
+                    a/6 * np.array([2, -1, -1])
+                ]
+            },
+            'bcc': {
+                'perfect': [
+                    a/2 * np.array([1, 1, 1]),
+                    a/2 * np.array([1, 1, -1]),
+                    a/2 * np.array([1, -1, 1]),
+                    a/2 * np.array([1, -1, -1])
+                ],
+                'partial': [
+                    a/2 * np.array([1, 0, 0]),
+                    a/2 * np.array([0, 1, 0]),
+                    a/2 * np.array([0, 0, 1])
+                ]
+            },
+            'hcp': {
+                'perfect': [
+                    a * np.array([1, 0, 0]),
+                    a * np.array([-1/2, np.sqrt(3)/2, 0]),
+                    a * np.array([-1/2, -np.sqrt(3)/2, 0])
+                ],
+                'partial': [
+                    a/3 * np.array([1, 0, 0]),
+                    a/3 * np.array([-1/2, np.sqrt(3)/2, 0]),
+                    a/3 * np.array([-1/2, -np.sqrt(3)/2, 0])
+                ]
+            }
+        }
     
     def validate_burgers_vectors(
         self,
@@ -50,7 +112,8 @@ class UnifiedBurgersValidator:
         ideal_edge_vectors: Optional[Dict] = None,
         elastic_mapping_stats: Optional[Dict] = None,
         interface_mesh: Optional[Dict] = None,
-        defect_regions: Optional[Dict] = None
+        defect_regions: Optional[Dict] = None,
+        ptm_types: Optional[np.ndarray] = None
     ) -> Dict[str, Any]:
         logger.info(f'Validating {len(primary_burgers)} Burgers vectors')
         
@@ -63,8 +126,10 @@ class UnifiedBurgersValidator:
         if has_interface_mesh:
             logger.info('Using interface mesh data for validation')
         
-        # Step 1: Primary validation (normalization)
-        primary_validation = self._validate_primary_burgers(primary_burgers)
+        # Step 1: Primary validation (normalization) with extended structure analysis
+        primary_validation = self._validate_primary_burgers(
+            primary_burgers, ptm_types, loops, positions
+        )
         
         # Step 2: Secondary validation (elastic mapping - enhanced if available)
         if has_enhanced_elastic:
@@ -117,36 +182,73 @@ class UnifiedBurgersValidator:
             'final_validation': final_validated
         }
     
-    def _validate_primary_burgers(self, burgers_vectors: Dict[int, np.ndarray]) -> Dict[str, Any]:
+    def _validate_primary_burgers(self, burgers_vectors: Dict[int, np.ndarray], 
+                                ptm_types: Optional[np.ndarray] = None, 
+                                loops: Optional[List[List[int]]] = None,
+                                positions: Optional[np.ndarray] = None) -> Dict[str, Any]:
         validated_loops = []
         normalized_burgers = {}
-        validation_stats = {'perfect': 0, 'partial': 0, 'unmapped': 0, 'zero': 0}
+        burgers_classifications = {}
+        validation_stats = {
+            'fcc_perfect': 0, 'fcc_partial': 0,
+            'bcc_perfect': 0, 'bcc_partial': 0,
+            'hcp_perfect': 0, 'hcp_partial': 0,
+            'non_standard': 0, 'unknown': 0, 'zero': 0
+        }
         magnitudes = []
+        structure_analysis = {}
         
         for loop_id, burger_vector in burgers_vectors.items():
             magnitude = np.linalg.norm(burger_vector)
             magnitudes.append(magnitude)
             
             if magnitude > 1e-5:
-                # Normalize to crystallographic form
+                # Analyze local structure if data is available
+                local_structure = None
+                if (loops is not None and len(loops) > 0 and 
+                    positions is not None and len(positions) > 0 and 
+                    ptm_types is not None and len(ptm_types) > 0 and 
+                    loop_id < len(loops)):
+                    loop = loops[loop_id]
+                    loop_structure = self.analyze_loop_structure(loop, positions, ptm_types)
+                    local_structure = loop_structure['dominant_structure']
+                    structure_analysis[loop_id] = loop_structure
+                
+                # Classify the Burgers vector with extended analysis
+                classification = self.classify_burgers_vector(burger_vector, local_structure)
+                burgers_classifications[loop_id] = classification
+                
+                # Try standard normalization first
                 normalized, b_type, distance = self.normalizer.normalize_burgers_vector(burger_vector)
                 
-                # Store normalized vector
-                normalized_burgers[loop_id] = normalized
-                validation_stats[b_type] += 1
-                
-                # Validate magnitude is physically reasonable
-                validation_metrics = self.normalizer.validate_burgers_magnitude(burger_vector)
-                
-                if (validation_metrics['is_realistic_perfect'] or 
-                    validation_metrics['is_realistic_partial']):
+                # Update classification based on normalization result
+                if b_type in ['perfect', 'partial'] and classification['is_standard']:
+                    # Standard dislocation successfully normalized
+                    family_key = f"{classification['crystal_structure']}_{b_type}"
+                    validation_stats[family_key] = validation_stats.get(family_key, 0) + 1
+                    normalized_burgers[loop_id] = normalized
                     validated_loops.append(loop_id)
+                    
+                elif self.allow_non_standard and magnitude > 0.1 * self.lattice_parameter:
+                    # Non-standard but potentially valid dislocation
+                    validation_stats['non_standard'] += 1
+                    normalized_burgers[loop_id] = burger_vector  # Keep original vector
+                    validated_loops.append(loop_id)
+                    classification['validation_method'] = 'non_standard'
+                    
+                else:
+                    # Could not validate
+                    validation_stats['unknown'] += 1
+                    classification['validation_method'] = 'failed'
+                    
             else:
                 validation_stats['zero'] += 1
         
         return {
             'valid_loops': validated_loops,
             'normalized_burgers': normalized_burgers,
+            'burgers_classifications': burgers_classifications,
+            'structure_analysis': structure_analysis,
             'stats': validation_stats,
             'magnitudes': magnitudes
         }
@@ -626,3 +728,135 @@ class UnifiedBurgersValidator:
                 enclosed_defects += 1
         
         return enclosed_defects / total_defects if total_defects > 0 else 0.0
+    
+    def classify_burgers_vector(self, burgers_vector: np.ndarray, local_structure: str = None) -> Dict[str, Any]:
+        """
+        Classify a Burgers vector based on crystal structure and return detailed information
+        """
+        magnitude = np.linalg.norm(burgers_vector)
+        
+        # Try to determine structure if not provided
+        if local_structure is None:
+            local_structure = self._detect_local_structure(burgers_vector)
+        
+        classification = {
+            'magnitude': magnitude,
+            'normalized_vector': burgers_vector / max(magnitude, 1e-10),
+            'crystal_structure': local_structure,
+            'is_standard': False,
+            'dislocation_type': 'unknown',
+            'family': 'unknown'
+        }
+        
+        # Check against standard vectors for the detected structure
+        if local_structure in self.standard_burgers:
+            standard_vectors = self.standard_burgers[local_structure]
+            
+            # Check perfect dislocations first
+            best_match, min_error = self._find_best_match(burgers_vector, standard_vectors['perfect'])
+            if min_error < self.tolerance:
+                classification.update({
+                    'is_standard': True,
+                    'dislocation_type': 'perfect',
+                    'family': f'{local_structure}_perfect',
+                    'match_error': min_error,
+                    'standard_vector': best_match
+                })
+                return classification
+            
+            # Check partial dislocations
+            best_match, min_error = self._find_best_match(burgers_vector, standard_vectors['partial'])
+            if min_error < self.tolerance:
+                classification.update({
+                    'is_standard': True,
+                    'dislocation_type': 'partial',
+                    'family': f'{local_structure}_partial',
+                    'match_error': min_error,
+                    'standard_vector': best_match
+                })
+                return classification
+        
+        # If no standard match found but non-standard vectors are allowed
+        if self.allow_non_standard:
+            classification.update({
+                'dislocation_type': 'non_standard',
+                'family': f'{local_structure}_non_standard' if local_structure != 'unknown' else 'unknown'
+            })
+        
+        return classification
+    
+    def _find_best_match(self, vector: np.ndarray, standard_vectors: List[np.ndarray]) -> tuple:
+        """Find the best matching standard vector"""
+        min_error = float('inf')
+        best_match = None
+        
+        for std_vector in standard_vectors:
+            # Try both orientations
+            error1 = np.linalg.norm(vector - std_vector)
+            error2 = np.linalg.norm(vector + std_vector)
+            error = min(error1, error2)
+            
+            if error < min_error:
+                min_error = error
+                best_match = std_vector if error1 < error2 else -std_vector
+        
+        return best_match, min_error
+    
+    def _detect_local_structure(self, burgers_vector: np.ndarray) -> str:
+        """
+        Attempt to detect crystal structure based on Burgers vector characteristics
+        """
+        magnitude = np.linalg.norm(burgers_vector)
+        a = self.lattice_parameter
+        
+        # Check common FCC signatures
+        if abs(magnitude - a/2 * np.sqrt(2)) < self.tolerance:  # <110>/2 type
+            return 'fcc'
+        elif abs(magnitude - a/6 * np.sqrt(6)) < self.tolerance:  # <112>/6 type
+            return 'fcc'
+        
+        # Check common BCC signatures
+        elif abs(magnitude - a/2 * np.sqrt(3)) < self.tolerance:  # <111>/2 type
+            return 'bcc'
+        elif abs(magnitude - a/2) < self.tolerance:  # <100>/2 type
+            return 'bcc'
+        
+        # Check common HCP signatures
+        elif abs(magnitude - a) < self.tolerance:  # <10-10> type
+            return 'hcp'
+        elif abs(magnitude - a/3) < self.tolerance:  # <10-10>/3 type
+            return 'hcp'
+        
+        # Default to the specified crystal type or unknown
+        return self.crystal_type if magnitude > 0.1 * a else 'unknown'
+    
+    def analyze_loop_structure(self, loop: List[int], positions: np.ndarray, 
+                             ptm_types: Optional[np.ndarray] = None) -> Dict[str, Any]:
+        """
+        Analyze the local crystal structure around a dislocation loop
+        """
+        if ptm_types is None:
+            return {'dominant_structure': self.crystal_type, 'structure_fractions': {}}
+        
+        # Map PTM type IDs to structure names
+        structure_map = {0: 'unknown', 1: 'fcc', 2: 'hcp', 3: 'bcc', 4: 'ico', 5: 'sc'}
+        
+        # Count structure types in the loop
+        structure_counts = {}
+        for atom_id in loop:
+            if atom_id < len(ptm_types):
+                struct_type = structure_map.get(ptm_types[atom_id], 'unknown')
+                structure_counts[struct_type] = structure_counts.get(struct_type, 0) + 1
+        
+        total_atoms = len(loop)
+        structure_fractions = {k: v/total_atoms for k, v in structure_counts.items()}
+        
+        # Determine dominant structure
+        dominant_structure = max(structure_counts, key=structure_counts.get) if structure_counts else 'unknown'
+        
+        return {
+            'dominant_structure': dominant_structure,
+            'structure_fractions': structure_fractions,
+            'structure_counts': structure_counts,
+            'total_atoms': total_atoms
+        }

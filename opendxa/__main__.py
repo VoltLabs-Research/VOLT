@@ -23,8 +23,18 @@ def parse_call_args():
     parser.add_argument('--min-neighbors', type=int, default=12, help='Minimum neighbors for surface filtering')
     parser.add_argument('--voronoi-factor', type=float, default=1.5, help='Factor to expand cutoff for Voronoi candidate pool')
     parser.add_argument('--tolerance', type=float, default=0.2, help='Tolerance for lattice connectivity matching')
-    parser.add_argument('--max-loop-length', type=int, default=8, help='Maximum length for Burgers circuit detection')
+    parser.add_argument('--max-loop-length', type=int, default=16, help='Maximum length for Burgers circuit detection')
     parser.add_argument('--burgers-threshold', type=float, default=1e-3, help='Threshold magnitude to consider Burgers vectors non-zero')
+    
+    # Crystal structure and analysis options
+    parser.add_argument('--crystal-type', type=str, default='fcc', choices=['fcc', 'bcc', 'hcp', 'auto'], 
+                       help='Crystal structure type (auto = detect from PTM analysis)')
+    parser.add_argument('--lattice-parameter', type=float, default=4.0, help='Lattice parameter in Angstroms')
+    parser.add_argument('--allow-non-standard-burgers', action='store_true', default=True,
+                       help='Allow detection of non-standard Burgers vectors')
+    parser.add_argument('--validation-tolerance', type=float, default=0.35, 
+                       help='Tolerance for Burgers vector validation (increased for HCP compatibility)')
+    
     parser.add_argument('--output', '-o', default='dislocations.json', help='Output JSON file for dislocations')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
     parser.add_argument('--track-dir', type=str, default=None, help='If set, perform dislocation tracking and statistics from this directory of JSON files')
