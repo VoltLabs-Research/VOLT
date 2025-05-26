@@ -219,7 +219,7 @@ To cite the latest version, use the **concept DOI** below:
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15514685.svg)](https://doi.org/10.5281/zenodo.15514685)
 
 ```bibtex
-@software{herrera2025opendxa,
+@software{opendxa,
   author       = {Rodolfo Herrera Hernández},
   title        = {OpenDXA: Open Source Dislocation Extraction Algorithm},
   year         = {2025},
