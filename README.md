@@ -22,7 +22,7 @@
 
 ### Quick Install
 ```bash
-git clone https://github.com/yourusername/OpenDXA.git
+git clone https://github.com/rodyherrera/OpenDXA.git
 cd OpenDXA
 pip install -e .
 ```
