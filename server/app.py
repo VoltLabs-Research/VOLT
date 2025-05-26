@@ -29,7 +29,7 @@ TEMPLATES, TEMPLATES_SIZES = get_ptm_templates()
 executor = None
 
 @asynccontextmanager
-async def lifespan():
+async def lifespan(app: FastAPI):
     '''
     Lifespan event handler for startup and shutdown
     '''
