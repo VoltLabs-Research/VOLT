@@ -300,3 +300,24 @@ async def get_timesteps(filename: str) -> Dict[str, List[int]]:
         logger.error(f'Error getting timesteps: {e}')
         raise HTTPException(status_code=500, detail=f'Error reading timesteps: {str(e)}')
 
+@app.delete('/files/{filename}', summary='Delete uploaded file')
+async def delete_file(filename: str) -> Dict[str, str]:
+    '''
+    Delete an uploaded file
+    '''
+    if filename not in uploaded_files:
+        raise HTTPException(status_code=404, detail=f'File {filename} not found')
+    file_path = uploaded_files[filename]
+    try:
+        if os.path.exists(file_path):
+            os.unlink(file_path)
+        del uploaded_files[filename]
+        keys_to_remove = [key for key in analysis_cache.keys() if key.startswith(filename)]
+        for key in keys_to_remove:
+            del analysis_cache[key]
+        return {
+            'message': f'File {filename} deleted successfully'
+        }
+    except Exception as e:
+        logger.error(f'Error deleting file: {e}')
+        raise HTTPException(status_code=500, detail=f'Error deleting file: {str(e)}')
