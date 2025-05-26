@@ -328,3 +328,15 @@ async def get_default_config() -> AnalysisConfig:
     Get default analysis configuration
     '''
     return AnalysisConfig()
+
+@app.get('/status', summary='Get server status')
+async def get_status() -> Dict[str, Any]:
+    '''
+    Get server status and statistics
+    '''
+    return {
+        'status': 'running',
+        'uploaded_files': len(uploaded_files),
+        'cached_results': len(analysis_cache),
+        'version': '1.0.0'
+    }
