@@ -263,12 +263,12 @@ async def analyze_file(
                 detail=f'Timestep {target_timestep} not found. Available: {available_timesteps[:10]}'
             )
         # Check cache
-        cache_key = f'{filename}_{timestep_data["timestep"]}_{hash(str(request.config.model_dump()))}'
+        cache_key = f'{filename}_{timestep_data['timestep']}_{hash(str(request.config.model_dump()))}'
         if cache_key in analysis_cache:
             logger.info(f'Returning cached result for {cache_key}')
             return AnalysisResult(**analysis_cache[cache_key])
         # Run analysis
-        logger.info(f'Analyzing timestep {timestep_data["timestep"]} from {filename}')
+        logger.info(f'Analyzing timestep {timestep_data['timestep']} from {filename}')
         result = analyze_timestep_wrapper(timestep_data, request.config)
         analysis_cache[cache_key] = result
         return AnalysisResult(**result)
@@ -278,4 +278,25 @@ async def analyze_file(
         logger.error(f'Error analyzing file: {e}')
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f'Analysis error: {str(e)}')
+
+@app.get('/analyze/{filename}/timesteps', summary='Get available timesteps for file')
+async def get_timesteps(filename: str) -> Dict[str, List[int]]:
+    '''
+    Get all availble timesteps for a specific file
+    '''
+    if filename not in uploaded_files:
+        raise HTTPException(status_code=404, detail=f'File {filename} not found')
     
+    file_path = uploaded_files[filename]
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail=f'File {filename} no longer exists')
+    
+    try:
+        parser = LammpstrjParser(file_path)
+        timesteps = [data['timestep'] for data in parser.iter_timesteps()]
+        return {'timesteps': timesteps}
+        
+    except Exception as e:
+        logger.error(f'Error getting timesteps: {e}')
+        raise HTTPException(status_code=500, detail=f'Error reading timesteps: {str(e)}')
+
