@@ -210,3 +210,21 @@ OpenDXA/
 ## 📄 License
 
 This project is licensed under the GPL-2.0 license License - see the [LICENSE](LICENSE) file for details.
+
+## 📚 Citation
+
+If you use **OpenDXA** in your research, please cite the version you used.  
+To cite the latest version, use the **concept DOI** below:
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15514685.svg)](https://doi.org/10.5281/zenodo.15514685)
+
+```bibtex
+@software{herrera2025opendxa,
+  author       = {Rodolfo Herrera Hernández},
+  title        = {OpenDXA: Open Source Dislocation Extraction Algorithm},
+  year         = {2025},
+  publisher    = {Zenodo},
+  version      = {1.0.0-beta},
+  doi          = {10.5281/zenodo.15514686},
+  url          = {https://doi.org/10.5281/zenodo.15514686}
+}
