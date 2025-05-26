@@ -8,6 +8,7 @@ from opendxa.utils.ptm_templates import get_ptm_templates
 from opendxa.utils.logging import setup_logging
 from opendxa.core import analyze_timestep, init_worker
 from server.models.analysis_config import AnalysisConfig
+from server.models.file_info import FileInfo
 
 import json
 import os
@@ -196,3 +197,37 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f'Error uploading file: {e}')
         raise HTTPException(status_code=500, detail=f'Error uploading file: {str(e)}')
+    
+@app.get('/files', summary='List uploaded files')
+async def list_files() -> Dict[str, List[FileInfo]]:
+    '''
+    List all uploaded files
+    '''
+    files_info = []
+    for filename, filepath in uploaded_files.items():
+        try:
+            if os.path.exists(filepath):
+                # TODO: duplicated code!
+                stat = os.stat(filepath)
+                parser = LammpstrjParser(filepath)
+                timesteps = []
+                atoms_count = 0
+                for i, data in enumerate(parser.iter_timesteps()):
+                    timesteps.append(data['timestep'])
+                    if i == 0:
+                        atoms_count = len(data['positions'])
+                    # Limit for perfomance
+                    if i >= 10:
+                        break
+                files_info.append(FileInfo(
+                    filename=filename,
+                    size=stat.st_size,
+                    timesteps=timesteps,
+                    atoms_count=atoms_count
+                ))
+        except Exception as e:
+            logger.warning(f'Error reading file info for {filename}: {e}')
+
+    return {
+        'files': files_info
+    }
