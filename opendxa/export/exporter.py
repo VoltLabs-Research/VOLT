@@ -12,6 +12,77 @@ def burgers_to_string(bvec: list[float]) -> str:
     numerators = [int(f * common_den) for f in fractions]
     return f'1/{common_den}[{numerators[0]} {numerators[1]} {numerators[2]}]'
 
+def generate_segments(points: list, segment_length: float = None, min_segments: int = 5) -> list:
+    """
+    Generate segments from a list of 3D points representing a dislocation line.
+    
+    Args:
+        points: List of 3D coordinates representing the dislocation line
+        segment_length: Target length for each segment (if None, auto-calculate)
+        min_segments: Minimum number of segments to generate
+    
+    Returns:
+        List of segments, where each segment is a dict with 'start' and 'end' points
+    """
+    if len(points) < 2:
+        return []
+    
+    points_array = np.array(points)
+    segments = []
+    
+    # Calculate cumulative distances along the line
+    distances = np.zeros(len(points))
+    for i in range(1, len(points)):
+        segment_dist = np.linalg.norm(points_array[i] - points_array[i-1])
+        distances[i] = distances[i-1] + segment_dist
+    
+    total_length = distances[-1]
+    
+    # Determine segment length
+    if segment_length is None:
+        # Auto-calculate based on total length and minimum segments
+        segment_length = total_length / max(min_segments, len(points) // 4)
+    
+    # Generate segments
+    current_distance = 0
+    start_idx = 0
+    
+    while current_distance < total_length and start_idx < len(points) - 1:
+        target_distance = min(current_distance + segment_length, total_length)
+        
+        # Find the end point for this segment
+        end_idx = start_idx + 1
+        while end_idx < len(points) and distances[end_idx] < target_distance:
+            end_idx += 1
+        
+        if end_idx >= len(points):
+            end_idx = len(points) - 1
+        
+        # Interpolate if needed for more precise segment endpoints
+        if end_idx < len(points) - 1 and distances[end_idx] > target_distance:
+            # Interpolate between end_idx-1 and end_idx
+            prev_dist = distances[end_idx - 1]
+            next_dist = distances[end_idx]
+            ratio = (target_distance - prev_dist) / (next_dist - prev_dist)
+            end_point = (points_array[end_idx - 1] * (1 - ratio) + 
+                        points_array[end_idx] * ratio).tolist()
+        else:
+            end_point = points[end_idx]
+        
+        segments.append({
+            'start': points[start_idx],
+            'end': end_point,
+            'start_index': start_idx,
+            'end_index': end_idx if end_idx < len(points) else len(points) - 1,
+            'length': target_distance - current_distance
+        })
+        
+        # Move to next segment
+        current_distance = target_distance
+        start_idx = end_idx if end_idx < len(points) - 1 else len(points) - 1
+    
+    return segments
+
 class DislocationExporter:
     def __init__(self,
         positions: np.ndarray,
@@ -22,7 +93,10 @@ class DislocationExporter:
         output_dir: str = 'dislocations',
         burgers_classifications: dict = None,
         structure_analysis: dict = None,
-        validation_result: dict = None
+        validation_result: dict = None,
+        segment_length: float = None,
+        min_segments: int = 5,
+        include_segments: bool = True
     ):
         self.positions = np.asarray(positions, dtype=np.float32)
         self.output_dir = output_dir
@@ -33,6 +107,9 @@ class DislocationExporter:
         self.burgers_classifications = burgers_classifications or {}
         self.structure_analysis = structure_analysis or {}
         self.validation_result = validation_result or {}
+        self.segment_length = segment_length
+        self.min_segments = min_segments
+        self.include_segments = include_segments
 
     def to_json(self, filename: str):
         os.makedirs(self.output_dir, exist_ok=True)
@@ -52,6 +129,15 @@ class DislocationExporter:
             points = self.positions[loop].tolist()
             burger_vector = self.burgers[idx].tolist()
             line_type = int(self.line_types[idx])
+            
+            # Generate segments if requested
+            segments = []
+            if self.include_segments:
+                segments = generate_segments(
+                    points, 
+                    segment_length=self.segment_length, 
+                    min_segments=self.min_segments
+                )
             
             # Detect crystal type and use appropriate matching
             crystal_type = 'fcc'  # default
@@ -81,6 +167,12 @@ class DislocationExporter:
                 'fcc_matched_burgers': fcc_matched_burgers.tolist(),
                 'fcc_alignment': float(fcc_alignment)
             }
+            
+            # Add segments if generated
+            if segments:
+                dislocation_data['segments'] = segments
+                dislocation_data['segment_count'] = len(segments)
+                dislocation_data['total_line_length'] = sum(seg['length'] for seg in segments)
             
             # Add extended classification if available
             if idx in self.burgers_classifications:

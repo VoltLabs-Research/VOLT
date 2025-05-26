@@ -22,9 +22,9 @@ def parse_call_args():
     parser.add_argument('--num-neighbors', type=int, default=12, help='Number of Voronoi neighbors')
     parser.add_argument('--min-neighbors', type=int, default=12, help='Minimum neighbors for surface filtering')
     parser.add_argument('--voronoi-factor', type=float, default=1.5, help='Factor to expand cutoff for Voronoi candidate pool')
-    parser.add_argument('--tolerance', type=float, default=0.2, help='Tolerance for lattice connectivity matching')
+    parser.add_argument('--tolerance', type=float, default=0.3, help='Tolerance for lattice connectivity matching')
     parser.add_argument('--max-loop-length', type=int, default=16, help='Maximum length for Burgers circuit detection')
-    parser.add_argument('--burgers-threshold', type=float, default=1e-3, help='Threshold magnitude to consider Burgers vectors non-zero')
+    parser.add_argument('--burgers-threshold', type=float, default=1e-4, help='Threshold magnitude to consider Burgers vectors non-zero')
     
     # Crystal structure and analysis options
     parser.add_argument('--crystal-type', type=str, default='fcc', choices=['fcc', 'bcc', 'hcp', 'auto'], 
@@ -42,12 +42,22 @@ def parse_call_args():
     parser.add_argument('--max-loops', type=int, default=1000, help='Maximum number of loops to find (lower = faster)')
     parser.add_argument('--max-connections-per-atom', type=int, default=6, help='Maximum connections per atom (lower = faster)')
     parser.add_argument('--loop-timeout', type=int, default=60, help='Timeout for loop finding in seconds')
+    
+    # Segment generation options
+    parser.add_argument('--include-segments', action='store_true', default=True, help='Include dislocation segments in JSON export')
+    parser.add_argument('--segment-length', type=float, default=None, help='Target length for dislocation segments (auto-calculated if not set)')
+    parser.add_argument('--min-segments', type=int, default=5, help='Minimum number of segments per dislocation line')
+    parser.add_argument('--no-segments', action='store_true', help='Disable segment generation for faster export')
 
     return parser.parse_args()
 
 def main():
     args = parse_call_args()
     setup_logging(args.verbose)
+    
+    # Handle segment flags
+    if args.no_segments:
+        args.include_segments = False
 
     if args.track_dir:
         logger.info(f'Tracking dislocations from directory: {args.track_dir}')
