@@ -78,15 +78,11 @@ class ElasticMapper:
             displacement_jumps[edge] = disp2 - disp1
         
         if len(displacement_jumps) > 1000:
-            logger.info(f"Computing elastic mapping using GPU acceleration for {len(displacement_jumps)} edges")
             edge_burgers, mapping_stats = elastic_mapping_gpu(
                 displacement_jumps, self.ideal_vectors, self.tolerance
             )
-            logger.info(f'GPU elastic mapping: {mapping_stats}')
             return edge_burgers
         
-        # CPU fallback
-        logger.info(f"Computing elastic mapping using CPU for {len(displacement_jumps)} edges")
         edge_burgers = {}
         mapping_stats = {'perfect': 0, 'partial': 0, 'unmapped': 0}
         
@@ -100,7 +96,6 @@ class ElasticMapper:
                 edge_burgers[edge] = displacement_jump
                 mapping_stats['unmapped'] += 1
         
-        logger.info(f'CPU elastic mapping: {mapping_stats}')
         return edge_burgers
     
     def _find_closest_ideal_burgers(

@@ -45,5 +45,8 @@ def step_delaunay_tessellation(ctx, filtered):
     n_tetrahedra = len(tessellation_data['tetrahedra'])
     n_connections = sum(len(v) for v in tessellation_data['connectivity'].values()) // 2
     
+    # Store tessellation data in context for other steps
+    ctx['tessellation_result'] = tessellation_data
+    
     ctx['logger'].info(f'Delaunay tessellation (PBC={pbc_active}): {n_tetrahedra} tetrahedra, {n_connections} tetrahedral connections')
     return tessellation_data

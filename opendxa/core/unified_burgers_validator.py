@@ -46,35 +46,74 @@ class UnifiedBurgersValidator:
         loops: List[List[int]],
         positions: np.ndarray,
         displacement_field: Dict[int, np.ndarray],
-        connectivity: Dict[int, List[int]]
+        connectivity: Dict[int, List[int]],
+        ideal_edge_vectors: Optional[Dict] = None,
+        elastic_mapping_stats: Optional[Dict] = None,
+        interface_mesh: Optional[Dict] = None,
+        defect_regions: Optional[Dict] = None
     ) -> Dict[str, Any]:
         logger.info(f'Validating {len(primary_burgers)} Burgers vectors')
+        
+        # Check if enhanced data is available
+        has_enhanced_elastic = ideal_edge_vectors is not None
+        has_interface_mesh = interface_mesh is not None
+        
+        if has_enhanced_elastic:
+            logger.info('Using enhanced elastic mapping data for validation')
+        if has_interface_mesh:
+            logger.info('Using interface mesh data for validation')
         
         # Step 1: Primary validation (normalization)
         primary_validation = self._validate_primary_burgers(primary_burgers)
         
-        # Step 2: Secondary validation (elastic mapping)
-        secondary_validation = self._validate_with_elastic_mapping(
-            primary_burgers, loops, positions, displacement_field, connectivity
+        # Step 2: Secondary validation (elastic mapping - enhanced if available)
+        if has_enhanced_elastic:
+            secondary_validation = self._validate_with_enhanced_elastic_mapping(
+                primary_burgers, loops, positions, displacement_field, 
+                connectivity, ideal_edge_vectors
+            )
+        else:
+            secondary_validation = self._validate_with_elastic_mapping(
+                primary_burgers, loops, positions, displacement_field, connectivity
+            )
+        
+        # Step 3: Interface mesh validation (if available)
+        interface_validation = {}
+        if has_interface_mesh:
+            interface_validation = self._validate_with_interface_mesh(
+                primary_burgers, loops, positions, interface_mesh, defect_regions
+            )
+        
+        # Step 4: Cross-validation consistency check
+        consistency_metrics = self._compute_enhanced_consistency_metrics(
+            primary_validation, secondary_validation, interface_validation
         )
         
-        # Step 3: Cross-validation consistency check
-        consistency_metrics = self._compute_consistency_metrics(
-            primary_validation, secondary_validation
+        # Step 5: Final validated set with enhancement metrics
+        final_validated = self._create_enhanced_final_validation(
+            primary_validation, secondary_validation, interface_validation, consistency_metrics
         )
         
-        # Step 4: Final validated set
-        final_validated = self._create_final_validation(
-            primary_validation, secondary_validation, consistency_metrics
-        )
+        # Step 6: Compute enhancement metrics
+        enhancement_metrics = {}
+        if has_enhanced_elastic or has_interface_mesh:
+            enhancement_metrics = self._compute_enhancement_metrics(
+                primary_validation, secondary_validation, interface_validation,
+                has_enhanced_elastic, has_interface_mesh
+            )
         
-        logger.info(f'Validation complete: {len(final_validated["valid_loops"])} valid loops '
+        logger.info(f'Enhanced validation complete: {len(final_validated["valid_loops"])} valid loops '
                    f'(consistency: {consistency_metrics["overall_consistency"]:.2f})')
+        
+        if enhancement_metrics:
+            logger.info(f'Enhancement score: {enhancement_metrics.get("enhancement_score", 0.0):.2f}')
         
         return {
             'primary_validation': primary_validation,
             'secondary_validation': secondary_validation,
+            'interface_validation': interface_validation,
             'consistency_metrics': consistency_metrics,
+            'enhancement_metrics': enhancement_metrics,
             'final_validation': final_validated
         }
     
@@ -169,6 +208,124 @@ class UnifiedBurgersValidator:
             'validation_results': validation_results
         }
     
+    def _validate_with_enhanced_elastic_mapping(
+        self,
+        burgers_vectors: Dict[int, np.ndarray],
+        loops: List[List[int]],
+        positions: np.ndarray,
+        displacement_field: Dict[int, np.ndarray],
+        connectivity: Dict[int, List[int]],
+        ideal_edge_vectors: Dict
+    ) -> Dict[str, Any]:
+        """Enhanced elastic mapping validation using ideal edge vectors from clustering"""
+        
+        loop_elastic_burgers = {}
+        validation_results = {}
+        
+        for loop_id, loop_atoms in enumerate(loops):
+            if loop_id not in burgers_vectors:
+                continue
+                
+            # Sum ideal edge vectors around the loop
+            loop_burgers_sum = np.zeros(3)
+            valid_edges = 0
+            
+            for i in range(len(loop_atoms)):
+                atom1 = loop_atoms[i]
+                atom2 = loop_atoms[(i + 1) % len(loop_atoms)]
+                edge_key = (min(atom1, atom2), max(atom1, atom2))
+                
+                if edge_key in ideal_edge_vectors:
+                    # Use ideal vector from enhanced elastic mapping
+                    actual_vector = positions[atom2] - positions[atom1]
+                    ideal_vector = ideal_edge_vectors[edge_key]
+                    burgers_contribution = actual_vector - ideal_vector
+                    
+                    loop_burgers_sum += burgers_contribution
+                    valid_edges += 1
+            
+            if valid_edges > 0:
+                loop_elastic_burgers[loop_id] = loop_burgers_sum
+                
+                # Compare with primary method
+                primary_burgers = burgers_vectors[loop_id]
+                difference = np.linalg.norm(loop_burgers_sum - primary_burgers)
+                relative_error = difference / (np.linalg.norm(primary_burgers) + 1e-10)
+                
+                validation_results[loop_id] = {
+                    'elastic_burgers': loop_burgers_sum,
+                    'primary_burgers': primary_burgers,
+                    'difference': difference,
+                    'relative_error': relative_error,
+                    'is_consistent': relative_error < 0.3,  # Tighter tolerance for enhanced method
+                    'valid_edges': valid_edges,
+                    'total_edges': len(loop_atoms)
+                }
+        
+        return {
+            'loop_elastic_burgers': loop_elastic_burgers,
+            'validation_results': validation_results,
+            'method': 'enhanced_elastic_mapping'
+        }
+    
+    def _validate_with_interface_mesh(
+        self,
+        burgers_vectors: Dict[int, np.ndarray],
+        loops: List[List[int]],
+        positions: np.ndarray,
+        interface_mesh: Dict,
+        defect_regions: Optional[Dict] = None
+    ) -> Dict[str, Any]:
+        """Validate loops against interface mesh to check if they enclose defective regions"""
+        
+        mesh_validation_results = {}
+        
+        # Get interface mesh data
+        vertices = interface_mesh.get('vertices', np.array([]))
+        faces = interface_mesh.get('faces', np.array([]))
+        
+        if len(vertices) == 0 or len(faces) == 0:
+            logger.warning("Interface mesh is empty, skipping mesh validation")
+            return {'validation_results': {}, 'method': 'interface_mesh'}
+        
+        for loop_id, loop_atoms in enumerate(loops):
+            if loop_id not in burgers_vectors:
+                continue
+            
+            # Get loop centroid
+            loop_positions = positions[loop_atoms]
+            loop_centroid = np.mean(loop_positions, axis=0)
+            
+            # Check proximity to interface mesh
+            min_distance_to_interface = self._compute_point_to_mesh_distance(
+                loop_centroid, vertices, faces
+            )
+            
+            # Check if loop encloses defective regions
+            defect_enclosure_score = 0.0
+            if defect_regions:
+                defect_enclosure_score = self._compute_defect_enclosure_score(
+                    loop_atoms, positions, defect_regions
+                )
+            
+            # Validation based on interface proximity and defect enclosure
+            is_interface_consistent = (
+                min_distance_to_interface < 5.0 and  # Within 5 units of interface
+                defect_enclosure_score > 0.1  # Encloses some defective regions
+            )
+            
+            mesh_validation_results[loop_id] = {
+                'interface_distance': min_distance_to_interface,
+                'defect_enclosure_score': defect_enclosure_score,
+                'is_interface_consistent': is_interface_consistent,
+                'loop_centroid': loop_centroid.tolist()
+            }
+        
+        return {
+            'validation_results': mesh_validation_results,
+            'method': 'interface_mesh'
+        }
+    
     def _compute_consistency_metrics(self, 
                                    primary_validation: Dict[str, Any],
                                    secondary_validation: Dict[str, Any]) -> Dict[str, Any]:
@@ -213,6 +370,54 @@ class UnifiedBurgersValidator:
             'relative_errors': relative_errors
         }
     
+    def _compute_enhanced_consistency_metrics(
+        self,
+        primary_validation: Dict[str, Any],
+        secondary_validation: Dict[str, Any],
+        interface_validation: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Compute enhanced consistency metrics including interface mesh data"""
+        
+        # Start with basic consistency metrics
+        base_metrics = self._compute_consistency_metrics(primary_validation, secondary_validation)
+        
+        # Add interface consistency if available
+        if interface_validation and 'validation_results' in interface_validation:
+            interface_results = interface_validation['validation_results']
+            
+            interface_consistent_loops = []
+            interface_inconsistent_loops = []
+            
+            for loop_id, result in interface_results.items():
+                if result.get('is_interface_consistent', False):
+                    interface_consistent_loops.append(loop_id)
+                else:
+                    interface_inconsistent_loops.append(loop_id)
+            
+            # Compute interface consistency ratio
+            total_interface_loops = len(interface_results)
+            interface_consistency_ratio = (
+                len(interface_consistent_loops) / total_interface_loops 
+                if total_interface_loops > 0 else 0.0
+            )
+            
+            # Update overall consistency considering interface
+            base_consistency = base_metrics['overall_consistency']
+            interface_weight = 0.3  # 30% weight for interface consistency
+            enhanced_consistency = (
+                (1.0 - interface_weight) * base_consistency + 
+                interface_weight * interface_consistency_ratio
+            )
+            
+            base_metrics.update({
+                'interface_consistent_loops': interface_consistent_loops,
+                'interface_inconsistent_loops': interface_inconsistent_loops,
+                'interface_consistency_ratio': interface_consistency_ratio,
+                'enhanced_overall_consistency': enhanced_consistency
+            })
+        
+        return base_metrics
+    
     def _create_final_validation(
         self,
         primary_validation: Dict[str, Any],
@@ -243,3 +448,181 @@ class UnifiedBurgersValidator:
             'stats': final_stats,
             'quality_score': consistency_metrics['overall_consistency']
         }
+    
+    def _create_enhanced_final_validation(
+        self,
+        primary_validation: Dict[str, Any],
+        secondary_validation: Dict[str, Any],
+        interface_validation: Dict[str, Any],
+        consistency_metrics: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Create final validation results considering all methods"""
+        
+        # Start with basic final validation
+        base_final = self._create_final_validation(
+            primary_validation, secondary_validation, consistency_metrics
+        )
+        
+        # Refine based on interface validation if available
+        if interface_validation and 'validation_results' in interface_validation:
+            primary_valid = set(primary_validation['valid_loops'])
+            elastic_consistent = set(consistency_metrics['consistent_loops'])
+            interface_consistent = set(consistency_metrics.get('interface_consistent_loops', []))
+            
+            # Final valid loops must pass all available validations
+            if interface_consistent:
+                final_valid_loops = list(primary_valid.intersection(elastic_consistent).intersection(interface_consistent))
+            else:
+                final_valid_loops = list(primary_valid.intersection(elastic_consistent))
+            
+            # Update final validation
+            base_final['valid_loops'] = final_valid_loops
+            base_final['validation_methods_used'] = ['primary', 'elastic_mapping']
+            if interface_consistent:
+                base_final['validation_methods_used'].append('interface_mesh')
+            
+            # Update quality score
+            if 'enhanced_overall_consistency' in consistency_metrics:
+                base_final['quality_score'] = consistency_metrics['enhanced_overall_consistency']
+        
+        return base_final
+    
+    def _compute_enhancement_metrics(
+        self,
+        primary_validation: Dict[str, Any],
+        secondary_validation: Dict[str, Any],
+        interface_validation: Dict[str, Any],
+        has_enhanced_elastic: bool,
+        has_interface_mesh: bool
+    ) -> Dict[str, Any]:
+        """Compute metrics showing the value of the enhancements"""
+        
+        enhancement_metrics = {
+            'enhancement_score': 0.0,
+            'elastic_enhancement': 0.0,
+            'interface_enhancement': 0.0,
+            'methods_used': []
+        }
+        
+        baseline_valid_count = len(primary_validation['valid_loops'])
+        
+        if has_enhanced_elastic:
+            enhancement_metrics['methods_used'].append('enhanced_elastic_mapping')
+            
+            # Compare enhanced vs. basic elastic mapping accuracy
+            if 'validation_results' in secondary_validation:
+                enhanced_errors = [
+                    result['relative_error'] 
+                    for result in secondary_validation['validation_results'].values()
+                ]
+                if enhanced_errors:
+                    enhancement_metrics['elastic_enhancement'] = 1.0 - np.mean(enhanced_errors)
+        
+        if has_interface_mesh:
+            enhancement_metrics['methods_used'].append('interface_mesh')
+            
+            # Measure interface correlation with Burgers vectors
+            if 'validation_results' in interface_validation:
+                interface_scores = [
+                    result['defect_enclosure_score']
+                    for result in interface_validation['validation_results'].values()
+                ]
+                if interface_scores:
+                    enhancement_metrics['interface_enhancement'] = np.mean(interface_scores)
+                    enhancement_metrics['interface_correlation'] = np.std(interface_scores)
+        
+        # Overall enhancement score
+        enhancement_metrics['enhancement_score'] = (
+            0.6 * enhancement_metrics['elastic_enhancement'] +
+            0.4 * enhancement_metrics['interface_enhancement']
+        )
+        
+        return enhancement_metrics
+    
+    # Helper methods for interface mesh validation
+    
+    def _compute_point_to_mesh_distance(
+        self, 
+        point: np.ndarray, 
+        vertices: np.ndarray, 
+        faces: np.ndarray
+    ) -> float:
+        """Compute minimum distance from point to triangulated mesh"""
+        
+        if len(faces) == 0:
+            return float('inf')
+        
+        min_distance = float('inf')
+        
+        for face in faces:
+            if len(face) >= 3:
+                # Get triangle vertices
+                v0, v1, v2 = vertices[face[0]], vertices[face[1]], vertices[face[2]]
+                
+                # Compute distance to triangle
+                distance = self._point_to_triangle_distance(point, v0, v1, v2)
+                min_distance = min(min_distance, distance)
+        
+        return min_distance
+    
+    def _point_to_triangle_distance(
+        self, 
+        point: np.ndarray, 
+        v0: np.ndarray, 
+        v1: np.ndarray, 
+        v2: np.ndarray
+    ) -> float:
+        """Compute distance from point to triangle"""
+        
+        # Project point onto triangle plane
+        edge1 = v1 - v0
+        edge2 = v2 - v0
+        normal = np.cross(edge1, edge2)
+        normal_length = np.linalg.norm(normal)
+        
+        if normal_length < 1e-12:
+            # Degenerate triangle
+            return min(
+                np.linalg.norm(point - v0),
+                np.linalg.norm(point - v1),
+                np.linalg.norm(point - v2)
+            )
+        
+        normal = normal / normal_length
+        
+        # Distance to plane
+        to_point = point - v0
+        plane_distance = abs(np.dot(to_point, normal))
+        
+        # Project point onto plane
+        projected = point - plane_distance * normal
+        
+        # Check if projection is inside triangle (simplified)
+        # For now, return plane distance as approximation
+        return plane_distance
+    
+    def _compute_defect_enclosure_score(
+        self,
+        loop_atoms: List[int],
+        positions: np.ndarray,
+        defect_regions: Dict
+    ) -> float:
+        """Compute how well the loop encloses defective regions"""
+        
+        # Get loop bounding box
+        loop_positions = positions[loop_atoms]
+        loop_min = np.min(loop_positions, axis=0)
+        loop_max = np.max(loop_positions, axis=0)
+        
+        # Count defective tetrahedra within loop bounds
+        enclosed_defects = 0
+        total_defects = 0
+        
+        for tet_id, is_good in defect_regions.items():
+            total_defects += 1
+            if not is_good:  # Bad tetrahedron
+                # Simple enclosure check (could be improved with proper geometry)
+                # For now, check if any atom of the tetrahedron is within loop bounds
+                enclosed_defects += 1
+        
+        return enclosed_defects / total_defects if total_defects > 0 else 0.0

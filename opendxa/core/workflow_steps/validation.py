@@ -1,8 +1,8 @@
 from opendxa.core.unified_burgers_validator import UnifiedBurgersValidator
 import numpy as np
 
-def step_unified_validation(ctx, advanced_loops, displacement, filtered):
-    """Unified validation using both Burgers circuits (primary) and elastic mapping (secondary)"""
+def step_unified_validation(ctx, advanced_loops, displacement, filtered, elastic_map=None, interface_mesh=None):
+    """Enhanced unified validation using Burgers circuits, elastic mapping, and interface mesh"""
     data = ctx['data']
     args = ctx['args']
     
@@ -20,7 +20,7 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered):
     connectivity_manager = ctx['connectivity_manager']
     connectivity_dict = connectivity_manager.as_lists(use_enhanced=True)
     
-    # Initialize unified validator with both methods
+    # Initialize unified validator with enhanced capabilities
     validator = UnifiedBurgersValidator(
         crystal_type=crystal_type,
         lattice_parameter=lattice_parameter,
@@ -29,14 +29,29 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered):
         pbc=pbc_active
     )
     
-    # Perform unified validation combining circuits and elastic mapping
-    validation_result = validator.validate_burgers_vectors(
-        primary_burgers=advanced_loops['burgers'],
-        positions=filtered['positions'],
-        connectivity=connectivity_dict,
-        displacement_field=displacement['vectors'],
-        loops=advanced_loops['loops']
-    )
+    # Prepare enhanced validation data
+    enhanced_validation_data = {
+        'primary_burgers': advanced_loops['burgers'],
+        'positions': filtered['positions'],
+        'connectivity': connectivity_dict,
+        'displacement_field': displacement['vectors'],
+        'loops': advanced_loops['loops']
+    }
+    
+    # Add elastic mapping data if available
+    if elastic_map is not None:
+        enhanced_validation_data['ideal_edge_vectors'] = elastic_map.get('ideal_edge_vectors', {})
+        enhanced_validation_data['elastic_mapping_stats'] = elastic_map.get('elastic_mapping_stats', {})
+        ctx['logger'].info('Using enhanced elastic mapping for validation')
+    
+    # Add interface mesh data if available
+    if interface_mesh is not None:
+        enhanced_validation_data['interface_mesh'] = interface_mesh
+        enhanced_validation_data['defect_regions'] = interface_mesh.get('tetrahedra_classification', {})
+        ctx['logger'].info(f'Using interface mesh with {len(interface_mesh.get("faces", []))} faces')
+    
+    # Perform enhanced unified validation
+    validation_result = validator.validate_burgers_vectors(**enhanced_validation_data)
     
     # Extract results from the correct structure
     final_validation = validation_result['final_validation']
@@ -45,22 +60,35 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered):
     cross_validation_metrics = validation_result['consistency_metrics']
     consistency_score = cross_validation_metrics['overall_consistency']
     
+    # Enhanced metrics if using new data
+    enhancement_metrics = {}
+    if elastic_map is not None or interface_mesh is not None:
+        enhancement_metrics = validation_result.get('enhancement_metrics', {})
+    
     # Log comprehensive validation results
     total_loops = len(advanced_loops['burgers'])
-    ctx['logger'].info(f'Unified validation: {len(validated_indices)}/{total_loops} loops validated')
+    ctx['logger'].info(f'Enhanced unified validation: {len(validated_indices)}/{total_loops} loops validated')
     ctx['logger'].info(f'Cross-validation consistency: {consistency_score:.3f}')
     ctx['logger'].info(f'Consistent loops: {len(cross_validation_metrics["consistent_loops"])}')
     ctx['logger'].info(f'Mean relative error: {cross_validation_metrics["mean_relative_error"]:.3f}')
     
-    # Store validation results in context
+    if enhancement_metrics:
+        ctx['logger'].info(f'Enhancement score: {enhancement_metrics.get("enhancement_score", 0.0):.3f}')
+        ctx['logger'].info(f'Interface correlation: {enhancement_metrics.get("interface_correlation", 0.0):.3f}')
+    
+    # Store enhanced validation results in context
     ctx['validated_loops'] = validated_indices
     ctx['final_burgers'] = final_burgers
     ctx['cross_validation_metrics'] = cross_validation_metrics
+    ctx['enhancement_metrics'] = enhancement_metrics
     
     return {
         'valid': validated_indices,
+        'validated_loops': validated_indices,  # For compatibility
+        'burgers_vectors': {i: final_burgers[i] for i in validated_indices},  # For stats reporting
         'final_burgers': final_burgers,
         'cross_validation_metrics': cross_validation_metrics,
+        'enhancement_metrics': enhancement_metrics,
         'consistency_score': consistency_score
     }
 
