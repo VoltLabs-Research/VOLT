@@ -1,14 +1,13 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 from concurrent.futures import ProcessPoolExecutor
-
 from opendxa.parser import LammpstrjParser
 from opendxa.utils.ptm_templates import get_ptm_templates
 from opendxa.utils.logging import setup_logging
 from opendxa.core import analyze_timestep, init_worker
+from server.models.analysis_config import AnalysisConfig
 
 import json
 import os
@@ -43,3 +42,19 @@ async def lifespan():
     if executor:
         executor.shutdown(wait=True)
     logger.info('OpenDXA API server shutdown complete')
+
+app = FastAPI(
+    title='OpenDXA API Server',
+    description='REST API for Open Dislocation Extraction Algorithm',
+    version='1.0.0',
+    lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
+
