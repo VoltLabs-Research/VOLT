@@ -1,12 +1,12 @@
 import axios from 'axios';
-import {
+import type {
     AnalysisConfig,
     FileInfo,
     AnalysisRequest,
     AnalysisResult,
     ServerStatus,
     UploadResult
-} from '../types';
+} from '../types/index';
 
 const API_BASE_URL = 'http://0.0.0.0:8000';
 

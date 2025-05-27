@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { Grid, OrbitControls, Stats, Environment } from '@react-three/drei';
+import { Grid, OrbitControls, Environment } from '@react-three/drei';
 import { IoAddOutline } from 'react-icons/io5';
+import { FileUpload } from './components/FileUpload';
+import { FileList } from './components/FileList';
 import './App.css';
 
 const CanvasGrid = () => {
@@ -27,16 +29,31 @@ const CanvasGrid = () => {
 };
 
 const App = () => {
+    const [selectedFile, setSelectedFile] = useState<FileInfo | undefined>();
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+    const handleUploadError = (error: string) => {
+        console.error('Upload error:', error);
+    };
+
+    const handleUploadSuccess = () => {
+        console.log('Upload success');
+    };
 
     return (
         <main className='editor-container'>
+            <FileList
+                onFileSelect={setSelectedFile}
+                selectedFile={selectedFile}
+                refreshTrigger={refreshTrigger}
+            />
+
             <section className='editor-camera-info-container'>
                 <h3 className='editor-camera-info-title'>Perspective Camera</h3>
                 <p className='editor-camera-info-description'>Timestep Visualization</p>
             </section>
 
-            <section className='editor-timestep-viewer-container'>
+            <FileUpload className='editor-timestep-viewer-container' onUploadError={handleUploadError} onUploadSuccess={handleUploadSuccess}>
                 <Canvas shadows camera={{ position: [5, 5, 5] }}>
                     <ambientLight intensity={0.3} />
                     <directionalLight
@@ -55,7 +72,7 @@ const App = () => {
                     <OrbitControls enableDamping dampingFactor={0.05} rotateSpeed={0.7} />
                     <Environment preset='city' />
                  </Canvas>
-            </section>
+            </FileUpload>
 
             <section className='editor-dislocations-button-container'>
                 <IoAddOutline className='editor-dislocations-button-icon' />
