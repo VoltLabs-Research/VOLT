@@ -21,11 +21,13 @@ export interface AnalysisConfig{
     workers: number;
 }
 
-export interface FileInfo{
+export interface FileInfo {
+    file_id: string;
     filename: string;
     size: number;
-    timesteps: number[];
+    total_timesteps: number;
     atoms_count: number;
+    upload_time: number;
 }
 
 export interface AnalysisRequest{

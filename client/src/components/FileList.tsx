@@ -21,15 +21,15 @@ export const FileList: React.FC<FileListProps> = ({
         execute(() => listFiles());
     }, [execute, refreshTrigger]);
 
-    const handleDelete = async (filename: string, event: React.MouseEvent) => {
+    const handleDelete = async (fileId: string, event: React.MouseEvent) => {
         event.stopPropagation();
         
-        if(!window.confirm(`¿Estás seguro de que quieres eliminar ${filename}?`)) {
+        if(!window.confirm(`¿Estás seguro de que quieres eliminar este archivo?`)) {
             return;
         }
 
         try {
-            await deleteFile(filename);
+            await deleteFile(fileId);
             execute(() => listFiles());
         }catch(error){
             console.error('Error eliminando archivo:', error);
@@ -59,16 +59,22 @@ export const FileList: React.FC<FileListProps> = ({
             <div className='file-list-body-container'>
                 {files.map((file) => (
                     <div
-                        key={file.filename}
-                        className={`file-item ${selectedFile?.filename === file.filename ? 'selected' : ''}`}
+                        key={file.file_id}
+                        className={`file-item ${selectedFile?.file_id === file.file_id ? 'selected' : ''}`}
                         onClick={() => onFileSelect(file)}
                     >
                         <h4>{file.filename}</h4>
                         <div className='file-details'>
                             <span>{formatFileSize(file.size)}</span>
                             <span>{file.atoms_count.toLocaleString()} atoms</span>
-                            <span>{file.timesteps.length} timesteps</span>
+                            <span>{file.total_timesteps} timesteps</span>
                         </div>
+                        <button 
+                            className='delete-button'
+                            onClick={(e) => handleDelete(file.file_id, e)}
+                        >
+                            ×
+                        </button>
                     </div>
                 ))}
             </div>

@@ -12,7 +12,6 @@ const API_BASE_URL = 'http://0.0.0.0:8000';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
-    // 5 minutes timeout for analysis
     timeout: 300000
 });
 
@@ -26,18 +25,18 @@ export const uploadFile = async (file: File, onProgress?: (progress: number) => 
     formData.append('file', file);
 
     const response = await api.post('/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      onUploadProgress: (progressEvent: ProgressEvent) => {
-        if (onProgress && progressEvent.total) {
-          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          onProgress(progress);
-        }
-      },
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent: ProgressEvent) => {
+            if (onProgress && progressEvent.total) {
+                const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                onProgress(progress);
+            }
+        },
     });
 
-    return response;
+    return response.data;
 };
 
 export const listFiles = async (): Promise<{ files: FileInfo[] }> => {
@@ -45,30 +44,68 @@ export const listFiles = async (): Promise<{ files: FileInfo[] }> => {
     return response.data;
 };
 
-export const deleteFile = async (filename: string): Promise<{ message: string }> => {
-    const response = await api.delete(`/files/${encodeURIComponent(filename)}`);
+export const deleteFile = async (fileId: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/files/${encodeURIComponent(fileId)}`);
     return response.data;
 };
 
-export const getTimesteps = async (filename: string): Promise<{ timesteps: number[] }> => {
-    const response = await api.get(`/analyze/${encodeURIComponent(filename)}/timesteps`);
+export const getTimesteps = async (fileId: string): Promise<{ file_id: string; filename: string; total_timesteps: number; timesteps: number[] }> => {
+    const response = await api.get(`/files/${encodeURIComponent(fileId)}/timesteps`);
     return response.data;
 };
 
+export const getTimestepPositions = async (fileId: string, timestep: number): Promise<{
+    file_id: string;
+    timestep: number;
+    atoms_count: number;
+    positions: number[][];
+    atom_types: number[];
+    box_bounds: number[][];
+    metadata: {
+        simulation_box: number[][];
+        total_atoms: number;
+    };
+}> => {
+    const response = await api.get(`/files/${encodeURIComponent(fileId)}/timesteps/${timestep}/positions`);
+    return response.data;
+};
 
-export const analyzeFile = async (
-    filename: string,
-    request: AnalysisRequest,
+export const analyzeTimestep = async (
+    fileId: string,
+    timestep: number,
+    config: AnalysisConfig,
     onProgress?: (status: string) => void
-    ): Promise<AnalysisResult> => {
+): Promise<AnalysisResult> => {
     if(onProgress) onProgress('Iniciando análisis...');
 
     const response = await api.post(
-        `/analyze/${encodeURIComponent(filename)}`,
-        request
+        `/analyze/${encodeURIComponent(fileId)}/timesteps/${timestep}`,
+        config
     );
 
     if(onProgress) onProgress('Análisis completado');
+    return response.data;
+};
+
+export const analyzeAllTimesteps = async (
+    fileId: string,
+    config: AnalysisConfig,
+    onProgress?: (status: string) => void
+): Promise<{
+    file_id: string;
+    total_timesteps: number;
+    processed: number;
+    errors: number;
+    results: AnalysisResult[];
+}> => {
+    if(onProgress) onProgress('Iniciando análisis batch...');
+
+    const response = await api.post(
+        `/analyze/${encodeURIComponent(fileId)}/all`,
+        config
+    );
+
+    if(onProgress) onProgress('Análisis batch completado');
     return response.data;
 };
 
