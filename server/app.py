@@ -318,18 +318,39 @@ async def get_timestep_positions(file_id: str, timestep: int) -> Dict[str, Any]:
             detail=f'Timestep {timestep} not found for file {file_id}. Available timesteps: {available_timesteps[:10]}...'
         )
     
-    return {
-        'file_id': file_id,
-        'timestep': timestep,
-        'atoms_count': len(timestep_data['positions']),
-        'positions': timestep_data['positions'].tolist(),
-        'atom_types': timestep_data.get('atom_types', []),
-        'box_bounds': timestep_data.get('box_bounds', None),
-        'metadata': {
-            'simulation_box': timestep_data.get('box_bounds', None),
-            'total_atoms': len(timestep_data['positions'])
+    try:
+        # Función helper para convertir numpy arrays a listas
+        def safe_to_list(data):
+            if hasattr(data, 'tolist'):
+                return data.tolist()
+            elif isinstance(data, (list, tuple)):
+                return list(data)
+            else:
+                return data
+        
+        positions = safe_to_list(timestep_data['positions'])
+        atom_types = safe_to_list(timestep_data.get('atom_types', []))
+        box_bounds = safe_to_list(timestep_data.get('box_bounds', None))
+        
+        return {
+            'file_id': file_id,
+            'timestep': timestep,
+            'atoms_count': len(positions),
+            'positions': positions,
+            'atom_types': atom_types,
+            'box_bounds': box_bounds,
+            'metadata': {
+                'simulation_box': box_bounds,
+                'total_atoms': len(positions)
+            }
         }
-    }
+        
+    except Exception as e:
+        logger.error(f'Error processing timestep data: {e}')
+        logger.error(f'timestep_data keys: {list(timestep_data.keys()) if timestep_data else "None"}')
+        logger.error(f'positions type: {type(timestep_data.get("positions", None)) if timestep_data else "None"}')
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f'Error processing timestep data: {str(e)}')
 
 @app.post('/analyze/{file_id}/timesteps/{timestep}', summary='Analyze specific timestep')
 async def analyze_timestep_endpoint(
