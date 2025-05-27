@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls, Stats, Environment } from '@react-three/drei';
+import { IoAddOutline } from 'react-icons/io5';
 import './App.css';
 
 const CanvasGrid = () => {
@@ -30,6 +31,11 @@ const App = () => {
 
     return (
         <main className='editor-container'>
+            <section className='editor-camera-info-container'>
+                <h3 className='editor-camera-info-title'>Perspective Camera</h3>
+                <p className='editor-camera-info-description'>Timestep Visualization</p>
+            </section>
+
             <section className='editor-timestep-viewer-container'>
                 <Canvas shadows camera={{ position: [5, 5, 5] }}>
                     <ambientLight intensity={0.3} />
@@ -49,6 +55,11 @@ const App = () => {
                     <OrbitControls enableDamping dampingFactor={0.05} rotateSpeed={0.7} />
                     <Environment preset='city' />
                  </Canvas>
+            </section>
+
+            <section className='editor-dislocations-button-container'>
+                <IoAddOutline className='editor-dislocations-button-icon' />
+                <span className='editor-dislocations-button-text'>Get Dislocations</span>
             </section>
         </main>
     );

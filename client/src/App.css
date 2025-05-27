@@ -4,6 +4,10 @@
     box-sizing: border-box;
 }
 
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
 .editor-container{
     width: 100%;
     height: 100vh;
@@ -13,4 +17,56 @@
 
 .editor-timestep-viewer-container{
     width: 100%;
+}
+
+.editor-camera-info-container{
+    position: absolute;
+    z-index: 100;
+    top: 2rem;
+    left: 2rem;
+    color: #FFF;
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+}
+
+.editor-camera-info-title{
+    font-weight: 500;
+}
+
+.editor-camera-info-description{
+    font-weight: 400;
+    color: #d8d8d8;
+}
+
+.editor-dislocations-button-container{
+    background-color: #fd5b01;
+    padding: 1rem 4.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: .5rem;
+    color: #FFF;
+    border-radius: 5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.editor-dislocations-button-container:hover{
+    opacity: 0.9;
+}
+
+.editor-dislocations-button-container:active{
+    transform: scale(.99);
+}
+
+.editor-dislocations-button-icon{
+    font-size: 1.5rem;
+}
+
+.editor-dislocations-button-container{
+    position: absolute;
+    bottom: 2rem;
+    right: 2rem;
 }
