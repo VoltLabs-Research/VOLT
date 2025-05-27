@@ -41,7 +41,6 @@ const useTimestepManager = (fileInfo: FileInfo | null) => {
 
     const handleTimestepChange = (timestep: number) => {
         setCurrentTimestep(timestep);
-        setIsPlaying(false);
     };
 
     const handleSpeedChange = (speed: number) => {
