@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import type { AnalysisConfig } from '../types/index';
 import { IoIosArrowDown } from 'react-icons/io';
-
-interface AnalysisConfigProps{
-    config: AnalysisConfig;
-    onChange: (config: AnalysisConfig) => void;
-}
+import EditorWidget from './EditorWidget';
 
 const AnalysisConfig: React.FC = () => {
     const [internalConfig, setInternalConfig] = useState({
@@ -152,7 +148,7 @@ const AnalysisConfig: React.FC = () => {
     };
 
     return (
-        <div className='editor-floating-container editor-analysis-config'>
+        <EditorWidget className='editor-analysis-config'>
             <div className='editor-analysis-config-header-container'>
                 <h3 className='editor-analysis-config-header-title'>Analysis</h3>
                 <IoIosArrowDown />
@@ -168,7 +164,7 @@ const AnalysisConfig: React.FC = () => {
                     </div>
                 ))}
             </div>
-        </div>
+        </EditorWidget>
     );
 };
 

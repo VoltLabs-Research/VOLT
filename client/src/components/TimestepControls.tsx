@@ -1,6 +1,7 @@
 import React from 'react';
 import { CiPlay1, CiPause1 } from "react-icons/ci";
 import type { FileInfo } from '../types';
+import EditorWidget from './EditorWidget';
 
 const TimestepControls: React.FC<{
     fileInfo: FileInfo | null;
@@ -26,7 +27,7 @@ const TimestepControls: React.FC<{
     const currentIndex = timesteps.indexOf(currentTimestep);
 
     return (
-        <div className='editor-floating-container editor-timestep-controls'>
+        <EditorWidget className='editor-timestep-controls'>
             <button
                 onClick={onPlayPause}
                 className='editor-timestep-controls-play-pause-button'
@@ -69,7 +70,7 @@ const TimestepControls: React.FC<{
                     {playSpeed.toFixed(1)}x
                 </label>
             </div>
-        </div>
+        </EditorWidget>
     );
 };
 

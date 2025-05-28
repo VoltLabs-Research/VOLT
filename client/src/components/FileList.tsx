@@ -4,6 +4,7 @@ import { deleteFile, listFiles } from '../services/api';
 import type { FileInfo } from '../types/index';
 import { IoIosArrowDown } from 'react-icons/io';
 import { BsThreeDots } from "react-icons/bs";
+import EditorWidget from './EditorWidget';
 
 interface FileListProps {
     onFileSelect: (file: FileInfo) => void;
@@ -51,7 +52,7 @@ export const FileList: React.FC<FileListProps> = ({
     const files = filesData?.files || [];
 
     return (
-        <div className='editor-floating-container editor-file-list-container'>
+        <EditorWidget className='editor-file-list-container'>
             <div className='editor-floating-header-container'>
                 <h3 className='editor-floating-header-title'>Uploaded Files ({files.length})</h3>
                 <IoIosArrowDown className='editor-floating-header-icon' />
@@ -78,6 +79,6 @@ export const FileList: React.FC<FileListProps> = ({
                     </div>
                 ))}
             </div>
-        </div>
+        </EditorWidget>
     );
 };

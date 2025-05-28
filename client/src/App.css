@@ -308,7 +308,6 @@ body {
     gap: 1rem;
     max-height: 500px;
     overflow-y: scroll;
-    padding-right: 1rem;
 }
 
 .labeled-input-container{
