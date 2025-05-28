@@ -3,7 +3,7 @@ import { CiPlay1, CiPause1 } from "react-icons/ci";
 import type { FileInfo } from '../types';
 import EditorWidget from './EditorWidget';
 
-const TimestepControls: React.FC<{
+interface TimestepControlsProps {
     fileInfo: FileInfo | null;
     timesteps: number[];
     currentTimestep: number;
@@ -12,7 +12,15 @@ const TimestepControls: React.FC<{
     onPlayPause: () => void;
     playSpeed: number;
     onSpeedChange: (speed: number) => void;
-}> = ({ 
+    isConnected: boolean;
+    isStreaming: boolean;
+    streamProgress?: { current: number; total: number } | null;
+    onStartPreloading: () => void;
+    onStopPreloading: () => void;
+    preloadedCount: number;
+}
+
+const TimestepControls: React.FC<TimestepControlsProps> = ({ 
     fileInfo, 
     timesteps, 
     currentTimestep, 
@@ -20,17 +28,25 @@ const TimestepControls: React.FC<{
     isPlaying, 
     onPlayPause, 
     playSpeed, 
-    onSpeedChange 
+    onSpeedChange,
+    isConnected,
+    isStreaming,
+    streamProgress,
+    preloadedCount
 }) => {
     if (!fileInfo || timesteps.length === 0) return null;
 
     const currentIndex = timesteps.indexOf(currentTimestep);
+    const progressPercentage = streamProgress 
+        ? (streamProgress.current / streamProgress.total) * 100 
+        : 0;
 
     return (
         <EditorWidget className='editor-timestep-controls'>
             <button
                 onClick={onPlayPause}
                 className='editor-timestep-controls-play-pause-button'
+                disabled={!isConnected}
             >
                 {isPlaying ? <CiPause1 /> : <CiPlay1 />}   
             </button>
@@ -44,6 +60,7 @@ const TimestepControls: React.FC<{
                         value={currentIndex}
                         onChange={(e) => onTimestepChange(timesteps[parseInt(e.target.value)])}
                         className='editor-timestep-controls-slider'
+                        disabled={!isConnected}
                         style={{
                             '--progress': `${(currentIndex / (timesteps.length - 1)) * 100}%`
                         }}
@@ -63,6 +80,7 @@ const TimestepControls: React.FC<{
                         value={playSpeed}
                         onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
                         className='speed-slider'
+                        disabled={!isConnected}
                         style={{
                             '--progress': `${playSpeed / (2) * 100}%`
                         }}

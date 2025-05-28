@@ -32,7 +32,6 @@ const EditorWidget: React.FC<EditorWidgetProps> = ({
     const handleMouseUp = useCallback(() => {
         isDraggingRef.current = false;
         
-        // Restaurar el scale normal al terminar el drag
         if (widgetRef.current) {
             const { x, y } = currentTranslateRef.current;
             widgetRef.current.style.transform = `translate(${x}px, ${y}px) scale(1)`;

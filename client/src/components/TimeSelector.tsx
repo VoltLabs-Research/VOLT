@@ -1,69 +1,68 @@
 import React, { useEffect } from 'react';
-import { useApi } from '../hooks/useApi';
-import { getTimesteps } from '../services/api';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 interface TimestepSelectorProps {
-    filename: string;
+    fileId: string;
     selectedTimestep?: number;
     onTimestepSelect: (timestep: number | undefined) => void;
 }
 
 export const TimestepSelector: React.FC<TimestepSelectorProps> = ({
-    filename,
+    fileId,
     selectedTimestep,
     onTimestepSelect,
 }) => {
-    const { data: timestepsData, loading, error, execute } = useApi<{ timesteps: number[] }>();
+    const { isConnected, connectionInfo, connectionError } = useWebSocket(fileId);
 
-    useEffect(() => {
-        if(filename){
-            execute(() => getTimesteps(filename));
-        }
-    }, [filename, execute]);
+    if (!isConnected && !connectionError) {
+        return <div className="loading">Conectando WebSocket...</div>;
+    }
+    
+    if (connectionError) {
+        return <div className="error">Error: {connectionError}</div>;
+    }
 
-    if(loading) return <div className="loading">Cargando timesteps...</div>;
-    if(error) return <div className="error">Error: {error}</div>;
-
-    const timesteps = timestepsData?.timesteps || [];
+    const timesteps = connectionInfo?.available_timesteps || [];
 
     return (
         <div className="timestep-selector">
-        <h4>Seleccionar Timestep</h4>
-        <div className="timestep-options">
-            <label>
-            <input
-                type="radio"
-                name="timestep"
-                checked={selectedTimestep === undefined}
-                onChange={() => onTimestepSelect(undefined)}
-            />
-            Primer timestep disponible
-            </label>
-            
-            {timesteps.length > 0 && (
-            <div className="timestep-list">
-                <label>Timestep específico:</label>
-                <select
-                value={selectedTimestep || ''}
-                onChange={(e) => onTimestepSelect(e.target.value ? parseInt(e.target.value) : undefined)}
-                >
-                <option value="">Seleccionar...</option>
-                {timesteps.map((timestep) => (
-                    <option key={timestep} value={timestep}>
-                    {timestep}
-                    </option>
-                ))}
-                </select>
+            <h4>Seleccionar Timestep (WebSocket)</h4>
+            <div className="connection-info">
+                <p>📡 Conectado: {connectionInfo?.filename}</p>
+                <p>📊 Total timesteps: {connectionInfo?.total_timesteps}</p>
             </div>
-            )}
-        </div>
-        
-        <div className="timestep-info">
-            <p>Total de timesteps disponibles: {timesteps.length}</p>
-            {timesteps.length > 0 && (
-            <p>Rango: {Math.min(...timesteps)} - {Math.max(...timesteps)}</p>
-            )}
-        </div>
+            
+            <div className="timestep-options">
+                <label>
+                    <input
+                        type="radio"
+                        name="timestep"
+                        checked={selectedTimestep === undefined}
+                        onChange={() => onTimestepSelect(undefined)}
+                    />
+                    Primer timestep disponible
+                </label>
+                
+                {timesteps.length > 0 && (
+                    <div className="timestep-list">
+                        <label>Timestep específico:</label>
+                        <select
+                            value={selectedTimestep || ''}
+                            onChange={(e) => onTimestepSelect(e.target.value ? parseInt(e.target.value) : undefined)}
+                        >
+                            <option value="">Seleccionar...</option>
+                            {timesteps.slice(0, 100).map((timestep: number) => (
+                                <option key={timestep} value={timestep}>
+                                    {timestep}
+                                </option>
+                            ))}
+                        </select>
+                        {timesteps.length > 100 && (
+                            <small>Mostrando primeros 100 timesteps</small>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

@@ -1,25 +1,31 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { getTimestepPositions } from '../services/api';
-import type { TimestepData, TimestepViewerProps } from '../types/index';
+import React, { useMemo } from 'react';
+import type { TimestepViewerProps } from '../types/index';
 import AtomParticles from './AtomParticles';
+import Loader from './Loader';
 import TimestepAnimator from './TimestepAnimator';
+import { createPortal } from 'react-dom';
 
-const TimestepViewer: React.FC<TimestepViewerProps> = ({ 
+interface ExtendedTimestepViewerProps extends TimestepViewerProps {
+    timestepData?: any;
+    loading?: boolean;
+    error?: string | null;
+}
+
+const TimestepViewer: React.FC<ExtendedTimestepViewerProps> = ({ 
     fileInfo, 
     currentTimestep, 
     isPlaying, 
     playSpeed, 
     timesteps, 
-    onTimestepChange 
+    onTimestepChange,
+    timestepData,
+    loading,
+    error
 }) => {
-    const [timestepData, setTimestepData] = useState<TimestepData | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
     const { atoms, scale, boundingBox } = useMemo(() => {
         if (!timestepData) return { atoms: [], scale: 1, boundingBox: null };
         
-        const atomsData = timestepData.positions.map((pos, index) => ({
+        const atomsData = timestepData.positions.map((pos: number[], index: number) => ({
             x: pos[0],
             y: pos[1],
             z: pos[2],
@@ -58,16 +64,6 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
             z: atom.z - centerZ
         }));
 
-        console.log('Simulation bounds:', {
-            x: [minX, maxX],
-            y: [minY, maxY], 
-            z: [minZ, maxZ],
-            center: [centerX, centerY, centerZ],
-            size: [sizeX, sizeY, sizeZ],
-            maxSize,
-            scale: calculatedScale
-        });
-
         return { 
             atoms: centeredAtoms, 
             scale: calculatedScale,
@@ -80,36 +76,6 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
         };
     }, [timestepData]);
 
-    useEffect(() => {
-        const loadTimestepData = async () => {
-            if (currentTimestep === 0 || !fileInfo) return;
-            
-            setLoading(true);
-            setError(null);
-            
-            try {
-                console.log(`Loading timestep ${currentTimestep} for file ${fileInfo.file_id}`);
-                const data = await getTimestepPositions(fileInfo.file_id, currentTimestep);
-                console.log('Received data:', data);
-                
-                setTimestepData({
-                    positions: data.positions,
-                    atom_types: data.atom_types,
-                    atoms_count: data.atoms_count,
-                    box_bounds: data.box_bounds
-                });
-            } catch (err: any) {
-                const errorMessage = err.response?.data?.detail || err.message || 'Unknown error';
-                setError(`Error loading timestep data: ${errorMessage}`);
-                console.error('Error loading timestep data:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadTimestepData();
-    }, [fileInfo.file_id, currentTimestep]);
-
     if (error) {
         return (
             <mesh position={[0, 2, 0]}>
@@ -118,6 +84,7 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
             </mesh>
         );
     }
+
 
     return (
         <>

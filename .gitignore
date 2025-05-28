@@ -30,4 +30,4 @@ dist-ssr
 *.sln
 *.sw?
 
-opendxa_data/
+opendxa_data/timesteps/

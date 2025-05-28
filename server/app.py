@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
@@ -23,6 +23,7 @@ import traceback
 import time
 import argparse
 import uuid
+import asyncio
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,6 +38,35 @@ RESULTS_DIR = DATA_DIR / 'results'
 DATA_DIR.mkdir(exist_ok=True)
 TIMESTEPS_DIR.mkdir(exist_ok=True)
 RESULTS_DIR.mkdir(exist_ok=True)
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        self.streaming_sessions: Dict[str, bool] = {}
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        try:
+            await websocket.send_text(message)
+        except Exception as e:
+            logger.error(f"Error sending message: {e}")
+            self.disconnect(websocket)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(message)
+            except:
+                self.disconnect(connection)
+
+manager = ConnectionManager()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -142,6 +172,226 @@ def save_analysis_result(file_id: str, timestep: int, result: Dict) -> str:
         json.dump(result, f, indent=2)
     return str(result_file)
 
+def safe_to_list(data):
+    '''Helper function to convert numpy arrays to lists'''
+    if hasattr(data, 'tolist'):
+        return data.tolist()
+    elif isinstance(data, (list, tuple)):
+        return list(data)
+    else:
+        return data
+
+async def stream_timesteps_data(
+    websocket: WebSocket, 
+    file_id: str, 
+    timesteps: List[int], 
+    include_positions: bool = True,
+    batch_size: int = 10,
+    delay_ms: int = 100
+):
+    """Stream timestep data through WebSocket"""
+    session_id = f"{file_id}_{id(websocket)}"
+    manager.streaming_sessions[session_id] = True
+    
+    try:
+        total_timesteps = len(timesteps)
+        await manager.send_personal_message(json.dumps({
+            "type": "stream_start",
+            "file_id": file_id,
+            "total_timesteps": total_timesteps,
+            "batch_size": batch_size
+        }), websocket)
+
+        # Procesar en lotes
+        for i in range(0, len(timesteps), batch_size):
+            # Verificar si la sesión sigue activa
+            if not manager.streaming_sessions.get(session_id, False):
+                break
+                
+            batch_timesteps = timesteps[i:i + batch_size]
+            batch_data = []
+            
+            for timestep in batch_timesteps:
+                try:
+                    if include_positions:
+                        # Cargar datos completos del timestep
+                        timestep_data = load_timestep_data(file_id, timestep)
+                        if timestep_data:
+                            positions = safe_to_list(timestep_data['positions'])
+                            atom_types = safe_to_list(timestep_data.get('atom_types', []))
+                            box_bounds = safe_to_list(timestep_data.get('box_bounds', None))
+                            
+                            batch_data.append({
+                                "timestep": timestep,
+                                "atoms_count": len(positions),
+                                "positions": positions,
+                                "atom_types": atom_types,
+                                "box_bounds": box_bounds
+                            })
+                    else:
+                        # Solo metadatos básicos
+                        timestep_data = load_timestep_data(file_id, timestep)
+                        if timestep_data:
+                            batch_data.append({
+                                "timestep": timestep,
+                                "atoms_count": len(timestep_data['positions']),
+                                "has_data": True
+                            })
+                        
+                except Exception as e:
+                    logger.error(f"Error loading timestep {timestep}: {e}")
+                    batch_data.append({
+                        "timestep": timestep,
+                        "error": str(e)
+                    })
+
+            # Enviar lote
+            message = {
+                "type": "timestep_batch",
+                "file_id": file_id,
+                "batch_index": i // batch_size,
+                "total_batches": (len(timesteps) + batch_size - 1) // batch_size,
+                "data": batch_data,
+                "progress": {
+                    "current": min(i + batch_size, len(timesteps)),
+                    "total": total_timesteps
+                }
+            }
+            
+            await manager.send_personal_message(json.dumps(message), websocket)
+            
+            # Pequeña pausa para no saturar
+            if delay_ms > 0:
+                await asyncio.sleep(delay_ms / 1000)
+
+        # Señal de finalización
+        await manager.send_personal_message(json.dumps({
+            "type": "stream_complete",
+            "file_id": file_id,
+            "total_timesteps": total_timesteps
+        }), websocket)
+
+    except Exception as e:
+        logger.error(f"Error in stream_timesteps_data: {e}")
+        await manager.send_personal_message(json.dumps({
+            "type": "stream_error",
+            "file_id": file_id,
+            "error": str(e)
+        }), websocket)
+    finally:
+        # Limpiar sesión
+        if session_id in manager.streaming_sessions:
+            del manager.streaming_sessions[session_id]
+
+@app.websocket("/ws/timesteps/{file_id}")
+async def websocket_timesteps(websocket: WebSocket, file_id: str):
+    """WebSocket endpoint para streaming de timesteps"""
+    await manager.connect(websocket)
+    
+    if file_id not in uploaded_files:
+        await manager.send_personal_message(json.dumps({
+            "type": "error",
+            "message": f"File with ID {file_id} not found"
+        }), websocket)
+        await websocket.close()
+        return
+
+    try:
+        metadata = uploaded_files[file_id]
+        timesteps = [ts['timestep'] for ts in metadata['timesteps_info']]
+        
+        # Enviar información inicial
+        await manager.send_personal_message(json.dumps({
+            "type": "connection_established",
+            "file_id": file_id,
+            "filename": metadata['original_filename'],
+            "total_timesteps": len(timesteps),
+            "available_timesteps": timesteps[:100]  # Enviar solo los primeros 100 para no saturar
+        }), websocket)
+
+        while True:
+            # Esperar comandos del cliente
+            data = await websocket.receive_text()
+            command = json.loads(data)
+            
+            if command["type"] == "start_stream":
+                include_positions = command.get("include_positions", True)
+                batch_size = command.get("batch_size", 10)
+                delay_ms = command.get("delay_ms", 100)
+                
+                # Filtrar timesteps si se especifica un rango
+                start_timestep = command.get("start_timestep")
+                end_timestep = command.get("end_timestep")
+                
+                filtered_timesteps = timesteps
+                if start_timestep is not None or end_timestep is not None:
+                    filtered_timesteps = [
+                        ts for ts in timesteps 
+                        if (start_timestep is None or ts >= start_timestep) and
+                           (end_timestep is None or ts <= end_timestep)
+                    ]
+                
+                await stream_timesteps_data(
+                    websocket, 
+                    file_id, 
+                    filtered_timesteps, 
+                    include_positions, 
+                    batch_size, 
+                    delay_ms
+                )
+                
+            elif command["type"] == "stop_stream":
+                session_id = f"{file_id}_{id(websocket)}"
+                manager.streaming_sessions[session_id] = False
+                await manager.send_personal_message(json.dumps({
+                    "type": "stream_stopped",
+                    "file_id": file_id
+                }), websocket)
+                
+            elif command["type"] == "get_timestep":
+                timestep = command["timestep"]
+                try:
+                    timestep_data = load_timestep_data(file_id, timestep)
+                    if timestep_data:
+                        positions = safe_to_list(timestep_data['positions'])
+                        atom_types = safe_to_list(timestep_data.get('atom_types', []))
+                        box_bounds = safe_to_list(timestep_data.get('box_bounds', None))
+                            
+                        await manager.send_personal_message(json.dumps({
+                            "type": "single_timestep",
+                            "timestep": timestep,
+                            "data": {
+                                "atoms_count": len(positions),
+                                "positions": positions,
+                                "atom_types": atom_types,
+                                "box_bounds": box_bounds
+                            }
+                        }), websocket)
+                    else:
+                        await manager.send_personal_message(json.dumps({
+                            "type": "error",
+                            "message": f"Timestep {timestep} not found"
+                        }), websocket)
+                except Exception as e:
+                    await manager.send_personal_message(json.dumps({
+                        "type": "error",
+                        "message": f"Error loading timestep {timestep}: {str(e)}"
+                    }), websocket)
+
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        # Detener cualquier streaming activo
+        session_id = f"{file_id}_{id(websocket)}"
+        if session_id in manager.streaming_sessions:
+            manager.streaming_sessions[session_id] = False
+            del manager.streaming_sessions[session_id]
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        await manager.send_personal_message(json.dumps({
+            "type": "error",
+            "message": str(e)
+        }), websocket)
+
 def args_from_config(config: AnalysisConfig, output_file: str = 'temp_output.json') -> object:
     '''Convert AnalysisConfig to args object compatible with OpenDXA'''
     class Args:
@@ -218,7 +468,8 @@ def analyze_timestep_wrapper(data: Dict, config: AnalysisConfig) -> Dict:
             'execution_time': 0,
             'error': str(e)
         }
-    
+
+# Todos los endpoints REST existentes...
 @app.get('/', summary='API Health Check')
 async def root():
     '''Health check endpoint'''
@@ -319,15 +570,6 @@ async def get_timestep_positions(file_id: str, timestep: int) -> Dict[str, Any]:
         )
     
     try:
-        # Función helper para convertir numpy arrays a listas
-        def safe_to_list(data):
-            if hasattr(data, 'tolist'):
-                return data.tolist()
-            elif isinstance(data, (list, tuple)):
-                return list(data)
-            else:
-                return data
-        
         positions = safe_to_list(timestep_data['positions'])
         atom_types = safe_to_list(timestep_data.get('atom_types', []))
         box_bounds = safe_to_list(timestep_data.get('box_bounds', None))
@@ -514,6 +756,7 @@ if __name__ == '__main__':
     📁 Upload files via POST /upload
     🔬 Analyze via POST /analyze/{{file_id}}/timesteps/{{timestep}}
     📊 Get positions via GET /files/{{file_id}}/timesteps/{{timestep}}/positions
+    🌐 WebSocket streaming via WS /ws/timesteps/{{file_id}}
     ''')
 
     uvicorn.run(

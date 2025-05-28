@@ -42,9 +42,13 @@ const App = () => {
         currentTimestep,
         isPlaying,
         playSpeed,
+        loading,
+        error,
+        timestepData,
         handleTimestepChange,
         handlePlayPause,
-        handleSpeedChange
+        handleSpeedChange,
+        isConnected
     } = useTimestepManager(selectedFile || null);
 
     const handleUploadError = (error: string) => {
@@ -54,6 +58,14 @@ const App = () => {
     const handleUploadSuccess = () => {
         console.log('Upload success');
         setRefreshTrigger(prev => prev + 1);
+    };
+
+    const getConnectionStatus = () => {
+        if (!selectedFile) return '';
+        if (!isConnected) return ' - WebSocket Disconnected';
+        if (loading) return ' - Loading';
+        if (error) return ' - Error';
+        return ' - Connected';
     };
 
     return (
@@ -71,7 +83,9 @@ const App = () => {
 
             <section className='editor-camera-info-container'>
                 <h3 className='editor-camera-info-title'>Perspective Camera</h3>
-                <p className='editor-camera-info-description'>Timestep Visualization</p>
+                <p className='editor-camera-info-description'>
+                    Timestep Visualization 
+                </p>
             </section>
 
             <div className='editor-timestep-viewer-container'>
@@ -99,6 +113,10 @@ const App = () => {
                                 playSpeed={playSpeed}
                                 timesteps={timesteps}
                                 onTimestepChange={handleTimestepChange}
+                                timestepData={timestepData}
+                                loading={loading}
+                                error={error}
+                                isConnected={isConnected}
                             />
                         )}
                         <OrbitControls 
@@ -122,6 +140,8 @@ const App = () => {
                     onPlayPause={handlePlayPause}
                     playSpeed={playSpeed}
                     onSpeedChange={handleSpeedChange}
+                    isConnected={isConnected}
+                    loading={loading}
                 />
             </div>
 
