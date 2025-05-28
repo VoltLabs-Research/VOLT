@@ -285,6 +285,62 @@ body {
     border-radius: 3px;
 }
 
+.file-header-container{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.editor-analysis-config{
+    right: 2rem;
+    top: 2rem;
+}
+
+.editor-analysis-config-header-container{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.editor-analysis-config-body-container{
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: 500px;
+    overflow-y: scroll;
+    padding-right: 1rem;
+}
+
+.labeled-input-container{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.labeled-input-label{
+    font-weight: 400;
+}
+
+.labeled-input{
+    width: 160px;
+    height: 2rem;
+    padding: 0 1rem;
+    background-color: #252525;
+    color: #dadada;
+    border-radius: .5rem;
+}
+
+.labeled-input{
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding-right: 30px !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 8px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+}
+
 @media screen and (max-width: 768px){
     .editor-timestep-controls {
         flex-direction: row;

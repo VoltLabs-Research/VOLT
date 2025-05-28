@@ -3,6 +3,7 @@ import useAPI from '../hooks/useAPI';
 import { deleteFile, listFiles } from '../services/api';
 import type { FileInfo } from '../types/index';
 import { IoIosArrowDown } from 'react-icons/io';
+import { BsThreeDots } from "react-icons/bs";
 
 interface FileListProps {
     onFileSelect: (file: FileInfo) => void;
@@ -63,18 +64,17 @@ export const FileList: React.FC<FileListProps> = ({
                         className={`file-item ${selectedFile?.file_id === file.file_id ? 'selected' : ''}`}
                         onClick={() => onFileSelect(file)}
                     >
-                        <h4>{file.filename}</h4>
+                        <div className='file-header-container'>
+                            <h4>{file.filename}</h4>
+                            <i className='file-delete-icon-container'>
+                                <BsThreeDots onClick={handleDelete} className='file-delete-icon' />
+                            </i>
+                        </div>
                         <div className='file-details'>
                             <span>{formatFileSize(file.size)}</span>
                             <span>{file.atoms_count.toLocaleString()} atoms</span>
                             <span>{file.total_timesteps} timesteps</span>
                         </div>
-                        <button 
-                            className='delete-button'
-                            onClick={(e) => handleDelete(file.file_id, e)}
-                        >
-                            ×
-                        </button>
                     </div>
                 ))}
             </div>

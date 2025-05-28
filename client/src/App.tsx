@@ -7,6 +7,7 @@ import { FileList } from './components/FileList';
 import TimestepViewer from './components/TimestepViewer';
 import TimestepControls from './components/TimestepControls';
 import useTimestepManager from './hooks/useTimestepManager';
+import AnalysisConfig from './components/AnalysisConfig';
 import type { FileInfo } from './types/index';
 import './App.css';
 
@@ -65,6 +66,8 @@ const App = () => {
                 selectedFile={selectedFile}
                 refreshTrigger={refreshTrigger}
             />
+
+            <AnalysisConfig />
 
             <section className='editor-camera-info-container'>
                 <h3 className='editor-camera-info-title'>Perspective Camera</h3>
