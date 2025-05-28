@@ -58,3 +58,26 @@ export interface UploadResult{
     atoms_count: number;
     message: string;
 }
+
+export interface AtomPosition{
+    x: number;
+    y: number;
+    z: number;
+    type: number;
+}
+
+export interface TimestepData{
+    positions: number[][];
+    atom_types: number[];
+    atoms_count: number;
+    box_bounds: number[][];
+}
+
+export interface TimestepViewerProps{
+    fileInfo: FileInfo;
+    currentTimestep: number;
+    isPlaying: boolean;
+    playSpeed: number;
+    timesteps: number[];
+    onTimestepChange: (timestep: number) => void;
+}
