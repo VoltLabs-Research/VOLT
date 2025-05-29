@@ -19,6 +19,11 @@ import os
 import tempfile
 import logging
 import uvicorn
+import uuid
+import time
+import traceback
+import asyncio
+import argparse
 import traceback
 import time
 import argparse
@@ -31,7 +36,7 @@ logger = logging.getLogger(__name__)
 TEMPLATES, TEMPLATES_SIZES = get_ptm_templates()
 executor = None
 
-DATA_DIR = Path('opendxa_data')
+DATA_DIR = Path('data')
 TIMESTEPS_DIR = DATA_DIR / 'timesteps'
 RESULTS_DIR = DATA_DIR / 'results'
 
@@ -436,20 +441,54 @@ def analyze_timestep_wrapper(data: Dict, config: AnalysisConfig) -> Dict:
             end_time = time.time()
             execution_time = end_time - start_time
 
+            # Check if output file exists and has content
             if os.path.exists(temp_file.name):
-                with open(temp_file.name, 'r') as file:
-                    result = json.load(file)
-                os.unlink(temp_file.name)
+                file_size = os.path.getsize(temp_file.name)
+                logger.info(f"Output file created: {temp_file.name}, size: {file_size} bytes")
+                
+                if file_size > 0:
+                    try:
+                        with open(temp_file.name, 'r') as file:
+                            result = json.load(file)
+                        os.unlink(temp_file.name)
 
-                return {
-                    'success': True,
-                    'timestep': data['timestep'],
-                    'dislocations': result.get('dislocations', []),
-                    'analysis_metadata': result.get('analysis_metadata', {}),
-                    'execution_time': execution_time,
-                    'error': None
-                }
+                        return {
+                            'success': True,
+                            'timestep': data['timestep'],
+                            'dislocations': result.get('dislocations', []),
+                            'analysis_metadata': result.get('analysis_metadata', {}),
+                            'execution_time': execution_time,
+                            'error': None
+                        }
+                    except json.JSONDecodeError as e:
+                        logger.error(f"JSON decode error in output file: {e}")
+                        # Read the file content for debugging
+                        with open(temp_file.name, 'r') as file:
+                            content = file.read()
+                        logger.error(f"File content (first 1000 chars): {content[:1000]}")
+                        os.unlink(temp_file.name)
+                        
+                        return {
+                            'success': False,
+                            'timestep': data['timestep'],
+                            'dislocations': [],
+                            'analysis_metadata': {},
+                            'execution_time': execution_time,
+                            'error': f'JSON decode error: {str(e)}'
+                        }
+                else:
+                    logger.error(f"Output file is empty: {temp_file.name}")
+                    os.unlink(temp_file.name)
+                    return {
+                        'success': False,
+                        'timestep': data['timestep'],
+                        'dislocations': [],
+                        'analysis_metadata': {},
+                        'execution_time': execution_time,
+                        'error': 'Output file is empty - analysis may have failed silently'
+                    }
             else:
+                logger.error(f"Output file not created: {temp_file.name}")
                 return {
                     'success': False,
                     'timestep': data['timestep'],
@@ -459,7 +498,7 @@ def analyze_timestep_wrapper(data: Dict, config: AnalysisConfig) -> Dict:
                     'error': 'No output file generated'
                 }
     except Exception as e:
-        logger.error(f'Error in analysis: {e}')
+        logger.error(f'Error in analysis: {e}', exc_info=True)
         return {
             'success': False,
             'timestep': data.get('timestep', -1),

@@ -7,6 +7,8 @@ import type { UploadResult } from '../types/index';
 interface FileUploadProps{
     onUploadSuccess: (result: UploadResult) => void;
     onUploadError: (error: string) => void;
+    children?: React.ReactNode;
+    className?: string;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onUploadError, children, className = '' }) => {

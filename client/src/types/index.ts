@@ -38,10 +38,29 @@ export interface AnalysisRequest{
 export interface AnalysisResult{
     success: boolean;
     timestep: number;
-    dislocations: any[];
+    dislocations: Dislocation[];
     analysis_metadata: Record<string, any>;
     execution_time: number;
     error?: string;
+}
+
+export interface Dislocation {
+    id: string;
+    core_atoms: number[];
+    line_points: number[][];
+    burgers_vector: number[];
+    length: number;
+    type: number | string; // Server returns number (0=edge, 1=screw, 2=mixed, -1=undefined)
+    segment_count?: number;
+    loops?: DislocationLoop[];
+}
+
+export interface DislocationLoop {
+    atoms: number[];
+    burgers_vector: number[];
+    center: number[];
+    normal: number[];
+    area: number;
 }
 
 export interface ServerStatus{

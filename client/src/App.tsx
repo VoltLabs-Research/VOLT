@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls, Environment } from '@react-three/drei';
 import { IoAddOutline } from 'react-icons/io5';
@@ -6,9 +6,9 @@ import { FileUpload } from './components/FileUpload';
 import { FileList } from './components/FileList';
 import TimestepViewer from './components/TimestepViewer';
 import TimestepControls from './components/TimestepControls';
+import DislocationAnalyzer from './components/DislocationAnalyzer';
 import useTimestepManager from './hooks/useTimestepManager';
-import AnalysisConfig from './components/AnalysisConfig';
-import type { FileInfo } from './types/index';
+import type { FileInfo, Dislocation } from './types/index';
 import './App.css';
 
 const CanvasGrid = () => {
@@ -36,6 +36,7 @@ const CanvasGrid = () => {
 const App = () => {
     const [selectedFile, setSelectedFile] = useState<FileInfo | undefined>();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [showDislocationAnalysis, setShowDislocationAnalysis] = useState(false);
     
     const {
         timesteps,
@@ -60,12 +61,12 @@ const App = () => {
         setRefreshTrigger(prev => prev + 1);
     };
 
-    const getConnectionStatus = () => {
-        if (!selectedFile) return '';
-        if (!isConnected) return ' - WebSocket Disconnected';
-        if (loading) return ' - Loading';
-        if (error) return ' - Error';
-        return ' - Connected';
+    const handleDislocationVisualize = (dislocation: Dislocation) => {
+        console.log('Visualizing dislocation:', dislocation);
+    };
+
+    const toggleDislocationAnalysis = () => {
+        setShowDislocationAnalysis(prev => !prev);
     };
 
     return (
@@ -78,8 +79,6 @@ const App = () => {
                 selectedFile={selectedFile}
                 refreshTrigger={refreshTrigger}
             />
-
-            <AnalysisConfig />
 
             <section className='editor-camera-info-container'>
                 <h3 className='editor-camera-info-title'>Perspective Camera</h3>
@@ -96,8 +95,7 @@ const App = () => {
                             castShadow
                             position={[15, 15, 15]}
                             intensity={1.0}
-                            shadow-mapSize-width={2048}
-                            shadow-mapSize-height={2048}
+                            shadow-mapSize={[2048, 2048]}
                             shadow-camera-far={100}
                             shadow-camera-left={-15}
                             shadow-camera-right={15}
@@ -116,7 +114,6 @@ const App = () => {
                                 timestepData={timestepData}
                                 loading={loading}
                                 error={error}
-                                isConnected={isConnected}
                             />
                         )}
                         <OrbitControls 
@@ -141,14 +138,37 @@ const App = () => {
                     playSpeed={playSpeed}
                     onSpeedChange={handleSpeedChange}
                     isConnected={isConnected}
-                    loading={loading}
+                    isStreaming={false}
+                    streamProgress={null}
+                    onStartPreloading={() => {}}
+                    onStopPreloading={() => {}}
+                    preloadedCount={0}
                 />
             </div>
 
             <section className='editor-dislocations-button-container'>
-                <IoAddOutline className='editor-dislocations-button-icon' />
-                <span className='editor-dislocations-button-text'>Get Dislocations</span>
+                <button 
+                    onClick={toggleDislocationAnalysis}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={!selectedFile}
+                >
+                    <IoAddOutline className='editor-dislocations-button-icon' />
+                    <span className='editor-dislocations-button-text'>
+                        {showDislocationAnalysis ? 'Hide' : 'Show'} Dislocation Analysis
+                    </span>
+                </button>
             </section>
+
+            {/* Dislocation Analysis Panel */}
+            {showDislocationAnalysis && selectedFile && (
+                <div className="mt-4 p-4 border border-gray-300 rounded-lg bg-white">
+                    <DislocationAnalyzer
+                        selectedFile={selectedFile}
+                        currentTimestep={currentTimestep}
+                        onDislocationVisualize={handleDislocationVisualize}
+                    />
+                </div>
+            )}
         </main>
     );
 };

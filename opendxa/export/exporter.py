@@ -112,8 +112,17 @@ class DislocationExporter:
         self.include_segments = include_segments
 
     def to_json(self, filename: str):
-        os.makedirs(self.output_dir, exist_ok=True)
-        filename = os.path.join(self.output_dir, f'timestep_{self.timestep}.json')
+        # If filename is provided, use it directly (for API calls)
+        # Otherwise, use the default output directory structure
+        if filename and os.path.isabs(filename):
+            # Absolute path provided (likely from API), use it directly
+            output_filename = filename
+            # Create directory if needed
+            os.makedirs(os.path.dirname(output_filename), exist_ok=True)
+        else:
+            # Relative path or no path - use output_dir structure
+            os.makedirs(self.output_dir, exist_ok=True)
+            output_filename = os.path.join(self.output_dir, filename or f'timestep_{self.timestep}.json')
         
         output = {
             'timestep': self.timestep,
@@ -213,7 +222,7 @@ class DislocationExporter:
                 'consistency_score': self.validation_result.get('consistency_metrics', {}).get('overall_consistency', 0.0)
             }
 
-        with open(filename, 'w') as file:
+        with open(output_filename, 'w') as file:
             json.dump(output, file, indent=2)
 
     def plot_lines(self, ax=None):

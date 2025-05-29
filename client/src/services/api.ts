@@ -2,10 +2,10 @@ import axios from 'axios';
 import type {
     AnalysisConfig,
     FileInfo,
-    AnalysisRequest,
     AnalysisResult,
     ServerStatus,
-    UploadResult
+    UploadResult,
+    Dislocation
 } from '../types/index';
 
 const API_BASE_URL = 'http://192.168.1.85:8000';
@@ -14,6 +14,29 @@ const api = axios.create({
     baseURL: API_BASE_URL,
     timeout: 300000
 });
+
+// Transform server response to match client interface
+const transformDislocation = (serverDislocation: any): Dislocation => {
+    return {
+        id: String(serverDislocation.loop_index || 0),
+        length: serverDislocation.total_line_length || 0,
+        burgers_vector: serverDislocation.burgers || [0, 0, 0],
+        line_points: serverDislocation.points || [],
+        core_atoms: serverDislocation.core_atoms || [],
+        type: serverDislocation.type || 'Unknown'
+    };
+};
+
+const transformAnalysisResult = (serverResult: any): AnalysisResult => {
+    return {
+        success: serverResult.success !== false,
+        timestep: serverResult.timestep,
+        dislocations: (serverResult.dislocations || []).map(transformDislocation),
+        analysis_metadata: serverResult.metadata || {},
+        execution_time: serverResult.execution_time || 0,
+        error: serverResult.error
+    };
+};
 
 export const healthCheck = async (): Promise<{ message: string; version: string; status: string }> => {
     const response = await api.get('/');
@@ -84,7 +107,7 @@ export const analyzeTimestep = async (
     );
 
     if(onProgress) onProgress('Análisis completado');
-    return response.data;
+    return transformAnalysisResult(response.data);
 };
 
 export const analyzeAllTimesteps = async (
@@ -106,7 +129,14 @@ export const analyzeAllTimesteps = async (
     );
 
     if(onProgress) onProgress('Análisis batch completado');
-    return response.data;
+    
+    // Transform the results array
+    const transformedData = {
+        ...response.data,
+        results: (response.data.results || []).map(transformAnalysisResult)
+    };
+    
+    return transformedData;
 };
 
 export const getDefaultConfig = async (): Promise<AnalysisConfig> => {
