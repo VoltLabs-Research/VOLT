@@ -22,7 +22,6 @@ interface UseTimestepManagerReturn {
     handleTimestepChange: (timestep: number) => void;
     handlePlayPause: () => void;
     handleSpeedChange: (speed: number) => void;
-    // WebSocket específico
     preloadedData: Map<number, TimestepData>;
     isStreaming: boolean;
     streamProgress: { current: number; total: number } | null;
@@ -32,7 +31,6 @@ interface UseTimestepManagerReturn {
 }
 
 const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn => {
-    // Estados principales
     const [timesteps, setTimesteps] = useState<number[]>([]);
     const [currentTimestep, setCurrentTimestep] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -42,7 +40,6 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
     const [timestepData, setTimestepData] = useState<TimestepData | null>(null);
     const [preloadedData, setPreloadedData] = useState<Map<number, TimestepData>>(new Map());
     
-    // WebSocket hook
     const {
         isConnected,
         connectionError,
@@ -56,12 +53,10 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
         connectionInfo
     } = useWebSocket(fileInfo?.file_id || null);
 
-    // Refs para control
     const animationRef = useRef<NodeJS.Timeout | null>(null);
     const hasStartedPreloadRef = useRef<boolean>(false);
     const currentFileIdRef = useRef<string | null>(null);
 
-    // Cargar lista de timesteps usando HTTP solo para la lista inicial
     useEffect(() => {
         const loadTimesteps = async () => {
             if (!fileInfo) {
@@ -72,7 +67,6 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
                 return;
             }
 
-            // Reset cuando cambia el archivo
             if (currentFileIdRef.current !== fileInfo.file_id) {
                 setPreloadedData(new Map());
                 setTimestepData(null);
@@ -101,7 +95,6 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
         loadTimesteps();
     }, [fileInfo, clearData]);
 
-    // INICIO AUTOMÁTICO DE PRELOAD cuando se conecta WebSocket
     useEffect(() => {
         const shouldStartPreload = (
             isConnected && 
@@ -111,16 +104,15 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
             timesteps.length > 0
         );
 
-        if (shouldStartPreload) {
-            console.log('🚀 Starting automatic preload...');
+        if(shouldStartPreload){
+            console.log('Starting automatic preload...');
             hasStartedPreloadRef.current = true;
             
-            // Pequeño delay para asegurar que la conexión esté estable
             const timeoutId = setTimeout(() => {
                 startStream({
                     includePositions: true,
-                    batchSize: 30, // Lotes medianos para balance velocidad/estabilidad
-                    delayMs: 50     // Delay moderado para no saturar
+                    batchSize: 30,
+                    delayMs: 50
                 });
             }, 100);
 
@@ -128,7 +120,6 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
         }
     }, [isConnected, connectionInfo, isStreaming, timesteps.length, startStream]);
 
-    // Actualizar datos pre-cargados cuando llegan por WebSocket
     useEffect(() => {
         if (receivedData.length > 0) {
             setPreloadedData(prevMap => {
@@ -145,10 +136,8 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
         }
     }, [receivedData]);
 
-    // Detectar cuando llega el timestep actual por WebSocket
     useEffect(() => {
         if (receivedData.length > 0) {
-            // Buscar el timestep actual en los datos recibidos
             const currentData = receivedData.find(data => 
                 data.timestep === currentTimestep && !data.error
             );
@@ -160,11 +149,9 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
         }
     }, [receivedData, currentTimestep]);
 
-    // Función para obtener datos de un timestep específico
     const loadTimestepData = useCallback((timestep: number) => {
         if (!fileInfo || !isConnected) return;
 
-        // Si tenemos los datos pre-cargados, usarlos inmediatamente
         if (preloadedData.has(timestep)) {
             const data = preloadedData.get(timestep)!;
             setTimestepData(data);
@@ -172,19 +159,16 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
             return;
         }
 
-        // Si no están pre-cargados, pedir por WebSocket
         setLoading(true);
         getTimestep(timestep);
     }, [fileInfo, isConnected, preloadedData, getTimestep]);
 
-    // Cargar datos cuando cambia el timestep actual
     useEffect(() => {
         if (currentTimestep > 0) {
             loadTimestepData(currentTimestep);
         }
     }, [currentTimestep, loadTimestepData]);
 
-    // Funciones de control
     const handleTimestepChange = useCallback((timestep: number) => {
         setCurrentTimestep(timestep);
     }, []);
@@ -197,10 +181,8 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
         setPlaySpeed(speed);
     }, []);
 
-    // Animación optimizada para datos pre-cargados
     useEffect(() => {
         if (isPlaying && timesteps.length > 0 && isConnected) {
-            // Velocidad adaptativa: más rápido si hay datos pre-cargados
             const baseInterval = preloadedData.size > timesteps.length * 0.5 ? 80 : 150;
             const interval = baseInterval / playSpeed;
             
@@ -227,11 +209,10 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
         };
     }, [isPlaying, timesteps, playSpeed, isConnected, preloadedData.size]);
 
-    // Funciones de control manual de preload (por si se necesita reiniciar)
     const startPreloading = useCallback(() => {
         if (!isConnected) return;
         
-        console.log('🔄 Manual preload restart...');
+        console.log('Manual preload restart...');
         clearData();
         setPreloadedData(new Map());
         hasStartedPreloadRef.current = true;
@@ -244,12 +225,11 @@ const useTimestepManager = (fileInfo: FileInfo | null): UseTimestepManagerReturn
     }, [isConnected, clearData, startStream]);
 
     const stopPreloading = useCallback(() => {
-        console.log('⏸️ Stopping preload...');
+        console.log('Stopping preload...');
         stopStream();
         hasStartedPreloadRef.current = false;
     }, [stopStream]);
 
-    // Limpiar al cambiar de archivo
     useEffect(() => {
         if (!fileInfo) {
             setPreloadedData(new Map());

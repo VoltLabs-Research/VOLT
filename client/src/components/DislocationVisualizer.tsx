@@ -4,7 +4,7 @@ import { Line, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Dislocation } from '../types/index';
 
-interface DislocationVisualizerProps {
+interface DislocationVisualizerProps{
     dislocations: Dislocation[];
     selectedDislocationId?: string;
     visible?: boolean;
@@ -20,14 +20,14 @@ const DislocationVisualizer: React.FC<DislocationVisualizerProps> = ({
     const groupRef = useRef<THREE.Group>(null);
 
     const getDislocationColor = (type: string, isSelected: boolean): string => {
-        if (isSelected) return '#ffff00'; // Yellow for selected
+        if (isSelected) return '#ffff00';
         
         switch (type.toLowerCase()) {
-            case 'edge': return '#3b82f6'; // Blue
-            case 'screw': return '#ef4444'; // Red
-            case 'mixed': return '#8b5cf6'; // Purple
-            case 'loop': return '#10b981'; // Green
-            default: return '#6b7280'; // Gray
+            case 'edge': return '#3b82f6';
+            case 'screw': return '#ef4444';
+            case 'mixed': return '#8b5cf6';
+            case 'loop': return '#10b981'; 
+            default: return '#6b7280';
         }
     };
 
@@ -40,12 +40,10 @@ const DislocationVisualizer: React.FC<DislocationVisualizerProps> = ({
             const lineWidth = isSelected ? 4 : 2;
             const opacity = isSelected ? 1.0 : 0.8;
 
-            // Create line points from dislocation line_points
             const linePoints = dislocation.line_points.map(point => 
                 new THREE.Vector3(point[0] * scale, point[1] * scale, point[2] * scale)
             );
 
-            // Create core atom spheres
             const coreAtomSpheres = dislocation.core_atoms.map((atomIndex, atomIdx) => (
                 <Sphere
                     key={`${dislocation.id}-atom-${atomIndex}-${atomIdx}`}
@@ -66,7 +64,6 @@ const DislocationVisualizer: React.FC<DislocationVisualizerProps> = ({
 
             return (
                 <group key={dislocation.id || index}>
-                    {/* Dislocation Line */}
                     {linePoints.length > 1 && (
                         <Line
                             points={linePoints}
@@ -77,10 +74,8 @@ const DislocationVisualizer: React.FC<DislocationVisualizerProps> = ({
                         />
                     )}
                     
-                    {/* Core Atoms */}
                     {coreAtomSpheres}
                     
-                    {/* Burgers Vector Arrow (simplified as a line from center) */}
                     {dislocation.burgers_vector.length >= 3 && linePoints.length > 0 && (
                         <Line
                             points={[
@@ -98,7 +93,6 @@ const DislocationVisualizer: React.FC<DislocationVisualizerProps> = ({
                         />
                     )}
                     
-                    {/* Dislocation Loops */}
                     {dislocation.loops && dislocation.loops.map((loop, loopIndex) => (
                         <group key={`${dislocation.id}-loop-${loopIndex}`}>
                             {loop.atoms.length > 2 && (
@@ -123,7 +117,6 @@ const DislocationVisualizer: React.FC<DislocationVisualizerProps> = ({
         });
     }, [dislocations, selectedDislocationId, visible, scale]);
 
-    // Optional animation for selected dislocations
     useFrame((state) => {
         if (groupRef.current && selectedDislocationId) {
             const time = state.clock.getElapsedTime();

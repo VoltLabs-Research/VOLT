@@ -56,7 +56,6 @@ export const useWebSocket = (fileId: string | null): UseWebSocketReturn => {
     const [connectionInfo, setConnectionInfo] = useState<any>(null);
     
     // Refs para control de reconexión
-    const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const reconnectAttemptsRef = useRef(0);
     const maxReconnectAttempts = 5;
 
@@ -64,8 +63,8 @@ export const useWebSocket = (fileId: string | null): UseWebSocketReturn => {
         if (!fileId || wsRef.current?.readyState === WebSocket.OPEN) return;
 
         try {
-            const wsUrl = `ws://192.168.1.85:8000/ws/timesteps/${encodeURIComponent(fileId)}`;
-            console.log(`🔌 Connecting to WebSocket: ${wsUrl}`);
+            const wsUrl = `ws://0.0.0.0:8000/ws/timesteps/${encodeURIComponent(fileId)}`;
+            console.log(`Connecting to WebSocket: ${wsUrl}`);
             
             wsRef.current = new WebSocket(wsUrl);
 
@@ -73,7 +72,7 @@ export const useWebSocket = (fileId: string | null): UseWebSocketReturn => {
                 setIsConnected(true);
                 setConnectionError(null);
                 reconnectAttemptsRef.current = 0;
-                console.log('✅ WebSocket connected successfully');
+                console.log('WebSocket connected successfully');
             };
 
             wsRef.current.onmessage = (event) => {
@@ -82,12 +81,12 @@ export const useWebSocket = (fileId: string | null): UseWebSocketReturn => {
                     
                     switch (message.type) {
                         case 'connection_established':
-                            console.log('📡 Connection established:', message);
+                            console.log('Connection established:', message);
                             setConnectionInfo(message);
                             break;
                             
                         case 'stream_start':
-                            console.log('🚀 Stream started:', message);
+                            console.log('Stream started:', message);
                             setIsStreaming(true);
                             setProgress({ current: 0, total: message.total_timesteps || 0 });
                             break;
@@ -95,11 +94,10 @@ export const useWebSocket = (fileId: string | null): UseWebSocketReturn => {
                         case 'timestep_batch':
                             const batchNum = (message.batch_index || 0) + 1;
                             const totalBatches = message.total_batches || 0;
-                            console.log(`📦 Received batch ${batchNum}/${totalBatches} with ${message.data?.length || 0} timesteps`);
+                            console.log(`Received batch ${batchNum}/${totalBatches} with ${message.data?.length || 0} timesteps`);
                             
                             if (message.data && Array.isArray(message.data)) {
                                 setReceivedData(prev => {
-                                    // Agregar solo timesteps válidos (sin error)
                                     const validData = message.data.filter(item => !item.error);
                                     return [...prev, ...validData];
                                 });
@@ -108,17 +106,17 @@ export const useWebSocket = (fileId: string | null): UseWebSocketReturn => {
                             break;
                             
                         case 'stream_complete':
-                            console.log('✅ Stream completed successfully');
+                            console.log('Stream completed successfully');
                             setIsStreaming(false);
                             break;
                             
                         case 'stream_stopped':
-                            console.log('⏹️ Stream stopped');
+                            console.log('Stream stopped');
                             setIsStreaming(false);
                             break;
                             
                         case 'single_timestep':
-                            console.log(`📄 Received single timestep: ${message.timestep}`);
+                            console.log(`Received single timestep: ${message.timestep}`);
                             if (message.data && message.timestep) {
                                 const newTimestepData: TimestepData = {
                                     timestep: message.timestep,
@@ -137,13 +135,13 @@ export const useWebSocket = (fileId: string | null): UseWebSocketReturn => {
                             
                         case 'error':
                         case 'stream_error':
-                            console.error('❌ WebSocket error:', message.error || message.message);
+                            console.error('WebSocket error:', message.error || message.message);
                             setConnectionError(message.error || message.message || 'Unknown error');
                             setIsStreaming(false);
                             break;
                             
                         default:
-                            console.log('❓ Unknown message type:', message.type);
+                            console.log('Unknown message type:', message.type);
                     }
                 } catch (error) {
                     console.error('💥 Error parsing WebSocket message:', error);
@@ -154,41 +152,29 @@ export const useWebSocket = (fileId: string | null): UseWebSocketReturn => {
             wsRef.current.onclose = (event) => {
                 setIsConnected(false);
                 setIsStreaming(false);
-                console.log('🔌 WebSocket disconnected:', event.code, event.reason);
+                console.log('WebSocket disconnected:', event.code, event.reason);
                 
-                // Intentar reconexión automática si no fue cierre intencional
                 if (event.code !== 1000 && reconnectAttemptsRef.current < maxReconnectAttempts) {
                     const reconnectDelay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
-                    console.log(`🔄 Attempting reconnection in ${reconnectDelay}ms (attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
-                    
-                    reconnectTimeoutRef.current = setTimeout(() => {
-                        reconnectAttemptsRef.current++;
-                        connect();
-                    }, reconnectDelay);
+                    console.log(`Attempting reconnection in ${reconnectDelay}ms (attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
                 }
             };
 
             wsRef.current.onerror = (error) => {
-                console.error('💥 WebSocket error:', error);
+                console.error('WebSocket error:', error);
                 setConnectionError('WebSocket connection error');
                 setIsConnected(false);
                 setIsStreaming(false);
             };
 
         } catch (error) {
-            console.error('💥 Failed to create WebSocket:', error);
+            console.error('Failed to create WebSocket:', error);
             setConnectionError('Failed to create WebSocket connection');
         }
     }, [fileId]);
 
     const disconnect = useCallback(() => {
-        console.log('🔌 Disconnecting WebSocket...');
-        
-        // Limpiar timeout de reconexión
-        if (reconnectTimeoutRef.current) {
-            clearTimeout(reconnectTimeoutRef.current);
-            reconnectTimeoutRef.current = null;
-        }
+        console.log('Disconnecting WebSocket...');
         
         if (wsRef.current) {
             wsRef.current.close(1000, 'Client disconnecting');
@@ -220,21 +206,21 @@ export const useWebSocket = (fileId: string | null): UseWebSocketReturn => {
         };
 
         if (sendMessage(command)) {
-            console.log('📤 Stream start command sent:', command);
+            console.log('Stream start command sent:', command);
         } else {
-            console.error('❌ Failed to send stream start command');
+            console.error('Failed to send stream start command');
         }
     }, [sendMessage]);
 
     const stopStream = useCallback(() => {
         if (sendMessage({ type: 'stop_stream' })) {
-            console.log('📤 Stream stop command sent');
+            console.log('Stream stop command sent');
         }
     }, [sendMessage]);
 
     const getTimestep = useCallback((timestep: number) => {
         if (sendMessage({ type: 'get_timestep', timestep })) {
-            console.log(`📤 Single timestep request sent: ${timestep}`);
+            console.log(`Single timestep request sent: ${timestep}`);
         }
     }, [sendMessage]);
 

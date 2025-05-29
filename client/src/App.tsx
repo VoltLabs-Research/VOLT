@@ -8,6 +8,8 @@ import TimestepViewer from './components/TimestepViewer';
 import TimestepControls from './components/TimestepControls';
 import DislocationAnalyzer from './components/DislocationAnalyzer';
 import useTimestepManager from './hooks/useTimestepManager';
+import AnalysisConfig from './components/AnalysisConfig';
+import useDislocationAnalysis from './hooks/useDislocationAnalysis';
 import type { FileInfo, Dislocation } from './types/index';
 import './App.css';
 
@@ -37,7 +39,15 @@ const App = () => {
     const [selectedFile, setSelectedFile] = useState<FileInfo | undefined>();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showDislocationAnalysis, setShowDislocationAnalysis] = useState(false);
-    
+
+    const { 
+        loadDefaultConfig, 
+        analyzeCurrentTimestep, 
+        isAnalyzing, 
+        analysis, 
+        clearAnalysis 
+    } = useDislocationAnalysis();
+
     const {
         timesteps,
         currentTimestep,
@@ -52,6 +62,15 @@ const App = () => {
         isConnected
     } = useTimestepManager(selectedFile || null);
 
+    const handleAnalyze = async () => {
+        await analyzeCurrentTimestep(selectedFile.file_id, currentTimestep);
+    };
+
+    useEffect(() => {
+        loadDefaultConfig();
+        setShowDislocationAnalysis(false);
+    }, [currentTimestep]);
+
     const handleUploadError = (error: string) => {
         console.error('Upload error:', error);
     };
@@ -65,10 +84,6 @@ const App = () => {
         console.log('Visualizing dislocation:', dislocation);
     };
 
-    const toggleDislocationAnalysis = () => {
-        setShowDislocationAnalysis(prev => !prev);
-    };
-
     return (
         <main className='editor-container'>
             <FileList
@@ -79,6 +94,8 @@ const App = () => {
                 selectedFile={selectedFile}
                 refreshTrigger={refreshTrigger}
             />
+
+            <AnalysisConfig />
 
             <section className='editor-camera-info-container'>
                 <h3 className='editor-camera-info-title'>Perspective Camera</h3>
@@ -146,28 +163,24 @@ const App = () => {
                 />
             </div>
 
-            <section className='editor-dislocations-button-container'>
-                <button 
-                    onClick={toggleDislocationAnalysis}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={!selectedFile}
-                >
-                    <IoAddOutline className='editor-dislocations-button-icon' />
-                    <span className='editor-dislocations-button-text'>
-                        {showDislocationAnalysis ? 'Hide' : 'Show'} Dislocation Analysis
-                    </span>
-                </button>
+            <section className='editor-dislocations-button-container' onClick={handleAnalyze}>
+                <IoAddOutline className='editor-dislocations-button-icon' />
+                <span className='editor-dislocations-button-text'>
+                    Dislocation Analysis
+                </span>
             </section>
 
-            {/* Dislocation Analysis Panel */}
-            {showDislocationAnalysis && selectedFile && (
-                <div className="mt-4 p-4 border border-gray-300 rounded-lg bg-white">
-                    <DislocationAnalyzer
-                        selectedFile={selectedFile}
-                        currentTimestep={currentTimestep}
-                        onDislocationVisualize={handleDislocationVisualize}
-                    />
-                </div>
+            {selectedFile && (
+                <DislocationAnalyzer
+                    selectedFile={selectedFile}
+                    showDislocationAnalysis={showDislocationAnalysis}
+                    currentTimestep={currentTimestep}
+                    onDislocationVisualize={handleDislocationVisualize}
+                    isAnalyzing={isAnalyzing}
+                    analysis={analysis}
+                    onClearAnalysis={clearAnalysis}
+                    onLoadDefaultConfig={loadDefaultConfig}
+                />
             )}
         </main>
     );
