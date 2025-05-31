@@ -17,6 +17,16 @@ def save_analysis_result(file_id: str, timestep: int, result: Dict) -> str:
         json.dump(result, file, indent=2)
     return str(result_file)
 
+def load_timestep_data(file_id: str, timestep: int) -> Optional[Dict]:
+    '''Load timestep data from disk'''
+    timestep_file = TIMESTEPS_DIR / f'{file_id}_{timestep}.pkl'
+    
+    if not timestep_file.exists():
+        return None
+    
+    with open(timestep_file, 'rb') as file:
+        return pickle.load(file)
+    
 def load_analysis_result(file_id: str, timestep: int) -> Optional[Dict]:
     '''
     Load analysis result from disk

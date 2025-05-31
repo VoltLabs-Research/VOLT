@@ -13,7 +13,7 @@ from server.models.analysis_result import AnalysisResult
 from server.services.connection_manager import manager
 from server.utils.analysis import (
     save_analysis_result,
-    save_timestep_data,
+    load_timestep_data,
     load_analysis_result,
     process_all_timesteps
 )
@@ -106,16 +106,15 @@ async def stream_timesteps_data(
                 
             batch_timesteps = timesteps[i:i + batch_size]
             batch_data = []
-            
             for timestep in batch_timesteps:
                 try:
                     if include_positions:
                         # Cargar datos completos del timestep
                         timestep_data = load_timestep_data(file_id, timestep)
                         if timestep_data:
-                            positions = safe_to_list(timestep_data['positions'])
-                            atom_types = safe_to_list(timestep_data.get('atom_types', []))
-                            box_bounds = safe_to_list(timestep_data.get('box_bounds', None))
+                            positions = timestep_data['positions']
+                            atom_types = timestep_data.get('atom_types', [])
+                            box_bounds = timestep_data.get('box_bounds', None)
                             
                             batch_data.append({
                                 "timestep": timestep,
@@ -249,9 +248,9 @@ async def websocket_timesteps(websocket: WebSocket, file_id: str):
                 try:
                     timestep_data = load_timestep_data(file_id, timestep)
                     if timestep_data:
-                        positions = safe_to_list(timestep_data['positions'])
-                        atom_types = safe_to_list(timestep_data.get('atom_types', []))
-                        box_bounds = safe_to_list(timestep_data.get('box_bounds', None))
+                        positions = timestep_data['positions']
+                        atom_types = timestep_data.get('atom_types', [])
+                        box_bounds = timestep_data.get('box_bounds', None)
                             
                         await manager.send_personal_message(json.dumps({
                             "type": "single_timestep",
@@ -500,9 +499,9 @@ async def get_timestep_positions(file_id: str, timestep: int) -> Dict[str, Any]:
         )
     
     try:
-        positions = safe_to_list(timestep_data['positions'])
-        atom_types = safe_to_list(timestep_data.get('atom_types', []))
-        box_bounds = safe_to_list(timestep_data.get('box_bounds', None))
+        positions = timestep_data['positions']
+        atom_types = timestep_data.get('atom_types', [])
+        box_bounds = timestep_data.get('box_bounds', None)
         
         return {
             'file_id': file_id,
