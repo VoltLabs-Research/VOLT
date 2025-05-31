@@ -9,10 +9,14 @@ from opendxa.utils.ptm_templates import get_ptm_templates
 from opendxa.utils.logging import setup_logging
 from opendxa.core import analyze_timestep, init_worker
 from server.models.analysis_config import AnalysisConfig
-from server.models.file_info import FileInfo
-from server.models.analysis_request import AnalysisRequest
 from server.models.analysis_result import AnalysisResult
 from server.services.connection_manager import manager
+from server.utils.analysis import (
+    save_analysis_result,
+    save_timestep_data,
+    load_analysis_result,
+    process_all_timesteps
+)
 
 import pickle
 import json
@@ -36,14 +40,6 @@ logger = logging.getLogger(__name__)
 
 TEMPLATES, TEMPLATES_SIZES = get_ptm_templates()
 executor = None
-
-DATA_DIR = Path('data')
-TIMESTEPS_DIR = DATA_DIR / 'timesteps'
-RESULTS_DIR = DATA_DIR / 'results'
-
-DATA_DIR.mkdir(exist_ok=True)
-TIMESTEPS_DIR.mkdir(exist_ok=True)
-RESULTS_DIR.mkdir(exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -80,83 +76,6 @@ app.add_middleware(
 
 uploaded_files: Dict[str, Dict[str, Any]] = {}
 analysis_cache: Dict[str, Dict] = {}
-
-def save_timestep_data(file_id: str, timestep: int, data: Dict) -> str:
-    '''Save timestep data to disk and return the file path'''
-    timestep_file = TIMESTEPS_DIR / f'{file_id}_{timestep}.pkl'
-    with open(timestep_file, 'wb') as file:
-        pickle.dump(data, file)
-    return str(timestep_file)
-
-def load_timestep_data(file_id: str, timestep: int) -> Optional[Dict]:
-    '''Load timestep data from disk'''
-    timestep_file = TIMESTEPS_DIR / f'{file_id}_{timestep}.pkl'
-    if not timestep_file.exists():
-        return None
-    
-    with open(timestep_file, 'rb') as file:
-        return pickle.load(file)
-    
-def load_analysis_result(file_id: str, timestep: int) -> Optional[Dict]:
-    '''Load analysis result from disk'''
-    result_file = RESULTS_DIR / f'{file_id}_{timestep}_analysis.json'
-    if not result_file.exists():
-        return None
-    
-    with open(result_file, 'r') as f:
-        return json.load(f)
-
-def process_all_timesteps(file_path: str, file_id: str) -> Dict[str, Any]:
-    '''Process and save all timesteps from a LAMMPS trajectory file'''
-    parser = LammpstrjParser(file_path)
-    timesteps_info = []
-    total_timesteps = 0
-    atoms_count = 0
-    
-    logger.info(f'Processing all timesteps for file_id: {file_id}')
-
-    for i, data in enumerate(parser.iter_timesteps()):
-        timestep = data['timestep']
-        
-        save_timestep_data(file_id, timestep, data)
-        
-        if i == 0:
-            atoms_count = len(data['positions'])
-        
-        timesteps_info.append({
-            'timestep': timestep,
-            'atoms_count': len(data['positions']),
-            'box_bounds': data.get('box_bounds', None)
-        })
-        
-        total_timesteps += 1
-        
-        if (i + 1) % 100 == 0:
-            logger.info(f'Processed {i+1} timesteps for file_id: {file_id}')
-    
-    logger.info(f'Completed processing {total_timesteps} timesteps for file_id: {file_id}')
-    
-    return {
-        'total_timesteps': total_timesteps,
-        'atoms_count': atoms_count,
-        'timesteps_info': timesteps_info
-    }
-    
-def save_analysis_result(file_id: str, timestep: int, result: Dict) -> str:
-    '''Save analysis result to disk'''
-    result_file = RESULTS_DIR / f'{file_id}_{timestep}_analysis.json'
-    with open(result_file, 'w') as f:
-        json.dump(result, f, indent=2)
-    return str(result_file)
-
-def safe_to_list(data):
-    '''Helper function to convert numpy arrays to lists'''
-    if hasattr(data, 'tolist'):
-        return data.tolist()
-    elif isinstance(data, (list, tuple)):
-        return list(data)
-    else:
-        return data
 
 async def stream_timesteps_data(
     websocket: WebSocket, 
