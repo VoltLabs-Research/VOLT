@@ -1,8 +1,8 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from services.connection_manager import ConnectionManager
+from server.services.connection_manager import ConnectionManager
 from server.utils.analysis import load_timestep_data
-from typing import List
 from server.config import uploaded_files
+from typing import List
 
 import logging
 import json
@@ -92,12 +92,12 @@ async def stream_timesteps_data(
         if session_id in manager.streaming_sessions:
             del manager.streaming_sessions[session_id]
 
-@router.websocket('/ws/timesteps/{file_id}')
+@router.websocket('/timesteps/{file_id}')
 async def websocket_timesteps(websocket: WebSocket, file_id: str):
     '''
     WebSocket endpoint for streaming and timesteps
     '''
-    await manager.connect()
+    await manager.connect(websocket)
 
     if file_id not in uploaded_files:
         await manager.send_personal_message(json.dumps({

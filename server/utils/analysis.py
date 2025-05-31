@@ -106,7 +106,7 @@ def save_analysis_result(file_id: str, timestep: int, result: Dict) -> str:
 def load_timestep_data(file_id: str, timestep: int) -> Optional[Dict]:
     '''Load timestep data from disk'''
     timestep_file = TIMESTEPS_DIR / f'{file_id}_{timestep}.pkl'
-    
+
     if not timestep_file.exists():
         return None
     
@@ -128,7 +128,7 @@ def save_timestep_data(file_id: str, timestep: int, data: Dict) -> str:
     '''
     Save timestep data to disk and return the file path
     '''
-    timestep_file= TIMESTEPS_DIR / f'{file_id}_{timestep_file}.pkl'
+    timestep_file= TIMESTEPS_DIR / f'{file_id}_{timestep}.pkl'
     with open(timestep_file, 'wb') as file:
         pickle.dump(data, file)
     return str(timestep_file)

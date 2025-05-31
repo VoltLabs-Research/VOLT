@@ -47,7 +47,7 @@ export const uploadFile = async (file: File, onProgress?: (progress: number) => 
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await api.post('/upload', formData, {
+    const response = await api.post('/files/', formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
@@ -63,7 +63,7 @@ export const uploadFile = async (file: File, onProgress?: (progress: number) => 
 };
 
 export const listFiles = async (): Promise<{ files: FileInfo[] }> => {
-    const response = await api.get('/files');
+    const response = await api.get('/files/');
     return response.data;
 };
 

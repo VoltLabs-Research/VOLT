@@ -1,4 +1,4 @@
-from models.analysis_config import AnalysisConfig
+from server.models.analysis_config import AnalysisConfig
 
 def args_from_config(config: AnalysisConfig, output_file: str = 'temp_output.json') -> object:
     '''Convert AnalysisConfig to args object compatible with OpenDXA'''

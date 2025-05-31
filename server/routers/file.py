@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from typing import Dict, Any, List
 from server.config import uploaded_files
 from server.utils.analysis import process_all_timesteps, load_timestep_data
+from server.config import TIMESTEPS_DIR, RESULTS_DIR, analysis_cache
 
 import uuid
 import logging
@@ -13,6 +14,41 @@ import os
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+@router.delete('/{file_id}', summary='Delete uploaded file and all associated data')
+async def delete_file(file_id: str) -> Dict[str, str]:
+    if file_id not in uploaded_files:
+        raise HTTPException(status_code=404, detail=f'File with ID {file_id} not found')
+    
+    try:
+        metadata = uploaded_files[file_id]
+        
+        if os.path.exists(metadata['file_path']):
+            os.unlink(metadata['file_path'])
+        
+        for timestep_info in metadata['timesteps_info']:
+            timestep = timestep_info['timestep']
+            timestep_file = TIMESTEPS_DIR / f'{file_id}_{timestep}.pkl'
+            if timestep_file.exists():
+                timestep_file.unlink()
+            
+            result_file = RESULTS_DIR / f'{file_id}_{timestep}_analysis.json'
+            if result_file.exists():
+                result_file.unlink()
+        
+        del uploaded_files[file_id]
+        
+        keys_to_remove = [key for key in analysis_cache.keys() if key.startswith(file_id)]
+        for key in keys_to_remove:
+            del analysis_cache[key]
+        
+        return {
+            'message': f'File {file_id} and all associated data deleted successfully'
+        }
+        
+    except Exception as e:
+        logger.error(f'Error deleting file: {e}')
+        raise HTTPException(status_code=500, detail=f'Error deleting file: {str(e)}')
+    
 @router.post('/', summary='Upload LAMMPS trajectory file and process all timesteps')
 async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:
     '''
@@ -55,7 +91,7 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f'Error processing file: {str(e)}')
 
 @router.get('/', summary='List uploaded files')
-async def list_files() -> Dict[str, List[str, Any]]:
+async def list_files() -> Dict[str, List[Dict[str, Any]]]:
     '''
     List all uploaded files with their metadata
     '''
