@@ -30,3 +30,4 @@ def step_classify_ptm(ctx, neighbors):
     types, quats = ptm_classifier.classify()
     ctx['logger'].info(f'PTM classified: {dict(zip(*np.unique(types, return_counts=True)))}')
     return {'types': types, 'quaternions': quats, 'neighbors': neighbors}
+
