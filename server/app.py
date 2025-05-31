@@ -1,21 +1,20 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional, List, Dict, Any
+from typing import List, Dict, Any
 from contextlib import asynccontextmanager
-from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
 from opendxa.utils.ptm_templates import get_ptm_templates
 from opendxa.utils.logging import setup_logging
-from opendxa.core import analyze_timestep, init_worker
+from opendxa.core import init_worker
 from server.models.analysis_config import AnalysisConfig
 from server.models.analysis_result import AnalysisResult
 from server.services.connection_manager import manager
-from server.utils.args import args_from_config
 from server.utils.analysis import (
     save_analysis_result,
     load_timestep_data,
     load_analysis_result,
-    process_all_timesteps
+    process_all_timesteps,
+    analyze_timestep_wrapper
 )
 
 import pickle
@@ -286,84 +285,6 @@ async def websocket_timesteps(websocket: WebSocket, file_id: str):
             "type": "error",
             "message": str(e)
         }), websocket)
-
-def analyze_timestep_wrapper(data: Dict, config: AnalysisConfig) -> Dict:
-    '''Wrapper function for analyze_timestep that returns results instead of writing to file'''
-    try:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as temp_file:
-            args = args_from_config(config, temp_file.name)
-
-            start_time = time.time()
-            analyze_timestep(data, args)
-            end_time = time.time()
-            execution_time = end_time - start_time
-
-            # Check if output file exists and has content
-            if os.path.exists(temp_file.name):
-                file_size = os.path.getsize(temp_file.name)
-                logger.info(f"Output file created: {temp_file.name}, size: {file_size} bytes")
-                
-                if file_size > 0:
-                    try:
-                        with open(temp_file.name, 'r') as file:
-                            result = json.load(file)
-                        os.unlink(temp_file.name)
-
-                        return {
-                            'success': True,
-                            'timestep': data['timestep'],
-                            'dislocations': result.get('dislocations', []),
-                            'analysis_metadata': result.get('analysis_metadata', {}),
-                            'execution_time': execution_time,
-                            'error': None
-                        }
-                    except json.JSONDecodeError as e:
-                        logger.error(f"JSON decode error in output file: {e}")
-                        # Read the file content for debugging
-                        with open(temp_file.name, 'r') as file:
-                            content = file.read()
-                        logger.error(f"File content (first 1000 chars): {content[:1000]}")
-                        os.unlink(temp_file.name)
-                        
-                        return {
-                            'success': False,
-                            'timestep': data['timestep'],
-                            'dislocations': [],
-                            'analysis_metadata': {},
-                            'execution_time': execution_time,
-                            'error': f'JSON decode error: {str(e)}'
-                        }
-                else:
-                    logger.error(f"Output file is empty: {temp_file.name}")
-                    os.unlink(temp_file.name)
-                    return {
-                        'success': False,
-                        'timestep': data['timestep'],
-                        'dislocations': [],
-                        'analysis_metadata': {},
-                        'execution_time': execution_time,
-                        'error': 'Output file is empty - analysis may have failed silently'
-                    }
-            else:
-                logger.error(f"Output file not created: {temp_file.name}")
-                return {
-                    'success': False,
-                    'timestep': data['timestep'],
-                    'dislocations': [],
-                    'analysis_metadata': {},
-                    'execution_time': execution_time,
-                    'error': 'No output file generated'
-                }
-    except Exception as e:
-        logger.error(f'Error in analysis: {e}', exc_info=True)
-        return {
-            'success': False,
-            'timestep': data.get('timestep', -1),
-            'dislocations': [],
-            'analysis_metadata': {},
-            'execution_time': 0,
-            'error': str(e)
-        }
 
 # Todos los endpoints REST existentes...
 @app.get('/', summary='API Health Check')
