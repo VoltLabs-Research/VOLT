@@ -1,24 +1,7 @@
 import React from 'react';
 import { CiPlay1, CiPause1 } from "react-icons/ci";
-import type { FileInfo } from '../types';
+import type { TimestepControlsProps } from '../types';
 import EditorWidget from './EditorWidget';
-
-interface TimestepControlsProps {
-    fileInfo: FileInfo | null;
-    timesteps: number[];
-    currentTimestep: number;
-    onTimestepChange: (timestep: number) => void;
-    isPlaying: boolean;
-    onPlayPause: () => void;
-    playSpeed: number;
-    onSpeedChange: (speed: number) => void;
-    isConnected: boolean;
-    isStreaming: boolean;
-    streamProgress?: { current: number; total: number } | null;
-    onStartPreloading: () => void;
-    onStopPreloading: () => void;
-    preloadedCount: number;
-}
 
 const TimestepControls: React.FC<TimestepControlsProps> = ({ 
     fileInfo, 

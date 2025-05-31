@@ -1,15 +1,7 @@
 import React, { useMemo } from 'react';
-import type { TimestepViewerProps } from '../types/index';
+import type { ExtendedTimestepViewerProps } from '../types/index';
 import AtomParticles from './AtomParticles';
-import Loader from './Loader';
 import TimestepAnimator from './TimestepAnimator';
-import { createPortal } from 'react-dom';
-
-interface ExtendedTimestepViewerProps extends TimestepViewerProps {
-    timestepData?: any;
-    loading?: boolean;
-    error?: string | null;
-}
 
 const TimestepViewer: React.FC<ExtendedTimestepViewerProps> = ({ 
     fileInfo, 

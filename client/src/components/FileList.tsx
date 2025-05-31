@@ -1,16 +1,10 @@
 import React, { useEffect } from 'react';
 import useAPI from '../hooks/useAPI';
 import { deleteFile, listFiles } from '../services/api';
-import type { FileInfo } from '../types/index';
 import { IoIosArrowDown } from 'react-icons/io';
 import { BsThreeDots } from "react-icons/bs";
 import EditorWidget from './EditorWidget';
-
-interface FileListProps {
-    onFileSelect: (file: FileInfo) => void;
-    selectedFile?: FileInfo;
-    refreshTrigger?: number;
-}
+import type { FileInfo, FileListProps } from '../types/index';
 
 export const FileList: React.FC<FileListProps> = ({ 
     onFileSelect, 

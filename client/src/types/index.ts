@@ -85,11 +85,75 @@ export interface AtomPosition{
     type: number;
 }
 
+export interface TimestepSelectorProps {
+    fileId: string;
+    selectedTimestep?: number;
+    onTimestepSelect: (timestep: number | undefined) => void;
+}
+
+export interface ExtendedTimestepViewerProps extends TimestepViewerProps {
+    timestepData?: any;
+    loading?: boolean;
+    error?: string | null;
+}
+
+export interface DislocationVisualizerProps{
+    dislocations: Dislocation[];
+    selectedDislocationId?: string;
+    visible?: boolean;
+    scale?: number;
+}
+
+export interface FileListProps {
+    onFileSelect: (file: FileInfo) => void;
+    selectedFile?: FileInfo;
+    refreshTrigger?: number;
+}
+
+export interface EditorWidgetProps {
+    children: React.ReactNode;
+    className?: string;
+}
+
+export interface TimestepControlsProps {
+    fileInfo: FileInfo | null;
+    timesteps: number[];
+    currentTimestep: number;
+    onTimestepChange: (timestep: number) => void;
+    isPlaying: boolean;
+    onPlayPause: () => void;
+    playSpeed: number;
+    onSpeedChange: (speed: number) => void;
+    isConnected: boolean;
+    isStreaming: boolean;
+    streamProgress?: { current: number; total: number } | null;
+    onStartPreloading: () => void;
+    onStopPreloading: () => void;
+    preloadedCount: number;
+}
+
+export interface DislocationAnalyzerProps {
+    selectedFile: FileInfo;
+    currentTimestep: number;
+    showDislocationAnalysis: boolean;
+    onDislocationVisualize?: (dislocation: Dislocation) => void;
+    isAnalyzing: boolean;
+    analysis: AnalysisResult | null;
+    onClearAnalysis: () => void;
+    onLoadDefaultConfig: () => Promise<void>;
+}
+
 export interface TimestepData{
     positions: number[][];
     atom_types: number[];
     atoms_count: number;
     box_bounds: number[][];
+}
+
+export interface DislocationResultsProps{
+    analysis: AnalysisResult;
+    onDislocationSelect?: (dislocation: Dislocation) => void;
+    selectedDislocationId?: string;
 }
 
 export interface TimestepViewerProps{
@@ -99,4 +163,50 @@ export interface TimestepViewerProps{
     playSpeed: number;
     timesteps: number[];
     onTimestepChange: (timestep: number) => void;
+}
+
+export interface TimestepData {
+    timestep: number;
+    atoms_count: number;
+    positions: number[][];
+    atom_types: number[];
+    box_bounds: number[][] | null;
+    error?: string;
+}
+
+export interface WebSocketMessage {
+    type: string;
+    file_id?: string;
+    data?: any;
+    error?: string;
+    message?: string;
+    timestep?: number;
+    total_timesteps?: number;
+    batch_index?: number;
+    total_batches?: number;
+    progress?: {
+        current: number;
+        total: number;
+    };
+}
+
+export interface UseWebSocketReturn {
+    isConnected: boolean;
+    connectionError: string | null;
+    startStream: (options?: StreamOptions) => void;
+    stopStream: () => void;
+    getTimestep: (timestep: number) => void;
+    isStreaming: boolean;
+    progress: { current: number; total: number } | null;
+    receivedData: TimestepData[];
+    clearData: () => void;
+    connectionInfo: any;
+}
+
+export interface StreamOptions {
+    includePositions?: boolean;
+    batchSize?: number;
+    delayMs?: number;
+    startTimestep?: number;
+    endTimestep?: number;
 }

@@ -1,11 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useWebSocket } from '../hooks/useWebSocket';
-
-interface TimestepSelectorProps {
-    fileId: string;
-    selectedTimestep?: number;
-    onTimestepSelect: (timestep: number | undefined) => void;
-}
+import type { TimestepSelectorProps } from '../types';
 
 export const TimestepSelector: React.FC<TimestepSelectorProps> = ({
     fileId,

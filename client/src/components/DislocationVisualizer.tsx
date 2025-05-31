@@ -2,14 +2,7 @@ import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Line, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
-import type { Dislocation } from '../types/index';
-
-interface DislocationVisualizerProps{
-    dislocations: Dislocation[];
-    selectedDislocationId?: string;
-    visible?: boolean;
-    scale?: number;
-}
+import type { DislocationVisualizerProps } from '../types/index';
 
 const DislocationVisualizer: React.FC<DislocationVisualizerProps> = ({
     dislocations,

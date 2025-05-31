@@ -1,50 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-
-interface TimestepData {
-    timestep: number;
-    atoms_count: number;
-    positions: number[][];
-    atom_types: number[];
-    box_bounds: number[][] | null;
-    error?: string;
-}
-
-interface WebSocketMessage {
-    type: string;
-    file_id?: string;
-    data?: any;
-    error?: string;
-    message?: string;
-    timestep?: number;
-    total_timesteps?: number;
-    batch_index?: number;
-    total_batches?: number;
-    progress?: {
-        current: number;
-        total: number;
-    };
-}
-
-interface UseWebSocketReturn {
-    isConnected: boolean;
-    connectionError: string | null;
-    startStream: (options?: StreamOptions) => void;
-    stopStream: () => void;
-    getTimestep: (timestep: number) => void;
-    isStreaming: boolean;
-    progress: { current: number; total: number } | null;
-    receivedData: TimestepData[];
-    clearData: () => void;
-    connectionInfo: any;
-}
-
-interface StreamOptions {
-    includePositions?: boolean;
-    batchSize?: number;
-    delayMs?: number;
-    startTimestep?: number;
-    endTimestep?: number;
-}
+import type { WebSocketMessage, TimestepData, UseWebSocketReturn, StreamOptions } from '../types';
 
 export const useWebSocket = (fileId: string | null): UseWebSocketReturn => {
     const wsRef = useRef<WebSocket | null>(null);

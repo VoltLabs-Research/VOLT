@@ -1,9 +1,5 @@
 import React, { useRef, useCallback } from 'react';
-
-interface EditorWidgetProps {
-    children: React.ReactNode;
-    className?: string;
-}
+import type { EditorWidgetProps } from '../types/index';
 
 const EditorWidget: React.FC<EditorWidgetProps> = ({ 
     children, 

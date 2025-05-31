@@ -1,20 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import DislocationResults from './DislocationResults';
-import type { FileInfo, Dislocation } from '../types/index';
+import type { Dislocation, DislocationAnalyzerProps } from '../types/index';
 import EditorWidget from './EditorWidget';
 import Loader from './Loader';
 import { LiaAtomSolid } from "react-icons/lia";
-
-interface DislocationAnalyzerProps {
-    selectedFile: FileInfo;
-    currentTimestep: number;
-    showDislocationAnalysis: boolean;
-    onDislocationVisualize?: (dislocation: Dislocation) => void;
-    isAnalyzing: boolean;
-    analysis: AnalysisResult | null;
-    onClearAnalysis: () => void;
-    onLoadDefaultConfig: () => Promise<void>;
-}
 
 const DislocationAnalyzer: React.FC<DislocationAnalyzerProps> = ({ 
     currentTimestep, 

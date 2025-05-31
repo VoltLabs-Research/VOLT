@@ -1,11 +1,5 @@
 import React from 'react';
-import type { AnalysisResult, Dislocation } from '../types/index';
-
-interface DislocationResultsProps {
-    analysis: AnalysisResult;
-    onDislocationSelect?: (dislocation: Dislocation) => void;
-    selectedDislocationId?: string;
-}
+import type { DislocationResultsProps } from '../types/index';
 
 const DislocationResults: React.FC<DislocationResultsProps> = ({ analysis, onDislocationSelect }) => {
     const formatBurgersVector = (vector: number[]): string => {
@@ -70,7 +64,12 @@ const DislocationResults: React.FC<DislocationResultsProps> = ({ analysis, onDis
     return (
         <div className='dislocation-results-container'>
             <div className='dislocation-results-header-container'>
-                <h3 className='dislocation-results-header-stats'>{analysis.dislocations.length} dislocations for timestep {analysis.timestep} ({analysis.execution_time.toFixed(2)}s)</h3>
+                <h3 className='dislocation-results-header-stats'>
+                {analysis.dislocations.length > 0 ? 
+                    `${analysis.dislocations.length} dislocations` : 
+                    'No dislocations found'
+                } for timestep {analysis.timestep} ({analysis.execution_time.toFixed(2)}s)
+                </h3>
             </div>
             <div className='dislocation-results-body-container'>
                 {analysis.dislocations.map((dislocation, index) => (

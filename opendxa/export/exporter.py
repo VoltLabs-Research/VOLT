@@ -114,15 +114,16 @@ class DislocationExporter:
     def to_json(self, filename: str):
         # If filename is provided, use it directly (for API calls)
         # Otherwise, use the default output directory structure
-        if filename and os.path.isabs(filename):
-            # Absolute path provided (likely from API), use it directly
-            output_filename = filename
-            # Create directory if needed
-            os.makedirs(os.path.dirname(output_filename), exist_ok=True)
-        else:
-            # Relative path or no path - use output_dir structure
-            os.makedirs(self.output_dir, exist_ok=True)
-            output_filename = os.path.join(self.output_dir, filename or f'timestep_{self.timestep}.json')
+        # if filename and os.path.isabs(filename):
+        #    # Absolute path provided (likely from API), use it directly
+        #    output_filename = filename
+        #    # Create directory if needed
+        #    os.makedirs(os.path.dirname(output_filename), exist_ok=True)
+        #else:
+        #    # Relative path or no path - use output_dir structure
+        #    os.makedirs(self.output_dir, exist_ok=True)
+        #    output_filename = os.path.join(self.output_dir, filename or f'timestep_{self.timestep}.json')
+        output_filename = os.path.join(self.output_dir, filename or f'timestep_{self.timestep}.json')
         
         output = {
             'timestep': self.timestep,
