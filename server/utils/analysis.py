@@ -94,7 +94,6 @@ def analyze_timestep_wrapper(data: Dict, config: AnalysisConfig) -> Dict:
             'error': str(e)
         }
 
-
 def save_analysis_result(file_id: str, timestep: int, result: Dict) -> str:
     '''
     Save analysis result to disk

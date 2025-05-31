@@ -30,5 +30,3 @@ class ConnectionManager:
                 await connection.send_text(message)
             except:
                 self.disconnect(connection)
-
-manager = ConnectionManager()

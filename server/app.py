@@ -9,6 +9,7 @@ from opendxa.core import init_worker
 from server.models.analysis_config import AnalysisConfig
 from server.models.analysis_result import AnalysisResult
 from server.services.connection_manager import manager
+from server.config import DATA_DIR, TIMESTEPS_DIR, RESULTS_DIR
 from server.utils.analysis import (
     save_analysis_result,
     load_timestep_data,
@@ -17,7 +18,6 @@ from server.utils.analysis import (
     analyze_timestep_wrapper
 )
 
-import pickle
 import json
 import os
 import tempfile
@@ -26,7 +26,6 @@ import uvicorn
 import uuid
 import time
 import traceback
-import asyncio
 import argparse
 import traceback
 import time
@@ -73,109 +72,6 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-uploaded_files: Dict[str, Dict[str, Any]] = {}
-analysis_cache: Dict[str, Dict] = {}
-
-async def stream_timesteps_data(
-    websocket: WebSocket, 
-    file_id: str, 
-    timesteps: List[int], 
-    include_positions: bool = True,
-    batch_size: int = 10,
-    delay_ms: int = 100
-):
-    """Stream timestep data through WebSocket"""
-    session_id = f"{file_id}_{id(websocket)}"
-    manager.streaming_sessions[session_id] = True
-    
-    try:
-        total_timesteps = len(timesteps)
-        await manager.send_personal_message(json.dumps({
-            "type": "stream_start",
-            "file_id": file_id,
-            "total_timesteps": total_timesteps,
-            "batch_size": batch_size
-        }), websocket)
-
-        # Procesar en lotes
-        for i in range(0, len(timesteps), batch_size):
-            # Verificar si la sesión sigue activa
-            if not manager.streaming_sessions.get(session_id, False):
-                break
-                
-            batch_timesteps = timesteps[i:i + batch_size]
-            batch_data = []
-            for timestep in batch_timesteps:
-                try:
-                    if include_positions:
-                        # Cargar datos completos del timestep
-                        timestep_data = load_timestep_data(file_id, timestep)
-                        if timestep_data:
-                            positions = timestep_data['positions']
-                            atom_types = timestep_data.get('atom_types', [])
-                            box_bounds = timestep_data.get('box_bounds', None)
-                            
-                            batch_data.append({
-                                "timestep": timestep,
-                                "atoms_count": len(positions),
-                                "positions": positions,
-                                "atom_types": atom_types,
-                                "box_bounds": box_bounds
-                            })
-                    else:
-                        # Solo metadatos básicos
-                        timestep_data = load_timestep_data(file_id, timestep)
-                        if timestep_data:
-                            batch_data.append({
-                                "timestep": timestep,
-                                "atoms_count": len(timestep_data['positions']),
-                                "has_data": True
-                            })
-                        
-                except Exception as e:
-                    logger.error(f"Error loading timestep {timestep}: {e}")
-                    batch_data.append({
-                        "timestep": timestep,
-                        "error": str(e)
-                    })
-
-            # Enviar lote
-            message = {
-                "type": "timestep_batch",
-                "file_id": file_id,
-                "batch_index": i // batch_size,
-                "total_batches": (len(timesteps) + batch_size - 1) // batch_size,
-                "data": batch_data,
-                "progress": {
-                    "current": min(i + batch_size, len(timesteps)),
-                    "total": total_timesteps
-                }
-            }
-            
-            await manager.send_personal_message(json.dumps(message), websocket)
-            
-            # Pequeña pausa para no saturar
-            if delay_ms > 0:
-                await asyncio.sleep(delay_ms / 1000)
-
-        # Señal de finalización
-        await manager.send_personal_message(json.dumps({
-            "type": "stream_complete",
-            "file_id": file_id,
-            "total_timesteps": total_timesteps
-        }), websocket)
-
-    except Exception as e:
-        logger.error(f"Error in stream_timesteps_data: {e}")
-        await manager.send_personal_message(json.dumps({
-            "type": "stream_error",
-            "file_id": file_id,
-            "error": str(e)
-        }), websocket)
-    finally:
-        # Limpiar sesión
-        if session_id in manager.streaming_sessions:
-            del manager.streaming_sessions[session_id]
 
 @app.websocket("/ws/timesteps/{file_id}")
 async def websocket_timesteps(websocket: WebSocket, file_id: str):
