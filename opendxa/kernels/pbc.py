@@ -1,6 +1,20 @@
 from numba import cuda
 import math
 
+@cuda.jit(device=True)
+def apply_pbc_component(delta, L):
+    '''
+    Wrap a single component delta into the minimum‐image convention 
+    given box length L along that axis.
+    '''
+    half_L = 0.5 * L
+    if delta > half_L:
+        return delta - L
+    elif delta < -half_L:
+        return delta + L
+    else:
+        return delta
+
 @cuda.jit
 def gpu_compute_displacement_field_kernel_pbc(
     positions, 
