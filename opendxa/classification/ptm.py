@@ -1,5 +1,6 @@
 from numba import cuda
-from opendxa.utils.kernels import ptm_kernel, get_cuda_launch_config
+from opendxa.utils.cuda import get_cuda_launch_config
+from opendxa.kernels.ptm import ptm_kernel
 import numpy as np
 
 class PTMLocalClassifier:

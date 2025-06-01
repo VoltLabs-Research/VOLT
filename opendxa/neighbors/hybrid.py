@@ -1,4 +1,4 @@
-from opendxa.utils.kernels import find_neighbors_unified_kernel
+from opendxa.kernels.neighbors import find_neighbors_unified_kernel
 import numpy as np
 import warnings
 

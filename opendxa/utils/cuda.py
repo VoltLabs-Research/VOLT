@@ -1,10 +1,16 @@
 from numba import cuda
+from opendxa.kernels.pbc import gpu_compute_displacement_field_kernel_pbc
+from opendxa.kernels.elastic_mapping import gpu_elastic_mapping_kernel
 import numpy as np
 import math
-from opendxa.utils.kernels import (
-    gpu_compute_displacement_field_kernel_pbc,
-    gpu_elastic_mapping_kernel
-)
+
+def get_cuda_launch_config(items, threads_per_block=256, min_blocks_per_sm=16):
+    device = cuda.get_current_device()
+    sms = device.MULTIPROCESSOR_COUNT
+    min_blocks = sms * min_blocks_per_sm
+    data_blocks = math.ceil(items / threads_per_block)
+    blocks = max(min_blocks, data_blocks)
+    return blocks, threads_per_block
 
 def elastic_mapping_gpu(displacement_jumps, ideal_vectors, tolerance):
     num_edges = len(displacement_jumps)

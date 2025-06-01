@@ -1,5 +1,6 @@
 from numba import cuda
-from opendxa.utils.kernels import burgers_kernel, get_cuda_launch_config
+from opendxa.utils.cuda import get_cuda_launch_config
+from opendxa.kernels.burgers import burgers_kernel
 from opendxa.utils.burgers import compute_local_scales
 import numpy as np
 

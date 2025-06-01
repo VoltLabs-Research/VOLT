@@ -1,5 +1,6 @@
 from numba import cuda
-from opendxa.utils.kernels import cna_kernel, get_cuda_launch_config
+from opendxa.utils.cuda import get_cuda_launch_config
+from opendxa.kernels.cna import cna_kernel
 import numpy as np
 
 class CNALocalClassifier:

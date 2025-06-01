@@ -1,5 +1,6 @@
 from numba import cuda
-from opendxa.utils.kernels import classify_line_kernel, get_cuda_launch_config
+from opendxa.utils.cuda import get_cuda_launch_config
+from opendxa.kernels.line_classification import classify_line_kernel
 import numpy as np
 
 class ClassificationEngine:
