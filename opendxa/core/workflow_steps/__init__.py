@@ -1,5 +1,5 @@
 from opendxa.core.sequentials import Sequentials
-from .neighbors import step_neighbors, step_classify_ptm
+from .neighbors import step_neighbors, step_classify_ptm, step_classify_cna
 from .filtering import step_surface_filter, step_delaunay_tessellation
 from .connectivity import step_graph
 from .displacement import step_displacement
@@ -18,17 +18,20 @@ def create_and_configure_workflow(ctx):
     workflow = Sequentials(ctx)
     args = ctx.get('args')
     
-    # Check if we should use fast mode
-    fast_mode = getattr(args, 'fast_mode', False)
-    
     # Core pipeline (always required)
     workflow.register('neighbors', step_neighbors)
-    workflow.register('ptm', step_classify_ptm, depends_on=['neighbors'])
-    workflow.register('filtered', step_surface_filter, depends_on=['ptm'])
+    
+    # Choose classification method based on use_cna argument
+    if args.use_cna:
+        workflow.register('structure_classification', step_classify_cna, depends_on=['neighbors'])
+    else:
+        workflow.register('structure_classification', step_classify_ptm, depends_on=['neighbors'])
+    
+    workflow.register('filtered', step_surface_filter, depends_on=['structure_classification'])
     workflow.register('tessellation', step_delaunay_tessellation, depends_on=['filtered'])
     workflow.register('connectivity', step_graph, depends_on=['filtered', 'tessellation'])
     
-    if fast_mode:
+    if args.fast_mode:
         # Fast mode: Skip displacement analysis and some refinement steps
         workflow.register('loops', step_burgers_loops, depends_on=['connectivity', 'filtered'])
         workflow.register('advanced_loops', step_advanced_grouping, depends_on=['loops', 'filtered'])
@@ -36,7 +39,7 @@ def create_and_configure_workflow(ctx):
     else:
         # Full pipeline with enhanced crystallographic analysis
         # Add new clustering and elastic mapping steps
-        workflow.register('cluster', step_build_clusters, depends_on=['ptm'])
+        workflow.register('cluster', step_build_clusters, depends_on=['structure_classification'])
         workflow.register('elastic_map', step_elastic_mapping, depends_on=['cluster', 'tessellation'])
         workflow.register('interface_mesh', step_interface_mesh, depends_on=['elastic_map'])
         
@@ -47,7 +50,7 @@ def create_and_configure_workflow(ctx):
         workflow.register('advanced_loops', step_advanced_grouping, depends_on=['loops', 'filtered'])
         
         # Enhanced unified validation that takes into account elastic mapping
-        workflow.register('validate', step_unified_validation, depends_on=['advanced_loops', 'displacement', 'filtered', 'elastic_map', 'interface_mesh'])
+        workflow.register('validate', step_unified_validation, depends_on=['advanced_loops', 'displacement', 'filtered', 'structure_classification', 'elastic_map', 'interface_mesh'])
         workflow.register('summary', step_summary_report, depends_on=['validate'])
         workflow.register('lines', step_dislocation_lines, depends_on=['advanced_loops', 'filtered'])
         

@@ -1,4 +1,4 @@
-from opendxa.classification import PTMLocalClassifier
+from opendxa.classification import PTMLocalClassifier, CNALocalClassifier
 from opendxa.neighbors import HybridNeighborFinder
 import numpy as np
 
@@ -30,4 +30,42 @@ def step_classify_ptm(ctx, neighbors):
     types, quats = ptm_classifier.classify()
     ctx['logger'].info(f'PTM classified: {dict(zip(*np.unique(types, return_counts=True)))}')
     return {'types': types, 'quaternions': quats, 'neighbors': neighbors}
+
+def step_classify_cna(ctx, neighbors):
+    """
+    Classify local structure using Common Neighbor Analysis (CNA).
+    
+    This step performs structure classification using CNA algorithm instead of PTM.
+    CNA is faster but less accurate than PTM for complex structures.
+    """
+    data = ctx['data']
+    args = ctx['args']
+    
+    # Get cutoff distance from args or use default
+    cutoff_distance = getattr(args, 'cutoff', 3.5)
+    
+    cna_classifier = CNALocalClassifier(
+        positions=data['positions'],
+        box_bounds=data['box'],
+        neighbor_dict=neighbors,
+        cutoff_distance=cutoff_distance,
+        max_neighbors=32  # Fixed max neighbors for CNA
+    )
+    
+    types, cna_signatures = cna_classifier.classify()
+    
+    # CNA doesn't provide quaternions, so we create dummy quaternions
+    # This maintains compatibility with the rest of the workflow
+    N = len(data['positions'])
+    quaternions = np.zeros((N, 4), dtype=np.float32)
+    quaternions[:, 0] = 1.0  # Identity quaternion (w=1, x=y=z=0)
+    
+    ctx['logger'].info(f'CNA classified: {dict(zip(*np.unique(types, return_counts=True)))}')
+    
+    return {
+        'types': types, 
+        'quaternions': quaternions, 
+        'neighbors': neighbors,
+        'cna_signatures': cna_signatures
+    }
 

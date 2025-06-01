@@ -1,17 +1,33 @@
 from opendxa.classification import SurfaceFilter, DelaunayTessellator
 import numpy as np
 
-def step_surface_filter(ctx, ptm):
+def step_surface_filter(ctx, structure_classification):
     args = ctx['args']
     data = ctx['data']
     surface_filter = SurfaceFilter(min_neighbors=args.min_neighbors)
+    
+    # Handle both PTM and CNA classification data
     data_filtered = surface_filter.filter_data(
         positions=data['positions'],
         ids=data['ids'],
-        neighbors=ptm['neighbors'],
-        ptm_types=ptm['types'],
-        quaternions=ptm['quaternions']
+        neighbors=structure_classification['neighbors'],
+        ptm_types=structure_classification['types'],
+        quaternions=structure_classification['quaternions']
     )
+    
+    # Forward classification-specific data to filtered result
+    if 'cna_signatures' in structure_classification:
+        # CNA classification
+        data_filtered['cna_signatures'] = structure_classification['cna_signatures']
+        data_filtered['classification_method'] = 'cna'
+    else:
+        # PTM classification
+        data_filtered['classification_method'] = 'ptm'
+    
+    # Maintain backward compatibility with ptm_types naming
+    # Note: data_filtered already contains 'ptm_types' from SurfaceFilter.filter_data()
+    # so we don't need to reassign it from 'types' key
+    
     n_interior = data_filtered['positions'].shape[0]
     ctx['logger'].info(f'Surface Filter: {n_interior} interior atoms')
     return data_filtered

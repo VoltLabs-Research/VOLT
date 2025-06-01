@@ -1,7 +1,7 @@
 from opendxa.core.unified_burgers_validator import UnifiedBurgersValidator
 import numpy as np
 
-def step_unified_validation(ctx, advanced_loops, displacement, filtered, ptm=None, elastic_map=None, interface_mesh=None):
+def step_unified_validation(ctx, advanced_loops, displacement, filtered, structure_classification=None, elastic_map=None, interface_mesh=None):
     """Enhanced unified validation using Burgers circuits, elastic mapping, and interface mesh"""
     data = ctx['data']
     args = ctx['args']
@@ -20,14 +20,15 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered, ptm=Non
     connectivity_manager = ctx['connectivity_manager']
     connectivity_dict = connectivity_manager.as_lists(use_enhanced=True)
     
-    # Get PTM types for structure analysis
-    ptm_types = None
-    if ptm is not None and isinstance(ptm, dict):
-        ptm_types = ptm.get('types', None)
-        if ptm_types is not None:
-            ctx['logger'].info(f'Structure-aware validation enabled with {len(ptm_types)} atom classifications')
+    # Get structure types for analysis (from either PTM or CNA)
+    structure_types = None
+    if structure_classification is not None and isinstance(structure_classification, dict):
+        structure_types = structure_classification.get('types', None)
+        classification_method = structure_classification.get('classification_method', 'unknown')
+        if structure_types is not None:
+            ctx['logger'].info(f'Structure-aware validation enabled with {len(structure_types)} atom classifications ({classification_method})')
         else:
-            ctx['logger'].debug('PTM data available but no types found')
+            ctx['logger'].debug('Structure classification data available but no types found')
     else:
         ctx['logger'].info('Using default structure assumption for validation')
     
@@ -48,7 +49,7 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered, ptm=Non
         'connectivity': connectivity_dict,
         'displacement_field': displacement['vectors'],
         'loops': advanced_loops['loops'],
-        'ptm_types': ptm_types
+        'ptm_types': structure_types  # Maintain compatibility with existing name
     }
     
     # Add elastic mapping data if available

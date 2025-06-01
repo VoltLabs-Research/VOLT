@@ -19,6 +19,7 @@ def args_from_config(config: AnalysisConfig, output_file: str = 'temp_output.jso
     args.allow_non_standard_burgers = config.allow_non_standard_burgers
     args.validation_tolerance = config.validation_tolerance
     args.fast_mode = config.fast_mode
+    args.use_cna = config.use_cna
     args.max_loops = config.max_loops
     args.max_connections_per_atom = config.max_connections_per_atom
     args.loop_timeout = config.loop_timeout

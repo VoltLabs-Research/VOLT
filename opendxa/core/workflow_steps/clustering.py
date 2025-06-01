@@ -5,9 +5,9 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-def step_build_clusters(ctx, ptm):
+def step_build_clusters(ctx, structure_classification):
     """
-    Build crystalline clusters based on PTM classification results.
+    Build crystalline clusters based on structure classification results (PTM or CNA).
     Groups atoms with similar structure types and orientations into clusters.
     
     This step implements crystallographic clustering similar to OVITO's StructureAnalysis::buildClusters
@@ -15,11 +15,12 @@ def step_build_clusters(ctx, ptm):
     """
     data = ctx['data']
     positions = data['positions']
-    neighbors = ptm['neighbors']
-    types = ptm['types']
-    quaternions = ptm['quaternions']
+    neighbors = structure_classification['neighbors']
+    types = structure_classification['types']
+    quaternions = structure_classification['quaternions']
     
-    logger.info("Building crystalline clusters...")
+    classification_method = structure_classification.get('classification_method', 'unknown')
+    logger.info(f"Building crystalline clusters using {classification_method.upper()} classification...")
     
     # Build clusters based on structure type and orientation similarity
     cluster_builder = CrystallineClusterBuilder(
@@ -27,7 +28,8 @@ def step_build_clusters(ctx, ptm):
         neighbors=neighbors,
         structure_types=types,
         quaternions=quaternions,
-        orientation_threshold=0.1,  # Threshold for quaternion similarity
+        # Threshold for quaternion similarity
+        orientation_threshold=0.1,
         min_cluster_size=5
     )
     

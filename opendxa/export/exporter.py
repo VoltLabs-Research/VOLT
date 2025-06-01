@@ -123,7 +123,8 @@ class DislocationExporter:
         #    # Relative path or no path - use output_dir structure
         #    os.makedirs(self.output_dir, exist_ok=True)
         #    output_filename = os.path.join(self.output_dir, filename or f'timestep_{self.timestep}.json')
-        output_filename = os.path.join(self.output_dir, filename or f'timestep_{self.timestep}.json')
+        os.makedirs(self.output_dir, exist_ok=True)
+        output_filename = os.path.join(self.output_dir, f'timestep_{self.timestep}.json')
         
         output = {
             'timestep': self.timestep,

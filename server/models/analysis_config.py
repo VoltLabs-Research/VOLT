@@ -14,6 +14,7 @@ class AnalysisConfig(BaseModel):
     allow_non_standard_burgers: bool = Field(default=True, description='Allow non-standard Burgers vectors')
     validation_tolerance: float = Field(default=0.35, description='Tolerance for Burgers vector validation')
     fast_mode: bool = Field(default=False, description='Enable fast mode (skips some analysis)')
+    use_cna: bool = Field(default=False, description='Use CNA instead of PTM for structure classification')
     max_loops: int = Field(default=1000, description='Maximum number of loops to find')
     max_connections_per_atom: int = Field(default=6, description='Maximum connections per atom')
     loop_timeout: int = Field(default=60, description='Timeout for loop finding in seconds')

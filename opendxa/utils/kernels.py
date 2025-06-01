@@ -39,7 +39,7 @@ def cna_kernel(
         return
     
     # Local arrays for neighbors and analysis
-    neighbor_list = cuda.local.array(64, dtype=cuda.int32)
+    neighbor_list = cuda.local.array(64, dtype=np.int32)
     # is_neighbor = cuda.local.array(64, dtype=cuda.boolean)
     
     # Load atom position

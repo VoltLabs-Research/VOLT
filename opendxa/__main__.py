@@ -37,6 +37,7 @@ def parse_call_args():
     
     parser.add_argument('--output', '-o', default='dislocations.json', help='Output JSON file for dislocations')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
+    parser.add_argument('--use-cna', action='store_true', help='Enable verbose logging')
     parser.add_argument('--track-dir', type=str, default=None, help='If set, perform dislocation tracking and statistics from this directory of JSON files')
     parser.add_argument('--fast-mode', action='store_true', help='Enable fast mode (skips some analysis steps for speed)')
     parser.add_argument('--max-loops', type=int, default=1000, help='Maximum number of loops to find (lower = faster)')
