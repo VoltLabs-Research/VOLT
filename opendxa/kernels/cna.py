@@ -43,7 +43,7 @@ def cna_kernel(
         return
 
     # 5) Enhanced local buffer management with safety checks
-    MAX_LOCAL_NEIGH = 128  # Increased for better support of complex structures
+    MAX_LOCAL_NEIGH = 128  
     effective_max_neighbors = min(max_neighbors, MAX_LOCAL_NEIGH)
     
     neighbor_list = cuda.local.array(MAX_LOCAL_NEIGH, int32)

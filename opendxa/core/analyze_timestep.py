@@ -1,4 +1,4 @@
-from opendxa.core.workflow_steps import create_and_configure_workflow
+from opendxa.workflow import create_and_configure_workflow
 from opendxa.utils.ptm_templates import get_ptm_templates
 import psutil
 import logging

@@ -1,4 +1,4 @@
-from opendxa.core.workflow_steps.connectivity import estimate_lattice_parameter
+from opendxa.workflow.connectivity import estimate_lattice_parameter
 from opendxa.classification import DisplacementFieldAnalyzer
 from opendxa.utils.pbc import unwrap_pbc_displacement
 import numpy as np
