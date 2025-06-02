@@ -16,6 +16,9 @@ numpy = "^2.2.6"
 cupy-cuda12x = "^13.4.1"
 numba = "^0.61.2"
 psutil = "^7.0.0"
+fastapi = "^0.115.12"
+python-multipart = "^0.0.20"
+uvicorn = "^0.34.3"
 
 
 [build-system]
