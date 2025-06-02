@@ -1,24 +1,23 @@
-[build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "opendxa"
-version = "1.0.0"
-description = "Open Source Dislocation Extraction Algorithm (DXA)"
+version = "0.1.0"
+description = "Open Source Dislocation Extraction Algorithm"
+authors = ["rodyherrera <contact@rodyherrera.com>"]
+license = "GPL-2.0"
 readme = "README.md"
-requires-python = ">=3.7"
-authors = [
-    { name = "Rodolfo Herrera Hernandez", email = "contact@rodyherrera.com" }
-]
 
-license = { file = "LICENSE" }
-dependencies = [
-    "numpy",
-    "numba",
-    "cupy-cuda12x",
-    "matplotlib"
-]
+[tool.poetry.dependencies]
+python = "^3.12"
+networkx = "^3.5"
+scipy = "^1.15.3"
+matplotlib = "^3.10.3"
+pandas = "^2.2.3"
+numpy = "^2.2.6"
+cupy-cuda12x = "^13.4.1"
+numba = "^0.61.2"
+psutil = "^7.0.0"
 
-[project.urls]
-Homepage = "https://github.com/rodyherrera/opendxa"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
