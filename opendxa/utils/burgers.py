@@ -61,7 +61,6 @@ def match_to_crystal_basis(burgers_vector, crystal_type='fcc', lattice_parameter
         # Default: return original vector with perfect alignment
         return burgers_vector, 1.0
 
-
 def compute_local_scales(positions, connectivity, box_bounds=None):
     '''
     For each atom i, compute the average bond length to its connected neighbors,

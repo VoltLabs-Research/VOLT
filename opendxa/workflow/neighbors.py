@@ -41,15 +41,15 @@ def step_classify_cna(ctx, neighbors):
     data = ctx['data']
     args = ctx['args']
     
-    # Get cutoff distance from args or use default
-    cutoff_distance = getattr(args, 'cutoff', 3.5)
-    
     cna_classifier = CNALocalClassifier(
         positions=data['positions'],
         box_bounds=data['box'],
         neighbor_dict=neighbors,
-        cutoff_distance=cutoff_distance,
-        max_neighbors=32  # Fixed max neighbors for CNA
+        cutoff_distance=args.cutoff,
+        max_neighbors=args.num_neighbors * 2,
+        adaptive_cutoff=True,
+        neighbor_tolerance=0.7,
+        tolerance=1e-5
     )
     
     types, cna_signatures = cna_classifier.classify()
@@ -58,7 +58,7 @@ def step_classify_cna(ctx, neighbors):
     # This maintains compatibility with the rest of the workflow
     N = len(data['positions'])
     quaternions = np.zeros((N, 4), dtype=np.float32)
-    quaternions[:, 0] = 1.0  # Identity quaternion (w=1, x=y=z=0)
+    quaternions[:, 0] = 1.0 
     
     ctx['logger'].info(f'CNA classified: {dict(zip(*np.unique(types, return_counts=True)))}')
     
