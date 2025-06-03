@@ -209,13 +209,6 @@ class UnifiedBurgersValidator:
             raise ValueError(f'positions must be shape (N_atoms, 3), got {pos.shape}')
         N_atoms = pos.shape[0]
 
-        # → Adjust for 1-based → 0-based indexing if necessary
-        if loops:
-            max_idx_in_loops = max(atom for loop in loops for atom in loop)
-            if max_idx_in_loops >= N_atoms:
-                # Convert each index by subtracting 1
-                loops = [[idx - 1 for idx in loop] for loop in loops]
-
         # Filter out any loops with invalid atom indices
         filtered_loops: List[List[int]] = []
         for idx, loop in enumerate(loops):
@@ -433,7 +426,7 @@ class UnifiedBurgersValidator:
         connectivity: Dict[int, List[int]]
     ) -> Dict[str, Any]:
         '''
-        Secondary validation using elastic mapping (edges → Burgers).
+        Secondary validation using elastic mapping (edges -> Burgers).
         '''
         # Compute edge vectors
         try:
