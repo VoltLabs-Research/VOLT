@@ -96,7 +96,8 @@ class DislocationExporter:
         validation_result: dict = None,
         segment_length: float = None,
         min_segments: int = 5,
-        include_segments: bool = True
+        include_segments: bool = True,
+        lattice_parameter: float = 1.0
     ):
         self.positions = np.asarray(positions, dtype=np.float32)
         self.output_dir = output_dir
@@ -110,6 +111,7 @@ class DislocationExporter:
         self.segment_length = segment_length
         self.min_segments = min_segments
         self.include_segments = include_segments
+        self.lattice_parameter = lattice_parameter
 
     def to_json(self, filename: str):
         # If filename is provided, use it directly (for API calls)
@@ -150,36 +152,31 @@ class DislocationExporter:
                     min_segments=self.min_segments
                 )
             
-            # Detect crystal type and use appropriate matching
-            crystal_type = 'fcc'  # default
-            lattice_parameter = 1.0  # default
-            
-            # Try to get crystal info from classification if available
+            # Use detected crystal structure from PTM/CNA analysis if available
             if idx in self.burgers_classifications:
                 classification = self.burgers_classifications[idx]
                 crystal_type = classification.get('crystal_structure', 'fcc')
+                # We could also extract lattice parameter from classification if available
             
-            # Use structure-aware matching
+            # Use structure-aware matching with the detected crystal type
             matched_burgers, alignment = match_to_crystal_basis(
-                np.array(burger_vector), crystal_type, lattice_parameter
+                # TODO: HARDCODED CRYSTAL_TYPE
+                np.array(burger_vector), 'fcc', self.lattice_parameter
             )
             
-            # Keep FCC matching for backward compatibility
-            fcc_matched_burgers, fcc_alignment = match_to_fcc_basis(burger_vector)
-            
+            # Build dislocation data
             dislocation_data = {
                 'loop_index': idx,
                 'type': line_type,
                 'burgers': burger_vector,
                 'points': points,
+                # TODO: hardcoded
+                'crystal_type': 'fcc',
                 'matched_burgers': matched_burgers.tolist(),
                 'matched_burgers_str': burgers_to_string(matched_burgers),
-                'alignment': float(alignment),
-                'fcc_matched_burgers': fcc_matched_burgers.tolist(),
-                'fcc_alignment': float(fcc_alignment)
+                'alignment': float(alignment)
             }
             
-            # Add segments if generated
             if segments:
                 dislocation_data['segments'] = segments
                 dislocation_data['segment_count'] = len(segments)

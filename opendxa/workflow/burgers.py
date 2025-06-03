@@ -4,7 +4,7 @@ from scipy.spatial.distance import cdist
 import numpy as np
 import time
 
-def step_burgers_loops(ctx, connectivity, filtered):
+def step_burgers_loops(ctx, filtered):
     data = ctx['data']
     args = ctx['args']
     
@@ -21,7 +21,8 @@ def step_burgers_loops(ctx, connectivity, filtered):
     start_time = time.perf_counter()
     loop_finder = FilteredLoopFinder(
         filtered_connectivity, 
-        data['positions'], 
+        # data['positions'],
+        filtered['positions'], 
         max_length=args.max_loop_length,
         max_loops=args.max_loops,
         timeout_seconds=args.loop_timeout
@@ -41,7 +42,7 @@ def step_burgers_loops(ctx, connectivity, filtered):
     evaluator = BurgersCircuitEvaluator(
         connectivity=connectivity_lists,
         positions=filtered['positions'],
-        ptm_types=filtered['ptm_types'],
+        types=filtered['types'],
         quaternions=filtered['quaternions'],
         templates=ctx['templates'],
         template_sizes=ctx['template_sizes'],
@@ -52,7 +53,7 @@ def step_burgers_loops(ctx, connectivity, filtered):
     ctx['logger'].info(f'Burgers evaluation: {time.perf_counter() - start_time:.3f}s')
 
     start_time = time.perf_counter()
-    grouper = LoopGrouper(raw_burgers, canonical_loops, data['positions'])
+    grouper = LoopGrouper(raw_burgers, canonical_loops, filtered['positions'])
     groups = grouper.group_loops()
     ctx['logger'].info(f'Loop grouping: {time.perf_counter() - start_time:.3f}s')
 

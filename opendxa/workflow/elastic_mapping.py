@@ -3,13 +3,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def step_elastic_mapping(ctx, cluster, tessellation):
+def step_elastic_mapping(ctx, cluster, tessellation, filtered):
     """
     Enhanced elastic mapping step that uses cluster information to assign ideal vectors
     to tessellation edges, similar to OVITO's ElasticMapping functionality.
     """
     data = ctx['data']
-    positions = data['positions']
     args = ctx['args']
     clusters = cluster['clusters']
     cluster_transitions = cluster['cluster_transitions']
@@ -35,10 +34,11 @@ def step_elastic_mapping(ctx, cluster, tessellation):
     
     # Create enhanced elastic mapper
     elastic_mapper = EnhancedElasticMapper(
-        positions=positions,
+        positions=filtered['positions'],
         clusters=clusters,
         cluster_transitions=cluster_transitions,
-        crystal_type=args.crystal_type,
+        # TODO: FIX THIS IS HARDCODED
+        crystal_type='fcc',
         lattice_parameter=args.lattice_parameter,
         box_bounds=data['box']
     )
@@ -56,14 +56,12 @@ def step_elastic_mapping(ctx, cluster, tessellation):
         'elastic_mapping_stats': elastic_mapper.get_mapping_statistics()
     }
 
-def step_interface_mesh(ctx, elastic_map):
+def step_interface_mesh(ctx, elastic_map, filtered):
     """
     Generate interface mesh by identifying good/bad tetrahedra and creating
     triangulated surfaces that separate defective regions.
     """
-    data = ctx['data']
     args = ctx['args']
-    positions = data['positions']
     ideal_edge_vectors = elastic_map['ideal_edge_vectors']
     
     # Get tessellation data from context
@@ -74,7 +72,7 @@ def step_interface_mesh(ctx, elastic_map):
     
     # Create interface mesh builder
     mesh_builder = InterfaceMeshBuilder(
-        positions=positions,
+        positions=filtered['positions'],
         tetrahedra=tetrahedra,
         ideal_edge_vectors=ideal_edge_vectors,
         defect_threshold=args.defect_threshold

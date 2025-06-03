@@ -67,7 +67,7 @@ def elastic_mapping_gpu(displacement_jumps, ideal_vectors, tolerance):
     
     return edge_burgers, mapping_stats
 
-def compute_displacement_field_gpu(positions, connectivity, ptm_types, templates):
+def compute_displacement_field_gpu(positions, connectivity, types, templates):
     num_atoms = len(positions)
     
     # Prepare connectivity data in CSR format
@@ -111,7 +111,7 @@ def compute_displacement_field_gpu(positions, connectivity, ptm_types, templates
     d_positions = cuda.to_device(positions_array)
     d_connectivity_data = cuda.to_device(np.array(connectivity_data, dtype=np.int32))
     d_connectivity_offsets = cuda.to_device(np.array(connectivity_offsets, dtype=np.int32))
-    d_ptm_types = cuda.to_device(ptm_types.astype(np.int32))
+    d_types = cuda.to_device(types.astype(np.int32))
     d_quaternions = cuda.to_device(quaternions_array)
     d_templates = cuda.to_device(templates_array)
     d_template_sizes = cuda.to_device(template_sizes)
@@ -129,7 +129,7 @@ def compute_displacement_field_gpu(positions, connectivity, ptm_types, templates
         d_positions, 
         d_connectivity_data, 
         d_connectivity_offsets,
-        d_ptm_types, 
+        d_types, 
         d_quaternions, 
         d_templates, 
         d_template_sizes,

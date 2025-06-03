@@ -193,7 +193,7 @@ class UnifiedBurgersValidator:
         elastic_mapping_stats: Optional[Dict] = None,
         interface_mesh: Optional[Dict[str, Any]] = None,
         defect_regions: Optional[Dict[int, bool]] = None,
-        ptm_types: Optional[np.ndarray] = None
+        types: Optional[np.ndarray] = None
     ) -> Dict[str, Any]:
         '''
         Perform multi-stage validation of Burgers vectors.
@@ -208,7 +208,7 @@ class UnifiedBurgersValidator:
             elastic_mapping_stats (dict, optional): Precomputed stats for elastic mapper.
             interface_mesh (dict, optional): {'vertices': np.ndarray, 'faces': np.ndarray}.
             defect_regions (dict, optional): {tetrahedron_id: bool is_good}.
-            ptm_types (np.ndarray, optional): Array of PTM type IDs per atom.
+            types (np.ndarray, optional): Array of PTM type IDs per atom.
 
         Returns:
             dict: {
@@ -294,7 +294,7 @@ class UnifiedBurgersValidator:
 
         # --- Step 1: primary validation ---
         primary_validation = self._validate_primary_burgers(
-            primary_burgers, ptm_types, loops, pos
+            primary_burgers, types, loops, pos
         )
 
         # --- Step 2: secondary validation ---
@@ -372,7 +372,7 @@ class UnifiedBurgersValidator:
     def _validate_primary_burgers(
         self,
         burgers_vectors: Dict[int, np.ndarray],
-        ptm_types: Optional[np.ndarray] = None,
+        types: Optional[np.ndarray] = None,
         loops: Optional[List[List[int]]] = None,
         positions: Optional[np.ndarray] = None
     ) -> Dict[str, Any]:
@@ -403,14 +403,14 @@ class UnifiedBurgersValidator:
             if magnitude > 1e-5:
                 # Local structure analysis if data is provided
                 local_structure: Optional[str] = None
-                if (loops is not None and positions is not None and ptm_types is not None and
+                if (loops is not None and positions is not None and types is not None and
                     0 <= loop_id < len(loops)):
                     loop_atoms = loops[loop_id]
                     if positions.ndim != 2 or positions.shape[1] != 3:
                         raise ValueError('positions must be shape (N_atoms, 3)')
-                    if ptm_types.ndim != 1 or ptm_types.size < len(loop_atoms):
-                        raise ValueError('ptm_types must be a 1D array with at least len(loop) entries')
-                    loop_structure = self.analyze_loop_structure(loop_atoms, positions, ptm_types)
+                    if types.ndim != 1 or types.size < len(loop_atoms):
+                        raise ValueError('types must be a 1D array with at least len(loop) entries')
+                    loop_structure = self.analyze_loop_structure(loop_atoms, positions, types)
                     local_structure = loop_structure.get('dominant_structure')
                     structure_analysis[loop_id] = loop_structure
 
@@ -1022,12 +1022,12 @@ class UnifiedBurgersValidator:
         self,
         loop: List[int],
         positions: np.ndarray,
-        ptm_types: Optional[np.ndarray] = None
+        types: Optional[np.ndarray] = None
     ) -> Dict[str, Any]:
         '''
         Analyze local crystal structure along a loop using PTM types.
         '''
-        if ptm_types is None:
+        if types is None:
             return {
                 'dominant_structure': self.crystal_type,
                 'structure_fractions': {},
@@ -1035,15 +1035,15 @@ class UnifiedBurgersValidator:
                 'total_atoms': len(loop)
             }
 
-        if not isinstance(ptm_types, np.ndarray) or ptm_types.ndim != 1:
-            raise ValueError('ptm_types must be a 1D numpy array')
+        if not isinstance(types, np.ndarray) or types.ndim != 1:
+            raise ValueError('types must be a 1D numpy array')
 
         structure_map = {0: 'unknown', 1: 'fcc', 2: 'hcp', 3: 'bcc', 4: 'ico', 5: 'sc'}
         counts: Dict[str, int] = {}
         for atom in loop:
-            if not isinstance(atom, int) or atom < 0 or atom >= len(ptm_types):
+            if not isinstance(atom, int) or atom < 0 or atom >= len(types):
                 continue
-            stype = structure_map.get(int(ptm_types[atom]), 'unknown')
+            stype = structure_map.get(int(types[atom]), 'unknown')
             counts[stype] = counts.get(stype, 0) + 1
 
         total_atoms = len(loop)

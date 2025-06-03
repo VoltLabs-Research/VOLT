@@ -57,7 +57,7 @@ def load_opendxa_vectors(json_path):
 
     result_list = []
     for dislocation in json_data['dislocations']:
-        burgers_vec = tuple(dislocation['fcc_matched_burgers'])
+        burgers_vec = tuple(dislocation['matched_burgers'])
         dislocation_id = dislocation.get('id', None)
         if dislocation_id is None:
             dislocation_id = len(result_list)

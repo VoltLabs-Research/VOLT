@@ -20,7 +20,7 @@ def gpu_compute_displacement_field_kernel_pbc(
     positions, 
     connectivity_data, 
     connectivity_offsets,
-    ptm_types, 
+    types, 
     quaternions, 
     templates, 
     template_sizes,
@@ -34,7 +34,7 @@ def gpu_compute_displacement_field_kernel_pbc(
     if atom_idx >= num_atoms:
         return
     
-    ptm_type = ptm_types[atom_idx]
+    ptm_type = types[atom_idx]
     if ptm_type < 0 or ptm_type >= template_sizes.shape[0]:
         displacement_vectors[atom_idx, 0] = math.nan
         displacement_vectors[atom_idx, 1] = math.nan

@@ -4,7 +4,7 @@ from opendxa.utils.cuda import quaternion_to_matrix
 class LatticeConnectivityGraph:
     def __init__(
         self, positions, ids, neighbors,
-        ptm_types, quaternions,
+        types, quaternions,
         templates, template_sizes,
         tolerance=0.2
     ):
@@ -25,9 +25,9 @@ class LatticeConnectivityGraph:
                     raise ValueError(f'neighbor {j} of atom {i} out of range')
         self.neighbors = neighbors
         # PTM types and quaternions
-        self.ptm_types = np.asarray(ptm_types, dtype=int)
-        if self.ptm_types.shape[0] != N:
-            raise ValueError('ptm_types length must match positions')
+        self.types = np.asarray(types, dtype=int)
+        if self.types.shape[0] != N:
+            raise ValueError('types length must match positions')
         self.quaternions = np.asarray(quaternions, dtype=np.float32)
         if self.quaternions.shape != (N,4):
             raise ValueError('quaternions must have shape (N,4)')
@@ -44,7 +44,7 @@ class LatticeConnectivityGraph:
         graph = {i: [] for i in range(N)}
 
         for i in range(N):
-            t = self.ptm_types[i]
+            t = self.types[i]
             if t < 0:
                 # skip disordered
                 continue

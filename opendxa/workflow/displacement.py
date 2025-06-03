@@ -3,11 +3,12 @@ from opendxa.classification import DisplacementFieldAnalyzer
 from opendxa.utils.pbc import unwrap_pbc_displacement
 import numpy as np
 
-def step_displacement(ctx, connectivity, filtered):
+def step_displacement(ctx, filtered):
     data = ctx['data']
     args = ctx['args']
     
     box_bounds = np.array(data['box'], dtype=np.float64)
+    # TODO: DUPLICATED PBC FORCE ASSIGNMENT
     pbc_active = [True, True, True]
     
     ctx['pbc_active'] = pbc_active
@@ -23,7 +24,7 @@ def step_displacement(ctx, connectivity, filtered):
     analyzer = DisplacementFieldAnalyzer(
         positions=filtered['positions'],
         connectivity=connectivity_lists,
-        ptm_types=filtered['ptm_types'],
+        types=filtered['types'],
         quaternions=filtered['quaternions'],
         templates=ctx['templates'],
         template_sizes=ctx['template_sizes'],

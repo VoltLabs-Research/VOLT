@@ -7,13 +7,13 @@ import numpy as np
 class BurgersCircuitEvaluator:
     def __init__(
         self, connectivity,
-        positions, ptm_types, quaternions,
+        positions, types, quaternions,
         templates, template_sizes,
         box_bounds=None
     ):
         self.conn = connectivity
         self.positions = np.asarray(positions, dtype=np.float32)
-        self.ptm_types = np.asarray(ptm_types, dtype=np.int32)
+        self.types = np.asarray(types, dtype=np.int32)
         self.quaternions = np.asarray(quaternions, dtype=np.float32)
         self.templates = np.asarray(templates, dtype=np.float32)
         self.template_sizes = np.asarray(template_sizes, dtype=np.int32)
@@ -38,7 +38,7 @@ class BurgersCircuitEvaluator:
         # GPU buffers
         d_pos = cuda.to_device(self.positions)
         d_quat = cuda.to_device(self.quaternions)
-        d_pt = cuda.to_device(self.ptm_types)
+        d_pt = cuda.to_device(self.types)
         d_tpl = cuda.to_device(self.templates)
         d_tsz = cuda.to_device(self.template_sizes)
         d_loops = cuda.to_device(arr)

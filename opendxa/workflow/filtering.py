@@ -11,7 +11,7 @@ def step_surface_filter(ctx, structure_classification):
         positions=data['positions'],
         ids=data['ids'],
         neighbors=structure_classification['neighbors'],
-        ptm_types=structure_classification['types'],
+        types=structure_classification['types'],
         quaternions=structure_classification['quaternions']
     )
     

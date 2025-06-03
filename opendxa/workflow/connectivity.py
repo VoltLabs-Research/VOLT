@@ -9,7 +9,7 @@ def step_graph(ctx, filtered, tessellation):
         positions=filtered['positions'],
         ids=filtered['ids'],
         neighbors=filtered['neighbors'],
-        ptm_types=filtered['ptm_types'],
+        types=filtered['types'],
         quaternions=filtered['quaternions'],
         templates=ctx['templates'],
         template_sizes=ctx['template_sizes'],

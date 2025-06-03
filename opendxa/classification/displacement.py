@@ -9,7 +9,7 @@ class DisplacementFieldAnalyzer:
         self,
         positions,
         connectivity,
-        ptm_types,
+        types,
         quaternions,
         templates,
         template_sizes,
@@ -18,7 +18,7 @@ class DisplacementFieldAnalyzer:
         # store
         self.positions = np.asarray(positions, dtype=np.float32)
         self.connectivity = connectivity
-        self.ptm_types = np.asarray(ptm_types, dtype=int)
+        self.types = np.asarray(types, dtype=int)
         self.quaternions = np.asarray(quaternions, dtype=np.float32)
         self.templates = np.asarray(templates, dtype=np.float32)
         self.template_sizes = np.asarray(template_sizes, dtype=int)
@@ -34,7 +34,7 @@ class DisplacementFieldAnalyzer:
         disp_dict = compute_displacement_field_gpu(
             self.positions,
             self.connectivity,
-            self.ptm_types,
+            self.types,
             self.templates
         )
         

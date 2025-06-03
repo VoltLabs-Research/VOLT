@@ -35,18 +35,18 @@ def create_and_configure_workflow(ctx):
         # Fast mode: Skip displacement analysis and some refinement steps
         workflow.register('loops', step_burgers_loops, depends_on=['connectivity', 'filtered'])
         workflow.register('advanced_loops', step_advanced_grouping, depends_on=['loops', 'filtered'])
-        workflow.register('export', step_export_fast, depends_on=['advanced_loops'])
+        workflow.register('export', step_export_fast, depends_on=['advanced_loops', 'filtered'])
     else:
         # Full pipeline with enhanced crystallographic analysis
         # Add new clustering and elastic mapping steps
-        workflow.register('cluster', step_build_clusters, depends_on=['structure_classification'])
-        workflow.register('elastic_map', step_elastic_mapping, depends_on=['cluster', 'tessellation'])
-        workflow.register('interface_mesh', step_interface_mesh, depends_on=['elastic_map'])
+        workflow.register('cluster', step_build_clusters, depends_on=['filtered'])
+        workflow.register('elastic_map', step_elastic_mapping, depends_on=['cluster', 'tessellation', 'filtered'])
+        workflow.register('interface_mesh', step_interface_mesh, depends_on=['elastic_map', 'filtered'])
         
         # Original displacement and connectivity steps
-        workflow.register('displacement', step_displacement, depends_on=['connectivity', 'filtered'])
+        workflow.register('displacement', step_displacement, depends_on=['filtered'])
         
-        workflow.register('loops', step_burgers_loops, depends_on=['connectivity', 'filtered'])
+        workflow.register('loops', step_burgers_loops, depends_on=['filtered'])
         workflow.register('advanced_loops', step_advanced_grouping, depends_on=['loops', 'filtered'])
         
         # Enhanced unified validation that takes into account elastic mapping
@@ -57,9 +57,9 @@ def create_and_configure_workflow(ctx):
         workflow.register('refinement', step_refine_lines, depends_on=['lines', 'filtered'])
         
         # New enhanced steps for core marking and advanced statistics
-        workflow.register('core_marking', step_mark_core_atoms, depends_on=['refinement', 'interface_mesh'])
+        workflow.register('core_marking', step_mark_core_atoms, depends_on=['refinement', 'interface_mesh', 'filtered'])
         workflow.register('advanced_stats', step_stats_report, depends_on=['validate', 'core_marking'])
         
-        workflow.register('export', step_export, depends_on=['refinement'])
+        workflow.register('export', step_export, depends_on=['refinement', 'filtered'])
 
     return workflow

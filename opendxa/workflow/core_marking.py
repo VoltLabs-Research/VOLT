@@ -5,13 +5,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def step_mark_core_atoms(ctx, refinement, interface_mesh):
+def step_mark_core_atoms(ctx, refinement, interface_mesh, filtered):
     '''
     Mark atoms belonging to dislocation cores by assigning dislocation IDs,
     similar to OVITO's assignCoreAtomDislocationIDs functionality.
     '''
     data = ctx['data']
-    positions = data['positions']
     args = ctx['args']
     
     # Get refined dislocation lines
@@ -31,7 +30,7 @@ def step_mark_core_atoms(ctx, refinement, interface_mesh):
     
     # Create core atom marker
     core_marker = DislocationCoreMarker(
-        positions=positions,
+        positions=filtered['positions'],
         tetrahedra=tetrahedra,
         dislocation_lines=refined_lines,
         interface_mesh={

@@ -1,7 +1,7 @@
 from opendxa.export import DislocationExporter
 import numpy as np
 
-def step_export(ctx, refinement):
+def step_export(ctx, refinement, filtered):
     data = ctx['data']
     args = ctx['args']
     
@@ -11,20 +11,21 @@ def step_export(ctx, refinement):
     line_types = [line['type'] for line in lines]
     
     exporter = DislocationExporter(
-        positions=ctx['data']['positions'],
+        positions=filtered['positions'],
         loops=loops,
         burgers=burgers,
         timestep=data['timestep'],
         line_types=np.array(line_types),
         segment_length=args.segment_length,
         min_segments=args.min_segments,
-        include_segments=args.include_segments
+        include_segments=args.include_segments,
+        lattice_parameter=args.lattice_parameter
     )
     exporter.to_json(args.output)
     ctx['logger'].info(f'Exported to {args.output} with segments: {args.include_segments}')
 
 
-def step_export_fast(ctx, advanced_loops):
+def step_export_fast(ctx, advanced_loops, filtered):
     data = ctx['data']
     args = ctx['args']
     
@@ -34,7 +35,8 @@ def step_export_fast(ctx, advanced_loops):
     line_types = np.zeros(len(loops), dtype=int)
     
     exporter = DislocationExporter(
-        positions=data['positions'],
+        # positions=data['positions'],
+        positions=filtered['positions'],
         loops=loops,
         burgers=burgers,
         timestep=data['timestep'],

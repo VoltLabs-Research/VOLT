@@ -4,7 +4,7 @@ from numba import cuda
 def burgers_kernel(
     positions,
     quaternions,
-    ptm_types,
+    types,
     templates,
     templates_sizes,
     loops,
@@ -28,7 +28,7 @@ def burgers_kernel(
     Args:
         positions (float32[:, 3]): Filtered atom coordinates.
         quaternions (float32[:, 4]): Local orientation quaternions.
-        ptm_types (int32[:]): PTM types per atom.
+        types (int32[:]): PTM types per atom.
         templates (float32[M, Kmax, 3]): Template neighbor coords.
         template_sizes (int32[M]): Number of neighbors per template.
         loops (int32[n_loops, Lmax]): Padded loop index arrays.
@@ -60,7 +60,7 @@ def burgers_kernel(
     for segment in range(length):
         i = loops[idx, segment]
         j = loops[idx, (segment + 1) % length]
-        ptm_type = ptm_types[i]
+        ptm_type = types[i]
         K = templates_sizes[ptm_type]
 
         # TODO: Assume scale 1.0 or precomputed

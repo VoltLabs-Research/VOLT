@@ -1,7 +1,15 @@
 from opendxa.core.unified_burgers_validator import UnifiedBurgersValidator
 import numpy as np
 
-def step_unified_validation(ctx, advanced_loops, displacement, filtered, structure_classification=None, elastic_map=None, interface_mesh=None):
+def step_unified_validation(
+    ctx, 
+    advanced_loops, 
+    displacement, 
+    filtered, 
+    structure_classification=None, 
+    elastic_map=None, 
+    interface_mesh=None
+):
     """Enhanced unified validation using Burgers circuits, elastic mapping, and interface mesh"""
     data = ctx['data']
     args = ctx['args']
@@ -9,6 +17,7 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered, structu
     # Get parameters from context
     # TODO: FROM CONTEXT?????
     lattice_parameter = ctx.get('lattice_parameter', 4.0)
+    # TODO: CRYSTAL TYPE?
     crystal_type = ctx.get('crystal_type', 'fcc')
     
     # Setup elastic mapping parameters
@@ -52,7 +61,7 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered, structu
         'connectivity': connectivity_dict,
         'displacement_field': displacement['vectors'],
         'loops': advanced_loops['loops'],
-        'ptm_types': structure_types
+        'types': structure_types
     }
     
     # Add elastic mapping data if available
