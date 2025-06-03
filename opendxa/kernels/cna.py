@@ -11,9 +11,9 @@ def cna_kernel(
     max_neighbors,
     out_types,
     out_cna_signatures,
-    tolerance=1e-10,
-    adaptive_cutoff=True,
-    neighbor_tolerance=0.1
+    tolerance,
+    adaptive_cutoff,
+    neighbor_tolerance
 ):
     i = cuda.grid(1)
     N_atoms = positions.shape[0]

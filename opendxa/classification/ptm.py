@@ -5,8 +5,13 @@ import numpy as np
 
 class PTMLocalClassifier:
     def __init__(
-        self, positions, box_bounds, neighbor_dict,
-        templates, template_sizes, max_neighbors=32
+        self, 
+        positions, 
+        box_bounds, 
+        neighbor_dict,
+        templates, 
+        template_sizes, 
+        max_neighbors=32
     ):
         self.N = len(positions)
         self.positions = np.asarray(positions, dtype=np.float32)

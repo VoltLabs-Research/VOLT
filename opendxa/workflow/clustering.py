@@ -6,14 +6,15 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 def step_build_clusters(ctx, structure_classification):
-    """
+    '''
     Build crystalline clusters based on structure classification results (PTM or CNA).
     Groups atoms with similar structure types and orientations into clusters.
     
     This step implements crystallographic clustering similar to OVITO's StructureAnalysis::buildClusters
     and connectClusters functionality.
-    """
+    '''
     data = ctx['data']
+    args = ctx['args']
     positions = data['positions']
     neighbors = structure_classification['neighbors']
     types = structure_classification['types']
@@ -29,8 +30,8 @@ def step_build_clusters(ctx, structure_classification):
         structure_types=types,
         quaternions=quaternions,
         # Threshold for quaternion similarity
-        orientation_threshold=0.1,
-        min_cluster_size=5
+        orientation_threshold=args.orientation_threshold,
+        min_cluster_size=args.min_cluster_size
     )
     
     clusters = cluster_builder.build_clusters()
@@ -53,15 +54,13 @@ def step_build_clusters(ctx, structure_classification):
         'cluster_info': cluster_builder.get_cluster_statistics()
     }
 
-
 class CrystallineClusterBuilder:
-    """
+    '''
     Builds crystalline clusters by grouping atoms with similar structure types
-    and orientations, similar to OVITO's clustering approach.
-    """
+    and orientations.
+    '''
     
-    def __init__(self, positions, neighbors, structure_types, quaternions, 
-                 orientation_threshold=0.1, min_cluster_size=5):
+    def __init__(self, positions, neighbors, structure_types, quaternions, orientation_threshold, min_cluster_size):
         self.positions = np.asarray(positions)
         self.neighbors = neighbors
         self.structure_types = np.asarray(structure_types)
@@ -90,11 +89,13 @@ class CrystallineClusterBuilder:
         
         # Process each atom
         for atom_id in range(self.n_atoms):
+            # Already assigned to a cluster
             if atom_id in atom_to_cluster:
-                continue  # Already assigned to a cluster
-                
+                continue 
+
+            # Skip unknown/disordered atoms  
             structure_type = self.structure_types[atom_id]
-            if structure_type <= 0:  # Skip unknown/disordered atoms
+            if structure_type <= 0:
                 continue
                 
             # Start a new cluster with this atom

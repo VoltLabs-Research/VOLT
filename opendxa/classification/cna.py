@@ -9,12 +9,12 @@ class CNALocalClassifier:
         positions,
         box_bounds,
         neighbor_dict,
-        cutoff_distance=3.5,
-        max_neighbors=32,
-        tolerance=1e-10,
-        adaptive_cutoff=True,
-        neighbor_tolerance=0.1,
-        extended_signatures=True
+        cutoff_distance,
+        max_neighbors,
+        tolerance,
+        adaptive_cutoff,
+        neighbor_tolerance,
+        extended_signature
     ):
         self.N = len(positions)
         self.positions = np.asarray(positions, dtype=np.float32)

@@ -239,7 +239,8 @@ class UnifiedBurgersValidator:
                 else:
                     logger.warning(f'skipping displacement_field[{edge_key}]: must be a 3-element array')
             else:
-                logger.warning(f'skipping invalid edge_key {edge_key} in displacement_field')
+                # logger.warning(f'skipping invalid edge_key {edge_key} in displacement_field')
+                pass
         displacement_field = filtered_disp
 
         # Validate and filter connectivity
@@ -258,7 +259,8 @@ class UnifiedBurgersValidator:
                 if isinstance(n, int) and 0 <= n < N_atoms:
                     valid_nbrs.append(n)
                 else:
-                    logger.warning(f'skipping neighbor index {n} for atom {atom}: out of range')
+                    # logger.warning(f'skipping neighbor index {n} for atom {atom}: out of range')
+                    pass
             if valid_nbrs:
                 filtered_conn[atom] = valid_nbrs
         connectivity = filtered_conn
@@ -283,7 +285,8 @@ class UnifiedBurgersValidator:
                     else:
                         logger.warning(f'skipping ideal_edge_vectors[{edge_key}]: must be a 3-element array')
                 else:
-                    logger.warning(f'skipping invalid edge_key {edge_key} in ideal_edge_vectors')
+                    # logger.warning(f'skipping invalid edge_key {edge_key} in ideal_edge_vectors')
+                    pass
             ideal_edge_vectors = filtered_ideal
 
             secondary_validation = self._validate_with_enhanced_elastic_mapping(

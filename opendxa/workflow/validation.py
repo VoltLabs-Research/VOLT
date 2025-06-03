@@ -7,11 +7,13 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered, structu
     args = ctx['args']
     
     # Get parameters from context
+    # TODO: FROM CONTEXT?????
     lattice_parameter = ctx.get('lattice_parameter', 4.0)
     crystal_type = ctx.get('crystal_type', 'fcc')
     
     # Setup elastic mapping parameters
     box_bounds = np.array(data['box'], dtype=np.float64)
+    # TODO: PBC IN ARGS!
     pbc_active = getattr(args, 'pbc', [True, True, True])
     if isinstance(pbc_active, bool):
         pbc_active = [pbc_active, pbc_active, pbc_active]
@@ -36,10 +38,10 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered, structu
     validator = UnifiedBurgersValidator(
         crystal_type=crystal_type,
         lattice_parameter=lattice_parameter,
-        tolerance=getattr(args, 'validation_tolerance', 0.15),
+        tolerance=args.validation_tolerance,
         box_bounds=box_bounds,
         pbc=pbc_active,
-        allow_non_standard=getattr(args, 'allow_non_standard_burgers', True)
+        allow_non_standard=args.allow_non_standard_burgers
     )
     
     # Prepare enhanced validation data
@@ -49,7 +51,7 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered, structu
         'connectivity': connectivity_dict,
         'displacement_field': displacement['vectors'],
         'loops': advanced_loops['loops'],
-        'ptm_types': structure_types  # Maintain compatibility with existing name
+        'ptm_types': structure_types
     }
     
     # Add elastic mapping data if available

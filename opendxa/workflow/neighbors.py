@@ -32,12 +32,12 @@ def step_classify_ptm(ctx, neighbors):
     return {'types': types, 'quaternions': quats, 'neighbors': neighbors}
 
 def step_classify_cna(ctx, neighbors):
-    """
+    '''
     Classify local structure using Common Neighbor Analysis (CNA).
     
     This step performs structure classification using CNA algorithm instead of PTM.
     CNA is faster but less accurate than PTM for complex structures.
-    """
+    '''
     data = ctx['data']
     args = ctx['args']
     
@@ -47,9 +47,9 @@ def step_classify_cna(ctx, neighbors):
         neighbor_dict=neighbors,
         cutoff_distance=args.cutoff,
         max_neighbors=args.num_neighbors * 2,
-        adaptive_cutoff=True,
-        neighbor_tolerance=0.7,
-        tolerance=1e-5
+        adaptive_cutoff=args.adaptative_cutoff,
+        neighbor_tolerance=args.neighbor_tolerance,
+        tolerance=args.tolerance
     )
     
     types, cna_signatures = cna_classifier.classify()

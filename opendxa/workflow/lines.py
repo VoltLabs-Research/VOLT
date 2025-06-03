@@ -2,11 +2,13 @@ from opendxa.classification import DislocationLineBuilder, ClassificationEngine
 import numpy as np
 
 def step_dislocation_lines(ctx, advanced_loops, filtered):
+    args = ctx['args']
+
     builder = DislocationLineBuilder(
         positions=filtered['positions'],
         loops=advanced_loops['loops'],
         burgers=advanced_loops['burgers'],
-        threshold=0.1
+        threshold=args.line_threshold
     )
     lines = builder.build_lines()
 

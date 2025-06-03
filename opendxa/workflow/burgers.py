@@ -10,27 +10,21 @@ def step_burgers_loops(ctx, connectivity, filtered):
     
     # Use connectivity manager for optimized loop finding
     connectivity_manager = ctx['connectivity_manager']
-    max_connections_per_atom = getattr(args, 'max_connections_per_atom', 6)
     
     # Get filtered connectivity directly from manager (eliminates redundant processing)
     start_time = time.perf_counter()
     filtered_connectivity = connectivity_manager.filter_for_loop_finding(
-        filtered['positions'], max_connections_per_atom
+        filtered['positions'], args.max_connections_per_atom
     )
     ctx['logger'].info(f'Connectivity filtering: {time.perf_counter() - start_time:.3f}s')
-    
-    # Configure loop finder with aggressive optimization for speed
-    max_loop_length = getattr(args, 'max_loop_length', 6)
-    max_loops = getattr(args, 'max_loops', 1000)
-    timeout_seconds = getattr(args, 'loop_timeout', 60) 
     
     start_time = time.perf_counter()
     loop_finder = FilteredLoopFinder(
         filtered_connectivity, 
         data['positions'], 
-        max_length=max_loop_length,
-        max_loops=max_loops,
-        timeout_seconds=timeout_seconds
+        max_length=args.max_loop_length,
+        max_loops=args.max_loops,
+        timeout_seconds=args.loop_timeout
     )
     loops = loop_finder.find_minimal_loops()
     ctx['logger'].info(f'Loop finding: {time.perf_counter() - start_time:.3f}s, found {len(loops)} loops')
@@ -136,7 +130,7 @@ def step_advanced_grouping(ctx, loops, filtered):
         )[0]
         
         for j in candidates:
-            if j > i and j not in used:  # Only check forward to avoid duplicates
+            if j > i and j not in used:
                 group.append(j)
                 used.add(j)
         groups.append(group)

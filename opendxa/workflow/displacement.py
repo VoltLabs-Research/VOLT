@@ -23,7 +23,7 @@ def step_displacement(ctx, connectivity, filtered):
     analyzer = DisplacementFieldAnalyzer(
         positions=filtered['positions'],
         connectivity=connectivity_lists,
-        ptm_types=filtered['ptm_types'],  # Use 'ptm_types' as provided by surface filter
+        ptm_types=filtered['ptm_types'],
         quaternions=filtered['quaternions'],
         templates=ctx['templates'],
         template_sizes=ctx['template_sizes'],

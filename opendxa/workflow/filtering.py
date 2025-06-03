@@ -24,10 +24,6 @@ def step_surface_filter(ctx, structure_classification):
         # PTM classification
         data_filtered['classification_method'] = 'ptm'
     
-    # Maintain backward compatibility with ptm_types naming
-    # Note: data_filtered already contains 'ptm_types' from SurfaceFilter.filter_data()
-    # so we don't need to reassign it from 'types' key
-    
     n_interior = data_filtered['positions'].shape[0]
     ctx['logger'].info(f'Surface Filter: {n_interior} interior atoms')
     return data_filtered
@@ -44,7 +40,7 @@ def step_delaunay_tessellation(ctx, filtered):
     ctx['pbc_active'] = pbc_active 
     
     # Adjust ghost layer thickness based on PBC
-    base_thickness = getattr(args, 'ghost_thickness', 5.0)
+    base_thickness = args.ghost_thickness
     if any(pbc_active):
         # Use smaller ghost layer for PBC systems to avoid artifacts
         ghost_thickness = min(base_thickness, 3.0)

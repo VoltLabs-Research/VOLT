@@ -68,7 +68,7 @@ def estimate_lattice_parameter(ctx, filtered, data, args):
                 first_neighbor_distances.append(min_dist)
     
     if first_neighbor_distances:
-        first_shell_distance = np.median(first_neighbor_distances)  # Usar mediana para robustez
+        first_shell_distance = np.median(first_neighbor_distances)
         lattice_parameter = first_shell_distance * np.sqrt(2)
         ctx['logger'].info(f'First neighbor distance: {first_shell_distance:.3f} Å')
         ctx['logger'].info(f'Estimated lattice parameter: {lattice_parameter:.3f} Å')

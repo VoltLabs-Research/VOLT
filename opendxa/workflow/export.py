@@ -10,23 +10,18 @@ def step_export(ctx, refinement):
     burgers = {i: line['burgers_vector'] for i, line in enumerate(lines)}
     line_types = [line['type'] for line in lines]
     
-    # Extract segment parameters from args if available
-    segment_length = getattr(args, 'segment_length', None)
-    min_segments = getattr(args, 'min_segments', 5)
-    include_segments = getattr(args, 'include_segments', True)
-    
     exporter = DislocationExporter(
         positions=ctx['data']['positions'],
         loops=loops,
         burgers=burgers,
         timestep=data['timestep'],
         line_types=np.array(line_types),
-        segment_length=segment_length,
-        min_segments=min_segments,
-        include_segments=include_segments
+        segment_length=args.segment_length,
+        min_segments=args.min_segments,
+        include_segments=args.include_segments
     )
     exporter.to_json(args.output)
-    ctx['logger'].info(f'Exported to {args.output} with segments: {include_segments}')
+    ctx['logger'].info(f'Exported to {args.output} with segments: {args.include_segments}')
 
 
 def step_export_fast(ctx, advanced_loops):
