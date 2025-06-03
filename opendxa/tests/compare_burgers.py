@@ -6,7 +6,6 @@ from fractions import Fraction
 import ovito
 import json
 import numpy as np
-import matplotlib.pyplot as plt 
 
 ovito.enable_logging()
 
@@ -25,7 +24,7 @@ def to_miller_indices(vector_float, denom=6):
     Converts a float vector (e.g., (0.1666667, -0.1666667, 0.3333333))
     to Miller indices simplified with denominator 'denom'.
     Returns a tuple (h, k, l) of integers. Useful to compare crystallographic directions
-    without floating‐point noise.
+    without floating-point noise.
     """
     fractions_list = [Fraction(component).limit_denominator(denom) for component in vector_float]
     return tuple(frac.numerator for frac in fractions_list)
@@ -196,6 +195,7 @@ def test_burgers_match(dump_path, opendxa_json_path, frame_index):
 # Example usage:
 test_burgers_match(
     '/home/rodyherrera/Desktop/OpenDXA/analysis.lammpstrj',
-    '/home/rodyherrera/Desktop/OpenDXA/dislocations/timestep_124000.json',
-    124000
+    '/home/rodyherrera/Desktop/OpenDXA/dislocations/timestep_130000.json',
+    # NOTE: frame != timestep
+    130
 )
