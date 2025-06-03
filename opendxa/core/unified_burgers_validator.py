@@ -99,64 +99,89 @@ class UnifiedBurgersValidator:
         )
 
     def _define_standard_burgers_vectors(self):
-        '''Define standard Burgers vectors for each crystal structure.'''
         a = self.lattice_parameter
 
         self.standard_burgers: Dict[str, Dict[str, List[np.ndarray]]] = {
             'fcc': {
                 'perfect': [
-                    a/2 * np.array([1, 1, 0]),
-                    a/2 * np.array([1, -1, 0]),
-                    a/2 * np.array([1, 0, 1]),
-                    a/2 * np.array([1, 0, -1]),
-                    a/2 * np.array([0, 1, 1]),
-                    a/2 * np.array([0, 1, -1])
+                    a/2 * np.array([ 1,  1,  0]),
+                    a/2 * np.array([ 1, -1,  0]),
+                    a/2 * np.array([-1,  1,  0]),
+                    a/2 * np.array([-1, -1,  0]),
+                    a/2 * np.array([ 1,  0,  1]),
+                    a/2 * np.array([ 1,  0, -1]),
+                    a/2 * np.array([-1,  0,  1]),
+                    a/2 * np.array([-1,  0, -1]),
+                    a/2 * np.array([ 0,  1,  1]),
+                    a/2 * np.array([ 0,  1, -1]),
+                    a/2 * np.array([ 0, -1,  1]),
+                    a/2 * np.array([ 0, -1, -1])
                 ],
                 'partial': [
-                    a/6 * np.array([1, 1, 2]),
-                    a/6 * np.array([1, 1, -2]),
-                    a/6 * np.array([1, -1, 2]),
-                    a/6 * np.array([1, -1, -2]),
-                    a/6 * np.array([1, 2, 1]),
-                    a/6 * np.array([1, -2, 1]),
-                    a/6 * np.array([-1, 2, 1]),
-                    a/6 * np.array([-1, -2, 1]),
-                    a/6 * np.array([2, 1, 1]),
-                    a/6 * np.array([2, 1, -1]),
-                    a/6 * np.array([2, -1, 1]),
-                    a/6 * np.array([2, -1, -1]),
-                    # Shockley a/3: 1/3 [0 -1 0]
-                    a/3 * np.array([0, -1, 0]),
-                    a/3 * np.array([0,  1, 0]),
+                    # Shockley <112> (±1/6)
+                    a/6 * np.array([ 1,  1, -2]),
+                    a/6 * np.array([ 1, -1,  2]),
+                    a/6 * np.array([-1,  1,  2]),
+                    a/6 * np.array([-1, -1, -2]),
+                    a/6 * np.array([ 1, -2,  1]),
+                    a/6 * np.array([ 1,  2, -1]),
+                    a/6 * np.array([-1,  2,  1]),
+                    a/6 * np.array([-1, -2, -1]),
+                    a/6 * np.array([-2,  1,  1]),
+                    a/6 * np.array([ 2,  1, -1]),
+                    a/6 * np.array([ 2, -1,  1]),
+                    a/6 * np.array([-2, -1, -1]),
+                    a/6 * np.array([ 1,  1,  2]),
+                    a/6 * np.array([ 1, -1, -2]),
+                    a/6 * np.array([-1,  1, -2]),
+                    a/6 * np.array([-1, -1,  2]),
+                    a/6 * np.array([ 1,  2,  1]),
+                    a/6 * np.array([ 1, -2, -1]),
+                    a/6 * np.array([-1, -2,  1]),
+                    a/6 * np.array([-1,  2, -1]),
+                    a/6 * np.array([ 2,  1,  1]),
+                    a/6 * np.array([-2,  1, -1]),
+                    a/6 * np.array([-2, -1,  1]),
+                    a/6 * np.array([ 2, -1, -1]),
+                    a/3 * np.array([ 0, -1,  0]),
+                    a/3 * np.array([ 0,  1,  0])
                 ]
             },
             'bcc': {
                 'perfect': [
-                    a/2 * np.array([1, 1, 1]),
-                    a/2 * np.array([1, 1, -1]),
-                    a/2 * np.array([1, -1, 1]),
-                    a/2 * np.array([1, -1, -1])
+                    a/2 * np.array([ 1,  1,  1]),
+                    a/2 * np.array([ 1,  1, -1]),
+                    a/2 * np.array([ 1, -1,  1]),
+                    a/2 * np.array([ 1, -1, -1]),
+                    a/2 * np.array([-1,  1,  1]),
+                    a/2 * np.array([-1,  1, -1]),
+                    a/2 * np.array([-1, -1,  1]),
+                    a/2 * np.array([-1, -1, -1])
                 ],
                 'partial': [
                     a/2 * np.array([1, 0, 0]),
+                    a/2 * np.array([-1, 0, 0]),
                     a/2 * np.array([0, 1, 0]),
-                    a/2 * np.array([0, 0, 1])
+                    a/2 * np.array([0, -1, 0]),
+                    a/2 * np.array([0, 0, 1]),
+                    a/2 * np.array([0, 0, -1])
                 ]
             },
             'hcp': {
                 'perfect': [
-                    a * np.array([1, 0, 0]),
-                    a * np.array([-1/2, np.sqrt(3)/2, 0]),
+                    a * np.array([ 1, 0, 0]),
+                    a * np.array([-1/2,  np.sqrt(3)/2, 0]),
                     a * np.array([-1/2, -np.sqrt(3)/2, 0])
                 ],
                 'partial': [
-                    a/3 * np.array([1, 0, 0]),
-                    a/3 * np.array([-1/2, np.sqrt(3)/2, 0]),
+                    a/3 * np.array([ 1, 0, 0]),
+                    a/3 * np.array([-1/2,  np.sqrt(3)/2, 0]),
                     a/3 * np.array([-1/2, -np.sqrt(3)/2, 0])
                 ]
             }
         }
 
+        
     def validate_burgers_vectors(
         self,
         primary_burgers: Dict[int, np.ndarray],
