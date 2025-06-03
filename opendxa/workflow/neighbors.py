@@ -19,6 +19,7 @@ def step_neighbors(ctx):
 
 def step_classify_ptm(ctx, neighbors):
     data = ctx['data']
+    args = ctx['args']
     ptm_classifier = PTMLocalClassifier(
         positions=data['positions'],
         box_bounds=data['box'],
@@ -29,7 +30,17 @@ def step_classify_ptm(ctx, neighbors):
     )
     types, quats = ptm_classifier.classify()
     ctx['logger'].info(f'PTM classified: {dict(zip(*np.unique(types, return_counts=True)))}')
-    return {'types': types, 'quaternions': quats, 'neighbors': neighbors}
+    if getattr(args, 'crystal_type', None) is not None:
+        crystal_type = args.crystal_type
+    else:
+        # infer_structure_type() → (type_name, fraction, counts)
+        crystal_type, _, _ = ptm_classifier.infer_structure_type()
+    return {
+        'types': types, 
+        'quaternions': quats, 
+        'crystal_type': crystal_type,
+        'neighbors': neighbors
+    }
 
 def step_classify_cna(ctx, neighbors):
     '''
@@ -61,10 +72,15 @@ def step_classify_cna(ctx, neighbors):
     quaternions[:, 0] = 1.0 
     
     ctx['logger'].info(f'CNA classified: {dict(zip(*np.unique(types, return_counts=True)))}')
-    
+    if getattr(args, 'crystal_type', None) is not None:
+        crystal_type = args.crystal_type
+    else:
+        # infer_structure_type() → (type_name, fraction, counts)
+        crystal_type, _, _ = cna_classifier.infer_structure_type()    
     return {
         'types': types, 
         'quaternions': quaternions, 
+        'crystal_type': crystal_type,
         'neighbors': neighbors,
         'cna_signatures': cna_signatures
     }

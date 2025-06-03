@@ -1,7 +1,7 @@
 from opendxa.export import DislocationExporter
 import numpy as np
 
-def step_export(ctx, refinement, filtered):
+def step_export(ctx, refinement, filtered, structure_classification):
     data = ctx['data']
     args = ctx['args']
     
@@ -19,7 +19,8 @@ def step_export(ctx, refinement, filtered):
         segment_length=args.segment_length,
         min_segments=args.min_segments,
         include_segments=args.include_segments,
-        lattice_parameter=args.lattice_parameter
+        lattice_parameter=args.lattice_parameter,
+        crystal_type=structure_classification['crystal_type']
     )
     exporter.to_json(args.output)
     ctx['logger'].info(f'Exported to {args.output} with segments: {args.include_segments}')
@@ -42,5 +43,5 @@ def step_export_fast(ctx, advanced_loops, filtered):
         timestep=data['timestep'],
         line_types=line_types
     )
-    exporter.to_json(args.output)
+    exporter.to_json(ctx)
     ctx['logger'].info(f'Fast export to {args.output}')

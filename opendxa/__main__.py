@@ -30,6 +30,17 @@ def parse_call_args():
     parser.add_argument('--min-cluster-size', type=int, default=5, help='Minimum number of atoms required to form a valid crystal orientation cluster')
     parser.add_argument('--core-radius', type=float, default=2.0, help='Radius for marking dislocation cores (in Angstroms)')
     # Crystal structure and analysis options
+    parser.add_argument(
+        "--crystal-type",
+        type=str.upper,
+        choices=["FCC", "HCP", "BCC", "ICO", "SC"],
+        default=None,
+        help=(
+            "Type of crystal for the simulation. If provided, "
+            "The DXA will directly use that template (e.g. FCC, HCP, BCC, ICO or SC). "
+            "If not specified, it will be automatically inferred with PTM/CNA."
+        )
+    )
     parser.add_argument('--lattice-parameter', type=float, default=4.0, help='Lattice parameter in Angstroms')
     # TODO: implement adaptative cutoff form PTM.
     parser.add_argument('--adaptive-cutoff', action='store_true', default=False,help='Enable adaptive cutoff for neighbor search (recommended for distorted structures)')

@@ -97,7 +97,8 @@ class DislocationExporter:
         segment_length: float = None,
         min_segments: int = 5,
         include_segments: bool = True,
-        lattice_parameter: float = 1.0
+        lattice_parameter: float = 1.0,
+        crystal_type: str = 'fcc'
     ):
         self.positions = np.asarray(positions, dtype=np.float32)
         self.output_dir = output_dir
@@ -112,8 +113,9 @@ class DislocationExporter:
         self.min_segments = min_segments
         self.include_segments = include_segments
         self.lattice_parameter = lattice_parameter
+        self.crystal_type = crystal_type
 
-    def to_json(self, filename: str):
+    def to_json(self, ctx):
         # If filename is provided, use it directly (for API calls)
         # Otherwise, use the default output directory structure
         # if filename and os.path.isabs(filename):
@@ -153,15 +155,18 @@ class DislocationExporter:
                 )
             
             # Use detected crystal structure from PTM/CNA analysis if available
-            if idx in self.burgers_classifications:
-                classification = self.burgers_classifications[idx]
-                crystal_type = classification.get('crystal_structure', 'fcc')
-                # We could also extract lattice parameter from classification if available
-            
+            # TODO: PTM and CNA have a method for inferring
+            # TODO: structure types, but UnifiedBurgersVectors already does this. Fix that.
+            #if idx in self.burgers_classifications:
+            #    classification = self.burgers_classifications[idx]
+            #    crystal_type = classification.get('crystal_structure', 'fcc')
+            #    # We could also extract lattice parameter from classification if available
+            crystal_type = self.crystal_type
+
             # Use structure-aware matching with the detected crystal type
             matched_burgers, alignment = match_to_crystal_basis(
                 # TODO: HARDCODED CRYSTAL_TYPE
-                np.array(burger_vector), 'fcc', self.lattice_parameter
+                np.array(burger_vector), crystal_type, self.lattice_parameter
             )
             
             # Build dislocation data
@@ -171,7 +176,7 @@ class DislocationExporter:
                 'burgers': burger_vector,
                 'points': points,
                 # TODO: hardcoded
-                'crystal_type': 'fcc',
+                'crystal_type': crystal_type,
                 'matched_burgers': matched_burgers.tolist(),
                 'matched_burgers_str': burgers_to_string(matched_burgers),
                 'alignment': float(alignment)

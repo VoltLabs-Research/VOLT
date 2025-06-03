@@ -56,13 +56,13 @@ class ElasticMapper:
         box_bounds: Optional[np.ndarray] = None,
         pbc: List[bool] = [True, True, True]
     ):
-        self.crystal_type = crystal_type
+        self.crystal_type = crystal_type.lower()
         self.lattice_param = lattice_parameter
         self.tolerance = tolerance
         self.box_bounds = box_bounds
         self.pbc = pbc
         self.ideal_vectors = {}
-        for b_type, vectors in self.IDEAL_BURGERS[crystal_type].items():
+        for b_type, vectors in self.IDEAL_BURGERS[self.crystal_type].items():
             self.ideal_vectors[b_type] = vectors * lattice_parameter
         
         logger.info(f'ElasticMapper initialized:')

@@ -40,7 +40,7 @@ def create_and_configure_workflow(ctx):
         # Full pipeline with enhanced crystallographic analysis
         # Add new clustering and elastic mapping steps
         workflow.register('cluster', step_build_clusters, depends_on=['filtered'])
-        workflow.register('elastic_map', step_elastic_mapping, depends_on=['cluster', 'tessellation', 'filtered'])
+        workflow.register('elastic_map', step_elastic_mapping, depends_on=['cluster', 'tessellation', 'filtered', 'structure_classification'])
         workflow.register('interface_mesh', step_interface_mesh, depends_on=['elastic_map', 'filtered'])
         
         # Original displacement and connectivity steps
@@ -60,6 +60,6 @@ def create_and_configure_workflow(ctx):
         workflow.register('core_marking', step_mark_core_atoms, depends_on=['refinement', 'interface_mesh', 'filtered'])
         workflow.register('advanced_stats', step_stats_report, depends_on=['validate', 'core_marking'])
         
-        workflow.register('export', step_export, depends_on=['refinement', 'filtered'])
+        workflow.register('export', step_export, depends_on=['refinement', 'filtered', 'structure_classification'])
 
     return workflow

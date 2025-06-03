@@ -3,7 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def step_elastic_mapping(ctx, cluster, tessellation, filtered):
+def step_elastic_mapping(ctx, cluster, tessellation, filtered, structure_classification):
     """
     Enhanced elastic mapping step that uses cluster information to assign ideal vectors
     to tessellation edges, similar to OVITO's ElasticMapping functionality.
@@ -31,14 +31,12 @@ def step_elastic_mapping(ctx, cluster, tessellation, filtered):
                     edges.append(edge)
                     seen_edges.add(edge)
         logger.info(f"Generated {len(edges)} edges from connectivity data")
-    
     # Create enhanced elastic mapper
     elastic_mapper = EnhancedElasticMapper(
         positions=filtered['positions'],
         clusters=clusters,
         cluster_transitions=cluster_transitions,
-        # TODO: FIX THIS IS HARDCODED
-        crystal_type='fcc',
+        crystal_type=structure_classification['crystal_type'],
         lattice_parameter=args.lattice_parameter,
         box_bounds=data['box']
     )

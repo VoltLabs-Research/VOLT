@@ -6,9 +6,9 @@ def step_unified_validation(
     advanced_loops, 
     displacement, 
     filtered, 
-    structure_classification=None, 
-    elastic_map=None, 
-    interface_mesh=None
+    structure_classification, 
+    elastic_map,
+    interface_mesh
 ):
     """Enhanced unified validation using Burgers circuits, elastic mapping, and interface mesh"""
     data = ctx['data']
@@ -17,8 +17,7 @@ def step_unified_validation(
     # Get parameters from context
     # TODO: FROM CONTEXT?????
     lattice_parameter = ctx.get('lattice_parameter', 4.0)
-    # TODO: CRYSTAL TYPE?
-    crystal_type = ctx.get('crystal_type', 'fcc')
+    crystal_type = structure_classification['crystal_type']
     
     # Setup elastic mapping parameters
     box_bounds = np.array(data['box'], dtype=np.float64)
