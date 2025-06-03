@@ -14,7 +14,8 @@ class CNALocalClassifier:
         tolerance,
         adaptive_cutoff,
         neighbor_tolerance,
-        extended_signature
+        # TODO: USE THIS AS MODULE CALL ARGUMENT!!
+        extended_signatures = True
     ):
         self.N = len(positions)
         self.positions = np.asarray(positions, dtype=np.float32)

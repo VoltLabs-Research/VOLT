@@ -47,7 +47,7 @@ def step_classify_cna(ctx, neighbors):
         neighbor_dict=neighbors,
         cutoff_distance=args.cutoff,
         max_neighbors=args.num_neighbors * 2,
-        adaptive_cutoff=args.adaptative_cutoff,
+        adaptive_cutoff=args.adaptive_cutoff,
         neighbor_tolerance=args.neighbor_tolerance,
         tolerance=args.tolerance
     )

@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-from typing import Dict, List, Optional, Any, Tuple, Union
+from typing import Dict, List, Optional, Any, Tuple
 from opendxa.classification.elastic_mapper import ElasticMapper
 from opendxa.filters.burgers_normalizer import BurgersNormalizer
 
@@ -8,7 +8,8 @@ logger = logging.getLogger(__name__)
 
 class UnifiedBurgersValidator:
     '''
-    Unified validation of Burgers vectors using normalization, elastic mapping, and optional interface checks.
+    Unified validation of Burgers vectors using normalization,
+    elastic mapping, and optional interface checks.
     '''
 
     def __init__(
@@ -23,12 +24,12 @@ class UnifiedBurgersValidator:
     ):
         '''
         Args:
-            crystal_type (str): 'fcc', 'bcc', or 'hcp'.
+            crystal_type (str): 'fcc', 'bcc' or 'hcp'.
             lattice_parameter (float): Lattice constant a (must be > 0).
-            tolerance (float): Tolerance fraction for normalization (>= 0).
-            validation_tolerance (float): Tolerance fraction for elastic mapping (>= 0).
-            box_bounds (np.ndarray, optional): Array of shape (3, 2) defining [min, max] for each axis.
-            pbc (List[bool]): Length-3 list indicating PBC usage on x, y, z axes.
+            tolerance (float): Fractional tolerance for normalization (>= 0).
+            validation_tolerance (float): Fractional tolerance for elastic mapping (>= 0).
+            box_bounds (np.ndarray, optional): Array of shape (3,2) defining [min,max] in each axis.
+            pbc (List[bool]): List of 3 booleans indicating PBC usage on x, y, z axes.
             allow_non_standard (bool): Whether to accept non-standard Burgers vectors.
 
         Raises:
@@ -36,47 +37,47 @@ class UnifiedBurgersValidator:
         '''
         # Validate crystal_type
         if not isinstance(crystal_type, str) or crystal_type.lower() not in ['fcc', 'bcc', 'hcp']:
-            raise ValueError(f'crystal_type must be one of "fcc", "bcc", "hcp", got {crystal_type}')
+            raise ValueError(f'crystal_type must be "fcc", "bcc" or "hcp", got: {crystal_type}')
         self.crystal_type = crystal_type.lower()
 
         # Validate numeric parameters
         if not (isinstance(lattice_parameter, (int, float)) and lattice_parameter > 0):
-            raise ValueError(f'lattice_parameter must be a positive number, got {lattice_parameter}')
+            raise ValueError(f'lattice_parameter must be a positive number, got: {lattice_parameter}')
         if not (isinstance(tolerance, (int, float)) and tolerance >= 0):
-            raise ValueError(f'tolerance must be non-negative, got {tolerance}')
+            raise ValueError(f'tolerance must be non-negative, got: {tolerance}')
         if not (isinstance(validation_tolerance, (int, float)) and validation_tolerance >= 0):
-            raise ValueError(f'validation_tolerance must be non-negative, got {validation_tolerance}')
+            raise ValueError(f'validation_tolerance must be non-negative, got: {validation_tolerance}')
         self.lattice_parameter = float(lattice_parameter)
         self.tolerance = float(tolerance)
         self.validation_tolerance = float(validation_tolerance)
 
         # Validate allow_non_standard
         if not isinstance(allow_non_standard, bool):
-            raise ValueError(f'allow_non_standard must be a boolean, got {allow_non_standard}')
+            raise ValueError(f'allow_non_standard must be boolean, got: {allow_non_standard}')
         self.allow_non_standard = allow_non_standard
 
         # Validate box_bounds
         if box_bounds is not None:
             box = np.asarray(box_bounds, dtype=np.float32)
             if box.ndim != 2 or box.shape != (3, 2):
-                raise ValueError(f'box_bounds must be shape (3, 2), got {box.shape}')
+                raise ValueError(f'box_bounds must have shape (3,2), got: {box.shape}')
             self.box_bounds = box
         else:
             self.box_bounds = None
 
         # Validate pbc
         if not (isinstance(pbc, (list, tuple)) and len(pbc) == 3 and all(isinstance(x, bool) for x in pbc)):
-            raise ValueError(f'pbc must be a list of 3 booleans, got {pbc}')
+            raise ValueError(f'pbc must be a list of 3 booleans, got: {pbc}')
         self.pbc = pbc
 
-        # Initialize normalizer
+        # Initialize Burgers normalizer
         self.normalizer = BurgersNormalizer(
             crystal_type=self.crystal_type,
             lattice_parameter=self.lattice_parameter,
             tolerance=self.tolerance
         )
 
-        # Initialize elastic mapper
+        # Initialize ElasticMapper
         try:
             self.elastic_mapper = ElasticMapper(
                 crystal_type=self.crystal_type,
@@ -88,7 +89,7 @@ class UnifiedBurgersValidator:
         except Exception as e:
             raise ValueError(f'Failed to initialize ElasticMapper: {e}')
 
-        # Define standard Burgers
+        # Define standard Burgers vectors
         self._define_standard_burgers_vectors()
 
         logger.info(
@@ -162,7 +163,7 @@ class UnifiedBurgersValidator:
         connectivity: Dict[int, List[int]],
         ideal_edge_vectors: Optional[Dict[Any, np.ndarray]] = None,
         elastic_mapping_stats: Optional[Dict] = None,
-        interface_mesh: Optional[Dict] = None,
+        interface_mesh: Optional[Dict[str, Any]] = None,
         defect_regions: Optional[Dict[int, bool]] = None,
         ptm_types: Optional[np.ndarray] = None
     ) -> Dict[str, Any]:
@@ -202,11 +203,18 @@ class UnifiedBurgersValidator:
             if arr.ndim != 1 or arr.size != 3:
                 raise ValueError(f'primary_burgers[{loop_id}] must be a 3-element array, got {arr.shape}')
 
-        # Validate loops and positions
+        # Validate positions
         pos = np.asarray(positions, dtype=np.float32)
         if pos.ndim != 2 or pos.shape[1] != 3:
             raise ValueError(f'positions must be shape (N_atoms, 3), got {pos.shape}')
         N_atoms = pos.shape[0]
+
+        # → Adjust for 1-based → 0-based indexing if necessary
+        if loops:
+            max_idx_in_loops = max(atom for loop in loops for atom in loop)
+            if max_idx_in_loops >= N_atoms:
+                # Convert each index by subtracting 1
+                loops = [[idx - 1 for idx in loop] for loop in loops]
 
         # Filter out any loops with invalid atom indices
         filtered_loops: List[List[int]] = []
@@ -239,7 +247,6 @@ class UnifiedBurgersValidator:
                 else:
                     logger.warning(f'skipping displacement_field[{edge_key}]: must be a 3-element array')
             else:
-                # logger.warning(f'skipping invalid edge_key {edge_key} in displacement_field')
                 pass
         displacement_field = filtered_disp
 
@@ -259,18 +266,17 @@ class UnifiedBurgersValidator:
                 if isinstance(n, int) and 0 <= n < N_atoms:
                     valid_nbrs.append(n)
                 else:
-                    # logger.warning(f'skipping neighbor index {n} for atom {atom}: out of range')
                     pass
             if valid_nbrs:
                 filtered_conn[atom] = valid_nbrs
         connectivity = filtered_conn
 
-        # Step 1: primary validation
+        # --- Step 1: primary validation ---
         primary_validation = self._validate_primary_burgers(
             primary_burgers, ptm_types, loops, pos
         )
 
-        # Step 2: secondary validation
+        # --- Step 2: secondary validation ---
         if ideal_edge_vectors is not None:
             # Validate and filter ideal_edge_vectors
             filtered_ideal: Dict[Tuple[int, int], np.ndarray] = {}
@@ -285,7 +291,6 @@ class UnifiedBurgersValidator:
                     else:
                         logger.warning(f'skipping ideal_edge_vectors[{edge_key}]: must be a 3-element array')
                 else:
-                    # logger.warning(f'skipping invalid edge_key {edge_key} in ideal_edge_vectors')
                     pass
             ideal_edge_vectors = filtered_ideal
 
@@ -298,7 +303,7 @@ class UnifiedBurgersValidator:
                 primary_burgers, loops, pos, displacement_field, connectivity
             )
 
-        # Step 3: interface mesh validation
+        # --- Step 3: interface mesh validation ---
         interface_validation: Dict[str, Any] = {}
         if interface_mesh is not None:
             if not isinstance(interface_mesh, dict):
@@ -307,17 +312,17 @@ class UnifiedBurgersValidator:
                 primary_burgers, loops, pos, interface_mesh, defect_regions
             )
 
-        # Step 4: consistency metrics
+        # --- Step 4: consistency metrics ---
         consistency_metrics = self._compute_enhanced_consistency_metrics(
             primary_validation, secondary_validation, interface_validation
         )
 
-        # Step 5: final validation
+        # --- Step 5: final validation ---
         final_validated = self._create_enhanced_final_validation(
             primary_validation, secondary_validation, interface_validation, consistency_metrics
         )
 
-        # Step 6: enhancement metrics
+        # --- Step 6: enhancement metrics ---
         enhancement_metrics: Dict[str, Any] = {}
         if ideal_edge_vectors or interface_mesh is not None:
             enhancement_metrics = self._compute_enhancement_metrics(
@@ -351,7 +356,7 @@ class UnifiedBurgersValidator:
         positions: Optional[np.ndarray] = None
     ) -> Dict[str, Any]:
         '''
-        Primary validation by normalizing Burgers and analyzing local structure if PTM data is available.
+        Primary validation: normalize Burgers and perform local structure analysis if PTM data is available.
         '''
         validated_loops: List[int] = []
         normalized_burgers: Dict[int, np.ndarray] = {}
@@ -366,7 +371,7 @@ class UnifiedBurgersValidator:
         structure_analysis: Dict[int, Dict[str, Any]] = {}
 
         for loop_id, burger_vector in burgers_vectors.items():
-            # Validate burger_vector shape
+            # Validate shape of burger_vector
             arr = np.asarray(burger_vector, dtype=np.float32)
             if arr.ndim != 1 or arr.size != 3:
                 raise ValueError(f'primary_burgers[{loop_id}] must be a 3-element array, got {arr.shape}')
@@ -375,12 +380,12 @@ class UnifiedBurgersValidator:
             magnitudes.append(magnitude)
 
             if magnitude > 1e-5:
-                # Local structure analysis if data available
+                # Local structure analysis if data is provided
                 local_structure: Optional[str] = None
                 if (loops is not None and positions is not None and ptm_types is not None and
                     0 <= loop_id < len(loops)):
                     loop_atoms = loops[loop_id]
-                    if np.asarray(positions).ndim != 2 or np.asarray(positions).shape[1] != 3:
+                    if positions.ndim != 2 or positions.shape[1] != 3:
                         raise ValueError('positions must be shape (N_atoms, 3)')
                     if ptm_types.ndim != 1 or ptm_types.size < len(loop_atoms):
                         raise ValueError('ptm_types must be a 1D array with at least len(loop) entries')
@@ -569,7 +574,7 @@ class UnifiedBurgersValidator:
         defect_regions: Optional[Dict[int, bool]] = None
     ) -> Dict[str, Any]:
         '''
-        Validate loops against interface mesh, checking proximity and defect enclosure.
+        Validate loops against an interface mesh by checking proximity and defect enclosure.
         '''
         vertices = interface_mesh.get('vertices', np.array([]))
         faces = interface_mesh.get('faces', np.array([]))
@@ -591,7 +596,7 @@ class UnifiedBurgersValidator:
             if loop_id not in burgers_vectors:
                 continue
             if not isinstance(loop_atoms, (list, tuple, np.ndarray)):
-                raise ValueError(f'loops[{loop_id}] must be list of atom indices')
+                raise ValueError(f'loops[{loop_id}] must be a list of atom indices')
 
             # Check atoms in valid range
             for atom in loop_atoms:
@@ -810,7 +815,7 @@ class UnifiedBurgersValidator:
                     metrics['interface_correlation'] = float(np.std(scores))
 
         metrics['enhancement_score'] = (
-            0.6 * metrics['elastic_enhancement'] + 
+            0.6 * metrics['elastic_enhancement'] +
             0.4 * metrics['interface_enhancement']
         )
 
@@ -823,7 +828,7 @@ class UnifiedBurgersValidator:
         faces: np.ndarray
     ) -> float:
         '''
-        Compute minimum distance from point to triangulated mesh (approximate via plane distance).
+        Compute minimum distance from a point to a triangulated mesh (approximate via plane distance).
         '''
         if faces.ndim != 2 or faces.shape[1] < 3:
             return float('inf')
@@ -849,7 +854,7 @@ class UnifiedBurgersValidator:
         v2: np.ndarray
     ) -> float:
         '''
-        Compute approximate distance from point to triangle plane (ignore in-plane check).
+        Compute approximate distance from a point to a triangle plane (ignore in-plane check).
         '''
         edge1 = v1 - v0
         edge2 = v2 - v0
@@ -873,7 +878,7 @@ class UnifiedBurgersValidator:
         defect_regions: Dict[int, bool]
     ) -> float:
         '''
-        Compute fraction of defective tetrahedra enclosed by loop bounding box.
+        Compute fraction of defective tetrahedra enclosed by the loop bounding box.
         '''
         loop_pos = positions[loop_atoms]
         loop_min = np.min(loop_pos, axis=0)
@@ -894,11 +899,11 @@ class UnifiedBurgersValidator:
         local_structure: Optional[str] = None
     ) -> Dict[str, Any]:
         '''
-        Classify a single Burgers vector based on standard sets or detect structure if unknown.
+        Classify a single Burgers vector based on standard sets, or detect structure if unknown.
         '''
         arr = np.asarray(burgers_vector, dtype=np.float32)
         if arr.ndim != 1 or arr.size != 3:
-            raise ValueError(f'burgers_vector must be 3-element array, got {arr.shape}')
+            raise ValueError(f'burgers_vector must be a 3-element array, got {arr.shape}')
 
         magnitude = float(np.linalg.norm(arr))
         classification: Dict[str, Any] = {
