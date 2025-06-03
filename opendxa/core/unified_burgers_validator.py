@@ -14,13 +14,13 @@ class UnifiedBurgersValidator:
 
     def __init__(
         self,
-        crystal_type: str = 'fcc',
-        lattice_parameter: float = 1.0,
-        tolerance: float = 0.15,
-        validation_tolerance: float = 0.3,
-        box_bounds: Optional[np.ndarray] = None,
-        pbc: List[bool] = [True, True, True],
-        allow_non_standard: bool = True
+        crystal_type: str,
+        lattice_parameter: float,
+        tolerance: float,
+        validation_tolerance: float,
+        box_bounds: Optional[np.ndarray],
+        pbc: List[bool],
+        allow_non_standard: bool
     ):
         '''
         Args:

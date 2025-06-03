@@ -38,8 +38,9 @@ def step_unified_validation(ctx, advanced_loops, displacement, filtered, structu
     validator = UnifiedBurgersValidator(
         crystal_type=crystal_type,
         lattice_parameter=lattice_parameter,
-        tolerance=args.validation_tolerance,
+        tolerance=args.tolerance,
         box_bounds=box_bounds,
+        validation_tolerance=args.validation_tolerance,
         pbc=pbc_active,
         allow_non_standard=args.allow_non_standard_burgers
     )
