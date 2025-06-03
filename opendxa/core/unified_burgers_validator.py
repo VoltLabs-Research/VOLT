@@ -124,7 +124,10 @@ class UnifiedBurgersValidator:
                     a/6 * np.array([2, 1, 1]),
                     a/6 * np.array([2, 1, -1]),
                     a/6 * np.array([2, -1, 1]),
-                    a/6 * np.array([2, -1, -1])
+                    a/6 * np.array([2, -1, -1]),
+                    # Shockley a/3: 1/3 [0 -1 0]
+                    a/3 * np.array([0, -1, 0]),
+                    a/3 * np.array([0,  1, 0]),
                 ]
             },
             'bcc': {
