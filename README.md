@@ -7,18 +7,20 @@
 
 **OpenDXA** is a high-performance, open-source Python package for extracting, analyzing, and visualizing dislocation lines in atomistic simulations. Built with GPU acceleration and robust algorithms, it provides comprehensive analysis of crystal defects in FCC, BCC, and HCP structures from LAMMPS trajectory files.
 
-## 🚀 Key Features
+## Key Features
 
-- **🔍 Advanced Dislocation Detection**: Robust extraction of dislocation lines using hybrid Voronoi-cutoff neighbor finding
-- **⚡ GPU Acceleration**: CUDA-accelerated Burgers circuit evaluation for high-performance analysis
-- **🔬 Multi-Crystal Support**: Compatible with FCC, BCC, and HCP crystal structures
-- **📊 Comprehensive Analysis**: Burgers vector classification, line type determination (edge/screw/mixed)
-- **📈 Detailed Export**: JSON export with dislocation segments, statistics, and metadata
-- **🎯 Flexible Segmentation**: Configurable dislocation line segmentation for detailed analysis
-- **📋 Structure Classification**: PTM-based local structure identification with orientation analysis
-- **🔄 Parallel Processing**: Multi-threaded analysis for large-scale simulations
-
-## 📦 Installation
+- **Parallell Neighbor Finding & Structure Classification**: OpenDXA uses a hybrid algorithm that combines cutoff-based and Voronoi-based neighbors search, with adjustable `cutoff`, `num_neighbors`, `voronoi_factor`. Supports both PTM (Polyhedral Template Matching) and CNA (Common Neighbor Analysis), selectable via `--use-cna`. Automatically infers or accepts user-supplied crystal-type and lattice parameter.
+- **Surface Filtering & Delaunay Tessellation**: To remove surface/disordered atoms based on a minimum neighbors criterion (`--min-neighbors`). Delaunay tessellation under PBC with ghost layers (`--ghost-thickness`) to identify tetrahedral connectivity for core-marking and later steps.
+- **Lattice Connectivity Graph**: `LatticeConnectivityGraph` builds a base connectivity graph from neighbors, then feeds into `ConnectivityManager` that centralizes and optionally enhaces connectivity (e.g via tessellation), allowing reuse of neighbors list across multiple pipeline stages. 
+- **Dislocation Loop Finding & Burgers Circuit Evaluation**: `FilteredLoopFinder` finds minimal loops in the connectivity graph (with `--max-loop-length`, `--max-loops`, `--loop-timeout`). `LoopCanonicalizer` normalizes loops for translation and symmetry-invariance. `BurgersCircuitEvaluator` computes Burgers vectors for each loop in a vectorized, GPU-friendly manner. Loop grouping (`LoopGrouper`) merges similar loops based on distance and Burgers-vector angle thresholds.
+- **Loop Clustering & Grouping**: Vectorized distance and angle-matrix computation with `scipy.spatial.distance.cdist`. Aggressive thresholds (`--grouping-distance-threshold`, `--grouping-angle-threshold`) for fast, approximate grouping when many loops are found. Fallback to simple grouping when the number of loops is small.
+- **Crystalline Cluster Building**: `CrystallineClusterBuilder` groups atoms into clusters by structure type (PTM/CNA) and orientation (quaternion similarity, `--orientation-threshold`, `--min-cluster-size`). Detects cluster borders (transitions) for elastic-mapping analyzes or advanced defect-network studies.
+- **Displacement Field Analysis & Lattice Parameter Estimation**: `DisplacementFieldAnalyzer` computes atomic displacement vectors and average magnitudes. PBC unwrapping via `unwrap_pbc_displacement`. Automatic estimation of lattice parameter from first-neighbor distances (`estimate_lattice_parameter`), with fallbacks for unrealistic values.
+- **Dislocation Core Marking & Line Refinement**: `DislocationCoreMarker` assigns dislocation-core IDs to atoms within a core radius (`--core-radius`) scaled by Burgers magnitude. `DislocationLineSmoother` smooths raw line points (`--line-smoothing-level`, `--line-point-interval`). Combines refined lines with core IDs and computes Nye tensor and comprehensive statistics (lengths, densities, Burgers-family classification).
+- **Export to JSON & Fast-Mode Pipeline**: `DislocationExporter` writes out final dislocation data (loops, segments, Burgers vectors, types, etc.) to a JSON file (`--output`). Supports "fast-mode" (`--fast-mode`) to skip heavy refinement steps and export minimal loop information quickly.
+- **Built-In Statistical & Graph-Theoric Analyses**: `DislocationStatisticsGenerator` produces tables similar to OVITO's DataTable: total length, density, line density, Burgers-family breakdown, cluster statistics, etc. Optional modules for histogramming Burgers vectors, tortuosity, orientation (azimuth/spherical), voxel density (`--run-voxel-density`, `--voxel-grid--size`), and persistence/homology. Graph-topology analysis for selected timesteps (`--run-graph-topology`, `--graph-topology-timesteps`).
+- **Spacetime Heatmap & Tracking Over Multiple Timesteps**: Builds a 2D heatmap (timestep vs. z-position) showing counts of dislocation centroids per z-bin (`--spacetime-heatmap`). `track_dislocations` correlates dislocations across successive timesteps based on Burgers signature and spatial proximity to produce time-resolving "tracks."
+## 📦 Installationng
 
 ### Quick Install
 ```bash
