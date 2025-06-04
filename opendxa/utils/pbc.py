@@ -78,7 +78,8 @@ def detect_pbc_from_box(
     positions: np.ndarray
 ) -> Tuple[bool, bool, bool]:
     pbc = [False, False, False]
-    tolerance = 0.1  # Tolerance for detecting atoms near boundaries
+    # Tolerance for detecting atoms near boundaries
+    tolerance = 0.1
     
     for dim in range(3):
         box_min, box_max = box_bounds[dim]
