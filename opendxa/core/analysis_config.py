@@ -62,6 +62,7 @@ class AnalysisConfig:
 
     # Directory for dislocation tracking (if any)
     track_dir: Optional[str] = None
+    spacetime_heatmap: bool = False
 
     # Fast mode settings
     fast_mode: bool = False

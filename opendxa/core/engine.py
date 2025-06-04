@@ -90,6 +90,8 @@ class DislocationAnalysis:
             tracker = DislocationTracker(self.config.track_dir)
             tracker.load_all_timesteps()
             tracker.compute_statistics()
+            if self.config.spacetime_heatmap:
+                tracker.plot_spacetime_heatmap()
             tracker.plot_burgers_histogram()
             tracker.track_dislocations()
             return

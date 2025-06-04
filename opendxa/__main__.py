@@ -30,6 +30,7 @@ def parse_call_args() -> AnalysisConfig:
     )
     parser.add_argument('--lattice-parameter', type=float, default=4.0, help='Parámetro de red (Å)')
     parser.add_argument('--adaptive-cutoff', action='store_true', default=False,help='Enable adaptive cutoff')
+    parser.add_argument('--spacetime-heatmap', action='store_true', default=False,help='Constructs and displays a heat map where the x-axis is the timestep and the y-axis is the position along z (in bins). The color indicates how many lines have their centroid in that z-range for each timestep.')
     parser.add_argument('--allow-non-standard-burgers', action='store_true', default=True, help='Detect non-standard Burgers')
     parser.add_argument('--validation-tolerance', type=float, default=0.35, help='Tolerance para validación Burgers')
     parser.add_argument('--ghost-thickness', type=float, default=1.5, help='Ghost thickness (Å)')
@@ -54,6 +55,7 @@ def parse_call_args() -> AnalysisConfig:
 
     config = AnalysisConfig(
         lammpstrj=args.lammpstrj,
+        spacetime_heatmap=args.spacetime_heatmap,
         workers=args.workers,
         defect_threshold=args.defect_threshold,
         smooth_mesh=args.smooth_mesh,

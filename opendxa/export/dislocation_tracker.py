@@ -19,6 +19,59 @@ class DislocationTracker:
                     data = json.load(f)
                     self.timesteps_data[timestep] = data['dislocations']
 
+    def plot_spacetime_heatmap(self, num_z_bins=50, z_bounds=None):
+        '''
+        Constructs and displays a heat map where the x-axis is the timestep
+        and the y-axis is the position along z (in bins). The color indicates
+        how many lines have their centroid in that z-range for each timestep.
+
+        Args:
+            num_z_bins (int): Number of cells along z. Defaults to 50.
+            z_bounds (Optional[list of 2 floats]): [z_lo, z_hi] of the box. If None,
+                                                    infers [min_z, max_z]
+                                                    across all centroids.
+
+        Returns:
+            None: Displays the heat map.
+        '''
+        timesteps = sorted(self.timesteps_data.keys())
+
+        if z_bounds is None:
+            all_z = []
+            for dislocs in self.timesteps_data.values():
+                for d in dislocs:
+                    pts = np.array(d['points'])
+                    cen_z = pts[:, 2].mean()
+                    all_z.append(cen_z)
+            z_lo, z_hi = min(all_z), max(all_z)
+        else:
+            z_lo, z_hi = z_bounds
+
+        heatmap = np.zeros((len(timesteps), num_z_bins), dtype=int)
+
+        for i, t in enumerate(timesteps):
+            for d in self.timesteps_data[t]:
+                pts = np.array(d['points'])
+                cen_z = pts[:, 2].mean()
+                # Calcular índice de bin
+                bin_index = int((cen_z - z_lo) / (z_hi - z_lo) * num_z_bins)
+                bin_index = min(max(bin_index, 0), num_z_bins - 1)
+                heatmap[i, bin_index] += 1
+
+        plt.figure(figsize=(8, 6))
+        plt.imshow(
+            heatmap.T,
+            aspect='auto',
+            origin='lower',
+            extent=[timesteps[0], timesteps[-1], z_lo, z_hi]
+        )
+        plt.colorbar(label='Number of dislocation lines')
+        plt.xlabel('Timestep')
+        plt.ylabel('Z coordinate')
+        plt.title('Spacetime Heatmap of Dislocation Centroids')
+        plt.tight_layout()
+        plt.show()
+
     def track_dislocations(self):
         # Naive tracking based on Burgers vector and centroid proximity
         tracks = []
