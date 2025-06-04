@@ -22,8 +22,8 @@ def step_export(ctx, refinement, filtered, structure_classification):
         lattice_parameter=args.lattice_parameter,
         crystal_type=structure_classification['crystal_type']
     )
-    exporter.to_json(args.output)
-    ctx['logger'].info(f'Exported to {args.output} with segments: {args.include_segments}')
+    exporter.to_json(ctx)
+    ctx['logger'].info(f'Exported with segments: {args.include_segments}')
 
 
 def step_export_fast(ctx, advanced_loops, filtered):
@@ -44,4 +44,4 @@ def step_export_fast(ctx, advanced_loops, filtered):
         line_types=line_types
     )
     exporter.to_json(ctx)
-    ctx['logger'].info(f'Fast export to {args.output}')
+    # ctx['logger'].info(f'Fast export to {args.output}')
