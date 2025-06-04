@@ -1,5 +1,5 @@
 from opendxa.parser import LammpstrjParser
-from opendxa.export import DislocationTracker
+from opendxa.export import DislocationDataset
 from opendxa.core.analysis_config import AnalysisConfig
 from opendxa.utils.ptm_templates import get_ptm_templates
 from opendxa.utils.logging import setup_logging
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class DislocationAnalysis:
     '''
     Encapsulates the full dislocation analysis workflow. Can be run either
-    in tracking mode (using DislocationTracker) or by iterating over
+    in tracking mode or by iterating over
     timesteps of a LAMMPS trajectory in parallel.
     '''
     def __init__(self, config: AnalysisConfig) -> None:
@@ -87,10 +87,11 @@ class DislocationAnalysis:
         # Tracking mode
         if self.config.track_dir:
             logger.info(f'Tracking dislocations from "{self.config.track_dir}"')
-            tracker = DislocationTracker(self.config.track_dir)
+            dataset = DislocationDataset(self.config.track_dir)
 
-            tracker.load_all_timesteps()
+            dataset.load_all_timesteps()
 
+            '''
             if self.config.run_burgers_histogram:
                 tracker.compute_statistics()
                 tracker.plot_burgers_histogram()
@@ -124,6 +125,7 @@ class DislocationAnalysis:
                     logger.info(f'Graph topology @ timestep {t}: {stats}')
 
             return
+            '''
         
         # Normal mode: parse and analyze trajectory
         logger.info(f'Using "{self.config.lammpstrj}" for analysis')

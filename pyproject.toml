@@ -22,6 +22,11 @@ uvicorn = "^0.34.3"
 pyqt6 = "^6.9.0"
 ovito = "^3.12.4"
 scikit-learn = "^1.6.1"
+pyvista = "^0.45.2"
+pyvistaqt = "^0.11.2"
+plotly = "^6.1.2"
+ripser = "^0.6.12"
+persim = "^0.3.8"
 
 
 [build-system]
