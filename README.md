@@ -108,7 +108,7 @@ Follow the steps below to set up OpenDXA using Poetry. These instructions assume
 | --orientation-threshold      | float            | 0.1            | Threshold for clustering (PTM/CNA)                                                                                                                              |
 | --min-cluster-size           | int              | 5              | Min. atoms for cluster                                                                                                                                          |
 | --core-radius                | float            | 2.0            | Radius for core marking (Å)                                                                                                                                     |
-| --crystal-type               | string (choices)| None           | Tipo de cristal (FCC, HCP, BCC, ICO o SC). If not provided, it is inferred.                                                                                     |
+| --crystal-type               | string (choices)| None           | Crystal Type (FCC, HCP, BCC, ICO o SC). If not provided, it is inferred.                                                                                     |
 | --lattice-parameter          | float            | 4.0            | Lattice parameter (Å)                                                                                                                                           |
 | --adaptive-cutoff            | bool             | false          | Enable adaptive cutoff                                                                                                                                          |
 | --spacetime-heatmap          | bool             | false          | Constructs and displays a heat map where x-axis is timestep and y-axis is position along z (bins), color indicates how many lines have centroid in that z-range |
@@ -146,126 +146,296 @@ Follow the steps below to set up OpenDXA using Poetry. These instructions assume
 python -m opendxa --help  # View all options
 ```
 
-## 📄 Output Format
+## Using OpenDXA as a Python Modulo
+Below are two example workflows illustrating how to import and use OpenDXA directly from Python code (instead of via the CLI). Each section includes a short explanation and a code snippet.
 
-### JSON Structure
-```json
-{
-  "timestep": 4900,
-  "dislocations": [
-    {
-      "loop_index": 0,
-      "type": 0,
-      "burgers": [-3.343, -0.651, -12.729],
-      "points": [[10.748, 10.748, 0.544], ...],
-      "segments": [
-        {
-          "start": [10.748, 10.748, 0.544],
-          "end": [28.548, 10.382, 2.173],
-          "length": 18.2,
-          "start_index": 0,
-          "end_index": 3
-        }
-      ],
-      "segment_count": 8,
-      "total_line_length": 145.7,
-      "matched_burgers": [0.5, 0.0, 0.5],
-      "matched_burgers_str": "1/2[1 0 1]",
-      "classification": {
-        "crystal_structure": "fcc",
-        "dislocation_type": "mixed",
-        "family": "perfect",
-        "is_standard": true
-      }
-    }
-  ],
-  "analysis_metadata": {
-    "total_loops": 12,
-    "classification_available": true,
-    "structure_analysis_available": true
-  }
-}
+---
+
+### Running a Dislocation Analysis Programmatically
+
+In this example, we create an `AnalysisConfig` object with the desired parameters (e.g. path to the LAMMPS `lammpstrj` file, number of workers, whether to use CNA or PTM for structure classification, etc.). Then we instantiate `DislocationAnalysis` with that config and call `analysis.run()` to launch the full DXA pipeline.
+
+```python
+from opendxa.core.analysis_config import AnalysisConfig
+from opendxa.core.engine import DislocationAnalysis
+
+# Build an AnalysisConfig with custom parameters
+config = AnalysisConfig(
+    lammpstrj='/home/rodyherrera/Desktop/OpenDXA/analysis.lammpstrj',
+    workers=2,
+    use_cna=False,
+    # Add any other flags you need, for example:
+    # defect_threshold=0.2,
+    # core_radius=1.5,
+    # max_loop_length=12,
+    # run_voxel_density=True,
+    # voxel_grid_size=[20, 20, 10],
+    # fast_mode=True,
+)
+
+# Instantiate and run the DislocationAnalysis engine
+analysis = DislocationAnalysis(config)
+analysis.run()
+```
+We import `AnalysisConfig` and `DislocationAnalysis`. We fill out `AnalysisConfig(...)` with only the parameters we want to change—the rest take default values.
+Calling `analysis.run()` executes the full workflow: neighbor finding, classification (PTM or CNA), surface filtering, tessellation, loop finding, Burgers‐vector evaluation, line refinement, and final JSON export.
+
+### Compute Dislocation Centroids and Save to CSV
+```python
+from opendxa.export import DislocationDataset
+from opendxa.analysis import compute_centroids
+import numpy as np
+import os
+
+DATA_DIR = '/home/rodyherrera/Desktop/OpenDXA/dislocations'
+RESULTS_DIR = '/home/rodyherrera/Desktop/OpenDXA/reports'
+TABLES_DIR = os.path.join(RESULTS_DIR, 'tables')
+os.makedirs(TABLES_DIR, exist_ok=True)
+
+dataset = DislocationDataset(directory=DATA_DIR)
+dataset.load_all_timesteps()
+
+# Compute centroids: returns a list of (timestep, ndarray_of_centroids) tuples
+print("Computing centroids...")
+centroids_list = compute_centroids(dataset.timesteps_data)
+
+# Save each timestep's centroids to CSV
+for timestep, centroids in centroids_list:
+    csv_filename = os.path.join(TABLES_DIR, f'centroids_t{timestep}.csv')
+    np.savetxt(csv_filename, centroids, delimiter=',', header='x,y,z', comments='')
+print('Centroids saved to CSV.')
 ```
 
-### Segment Information
-Each dislocation can include detailed segment data:
-- **start/end**: 3D coordinates of segment endpoints
-- **length**: Physical length of the segment
-- **start_index/end_index**: Indices in the original points array
+Other centroid-related functions:
+- **compute_line_lengths(...)**: returns (timestep, length) pairs
+- **compute_anisotropy_eigenvalues(...)**: principal eigenvalues of centroid covariance matrix
 
-## 🔬 Algorithm Workflow
+### Voxel Density & Voxel Line-Length Density
+```python
+from opendxa.visualization import plot_voxel_density_map, plot_voxel_line_length_map
+from opendxa.analysis import voxel_density, voxel_line_length_density
+from opendxa.export import DislocationDataset
+import os
 
-### 1. **Trajectory Parsing**
-- Parse LAMMPS `.lammpstrj` files
-- Extract atomic positions, box dimensions, and atom IDs
-- Support for periodic boundary conditions
+dataset = DislocationDataset(directory=DATA_DIR)
+dataset.load_all_timesteps()
 
-### 2. **Neighbor Detection**
-- Hybrid Voronoi + cutoff approach
-- Efficient spatial search with topological relevance
-- Configurable neighbor count and cutoff distance
+box_bounds = [[0, 30], [0, 30], [0, 10]]
+grid_size = (20, 20, 10)
 
-### 3. **Structure Classification**
-- Polyhedral Template Matching (PTM)
-- FCC, BCC, HCP structure identification
-- Orientation quaternion calculation
+print('Computing voxel density (counts)...')
+voxel_counts = voxel_density(
+    dataset.timesteps_data,
+    grid_size=grid_size,
+    box_bounds=box_bounds
+)
 
-### 4. **Surface Filtering**
-- Remove surface atoms with insufficient neighbors
-- Focus analysis on bulk crystal regions
-- Configurable neighbor thresholds
+# Plot and save the central Z-slice of voxel counts
+fig1 = plot_voxel_density_map(voxel_counts, grid_size=grid_size, title='Voxel Count')
+fig1.savefig(os.path.join(FIGURES_DIR, 'voxel_count.png'))
+print("Voxel count plot saved.")
 
-### 5. **Connectivity Analysis**
-- Construct lattice connectivity graph
-- Identify topological loops
-- GPU-accelerated bond evaluation
+print("Computing voxel line-length density...")
+voxel_densities = voxel_line_length_density(
+    dataset.timesteps_data,
+    grid_size=grid_size,
+    box_bounds=box_bounds
+)
 
-### 6. **Displacement Field Analysis**
-- Compute atomic displacement vectors
-- Quantify elastic strain fields
-- Guide Burgers circuit analysis
-
-### 7. **Burgers Circuit Evaluation**
-- GPU-accelerated CUDA kernels
-- Evaluate closed loops for Burgers vectors
-- Identify dislocation cores
-
-### 8. **Line Reconstruction**
-- Build continuous dislocation lines
-- Connect related loop segments
-- Generate smooth line representations
-
-### 9. **Classification & Segmentation**
-- Classify as edge, screw, or mixed dislocations
-- Generate configurable line segments
-- Calculate segment statistics
-
-### 10. **Export & Visualization**
-- Comprehensive JSON export
-- Plotting capabilities
-- Integration with visualization tools
-
-## 📊 Examples
-
-### Analyze with Custom Parameters
-```bash
-python -m opendxa nanoparticle.lammpstrj \
-  --cutoff 3.2 \
-  --num-neighbors 14 \
-  --crystal-type bcc \
-  --lattice-parameter 2.87 \
-  --segment-length 10.0 \
-  --min-segments 3
+# Plot & save the central Z-slice of voxel line length density
+fig2 = plot_voxel_line_length_map(voxel_densities, axis='z')
+fig2.savefig(os.path.join(FIGURES_DIR, 'voxel_line_length.png'))
+print('Voxel line length density plot saved.')
 ```
 
-### Fast Analysis for Large Systems
-```bash
-python -m opendxa large_system.lammpstrj \
-  --fast-mode \
-  --workers 8 \
-  --max-loops 500 \
-  --no-segments
+Additional voxel functions
+- **voxel_density(...)** (you can adjust **grid_size**)
+- **voxel_line_length_density(...)**
+To compute a 3D density histogram, inspect the returned dictionaries
+
+### KMeans Clustering on Centroids
+```python
+from opendxa.export import DislocationDataset
+from opendxa.analysis import cluster_centroids
+import numpy as np
+
+dataset = DislocationDataset(directory=DATA_DIR)
+dataset.load_all_timesteps()
+
+print('Running KMeans clustering on centroids...')
+kmeans_model, all_centroids, cluster_labels = cluster_centroids(
+    dataset.timesteps_data,
+    n_clusters=3
+)
+
+print(f'KMeans inertia: {kmeans_model.inertia_:.3f}')
+
+# Count how many points per cluster
+unique_labels, label_counts = np.unique(cluster_labels, return_counts=True)
+for label, count in zip(unique_labels, label_counts):
+    print(f"  Cluster {label}: {count} points")
 ```
+
+Other clustering-related utilities
+- **compute_persistence_centroids(...)**: for persistent homology of the centroid point cloud
+- **compute_anisotropy_eigenvalues(...)**: eigenvalues of covariance
+
+### Tortuosity & Line Length Histograms
+```python
+from opendxa.analysis import compute_tortuosity, compute_line_lengths
+from opendxa.export import DislocationDataset
+from opendxa.visualization import plot_histogram
+import numpy as np
+import os
+
+dataset = DislocationDataset(directory=DATA_DIR)
+dataset.load_all_timesteps()
+
+# Compute tortuosity values (real path length / end-to-end distance)
+print('Computing tortuosity...')
+tortuosity_values = compute_tortuosity(dataset.timesteps_data)
+
+# Plot and save histogram of tortuosity
+fig3 = plot_histogram(
+    tortuosity_values,
+    bins=50,
+    title='Tortuosity',
+    xlabel='Tortuosity'
+)
+fig3.savefig(os.path.join(FIGURES_DIR, 'tortuosity_histogram.png'))
+print('Tortuosity histogram saved.')
+
+print('Computing line lengths...')
+line_lengths_data = compute_line_lengths(dataset.timesteps_data)
+lengths = np.array([length for (_, length) in line_lengths_data])
+
+# Plot and save histogram of line lengths
+fig4 = plot_histogram(
+    lengths,
+    bins=50,
+    title='Line Lengths',
+    xlabel="Length (Å)"
+)
+fig4.savefig(os.path.join(FIGURES_DIR, 'line_lengths_histogram.png'))
+print('Line length histogram saved.')
+```
+Other shape-analysis functions
+- **compute_orientation_azimuth(...) / compute_orientation_spherical(...)**: line orientation distributions
+- **segments_to_plane_histogram(...)**: counts of segments lying near specified crystal planes
+
+### Graph-Theoretic Analysis (One Timestep)
+```python
+from opendxa.analysis import build_dislocation_graph, analyze_graph_topology, compute_graph_spectrum
+from opendxa.visualization import plot_networkx_graph
+from opendxa.export import DislocationDataset
+
+dataset = DislocationDataset(directory=DATA_DIR)
+dataset.load_all_timesteps()
+
+# Pick the first timestep for demonstration
+timesteps = dataset.get_timesteps()
+first_timestep = timesteps[0]
+print(f"Building graph for timestep {first_timestep}...")
+dislocs_first = dataset.get_dislocations(first_timestep)
+
+# Build a NetworkX graph where nodes are dislocation IDs and edges connect spatially adjacent lines
+graph_first = build_dislocation_graph(dislocs_first)
+
+# Compute basic graph statistics
+topology_stats = analyze_graph_topology(graph_first)
+laplacian_spectrum = compute_graph_spectrum(graph_first)
+
+print(f"  Components: {topology_stats['num_components']}")
+print(f"  Cycles:     {topology_stats['num_cycles']}")
+print(f"  Mean degree: {topology_stats['mean_degree']:.3f}")
+print(f"  First 5 Laplacian eigenvalues: {laplacian_spectrum[:5]}")
+
+# Visualize and save the XY-projection of the graph
+fig5 = plot_networkx_graph(graph_first, title=f"Graph at t={first_timestep}")
+fig5.savefig(os.path.join(FIGURES_DIR, f"graph_{first_timestep}.png"))
+print(f"Graph for timestep {first_timestep} saved.")
+```
+
+Other network functions
+- **compute_laplacian_spectrum(...)**: full spectrum (if you passed a NetworkX Graph directly)
+
+### Spacetime Heatmap
+```python
+from opendxa.export import DislocationDataset
+from opendxa.analysis import compute_spacetime_heatmap
+from opendxa.visualization import plot_spacetime_heatmap
+
+dataset = DislocationDataset(directory=DATA_DIR)
+dataset.load_all_timesteps()
+
+print('Computing spacetime heatmap...')
+ts_list, z_bounds, heatmap_matrix = compute_spacetime_heatmap(
+    dataset.timesteps_data,
+    num_z_bins=50,
+    # automatically infers min/max Z
+    z_bounds=None
+)
+
+fig6 = plot_spacetime_heatmap(ts_list, z_bounds, heatmap_matrix)
+fig6.savefig(os.path.join(FIGURES_DIR, 'spacetime_heatmap.png'))
+print("Spacetime heatmap saved.")
+```
+Other heatmap utilities
+- You can adjust **num_z_bins** to increase/decrease resolution
+- For custom binning, supply a fixed **z_bounds=[z_min, z_max]**
+
+### Tracking Dislocations Across Timesteps
+```python
+from opendxa.export import DislocationDataset
+from opendxa.analysis import track_dislocations
+
+dataset = DislocationDataset(directory=DATA_DIR)
+dataset.load_all_timesteps()
+
+print('Tracking dislocations...')
+dislocation_tracks = track_dislocations(dataset.timesteps_data)
+print(f'  Number of tracks found: {len(dislocation_tracks)}')
+
+# Example: print which timesteps the first track appears in
+if dislocation_tracks:
+    example_track = dislocation_tracks[0]
+    print(f'  Track #0 present at timesteps: {sorted(example_track.keys())}')
+
+```
+
+Other tracking tools
+- You may supply a custom tolerance (**tol**) or distance threshold (**dist_tol**) to **track_dislocations(...)**
+- To export track data, iterate over **dislocation_tracks** and save per-track CSVs or JSONs
+
+### Visualization & Analysis Tools
+| Function Name                      | Description                                                                                                                |
+|------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| **plot_centroids_3d(centroids, burgers_labels=None)** | Create a 3D scatter plot of dislocation centroids, colored by optional Burgers vector labels.                    |
+| **plot_dislocation_lines_3d(dislocs, color_by='burgers')** | Plot 3D dislocation lines; lines colored randomly if `color_by='burgers'`, otherwise uniform color.           |
+| **plot_networkx_graph(G, title='Dislocation Graph')** | Draw an XY-projection of a NetworkX graph representing dislocation connectivity; nodes and edges plotted.          |
+| **plot_spacetime_heatmap(ts, z_bounds, heat)** | Render a 2D heatmap (timestep vs. Z coordinate) showing counts of lines per Z-bin over time.                         |
+| **plot_histogram(data, bins=50, title='', xlabel='', ylabel='Frequency')** | Generate a histogram of `data` with specified bin count, title, and axis labels.                                 |
+| **plot_burgers_histogram(burgers_hist)** | Create a bar chart of Burgers vector frequencies (keys) vs. counts.                                                      |
+| **plot_voxel_density_map(counts, grid_size, title='Voxel Density')** | Display the central Z-slice of a 3D voxel count array as a 2D heatmap; `counts` is a dict mapping voxel→count.    |
+| **plot_voxel_line_length_map(densities, axis='z', slice_index=None)** | Show the central slice of line-length density along the specified axis (`x`, `y`, or `z`).                       |
+| **compute_anisotropy_eigenvalues(timesteps_data)** | Compute principal eigenvalues (λ₁ ≥ λ₂ ≥ λ₃) of the covariance matrix of all dislocation centroids.                  |
+| **compute_laplacian_spectrum(G)** | Return the sorted eigenvalues of the Laplacian matrix of graph `G`.                                                       |
+| **compute_burgers_histogram(timesteps_data)** | Build a histogram (dict) of discrete Burgers vector strings → counts across all timesteps; returns (hist, total_loops). |
+| **compute_centroids(timesteps_data)** | Compute the centroid of each dislocation line (average of its points) for every timestep; returns a list of (t, centroids_array). |
+| **cluster_centroids(timesteps_data, n_clusters=3)** | Run KMeans clustering on all centroids across timesteps; returns (KMeans model, all_centroids_array, labels).        |
+| **build_dislocation_graph(dislocs, tol=1e-3)** | Construct a NetworkX graph by rounding each point to grid `tol` and connecting consecutive points of each line.      |
+| **analyze_graph_topology(G)** | Compute basic graph‐theoretic metrics: number of connected components, number of cycles, mean node degree, degree distribution. |
+| **compute_graph_spectrum(G)** | Compute and return the sorted Laplacian eigenvalues of graph `G`.                                                         |
+| **compute_orientation_azimuth(timesteps_data)** | Calculate azimuth angles (φ in degrees) for each dislocation line, using its first-to-last segment in XY plane.    |
+| **compute_orientation_spherical(timesteps_data)** | Compute spherical orientation angles (θ, φ) for each segment of every line; returns array of (θ, φ) pairs.          |
+| **compute_persistence_centroids(timesteps_data, maxdim=1)** | Perform persistent homology on the point cloud of all centroids; returns persistence diagrams (`dgms`).            |
+| **segments_to_plane_histogram(dislocs, plane_normals, angle_tol=5.0)** | Count line segments whose orientation is within `angle_tol` of 90° to each given crystal plane normal.               |
+| **compute_spacetime_heatmap(timesteps_data, num_z_bins=50, z_bounds=None)** | Build a 2D array of shape (num_timesteps × num_z_bins) counting centroids per Z-bin for each timestep.               |
+| **compute_tortuosity(timesteps_data)** | Calculate tortuosity (actual length / end-to-end distance) for each line across all timesteps; returns list of values. |
+| **compute_line_lengths(timesteps_data)** | Compute total geometric length of each dislocation line for every timestep; returns list of (timestep, length).       |
+| **voxel_density(timesteps_data, grid_size=(10,10,10), box_bounds=None)** | Bin each line’s centroid into a 3D grid and count how many lines fall in each voxel; returns dict voxel→count.        |
+| **voxel_line_length_density(timesteps_data, grid_size=(10,10,10), box_bounds=None)** | Sum line lengths per voxel based on each centroid’s position; returns a 3D NumPy array of length densities.          |
+| **track_dislocations(timesteps_data, tol=1e-2, dist_tol=5.0)** | Link dislocations across successive timesteps by matching rounded Burgers vectors and spatial proximity; returns list of track dicts. |
 
 ## 🛠️ Development
 
