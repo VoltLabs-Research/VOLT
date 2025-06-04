@@ -25,36 +25,52 @@
 Follow the steps below to set up OpenDXA using Poetry. These instructions assume you already have Python 3.12+ installed.
 
 1. **Install Poetry**
+
     If you don't have Poetry installed, run:
+
     ```bash
     pip install poetry
     ```
+
     or, for the latest recommended installation method:
+
     ```bash
     curl -sSL https://install.python-poetry.org | python3 -
     ```
+
 2. **Clone Repository**
+
     ```bash
     git clone https://github.com/rodyherrera/OpenDXA.git
     cd OpenDXA
     ```
 3. **Install Dependencies**
+
     Poetry will automatically create and manage a virtual environment for you. Simply run:
+
     ```bash
     poetry install
     ```
+
     This will:
       - Read the pyproject.toml and poetry.lock files.
       - Create a new isolated virtual environment.
       - Install all required packages exactly as pinned in the lockfile.
+
 4. **Activate the Poetry Shell (Optional but Recommended)** 
+
     To enter the project’s virtual environment and run commands interactively:
+
     ```bash
     poetry shell
+
     ```
     You can also skip stepping into the shell and prefix commands with poetry run (see next step).
+
 5. **Run OpenDXA**
+
     Run OpenDXAFrom inside the Poetry shell (or by prefixing with poetry run), invoke the CLI module:
+
     ```bash
     python -m opendxa path/to/trajectory.lammpstrj \
         --workers 8 \
@@ -63,7 +79,9 @@ Follow the steps below to set up OpenDXA using Poetry. These instructions assume
         --core-radius 2.0 \
         --max-loop-length 16
     ```
+
     Or, outside the shell:
+
     ```bash
     poetry run python -m opendxa path/to/trajectory.lammpstrj \
         --workers 8 \
@@ -72,58 +90,56 @@ Follow the steps below to set up OpenDXA using Poetry. These instructions assume
         --core-radius 2.0 \
         --max-loop-length 16 
       ```
-### Clone the repository and navigate into it
-```bash
-git clone https://github.com/rodyherrera/OpenDXA.git
-cd OpenDXA
-```
-
-### Install all dependencies and create a virtual environment
-Poetry will automatically create and manage a venv for you:
-```bash
-poetry install
-```
-
-### Activate the Poetry shell to run local commands
-```bash
-poetry shell
-```
-
-### Run OpenDXA
-From inside the Poetry shell (or by prefixing with poetry run), you can invoke the CLI exactly as before. For example:
-```
-python -m opendxa path/to/trajectory.lammpstrj \
-    --workers 8 \
-    --cutoff 3.5 \
-    --use-cna \
-    --core-radius 2.0 \
-    --max-loop-length 16
-```
-
-## ⚙️ Command Line Options
-
-### Core Parameters
-- `lammpstrj` - Path to LAMMPS trajectory file
-- `--output`, `-o` - Output JSON file (default: `dislocations.json`)
-- `--timestep` - Specific timestep to analyze (default: first)
-- `--workers` - Number of parallel workers (default: 4)
-
-### Analysis Configuration
-- `--cutoff` - Cutoff distance for neighbor search (default: 3.5)
-- `--num-neighbors` - Number of Voronoi neighbors (default: 12)
-- `--crystal-type` - Crystal structure type: `fcc`, `bcc`, `hcp`, `auto` (default: `fcc`)
-- `--lattice-parameter` - Lattice parameter in Angstroms (default: 4.0)
-
-### Segmentation Options
-- `--include-segments` - Include dislocation segments in JSON export (default: True)
-- `--segment-length` - Target length for segments (auto-calculated if not set)
-- `--min-segments` - Minimum segments per dislocation line (default: 5)
-- `--no-segments` - Disable segment generation for faster export
-
-### Performance Options
-- `--fast-mode` - Enable fast mode (skips detailed analysis)
-- `--max-loops` - Maximum loops to find (default: 1000)
-- `--loop-timeout` - Timeout for loop finding in seconds (default: 60)
+## Command-Line Arguments
+| Argument                     | Type             | Default        | Description                                                                                                                                                     |
+|------------------------------|------------------|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| lammpstrj                    | string           | (required)     | Path to LAMMPS lammpstrj file                                                                                                                                   |
+| --workers                    | int              | 4              | Number of parallel workers                                                                                                                                      |
+| --defect-threshold           | float            | 0.15           | Threshold for detecting defective atoms                                                                                                                         |
+| --smooth-mesh                | bool             | true           | Apply smoothing to interface mesh                                                                                                                               |
+| --timestep                   | int              | None           | Specific timestep to analyze (default: first)                                                                                                                   |
+| --cutoff                     | float            | 3.5            | Cutoff distance for neighbor search                                                                                                                             |
+| --num-neighbors              | int              | 12             | Number of Voronoi neighbors                                                                                                                                     |
+| --min-neighbors              | int              | 12             | Min. neighbors for surface filtering                                                                                                                            |
+| --voronoi-factor             | float            | 1.5            | Factor to expand cutoff for Voronoi                                                                                                                             |
+| --tolerance                  | float            | 0.3            | Tolerance for lattice connectivity matching                                                                                                                     |
+| --max-loop-length            | int              | 16             | Max length for Burgers circuit detection                                                                                                                        |
+| --burgers-threshold          | float            | 0.0001         | Threshold for Burgers vector módulo                                                                                                                             |
+| --orientation-threshold      | float            | 0.1            | Threshold for clustering (PTM/CNA)                                                                                                                              |
+| --min-cluster-size           | int              | 5              | Min. atoms for cluster                                                                                                                                          |
+| --core-radius                | float            | 2.0            | Radius for core marking (Å)                                                                                                                                     |
+| --crystal-type               | string (choices)| None           | Tipo de cristal (FCC, HCP, BCC, ICO o SC). If not provided, it is inferred.                                                                                     |
+| --lattice-parameter          | float            | 4.0            | Lattice parameter (Å)                                                                                                                                           |
+| --adaptive-cutoff            | bool             | false          | Enable adaptive cutoff                                                                                                                                          |
+| --spacetime-heatmap          | bool             | false          | Constructs and displays a heat map where x-axis is timestep and y-axis is position along z (bins), color indicates how many lines have centroid in that z-range |
+| --allow-non-standard-burgers | bool             | true           | Detect non-standard Burgers                                                                                                                                     |
+| --validation-tolerance       | float            | 0.35           | Tolerance for Burgers validation                                                                                                                                |
+| --ghost-thickness            | float            | 1.5            | Ghost thickness (Å)                                                                                                                                             |
+| --output, -o                 | string           | dislocations.json | Output JSON file                                                                                                                                              |
+| -v, --verbose                | bool             | false          | Enable verbose logging                                                                                                                                          |
+| --use-cna                    | bool             | false          | Use CNA instead of PTM                                                                                                                                          |
+| --neighbor-tolerance         | float            | 0.1            | Relative neighbor tolerance                                                                                                                                     |
+| --track-dir                  | string           | None           | Directory for JSON tracking                                                                                                                                     |
+| --fast-mode                  | bool             | false          | Enable fast mode (skip steps)                                                                                                                                    |
+| --max-loops                  | int              | 1000           | Max loops to find                                                                                                                                               |
+| --max-connections-per-atom   | int              | 6              | Max connections per atom                                                                                                                                        |
+| --loop-timeout               | int              | 60             | Timeout for loops (s)                                                                                                                                           |
+| --line-threshold             | float            | 0.1            | Threshold for dislocation lines                                                                                                                                 |
+| --include-segments           | bool             | true           | Include segments in JSON                                                                                                                                        |
+| --segment-length             | float            | None           | Target segment length (auto)                                                                                                                                    |
+| --min-segments               | int              | 5              | Min segments per line                                                                                                                                           |
+| --no-segments                | bool             | false          | Do not generate segments (faster)                                                                                                                               |
+| --line-smoothing-level       | int              | 3              | Line smoothing level                                                                                                                                            |
+| --line-point-interval        | float            | 1.0            | Interval (Å) between points on line                                                                                                                             |
+| --run-burgers-histogram      | bool             | false          | Compute and plot Burgers histogram                                                                                                                               |
+| --run-voxel-density          | bool             | false          | Compute voxel density                                                                                                                                           |
+| --voxel-grid-size            | int[3]           | [10, 10, 10]   | Grid size for voxel density                                                                                                                                     |
+| --run-clustering             | bool             | false          | Perform centroid clustering (KMeans)                                                                                                                            |
+| --clustering-n-clusters      | int              | 3              | Number of clusters for KMeans                                                                                                                                    |
+| --run-tortuosity             | bool             | false          | Compute and plot tortuosity histogram                                                                                                                            |
+| --run-orientation            | bool             | false          | Compute and plot orientation histogram                                                                                                                            |
+| --run-graph-topology         | bool             | false          | Analyze graph topology                                                                                                                                         |
+| --graph-topology-timesteps   | int[]            | None           | List of timesteps for graph topology analysis                                                                                                                   |
 
 ### Advanced Options
 ```bash
