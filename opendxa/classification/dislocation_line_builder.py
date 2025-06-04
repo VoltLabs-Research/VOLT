@@ -8,7 +8,7 @@ class DislocationLineBuilder:
         self.thresh = threshold
 
     def build_lines(self):
-        lines=[]
+        lines = []
         for idx, b in self.burgers.items():
             if np.linalg.norm(b) < self.thresh: continue
             loop = self.loops[idx]
