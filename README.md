@@ -20,25 +20,84 @@
 - **Export to JSON & Fast-Mode Pipeline**: `DislocationExporter` writes out final dislocation data (loops, segments, Burgers vectors, types, etc.) to a JSON file (`--output`). Supports "fast-mode" (`--fast-mode`) to skip heavy refinement steps and export minimal loop information quickly.
 - **Built-In Statistical & Graph-Theoric Analyses**: `DislocationStatisticsGenerator` produces tables similar to OVITO's DataTable: total length, density, line density, Burgers-family breakdown, cluster statistics, etc. Optional modules for histogramming Burgers vectors, tortuosity, orientation (azimuth/spherical), voxel density (`--run-voxel-density`, `--voxel-grid--size`), and persistence/homology. Graph-topology analysis for selected timesteps (`--run-graph-topology`, `--graph-topology-timesteps`).
 - **Spacetime Heatmap & Tracking Over Multiple Timesteps**: Builds a 2D heatmap (timestep vs. z-position) showing counts of dislocation centroids per z-bin (`--spacetime-heatmap`). `track_dislocations` correlates dislocations across successive timesteps based on Burgers signature and spatial proximity to produce time-resolving "tracks."
-## 📦 Installationng
 
-### Quick Install
+## Installation
+Follow the steps below to set up OpenDXA using Poetry. These instructions assume you already have Python 3.12+ installed.
+
+1. **Install Poetry**
+    If you don't have Poetry installed, run:
+    ```bash
+    pip install poetry
+    ```
+    or, for the latest recommended installation method:
+    ```bash
+    curl -sSL https://install.python-poetry.org | python3 -
+    ```
+2. **Clone Repository**
+    ```bash
+    git clone https://github.com/rodyherrera/OpenDXA.git
+    cd OpenDXA
+    ```
+3. **Install Dependencies**
+    Poetry will automatically create and manage a virtual environment for you. Simply run:
+    ```bash
+    poetry install
+    ```
+    This will:
+      - Read the pyproject.toml and poetry.lock files.
+      - Create a new isolated virtual environment.
+      - Install all required packages exactly as pinned in the lockfile.
+4. **Activate the Poetry Shell (Optional but Recommended)** 
+    To enter the project’s virtual environment and run commands interactively:
+    ```bash
+    poetry shell
+    ```
+    You can also skip stepping into the shell and prefix commands with poetry run (see next step).
+5. **Run OpenDXA**
+    Run OpenDXAFrom inside the Poetry shell (or by prefixing with poetry run), invoke the CLI module:
+    ```bash
+    python -m opendxa path/to/trajectory.lammpstrj \
+        --workers 8 \
+        --cutoff 3.5 \
+        --use-cna \
+        --core-radius 2.0 \
+        --max-loop-length 16
+    ```
+    Or, outside the shell:
+    ```bash
+    poetry run python -m opendxa path/to/trajectory.lammpstrj \
+        --workers 8 \
+        --cutoff 3.5 \
+        --use-cna \
+        --core-radius 2.0 \
+        --max-loop-length 16 
+      ```
+### Clone the repository and navigate into it
 ```bash
 git clone https://github.com/rodyherrera/OpenDXA.git
 cd OpenDXA
-pip install -e .
 ```
 
-### Dependencies
+### Install all dependencies and create a virtual environment
+Poetry will automatically create and manage a venv for you:
 ```bash
-pip install numpy scipy matplotlib cupy numba
+poetry install
 ```
 
-### Virtual Environment (Recommended)
+### Activate the Poetry shell to run local commands
 ```bash
-python -m venv opendxa-env
-source opendxa-env/bin/activate  # On Windows: opendxa-env\Scripts\activate
-pip install -e .
+poetry shell
+```
+
+### Run OpenDXA
+From inside the Poetry shell (or by prefixing with poetry run), you can invoke the CLI exactly as before. For example:
+```
+python -m opendxa path/to/trajectory.lammpstrj \
+    --workers 8 \
+    --cutoff 3.5 \
+    --use-cna \
+    --core-radius 2.0 \
+    --max-loop-length 16
 ```
 
 ## ⚙️ Command Line Options
