@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Tuple, List
 
 @dataclass
 class AnalysisConfig:
@@ -63,7 +63,18 @@ class AnalysisConfig:
     # Directory for dislocation tracking (if any)
     track_dir: Optional[str] = None
     spacetime_heatmap: bool = False
+    run_voxel_density: bool = False
+    voxel_grid_size: Tuple[int, int, int] = (10, 10, 10)
+    voxel_box_bounds: Optional[List[List[float]]] = None
+    run_clustering: bool = False
+    clustering_n_clusters: int = 3
+    run_tortuosity: bool = False
+    run_graph_topology: bool = False
+    graph_topology_timesteps: Optional[List[int]] = None
+    run_orientation: bool = False
+    orientation_bins: int = 36
 
+    run_burgers_histogram: bool = False
     # Fast mode settings
     fast_mode: bool = False
     max_loops: int = 1000

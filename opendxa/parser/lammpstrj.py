@@ -1,4 +1,5 @@
 import numpy as np
+import itertools
 
 class LammpstrjParser:
     '''
@@ -170,13 +171,11 @@ class LammpstrjParser:
         Raises:
             ValueError: If loadtxt fails to read the expected number of rows.
         '''
-        data = np.loadtxt(
-            file,
-            dtype=np.float64,
-            max_rows=number_of_atoms,
-            usecols=indices
-        )
-        ids = data[:, 0].astype(int).tolist()
-        positions = data[:, 1:].tolist()
+        lines = ''.join(itertools.islice(file, number_of_atoms))
+        arr = np.fromstring(lines, dtype=np.float64, sep=' ')
+        num_cols = len(indices)
+        arr = arr.reshape((number_of_atoms, -1))
+        ids = arr[:, indices['id']].astype(int).tolist()
+        positions = arr[:, [indices[ax] for ax in ('x','y','z')]].tolist()
         return ids, positions
         

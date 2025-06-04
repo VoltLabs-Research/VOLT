@@ -88,14 +88,43 @@ class DislocationAnalysis:
         if self.config.track_dir:
             logger.info(f'Tracking dislocations from "{self.config.track_dir}"')
             tracker = DislocationTracker(self.config.track_dir)
+
             tracker.load_all_timesteps()
-            tracker.compute_statistics()
+
+            if self.config.run_burgers_histogram:
+                tracker.compute_statistics()
+                tracker.plot_burgers_histogram()
+
             if self.config.spacetime_heatmap:
                 tracker.plot_spacetime_heatmap()
-            tracker.plot_burgers_histogram()
-            tracker.track_dislocations()
-            return
 
+            if self.config.run_voxel_density:
+                counts = tracker.voxel_density(
+                    grid_size=self.config.voxel_grid_size,
+                    box_bounds=self.config.voxel_box_bounds
+                )
+                logger.info(f'Voxel density counts (non-zero): { {k: v for k, v in counts.items() if v>0} }')
+
+            if self.config.run_clustering:
+                kmeans_obj, centroids_all, labels = tracker.cluster_centroids(
+                    n_clusters=self.config.clustering_n_clusters
+                )
+                logger.info(f'KMeans inertia: {kmeans_obj.inertia_}')
+
+            if self.config.run_tortuosity:
+                tracker.plot_tortuosity_histogram()
+
+            if self.config.run_orientation:
+                tracker.compute_orientation_histogram(bins=self.config.orientation_bins)
+
+            if self.config.run_graph_topology:
+                ts_list = self.config.graph_topology_timesteps or list(tracker.timesteps_data.keys())
+                for t in ts_list:
+                    stats = tracker.analyze_graph_topology(t)
+                    logger.info(f'Graph topology @ timestep {t}: {stats}')
+
+            return
+        
         # Normal mode: parse and analyze trajectory
         logger.info(f'Using "{self.config.lammpstrj}" for analysis')
         all_timesteps = self.parser.iter_timesteps()

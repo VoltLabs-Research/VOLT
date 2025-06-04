@@ -50,11 +50,29 @@ def parse_call_args() -> AnalysisConfig:
     parser.add_argument('--no-segments', action='store_true', help='No generar segmentos (más rápido)')
     parser.add_argument('--line-smoothing-level', type=int, default=3, help='Nivel de suavizado de líneas')
     parser.add_argument('--line-point-interval', type=float, default=1.0, help='Intervalo (Å) entre puntos en línea')
+    parser.add_argument('--run-burgers-histogram', action='store_true', help='Compute and plot Burgers histogram')
+    parser.add_argument('--run-voxel-density', action='store_true', help='Compute voxel density')
+    parser.add_argument('--voxel-grid-size', nargs=3, type=int, default=[10,10,10], help='Grid size for voxel density')
+    parser.add_argument('--run-clustering', action='store_true', help='Perform centroid clustering (KMeans)')
+    parser.add_argument('--clustering-n-clusters', type=int, default=3, help='Number of clusters for KMeans')
+    parser.add_argument('--run-tortuosity', action='store_true', help='Compute and plot tortuosity histogram')
+    parser.add_argument('--run-orientation', action='store_true', help='Compute and plot orientation histogram')
+    parser.add_argument('--run-graph-topology', action='store_true', help='Analyze graph topology')
+    parser.add_argument('--graph-topology-timesteps', nargs='+', type=int, default=None, help='List of timesteps for graph topology')
 
     args = parser.parse_args()
 
     config = AnalysisConfig(
         lammpstrj=args.lammpstrj,
+        run_burgers_histogram=args.run_burgers_histogram,
+        clustering_n_clusters=args.clustering_n_clusters,
+        graph_topology_timesteps=args.graph_topology_timesteps,
+        run_clustering=args.run_clustering,
+        run_graph_topology=args.run_graph_topology,
+        run_orientation=args.run_orientation,
+        run_tortuosity=args.run_tortuosity,
+        run_voxel_density=args.run_voxel_density,
+        voxel_grid_size=args.voxel_grid_size,
         spacetime_heatmap=args.spacetime_heatmap,
         workers=args.workers,
         defect_threshold=args.defect_threshold,
