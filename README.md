@@ -443,15 +443,28 @@ Other tracking tools
 ```
 OpenDXA/
 ├── opendxa/
-│   ├── classification/     # Structure and dislocation classification
+│   ├── analysis/          # Data analysis algorithms
+│   ├── classification/    # Structure and dislocation classification
 │   ├── core/              # Core analysis algorithms
-│   ├── export/            # Export and visualization
+│   ├── export/            # Export functionality
 │   ├── filters/           # Data filtering and preprocessing
+│   ├── kernels/           # CUDA kernels
 │   ├── neighbors/         # Neighbor finding algorithms
 │   ├── parser/            # File parsing utilities
-│   └── utils/             # Utility functions and CUDA kernels
+│   ├── utils/             # Utility functions
+│   ├── visualization/     # Visualization tools
+│   └── workflow/          # Pipeline workflow steps
+├── client/               # Web interface frontend (TypeScript/Vite)
+│   ├── src/              # Frontend source code
+│   └── public/           # Static assets
+├── server/               # API backend
+│   ├── routers/          # API endpoints
+│   ├── models/           # Data models
+│   ├── services/         # Business logic
+│   └── utils/            # Backend utilities
 ├── screenshots/           # Documentation images
-└── dislocations/         # Example output files
+├── dislocations/          # Example output files
+└── reports/               # Analysis reports output
 ```
 
 ## 📄 License
