@@ -33,7 +33,7 @@ def step_classify_ptm(ctx, neighbors):
     if getattr(args, 'crystal_type', None) is not None:
         crystal_type = args.crystal_type
     else:
-        # infer_structure_type() → (type_name, fraction, counts)
+        # infer_structure_type() - (type_name, fraction, counts)
         crystal_type, _, _ = ptm_classifier.infer_structure_type()
     return {
         'types': types, 
@@ -75,7 +75,7 @@ def step_classify_cna(ctx, neighbors):
     if getattr(args, 'crystal_type', None) is not None:
         crystal_type = args.crystal_type
     else:
-        # infer_structure_type() → (type_name, fraction, counts)
+        # infer_structure_type() - (type_name, fraction, counts)
         crystal_type, _, _ = cna_classifier.infer_structure_type()    
     return {
         'types': types, 

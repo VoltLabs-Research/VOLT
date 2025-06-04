@@ -88,7 +88,7 @@ def test_infer_structure_type_unknown_key(dummy_data):
 
     structure_name, fraction, counts = classifier.infer_structure_type()
     
-    # All five entries are key=5 → counts {5:5}, the dominant type_key=5 not in structure_names
+    # All five entries are key=5 - counts {5:5}, the dominant type_key=5 not in structure_names
     assert structure_name == 'Unknown'
     assert pytest.approx(fraction, rel=1e-6) == 1.0  # 5/5 = 1.0
     assert counts == {5: 5}

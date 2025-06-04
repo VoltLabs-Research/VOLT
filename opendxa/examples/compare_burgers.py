@@ -152,7 +152,7 @@ def test_burgers_match(dump_path, opendxa_json_path, frame_index):
     print('   even considering opposite sign. This may indicate lines too short or classification differences.\n')
     if ovito_unmatched:
         for miller in ovito_unmatched:
-            print(f'   • Miller [{miller[0]} {miller[1]} {miller[2]}] → OVITO line IDs: {ovito_by_miller[miller]}')
+            print(f'   • Miller [{miller[0]} {miller[1]} {miller[2]}] - OVITO line IDs: {ovito_by_miller[miller]}')
         print()
     else:
         print('   (All OVITO directions have at least one match)\n')
@@ -162,7 +162,7 @@ def test_burgers_match(dump_path, opendxa_json_path, frame_index):
     print('   arise from dislocation segments OVITO treats as noise or slight rounding differences.\n')
     if opendxa_unmatched:
         for miller in opendxa_unmatched:
-            print(f'   • Miller [{miller[0]} {miller[1]} {miller[2]}] → OpenDXA IDs: {opendxa_by_miller[miller]}')
+            print(f'   • Miller [{miller[0]} {miller[1]} {miller[2]}] - OpenDXA IDs: {opendxa_by_miller[miller]}')
         print()
     else:
         print('   (All OpenDXA directions have at least one match)\n')
