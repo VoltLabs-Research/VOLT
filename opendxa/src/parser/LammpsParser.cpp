@@ -1,4 +1,5 @@
 #include "core/Clustering.hpp"
+#include "utils/CutoffEstimator.hpp"
 
 /******************************************************************************
 * Reads the atomic coordinates from the input file in LAMMPS dump format.
@@ -20,9 +21,6 @@ void DXAClustering::readLAMMPSAtomsFile(ParserStream& stream)
 				break;
 			}
 			else if(stream.line().find("ITEM: ATOMS") != string::npos) {
-				// Setup simulation cell geometry.
-				setupSimulationCell(cnaCutoff);
-
 				// Parse column names.
 				int columnPosx = -1;
 				int columnPosy = -1;
@@ -102,6 +100,12 @@ void DXAClustering::readLAMMPSAtomsFile(ParserStream& stream)
 					addInputAtom(pos, id);
 				}
 
+				if(!cnaCutoff){
+					double estimatedCutoff = estimateCutoff(getInputAtoms(), getSimulationCell());
+					cnaCutoff = estimatedCutoff;
+				}
+
+				setupSimulationCell(cnaCutoff);
 				// Stop parsing here
 				return;
 			}

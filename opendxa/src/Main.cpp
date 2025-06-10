@@ -28,18 +28,18 @@ static OpenDXA::Config parseOptions(int argc, char* argv[]){
 		("help", "Print help");
 	
 	// Required args
-	opts.parse_positional({ "cna_cutoff", "inputfile", "outputfile" });
+	opts.parse_positional({ "inputfile", "outputfile" });
 	auto result = opts.parse(argc, argv);
-	if(result.count("help") || !result.count("cna_cutoff")){
+	if(result.count("help")){
 		std::cout << opts.help() << std::endl;
 		std::exit(0);
 	}
 
 	OpenDXA::Config config;
-	config.cnaCutoff = result["cna_cutoff"].as<double>();
     config.inputFile = result["inputfile"].as<std::string>();
     config.outputFile = result["outputfile"].as<std::string>();
 	
+	if(result.count("cna_cutoff")) config.cnaCutoff = result["cna_cutoff"].as<double>();
 	if(result.count("dumpmesh")) config.dumpMeshFile = result["dumpmesh"].as<std::string>();
 	if(result.count("dumpatoms")) config.dumpAtomsFile = result["dumpatoms"].as<std::string>();
 	if(result.count("dumpsf")) config.dumpSFPlanesFile = result["dumpsf"].as<std::string>();
