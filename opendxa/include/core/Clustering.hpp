@@ -36,7 +36,6 @@ public:
 
 protected:
 	void readLAMMPSAtomsFile(ParserStream& stream);
-	void skipCurrentTimestep(ParserStream& stream);
 	InputAtom& addInputAtom(const Point3& pos, int id);
 
 	void orderFCCAtomNeighbors(InputAtom* atom);
