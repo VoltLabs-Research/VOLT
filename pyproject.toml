@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "opendxa"
+version = "1.0.0"
+description = "Open Source Dislocation Extraction Algorithm"
+authors = ["rodyherrera <contact@rodyherrera.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+numpy = "^2.3.0"
+pandas = "^2.3.0"
+dash = "^3.0.4"
+plotly = "^6.1.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
