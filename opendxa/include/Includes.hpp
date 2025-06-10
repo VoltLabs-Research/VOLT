@@ -19,6 +19,8 @@
 #include <algorithm>
 #include <locale.h>
 #include <time.h>
+#include <cmath>
+#include <iomanip>
 
 using namespace std;
 

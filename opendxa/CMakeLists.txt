@@ -156,18 +156,18 @@ if(DXA_BUILD_EXECUTABLE)
     find_package(OpenGL REQUIRED)
     message(STATUS "OpenGL found - visualization support enabled")
 
-    add_executable(dxa_cli 
+    add_executable(opendxa 
         src/Main.cpp
         src/parser/Parser.cpp
         src/parser/LammpsParser.cpp
     )
 
-    target_link_libraries(dxa_cli PRIVATE 
+    target_link_libraries(opendxa PRIVATE 
         dxa_core 
         OpenGL::GLU
     )
     
-    target_compile_options(dxa_cli PRIVATE
+    target_compile_options(opendxa PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-O3 -march=native -ffast-math>
         $<$<CXX_COMPILER_ID:Clang>:-O3 -march=native -ffast-math>
         $<$<CXX_COMPILER_ID:Intel>:-O3 -xHost -fp-model fast=2>
@@ -196,7 +196,7 @@ install(TARGETS dxa_core
 )
 
 if(DXA_BUILD_EXECUTABLE)
-    install(TARGETS dxa_cli
+    install(TARGETS opendxa
         RUNTIME DESTINATION bin
     )
 endif()

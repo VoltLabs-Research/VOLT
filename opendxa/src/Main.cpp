@@ -284,26 +284,18 @@ int main(int argc, char* argv[])
 		// Create the facets of the interface mesh.
 		searcher.createInterfaceMeshFacets();
 
-#ifdef DEBUG_DISLOCATIONS
-		// Check the generated mesh.
 		searcher.validateInterfaceMesh();
-#endif
 
-		// Mark stacking fault basal plane edges.
 		if(dumpSFPlanesFile.empty() == false) {
-			// This call has been added to solve situation shown in "sfcontour10a.png".
 			if(!searcher.createStackingFaultEdges())
 				dumpSFPlanesFile.clear();
 		}
 
-		// Prepare stacking fault planes.
 		if(dumpSFPlanesFile.empty() == false)
 			searcher.findStackingFaultPlanes();
 
-		// Trace Burgers circuits on the interface mesh.
 		searcher.traceDislocationSegments();
 
-		// Dump interface mesh.
 		if(dumpMeshFile.empty() == false) {
 			ofstream dumpmesh_outstream;
 			dumpmesh_outstream.open(dumpMeshFile.c_str(), ios::out);
@@ -313,29 +305,21 @@ int main(int argc, char* argv[])
 		}
 
 		if(dumpSurfaceFile.empty() == false) {
-			// Generate defect surface mesh for output.
 			searcher.generateOutputMesh();
 
-			// Smooth the interface mesh for output.
 			searcher.smoothOutputSurface(surfaceSmoothingLevel);
 		}
 
-		// Connect stacking faults to bordering dislocation lines.
 		if(dumpSFPlanesFile.empty() == false)
 			searcher.findSFDislocationContours();
 
-		// Smooth dislocation lines mesh.
 		searcher.smoothDislocationSegments(lineSmoothingLevel, lineCoarseningLevel);
 
-		// Create triangulation of stacking fault planes.
 		if(dumpSFPlanesFile.empty() == false)
 			searcher.finishStackingFaults(sfFlattenLevel);
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
 		searcher.MsgLogger() << "Total analysis time (including CNA): " << analysisTimer.elapsedTime() << " sec." << endl;
-#endif
 
-		// Write stacking faults to file.
 		if(dumpSFPlanesFile.empty() == false) {
 			ofstream dump_outstream;
 			dump_outstream.open(dumpSFPlanesFile.c_str(), ios::out);
@@ -345,7 +329,6 @@ int main(int argc, char* argv[])
 			//searcher.writeStackingFaultPolylines(dump_outstream);
 		}
 
-		// Write crystal defect surface to file.
 		if(dumpSurfaceFile.empty() == false) {
 			searcher.finishOutputSurface(dumpSurfaceCapFile.empty() == false);
 
@@ -364,7 +347,6 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		// Write simulation cell geometry to file.
 		if(dumpCellFile.empty() == false) {
 			ofstream dump_outstream;
 			dump_outstream.open(dumpCellFile.c_str(), ios::out);
@@ -373,10 +355,8 @@ int main(int argc, char* argv[])
 			searcher.writeSimulationCellFileVTK(dump_outstream);
 		}
 
-		// Wrap dislocation lines at periodic boundaries.
 		searcher.wrapDislocationSegments();
 
-		// Write dislocation lines to output file.
 		ofstream file_outstream;
 		ostream* outstream;
 		const char* outputFilename = argv[iarg+2];
@@ -392,7 +372,6 @@ int main(int argc, char* argv[])
 		// Write results to output file.
 		searcher.writeDislocationsVTKFile(*outstream);
 
-#if 0
 		// Calculate scalar dislocation density and density tensor.
 		double dislocationDensity = 0.0;
 		double dislocationDensityTensor[3][3] = {0.0};
@@ -425,8 +404,6 @@ int main(int argc, char* argv[])
 		for(int i = 0; i < 3; i++) {
 			searcher.MsgLogger() << dislocationDensityTensor[i][0] << " " << dislocationDensityTensor[i][1] << " " << dislocationDensityTensor[i][2] << " " << endl;
 		}
-
-#endif
 
 		// Release memory;
 		searcher.cleanup();
