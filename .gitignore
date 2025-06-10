@@ -33,3 +33,8 @@ dist-ssr
 ./data/*
 
 reports/
+
+build*
+
+*.o
+*.o.d
