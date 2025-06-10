@@ -101,6 +101,8 @@ add_library(dxa_core
 target_include_directories(dxa_core 
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/cxxopts/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
