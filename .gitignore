@@ -34,7 +34,8 @@ dist-ssr
 
 reports/
 
-build*
+
+opendxa/build/
 
 *.o
 *.o.d
