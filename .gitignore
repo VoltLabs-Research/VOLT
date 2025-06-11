@@ -34,8 +34,33 @@ dist-ssr
 
 reports/
 
+bindings/python/build/
+bindings/python/dist/
+bindings/python/*.egg-info/
+__pycache__/
+*.py[cod]
+*$py.class
 
-opendxa/build/
+build/
+builds/
+Build/
+cmake-build-*/
+out/build/
+builds/
+Build/
+cmake-build-*/
+out/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+install_manifest.txt
+CTestTestfile.cmake
+_deps/
 
 *.o
 *.o.d
