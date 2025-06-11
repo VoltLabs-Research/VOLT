@@ -1,43 +1,35 @@
-from setuptools import setup, Extension
+from setuptools import setup, find_packages
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 import pybind11
 import os
 
 OPENDXA_ROOT = os.path.abspath('../../opendxa')
-BUILD_DIR = os.path.join(OPENDXA_ROOT, 'build')
 INCLUDE_DIR = os.path.join(OPENDXA_ROOT, 'include')
+SRC_DIR = os.path.join(OPENDXA_ROOT, 'src')
 
-LIB_PATH = os.path.join(BUILD_DIR, 'libopendxapy.a')
-if not os.path.exists(LIB_PATH):
-    raise FileNotFoundError(f'Library not found: {LIB_PATH}. Please compile OpenDXA first.')
-
-print(f'Found compiled library (libopendxapy.a): {LIB_PATH}')
+cpp_files = []
+for root, dirs, files in os.walk(SRC_DIR):
+    for file in files:
+        if file.endswith('.cpp') and file != 'Main.cpp':
+            cpp_files.append(os.path.join(root, file))
 
 ext_modules = [
     Pybind11Extension(
-        'opendxa',
-        [
-            'PyBindModule.cpp',
-        ],
+        'opendxa._core',
+        ['PyBindModule.cpp'] + cpp_files,
         include_dirs=[
             INCLUDE_DIR,
-            # OpenGL headers
+            os.path.join(OPENDXA_ROOT, 'dependencies', 'cxxopts', 'include'),
+            SRC_DIR,
             '/usr/include/GL',
+            '/usr/include/eigen3',
         ],
-        # Usar la librería compilada
-        extra_objects=[LIB_PATH],
         libraries=[
-            # OpeNGL
             'GL',
-            # OpenGL Utility Library
-            'GLU',
-            # Threading
-            'pthread', 
-            # Dynamic linking
+            'GLU', 
+            'pthread',
             'dl',
-            # Math
             'm',
-            # OpenMP
             'gomp',
         ],
         library_dirs=[
@@ -48,12 +40,16 @@ ext_modules = [
         cxx_std=17,
         define_macros=[
             ('VERSION_INFO', '"1.0.0"'),
+            ('NDEBUG', '1'),
         ],
         extra_compile_args=[
             '-O3',
             '-march=native',
             '-ffast-math',
             '-fopenmp',
+            '-fPIC',
+            '-Wall',
+            '-Wextra',
         ],
         extra_link_args=[
             '-fopenmp',
@@ -64,10 +60,15 @@ ext_modules = [
 setup(
     name='opendxa',
     version='1.0.0',
-    author='Rodolfo Herrera H',
+    packages=find_packages(),
+    author='rodyherrera',
     author_email='contact@rodyherrera.com',
-    description='Python bindings for Open Source Dislocation Extraction Algorithm',
-    long_description='',
+    description='Open Source Dislocation Extraction Algorithm',
     ext_modules=ext_modules,
-    cmdclass={'build_ext': build_ext}
+    cmdclass={'build_ext': build_ext},
+    python_requires='>=3.8',
+    install_requires=[
+        'numpy>=1.20.0',
+        'pybind11>=2.10.0',
+    ]
 )

@@ -32,30 +32,28 @@ if(DXA_BUILD_PYTHON_BINDINGS)
     endif()
 endif()
 
-add_library(opendxapy
-    src/utils/linalg/LinAlg.cpp
-    src/geometry/Smoothing.cpp
-    src/geometry/Mesh.cpp
-    
-    src/engine/AnalysisEnvironment.cpp
-    src/engine/SimulationCell.cpp
-    src/engine/AnalysisSummary.cpp
-    
-    src/lattice/FaceCenteredCubic.cpp
-    src/lattice/HexagonalClosePacked.cpp
-    src/lattice/BaceCenteredCubic.cpp
-    
-    src/core/Clustering.cpp
-    src/core/CommonNeighborAnalysis.cpp
-    src/core/InterfaceMesh.cpp
-    src/core/DislocationTracing.cpp
-    src/core/StackingFaults.cpp
+file(GLOB_RECURSE OPENDXA_SOURCES
+    "src/*.cpp"
+)
+
+list(FILTER OPENDXA_SOURCES EXCLUDE REGEX ".*Main\\.cpp$")
+
+message(STATUS "Found source files:")
+foreach(source_file ${OPENDXA_SOURCES})
+    message(STATUS "  ${source_file}")
+endforeach()
+
+add_library(opendxapy ${OPENDXA_SOURCES})
+
+set_target_properties(opendxapy PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
 )
 
 target_include_directories(opendxapy 
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/cxxopts/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -73,6 +71,7 @@ if(DXA_USE_OPENMP AND OpenMP_CXX_FOUND)
 endif()
 
 target_compile_options(opendxapy PRIVATE
+    -fPIC
     $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -O3 -march=native -ffast-math>
     $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -O3 -march=native -ffast-math>
     $<$<CXX_COMPILER_ID:Intel>:-Wall -O3 -xHost -fp-model fast=2>
@@ -85,8 +84,6 @@ if(DXA_BUILD_EXECUTABLE)
 
     add_executable(opendxa 
         src/Main.cpp
-        src/parser/Parser.cpp
-        src/parser/LammpsParser.cpp
     )
 
     target_link_libraries(opendxa PRIVATE 
@@ -125,7 +122,7 @@ if(DXA_BUILD_PYTHON_BINDINGS AND pybind11_FOUND)
         PREFIX "${PYTHON_MODULE_PREFIX}"
         SUFFIX "${PYTHON_MODULE_EXTENSION}"
     )
-    
+
     message(STATUS "Python bindings target 'opendxa_py' configured")
 endif()
 
