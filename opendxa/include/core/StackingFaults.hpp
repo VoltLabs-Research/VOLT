@@ -7,7 +7,7 @@
 
 class DXAStackingFaults : public DXATracing{
 public:
-	DXAStackingFaults(ostream& msgLogger, ostream& verboseLogger);
+	DXAStackingFaults(ostream& msgLogger, ostream& MsgLogger);
 	~DXAStackingFaults() { cleanup(); }
 
 	bool createStackingFaultEdges();

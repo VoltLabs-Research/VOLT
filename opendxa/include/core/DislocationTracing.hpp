@@ -6,7 +6,7 @@
 
 class DXATracing : public DXAInterfaceMesh{
 public:
-	DXATracing(ostream& msgLogger, ostream& verboseLogger);
+	DXATracing(ostream& msgLogger, ostream& MsgLogger);
 	~DXATracing() { cleanup(); }
 
 	void setMaximumBurgersCircuitSize(int maxSize) { this->maxBurgersCircuitSize = maxSize; burgersSearchDepth = (maxSize - 1) / 2; }

@@ -80,7 +80,7 @@ bool AnalysisEnvironment::readSimulationCell(ParserStream& stream){
 			pbc[0] = (pbcx == "pp");
 			pbc[1] = (pbcy == "pp");
 			pbc[2] = (pbcz == "pp");
-			VerboseLogger() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2] << endl;
+			MsgLogger() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2] << endl;
 		}
 
 		FloatType tiltFactors[3];
@@ -100,11 +100,11 @@ bool AnalysisEnvironment::readSimulationCell(ParserStream& stream){
 		simulationCell.column(0) = Vector3(simBox[1][0] - simBox[0][0], 0, 0);
 		simulationCell.column(1) = Vector3(tiltFactors[0], simBox[1][1] - simBox[0][1], 0);
 		simulationCell.column(2) = Vector3(tiltFactors[1], tiltFactors[2], simBox[1][2] - simBox[0][2]);
-		VerboseLogger() << "Triclinic simulation cell:" << endl;
-		VerboseLogger() << "   Origin: " << simulationCellOrigin << endl;
-		VerboseLogger() << "   Cell vector 1: " << simulationCell.column(0) << endl;
-		VerboseLogger() << "   Cell vector 2: " << simulationCell.column(1) << endl;
-		VerboseLogger() << "   Cell vector 3: " << simulationCell.column(2) << endl;
+		MsgLogger() << "Triclinic simulation cell:" << endl;
+		MsgLogger() << "   Origin: " << simulationCellOrigin << endl;
+		MsgLogger() << "   Cell vector 1: " << simulationCell.column(0) << endl;
+		MsgLogger() << "   Cell vector 2: " << simulationCell.column(1) << endl;
+		MsgLogger() << "   Cell vector 3: " << simulationCell.column(2) << endl;
 		return true;
 	}else if(stream.line().find("ITEM: BOX BOUNDS") == 0) {
 		// Parse optional boundary condition flags.
@@ -115,15 +115,15 @@ bool AnalysisEnvironment::readSimulationCell(ParserStream& stream){
 			pbc[0] = (pbcx == "pp");
 			pbc[1] = (pbcy == "pp");
 			pbc[2] = (pbcz == "pp");
-			VerboseLogger() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2] << endl;
+			MsgLogger() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2] << endl;
 		}
 
 		FloatType simBox[2][3];
-		VerboseLogger() << "Orthogonal simulation cell:" << endl;
+		MsgLogger() << "Orthogonal simulation cell:" << endl;
 		for(size_t k=0; k<3; k++) {
 			if(sscanf(stream.readline().c_str(), FLOAT_SCANF_STRING_2, &simBox[0][k], &simBox[1][k]) != 2)
 				raiseError("File parsing error. Invalid box size in line %d of dump file: %s", stream.lineNumber(), stream.line().c_str());
-			VerboseLogger() << "   " << simBox[0][k] << "  " << simBox[1][k] << endl;
+			MsgLogger() << "   " << simBox[0][k] << "  " << simBox[1][k] << endl;
 		}
 		simulationCellOrigin.X = simBox[0][0];
 		simulationCellOrigin.Y = simBox[0][1];
@@ -140,7 +140,7 @@ bool AnalysisEnvironment::readSimulationCell(ParserStream& stream){
 		pbc[0] = (bool)pbcFlags[0];
 		pbc[1] = (bool)pbcFlags[1];
 		pbc[2] = (bool)pbcFlags[2];
-		VerboseLogger() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2] << endl;
+		MsgLogger() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2] << endl;
 		return true;
 	}
 	return false;

@@ -13,7 +13,7 @@ enum ParserFileType{
 
 class DXAClustering : public AnalysisEnvironment{
 public:
-	DXAClustering(ostream& msgLogger, ostream& verboseLogger);
+	DXAClustering(ostream& msgLogger, ostream& MsgLogger);
 	~DXAClustering() { cleanup(); }
 	void setCNACutoff(FloatType cutoff);
 	FloatType getCNACutoff() const { return cnaCutoff; }

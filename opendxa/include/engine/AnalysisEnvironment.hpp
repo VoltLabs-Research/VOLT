@@ -7,14 +7,13 @@
 
 class AnalysisEnvironment{
 public:
-	AnalysisEnvironment(ostream& msgLogger, ostream& verboseLogger);
+	AnalysisEnvironment(ostream& msgLogger, ostream& MsgLogger);
 	static void raiseError(const char* format, ...);
 
 	void setPBC(bool pbcX, bool pbcY, bool pbcZ) { pbc[0] = pbcX; pbc[1] = pbcY; pbc[2] = pbcZ; }
 	const bool* pbcFlags() const { return pbc; }
 	bool hasPeriodicBoundaries() const { return pbc[0] || pbc[1] || pbc[2]; }
 	void setMsgLogger(ostream& stream) { msgLogger = &stream; }
-	void setVerboseLogger(ostream& stream) { verboseLogger = &stream; }
 
 	Vector3 wrapVector(const Vector3& v) const;
 	Vector3 wrapReducedVector(Vector3 rv) const;
@@ -33,7 +32,6 @@ public:
 	Vector3 absoluteToReduced(const Vector3& worldVec) const { return getReciprocalSimulationCell() * worldVec; }
 
 	ostream& MsgLogger() const { return *msgLogger; }
-	ostream& VerboseLogger() const { return *verboseLogger; }
 
 	const Matrix3& getSimulationCell() const { return simulationCell; }
 	const Point3& getSimulationCellOrigin() const { return simulationCellOrigin; }
@@ -54,7 +52,6 @@ protected:
 	Point3 simulationCellOrigin;
 	Matrix3 reciprocalSimulationCell;
 	ostream* msgLogger;
-	ostream* verboseLogger;
 
 	template<typename Particle>
 	friend class NeighborListBuilder;

@@ -5,7 +5,7 @@
 #include "core/StackingFaults.hpp"
 
 AnalysisEnvironment::AnalysisEnvironment(ostream& _msgLogger, ostream& _verboseLogger) :
-	msgLogger(&_msgLogger), verboseLogger(&_verboseLogger){
+	msgLogger(&_msgLogger){
 	timestep = 0;
 	pbc[0] = pbc[1] = pbc[2] = true;
 	simulationCell = NULL_MATRIX;
