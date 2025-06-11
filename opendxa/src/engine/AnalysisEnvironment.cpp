@@ -3,9 +3,9 @@
 #include "core/InterfaceMesh.hpp"
 #include "core/DislocationTracing.hpp"
 #include "core/StackingFaults.hpp"
+#include "logger/Logger.hpp"
 
-AnalysisEnvironment::AnalysisEnvironment(ostream& _msgLogger, ostream& _verboseLogger) :
-	msgLogger(&_msgLogger){
+AnalysisEnvironment::AnalysisEnvironment(){
 	timestep = 0;
 	pbc[0] = pbc[1] = pbc[2] = true;
 	simulationCell = NULL_MATRIX;
@@ -23,8 +23,7 @@ void AnalysisEnvironment::raiseError(const char* format, ...){
 	throw runtime_error(buffer);
 }
 
-DXAClustering::DXAClustering(ostream& msgLogger, ostream& verboseLogger)
-	: AnalysisEnvironment(msgLogger, verboseLogger){
+DXAClustering::DXAClustering(): AnalysisEnvironment(){
 	cnaCutoff = 0;
 	numLocalInputAtoms = 0;
 	numClusters = 0;
@@ -33,17 +32,14 @@ DXAClustering::DXAClustering(ostream& msgLogger, ostream& verboseLogger)
 	numClusterTransitions = 0;
 }
 
-DXAInterfaceMesh::DXAInterfaceMesh(ostream& msgLogger, ostream& verboseLogger)
-	: DXAClustering(msgLogger, verboseLogger){}
+DXAInterfaceMesh::DXAInterfaceMesh(): DXAClustering(){}
 
-DXATracing::DXATracing(ostream& msgLogger, ostream& verboseLogger)
-	: DXAInterfaceMesh(msgLogger, verboseLogger), unusedCircuit(NULL){
+DXATracing::DXATracing(): DXAInterfaceMesh(), unusedCircuit(NULL){
 	this->burgersSearchDepth = (DEFAULT_MAX_BURGERS_CIRCUIT_SIZE - 1) / 2;
 	this->maxBurgersCircuitSize = DEFAULT_MAX_BURGERS_CIRCUIT_SIZE;	this->maxExtendedBurgersCircuitSize = DEFAULT_MAX_EXTENDED_BURGERS_CIRCUIT_SIZE;
 }
 
-DXAStackingFaults::DXAStackingFaults(ostream& msgLogger, ostream& verboseLogger)
-	: DXATracing(msgLogger, verboseLogger){}
+DXAStackingFaults::DXAStackingFaults(): DXATracing(){}
 
 void DXAClustering::cleanup(){
 	inputAtoms.clear();

@@ -8,7 +8,7 @@
 
 class DXAInterfaceMesh : public DXAClustering{
 public:
-	DXAInterfaceMesh(ostream& msgLogger, ostream& MsgLogger);
+	DXAInterfaceMesh();
 	~DXAInterfaceMesh() { cleanup(); }
 
 	void createInterfaceMeshNodes();

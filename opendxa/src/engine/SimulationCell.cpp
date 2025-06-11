@@ -80,7 +80,7 @@ bool AnalysisEnvironment::readSimulationCell(ParserStream& stream){
 			pbc[0] = (pbcx == "pp");
 			pbc[1] = (pbcy == "pp");
 			pbc[2] = (pbcz == "pp");
-			MsgLogger() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2] << endl;
+			LOG_INFO() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2];
 		}
 
 		FloatType tiltFactors[3];
@@ -100,11 +100,11 @@ bool AnalysisEnvironment::readSimulationCell(ParserStream& stream){
 		simulationCell.column(0) = Vector3(simBox[1][0] - simBox[0][0], 0, 0);
 		simulationCell.column(1) = Vector3(tiltFactors[0], simBox[1][1] - simBox[0][1], 0);
 		simulationCell.column(2) = Vector3(tiltFactors[1], tiltFactors[2], simBox[1][2] - simBox[0][2]);
-		MsgLogger() << "Triclinic simulation cell:" << endl;
-		MsgLogger() << "   Origin: " << simulationCellOrigin << endl;
-		MsgLogger() << "   Cell vector 1: " << simulationCell.column(0) << endl;
-		MsgLogger() << "   Cell vector 2: " << simulationCell.column(1) << endl;
-		MsgLogger() << "   Cell vector 3: " << simulationCell.column(2) << endl;
+		LOG_INFO() << "Triclinic simulation cell:";
+		LOG_INFO() << "   Origin: " << simulationCellOrigin;
+		LOG_INFO() << "   Cell vector 1: " << simulationCell.column(0);
+		LOG_INFO() << "   Cell vector 2: " << simulationCell.column(1);
+		LOG_INFO() << "   Cell vector 3: " << simulationCell.column(2);
 		return true;
 	}else if(stream.line().find("ITEM: BOX BOUNDS") == 0) {
 		// Parse optional boundary condition flags.
@@ -115,15 +115,15 @@ bool AnalysisEnvironment::readSimulationCell(ParserStream& stream){
 			pbc[0] = (pbcx == "pp");
 			pbc[1] = (pbcy == "pp");
 			pbc[2] = (pbcz == "pp");
-			MsgLogger() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2] << endl;
+			LOG_INFO() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2];
 		}
 
 		FloatType simBox[2][3];
-		MsgLogger() << "Orthogonal simulation cell:" << endl;
+		LOG_INFO() << "Orthogonal simulation cell:";
 		for(size_t k=0; k<3; k++) {
 			if(sscanf(stream.readline().c_str(), FLOAT_SCANF_STRING_2, &simBox[0][k], &simBox[1][k]) != 2)
 				raiseError("File parsing error. Invalid box size in line %d of dump file: %s", stream.lineNumber(), stream.line().c_str());
-			MsgLogger() << "   " << simBox[0][k] << "  " << simBox[1][k] << endl;
+			LOG_INFO() << "   " << simBox[0][k] << "  " << simBox[1][k];
 		}
 		simulationCellOrigin.X = simBox[0][0];
 		simulationCellOrigin.Y = simBox[0][1];
@@ -140,30 +140,30 @@ bool AnalysisEnvironment::readSimulationCell(ParserStream& stream){
 		pbc[0] = (bool)pbcFlags[0];
 		pbc[1] = (bool)pbcFlags[1];
 		pbc[2] = (bool)pbcFlags[2];
-		MsgLogger() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2] << endl;
+		LOG_INFO() << "Periodic boundary conditions: " << pbc[0] << " " << pbc[1] << " " << pbc[2];
 		return true;
 	}
 	return false;
 }
 
 void AnalysisEnvironment::writeSimulationCellHeaderLAMMPS(ostream& stream){
-	stream << "ITEM: TIMESTEP" << endl;
-	stream << timestep << endl;
+	stream << "ITEM: TIMESTEP";
+	stream << timestep;
 	if(simulationCell(0,1) == 0.0 && simulationCell(0,2) == 0.0 && simulationCell(1,2) == 0.0) {
 		stream << "ITEM: BOX BOUNDS";
 		if(pbc[0]) stream << " pp"; else stream << " ff";
 		if(pbc[1]) stream << " pp"; else stream << " ff";
 		if(pbc[2]) stream << " pp"; else stream << " ff";
-		stream << endl;
-		stream << simulationCellOrigin.X << " " << (simulationCellOrigin.X + simulationCell(0,0)) << endl;
-		stream << simulationCellOrigin.Y << " " << (simulationCellOrigin.Y + simulationCell(1,1)) << endl;
-		stream << simulationCellOrigin.Z << " " << (simulationCellOrigin.Z + simulationCell(2,2)) << endl;
+		stream;
+		stream << simulationCellOrigin.X << " " << (simulationCellOrigin.X + simulationCell(0,0));
+		stream << simulationCellOrigin.Y << " " << (simulationCellOrigin.Y + simulationCell(1,1));
+		stream << simulationCellOrigin.Z << " " << (simulationCellOrigin.Z + simulationCell(2,2));
 	}else{
 		stream << "ITEM: BOX BOUNDS xy xz yz";
 		if(pbc[0]) stream << " pp"; else stream << " ff";
 		if(pbc[1]) stream << " pp"; else stream << " ff";
 		if(pbc[2]) stream << " pp"; else stream << " ff";
-		stream << endl;
+		stream;
 		FloatType xlo = simulationCellOrigin.X;
 		FloatType ylo = simulationCellOrigin.Y;
 		FloatType zlo = simulationCellOrigin.Z;
@@ -179,9 +179,9 @@ void AnalysisEnvironment::writeSimulationCellHeaderLAMMPS(ostream& stream){
 		xhi = max(xhi, xhi+xy);
 		xhi = max(xhi, xhi+xz);
 		yhi = max(yhi, yhi+yz);
-		stream << xlo << " " << xhi << " " << xy << endl;
-		stream << ylo << " " << yhi << " " << xz << endl;
-		stream << zlo << " " << zhi << " " << yz << endl;
+		stream << xlo << " " << xhi << " " << xy;
+		stream << ylo << " " << yhi << " " << xz;
+		stream << zlo << " " << zhi << " " << yz;
 	}
 }
 

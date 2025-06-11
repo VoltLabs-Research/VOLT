@@ -115,11 +115,8 @@ Cluster* DXAClustering::createClusterOnDemand(int id, int processor)
 /******************************************************************************
 * Brings the neighbors of crystalline atoms into a fixed order.
 ******************************************************************************/
-void DXAClustering::orderCrystallineAtoms()
-{
-#if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Ordering neighbors of crystalline atoms." << endl;
-#endif
+void DXAClustering::orderCrystallineAtoms(){
+	LOG_INFO() << "Ordering neighbors of crystalline atoms.";
 
 	firstGhostAtom = inputAtoms.begin() + numLocalInputAtoms;
 
@@ -146,7 +143,7 @@ void DXAClustering::orderCrystallineAtoms()
 void DXAClustering::determineDistanceFromDefects()
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Determining distances from nearest crystal defect." << endl;
+	LOG_INFO() << "Determining distances from nearest crystal defect.";
 #endif
 
 	// Reset fields.
@@ -190,7 +187,7 @@ void DXAClustering::determineDistanceFromDefects()
 void DXAClustering::clusterCrystallineAtoms(int level)
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Decomposing crystalline atoms into clusters (pass " << level << ")." << endl;
+	LOG_INFO() << "Decomposing crystalline atoms into clusters (pass " << level << ").";
 #endif
 
 	// First grow any existing clusters.
@@ -347,7 +344,7 @@ void DXAClustering::disableDisclinationBorderAtom(InputAtom* atom)
 void DXAClustering::createClusterTransitions()
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Calculating cluster transition matrices." << endl;
+	LOG_INFO() << "Calculating cluster transition matrices.";
 #endif
 
 	// Iterate over all local atoms that are part of a crystalline cluster.
@@ -465,7 +462,7 @@ void DXAClustering::createSuperclusters(vector<ClusterTransition*>& clusterTrans
 	DISLOCATIONS_ASSERT(numClusterTransitions == (int)clusterTransitions.size());
 
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Joining " << clusters.size() << " crystallite clusters into superclusters." << endl;
+	LOG_INFO() << "Joining " << clusters.size() << " crystallite clusters into superclusters.";
 #endif
 	numClusterDisclinations = 0;
 
@@ -491,11 +488,11 @@ void DXAClustering::createSuperclusters(vector<ClusterTransition*>& clusterTrans
 		joinClusters(t, priorityStack);
 	}
 
-	MsgLogger() << "Number of super clusters: " << numSuperClusters << endl;
+	LOG_INFO() << "Number of super clusters: " << numSuperClusters;
 	if(numDisclinationAtoms || numClusterDisclinations) {
-		MsgLogger() << "Detected at least one disclination:" << endl;
-		MsgLogger() << "  Number of inter-cluster disclinations: " << numClusterDisclinations << endl;
-		MsgLogger() << "  Number of disabled disclination atoms: " << numDisclinationAtoms << endl;
+		LOG_INFO() << "Detected at least one disclination:";
+		LOG_INFO() << "  Number of inter-cluster disclinations: " << numClusterDisclinations;
+		LOG_INFO() << "  Number of disabled disclination atoms: " << numDisclinationAtoms;
 	}
 }
 
@@ -632,7 +629,7 @@ void DXAClustering::joinClusters(ClusterTransition* transition, list<ClusterTran
 void DXAClustering::alignClusterOrientations()
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Aligning cluster orientations." << endl;
+	LOG_INFO() << "Aligning cluster orientations.";
 #endif
 
 	// Some cluster-cluster transitions might have been disabled before to

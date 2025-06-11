@@ -349,29 +349,29 @@ public:
 		for(vector< vector<Point3> >::const_iterator n = contours.begin(); n != contours.end(); ++n)
 			numPoints += n->size();
 
-		stream << "# vtk DataFile Version 3.0" << endl;
-		stream << "# Interface mesh" << endl;
-		stream << "ASCII" << endl;
-		stream << "DATASET UNSTRUCTURED_GRID" << endl;
-		stream << "POINTS " << numPoints << " float" << endl;
+		stream << "# vtk DataFile Version 3.0";
+		stream << "# Interface mesh";
+		stream << "ASCII";
+		stream << "DATASET UNSTRUCTURED_GRID";
+		stream << "POINTS " << numPoints << " float";
 		for(vector< vector<Point3> >::const_iterator n = contours.begin(); n != contours.end(); ++n) {
 			for(vector<Point3>::const_iterator p = n->begin(); p != n->end(); ++p) {
 				Point3 wp = cell.getSimulationCellOrigin() + (cell.getSimulationCell() * (*p - ORIGIN));
-				stream << wp.X << " " << wp.Y << " " << wp.Z << endl;
+				stream << wp.X << " " << wp.Y << " " << wp.Z;
 			}
 		}
-		stream << endl << "CELLS " << contours.size() << " " << (contours.size()+numPoints) << endl;
+		stream << endl << "CELLS " << contours.size() << " " << (contours.size()+numPoints);
 		size_t counter = 0;
 		for(vector< vector<Point3> >::const_iterator n = contours.begin(); n != contours.end(); ++n) {
 			stream << n->size();
 			for(size_t i = 0; i < n->size(); i++)
 				stream << " " << counter++;
-			stream << endl;
+			stream;
 		}
 
-		stream << endl << "CELL_TYPES " << contours.size() << endl;
+		stream << endl << "CELL_TYPES " << contours.size();
 		for(size_t i = 0; i < contours.size(); i++)
-			stream << "7" << endl;
+			stream << "7";
 	}
 
 
@@ -459,9 +459,9 @@ public:
 
 	static void errorData(GLenum errno, void* polygon_data) {
 		if(errno == GLU_TESS_NEED_COMBINE_CALLBACK)
-			cerr << "ERROR: Could not tessellate cap polygon. It contains overlapping contours." << endl;
+			cerr << "ERROR: Could not tessellate cap polygon. It contains overlapping contours.";
 		else
-			cerr << "ERROR: Could not tessellate cap polygon. GLU error code: " << errno << endl;
+			cerr << "ERROR: Could not tessellate cap polygon. GLU error code: " << errno;
 		DISLOCATIONS_ASSERT_GLOBAL(false);
 	}
 
@@ -738,7 +738,7 @@ bool OutputMesh::pointInPolyhedron(const Point3 p, const AnalysisEnvironment& ce
 	}
 
 	if(closestEdge != NULL) {
-		cell.MsgLogger() << "POINT IN POLYHEDRON TEST: Edge is closest. WARNING: This is untested code! You may get wrong surface cap output." << endl;
+		LOG_INFO() << "POINT IN POLYHEDRON TEST: Edge is closest. WARNING: This is untested code! You may get wrong surface cap output.";
 		OutputFacet* facets[2] = { closestEdge->facet, closestEdge->oppositeEdge->facet };
 		closestNormal = NULL_VECTOR;
 		for(int f = 0; f < 2; f++) {
@@ -769,19 +769,19 @@ bool OutputMesh::pointInPolyhedron(const Point3 p, const AnalysisEnvironment& ce
 	}
 	else if(closestFacet) {
 		//closestFacet->entity = 1;
-		//cerr << "facet location: " << (closestFacet->edges[0]->vertex2->pos) << endl;
-		//cerr << "facet location: " << (closestFacet->edges[1]->vertex2->pos) << endl;
-		//cerr << "facet location: " << (closestFacet->edges[2]->vertex2->pos) << endl;
+		//cerr << "facet location: " << (closestFacet->edges[0]->vertex2->pos);
+		//cerr << "facet location: " << (closestFacet->edges[1]->vertex2->pos);
+		//cerr << "facet location: " << (closestFacet->edges[2]->vertex2->pos);
 	}
 
-	//cerr << "Closest DISTANCE = " << sqrt(closestDistance2) << endl;
-	//cerr << "vertex: " << closestVertex << endl;
-	//cerr << "edge: " << closestEdge << endl;
-	//cerr << "facet: " << closestFacet << endl;
-	//cerr << "intersection point: " << (p + closestVector) << endl;
-	//cerr << "normal: " << closestNormal << endl;
+	//cerr << "Closest DISTANCE = " << sqrt(closestDistance2);
+	//cerr << "vertex: " << closestVertex;
+	//cerr << "edge: " << closestEdge;
+	//cerr << "facet: " << closestFacet;
+	//cerr << "intersection point: " << (p + closestVector);
+	//cerr << "normal: " << closestNormal;
 
-	//cerr << "Corner " << p << " inside disordered region: " << (DotProduct(closestNormal, closestVector) > 0.0) << endl << endl;
+	//cerr << "Corner " << p << " inside disordered region: " << (DotProduct(closestNormal, closestVector) > 0.0) << endl;
 	return DotProduct(closestNormal, closestVector) > 0.0;
 }
 
@@ -826,13 +826,13 @@ void OutputMesh::refineFacets(const AnalysisEnvironment& cell, FloatType maxRati
 		if(longestWrappedEdge != NULL || longestEdgeLengthSq > maxEdgeLengthSquared ||
 				(shortestEdgeLengthSq > FLOATTYPE_EPSILON && longestEdgeLengthSq / shortestEdgeLengthSq > maxRatioSquared)) {
 
-			//if(longestWrappedEdge == NULL)		//	cerr << "Ratio: " << (longestEdgeLengthSq / shortestEdgeLengthSq) << endl;
+			//if(longestWrappedEdge == NULL)		//	cerr << "Ratio: " << (longestEdgeLengthSq / shortestEdgeLengthSq);
 
 			OutputVertex* splitVertex = createVertex(vertex2->pos - (FloatType)0.5 * edgev);
 			splitVertex->normal = vertex1->normal;
 			splitVertex->numFacets = 2;
 
-			//cerr << "Splitting edge: " << " facet=" << facet << "  edge=" << edgev << "  " << vertex1->pos << " - " << vertex2->pos << "  splitvertex=" << splitVertex->pos << endl;
+			//cerr << "Splitting edge: " << " facet=" << facet << "  edge=" << edgev << "  " << vertex1->pos << " - " << vertex2->pos << "  splitvertex=" << splitVertex->pos;
 
 			OutputEdge* edge1 = longestEdge;
 			OutputEdge* edge3 = longestEdge->oppositeEdge;

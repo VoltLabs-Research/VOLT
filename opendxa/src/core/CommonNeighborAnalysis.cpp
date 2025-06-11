@@ -299,7 +299,7 @@ static inline void analyzeCNASignature(
 }
 
 void DXAClustering::buildNearestNeighborLists(){
-	MsgLogger() << "Building nearest neighbor lists." << endl;
+	LOG_INFO() << "Building nearest neighbor lists.";
 	Timer neighborTimer;
 
 	neighborListBuilder.initialize(*this, cnaCutoff);
@@ -336,11 +336,11 @@ void DXAClustering::buildNearestNeighborLists(){
 		}
 	}
 
-	MsgLogger() << "Neighbor list time: " << neighborTimer.elapsedTime() << " sec." << endl;
+	LOG_INFO() << "Neighbor list time: " << neighborTimer.elapsedTime() << " sec.";
 }
 
 void DXAClustering::performCNA(){
-	MsgLogger() << "Performing common neighbor analysis (CNA)." << endl;
+	LOG_INFO() << "Performing common neighbor analysis (CNA).";
 	Timer timer;
 	size_t numFCC = 0;
 	size_t numHCP = 0;
@@ -372,8 +372,8 @@ void DXAClustering::performCNA(){
 		numBCC += local_numBCC;
 	}
 
-	MsgLogger() << "Number of FCC atoms: " << numFCC 
+	LOG_INFO() << "Number of FCC atoms: " << numFCC 
 				<< "   Number of HCP atoms: " << numHCP 
-				<< "   Number of BCC atoms: " << numBCC << endl;
-	MsgLogger() << "CNA time: " << timer.elapsedTime() << " sec." << endl;
+				<< "   Number of BCC atoms: " << numBCC;
+	LOG_INFO() << "CNA time: " << timer.elapsedTime() << " sec.";
 }

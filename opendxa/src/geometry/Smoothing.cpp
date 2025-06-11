@@ -8,7 +8,7 @@
 void DXATracing::generateOutputMesh()
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Generating output mesh." << endl;
+	LOG_INFO() << "Generating output mesh.";
 	Timer timer;
 #endif
 
@@ -87,7 +87,7 @@ void DXATracing::generateOutputMesh()
 			}
 			DISLOCATIONS_ASSERT(meshEdge->outputEdge->facet == NULL);
 			//if(facetEdges[0]->facet)
-			//	MsgLogger() << "circuit->primarySegmentCap: " << circuit->primarySegmentCap.size() << "  " << (e - circuit->primarySegmentCap.begin()) << endl;
+			//	LOG_INFO() << "circuit->primarySegmentCap: " << circuit->primarySegmentCap.size() << "  " << (e - circuit->primarySegmentCap.begin());
 			DISLOCATIONS_ASSERT(facetEdges[0]->facet == NULL);
 
 			// Create new output facet.
@@ -104,7 +104,7 @@ void DXATracing::generateOutputMesh()
 	}
 
 #if DISLOCATION_TRACE_OUTPUT >= 2
-	MsgLogger() << "Output mesh time: " << timer.elapsedTime() << " sec." << endl;
+	LOG_INFO() << "Output mesh time: " << timer.elapsedTime() << " sec.";
 #endif
 }
 
@@ -115,14 +115,14 @@ void DXAInterfaceMesh::smoothOutputSurface(int smoothingLevel)
 {
 	if(smoothingLevel > 0) {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-		MsgLogger() << "Smoothing output mesh." << endl;
+		LOG_INFO() << "Smoothing output mesh.";
 		Timer timer;
 #endif
 
 		outputMesh.smoothMesh(smoothingLevel, *this);
 
 #if DISLOCATION_TRACE_OUTPUT >= 2
-		MsgLogger() << "Mesh smoothing time: " << timer.elapsedTime() << " sec." << endl;
+		LOG_INFO() << "Mesh smoothing time: " << timer.elapsedTime() << " sec.";
 #endif
 	}
 }
@@ -133,7 +133,7 @@ void DXAInterfaceMesh::smoothOutputSurface(int smoothingLevel)
 void DXAInterfaceMesh::finishOutputSurface(bool createCapSurface)
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Wrapping output mesh at periodic boundaries." << endl;
+	LOG_INFO() << "Wrapping output mesh at periodic boundaries.";
 #endif
 	outputMesh.calculateNormals(*this);
 	if(createCapSurface)
@@ -211,7 +211,7 @@ void DXATracing::smoothDislocationSegments(int smoothingLevel, int coarseningLev
 	if(smoothingLevel <= 0) return;
 
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Smoothing dislocation segments." << endl;
+	LOG_INFO() << "Smoothing dislocation segments.";
 	Timer timer;
 #endif
 
@@ -318,7 +318,7 @@ void DXATracing::wrapDislocationSegments()
 		return;	// Nothing to do.
 
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Wrapping dislocation segments." << endl;
+	LOG_INFO() << "Wrapping dislocation segments.";
 	Timer timer;
 #endif
 
@@ -381,7 +381,7 @@ void DXATracing::wrapDislocationSegments()
 	}
 
 #if DISLOCATION_TRACE_OUTPUT >= 2
-	MsgLogger() << "Dislocation wrapping time: " << timer.elapsedTime() << " sec." << endl;
+	LOG_INFO() << "Dislocation wrapping time: " << timer.elapsedTime() << " sec.";
 #endif
 }
 
@@ -411,7 +411,7 @@ inline unsigned int computeOutCode(const Vector3& p)
 void DXATracing::clipDislocationLines(const Point3& clipOrigin, const Matrix3& clipCell)
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Clipping dislocation segments." << endl;
+	LOG_INFO() << "Clipping dislocation segments.";
 #endif
 
 	Matrix3 reciprocalClipCell = clipCell.inverse();

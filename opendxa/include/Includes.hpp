@@ -27,5 +27,6 @@ using namespace std;
 #include "utils/FloatType.hpp"
 #include "utils/Debug.hpp"
 #include "utils/linalg/LinAlg.hpp"
+#include "logger/LoggerManager.hpp"
 
 #endif

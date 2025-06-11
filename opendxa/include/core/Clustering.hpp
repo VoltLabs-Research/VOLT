@@ -4,8 +4,8 @@
 #include "../Includes.hpp"
 #include "../engine/AnalysisEnvironment.hpp"
 #include "../utils/MemoryPool.hpp"
-#include "NeighborListBuilder.hpp"
 #include "../structures/Structures.hpp"
+#include "NeighborListBuilder.hpp"
 
 enum ParserFileType{
 	PARSER_FILETYPE_LAMMPS,
@@ -13,7 +13,7 @@ enum ParserFileType{
 
 class DXAClustering : public AnalysisEnvironment{
 public:
-	DXAClustering(ostream& msgLogger, ostream& MsgLogger);
+	DXAClustering();
 	~DXAClustering() { cleanup(); }
 	void setCNACutoff(FloatType cutoff);
 	FloatType getCNACutoff() const { return cnaCutoff; }

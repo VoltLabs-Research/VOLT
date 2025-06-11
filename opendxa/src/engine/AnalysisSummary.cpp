@@ -11,14 +11,14 @@
 void DXAClustering::writeAtomsDumpFile(ostream& stream)
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Dumping atoms to output file." << endl;
+	LOG_INFO() << "Dumping atoms to output file.";
 #endif
 
 	writeSimulationCellHeaderLAMMPS(stream);
-	stream << "ITEM: NUMBER OF ATOMS" << endl;
-	stream << inputAtoms.size() << endl;
+	stream << "ITEM: NUMBER OF ATOMS";
+	stream << inputAtoms.size();
 	stream << "ITEM: ATOMS id x y z CNAAtomType Coordination RecursiveDepth IsISF IsTB";
-	stream << endl;
+	stream;
 	for(vector<InputAtom>::const_iterator p = inputAtoms.begin(); p != inputAtoms.end(); ++p) {
 		stream        << p->tag;
 		stream << " " << p->pos.X << " " << p->pos.Y << " " << p->pos.Z;
@@ -27,7 +27,7 @@ void DXAClustering::writeAtomsDumpFile(ostream& stream)
 		stream << " " << p->recursiveDepth;
 		stream << " " << p->testFlag(ATOM_ISF);
 		stream << " " << p->testFlag(ATOM_TB);
-		stream << endl;
+		stream;
 	}
 	stream << flush;
 }
@@ -38,7 +38,7 @@ void DXAClustering::writeAtomsDumpFile(ostream& stream)
 void DXAInterfaceMesh::writeInterfaceMeshFile(ostream& stream) const
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Writing interface mesh to output file." << endl;
+	LOG_INFO() << "Writing interface mesh to output file.";
 #endif
 
 	size_t numFacets = 0;
@@ -57,20 +57,20 @@ void DXAInterfaceMesh::writeInterfaceMeshFile(ostream& stream) const
 	}
 
 
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "# Interface mesh" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << nodes.size() << " float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "# Interface mesh";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS " << nodes.size() << " float";
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		const Point3& pos = (*n)->pos;
-		stream << pos.X << " " << pos.Y << " " << pos.Z << endl;
+		stream << pos.X << " " << pos.Y << " " << pos.Z;
 	}
-	stream << endl << "CELLS " << (numEdges + numFacets) << " " << (numEdges*3 + numFacets + numFacetVertices) << endl;
+	stream << endl << "CELLS " << (numEdges + numFacets) << " " << (numEdges*3 + numFacets + numFacetVertices);
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if(isWrappedEdge(&(*n)->edges[i]) == false)
-				stream << "2 " << (*n)->index << " " << (*n)->edgeNeighbor(i)->index << endl;
+				stream << "2 " << (*n)->index << " " << (*n)->edgeNeighbor(i)->index;
 		}
 	}
 	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
@@ -78,20 +78,20 @@ void DXAInterfaceMesh::writeInterfaceMeshFile(ostream& stream) const
 			stream << "3";
 			for(int i=0; i<3; i++)
 				stream << " " << (*f)->vertex(i)->index;
-			stream << endl;
+			stream;
 		}
 	}
 
-	stream << endl << "CELL_TYPES " << (numEdges + numFacets) << endl;
+	stream << endl << "CELL_TYPES " << (numEdges + numFacets);
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "3" << endl;
+		stream << "3";
 	for(size_t i = 0; i < numFacets; i++)
-		stream << "5" << endl;	// Triangle
+		stream << "5";	// Triangle
 
-	stream << endl << "CELL_DATA " << (numEdges + numFacets) << endl;
+	stream << endl << "CELL_DATA " << (numEdges + numFacets);
 
-	stream << endl << "SCALARS edge_count int 1" << endl;
-	stream << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS edge_count int 1";
+	stream << "LOOKUP_TABLE default";
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if(isWrappedEdge(&(*n)->edges[i]) == false) {
@@ -99,85 +99,85 @@ void DXAInterfaceMesh::writeInterfaceMeshFile(ostream& stream) const
 				for(int c = 0; c < (*n)->numEdges; c++)
 					if((*n)->edgeNeighbor(c) == (*n)->edgeNeighbor(i))
 						count++;
-				stream << count << endl;
+				stream << count;
 			}
 		}
 	}
 	for(size_t i = 0; i < numFacets; i++)
-		stream << "0" << endl;
+		stream << "0";
 
 	/*
-	stream << endl << "VECTORS lattice_vector float" << endl;
+	stream << endl << "VECTORS lattice_vector float";
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if(isWrappedEdge(&(*n)->edges[i]) == false) {
 				for(int c = 0; c < 3; c++)
 					stream << (*n)->edges[i].latticeVector[c] << " ";
-				stream << endl;
+				stream;
 			}
 		}
 	}
 	for(size_t i = 0; i < numFacets; i++)
-		stream << "0 0 0" << endl;
+		stream << "0 0 0";
 		*/
 
-	stream << endl << "SCALARS segment int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS segment int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "0" << endl;
+		stream << "0";
 	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
 		if(isWrappedFacet(*f) == false) {
 			if((*f)->circuit != NULL)
-				stream << (*f)->circuit->segment->index << endl;
+				stream << (*f)->circuit->segment->index;
 			else
-				stream << "-1" << endl;
+				stream << "-1";
 		}
 	}
 
-	stream << endl << "SCALARS final_segment int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS final_segment int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "0" << endl;
+		stream << "0";
 	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
 		if(isWrappedFacet(*f) == false) {
 			if((*f)->circuit != NULL && ((*f)->circuit->isDangling == false || (*f)->testFlag(FACET_IS_PRIMARY_SEGMENT))) {
 				DislocationSegment* segment = (*f)->circuit->segment;
 				while(segment->replacedWith != NULL) segment = segment->replacedWith;
-				stream << segment->index << endl;
+				stream << segment->index;
 			}
 			else
-				stream << "-1" << endl;
+				stream << "-1";
 		}
 	}
 
-	stream << endl << "SCALARS is_primary_segment int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS is_primary_segment int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "0" << endl;
+		stream << "0";
 	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f)
 		if(isWrappedFacet(*f) == false)
-			stream << (*f)->testFlag(FACET_IS_PRIMARY_SEGMENT) << endl;
+			stream << (*f)->testFlag(FACET_IS_PRIMARY_SEGMENT);
 
-	stream << endl << "SCALARS selection int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS selection int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "0" << endl;
+		stream << "0";
 	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f)
 		if(isWrappedFacet(*f) == false)
-			stream << (*f)->selection << endl;
+			stream << (*f)->selection;
 
-	stream << endl << "SCALARS isSF int 1" << endl;
-	stream << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS isSF int 1";
+	stream << "LOOKUP_TABLE default";
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if((*n)->edges[i].isSFEdge)
-				stream << "1" << endl;
+				stream << "1";
 			else
-				stream << "0" << endl;
+				stream << "0";
 		}
 	}
 	for(size_t i = 0; i < numFacets; i++)
-		stream << "0" << endl;
+		stream << "0";
 }
 
 /******************************************************************************
@@ -186,7 +186,7 @@ void DXAInterfaceMesh::writeInterfaceMeshFile(ostream& stream) const
 void DXATracing::writeDislocationsVTKFile(ostream& stream) const
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Writing dislocation lines to output file." << endl;
+	LOG_INFO() << "Writing dislocation lines to output file.";
 #endif
 
 	// Gather dislocation line points.
@@ -195,64 +195,64 @@ void DXATracing::writeDislocationsVTKFile(ostream& stream) const
 		numSegmentPoints += (*segment)->line.size();
 	}
 
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << numSegmentPoints << " float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS " << numSegmentPoints << " float";
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment) {
 		for(deque<Point3>::const_iterator p = (*segment)->line.begin(); p != (*segment)->line.end(); ++p) {
-			stream << p->X << " " << p->Y << " " << p->Z << endl;
+			stream << p->X << " " << p->Y << " " << p->Z;
 		}
 	}
 	size_t numCells = segments.size();
-	stream << endl << "CELLS " << numCells << " " << (numSegmentPoints + segments.size()) << endl;
+	stream << endl << "CELLS " << numCells << " " << (numSegmentPoints + segments.size());
 	size_t startIndex = 0;
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment) {
 		DISLOCATIONS_ASSERT((*segment)->line.empty() == false);
 		stream << (*segment)->line.size();
 		for(size_t i = 0; i < (*segment)->line.size(); i++)
 			stream << " " << (i+startIndex);
-		stream << endl;
+		stream;
 		startIndex += (*segment)->line.size();
 	}
 
-	stream << endl << "CELL_TYPES " << numCells << endl;
+	stream << endl << "CELL_TYPES " << numCells;
 	for(size_t i = 0; i < segments.size(); i++)
-		stream << "4" << endl;	// Poly line
+		stream << "4";	// Poly line
 
-	stream << endl << "CELL_DATA " << numCells << endl;
+	stream << endl << "CELL_DATA " << numCells;
 
-	stream << endl << "VECTORS burgers_vector float" << endl;
+	stream << endl << "VECTORS burgers_vector float";
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment)
-		stream << (*segment)->burgersVector.X << " " << (*segment)->burgersVector.Y << " " << (*segment)->burgersVector.Z << endl;	stream << endl << "VECTORS burgers_vector_world float" << endl;
+		stream << (*segment)->burgersVector.X << " " << (*segment)->burgersVector.Y << " " << (*segment)->burgersVector.Z;	stream << endl << "VECTORS burgers_vector_world float";
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment)
-		stream << (*segment)->burgersVectorWorld.X << " " << (*segment)->burgersVectorWorld.Y << " " << (*segment)->burgersVectorWorld.Z << endl;
+		stream << (*segment)->burgersVectorWorld.X << " " << (*segment)->burgersVectorWorld.Y << " " << (*segment)->burgersVectorWorld.Z;
 
 	// Add fractional Burgers vector representation as scalars for enhanced visualization
-	stream << endl << "SCALARS burgers_vector_magnitude float" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS burgers_vector_magnitude float";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment) {
 		// Calculate magnitude for color mapping
 		LatticeVector bv = (*segment)->burgersVector;
 		double magnitude = sqrt(static_cast<double>(bv.X * bv.X + bv.Y * bv.Y + bv.Z * bv.Z));
-		stream << magnitude << endl;
+		stream << magnitude;
 	}
 
-	stream << endl << "SCALARS segment_length float" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS segment_length float";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment)
-		stream << (*segment)->calculateLength() << endl;
-	stream << endl << "SCALARS segment_id int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+		stream << (*segment)->calculateLength();
+	stream << endl << "SCALARS segment_id int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment)
-		stream << (*segment)->index << endl;
+		stream << (*segment)->index;
 
 	// Add fractional Burgers vector information as comments for human readability
-	stream << endl << "# Fractional Burgers Vector Notation:" << endl;
+	stream << endl << "# Fractional Burgers Vector Notation:";
 	int segmentIndex = 0;
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment, ++segmentIndex) {
 		std::string fractionalStr = burgersToFractionalString((*segment)->burgersVector);
-		stream << "# Segment " << segmentIndex << ": " << fractionalStr << endl;
+		stream << "# Segment " << segmentIndex << ": " << fractionalStr;
 	}
 }
 
@@ -262,7 +262,7 @@ void DXATracing::writeDislocationsVTKFile(ostream& stream) const
 void AnalysisEnvironment::writeSimulationCellFileVTK(ostream& stream) const
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Writing simulation cell to output file." << endl;
+	LOG_INFO() << "Writing simulation cell to output file.";
 #endif
 
 	Point3 corners[8];
@@ -275,17 +275,17 @@ void AnalysisEnvironment::writeSimulationCellFileVTK(ostream& stream) const
 	corners[6] = simulationCellOrigin + simulationCell.column(0) + simulationCell.column(1) + simulationCell.column(2);
 	corners[7] = simulationCellOrigin + simulationCell.column(1) + simulationCell.column(2);
 
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS 8 float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS 8 float";
 	for(int i=0; i<8; i++)
-		stream << corners[i].X << " " << corners[i].Y << " " << corners[i].Z << endl;
+		stream << corners[i].X << " " << corners[i].Y << " " << corners[i].Z;
 
-	stream << endl << "CELLS 1 9" << endl;
-	stream << "8 0 1 2 3 4 5 6 7" << endl;
+	stream << endl << "CELLS 1 9";
+	stream << "8 0 1 2 3 4 5 6 7";
 
-	stream << endl << "CELL_TYPES 1" << endl;	stream << "12" << endl;  // Hexahedron
+	stream << endl << "CELL_TYPES 1";	stream << "12";  // Hexahedron
 }
 
 /******************************************************************************
@@ -294,7 +294,7 @@ void AnalysisEnvironment::writeSimulationCellFileVTK(ostream& stream) const
 void DXAInterfaceMesh::writeOutputMeshFile(ostream& stream) const
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Writing defect surface to output file." << endl;
+	LOG_INFO() << "Writing defect surface to output file.";
 #endif
 
 	outputMesh.writeToVTKFile(stream, "Defect surface");
@@ -306,7 +306,7 @@ void DXAInterfaceMesh::writeOutputMeshFile(ostream& stream) const
 void DXAInterfaceMesh::writeOutputMeshCapFile(ostream& stream) const
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Writing defect surface cap facets to output file." << endl;
+	LOG_INFO() << "Writing defect surface cap facets to output file.";
 #endif
 
 	outputMeshCap.writeToVTKFile(stream, "Defect surface cap");
@@ -317,41 +317,41 @@ void DXAInterfaceMesh::writeOutputMeshCapFile(ostream& stream) const
 ******************************************************************************/
 void OutputMesh::writeToVTKFile(ostream& stream, const string& commentHeaderLine) const
 {
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << vertices.size() << " float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS " << vertices.size() << " float";
 	for(vector<OutputVertex*>::const_iterator v = vertices.begin(); v != vertices.end(); ++v)
-		stream << (*v)->pos.X << " " << (*v)->pos.Y << " " << (*v)->pos.Z << endl;
-	stream << endl << "CELLS " << facets.size() << " " << (facets.size()*4) << endl;
+		stream << (*v)->pos.X << " " << (*v)->pos.Y << " " << (*v)->pos.Z;
+	stream << endl << "CELLS " << facets.size() << " " << (facets.size()*4);
 	for(vector<OutputFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
 		stream << "3";
 		for(int i=0; i<3; i++)
 			stream << " " << (*f)->edges[i]->vertex2->index;
-		stream << endl;
+		stream;
 	}
-	stream << endl << "CELL_TYPES " << facets.size() << endl;
+	stream << endl << "CELL_TYPES " << facets.size();
 	for(size_t i = 0; i < facets.size(); i++)
-		stream << "5" << endl;	// Triangle
+		stream << "5";	// Triangle
 
-	stream << "POINT_DATA " << vertices.size() << endl;
-	stream << "NORMALS point_normals float" << endl;
+	stream << "POINT_DATA " << vertices.size();
+	stream << "NORMALS point_normals float";
 	for(vector<OutputVertex*>::const_iterator v = vertices.begin(); v != vertices.end(); ++v) {
-		stream << (*v)->normal.X << " " << (*v)->normal.Y << " " << (*v)->normal.Z << endl;
+		stream << (*v)->normal.X << " " << (*v)->normal.Y << " " << (*v)->normal.Z;
 	}
 
-	stream << endl << "CELL_DATA " << facets.size() << endl;
+	stream << endl << "CELL_DATA " << facets.size();
 
-	stream << endl << "SCALARS entity int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS entity int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<OutputFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
-		stream << (*f)->entity << endl;
+		stream << (*f)->entity;
 	}
 
-	stream << endl << "SCALARS disclination_barrier int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS disclination_barrier int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<OutputFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
-		stream << (*f)->testFlag(OUTPUT_FACET_IS_DISCLINATION_BARRIER) << endl;
+		stream << (*f)->testFlag(OUTPUT_FACET_IS_DISCLINATION_BARRIER);
 	}
 }
 
@@ -361,7 +361,7 @@ void OutputMesh::writeToVTKFile(ostream& stream, const string& commentHeaderLine
 void DXAInterfaceMesh::writeOpenMeshEdges(ostream& stream, bool skipDeadEdges) const
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Dumping open mesh edges to output file." << endl;
+	LOG_INFO() << "Dumping open mesh edges to output file.";
 #endif
 
 	size_t numEdges = 0;
@@ -373,32 +373,32 @@ void DXAInterfaceMesh::writeOpenMeshEdges(ostream& stream, bool skipDeadEdges) c
 			}
 	}
 
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "# Interface mesh" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << nodes.size() << " float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "# Interface mesh";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS " << nodes.size() << " float";
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		const Point3& pos = (*n)->pos;
-		stream << pos.X << " " << pos.Y << " " << pos.Z << endl;
+		stream << pos.X << " " << pos.Y << " " << pos.Z;
 	}
-	stream << endl << "CELLS " << numEdges << " " << numEdges*3 << endl;
+	stream << endl << "CELLS " << numEdges << " " << numEdges*3;
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if((*n)->edges[i].facet == NULL) {
 				if((*n)->edges[i].oppositeEdge->facet != NULL || skipDeadEdges == false)
-					stream << "2 " << (*n)->index << " " << (*n)->edgeNeighbor(i)->index << endl;
+					stream << "2 " << (*n)->index << " " << (*n)->edgeNeighbor(i)->index;
 			}
 		}
 	}
 
-	stream << endl << "CELL_TYPES " << numEdges << endl;
+	stream << endl << "CELL_TYPES " << numEdges;
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "3" << endl;
+		stream << "3";
 
-	stream << endl << "CELL_DATA " << numEdges << endl;
+	stream << endl << "CELL_DATA " << numEdges;
 
-	stream << endl << "VECTORS edge_vector float" << endl;
+	stream << endl << "VECTORS edge_vector float";
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if((*n)->edges[i].facet != NULL) continue;
@@ -407,12 +407,12 @@ void DXAInterfaceMesh::writeOpenMeshEdges(ostream& stream, bool skipDeadEdges) c
 				if(fabs(edgeVector.X) < FLOATTYPE_EPSILON) edgeVector.X = 0;
 				if(fabs(edgeVector.Y) < FLOATTYPE_EPSILON) edgeVector.Y = 0;
 				if(fabs(edgeVector.Z) < FLOATTYPE_EPSILON) edgeVector.Z = 0;
-				stream << edgeVector.X << " " << edgeVector.Y << " " << edgeVector.Z << endl;
+				stream << edgeVector.X << " " << edgeVector.Y << " " << edgeVector.Z;
 			}
 		}
 	}
 
-	stream << endl << "VECTORS lattice_vector float" << endl;
+	stream << endl << "VECTORS lattice_vector float";
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if((*n)->edges[i].facet != NULL) continue;
@@ -421,28 +421,28 @@ void DXAInterfaceMesh::writeOpenMeshEdges(ostream& stream, bool skipDeadEdges) c
 				if(fabs(latticeVector.X) < FLOATTYPE_EPSILON) latticeVector.X = 0;
 				if(fabs(latticeVector.Y) < FLOATTYPE_EPSILON) latticeVector.Y = 0;
 				if(fabs(latticeVector.Z) < FLOATTYPE_EPSILON) latticeVector.Z = 0;
-				stream << latticeVector.X << " " << latticeVector.Y << " " << latticeVector.Z << endl;
+				stream << latticeVector.X << " " << latticeVector.Y << " " << latticeVector.Z;
 			}
 		}
 	}
 
-	stream << endl << "SCALARS node1 int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS node1 int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if((*n)->edges[i].facet != NULL) continue;
 			if((*n)->edges[i].oppositeEdge->facet != NULL || skipDeadEdges == false)
-				stream << (*n)->tag << endl;
+				stream << (*n)->tag;
 		}
 	}
 
-	stream << endl << "SCALARS node2 int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS node2 int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if((*n)->edges[i].facet != NULL) continue;
 			if((*n)->edges[i].oppositeEdge->facet != NULL || skipDeadEdges == false)
-				stream << (*n)->edges[i].node2()->tag << endl;
+				stream << (*n)->edges[i].node2()->tag;
 		}
 	}
 }
@@ -453,29 +453,29 @@ void DXAInterfaceMesh::writeOpenMeshEdges(ostream& stream, bool skipDeadEdges) c
 void DXAStackingFaults::writeStackingFaults(ostream& stream) const
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Writing stacking faults to output file." << endl;
+	LOG_INFO() << "Writing stacking faults to output file.";
 #endif
 
 	stackingFaultOutputMesh.writeToVTKFile(stream, "Stacking faults");
 
 	// Append the ISF information to the file.
-	stream << endl << "SCALARS intrinsic_stacking_fault float" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS intrinsic_stacking_fault float";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<OutputFacet*>::const_iterator f = stackingFaultOutputMesh.getFacets().begin(); f != stackingFaultOutputMesh.getFacets().end(); ++f) {
 		DISLOCATIONS_ASSERT((*f)->entity >= 0 && (*f)->entity < stackingFaults.size());
 		StackingFault* sf = stackingFaults[(*f)->entity];
 		DISLOCATIONS_ASSERT(sf->numHCPAtoms > 0);
-		stream << ((FloatType)sf->numISFAtoms / (FloatType)sf->numHCPAtoms) << endl;
+		stream << ((FloatType)sf->numISFAtoms / (FloatType)sf->numHCPAtoms);
 	}
 
 	// Append the TB information to the file.
-	stream << endl << "SCALARS twin_boundary float" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS twin_boundary float";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<OutputFacet*>::const_iterator f = stackingFaultOutputMesh.getFacets().begin(); f != stackingFaultOutputMesh.getFacets().end(); ++f) {
 		DISLOCATIONS_ASSERT((*f)->entity >= 0 && (*f)->entity < stackingFaults.size());
 		StackingFault* sf = stackingFaults[(*f)->entity];
 		DISLOCATIONS_ASSERT(sf->numHCPAtoms > 0);
-		stream << ((FloatType)sf->numTBAtoms / (FloatType)sf->numHCPAtoms) << endl;
+		stream << ((FloatType)sf->numTBAtoms / (FloatType)sf->numHCPAtoms);
 	}
 }
 
@@ -485,7 +485,7 @@ void DXAStackingFaults::writeStackingFaults(ostream& stream) const
 void DXAStackingFaults::writeStackingFaultContours(ostream& stream) const
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Writing stacking fault contours to output file." << endl;
+	LOG_INFO() << "Writing stacking fault contours to output file.";
 #endif
 
 	// Count contour edges.
@@ -496,44 +496,44 @@ void DXAStackingFaults::writeStackingFaultContours(ostream& stream) const
 		}
 	}
 
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "# HCP atom planes" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << (numEdges*2) << " float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "# HCP atom planes";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS " << (numEdges*2) << " float";
 	for(vector<StackingFault*>::const_iterator sf = stackingFaults.begin(); sf != stackingFaults.end(); ++sf) {
 		for(vector<StackingFaultContour>::const_iterator contour = (*sf)->contours.begin(); contour != (*sf)->contours.end(); ++contour) {
 			for(vector<MeshEdge*>::const_iterator edge = contour->edges.begin(); edge != contour->edges.end(); ++edge) {
-				stream << (*edge)->node1->pos.X << " "<< (*edge)->node1->pos.Y << " "<< (*edge)->node1->pos.Z << endl;
-				stream << (*edge)->node2()->pos.X << " "<< (*edge)->node2()->pos.Y << " "<< (*edge)->node2()->pos.Z << endl;
+				stream << (*edge)->node1->pos.X << " "<< (*edge)->node1->pos.Y << " "<< (*edge)->node1->pos.Z;
+				stream << (*edge)->node2()->pos.X << " "<< (*edge)->node2()->pos.Y << " "<< (*edge)->node2()->pos.Z;
 			}
 		}
 	}
-	stream << endl << "CELLS " << numEdges << " " << (numEdges*3) << endl;
+	stream << endl << "CELLS " << numEdges << " " << (numEdges*3);
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "2 " << (i*2) << " " << (i*2+1) << endl;
+		stream << "2 " << (i*2) << " " << (i*2+1);
 
-	stream << endl << "CELL_TYPES " << numEdges << endl;
+	stream << endl << "CELL_TYPES " << numEdges;
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "3" << endl;
+		stream << "3";
 
-	stream << endl << "CELL_DATA " << numEdges << endl;
-	stream << endl << "SCALARS stacking_fault int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "CELL_DATA " << numEdges;
+	stream << endl << "SCALARS stacking_fault int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<StackingFault*>::const_iterator sf = stackingFaults.begin(); sf != stackingFaults.end(); ++sf) {
 		for(vector<StackingFaultContour>::const_iterator contour = (*sf)->contours.begin(); contour != (*sf)->contours.end(); ++contour) {
 			for(vector<MeshEdge*>::const_iterator edge = contour->edges.begin(); edge != contour->edges.end(); ++edge) {
-				stream << (*sf)->index << endl;
+				stream << (*sf)->index;
 			}
 		}
 	}
 
-	stream << endl << "SCALARS contour_position float 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS contour_position float 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<StackingFault*>::const_iterator sf = stackingFaults.begin(); sf != stackingFaults.end(); ++sf) {
 		for(vector<StackingFaultContour>::const_iterator contour = (*sf)->contours.begin(); contour != (*sf)->contours.end(); ++contour) {
 			for(size_t e = 0; e < contour->edges.size(); e++)
-				stream << (FloatType)e/contour->edges.size() << endl;
+				stream << (FloatType)e/contour->edges.size();
 		}
 	}
 }
@@ -544,7 +544,7 @@ void DXAStackingFaults::writeStackingFaultContours(ostream& stream) const
 void DXAStackingFaults::writeStackingFaultPolylines(ostream& stream) const
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Writing stacking fault polylines to output file." << endl;
+	LOG_INFO() << "Writing stacking fault polylines to output file.";
 #endif
 
 	// Count contour edges.
@@ -557,40 +557,40 @@ void DXAStackingFaults::writeStackingFaultPolylines(ostream& stream) const
 		}
 	}
 
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "# HCP atom planes" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << numPoints << " float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "# HCP atom planes";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS " << numPoints << " float";
 	for(vector<StackingFault*>::const_iterator sf = stackingFaults.begin(); sf != stackingFaults.end(); ++sf) {
 		for(vector<StackingFaultContour>::const_iterator contour = (*sf)->contours.begin(); contour != (*sf)->contours.end(); ++contour) {
 			for(vector<Point3>::const_iterator p = contour->polyline.begin(); p != contour->polyline.end(); ++p) {
-				stream << p->X << " "<< p->Y << " "<< p->Z << endl;
+				stream << p->X << " "<< p->Y << " "<< p->Z;
 			}
 		}
 	}
-	stream << endl << "CELLS " << numContours << " " << (numPoints+numContours) << endl;
+	stream << endl << "CELLS " << numContours << " " << (numPoints+numContours);
 	size_t index = 0;
 	for(vector<StackingFault*>::const_iterator sf = stackingFaults.begin(); sf != stackingFaults.end(); ++sf) {
 		for(vector<StackingFaultContour>::const_iterator contour = (*sf)->contours.begin(); contour != (*sf)->contours.end(); ++contour) {
 			stream << contour->polyline.size();
 			for(size_t i = 0; i < contour->polyline.size(); i++) {
 				stream << " " << index++;
-				stream << endl;
+				stream;
 			}
 		}
 	}
 
-	stream << endl << "CELL_TYPES " << numContours << endl;
+	stream << endl << "CELL_TYPES " << numContours;
 	for(size_t i = 0; i < numContours; i++)
-		stream << "7" << endl;	// Polyline
+		stream << "7";	// Polyline
 
-	stream << endl << "CELL_DATA " << numContours << endl;
-	stream << endl << "SCALARS stacking_fault int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "CELL_DATA " << numContours;
+	stream << endl << "SCALARS stacking_fault int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<StackingFault*>::const_iterator sf = stackingFaults.begin(); sf != stackingFaults.end(); ++sf) {
 		for(vector<StackingFaultContour>::const_iterator contour = (*sf)->contours.begin(); contour != (*sf)->contours.end(); ++contour) {
-			stream << (*sf)->index << endl;
+			stream << (*sf)->index;
 		}	}
 }
 
@@ -599,11 +599,11 @@ void DXAStackingFaults::writeStackingFaultPolylines(ostream& stream) const
 ******************************************************************************/
 void BurgersCircuit::writeToFile(ostream& stream)
 {
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "# Burgers circuit" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << edgeCount << " float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "# Burgers circuit";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS " << edgeCount << " float";
 	MeshEdge* edge = firstEdge;
 	do {
 		Point3 vizpos = edge->node1->pos;
@@ -615,26 +615,26 @@ void BurgersCircuit::writeToFile(ostream& stream)
 			Vector3 normal = CrossProduct(edge->oppositeEdge->facet->vertex(2)->pos - edge->oppositeEdge->facet->vertex(0)->pos, edge->oppositeEdge->facet->vertex(1)->pos - edge->oppositeEdge->facet->vertex(0)->pos);
 			vizpos += NormalizeSafely(normal) * 0.05;
 		}
-		stream << vizpos.X << " " << vizpos.Y << " " << vizpos.Z << endl;
+		stream << vizpos.X << " " << vizpos.Y << " " << vizpos.Z;
 		edge = edge->nextEdge;
 	}
 	while(edge != firstEdge);
-	stream << endl << "CELLS " << (edgeCount) << " " << (edgeCount*3) << endl;
+	stream << endl << "CELLS " << (edgeCount) << " " << (edgeCount*3);
 	for(int i=0; i<edgeCount; i++)
-		stream << "2 " << i << " " << ((i+1)%edgeCount) << endl;
-	stream << endl;
-	stream << "CELL_TYPES " << edgeCount << endl;
+		stream << "2 " << i << " " << ((i+1)%edgeCount);
+	stream;
+	stream << "CELL_TYPES " << edgeCount;
 	for(int i=0; i<edgeCount; i++)
-		stream << "3" << endl;
+		stream << "3";
 
-	stream << endl << "CELL_DATA " << (edgeCount) << endl;
+	stream << endl << "CELL_DATA " << (edgeCount);
 
-	stream << endl << "VECTORS lattice_vector float" << endl;
+	stream << endl << "VECTORS lattice_vector float";
 	edge = firstEdge;
 	do {
 		for(int c = 0; c < 3; c++)
 			stream << edge->latticeVector[c] << " ";
-		stream << endl;
+		stream;
 		edge = edge->nextEdge;
 	}
 	while(edge != firstEdge);
@@ -645,11 +645,11 @@ void BurgersCircuit::writeToFile(ostream& stream)
 ******************************************************************************/
 void BurgersCircuit::writeCapToFile(ostream& stream)
 {
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "# Burgers circuit" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << primarySegmentCap.size() << " float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "# Burgers circuit";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS " << primarySegmentCap.size() << " float";
 	for(vector<MeshEdge*>::const_iterator i1 = primarySegmentCap.begin(); i1 != primarySegmentCap.end(); ++i1) {
 		MeshEdge* edge = *i1;
 		Point3 vizpos = edge->node1->pos;
@@ -661,15 +661,15 @@ void BurgersCircuit::writeCapToFile(ostream& stream)
 			Vector3 normal = CrossProduct(edge->oppositeEdge->facet->vertex(2)->pos - edge->oppositeEdge->facet->vertex(0)->pos, edge->oppositeEdge->facet->vertex(1)->pos - edge->oppositeEdge->facet->vertex(0)->pos);
 			vizpos += NormalizeSafely(normal) * 0.05;
 		}
-		stream << vizpos.X << " " << vizpos.Y << " " << vizpos.Z << endl;
+		stream << vizpos.X << " " << vizpos.Y << " " << vizpos.Z;
 	}
-	stream << endl << "CELLS " << (primarySegmentCap.size()) << " " << (primarySegmentCap.size()*3) << endl;
+	stream << endl << "CELLS " << (primarySegmentCap.size()) << " " << (primarySegmentCap.size()*3);
 	for(int i=0; i<primarySegmentCap.size(); i++)
-		stream << "2 " << i << " " << ((i+1)%primarySegmentCap.size()) << endl;
-	stream << endl;
-	stream << "CELL_TYPES " << primarySegmentCap.size() << endl;
+		stream << "2 " << i << " " << ((i+1)%primarySegmentCap.size());
+	stream;
+	stream << "CELL_TYPES " << primarySegmentCap.size();
 	for(int i=0; i<primarySegmentCap.size(); i++)
-	stream << "3" << endl;
+	stream << "3";
 }
 
 /******************************************************************************
@@ -677,33 +677,33 @@ void BurgersCircuit::writeCapToFile(ostream& stream)
 ******************************************************************************/
 void StackingFaultContour::writeToFile(ostream& stream) const
 {
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "# Stacking fault contour" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << (edges.size()*2) << " float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "# Stacking fault contour";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS " << (edges.size()*2) << " float";
 	for(vector<MeshEdge*>::const_iterator i = edges.begin(); i != edges.end(); ++i) {
 		MeshEdge* edge = *i;
-		stream << edge->node1->pos.X << " " << edge->node1->pos.Y << " " << edge->node1->pos.Z << endl;
-		stream << edge->node2()->pos.X << " " << edge->node2()->pos.Y << " " << edge->node2()->pos.Z << endl;
+		stream << edge->node1->pos.X << " " << edge->node1->pos.Y << " " << edge->node1->pos.Z;
+		stream << edge->node2()->pos.X << " " << edge->node2()->pos.Y << " " << edge->node2()->pos.Z;
 	}
-	stream << endl << "CELLS " << edges.size() << " " << (edges.size()*3) << endl;
+	stream << endl << "CELLS " << edges.size() << " " << (edges.size()*3);
 	for(int i=0; i<edges.size(); i++)
-		stream << "2 " << (i*2) << " " << (i*2+1) << endl;
-	stream << endl;
-	stream << "CELL_TYPES " << edges.size() << endl;
+		stream << "2 " << (i*2) << " " << (i*2+1);
+	stream;
+	stream << "CELL_TYPES " << edges.size();
 	for(int i=0; i<edges.size(); i++)
-		stream << "3 " << endl;
+		stream << "3 ";
 
-	stream << endl << "CELL_DATA " << edges.size() << endl;
+	stream << endl << "CELL_DATA " << edges.size();
 
-	stream << endl << "SCALARS edge_index int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS edge_index int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(int i=0; i<edges.size(); i++)
-		stream << i << endl;
+		stream << i;
 
-	stream << endl << "SCALARS facet_det float 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS facet_det float 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<MeshEdge*>::const_iterator i = edges.begin(); i != edges.end(); ++i) {
 		MeshEdge* edge = *i;
 		MeshFacet* facet1 = edge->facet;
@@ -714,20 +714,20 @@ void StackingFaultContour::writeToFile(ostream& stream) const
 			MeshNode* node1 = node1edge->node2();
 			MeshNode* node2 = node2edge->node2();
 			FloatType facet_det = Matrix3(edge->latticeVector, node1edge->latticeVector, node2edge->latticeVector).determinant();
-			stream << facet_det << endl;
+			stream << facet_det;
 		}
-		else stream << "0" << endl;
+		else stream << "0";
 	}
 
-	stream << endl << "SCALARS node_index int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS node_index int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<MeshEdge*>::const_iterator i = edges.begin(); i != edges.end(); ++i)
-		stream << (*i)->node1->tag << endl;
+		stream << (*i)->node1->tag;
 
-	stream << endl << "SCALARS isSFEdge int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS isSFEdge int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<MeshEdge*>::const_iterator i = edges.begin(); i != edges.end(); ++i)
-		stream << (*i)->isSFEdge << endl;
+		stream << (*i)->isSFEdge;
 }
 
 /******************************************************************************
@@ -735,21 +735,21 @@ void StackingFaultContour::writeToFile(ostream& stream) const
 ******************************************************************************/
 void StackingFaultContour::writePolyline(ostream& stream) const
 {
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "# Stacking fault contour" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << polyline.size() << " float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "# Stacking fault contour";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS " << polyline.size() << " float";
 	for(vector<Point3>::const_iterator i = polyline.begin(); i != polyline.end(); ++i) {
-		stream << i->X << " " << i->Y << " " << i->Z << endl;
+		stream << i->X << " " << i->Y << " " << i->Z;
 	}
-	stream << endl << "CELLS " << 1 << " " << (polyline.size()+1) << endl;
+	stream << endl << "CELLS " << 1 << " " << (polyline.size()+1);
 	stream << polyline.size();
 	for(int i=0; i<polyline.size(); i++)
-		stream << " " << i << endl;
-	stream << endl;
-	stream << "CELL_TYPES " << 1 << endl;
-	stream << "7" << endl;	// Polyline
+		stream << " " << i;
+	stream;
+	stream << "CELL_TYPES " << 1;
+	stream << "7";	// Polyline
 }
 
 /******************************************************************************
@@ -764,46 +764,46 @@ void StackingFault::writeToFile(ostream& stream) const
 		numPoints += c->edges.size() * 2;
 	}
 
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "# Stacking fault" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << numPoints << " float" << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "# Stacking fault";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS " << numPoints << " float";
 	for(vector<StackingFaultContour>::const_iterator c = contours.begin(); c != contours.end(); ++c) {
 		for(vector<MeshEdge*>::const_iterator i = c->edges.begin(); i != c->edges.end(); ++i) {
 			MeshEdge* edge = *i;
 			if(edge->node1->outputVertex == NULL)
-				stream << edge->node1->pos.X << " " << edge->node1->pos.Y << " " << edge->node1->pos.Z << endl;
+				stream << edge->node1->pos.X << " " << edge->node1->pos.Y << " " << edge->node1->pos.Z;
 			else
-				stream << edge->node1->outputVertex->pos.X << " " << edge->node1->outputVertex->pos.Y << " " << edge->node1->outputVertex->pos.Z << endl;
+				stream << edge->node1->outputVertex->pos.X << " " << edge->node1->outputVertex->pos.Y << " " << edge->node1->outputVertex->pos.Z;
 			if(edge->node2()->outputVertex == NULL)
-				stream << edge->node2()->pos.X << " " << edge->node2()->pos.Y << " " << edge->node2()->pos.Z << endl;
+				stream << edge->node2()->pos.X << " " << edge->node2()->pos.Y << " " << edge->node2()->pos.Z;
 			else
-				stream << edge->node2()->outputVertex->pos.X << " " << edge->node2()->outputVertex->pos.Y << " " << edge->node2()->outputVertex->pos.Z << endl;
+				stream << edge->node2()->outputVertex->pos.X << " " << edge->node2()->outputVertex->pos.Y << " " << edge->node2()->outputVertex->pos.Z;
 		}
 	}
-	stream << endl << "CELLS " << numEdges << " " << (numEdges*3) << endl;
+	stream << endl << "CELLS " << numEdges << " " << (numEdges*3);
 	for(int i=0; i<numEdges; i++)
-		stream << "2 " << (i*2) << " " << (i*2+1) << endl;
-	stream << endl;
-	stream << "CELL_TYPES " << numEdges << endl;
+		stream << "2 " << (i*2) << " " << (i*2+1);
+	stream;
+	stream << "CELL_TYPES " << numEdges;
 	for(int i=0; i<numEdges; i++)
-		stream << "3" << endl;
+		stream << "3";
 
-	stream << endl << "CELL_DATA " << numEdges << endl;
+	stream << endl << "CELL_DATA " << numEdges;
 
-	stream << endl << "SCALARS contour int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS contour int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<StackingFaultContour>::const_iterator c = contours.begin(); c != contours.end(); ++c) {
 		for(int i=0; i<c->edges.size(); i++)
-			stream << (c-contours.begin()) << endl;
+			stream << (c-contours.begin());
 	}
 
-	stream << endl << "SCALARS edge_index int 1" << endl;
-	stream << endl << "LOOKUP_TABLE default" << endl;
+	stream << endl << "SCALARS edge_index int 1";
+	stream << endl << "LOOKUP_TABLE default";
 	for(vector<StackingFaultContour>::const_iterator c = contours.begin(); c != contours.end(); ++c) {
 		for(int i=0; i<c->edges.size(); i++)
-			stream << i << endl;	}
+			stream << i;	}
 }
 
 /******************************************************************************
@@ -811,15 +811,15 @@ void StackingFault::writeToFile(ostream& stream) const
 ******************************************************************************/
 void MeshEdge::writeToFile(ostream& stream)
 {
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "# Mesh edge" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS 2 float" << endl;
-	stream << node1->pos.X << " " << node1->pos.Y << " " << node1->pos.Z << endl;
-	stream << node2()->pos.X << " " << node2()->pos.Y << " " << node2()->pos.Z << endl;
-	stream << endl << "CELLS 1 3" << endl;
-	stream << endl << "2 0 1" << endl;
-	stream << endl;	stream << "CELL_TYPES 1" << endl;
-	stream << "3 " << endl;
+	stream << "# vtk DataFile Version 3.0";
+	stream << "# Mesh edge";
+	stream << "ASCII";
+	stream << "DATASET UNSTRUCTURED_GRID";
+	stream << "POINTS 2 float";
+	stream << node1->pos.X << " " << node1->pos.Y << " " << node1->pos.Z;
+	stream << node2()->pos.X << " " << node2()->pos.Y << " " << node2()->pos.Z;
+	stream << endl << "CELLS 1 3";
+	stream << endl << "2 0 1";
+	stream;	stream << "CELL_TYPES 1";
+	stream << "3 ";
 }

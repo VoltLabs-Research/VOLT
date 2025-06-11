@@ -1,6 +1,7 @@
 #include "parser/ParserStream.hpp"
 #include "utils/Timer.hpp"
 #include "core/StackingFaults.hpp"
+#include "logger/Logger.hpp"
 #include "engine/Config.hpp"
 #include "cxxopts.hpp"
 
@@ -75,8 +76,12 @@ static OpenDXA::Config parseOptions(int argc, char* argv[]){
 
 int main(int argc, char* argv[]){
 	try{
+		auto logger = std::make_shared<Logger>("Global");
+		logger->setLevel(LogLevel::INFO);
+		LoggerManager::initialize(logger);
+
 		OpenDXA::Config config = parseOptions(argc, argv);
-		DXAStackingFaults searcher(std::cerr, std::cerr);
+		DXAStackingFaults searcher;
 		searcher.compute(config);
 		
 	}catch(std::exception &exception){

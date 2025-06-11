@@ -80,7 +80,7 @@ struct BaseAtom{
 
 	inline void addNeighbor(BaseAtom* neighbor) {
 		if(hasNeighbor(neighbor)) {
-			cout << "Atom " << tag << " has already a neighbor: " << neighbor->tag << endl;
+			cout << "Atom " << tag << " has already a neighbor: " << neighbor->tag;
 		}
 		DISLOCATIONS_ASSERT_GLOBAL(hasNeighbor(neighbor) == false);
 		DISLOCATIONS_ASSERT_MSG_GLOBAL(numNeighbors < MAX_ATOM_NEIGHBORS, "addNeighbor()", "Maximum number of nearest neighbors per atom was exceeded.");
