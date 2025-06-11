@@ -3,12 +3,12 @@
 
 #include "../Includes.hpp"
 #include "../utils/linalg/LinAlg.hpp"
-#include "../engine/DislocationExtractionAlgorithm.hpp"
+#include "../engine/AnalysisEnvironment.hpp"
 
 template<typename Particle>
 class NeighborListBuilder{
 public:
-	void initialize(const DXABase& cell, FloatType cutoff){
+	void initialize(const AnalysisEnvironment& cell, FloatType cutoff){
 		this->cutoff = cutoff;
 		this->cutoffSquared = cutoff*cutoff;
 		simulationCell = cell.simulationCell;

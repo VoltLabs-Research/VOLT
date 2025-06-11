@@ -5,9 +5,9 @@
 #include "../Settings.hpp"
 #include "../parser/ParserStream.hpp"
 
-class DXABase{
+class AnalysisEnvironment{
 public:
-	DXABase(ostream& msgLogger, ostream& verboseLogger);
+	AnalysisEnvironment(ostream& msgLogger, ostream& verboseLogger);
 	static void raiseError(const char* format, ...);
 
 	void setPBC(bool pbcX, bool pbcY, bool pbcZ) { pbc[0] = pbcX; pbc[1] = pbcY; pbc[2] = pbcZ; }

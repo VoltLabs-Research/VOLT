@@ -37,7 +37,7 @@ add_library(opendxapy
     src/geometry/Smoothing.cpp
     src/geometry/Mesh.cpp
     
-    src/engine/DislocationExtractionAlgorithm.cpp
+    src/engine/AnalysisEnvironment.cpp
     src/engine/SimulationCell.cpp
     src/engine/AnalysisSummary.cpp
     

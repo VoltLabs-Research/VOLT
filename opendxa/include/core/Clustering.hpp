@@ -2,7 +2,7 @@
 #define __DXA_CLUSTERING_H
 
 #include "../Includes.hpp"
-#include "../engine/DislocationExtractionAlgorithm.hpp"
+#include "../engine/AnalysisEnvironment.hpp"
 #include "../utils/MemoryPool.hpp"
 #include "NeighborListBuilder.hpp"
 #include "../structures/Structures.hpp"
@@ -11,7 +11,7 @@ enum ParserFileType{
 	PARSER_FILETYPE_LAMMPS,
 };
 
-class DXAClustering : public DXABase{
+class DXAClustering : public AnalysisEnvironment{
 public:
 	DXAClustering(ostream& msgLogger, ostream& verboseLogger);
 	~DXAClustering() { cleanup(); }

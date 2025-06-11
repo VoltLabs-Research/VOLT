@@ -1152,7 +1152,7 @@ void DXATracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCircuit* out
 	backwardCircuit->createPrimaryCap();
 }
 
-void BurgersCircuit::updateLatticeToWorldTransformation(const DXABase& simCell) const
+void BurgersCircuit::updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell) const
 {
 	MeshEdge* e = firstEdge;
 	do {
@@ -1162,7 +1162,7 @@ void BurgersCircuit::updateLatticeToWorldTransformation(const DXABase& simCell) 
 	while(e != firstEdge);
 }
 
-void BurgersCircuit::updateLatticeToWorldTransformation(const DXABase& simCell, MeshNode* node) const
+void BurgersCircuit::updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell, MeshNode* node) const
 {
 	DISLOCATIONS_ASSERT(segment != NULL);
 	for(int nindex = 0; nindex < node->numNeighbors; nindex++) {

@@ -1,6 +1,6 @@
-#include "engine/DislocationExtractionAlgorithm.hpp"
+#include "engine/AnalysisEnvironment.hpp"
 
-Vector3 DXABase::wrapVector(const Vector3& v) const{
+Vector3 AnalysisEnvironment::wrapVector(const Vector3& v) const{
 	Vector3 result = v;
 	Vector3 rv = reciprocalSimulationCell * v;
 	while(rv.X > +0.5 && pbc[0]) { rv.X -= 1.0; result -= simulationCell.column(0); }
@@ -12,7 +12,7 @@ Vector3 DXABase::wrapVector(const Vector3& v) const{
 	return result;
 }
 
-Vector3 DXABase::wrapReducedVector(Vector3 rv) const{
+Vector3 AnalysisEnvironment::wrapReducedVector(Vector3 rv) const{
 	while(rv.X > +0.5 && pbc[0]) { rv.X -= 1.0; }
 	while(rv.X < -0.5 && pbc[0]) { rv.X += 1.0; }
 	while(rv.Y > +0.5 && pbc[1]) { rv.Y -= 1.0; }
@@ -22,7 +22,7 @@ Vector3 DXABase::wrapReducedVector(Vector3 rv) const{
 	return rv;
 }
 
-bool DXABase::isWrappedVector(const Vector3& v) const{
+bool AnalysisEnvironment::isWrappedVector(const Vector3& v) const{
 	Vector3 rv = reciprocalSimulationCell * v;
 	if(pbc[0] && fabs(rv.X) > 0.5) return true;
 	if(pbc[1] && fabs(rv.Y) > 0.5) return true;
@@ -30,19 +30,19 @@ bool DXABase::isWrappedVector(const Vector3& v) const{
 	return false;
 }
 
-bool DXABase::isReducedWrappedVector(const Vector3& v) const{
+bool AnalysisEnvironment::isReducedWrappedVector(const Vector3& v) const{
 	if(pbc[0] && fabs(v.X) > 0.5) return true;
 	if(pbc[1] && fabs(v.Y) > 0.5) return true;
 	if(pbc[2] && fabs(v.Z) > 0.5) return true;
 	return false;
 }
 
-Vector3I DXABase::periodicImage(const Point3& p) const{
+Vector3I AnalysisEnvironment::periodicImage(const Point3& p) const{
 	Vector3 rp = reciprocalSimulationCell * (p - simulationCellOrigin);
 	return Vector3I(pbc[0] ? (int)floor(rp.X) : 0, pbc[1] ? (int)floor(rp.Y) : 0, pbc[2] ? (int)floor(rp.Z) : 0);
 }
 
-Point3 DXABase::wrapPoint(const Point3& p) const{
+Point3 AnalysisEnvironment::wrapPoint(const Point3& p) const{
 	Point3 result = p;
 	// Transform point to reduced cell coordinates.
 	Vector3 rp = reciprocalSimulationCell * (p - simulationCellOrigin);
@@ -55,7 +55,7 @@ Point3 DXABase::wrapPoint(const Point3& p) const{
 	return result;
 }
 
-Point3 DXABase::wrapReducedPoint(Point3 p) const{
+Point3 AnalysisEnvironment::wrapReducedPoint(Point3 p) const{
 	while(p.X >= +1.0 && pbc[0]) { p.X -= 1.0; }
 	while(p.X <  0.0 && pbc[0]) { p.X += 1.0; }
 	while(p.Y >= +1.0 && pbc[1]) { p.Y -= 1.0; }
@@ -65,7 +65,7 @@ Point3 DXABase::wrapReducedPoint(Point3 p) const{
 	return p;
 }
 
-bool DXABase::readSimulationCell(ParserStream& stream){
+bool AnalysisEnvironment::readSimulationCell(ParserStream& stream){
 	if(stream.line().find("ITEM: TIMESTEP") != string::npos) {
 		if(sscanf(stream.readline().c_str(), "%i", &timestep) != 1)
 			raiseError("File parsing error. Invalid timestep number (line %d): %s", stream.lineNumber(), stream.line().c_str());
@@ -146,7 +146,7 @@ bool DXABase::readSimulationCell(ParserStream& stream){
 	return false;
 }
 
-void DXABase::writeSimulationCellHeaderLAMMPS(ostream& stream){
+void AnalysisEnvironment::writeSimulationCellHeaderLAMMPS(ostream& stream){
 	stream << "ITEM: TIMESTEP" << endl;
 	stream << timestep << endl;
 	if(simulationCell(0,1) == 0.0 && simulationCell(0,2) == 0.0 && simulationCell(1,2) == 0.0) {
@@ -185,7 +185,7 @@ void DXABase::writeSimulationCellHeaderLAMMPS(ostream& stream){
 	}
 }
 
-void DXABase::setupSimulationCell(FloatType cutoffRadius){
+void AnalysisEnvironment::setupSimulationCell(FloatType cutoffRadius){
 	reciprocalSimulationCell = simulationCell.inverse();
 	DISLOCATIONS_ASSERT(cutoffRadius > 0.0);
 

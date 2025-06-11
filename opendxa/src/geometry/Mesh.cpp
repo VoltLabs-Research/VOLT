@@ -84,7 +84,7 @@ static const Vector3 cubeCorners[8] = {
 		Vector3(1,1,1),
 };
 
-void OutputMesh::wrapMesh(const DXABase& cell, OutputMesh* capMesh){
+void OutputMesh::wrapMesh(const AnalysisEnvironment& cell, OutputMesh* capMesh){
 	if(cell.hasPeriodicBoundaries() == false) return;
 
 	// Convert all positions into reduced coordinates.
@@ -177,7 +177,7 @@ void OutputMesh::wrapMesh(const DXABase& cell, OutputMesh* capMesh){
 	}
 }
 
-void OutputMesh::splitEdge(OutputEdge* edge, const DXABase& cell, int dim){
+void OutputMesh::splitEdge(OutputEdge* edge, const AnalysisEnvironment& cell, int dim){
 	OutputVertex* vertex1 = edge->oppositeEdge->vertex2;
 	OutputVertex* vertex2 = edge->vertex2;
 	FloatType rv = vertex1->pos[dim];
@@ -344,7 +344,7 @@ public:
 		gluDeleteTess(tess);
 	}
 
-	void writeToFile(ostream& stream, const DXABase& cell) {
+	void writeToFile(ostream& stream, const AnalysisEnvironment& cell) {
 		size_t numPoints = 0;
 		for(vector< vector<Point3> >::const_iterator n = contours.begin(); n != contours.end(); ++n)
 			numPoints += n->size();
@@ -476,7 +476,7 @@ private:
 	vector< vector<Point3> > contours;
 };
 
-void OutputMesh::createCaps(const DXABase& cell, OutputMesh& capMesh, OutputVertex* cornerVertices[8]){
+void OutputMesh::createCaps(const AnalysisEnvironment& cell, OutputMesh& capMesh, OutputVertex* cornerVertices[8]){
 	CapTessellator tessellator(capMesh);
 
 	for(int dim1 = 0; dim1 < 3; dim1++) {
@@ -649,7 +649,7 @@ void OutputMesh::createCaps(const DXABase& cell, OutputMesh& capMesh, OutputVert
 	}
 }
 
-void OutputMesh::calculateNormals(const DXABase& cell){
+void OutputMesh::calculateNormals(const AnalysisEnvironment& cell){
 	for(vector<OutputVertex*>::const_iterator v = vertices.begin(); v != vertices.end(); ++v)
 		(*v)->normal = NULL_VECTOR;
 
@@ -666,7 +666,7 @@ void OutputMesh::calculateNormals(const DXABase& cell){
 		(*v)->normal = NormalizeSafely((*v)->normal);
 }
 
-bool OutputMesh::pointInPolyhedron(const Point3 p, const DXABase& cell) const{
+bool OutputMesh::pointInPolyhedron(const Point3 p, const AnalysisEnvironment& cell) const{
 	OutputVertex* closestVertex = NULL;
 	FloatType closestDistance2 = FLOATTYPE_MAX;
 	Vector3 closestNormal = NULL_VECTOR, closestVector = NULL_VECTOR;
@@ -785,7 +785,7 @@ bool OutputMesh::pointInPolyhedron(const Point3 p, const DXABase& cell) const{
 	return DotProduct(closestNormal, closestVector) > 0.0;
 }
 
-void OutputMesh::refineFacets(const DXABase& cell, FloatType maxRatio, FloatType maxEdgeLength){
+void OutputMesh::refineFacets(const AnalysisEnvironment& cell, FloatType maxRatio, FloatType maxEdgeLength){
 	FloatType maxRatioSquared = maxRatio * maxRatio;
 	if(maxRatio == FLOATTYPE_MAX) maxRatioSquared = FLOATTYPE_MAX;
 	FloatType maxEdgeLengthSquared = maxEdgeLength * maxEdgeLength;

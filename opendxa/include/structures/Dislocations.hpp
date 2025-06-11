@@ -33,10 +33,10 @@ struct BurgersCircuit{
 
 	inline LatticeVector burgersVector() const;
 
-	void updateLatticeToWorldTransformation(const DXABase& simCell) const;
-	void updateLatticeToWorldTransformation(const DXABase& simCell, MeshNode* node) const;
+	void updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell) const;
+	void updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell, MeshNode* node) const;
 
-	Point3 calculateCenter(const Point3& refPoint, const DXABase& simCell) const {
+	Point3 calculateCenter(const Point3& refPoint, const AnalysisEnvironment& simCell) const {
 		Vector3 center(NULL_VECTOR);
 		MeshEdge* edge = firstEdge;
 		do {
@@ -119,7 +119,7 @@ struct DislocationSegment
 		displacementCount = 0;
 	}
 
-	DislocationSegment(const LatticeVector& b, BurgersCircuit* forwardCircuit, BurgersCircuit* backwardCircuit, const Point3& refPoint, const DXABase& simCell) :
+	DislocationSegment(const LatticeVector& b, BurgersCircuit* forwardCircuit, BurgersCircuit* backwardCircuit, const Point3& refPoint, const AnalysisEnvironment& simCell) :
 		burgersVector(b), primarySegmentStart(0), primarySegmentEnd(2), replacedWith(NULL), V(NULL_MATRIX), W(NULL_MATRIX) {
 		circuits[0] = forwardCircuit;
 		circuits[1] = backwardCircuit;
@@ -150,7 +150,7 @@ struct DislocationSegment
 	BurgersCircuit* forwardCircuit() const { return circuits[0]; }
 	BurgersCircuit* backwardCircuit() const { return circuits[1]; }
 
-	void recordLinePoint(BurgersCircuit* circuit, bool isPrimarySegment, const DXABase& simCell) {
+	void recordLinePoint(BurgersCircuit* circuit, bool isPrimarySegment, const AnalysisEnvironment& simCell) {
 		DISLOCATIONS_ASSERT_GLOBAL(!line.empty());
 		if(circuit == forwardCircuit()) {
 			line.push_back(circuit->calculateCenter(line.back(), simCell));

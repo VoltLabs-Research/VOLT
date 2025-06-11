@@ -259,7 +259,7 @@ void DXATracing::writeDislocationsVTKFile(ostream& stream) const
 /******************************************************************************
 * Writes the simulation cell geometry to a visualization file.
 ******************************************************************************/
-void DXABase::writeSimulationCellFileVTK(ostream& stream) const
+void AnalysisEnvironment::writeSimulationCellFileVTK(ostream& stream) const
 {
 #if DISLOCATION_TRACE_OUTPUT >= 1
 	MsgLogger() << "Writing simulation cell to output file." << endl;

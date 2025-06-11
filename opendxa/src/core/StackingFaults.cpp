@@ -3,6 +3,99 @@
 
 #include <GL/glu.h>
 
+void DXAStackingFaults::compute(const OpenDXA::Config &config){
+	setCNACutoff((FloatType) config.cnaCutoff);
+	setPBC(config.pbcX, config.pbcY, config.pbcZ);
+	setMaximumBurgersCircuitSize(config.maxCircuitSize);
+	setMaximumExtendedBurgersCircuitSize(config.extendedCircuitSize);
+
+	std::ifstream inputFile(config.inputFile);
+	if(!inputFile){
+		throw std::runtime_error("Cannot open " + config.inputFile);
+	}
+
+	ParserStream parserStream(inputFile);
+	readAtomsFile(parserStream);
+
+	if(config.scaleFactors != Vector3{1, 1, 1}){
+		transformSimulationCell(Matrix3(config.scaleFactors.X, 0, 0, 0, config.scaleFactors.Y, 0, 0, 0, config.scaleFactors.Z));
+	}
+
+	wrapInputAtoms(config.atomOffset);
+
+	Timer fullTimer;
+	buildNearestNeighborLists();
+	performCNA();
+	orderCrystallineAtoms();
+	clusterAtoms();
+	createInterfaceMeshNodes();
+
+	if(!config.dumpSFPlanesFile.empty()) createStackingFaultEdges();
+	if(!config.dumpAtomsFile.empty()) writeAtomsDumpFile(*new std::ofstream(config.dumpAtomsFile));
+
+	createInterfaceMeshFacets();
+	validateInterfaceMesh();
+	findStackingFaultPlanes();
+	traceDislocationSegments();
+
+	if(!config.dumpMeshFile.empty()) writeInterfaceMeshFile(*new std::ofstream(config.dumpMeshFile));
+	if(!config.dumpSurfaceFile.empty()){
+		generateOutputMesh();
+		smoothOutputSurface(config.surfaceSmooth);
+		writeOutputMeshFile(*new std::ofstream(config.dumpSurfaceFile));
+	}
+
+	smoothDislocationSegments(config.lineSmooth, config.lineCoarsen);
+	finishStackingFaults(config.sfFlatten);
+	wrapDislocationSegments();
+
+	std::ofstream fout(config.outputFile);
+	if(!fout){
+		throw std::runtime_error("Cannot open " + config.outputFile);
+	}
+
+	writeDislocationsVTKFile(fout);
+
+	// Calculate scalar dislocation density and density tensor
+	// TODO: This may be optional, and in the future may be exported if specified.
+	double dislocationDensity = 0.0;
+	double dislocationDensityTensor[3][3] = { 0.0 };
+
+	const std::vector<DislocationSegment*>& segments = getSegments();
+	for(int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++){
+		DislocationSegment* segment = segments[segmentIndex];
+		const std::deque<Point3>& line = segment->line;
+		// line.front() line.back() (line.back() - line.front()) (diff)
+		for(std::deque<Point3>::const_iterator p1 = line.begin(), p2 = line.begin() + 1; p2 < line.end(); ++p1, ++p2){
+			Vector3 delta = (*p2) - (*p1);
+			dislocationDensity += Length(delta);
+			for(int i = 0; i < 3; i++){
+				for(int j = 0; j < 3; j++){
+					dislocationDensityTensor[i][j] += delta[i] * segment->burgersVectorWorld[j];
+				}
+			}
+		}
+	}
+
+	double volume = getSimulationCell().determinant();
+	dislocationDensity /= volume;
+	for(int i = 0; i < 3; i++){
+		for(int j = 0; j < 3; j++){
+			dislocationDensityTensor[i][j] /= volume;
+		}
+	}
+
+	std::cout << "Dislocation densitity: " << dislocationDensity << std::endl;
+	std::cout << "Dislocation density tensor: " << endl;
+	for(int i = 0; i < 3; i++){
+		std::cout << std::to_string(dislocationDensityTensor[i][0]) << " " << std::to_string(dislocationDensityTensor[i][1]) << " " << std::to_string(dislocationDensityTensor[i][2]) << " " << std::endl;
+	}
+
+	std::cerr << "Total time: " << fullTimer.elapsedTime() << " seconds." << std::endl;
+
+	cleanup();
+}
+
 bool DXAStackingFaults::createStackingFaultEdges(){
 #if DISLOCATION_TRACE_OUTPUT >= 1
 	MsgLogger() << "Creating stacking fault contour edges." << endl;

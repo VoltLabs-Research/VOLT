@@ -1,10 +1,10 @@
-#include "engine/DislocationExtractionAlgorithm.hpp"
+#include "engine/AnalysisEnvironment.hpp"
 #include "core/Clustering.hpp"
 #include "core/InterfaceMesh.hpp"
 #include "core/DislocationTracing.hpp"
 #include "core/StackingFaults.hpp"
 
-DXABase::DXABase(ostream& _msgLogger, ostream& _verboseLogger) :
+AnalysisEnvironment::AnalysisEnvironment(ostream& _msgLogger, ostream& _verboseLogger) :
 	msgLogger(&_msgLogger), verboseLogger(&_verboseLogger){
 	timestep = 0;
 	pbc[0] = pbc[1] = pbc[2] = true;
@@ -13,7 +13,7 @@ DXABase::DXABase(ostream& _msgLogger, ostream& _verboseLogger) :
 	processor = 0;
 }
 
-void DXABase::raiseError(const char* format, ...){
+void AnalysisEnvironment::raiseError(const char* format, ...){
 	va_list ap;
 	va_start(ap,format);
 	char buffer[4096];
@@ -24,7 +24,7 @@ void DXABase::raiseError(const char* format, ...){
 }
 
 DXAClustering::DXAClustering(ostream& msgLogger, ostream& verboseLogger)
-	: DXABase(msgLogger, verboseLogger){
+	: AnalysisEnvironment(msgLogger, verboseLogger){
 	cnaCutoff = 0;
 	numLocalInputAtoms = 0;
 	numClusters = 0;

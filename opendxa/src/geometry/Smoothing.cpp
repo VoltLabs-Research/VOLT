@@ -145,7 +145,7 @@ void DXAInterfaceMesh::finishOutputSurface(bool createCapSurface)
 /******************************************************************************
 * Smooths the output mesh for better visualization results.
 ******************************************************************************/
-void OutputMesh::smoothMesh(int smoothingLevel, const DXABase& cell)
+void OutputMesh::smoothMesh(int smoothingLevel, const AnalysisEnvironment& cell)
 {
 	// This is the implementation of the mesh smoothing algorithm:
 	//
@@ -169,7 +169,7 @@ void OutputMesh::smoothMesh(int smoothingLevel, const DXABase& cell)
 /******************************************************************************
 * Smooths the output mesh for better visualization results.
 ******************************************************************************/
-void OutputMesh::smoothMesh(FloatType prefactor, const DXABase& cell, bool projectToNormals)
+void OutputMesh::smoothMesh(FloatType prefactor, const AnalysisEnvironment& cell, bool projectToNormals)
 {
 	// Reset Laplacians
 	for(vector<OutputVertex*>::const_iterator v = vertices.begin(); v != vertices.end(); ++v) {

@@ -4,7 +4,7 @@
 #define __DXA_OUTPUT_MESH_H
 
 #include "../Includes.hpp"
-#include "../engine/DislocationExtractionAlgorithm.hpp"
+#include "../engine/AnalysisEnvironment.hpp"
 #include "../utils/MemoryPool.hpp"
 
 struct OutputVertex;
@@ -98,19 +98,19 @@ public:
 	OutputFacet* createFacet(OutputEdge* edges[3], int entity = 0);
 	OutputFacet* createFacetAndEdges(OutputVertex* vertices[3], int entity = 0);
 
-	void smoothMesh(int smoothingLevel, const DXABase& cell);
-	void smoothMesh(FloatType prefactor, const DXABase& cell, bool projectToNormals);
-	void wrapMesh(const DXABase& cell, OutputMesh* capMesh = NULL);
-	void calculateNormals(const DXABase& cell);
-	bool pointInPolyhedron(const Point3 p, const DXABase& cell) const;
-	void refineFacets(const DXABase& cell, FloatType maxRatio = FLOATTYPE_MAX, FloatType maxEdgeLength = FLOATTYPE_MAX);
+	void smoothMesh(int smoothingLevel, const AnalysisEnvironment& cell);
+	void smoothMesh(FloatType prefactor, const AnalysisEnvironment& cell, bool projectToNormals);
+	void wrapMesh(const AnalysisEnvironment& cell, OutputMesh* capMesh = NULL);
+	void calculateNormals(const AnalysisEnvironment& cell);
+	bool pointInPolyhedron(const Point3 p, const AnalysisEnvironment& cell) const;
+	void refineFacets(const AnalysisEnvironment& cell, FloatType maxRatio = FLOATTYPE_MAX, FloatType maxEdgeLength = FLOATTYPE_MAX);
 
 	const vector<OutputFacet*>& getFacets() const { return facets; }
 
 private:
-	void splitEdge(OutputEdge* edge, const DXABase& cell, int dim);
+	void splitEdge(OutputEdge* edge, const AnalysisEnvironment& cell, int dim);
 	void splitFacet(OutputFacet* facet1, OutputEdge* edge1, OutputEdge* edge2, OutputVertex* intersectionPoint1, OutputVertex* intersectionPoint2, int dim);
-	void createCaps(const DXABase& cell, OutputMesh& capMesh, OutputVertex* cornerVertices[8]);
+	void createCaps(const AnalysisEnvironment& cell, OutputMesh& capMesh, OutputVertex* cornerVertices[8]);
 
 	vector<OutputVertex*> vertices;
 	MemoryPool<OutputVertex> vertexPool;

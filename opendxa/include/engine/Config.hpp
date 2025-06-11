@@ -1,4 +1,8 @@
+#ifndef __OPENDXA_CONFIG_HPP
+#define __OPENDXA_CONFIG_HPP
+
 #include "../Includes.hpp"
+#include "../Settings.hpp"
 
 namespace OpenDXA{
 struct Config{
@@ -32,3 +36,5 @@ struct Config{
 	FloatType sfFlatten = DEFAULT_SF_FLATTEN_LEVEL;
 };
 }
+
+#endif

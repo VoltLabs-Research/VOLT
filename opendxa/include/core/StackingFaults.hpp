@@ -2,6 +2,7 @@
 #define __DXA_STACKING_FAULTS_H
 
 #include "../Includes.hpp"
+#include "engine/Config.hpp"
 #include "DislocationTracing.hpp"
 
 class DXAStackingFaults : public DXATracing{
@@ -17,6 +18,7 @@ public:
 	void writeStackingFaultContours(ostream& stream) const;
 	void writeStackingFaultPolylines(ostream& stream) const;
 	void cleanup();
+	void compute(const OpenDXA::Config &config);
 
 protected:
 	void traceStackingFaultContour(StackingFault* sf, StackingFaultContour& contour, deque< pair<InputAtom*, Point3> >& toprocess, Point3 currentUnwrappedPos, set<MeshEdge*>& visitedEdges, const LatticeVector hexagonalLatticeVectors[6], int currentDir);

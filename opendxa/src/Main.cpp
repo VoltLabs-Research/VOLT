@@ -73,104 +73,12 @@ static OpenDXA::Config parseOptions(int argc, char* argv[]){
     return config;
 }
 
-static void runDislocationAnalysis(const OpenDXA::Config &config){
-	DXAStackingFaults searcher(std::cerr, std::cerr);
-	searcher.setCNACutoff((FloatType) config.cnaCutoff);
-	searcher.setPBC(config.pbcX, config.pbcY, config.pbcZ);
-	searcher.setMaximumBurgersCircuitSize(config.maxCircuitSize);
-	searcher.setMaximumExtendedBurgersCircuitSize(config.extendedCircuitSize);
-
-	std::ifstream inputFile(config.inputFile);
-	if(!inputFile){
-		throw std::runtime_error("Cannot open " + config.inputFile);
-	}
-
-	ParserStream parserStream(inputFile);
-	searcher.readAtomsFile(parserStream);
-
-	if(config.scaleFactors != Vector3{1, 1, 1}){
-		searcher.transformSimulationCell(Matrix3(config.scaleFactors.X, 0, 0, 0, config.scaleFactors.Y, 0, 0, 0, config.scaleFactors.Z));
-	}
-
-	searcher.wrapInputAtoms(config.atomOffset);
-
-	Timer fullTimer;
-	searcher.buildNearestNeighborLists();
-	searcher.performCNA();
-	searcher.orderCrystallineAtoms();
-	searcher.clusterAtoms();
-	searcher.createInterfaceMeshNodes();
-
-	if(!config.dumpSFPlanesFile.empty()) searcher.createStackingFaultEdges();
-	if(!config.dumpAtomsFile.empty()) searcher.writeAtomsDumpFile(*new std::ofstream(config.dumpAtomsFile));
-
-	searcher.createInterfaceMeshFacets();
-	searcher.validateInterfaceMesh();
-	searcher.findStackingFaultPlanes();
-	searcher.traceDislocationSegments();
-
-	if(!config.dumpMeshFile.empty()) searcher.writeInterfaceMeshFile(*new std::ofstream(config.dumpMeshFile));
-	if(!config.dumpSurfaceFile.empty()){
-		searcher.generateOutputMesh();
-		searcher.smoothOutputSurface(config.surfaceSmooth);
-		searcher.writeOutputMeshFile(*new std::ofstream(config.dumpSurfaceFile));
-	}
-
-	searcher.smoothDislocationSegments(config.lineSmooth, config.lineCoarsen);
-	searcher.finishStackingFaults(config.sfFlatten);
-	searcher.wrapDislocationSegments();
-
-	std::ofstream fout(config.outputFile);
-	if(!fout){
-		throw std::runtime_error("Cannot open " + config.outputFile);
-	}
-
-	searcher.writeDislocationsVTKFile(fout);
-
-	// Calculate scalar dislocation density and density tensor
-	// TODO: This may be optional, and in the future may be exported if specified.
-	double dislocationDensity = 0.0;
-	double dislocationDensityTensor[3][3] = { 0.0 };
-
-	const std::vector<DislocationSegment*>& segments = searcher.getSegments();
-	for(int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++){
-		DislocationSegment* segment = segments[segmentIndex];
-		const std::deque<Point3>& line = segment->line;
-		// line.front() line.back() (line.back() - line.front()) (diff)
-		for(std::deque<Point3>::const_iterator p1 = line.begin(), p2 = line.begin() + 1; p2 < line.end(); ++p1, ++p2){
-			Vector3 delta = (*p2) - (*p1);
-			dislocationDensity += Length(delta);
-			for(int i = 0; i < 3; i++){
-				for(int j = 0; j < 3; j++){
-					dislocationDensityTensor[i][j] += delta[i] * segment->burgersVectorWorld[j];
-				}
-			}
-		}
-	}
-
-	double volume = searcher.getSimulationCell().determinant();
-	dislocationDensity /= volume;
-	for(int i = 0; i < 3; i++){
-		for(int j = 0; j < 3; j++){
-			dislocationDensityTensor[i][j] /= volume;
-		}
-	}
-
-	std::cout << "Dislocation densitity: " << dislocationDensity << std::endl;
-	std::cout << "Dislocation density tensor: " << endl;
-	for(int i = 0; i < 3; i++){
-		std::cout << std::to_string(dislocationDensityTensor[i][0]) << " " << std::to_string(dislocationDensityTensor[i][1]) << " " << std::to_string(dislocationDensityTensor[i][2]) << " " << std::endl;
-	}
-
-	std::cerr << "Total time: " << fullTimer.elapsedTime() << " seconds." << std::endl;
-
-	searcher.cleanup();
-}
-
 int main(int argc, char* argv[]){
 	try{
 		OpenDXA::Config config = parseOptions(argc, argv);
-		runDislocationAnalysis(config);
+		DXAStackingFaults searcher(std::cerr, std::cerr);
+		searcher.compute(config);
+		
 	}catch(std::exception &exception){
 		std::cerr << "Error: " << exception.what() << std::endl;
 		return 1;
