@@ -491,14 +491,12 @@ void DXAClustering::createSuperclusters(vector<ClusterTransition*>& clusterTrans
 		joinClusters(t, priorityStack);
 	}
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	MsgLogger() << "Number of super clusters: " << numSuperClusters << endl;
 	if(numDisclinationAtoms || numClusterDisclinations) {
 		MsgLogger() << "Detected at least one disclination:" << endl;
 		MsgLogger() << "  Number of inter-cluster disclinations: " << numClusterDisclinations << endl;
 		MsgLogger() << "  Number of disabled disclination atoms: " << numDisclinationAtoms << endl;
 	}
-#endif
 }
 
 /******************************************************************************
@@ -515,27 +513,15 @@ void DXAClustering::joinClusters(ClusterTransition* transition, list<ClusterTran
 	DISLOCATIONS_ASSERT(cluster1->masterCluster == NULL);
 	DISLOCATIONS_ASSERT(cluster2->masterCluster == NULL);
 
-//#if DISLOCATION_TRACE_OUTPUT >= 1
-//	MsgLogger() << "Joining clusters " << cluster1->id << " and " << cluster2->id << "." << endl;
-//#endif
+	std::cout << "Joining clusters " << std::to_string(cluster1->id) << " and " << std::to_string(cluster2->id) << std::endl;
 
 	ClusterTransition* t;
-
-#ifdef DEBUG_DISLOCATIONS
-	int counter1 = 0;
-	int counter2 = 0;
-#endif
 
 	// Transform all orientations of cluster 2 to align with cluster 1.
 	LatticeOrientation newTransformation = cluster1->transformation * inverseTransition->transitionTM;
 	LatticeOrientation diffTransformation = newTransformation * cluster2->transformation.inverse();
 	Cluster* c = cluster2;
 	do {
-#ifdef DEBUG_DISLOCATIONS
-		DISLOCATIONS_ASSERT(counter1 < clusters.size());
-		counter1++;
-#endif
-
 		DISLOCATIONS_ASSERT(c->masterCluster == cluster2 || c == cluster2);
 		DISLOCATIONS_ASSERT(c->transitions == NULL || c == cluster2);
 
@@ -548,10 +534,6 @@ void DXAClustering::joinClusters(ClusterTransition* transition, list<ClusterTran
 	// Re-wire transitions. All transitions pointing to/from cluster 2 will be transfered to cluster 1.
 	ClusterTransition* t2 = cluster2->transitions;
 	while(t2) {
-#ifdef DEBUG_DISLOCATIONS
-		DISLOCATIONS_ASSERT(counter2 < cluster2->numTransitions);		
-		counter2++;
-#endif
 		DISLOCATIONS_ASSERT(t2->cluster1 == cluster2);
 		DISLOCATIONS_ASSERT(t2->inverse != NULL);
 		DISLOCATIONS_ASSERT(t2->inverse->cluster2 == cluster2);
@@ -587,10 +569,6 @@ void DXAClustering::joinClusters(ClusterTransition* transition, list<ClusterTran
 	int counter3 = 0;
 	int counter3Max = cluster1->numTransitions;
 	while(t) {
-#ifdef DEBUG_DISLOCATIONS
-		DISLOCATIONS_ASSERT(counter3 < counter3Max);
-		counter3++;
-#endif
 		DISLOCATIONS_ASSERT(t->cluster1 == cluster1);
 		DISLOCATIONS_ASSERT(t->inverse != NULL);
 		ClusterTransition* next = t->next;
@@ -614,10 +592,6 @@ void DXAClustering::joinClusters(ClusterTransition* transition, list<ClusterTran
 	ClusterTransition* t1 = cluster1->transitions;
 	int counter4 = 0;
 	while(t1) {
-#ifdef DEBUG_DISLOCATIONS
-		DISLOCATIONS_ASSERT(counter4 < cluster1->numTransitions);
-		counter4++;
-#endif
 		DISLOCATIONS_ASSERT(t1->cluster1 == cluster1);
 		DISLOCATIONS_ASSERT(t1->cluster2 != cluster1);
 		DISLOCATIONS_ASSERT(t1->inverse != NULL);
@@ -628,10 +602,6 @@ void DXAClustering::joinClusters(ClusterTransition* transition, list<ClusterTran
 			ClusterTransition* t2 = t1->next;
 			int counter5 = counter4;
 			while(t2) {
-#ifdef DEBUG_DISLOCATIONS
-				DISLOCATIONS_ASSERT(counter5 < cluster1->numTransitions);
-				counter5++;
-#endif
 				if(t2->cluster2 == t1->cluster2 && t2->transitionTM.equals(t1->transitionTM)) {
 					if(t2->numberOfBonds != numeric_limits<int>::max())
 						t1->priority += t2->numberOfBonds;
@@ -712,30 +682,5 @@ void DXAClustering::alignClusterOrientations()
 		// Align cluster's lattice orientation.
 		atom.latticeOrientation = atom.cluster->transformation * atom.latticeOrientation;
 	}
-
-#ifdef DEBUG_DISLOCATIONS
-#if DISLOCATION_TRACE_OUTPUT >= 1
-	MsgLogger() << "Validating cluster orientations." << endl;
-#endif
-
-	// Check if all crystalline atoms are aligned with their nearest neighbors
-	// and no disclinations are present.
-#pragma omp parallel for
-	for(int atomIndex = 0; atomIndex < numLocalInputAtoms; atomIndex++) {
-		InputAtom& atom = inputAtoms[atomIndex];
-		DISLOCATIONS_ASSERT(atom.isCrystalline() == (atom.cluster != NULL));
-		// Skip atoms that are not part of a cluster.
-		if(atom.cluster == NULL) continue;
-
-		for(int n = 0; n < atom.numNeighbors; n++) {
-			InputAtom* neighbor = atom.neighborAtom(n);
-			if(neighbor->isDisordered()) continue;
-			if(atom.isValidTransitionNeighbor(n) == false) continue;
-
-			LatticeOrientation neighborLatticeOrientation = atom.determineTransitionMatrix(n);
-			DISLOCATIONS_ASSERT(neighbor->latticeOrientation.equals(neighborLatticeOrientation));
-		}
-	}
-#endif
 }
 
