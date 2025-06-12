@@ -52,21 +52,20 @@ void DXAInterfaceMesh::writeInterfaceMeshFile(ostream& stream) const
 		}
 	}
 
-
-	stream << "# vtk DataFile Version 3.0";
-	stream << "# Interface mesh";
-	stream << "ASCII";
-	stream << "DATASET UNSTRUCTURED_GRID";
-	stream << "POINTS " << nodes.size() << " float";
+	stream << "# vtk DataFile Version 3.0" << endl;
+	stream << "# Interface mesh" << endl;
+	stream << "ASCII" << endl;
+	stream << "DATASET UNSTRUCTURED_GRID" << endl;
+	stream << "POINTS " << nodes.size() << " float" << endl;
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		const Point3& pos = (*n)->pos;
-		stream << pos.X << " " << pos.Y << " " << pos.Z;
+		stream << pos.X << " " << pos.Y << " " << pos.Z << endl;
 	}
-	stream << endl << "CELLS " << (numEdges + numFacets) << " " << (numEdges*3 + numFacets + numFacetVertices);
+	stream << "CELLS " << (numEdges + numFacets) << " " << (numEdges*3 + numFacets + numFacetVertices) << endl;
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if(isWrappedEdge(&(*n)->edges[i]) == false)
-				stream << "2 " << (*n)->index << " " << (*n)->edgeNeighbor(i)->index;
+				stream << "2 " << (*n)->index << " " << (*n)->edgeNeighbor(i)->index << endl;
 		}
 	}
 	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
@@ -74,20 +73,20 @@ void DXAInterfaceMesh::writeInterfaceMeshFile(ostream& stream) const
 			stream << "3";
 			for(int i=0; i<3; i++)
 				stream << " " << (*f)->vertex(i)->index;
-			stream;
+			stream << endl;
 		}
 	}
 
-	stream << endl << "CELL_TYPES " << (numEdges + numFacets);
+	stream << "CELL_TYPES " << (numEdges + numFacets) << endl;
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "3";
+		stream << "3" << endl;
 	for(size_t i = 0; i < numFacets; i++)
-		stream << "5";	// Triangle
+		stream << "5" << endl;	// Triangle
 
-	stream << endl << "CELL_DATA " << (numEdges + numFacets);
+	stream << "CELL_DATA " << (numEdges + numFacets) << endl;
 
-	stream << endl << "SCALARS edge_count int 1";
-	stream << "LOOKUP_TABLE default";
+	stream << "SCALARS edge_count int 1" << endl;
+	stream << "LOOKUP_TABLE default" << endl;
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if(isWrappedEdge(&(*n)->edges[i]) == false) {
@@ -95,85 +94,87 @@ void DXAInterfaceMesh::writeInterfaceMeshFile(ostream& stream) const
 				for(int c = 0; c < (*n)->numEdges; c++)
 					if((*n)->edgeNeighbor(c) == (*n)->edgeNeighbor(i))
 						count++;
-				stream << count;
+				stream << count << endl;
 			}
 		}
 	}
 	for(size_t i = 0; i < numFacets; i++)
-		stream << "0";
+		stream << "0" << endl;
 
 	/*
-	stream << endl << "VECTORS lattice_vector float";
+	stream << "VECTORS lattice_vector float" << endl;
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
 			if(isWrappedEdge(&(*n)->edges[i]) == false) {
 				for(int c = 0; c < 3; c++)
 					stream << (*n)->edges[i].latticeVector[c] << " ";
-				stream;
+				stream << endl;
 			}
 		}
 	}
 	for(size_t i = 0; i < numFacets; i++)
-		stream << "0 0 0";
-		*/
+		stream << "0 0 0" << endl;
+	*/
 
-	stream << endl << "SCALARS segment int 1";
-	stream << endl << "LOOKUP_TABLE default";
+	stream << "SCALARS segment int 1" << endl;
+	stream << "LOOKUP_TABLE default" << endl;
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "0";
+		stream << "0" << endl;
 	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
 		if(isWrappedFacet(*f) == false) {
 			if((*f)->circuit != NULL)
-				stream << (*f)->circuit->segment->index;
+				stream << (*f)->circuit->segment->index << endl;
 			else
-				stream << "-1";
+				stream << "-1" << endl;
 		}
 	}
 
-	stream << endl << "SCALARS final_segment int 1";
-	stream << endl << "LOOKUP_TABLE default";
+	stream << "SCALARS final_segment int 1" << endl;
+	stream << "LOOKUP_TABLE default" << endl;
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "0";
+		stream << "0" << endl;
 	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
 		if(isWrappedFacet(*f) == false) {
 			if((*f)->circuit != NULL && ((*f)->circuit->isDangling == false || (*f)->testFlag(FACET_IS_PRIMARY_SEGMENT))) {
 				DislocationSegment* segment = (*f)->circuit->segment;
 				while(segment->replacedWith != NULL) segment = segment->replacedWith;
-				stream << segment->index;
+				stream << segment->index << endl;
 			}
 			else
-				stream << "-1";
+				stream << "-1" << endl;
 		}
 	}
 
-	stream << endl << "SCALARS is_primary_segment int 1";
-	stream << endl << "LOOKUP_TABLE default";
+	stream << "SCALARS is_primary_segment int 1" << endl;
+	stream << "LOOKUP_TABLE default" << endl;
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "0";
+		stream << "0" << endl;
 	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f)
 		if(isWrappedFacet(*f) == false)
-			stream << (*f)->testFlag(FACET_IS_PRIMARY_SEGMENT);
+			stream << (*f)->testFlag(FACET_IS_PRIMARY_SEGMENT) << endl;
 
-	stream << endl << "SCALARS selection int 1";
-	stream << endl << "LOOKUP_TABLE default";
+	stream << "SCALARS selection int 1" << endl;
+	stream << "LOOKUP_TABLE default" << endl;
 	for(size_t i = 0; i < numEdges; i++)
-		stream << "0";
+		stream << "0" << endl;
 	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f)
 		if(isWrappedFacet(*f) == false)
-			stream << (*f)->selection;
+			stream << (*f)->selection << endl;
 
-	stream << endl << "SCALARS isSF int 1";
-	stream << "LOOKUP_TABLE default";
+	stream << "SCALARS isSF int 1" << endl;
+	stream << "LOOKUP_TABLE default" << endl;
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
 		for(int i = 0; i < (*n)->numEdges; i++) {
-			if((*n)->edges[i].isSFEdge)
-				stream << "1";
-			else
-				stream << "0";
+			if(isWrappedEdge(&(*n)->edges[i]) == false) {
+				if((*n)->edges[i].isSFEdge)
+					stream << "1" << endl;
+				else
+					stream << "0" << endl;
+			}
 		}
 	}
 	for(size_t i = 0; i < numFacets; i++)
-		stream << "0";
+		stream << "0" << endl;
 }
 
 /******************************************************************************
