@@ -1,6 +1,5 @@
 from typing import Dict, Optional, Any
 from config import TIMESTEPS_DIR, RESULTS_DIR
-from utils.args import args_from_config
 from utils.lammps import LammpstrjParser
 from models.analysis_config import AnalysisConfig
 from opendxa import DislocationAnalysis
@@ -172,68 +171,15 @@ def create_timestep_dump_file(timestep_data: Dict, output_path: str) -> None:
     with open(output_path, 'r') as f:
         content = f.read()
         lines = content.split('\n')
-        logger.info(f"Created dump file with {len(lines)} lines")
-        logger.info(f"First 10 lines:\n" + '\n'.join(lines[:10]))
+        logger.info(f"Lines", len(lines))
         logger.info(f"Last 5 lines:\n" + '\n'.join(lines[-5:]))
 
-def analyze_timestep_wrapper(timestep_data: Dict, config: AnalysisConfig) -> Dict:
+def analyze_timestep_wrapper(timestep_data: Dict, config: AnalysisConfig, file_path) -> Dict:
     '''
     Wrapper function for analyze_timestep that returns results instead of writing to file
     '''
     try:
-        logger.info(f"Starting analysis for timestep {timestep_data.get('timestep', 'unknown')}")
-        logger.info(f"Timestep data keys: {list(timestep_data.keys())}")
-        
-        # Create a temporary LAMMPS dump file from timestep data
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.dump', delete=False) as temp_dump_file:
-            dump_file_path = temp_dump_file.name
-        
-        logger.info(f"Creating temporary dump file: {dump_file_path}")
-        
-        # Create the LAMMPS dump file
-        create_timestep_dump_file(timestep_data, dump_file_path)
-        
-        # Verify the dump file was created correctly
-        if not os.path.exists(dump_file_path):
-            raise Exception("Failed to create temporary dump file")
-        
-        dump_file_size = os.path.getsize(dump_file_path)
-        logger.info(f"Dump file created successfully, size: {dump_file_size} bytes")
-        
-        # Read and log dump file statistics for debugging
-        with open(dump_file_path, 'r') as f:
-            dump_content = f.read()
-            dump_lines = dump_content.split('\n')
-            atom_lines = [line for line in dump_lines if line and not line.startswith('ITEM:') and line.strip() and not line.isdigit()]
-            logger.info(f"Dump file statistics: {len(dump_lines)} total lines, {len(atom_lines)} atom data lines")
-            
-            # Log sample atom positions to verify data integrity
-            if len(atom_lines) >= 5:
-                logger.info("Sample atom positions from dump file:")
-                for i, line in enumerate(atom_lines[:5]):
-                    logger.info(f"  Atom {i+1}: {line}")
-            
-            # Check for coordinate ranges in dump file
-            atom_coords = []
-            for line in atom_lines:
-                parts = line.strip().split()
-                if len(parts) >= 5:  # id type x y z
-                    try:
-                        x, y, z = float(parts[2]), float(parts[3]), float(parts[4])
-                        atom_coords.append([x, y, z])
-                    except ValueError:
-                        continue
-            
-            if atom_coords:
-                x_vals = [pos[0] for pos in atom_coords]
-                y_vals = [pos[1] for pos in atom_coords]
-                z_vals = [pos[2] for pos in atom_coords]
-                logger.info(f"Dump file coordinate ranges:")
-                logger.info(f"  X: {min(x_vals):.3f} to {max(x_vals):.3f}")
-                logger.info(f"  Y: {min(y_vals):.3f} to {max(y_vals):.3f}")
-                logger.info(f"  Z: {min(z_vals):.3f} to {max(z_vals):.3f}")
-                logger.info(f"  Total valid atom positions in dump: {len(atom_coords)}")
-        
+        dump_file_path = file_path
         # Create a temporary VTK file for the output
         with tempfile.NamedTemporaryFile(mode='w', suffix='.vtk', delete=False) as temp_file:
             vtk_output_path = temp_file.name
@@ -255,12 +201,12 @@ def analyze_timestep_wrapper(timestep_data: Dict, config: AnalysisConfig) -> Dic
             except Exception as e:
                 logger.error(f"OpenDXA analysis failed: {e}")
                 # Clean up and re-raise
-                if os.path.exists(dump_file_path):
-                    os.unlink(dump_file_path)
+                # if os.path.exists(dump_file_path):
+                #    os.unlink(dump_file_path)
                 raise Exception(f"OpenDXA analysis failed: {str(e)}")
 
             # Clean up the temporary dump file
-            os.unlink(dump_file_path)
+            # os.unlink(dump_file_path)
 
             if os.path.exists(vtk_output_path):
                 file_size = os.path.getsize(vtk_output_path)
@@ -271,7 +217,7 @@ def analyze_timestep_wrapper(timestep_data: Dict, config: AnalysisConfig) -> Dic
                         # Read the VTK file content as plain text
                         with open(vtk_output_path, 'r') as file:
                             vtk_content = file.read()
-                        os.unlink(vtk_output_path)
+                        # os.unlink(vtk_output_path)
 
                         # Log the first few lines to verify VTK format
                         lines = vtk_content.split('\n')
@@ -357,7 +303,7 @@ def analyze_timestep_wrapper(timestep_data: Dict, config: AnalysisConfig) -> Dic
 
                         return {
                             'success': True,
-                            'timestep': timestep_data.get('timestep', 0),
+                            'timestep': 0,
                             'dislocations': [],  # VTK data contains the dislocations
                             'analysis_metadata': {
                                 'format': 'vtk',
@@ -380,7 +326,7 @@ def analyze_timestep_wrapper(timestep_data: Dict, config: AnalysisConfig) -> Dic
                             with open(vtk_output_path, 'r') as file:
                                 content = file.read()
                             logger.error(f"VTK file content (first 1000 chars): {content[:1000]}")
-                            os.unlink(vtk_output_path)
+                            # os.unlink(vtk_output_path)
                             
                             return {
                                 'success': False,
@@ -403,7 +349,7 @@ def analyze_timestep_wrapper(timestep_data: Dict, config: AnalysisConfig) -> Dic
                             }
                 else:
                     logger.error(f"VTK output file is empty: {vtk_output_path}")
-                    os.unlink(vtk_output_path)
+                    # os.unlink(vtk_output_path)
                     return {
                         'success': False,
                         'timestep': timestep_data.get('timestep', 0),
@@ -472,10 +418,11 @@ def save_timestep_data(file_id: str, timestep: int, data: Dict) -> str:
     '''
     Save timestep data to disk and return the file path
     '''
-    timestep_file= TIMESTEPS_DIR / f'{file_id}_{timestep}.pkl'
-    with open(timestep_file, 'wb') as file:
-        pickle.dump(data, file)
-    return str(timestep_file)
+    # timestep_file= TIMESTEPS_DIR / f'{file_id}_{timestep}.pkl'
+    # with open(timestep_file, 'wb') as file:
+    #    pickle.dump(data, file)
+    # return str(timestep_file)
+    return ''
 
 def process_all_timesteps(file_path: str, file_id: str) -> Dict[str, Any]:
     '''

@@ -18,6 +18,7 @@ struct Config{
     std::string dumpSurfaceFile;
     std::string dumpSurfaceCapFile;
     std::string dumpCellFile;
+	std::string dumpJsonFile;
 
 	// Control
 	bool pbcX = false;

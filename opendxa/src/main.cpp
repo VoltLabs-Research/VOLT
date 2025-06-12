@@ -11,6 +11,7 @@ static OpenDXA::Config parseOptions(int argc, char* argv[]){
 		("cna_cutoff", "Common Neighbor Analysis (CNA) cutoff radius", cxxopts::value<double>())
 		("inputfile", "Input atom file", cxxopts::value<std::string>())
 		("outputfile", "Output VTK file", cxxopts::value<std::string>())
+		("dumpjsonfile", "Output JSON file", cxxopts::value<std::string>())
 		("dumpmesh", "Dump interface mesh", cxxopts::value<std::string>())
 		("dumpatoms", "Dump processed atoms", cxxopts::value<std::string>())
 		("dumpsf", "Dump SF planes", cxxopts::value<std::string>())
@@ -40,6 +41,7 @@ static OpenDXA::Config parseOptions(int argc, char* argv[]){
     config.inputFile = result["inputfile"].as<std::string>();
     config.outputFile = result["outputfile"].as<std::string>();
 	
+	if(result.count("dumpjsonfile")) config.dumpJsonFile = result["dumpjsonfile"].as<string>();
 	if(result.count("cna_cutoff")) config.cnaCutoff = result["cna_cutoff"].as<double>();
 	if(result.count("dumpmesh")) config.dumpMeshFile = result["dumpmesh"].as<std::string>();
 	if(result.count("dumpatoms")) config.dumpAtomsFile = result["dumpatoms"].as<std::string>();

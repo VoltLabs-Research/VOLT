@@ -5,6 +5,39 @@
 #include <opendxa/utils/burgers.hpp>
 #include <sstream>
 
+using json = nlohmann::json;
+
+void DXATracing::writeDislocationsJSON(std::ostream &stream) const{
+	json root;
+    root["num_segments"] = segments.size();
+    json segs = json::array();
+    size_t idx_offset = 0;
+    for(auto* segment : segments){
+        json pts = json::array();
+        for (auto const& p : segment->line) {
+            pts.push_back({{"x", p.X}, {"y", p.Y}, {"z", p.Z}});
+        }
+        auto bv = segment->burgersVector;
+        auto bw = segment->burgersVectorWorld;
+        double mag = std::sqrt(double(bv.X*bv.X + bv.Y*bv.Y + bv.Z*bv.Z));
+        json s;
+        s["id"] = segment->index;
+        s["point_index_offset"] = idx_offset;
+        s["num_points"] = pts.size();
+        s["points"] = std::move(pts);
+        s["length"] = segment->calculateLength();
+        s["burgers_vector"] = {{"x", bv.X}, {"y", bv.Y}, {"z", bv.Z}};
+        s["burgers_vector_world"] = {{"x", bw.X}, {"y", bw.Y}, {"z", bw.Z}};
+        s["burgers_vector_magnitude"] = mag;
+        s["fractional_burgers"] = burgersToFractionalString(bv);
+        segs.push_back(std::move(s));
+        idx_offset += segment->line.size();
+    }
+    root["segments"] = std::move(segs);
+
+    stream << root.dump(4) << std::endl;
+}
+
 void DXAClustering::writeAtomsDumpFile(ostream& stream){
 	LOG_INFO() << "Dumping atoms to output file.";
 

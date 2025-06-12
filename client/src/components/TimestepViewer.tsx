@@ -78,10 +78,6 @@ const TimestepViewer: React.FC<ExtendedTimestepViewerProps & {
         } : null
     });
 
-    if (error) {
-        console.error('TimestepViewer error:', error);
-        return null;
-    }
            
     //  {atoms.length > 0 && <AtomParticles atoms={atoms} scale={scale} />}
     return (

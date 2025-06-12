@@ -57,6 +57,14 @@ void DXAStackingFaults::compute(const OpenDXA::Config &config){
 
 	writeDislocationsVTKFile(fout);
 
+	if(!config.dumpJsonFile.empty()){
+		std::ofstream jsonDump(config.dumpJsonFile);
+		if(!jsonDump){
+			throw std::runtime_error("Cannot open " + config.dumpJsonFile);
+		}
+		writeDislocationsJSON(jsonDump);
+	}
+
 	// Calculate scalar dislocation density and density tensor
 	// TODO: This may be optional, and in the future may be exported if specified.
 	double dislocationDensity = 0.0;

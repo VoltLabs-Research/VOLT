@@ -8,6 +8,7 @@
 #include <opendxa/utils/memory_pool.hpp>
 #include <opendxa/structures/dislocations/burgers_circuit.hpp>
 #include <opendxa/core/interface_mesh.hpp>
+#include <nlohmann/json.hpp>
 
 class DXATracing : public DXAInterfaceMesh{
 public:
@@ -17,8 +18,7 @@ public:
 	void setMaximumBurgersCircuitSize(int maxSize) { this->maxBurgersCircuitSize = maxSize; burgersSearchDepth = (maxSize - 1) / 2; }
 	void setMaximumExtendedBurgersCircuitSize(int maxSize) { this->maxExtendedBurgersCircuitSize = maxSize; }
 
-	void getDislocationData() const;
-
+	void writeDislocationsJSON(std::ostream &stream) const;
 	void traceDislocationSegments();
 	void smoothDislocationSegments(int smoothingLevel, int coarseningLevel);
 	void wrapDislocationSegments();

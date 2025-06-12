@@ -39,7 +39,7 @@ async def analyze_all_timesteps(file_id: str, config: AnalysisConfig):
             
             timestep_data = load_timestep_data(file_id, timestep)
             if timestep_data:
-                result = analyze_timestep_wrapper(timestep_data, config)
+                result = analyze_timestep_wrapper(timestep_data, config, uploaded_files[file_id]['file_path'])
                 # save_analysis_result(file_id, timestep, result)
                 results.append(result)
                 processed += 1
@@ -72,6 +72,8 @@ async def analyze_timestep_endpoint(file_id: str, timestep: int, config: Analysi
    #     return AnalysisResult(**cached_result)
 
     timestep_data = load_timestep_data(file_id, timestep)
+    file_path = uploaded_files[file_id]['file_path']
+    timestep_data = open(file_path)
     if timestep_data is None:
         metadata = uploaded_files[file_id]
         available_timesteps = [timestep['timestep'] for timestep in metadata['timesteps_info']]
@@ -82,7 +84,7 @@ async def analyze_timestep_endpoint(file_id: str, timestep: int, config: Analysi
 
     try:
         logger.info(f'Analyzing timestep {timestep} from file_id {file_id}')
-        result = analyze_timestep_wrapper(timestep_data, config)
+        result = analyze_timestep_wrapper(timestep_data, config, uploaded_files[file_id]['file_path'])
         
         # save_analysis_result(file_id, timestep, result)
         

@@ -22,18 +22,18 @@ async def delete_file(file_id: str) -> Dict[str, str]:
     try:
         metadata = uploaded_files[file_id]
         
-        if os.path.exists(metadata['file_path']):
-            os.unlink(metadata['file_path'])
+        # if os.path.exists(metadata['file_path']):
+        #    os.unlink(metadata['file_path'])
         
         for timestep_info in metadata['timesteps_info']:
             timestep = timestep_info['timestep']
             timestep_file = TIMESTEPS_DIR / f'{file_id}_{timestep}.pkl'
-            if timestep_file.exists():
-                timestep_file.unlink()
+            # if timestep_file.exists():
+            #    timestep_file.unlink()
             
             result_file = RESULTS_DIR / f'{file_id}_{timestep}_analysis.json'
-            if result_file.exists():
-                result_file.unlink()
+            # if result_file.exists():
+            #    result_file.unlink()
         
         del uploaded_files[file_id]
         

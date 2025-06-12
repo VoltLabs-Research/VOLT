@@ -55,6 +55,7 @@ target_include_directories(opendxapy
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/cxxopts/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/json/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
