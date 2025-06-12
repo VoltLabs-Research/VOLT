@@ -25,7 +25,6 @@ public:
     Logger(const std::string& name = "Default");
     ~Logger();
 
-    // Configuración
     void setLevel(LogLevel level) { minLevel = level; }
     void setOutputStream(std::shared_ptr<std::ostream> stream) { outputStream = stream; }
     void setLogToFile(const std::string& filename);
@@ -99,7 +98,7 @@ private:
     std::string loggerName;
     LogLevel minLevel;
     std::shared_ptr<std::ostream> outputStream;
-    std::shared_ptr<std::ofstream> fileStream;  // CAMBIO: ahora es shared_ptr
+    std::shared_ptr<std::ofstream> fileStream; 
     bool logToConsole;
     bool showTimestamp;
     bool showThreadId;

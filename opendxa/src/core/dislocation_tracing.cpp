@@ -64,14 +64,6 @@ void DXATracing::traceDislocationSegments()
 void DXATracing::findPrimarySegments()
 {
 	LOG_INFO() << "Searching for primary dislocation segments. Maximum recursive search depth: " << burgersSearchDepth;
-
-	/* Ensure that all visit flags are cleared.
-	for(vector<MeshNode*>::iterator node = nodes.begin(); node != nodes.end(); ++node) {
-		DISLOCATIONS_ASSERT((*node)->wasVisited() == false);
-		DISLOCATIONS_ASSERT((*node)->recursiveDepth == 0);
-	}*/
-
-	// List of all nodes that have been visited during the last recursive walk.
 	vector<MeshNode*> visitedNodes;
 
 	// Stack of nodes that still have to be visited during the current recursive walk.

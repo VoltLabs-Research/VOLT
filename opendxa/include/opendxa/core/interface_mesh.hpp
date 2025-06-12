@@ -18,9 +18,7 @@ public:
 	void finishOutputSurface(bool createCapSurface);
 
 	void writeInterfaceMeshFile(ostream& stream) const;
-	void writeOpenMeshEdges(ostream& stream, bool skipDeadEdges = false) const;
 	void writeOutputMeshFile(ostream& stream) const;
-	void writeOutputMeshCapFile(ostream& stream) const;
 	void cleanup();
 	void validateInterfaceMesh();
 

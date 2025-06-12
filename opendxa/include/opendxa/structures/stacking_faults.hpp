@@ -15,7 +15,6 @@ struct StackingFaultContour {
 	vector< pair<int,int> > segmentIntervals;
 
 	void writeToFile(ostream& stream) const;
-	void writePolyline(ostream& stream) const;
 };
 
 struct SFContourVertex {

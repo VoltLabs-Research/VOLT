@@ -59,10 +59,6 @@ target_include_directories(opendxapy
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_compile_definitions(opendxapy PUBLIC
-    $<$<BOOL:${DXA_ENABLE_DEBUG}>:DEBUG_DISLOCATIONS>
-)
-
 target_link_libraries(opendxapy PUBLIC Eigen3::Eigen)
 
 if(DXA_USE_OPENMP AND OpenMP_CXX_FOUND)

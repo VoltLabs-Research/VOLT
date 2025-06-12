@@ -38,7 +38,6 @@ struct BurgersCircuit{
     void updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell, MeshNode* node) const;
     
     void writeToFile(std::ostream& stream);
-    void writeCapToFile(std::ostream& stream);
 
     bool isInRing(BurgersCircuit* other) const{
         BurgersCircuit* c = junctionRing;

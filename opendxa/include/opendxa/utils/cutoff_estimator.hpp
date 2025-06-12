@@ -19,7 +19,7 @@ static double findNearestNeighbor(const std::vector<InputAtom>& atoms, size_t ce
 
 static double estimateCutoff(const std::vector<InputAtom>& atoms, const Matrix3& cell){
     if(atoms.empty()) return 3.0;
-    std::cout << "Estimating CNA cutoff from " << atoms.size() << " atoms..." << std::endl;
+    LOG_INFO() << "Estimating CNA cutoff from " << atoms.size() << " atoms...";
     // first, using nearest neighbor
     std::vector<double> nearestDistances;
     size_t sampleSize = std::min(size_t(500), atoms.size());
@@ -52,8 +52,8 @@ static double estimateCutoff(const std::vector<InputAtom>& atoms, const Matrix3&
     double ratio = std::max(cutoff1, cutoff2) / std::min(cutoff1, cutoff2);
     double finalCutoff = (ratio > 2.0) ? std::min(cutoff1, cutoff2) * 1.2 : 0.4 * cutoff1 + 0.6 * cutoff2;
     finalCutoff = std::max(2.0, std::min(4.5, finalCutoff));
-    std::cout << "  - Neighbor-based: " << cutoff1 << " Å" << std::endl;
-    std::cout << "  - Density-based: " << cutoff2 << " Å" << std::endl;
-    std::cout << "  - Final cutoff: " << finalCutoff << " Å" << std::endl;
+    LOG_INFO() << "  - Neighbor-based: " << cutoff1 << " Å";
+    LOG_INFO() << "  - Density-based: " << cutoff2 << " Å";
+    LOG_INFO() << "  - Final cutoff: " << finalCutoff << " Å";
     return finalCutoff; 
 }

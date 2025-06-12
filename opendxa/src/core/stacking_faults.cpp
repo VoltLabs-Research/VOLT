@@ -86,13 +86,13 @@ void DXAStackingFaults::compute(const OpenDXA::Config &config){
 		}
 	}
 
-	std::cout << "Dislocation densitity: " << dislocationDensity << std::endl;
-	std::cout << "Dislocation density tensor: ";
+	LOG_INFO() << "Dislocation densitity: " << dislocationDensity;
+	LOG_INFO() << "Dislocation density tensor: ";
 	for(int i = 0; i < 3; i++){
-		std::cout << std::to_string(dislocationDensityTensor[i][0]) << " " << std::to_string(dislocationDensityTensor[i][1]) << " " << std::to_string(dislocationDensityTensor[i][2]) << " " << std::endl;
+		LOG_INFO() << dislocationDensityTensor[i][0] << " " << dislocationDensityTensor[i][1] << " " << dislocationDensityTensor[i][2];
 	}
 
-	std::cerr << "Total time: " << fullTimer.elapsedTime() << " seconds." << std::endl;
+	LOG_INFO() << "Total time: " << fullTimer.elapsedTime() << " seconds.";
 
 	cleanup();
 }
@@ -693,18 +693,6 @@ void DXAStackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFau
 			}
 		}
 
-#ifdef DEBUG_DISLOCATIONS
-		if(nextEdge == NULL) {
-			LOG_INFO() << "ERROR: Could not continue tracing stacking fault contour. Last edge was: " << lastEdge->node1->tag << " - " << lastEdge->node2()->tag;
-			ofstream stream3("interface_mesh.vtk");
-			writeInterfaceMeshFile(stream3);
-			ofstream stream1("contour.vtk");
-			contour.writeToFile(stream1);
-			ofstream stream2("edge.vtk");
-			lastEdge->writeToFile(stream2);
-		}
-		DISLOCATIONS_ASSERT(nextEdge != NULL);
-#endif
 		nextDir = (nextDir + inverseDir) % 6;
 
 		// Put the HCP atom onto the recursive stack because it is part of the same stacking fault.
@@ -717,23 +705,6 @@ void DXAStackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFau
 			return;
 		}
 
-#ifdef DEBUG_DISLOCATIONS
-		// Has this edge already been made part of a contour?
-		if(visitedEdges.find(nextEdge) != visitedEdges.end()) {
-			ofstream stream3("stacking_faults.vtk");
-			writeStackingFaultContours(stream3);
-			ofstream stream1("contour.vtk");
-			contour.writeToFile(stream1);
-			ofstream stream2("edge.vtk");
-			nextEdge->writeToFile(stream2);
-			for(int e = 0; e < contour.edges.size(); e++)
-				LOG_INFO() << "Edge " << e << ": " << contour.edges[e]->node1->tag << " - " << contour.edges[e]->node2()->tag << "  isSFEdge=" << contour.edges[e]->isSFEdge;
-			LOG_INFO() << "Edge already visited: " << nextEdge->node1->tag << " - " << nextEdge->node2()->tag;
-			ofstream stream4("interface_mesh.vtk");
-			writeInterfaceMeshFile(stream4);
-			raiseError("Arrived at edge that was already visited before.");
-		}
-#endif
 		DISLOCATIONS_ASSERT(visitedEdges.find(nextEdge) == visitedEdges.end());
 
 		// Append edge to contour.
@@ -877,10 +848,6 @@ private:
 		SFTessellator* tessellator = (SFTessellator*)polygon_data;
 		LOG_INFO() << "GLU error: " << errno;
 		if(errno == GLU_TESS_NEED_COMBINE_CALLBACK) {
-#ifdef DEBUG_DISLOCATIONS
-			ofstream stream("stacking_fault.vtk");
-			tessellator->sf->writeToFile(stream);
-#endif
 			tessellator->caller.raiseError("Could not tessellate stacking fault polygon. It contains overlapping contours.");
 		}
 		else
@@ -894,7 +861,6 @@ private:
 	GLenum primitiveType;
 	vector<OutputVertex*> vertices;
 };
-
 
 /******************************************************************************
 * Links stacking faults to dislocation segments and triangulates the SF planes.
@@ -911,12 +877,8 @@ void DXAStackingFaults::finishStackingFaults(FloatType flatten)
 		StackingFault* sf = stackingFaults[sfindex];
 		if(sf->isInvalid) continue;
 
-		// Transform stacking fault plane to reduced coordinates.
 		sf->reducedNormalVector = Normalize(getReciprocalSimulationCell() * sf->normalVector);
 		sf->reducedCenter = ORIGIN + (getReciprocalSimulationCell() * (sf->center - getSimulationCellOrigin()));
-
-		//if(sf->index == 594)
-		//	LOG_INFO() << "Processing stacking fault " << sf->index << " with " << sf->contours.size() << " contours. Center of mass: " << sf->reducedCenter;
 
 		Point3 bbminSFfOld(+100);
 		Point3 bbmaxSFfOld(-100);
@@ -947,13 +909,6 @@ void DXAStackingFaults::finishStackingFaults(FloatType flatten)
 			lastContourVertex->next = firstContourVertex;
 
 			for(int dim = 0; dim < 3; dim++) {
-				//if(bbmaxContour[dim] - bbminContour[dim] > 1) {
-				//	ofstream stream("polyline.vtk");
-				//	contour->writePolyline(stream);
-				//}
-				//DISLOCATIONS_ASSERT(bbmaxContour[dim] - bbminContour[dim] <= 1);
-				// The contours of infinite stacking faults may stretch over the [-1,+1] periodic image interval.
-				// We ensure that all contours are shifted into the [-1,0] periodic image interval.
 				if(sf->isInfinite[dim]) {
 					DISLOCATIONS_ASSERT(pbcFlags()[dim]);
 					DISLOCATIONS_ASSERT(sf->reducedNormalVector[dim] == 0);
@@ -975,31 +930,6 @@ void DXAStackingFaults::finishStackingFaults(FloatType flatten)
 			}
 		}
 
-		//if(sf->index == 594) {
-		//	LOG_INFO() << "Old bounding box: " << bbminSF << " - " << bbmaxSF;
-		//	LOG_INFO() << "Old bounding box: " << bbminSFfOld << " - " << bbmaxSFfOld;
-		//}
-
-		/*
-		// Ensure that all contours are within the [-1,0] periodic image interval.
-		// Shift contours if necessary.
-		for(int dim = 0; dim < 3; dim++) {
-			if(pbcFlags()[dim] == false) continue;
-			DISLOCATIONS_ASSERT(bbmaxSF[dim] - bbminSF[dim] <= 1);
-			int shift = 0;
-			if(bbmaxSF[dim] > 0) shift = -bbmaxSF[dim];
-			if(bbminSF[dim] < -1) shift = (-1) - bbminSF[dim];
-			if(sf->index == 594)
-			LOG_INFO() << "  shift[" << dim << "]=" << shift;
-			if(shift == 0) continue;
-			for(SFContourVertex* vertex = sf->globalVertexList; vertex != NULL; vertex = vertex->globalNext) {
-				vertex->pos[dim] += shift;
-				vertex->image[dim] += shift;
-			}
-			sf->reducedCenter[dim] += shift;
-		}
-		*/
-
 		if(sf->isInfinite[0] || sf->isInfinite[1] || sf->isInfinite[2]) {
 			sf->isInvalid = true;
 			hasInfiniteSF = true;
@@ -1011,211 +941,9 @@ void DXAStackingFaults::finishStackingFaults(FloatType flatten)
 			continue;
 		}
 
-
-#if 0
-		// Check if all contour vertices are in the stacking fault plane.
-		Point3 bbminSFf(+100);
-		Point3 bbmaxSFf(-100);
 		for(SFContourVertex* vertex = sf->globalVertexList; vertex != NULL; vertex = vertex->globalNext) {
-			//FloatType d = DotProduct(sf->reducedCenter - vertex->pos, sf->reducedNormalVector);
-			//LOG_INFO() << "  " << d;
-			//DISLOCATIONS_ASSERT(fabs(d) < 0.004);
-			for(int dim = 0; dim < 3; dim++) {
-				if(vertex->pos[dim] < bbminSFf[dim]) bbminSFf[dim] = vertex->pos[dim];
-				if(vertex->pos[dim] > bbmaxSFf[dim]) bbmaxSFf[dim] = vertex->pos[dim];
-			}
-		}
-
-		//if(sf->index == 594) {
-		//	LOG_INFO() << "Normal vector: " << sf->reducedNormalVector;
-		//	LOG_INFO() << "SF " << sf->index << "  infinite: " << sf->isInfinite[0] << sf->isInfinite[1] << sf->isInfinite[2];
-		//	LOG_INFO() << "New center of mass: " << sf->reducedCenter;
-		//	LOG_INFO() << "New bounding box: " << bbminSFf << " - " << bbmaxSFf;
-		//}
-#endif
-
-		/*
-
-		// The clip vertices on both sides of the clip plane, ordered w.r.t. their position along the intersection lines.
-		multimap<FloatType, SFContourVertex*> clipVertices[3][2];
-
-		//if(sf->index != 4)
-		//	continue;
-
-		// Save the original head of the linked list of vertices of this stacking fault.
-		SFContourVertex* vertexHead = sf->globalVertexList;
-
-		// Create corner vertices.
-		for(int dim1 = 0; dim1 < 3; dim1++) {
-			int dim2, dim3;
-			if(dim1 == 0) { dim2 = 2; dim3 = 1; }
-			else if(dim1 == 1) { dim2 = 0; dim3 = 2; }
-			else { dim2 = 1; dim3 = 0; }
-			if(pbcFlags()[dim2] == false || pbcFlags()[dim3] == false) continue;
-			if(sf->reducedNormalVector[dim1] == 0) continue;
-
-			FloatType d = DotProduct(sf->reducedCenter - ORIGIN, sf->reducedNormalVector);
-			FloatType y = d / sf->reducedNormalVector[dim1];
-			if(pbcFlags()[dim1]) {
-				if(y <= -1 || y >= 1) continue;
-			}
-			else {
-				if(y <= 0 || y >= 1) continue;
-			}
-
-			Point3 cornerPoint;
-			cornerPoint[dim1] = y;
-			cornerPoint[dim2] = 0;
-			cornerPoint[dim3] = 0;
-
-			// Check if point is really in the stacking fault plane.
-			DISLOCATIONS_ASSERT(fabs(DotProduct(sf->reducedCenter - cornerPoint, sf->reducedNormalVector)) <= FLOATTYPE_EPSILON);
-
-
-			if(sf->isInfinite[0] == false && (cornerPoint.X < bbminSFf[0] || cornerPoint.X > bbmaxSFf[0])) continue;
-			if(sf->isInfinite[1] == false && (cornerPoint.Y < bbminSFf[1] || cornerPoint.Y > bbmaxSFf[1])) continue;
-			if(sf->isInfinite[2] == false && (cornerPoint.Z < bbminSFf[2] || cornerPoint.Z > bbmaxSFf[2])) continue;
-
-			bool isInsideSF;
-
-			if(sf->isInfinite[0] || sf->isInfinite[1] || sf->isInfinite[2])
-				isInsideSF = isInsideStackingFault(sf, vertexHead, cornerPoint);
-			else
-				isInsideSF = isInsideStackingFaultRay(sf, vertexHead, cornerPoint);
-
-			LOG_INFO() << " Dim1= " << dim1 <<  "  corner point: " << cornerPoint << "  abs: " << reducedToAbsolute(cornerPoint) << "  inside: " << isInsideSF;
-			//DISLOCATIONS_ASSERT(isInsideSF == false);
-
-			if(!isInsideSF)
-				continue;
-
-			Vector3 projectionDir2 = CrossProduct(unitVectors[dim2], sf->reducedNormalVector);
-			Vector3 projectionDir3 = CrossProduct(unitVectors[dim3], sf->reducedNormalVector);
-			DISLOCATIONS_ASSERT(projectionDir2[dim2] == 0);
-			DISLOCATIONS_ASSERT(projectionDir3[dim3] == 0);
-			DISLOCATIONS_ASSERT(projectionDir2[dim3] != 0);
-			DISLOCATIONS_ASSERT(projectionDir3[dim2] != 0);
-			FloatType tsort2 = DotProduct(projectionDir2, cornerPoint - sf->reducedCenter);
-			FloatType tsort3 = DotProduct(projectionDir3, cornerPoint - sf->reducedCenter);
-			FloatType tsort2_shifted = tsort2 + 1.0/projectionDir2[dim3];
-			FloatType tsort3_shifted = tsort3 + 1.0/projectionDir3[dim2];
-
-			LOG_INFO() << " dim2=" << dim2 << "  proj dir 2 : " << projectionDir2 << "  t2=" << tsort2 << "  tshifted2=" << tsort2_shifted;
-			LOG_INFO() << " dim3=" << dim3 << "  proj dir 3 : " << projectionDir3 << "  t3=" << tsort3 << "  tshifted3=" << tsort3_shifted;
-
-			// Create four corner vertices in the four quadrants.
-			SFContourVertex* vertex;
-
-			vertex = createSFVertex(sf, cornerPoint);
-			vertex->image[dim2] = -1; vertex->image[dim3] = -1;
-			clipVertices[dim2][0].insert(make_pair(-tsort2_shifted, vertex));
-			clipVertices[dim3][0].insert(make_pair(-tsort3_shifted, vertex));
-			LOG_INFO() << "  Add corner vertex: " << vertex->image << " [dim2][+] t = " << -tsort2_shifted;
-			LOG_INFO() << "  Add corner vertex: " << vertex->image << " [dim3][+] t = " << -tsort3_shifted;
-
-			vertex = createSFVertex(sf, cornerPoint);
-			vertex->image[dim2] = 0; vertex->image[dim3] = -1;
-			clipVertices[dim2][1].insert(make_pair(+tsort2_shifted, vertex));
-			clipVertices[dim3][0].insert(make_pair(-tsort3, vertex));
-			LOG_INFO() << "  Add corner vertex: " << vertex->image << " [dim2][-] t = " << +tsort2_shifted;
-			LOG_INFO() << "  Add corner vertex: " << vertex->image << " [dim3][+] t = " << -tsort3;
-
-			vertex = createSFVertex(sf, cornerPoint);
-			vertex->image[dim2] = 0; vertex->image[dim3] = 0;
-			clipVertices[dim2][1].insert(make_pair(+tsort2, vertex));
-			clipVertices[dim3][1].insert(make_pair(+tsort3, vertex));
-			LOG_INFO() << "  Add corner vertex: " << vertex->image << " [dim2][-] t = " << +tsort2;
-			LOG_INFO() << "  Add corner vertex: " << vertex->image << " [dim3][-] t = " << +tsort3;
-
-			vertex = createSFVertex(sf, cornerPoint);
-			vertex->image[dim2] = -1; vertex->image[dim3] = 0;
-			clipVertices[dim2][0].insert(make_pair(-tsort2, vertex));
-			clipVertices[dim3][1].insert(make_pair(+tsort3_shifted, vertex));
-			LOG_INFO() << "  Add corner vertex: " << vertex->image << " [dim2][+] t = " << -tsort2;
-			LOG_INFO() << "  Add corner vertex: " << vertex->image << " [dim3][-] t = " << +tsort3_shifted;
-		}
-
-		for(int dim = 0; dim < 3; dim++) {
-#ifdef DEBUG_DISLOCATIONS
-			for(SFContourVertex* vertex = sf->globalVertexList; vertex != NULL; vertex = vertex->globalNext)
-				DISLOCATIONS_ASSERT(vertex->image[dim] == 0 || vertex->image[dim] == -1);
-#endif
-			// Normal vector of the box face.
-			Vector3 slicePlaneNormal = unitVectors[dim];
-
-			// Calculate direction of intersection line of cell face with stacking fault plane.
-			Vector3 projectionDir = CrossProduct(slicePlaneNormal, sf->reducedNormalVector);
-			DISLOCATIONS_ASSERT(projectionDir[dim] == 0.0);
-
-			// Split polyline segments at periodic box faces.
-			for(SFContourVertex* vertex = sf->globalVertexList; vertex != NULL; vertex = vertex->globalNext)
-				splitPolylineSegment2(sf, vertex, dim, projectionDir, clipVertices[dim]);
-		}
-
-		for(int dim = 0; dim < 3; dim++) {
-			// Connect clip vertices.
-			LOG_INFO() << "  Dim=" << dim << "  # of clip vertices: " << clipVertices[dim][0].size();
-			DISLOCATIONS_ASSERT(clipVertices[dim][0].size() == clipVertices[dim][1].size());
-			DISLOCATIONS_ASSERT((clipVertices[dim][0].size() % 2) == 0);
-			for(int dir = 0; dir <= 1; dir++) {
-				LOG_INFO() << "  Dim=" << dim << "  dir = " << dir;
-				for(map<FloatType, SFContourVertex*>::iterator iter = clipVertices[dim][dir].begin(); iter != clipVertices[dim][dir].end(); ++iter) {
-					SFContourVertex* vertex = iter->second;
-					Point3 pos = vertex->pos - Vector3(vertex->image.X, vertex->image.Y, vertex->image.Z);
-					LOG_INFO() << "    vertex " << pos << "  t=" << iter->first << "  in/out=" << (vertex->next == NULL);
-				}
-				for(map<FloatType, SFContourVertex*>::iterator iter = clipVertices[dim][dir].begin(); iter != clipVertices[dim][dir].end(); ) {
-					SFContourVertex* vertex1 = iter->second;
-					++iter;
-					DISLOCATIONS_ASSERT(iter != clipVertices[dim][dir].end());
-					SFContourVertex* vertex2 = iter->second;
-					++iter;
-
-					if(vertex1->next != NULL) {
-						swap(vertex1, vertex2);
-					}
-
-					//LOG_INFO() << "Connecting vertices, dim: " << dim << "  dir=" << dir;
-					//LOG_INFO() << " vertex1: " << vertex1->pos;
-					//LOG_INFO() << " vertex2: " << vertex2->pos;
-					DISLOCATIONS_ASSERT(vertex1->pos[dim] == vertex2->pos[dim]);
-					DISLOCATIONS_ASSERT(vertex1->next == NULL);
-					DISLOCATIONS_ASSERT(vertex2->previous == NULL);
-					DISLOCATIONS_ASSERT(vertex2->next != vertex1);
-					DISLOCATIONS_ASSERT(vertex1->previous != vertex2);
-					DISLOCATIONS_ASSERT(vertex1->image[dim] == vertex2->image[dim]);
-
-					vertex1->next = vertex2;
-					vertex2->previous = vertex1;
-				}
-			}
-		}
-		*/
-
-		// Convert back to absolute coordinates.
-		for(SFContourVertex* vertex = sf->globalVertexList; vertex != NULL; vertex = vertex->globalNext) {
-			//vertex->pos -= Vector3(vertex->image.X, vertex->image.Y, vertex->image.Z);
 			vertex->pos = reducedToAbsolute(vertex->pos);
-
-			//if(sf->isInfinite[0]) vertex->image.X = 0;
-			//if(sf->isInfinite[1]) vertex->image.Y = 0;
-			//if(sf->isInfinite[2]) vertex->image.Z = 0;
 		}
-		//if(sf->index == 881)
-		//	break;
-
-
-		/*
-		// Check topology.
-		for(SFContourVertex* vertex = sf->globalVertexList; vertex != NULL; vertex = vertex->globalNext) {
-			DISLOCATIONS_ASSERT(vertex->next != NULL);
-			DISLOCATIONS_ASSERT(vertex->previous != NULL);
-			DISLOCATIONS_ASSERT(isWrappedVector(vertex->next->pos - vertex->pos) == false);
-			DISLOCATIONS_ASSERT(vertex->image[0] >= -1 && vertex->image[0] <= 1);
-			DISLOCATIONS_ASSERT(vertex->image[1] >= -1 && vertex->image[1] <= 1);
-			DISLOCATIONS_ASSERT(vertex->image[2] >= -1 && vertex->image[2] <= 1);
-		}
-		*/
 	}
 
 	if(hasInfiniteSF){
@@ -1301,8 +1029,6 @@ void DXAStackingFaults::splitPolylineSegment2(StackingFault* sf, SFContourVertex
 	FloatType tsort = DotProduct(projectionDir, ipoint - sf->reducedCenter);
 	tsort -= DotProduct(projectionDir, Vector3(intersectionPoint1->image.X, intersectionPoint1->image.Y, intersectionPoint1->image.Z));
 
-	//LOG_INFO() << "  Splitting Dim=" << dim << " vertex1: " << vertex1->pos[dim] << " vertex2: " << vertex2->pos[dim] << "  tsort = " << tsort;
-
 	if(cell1 < cell2) {
 		clipVertices[0].insert(make_pair(-tsort, intersectionPoint1));
 		clipVertices[1].insert(make_pair(+tsort, intersectionPoint2));
@@ -1381,37 +1107,6 @@ LOG_INFO() << "Finding stacking fault border dislocations.";
 				if(startCircuit->isDangling == false && endCircuit->isDangling == false && startCircuit->isInRing(endCircuit))
 					contour->segmentIntervals.back().second = contour->segmentIntervals.front().first;
 			}
-
-#ifdef DEBUG_DISLOCATIONS
-			for(vector< pair<int,int> >::const_iterator i1 = contour->segmentIntervals.begin(); i1 != contour->segmentIntervals.end(); ++i1) {
-				vector< pair<int,int> >::const_iterator i2 = i1 + 1;
-				if(i2 == contour->segmentIntervals.end()) i2 = contour->segmentIntervals.begin();
-				if(i2 == i1) break;
-				DISLOCATIONS_ASSERT(i2->first >= i1->second || i2->second <= i1->first);
-			}
-#endif
-
-#if 0
-			if(sf->index == 1852) {
-				LOG_INFO() << "sf=" << sf->index;
-				for(int i=0; i<contour->segmentIntervals.size(); i++) {
-					LOG_INFO() << "Interval " << i << ": " << contour->segmentIntervals[i].first << " - " << contour->segmentIntervals[i].second << "  segment: " << contour->borderSegments[i]->segment->index;
-					MeshEdge* startEdge = contour->edges[contour->segmentIntervals[i].first];
-					MeshEdge* endEdge = contour->edges[contour->segmentIntervals[i].second];
-					LOG_INFO() << absoluteToReduced(startEdge->node1->pos - contour->borderSegments[i]->center())
-							<< "  startnode: " << absoluteToReduced(startEdge->node1->pos)
-							<< "  start: " << absoluteToReduced(contour->borderSegments[i]->center())
-							<< "  end: " << absoluteToReduced(contour->borderSegments[i]->oppositeCircuit->center());
-				}
-				//ofstream stream2("interface_mesh.vtk");
-				//writeInterfaceMeshFile(stream2);				
-				stringstream ss;
-				ss << "contour" << sf->index << "_" << (contour - sf->contours.begin()) << ".vtk";
-				ofstream stream1(ss.str().c_str());
-				contour->writeToFile(stream1);
-//				raiseError("STOP HERE");
-			}
-#endif
 		}
 	}
 

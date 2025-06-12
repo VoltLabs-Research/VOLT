@@ -19,16 +19,15 @@ Logger::~Logger(){
 void Logger::setLogToFile(const std::string& filename){
     std::lock_guard<std::mutex> lock(logMutex);
     fileStream = std::make_shared<std::ofstream>(filename, std::ios::app);
-    if(fileStream->is_open()){
-        outputStream = fileStream;
-        logToConsole = false;
+    if(!fileStream->is_open()){
+        throw std::runtime_error("Failed to open log file: " + filename);
     }
 }
 
 void Logger::setLogToConsole(bool enable){
     std::lock_guard<std::mutex> lock(logMutex);
     logToConsole = enable;
-    if(enable && (!fileStream || !fileStream->is_open())){
+    if(enable){
         outputStream = std::shared_ptr<std::ostream>(&std::cout, [](std::ostream*){});
     }
 }
@@ -39,9 +38,14 @@ void Logger::log(LogLevel level, const std::string& message){
     std::lock_guard<std::mutex> lock(logMutex);
     std::string formattedMessage = formatMessage(level, message);
     
-    if(outputStream){
-        *outputStream << formattedMessage << std::endl;
-        outputStream->flush();
+    if(logToConsole){
+        std::cout << formattedMessage << std::endl;
+        std::cout.flush();
+    }
+    
+    if(fileStream && fileStream->is_open()){
+        *fileStream << formattedMessage << std::endl;
+        fileStream->flush();
     }
 }
 
@@ -58,7 +62,8 @@ std::string Logger::formatMessage(LogLevel level, const std::string& message){
         ss << "[Thread-" << std::this_thread::get_id() << "] ";
     }
     
-    ss << "[" << loggerName << "] " << message;
+    // ss << "[" << loggerName << "] " << message;
+    ss << message;
     
     return ss.str();
 }
@@ -77,9 +82,9 @@ std::string Logger::levelToString(LogLevel level){
         case LogLevel::DEBUG:
             return "DEBUG";
         case LogLevel::INFO:
-            return "INFO ";
+            return "INFO";
         case LogLevel::WARN:
-            return "WARN ";
+            return "WARN";
         case LogLevel::ERROR:
             return "ERROR";
         case LogLevel::FATAL:

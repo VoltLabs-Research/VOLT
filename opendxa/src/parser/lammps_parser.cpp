@@ -2,7 +2,7 @@
 #include <opendxa/utils/cutoff_estimator.hpp>
 
 void DXAClustering::readLAMMPSAtomsFile(ParserStream &stream){
-	std::cout << "Parsing LAMMPS dump file." << std::endl;
+	LOG_INFO() << "Parsing LAMMPS dump file.";
 	int numRealInputAtoms = -1;
 	int columnPosX = -1;
 	int columnPosY = -1;
@@ -71,9 +71,9 @@ void DXAClustering::readLAMMPSAtomsFile(ParserStream &stream){
             if(columnPosY == -1) raiseError("File parsing error. Input file does not contain Y coordinate column.");
             if(columnPosZ == -1) raiseError("File parsing error. Input file does not contain Z coordinate column.");
 
-			std::cout << "Reading " << std::to_string(numRealInputAtoms) << " atoms at timestep " << timestep << " from input file (required memory: " << std::to_string(numRealInputAtoms * sizeof(InputAtom) / 1024 / 1024) << " mbyte)." << std::endl;
+			LOG_INFO() << "Reading " << numRealInputAtoms << " atoms at timestep " << timestep << " from input file (required memory: " << numRealInputAtoms * sizeof(InputAtom) / 1024 / 1024 << " mbyte).";
 			if(reducedCoordinates){
-				std::cout << "LAMMPS file contains reduced atom coordinates." << std::endl;
+				LOG_INFO() << "LAMMPS file contains reduced atom coordinates.";
 			}
 			inputAtoms.reserve(numRealInputAtoms);
 			for(int i = 0; i < numRealInputAtoms; ++i){

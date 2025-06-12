@@ -16,9 +16,6 @@ public:
 	void findStackingFaultPlanes();
 	void findSFDislocationContours();
 	void finishStackingFaults(FloatType flatten = DEFAULT_SF_FLATTEN_LEVEL);
-	void writeStackingFaults(ostream& stream) const;
-	void writeStackingFaultContours(ostream& stream) const;
-	void writeStackingFaultPolylines(ostream& stream) const;
 	void cleanup();
 	void compute(const OpenDXA::Config &config);
 

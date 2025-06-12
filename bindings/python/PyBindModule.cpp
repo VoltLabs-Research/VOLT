@@ -5,9 +5,74 @@
 #include <opendxa/core/stacking_faults.hpp>
 #include <opendxa/utils/cutoff_estimator.hpp>
 #include <opendxa/engine/config.hpp>
+#include <opendxa/logger/logger_manager.hpp>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
+
+class PythonLogger{
+public:
+    PythonLogger(){
+        if(!LoggerManager::isInitialized()){
+            LoggerManager::initialize("Global");
+        }
+    }
+
+    void setLevel(const std::string &level){
+        // TODO: duplicated code
+        LogLevel logLevel = LogLevel::INFO;
+        if (level == "DEBUG") logLevel = LogLevel::DEBUG;
+        else if (level == "INFO") logLevel = LogLevel::INFO;
+        else if (level == "WARN") logLevel = LogLevel::WARN;
+        else if (level == "ERROR") logLevel = LogLevel::ERROR;
+        else if (level == "FATAL") logLevel = LogLevel::FATAL;
+        LoggerManager::get().setLevel(logLevel);
+    }
+
+    void setLogFile(const std::string &filename){
+        LoggerManager::get().setLogToFile(filename);
+    }
+
+    void enableConsole(bool enable){
+        LoggerManager::get().setLogToConsole(enable);
+    }
+
+    void enableTimestamp(bool enable){
+        LoggerManager::get().enableTimestamp(enable);
+    }
+
+    void enableThreadId(bool enable){
+        LoggerManager::get().enableThreadId(enable);
+    }
+
+    void debug(const std::string &message){
+        LOG_DEBUG() << message;
+    }
+
+    void info(const std::string &message){
+        LOG_INFO() << message;
+    }
+
+    void warn(const std::string &message){
+        LOG_WARN() << message;
+    }
+
+    void error(const std::string &message){
+        LOG_ERROR() << message;
+    }
+
+    void fatal(const std::string &message){
+        LOG_FATAL() << message;
+    }
+
+    bool hasFatalOccurred() const{
+        return LoggerManager::get().hasFatalOccurred();
+    }
+
+    void clearFatalFlag(){
+        LoggerManager::get().clearFatalFlag();
+    }
+};
 
 double estimateCutoffWrapper(
         const std::vector<std::array<double, 3>>& positions,
@@ -203,6 +268,21 @@ PYBIND11_MODULE(_core, module){
              py::arg("input_file"), py::arg("output_file") = "")
         .def("get_config", &DislocationAnalysis::getConfig,
              "Get current configuration as dictionary");
+
+    py::class_<PythonLogger>(module, "Logger", "Logger instance for Python")
+        .def(py::init<>(), "Create a logger instance")
+        .def("set_level", &PythonLogger::setLevel, "Set log level", py::arg("level"))
+        .def("set_log_file", &PythonLogger::setLogFile, "Set log file", py::arg("filename"))
+        .def("enable_console", &PythonLogger::enableConsole, "Enable console output", py::arg("enable"))
+        .def("enable_timestamp", &PythonLogger::enableTimestamp, "Enable timestamps", py::arg("enable"))
+        .def("enable_thread_id", &PythonLogger::enableThreadId, "Enable thread ID", py::arg("enable"))
+        .def("debug", &PythonLogger::debug, "Log debug message", py::arg("message"))
+        .def("info", &PythonLogger::info, "Log info message", py::arg("message"))
+        .def("warn", &PythonLogger::warn, "Log warning message", py::arg("message"))
+        .def("error", &PythonLogger::error, "Log error message", py::arg("message"))
+        .def("fatal", &PythonLogger::fatal, "Log fatal message", py::arg("message"))
+        .def("has_fatal_occurred", &PythonLogger::hasFatalOccurred, "Check if fatal error occurred")
+        .def("clear_fatal_flag", &PythonLogger::clearFatalFlag, "Clear fatal error flag");
 
     module.attr("FCC") = py::int_(static_cast<int>(FCC));
     module.attr("HCP") = py::int_(static_cast<int>(HCP));

@@ -75,7 +75,7 @@ void BaseAtom::addNeighbor(BaseAtom* neighbor){
     }
     
     if(hasNeighbor(neighbor)){
-        std::cout << "Warning: Atom " << tag << " already has neighbor: " << neighbor->tag << std::endl;
+        LOG_WARN() << "Warning: Atom " << tag << " already has neighbor: " << neighbor->tag;
         DISLOCATIONS_ASSERT_GLOBAL(false);
         return;
     }

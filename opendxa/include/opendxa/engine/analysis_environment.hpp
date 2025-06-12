@@ -34,7 +34,6 @@ public:
 	const Point3& getSimulationCellOrigin() const { return simulationCellOrigin; }
 	const Matrix3& getReciprocalSimulationCell() const { return reciprocalSimulationCell; }
 
-	void writeSimulationCellFileVTK(ostream& stream) const;
 	void writeSimulationCellHeaderLAMMPS(ostream& stream);
 
 protected:

@@ -501,7 +501,7 @@ void DXAClustering::joinClusters(ClusterTransition* transition, list<ClusterTran
 	DISLOCATIONS_ASSERT(cluster1->masterCluster == NULL);
 	DISLOCATIONS_ASSERT(cluster2->masterCluster == NULL);
 
-	std::cout << "Joining clusters " << std::to_string(cluster1->id) << " and " << std::to_string(cluster2->id) << std::endl;
+	LOG_INFO() << "Joining clusters " << std::to_string(cluster1->id) << " and " << std::to_string(cluster2->id);
 
 	ClusterTransition* t;
 
