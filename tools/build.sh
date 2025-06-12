@@ -75,7 +75,6 @@ run_command "Cleaning previous builds" \
     $PYTHON_CMD setup.py clean --all 2>/dev/null || true
 
 rm -rf build/ dist/ *.egg-info/ *.so __pycache__/ 2>/dev/null || true
-rm -rf opendxa/ 2>/dev/null || true
 
 # Use pip install instead of direct setup.py
 run_command "Installing Python package" \

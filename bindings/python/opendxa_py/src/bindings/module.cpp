@@ -2,6 +2,8 @@
 #include <opendxa_py/bindings/dislocation_analysis.hpp>
 #include <opendxa_py/bindings/cutoff.hpp>
 #include <opendxa_py/bindings/logger.hpp>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 
 namespace OpenDXA::Bindings::Python{
 

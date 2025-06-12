@@ -1,7 +1,5 @@
 from setuptools import setup, find_packages
 from pybind11.setup_helpers import Pybind11Extension, build_ext
-from pybind11 import get_cmake_dir
-import pybind11
 import os
 import shutil
 from pathlib import Path
@@ -10,10 +8,6 @@ from pathlib import Path
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 OPENDXA_PY_ROOT = CURRENT_DIR
 OPENDXA_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, '../../opendxa'))
-
-lib_dir = os.path.join(OPENDXA_PY_ROOT, 'lib')
-if not os.path.exists(lib_dir):
-    os.makedirs(lib_dir)
 
 INCLUDE_DIR = os.path.join(OPENDXA_ROOT, 'include')
 SRC_DIR = os.path.join(OPENDXA_ROOT, 'src')
@@ -59,7 +53,6 @@ class CustomBuildExt(build_ext):
         
         # Copy source files to build directory with flattened structure
         new_sources = []
-        source_map = {}
         
         for i, source in enumerate(ext.sources):
             if os.path.isabs(source):
@@ -79,7 +72,6 @@ class CustomBuildExt(build_ext):
             
             shutil.copy2(source_file, new_path)
             new_sources.append(new_path)
-            source_map[source] = new_path
             
         # Update extension sources
         ext.sources = new_sources
@@ -227,7 +219,7 @@ print("=" * 60)
 
 ext_modules = [
     Pybind11Extension(
-        'lib._core',
+        'opendxa._core',
         cpp_files, 
         include_dirs=include_dirs,
         libraries=libraries,
@@ -254,8 +246,8 @@ ext_modules = [
 setup(
     name='opendxa',
     version='1.0.0',
-    packages=['lib'], 
-    package_dir={'lib': 'lib'}, 
+    packages=['opendxa'],
+    package_dir={'opendxa': 'opendxa'}, 
     author='rodyherrera',
     author_email='contact@rodyherrera.com',
     description='Open Source Dislocation Extraction Algorithm',
