@@ -1,9 +1,6 @@
 #ifndef __DXA_SETTINGS_H
 #define __DXA_SETTINGS_H
 
-/// The level of verbosity (0 to 4)
-#define DISLOCATION_TRACE_OUTPUT 2
-
 /// This is used to avoid disclinations.
 #define NUM_RECURSIVE_WALK_PRIORITIES 5
 

@@ -714,10 +714,8 @@ bool OutputMesh::pointInPolyhedron(const Point3 p, const AnalysisEnvironment& ce
 		Vector3 normal = CrossProduct(edgeVectors[0], edgeVectors[1]);
 		FloatType normalLengthSq = LengthSquared(normal);
 		if(fabs(normalLengthSq) <= 1e-12) continue;
-		//FloatType sign = DotProduct(normal, vertexVectors[0]);
 		bool isInsideTriangle = true;
 		for(int v = 0; v < 3; v++) {
-			//DISLOCATIONS_ASSERT(fabs(DotProduct(normal, edgeVectors[v])) < 1e-12);
 			if(DotProduct(vertexVectors[v], CrossProduct(normal, edgeVectors[v])) >= 0.0) {
 				isInsideTriangle = false;
 				break;
@@ -767,21 +765,6 @@ bool OutputMesh::pointInPolyhedron(const Point3 p, const AnalysisEnvironment& ce
 		}
 		while(edge != closestVertex->edges);
 	}
-	else if(closestFacet) {
-		//closestFacet->entity = 1;
-		//cerr << "facet location: " << (closestFacet->edges[0]->vertex2->pos);
-		//cerr << "facet location: " << (closestFacet->edges[1]->vertex2->pos);
-		//cerr << "facet location: " << (closestFacet->edges[2]->vertex2->pos);
-	}
-
-	//cerr << "Closest DISTANCE = " << sqrt(closestDistance2);
-	//cerr << "vertex: " << closestVertex;
-	//cerr << "edge: " << closestEdge;
-	//cerr << "facet: " << closestFacet;
-	//cerr << "intersection point: " << (p + closestVector);
-	//cerr << "normal: " << closestNormal;
-
-	//cerr << "Corner " << p << " inside disordered region: " << (DotProduct(closestNormal, closestVector) > 0.0) << endl;
 	return DotProduct(closestNormal, closestVector) > 0.0;
 }
 
@@ -826,13 +809,9 @@ void OutputMesh::refineFacets(const AnalysisEnvironment& cell, FloatType maxRati
 		if(longestWrappedEdge != NULL || longestEdgeLengthSq > maxEdgeLengthSquared ||
 				(shortestEdgeLengthSq > FLOATTYPE_EPSILON && longestEdgeLengthSq / shortestEdgeLengthSq > maxRatioSquared)) {
 
-			//if(longestWrappedEdge == NULL)		//	cerr << "Ratio: " << (longestEdgeLengthSq / shortestEdgeLengthSq);
-
 			OutputVertex* splitVertex = createVertex(vertex2->pos - (FloatType)0.5 * edgev);
 			splitVertex->normal = vertex1->normal;
 			splitVertex->numFacets = 2;
-
-			//cerr << "Splitting edge: " << " facet=" << facet << "  edge=" << edgev << "  " << vertex1->pos << " - " << vertex2->pos << "  splitvertex=" << splitVertex->pos;
 
 			OutputEdge* edge1 = longestEdge;
 			OutputEdge* edge3 = longestEdge->oppositeEdge;

@@ -142,9 +142,7 @@ void DXAClustering::orderCrystallineAtoms(){
 ******************************************************************************/
 void DXAClustering::determineDistanceFromDefects()
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Determining distances from nearest crystal defect.";
-#endif
 
 	// Reset fields.
 	for(int atomIndex = 0; atomIndex < (int)inputAtoms.size(); atomIndex++) {
@@ -186,9 +184,7 @@ void DXAClustering::determineDistanceFromDefects()
 ******************************************************************************/
 void DXAClustering::clusterCrystallineAtoms(int level)
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Decomposing crystalline atoms into clusters (pass " << level << ").";
-#endif
 
 	// First grow any existing clusters.
 	if(level > 0) {
@@ -343,10 +339,7 @@ void DXAClustering::disableDisclinationBorderAtom(InputAtom* atom)
 ******************************************************************************/
 void DXAClustering::createClusterTransitions()
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Calculating cluster transition matrices.";
-#endif
-
 	// Iterate over all local atoms that are part of a crystalline cluster.
 	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != firstGhostAtom; ++atom) {
 		// Skip atoms that are not part of a cluster.
@@ -461,9 +454,7 @@ void DXAClustering::createSuperclusters(vector<ClusterTransition*>& clusterTrans
 {
 	DISLOCATIONS_ASSERT(numClusterTransitions == (int)clusterTransitions.size());
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Joining " << clusters.size() << " crystallite clusters into superclusters.";
-#endif
 	numClusterDisclinations = 0;
 
 	// In the beginning, each cluster is considered a supercluster.
@@ -628,9 +619,7 @@ void DXAClustering::joinClusters(ClusterTransition* transition, list<ClusterTran
 ******************************************************************************/
 void DXAClustering::alignClusterOrientations()
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Aligning cluster orientations.";
-#endif
 
 	// Some cluster-cluster transitions might have been disabled before to
 	// avoid disclinations. We now have to disable the corresponding border atoms.

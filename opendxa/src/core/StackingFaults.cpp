@@ -99,9 +99,7 @@ void DXAStackingFaults::compute(const OpenDXA::Config &config){
 }
 
 bool DXAStackingFaults::createStackingFaultEdges(){
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Creating stacking fault contour edges.";
-#endif
 
 	bool isInvalidInput = false;
 	int numExtraEdgesCreated = 0;
@@ -190,9 +188,7 @@ bool DXAStackingFaults::createStackingFaultEdges(){
 }
 
 void DXAStackingFaults::findStackingFaultPlanes(){
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Tracing stacking fault contours.";
-#endif
 
 	// Reset visit flags of atoms.
 	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom)
@@ -347,9 +343,7 @@ void DXAStackingFaults::findStackingFaultPlanes(){
 		}
 	}
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Found " << stackingFaults.size() << " stacking faults.";
-#endif
 }
 
 /******************************************************************************
@@ -910,9 +904,7 @@ void DXAStackingFaults::finishStackingFaults(FloatType flatten)
 {
 	createSFPolylines(flatten);
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Wrapping infinite stacking faults at periodic boundaries.";
-#endif
 
 	bool hasInfiniteSF = false;
 
@@ -1227,34 +1219,27 @@ void DXAStackingFaults::finishStackingFaults(FloatType flatten)
 		*/
 	}
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
-	if(hasInfiniteSF)
+	if(hasInfiniteSF){
 		LOG_INFO() << "WARNING: Detected infinite stacking faults in the periodic simulation cell. They cannot be processed yet.";
+	}
 	LOG_INFO() << "Triangulating stacking fault polygons.";
-#endif
 	SFTessellator tessellator(*this);
 	for(vector<StackingFault*>::const_iterator sf = stackingFaults.begin(); sf != stackingFaults.end(); ++sf) {
 		if((*sf)->isInvalid == false)
 			tessellator.tessellateSF(*sf);
 	}
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Refining triangulation of stacking fault polygons.";
-#endif
 	stackingFaultOutputMesh.refineFacets(*this, 40.0);
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Smoothing stacking faults.";
-#endif
 	for(int iteration = 0; iteration < 20; iteration++) {
 		stackingFaultOutputMesh.smoothMesh(0.5, *this, true);
 	}
 	// Refine again to split too long facets which might result from slight displacement of vertices during smoothing.
 	stackingFaultOutputMesh.refineFacets(*this);
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Wrapping triangulated stacking faults at periodic boundaries.";
-#endif
 	stackingFaultOutputMesh.wrapMesh(*this);
 }
 
@@ -1331,9 +1316,7 @@ void DXAStackingFaults::splitPolylineSegment2(StackingFault* sf, SFContourVertex
 
 void DXAStackingFaults::findSFDislocationContours()
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
-	LOG_INFO() << "Finding stacking fault border dislocations.";
-#endif
+LOG_INFO() << "Finding stacking fault border dislocations.";
 
 //#pragma omp parallel for
 	for(int sfindex = 0; sfindex < (int)stackingFaults.size(); sfindex++) {
@@ -1535,9 +1518,7 @@ void DXAStackingFaults::findSFDislocationContours()
 ******************************************************************************/
 void DXAStackingFaults::createSFPolylines(FloatType flatten)
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
-	LOG_INFO() << "Creating stacking fault contour lines.";
-#endif
+LOG_INFO() << "Creating stacking fault contour lines.";
 
 //#pragma omp parallel for
 	for(int sfindex = 0; sfindex < (int)stackingFaults.size(); sfindex++) {
@@ -1551,16 +1532,13 @@ void DXAStackingFaults::createSFPolylines(FloatType flatten)
 				addMeshIntervalToSFPolyline(*contour, 0, contour->edges.size(), wrappedPoint, unwrappedPoint);
 			}
 			else {
-				//LOG_INFO() << "New contour: sf=" << sf->index;
+				LOG_INFO() << "New contour: sf=" << sf->index;
 				for(size_t segmentIndex1 = 0; segmentIndex1 < contour->borderSegments.size(); segmentIndex1++) {
 					size_t segmentIndex2 = segmentIndex1 + 1;
 					if(segmentIndex2 == contour->borderSegments.size()) segmentIndex2 = 0;
 
 					int startIndex = contour->segmentIntervals[segmentIndex1].second;
 					int endIndex = contour->segmentIntervals[segmentIndex2].first;
-
-					//if(sf->index == 590)
-					//	LOG_INFO() << "disloc interval: " << startIndex << " - " << endIndex;
 
 					// Advance base point to beginning of first dislocation interval.
 					if(segmentIndex1 == 0) {
@@ -1569,28 +1547,11 @@ void DXAStackingFaults::createSFPolylines(FloatType flatten)
 							Vector3 delta = wrapVector((*edge)->node1->pos - wrappedPoint);
 							wrappedPoint += delta;
 							unwrappedPoint += delta;
-							//LOG_INFO() << " skipping " << (*edge)->node1->pos << "  " << unwrappedPoint <<  "  " << wrappedPoint;
+							LOG_INFO() << " skipping " << (*edge)->node1->pos << "  " << unwrappedPoint <<  "  " << wrappedPoint;
 						}
 					}
-
-					//if(sf->index == 590) {
-					//	LOG_INFO() << " before disloc " << "  " << absoluteToReduced(unwrappedPoint) << "    " << absoluteToReduced(wrappedPoint);
-					//	LOG_INFO() << "   node = " << absoluteToReduced(contour->edges[startIndex]->node1->pos);
-					//}
-
-					//LOG_INFO() << DotProduct(unwrappedPoint - sf->center, sf->normalVector);
-					//DISLOCATIONS_ASSERT(fabs(DotProduct(unwrappedPoint - sf->center, sf->normalVector)) < 50.0);
-					//DISLOCATIONS_ASSERT(wrapVector(unwrappedPoint - wrappedPoint).equals(NULL_VECTOR));
 					addDislocationIntervalToSFPolyline(*contour, contour->borderSegments[segmentIndex1], wrappedPoint, unwrappedPoint);
-
-					//if(sf->index == 590)
-					//	LOG_INFO() << " after disloc " << "  " << absoluteToReduced(unwrappedPoint) << "    " << absoluteToReduced(wrappedPoint);
-
-					//LOG_INFO() << DotProduct(unwrappedPoint - sf->center, sf->normalVector);
-					//DISLOCATIONS_ASSERT(fabs(DotProduct(unwrappedPoint - sf->center, sf->normalVector)) < 50.0);
 					addMeshIntervalToSFPolyline(*contour, startIndex, endIndex, wrappedPoint, unwrappedPoint);
-					//DISLOCATIONS_ASSERT(fabs(DotProduct(unwrappedPoint - sf->center, sf->normalVector)) < 50.0);
-					//DISLOCATIONS_ASSERT(wrapVector(unwrappedPoint - wrappedPoint).equals(NULL_VECTOR));
 				}
 			}
 
@@ -1602,16 +1563,6 @@ void DXAStackingFaults::createSFPolylines(FloatType flatten)
 					*p -= (flatten * t) * sf->normalVector;
 				}
 			}
-
-#if 0
-			if(sf->index == 397/* && contour == sf->contours.begin()*/) {
-				stringstream ss;
-				ss << "polyline" << sf->index << "_" << (contour - sf->contours.begin()) << ".vtk";
-				ofstream stream(ss.str().c_str());
-				contour->writePolyline(stream);
-				LOG_INFO() << "******* Writing contour polyline " << sf->index << "_" << (contour - sf->contours.begin()) << " size " << contour->polyline.size();
-			}
-#endif
 		}
 	}
 }
@@ -1624,7 +1575,7 @@ pair<int,int> DXAStackingFaults::findSFContourSegmentIntersection(StackingFaultC
 {
 	DISLOCATIONS_ASSERT(find(segments.begin(), segments.end(), segment) != segments.end());
 
-	//LOG_INFO() << "sf=" << contour.sf->index << "  segment=" << segment->index << "  startIndex=" << (interiorEdge - contour.edges.begin());
+	LOG_INFO() << "sf=" << contour.sf->index << "  segment=" << segment->index << "  startIndex=" << (interiorEdge - contour.edges.begin());
 
 	// Check if the start edge is on one of the Burgers circuits.
 	for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++) {
@@ -1634,7 +1585,6 @@ pair<int,int> DXAStackingFaults::findSFContourSegmentIntersection(StackingFaultC
 			MeshEdge* circuitEdge = circuit->firstEdge;
 			do {
 				if(*interiorEdge == circuitEdge) {
-					//LOG_INFO() << "Invalid start edge";
 					int startIntersection = interiorEdge - contour.edges.begin();
 					int endIntersection = startIntersection + 1;
 					if(endIntersection == contour.edges.size()) endIntersection = 0;
@@ -1656,7 +1606,6 @@ pair<int,int> DXAStackingFaults::findSFContourSegmentIntersection(StackingFaultC
 			}
 		}
 	}
-
 
 	// Go along the contour.
 	vector<MeshEdge*>::const_iterator ci1 = interiorEdge;
@@ -1719,12 +1668,6 @@ pair<int,int> DXAStackingFaults::findSFContourSegmentIntersection(StackingFaultC
 			}
 		}
 
-	//	if(contour.sf->index == 1978 && interiorEdge - contour.edges.begin() == 4 && segment->index == 373) {
-		//	LOG_INFO() << "edgeIndex=" << (ci2 - contour.edges.begin()) << "  circuit[0] isforward = " << segment->circuits[0]->isForwardCircuit() << " segment=" << segment->index;
-			//LOG_INFO() << "goingOutside[0] = " << goingOutside[0] << "   goingOutside[1] = " << goingOutside[1];
-			//LOG_INFO() << "goingInside[0] = " << goingInside[0] << "   goingInside[1] = " << goingInside[1];
-		//}
-
 		bool wentOutside = false;
 		if(isInside) {
 			for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++) {
@@ -1733,24 +1676,16 @@ pair<int,int> DXAStackingFaults::findSFContourSegmentIntersection(StackingFaultC
 					wentOutside = true;
 					intersectionPoints.push_back(ci2 - contour.edges.begin());
 					intersectionCircuits.push_back(circuitIndex);
-					//if(contour.sf->index == 1978 && interiorEdge - contour.edges.begin() == 4) {
-					//	LOG_INFO() << "  goin outside at " << (ci2 - contour.edges.begin()) << "  isForwardCircuit=" << segment->circuits[circuitIndex]->isForwardCircuit() << " segment=" << segment->index;
-					//}
 					break;
 				}
 			}
 		}
-		//int wentInside = -1;
 		if(!isInside && !isFullyOutside) {
 			for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++) {
 				if(goingInside[circuitIndex] > 0 && goingInside[circuitIndex] >= goingOutside[circuitIndex]) {
 					isInside = true;
 					intersectionPoints.push_back(ci2 - contour.edges.begin());
 					intersectionCircuits.push_back(circuitIndex);
-					//if(contour.sf->index == 1978 && interiorEdge - contour.edges.begin() == 4) {
-					//	LOG_INFO() << "  goin inside at " << (ci2 - contour.edges.begin()) << "  isForwardCircuit=" << segment->circuits[circuitIndex]->isForwardCircuit() << " segment=" << segment->index;
-					//}
-					//wentInside = circuitIndex;
 					break;
 				}
 			}
@@ -1761,9 +1696,6 @@ pair<int,int> DXAStackingFaults::findSFContourSegmentIntersection(StackingFaultC
 					isInside = false;
 					intersectionPoints.push_back(ci2 - contour.edges.begin());
 					intersectionCircuits.push_back(circuitIndex);
-					//if(contour.sf->index == 1978 && interiorEdge - contour.edges.begin() == 4) {
-					//	LOG_INFO() << "  goin outside at " << (ci2 - contour.edges.begin()) << "  isForwardCircuit=" << segment->circuits[circuitIndex]->isForwardCircuit() << " segment=" << segment->index;
-					//}
 					break;
 				}
 			}
@@ -1772,86 +1704,34 @@ pair<int,int> DXAStackingFaults::findSFContourSegmentIntersection(StackingFaultC
 	}
 	while(ci1 != interiorEdge);
 
-	//LOG_INFO() << "S1";
-#ifdef DEBUG_DISLOCATIONS
-	if((intersectionPoints.size() % 2) != 0) {
-		ofstream stream1("contour.vtk");
-		contour.writeToFile(stream1);
-		ofstream stream3("forward_circuit.vtk");
-		if(segment->forwardCircuit()->isDangling == false)
-			segment->forwardCircuit()->writeToFile(stream3);
-		else
-			segment->forwardCircuit()->writeCapToFile(stream3);
-		ofstream stream4("backward_circuit.vtk");
-		if(segment->backwardCircuit()->isDangling == false)
-			segment->backwardCircuit()->writeToFile(stream4);
-		else
-			segment->backwardCircuit()->writeCapToFile(stream4);
-	}
-#endif
 	DISLOCATIONS_ASSERT((intersectionPoints.size() % 2) == 0);
 	for(int i = 0; i < (int)intersectionPoints.size();) {
-		//LOG_INFO() << "i=" << i << "  size=" << intersectionPoints.size();
 		if(intersectionPoints[i] == intersectionPoints[i+1] &&
 				intersectionCircuits[i] == intersectionCircuits[i+1]) {
-			//LOG_INFO() << "S2";
 			intersectionPoints.erase(intersectionPoints.begin() + i, intersectionPoints.begin() + i + 2);
 			intersectionCircuits.erase(intersectionCircuits.begin() + i, intersectionCircuits.begin() + i + 2);
 		}
 		else i += 2;
 	}
-	//LOG_INFO() << "S3" << "  size=" << intersectionPoints.size();
 	for(int i = 1; i < (int)intersectionPoints.size() - 1; ) {
-		//LOG_INFO() << "i=" << i << "  size=" << intersectionPoints.size();
 		if(intersectionPoints[i] == intersectionPoints[i+1] &&
 				intersectionCircuits[i] == intersectionCircuits[i+1]) {
-			//LOG_INFO() << "S4";
 			intersectionPoints.erase(intersectionPoints.begin() + i, intersectionPoints.begin() + i + 2);
 			intersectionCircuits.erase(intersectionCircuits.begin() + i, intersectionCircuits.begin() + i + 2);
 		}
 		else i += 2;
 	}
-	//LOG_INFO() << "S5";
 	DISLOCATIONS_ASSERT((intersectionPoints.size() % 2) == 0);
-
-#if 0
-	if(contour.sf->index == 1978 /*&& interiorEdge - contour.edges.begin() == 23*/ /*&& segment->index == 371*/) {
-		LOG_INFO() << "sf=" << contour.sf->index;
-		LOG_INFO() << "segment=" << segment->index;
-		LOG_INFO() << "startEdge=" << (interiorEdge - contour.edges.begin());
-		//LOG_INFO() << "startIntersection=" << startIntersection;
-		//LOG_INFO() << "endIntersection=" << endIntersection;
-		//LOG_INFO() << "isInside = " << isInside;
-		//LOG_INFO() << "wasOutside = " << wasOutside;
-		ofstream stream3("forward_circuit.vtk");
-		if(segment->forwardCircuit()->isDangling == false)
-			segment->forwardCircuit()->writeToFile(stream3);
-		else
-			segment->forwardCircuit()->writeCapToFile(stream3);
-		ofstream stream4("backward_circuit.vtk");
-		if(segment->backwardCircuit()->isDangling == false)
-			segment->backwardCircuit()->writeToFile(stream4);
-		else
-			segment->backwardCircuit()->writeCapToFile(stream4);
-		raiseError("Stop HERE");
-	}
-#endif
-
-	//LOG_INFO() << "S6";
 	// After we have traversed the complete contour, we should be inside the segment area again.
 	if(intersectionCircuits.empty() || intersectionCircuits.front() == intersectionCircuits.back()) {
-		//if(contour.sf->index == 584)
-		//	LOG_INFO() << "  isInside=" << isInside << "  wasOutside=" << wasOutside;
 		int startIntersection = interiorEdge - contour.edges.begin();
 		int endIntersection = startIntersection + 1;
 		if(endIntersection == contour.edges.size()) endIntersection = 0;
 		return make_pair(startIntersection, endIntersection);
 	}
 
-	//LOG_INFO() << "S7";
 	int startIntersection = intersectionPoints.back();
 	int endIntersection = intersectionPoints.front();
-	//LOG_INFO() << "S8";
 	BurgersCircuit* startCircuit = segment->circuits[intersectionCircuits.back()];
 	BurgersCircuit* endCircuit = segment->circuits[intersectionCircuits.front()];
 
@@ -1861,40 +1741,6 @@ pair<int,int> DXAStackingFaults::findSFContourSegmentIntersection(StackingFaultC
 			startIntersection = contour.segmentIntervals.back().second;
 		}
 	}
-
-#ifdef DEBUG_DISLOCATIONS
-	if(contour.segmentIntervals.empty() == false) {
-		if(!((contour.segmentIntervals.back().second <= startIntersection || endIntersection <= contour.segmentIntervals.back().first)) ||
-			!(contour.segmentIntervals.front().first >= endIntersection || startIntersection >= contour.segmentIntervals.front().second)) {
-			LOG_INFO() << "sf=" << contour.sf->index;
-			LOG_INFO() << "startEdge=" << (interiorEdge - contour.edges.begin());
-			LOG_INFO() << "startIntersection=" << startIntersection;
-			LOG_INFO() << "endIntersection=" << endIntersection;
-			LOG_INFO() << "segment=" << segment->index;
-			LOG_INFO() << "contour length=" << contour.edges.size();
-			for(int i=0; i<contour.segmentIntervals.size(); i++) {
-				LOG_INFO() << "Interval " << i << ": " << contour.segmentIntervals[i].first << " - " << contour.segmentIntervals[i].second << "  segment: " << contour.borderSegments[i]->segment->index;
-			}
-			//ofstream stream2("interface_mesh.vtk");
-			//writeInterfaceMeshFile(stream2);
-			ofstream stream1("contour.vtk");
-			contour.writeToFile(stream1);
-
-			ofstream stream3("forward_circuit.vtk");
-			if(segment->forwardCircuit()->isDangling == false)
-				segment->forwardCircuit()->writeToFile(stream3);
-			else
-				segment->forwardCircuit()->writeCapToFile(stream3);
-			ofstream stream4("backward_circuit.vtk");
-			if(segment->backwardCircuit()->isDangling == false)
-				segment->backwardCircuit()->writeToFile(stream4);
-			else
-				segment->backwardCircuit()->writeCapToFile(stream4);
-		}
-		DISLOCATIONS_ASSERT(contour.segmentIntervals.back().second <= startIntersection || endIntersection <= contour.segmentIntervals.back().first);
-		DISLOCATIONS_ASSERT(contour.segmentIntervals.front().first >= endIntersection || startIntersection >= contour.segmentIntervals.front().second);
-	}
-#endif
 
 	contour.borderSegments.push_back(startCircuit);
 	contour.segmentIntervals.push_back(make_pair(startIntersection, endIntersection));
@@ -1976,12 +1822,6 @@ void DXAStackingFaults::addDislocationIntervalToSFPolyline(StackingFaultContour&
 ******************************************************************************/
 bool DXAStackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex* vertexHead, const Point3 p)
 {
-	// Two-dimensional implementation of the point in polyhedron test described in:
-	//
-	// J. Andreas Baerentzen and Henrik Aanaes
-	// Signed Distance Computation Using the Angle Weighted Pseudonormal
-	// IEEE Transactions on Visualization and Computer Graphics, Volume 11, Issue 3 (May 2005), Pages: 243 - 253
-
 	// Point must be in the SF plane.
 	DISLOCATIONS_ASSERT(fabs(DotProduct(p - sf->reducedCenter, sf->reducedNormalVector)) <= FLOATTYPE_EPSILON);
 
@@ -2009,7 +1849,6 @@ bool DXAStackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex
 	SFContourVertex* closestEdge = NULL;
 	for(SFContourVertex* vertex = vertexHead; vertex != NULL; vertex = vertex->globalNext) {
 		DISLOCATIONS_ASSERT(vertex->next != NULL);
-		//Point3 baseCorner = vertex->pos;
 		Vector3 lineDir = wrapReducedVector(vertex->next->pos - vertex->pos);
 		Vector3 r = p - vertex->pos;
 		for(int dim = 0; dim < 3; dim++) {
@@ -2019,14 +1858,11 @@ bool DXAStackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex
 			}
 		}
 		FloatType edgeLength = Length(lineDir);
-		//LOG_INFO() << "edgeLength=" << edgeLength << "  edge: " << reducedToAbsolute(vertex->pos) << " - " << reducedToAbsolute(vertex->next->pos);
 		if(edgeLength <= 1e-8) continue;
 		lineDir /= edgeLength;
 		FloatType d = DotProduct(lineDir, r);
-		//LOG_INFO() << "d = " << d;
 		if(d >= edgeLength || d <= 0.0) continue;
 		Point3 c = vertex->pos + lineDir * d;
-		//LOG_INFO() << "c = " << reducedToAbsolute(c);
 		Vector3 r2 = c - p;
 		for(int dim = 0; dim < 3; dim++) {
 			if(sf->isInfinite[dim]) {
@@ -2041,29 +1877,17 @@ bool DXAStackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex
 			closestEdge = vertex;
 			closestVector = r2;
 			LOG_INFO() << DotProduct(lineDir, sf->reducedNormalVector);
-			//DISLOCATIONS_ASSERT(fabs(DotProduct(lineDir, sf->reducedNormalVector)) < FLOATTYPE_EPSILON);
 			closestNormal = CrossProduct(lineDir, sf->reducedNormalVector);
 		}
 	}
 
 	if(closestVertex != NULL) {
-
 		// Calculate pseudo-normal at vertex.
 		Vector3 lineDir1 = wrapReducedVector(closestVertex->next->pos - closestVertex->pos);
 		Vector3 lineDir2 = wrapReducedVector(closestVertex->pos - closestVertex->previous->pos);
 		closestNormal = NormalizeSafely(CrossProduct(lineDir1, sf->reducedNormalVector)) + NormalizeSafely(CrossProduct(lineDir2, sf->reducedNormalVector));
-
-		//LOG_INFO() << "Closest vertex " << closestVector << " abs point: " << reducedToAbsolute(p + closestVector) << "  normal=" << closestNormal;
 	}
 	else if(closestEdge == NULL) return true;
-	else {
-		//LOG_INFO() << "Closest edge " << closestVector << "  normal=" << closestNormal;
-	}
-
-	//LOG_INFO() << DotProduct(closestNormal, sf->reducedNormalVector) << "  " << DotProduct(closestVector, sf->reducedNormalVector);
-	//LOG_INFO() << (FLOATTYPE_EPSILON * Length(closestNormal) * Length(sf->reducedNormalVector)) << "  " << (FLOATTYPE_EPSILON * Length(closestVector) * Length(sf->reducedNormalVector));
-	//DISLOCATIONS_ASSERT(fabs(DotProduct(closestNormal, sf->reducedNormalVector)) <= FLOATTYPE_EPSILON * Length(closestNormal) * Length(sf->reducedNormalVector));
-	//DISLOCATIONS_ASSERT(fabs(DotProduct(closestVector, sf->reducedNormalVector)) <= FLOATTYPE_EPSILON * Length(closestVector) * Length(sf->reducedNormalVector));
 
 	return DotProduct(closestNormal, closestVector) > 0.0;
 }
@@ -2087,7 +1911,6 @@ bool DXAStackingFaults::isInsideStackingFaultRay(StackingFault* sf, SFContourVer
 	int intersectioncount = 0;
 	for(SFContourVertex* vertex = vertexHead; vertex != NULL; vertex = vertex->globalNext) {
 		DISLOCATIONS_ASSERT(vertex->next != NULL);
-		//Point3 baseCorner = vertex->pos;
 		Vector3 a = wrapReducedVector(vertex->next->pos - vertex->pos);
 		Vector3 b = rayDir;
 		Vector3 c = p - vertex->pos;

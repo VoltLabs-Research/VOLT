@@ -10,9 +10,7 @@
 ******************************************************************************/
 void DXAClustering::writeAtomsDumpFile(ostream& stream)
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Dumping atoms to output file.";
-#endif
 
 	writeSimulationCellHeaderLAMMPS(stream);
 	stream << "ITEM: NUMBER OF ATOMS";
@@ -37,9 +35,7 @@ void DXAClustering::writeAtomsDumpFile(ostream& stream)
 ******************************************************************************/
 void DXAInterfaceMesh::writeInterfaceMeshFile(ostream& stream) const
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Writing interface mesh to output file.";
-#endif
 
 	size_t numFacets = 0;
 	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
@@ -185,9 +181,7 @@ void DXAInterfaceMesh::writeInterfaceMeshFile(ostream& stream) const
 ******************************************************************************/
 void DXATracing::writeDislocationsVTKFile(ostream& stream) const
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Writing dislocation lines to output file.";
-#endif
 
 	// Gather dislocation line points.
 	size_t numSegmentPoints = 0;
@@ -261,9 +255,7 @@ void DXATracing::writeDislocationsVTKFile(ostream& stream) const
 ******************************************************************************/
 void AnalysisEnvironment::writeSimulationCellFileVTK(ostream& stream) const
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Writing simulation cell to output file.";
-#endif
 
 	Point3 corners[8];
 	corners[0] = simulationCellOrigin;
@@ -293,9 +285,7 @@ void AnalysisEnvironment::writeSimulationCellFileVTK(ostream& stream) const
 ******************************************************************************/
 void DXAInterfaceMesh::writeOutputMeshFile(ostream& stream) const
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Writing defect surface to output file.";
-#endif
 
 	outputMesh.writeToVTKFile(stream, "Defect surface");
 }
@@ -305,9 +295,7 @@ void DXAInterfaceMesh::writeOutputMeshFile(ostream& stream) const
 ******************************************************************************/
 void DXAInterfaceMesh::writeOutputMeshCapFile(ostream& stream) const
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Writing defect surface cap facets to output file.";
-#endif
 
 	outputMeshCap.writeToVTKFile(stream, "Defect surface cap");
 }
@@ -360,9 +348,7 @@ void OutputMesh::writeToVTKFile(ostream& stream, const string& commentHeaderLine
 ******************************************************************************/
 void DXAInterfaceMesh::writeOpenMeshEdges(ostream& stream, bool skipDeadEdges) const
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Dumping open mesh edges to output file.";
-#endif
 
 	size_t numEdges = 0;
 	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
@@ -452,9 +438,7 @@ void DXAInterfaceMesh::writeOpenMeshEdges(ostream& stream, bool skipDeadEdges) c
 ******************************************************************************/
 void DXAStackingFaults::writeStackingFaults(ostream& stream) const
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Writing stacking faults to output file.";
-#endif
 
 	stackingFaultOutputMesh.writeToVTKFile(stream, "Stacking faults");
 
@@ -484,9 +468,7 @@ void DXAStackingFaults::writeStackingFaults(ostream& stream) const
 ******************************************************************************/
 void DXAStackingFaults::writeStackingFaultContours(ostream& stream) const
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Writing stacking fault contours to output file.";
-#endif
 
 	// Count contour edges.
 	size_t numEdges = 0;
@@ -543,9 +525,7 @@ void DXAStackingFaults::writeStackingFaultContours(ostream& stream) const
 ******************************************************************************/
 void DXAStackingFaults::writeStackingFaultPolylines(ostream& stream) const
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Writing stacking fault polylines to output file.";
-#endif
 
 	// Count contour edges.
 	size_t numPoints = 0;

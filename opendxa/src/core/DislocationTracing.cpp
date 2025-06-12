@@ -18,10 +18,8 @@ void DXATracing::traceDislocationSegments()
 	// First find dislocation segments by tracing short Burgers circuits around dislocation cores.
 	findPrimarySegments();
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	size_t numPrimarySegments = segments.size();
 	LOG_INFO() << "Extending and joining dislocation segments. Extended circuit length limit: " << maxExtendedBurgersCircuitSize;
-#endif
 
 	// Count the number of created dislocation junctions.
 	int numJunctions = 0;
@@ -54,10 +52,8 @@ void DXATracing::traceDislocationSegments()
 		line.erase(line.begin(), line.begin() + segment->primarySegmentStart);
 	}
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Found " << (max(segments.size(), numPrimarySegments) - numPrimarySegments) << " secondary dislocation segments.";
 	LOG_INFO() << "Created " << numJunctions << " dislocation junctions.";
-#endif
 }
 
 /******************************************************************************
@@ -65,17 +61,13 @@ void DXATracing::traceDislocationSegments()
 ******************************************************************************/
 void DXATracing::findPrimarySegments()
 {
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Searching for primary dislocation segments. Maximum recursive search depth: " << burgersSearchDepth;
-#endif
 
-	// Ensure that all visit flags are cleared.
-#ifdef DEBUG_DISLOCATIONS
+	/* Ensure that all visit flags are cleared.
 	for(vector<MeshNode*>::iterator node = nodes.begin(); node != nodes.end(); ++node) {
 		DISLOCATIONS_ASSERT((*node)->wasVisited() == false);
 		DISLOCATIONS_ASSERT((*node)->recursiveDepth == 0);
-	}
-#endif
+	}*/
 
 	// List of all nodes that have been visited during the last recursive walk.
 	vector<MeshNode*> visitedNodes;
@@ -121,9 +113,7 @@ void DXATracing::findPrimarySegments()
 		while(toprocess.empty() == false);
 	}
 
-#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Found " << segments.size() << " primary dislocation segments.";
-#endif
 }
 
 /******************************************************************************
@@ -289,14 +279,7 @@ bool DXATracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& edge, ve
 			// Build the backward circuit.
 			BurgersCircuit* backwardCircuit = buildBackwardCircuit(forwardCircuit);
 
-			//LOG_INFO() << "Found circuit with Burgers vector: " << segment->burgersVector << ". Forward edge count: " << forwardCircuit.edgeCount << " Backward edge count: " << backwardCircuit.edgeCount;
-
-#if 0
-			ofstream stream1("burgers_circuit_forward.vtk");
-			forwardCircuit.writeToFile(stream1);
-			ofstream stream2("burgers_circuit_backward.vtk");
-			backwardCircuit.writeToFile(stream2);
-#endif
+			LOG_INFO() << "Found circuit with Burgers vector: " << segment->burgersVector << ". Forward edge count: " << forwardCircuit.edgeCount << " Backward edge count: " << backwardCircuit.edgeCount;
 
 			// Allocate new dislocation segment.
 			DislocationSegment* segment = segmentPool.construct(burgersVector, forwardCircuit, backwardCircuit, currentNode->pos, *this);
@@ -415,21 +398,6 @@ BurgersCircuit* DXATracing::buildBackwardCircuit(BurgersCircuit* forwardCircuit)
 			DISLOCATIONS_ASSERT(!innerEdge1->node1->pos.equals(innerEdge1->node2()->pos));
 			DISLOCATIONS_ASSERT(!innerEdge2->node1->pos.equals(innerEdge2->node2()->pos));
 		}
-		else {
-#ifdef DEBUG_DISLOCATIONS
-			MeshEdge* shortEdge = NULL;
-			for(int e = 0; e < 3; e++) {
-				if(facet1->edges[e] == oppositeEdge1) {
-					shortEdge = facet1->edges[(e+1)%3]->oppositeEdge;
-					break;
-				}
-			}
-			DISLOCATIONS_ASSERT(shortEdge != NULL && shortEdge != edge1 && shortEdge != edge2);
-			DISLOCATIONS_ASSERT(shortEdge->node1 == edge2->node2());
-			DISLOCATIONS_ASSERT(shortEdge->node2() == edge1->node1);
-			DISLOCATIONS_ASSERT(shortEdge->circuit == NULL || shortEdge->circuit == backwardCircuit);
-#endif
-		}
 
 		edge1 = edge2;
 	}
@@ -439,41 +407,7 @@ BurgersCircuit* DXATracing::buildBackwardCircuit(BurgersCircuit* forwardCircuit)
 	DISLOCATIONS_ASSERT(backwardCircuit->lastEdge->nextEdge == NULL || backwardCircuit->lastEdge->nextEdge == backwardCircuit->firstEdge);
 	backwardCircuit->lastEdge->nextEdge = backwardCircuit->firstEdge;
 
-	//LOG_INFO() << "Found circuit with Burgers vector: " << segment.burgersVector << ". Forward edge count: " << forwardCircuit.edgeCount << " Backward edge count: " << backwardCircuit.edgeCount;
-
-#if 0
-	if(backwardCircuit->firstEdge == backwardCircuit->firstEdge->nextEdge) {
-		ofstream stream1("burgers_circuit_forward.vtk");
-		forwardCircuit->writeToFile(stream1);
-
-		ofstream stream("burgers_circuit_forward_facets.vtk");
-		stream << "# vtk DataFile Version 3.0";
-		stream << "# Interface mesh";
-		stream << "ASCII";
-		stream << "DATASET UNSTRUCTURED_GRID";
-		stream << "POINTS " << (forwardCircuit->edgeCount*3) << " float";
-		MeshEdge* edge = forwardCircuit->firstEdge;
-		do {
-			MeshEdge* oppositeEdge = edge->oppositeEdge;
-			MeshFacet* facet = oppositeEdge->facet;
-			for(int v = 0; v < 3; v++)
-				stream << facet->vertex(v)->pos.X << " " << facet->vertex(v)->pos.Y << " " << facet->vertex(v)->pos.Z;
-			edge = edge->nextEdge;
-		}
-		while(edge != forwardCircuit->firstEdge);
-		stream << endl << "CELLS " << forwardCircuit->edgeCount << " " << (forwardCircuit->edgeCount*4);
-		for(int i=0; i<forwardCircuit->edgeCount*3; ) {
-			stream << "3 " << i++ << " " << i++ << " " << i++;
-		}
-		stream << endl << "CELL_TYPES " << (forwardCircuit->edgeCount);
-		for(size_t i = 0; i < forwardCircuit->edgeCount; i++)
-			stream << "5";
-
-		ofstream stream2("burgers_circuit_backward.vtk");
-		backwardCircuit->writeToFile(stream2);
-	}
-#endif
-
+	LOG_INFO() << "Found circuit with Burgers vector: " << segment.burgersVector << ". Forward edge count: " << forwardCircuit.edgeCount << " Backward edge count: " << backwardCircuit.edgeCount;
 	DISLOCATIONS_ASSERT(backwardCircuit->firstEdge != backwardCircuit->firstEdge->nextEdge);
 	DISLOCATIONS_ASSERT(backwardCircuit->countEdges() == backwardCircuit->edgeCount);
 	DISLOCATIONS_ASSERT(backwardCircuit->calculateBurgersVector().equals(-forwardCircuit->calculateBurgersVector()));
@@ -486,9 +420,6 @@ BurgersCircuit* DXATracing::buildBackwardCircuit(BurgersCircuit* forwardCircuit)
 ******************************************************************************/
 void DXATracing::traceSegment(DislocationSegment& segment, BurgersCircuit& circuit, int maxCircuitLength, bool isPrimarySegment)
 {
-	//ofstream stream("burgers_circuit.vtk");
-	//circuit.writeToFile(stream);
-
 	DISLOCATIONS_ASSERT(circuit.countEdges() == circuit.edgeCount);
 	DISLOCATIONS_ASSERT(circuit.isDangling);
 
@@ -816,20 +747,8 @@ void DXATracing::recordLinePoint(BurgersCircuit* circuit, bool isPrimarySegment)
 {
 	DislocationSegment* segment = circuit->segment;
 	DISLOCATIONS_ASSERT(!segment->line.empty());
-#if 0
-	if(circuit->isForwardCircuit()) {
-		// Add a new point to end the line. Make sure it is not wrapped at periodic boundaries.
-		segment->line.push_back(segment->line.back() + structure.wrapVector(circuit->calculateCenter() - segment->line.back()));
-	}
-	else {
-		// Add a new point to start the line. Make sure it is not wrapped at periodic boundaries.
-		segment->line.push_front(segment->line.front() + structure.wrapVector(circuit->calculateCenter() - segment->line.front()));
-		segment->primarySegmentStart++;
-		segment->primarySegmentEnd++;
-	}
-#else
+
 	segment->recordLinePoint(circuit, isPrimarySegment, *this);
-#endif
 }
 
 
@@ -1092,7 +1011,7 @@ void DXATracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCircuit* out
 		edgeCount++;
 	}
 
-	//LOG_INFO() << "Build hole circuit: " << edgeCount << " edges  b=" << burgersVector << "  isBorder=" << isBorder << " numCircuits = " << numCircuits;
+	LOG_INFO() << "Build hole circuit: " << edgeCount << " edges  b=" << burgersVector << "  isBorder=" << isBorder << " numCircuits = " << numCircuits;
 
 	// Create secondary segment only for dislocations (b != 0) and thin enough dislocation cores.
 	if(numCircuits == 1 || isBorder || edgeCount > maxCircuitLength || burgersVector.equals(NULL_VECTOR)) {
@@ -1125,12 +1044,7 @@ void DXATracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCircuit* out
 	while(edge != circuitStart);
 	DISLOCATIONS_ASSERT(forwardCircuit->countEdges() == forwardCircuit->edgeCount);
 
-	//LOG_INFO() << "Creating secondary segment";
-
-#if 0
-	ofstream stream1("burgers_circuit_forward.vtk");
-	forwardCircuit->writeToFile(stream1);
-#endif
+	LOG_INFO() << "Creating secondary segment";
 
 	// Build the backward circuit.
 	BurgersCircuit* backwardCircuit = buildBackwardCircuit(forwardCircuit);
