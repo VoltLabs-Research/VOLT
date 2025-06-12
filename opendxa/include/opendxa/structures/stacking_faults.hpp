@@ -2,6 +2,7 @@
 #define __DXA_STACKING_FAULTS_STRUCT_H
 
 #include <opendxa/includes.hpp>
+#include <opendxa/structures/dislocations/burgers_circuit.hpp>
 
 struct StackingFault;
 

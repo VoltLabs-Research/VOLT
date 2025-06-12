@@ -4,6 +4,8 @@
 #include <opendxa/includes.hpp>
 #include <opendxa/settings.hpp>
 
+struct BaseAtom;
+
 enum AtomBitFlags{
 	ATOM_VISITED = 0,
 	ATOM_IS_MESHNODE = 1,

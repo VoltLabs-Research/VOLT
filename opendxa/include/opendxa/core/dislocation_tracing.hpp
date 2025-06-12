@@ -3,6 +3,8 @@
 
 #include <opendxa/includes.hpp>
 #include <opendxa/core/interface_mesh.hpp>
+#include <opendxa/structures/dislocations/dislocation_segment.hpp>
+#include <opendxa/structures/dislocations/burgers_circuit.hpp>
 
 class DXATracing : public DXAInterfaceMesh{
 public:

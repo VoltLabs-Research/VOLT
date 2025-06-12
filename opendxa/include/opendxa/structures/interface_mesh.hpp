@@ -3,6 +3,12 @@
 
 #include <opendxa/includes.hpp>
 #include <opendxa/structures/atoms/base_atom.hpp>
+#include <opendxa/structures/dislocations/burgers_circuit.hpp>
+
+struct MeshFacet;
+struct MeshNode;
+struct OutputEdge;
+struct OutputVertex;
 
 enum FacetBitFlags {
 	FACET_IS_PRIMARY_SEGMENT = 0,
