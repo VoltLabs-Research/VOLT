@@ -189,67 +189,70 @@ void DXATracing::writeDislocationsVTKFile(ostream& stream) const
 		numSegmentPoints += (*segment)->line.size();
 	}
 
-	stream << "# vtk DataFile Version 3.0";
-	stream << "ASCII";
-	stream << "DATASET UNSTRUCTURED_GRID";
-	stream << "POINTS " << numSegmentPoints << " float";
+	stream << "# vtk DataFile Version 3.0" << endl;
+	stream << "ASCII" << endl;
+	stream << "DATASET UNSTRUCTURED_GRID" << endl;
+	stream << "POINTS " << numSegmentPoints << " float" << endl;
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment) {
 		for(deque<Point3>::const_iterator p = (*segment)->line.begin(); p != (*segment)->line.end(); ++p) {
-			stream << p->X << " " << p->Y << " " << p->Z;
+			stream << p->X << " " << p->Y << " " << p->Z << endl;
 		}
 	}
+	
 	size_t numCells = segments.size();
-	stream << endl << "CELLS " << numCells << " " << (numSegmentPoints + segments.size());
+	stream << "CELLS " << numCells << " " << (numSegmentPoints + segments.size()) << endl;
 	size_t startIndex = 0;
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment) {
 		DISLOCATIONS_ASSERT((*segment)->line.empty() == false);
 		stream << (*segment)->line.size();
 		for(size_t i = 0; i < (*segment)->line.size(); i++)
 			stream << " " << (i+startIndex);
-		stream;
+		stream << endl;  // Fixed: was just 'stream;'
 		startIndex += (*segment)->line.size();
 	}
 
-	stream << endl << "CELL_TYPES " << numCells;
+	stream << "CELL_TYPES " << numCells << endl;
 	for(size_t i = 0; i < segments.size(); i++)
-		stream << "4";	// Poly line
+		stream << "4" << endl;	// Poly line
 
-	stream << endl << "CELL_DATA " << numCells;
+	stream << "CELL_DATA " << numCells << endl;
 
-	stream << endl << "VECTORS burgers_vector float";
+	stream << "VECTORS burgers_vector float" << endl;
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment)
-		stream << (*segment)->burgersVector.X << " " << (*segment)->burgersVector.Y << " " << (*segment)->burgersVector.Z;	stream << endl << "VECTORS burgers_vector_world float";
+		stream << (*segment)->burgersVector.X << " " << (*segment)->burgersVector.Y << " " << (*segment)->burgersVector.Z << endl;
+	
+	stream << "VECTORS burgers_vector_world float" << endl;
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment)
-		stream << (*segment)->burgersVectorWorld.X << " " << (*segment)->burgersVectorWorld.Y << " " << (*segment)->burgersVectorWorld.Z;
+		stream << (*segment)->burgersVectorWorld.X << " " << (*segment)->burgersVectorWorld.Y << " " << (*segment)->burgersVectorWorld.Z << endl;
 
 	// Add fractional Burgers vector representation as scalars for enhanced visualization
-	stream << endl << "SCALARS burgers_vector_magnitude float";
-	stream << endl << "LOOKUP_TABLE default";
+	stream << "SCALARS burgers_vector_magnitude float" << endl;
+	stream << "LOOKUP_TABLE default" << endl;
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment) {
 		// Calculate magnitude for color mapping
 		LatticeVector bv = (*segment)->burgersVector;
 		double magnitude = sqrt(static_cast<double>(bv.X * bv.X + bv.Y * bv.Y + bv.Z * bv.Z));
-		stream << magnitude;
+		stream << magnitude << endl;
 	}
 
-	stream << endl << "SCALARS segment_length float";
-	stream << endl << "LOOKUP_TABLE default";
+	stream << "SCALARS segment_length float" << endl;
+	stream << "LOOKUP_TABLE default" << endl;
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment)
-		stream << (*segment)->calculateLength();
-	stream << endl << "SCALARS segment_id int 1";
-	stream << endl << "LOOKUP_TABLE default";
+		stream << (*segment)->calculateLength() << endl;
+	
+	stream << "SCALARS segment_id int 1" << endl;
+	stream << "LOOKUP_TABLE default" << endl;
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment)
-		stream << (*segment)->index;
+		stream << (*segment)->index << endl;
 
 	// Add fractional Burgers vector information as comments for human readability
-	stream << endl << "# Fractional Burgers Vector Notation:";
+	stream << "# Fractional Burgers Vector Notation:" << endl;
 	int segmentIndex = 0;
 	for(vector<DislocationSegment*>::const_iterator segment = segments.begin(); segment != segments.end(); ++segment, ++segmentIndex) {
 		std::string fractionalStr = burgersToFractionalString((*segment)->burgersVector);
-		stream << "# Segment " << segmentIndex << ": " << fractionalStr;
+		stream << "# Segment " << segmentIndex << ": " << fractionalStr << endl;
 	}
 }
-
 /******************************************************************************
 * Writes the simulation cell geometry to a visualization file.
 ******************************************************************************/

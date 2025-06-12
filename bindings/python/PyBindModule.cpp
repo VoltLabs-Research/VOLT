@@ -5,7 +5,6 @@
 #include <opendxa/core/stacking_faults.hpp>
 #include <opendxa/utils/cutoff_estimator.hpp>
 #include <opendxa/engine/config.hpp>
-#include <sstream>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -37,9 +36,7 @@ double estimateCutoffWrapper(
 class DislocationAnalysis{
 public:
     DislocationAnalysis(){
-        msgStream = std::make_unique<std::ostringstream>();
-        verboseStream = std::make_unique<std::ostringstream>();
-        analyzer = std::make_unique<DXAStackingFaults>(*msgStream, *verboseStream);
+        analyzer = std::make_unique<DXAStackingFaults>();
         
         resetConfig();
     }
@@ -126,23 +123,14 @@ public:
             config.outputFile = outputFile;
         }
 
-        msgStream->str("");
-        msgStream->clear();
-        verboseStream->str("");
-        verboseStream->clear();
-
         try{
             analyzer->compute(config);
             return py::dict("success"_a=true,
                 "message"_a="Analysis completed successfully",
-                "output_file"_a=config.outputFile,
-                "log"_a=msgStream->str(),
-                "verbose_log"_a=verboseStream->str());
+                "output_file"_a=config.outputFile);
         }catch(const std::exception &e){
             return py::dict("success"_a=false,
-                "error"_a=e.what(),
-                "log"_a=msgStream->str(),
-                "verbose_log"_a=verboseStream->str());
+                "error"_a=e.what());
         }
     }
 
@@ -162,12 +150,9 @@ public:
         );
     }
 
-
 private:
     OpenDXA::Config config;
     std::unique_ptr<DXAStackingFaults> analyzer;
-    std::unique_ptr<std::ostringstream> msgStream;
-    std::unique_ptr<std::ostringstream> verboseStream;
 };
 
 PYBIND11_MODULE(_core, module){

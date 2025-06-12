@@ -8,8 +8,10 @@
 ******************************************************************************/
 void DXAInterfaceMesh::createInterfaceMeshNodes()
 {
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Creating interface mesh nodes.";
 	Timer timer;
+#endif
 
 	// Reset recursive walk counters.
 	// And reset neighbor lists for disordered atoms.
@@ -27,6 +29,11 @@ void DXAInterfaceMesh::createInterfaceMeshNodes()
 
 			// Is it already a mesh node?
 			if(neighbor1->isMeshNode() == false) {
+
+				//if(neighbor1->tag == 11424775 || neighbor1->tag == 11424754) {
+				//	LOG_INFO() << "************ Creating node " << neighbor1->tag << " from crystalline atom " << atom->tag;
+				//}
+
 				// Replace input atom with mesh node.
 				MeshNode* node = nodePool.construct(*neighbor1);
 				node->index = nodes.size();
@@ -58,6 +65,7 @@ void DXAInterfaceMesh::createInterfaceMeshNodes()
 		}
 	}
 
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	// Determine the maximum number of neighbors.
 	int maxNodeNeighbors = 0;
 	for(vector<MeshNode*>::iterator node = nodes.begin(); node != nodes.end(); ++node)
@@ -66,7 +74,10 @@ void DXAInterfaceMesh::createInterfaceMeshNodes()
 
 	LOG_INFO() << "Generated " << nodes.size() << " interface mesh nodes (" << (nodePool.memoryUsage()/1024/1024) << " mbyte).";
 	LOG_INFO() << "Maximum number of nearest neighbors per node: " << maxNodeNeighbors;
+#endif
+#if DISLOCATION_TRACE_OUTPUT >= 2
 	LOG_INFO() << "Node creation time: " << timer.elapsedTime() << " sec.";
+#endif
 }
 
 /******************************************************************************************
@@ -74,11 +85,17 @@ void DXAInterfaceMesh::createInterfaceMeshNodes()
 *******************************************************************************************/
 void DXAInterfaceMesh::createMeshNodeRecursive(InputAtom* a, BaseAtom* neighbor, MeshNode* node, int currentDepth, vector<InputAtom*>& visitedAtoms, const Point3& currentCoord)
 {
+	//if(node->tag == 3030225)
+	//	LOG_INFO() << "* " << a->tag << "   currentCoord=" << currentCoord;
+
 	visitedAtoms.push_back(a);
 	a->recursiveDepth = currentDepth;
 	for(int i = 0; i < a->numNeighbors; i++) {
 		if(a->neighbor(i) == neighbor) {
 			Point3 nodeCoord = currentCoord + a->latticeNeighborVector(i);
+
+			//if(node->tag == 3030225)
+			//	LOG_INFO() << "*** " << a->tag << "   " << nodeCoord;
 
 			if(nodeCoord.equals(ORIGIN)) {
 				// Replace atom in neighbor list with mesh node.
@@ -110,8 +127,10 @@ void DXAInterfaceMesh::createMeshNodeRecursive(InputAtom* a, BaseAtom* neighbor,
 ******************************************************************************/
 void DXAInterfaceMesh::createInterfaceMeshEdges()
 {
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Creating interface mesh edges.";
 	Timer timer;
+#endif
 
 	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom) {
 
@@ -129,7 +148,9 @@ void DXAInterfaceMesh::createInterfaceMeshEdges()
 		}
 }
 
+#if DISLOCATION_TRACE_OUTPUT >= 2
 	LOG_INFO() << "Edge creation time: " << timer.elapsedTime() << " sec.";
+#endif
 }
 
 /******************************************************************************
@@ -173,8 +194,10 @@ void DXAInterfaceMesh::createBCCMeshEdges(InputAtom* atom)
 ******************************************************************************/
 void DXAInterfaceMesh::createInterfaceMeshFacets()
 {
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Creating interface mesh facets.";
 	Timer timer;
+#endif
 
 	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom) {
 
@@ -192,10 +215,53 @@ void DXAInterfaceMesh::createInterfaceMeshFacets()
 		}
 	}
 
+#if 0
+	ofstream stream("intermediate_interface_mesh.vtk");
+	writeInterfaceMeshFile(stream);
+	ofstream stream2("open_edges2.vtk");
+	raiseError("stop");
+#endif
+
+	// Close the remaining holes in the interface mesh.
+	closeFacetHoles();
+
+#if 1
 	validateInterfaceMesh();
+#endif
+
+#if 0
+	for(vector<MeshFacet*>::const_iterator facet = facets.begin(); facet != facets.end(); ++facet) {
+		for(int e = 0; e < 3; e++) {
+			MeshEdge* edge = (*facet)->edges[e];
+			if(edge->facet == NULL) continue;
+			MeshEdge* oppositeEdge = edge->oppositeEdge;
+			MeshFacet* oppositeFacet = oppositeEdge->facet;
+			DISLOCATIONS_ASSERT(oppositeFacet != NULL);
+		}
+	}
+#endif
 
 	// Fix facet-edge connectivity.
 	fixMeshEdges();
+
+#if 0
+	for(vector<MeshFacet*>::const_iterator facet = facets.begin(); facet != facets.end(); ++facet) {
+		for(int e = 0; e < 3; e++) {
+			MeshEdge* edge = (*facet)->edges[e];
+			if(edge->facet == NULL) continue;
+			MeshEdge* oppositeEdge = edge->oppositeEdge;
+			MeshFacet* oppositeFacet = oppositeEdge->facet;
+			DISLOCATIONS_ASSERT(oppositeFacet != NULL);
+		}
+	}
+#endif
+
+#if 0
+	ofstream stream("intermediate_interface_mesh.vtk");
+	writeInterfaceMeshFile(stream);
+	ofstream stream2("open_edges.vtk");
+	raiseError("stop");
+#endif
 
 	// Remove facets, which are useless.
 	removeUnnecessaryFacets();
@@ -203,8 +269,12 @@ void DXAInterfaceMesh::createInterfaceMeshFacets()
 	// Create copies of mesh nodes, which are part of locally independent manifolds.
 	duplicateSharedMeshNodes();
 
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Generated " << facets.size() << " interface mesh facets (" << (facetPool.memoryUsage()/1024/1024) << " mbyte).";
+#endif
+#if DISLOCATION_TRACE_OUTPUT >= 2
 	LOG_INFO() << "Facet creation time: " << timer.elapsedTime() << " sec.";
+#endif
 }
 
 
@@ -437,13 +507,13 @@ void DXAInterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices,
 			if(edge.node2() == node2 && edge.latticeVector.equals(edgeVectors[v])) {
 				const MeshFacet* existingFacet = edge.facet;
 				if(existingFacet == NULL) {
-					if(edges[v]) LOG_INFO() << "Multiple existing edges: " << edge.node1->tag << " - " << edge.node2()->tag;					
+					//if(edges[v]) LOG_INFO() << "Multiple existing edges: " << edge.node1->tag << " - " << edge.node2()->tag;					
 					edges[v] = &edge;
 					break;
 				}
 				else {
 					if(existingFacet->hasVertex(vertices[(v+2)%numVertices])) {
-						LOG_INFO() << "Existing facet";
+						//LOG_INFO() << "Existing facet";
 						return;
 					}
 				}
@@ -507,6 +577,32 @@ void DXAInterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdg
 		if(prioritySplitEdgeFound) break;
 	}
 
+#if 0
+	if(numVertices == 5) {
+		for(int v = 0; v < numVertices; v++) {
+			if(vertices[v]->tag == 3029698) {
+				LOG_INFO() << "Create FACET splitEdgeFound = " << splitEdgeFound;
+				for(int v2 = 0; v2 < numVertices; v2++) {
+					LOG_INFO() << "v = " << vertices[v2]->tag;
+				}
+				for(int v1 = 0; v1 < numVertices; v1++) {
+					for(int v2 = v1 + 2; v2 < numVertices; v2++) {
+						if(v1 == 0 && v2 == numVertices-1) continue;
+						//LOG_INFO() << "Vertex " << v1 << " has neighbor " << v2 << " : " << vertices[v1]->hasNeighbor(vertices[v2]) << "  " << vertices[v1]->hasNeighborTag(vertices[v2]->tag);
+						for(int e = 0; e < vertices[v1]->numEdges; e++) {
+							if(vertices[v1]->edges[e].node2()->tag == vertices[v2]->tag) {
+								LOG_INFO() << "Found edge with sf: " << vertices[v1]->edges[e].isSFEdge;
+							}
+						}
+					}
+				}
+				break;
+			}
+		}
+	}
+#endif
+
+
 	if(splitEdgeFound) {
 		int numVertices1 = split_v2 - split_v1 + 1;
 		int numVertices2 = split_v1 + numVertices - split_v2 + 1;
@@ -551,6 +647,8 @@ void DXAInterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdg
 	edges[1]->facet = facet;
 	LatticeVector edgeVector = edges[0]->latticeVector + edges[1]->latticeVector;
 	for(int v = 2; v < numVertices - 1; v++) {
+		//DISLOCATIONS_ASSERT(vertices[0]->tag != vertices[v]->tag);
+		// Create a new edge.
 		MeshEdge* extraEdge = vertices[0]->createEdge(vertices[v], edgeVector);
 		MeshEdge* opppositeEdge = extraEdge->oppositeEdge;
 
@@ -569,6 +667,39 @@ void DXAInterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdg
 	facet->edges[2] = edges[numVertices-1];
 	edges[numVertices-1]->facet = facet;
 	facets.push_back(facet);
+
+#ifdef DEBUG_DISLOCATIONS
+	edgeVector += edges[numVertices-1]->latticeVector;
+	if(edgeVector.equals(NULL_VECTOR) == false) {
+#if 0
+		ofstream stream("invalid_facet.vtk");
+		stream << "# vtk DataFile Version 3.0";
+		stream << "# Burgers circuit";
+		stream << "ASCII";
+		stream << "DATASET UNSTRUCTURED_GRID";
+		stream << "POINTS " << numVertices << " float";
+		for(int v = 0; v < numVertices; v++)
+			stream << vertices[v]->pos.X << " " << vertices[v]->pos.Y << " " << vertices[v]->pos.Z;
+		stream << endl << "CELLS " << numVertices << " " << (numVertices*3);
+		for(int i=0; i<numVertices; i++)
+			stream << "2 " << i << " " << ((i+1)%numVertices);
+		stream;
+		stream << "CELL_TYPES " << numVertices;
+		for(int i=0; i<numVertices; i++)
+			stream << "3";
+
+		stream << endl << "CELL_DATA " << numVertices;
+
+		stream << endl << "VECTORS lattice_vector float";
+		for(int v = 0; v < numVertices; v++) {
+			for(int c = 0; c < 3; c++)
+				stream << edges[v]->latticeVector[c] << " ";
+			stream;
+		}
+#endif
+		raiseError("Detected non-null Burgers vector for facet: %f %f %f", edgeVector.X, edgeVector.Y, edgeVector.Z);
+	}
+#endif
 }
 
 /******************************************************************************
@@ -576,7 +707,9 @@ void DXAInterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdg
 ******************************************************************************/
 void DXAInterfaceMesh::closeFacetHoles()
 {
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Closing remaining holes in interface mesh.";
+#endif
 
 	// Creating missing facets.
 	MeshNode* vertices[MAX_FACET_HOLE_EDGE_COUNT];
@@ -598,6 +731,18 @@ bool DXAInterfaceMesh::constructFacetRecursive(int numEdges, int maxEdges, MeshN
 {
 	MeshNode* currentAtom = vertices[numEdges];
 
+#ifdef DEBUG_DISLOCATIONS
+	if(numEdges > 0) {
+		bool foundOpenEdge = false;
+		for(int e = 0; e < currentAtom->numEdges; e++) {
+			if(currentAtom->edges[e].facet == NULL) {
+				foundOpenEdge = true;
+				break;
+			}
+		}
+		if(!foundOpenEdge) raiseError("Detected discontinued open edge at atom %i.", vertices[numEdges]->tag);
+	}
+#endif
 
 	for(int e = 0; e < currentAtom->numEdges; e++) {
 		const MeshEdge& edge = currentAtom->edges[e];
@@ -615,13 +760,22 @@ bool DXAInterfaceMesh::constructFacetRecursive(int numEdges, int maxEdges, MeshN
 		}
 		else if(numEdges < maxEdges-1) {
 			bool invalid = false;
-			// TODO: CHECK THIS CODE!!!!!!!! There's a problem here
+			/*
+			for(int i = 0; i < numEdges; i++) {
+				if(vertices[i] == neighbor) {
+					invalid = true;
+					break;
+				}
+			}
+			*/
+			// Replace above code with the following one becuase of situation "mesh2.png".
 			for(int i = 0; i < numEdges; i++) {
 				if(edges[i] == &edge || edges[i] == edge.oppositeEdge) {
 					invalid = true;
 					break;
 				}
 			}
+
 			if(!invalid) {
 				vertices[numEdges+1] = neighbor;
 				if(constructFacetRecursive(numEdges + 1, maxEdges, vertices, edges, burgersVector2) && numEdges != 0)
@@ -639,7 +793,9 @@ bool DXAInterfaceMesh::constructFacetRecursive(int numEdges, int maxEdges, MeshN
 ******************************************************************************/
 void DXAInterfaceMesh::validateInterfaceMesh()
 {
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Validating mesh topology.";
+#endif
 
 	// Check if edges and facets are properly linked together.
 	for(vector<MeshNode*>::const_iterator iter = nodes.begin(); iter != nodes.end(); ++iter) {
@@ -650,8 +806,9 @@ void DXAInterfaceMesh::validateInterfaceMesh()
 				raiseError("Detected invalid reference between opposite edges. Edge vertex 1: %i  edge vertex 2: %i", node->tag, neighbor->tag);			if((node->edges[e].facet != NULL && node->edges[e].oppositeEdge->facet == NULL)
 					|| (node->edges[e].facet == NULL && node->edges[e].oppositeEdge->facet != NULL)) {
 
+				//ofstream stream1("interface_mesh.vtk");
+				//writeInterfaceMeshFile(stream1);
 				ofstream stream2("open_edges.vtk");
-				writeOpenMeshEdges(stream2, true);
 				ofstream stream3("edge.vtk");
 				node->edges[e].writeToFile(stream3);
 
@@ -701,10 +858,15 @@ void DXAInterfaceMesh::validateInterfaceMesh()
 	}
 }
 
+/******************************************************************************
+* Duplicates mesh nodes which are part of two locally independent manifolds.
+******************************************************************************/
 void DXAInterfaceMesh::duplicateSharedMeshNodes()
 {
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Duplicating shared mesh nodes.";
 	Timer timer;
+#endif
 
 	size_t numSharedNodes = 0;
 
@@ -721,6 +883,9 @@ void DXAInterfaceMesh::duplicateSharedMeshNodes()
 		}
 		if(initialEdge == NULL) continue;
 
+		//int counter = 1;
+
+		// Go in positive direction around node.
 		MeshEdge* currentEdge = initialEdge;
 		do {
 			edgeVisited[node->edgeIndex(currentEdge)] = true;
@@ -739,6 +904,9 @@ void DXAInterfaceMesh::duplicateSharedMeshNodes()
 			}
 		}
 		if(!isSharedNode) continue;
+
+		//if(node->tag == 3030225)
+		//	LOG_INFO() << "*** Found shared node " << node->tag;
 
 		// Create a second node that takes the edges not visited yet.
 		MeshNode* secondNode = nodePool.construct(*(BaseAtom*)node);
@@ -769,6 +937,14 @@ void DXAInterfaceMesh::duplicateSharedMeshNodes()
 		for(int nn = 0; nn < node->numNeighbors; nn++)
 			secondNode->addNeighbor(node->neighbor(nn));
 
+#ifdef DEBUG_DISLOCATIONS
+		for(int e = 0; e < secondNode->numEdges; e++) {
+			MeshEdge& edge = secondNode->edges[e];
+			DISLOCATIONS_ASSERT(edge.node1 == secondNode);
+			DISLOCATIONS_ASSERT(edge.node2() != secondNode);
+		}
+#endif
+
 		// Delete edges from original node.
 		int newNumEdges = 0;
 		for(int e = 0; e < node->numEdges; e++) {
@@ -786,9 +962,23 @@ void DXAInterfaceMesh::duplicateSharedMeshNodes()
 		numSharedNodes++;
 	}
 
-	LOG_INFO() << "Duplicated " << numSharedNodes << " mesh nodes to fix local manifold topology.";
-	LOG_INFO() << "Duplication time: " << timer.elapsedTime() << " sec.";
+#if defined(DEBUG_DISLOCATIONS) && 0
+	map<int,int> multiplicities;
+	for(vector<MeshNode*>::iterator node = nodes.begin(); node != nodes.end(); ++node) {
+		multiplicities[(*node)->tag-1]++;
+	}
+	for(vector<MeshNode*>::iterator node = nodes.begin(); node != nodes.end(); ++node)
+		(*node)->multiplicity = multiplicities[(*node)->tag-1];
+#endif
 
+#if DISLOCATION_TRACE_OUTPUT >= 1
+	LOG_INFO() << "Duplicated " << numSharedNodes << " mesh nodes to fix local manifold topology.";
+#endif
+#if DISLOCATION_TRACE_OUTPUT >= 2
+	LOG_INFO() << "Duplication time: " << timer.elapsedTime() << " sec.";
+#endif
+
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	// Determine the maximum number of edges per node.
 	int maxEdges = 0;
 	for(vector<MeshNode*>::iterator node = nodes.begin(); node != nodes.end(); ++node)
@@ -796,6 +986,7 @@ void DXAInterfaceMesh::duplicateSharedMeshNodes()
 			maxEdges = (*node)->numEdges;
 
 	LOG_INFO() << "Maximum number of edges per node: " << maxEdges;
+#endif
 }
 
 /******************************************************************************
@@ -803,7 +994,9 @@ void DXAInterfaceMesh::duplicateSharedMeshNodes()
 ******************************************************************************/
 void DXAInterfaceMesh::removeUnnecessaryFacets()
 {
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Removing unnecessary mesh facets.";
+#endif
 
 	size_t oldFacetCount = facets.size();
 
@@ -952,7 +1145,9 @@ void DXAInterfaceMesh::removeUnnecessaryFacets()
 	}
 	while(removedSomeFacets);
 
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Deleted " << ((oldFacetCount - facets.size())/2) << " unnecessary facet pairs.";
+#endif
 }
 
 bool DXAInterfaceMesh::edgeEdgeOrientation(MeshEdge* edge1, MeshEdge* edge3)
@@ -1038,7 +1233,9 @@ bool DXAInterfaceMesh::edgeEdgeOrientation(MeshEdge* edge1, MeshEdge* edge3)
 ******************************************************************************/
 void DXAInterfaceMesh::fixMeshEdges()
 {
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Fixing mesh edges.";
+#endif
 
 	size_t fixedEdges = 0;
 
@@ -1059,6 +1256,17 @@ void DXAInterfaceMesh::fixMeshEdges()
 					MeshEdge* currentEdge = edge1;
 					do {
 						if(currentEdge == edge2) hitEdge2 = true;
+#ifdef DEBUG_DISLOCATIONS
+						if(currentEdge->facet == NULL) {
+							LOG_INFO() << "Invalid edge: " << currentEdge->node1->tag << " - " << currentEdge->node2()->tag;
+							ofstream stream1("interface_mesh.vtk");
+							writeInterfaceMeshFile(stream1);
+							ofstream stream2("open_edges.vtk");
+							ofstream stream3("edge.vtk");
+							currentEdge->writeToFile(stream3);
+						}
+						DISLOCATIONS_ASSERT(currentEdge->facet != NULL);
+#endif
 						currentEdge = currentEdge->facet->previousEdge(currentEdge)->oppositeEdge;
 					}
 					while(currentEdge != edge1);
@@ -1072,13 +1280,27 @@ void DXAInterfaceMesh::fixMeshEdges()
 						swap(edge1->facet->edges[edge1->facet->edgeIndex(edge1)], edge2->facet->edges[edge2->facet->edgeIndex(edge2)]);
 						swap(edge1->facet, edge2->facet);
 						fixedEdges++;
+
+#ifdef DEBUG_DISLOCATIONS
+						hitEdge2 = false;
+						currentEdge = edge1;
+						do {
+							if(currentEdge == edge2) hitEdge2 = true;
+							DISLOCATIONS_ASSERT(currentEdge->facet != NULL);
+							currentEdge = currentEdge->facet->previousEdge(currentEdge)->oppositeEdge;
+						}
+						while(currentEdge != edge1);
+						DISLOCATIONS_ASSERT(hitEdge2 == false);
+#endif
 					}
 				}
 			}
 		}
 	}
 
+#if DISLOCATION_TRACE_OUTPUT >= 1
 	LOG_INFO() << "Fixed connectivity of " << fixedEdges << " mesh edges.";
+#endif
 }
 
 /******************************************************************************

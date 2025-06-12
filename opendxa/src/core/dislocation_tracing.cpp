@@ -1010,8 +1010,6 @@ void DXATracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCircuit* out
 		edgeCount++;
 	}
 
-	LOG_INFO() << "Build hole circuit: " << edgeCount << " edges  b=" << burgersVector << "  isBorder=" << isBorder << " numCircuits = " << numCircuits;
-
 	// Create secondary segment only for dislocations (b != 0) and thin enough dislocation cores.
 	if(numCircuits == 1 || isBorder || edgeCount > maxCircuitLength || burgersVector.equals(NULL_VECTOR)) {
 		// Clear unused circuit.
