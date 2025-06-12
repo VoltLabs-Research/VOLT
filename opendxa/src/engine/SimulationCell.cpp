@@ -1,4 +1,4 @@
-#include "engine/AnalysisEnvironment.hpp"
+#include <opendxa/engine/AnalysisEnvironment.hpp>
 
 Vector3 AnalysisEnvironment::wrapVector(const Vector3& v) const{
 	Vector3 result = v;

@@ -1,4 +1,4 @@
-#include "utils/linalg/LinAlg.hpp"
+#include <opendxa/utils/linalg/LinAlg.hpp>
 
 NullVector NULL_VECTOR;
 IdentityMatrix IDENTITY;

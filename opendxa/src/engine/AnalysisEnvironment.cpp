@@ -1,9 +1,9 @@
-#include "engine/AnalysisEnvironment.hpp"
-#include "core/Clustering.hpp"
-#include "core/InterfaceMesh.hpp"
-#include "core/DislocationTracing.hpp"
-#include "core/StackingFaults.hpp"
-#include "logger/Logger.hpp"
+#include <opendxa/engine/AnalysisEnvironment.hpp>
+#include <opendxa/core/Clustering.hpp>
+#include <opendxa/core/InterfaceMesh.hpp>
+#include <opendxa/core/DislocationTracing.hpp>
+#include <opendxa/core/StackingFaults.hpp>
+#include <opendxa/logger/Logger.hpp>
 
 AnalysisEnvironment::AnalysisEnvironment(){
 	timestep = 0;

@@ -1,9 +1,9 @@
-#include "parser/ParserStream.hpp"
-#include "utils/Timer.hpp"
-#include "core/StackingFaults.hpp"
-#include "logger/Logger.hpp"
-#include "engine/Config.hpp"
-#include "cxxopts.hpp"
+#include <opendxa/parser/ParserStream.hpp>
+#include <opendxa/utils/Timer.hpp>
+#include <opendxa/core/StackingFaults.hpp>
+#include <opendxa/logger/Logger.hpp>
+#include <opendxa/engine/Config.hpp>
+#include <cxxopts.hpp>
 
 static OpenDXA::Config parseOptions(int argc, char* argv[]){
 	cxxopts::Options opts("OpenDXA", "Dislocation Extraction Algorithm (DXA)");

@@ -1,4 +1,4 @@
-#include "geometry/Mesh.hpp"
+#include <opendxa/geometry/Mesh.hpp>
 #include <GL/glu.h>
 
 void OutputMesh::clear(){

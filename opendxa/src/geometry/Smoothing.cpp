@@ -1,6 +1,6 @@
-#include "core/InterfaceMesh.hpp"
-#include "core/DislocationTracing.hpp"
-#include "utils/Timer.hpp"
+#include <opendxa/core/InterfaceMesh.hpp>
+#include <opendxa/core/DislocationTracing.hpp>
+#include <opendxa/utils/Timer.hpp>
 
 /******************************************************************************
 * Generates the nodes and facets of the output mesh.

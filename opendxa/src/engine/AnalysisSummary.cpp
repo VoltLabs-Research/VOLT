@@ -1,8 +1,8 @@
-#include "core/Clustering.hpp"
-#include "core/InterfaceMesh.hpp"
-#include "core/DislocationTracing.hpp"
-#include "core/StackingFaults.hpp"
-#include "utils/Burgers.hpp"
+#include <opendxa/core/Clustering.hpp>
+#include <opendxa/core/InterfaceMesh.hpp>
+#include <opendxa/core/DislocationTracing.hpp>
+#include <opendxa/core/StackingFaults.hpp>
+#include <opendxa/utils/Burgers.hpp>
 #include <sstream>
 
 /******************************************************************************

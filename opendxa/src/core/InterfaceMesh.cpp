@@ -1,6 +1,6 @@
-#include "core/InterfaceMesh.hpp"
-#include "structures/InterfaceMesh.hpp"
-#include "utils/Timer.hpp"
+#include <opendxa/core/InterfaceMesh.hpp>
+#include <opendxa/structures/InterfaceMesh.hpp>
+#include <opendxa/utils/Timer.hpp>
 
 /******************************************************************************
 * For each non-crystalline atom that has at least one crystalline neighbor

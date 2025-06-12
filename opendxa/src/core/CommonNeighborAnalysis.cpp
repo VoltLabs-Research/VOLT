@@ -1,6 +1,6 @@
-#include "core/Clustering.hpp"
-#include "utils/Timer.hpp"
-#include "core/NeighborListBuilder.hpp"
+#include <opendxa/core/Clustering.hpp>
+#include <opendxa/utils/Timer.hpp>
+#include <opendxa/core/NeighborListBuilder.hpp>
 #include <unordered_set>
 #include <algorithm>
 #include <immintrin.h>

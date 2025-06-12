@@ -1,10 +1,10 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
-#include "Includes.hpp"
-#include "core/StackingFaults.hpp"
-#include "utils/CutoffEstimator.hpp"
-#include "engine/Config.hpp"
+#include <opendxa/Includes.hpp>
+#include <opendxa/core/StackingFaults.hpp>
+#include <opendxa/utils/CutoffEstimator.hpp>
+#include <opendxa/engine/Config.hpp>
 #include <sstream>
 
 namespace py = pybind11;

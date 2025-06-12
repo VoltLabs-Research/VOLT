@@ -1,5 +1,5 @@
-#include "core/Clustering.hpp"
-#include "structures/Lattice.hpp"
+#include <opendxa/core/Clustering.hpp>
+#include <opendxa/structures/Lattice.hpp>
 
 // Coordinates of the nearest neighbors in the FCC lattice:
 static const LatticeVector fccNeighborVectors[12] = {

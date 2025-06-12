@@ -1,4 +1,4 @@
-#include "core/Clustering.hpp"
+#include <opendxa/core/Clustering.hpp>
 
 /******************************************************************************
 * Reads the atomic coordinates from the input file.

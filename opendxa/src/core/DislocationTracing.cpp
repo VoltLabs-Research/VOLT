@@ -1,6 +1,6 @@
-#include "core/DislocationTracing.hpp"
-#include "structures/Dislocations.hpp"
-#include "utils/Timer.hpp"
+#include <opendxa/core/DislocationTracing.hpp>
+#include <opendxa/structures/Dislocations.hpp>
+#include <opendxa/utils/Timer.hpp>
 
 /******************************************************************************
 * Does the actual dislocation detection.
@@ -279,8 +279,6 @@ bool DXATracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& edge, ve
 			// Build the backward circuit.
 			BurgersCircuit* backwardCircuit = buildBackwardCircuit(forwardCircuit);
 
-			LOG_INFO() << "Found circuit with Burgers vector: " << segment->burgersVector << ". Forward edge count: " << forwardCircuit.edgeCount << " Backward edge count: " << backwardCircuit.edgeCount;
-
 			// Allocate new dislocation segment.
 			DislocationSegment* segment = segmentPool.construct(burgersVector, forwardCircuit, backwardCircuit, currentNode->pos, *this);
 			segment->index = segments.size();
@@ -407,7 +405,6 @@ BurgersCircuit* DXATracing::buildBackwardCircuit(BurgersCircuit* forwardCircuit)
 	DISLOCATIONS_ASSERT(backwardCircuit->lastEdge->nextEdge == NULL || backwardCircuit->lastEdge->nextEdge == backwardCircuit->firstEdge);
 	backwardCircuit->lastEdge->nextEdge = backwardCircuit->firstEdge;
 
-	LOG_INFO() << "Found circuit with Burgers vector: " << segment.burgersVector << ". Forward edge count: " << forwardCircuit.edgeCount << " Backward edge count: " << backwardCircuit.edgeCount;
 	DISLOCATIONS_ASSERT(backwardCircuit->firstEdge != backwardCircuit->firstEdge->nextEdge);
 	DISLOCATIONS_ASSERT(backwardCircuit->countEdges() == backwardCircuit->edgeCount);
 	DISLOCATIONS_ASSERT(backwardCircuit->calculateBurgersVector().equals(-forwardCircuit->calculateBurgersVector()));

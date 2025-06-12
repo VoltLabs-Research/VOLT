@@ -1,4 +1,4 @@
-#include "core/Clustering.hpp"
+#include <opendxa/core/Clustering.hpp>
 
 /******************************************************************************
 * Wraps input atoms at periodic boundary conditions.

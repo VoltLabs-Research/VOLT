@@ -1,9 +1,8 @@
-#include "core/StackingFaults.hpp"
-#include "utils/Timer.hpp"
+#include <opendxa/parser/ParserStream.hpp>
+#include <opendxa/engine/Config.hpp>
+#include <opendxa/core/StackingFaults.hpp>
+#include <opendxa/utils/Timer.hpp>
 #include <GL/glu.h>
-
-#include "parser/ParserStream.hpp"
-#include "engine/Config.hpp"
 
 void DXAStackingFaults::compute(const OpenDXA::Config &config){
 	setCNACutoff((FloatType) config.cnaCutoff);

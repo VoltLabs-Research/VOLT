@@ -1,5 +1,5 @@
-#include "core/Clustering.hpp"
-#include "structures/Lattice.hpp"
+#include <opendxa/core/Clustering.hpp>
+#include <opendxa/structures/Lattice.hpp>
 
 static const LatticeVector bccNeighborVectors[16] = {
 	LatticeVector(-1.0/2,-1.0/2,-1.0/2),

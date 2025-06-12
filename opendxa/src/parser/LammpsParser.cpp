@@ -1,5 +1,5 @@
-#include "core/Clustering.hpp"
-#include "utils/CutoffEstimator.hpp"
+#include <opendxa/core/Clustering.hpp>
+#include <opendxa/utils/CutoffEstimator.hpp>
 
 void DXAClustering::readLAMMPSAtomsFile(ParserStream &stream){
 	std::cout << "Parsing LAMMPS dump file." << std::endl;

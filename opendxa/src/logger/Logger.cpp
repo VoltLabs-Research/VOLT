@@ -1,4 +1,4 @@
-#include "logger/Logger.hpp"
+#include <opendxa/logger/Logger.hpp>
 
 Logger::Logger(const std::string& name) 
     : loggerName(name)
