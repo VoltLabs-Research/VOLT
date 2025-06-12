@@ -2,6 +2,7 @@
 #define __DXA_INTERFACE_MESH_STRUCT_H
 
 #include <opendxa/includes.hpp>
+#include <opendxa/structures/atoms/base_atom.hpp>
 
 enum FacetBitFlags {
 	FACET_IS_PRIMARY_SEGMENT = 0,

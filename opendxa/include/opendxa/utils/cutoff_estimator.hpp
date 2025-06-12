@@ -1,5 +1,5 @@
 #include <opendxa/includes.hpp>
-#include <opendxa/structures/atoms.hpp>
+#include <opendxa/structures/structures.hpp>
 
 // TODO: Duplicated code. Already exists a nearest neighbor finder.
 static double findNearestNeighbor(const std::vector<InputAtom>& atoms, size_t centerIndex){
