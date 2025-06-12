@@ -1,6 +1,8 @@
 #include <opendxa_py/wrappers/dislocation_analysis.hpp>
 #include <stdexcept>
 
+using namespace pybind11::literals;
+
 namespace OpenDXA::Bindings::Python::Wrappers{
 
 AnalysisWrapper::AnalysisWrapper(){

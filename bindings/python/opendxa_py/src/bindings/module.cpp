@@ -1,5 +1,5 @@
 #include <opendxa_py/bindings/module.hpp>
-#include <opendxa_py/bindings/analysis.hpp>
+#include <opendxa_py/bindings/dislocation_analysis.hpp>
 #include <opendxa_py/bindings/cutoff.hpp>
 #include <opendxa_py/bindings/logger.hpp>
 

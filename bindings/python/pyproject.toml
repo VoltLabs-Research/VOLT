@@ -1,0 +1,23 @@
+[build-system]
+requires = [
+    "setuptools>=45",
+    "wheel", 
+    "pybind11>=2.10.0",
+    "numpy>=1.20.0"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opendxa"
+version = "1.0.0"
+description = "Open Source Dislocation Extraction Algorithm"
+authors = [{name = "rodyherrera", email = "contact@rodyherrera.com"}]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.20.0",
+    "pybind11>=2.10.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lib*"]

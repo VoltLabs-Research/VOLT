@@ -5,7 +5,7 @@
 
 namespace OpenDXA::Bindings::Python{
 
-void bindEstimateCutoffFromPositions(pybind11::module &m)
+void bindEstimateCutoffFromPositions(pybind11::module &m);
 
 }
 

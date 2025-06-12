@@ -3,7 +3,7 @@
 
 namespace OpenDXA::Bindings::Python::Wrappers{
 
-LoggerWrapper::LogerWrapper(){
+LoggerWrapper::LoggerWrapper(){
     ensureLoggerInitialized();
 }
 
@@ -14,7 +14,7 @@ void LoggerWrapper::ensureLoggerInitialized(){
 }
 
 void LoggerWrapper::setLevel(const std::string& level){
-    LoggerManager::get().setLevel(utils::stringToLogLevel(level));
+    LoggerManager::get().setLevel(Utils::stringToLogLevel(level));
 }
 
 void LoggerWrapper::setLogFile(const std::string& filename){

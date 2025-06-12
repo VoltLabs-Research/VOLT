@@ -6,7 +6,7 @@ namespace py = pybind11;
 namespace OpenDXA::Bindings::Python{
 
 void bindEstimateCutoffFromPositions(py::module &m){
-    module.def(
+    m.def(
         "estimate_cutoff", 
         &Wrappers::estimateCutoffFromPositions,
         "Estimate optimal CNA cutoff from atomic positions",
