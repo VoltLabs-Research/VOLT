@@ -3,7 +3,7 @@
 
 #include <opendxa/includes.hpp>
 #include <opendxa/core/clustering.hpp>
-#include <opendxa/core/interface_mesh.hpp>
+#include <opendxa/structures/mesh/mesh.hpp>
 #include <opendxa/geometry/mesh.hpp>
 
 class DXAInterfaceMesh : public DXAClustering{

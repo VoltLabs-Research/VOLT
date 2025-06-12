@@ -1,5 +1,5 @@
 #include <opendxa/core/interface_mesh.hpp>
-#include <opendxa/structures/interface_mesh.hpp>
+#include <opendxa/structures/mesh/mesh.hpp>
 #include <opendxa/utils/timer.hpp>
 
 /******************************************************************************

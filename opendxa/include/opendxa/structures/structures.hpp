@@ -13,7 +13,7 @@ struct OutputEdge;
 struct OutputFacet;
 
 #include <opendxa/structures/lattice.hpp>
-#include <opendxa/structures/interface_mesh.hpp>
+#include <opendxa/structures/mesh/mesh.hpp>
 #include <opendxa/structures/stacking_faults.hpp>
 #include <opendxa/structures/atoms/base_atom.hpp>
 #include <opendxa/structures/atoms/input_atom.hpp>

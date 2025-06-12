@@ -2,9 +2,12 @@
 #define __DXA_TRACING_H
 
 #include <opendxa/includes.hpp>
-#include <opendxa/core/interface_mesh.hpp>
+#include <opendxa/structures/mesh/mesh.hpp>
+#include <opendxa/engine/analysis_environment.hpp>
 #include <opendxa/structures/dislocations/dislocation_segment.hpp>
+#include <opendxa/utils/memory_pool.hpp>
 #include <opendxa/structures/dislocations/burgers_circuit.hpp>
+#include <opendxa/core/interface_mesh.hpp>
 
 class DXATracing : public DXAInterfaceMesh{
 public:

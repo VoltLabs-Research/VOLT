@@ -1,4 +1,5 @@
 #include <opendxa/core/dislocation_tracing.hpp>
+#include <opendxa/structures/atoms/input_atom.hpp>
 #include <opendxa/structures/dislocations/burgers_circuit.hpp>
 #include <opendxa/structures/dislocations/dislocation_segment.hpp>
 #include <opendxa/utils/timer.hpp>
