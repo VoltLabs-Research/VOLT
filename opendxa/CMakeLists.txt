@@ -83,7 +83,7 @@ if(DXA_BUILD_EXECUTABLE)
     message(STATUS "OpenGL found - visualization support enabled")
 
     add_executable(opendxa 
-        src/Main.cpp
+        src/main.cpp
     )
 
     target_link_libraries(opendxa PRIVATE 
