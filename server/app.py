@@ -1,9 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from opendxa.utils.ptm_templates import get_ptm_templates
-from opendxa.utils.logging import setup_logging
-from server.utils.bootstrap import lifespan
-from server.routers import (
+from utils.bootstrap import lifespan
+from routers import (
     analyze_router,
     config_router,
     file_router,
@@ -17,9 +15,6 @@ import uvicorn
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-TEMPLATES, TEMPLATES_SIZES = get_ptm_templates()
-executor = None
 
 app = FastAPI(
     title='OpenDXA API Server',
@@ -50,19 +45,17 @@ if __name__ == '__main__':
     parser.add_argument('--workers', type=int, default=1, help='Number of workers')
     args = parser.parse_args()
 
-    setup_logging()
-
     print(f'''
-    🚀 OpenDXA API Server Starting...
+    OpenDXA API Server Starting...
     
-    📍 URL: http://{args.host}:{args.port}
-    📖 Docs: http://{args.host}:{args.port}/docs
-    🔍 Interactive API: http://{args.host}:{args.port}/redoc
+    URL: http://{args.host}:{args.port}
+    Docs: http://{args.host}:{args.port}/docs
+    Interactive API: http://{args.host}:{args.port}/redoc
     
-    📁 Upload files via POST /upload
-    🔬 Analyze via POST /analyze/{{file_id}}/timesteps/{{timestep}}
-    📊 Get positions via GET /files/{{file_id}}/timesteps/{{timestep}}/positions
-    🌐 WebSocket streaming via WS /ws/timesteps/{{file_id}}
+    Upload files via POST /upload
+    Analyze via POST /analyze/{{file_id}}/timesteps/{{timestep}}
+    Get positions via GET /files/{{file_id}}/timesteps/{{timestep}}/positions
+    WebSocket streaming via WS /ws/timesteps/{{file_id}}
     ''')
 
     uvicorn.run(

@@ -47,7 +47,7 @@ export const useDislocationAnalysis = (): UseDislocationAnalysisReturn => {
         setError(null);
 
         try {
-            const analysisConfig = customConfig ? { ...config, ...customConfig } : config!;
+            const analysisConfig: AnalysisConfig = customConfig ? { ...config!, ...customConfig } as AnalysisConfig : config!;
             
             const result = await analyzeTimestep(
                 fileId, 
@@ -59,6 +59,12 @@ export const useDislocationAnalysis = (): UseDislocationAnalysisReturn => {
             );
 
             setAnalysis(result);
+            console.log('Analysis result:', result);
+            console.log('VTK data available:', !!result.vtk_data);
+            console.log('VTK data length:', result.vtk_data?.length || 0);
+            if (result.vtk_data) {
+                console.log('VTK data preview:', result.vtk_data.substring(0, 200));
+            }
             return result;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Analysis failed';

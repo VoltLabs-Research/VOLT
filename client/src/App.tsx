@@ -1,3 +1,27 @@
+// Temporary declaration for Three.js components
+declare global {
+    namespace JSX {
+        interface IntrinsicElements {
+            ambientLight: {
+                intensity?: number;
+                color?: string;
+            };
+            directionalLight: {
+                intensity?: number;
+                position?: [number, number, number];
+                color?: string;
+                castShadow?: boolean;
+                'shadow-mapSize'?: [number, number];
+                'shadow-camera-far'?: number;
+                'shadow-camera-left'?: number;
+                'shadow-camera-right'?: number;
+                'shadow-camera-top'?: number;
+                'shadow-camera-bottom'?: number;
+            };
+        }
+    }
+}
+
 import { useEffect, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls, Environment } from '@react-three/drei';
@@ -8,7 +32,6 @@ import TimestepViewer from './components/TimestepViewer';
 import TimestepControls from './components/TimestepControls';
 import DislocationAnalyzer from './components/DislocationAnalyzer';
 import useTimestepManager from './hooks/useTimestepManager';
-import AnalysisConfig from './components/AnalysisConfig';
 import useDislocationAnalysis from './hooks/useDislocationAnalysis';
 import type { FileInfo, Dislocation } from './types/index';
 import './App.css';
@@ -63,6 +86,10 @@ const App = () => {
     } = useTimestepManager(selectedFile || null);
 
     const handleAnalyze = async () => {
+        if (!selectedFile) {
+            console.error('No file selected');
+            return;
+        }
         await analyzeCurrentTimestep(selectedFile.file_id, currentTimestep);
     };
 
@@ -95,7 +122,7 @@ const App = () => {
                 refreshTrigger={refreshTrigger}
             />
 
-            <AnalysisConfig />
+            {/* <AnalysisConfig /> */}
 
             <section className='editor-camera-info-container'>
                 <h3 className='editor-camera-info-title'>Perspective Camera</h3>
@@ -107,7 +134,9 @@ const App = () => {
             <div className='editor-timestep-viewer-container'>
                 <FileUpload onUploadError={handleUploadError} onUploadSuccess={handleUploadSuccess}>
                     <Canvas shadows camera={{ position: [12, 8, 12], fov: 50 }}>
+                        {/* @ts-ignore */}
                         <ambientLight intensity={0.4} />
+                        {/* @ts-ignore */}
                         <directionalLight
                             castShadow
                             position={[15, 15, 15]}
@@ -131,6 +160,8 @@ const App = () => {
                                 timestepData={timestepData}
                                 loading={loading}
                                 error={error}
+                                showDislocations={!!analysis?.vtk_data}
+                                analysis={analysis}
                             />
                         )}
                         <OrbitControls 

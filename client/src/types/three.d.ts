@@ -19,6 +19,11 @@ declare global {
                 'shadow-camera-bottom'?: number;
             };
             mesh: any;
+            group: any;
+            boxGeometry: any;
+            meshBasicMaterial: any;
+            cylinderGeometry: any;
+            coneGeometry: any;
         }
     }
 }

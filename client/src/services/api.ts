@@ -32,7 +32,8 @@ const transformAnalysisResult = (serverResult: any): AnalysisResult => {
         success: serverResult.success !== false,
         timestep: serverResult.timestep,
         dislocations: (serverResult.dislocations || []).map(transformDislocation),
-        analysis_metadata: serverResult.metadata || {},
+        analysis_metadata: serverResult.analysis_metadata || serverResult.metadata || {},
+        vtk_data: serverResult.vtk_data,
         execution_time: serverResult.execution_time || 0,
         error: serverResult.error
     };
@@ -51,7 +52,7 @@ export const uploadFile = async (file: File, onProgress?: (progress: number) => 
         headers: {
             'Content-Type': 'multipart/form-data',
         },
-        onUploadProgress: (progressEvent: ProgressEvent) => {
+        onUploadProgress: (progressEvent: any) => {
             if (onProgress && progressEvent.total) {
                 const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                 onProgress(progress);

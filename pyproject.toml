@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "opendxa"
+version = "0.1.0"
+description = ""
+authors = ["rodyherrera <contact@rodyherrera.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.12"
+pyvista = "^0.45.2"
+pandas = "^2.3.0"
+matplotlib = "^3.10.3"
+numpy = "^2.3.0"
+uvicorn = "^0.34.3"
+wsproto = "^1.2.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

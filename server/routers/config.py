@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from server.models.analysis_config import AnalysisConfig
+from models.analysis_config import AnalysisConfig
 
 router = APIRouter()
 

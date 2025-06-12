@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from server.services.connection_manager import ConnectionManager
-from server.utils.analysis import load_timestep_data
-from server.config import uploaded_files
+from services.connection_manager import ConnectionManager
+from utils.analysis import load_timestep_data
+from config import uploaded_files
 from typing import List
 
 import logging

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from typing import Dict, Any
-from server.config import uploaded_files, analysis_cache, DATA_DIR
+from config import uploaded_files, analysis_cache, DATA_DIR
 
 router = APIRouter()
 

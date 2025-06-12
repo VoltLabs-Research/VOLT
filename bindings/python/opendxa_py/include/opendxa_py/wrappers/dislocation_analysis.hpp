@@ -6,6 +6,7 @@
 #include <pybind11/pybind11.h>
 #include <opendxa/core/stacking_faults.hpp>
 #include <opendxa/engine/config.hpp>
+#include <opendxa/core/dislocation_tracing.hpp>
 
 namespace py = pybind11;
 

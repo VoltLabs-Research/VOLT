@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from server.models.analysis_config import AnalysisConfig
-from server.models.analysis_result import AnalysisResult
-from server.config import uploaded_files
-from server.utils.analysis import (
+from models.analysis_config import AnalysisConfig
+from models.analysis_result import AnalysisResult
+from config import uploaded_files
+from utils.analysis import (
     load_analysis_result, 
     load_timestep_data, 
     save_analysis_result, 
@@ -40,7 +40,7 @@ async def analyze_all_timesteps(file_id: str, config: AnalysisConfig):
             timestep_data = load_timestep_data(file_id, timestep)
             if timestep_data:
                 result = analyze_timestep_wrapper(timestep_data, config)
-                save_analysis_result(file_id, timestep, result)
+                # save_analysis_result(file_id, timestep, result)
                 results.append(result)
                 processed += 1
             else:
@@ -66,10 +66,10 @@ async def analyze_timestep_endpoint(file_id: str, timestep: int, config: Analysi
     if file_id not in uploaded_files:
         raise HTTPException(status_code=404, detail=f'File with ID {file_id} not found')
 
-    cached_result = load_analysis_result(file_id, timestep)
-    if cached_result:
-        logger.info(f'Returning cached analysis result for {file_id}_{timestep}')
-        return AnalysisResult(**cached_result)
+   # cached_result = load_analysis_result(file_id, timestep)
+   # if cached_result:
+    #    logger.info(f'Returning cached analysis result for {file_id}_{timestep}')
+   #     return AnalysisResult(**cached_result)
 
     timestep_data = load_timestep_data(file_id, timestep)
     if timestep_data is None:
@@ -84,9 +84,11 @@ async def analyze_timestep_endpoint(file_id: str, timestep: int, config: Analysi
         logger.info(f'Analyzing timestep {timestep} from file_id {file_id}')
         result = analyze_timestep_wrapper(timestep_data, config)
         
-        save_analysis_result(file_id, timestep, result)
+        # save_analysis_result(file_id, timestep, result)
         
-        return AnalysisResult(**result)
+        # return AnalysisResult(**result)
+        logger.info(f'Analysis completed. Success: {result.get("success", False)}')
+        return result
     except Exception as e:
         logger.error(f'Error analyzing timestep: {e}')
         logger.error(traceback.format_exc())

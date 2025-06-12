@@ -36,7 +36,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onUploa
     const { getRootProps, getInputProps } = useDropzone({
         onDrop,
         accept: {
-            'text/plain': ['.dump', '.lammpstrj', '.xyz'],
+            'text/plain': ['.dump', '.lammpstrj', '.xyz', '.config'],
         },
         multiple: false,
         disabled: uploading,

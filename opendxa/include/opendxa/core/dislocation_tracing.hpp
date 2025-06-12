@@ -17,6 +17,8 @@ public:
 	void setMaximumBurgersCircuitSize(int maxSize) { this->maxBurgersCircuitSize = maxSize; burgersSearchDepth = (maxSize - 1) / 2; }
 	void setMaximumExtendedBurgersCircuitSize(int maxSize) { this->maxExtendedBurgersCircuitSize = maxSize; }
 
+	void getDislocationData() const;
+
 	void traceDislocationSegments();
 	void smoothDislocationSegments(int smoothingLevel, int coarseningLevel);
 	void wrapDislocationSegments();

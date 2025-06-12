@@ -426,7 +426,7 @@ body {
         margin-bottom: 0;
         font-size: 1rem;
     }
-    
+
     .editor-timesteps-controls-slider,
     .editor-timesteps-controls-speed{
         width: auto;
@@ -441,4 +441,15 @@ body {
         align-items: center;
         gap: 0.5rem;
     }
+
+    .editor-floating-container{
+        left: 0;
+    }
+
+    .editor-dislocations-containerm
+    .editor-timestep-controls{
+        display: none !important;
+        visibility: hidden;
+    }
+    
 }

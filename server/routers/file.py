@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from typing import Dict, Any, List
-from server.config import uploaded_files
-from server.utils.analysis import process_all_timesteps, load_timestep_data
-from server.config import TIMESTEPS_DIR, RESULTS_DIR, analysis_cache
+from config import uploaded_files
+from utils.analysis import process_all_timesteps, load_timestep_data
+from config import TIMESTEPS_DIR, RESULTS_DIR, analysis_cache
 
 import uuid
 import logging

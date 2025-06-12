@@ -40,6 +40,7 @@ export interface AnalysisResult{
     timestep: number;
     dislocations: Dislocation[];
     analysis_metadata: Record<string, any>;
+    vtk_data?: string;
     execution_time: number;
     error?: string;
 }
