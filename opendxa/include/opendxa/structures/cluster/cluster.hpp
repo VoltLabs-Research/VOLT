@@ -1,9 +1,11 @@
-#ifndef OPENDXA_CLUSTER_HPP
-#define OPENDXA_CLUSTER_HPP
+#ifndef OPENDXA_STRUCTURES_CLUSTER_HPP
+#define OPENDXA_STRUCTURES_CLUSTER_HPP
 
 #include <opendxa/structures/structures.hpp>
 
-struct Cluster{
+struct ClusterTransition;
+
+struct Cluster {
     int id;
     int processor;
     Cluster* masterCluster;
@@ -13,36 +15,18 @@ struct Cluster{
     ClusterTransition* originalTransitions;
     int numTransitions;
 
-    inline void removeTransition(ClusterTransition* t);
+    Cluster();
+    
+    ~Cluster();
+
+    void removeTransition(ClusterTransition* t);
+    
+    bool hasTransition(ClusterTransition* t) const;
+    void addTransition(ClusterTransition* t);
+    void clearTransitions();
+    
+    bool isValid() const;
+    int countTransitions() const;
 };
 
-// TODO: Should I leave this here? Probably not.
-inline void Cluster::removeTransition(ClusterTransition* t){
-    if(transitions == t){
-        transitions = t->next;
-        t->next = NULL;
-        numTransitions--;
-        return;
-    }
-
-    ClusterTransition* iter = transitions;
-    // int counter = 0;
-
-    while(iter){
-        // DISLOCATIONS_ASSERT_GLOBAL(counter < numTransitions);
-        // counter++;
-
-        if(iter->next == t){
-            iter->next = t->next;
-            t->next = NULL;
-            numTransitions--;
-            return;
-        }
-
-        iter = iter->next;
-    }
-
-    // shouldn't get here
-}
-
-#endif
+#endif 
