@@ -7,6 +7,8 @@
 #include <opendxa/structures/structures.hpp>
 #include <opendxa/core/neighbor_list_builder.hpp>
 #include <opendxa/logger/logger.hpp>
+#include <opendxa/structures/cluster/cluster.hpp>
+#include <opendxa/structures/cluster/cluster_transition.hpp>
 
 enum ParserFileType{
 	PARSER_FILETYPE_LAMMPS,
