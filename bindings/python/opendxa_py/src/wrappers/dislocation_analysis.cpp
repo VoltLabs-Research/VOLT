@@ -16,7 +16,6 @@ void AnalysisWrapper::resetConfig(){
     config.cnaCutoff = 0.0;
 }
 
-
 void AnalysisWrapper::setCutoff(double cutoff){
     validateCutoff(cutoff);
     config.cnaCutoff = cutoff;
@@ -71,20 +70,14 @@ void AnalysisWrapper::setOutputFiles(
     if(!cellFile.empty()) config.dumpCellFile = cellFile;
 }
 
-py::dict AnalysisWrapper::compute(const std::string& inputFile, const std::string& outputFile){
+json AnalysisWrapper::compute(const std::string& inputFile, const std::string& outputFile){
     config.inputFile = inputFile;
     if(!outputFile.empty()){
         config.outputFile = outputFile;
     }
 
-    try{
-        analyzer->compute(config);
-        return py::dict("success"_a=true,
-                       "message"_a="Analysis completed successfully",
-                       "output_file"_a=config.outputFile);
-    }catch (const std::exception& e){
-        return py::dict("success"_a=false, "error"_a=e.what());
-    }
+    json data = analyzer->compute(config);
+    return data;
 }
 
 py::dict AnalysisWrapper::getConfig() const{

@@ -6,6 +6,9 @@
 #include <opendxa/core/dislocation_tracing.hpp>
 #include <opendxa/structures/dislocations/dislocation_segment.hpp>
 #include <opendxa/structures/dislocations/burgers_circuit.hpp>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 class DXAStackingFaults : public DXATracing{
 public:
@@ -17,7 +20,7 @@ public:
 	void findSFDislocationContours();
 	void finishStackingFaults(FloatType flatten = DEFAULT_SF_FLATTEN_LEVEL);
 	void cleanup();
-	void compute(const OpenDXA::Config &config);
+	json compute(const OpenDXA::Config &config);
 
 protected:
 	void traceStackingFaultContour(StackingFault* sf, StackingFaultContour& contour, deque< pair<InputAtom*, Point3> >& toprocess, Point3 currentUnwrappedPos, set<MeshEdge*>& visitedEdges, const LatticeVector hexagonalLatticeVectors[6], int currentDir);

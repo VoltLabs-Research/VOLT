@@ -56,6 +56,7 @@ target_include_directories(opendxapy
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/cxxopts/include
         ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/json/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/pybind11_json/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )

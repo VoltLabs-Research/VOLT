@@ -7,6 +7,10 @@
 #include <opendxa/core/stacking_faults.hpp>
 #include <opendxa/engine/config.hpp>
 #include <opendxa/core/dislocation_tracing.hpp>
+#include <nlohmann/json.hpp>
+#include <pybind11_json/pybind11_json.hpp>
+
+using json = nlohmann::json;
 
 namespace py = pybind11;
 
@@ -33,7 +37,7 @@ public:
                        const std::string& surfaceCapFile = "",
                        const std::string& cellFile = "");
     
-    py::dict compute(const std::string& inputFile, const std::string& outputFile = "");
+    json compute(const std::string& inputFile, const std::string& outputFile = "");
     py::dict getConfig() const;
 
 private:

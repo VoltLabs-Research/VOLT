@@ -10,6 +10,8 @@
 #include <opendxa/core/interface_mesh.hpp>
 #include <nlohmann/json.hpp>
 
+using json = nlohmann::json;
+
 class DXATracing : public DXAInterfaceMesh{
 public:
 	DXATracing();
@@ -18,7 +20,7 @@ public:
 	void setMaximumBurgersCircuitSize(int maxSize) { this->maxBurgersCircuitSize = maxSize; burgersSearchDepth = (maxSize - 1) / 2; }
 	void setMaximumExtendedBurgersCircuitSize(int maxSize) { this->maxExtendedBurgersCircuitSize = maxSize; }
 
-	void writeDislocationsJSON(std::ostream &stream) const;
+	json exportDislocationsToJson() const;
 	void traceDislocationSegments();
 	void smoothDislocationSegments(int smoothingLevel, int coarseningLevel);
 	void wrapDislocationSegments();

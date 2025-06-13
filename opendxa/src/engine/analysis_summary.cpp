@@ -5,9 +5,7 @@
 #include <opendxa/utils/burgers.hpp>
 #include <sstream>
 
-using json = nlohmann::json;
-
-void DXATracing::writeDislocationsJSON(std::ostream &stream) const{
+json DXATracing::exportDislocationsToJson() const{
 	json root;
     root["num_segments"] = segments.size();
     json segs = json::array();
@@ -35,7 +33,7 @@ void DXATracing::writeDislocationsJSON(std::ostream &stream) const{
     }
     root["segments"] = std::move(segs);
 
-    stream << root.dump(4) << std::endl;
+	return root;
 }
 
 void DXAClustering::writeAtomsDumpFile(ostream& stream){

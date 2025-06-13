@@ -4,7 +4,7 @@
 #include <opendxa/utils/timer.hpp>
 #include <GL/glu.h>
 
-void DXAStackingFaults::compute(const OpenDXA::Config &config){
+json DXAStackingFaults::compute(const OpenDXA::Config &config){
 	setCNACutoff((FloatType) config.cnaCutoff);
 	setPBC(config.pbcX, config.pbcY, config.pbcZ);
 	setMaximumBurgersCircuitSize(config.maxCircuitSize);
@@ -56,14 +56,7 @@ void DXAStackingFaults::compute(const OpenDXA::Config &config){
 	}
 
 	writeDislocationsVTKFile(fout);
-
-	if(!config.dumpJsonFile.empty()){
-		std::ofstream jsonDump(config.dumpJsonFile);
-		if(!jsonDump){
-			throw std::runtime_error("Cannot open " + config.dumpJsonFile);
-		}
-		writeDislocationsJSON(jsonDump);
-	}
+	json data = exportDislocationsToJson();
 
 	// Calculate scalar dislocation density and density tensor
 	// TODO: This may be optional, and in the future may be exported if specified.
@@ -103,6 +96,8 @@ void DXAStackingFaults::compute(const OpenDXA::Config &config){
 	LOG_INFO() << "Total time: " << fullTimer.elapsedTime() << " seconds.";
 
 	cleanup();
+
+	return data;
 }
 
 bool DXAStackingFaults::createStackingFaultEdges(){
