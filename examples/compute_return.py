@@ -45,6 +45,82 @@ analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.290
             }]
         }]
     },
+    "stacking_faults": [
+        "num_stacking_faults": int,
+        "data": {
+            "index": int,
+            "normal_vector": [X, Y, Z],
+            "center": [X, Y, Z],
+            "base_point": [X, Y, Z],
+            "num_hcp_atoms": int,
+            "num_isf_atoms": int,
+            "num_tb_atoms": int,
+            "is_infinite": [bool, bool, boll],
+            "is_invalid": bool,
+            "num_contours": int,
+            "total_edges": int,
+            "total_points": int,
+            "contours": [{
+                "contour_id": int,
+                "num_edges": int,
+                "num_points": int,
+                "total_edges": int,
+                "points": [{
+                    "index": int,
+                    "position": [x, Y, Z] (int, int, int)
+                    "tag": int
+                }],
+                "edges": [{
+                    "vertices": [int, int],
+                    "edge_index": int
+                }],
+                "cell": {
+                    "edge_index": [...],
+                    "facet_determinant": [...],
+                    "node_index": [...],
+                    "is_sf_edge": [...]
+                },
+                "contour": {
+                    "stacking_fault_edge_count": int,
+                    "stacking_fault_ratio": int,
+                    "facet_determinant_range": {
+                        "max": int,
+                        "min": int,
+                        "mean": int
+                    }
+                }
+            }],
+            "consolidated": {
+                "points": [{
+                    "index": int,
+                    "contour_id": int,
+                    "position": [X, Y, Z] (int, int, int),
+                    "tag": int
+                }],
+                "edges": [{
+                    "vertices": [int, int],
+                    "contour_id": int
+                }],
+                "cell": {
+                    "contour_id": [int],
+                    "edge_index_local": [int],
+                    "edge_index_global": [int]
+                }
+            },
+            "summary": {
+                "total_contours": int,
+                "total_edges": int,
+                "total_points": int,
+                "total_stacking_fault_edges": int,
+                "overall_stacking_fault_ratio": float,
+                "global_facet_determinant_range": {
+                    "min": float,
+                    "max": float,
+                    "mean": float
+                }
+            }
+        }
+    }],
     "interface_mesh": {
         "metadata": {
             "num_nodes": int

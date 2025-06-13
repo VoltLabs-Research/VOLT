@@ -193,6 +193,28 @@ json DXAInterfaceMesh::getInterfaceMeshData(){
 	return meshJson;
 }
 
+json DXAStackingFaults::getStackingFaults() const{
+	json root;
+	root["num_stacking_faults"] = stackingFaults.size();
+	json stackingFaultsArr = json::array();
+	for(const auto* sf : stackingFaults){
+		json data = sf->getStackingFault();
+		data["index"] = sf->index;
+		data["is_invalid"] = sf->isInvalid;
+        data["normal_vector"] = {sf->normalVector.X, sf->normalVector.Y, sf->normalVector.Z};
+        data["center"] = {sf->center.X, sf->center.Y, sf->center.Z};
+        data["base_point"] = {sf->basePoint.X, sf->basePoint.Y, sf->basePoint.Z};
+        data["num_hcp_atoms"] = sf->numHCPAtoms;
+        data["num_isf_atoms"] = sf->numISFAtoms;
+        data["num_tb_atoms"] = sf->numTBAtoms;
+        data["is_infinite"] = {sf->isInfinite[0], sf->isInfinite[1], sf->isInfinite[2]};
+        data["is_invalid"] = sf->isInvalid;
+        stackingFaultsArr.push_back(data);
+	}
+	root["data"] = stackingFaultsArr;
+	return root;
+}
+
 void DXATracing::writeDislocationsVTKFile(ostream& stream) const{
 	LOG_INFO() << "Writing dislocation lines to output file.";
 
@@ -397,108 +419,233 @@ json BurgersCircuit::getBurgersCircuit(){
 	return root;
 }
 
-void StackingFaultContour::writeToFile(ostream& stream) const{
-	stream << "# vtk DataFile Version 3.0";
-	stream << "# Stacking fault contour";
-	stream << "ASCII";
-	stream << "DATASET UNSTRUCTURED_GRID";
-	stream << "POINTS " << (edges.size()*2) << " float";
-	for(vector<MeshEdge*>::const_iterator i = edges.begin(); i != edges.end(); ++i) {
-		MeshEdge* edge = *i;
-		stream << edge->node1->pos.X << " " << edge->node1->pos.Y << " " << edge->node1->pos.Z;
-		stream << edge->node2()->pos.X << " " << edge->node2()->pos.Y << " " << edge->node2()->pos.Z;
+json StackingFaultContour::getStackingFaultContour() const{
+	json root;
+	root["num_edges"] = edges.size();
+	root["num_points"] = edges.size() * 2;
+
+	// Points, each edge contributes 2 points (node1 and node2)
+	root["points"] = json::array();
+	int pointIndex = 0;
+	for(vector<MeshEdge*>::const_iterator i = edges.begin(); i != edges.end(); ++i){
+		MeshEdge *edge = *i;
+		// Point 1 (node1)
+        json point1;
+        point1["index"] = pointIndex++;
+        point1["position"] = {
+			edge->node1->pos.X, 
+			edge->node1->pos.Y, 
+			edge->node1->pos.Z
+		};
+        point1["tag"] = edge->node1->tag;
+        root["points"].push_back(point1);
+		// Point 2 (node2)
+		json point2;
+        point2["index"] = pointIndex++;
+        point2["position"] = {
+			edge->node2()->pos.X, 
+			edge->node2()->pos.Y, 
+			edge->node2()->pos.Z
+		};
+        point2["node_tag"] = edge->node2()->tag;
+        root["points"].push_back(point2);
 	}
-	stream << endl << "CELLS " << edges.size() << " " << (edges.size()*3);
-	for(int i=0; i<edges.size(); i++)
-		stream << "2 " << (i*2) << " " << (i*2+1);
-	stream;
-	stream << "CELL_TYPES " << edges.size();
-	for(int i=0; i<edges.size(); i++)
-		stream << "3 ";
+	// Cells/Edges, each edge is a line connecting 2 consecutive points
+	root["edges"] = json::array();
+	for(int i = 0; i < edges.size(); i++){
+		json edgeCell;
+		// Connect consecutive points on each edge
+        edgeCell["vertices"] = {i * 2, i * 2 + 1}; 
+        edgeCell["edge_index"] = i;
+        root["edges"].push_back(edgeCell);
+	}
 
-	stream << endl << "CELL_DATA " << edges.size();
-
-	stream << endl << "SCALARS edge_index int 1";
-	stream << endl << "LOOKUP_TABLE default";
-	for(int i=0; i<edges.size(); i++)
-		stream << i;
-
-	stream << endl << "SCALARS facet_det float 1";
-	stream << endl << "LOOKUP_TABLE default";
-	for(vector<MeshEdge*>::const_iterator i = edges.begin(); i != edges.end(); ++i) {
+	root["cell"]["edge_index"] = json::array();
+	root["cell"]["facet_determinant"] = json::array();
+	root["cell"]["node_index"] = json::array();
+	root["cell"]["is_sf_edge"] = json::array();
+	
+	int edgeIndex = 0;
+	// TODO: can use the last one for loop?
+    for(vector<MeshEdge*>::const_iterator i = edges.begin(); i != edges.end(); ++i){
 		MeshEdge* edge = *i;
+		root["cell"]["edge_index"].push_back(edgeIndex);
+
+		// Facet determinant calculation
 		MeshFacet* facet1 = edge->facet;
 		MeshFacet* facet2 = edge->oppositeEdge->facet;
-		if(facet1 != NULL && facet2 != NULL) {
-			MeshEdge* node1edge = facet1->previousEdge(edge)->oppositeEdge;
-			MeshEdge* node2edge = facet2->nextEdge(edge->oppositeEdge);
-			MeshNode* node1 = node1edge->node2();
-			MeshNode* node2 = node2edge->node2();
-			FloatType facet_det = Matrix3(edge->latticeVector, node1edge->latticeVector, node2edge->latticeVector).determinant();
-			stream << facet_det;
+		if(facet1 != NULL && facet2 != NULL){
+            MeshEdge* node1edge = facet1->previousEdge(edge)->oppositeEdge;
+            MeshEdge* node2edge = facet2->nextEdge(edge->oppositeEdge);
+            MeshNode* node1 = node1edge->node2();
+            MeshNode* node2 = node2edge->node2();
+
+            FloatType facet_det = Matrix3(
+                edge->latticeVector, 
+                node1edge->latticeVector, 
+                node2edge->latticeVector
+            ).determinant();
+            root["cell"]["facet_determinant"].push_back(facet_det);
+		}else{
+			root["cell"]["facet_determinant"].push_back(0.0);
 		}
-		else stream << "0";
+
+		// Node index (node1 tag)
+		root["cell"]["node_Index"].push_back(edge->node1->tag);
+		
+		root["cell"]["is_sf_edge"].push_back(edge->isSFEdge);
+		
+		edgeIndex++;
 	}
 
-	stream << endl << "SCALARS node_index int 1";
-	stream << endl << "LOOKUP_TABLE default";
-	for(vector<MeshEdge*>::const_iterator i = edges.begin(); i != edges.end(); ++i)
-		stream << (*i)->node1->tag;
+	int sfEdgeCount = 0;
+	// TODO: can use the last one for loop?
+    for(vector<MeshEdge*>::const_iterator i = edges.begin(); i != edges.end(); ++i){
+		if((*i)->isSFEdge){
+			sfEdgeCount++;
+		}
+	}
+	root["contour"]["stacking_fault_edge_count"] = sfEdgeCount;
+	root["contour"]["stacking_fault_ratio"] = (double)sfEdgeCount / edges.size();
 
-	stream << endl << "SCALARS isSFEdge int 1";
-	stream << endl << "LOOKUP_TABLE default";
-	for(vector<MeshEdge*>::const_iterator i = edges.begin(); i != edges.end(); ++i)
-		stream << (*i)->isSFEdge;
+	// Range of facet determinants (useful for analysis)
+	// Well, it is possible to quantitatively characterize 
+	// crystalline quality, detect defects, and validate the 
+	// physical consistency of dislocations.
+	vector<FloatType> facetDets;
+	for(const auto &det : root["cell"]["facet_determinant"]){
+		if(det != 0.0){
+			facetDets.push_back(det);
+		}
+	}
+
+	if(!facetDets.empty()){
+		auto minmax = std::minmax_element(facetDets.begin(), facetDets.end());
+		root["contour"]["facet_determinant_range"]["min"] = *minmax.first;
+		root["contour"]["facet_determinant_range"]["max"] = *minmax.second;
+
+		FloatType sum = std::accumulate(facetDets.begin(), facetDets.end(), 0.0);
+		root["contour"]["facet_determinant_range"]["mean"] = sum / facetDets.size();
+	}
+
+	return root;
 }
 
-void StackingFault::writeToFile(ostream& stream) const{
-	size_t numEdges = 0;
-	size_t numPoints = 0;
-	for(vector<StackingFaultContour>::const_iterator c = contours.begin(); c != contours.end(); ++c) {
-		numEdges += c->edges.size();
-		numPoints += c->edges.size() * 2;
+json StackingFault::getStackingFault() const{
+	json root;
+	root["num_contours"] = contours.size();
+
+	size_t totalNumEdges = 0;
+	size_t totalNumPoints = 0;
+	for(vector<StackingFaultContour>::const_iterator c = contours.begin(); c != contours.end(); ++c){
+        totalNumEdges += c->edges.size();
+        totalNumPoints += c->edges.size() * 2;
+    }
+	root["total_edges"] = totalNumEdges;
+	root["total_points"] = totalNumPoints;
+	root["contours"] = json::array();
+    for(vector<StackingFaultContour>::const_iterator c = contours.begin(); c != contours.end(); ++c){
+		int contourId = c - contours.begin();
+		json contourData = c->getStackingFaultContour();
+		contourData["contour_id"] = contourId;
+		root["contours"].push_back(contourData);
 	}
 
-	stream << "# vtk DataFile Version 3.0";
-	stream << "# Stacking fault";
-	stream << "ASCII";
-	stream << "DATASET UNSTRUCTURED_GRID";
-	stream << "POINTS " << numPoints << " float";
-	for(vector<StackingFaultContour>::const_iterator c = contours.begin(); c != contours.end(); ++c) {
-		for(vector<MeshEdge*>::const_iterator i = c->edges.begin(); i != c->edges.end(); ++i) {
-			MeshEdge* edge = *i;
-			if(edge->node1->outputVertex == NULL)
-				stream << edge->node1->pos.X << " " << edge->node1->pos.Y << " " << edge->node1->pos.Z;
-			else
-				stream << edge->node1->outputVertex->pos.X << " " << edge->node1->outputVertex->pos.Y << " " << edge->node1->outputVertex->pos.Z;
-			if(edge->node2()->outputVertex == NULL)
-				stream << edge->node2()->pos.X << " " << edge->node2()->pos.Y << " " << edge->node2()->pos.Z;
-			else
-				stream << edge->node2()->outputVertex->pos.X << " " << edge->node2()->outputVertex->pos.Y << " " << edge->node2()->outputVertex->pos.Z;
+	root["consolidated"]["points"] = json::array();
+	root["consolidated"]["edges"] = json::array();
+    root["consolidated"]["cell"]["contour_id"] = json::array();
+    root["consolidated"]["cell"]["edge_index_local"] = json::array();
+    root["consolidated"]["cell"]["edge_index_global"] = json::array();
+    
+	int globalPointIndex = 0;
+    int globalEdgeIndex = 0;
+    
+    for(vector<StackingFaultContour>::const_iterator c = contours.begin(); c != contours.end(); ++c){
+        int contourId = c - contours.begin();
+        
+        for(vector<MeshEdge*>::const_iterator i = c->edges.begin(); i != c->edges.end(); ++i){
+            MeshEdge* edge = *i;
+            
+            // Points (2 per edge)
+            // Point 1 (node1)
+            json point1;
+            point1["index"] = globalPointIndex++;
+            point1["contour_id"] = contourId;
+            
+            if(edge->node1->outputVertex == NULL) {
+                point1["position"] = {edge->node1->pos.X, edge->node1->pos.Y, edge->node1->pos.Z};
+            } else {
+                point1["position"] = {
+                    edge->node1->outputVertex->pos.X,
+                    edge->node1->outputVertex->pos.Y,
+                    edge->node1->outputVertex->pos.Z
+                };
+            }
+            point1["tag"] = edge->node1->tag;
+            root["consolidated"]["points"].push_back(point1);
+            
+            // Point 2 (node2)
+            json point2;
+            point2["index"] = globalPointIndex++;
+            point2["contour_id"] = contourId;
+            
+            if(edge->node2()->outputVertex == NULL) {
+                point2["position"] = {edge->node2()->pos.X, edge->node2()->pos.Y, edge->node2()->pos.Z};
+            } else {
+                point2["position"] = {
+                    edge->node2()->outputVertex->pos.X,
+                    edge->node2()->outputVertex->pos.Y,
+                    edge->node2()->outputVertex->pos.Z
+                };
+            }
+            point2["tag"] = edge->node2()->tag;
+            root["consolidated"]["points"].push_back(point2);
+            
+            // Edge
+            json edgeCell;
+            edgeCell["vertices"] = {globalEdgeIndex * 2, globalEdgeIndex * 2 + 1};
+            edgeCell["contour_id"] = contourId;
+            root["consolidated"]["edges"].push_back(edgeCell);
+            
+            // Cell data
+            root["consolidated"]["cell"]["contour_id"].push_back(contourId);
+            root["consolidated"]["cell"]["edge_index_local"].push_back(i - c->edges.begin());
+            root["consolidated"]["cell"]["edge_index_global"].push_back(globalEdgeIndex);
+            
+            globalEdgeIndex++;
+        }
+    }
+
+	root["summary"]["total_contours"] = contours.size();
+    root["summary"]["total_edges"] = totalNumEdges;
+    root["summary"]["total_points"] = totalNumPoints;
+    
+    int totalSfEdges = 0;
+    vector<FloatType> allFacetDets;
+    
+    for(const auto& contour : root["contours"]){
+        totalSfEdges += contour["contour"]["stacking_fault_edge_count"].get<int>();
+        
+        for(const auto& det : contour["cell"]["facet_determinant"]){
+            if(det.get<FloatType>() != 0.0){
+                allFacetDets.push_back(det.get<FloatType>());
+            }
 		}
-	}
-	stream << endl << "CELLS " << numEdges << " " << (numEdges*3);
-	for(int i=0; i<numEdges; i++)
-		stream << "2 " << (i*2) << " " << (i*2+1);
-	stream;
-	stream << "CELL_TYPES " << numEdges;
-	for(int i=0; i<numEdges; i++)
-		stream << "3";
-
-	stream << endl << "CELL_DATA " << numEdges;
-
-	stream << endl << "SCALARS contour int 1";
-	stream << endl << "LOOKUP_TABLE default";
-	for(vector<StackingFaultContour>::const_iterator c = contours.begin(); c != contours.end(); ++c) {
-		for(int i=0; i<c->edges.size(); i++)
-			stream << (c-contours.begin());
-	}
-
-	stream << endl << "SCALARS edge_index int 1";
-	stream << endl << "LOOKUP_TABLE default";
-	for(vector<StackingFaultContour>::const_iterator c = contours.begin(); c != contours.end(); ++c) {
-		for(int i=0; i<c->edges.size(); i++)
-			stream << i;	}
+    }
+    
+    root["summary"]["total_stacking_fault_edges"] = totalSfEdges;
+    root["summary"]["overall_stacking_fault_ratio"] = (double)totalSfEdges / totalNumEdges;
+    
+    if(!allFacetDets.empty()) {
+        auto minmax = std::minmax_element(allFacetDets.begin(), allFacetDets.end());
+        root["summary"]["global_facet_determinant_range"]["min"] = *minmax.first;
+        root["summary"]["global_facet_determinant_range"]["max"] = *minmax.second;
+        
+        FloatType sum = std::accumulate(allFacetDets.begin(), allFacetDets.end(), 0.0);
+        root["summary"]["global_facet_determinant_range"]["mean"] = sum / allFacetDets.size();
+    }
+    
+    return root;
 }
 
 void MeshEdge::writeToFile(ostream& stream){

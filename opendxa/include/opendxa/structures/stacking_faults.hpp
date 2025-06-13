@@ -3,6 +3,9 @@
 
 #include <opendxa/includes.hpp>
 #include <opendxa/structures/dislocations/burgers_circuit.hpp>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 struct StackingFault;
 
@@ -14,7 +17,7 @@ struct StackingFaultContour {
 	vector<BurgersCircuit*> borderSegments;
 	vector< pair<int,int> > segmentIntervals;
 
-	void writeToFile(ostream& stream) const;
+	json getStackingFaultContour() const;
 };
 
 struct SFContourVertex {
@@ -46,7 +49,7 @@ struct StackingFault {
 	int numISFAtoms;
 	int numTBAtoms;
 
-	void writeToFile(ostream& stream) const;
+	json getStackingFault() const;
 };
 
 #endif 
