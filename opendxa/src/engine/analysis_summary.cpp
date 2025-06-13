@@ -36,25 +36,25 @@ json DXATracing::exportDislocationsToJson() const{
 	return root;
 }
 
-void DXAClustering::writeAtomsDumpFile(ostream& stream){
-	LOG_INFO() << "Dumping atoms to output file.";
+json DXAClustering::getAtomsData(){
+	json root;
+	json atoms = json::array();
 
-	writeSimulationCellHeaderLAMMPS(stream);
-	stream << "ITEM: NUMBER OF ATOMS";
-	stream << inputAtoms.size();
-	stream << "ITEM: ATOMS id x y z CNAAtomType Coordination RecursiveDepth IsISF IsTB";
-	stream;
+	root["metadata"]["num_atoms"] = inputAtoms.size();
+
 	for(vector<InputAtom>::const_iterator p = inputAtoms.begin(); p != inputAtoms.end(); ++p){
-		stream        << p->tag;
-		stream << " " << p->pos.X << " " << p->pos.Y << " " << p->pos.Z;
-		stream << " " << p->cnaType;
-		stream << " " << p->numNeighbors;
-		stream << " " << p->recursiveDepth;
-		stream << " " << p->testFlag(ATOM_ISF);
-		stream << " " << p->testFlag(ATOM_TB);
-		stream;
+		json atom;
+		atom["id"] = p->tag;
+		atom["position"] = { p->pos.X, p->pos.Y, p->pos.Z };
+		atom["cna"]["atom_type"] = p->cnaType;
+		atom["coordination"] = p->numNeighbors;
+		atom["recursive_depth"] = p->recursiveDepth;
+		atoms.push_back(atom);
 	}
-	stream << flush;
+
+	root["data"] = std::move(atoms);
+
+	return root;
 }
 
 json DXAInterfaceMesh::getInterfaceMeshData(){
@@ -163,21 +163,15 @@ json DXAInterfaceMesh::getInterfaceMeshData(){
     // fill summary arrays for edges
     for(const auto& edge : meshJson["edges"]){
         meshJson["summary"]["edge_count"].push_back(edge["edge_count"]);
-        meshJson["summary"]["segment"].push_back(edge["segment"]);
-        meshJson["summary"]["final_segment"].push_back(edge["final_segment"]);
-        meshJson["summary"]["is_primary_segment"].push_back(edge["is_primary_segment"]);
-        meshJson["summary"]["selection"].push_back(edge["selection"]);
         meshJson["summary"]["isSF"].push_back(edge["isSF"]);
     }
     
     // Populate summary arrays for facets
     for(const auto& facet : meshJson["facets"]){
-        meshJson["summary"]["edge_count"].push_back(facet["edge_count"]);
         meshJson["summary"]["segment"].push_back(facet["segment"]);
         meshJson["summary"]["final_segment"].push_back(facet["final_segment"]);
         meshJson["summary"]["is_primary_segment"].push_back(facet["is_primary_segment"]);
         meshJson["summary"]["selection"].push_back(facet["selection"]);
-        meshJson["summary"]["isSF"].push_back(facet["isSF"]);
     }
 
 	return meshJson;

@@ -32,7 +32,6 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config){
 	createInterfaceMeshNodes();
 
 	if(!config.dumpSFPlanesFile.empty()) createStackingFaultEdges();
-	if(!config.dumpAtomsFile.empty()) writeAtomsDumpFile(*new std::ofstream(config.dumpAtomsFile));
 
 	createInterfaceMeshFacets();
 	validateInterfaceMesh();
@@ -57,6 +56,7 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config){
 	writeDislocationsVTKFile(fout);
 	json data = exportDislocationsToJson();
 	data["interface_mesh"] = getInterfaceMeshData();
+	data["atoms"] = getAtomsData();
 
 	// Calculate scalar dislocation density and density tensor
 	// TODO: This may be optional, and in the future may be exported if specified.

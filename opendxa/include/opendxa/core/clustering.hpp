@@ -9,6 +9,9 @@
 #include <opendxa/logger/logger.hpp>
 #include <opendxa/structures/cluster/cluster.hpp>
 #include <opendxa/structures/cluster/cluster_transition.hpp>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 enum ParserFileType{
 	PARSER_FILETYPE_LAMMPS,
@@ -32,7 +35,7 @@ public:
 	void createClusterTransitions();
 	void createSuperclusters(vector<ClusterTransition*>& clusterTransitions);
 	void alignClusterOrientations();
-	void writeAtomsDumpFile(ostream& stream);
+	json getAtomsData();
 
 	void cleanup();
 	const vector<InputAtom>& getInputAtoms() const { return inputAtoms; }

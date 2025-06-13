@@ -39,6 +39,20 @@ analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.290
             "selection": [int],
             "isSF": [int]
         }
+    },
+    {
+        "metadata": {
+            "num_atoms": int
+        },
+        "data": [{
+            "id": int,
+            "position": [X, Y, Z] (int, int, int),
+            "cna": {
+                "atom_type": 0 | 1 | 2 | 3 | 4 | 5,
+                "coordination": int,
+                "recursive_depth": int
+            }
+        }]
     }
 }
 '''

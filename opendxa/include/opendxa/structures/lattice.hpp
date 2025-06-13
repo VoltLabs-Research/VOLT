@@ -11,8 +11,8 @@ enum CNAAtomType {
 	FCC = 1,
 	HCP = 2,
 	BCC = 3,
-	OTHER = 5,
-	SIGMA7_TWIST_UNIT = 6
+	OTHER = 4,
+	SIGMA7_TWIST_UNIT = 5
 };
 
 struct NearestNeighborTetrahedron {
