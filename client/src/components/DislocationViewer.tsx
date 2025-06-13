@@ -262,22 +262,7 @@ const DislocationViewer: React.FC<DislocationViewerProps> = ({
 
     // Generate colors based on Burgers vector
     const getLineColor = (line: VTKDislocationLine): THREE.Color => {
-        if (!colorByBurgersVector) {
-            return new THREE.Color(0xff0000); // Bright red default for visibility
-        }
-
-        const [bx, by, bz] = line.burgersVector;
-        
-        // Create color based on Burgers vector direction with better visibility
-        const r = Math.abs(bx) * 3; // Increased scaling
-        const g = Math.abs(by) * 3;
-        const b = Math.abs(bz) * 3;
-        
-        return new THREE.Color(
-            Math.min(1, Math.max(0.3, r)), // Higher minimum for visibility
-            Math.min(1, Math.max(0.3, g)),
-            Math.min(1, Math.max(0.3, b))
-        );
+        return new THREE.Color(0, 1, 0)
     };
 
     // Generate line thickness based on segment length or magnitude

@@ -87,7 +87,7 @@ const TimestepViewer: React.FC<ExtendedTimestepViewerProps & {
             {showDislocations && analysis?.vtk_data && (
                 <DislocationViewer
                     vtkData={analysis.vtk_data}
-                    scale={scale}
+                    scale={0.3}
                     centerOffset={centerOffset}
                     showBurgersVectors={true}
                     colorByBurgersVector={true}

@@ -4,7 +4,7 @@ from opendxa.visualizers.vtk import DislocationVTKReader
 pipeline = DislocationAnalysis()
 
 # pipeline.compute(dump_file, output_file)
-pipeline.compute('/home/rodyherrera/Desktop/Sigma9yz/dump.ensayo.25000.config', 'dislocations.vtk')
+pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.2900000.config', 'dislocations.vtk')
 
 vtk_reader = DislocationVTKReader('dislocations.vtk')
 vtk_reader.plot_dislocations()

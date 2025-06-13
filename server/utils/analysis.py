@@ -192,6 +192,7 @@ def analyze_timestep_wrapper(timestep_data: Dict, config: AnalysisConfig, file_p
                 
                 # Configure the pipeline to generate VTK output
                 # The pipeline.compute() method expects inputFile and outputFile parameters
+                pipeline.set_circuit_sizes(3, 16)
                 pipeline.compute(dump_file_path, vtk_output_path)
                 
                 end_time = time.time()

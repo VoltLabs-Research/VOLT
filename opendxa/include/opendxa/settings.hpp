@@ -13,7 +13,7 @@
 
 /// The maximum number of edges in a Burgers circuit used during 
 // search of primary dislocation segments.
-#define DEFAULT_MAX_BURGERS_CIRCUIT_SIZE 9
+#define DEFAULT_MAX_BURGERS_CIRCUIT_SIZE 3
 
 /// The maximum number of edges in a Burgers circuit when the primary 
 // dislocation segments are being extended towards the nodal points.
