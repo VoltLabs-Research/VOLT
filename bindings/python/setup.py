@@ -118,6 +118,7 @@ def get_include_dirs():
         INCLUDE_DIR,
         OPENDXA_PY_ROOT,
         os.path.join(OPENDXA_ROOT, 'dependencies', 'cxxopts', 'include'),
+        os.path.join(OPENDXA_ROOT, 'dependencies', 'json', 'include'),
         SRC_DIR,
         os.path.join(OPENDXA_PY_ROOT, 'opendxa_py', 'include'),
     ]
