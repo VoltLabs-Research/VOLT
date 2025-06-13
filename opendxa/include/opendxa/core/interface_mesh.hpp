@@ -5,6 +5,9 @@
 #include <opendxa/core/clustering.hpp>
 #include <opendxa/structures/mesh/mesh.hpp>
 #include <opendxa/geometry/mesh.hpp>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 class DXAInterfaceMesh : public DXAClustering{
 public:
@@ -17,7 +20,7 @@ public:
 	void smoothOutputSurface(int smoothingLevel);
 	void finishOutputSurface(bool createCapSurface);
 
-	void writeInterfaceMeshFile(ostream& stream) const;
+	json getInterfaceMeshData();
 	void writeOutputMeshFile(ostream& stream) const;
 	void cleanup();
 	void validateInterfaceMesh();

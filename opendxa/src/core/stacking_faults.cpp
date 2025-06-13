@@ -39,7 +39,6 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config){
 	findStackingFaultPlanes();
 	traceDislocationSegments();
 
-	if(!config.dumpMeshFile.empty()) writeInterfaceMeshFile(*new std::ofstream(config.dumpMeshFile));
 	if(!config.dumpSurfaceFile.empty()){
 		generateOutputMesh();
 		smoothOutputSurface(config.surfaceSmooth);
@@ -57,6 +56,7 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config){
 
 	writeDislocationsVTKFile(fout);
 	json data = exportDislocationsToJson();
+	data["interface_mesh"] = getInterfaceMeshData();
 
 	// Calculate scalar dislocation density and density tensor
 	// TODO: This may be optional, and in the future may be exported if specified.

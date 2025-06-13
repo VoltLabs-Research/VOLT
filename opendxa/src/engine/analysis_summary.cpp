@@ -57,132 +57,133 @@ void DXAClustering::writeAtomsDumpFile(ostream& stream){
 	stream << flush;
 }
 
-void DXAInterfaceMesh::writeInterfaceMeshFile(ostream& stream) const{
-	LOG_INFO() << "Writing interface mesh to output file.";
-
-	size_t numFacets = 0;
-	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
-		if(isWrappedFacet(*f) == false)
-			numFacets++;
-	}
-	size_t numFacetVertices = numFacets*3;
-
-	size_t numEdges = 0;
-	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-		for(int i = 0; i < (*n)->numEdges; i++) {
-			if(isWrappedEdge(&(*n)->edges[i]) == false)
-				numEdges++;
-		}
-	}
-
-	stream << "# vtk DataFile Version 3.0" << endl;
-	stream << "# Interface mesh" << endl;
-	stream << "ASCII" << endl;
-	stream << "DATASET UNSTRUCTURED_GRID" << endl;
-	stream << "POINTS " << nodes.size() << " float" << endl;
-	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-		const Point3& pos = (*n)->pos;
-		stream << pos.X << " " << pos.Y << " " << pos.Z << endl;
-	}
-	stream << "CELLS " << (numEdges + numFacets) << " " << (numEdges*3 + numFacets + numFacetVertices) << endl;
-	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-		for(int i = 0; i < (*n)->numEdges; i++) {
-			if(isWrappedEdge(&(*n)->edges[i]) == false)
-				stream << "2 " << (*n)->index << " " << (*n)->edgeNeighbor(i)->index << endl;
-		}
-	}
-	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
-		if(isWrappedFacet(*f) == false) {
-			stream << "3";
-			for(int i=0; i<3; i++)
-				stream << " " << (*f)->vertex(i)->index;
-			stream << endl;
-		}
-	}
-
-	stream << "CELL_TYPES " << (numEdges + numFacets) << endl;
-	for(size_t i = 0; i < numEdges; i++)
-		stream << "3" << endl;
-	for(size_t i = 0; i < numFacets; i++)
-		stream << "5" << endl;	// Triangle
-
-	stream << "CELL_DATA " << (numEdges + numFacets) << endl;
-
-	stream << "SCALARS edge_count int 1" << endl;
-	stream << "LOOKUP_TABLE default" << endl;
-	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-		for(int i = 0; i < (*n)->numEdges; i++) {
-			if(isWrappedEdge(&(*n)->edges[i]) == false) {
-				int count = 0;
-				for(int c = 0; c < (*n)->numEdges; c++)
-					if((*n)->edgeNeighbor(c) == (*n)->edgeNeighbor(i))
-						count++;
-				stream << count << endl;
+json DXAInterfaceMesh::getInterfaceMeshData(){
+    json meshJson;
+    
+    // Count uninvolved facets and edges
+    size_t numFacets = 0;
+    for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
+        if(isWrappedFacet(*f) == false)
+            numFacets++;
+    }
+    
+    size_t numEdges = 0;
+    for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+        for(int i = 0; i < (*n)->numEdges; i++) {
+            if(isWrappedEdge(&(*n)->edges[i]) == false)
+                numEdges++;
+        }
+    }
+    
+    // General information
+    meshJson["metadata"]["num_nodes"] = nodes.size();
+    meshJson["metadata"]["num_facets"] = numFacets;
+    meshJson["metadata"]["num_edges"] = numEdges;
+    meshJson["metadata"]["total_cells"] = numEdges + numFacets;
+    
+    // Points/Nodes
+    meshJson["points"] = nlohmann::json::array();
+    for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+        const Point3& pos = (*n)->pos;
+        nlohmann::json point;
+        point["index"] = (*n)->index;
+        point["coordinates"] = {pos.X, pos.Y, pos.Z};
+        meshJson["points"].push_back(point);
+    }
+    
+    // Edges
+    meshJson["edges"] = nlohmann::json::array();
+    for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n){
+        for(int i = 0; i < (*n)->numEdges; i++){
+            if(isWrappedEdge(&(*n)->edges[i]) == false) {
+                nlohmann::json edge;
+                edge["vertices"] = {(*n)->index, (*n)->edgeNeighbor(i)->index};
+                
+                // Calcular edge_count
+                int count = 0;
+                for(int c = 0; c < (*n)->numEdges; c++){
+                    if((*n)->edgeNeighbor(c) == (*n)->edgeNeighbor(i))
+                        count++;
+                }
+                edge["edge_count"] = count;
+                edge["segment"] = 0;
+                edge["final_segment"] = 0;
+                edge["is_primary_segment"] = 0;
+                edge["selection"] = 0;
+                edge["isSF"] = (*n)->edges[i].isSFEdge ? 1 : 0;
+                
+                meshJson["edges"].push_back(edge);
+            }
+        }
+    }
+    
+    // Facets/Triangles
+    meshJson["facets"] = nlohmann::json::array();
+    for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
+        if(isWrappedFacet(*f) == false) {
+            nlohmann::json facet;
+            facet["vertices"] = {
+                (*f)->vertex(0)->index,
+                (*f)->vertex(1)->index,
+                (*f)->vertex(2)->index
+            };
+            
+            facet["edge_count"] = 0;
+            
+            // Segment
+            if((*f)->circuit != NULL){
+                facet["segment"] = (*f)->circuit->segment->index;
+			}else{
+                facet["segment"] = -1;
 			}
-		}
-	}
-	for(size_t i = 0; i < numFacets; i++)
-		stream << "0" << endl;
-
-	stream << "SCALARS segment int 1" << endl;
-	stream << "LOOKUP_TABLE default" << endl;
-	for(size_t i = 0; i < numEdges; i++)
-		stream << "0" << endl;
-	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
-		if(isWrappedFacet(*f) == false) {
-			if((*f)->circuit != NULL)
-				stream << (*f)->circuit->segment->index << endl;
-			else
-				stream << "-1" << endl;
-		}
-	}
-
-	stream << "SCALARS final_segment int 1" << endl;
-	stream << "LOOKUP_TABLE default" << endl;
-	for(size_t i = 0; i < numEdges; i++)
-		stream << "0" << endl;
-	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
-		if(isWrappedFacet(*f) == false) {
-			if((*f)->circuit != NULL && ((*f)->circuit->isDangling == false || (*f)->testFlag(FACET_IS_PRIMARY_SEGMENT))) {
-				DislocationSegment* segment = (*f)->circuit->segment;
-				while(segment->replacedWith != NULL) segment = segment->replacedWith;
-				stream << segment->index << endl;
+            
+            // Final segment
+            if((*f)->circuit != NULL && ((*f)->circuit->isDangling == false || (*f)->testFlag(FACET_IS_PRIMARY_SEGMENT))){
+                DislocationSegment* segment = (*f)->circuit->segment;
+                while(segment->replacedWith != NULL){
+                    segment = segment->replacedWith;
+				}
+                facet["final_segment"] = segment->index;
+            }else{
+                facet["final_segment"] = -1;
 			}
-			else
-				stream << "-1" << endl;
-		}
-	}
+            facet["is_primary_segment"] = (*f)->testFlag(FACET_IS_PRIMARY_SEGMENT) ? 1 : 0;
+            facet["selection"] = (*f)->selection;
+            facet["isSF"] = 0;
+            
+            meshJson["facets"].push_back(facet);
+        }
+    }
+    
+    // Add summary of cell data organized by type
+    meshJson["summary"]["edge_count"] = json::array();
+    meshJson["summary"]["segment"] = json::array();
+    meshJson["summary"]["final_segment"] = json::array();
+    meshJson["summary"]["is_primary_segment"] = json::array();
+    meshJson["summary"]["selection"] = json::array();
+    meshJson["summary"]["isSF"] = json::array();
+    
+    // fill summary arrays for edges
+    for(const auto& edge : meshJson["edges"]){
+        meshJson["summary"]["edge_count"].push_back(edge["edge_count"]);
+        meshJson["summary"]["segment"].push_back(edge["segment"]);
+        meshJson["summary"]["final_segment"].push_back(edge["final_segment"]);
+        meshJson["summary"]["is_primary_segment"].push_back(edge["is_primary_segment"]);
+        meshJson["summary"]["selection"].push_back(edge["selection"]);
+        meshJson["summary"]["isSF"].push_back(edge["isSF"]);
+    }
+    
+    // Populate summary arrays for facets
+    for(const auto& facet : meshJson["facets"]){
+        meshJson["summary"]["edge_count"].push_back(facet["edge_count"]);
+        meshJson["summary"]["segment"].push_back(facet["segment"]);
+        meshJson["summary"]["final_segment"].push_back(facet["final_segment"]);
+        meshJson["summary"]["is_primary_segment"].push_back(facet["is_primary_segment"]);
+        meshJson["summary"]["selection"].push_back(facet["selection"]);
+        meshJson["summary"]["isSF"].push_back(facet["isSF"]);
+    }
 
-	stream << "SCALARS is_primary_segment int 1" << endl;
-	stream << "LOOKUP_TABLE default" << endl;
-	for(size_t i = 0; i < numEdges; i++)
-		stream << "0" << endl;
-	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f)
-		if(isWrappedFacet(*f) == false)
-			stream << (*f)->testFlag(FACET_IS_PRIMARY_SEGMENT) << endl;
-
-	stream << "SCALARS selection int 1" << endl;
-	stream << "LOOKUP_TABLE default" << endl;
-	for(size_t i = 0; i < numEdges; i++)
-		stream << "0" << endl;
-	for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f)
-		if(isWrappedFacet(*f) == false)
-			stream << (*f)->selection << endl;
-
-	stream << "SCALARS isSF int 1" << endl;
-	stream << "LOOKUP_TABLE default" << endl;
-	for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-		for(int i = 0; i < (*n)->numEdges; i++) {
-			if(isWrappedEdge(&(*n)->edges[i]) == false) {
-				if((*n)->edges[i].isSFEdge)
-					stream << "1" << endl;
-				else
-					stream << "0" << endl;
-			}
-		}
-	}
-	for(size_t i = 0; i < numFacets; i++)
-		stream << "0" << endl;
+	return meshJson;
 }
 
 void DXATracing::writeDislocationsVTKFile(ostream& stream) const{

@@ -84,5 +84,3 @@ void DXAStackingFaults::cleanup(){
 void DXAClustering::setCNACutoff(FloatType cutoff){
 	this->cnaCutoff = cutoff;
 }
-
-
