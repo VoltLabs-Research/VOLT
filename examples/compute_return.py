@@ -40,7 +40,7 @@ analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.290
             "isSF": [int]
         }
     },
-    {
+    "atoms": {
         "metadata": {
             "num_atoms": int
         },
@@ -53,7 +53,19 @@ analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.290
                 "recursive_depth": int
             }
         }]
+    },
+    "output_mesh": {
+        "metadata": {
+            "num_vertices": int,
+            "num_facets": int,
+            "total_cells": int
+        },
+        "vertices": [{
+            "index": int,
+            "position": [X, Y, Z] (int, int, int)
+            "normal": [X, Y, Z] (int, int, int),
+        }]
     }
 }
 '''
-print(analysis)
+print(analysis['output_mesh'])

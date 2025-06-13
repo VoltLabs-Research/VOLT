@@ -21,7 +21,7 @@ public:
 	void finishOutputSurface(bool createCapSurface);
 
 	json getInterfaceMeshData();
-	void writeOutputMeshFile(ostream& stream) const;
+	json getOutputMeshData();
 	void cleanup();
 	void validateInterfaceMesh();
 

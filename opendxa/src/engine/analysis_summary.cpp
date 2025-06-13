@@ -251,50 +251,58 @@ void DXATracing::writeDislocationsVTKFile(ostream& stream) const{
 	}
 }
 
-void DXAInterfaceMesh::writeOutputMeshFile(ostream& stream) const{
+json DXAInterfaceMesh::getOutputMeshData(){
 	LOG_INFO() << "Writing defect surface to output file.";
 
-	outputMesh.writeToVTKFile(stream, "Defect surface");
+	return outputMesh.writeToVTKFile();
 }
 
-void OutputMesh::writeToVTKFile(ostream& stream, const string& commentHeaderLine) const{
-	stream << "# vtk DataFile Version 3.0";
-	stream << "ASCII";
-	stream << "DATASET UNSTRUCTURED_GRID";
-	stream << "POINTS " << vertices.size() << " float";
-	for(vector<OutputVertex*>::const_iterator v = vertices.begin(); v != vertices.end(); ++v)
-		stream << (*v)->pos.X << " " << (*v)->pos.Y << " " << (*v)->pos.Z;
-	stream << endl << "CELLS " << facets.size() << " " << (facets.size()*4);
-	for(vector<OutputFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
-		stream << "3";
-		for(int i=0; i<3; i++)
-			stream << " " << (*f)->edges[i]->vertex2->index;
-		stream;
-	}
-	stream << endl << "CELL_TYPES " << facets.size();
-	for(size_t i = 0; i < facets.size(); i++)
-		stream << "5";	// Triangle
+json OutputMesh::writeToVTKFile(){
+	json root;
+	root["metadata"]["num_vertices"] = vertices.size();
+	root["metadata"]["num_facets"] = facets.size();
+	root["metadata"]["total_cells"] = facets.size();
 
-	stream << "POINT_DATA " << vertices.size();
-	stream << "NORMALS point_normals float";
-	for(vector<OutputVertex*>::const_iterator v = vertices.begin(); v != vertices.end(); ++v) {
-		stream << (*v)->normal.X << " " << (*v)->normal.Y << " " << (*v)->normal.Z;
+	root["vertices"] = json::array();
+	for(vector<OutputVertex*>::const_iterator v = vertices.begin(); v != vertices.end(); ++v){
+		json vertex;
+		vertex["index"] = (*v)->index;
+		vertex["position"] = { (*v)->pos.X, (*v)->pos.Y, (*v)->pos.Z };
+		vertex["normal"] = { (*v)->normal.X, (*v)->normal.Y, (*v)->normal.Z };
+		root["vertices"].push_back(vertex);
 	}
 
-	stream << endl << "CELL_DATA " << facets.size();
-
-	stream << endl << "SCALARS entity int 1";
-	stream << endl << "LOOKUP_TABLE default";
-	for(vector<OutputFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
-		stream << (*f)->entity;
+	root["facets"] = json::array();
+    for(vector<OutputFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f){
+		json facet;
+		facet["vertices"] = {
+			(*f)->edges[0]->vertex2->index,
+            (*f)->edges[1]->vertex2->index,
+            (*f)->edges[2]->vertex2->index
+		};
+		facet["entity"] = (*f)->entity;
+        facet["disclination_barrier"] = (*f)->testFlag(OUTPUT_FACET_IS_DISCLINATION_BARRIER);
+		root["facets"].push_back(facet);
 	}
 
-	stream << endl << "SCALARS disclination_barrier int 1";
-	stream << endl << "LOOKUP_TABLE default";
-	for(vector<OutputFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
-		stream << (*f)->testFlag(OUTPUT_FACET_IS_DISCLINATION_BARRIER);
+	root["point_data"]["normals"] = json::array();
+    for(vector<OutputVertex*>::const_iterator v = vertices.begin(); v != vertices.end(); ++v){
+		root["point_data"]["normals"].push_back({
+			(*v)->normal.X, (*v)->normal.Y, (*v)->normal.Z
+		});
 	}
-}
+
+	root["cell"]["entity"] = json::array();
+	root["cell"]["disclination_barrier"]= json::array();
+    for(vector<OutputFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f){
+		root["cell"]["entity"].push_back((*f)->entity);
+		root["cell"]["dislocation_barrier"].push_back(
+            (*f)->testFlag(OUTPUT_FACET_IS_DISCLINATION_BARRIER)
+		);
+	}
+
+	return root;
+;}
 
 void BurgersCircuit::writeToFile(ostream& stream){
 	stream << "# vtk DataFile Version 3.0";

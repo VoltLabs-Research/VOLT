@@ -4,6 +4,9 @@
 #include <opendxa/includes.hpp>
 #include <opendxa/engine/analysis_environment.hpp>
 #include <opendxa/utils/memory_pool.hpp>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 struct OutputVertex;
 struct OutputEdge;
@@ -89,7 +92,7 @@ struct OutputFacet
 class OutputMesh{
 public:
 	void clear();
-	void writeToVTKFile(ostream& stream, const string& commentHeaderLine) const;
+	json writeToVTKFile();
 
 	OutputVertex* createVertex(const Point3& pos, const Vector3& normal = NULL_VECTOR);
 	OutputEdge* createEdge(OutputVertex* vertex1, OutputVertex* vertex2);
