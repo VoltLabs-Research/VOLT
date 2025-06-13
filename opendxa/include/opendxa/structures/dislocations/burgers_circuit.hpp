@@ -5,6 +5,9 @@
 #include <iosfwd> 
 #include <opendxa/engine/analysis_environment.hpp>
 #include <opendxa/utils/linalg/lattice_vector.hpp>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 struct DislocationSegment;
 struct MeshEdge;
@@ -37,7 +40,7 @@ struct BurgersCircuit{
     void updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell) const;
     void updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell, MeshNode* node) const;
     
-    void writeToFile(std::ostream& stream);
+    json getBurgersCircuit();
 
     bool isInRing(BurgersCircuit* other) const{
         BurgersCircuit* c = junctionRing;

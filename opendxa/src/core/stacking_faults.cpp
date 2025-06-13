@@ -51,10 +51,11 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config){
 	}
 
 	writeDislocationsVTKFile(fout);
-	json data = exportDislocationsToJson();
+	json data;
+	data["dislocations"] = exportDislocationsToJson();
 	data["interface_mesh"] = getInterfaceMeshData();
 	data["atoms"] = getAtomsData();
-	data["output_mesh"] = getOutputMeshData();
+	data["output_mesh"] = outputMesh.getOutputMeshData();
 
 	// Calculate scalar dislocation density and density tensor
 	// TODO: This may be optional, and in the future may be exported if specified.

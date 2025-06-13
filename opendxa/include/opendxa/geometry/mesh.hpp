@@ -92,7 +92,7 @@ struct OutputFacet
 class OutputMesh{
 public:
 	void clear();
-	json writeToVTKFile();
+	json getOutputMeshData();
 
 	OutputVertex* createVertex(const Point3& pos, const Vector3& normal = NULL_VECTOR);
 	OutputEdge* createEdge(OutputVertex* vertex1, OutputVertex* vertex2);

@@ -28,6 +28,22 @@ json DXATracing::exportDislocationsToJson() const{
         s["burgers_vector_world"] = {{"x", bw.X}, {"y", bw.Y}, {"z", bw.Z}};
         s["burgers_vector_magnitude"] = mag;
         s["fractional_burgers"] = burgersToFractionalString(bv);
+
+		// Burgers circuits data
+		json circuits = json::array();
+		if(segment->circuits[0] != nullptr){
+			json forwardCircuit = segment->circuits[0]->getBurgersCircuit();
+			forwardCircuit["type"] = "forward";
+			circuits.push_back(forwardCircuit);
+		}
+
+		if(segment->circuits[1] != nullptr){
+			json backwardCircuit = segment->circuits[1]->getBurgersCircuit();
+			backwardCircuit["type"] = "backward";
+			circuits.push_back(backwardCircuit);
+		}
+		s["burgers_circuit"] = circuits;
+
         segs.push_back(std::move(s));
         idx_offset += segment->line.size();
     }
@@ -251,13 +267,7 @@ void DXATracing::writeDislocationsVTKFile(ostream& stream) const{
 	}
 }
 
-json DXAInterfaceMesh::getOutputMeshData(){
-	LOG_INFO() << "Writing defect surface to output file.";
-
-	return outputMesh.writeToVTKFile();
-}
-
-json OutputMesh::writeToVTKFile(){
+json OutputMesh::getOutputMeshData(){
 	json root;
 	root["metadata"]["num_vertices"] = vertices.size();
 	root["metadata"]["num_facets"] = facets.size();
@@ -302,48 +312,89 @@ json OutputMesh::writeToVTKFile(){
 	}
 
 	return root;
-;}
+}
 
-void BurgersCircuit::writeToFile(ostream& stream){
-	stream << "# vtk DataFile Version 3.0";
-	stream << "# Burgers circuit";
-	stream << "ASCII";
-	stream << "DATASET UNSTRUCTURED_GRID";
-	stream << "POINTS " << edgeCount << " float";
+json BurgersCircuit::getBurgersCircuit(){
+	json root;
+
+	root["num_edges"] = edgeCount;
+
+	// Points
+	root["points"] = json::array();
 	MeshEdge* edge = firstEdge;
-	do {
+	int pointIndex = 0;
+
+	do{
 		Point3 vizpos = edge->node1->pos;
-		if(edge->facet) {
-			Vector3 normal = CrossProduct(edge->facet->vertex(2)->pos - edge->facet->vertex(0)->pos, edge->facet->vertex(1)->pos - edge->facet->vertex(0)->pos);
-			vizpos += NormalizeSafely(normal) * 0.05;
+		if(edge->facet){
+			Vector3 normal = CrossProduct(
+                edge->facet->vertex(2)->pos - edge->facet->vertex(0)->pos, 
+                edge->facet->vertex(1)->pos - edge->facet->vertex(0)->pos
+            );
+            vizpos += NormalizeSafely(normal) * 0.05;
 		}
-		if(edge->oppositeEdge->facet) {
-			Vector3 normal = CrossProduct(edge->oppositeEdge->facet->vertex(2)->pos - edge->oppositeEdge->facet->vertex(0)->pos, edge->oppositeEdge->facet->vertex(1)->pos - edge->oppositeEdge->facet->vertex(0)->pos);
-			vizpos += NormalizeSafely(normal) * 0.05;
-		}
-		stream << vizpos.X << " " << vizpos.Y << " " << vizpos.Z;
+		if(edge->oppositeEdge->facet){
+            Vector3 normal = CrossProduct(
+                edge->oppositeEdge->facet->vertex(2)->pos - edge->oppositeEdge->facet->vertex(0)->pos, 
+                edge->oppositeEdge->facet->vertex(1)->pos - edge->oppositeEdge->facet->vertex(0)->pos
+            );
+            vizpos += NormalizeSafely(normal) * 0.05;
+        }
+
+		json point;
+		point["index"] = pointIndex;
+        point["position"] = {vizpos.X, vizpos.Y, vizpos.Z};
+        point["original_position"] = {edge->node1->pos.X, edge->node1->pos.Y, edge->node1->pos.Z};
+        point["lattice_vector"] = {edge->latticeVector[0], edge->latticeVector[1], edge->latticeVector[2]};
+		root["points"].push_back(point);
 		edge = edge->nextEdge;
+		pointIndex++;
+	}while(edge != firstEdge);
+
+	// Cell/edges connect consecutive points building a circuit
+	root["edges"] = json::array();
+	for(int i = 0; i < edgeCount; i++){
+		json edge;
+		// Connect with the next (circular)
+        edge["vertices"] = {i, (i + 1) % edgeCount}; 
+		edge["index"] = i;
+		root["edges"].push_back(edge);
 	}
-	while(edge != firstEdge);
-	stream << endl << "CELLS " << (edgeCount) << " " << (edgeCount*3);
-	for(int i=0; i<edgeCount; i++)
-		stream << "2 " << i << " " << ((i+1)%edgeCount);
-	stream;
-	stream << "CELL_TYPES " << edgeCount;
-	for(int i=0; i<edgeCount; i++)
-		stream << "3";
 
-	stream << endl << "CELL_DATA " << (edgeCount);
+	// cell data lattice vectors for edge
+	root["cell"]["lattice_vectors"] = json::array();
 
-	stream << endl << "VECTORS lattice_vector float";
+	// this while can be replaced with the last one?
 	edge = firstEdge;
-	do {
-		for(int c = 0; c < 3; c++)
-			stream << edge->latticeVector[c] << " ";
-		stream;
+	do{
+        json latticeVector = {edge->latticeVector[0], edge->latticeVector[1], edge->latticeVector[2]};
+        root["cell"]["lattice_vectors"].push_back(latticeVector);
+        edge = edge->nextEdge;
+	}while(edge != firstEdge);
+
+	// calcule total vector burger (sum of all lattice vectors)
+	Vector3 totalBurgers = { 0.0, 0.0, 0.0 };
+	edge = firstEdge;
+	do{
+		totalBurgers.X += edge->latticeVector[0];
+        totalBurgers.Y += edge->latticeVector[1];
+        totalBurgers.Z += edge->latticeVector[2];
 		edge = edge->nextEdge;
-	}
-	while(edge != firstEdge);
+	}while(edge != firstEdge);
+	
+	root["circuit"]["burgers_vector"] = {
+		totalBurgers.X,
+		totalBurgers.Y,
+		totalBurgers.Z
+	};
+
+	root["circuit"]["burgers_magnitude"] = sqrt(
+		totalBurgers.X*totalBurgers.X + 
+		totalBurgers.Y*totalBurgers.Y + 
+		totalBurgers.Z*totalBurgers.Z
+	);
+
+	return root;
 }
 
 void StackingFaultContour::writeToFile(ostream& stream) const{

@@ -8,6 +8,43 @@ analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.290
 
 '''
 {
+    "dislocations": {
+        "num_segments": int,
+        "segments": [{
+            "id": int,
+            "point_index_offset": int,
+            "num_points": int,
+            "points": [ [X, Y, Z] ] (int, int, int),
+            "length": int (segment length),
+            "burgers_vector": [X, Y, Z] (int, int, int),
+            "burgers_vector_magnitude": int,
+            "fractional_burgers": str,
+            "burgers_circuit": [{
+                "type": forward | backward,
+                "num_edges": int,
+                "points": [{
+                    "index": int,
+                    "position": [X, Y, Z] (int, int, int),
+                    Edge Node1 Pos X, ...
+                    "original_position": [X, Y, Z] (int, int, int),
+                    "lattice_vector": [Edge Lattice Vector 0, ...] 
+                }] ,
+                "edges": [{
+                    [i, (i + 1) % edgeCount]
+                    "vertices": [int, int]
+                    "index": int
+                }],
+                "cell": {
+                    "lattice_vectors": [...]
+                },
+                "circuit": {
+                    Total burgers stats
+                    "burgers_vector": [X, Y, Z] (int, int, int),
+                    "burgers_magnitude": [X, Y, Z] (int, int, int)
+                }
+            }]
+        }]
+    },
     "interface_mesh": {
         "metadata": {
             "num_nodes": int
@@ -68,4 +105,3 @@ analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.290
     }
 }
 '''
-print(analysis['output_mesh'])
