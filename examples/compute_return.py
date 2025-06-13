@@ -22,20 +22,14 @@ analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.290
         "edges": [{
             "vertices": [index, edge neighbor index] (int int),
             "edge_count": int,
-            "segment": int,
-            "final_segment": int,
-            "is_primary_segment": int,
-            "selection": 0,
             "isSF": 1 | 0
         }],
         "facets": [{
             "vertices": [index vertex 1, index vertex 2, index vertex 3] (int int int),
-            "edge_count": 0,
-            "segment": index (int),
+            "segment": index (int) | -1,
             "final_segment": index | -1
             "is_primary_segment": 1 | 0,
             "selection": int,
-            "isSF": 0
         }],
         "summary": {
             "edge_count": [int],

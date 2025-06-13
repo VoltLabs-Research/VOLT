@@ -59,19 +59,21 @@ void DXAClustering::writeAtomsDumpFile(ostream& stream){
 
 json DXAInterfaceMesh::getInterfaceMeshData(){
     json meshJson;
-    
+
     // Count uninvolved facets and edges
     size_t numFacets = 0;
-    for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f) {
-        if(isWrappedFacet(*f) == false)
+    for(vector<MeshFacet*>::const_iterator f = facets.begin(); f != facets.end(); ++f){
+        if(isWrappedFacet(*f) == false){
             numFacets++;
+		}
     }
     
     size_t numEdges = 0;
-    for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-        for(int i = 0; i < (*n)->numEdges; i++) {
-            if(isWrappedEdge(&(*n)->edges[i]) == false)
+    for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n){
+        for(int i = 0; i < (*n)->numEdges; i++){
+            if(isWrappedEdge(&(*n)->edges[i]) == false){
                 numEdges++;
+			}
         }
     }
     
@@ -91,25 +93,23 @@ json DXAInterfaceMesh::getInterfaceMeshData(){
         meshJson["points"].push_back(point);
     }
     
-    // Edges
+	// Edges represent connections between nodes and can be stacking fault edges. 
+	// Facets represent triangular surfaces that belong to dislocation segments.
     meshJson["edges"] = nlohmann::json::array();
     for(vector<MeshNode*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n){
         for(int i = 0; i < (*n)->numEdges; i++){
             if(isWrappedEdge(&(*n)->edges[i]) == false) {
-                nlohmann::json edge;
+                json edge;
                 edge["vertices"] = {(*n)->index, (*n)->edgeNeighbor(i)->index};
                 
                 // Calcular edge_count
                 int count = 0;
                 for(int c = 0; c < (*n)->numEdges; c++){
-                    if((*n)->edgeNeighbor(c) == (*n)->edgeNeighbor(i))
+                    if((*n)->edgeNeighbor(c) == (*n)->edgeNeighbor(i)){
                         count++;
+					}
                 }
                 edge["edge_count"] = count;
-                edge["segment"] = 0;
-                edge["final_segment"] = 0;
-                edge["is_primary_segment"] = 0;
-                edge["selection"] = 0;
                 edge["isSF"] = (*n)->edges[i].isSFEdge ? 1 : 0;
                 
                 meshJson["edges"].push_back(edge);
@@ -127,8 +127,6 @@ json DXAInterfaceMesh::getInterfaceMeshData(){
                 (*f)->vertex(1)->index,
                 (*f)->vertex(2)->index
             };
-            
-            facet["edge_count"] = 0;
             
             // Segment
             if((*f)->circuit != NULL){
@@ -149,7 +147,6 @@ json DXAInterfaceMesh::getInterfaceMeshData(){
 			}
             facet["is_primary_segment"] = (*f)->testFlag(FACET_IS_PRIMARY_SEGMENT) ? 1 : 0;
             facet["selection"] = (*f)->selection;
-            facet["isSF"] = 0;
             
             meshJson["facets"].push_back(facet);
         }
