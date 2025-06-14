@@ -4,7 +4,7 @@ from opendxa import DislocationAnalysis
 pipeline = DislocationAnalysis()
 
 # pipeline.compute(dump_file, output_file)
-analysis = pipeline.compute('/home/rodyherrera/Desktop/Scratching_1200K/dump.50000', 'dislocations.vtk')
+analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.2900000.config', 'dislocations.vtk')
 
 settings = VisualizationSettings(
     line_width=3.0,

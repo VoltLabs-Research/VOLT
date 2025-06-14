@@ -3,10 +3,95 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../")"
 PYTHON_BINDINGS_DIR="${PROJECT_ROOT}/bindings/python"
+DEPS_DIR="$(realpath "${SCRIPT_DIR}/../opendxa/dependencies/")"
 
 PYTHON_CMD="python3"
 PIP_CMD="pip"
 PARALLEL_JOBS="$(nproc)"
+
+clone_if_missing() {
+    local repo_name="$1"
+    local repo_url="$2"
+    local target_dir="${DEPS_DIR}/${repo_name}"
+    
+    if [ -d "$target_dir" ]; then
+        if [ -d "$target_dir/.git" ]; then
+            echo "$repo_name already exists and is a valid Git repository"
+            return 0
+        else
+            echo "$target_dir exists but is not a valid Git repository"
+            echo "Deleting incomplete directory..."
+            rm -rf "$target_dir"
+        fi
+    fi
+    
+    echo "Cloning $repo_name from $repo_url..."
+    if git clone "$repo_url" "$target_dir"; then
+        echo "$repo_name cloned successfully"
+        return 0
+    else
+        echo "Error cloning $repo_name"
+        return 1
+    fi
+}
+
+install_deps(){
+    echo "Checking C++ dependencies..."
+    echo "Dependencies directory: $DEPS_DIR"
+
+    if [ ! -d "$DEPS_DIR" ]; then
+        echo "Creating dependency directory: $DEPS_DIR"
+        mkdir -p "$DEPS_DIR"
+    fi
+
+    cd "$DEPS_DIR" || {
+        echo "The dependencies directory could not be accessed"
+        exit 1
+    }
+
+    declare -a dependencies=(
+        "json|https://github.com/nlohmann/json.git"
+        "cxxopts|https://github.com/jarro2783/cxxopts.git"
+        "pybind11_json|https://github.com/pybind/pybind11_json.git"
+    )
+
+    local failed_clones=0
+    local total_deps=${#dependencies[@]}
+
+    echo "Checking $total_deps dependencies..."
+    echo
+
+    for dep in "${dependencies[@]}"; do
+        IFS='|' read -r repo_name repo_url <<< "$dep"
+        
+        if ! clone_if_missing "$repo_name" "$repo_url"; then
+            ((failed_clones++))
+        fi
+        echo
+    done
+
+    if [ $failed_clones -eq 0 ]; then
+        echo "Tall facilities are available!"
+        echo "Verified dependencies:"
+        for dep in "${dependencies[@]}"; do
+            IFS='|' read -r repo_name repo_url <<< "$dep"
+            echo "  - $repo_name"
+        done
+    else
+        echo "$failed_clones of $total_deps dependencies failed"
+        exit 1
+    fi
+
+    echo
+    echo "/opendxa/dependencies/ structure:"
+    if command -v tree &> /dev/null; then
+        tree "$DEPS_DIR" -L 2
+    else
+        ls -la "$DEPS_DIR"
+    fi
+}
+
+install_deps
 
 echo
 echo "Python: $PYTHON_CMD"
