@@ -11,7 +11,7 @@ analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.290
     "dislocations": {
         "num_segments": int,
         "segments": [{
-            "id": int,
+            "index": int,
             "point_index_offset": int,
             "num_points": int,
             "points": [ [X, Y, Z] ] (int, int, int),
@@ -130,7 +130,7 @@ analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.290
         },
         "points": [{
             "index": int,
-            "coordinates": [X, Y, Z] (int, int, int),
+            "position": [X, Y, Z] (int, int, int),
         }],
         "edges": [{
             "vertices": [index, edge neighbor index] (int int),
@@ -158,7 +158,7 @@ analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.290
             "num_atoms": int
         },
         "data": [{
-            "id": int,
+            "index": int,
             "position": [X, Y, Z] (int, int, int),
             "cna": {
                 "atom_type": 0 | 1 | 2 | 3 | 4 | 5,

@@ -12,20 +12,20 @@ json DXATracing::exportDislocationsToJson() const{
     size_t idx_offset = 0;
     for(auto* segment : segments){
         json pts = json::array();
-        for (auto const& p : segment->line) {
-            pts.push_back({{"x", p.X}, {"y", p.Y}, {"z", p.Z}});
+        for (auto const& p : segment->line){
+			pts.push_back({ p.X, p.Y, p.Z });
         }
         auto bv = segment->burgersVector;
         auto bw = segment->burgersVectorWorld;
         double mag = std::sqrt(double(bv.X*bv.X + bv.Y*bv.Y + bv.Z*bv.Z));
         json s;
-        s["id"] = segment->index;
+        s["index"] = segment->index;
         s["point_index_offset"] = idx_offset;
         s["num_points"] = pts.size();
         s["points"] = std::move(pts);
         s["length"] = segment->calculateLength();
-        s["burgers_vector"] = {{"x", bv.X}, {"y", bv.Y}, {"z", bv.Z}};
-        s["burgers_vector_world"] = {{"x", bw.X}, {"y", bw.Y}, {"z", bw.Z}};
+        s["burgers_vector"] = { bv.X, bv.Y, bv.Z };
+        s["burgers_vector_world"] = { bw.X, bw.Y, bw.Z };
         s["burgers_vector_magnitude"] = mag;
         s["fractional_burgers"] = burgersToFractionalString(bv);
 
@@ -60,7 +60,7 @@ json DXAClustering::getAtomsData(){
 
 	for(vector<InputAtom>::const_iterator p = inputAtoms.begin(); p != inputAtoms.end(); ++p){
 		json atom;
-		atom["id"] = p->tag;
+		atom["node_id"] = p->tag;
 		atom["position"] = { p->pos.X, p->pos.Y, p->pos.Z };
 		atom["cna"]["atom_type"] = p->cnaType;
 		atom["coordination"] = p->numNeighbors;
@@ -105,7 +105,7 @@ json DXAInterfaceMesh::getInterfaceMeshData(){
         const Point3& pos = (*n)->pos;
         nlohmann::json point;
         point["index"] = (*n)->index;
-        point["coordinates"] = {pos.X, pos.Y, pos.Z};
+        point["position"] = {pos.X, pos.Y, pos.Z};
         meshJson["points"].push_back(point);
     }
     
@@ -447,7 +447,7 @@ json StackingFaultContour::getStackingFaultContour() const{
 			edge->node2()->pos.Y, 
 			edge->node2()->pos.Z
 		};
-        point2["node_tag"] = edge->node2()->tag;
+        point2["node_id"] = edge->node2()->tag;
         root["points"].push_back(point2);
 	}
 	// Cells/Edges, each edge is a line connecting 2 consecutive points
@@ -648,16 +648,4 @@ json StackingFault::getStackingFault() const{
     return root;
 }
 
-void MeshEdge::writeToFile(ostream& stream){
-	stream << "# vtk DataFile Version 3.0";
-	stream << "# Mesh edge";
-	stream << "ASCII";
-	stream << "DATASET UNSTRUCTURED_GRID";
-	stream << "POINTS 2 float";
-	stream << node1->pos.X << " " << node1->pos.Y << " " << node1->pos.Z;
-	stream << node2()->pos.X << " " << node2()->pos.Y << " " << node2()->pos.Z;
-	stream << endl << "CELLS 1 3";
-	stream << endl << "2 0 1";
-	stream;	stream << "CELL_TYPES 1";
-	stream << "3 ";
-}
+// TODO: add mesh data info

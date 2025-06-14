@@ -22,7 +22,6 @@ struct MeshEdge {
         return oppositeEdge->node1; 
     }
 
-    void writeToFile(std::ostream& stream);
     bool isValid() const;
     void setFacet(MeshFacet* newFacet);
     void setCircuit(BurgersCircuit* newCircuit);
