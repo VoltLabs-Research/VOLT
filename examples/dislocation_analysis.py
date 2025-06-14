@@ -1,13 +1,24 @@
 from opendxa import DislocationAnalysis
-from opendxa.visualizers.vtk import DislocationVTKReader
+from opendxa.visualizers import DislocationVisualizer, VisualizationSettings
 
 pipeline = DislocationAnalysis()
 
 # pipeline.compute(dump_file, output_file)
-pipeline.compute('/home/rodyherrera/Desktop/Sigma3_yz/dump.ensayo.2900000.config', 'dislocations.vtk')
+analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma9yz/dump.ensayo.550000.config', 'dislocations.vtk')
 
-vtk_reader = DislocationVTKReader('dislocations.vtk')
-vtk_reader.plot_dislocations()
+settings = VisualizationSettings(
+    line_width=4.0,
+    colormap='viridis',
+    background_color='black',
+    #show_atoms=True,
+    #show_stacking_faults=True,
+    #show_interface=True,
+    #show_grid=True,
+    point_size=0.2
+)
+
+dislocation_visualizer = DislocationVisualizer(analysis, settings)
+dislocation_visualizer.visualize()
 
 # These are the default values. If you don't specify a cutoff value, it will be 
 # calculated as an estimate, and I personally recommend not specifying it and relying on the estimate.
