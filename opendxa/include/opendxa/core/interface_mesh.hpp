@@ -29,7 +29,7 @@ protected:
 	void createBCCMeshEdges(InputAtom* atom);
 	void createFCCHCPMeshFacets(InputAtom* atom);
 	void createBCCMeshFacets(InputAtom* atom);
-	void createMeshNodeRecursive(InputAtom* a, BaseAtom* neighbor, MeshNode* node, int depth, vector<InputAtom*>& visitedAtoms, const Point3& currentCoord);
+	void createMeshNodeDFS(InputAtom* a, BaseAtom* neighbor, MeshNode* node, int depth, vector<InputAtom*>& visitedAtoms, const Point3& currentCoord);
 	bool createAdjacentTriangle(MeshNode* center, MeshNode* vertex1, BaseAtom* vertex2, const LatticeVector& edgeVector1, const LatticeVector& edgeVector2);
 	void createAdjacentQuad(BaseAtom* center, MeshNode* vertex1, MeshNode* vertex2, const LatticeVector& edgeVector1, const LatticeVector& edgeVector2);
 	void closeFacetHoles();

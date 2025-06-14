@@ -45,7 +45,7 @@ void DXAInterfaceMesh::createInterfaceMeshNodes(){
 				nodes.push_back(node);
 				// Also replace the atom with the node in neighbor lists of all nearby crystallinea toms
 				vector<InputAtom*> visitedAtoms;
-				createMeshNodeRecursive(&*atom, neighbor1, node, 0, visitedAtoms, ORIGIN - atom->latticeNeighborVector(i));
+				createMeshNodeDFS(&*atom, neighbor1, node, 0, visitedAtoms, ORIGIN - atom->latticeNeighborVector(i));
 				// Reset visit flags
 				for(auto visitedAtom = visitedAtoms.begin(); visitedAtom != visitedAtoms.end(); ++visitedAtom){
 					(*visitedAtom)->recursiveDepth = numeric_limits<int>::max();
@@ -81,39 +81,55 @@ void DXAInterfaceMesh::createInterfaceMeshNodes(){
 	LOG_INFO() << "Node creation time: " << timer.elapsedTime() << " sec.";
 }
 
-/******************************************************************************************
-* Replaces an input atom with a mesh node in the neighbors list of all surrounding atoms.
-*******************************************************************************************/
-void DXAInterfaceMesh::createMeshNodeRecursive(InputAtom* a, BaseAtom* neighbor, MeshNode* node, int currentDepth, vector<InputAtom*>& visitedAtoms, const Point3& currentCoord)
-{
-	visitedAtoms.push_back(a);
-	a->recursiveDepth = currentDepth;
-	for(int i = 0; i < a->numNeighbors; i++) {
-		if(a->neighbor(i) == neighbor) {
-			Point3 nodeCoord = currentCoord + a->latticeNeighborVector(i);
-			if(nodeCoord.equals(ORIGIN)) {
-				// Replace atom in neighbor list with mesh node.
-				a->setNeighbor(i, node);
-				node->addNeighbor(a);
+void DXAInterfaceMesh::createMeshNodeDFS(InputAtom* a, BaseAtom* neighbor, MeshNode* node, int currentDepth, vector<InputAtom*>& visitedAtoms, const Point3& currentCoord){
+    // TODO: move this.
+    struct StackFrame{
+        InputAtom* atom;
+        int depth;
+        Point3 coord;
+    };
+    
+    std::stack<StackFrame> processingStack;
+    processingStack.push({a, currentDepth, currentCoord});
+    
+    while(!processingStack.empty()){
+        StackFrame current = processingStack.top();
+        processingStack.pop();
+        
+        InputAtom* currentAtom = current.atom;
+        int depth = current.depth;
+        Point3 coord = current.coord;
+        
+        visitedAtoms.push_back(currentAtom);
+        currentAtom->recursiveDepth = depth;
+        
+        for(int i = 0; i < currentAtom->numNeighbors; i++){
+            if(currentAtom->neighbor(i) == neighbor){
+                Point3 nodeCoord = coord + currentAtom->latticeNeighborVector(i);
+				if(!nodeCoord.equals(ORIGIN)) continue;
 
-				// Extend the recursive walk by resetting the depth counter.
-				currentDepth = 0;
-			}
-		}
-	}
-	// Stop recursive walk when maximum depth is reached.
-	if(currentDepth >= MAX_RECURSIVE_ATOM_REPLACEMENT_DEPTH) return;
+				currentAtom->setNeighbor(i, node);
+				node->addNeighbor(currentAtom);
+				depth = 0;
+            }
+        }
+        
+		// TODO: change constant name
+        if(depth >= MAX_RECURSIVE_ATOM_REPLACEMENT_DEPTH) continue;
+        
+        depth++;
+        for(int j = 0; j < currentAtom->numNeighbors; j++){
+            BaseAtom* neighbor2 = currentAtom->neighbor(j);
+            if(neighbor2 == NULL || neighbor2->isDisordered() || neighbor2->testFlag(ATOM_NON_BULK) == false) continue;
 
-	currentDepth++;
-	for(int j = 0; j < a->numNeighbors; j++) {
-		BaseAtom* neighbor2 = a->neighbor(j);
-		if(neighbor2 == NULL || neighbor2->isDisordered() || neighbor2->testFlag(ATOM_NON_BULK) == false) continue;
-		DISLOCATIONS_ASSERT(neighbor2->isMeshNode() == false);
-		InputAtom* inputNeighbor2 = static_cast<InputAtom*>(neighbor2);
-		if(inputNeighbor2->recursiveDepth > currentDepth) {
-			createMeshNodeRecursive(inputNeighbor2, neighbor, node, currentDepth, visitedAtoms, currentCoord + a->latticeNeighborVector(j));
-		}
-	}
+            DISLOCATIONS_ASSERT(neighbor2->isMeshNode() == false);
+            
+			InputAtom* inputNeighbor2 = static_cast<InputAtom*>(neighbor2);
+            if(inputNeighbor2->recursiveDepth > depth){
+                processingStack.push({inputNeighbor2, depth, coord + currentAtom->latticeNeighborVector(j)});
+            }
+        }
+    }
 }
 
 // Creates the interface mesh edges.
