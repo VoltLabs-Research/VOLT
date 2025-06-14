@@ -1,19 +1,18 @@
-from opendxa import DislocationAnalysis
 from opendxa.visualizers import DislocationVisualizer, VisualizationSettings
+from opendxa import DislocationAnalysis
 
 pipeline = DislocationAnalysis()
 
 # pipeline.compute(dump_file, output_file)
-analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma9yz/dump.ensayo.550000.config', 'dislocations.vtk')
+analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma9yz/dump.ensayo.50000.config', 'dislocations.vtk')
 
 settings = VisualizationSettings(
-    line_width=4.0,
-    colormap='viridis',
-    background_color='black',
-    #show_atoms=True,
-    #show_stacking_faults=True,
-    #show_interface=True,
-    #show_grid=True,
+    line_width=3.0,
+    colormap='plasma',
+    show_atoms=True,
+    show_stacking_faults=True,
+    show_interface=True,
+    show_grid=True,
     point_size=0.2
 )
 
