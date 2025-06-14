@@ -197,3 +197,36 @@ class DislocationVisualizer:
             self.plotter.show()
 
         return self.plotter, self.stats
+
+    def print_stats(self):
+        if self.stats is None:
+            # TODO: use OpenDXA logger
+            print('Warning: No statistics available. Run build_meshes() first.')
+            return
+        
+        print('Dislocation Statistics')
+        print(f'    Total number of segments: {self.stats.num_segments}')
+        print(f'    Total number of points: {self.stats.total_points}')
+        print(f'    Total length: {self.stats.total_length:.3f} Angstrom')
+        print(f'    Average length: {self.stats.average_length:.3f} Angstrom')
+        print(f'    Maximum length: {self.stats.max_length:.3f} Angstrom')
+        print(f'    Minimum length: {self.stats.min_length:.3f} Angstrom')
+
+        print(f'\nUnique Burgers magnitudes: {len(self.stats.unique_burgers_magnitudes)}')
+        for magnitude in sorted(self.stats.unique_burgers_magnitudes):
+            count = self.stats.burgers_magnitudes.count(magnitude)
+            percentage = (count / len(self.stats.burgers_magnitudes)) * 100
+            print(f'    |b| = {magnitude:.3f}: {count} segments ({percentage:.1f}%)')
+        
+        # Segment details (first 10)
+        print(f'\nSegment Details (first 10)')
+        print(f'{"ID":<4} {"Burgers Vector":<25} {"Length":<10} {"|b|":<8}')
+
+        for info in self.stats.segment_info[:10]:
+            print(f'{info["segment_id"]:<4} '
+                f'{info["fractional_burgers"]:<25} '
+                f'{info["length"]:<10.3f} '
+                f'{info["burgers_magnitudes"]:<8.3f}')
+        
+        if len(self.stats.segment_info) > 10:
+            print(f'... and {len(self.stats.segment_info) - 10} more segments')

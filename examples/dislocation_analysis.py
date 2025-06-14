@@ -18,6 +18,9 @@ settings = VisualizationSettings(
 
 dislocation_visualizer = DislocationVisualizer(analysis, settings)
 dislocation_visualizer.visualize()
+dislocation_visualizer.print_stats()
+
+# dislocation_visualizer.to_vtk(filename)
 
 # These are the default values. If you don't specify a cutoff value, it will be 
 # calculated as an estimate, and I personally recommend not specifying it and relying on the estimate.
