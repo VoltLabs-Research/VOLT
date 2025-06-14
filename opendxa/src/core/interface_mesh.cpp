@@ -117,29 +117,24 @@ void DXAInterfaceMesh::createMeshNodeRecursive(InputAtom* a, BaseAtom* neighbor,
 	}
 }
 
-/******************************************************************************
-* Creates the interface mesh edges.
-******************************************************************************/
-void DXAInterfaceMesh::createInterfaceMeshEdges()
-{
+// Creates the interface mesh edges.
+void DXAInterfaceMesh::createInterfaceMeshEdges(){
 	LOG_INFO() << "Creating interface mesh edges.";
 	Timer timer;
-
-	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom) {
-
-		// Do an early rejection of bulk atoms, which are not adjacent to the interface mesh.
-		if(atom->testFlag(ATOM_NON_BULK) == false) continue;
-
-		switch(atom->cnaType) {
-		case FCC:
-		case HCP:
-			createFCCHCPMeshEdges(&*atom);
-			break;
-		case BCC:
-			createBCCMeshEdges(&*atom);
-			break;
+	#pragma omp parallel for schedule(dynamic)
+	for(std::size_t idx = 0; idx < inputAtoms.size(); ++idx){
+		auto &atom = inputAtoms[idx];
+		if(!atom.testFlag(ATOM_NON_BULK)) continue;
+		switch(atom.cnaType){
+			case FCC:
+			case HCP:
+				createFCCHCPMeshEdges(&atom);
+				break;
+			case BCC:
+				createBCCMeshEdges(&atom);
+				break;
 		}
-}
+	}
 
 	LOG_INFO() << "Edge creation time: " << timer.elapsedTime() << " sec.";
 }
