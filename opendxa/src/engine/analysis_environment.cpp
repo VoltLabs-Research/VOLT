@@ -23,20 +23,34 @@ void AnalysisEnvironment::raiseError(const char* format, ...){
 	throw runtime_error(buffer);
 }
 
-DXAClustering::DXAClustering(): AnalysisEnvironment(){
-	cnaCutoff = 0;
-	numLocalInputAtoms = 0;
-	numClusters = 0;
-	numClusterDisclinations = 0;
-	numSuperClusters = 0;
-	numClusterTransitions = 0;
+DXAClustering::DXAClustering()
+		: cnaCutoff(0.0),
+		numLocalInputAtoms(0),
+		numClusters(0),
+		numDisclinationAtoms(0),
+		numClusterDisclinations(0),
+		numSuperClusters(0),
+		numClusterTransitions(0){
+	// TODO: Should I keep this? Could I somehow estimate this 
+	// parameter based on the simulation being evaluated? 
+	// Should it be a configurable parameter?
+	constexpr size_t expectedAtoms = 40000;
+	inputAtoms.reserve(expectedAtoms);
 }
 
 DXAInterfaceMesh::DXAInterfaceMesh(): DXAClustering(){}
 
-DXATracing::DXATracing(): DXAInterfaceMesh(), unusedCircuit(NULL){
-	this->burgersSearchDepth = (DEFAULT_MAX_BURGERS_CIRCUIT_SIZE - 1) / 2;
-	this->maxBurgersCircuitSize = DEFAULT_MAX_BURGERS_CIRCUIT_SIZE;	this->maxExtendedBurgersCircuitSize = DEFAULT_MAX_EXTENDED_BURGERS_CIRCUIT_SIZE;
+DXATracing::DXATracing(): DXAInterfaceMesh(), unusedCircuit(nullptr){
+	// TODO: Should I readjust these variables or follow the user's instructions?
+	burgersSearchDepth = (DEFAULT_MAX_BURGERS_CIRCUIT_SIZE - 1) / 2;
+	maxBurgersCircuitSize = DEFAULT_MAX_BURGERS_CIRCUIT_SIZE;
+	maxExtendedBurgersCircuitSize = DEFAULT_MAX_EXTENDED_BURGERS_CIRCUIT_SIZE;
+
+	const std::size_t expectedCircuits = 4 * nodes.size();
+	const std::size_t expectedSegments = expectedCircuits / 2 + 1024;
+
+	circuitPool.reserve(expectedCircuits);
+	segmentPool.reserve(expectedSegments);
 }
 
 DXAStackingFaults::DXAStackingFaults(): DXATracing(){}
