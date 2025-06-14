@@ -31,7 +31,8 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config){
 	clusterAtoms();
 	createInterfaceMeshNodes();
 
-	if(!config.dumpSFPlanesFile.empty()) createStackingFaultEdges();
+	// TODO: Check this function in DislocationAnalysis (pybind)
+	// createStackingFaultEdges();
 
 	createInterfaceMeshFacets();
 	validateInterfaceMesh();
@@ -50,7 +51,6 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config){
 		throw std::runtime_error("Cannot open " + config.outputFile);
 	}
 
-	writeDislocationsVTKFile(fout);
 	json data;
 	data["dislocations"] = exportDislocationsToJson();
 	data["interface_mesh"] = getInterfaceMeshData();
@@ -60,6 +60,7 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config){
 
 	// Calculate scalar dislocation density and density tensor
 	// TODO: This may be optional, and in the future may be exported if specified.
+	// TODO: maybe it's a good idea add it on data json 
 	double dislocationDensity = 0.0;
 	double dislocationDensityTensor[3][3] = { 0.0 };
 

@@ -27,7 +27,6 @@ public:
 	void clipDislocationLines(const Point3& clipOrigin, const Matrix3& clipCell);
 	void generateOutputMesh();
 	const vector<DislocationSegment*>& getSegments() const { return this->segments; }
-	void writeDislocationsVTKFile(ostream& stream) const;
 	void cleanup();
 
 protected:
