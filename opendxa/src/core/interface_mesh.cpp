@@ -214,20 +214,15 @@ void DXAInterfaceMesh::createBCCMeshEdges(InputAtom* atom){
 	}
 }
 
-/******************************************************************************
-* Creates the facets of the interface mesh.
-******************************************************************************/
-void DXAInterfaceMesh::createInterfaceMeshFacets()
-{
+// Creates the facets of the interface mesh.
+void DXAInterfaceMesh::createInterfaceMeshFacets(){
 	LOG_INFO() << "Creating interface mesh facets.";
 	Timer timer;
 
-	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom) {
-
+	for(auto atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom){
 		// Do an early rejection of bulk atoms, which are not adjacent to the interface mesh.
 		if(atom->testFlag(ATOM_NON_BULK) == false) continue;
-
-		switch(atom->cnaType) {
+		switch(atom->cnaType){
 		case FCC:
 		case HCP:
 			createFCCHCPMeshFacets(&*atom);
@@ -237,9 +232,9 @@ void DXAInterfaceMesh::createInterfaceMeshFacets()
 			break;
 		}
 	}
+
 	// Close the remaining holes in the interface mesh.
 	closeFacetHoles();
-
 	validateInterfaceMesh();
 
 	// Fix facet-edge connectivity.
@@ -462,36 +457,30 @@ void DXAInterfaceMesh::createAdjacentQuad(BaseAtom* center, MeshNode* vertex1, M
 	}
 }
 
-/******************************************************************************
-* Creates a facet connecting up to four nodes.
-* Checks whether the facet already exists.
-* Edges are created on demand by this function.
-******************************************************************************/
-void DXAInterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices, const LatticeVector* edgeVectors)
-{
+// Creates a facet connecting up to four nodes.
+// Checks whether the facet already exists.
+// Edges are created on demand by this function.
+void DXAInterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices, const LatticeVector* edgeVectors){
 	DISLOCATIONS_ASSERT(numVertices <= 4);
 	MeshEdge* edges[4];
 
 	// Lookup free existing edges.
 	// Also check if the facet already exists.
-	for(int v = 0; v < numVertices; v++) {
+	for(int v = 0; v < numVertices; v++){
 		MeshNode* node1 = vertices[v];
-		MeshNode* node2 = vertices[(v+1)%numVertices];
+		MeshNode* node2 = vertices[(v + 1) % numVertices];
 		DISLOCATIONS_ASSERT(node2->tag != node1->tag);
 
 		edges[v] = NULL;
-		for(int e = 0; e < node1->numEdges; e++) {
+		for(int e = 0; e < node1->numEdges; e++){
 			MeshEdge& edge = node1->edges[e];
-			if(edge.node2() == node2 && edge.latticeVector.equals(edgeVectors[v])) {
+			if(edge.node2() == node2 && edge.latticeVector.equals(edgeVectors[v])){
 				const MeshFacet* existingFacet = edge.facet;
-				if(existingFacet == NULL) {
-					//if(edges[v]) LOG_INFO() << "Multiple existing edges: " << edge.node1->tag << " - " << edge.node2()->tag;					
+				if(existingFacet == NULL){
 					edges[v] = &edge;
 					break;
-				}
-				else {
-					if(existingFacet->hasVertex(vertices[(v+2)%numVertices])) {
-						//LOG_INFO() << "Existing facet";
+				}else{
+					if(existingFacet->hasVertex(vertices[(v+2)%numVertices])){
 						return;
 					}
 				}
@@ -499,15 +488,19 @@ void DXAInterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices,
 		}
 	}
 
-	// Create necessary edges.
-	for(int v = 0; v < numVertices; v++) {
-		DISLOCATIONS_ASSERT(vertices[v]->isMeshNode());
-		if(edges[v] == NULL)
-			edges[v] = vertices[v]->createEdge(vertices[(v+1)%numVertices], edgeVectors[v]);
-	}
+	// Create necessary edges with thread safety
+	#pragma omp critical(edge_creation)
+	{
+		for(int v = 0; v < numVertices; v++){
+			DISLOCATIONS_ASSERT(vertices[v]->isMeshNode());
+			if(edges[v] == NULL){
+				edges[v] = vertices[v]->createEdge(vertices[(v+1)%numVertices], edgeVectors[v]);
+			}
+		}
 
-	// Create facet
-	createFacet(numVertices, vertices, edges);
+		// Create facet
+		createFacet(numVertices, vertices, edges);
+	}
 }
 
 /******************************************************************************
