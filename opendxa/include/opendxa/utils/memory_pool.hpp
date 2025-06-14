@@ -89,8 +89,7 @@ public:
         }
     }
 
-    // Limpiar todo de manera segura
-    void clear() {
+    void clear(){
         std::lock_guard<std::mutex> lock(mutex_);
         
         isClearing_ = true;
@@ -163,6 +162,33 @@ public:
         } catch (...) {
             return false;
         }
+    }
+
+    // Reserves space for at least n **unbuilt** objects.
+    // If there is already enough capacity, do nothing.
+    void reserve(std::size_t n){
+        std::lock_guard<std::mutex> lock(mutex_);
+        // it's enough
+        if(n <= capacity()) return;
+        // Maximum number of objects per page
+        const std::size_t objsPerPage = pageSize_;
+        // Total pages that would be needed
+        std::size_t pagesNeeded = (n + objsPerPage - 1) / objsPerPage;
+        // Add missing pages
+        while(pages_.size() < pagesNeeded){
+            try{
+                unsigned char* newPage = new unsigned char[pageSize_ * sizeof(T)];
+                pages_.push_back(newPage);
+            }catch(const std::bad_alloc&){
+                throw std::runtime_error("MemoryPool::reserve out of memory.");
+            }
+        }
+    }
+
+    // Current total capacity (possible objects before reallocating).
+    std::size_t capacity() const noexcept{
+        // Each page has pageSize_ "holes" of size sizeof(T)
+        return pages_.size() * pageSize;
     }
 
 private:
