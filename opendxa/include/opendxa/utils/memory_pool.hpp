@@ -188,7 +188,7 @@ public:
     // Current total capacity (possible objects before reallocating).
     std::size_t capacity() const noexcept{
         // Each page has pageSize_ "holes" of size sizeof(T)
-        return pages_.size() * pageSize;
+        return pages_.size() * pageSize_;
     }
 
 private:

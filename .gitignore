@@ -36,6 +36,8 @@ dist-ssr
 
 reports/
 
+*dump
+
 bindings/python/build/
 bindings/python/dist/
 bindings/python/*.egg-info/
