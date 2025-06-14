@@ -1163,49 +1163,53 @@ bool DXAInterfaceMesh::edgeEdgeOrientation(MeshEdge* edge1, MeshEdge* edge3)
 	}
 }
 
-/******************************************************************************
-* Fix facet-edge connectivity.
-******************************************************************************/
-void DXAInterfaceMesh::fixMeshEdges()
-{
-	size_t fixedEdges = 0;
+// Fix facet-edge connectivity.
+void DXAInterfaceMesh::fixMeshEdges(){
+    size_t fixedEdges = 0;
 
-	// Iterate over all edges of the mesh, which are in use.
-	for(vector<MeshFacet*>::const_iterator facet = facets.begin(); facet != facets.end(); ++facet) {
-		for(int e = 0; e < 3; e++) {
-			MeshEdge* edge1 = (*facet)->edges[e];
-			
-			// Look for an identical parallel edge.
-			for(int e2 = 0; e2 < edge1->node1->numEdges; e2++) {
-				MeshEdge* edge2 = &edge1->node1->edges[e2];
-				if(edge2 == edge1) continue;
-				if(edge2->facet == NULL) continue;				
-				if(edge2->node2() == edge1->node2() && edge1->latticeVector.equals(edge2->latticeVector)) {
-			
-					// Check if edge2 can be reached from edge1 by traversing the facets of the first shared node.
-					bool hitEdge2 = false;
-					MeshEdge* currentEdge = edge1;
-					do {
-						if(currentEdge == edge2) hitEdge2 = true;
-						currentEdge = currentEdge->facet->previousEdge(currentEdge)->oppositeEdge;
-					}
-					while(currentEdge != edge1);
+    #pragma omp parallel for schedule(dynamic) reduction(+:fixedEdges)
+    for(size_t facetIdx = 0; facetIdx < facets.size(); ++facetIdx){
+        MeshFacet* facet = facets[facetIdx];
 
-					if(hitEdge2) {
+        for(int e = 0; e < 3; ++e){
+            MeshEdge* edge1 = facet->edges[e];
 
-						if(!edgeEdgeOrientation(edge1, edge2))
-							continue;
+            // We traverse the edges that share the first node
+            for(int e2 = 0; e2 < edge1->node1->numEdges; ++e2){
+                MeshEdge* edge2 = &edge1->node1->edges[e2];
+                if(edge2 == edge1 || edge2->facet == nullptr) continue;
 
-						// Swap facets of the two edges.
-						swap(edge1->facet->edges[edge1->facet->edgeIndex(edge1)], edge2->facet->edges[edge2->facet->edgeIndex(edge2)]);
-						swap(edge1->facet, edge2->facet);
-						fixedEdges++;
+                // Same nodes and same network vector?
+                if(edge2->node2() == edge1->node2() && edge1->latticeVector.equals(edge2->latticeVector)){
+                    // Is edge2 reached by walking on the mesh?
+                    bool hitEdge2 = false;
+                    MeshEdge* currentEdge = edge1;
+                    do{
+                        if(currentEdge == edge2){
+							hitEdge2 = true; 
+							break; 
+						}
+                        currentEdge = currentEdge->facet->previousEdge(currentEdge)->oppositeEdge;
+                    }while(currentEdge != edge1);
 
-					}
-				}
-			}
-		}
-	}
+                    // Correct orientation?
+                    if(hitEdge2 && edgeEdgeOrientation(edge1, edge2)){
+                        // Critical section, we modify shared structures
+                        #pragma omp critical(edge_swap)
+                        {
+                            std::swap(edge1->facet->edges[edge1->facet->edgeIndex(edge1)],
+                                      edge2->facet->edges[edge2->facet->edgeIndex(edge2)]);
+                            std::swap(edge1->facet, edge2->facet);
+                        }
+                        // OpenMP will do the boosting
+                        ++fixedEdges;
+                    }
+                }
+            }
+        }
+    }
+
+    LOG_INFO() << "Fixed " << fixedEdges << " mesh edges.";
 }
 
 /******************************************************************************
