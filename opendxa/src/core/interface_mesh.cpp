@@ -503,52 +503,58 @@ void DXAInterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices,
 	}
 }
 
-/******************************************************************************
-* Creates a facet with N edges.
-* Triangulates the facet if N >= 4.
-******************************************************************************/
-void DXAInterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdge** edges, int selection)
-{
+// Creates a facet with N edges. Triangulates the facet if N >= 4.
+void DXAInterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdge** edges, int selection){
 	DISLOCATIONS_ASSERT(numVertices >= 3);
 
 	// Check if we have to split the facet.
-	int split_v1, split_v2;
+	int split_v1;
+	int split_v2;
 	bool splitEdgeFound = false;
 	bool prioritySplitEdgeFound = false;
-	for(int v1 = 0; v1 < numVertices; v1++) {
-		for(int v2 = v1 + 2; v2 < numVertices; v2++) {
+
+	for(int v1 = 0; v1 < numVertices; v1++){
+		for(int v2 = v1 + 2; v2 < numVertices; v2++){
 			if(v1 == 0 && v2 == numVertices-1) continue;
 			if(vertices[v1]->tag == vertices[v2]->tag) continue;
-			if(vertices[v1]->hasNeighbor(vertices[v2])) {
+
+			if(vertices[v1]->hasNeighbor(vertices[v2])){
 				splitEdgeFound = true;
-				split_v1 = v1; split_v2 = v2;
+				split_v1 = v1; 
+				split_v2 = v2;
 			}
-			for(int e = 0; e < vertices[v1]->numEdges; e++) {
-				if(vertices[v1]->edges[e].node2() == vertices[v2]) {
+			
+			for(int e = 0; e < vertices[v1]->numEdges; e++){
+				if(vertices[v1]->edges[e].node2() == vertices[v2]){
 					splitEdgeFound = true;
-					split_v1 = v1; split_v2 = v2;
-					if(vertices[v1]->edges[e].isSFEdge) {
+					split_v1 = v1; 
+					split_v2 = v2;
+					if(vertices[v1]->edges[e].isSFEdge){
 						prioritySplitEdgeFound = true;
 						break;
 					}
 				}
 			}
-			for(int e = 0; e < vertices[v2]->numEdges; e++) {
-				if(vertices[v2]->edges[e].node2() == vertices[v1]) {
+			
+			for(int e = 0; e < vertices[v2]->numEdges; e++){
+				if(vertices[v2]->edges[e].node2() == vertices[v1]){
 					splitEdgeFound = true;
-					split_v1 = v1; split_v2 = v2;
-					if(vertices[v2]->edges[e].isSFEdge) {
+					split_v1 = v1; 
+					split_v2 = v2;
+					if(vertices[v2]->edges[e].isSFEdge){
 						prioritySplitEdgeFound = true;
 						break;
 					}
 				}
 			}
+
 			if(prioritySplitEdgeFound) break;
 		}
+
 		if(prioritySplitEdgeFound) break;
 	}
 
-	if(splitEdgeFound) {
+	if(splitEdgeFound){
 		int numVertices1 = split_v2 - split_v1 + 1;
 		int numVertices2 = split_v1 + numVertices - split_v2 + 1;
 		DISLOCATIONS_ASSERT(numVertices1 + numVertices2 == numVertices + 2);
@@ -558,7 +564,7 @@ void DXAInterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdg
 		MeshNode* vertices1[MAX_FACET_HOLE_EDGE_COUNT];
 		MeshEdge* edges1[MAX_FACET_HOLE_EDGE_COUNT];
 		LatticeVector b1(NULL_VECTOR);
-		for(int v = 0; v < numVertices1 - 1; v++) {
+		for(int v = 0; v < numVertices1 - 1; v++){
 			vertices1[v] = vertices[v + split_v1];
 			edges1[v] = edges[v + split_v1];
 			b1 -= edges1[v]->latticeVector;
@@ -571,11 +577,13 @@ void DXAInterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdg
 		MeshNode* vertices2[MAX_FACET_HOLE_EDGE_COUNT];
 		MeshEdge* edges2[MAX_FACET_HOLE_EDGE_COUNT];
 		LatticeVector b2(NULL_VECTOR);
-		for(int v = 0; v < numVertices2 - 1; v++) {
+		
+		for(int v = 0; v < numVertices2 - 1; v++){
 			vertices2[v] = vertices[(v + split_v2) % numVertices];
 			edges2[v] = edges[(v + split_v2) % numVertices];
 			b2 -= edges2[v]->latticeVector;
 		}
+
 		vertices2[numVertices2 - 1] = vertices[split_v1];
 		edges2[numVertices2 - 1] = edges1[numVertices1 - 1]->oppositeEdge;
 		DISLOCATIONS_ASSERT(b2.equals(edges2[numVertices2 - 1]->latticeVector));
@@ -584,34 +592,39 @@ void DXAInterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdg
 		return;
 	}
 
-	MeshFacet* facet = facetPool.construct();
-	facet->selection = selection;
-	facet->edges[0] = edges[0];
-	facet->edges[1] = edges[1];
-	edges[0]->facet = facet;
-	edges[1]->facet = facet;
-	LatticeVector edgeVector = edges[0]->latticeVector + edges[1]->latticeVector;
-	for(int v = 2; v < numVertices - 1; v++) {
-		// Create a new edge.
-		MeshEdge* extraEdge = vertices[0]->createEdge(vertices[v], edgeVector);
-		MeshEdge* opppositeEdge = extraEdge->oppositeEdge;
-
-		facet->edges[2] = opppositeEdge;
-		opppositeEdge->facet = facet;
-		facets.push_back(facet);
-
-		facet = facetPool.construct();
+	// Thread-safe facet creation
+	#pragma omp critical(facet_creation)
+	{
+		MeshFacet* facet = facetPool.construct();
 		facet->selection = selection;
-		facet->edges[0] = extraEdge;
-		facet->edges[1] = edges[v];
-		extraEdge->facet = facet;
-		edges[v]->facet = facet;
-		edgeVector += edges[v]->latticeVector;
+		facet->edges[0] = edges[0];
+		facet->edges[1] = edges[1];
+		edges[0]->facet = facet;
+		edges[1]->facet = facet;
+		LatticeVector edgeVector = edges[0]->latticeVector + edges[1]->latticeVector;
+		for(int v = 2; v < numVertices - 1; v++){
+			// Create a new edge.
+			MeshEdge* extraEdge = vertices[0]->createEdge(vertices[v], edgeVector);
+			MeshEdge* opppositeEdge = extraEdge->oppositeEdge;
+
+			facet->edges[2] = opppositeEdge;
+			opppositeEdge->facet = facet;
+			facets.push_back(facet);
+
+			facet = facetPool.construct();
+			facet->selection = selection;
+			facet->edges[0] = extraEdge;
+			facet->edges[1] = edges[v];
+			extraEdge->facet = facet;
+			edges[v]->facet = facet;
+			edgeVector += edges[v]->latticeVector;
+		}
+		facet->edges[2] = edges[numVertices-1];
+		edges[numVertices-1]->facet = facet;
+		facets.push_back(facet);
 	}
-	facet->edges[2] = edges[numVertices-1];
-	edges[numVertices-1]->facet = facet;
-	facets.push_back(facet);
 }
+
 
 /******************************************************************************
 * Closes the remaining holes in the interface mesh.
