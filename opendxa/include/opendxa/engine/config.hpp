@@ -11,15 +11,6 @@ struct Config{
 	std::string inputFile;
 	std::string outputFile;
 
-	// Dump-related
-	std::string dumpMeshFile;
-	std::string dumpAtomsFile;
-    std::string dumpSFPlanesFile;
-    std::string dumpSurfaceFile;
-    std::string dumpSurfaceCapFile;
-    std::string dumpCellFile;
-	std::string dumpJsonFile;
-
 	// Control
 	bool pbcX = false;
 	bool pbcY = false;

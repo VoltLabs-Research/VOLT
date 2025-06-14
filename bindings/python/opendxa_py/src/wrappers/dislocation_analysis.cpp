@@ -53,21 +53,8 @@ void AnalysisWrapper::setSFFlatten(double flatten){
     config.sfFlatten = static_cast<FloatType>(flatten);
 }
 
-void AnalysisWrapper::setOutputFiles(
-        const std::string& mainOutput,
-        const std::string& meshFile,
-        const std::string& atomsFile,
-        const std::string& sfPlanesFile,
-        const std::string& surfaceFile,
-        const std::string& surfaceCapFile,
-        const std::string& cellFile){
+void AnalysisWrapper::setOutputFiles(const std::string& mainOutput){
     if(!mainOutput.empty()) config.outputFile = mainOutput;
-    if(!meshFile.empty()) config.dumpMeshFile = meshFile;
-    if(!atomsFile.empty()) config.dumpAtomsFile = atomsFile;
-    if(!sfPlanesFile.empty()) config.dumpSFPlanesFile = sfPlanesFile;
-    if(!surfaceFile.empty()) config.dumpSurfaceFile = surfaceFile;
-    if(!surfaceCapFile.empty()) config.dumpSurfaceCapFile = surfaceCapFile;
-    if(!cellFile.empty()) config.dumpCellFile = cellFile;
 }
 
 json AnalysisWrapper::compute(const std::string& inputFile, const std::string& outputFile){

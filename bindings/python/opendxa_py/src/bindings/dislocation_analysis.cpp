@@ -33,13 +33,7 @@ void bindDislocationAnalysis(py::module &m){
              "Set stacking fault flattening level", py::arg("flatten"))
         .def("set_output_files", &Wrappers::AnalysisWrapper::setOutputFiles,
              "Set output file paths",
-             py::arg("main_output") = "",
-             py::arg("mesh_file") = "",
-             py::arg("atoms_file") = "",
-             py::arg("sf_planes_file") = "",
-             py::arg("surface_file") = "",
-             py::arg("surface_cap_file") = "",
-             py::arg("cell_file") = "")
+             py::arg("main_output") = "")
         .def("compute", &Wrappers::AnalysisWrapper::compute,
              "Run analysis from input file",
              py::arg("input_file"), py::arg("output_file") = "")

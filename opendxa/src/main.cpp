@@ -10,14 +10,7 @@ static OpenDXA::Config parseOptions(int argc, char* argv[]){
 	opts.add_options()
 		("cna_cutoff", "Common Neighbor Analysis (CNA) cutoff radius", cxxopts::value<double>())
 		("inputfile", "Input atom file", cxxopts::value<std::string>())
-		("outputfile", "Output VTK file", cxxopts::value<std::string>())
-		("dumpjsonfile", "Output JSON file", cxxopts::value<std::string>())
-		("dumpmesh", "Dump interface mesh", cxxopts::value<std::string>())
-		("dumpatoms", "Dump processed atoms", cxxopts::value<std::string>())
-		("dumpsf", "Dump SF planes", cxxopts::value<std::string>())
-		("dumpsurface", "Dump defect surface", cxxopts::value<std::string>())
-		("dumpsurfacecap", "Dump PBC cap surface", cxxopts::value<std::string>())
-		("dumpcell", "Dump simulation cell geometry", cxxopts::value<std::string>())
+		("outputfile", "Output JSON file", cxxopts::value<std::string>())
 		("pbc", "Periodic BC (X Y Z)", cxxopts::value<std::vector<int>>())
 		("offset", "Atom offset (X Y Z)", cxxopts::value<std::vector<double>>())
 		("scale", "Cell scale (X Y Z)", cxxopts::value<std::vector<double>>())
@@ -30,7 +23,7 @@ static OpenDXA::Config parseOptions(int argc, char* argv[]){
 		("help", "Print help");
 	
 	// Required args
-	opts.parse_positional({ "inputfile", "outputfile" });
+	opts.parse_positional({ "inputfile" });
 	auto result = opts.parse(argc, argv);
 	if(result.count("help")){
 		std::cout << opts.help() << std::endl;
@@ -39,16 +32,8 @@ static OpenDXA::Config parseOptions(int argc, char* argv[]){
 
 	OpenDXA::Config config;
     config.inputFile = result["inputfile"].as<std::string>();
-    config.outputFile = result["outputfile"].as<std::string>();
-	
-	if(result.count("dumpjsonfile")) config.dumpJsonFile = result["dumpjsonfile"].as<string>();
-	if(result.count("cna_cutoff")) config.cnaCutoff = result["cna_cutoff"].as<double>();
-	if(result.count("dumpmesh")) config.dumpMeshFile = result["dumpmesh"].as<std::string>();
-	if(result.count("dumpatoms")) config.dumpAtomsFile = result["dumpatoms"].as<std::string>();
-	if(result.count("dumpsf")) config.dumpSFPlanesFile = result["dumpsf"].as<std::string>();
-	if(result.count("dumpsurface")) config.dumpSurfaceFile = result["dumpsurface"].as<std::string>();
-	if(result.count("dumpsurfacecap")) config.dumpSurfaceCapFile = result["dumpsurfacecap"].as<std::string>();
-	if(result.count("dumpcell")) config.dumpCellFile = result["dumpcell"].as<std::string>();
+
+	if(result.count("outputfile")) config.outputFile = result["outputfile"].as<string>();
 
 	if(result.count("pbc")){
 		auto vec = result["pbc"].as<std::vector<int>>();

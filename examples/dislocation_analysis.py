@@ -4,7 +4,7 @@ from opendxa import DislocationAnalysis
 pipeline = DislocationAnalysis()
 
 # pipeline.compute(dump_file, output_file)
-analysis = pipeline.compute('/home/rodyherrera/Desktop/Sigma9yz/dump.ensayo.50000.config', 'dislocations.vtk')
+analysis = pipeline.compute('/home/rodyherrera/Desktop/Scratching_1200K/dump.50000', 'dislocations.vtk')
 
 settings = VisualizationSettings(
     line_width=3.0,
@@ -23,7 +23,7 @@ dislocation_visualizer.print_stats()
 # dislocation_visualizer.to_vtk(filename)
 
 # These are the default values. If you don't specify a cutoff value, it will be 
-# calculated as an estimate, and I personally recommend not specifying it and relying on the estimate.
+# calculated as an estimate.
 #
 # pipeline.set_circuit_sizes(9, 16)
 # pipeline.set_smoothing_params(8, 4, 4)

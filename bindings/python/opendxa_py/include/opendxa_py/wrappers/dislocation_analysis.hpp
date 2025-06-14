@@ -29,13 +29,7 @@ public:
     void setCircuitSizes(int maxCircuit, int extendedCircuit);
     void setSmoothingParams(int surfaceSmooth, int lineSmooth, int lineCoarsen);
     void setSFFlatten(double flatten);
-    void setOutputFiles(const std::string& mainOutput = "",
-                       const std::string& meshFile = "",
-                       const std::string& atomsFile = "",
-                       const std::string& sfPlanesFile = "",
-                       const std::string& surfaceFile = "",
-                       const std::string& surfaceCapFile = "",
-                       const std::string& cellFile = "");
+    void setOutputFiles(const std::string& mainOutput = "");
     
     json compute(const std::string& inputFile, const std::string& outputFile = "");
     py::dict getConfig() const;

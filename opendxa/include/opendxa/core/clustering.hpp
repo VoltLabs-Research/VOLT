@@ -36,7 +36,7 @@ public:
 	void createSuperclusters(vector<ClusterTransition*>& clusterTransitions);
 	void alignClusterOrientations();
 	json getAtomsData();
-
+    vector<InputAtom>& getInputAtoms() { return inputAtoms; }
 	void cleanup();
 	const vector<InputAtom>& getInputAtoms() const { return inputAtoms; }
 
