@@ -10,6 +10,9 @@
 #include <opendxa/structures/cluster/cluster.hpp>
 #include <opendxa/structures/cluster/cluster_transition.hpp>
 #include <nlohmann/json.hpp>
+#include <climits>
+#include <limits>
+#include <stack>
 
 using json = nlohmann::json;
 
@@ -48,6 +51,7 @@ protected:
 	void orderHCPAtomNeighbors(InputAtom* atom);
 	void orderBCCAtomNeighbors(InputAtom* atom);
 
+	void finalizeSuperclusters();
 	void clusterNeighbor(InputAtom* currentAtom, InputAtom* neighbor, const LatticeOrientation& neighborLatticeOrientation, deque<InputAtom*>& toprocess, int level);
 	bool isValidClusterNeighbor(InputAtom* currentAtom, int neighborIndex, int level);
 	void disableDisclinationBorderAtom(InputAtom* atom);
