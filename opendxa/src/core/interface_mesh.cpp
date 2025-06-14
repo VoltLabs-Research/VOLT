@@ -161,11 +161,51 @@ void DXAInterfaceMesh::createFCCHCPMeshEdges(InputAtom* atom)
 	}
 }
 
-/******************************************************************************
-* Creates the edges around BCC atoms.
-******************************************************************************/
-void DXAInterfaceMesh::createBCCMeshEdges(InputAtom* atom)
-{
+// Creates the edges around BCC atoms.
+void DXAInterfaceMesh::createBCCMeshEdges(InputAtom* atom){
+	const CrystalLatticeType& lattice = atom->latticeType();
+	for(int quad = 0; quad < lattice.numQuads; ++quad){
+		// 4 NN + 1 SNN
+		MeshNode *v[5] = { nullptr };
+		LatticeVector lv[5];
+		// first-order neighbors (contour)
+		bool allNN = true;
+		for(int i = 0; i < 4; ++i){
+			BaseAtom* nb = atom->neighbor(lattice.quads[quad].neighborIndices[i]);
+			if(nb && nb->isMeshNode()){
+				v[i] = static_cast<MeshNode*>(nb);
+			}else{
+				// the quad is not complete
+				allNN = false;
+			}
+			lv[i] = atom->latticeOrientation * lattice.quads[quad].neighborVectors[i];
+		}
+
+		// second neighbor (center of the quad)
+		BaseAtom* nb2 = atom->neighbor(lattice.quads[quad].secondNearestNeighbor);
+		if(nb2 && nb2->isMeshNode()){
+			v[4] = static_cast<MeshNode*>(nb2);
+			lv[4] = atom->latticeOrientation * lattice.neighborVectors[lattice.quads[quad].secondNearestNeighbor];
+		}
+
+		// Boundary edges if all 4 vertices exist
+		if(allNN){
+			for(int i = 0; i < 4; ++i){
+				int j = (i + 1) & 3;
+				v[i]->createEdge(v[j], lv[j] - lv[i]);
+			}
+		}
+
+		// Radial edges towards the central vertex
+		if(v[4]){
+			for(int i = 0; i < 4; ++i){
+				if(!v[i]) continue;
+				// vector = r_center - r_i in grid coordinates
+				LatticeVector rel = lv[4] - lv[i];
+				v[i]->createEdge(v[4], rel);
+			}
+		}
+	}
 }
 
 /******************************************************************************
@@ -693,13 +733,12 @@ void DXAInterfaceMesh::validateInterfaceMesh()
 	}
 }
 
-void DXAInterfaceMesh::duplicateSharedMeshNodes()
-{
+void DXAInterfaceMesh::duplicateSharedMeshNodes(){
 	size_t numSharedNodes = 0;
 
 	for(size_t nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
 		MeshNode* node = nodes[nodeIndex];
-
+		DISLOCATIONS_ASSERT(node->numEdges <= MAX_NODE_EDGES);
 		bool edgeVisited[MAX_NODE_EDGES] = { false };
 		MeshEdge* initialEdge = NULL;
 		for(int e = 0; e < node->numEdges; e++) {
