@@ -701,64 +701,104 @@ bool DXAInterfaceMesh::constructFacetRecursive(int numEdges, int maxEdges, MeshN
 	return false;
 }
 
+void DXAInterfaceMesh::validateInterfaceMesh(){
+    LOG_INFO() << "Validating mesh topology.";
 
-void DXAInterfaceMesh::validateInterfaceMesh()
-{
-	LOG_INFO() << "Validating mesh topology.";
+    // Parallelize node validation
+    #pragma omp parallel for schedule(dynamic)
+    for(size_t nodeIdx = 0; nodeIdx < nodes.size(); ++nodeIdx){
+        MeshNode* node = nodes[nodeIdx];
+        for(int e = 0; e < node->numEdges; e++) {
+            MeshNode* neighbor = node->edgeNeighbor(e);
+            
+            if(node->edges[e].oppositeEdge->oppositeEdge != &node->edges[e]){
+                #pragma omp critical(error_reporting)
+                {
+                    raiseError("Detected invalid reference between opposite edges. Edge vertex 1: %i  edge vertex 2: %i", node->tag, neighbor->tag);
+                }
+            }
+            
+            if((node->edges[e].facet != NULL && node->edges[e].oppositeEdge->facet == NULL) ||
+               (node->edges[e].facet == NULL && node->edges[e].oppositeEdge->facet != NULL)){
+                #pragma omp critical(error_reporting)
+                {
+                    raiseError("Detected open interface mesh surface. Edge vertex 1: %i  edge vertex 2: %i", node->tag, neighbor->tag);
+                }
+            }
 
-	// Check if edges and facets are properly linked together.
-	for(vector<MeshNode*>::const_iterator iter = nodes.begin(); iter != nodes.end(); ++iter) {
-		MeshNode* node = *iter;
-		for(int e = 0; e < node->numEdges; e++) {
-			MeshNode* neighbor = node->edgeNeighbor(e);
-			if(node->edges[e].oppositeEdge->oppositeEdge != &node->edges[e])
-				raiseError("Detected invalid reference between opposite edges. Edge vertex 1: %i  edge vertex 2: %i", node->tag, neighbor->tag);			if((node->edges[e].facet != NULL && node->edges[e].oppositeEdge->facet == NULL)
-					|| (node->edges[e].facet == NULL && node->edges[e].oppositeEdge->facet != NULL)) {
+            MeshFacet* facet = node->edges[e].facet;
+            if(facet == NULL) continue;
+            
+            bool found = false;
+            for(int v = 0; v < 3; v++){
+                if(facet->edges[v]->node1 == node){
+                    if(facet->edges[v] != &node->edges[e]) {
+                        #pragma omp critical(error_reporting)
+                        {
+                            raiseError("Detected invalid reference from facet to edge. Edge: %i - %i", node->tag, neighbor->tag);
+                        }
+                    }
+                    found = true;
+                    break;
+                }
+            }
+            if(!found){
+                #pragma omp critical(error_reporting)
+                {
+                    raiseError("Facet does not contain vertex to which it is incident. Vertex: %i", node->tag);
+                }
+            }
+        }
+    }
+    
+    // Parallelize facet validation
+    #pragma omp parallel for schedule(dynamic)
+    for(size_t facetIdx = 0; facetIdx < facets.size(); ++facetIdx){
+        MeshFacet* facet = facets[facetIdx];
+        MeshFacet* lastOppositeFacet = NULL;
+        LatticeVector burgersVector(NULL_VECTOR);
+        
+        for(int v = 0; v < 3; v++){
+            MeshNode* node1 = facet->edges[v]->node1;
+            MeshNode* node2 = facet->edges[(v+1)%3]->node1;
+            DISLOCATIONS_ASSERT(node2 == facet->edges[v]->node2());
+            
+            if(facet->edges[v]->facet != facet){
+                #pragma omp critical(error_reporting)
+                {
+                    raiseError("Edge is not incident to facet which is part of. Edge: %i - %i.", node1->tag, node2->tag);
+                }
+            }
 
-				raiseError("Detected open interface mesh surface. Edge vertex 1: %i  edge vertex 2: %i", node->tag, neighbor->tag);
-			}
+            burgersVector += facet->edges[v]->latticeVector;
 
-			MeshFacet* facet = node->edges[e].facet;
-			if(facet == NULL) continue;
-			bool found = false;
-			for(int v = 0; v < 3; v++) {
-				if(facet->edges[v]->node1 == node) {
-					if(facet->edges[v] != &node->edges[e])
-						raiseError("Detected invalid reference from facet to edge. Edge: %i - %i", node->tag, neighbor->tag);
-					found = true;
-					break;
-				}
-			}
-			if(!found)
-				raiseError("Facet does not contain vertex to which it is incident. Vertex: %i", node->tag);
-		}
-	}
-	for(vector<MeshFacet*>::const_iterator facet = facets.begin(); facet != facets.end(); ++facet) {
-		MeshFacet* lastOppositeFacet = NULL;
-		LatticeVector burgersVector(NULL_VECTOR);
-		for(int v = 0; v < 3; v++) {
-			MeshNode* node1 = (*facet)->edges[v]->node1;
-			MeshNode* node2 = (*facet)->edges[(v+1)%3]->node1;
-			DISLOCATIONS_ASSERT(node2 == (*facet)->edges[v]->node2());
-			if((*facet)->edges[v]->facet != (*facet))
-				raiseError("Edge is not incident to facet which is part of. Edge: %i - %i.", node1->tag, node2->tag);
+            MeshFacet* oppositeFacet = facet->edges[v]->oppositeEdge->facet;
+            if(oppositeFacet == facet){
+                #pragma omp critical(error_reporting)
+                {
+                    raiseError("Facet is opposite to itself.");
+                }
+            }
 
-			burgersVector += (*facet)->edges[v]->latticeVector;
-
-			MeshFacet* oppositeFacet = (*facet)->edges[v]->oppositeEdge->facet;
-			if(oppositeFacet == (*facet))
-				raiseError("Facet is opposite to itself.");
-
-			if(oppositeFacet == lastOppositeFacet && oppositeFacet != NULL) {
-				MeshNode* thirdVertex = (*facet)->edges[(v+2)%3]->node1;
-				if(oppositeFacet->hasVertex(thirdVertex) == false)
-					raiseError("Facet has two neighbor edges to the same other facet. Edge: %i - %i", node1->tag, node2->tag);
-			}
-			lastOppositeFacet = oppositeFacet;
-		}
-		if(burgersVector.equals(NULL_VECTOR) == false)
-			raiseError("Facet Burgers vector is non-null: %f %f %f", burgersVector.X, burgersVector.Y, burgersVector.Z);
-	}
+            if(oppositeFacet == lastOppositeFacet && oppositeFacet != NULL){
+                MeshNode* thirdVertex = facet->edges[(v + 2) % 3]->node1;
+                if(oppositeFacet->hasVertex(thirdVertex) == false) {
+                    #pragma omp critical(error_reporting)
+                    {
+                        raiseError("Facet has two neighbor edges to the same other facet. Edge: %i - %i", node1->tag, node2->tag);
+                    }
+                }
+            }
+            lastOppositeFacet = oppositeFacet;
+        }
+        
+        if(burgersVector.equals(NULL_VECTOR) == false){
+            #pragma omp critical(error_reporting)
+            {
+                raiseError("Facet Burgers vector is non-null: %f %f %f", burgersVector.X, burgersVector.Y, burgersVector.Z);
+            }
+        }
+    }
 }
 
 void DXAInterfaceMesh::duplicateSharedMeshNodes(){
