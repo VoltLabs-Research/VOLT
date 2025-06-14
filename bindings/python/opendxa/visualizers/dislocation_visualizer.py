@@ -44,6 +44,21 @@ class DislocationVisualizer:
         return self.meshes
     
     def _build_statistics(self, segments: List[Dict], additional_data: Dict):
+        if not segments or not additional_data:
+            self.stats = DislocationStats(
+                num_segments=0,
+                total_points=0,
+                total_length=0,
+                average_length=0.0,
+                max_length=0.0,
+                min_length=0.0,
+                burgers_magnitudes=[],
+                unique_burgers_magnitudes=[],
+                fractional_burgers=[],
+                segment_info=[]
+            )
+            return
+    
         segment_lengths = additional_data['segment_lengths']
         burgers_magnitudes = additional_data['burgers_magnitudes']
         segment_ids = additional_data['segment_ids']

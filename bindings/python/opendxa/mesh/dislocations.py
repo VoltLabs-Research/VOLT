@@ -4,6 +4,9 @@ import numpy as np
 import math
 
 def build_dislocation_mesh(segments: List[Dict]) -> Tuple[pv.PolyData, Dict[str, List]]:
+    if not segment:
+        return None, {}
+    
     all_points = []
     lines = []
 
