@@ -748,56 +748,89 @@ void DXAInterfaceMesh::validateInterfaceMesh()
 void DXAInterfaceMesh::duplicateSharedMeshNodes(){
 	size_t numSharedNodes = 0;
 
-	for(size_t nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+	// Parallelize shared node detection
+	vector<bool> isSharedNode(nodes.size(), false);
+	
+	#pragma omp parallel for schedule(dynamic)
+	for(size_t nodeIndex = 0; nodeIndex < nodes.size(); ++nodeIndex){
 		MeshNode* node = nodes[nodeIndex];
 		DISLOCATIONS_ASSERT(node->numEdges <= MAX_NODE_EDGES);
+
 		bool edgeVisited[MAX_NODE_EDGES] = { false };
 		MeshEdge* initialEdge = NULL;
-		for(int e = 0; e < node->numEdges; e++) {
-			if(node->edges[e].facet != NULL || node->edges[e].oppositeEdge->facet != NULL)
+
+		for(int e = 0; e < node->numEdges; e++){
+			if(node->edges[e].facet != NULL || node->edges[e].oppositeEdge->facet != NULL){
 				initialEdge = &node->edges[e];
-			else
+			}else{
 				edgeVisited[e] = true;
+			}
 		}
+
 		if(initialEdge == NULL) continue;
 
 		MeshEdge* currentEdge = initialEdge;
-		do {
+		do{
 			edgeVisited[node->edgeIndex(currentEdge)] = true;
 			DISLOCATIONS_ASSERT(currentEdge->facet != NULL);
 			DISLOCATIONS_ASSERT(currentEdge->facet->testFlag(FACET_IS_UNNECESSARY) == false);
 			currentEdge = currentEdge->facet->previousEdge(currentEdge)->oppositeEdge;
-		}
-		while(currentEdge != initialEdge);
+		}while(currentEdge != initialEdge);
 
-		bool isSharedNode = false;
-		for(int e = 0; e < node->numEdges; e++) {
-			if(edgeVisited[e] == false) {
-				isSharedNode = true;
+		bool shared = false;
+		for(int e = 0; e < node->numEdges; e++){
+			if(edgeVisited[e] == false){
+				shared = true;
 				break;
 			}
 		}
-		if(!isSharedNode) continue;
+
+		isSharedNode[nodeIndex] = shared;
+	}
+
+	// Process shared nodes in serial 
+	for(size_t nodeIndex = 0; nodeIndex < nodes.size(); ++nodeIndex){
+		if(!isSharedNode[nodeIndex]) continue;
+		
+		MeshNode* node = nodes[nodeIndex];
+		bool edgeVisited[MAX_NODE_EDGES] = { false };
+		MeshEdge* initialEdge = NULL;
+		for(int e = 0; e < node->numEdges; e++){
+			if(node->edges[e].facet != NULL || node->edges[e].oppositeEdge->facet != NULL){
+				initialEdge = &node->edges[e];
+			}else{
+				edgeVisited[e] = true;
+			}
+		}
+
+		MeshEdge* currentEdge = initialEdge;
+		do{
+			edgeVisited[node->edgeIndex(currentEdge)] = true;
+			currentEdge = currentEdge->facet->previousEdge(currentEdge)->oppositeEdge;
+		}while(currentEdge != initialEdge);
 
 		// Create a second node that takes the edges not visited yet.
 		MeshNode* secondNode = nodePool.construct(*(BaseAtom*)node);
 		DISLOCATIONS_ASSERT(secondNode->numEdges == 0);
 		secondNode->index = nodes.size();
 		nodes.push_back(secondNode);
-		for(int e = 0; e < node->numEdges; e++) {
-			if(edgeVisited[e] == false) {
+
+		for(int e = 0; e < node->numEdges; e++){
+			if(edgeVisited[e] == false){
 				MeshEdge& oldEdge = node->edges[e];
 				MeshEdge* oppositeEdge = oldEdge.oppositeEdge;
 				MeshEdge& newEdge = secondNode->edges[secondNode->numEdges++];
+				
 				// Copy edge data.
 				newEdge.node1 = secondNode;
 				newEdge.latticeVector = oldEdge.latticeVector;
 				newEdge.oppositeEdge = oppositeEdge;
 				newEdge.facet = oldEdge.facet;
+
 				// Adjust pointers.
 				oppositeEdge->oppositeEdge = &newEdge;
 				DISLOCATIONS_ASSERT(oppositeEdge != &newEdge);
-				if(oldEdge.facet) {
+				if(oldEdge.facet){
 					oldEdge.facet->edges[oldEdge.facet->edgeIndex(&oldEdge)] = &newEdge;
 					DISLOCATIONS_ASSERT(oldEdge.facet->hasVertex(secondNode));
 				}
@@ -805,15 +838,17 @@ void DXAInterfaceMesh::duplicateSharedMeshNodes(){
 		}
 
 		// Copy neighbors.
-		for(int nn = 0; nn < node->numNeighbors; nn++)
+		for(int nn = 0; nn < node->numNeighbors; nn++){
 			secondNode->addNeighbor(node->neighbor(nn));
+		}
 
 		// Delete edges from original node.
 		int newNumEdges = 0;
-		for(int e = 0; e < node->numEdges; e++) {
-			if(edgeVisited[e]) {
-				if(e != newNumEdges)
+		for(int e = 0; e < node->numEdges; e++){
+			if(edgeVisited[e]){
+				if(e != newNumEdges){
 					node->moveEdge(e, newNumEdges);
+				}
 				newNumEdges++;
 			}
 		}
@@ -824,7 +859,6 @@ void DXAInterfaceMesh::duplicateSharedMeshNodes(){
 
 		numSharedNodes++;
 	}
-
 }
 
 /******************************************************************************
