@@ -2,6 +2,18 @@
 #include <opendxa/structures/mesh/mesh.hpp>
 #include <opendxa/utils/timer.hpp>
 
+void DXAInterfaceMesh::cleanup(){
+	DXAClustering::cleanup();
+	nodes.clear();
+	nodePool.clear();
+	facets.clear();
+	facetPool.clear();
+	outputMesh.clear();
+	outputMeshCap.clear();
+}
+
+DXAInterfaceMesh::DXAInterfaceMesh(): DXAClustering(){}
+
 /******************************************************************************
 * For each non-crystalline atom that has at least one crystalline neighbor
 * (the so-called interface atoms) a node is created for the interface mesh.
@@ -165,7 +177,7 @@ void DXAInterfaceMesh::createFCCHCPMeshEdges(InputAtom* atom)
 void DXAInterfaceMesh::createBCCMeshEdges(InputAtom* atom){
 	const CrystalLatticeType& lattice = atom->latticeType();
 	for(int quad = 0; quad < lattice.numQuads; ++quad){
-		// 4 NN + 1 SNN
+		// 4 NN (Nearest Neighbors) + 1 SNN (Second Nearest Neighbor)
 		MeshNode *v[5] = { nullptr };
 		LatticeVector lv[5];
 		// first-order neighbors (contour)

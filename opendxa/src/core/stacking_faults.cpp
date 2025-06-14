@@ -4,6 +4,16 @@
 #include <opendxa/utils/timer.hpp>
 #include <GL/glu.h>
 
+DXAStackingFaults::DXAStackingFaults(): DXATracing(){}
+
+void DXAStackingFaults::cleanup(){
+	DXATracing::cleanup();
+	stackingFaults.clear();
+	stackingFaultPool.clear();
+	stackingFaultVertexPool.clear();
+	stackingFaultOutputMesh.clear();
+}
+
 json DXAStackingFaults::compute(const OpenDXA::Config &config){
 	setCNACutoff((FloatType) config.cnaCutoff);
 	setPBC(config.pbcX, config.pbcY, config.pbcZ);

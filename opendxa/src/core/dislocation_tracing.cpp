@@ -4,6 +4,29 @@
 #include <opendxa/structures/dislocations/dislocation_segment.hpp>
 #include <opendxa/utils/timer.hpp>
 
+DXATracing::DXATracing(): DXAInterfaceMesh(), unusedCircuit(nullptr){
+	// TODO: Should I readjust these variables or follow the user's instructions?
+	burgersSearchDepth = (DEFAULT_MAX_BURGERS_CIRCUIT_SIZE - 1) / 2;
+	maxBurgersCircuitSize = DEFAULT_MAX_BURGERS_CIRCUIT_SIZE;
+	maxExtendedBurgersCircuitSize = DEFAULT_MAX_EXTENDED_BURGERS_CIRCUIT_SIZE;
+
+	const std::size_t expectedCircuits = 4 * nodes.size();
+	const std::size_t expectedSegments = expectedCircuits / 2 + 1024;
+
+	circuitPool.reserve(expectedCircuits);
+	segmentPool.reserve(expectedSegments);
+}
+
+void DXATracing::cleanup(){
+	DXAInterfaceMesh::cleanup();
+
+	segments.clear();
+	segmentPool.clear();
+	danglingCircuits.clear();
+	circuitPool.clear();
+	unusedCircuit = NULL;
+}
+
 /******************************************************************************
 * Does the actual dislocation detection.
 ******************************************************************************/

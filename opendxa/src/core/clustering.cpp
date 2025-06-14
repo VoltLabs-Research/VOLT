@@ -1,5 +1,36 @@
 #include <opendxa/core/clustering.hpp>
 
+DXAClustering::DXAClustering()
+		: cnaCutoff(0.0),
+		numLocalInputAtoms(0),
+		numClusters(0),
+		numDisclinationAtoms(0),
+		numClusterDisclinations(0),
+		numSuperClusters(0),
+		numClusterTransitions(0){
+	// TODO: Should I keep this? Could I somehow estimate this 
+	// parameter based on the simulation being evaluated? 
+	// Should it be a configurable parameter?
+	constexpr size_t expectedAtoms = 40000;
+	inputAtoms.reserve(expectedAtoms);
+}
+
+void DXAClustering::cleanup(){
+	inputAtoms.clear();
+	numClusters = 0;
+	numLocalInputAtoms = 0;
+	numClusterDisclinations = 0;
+	numSuperClusters = 0;
+	numClusterTransitions = 0;
+	clusters.clear();
+	clusterPool.clear();
+	clusterTransitionPool.clear();
+}
+
+void DXAClustering::setCNACutoff(FloatType cutoff){
+	this->cnaCutoff = cutoff;
+}
+
 // Wraps input atoms at periodic boundary conditions.
 void DXAClustering::wrapInputAtoms(const Vector3 offset){
 	// Apply an optional offset transformation to all atoms.
