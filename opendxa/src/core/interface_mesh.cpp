@@ -3,13 +3,27 @@
 #include <opendxa/utils/timer.hpp>
 
 void DXAInterfaceMesh::cleanup(){
-	DXAClustering::cleanup();
-	nodes.clear();
-	nodePool.clear();
-	facets.clear();
-	facetPool.clear();
-	outputMesh.clear();
-	outputMeshCap.clear();
+    DXAClustering::cleanup();
+    
+    // Parallelize cleaning of large containers
+    #pragma omp parallel sections
+    {
+        #pragma omp section
+        {
+            nodes.clear();
+            nodePool.clear();
+        }
+        #pragma omp section
+        {
+            facets.clear();
+            facetPool.clear();
+        }
+        #pragma omp section
+        {
+            outputMesh.clear();
+            outputMeshCap.clear();
+        }
+    }
 }
 
 DXAInterfaceMesh::DXAInterfaceMesh(): DXAClustering(){}
