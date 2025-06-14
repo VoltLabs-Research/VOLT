@@ -14,68 +14,67 @@ void DXAInterfaceMesh::cleanup(){
 
 DXAInterfaceMesh::DXAInterfaceMesh(): DXAClustering(){}
 
-/******************************************************************************
-* For each non-crystalline atom that has at least one crystalline neighbor
-* (the so-called interface atoms) a node is created for the interface mesh.
-******************************************************************************/
-void DXAInterfaceMesh::createInterfaceMeshNodes()
-{
+// For each non-crystalline atom that has at least one crystalline neighbor
+// (the so-called interface atoms) a node is created for the interface mesh.
+void DXAInterfaceMesh::createInterfaceMeshNodes(){
 	LOG_INFO() << "Creating interface mesh nodes.";
 	Timer timer;
 
-	// Reset recursive walk counters.
-	// And reset neighbor lists for disordered atoms.
-	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom)
-		atom->recursiveDepth = numeric_limits<int>::max();
+	// Pre-reserve memory for better performance
+	size_t estimatedNodes = inputAtoms.size() / 8;
+	nodes.reserve(estimatedNodes);
 
-	// Convert first layer of disordered atoms into mesh nodes.
-	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom) {
+	// Reset recursively walk counters
+	#pragma omp parallel for schedule(static)
+	for(size_t idx = 0; idx < inputAtoms.size(); ++idx){
+		inputAtoms[idx].recursiveDepth = numeric_limits<int>::max();
+	}
+
+	// Convert first layer of disordered atoms into mesh nodes
+	for(auto atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom){
 		if(atom->isDisordered() || atom->testFlag(ATOM_NON_BULK) == false) continue;
-
-		// Iterate over all disordered neighbors.
-		for(int i = 0; i < atom->numNeighbors; i++) {
+		// Iterate over all disordered neighbors
+		for(int i = 0; i < atom->numNeighbors; i++){
 			BaseAtom* neighbor1 = atom->neighbor(i);
 			if(neighbor1 == NULL || neighbor1->isCrystalline()) continue;
-
 			// Is it already a mesh node?
-			if(neighbor1->isMeshNode() == false) {
-
-				// Replace input atom with mesh node.
-				MeshNode* node = nodePool.construct(*neighbor1);
+			if(neighbor1->isMeshNode() == false){
+				// Replace input atom with mesh node
+				MeshNode *node = nodePool.construct(*neighbor1);
 				node->index = nodes.size();
 				nodes.push_back(node);
-
-				// Also replace the atom with the node in neighbor lists of all nearby crystalline atoms.
+				// Also replace the atom with the node in neighbor lists of all nearby crystallinea toms
 				vector<InputAtom*> visitedAtoms;
 				createMeshNodeRecursive(&*atom, neighbor1, node, 0, visitedAtoms, ORIGIN - atom->latticeNeighborVector(i));
-
-				// Reset visit flags.
-				for(vector<InputAtom*>::const_iterator a = visitedAtoms.begin(); a != visitedAtoms.end(); ++a)
-					(*a)->recursiveDepth = numeric_limits<int>::max();
-
+				// Reset visit flags
+				for(auto visitedAtom = visitedAtoms.begin(); visitedAtom != visitedAtoms.end(); ++visitedAtom){
+					(*visitedAtom)->recursiveDepth = numeric_limits<int>::max();
+				}
 				neighbor1 = node;
 			}
 
-			// Create neighbor list of mesh node.
-			for(int j = 0; j < i; j++) {
-				if(atom->neighborBond(i, j)) {
-					BaseAtom* neighbor2 = atom->neighbor(j);
-					if(neighbor2 == NULL || neighbor2->isMeshNode() == false) continue;
-					if(neighbor1->hasNeighbor(neighbor2) == false) {
-						DISLOCATIONS_ASSERT(neighbor1->pos != neighbor2->pos);
-						neighbor1->addNeighbor(neighbor2);
-						neighbor2->addNeighbor(neighbor1);
-					}
+			// Create neighbor list of mesh node
+			for(int j = 0; j < i; j++){
+				if(!atom->neighborBond(i, j)) continue;;
+				BaseAtom* neighbor2 = atom->neighbor(j);
+				if(neighbor2 == NULL || neighbor2->isMeshNode() == false) continue;
+				if(neighbor1->hasNeighbor(neighbor2) == false){
+					DISLOCATIONS_ASSERT(neighbor1->pos != neighbor2->pos);
+					neighbor1->addNeighbor(neighbor2);
+					neighbor2->addNeighbor(neighbor1);
 				}
 			}
 		}
 	}
 
-	// Determine the maximum number of neighbors.
+	// Determine the maximum number of neighbors
 	int maxNodeNeighbors = 0;
-	for(vector<MeshNode*>::iterator node = nodes.begin(); node != nodes.end(); ++node)
-		if((*node)->numNeighbors > maxNodeNeighbors)
-			maxNodeNeighbors = (*node)->numNeighbors;
+	#pragma omp parallel for reduction(max:maxNodeNeighbors)
+	for(size_t nodeIdx = 0; nodeIdx < nodes.size(); ++nodeIdx){
+		if(nodes[nodeIdx]->numNeighbors > maxNodeNeighbors){
+			maxNodeNeighbors = nodes[nodeIdx]->numNeighbors;
+		}
+	}
 
 	LOG_INFO() << "Generated " << nodes.size() << " interface mesh nodes (" << (nodePool.memoryUsage()/1024/1024) << " mbyte).";
 	LOG_INFO() << "Maximum number of nearest neighbors per node: " << maxNodeNeighbors;
