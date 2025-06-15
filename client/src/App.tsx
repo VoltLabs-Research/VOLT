@@ -3,8 +3,9 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls, Environment } from '@react-three/drei';
 import { IoAddOutline } from 'react-icons/io5';
 import { FileUpload } from './components/FileUpload';
-import './App.css';
 import { FileList } from './components/FileList';
+import { analyzeFolder } from './services/api';
+import './App.css';
 
 const CanvasGrid = () => {
     const { gl } = useThree();

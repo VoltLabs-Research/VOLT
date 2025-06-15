@@ -38,6 +38,11 @@ export const uploadFolder = async (files: FileList): Promise<any> => {
     return response.data;
 };
 
+export const analyzeFolder = async (folderId: string): Promise<any[]> => {
+    const response = await api.get(`/dislocations/analyze/${folderId}`);
+    return response.data;
+};
+
 export const deleteFolder = async (folderId: string): Promise<void> => {
     await api.delete(`/files/${folderId}`);
 };

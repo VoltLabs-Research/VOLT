@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { uploadFolder } from '../services/api';
+import { uploadFolder, analyzeFolder } from '../services/api';
 import Loader from './Loader';
 
 interface FileUploadProps {
@@ -17,6 +17,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [analyzing, setAnalyzing] = useState(false);
     const dropRef = useRef<HTMLDivElement>(null);
 
     const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
@@ -61,13 +62,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
             const res = await uploadFolder(allFiles);
             onUploadSuccess?.(res);
+            try{
+                setUploadProgress(100);
+                setUploading(false);
+                setAnalyzing(true);
+                await analyzeFolder(res.folder_id)
+            }finally{
+                setAnalyzing(false);
+            }
         } catch (err) {
             console.error('Upload failed', err);
             onUploadError?.(err);
         } finally {
             setUploading(false);
-            setUploadProgress(100);
         }
+
+
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -82,10 +92,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             className={'file-upload-container '.concat(className)}
         >
             {children}
-            {uploading && (
+            {(uploading || analyzing) && (
                 <div className='file-upload-loader-container'>
                     <Loader scale={0.78} />
-                    <p className='file-upload-loader-progress'>Uploading... {uploadProgress}%</p>
+                    <p className='file-upload-loader-progress'>
+                        {uploading ? (
+                            <span>Uploading... {uploadProgress}%</span>
+                        ) : (
+                            <span>Analyzing dislocations...</span>
+                        )}
+                    </p>
                 </div>
             )}
         </div>
