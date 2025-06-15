@@ -1,38 +1,56 @@
-import React, { useMemo } from 'react';
-import type { ExtendedTimestepViewerProps, AnalysisResult } from '../types/index';
+import React, { useEffect, useMemo } from 'react';
 import AtomParticles from './AtomParticles';
 import DislocationViewer from './DislocationViewer';
 import TimestepAnimator from './TimestepAnimator';
+import useTimestepStream from '../hooks/useTimestepStream';
 
-const TimestepViewer: React.FC<ExtendedTimestepViewerProps & {
+const TimestepViewer: React.FC<any & {
+    folderId: string;
     showDislocations?: boolean;
-    analysis?: AnalysisResult | null; // AnalysisResult from useDislocationAnalysis
-}> = ({ 
-    currentTimestep, 
-    isPlaying, 
-    playSpeed, 
-    timesteps, 
+    analysis?: any | null
+}> = ({
+    folderId,
+    currentTimestep,
+    isPlaying,
+    playSpeed,
+    timesteps,
     onTimestepChange,
-    timestepData,
-    error,
-    showDislocations = false,
-    analysis
+    analysis,
+    showDislocations = false
 }) => {
+    const { data, error } = useTimestepStream({ folderId, timestepId: currentTimestep });
+
+    useEffect(() => {
+        console.log(data)
+    }, [data]);
+
     const { atoms, scale, centerOffset } = useMemo(() => {
-        if (!timestepData) return { atoms: [], scale: 1, centerOffset: [0, 0, 0] as [number, number, number] };
-        
-        const atomsData = timestepData.positions.map((pos: number[], index: number) => ({
-            x: pos[0],
-            y: pos[1],
-            z: pos[2],
-            type: timestepData.atom_types[index] || 1
+        if(!data?.positions){
+            return {
+                atoms: [],
+                scale: 1,
+                centerOffset: [0, 0, 0]
+            }
+        }
+
+        const atomsData = data.positions.map((position: number[], index: number) => ({
+            x: position[0],
+            y: position[1],
+            z: position[2],
+            // TODO: This should be dynamic.
+            type: 1
         }));
 
-        let minX = Infinity, maxX = -Infinity;
-        let minY = Infinity, maxY = -Infinity;
-        let minZ = Infinity, maxZ = -Infinity;
+        let minX = Infinity;
+        let maxX = -Infinity;
 
-        atomsData.forEach((atom: any) => {
+        let minY = Infinity;
+        let maxY = -Infinity;
+
+        let minZ = Infinity;
+        let maxZ = -Infinity;
+
+        atomsData.forEach((atom) => {
             minX = Math.min(minX, atom.x);
             maxX = Math.max(maxX, atom.x);
             minY = Math.min(minY, atom.y);
@@ -51,58 +69,33 @@ const TimestepViewer: React.FC<ExtendedTimestepViewerProps & {
         const maxSize = Math.max(sizeX, sizeY, sizeZ);
 
         const targetSize = 10;
-        const calculatedScale = maxSize > 0 ? targetSize / maxSize : 1;
+        const calculatedScale = maxSize > 0 ? (targetSize / maxSize) : 1;
 
-        const centeredAtoms = atomsData.map((atom: any) => ({
+        const centeredAtoms = atomsData.map((atom) => ({
             ...atom,
             x: atom.x - centerX,
             y: atom.y - centerY,
             z: atom.z - centerZ
         }));
 
-        return { 
-            atoms: centeredAtoms, 
+        return {
+            atoms: centeredAtoms,
             scale: calculatedScale,
-            centerOffset: [-centerX * calculatedScale, -centerZ * calculatedScale + 5, -centerY * calculatedScale] as [number, number, number]
+            centerOffset: [
+                -centerX * calculatedScale,
+                -centerZ * (calculatedScale + 5),
+                -centerY * calculatedScale
+            ]
         };
-    }, [timestepData]);
+    }, [data]);
 
-    console.log('TimestepViewer atoms data:', {
-        atomsCount: atoms.length,
-        scale,
-        centerOffset,
-        atomsRange: atoms.length > 0 ? {
-            x: [Math.min(...atoms.map(a => a.x)), Math.max(...atoms.map(a => a.x))],
-            y: [Math.min(...atoms.map(a => a.y)), Math.max(...atoms.map(a => a.y))],
-            z: [Math.min(...atoms.map(a => a.z)), Math.max(...atoms.map(a => a.z))]
-        } : null
-    });
+    // TODO: if error return bla bla 
 
-           
-    //  {atoms.length > 0 && <AtomParticles atoms={atoms} scale={scale} />}
     return (
-        <>
-            
-            {/* Show dislocations using VTK data from analysis */}
-            {showDislocations && analysis?.vtk_data && (
-                <DislocationViewer
-                    vtkData={analysis.vtk_data}
-                    scale={0.3}
-                    centerOffset={centerOffset}
-                    showBurgersVectors={true}
-                    colorByBurgersVector={true}
-                />
-            )}
-            
-            <TimestepAnimator
-                timesteps={timesteps}
-                currentTimestep={currentTimestep}
-                onTimestepChange={onTimestepChange}
-                isPlaying={isPlaying}
-                playSpeed={playSpeed}
-            />
-        </>
-    );
+        <React.Fragment>
+            {atoms.length > 0 && <AtomParticles atoms={atoms} scale={scale} /> }
+        </React.Fragment>
+    )
 };
 
 export default TimestepViewer;

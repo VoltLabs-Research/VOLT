@@ -14,35 +14,38 @@ def extract_timesteps(lines: List[str]) -> List[int]:
     return timesteps
 
 def read_lammps_dump(filepath: str) -> Dict[int, np.ndarray]:
-    positions_by_timestep = {}
-
     with open(filepath, 'r') as file:
-        line = file.readline()
+        lines = file.readlines()
 
-        while line:
-            if line.startswith('ITEM: TIMESTEP'):
-                timestep = int(file.readline().strip())
+    num_atoms = 0
+    coord_cols = []
+    positions = []
+    reading_atoms = False
 
-                while line and not line.startswith('ITEM: ATOMS'):
-                    line = file.readline()
-                
-                header_parts = line.strip().split()[2:]
-                coord_cols = [
-                    i for i, key in enumerate(header_parts)
-                    if any(k in key for k in ['x', 'y', 'z'])
-                ]
-                atom_lines = []
+    for i, line in enumerate(lines):
+        line = line.strip()
 
-                line = file.readline()
-                while line and not line.startswith('ITEM:'):
-                    parts = line.strip().split()
-                    coords = [float(parts[i]) for i in coord_cols]
-                    atom_lines.append(coords)
-                    line = file.readline()
-
-                positions = np.array(atom_lines)
-                positions_by_timestep[timestep] = positions
-            else:
-                line = file.readline()
-
-    return positions_by_timestep
+        if line.startswith('ITEM: NUMBER OF ATOMS'):
+            num_atoms = int(lines[i + 1].strip())
+        
+        elif line.startswith('ITEM: ATOMS'):
+            # ['id', 'type', 'x', 'y', 'z', ...]
+            header = line.split()[2:]
+            coord_cols = [
+                idx for idx, name in enumerate(header)
+                if name in ('x', 'y', 'z', 'xs', 'ys', 'zs')
+            ]
+            if len(coord_cols) != 3:
+                raise ValueError('Could not find x/y/z columns in ATOMS header.')
+            reading_atoms = True
+            continue
+        elif reading_atoms:
+            if line.startswith('ITEM:'):
+                break
+            parts = line.split()
+            try:
+                position = [float(parts[i]) for i in coord_cols]
+                positions.append(position)
+            except Exception as e:
+                raise ValueError(f'Invalid line in atom data: {line}\n{e}')
+    return num_atoms, np.array(positions)

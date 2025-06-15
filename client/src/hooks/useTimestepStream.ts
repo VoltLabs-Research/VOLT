@@ -13,7 +13,7 @@ interface UseTimestepStreamOptions{
     baseUrl?: string;
 }
 
-const useTimestepStream = ({ folderId, timestepId, baseUrl = 'ws://0.0.0.0:8000' }: UseTimestepStreamOptions) => {
+const useTimestepStream = ({ folderId, timestepId, baseUrl = 'ws://127.0.0.1:8000/ws' }: UseTimestepStreamOptions) => {
     const [data, setData] = useState<TimestepData | null>(null);
     const [error, setError] = useState<string | null>(null);
 

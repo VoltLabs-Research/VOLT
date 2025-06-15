@@ -12,7 +12,7 @@ interface FileListProps {
   refreshTrigger: number;
 }
 
-export const FileList: React.FC<FileListProps> = ({
+const FileList: React.FC<FileListProps> = ({
     onFileSelect,
     selectedFile,
     refreshTrigger
@@ -76,3 +76,5 @@ export const FileList: React.FC<FileListProps> = ({
         </EditorWidget>
     );
 };
+
+export default FileList;

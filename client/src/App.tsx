@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls, Environment } from '@react-three/drei';
 import { IoAddOutline } from 'react-icons/io5';
-import { FileUpload } from './components/FileUpload';
-import { FileList } from './components/FileList';
+import FileUpload from './components/FileUpload';
+import FileList from './components/FileList';
+import TimestepViewer from './components/TimestepViewer';
 import './App.css';
 
 const CanvasGrid = () => {
@@ -29,17 +30,28 @@ const CanvasGrid = () => {
 };
 
 const App = () => {
+    // TODO: use react redux
+    const [folderId, setFolderId] = useState<string | null>(null);
+    const [currentTimestep, setCurrentTimestep] = useState<number>(0);
+
     const handleUploadError = (error: string) => {
-        console.error('Upload error:', error);
+        console.error('OpenDXA: Upload error:', error);
     };
 
-    const handleUploadSuccess = () => {
+    const handleFolderSelection = (uploadedFolderId: string) => {
+        setFolderId(uploadedFolderId);
+
+        // By default, when uploading a directory with simulations 
+        // to the server, after uploading it we load the first timestep.
+        // TODO: It can't always be 0. Well, a simulation can start 
+        // for example with timestep 10000. Handle these cases.
+        setCurrentTimestep(0);
     };
 
     return (
         <main className='editor-container'>
             {/* <AnalysisConfig /> */}
-            <FileList />
+            <FileList onFileSelect={handleFolderSelection} />
 
             <section className='editor-camera-info-container'>
                 <h3 className='editor-camera-info-title'>Perspective Camera</h3>
@@ -49,7 +61,7 @@ const App = () => {
             </section>
 
             <div className='editor-timestep-viewer-container'>
-                <FileUpload onUploadError={handleUploadError} onUploadSuccess={handleUploadSuccess}>
+                <FileUpload onUploadError={handleUploadError} onUploadSuccess={handleFolderSelection}>
                     <Canvas shadows camera={{ position: [12, 8, 12], fov: 50 }}>
                         {/* @ts-ignore */}
                         <ambientLight intensity={0.4} />
@@ -75,6 +87,17 @@ const App = () => {
                             target={[0, 3, 0]}
                         />
                         <Environment preset='city' />
+
+                        {folderId && (
+                            <TimestepViewer
+                                folderId={folderId}
+                                currentTimestep={currentTimestep}
+                                isPlaying={false}
+                                playSpeed={1}
+                                timesteps={[0]}
+                                onTimestepChange={setCurrentTimestep}
+                            />
+                        )}
                     </Canvas>
                 </FileUpload>
             </div>

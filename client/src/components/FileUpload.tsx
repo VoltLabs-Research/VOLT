@@ -9,7 +9,7 @@ interface FileUploadProps {
     children?: React.ReactNode;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({
+const FileUpload: React.FC<FileUploadProps> = ({
     onUploadSuccess,
     onUploadError,
     className = '',
@@ -107,3 +107,5 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         </div>
     );
 };
+
+export default FileUpload;

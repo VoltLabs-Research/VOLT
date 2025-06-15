@@ -22,7 +22,7 @@ const useWebSocket = ({
     const socketRef = useRef<WebSocket | null>(null);
     const [status, setStatus] = useState<WebSocketStatus>('idle');
 
-    const connect = useCallback(() => {
+    const connect = () => {
         if(socketRef.current && socketRef.current.readyState === WebSocket.OPEN) return;
 
         const ws = new WebSocket(url);
@@ -30,24 +30,28 @@ const useWebSocket = ({
         setStatus('connecting');
 
         ws.onopen = () => {
+            console.log(`OpenDXA [DEBUG]: Connected to the WebSocket ${url}.`)
             setStatus('open');
             onOpen?.();
         };
 
         ws.onmessage = (event) => {
+            console.log(`OpenDXA [DEBUG]: "onmessage" event in "useWebSocket" hook.`)
             onMessage?.(event);
         };
 
         ws.onerror = (event) => {
+            console.log(`OpenDXA [DEBUG]: "onerror" event in "useWebSocket" hook.`)
             setStatus('error');
             onError?.(event);
         };
 
         ws.onclose = () => {
+            console.log(`OpenDXA [DEBUG]: "onclose" event in "useWebSocket" hook.`)
             setStatus('closed');
             onClose?.();
         };
-    }, [url, onMessage, onOpen, onClose, onError]);
+    };
 
     const sendMessage = useCallback((data: any) => {
         if(socketRef.current && socketRef.current.readyState === WebSocket.OPEN){
@@ -69,7 +73,7 @@ const useWebSocket = ({
         return () => {
             disconnect();
         };
-    }, [autoConnect, connect, disconnect]);
+    }, []);
 
     return {
         status,

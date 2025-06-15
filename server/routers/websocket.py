@@ -11,12 +11,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 manager = ConnectionManager()
 
-@router.websocket('/timesteps/{folder_id}/{timestep_id}')
+@router.websocket('/timesteps/{folder_id}/{timestep}')
 async def websocket_send_timestep(websocket: WebSocket, folder_id: str, timestep: int):
     await manager.connect(websocket)
 
     try:
-        dump_path = Path(TRAJECTORY_DIR) / folder_id / timestep
+        dump_path = Path(TRAJECTORY_DIR) / folder_id / str(timestep)
         if not dump_path.exists():
             await websocket.send_text(json.dumps({
                 'status': 'error',
@@ -25,14 +25,13 @@ async def websocket_send_timestep(websocket: WebSocket, folder_id: str, timestep
             await websocket.close()
             return
         
-        positions = read_lammps_dump(str(dump_path))
-
+        num_atoms, positions = read_lammps_dump(str(dump_path))
         await websocket.send_text(json.dumps({
             'status': 'success',
             'data': {
                 'timestep': timestep,
-                'total_atoms': len(positions),
-                'positions': positions
+                'total_atoms': num_atoms,
+                'positions': positions.tolist()
             }
         }))
     
