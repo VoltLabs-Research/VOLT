@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@use-gesture/react": "^10.3.1"
+  }
+}

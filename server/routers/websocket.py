@@ -51,14 +51,11 @@ async def websocket_send_timestep(websocket: WebSocket, folder_id: str, timestep
             await websocket.close()
             return
         
-        num_atoms, positions = read_lammps_dump(str(dump_path))
+        atoms_data = read_lammps_dump(str(dump_path))
+        atoms_data['timestep'] = timestep
         await websocket.send_text(json.dumps({
             'status': 'success',
-            'data': {
-                'timestep': timestep,
-                'total_atoms': num_atoms,
-                'positions': positions.tolist()
-            }
+            'data': atoms_data
         }))
     
     except WebSocketDisconnect:

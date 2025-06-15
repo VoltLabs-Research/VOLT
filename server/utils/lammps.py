@@ -21,6 +21,8 @@ def read_lammps_dump(filepath: str) -> Dict[int, np.ndarray]:
     coord_cols = []
     positions = []
     reading_atoms = False
+    type_col = None
+    types = []
 
     for i, line in enumerate(lines):
         line = line.strip()
@@ -37,15 +39,36 @@ def read_lammps_dump(filepath: str) -> Dict[int, np.ndarray]:
             ]
             if len(coord_cols) != 3:
                 raise ValueError('Could not find x/y/z columns in ATOMS header.')
+            
+            if 'type' in header:
+                type_col = header.index('type')
+            else:
+                raise ValueError('ATOM type column not found in header.')
+
             reading_atoms = True
             continue
+
         elif reading_atoms:
             if line.startswith('ITEM:'):
                 break
             parts = line.split()
             try:
                 position = [float(parts[i]) for i in coord_cols]
+                atom_type = int(parts[type_col])
                 positions.append(position)
+                types.append(atom_type)
+
             except Exception as e:
                 raise ValueError(f'Invalid line in atom data: {line}\n{e}')
-    return num_atoms, np.array(positions)
+    
+    atoms_as_dict = [{
+        'type': int(atom_type),
+        'position': list(map(float, position))
+    } for position, atom_type in zip(positions, types)]
+    
+    data = {
+        'total_atoms': num_atoms,
+        'atoms': atoms_as_dict
+    }
+
+    return data

@@ -2,36 +2,29 @@ import React, { useEffect, useMemo } from 'react';
 import AtomParticles from './AtomParticles';
 
 const TimestepViewer: React.FC<any> = ({ data }) => {
-
     useEffect(() => {
         console.log(data)
     }, [data]);
 
     const { atoms, scale, centerOffset } = useMemo(() => {
-        if(!data?.positions){
+        if (!data?.atoms || data.atoms.length === 0) {
             return {
                 atoms: [],
                 scale: 1,
                 centerOffset: [0, 0, 0]
-            }
+            };
         }
 
-        const atomsData = data.positions.map((position: number[], index: number) => ({
-            x: position[0],
-            y: position[1],
-            z: position[2],
-            // TODO: This should be dynamic.
-            type: 1
+        const atomsData = data.atoms.map((atom: any) => ({
+            x: atom.position[0],
+            y: atom.position[1],
+            z: atom.position[2],
+            type: atom.type
         }));
 
-        let minX = Infinity;
-        let maxX = -Infinity;
-
-        let minY = Infinity;
-        let maxY = -Infinity;
-
-        let minZ = Infinity;
-        let maxZ = -Infinity;
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        let minZ = Infinity, maxZ = -Infinity;
 
         atomsData.forEach((atom) => {
             minX = Math.min(minX, atom.x);
@@ -50,9 +43,8 @@ const TimestepViewer: React.FC<any> = ({ data }) => {
         const sizeY = maxY - minY;
         const sizeZ = maxZ - minZ;
         const maxSize = Math.max(sizeX, sizeY, sizeZ);
-
         const targetSize = 10;
-        const calculatedScale = maxSize > 0 ? (targetSize / maxSize) : 1;
+        const calculatedScale = maxSize > 0 ? targetSize / maxSize : 1;
 
         const centeredAtoms = atomsData.map((atom) => ({
             ...atom,
@@ -72,13 +64,11 @@ const TimestepViewer: React.FC<any> = ({ data }) => {
         };
     }, [data]);
 
-    // TODO: if error return bla bla 
-
     return (
-        <React.Fragment>
-            {atoms.length > 0 && <AtomParticles atoms={atoms} scale={scale} /> }
-        </React.Fragment>
-    )
+        <>
+            {atoms.length > 0 && <AtomParticles atoms={atoms} scale={scale} />}
+        </>
+    );
 };
 
 export default TimestepViewer;

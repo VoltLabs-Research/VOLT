@@ -37,6 +37,7 @@ const useAnalysisStream = ({ folderId, timestep, baseUrl = 'ws://127.0.0.1:8000/
                         magnitude: s.burgers?.magnitude ?? 0,
                         length: s.length
                     }));
+                    console.log(segments)
                     setData(segments);
                 }else if(response.status === 'error'){
                     setError(response.data?.code || 'unhandled_exception');
