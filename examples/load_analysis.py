@@ -1,7 +1,17 @@
 from opendxa.visualizers import DislocationVisualizer, VisualizationSettings
-from opendxa.utils import load_analysis
+from opendxa.utils import load_analyses
 
-analysis = load_analysis('/home/rodyherrera/Desktop/tmp/OpenDXA/debug.analysis_2.json')
+# Single file:
+# analisis = next(load_analyses('analysis.json'))
+#
+# All files in memory
+# all_analyses = list(load_analyses("/route/to/analyses/"))
+#
+# Streaming processing (low RAM consumption)
+# for analisis in load_analyses("/ruta/a/dir"):
+#     procesar(analisis)
+
+analysis = next(load_analyses('/home/rodyherrera/Desktop/tmp/OpenDXA/debug.analysis_2.json'))
 
 settings = VisualizationSettings(
     line_width=3.0,
