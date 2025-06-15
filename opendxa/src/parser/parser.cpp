@@ -3,11 +3,11 @@
 /******************************************************************************
 * Reads the atomic coordinates from the input file.
 ******************************************************************************/
-ParserFileType DXAClustering::readAtomsFile(ParserStream& stream)
+ParserFileType DXAClustering::readAtomsFile(ParserStream& stream, bool shouldIgnoreInvalidFile = false)
 {
 	// Parse first line.
 	stream.readline();
-	if(stream.eof())
+	if(stream.eof() && !shouldIgnoreInvalidFile)
 		raiseError("Invalid input file. File contains only a single text line.");
 
 	// Perform auto-detection of file format.
@@ -16,7 +16,9 @@ ParserFileType DXAClustering::readAtomsFile(ParserStream& stream)
 		readLAMMPSAtomsFile(stream);
 		return PARSER_FILETYPE_LAMMPS;
 	}
-	raiseError("Invalid input file. File format could not be recognized.");
+	if(!shouldIgnoreInvalidFile){
+		raiseError("Invalid input file. File format could not be recognized.");
+	}
 	return (ParserFileType)0;
 }
 

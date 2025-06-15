@@ -3,6 +3,10 @@
 #include <opendxa/core/stacking_faults.hpp>
 #include <opendxa/utils/timer.hpp>
 #include <GL/glu.h>
+#include <filesystem>
+#include <regex>
+
+namespace fs = std::filesystem;
 
 DXAStackingFaults::DXAStackingFaults(): DXATracing(){}
 
@@ -16,70 +20,115 @@ void DXAStackingFaults::cleanup(){
 }
 
 json DXAStackingFaults::compute(const OpenDXA::Config &config){
-	setCNACutoff((FloatType) config.cnaCutoff);
-	setPBC(config.pbcX, config.pbcY, config.pbcZ);
-	setMaximumBurgersCircuitSize(config.maxCircuitSize);
-	setMaximumExtendedBurgersCircuitSize(config.extendedCircuitSize);
+    setCNACutoff((FloatType) config.cnaCutoff);
+    setPBC(config.pbcX, config.pbcY, config.pbcZ);
+    setMaximumBurgersCircuitSize(config.maxCircuitSize);
+    setMaximumExtendedBurgersCircuitSize(config.extendedCircuitSize);
 
-	std::ifstream inputFile(config.inputFile);
-	if(!inputFile){
-		throw std::runtime_error("Cannot open " + config.inputFile);
-	}
+    fs::path inputPath(config.inputFile);
+    fs::path outputPath(config.outputFile);
 
-	ParserStream parserStream(inputFile);
-	readAtomsFile(parserStream);
+    bool outputIsDir = false;
+    if(!config.outputFile.empty()){
+        if(fs::exists(outputPath)){
+            if(fs::is_directory(outputPath)){
+                outputIsDir = true;
+            } else {
+                outputIsDir = false;
+            }
+        } else if(fs::is_directory(inputPath)){
+            fs::create_directories(outputPath);
+            outputIsDir = true;
+        }
+    }
 
-	if(config.scaleFactors != Vector3{1, 1, 1}){
-		transformSimulationCell(Matrix3(config.scaleFactors.X, 0, 0, 0, config.scaleFactors.Y, 0, 0, 0, config.scaleFactors.Z));
-	}
+    json aggregate; 
+    size_t fileIndex = 0;
 
-	wrapInputAtoms(config.atomOffset);
+    auto process_file = [&](const fs::path &file){
+        LOG_INFO() << "Processing file: " << file.string();
 
-	Timer fullTimer;
-	buildNearestNeighborLists();
-	performCNA();
-	orderCrystallineAtoms();
-	clusterAtoms();
-	createInterfaceMeshNodes();
+        std::ifstream in(file);
+        if(!in){
+            LOG_ERROR() << "Cannot open file: " << file.string();
+            return;
+        }
+        cleanup();
 
-	// TODO: Check this function in DislocationAnalysis (pybind)
-	createStackingFaultEdges();
+        ParserStream parserStream(in);
+        readAtomsFile(parserStream, fs::is_directory(inputPath));
+        if(config.scaleFactors != Vector3{1,1,1})
+            transformSimulationCell(Matrix3{config.scaleFactors.X,0,0,0,config.scaleFactors.Y,0,0,0,config.scaleFactors.Z});
+        wrapInputAtoms(config.atomOffset);
 
-	createInterfaceMeshFacets();
-	validateInterfaceMesh();
-	findStackingFaultPlanes();
-	traceDislocationSegments();
+        Timer t;
+        buildNearestNeighborLists();
+        performCNA();
+        orderCrystallineAtoms();
+        clusterAtoms();
+        createInterfaceMeshNodes();
+        createStackingFaultEdges();
+        createInterfaceMeshFacets();
+        validateInterfaceMesh();
+        findStackingFaultPlanes();
+        traceDislocationSegments();
+        generateOutputMesh();
+        smoothOutputSurface(config.surfaceSmooth);
+        smoothDislocationSegments(config.lineSmooth, config.lineCoarsen);
+        finishStackingFaults(config.sfFlatten);
+        wrapDislocationSegments();
 
-	generateOutputMesh();
-	smoothOutputSurface(config.surfaceSmooth);
+        json data;
+        data["dislocations"] = exportDislocationsToJson();
+        data["interface_mesh"] = getInterfaceMeshData();
+        data["atoms"] = getAtomsData();
+        data["output_mesh"] = outputMesh.getOutputMeshData();
+        data["stacking_faults"] = getStackingFaults();
 
-	smoothDislocationSegments(config.lineSmooth, config.lineCoarsen);
-	finishStackingFaults(config.sfFlatten);
-	wrapDislocationSegments();
+        if(outputIsDir){
+            std::string stem = file.stem().string();
+            std::smatch m;
+            std::string ts = "0";
+            static const std::regex r(R"((\d+))");
+            if(std::regex_search(stem, m, r)){
+                ts = m.str(1);
+            }
+            fs::path outFile = outputPath / ("timestep_" + ts + ".json");
+            std::ofstream fout(outFile);
+            if(!fout){
+                LOG_ERROR() << "Cannot open output file: " << outFile.string();
+            } else {
+                fout << data.dump() << "\n";
+            }
+        } else if(!config.outputFile.empty()){
+            std::ofstream fout(outputPath);
+            if(!fout){
+                LOG_ERROR() << "Cannot open output file: " << outputPath.string();
+            } else {
+                fout << data.dump() << "\n";
+            }
+        } else {
+            aggregate["files"].push_back(data);
+        }
 
-	json data;
-	data["dislocations"] = exportDislocationsToJson();
-	data["interface_mesh"] = getInterfaceMeshData();
-	data["atoms"] = getAtomsData();
-	data["output_mesh"] = outputMesh.getOutputMeshData();
-	data["stacking_faults"] = getStackingFaults();
+        cleanup();
+    };
 
-	if(!config.outputFile.empty()){
-		std::ofstream fout(config.outputFile);
-		
-		if(!fout){
-			throw std::runtime_error("Cannot open " + config.outputFile);
-		}
+    if(fs::is_directory(inputPath)){
+        for(auto const& entry : fs::directory_iterator(inputPath)){
+            if(entry.is_regular_file()){
+                process_file(entry.path());
+                ++fileIndex;
+            }
+        }
+    } else {
+        process_file(inputPath);
+    }
 
-		fout << data.dump() << std::endl;
-		fout.close();
-	}
-
-	LOG_INFO() << "Total time: " << fullTimer.elapsedTime() << " seconds.";
-
-	cleanup();
-
-	return data;
+    if(config.outputFile.empty()){
+        return aggregate;
+    }
+    return json{{ "processed_files", fileIndex }};
 }
 
 bool DXAStackingFaults::createStackingFaultEdges(){

@@ -26,7 +26,7 @@ public:
 	~DXAClustering() { cleanup(); }
 	void setCNACutoff(FloatType cutoff);
 	FloatType getCNACutoff() const { return cnaCutoff; }
-	ParserFileType readAtomsFile(ParserStream& stream);
+	ParserFileType readAtomsFile(ParserStream& stream, bool shouldIgnoreInvalidFile);
 	void transformSimulationCell(const Matrix3& tm);
 	void wrapInputAtoms(const Vector3 offset = NULL_VECTOR);
 	void buildNearestNeighborLists();
