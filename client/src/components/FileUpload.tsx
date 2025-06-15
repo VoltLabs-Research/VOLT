@@ -1,54 +1,88 @@
-import React, { useCallback, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { uploadFile } from '../services/api';
+import React, { useState, useRef } from 'react';
+import { uploadFolder } from '../services/api';
 import Loader from './Loader';
-import type { UploadResult } from '../types/index';
 
-interface FileUploadProps{
-    onUploadSuccess: (result: UploadResult) => void;
-    onUploadError: (error: string) => void;
-    children?: React.ReactNode;
+interface FileUploadProps {
+    onUploadSuccess?: (res: any) => void;
+    onUploadError?: (err: any) => void;
     className?: string;
+    children?: React.ReactNode;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onUploadError, children, className = '' }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({
+    onUploadSuccess,
+    onUploadError,
+    className = '',
+    children
+}) => {
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const dropRef = useRef<HTMLDivElement>(null);
 
-    const onDrop = useCallback(async (acceptedFiles: File[]) => {
-        if(acceptedFiles.length === 0) return;
+    const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        if (uploading) return;
 
-        const file = acceptedFiles[0];
+        const items = event.dataTransfer.items;
+        if (!items) return;
+
+        const allFiles: File[] = [];
+
+        const traverseFileTree = async (item: any, path = ''): Promise<void> => {
+            if (item.isFile) {
+                const file = await new Promise<File>(resolve => item.file(resolve));
+                Object.defineProperty(file, 'webkitRelativePath', {
+                    value: path + file.name
+                });
+                allFiles.push(file);
+            } else if (item.isDirectory) {
+                const dirReader = item.createReader();
+                const readEntries = (): Promise<void> =>
+                    new Promise((resolve) => {
+                        dirReader.readEntries(async (entries: any[]) => {
+                            for (const entry of entries) {
+                                await traverseFileTree(entry, path + item.name + '/');
+                            }
+                            resolve();
+                        });
+                    });
+                await readEntries();
+            }
+        };
+
         setUploading(true);
         setUploadProgress(0);
 
-        try{
-            const result = await uploadFile(file, setUploadProgress);
-            onUploadSuccess(result);
-        }catch(error){
-            onUploadError(error instanceof Error ? error.message : 'Error al subir archivo');
-        }finally{
-            setUploading(false);
-            setUploadProgress(0);
-        }
-    }, [onUploadSuccess, onUploadError]);
+        try {
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i].webkitGetAsEntry();
+                if (item) await traverseFileTree(item);
+            }
 
-    const { getRootProps, getInputProps } = useDropzone({
-        onDrop,
-        accept: {
-            'text/plain': ['.dump', '.lammpstrj', '.xyz', '.config', '.525000'],
-        },
-        multiple: false,
-        disabled: uploading,
-        noClick: true,
-        noKeyboard: true
-    });
+            const res = await uploadFolder(allFiles);
+            onUploadSuccess?.(res);
+        } catch (err) {
+            console.error('Upload failed', err);
+            onUploadError?.(err);
+        } finally {
+            setUploading(false);
+            setUploadProgress(100);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+    };
 
     return (
-        <div {...getRootProps()} className={'file-upload-container '.concat(className)}>
+        <div
+            ref={dropRef}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            className={'file-upload-container '.concat(className)}
+        >
             {children}
-            <input {...getInputProps()} />
-            {uploadProgress && (
+            {uploading && (
                 <div className='file-upload-loader-container'>
                     <Loader scale={0.78} />
                     <p className='file-upload-loader-progress'>Uploading... {uploadProgress}%</p>
@@ -57,3 +91,4 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onUploa
         </div>
     );
 };
+    

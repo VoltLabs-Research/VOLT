@@ -1,39 +1,8 @@
-// Temporary declaration for Three.js components
-declare global {
-    namespace JSX {
-        interface IntrinsicElements {
-            ambientLight: {
-                intensity?: number;
-                color?: string;
-            };
-            directionalLight: {
-                intensity?: number;
-                position?: [number, number, number];
-                color?: string;
-                castShadow?: boolean;
-                'shadow-mapSize'?: [number, number];
-                'shadow-camera-far'?: number;
-                'shadow-camera-left'?: number;
-                'shadow-camera-right'?: number;
-                'shadow-camera-top'?: number;
-                'shadow-camera-bottom'?: number;
-            };
-        }
-    }
-}
-
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls, Environment } from '@react-three/drei';
 import { IoAddOutline } from 'react-icons/io5';
 import { FileUpload } from './components/FileUpload';
-import { FileList } from './components/FileList';
-import TimestepViewer from './components/TimestepViewer';
-import TimestepControls from './components/TimestepControls';
-import DislocationAnalyzer from './components/DislocationAnalyzer';
-import useTimestepManager from './hooks/useTimestepManager';
-import useDislocationAnalysis from './hooks/useDislocationAnalysis';
-import type { FileInfo, Dislocation } from './types/index';
 import './App.css';
 
 const CanvasGrid = () => {
@@ -59,69 +28,15 @@ const CanvasGrid = () => {
 };
 
 const App = () => {
-    const [selectedFile, setSelectedFile] = useState<FileInfo | undefined>();
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
-    const [showDislocationAnalysis, setShowDislocationAnalysis] = useState(false);
-
-    const { 
-        loadDefaultConfig, 
-        analyzeCurrentTimestep, 
-        isAnalyzing, 
-        analysis, 
-        clearAnalysis 
-    } = useDislocationAnalysis();
-
-    const {
-        timesteps,
-        currentTimestep,
-        isPlaying,
-        playSpeed,
-        loading,
-        error,
-        timestepData,
-        handleTimestepChange,
-        handlePlayPause,
-        handleSpeedChange,
-        isConnected
-    } = useTimestepManager(selectedFile || null);
-
-    const handleAnalyze = async () => {
-        if (!selectedFile) {
-            console.error('No file selected');
-            return;
-        }
-        await analyzeCurrentTimestep(selectedFile.file_id, currentTimestep);
-    };
-
-    useEffect(() => {
-        loadDefaultConfig();
-        setShowDislocationAnalysis(false);
-    }, [currentTimestep]);
-
     const handleUploadError = (error: string) => {
         console.error('Upload error:', error);
     };
 
     const handleUploadSuccess = () => {
-        console.log('Upload success');
-        setRefreshTrigger(prev => prev + 1);
-    };
-
-    const handleDislocationVisualize = (dislocation: Dislocation) => {
-        console.log('Visualizing dislocation:', dislocation);
     };
 
     return (
         <main className='editor-container'>
-            <FileList
-                onFileSelect={(file) => {
-                    console.log('File selected:', file);
-                    setSelectedFile(file);
-                }}
-                selectedFile={selectedFile}
-                refreshTrigger={refreshTrigger}
-            />
-
             {/* <AnalysisConfig /> */}
 
             <section className='editor-camera-info-container'>
@@ -149,21 +64,6 @@ const App = () => {
                             shadow-camera-bottom={-15}
                         />
                         <CanvasGrid />
-                        {selectedFile && (
-                            <TimestepViewer 
-                                fileInfo={selectedFile}
-                                currentTimestep={currentTimestep}
-                                isPlaying={isPlaying}
-                                playSpeed={playSpeed}
-                                timesteps={timesteps}
-                                onTimestepChange={handleTimestepChange}
-                                timestepData={timestepData}
-                                loading={loading}
-                                error={error}
-                                showDislocations={!!analysis?.vtk_data}
-                                analysis={analysis}
-                            />
-                        )}
                         <OrbitControls 
                             enableDamping 
                             dampingFactor={0.05} 
@@ -175,44 +75,14 @@ const App = () => {
                         <Environment preset='city' />
                     </Canvas>
                 </FileUpload>
-                
-                <TimestepControls
-                    fileInfo={selectedFile || null}
-                    timesteps={timesteps}
-                    currentTimestep={currentTimestep}
-                    onTimestepChange={handleTimestepChange}
-                    isPlaying={isPlaying}
-                    onPlayPause={handlePlayPause}
-                    playSpeed={playSpeed}
-                    onSpeedChange={handleSpeedChange}
-                    isConnected={isConnected}
-                    isStreaming={false}
-                    streamProgress={null}
-                    onStartPreloading={() => {}}
-                    onStopPreloading={() => {}}
-                    preloadedCount={0}
-                />
             </div>
 
-            <section className='editor-dislocations-button-container' onClick={handleAnalyze}>
+            <section className='editor-dislocations-button-container'>
                 <IoAddOutline className='editor-dislocations-button-icon' />
                 <span className='editor-dislocations-button-text'>
                     Dislocation Analysis
                 </span>
             </section>
-
-            {selectedFile && (
-                <DislocationAnalyzer
-                    selectedFile={selectedFile}
-                    showDislocationAnalysis={showDislocationAnalysis}
-                    currentTimestep={currentTimestep}
-                    onDislocationVisualize={handleDislocationVisualize}
-                    isAnalyzing={isAnalyzing}
-                    analysis={analysis}
-                    onClearAnalysis={clearAnalysis}
-                    onLoadDefaultConfig={loadDefaultConfig}
-                />
-            )}
         </main>
     );
 };

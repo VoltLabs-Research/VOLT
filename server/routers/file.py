@@ -15,10 +15,9 @@ logger = logging.getLogger(__name__)
 async def delete_file(file_id: str) -> Dict[str, str]:
     if file_id not in uploaded_files:
         raise HTTPException(status_code=404, detail=f'File with ID {file_id} not found')
-    
-    
+
 @router.post('/', summary='Upload multiple trajectory files from a folder')
-async def upload_file(files: UploadFile = File(...)) -> Dict[str, Any]:
+async def upload_file(files: List[UploadFile] = File(...)) -> Dict[str, Any]:
     folder_id = str(uuid.uuid4())
     folder_path = Path(TRAJECTORY_DIR) / folder_id
     folder_path.mkdir(parents=True, exist_ok=True)
