@@ -4,7 +4,7 @@ from opendxa import DislocationAnalysis
 pipeline = DislocationAnalysis()
 
 # pipeline.compute(dump_file, output_file)
-analysis = pipeline.compute('/home/rodyherrera/Desktop/tmp/OpenDXA/examples/820000_scratch_6m_atoms.dump', 'analysis.json')
+analysis = pipeline.compute('/home/rodyherrera/Desktop/tmp/OpenDXA/examples/1000000_s9.dump', 'debug.analysis_2.json')
 
 settings = VisualizationSettings(
     line_width=3.0,

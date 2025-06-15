@@ -21,7 +21,7 @@ dist-ssr
 *.local
 *.vtk
 
-debug.analysis.json
+debug.analysis*
 
 # Editor directories and files
 .vscode/*

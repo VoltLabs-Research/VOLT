@@ -9,6 +9,7 @@ DXAStackingFaults::DXAStackingFaults(): DXATracing(){}
 void DXAStackingFaults::cleanup(){
 	DXATracing::cleanup();
 	stackingFaults.clear();
+	std::vector<StackingFault*>().swap(stackingFaults);
 	stackingFaultPool.clear();
 	stackingFaultVertexPool.clear();
 	stackingFaultOutputMesh.clear();

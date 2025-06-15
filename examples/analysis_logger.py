@@ -17,4 +17,4 @@ logger.enable_thread_id(False)
 logger.set_log_file('analysis.log')
 
 pipeline = DislocationAnalysis()
-pipeline.compute('dump_file', 'dislocations.vtk')
+pipeline.compute('dump_file')
