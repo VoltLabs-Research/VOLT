@@ -21,6 +21,8 @@ dist-ssr
 *.local
 *.vtk
 
+debug.analysis.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

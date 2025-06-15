@@ -20,6 +20,7 @@ public:
 	void setMaximumBurgersCircuitSize(int maxSize) { this->maxBurgersCircuitSize = maxSize; burgersSearchDepth = (maxSize - 1) / 2; }
 	void setMaximumExtendedBurgersCircuitSize(int maxSize) { this->maxExtendedBurgersCircuitSize = maxSize; }
 
+	json getDislocationDensity() const;
 	json exportDislocationsToJson() const;
 	void traceDislocationSegments();
 	void smoothDislocationSegments(int smoothingLevel, int coarseningLevel);

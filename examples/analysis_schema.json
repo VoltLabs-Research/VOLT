@@ -160,15 +160,55 @@
         "summary": {
           "type": "object",
           "properties": {
-            "total_points": { "type": "integer", "minimum": 0 },
-            "average_segment_length": { "type": "number", "minimum": 0 },
-            "max_segment_length": { "type": "number", "minimum": 0 },
-            "min_segment_length": { "type": "number", "minimum": 0 },
-            "total_length": { "type": "number", "minimum": 0 },
-            "segments_with_circuits": { "type": "integer", "minimum": 0 },
-            "memory_optimization": { "type": "string", "const": "reserve_enabled" }
+            "total_points":             { "type": "integer", "minimum": 0 },
+            "average_segment_length":   { "type": "number",  "minimum": 0 },
+            "max_segment_length":       { "type": "number",  "minimum": 0 },
+            "min_segment_length":       { "type": "number",  "minimum": 0 },
+            "total_length":             { "type": "number",  "minimum": 0 },
+            "segments_with_circuits":   { "type": "integer", "minimum": 0 },
+            "density": {
+              "type": "object",
+              "properties": {
+                "dislocation_density": {
+                  "type":   "number",
+                  "minimum": 0
+                },
+                "dislocation_density_tensor": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": {
+                    "type":    "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "items":   { "type": "number" }
+                  }
+                },
+                "volume": {
+                  "type": "number"
+                },
+                "segment_count": {
+                  "type":    "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "dislocation_density",
+                "dislocation_density_tensor",
+                "volume",
+                "segment_count"
+              ]
+            }
           },
-          "required": ["total_points", "average_segment_length", "max_segment_length", "min_segment_length", "total_length", "segments_with_circuits", "memory_optimization"]
+          "required": [
+            "total_points",
+            "average_segment_length",
+            "max_segment_length",
+            "min_segment_length",
+            "total_length",
+            "segments_with_circuits",
+            "density"
+          ]
         }
       },
       "required": ["metadata", "data", "summary"]

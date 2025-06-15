@@ -70,44 +70,8 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config){
 			throw std::runtime_error("Cannot open " + config.outputFile);
 		}
 
-		fout << data.dump(4) << std::endl;
+		fout << data.dump() << std::endl;
 		fout.close();
-	}
-
-	// Calculate scalar dislocation density and density tensor
-	// TODO: This may be optional, and in the future may be exported if specified.
-	// TODO: maybe it's a good idea add it on data json 
-	double dislocationDensity = 0.0;
-	double dislocationDensityTensor[3][3] = { 0.0 };
-
-	const std::vector<DislocationSegment*>& segments = getSegments();
-	for(int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++){
-		DislocationSegment* segment = segments[segmentIndex];
-		const std::deque<Point3>& line = segment->line;
-		// line.front() line.back() (line.back() - line.front()) (diff)
-		for(std::deque<Point3>::const_iterator p1 = line.begin(), p2 = line.begin() + 1; p2 < line.end(); ++p1, ++p2){
-			Vector3 delta = (*p2) - (*p1);
-			dislocationDensity += Length(delta);
-			for(int i = 0; i < 3; i++){
-				for(int j = 0; j < 3; j++){
-					dislocationDensityTensor[i][j] += delta[i] * segment->burgersVectorWorld[j];
-				}
-			}
-		}
-	}
-
-	double volume = getSimulationCell().determinant();
-	dislocationDensity /= volume;
-	for(int i = 0; i < 3; i++){
-		for(int j = 0; j < 3; j++){
-			dislocationDensityTensor[i][j] /= volume;
-		}
-	}
-
-	LOG_INFO() << "Dislocation densitity: " << dislocationDensity;
-	LOG_INFO() << "Dislocation density tensor: ";
-	for(int i = 0; i < 3; i++){
-		LOG_INFO() << dislocationDensityTensor[i][0] << " " << dislocationDensityTensor[i][1] << " " << dislocationDensityTensor[i][2];
 	}
 
 	LOG_INFO() << "Total time: " << fullTimer.elapsedTime() << " seconds.";

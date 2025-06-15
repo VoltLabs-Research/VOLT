@@ -17,6 +17,53 @@ json createStandardStructureOptimized(){
     return root;
 }
 
+json DXATracing::getDislocationDensity() const{
+    double dislocationDensity = 0.0;
+    double dislocationDensityTensor[3][3] = {{0.0}};
+    
+    const auto& segments = getSegments();
+    for(const auto* segment : segments){
+        const auto& line = segment->line;
+
+        for(auto p1 = line.begin(), p2 = std::next(p1); p2 != line.end(); ++p1, ++p2){
+            Vector3 delta = (*p2) - (*p1);
+            dislocationDensity += Length(delta);
+
+            for(int i = 0; i < 3; i++){
+                for(int j = 0; j < 3; j++){
+                    dislocationDensityTensor[i][j] += delta[i] * segment->burgersVectorWorld[j];
+                }
+            }
+        }
+    }
+
+    const double volume = getSimulationCell().determinant();
+    dislocationDensity /= volume;
+    for(int i = 0; i < 3; i++){
+        for(int j = 0; j < 3; j++){
+            dislocationDensityTensor[i][j] /= volume;
+        }
+    }
+
+    json result;
+    result["dislocation_density"] = dislocationDensity;
+
+    json tensor = json::array();
+    for(int i = 0; i < 3; i++){
+        json row = json::array();
+        for(int j = 0; j < 3; j++){
+            row.push_back(dislocationDensityTensor[i][j]);
+        }
+        tensor.push_back(std::move(row));
+    }
+
+    result["dislocation_density_tensor"] = std::move(tensor);
+    result["volume"] = volume;
+    result["segment_count"] = segments.size();
+
+    return result;
+}
+
 json createMetadataOptimized(const std::string& type, size_t count, const std::string& description = ""){
     json metadata;
     metadata["type"] = type;
@@ -114,9 +161,9 @@ json DXATracing::exportDislocationsToJson() const{
     root["summary"]["max_segment_length"] = segments.empty() ? 0.0 : *std::max_element(lengths.begin(), lengths.end());
     root["summary"]["min_segment_length"] = segments.empty() ? 0.0 : *std::min_element(lengths.begin(), lengths.end());
     root["summary"]["total_length"] = total_length;
+    root["summary"]["density"] = getDislocationDensity();
     root["summary"]["segments_with_circuits"] = std::count_if(segments.begin(), segments.end(), 
         [](const auto* seg) { return seg->circuits[0] || seg->circuits[1]; });
-    root["summary"]["memory_optimization"] = "reserve_enabled";
     
     return root;
 }
