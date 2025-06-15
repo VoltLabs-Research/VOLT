@@ -7,8 +7,16 @@ interface UseAnalysisStreamOptions{
     baseUrl?: string;
 }
 
+export interface DislocationSegment{
+    id: number;
+    points: number[][];
+    burgers_vector: number[];
+    magnitude: number;
+    length: number;
+}
+
 const useAnalysisStream = ({ folderId, timestep, baseUrl = 'ws://127.0.0.1:8000/ws' }: UseAnalysisStreamOptions) => {
-    const [data, setData] = useState<any | null>(null);
+    const [data, setData] = useState<DislocationSegment[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [url, setUrl] = useState<string | null>(null);
 
@@ -20,8 +28,16 @@ const useAnalysisStream = ({ folderId, timestep, baseUrl = 'ws://127.0.0.1:8000/
             try{
                 const response = JSON.parse(event.data);
                 if(response.status === 'success'){
-                    // dislocations
-                    setData(response.data);
+                    const rawSegments = response.data.data;
+                    console.log(`OpenDXA [DEBUG]: useAnalysisTream hook (${folderId}/${timestep}) ${rawSegments.length} dislocations`)
+                    const segments: DislocationSegment[] = rawSegments.map((s: any, i: number) => ({
+                        id: s.index ?? i,
+                        points: s.points,
+                        burgers_vector: s.burgers?.vector ?? [0, 0, 0],
+                        magnitude: s.burgers?.magnitude ?? 0,
+                        length: s.length
+                    }));
+                    setData(segments);
                 }else if(response.status === 'error'){
                     setError(response.data?.code || 'unhandled_exception');
                 }
@@ -35,16 +51,14 @@ const useAnalysisStream = ({ folderId, timestep, baseUrl = 'ws://127.0.0.1:8000/
     });
 
     useEffect(() => {
-        if(!folderId || timestep == null) return;
+        if (!folderId || timestep == null) return;
         const newUrl = `${baseUrl}/analysis/${folderId}/${timestep}`;
         setUrl(newUrl);
         disconnect();
     }, [folderId, timestep]);
 
     useEffect(() => {
-        if(url){
-            connect();
-        }
+        if(url) connect();
     }, [url]);
 
     return {

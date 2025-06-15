@@ -1,12 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls, Environment } from '@react-three/drei';
 import { IoAddOutline } from 'react-icons/io5';
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
 import TimestepViewer from './components/TimestepViewer';
-import useTimestepStream from './hooks/useTimestepStream';
+import DislocationViewer from './components/DislocationViewer';
 import TimestepControls from './components/TimestepControls';
+import useTimestepStream from './hooks/useTimestepStream';
+import useAnalysisStream from './hooks/useAnalysisStream';
 import './App.css';
 
 const CanvasGrid = () => {
@@ -40,6 +42,11 @@ const App = () => {
     const { data, error } = useTimestepStream({ folderId: folder?.folder_id || null, timestepId: currentTimestep });
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const currentIndexRef = useRef(0);
+
+    const analysisStream = useAnalysisStream({
+        folderId: folder?.folder_id ?? '',
+        timestep: currentTimestep,
+    });
 
     useEffect(() => {
         if(!folder) return;
@@ -137,6 +144,14 @@ const App = () => {
 
                         {folder && (
                             <TimestepViewer data={data} />
+                        )}
+
+                        {analysisStream && (
+                            <DislocationViewer
+                                segments={analysisStream.data}
+                                scale={0.2}
+                                centerOffset={[-5, 0, 10]}
+                            />
                         )}
                     </Canvas>
                 </FileUpload>

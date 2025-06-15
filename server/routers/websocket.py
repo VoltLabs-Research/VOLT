@@ -102,7 +102,7 @@ async def websocket_send_analysis(websocket: WebSocket, folder_id: str, timestep
 
         # There's no need to verify that the properties exist (I think). 
         # Since they're returned from CPP, it's impossible for them not to exist (I think).
-        dislocations = content['dislocations']
+        dislocations = content['dislocations']['data']
         
         await websocket.send_text(json.dumps({
             'status': 'success',
