@@ -56,17 +56,23 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config){
 	finishStackingFaults(config.sfFlatten);
 	wrapDislocationSegments();
 
-	std::ofstream fout(config.outputFile);
-	if(!fout){
-		throw std::runtime_error("Cannot open " + config.outputFile);
-	}
-
 	json data;
 	data["dislocations"] = exportDislocationsToJson();
 	data["interface_mesh"] = getInterfaceMeshData();
 	data["atoms"] = getAtomsData();
 	data["output_mesh"] = outputMesh.getOutputMeshData();
 	data["stacking_faults"] = getStackingFaults();
+
+	if(!config.outputFile.empty()){
+		std::ofstream fout(config.outputFile);
+		
+		if(!fout){
+			throw std::runtime_error("Cannot open " + config.outputFile);
+		}
+
+		fout << data.dump(4) << std::endl;
+		fout.close();
+	}
 
 	// Calculate scalar dislocation density and density tensor
 	// TODO: This may be optional, and in the future may be exported if specified.
