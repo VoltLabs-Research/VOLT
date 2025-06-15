@@ -2,8 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from utils.bootstrap import lifespan
 from routers import (
-    analyze_router,
-    config_router,
     file_router,
     server_router,
     websocket_router
@@ -31,8 +29,6 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-app.include_router(analyze_router, prefix='/analyze')
-app.include_router(config_router, prefix='/config')
 app.include_router(file_router, prefix='/files')
 app.include_router(websocket_router, prefix='/ws')
 app.include_router(server_router)

@@ -1,11 +1,12 @@
 from opendxa.digrat.dislocation_lineage import DislocationLineage
 from scipy.optimize import linear_sum_assignment
-from opendxa import DislocationAnalysis
 from collections import defaultdict
 from itertools import combinations
 from typing import Dict
 import numpy as np
 import json
+import re
+import os
 
 class DislocationTracker:
     '''
@@ -88,9 +89,37 @@ class DislocationTracker:
 
         return max(0, min(1, total_score))
     
-    def load_frame_data(self, dump_path: str, frame_index: int) -> dict:
-        pipeline = DislocationAnalysis()
+    def load_frame_data(self, json_file_path) -> dict:
+        '''
+        Loads and processes single-frame data from a .json analysis file pre-processed by opendxa.
+        '''
+        try:
+            with open(json_file_path, 'r') as file:
+                analysis_data = json.load(file)
+
+            frame_dislocations = {}
+            dislocation_list = analysis_data.get('dislocations', {}).get('lines', [])
+
+            if not dislocation_list:
+                return {}
+            
+            for dislocation_line in dislocation_list:
+                # The ID of the dislocation within the frame
+                dislocation_id = dislocation_line['id']
+                dislocation_data = {
+                    'burgers_vector': np.array(dislocation_line['true_burgers_vector']),
+                    'position': np.mean(dislocation_line['points'], axis=0),
+                    'length': float(dislocation_line['length']),
+                    'opendxa_id': int(dislocation_id)
+                }
+                frame_dislocations[dislocation_id] = dislocation_data
+            return frame_dislocations
         
+        except (IOError, json.JSONDecodeError) as e:
+            print(e)
+            self.tracking_stats['tracking_errors'].append(e)
+            return {}
+
     def matching_algorithm(self, prev_fps: dict, curr_fps: dict, min_similarity: float = 0.6) -> list:
         '''
         Solve the 1-to-1 matching problem using the Hungarian Algorithm to find the globally optimal match.
@@ -262,17 +291,54 @@ class DislocationTracker:
     
     def analyze_trajectory(
         self,
-        dump_folder: str,
-        start_frame: int,
-        end_frame: int,
-        step: int = 1,
+        analysis_folder: str,
         min_similarity: float = 0.7,
         burgers_tolerance: float = 0.05
     ):
         '''
-        Analyzes a complete trajectory, managing the loop through frames and calling processing logic.
+        Analyzes a complete trajectory, reading from a folder containing .json files pre-processed by opendxa.
         '''
-        pass
+        # Function to extract the frame number from the file name
+        def get_frame_number(filename):
+            match = re.search(r'\d+', filename)
+            return int(match.group()) if match else -1
+        # Obtain and sort analysis files chronologically
+        try:
+            json_files = [f for f in os.listdir(analysis_folder) if f.endswith('.json')]
+            json_files.sort(key=get_frame_number)
+            if not json_files:
+                print(f"WARNING: No .json files found in '{analysis_folder}'.")
+                return
+        except FileNotFoundError:
+            print("ERROR: The analysis folder '{analysis_folder}' does not exist")
+            return
+        
+        initial_file = json_files[0]
+        initial_frame_idx = get_frame_number(initial_file)
+        prev_data = self.load_frame_data(os.path.join(analysis_folder, initial_file))
+        self.frame_fingerprints[initial_frame_idx] = {
+            id: self.create_dislocation_fingerprint(data) for id, data in prev_data.items()
+        }
+        self.process_events_and_update_lineage(-1, initial_frame_idx, {}, prev_data, min_similarity, burgers_tolerance)
+        prev_frame_idx = initial_frame_idx
+
+        # Process subsequent frames
+        for i in range(1, len(json_files)):
+            curr_file = json_files[i]
+            curr_frame_idx = get_frame_number(curr_file)
+            print(f"Procesando transición {prev_frame_idx} -> {curr_frame_idx}...")
+            
+            curr_data = self.load_frame_data(os.path.join(analysis_folder, curr_file))
+            self.frame_fingerprints[curr_frame_idx] = {
+                id: self.create_dislocation_fingerprint(data) for id, data in curr_data.items()
+            }
+            
+            self.process_events_and_update_lineage(
+                prev_frame_idx, curr_frame_idx, prev_data, curr_data, min_similarity, burgers_tolerance
+            )
+            
+            prev_data = curr_data
+            prev_frame_idx = curr_frame_idx
 
     def export_lineage_data(self, export_file: str):
         export_data = { 'lineages': {} }

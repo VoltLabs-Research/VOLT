@@ -1,12 +1,12 @@
 from pathlib import Path
 
 DATA_DIR = Path('data')
-TIMESTEPS_DIR = DATA_DIR / 'timesteps'
-RESULTS_DIR = DATA_DIR / 'results'
+TRAJECTORY_DIR = DATA_DIR / 'timesteps'
+ANALYSIS_DIR = DATA_DIR / 'results'
 
 DATA_DIR.mkdir(exist_ok=True)
-TIMESTEPS_DIR.mkdir(exist_ok=True)
-RESULTS_DIR.mkdir(exist_ok=True)
+TRAJECTORY_DIR.mkdir(exist_ok=True)
+ANALYSIS_DIR.mkdir(exist_ok=True)
 
 # TODO: DELETE THIS FROM HERE, temp solution
 from typing import Dict, Any

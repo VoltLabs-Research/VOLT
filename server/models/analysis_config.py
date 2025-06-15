@@ -1,25 +1,20 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 
 class AnalysisConfig(BaseModel):
-    cutoff: float = Field(default=3.5, description='Cutoff distance for neighbor search')
-    num_neighbors: int = Field(default=12, description='Number of Voronoi neighbors')
-    min_neighbors: int = Field(default=12, description='Minimum neighbors for surface filtering')
-    voronoi_factor: float = Field(default=1.5, description='Factor to expand cutoff for Voronoi candidate pool')
-    tolerance: float = Field(default=0.3, description='Tolerance for lattice connectivity matching')
-    max_loop_length: int = Field(default=16, description='Maximum length for Burgers circuit detection')
-    burgers_threshold: float = Field(default=1e-4, description='Threshold magnitude for non-zero Burgers vectors')
-    crystal_type: str = Field(default='fcc', description='Crystal structure type (fcc, bcc, hcp, auto)')
-    lattice_parameter: float = Field(default=4.0, description='Lattice parameter in Angstroms')
-    allow_non_standard_burgers: bool = Field(default=True, description='Allow non-standard Burgers vectors')
-    validation_tolerance: float = Field(default=0.35, description='Tolerance for Burgers vector validation')
-    fast_mode: bool = Field(default=False, description='Enable fast mode (skips some analysis)')
-    use_cna: bool = Field(default=False, description='Use CNA instead of PTM for structure classification')
-    max_loops: int = Field(default=1000, description='Maximum number of loops to find')
-    max_connections_per_atom: int = Field(default=6, description='Maximum connections per atom')
-    loop_timeout: int = Field(default=60, description='Timeout for loop finding in seconds')
-    include_segments: bool = Field(default=True, description='Include dislocation segments in output')
-    segment_length: Optional[float] = Field(default=None, description='Target length for segments')
-    min_segments: int = Field(default=5, description='Minimum segments per dislocation line')
-    no_segments: bool = Field(default=False, description='Disable segment generation')
-    workers: int = Field(default=1, description='Number of parallel workers (limited to 1 for API)')
+    cna_cutoff: Optional[float] = Field(default=None, description='Common Neighbor Analysis (CNA) cutoff radius')
+    inputfile: str = Field(description='Input atom file path')
+    outputfile: str = Field(description='Output JSON file path')
+    pbc: Optional[List[int]] = Field(default=None, description='Periodic boundary conditions (X Y Z) - 1 for periodic, 0 for non-periodic')
+    offset: Optional[List[float]] = Field(default=None, description='Atom position offset (X Y Z)')
+    scale: Optional[List[float]] = Field(default=None, description='Cell scaling factors (X Y Z)')
+    
+    # Circuit and analysis parameters
+    maxcircuitsize: int = Field(default=12, description='Maximum size for Burgers circuit detection')
+    extcircuitsize: int = Field(default=14, description='Maximum size for extended Burgers circuit detection')
+    
+    # Smoothing and processing parameters
+    smoothsurface: int = Field(default=8, description='Surface smoothing level for dislocation surface extraction')
+    smoothlines: int = Field(default=1, description='Line smoothing level for dislocation line processing')
+    coarsenlines: int = Field(default=1, description='Line coarsening level to reduce point density')
+    flattensf: float = Field(default=0.0, description='Stacking fault flattening level')
