@@ -1,5 +1,5 @@
 from opendxa.visualizers.settings import VisualizationSettings
-from opendxa.visualizers.stats import DislocationStats
+from opendxa.stats import DislocationStats
 from opendxa.mesh import (
     build_dislocation_mesh, 
     build_atom_mesh, 
