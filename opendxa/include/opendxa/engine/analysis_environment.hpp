@@ -1,5 +1,5 @@
-#ifndef __DXA_BASE_H
-#define __DXA_BASE_H
+#ifndef OPENDXA_BASE_H
+#define OPENDXA_BASE_H
 
 #include <opendxa/includes.hpp>
 #include <opendxa/settings.hpp>

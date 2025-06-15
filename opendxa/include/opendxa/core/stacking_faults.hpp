@@ -1,5 +1,5 @@
-#ifndef __DXA_STACKING_FAULTS_H
-#define __DXA_STACKING_FAULTS_H
+#ifndef OPENDXA_STACKING_FAULTS_H
+#define OPENDXA_STACKING_FAULTS_H
 
 #include <opendxa/includes.hpp>
 #include <opendxa/engine/config.hpp>
@@ -14,10 +14,10 @@ namespace fs = std::filesystem;
 
 using json = nlohmann::json;
 
-class DXAStackingFaults : public DXATracing{
+class StackingFaults : public DislocationTracing{
 public:
-	DXAStackingFaults();
-	~DXAStackingFaults() { cleanup(); }
+	StackingFaults();
+	~StackingFaults() { cleanup(); }
 
 	bool createStackingFaultEdges();
 	void findStackingFaultPlanes();

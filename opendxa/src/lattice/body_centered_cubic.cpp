@@ -52,7 +52,7 @@ const CrystalLatticeType bccLattice = {
 	}
 };
 
-void DXAClustering::orderBCCAtomNeighbors(InputAtom* atom){
+void Clustering::orderBCCAtomNeighbors(InputAtom* atom){
 	DISLOCATIONS_ASSERT(atom->isBCC() && atom->numNeighbors == 14);
 
 	// Find bonds between neighbors.

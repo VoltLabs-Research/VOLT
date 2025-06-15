@@ -4,10 +4,10 @@
 #include <opendxa/utils/timer.hpp>
 #include <GL/glu.h>
 
-DXAStackingFaults::DXAStackingFaults(): DXATracing(){}
+StackingFaults::StackingFaults(): DislocationTracing(){}
 
-void DXAStackingFaults::cleanup(){
-	DXATracing::cleanup();
+void StackingFaults::cleanup(){
+	DislocationTracing::cleanup();
 	stackingFaults.clear();
 	std::vector<StackingFault*>().swap(stackingFaults);
 	stackingFaultPool.clear();
@@ -15,7 +15,7 @@ void DXAStackingFaults::cleanup(){
 	stackingFaultOutputMesh.clear();
 }
 
-json DXAStackingFaults::processFile(const fs::path& file, const OpenDXA::Config& config, bool outputIsDir, const fs::path& outputPath){
+json StackingFaults::processFile(const fs::path& file, const OpenDXA::Config& config, bool outputIsDir, const fs::path& outputPath){
     LOG_INFO() << "Processing file: " << file.string();
 
     std::ifstream in(file);
@@ -75,7 +75,7 @@ json DXAStackingFaults::processFile(const fs::path& file, const OpenDXA::Config&
     return data;
 }
 
-void DXAStackingFaults::writeOutputFile(const fs::path& inputFile, 
+void StackingFaults::writeOutputFile(const fs::path& inputFile, 
                                        const fs::path& outputDir, 
                                        const json& data) {
     std::string stem = inputFile.stem().string();
@@ -94,7 +94,7 @@ void DXAStackingFaults::writeOutputFile(const fs::path& inputFile,
     fout << data.dump() << "\n";
 }
 
-json DXAStackingFaults::compute(const OpenDXA::Config &config) {
+json StackingFaults::compute(const OpenDXA::Config &config) {
     setCNACutoff((FloatType) config.cnaCutoff);
     setPBC(config.pbcX, config.pbcY, config.pbcZ);
     setMaximumBurgersCircuitSize(config.maxCircuitSize);
@@ -117,7 +117,7 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config) {
     std::atomic<size_t> fileIndex{0};
     std::mutex aggregateMutex;
     auto createConfiguredProcessor = [&config]() {
-        auto processor = std::make_unique<DXAStackingFaults>();
+        auto processor = std::make_unique<StackingFaults>();
         processor->setCNACutoff((FloatType) config.cnaCutoff);
         processor->setPBC(config.pbcX, config.pbcY, config.pbcZ);
         processor->setMaximumBurgersCircuitSize(config.maxCircuitSize);
@@ -181,7 +181,7 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config) {
     return json{{"processed_files", fileIndex.load()}};
 }
 
-bool DXAStackingFaults::createStackingFaultEdges(){
+bool StackingFaults::createStackingFaultEdges(){
 	LOG_INFO() << "Creating stacking fault contour edges.";
 
 	bool isInvalidInput = false;
@@ -270,7 +270,7 @@ bool DXAStackingFaults::createStackingFaultEdges(){
 	return !isInvalidInput;
 }
 
-void DXAStackingFaults::findStackingFaultPlanes(){
+void StackingFaults::findStackingFaultPlanes(){
 	LOG_INFO() << "Tracing stacking fault contours.";
 
 	// Reset visit flags of atoms.
@@ -432,7 +432,7 @@ void DXAStackingFaults::findStackingFaultPlanes(){
 /******************************************************************************
 * Puts the atom onto the recusrive stack.
 ******************************************************************************/
-void DXAStackingFaults::recursiveWalkSFAtom(InputAtom* atom, StackingFault* sf, Point3 unwrappedPos, deque< pair<InputAtom*, Point3> >& toprocess)
+void StackingFaults::recursiveWalkSFAtom(InputAtom* atom, StackingFault* sf, Point3 unwrappedPos, deque< pair<InputAtom*, Point3> >& toprocess)
 {
 	// Round unwrapped pos.
 	Vector3 shift = absoluteToReduced(unwrappedPos - atom->pos);
@@ -458,7 +458,7 @@ void DXAStackingFaults::recursiveWalkSFAtom(InputAtom* atom, StackingFault* sf, 
 /******************************************************************************
 * Finds the basal plane HCP atom for a contour edge.
 ******************************************************************************/
-BaseAtom* DXAStackingFaults::findEdgeBasalPlaneNeighbor(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const
+BaseAtom* StackingFaults::findEdgeBasalPlaneNeighbor(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const
 {
 	MeshNode* currentNode = edge->node1;
 	MeshNode* nextNode = edge->node2();
@@ -491,7 +491,7 @@ BaseAtom* DXAStackingFaults::findEdgeBasalPlaneNeighbor(MeshEdge* edge, const La
 /******************************************************************************
 * Checks whether this mesh edge borders a stacking fault.
 ******************************************************************************/
-bool DXAStackingFaults::isValidStackingFaultContourEdge(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const
+bool StackingFaults::isValidStackingFaultContourEdge(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const
 {
 	// A valid border edge must be have two adjacent facets.
 	MeshFacet* facet1 = edge->facet;
@@ -561,7 +561,7 @@ bool DXAStackingFaults::isValidStackingFaultContourEdge(MeshEdge* edge, const La
 /******************************************************************************
 * Finds all mesh edges forming a closed contour of a stacking fault.
 ******************************************************************************/
-void DXAStackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultContour& contour, deque< pair<InputAtom*, Point3> >& toprocess, Point3 currentUnwrappedPos, set<MeshEdge*>& visitedEdges, const LatticeVector basalPlaneLatticeVectors[6], int lastDir)
+void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultContour& contour, deque< pair<InputAtom*, Point3> >& toprocess, Point3 currentUnwrappedPos, set<MeshEdge*>& visitedEdges, const LatticeVector basalPlaneLatticeVectors[6], int lastDir)
 {
 	MeshEdge* lastEdge = contour.edges.back();
 	MeshNode* currentNode = lastEdge->node2();
@@ -737,7 +737,7 @@ void DXAStackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFau
 class SFTessellator
 {
 public:
-	SFTessellator(DXAStackingFaults& _caller) : caller(_caller) {
+	SFTessellator(StackingFaults& _caller) : caller(_caller) {
 		tess = gluNewTess();
 		if(!tess) caller.raiseError("Could not create OpenGL polygon tessellation object.");
 		gluTessCallback(tess, GLU_TESS_ERROR_DATA, (GLvoid (*)())errorData);
@@ -848,7 +848,7 @@ private:
 	}
 
 private:
-	DXAStackingFaults& caller;
+	StackingFaults& caller;
 	GLUtesselator* tess;
 	StackingFault* sf;
 	GLenum primitiveType;
@@ -858,7 +858,7 @@ private:
 /******************************************************************************
 * Links stacking faults to dislocation segments and triangulates the SF planes.
 ******************************************************************************/
-void DXAStackingFaults::finishStackingFaults(FloatType flatten)
+void StackingFaults::finishStackingFaults(FloatType flatten)
 {
 	createSFPolylines(flatten);
 
@@ -969,7 +969,7 @@ void DXAStackingFaults::finishStackingFaults(FloatType flatten)
 * Splits a polyline segment at periodic boundaries of the simulation
 * cell.
 ******************************************************************************/
-void DXAStackingFaults::splitPolylineSegment2(StackingFault* sf, SFContourVertex* vertex1, int dim, const Vector3& projectionDir, multimap<FloatType, SFContourVertex*> clipVertices[2])
+void StackingFaults::splitPolylineSegment2(StackingFault* sf, SFContourVertex* vertex1, int dim, const Vector3& projectionDir, multimap<FloatType, SFContourVertex*> clipVertices[2])
 {
 	SFContourVertex* vertex2 = vertex1->next;
 	if(vertex2 == NULL) return;
@@ -1029,7 +1029,7 @@ void DXAStackingFaults::splitPolylineSegment2(StackingFault* sf, SFContourVertex
 	}
 }
 
-void DXAStackingFaults::findSFDislocationContours()
+void StackingFaults::findSFDislocationContours()
 {
 LOG_INFO() << "Finding stacking fault border dislocations.";
 
@@ -1190,7 +1190,7 @@ LOG_INFO() << "Finding stacking fault border dislocations.";
 /******************************************************************************
 * Create the polylines that border the stacking faults.
 ******************************************************************************/
-void DXAStackingFaults::createSFPolylines(FloatType flatten)
+void StackingFaults::createSFPolylines(FloatType flatten)
 {
 LOG_INFO() << "Creating stacking fault contour lines.";
 
@@ -1243,7 +1243,7 @@ LOG_INFO() << "Creating stacking fault contour lines.";
 * Finds the intersection points where the SF contour line enters and exists the
 * defect surface area swept by the dislocation segment's Burgers circuits.
 ******************************************************************************/
-pair<int,int> DXAStackingFaults::findSFContourSegmentIntersection(StackingFaultContour& contour, DislocationSegment* segment, const vector<MeshEdge*>::const_iterator& interiorEdge)
+pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultContour& contour, DislocationSegment* segment, const vector<MeshEdge*>::const_iterator& interiorEdge)
 {
 	DISLOCATIONS_ASSERT(find(segments.begin(), segments.end(), segment) != segments.end());
 
@@ -1424,7 +1424,7 @@ pair<int,int> DXAStackingFaults::findSFContourSegmentIntersection(StackingFaultC
 * Converts a part of an SF contour, which runs along the interface mesh, into
 * a polyline.
 ******************************************************************************/
-void DXAStackingFaults::addMeshIntervalToSFPolyline(StackingFaultContour& contour, int startIndex, int endIndex, Point3& wrappedPoint, Point3& unwrappedPoint)
+void StackingFaults::addMeshIntervalToSFPolyline(StackingFaultContour& contour, int startIndex, int endIndex, Point3& wrappedPoint, Point3& unwrappedPoint)
 {
 	// Number of mesh edges.
 	int edgeCount = endIndex - startIndex;
@@ -1455,7 +1455,7 @@ void DXAStackingFaults::addMeshIntervalToSFPolyline(StackingFaultContour& contou
 * Converts a part of an SF contour, which runs along a dislocation line, into
 * a polyline.
 ******************************************************************************/
-void DXAStackingFaults::addDislocationIntervalToSFPolyline(StackingFaultContour& contour, BurgersCircuit* startCircuit, Point3& wrappedPoint, Point3& unwrappedPoint)
+void StackingFaults::addDislocationIntervalToSFPolyline(StackingFaultContour& contour, BurgersCircuit* startCircuit, Point3& wrappedPoint, Point3& unwrappedPoint)
 {
 	// The dislocation segment should be a real one.
 	DISLOCATIONS_ASSERT(startCircuit->segment->replacedWith == NULL);
@@ -1485,7 +1485,7 @@ void DXAStackingFaults::addDislocationIntervalToSFPolyline(StackingFaultContour&
 * Determines whether the given point (in reduced coordinates) is inside the
 * stacking fault polygon.
 ******************************************************************************/
-bool DXAStackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex* vertexHead, const Point3 p)
+bool StackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex* vertexHead, const Point3 p)
 {
 	// Point must be in the SF plane.
 	DISLOCATIONS_ASSERT(fabs(DotProduct(p - sf->reducedCenter, sf->reducedNormalVector)) <= FLOATTYPE_EPSILON);
@@ -1561,7 +1561,7 @@ bool DXAStackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex
 * Determines whether the given point (in reduced coordinates) is inside the
 * stacking fault polygon.
 ******************************************************************************/
-bool DXAStackingFaults::isInsideStackingFaultRay(StackingFault* sf, SFContourVertex* vertexHead, const Point3 p)
+bool StackingFaults::isInsideStackingFaultRay(StackingFault* sf, SFContourVertex* vertexHead, const Point3 p)
 {
 	// Test point must be in the SF plane.
 	DISLOCATIONS_ASSERT(fabs(DotProduct(p - sf->reducedCenter, sf->reducedNormalVector)) <= FLOATTYPE_EPSILON);

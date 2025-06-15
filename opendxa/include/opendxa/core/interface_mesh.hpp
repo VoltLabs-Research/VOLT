@@ -1,5 +1,5 @@
-#ifndef __DXA_INTERFACE_MESH_H
-#define __DXA_INTERFACE_MESH_H
+#ifndef OPENDXA_INTERFACE_MESH_H
+#define OPENDXA_INTERFACE_MESH_H
 
 #include <opendxa/includes.hpp>
 #include <opendxa/core/clustering.hpp>
@@ -9,10 +9,10 @@
 
 using json = nlohmann::json;
 
-class DXAInterfaceMesh : public DXAClustering{
+class InterfaceMesh : public Clustering{
 public:
-	DXAInterfaceMesh();
-	~DXAInterfaceMesh() { cleanup(); }
+	InterfaceMesh();
+	~InterfaceMesh() { cleanup(); }
 
 	void createInterfaceMeshNodes();
 	void createInterfaceMeshEdges();

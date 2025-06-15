@@ -1,5 +1,5 @@
-#ifndef __DXA_DEBUG_H
-#define __DXA_DEBUG_H
+#ifndef OPENDXA_DEBUG_H
+#define OPENDXA_DEBUG_H
 
 #define DISLOCATIONS_ASSERT(cond)
 #define DISLOCATIONS_ASSERT_MSG(cond,location,msg)

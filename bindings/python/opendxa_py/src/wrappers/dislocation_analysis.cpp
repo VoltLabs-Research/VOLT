@@ -6,7 +6,7 @@ using namespace pybind11::literals;
 namespace OpenDXA::Bindings::Python::Wrappers{
 
 AnalysisWrapper::AnalysisWrapper(){
-    analyzer = std::make_unique<DXAStackingFaults>();
+    analyzer = std::make_unique<StackingFaults>();
     resetConfig();
 }
 

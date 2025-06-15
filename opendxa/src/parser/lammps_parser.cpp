@@ -1,7 +1,7 @@
 #include <opendxa/core/clustering.hpp>
 #include <opendxa/utils/cutoff_estimator.hpp>
 
-void DXAClustering::readLAMMPSAtomsFile(ParserStream &stream){
+void Clustering::readLAMMPSAtomsFile(ParserStream &stream){
 	LOG_INFO() << "Parsing LAMMPS dump file.";
 	int numRealInputAtoms = -1;
 	int columnPosX = -1;

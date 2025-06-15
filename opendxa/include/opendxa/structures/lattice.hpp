@@ -1,5 +1,5 @@
-#ifndef __DXA_LATTICE_H
-#define __DXA_LATTICE_H
+#ifndef OPENDXA_LATTICE_H
+#define OPENDXA_LATTICE_H
 
 #include <opendxa/includes.hpp>
 #include <opendxa/settings.hpp>

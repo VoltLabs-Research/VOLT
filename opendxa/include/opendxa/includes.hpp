@@ -1,5 +1,5 @@
-#ifndef __DXA_STDINC_H
-#define __DXA_STDINC_H
+#ifndef OPENDXA_STDINC_H
+#define OPENDXA_STDINC_H
 
 #include <vector>
 #include <deque>

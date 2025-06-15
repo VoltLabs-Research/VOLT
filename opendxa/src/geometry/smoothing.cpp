@@ -5,7 +5,7 @@
 /******************************************************************************
 * Generates the nodes and facets of the output mesh.
 ******************************************************************************/
-void DXATracing::generateOutputMesh()
+void DislocationTracing::generateOutputMesh()
 {
 	LOG_INFO() << "Generating output mesh.";
 	Timer timer;
@@ -105,7 +105,7 @@ void DXATracing::generateOutputMesh()
 /******************************************************************************
 * Smooths the output mesh for better visualization results.
 ******************************************************************************/
-void DXAInterfaceMesh::smoothOutputSurface(int smoothingLevel)
+void InterfaceMesh::smoothOutputSurface(int smoothingLevel)
 {
 	if(smoothingLevel > 0) {
 		LOG_INFO() << "Smoothing output mesh.";
@@ -120,7 +120,7 @@ void DXAInterfaceMesh::smoothOutputSurface(int smoothingLevel)
 /******************************************************************************
 * Prepares the defect surface mesh for output.
 ******************************************************************************/
-void DXAInterfaceMesh::finishOutputSurface(bool createCapSurface)
+void InterfaceMesh::finishOutputSurface(bool createCapSurface)
 {
 	LOG_INFO() << "Wrapping output mesh at periodic boundaries.";
 	outputMesh.calculateNormals(*this);
@@ -187,7 +187,7 @@ void OutputMesh::smoothMesh(FloatType prefactor, const AnalysisEnvironment& cell
 /******************************************************************************
 * Smooths the dislocation lines for better visualization results.
 ******************************************************************************/
-void DXATracing::smoothDislocationSegments(int smoothingLevel, int coarseningLevel)
+void DislocationTracing::smoothDislocationSegments(int smoothingLevel, int coarseningLevel)
 {
 	if(smoothingLevel <= 0) return;
 
@@ -284,7 +284,7 @@ void DXATracing::smoothDislocationSegments(int smoothingLevel, int coarseningLev
 /******************************************************************************
 * Wraps the dislocation lines at periodic boundaries.
 ******************************************************************************/
-void DXATracing::wrapDislocationSegments()
+void DislocationTracing::wrapDislocationSegments()
 {
 	if(!hasPeriodicBoundaries())
 		return;	// Nothing to do.
@@ -376,7 +376,7 @@ inline unsigned int computeOutCode(const Vector3& p)
 /******************************************************************************
 * Clips the dislocation segments to the given sub-volume.
 ******************************************************************************/
-void DXATracing::clipDislocationLines(const Point3& clipOrigin, const Matrix3& clipCell)
+void DislocationTracing::clipDislocationLines(const Point3& clipOrigin, const Matrix3& clipCell)
 {
 	LOG_INFO() << "Clipping dislocation segments.";
 

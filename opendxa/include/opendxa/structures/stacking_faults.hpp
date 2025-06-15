@@ -1,5 +1,5 @@
-#ifndef __DXA_STACKING_FAULTS_STRUCT_H
-#define __DXA_STACKING_FAULTS_STRUCT_H
+#ifndef OPENDXA_STACKING_FAULTS_STRUCT_H
+#define OPENDXA_STACKING_FAULTS_STRUCT_H
 
 #include <opendxa/includes.hpp>
 #include <opendxa/structures/dislocations/burgers_circuit.hpp>

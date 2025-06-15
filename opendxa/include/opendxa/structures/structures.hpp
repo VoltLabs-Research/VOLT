@@ -1,5 +1,5 @@
-#ifndef __DXA_DATA_STRUCTURES_H
-#define __DXA_DATA_STRUCTURES_H
+#ifndef OPENDXA_DATA_STRUCTURES_H
+#define OPENDXA_DATA_STRUCTURES_H
 
 struct BaseAtom;
 struct InputAtom;

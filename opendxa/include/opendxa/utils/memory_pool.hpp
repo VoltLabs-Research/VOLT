@@ -1,5 +1,5 @@
-#ifndef __DXA_MEMORY_POOL_H
-#define __DXA_MEMORY_POOL_H
+#ifndef OPENDXA_MEMORY_POOL_H
+#define OPENDXA_MEMORY_POOL_H
 
 #include <opendxa/includes.hpp>
 #include <memory>

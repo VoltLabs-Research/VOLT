@@ -17,7 +17,7 @@ json createStandardStructureOptimized(){
     return root;
 }
 
-json DXATracing::getDislocationDensity() const{
+json DislocationTracing::getDislocationDensity() const{
     double dislocationDensity = 0.0;
     double dislocationDensityTensor[3][3] = {{0.0}};
     
@@ -87,7 +87,7 @@ void reserveArray(json& arr, size_t size){
     }
 }
 
-json DXATracing::exportDislocationsToJson() const{
+json DislocationTracing::exportDislocationsToJson() const{
     json root = createStandardStructureOptimized();
     
     root["metadata"] = createMetadataOptimized(
@@ -168,7 +168,7 @@ json DXATracing::exportDislocationsToJson() const{
     return root;
 }
 
-json DXAClustering::getAtomsData(){
+json Clustering::getAtomsData(){
     json root = createStandardStructureOptimized();
     
     root["metadata"] = createMetadataOptimized(
@@ -228,7 +228,7 @@ json DXAClustering::getAtomsData(){
     return root;
 }
 
-json DXAInterfaceMesh::getInterfaceMeshData(){
+json InterfaceMesh::getInterfaceMeshData(){
     json root = createStandardStructureOptimized();
     
     size_t numValidFacets = 0;
@@ -373,7 +373,7 @@ json DXAInterfaceMesh::getInterfaceMeshData(){
     return root;
 }
 
-json DXAStackingFaults::getStackingFaults() const{
+json StackingFaults::getStackingFaults() const{
     json root = createStandardStructureOptimized();
     
     root["metadata"] = createMetadataOptimized(

@@ -1,6 +1,6 @@
 #include <opendxa/core/clustering.hpp>
 
-DXAClustering::DXAClustering()
+Clustering::Clustering()
 		: cnaCutoff(0.0),
 		numLocalInputAtoms(0),
 		numClusters(0),
@@ -15,7 +15,7 @@ DXAClustering::DXAClustering()
 	inputAtoms.reserve(expectedAtoms);
 }
 
-void DXAClustering::cleanup(){
+void Clustering::cleanup(){
 	inputAtoms.clear();
 	numClusters = 0;
 	numLocalInputAtoms = 0;
@@ -27,12 +27,12 @@ void DXAClustering::cleanup(){
 	clusterTransitionPool.clear();
 }
 
-void DXAClustering::setCNACutoff(FloatType cutoff){
+void Clustering::setCNACutoff(FloatType cutoff){
 	this->cnaCutoff = cutoff;
 }
 
 // Wraps input atoms at periodic boundary conditions.
-void DXAClustering::wrapInputAtoms(const Vector3 offset){
+void Clustering::wrapInputAtoms(const Vector3 offset){
 	// Apply an optional offset transformation to all atoms.
 	if(offset != NULL_VECTOR){
 		#pragma omp parallel for
@@ -51,7 +51,7 @@ void DXAClustering::wrapInputAtoms(const Vector3 offset){
 }
 
 // Full clustering pipeline
-void DXAClustering::clusterAtoms(){
+void Clustering::clusterAtoms(){
 	determineDistanceFromDefects();
 	clusterCrystallineAtoms(0);
 	createClusterTransitions();
@@ -84,7 +84,7 @@ void DXAClustering::clusterAtoms(){
 }
 
 // Propagates orientations and removes redundant transitions after the DSU.
-void DXAClustering::finalizeSuperclusters(){
+void Clustering::finalizeSuperclusters(){
 	// Propagate transformations from each root
 	std::vector<Cluster*> roots;
 	roots.reserve(clusters.size());
@@ -136,7 +136,7 @@ void DXAClustering::finalizeSuperclusters(){
 
 // Create a new instance of the Cluster structure 
 // and adds it to the global list.
-Cluster* DXAClustering::createCluster(int id, int processor){
+Cluster* Clustering::createCluster(int id, int processor){
 	DISLOCATIONS_ASSERT(id >= 0);
 	DISLOCATIONS_ASSERT(processor >= 0);
 	DISLOCATIONS_ASSERT(clusters.find(id) == clusters.end());
@@ -158,7 +158,7 @@ Cluster* DXAClustering::createCluster(int id, int processor){
 // Create a new instance of the Cluster structure if necessary.
 // If there is an existing instance for the given ID the returns
 // this instance.
-Cluster* DXAClustering::createClusterOnDemand(int id, int processor){
+Cluster* Clustering::createClusterOnDemand(int id, int processor){
 	// The special NULL cluster has ID -1.
 	if(id < 0) return NULL;
 
@@ -171,7 +171,7 @@ Cluster* DXAClustering::createClusterOnDemand(int id, int processor){
 }
 
 // Brings the neighbors of crystalline atoms into a fixed order.
-void DXAClustering::orderCrystallineAtoms(){
+void Clustering::orderCrystallineAtoms(){
 	LOG_INFO() << "Ordering neighbors of crystalline atoms.";
 
 	firstGhostAtom = inputAtoms.begin() + numLocalInputAtoms;
@@ -191,7 +191,7 @@ void DXAClustering::orderCrystallineAtoms(){
 
 // Calculate the minimum distance to a defect for each crystalline atom
 // Single-source multiple BFS, O(n + m).
-void DXAClustering::determineDistanceFromDefects(){
+void Clustering::determineDistanceFromDefects(){
 	LOG_INFO() << "Determining distances to defects by BFS.";
 	
 	std::deque<InputAtom*> deque;
@@ -224,7 +224,7 @@ void DXAClustering::determineDistanceFromDefects(){
 
 // Build all crystal clusters in ONE BFS pass.
 // TODO: remove level from fn definition.
-void DXAClustering::clusterCrystallineAtoms(int /*level*/){
+void Clustering::clusterCrystallineAtoms(int /*level*/){
 	LOG_INFO() << "Breaking down crystalline atoms into clusters (single BFS).";
 	std::deque<InputAtom*> deque;
 	for(auto &atom : inputAtoms){
@@ -253,7 +253,7 @@ void DXAClustering::clusterCrystallineAtoms(int /*level*/){
 // Decides whether the neighbor can join the current atom's cluster.
 // Filter by: local/ghost, crystal type, and priority based on defectProximity.
 // TODO: remove level from fn definition.
-bool DXAClustering::isValidClusterNeighbor(InputAtom* currentAtom, int neighborIndex, int /*level*/){
+bool Clustering::isValidClusterNeighbor(InputAtom* currentAtom, int neighborIndex, int /*level*/){
 	InputAtom* neighbor = currentAtom->neighborAtom(neighborIndex);
 	
 	// If the neighbor isn't a local atom, it's because it's a ghost. 
@@ -282,7 +282,7 @@ bool DXAClustering::isValidClusterNeighbor(InputAtom* currentAtom, int neighborI
 
 // Makes a neighbor atom part of the crystallite cluster and puts it
 // on the recursive stack. Assign the lattice orientation matrix and detects intra-cluster disclinations.
-void DXAClustering::clusterNeighbor(InputAtom* currentAtom, InputAtom* neighbor, const LatticeOrientation& neighborLatticeOrientation, deque<InputAtom*>& toprocess, int level){
+void Clustering::clusterNeighbor(InputAtom* currentAtom, InputAtom* neighbor, const LatticeOrientation& neighborLatticeOrientation, deque<InputAtom*>& toprocess, int level){
 	// Is the neighbor not part of this cluster yet?
 	if(neighbor->cluster == NULL){
 		neighbor->latticeOrientation = neighborLatticeOrientation;
@@ -306,7 +306,7 @@ void DXAClustering::clusterNeighbor(InputAtom* currentAtom, InputAtom* neighbor,
 
 // Marks the given crystalline atoms as a disclination border atom and
 // disables it such that it becomes a barrier for Burgers circuit tracing.
-void DXAClustering::disableDisclinationBorderAtom(InputAtom* atom){
+void Clustering::disableDisclinationBorderAtom(InputAtom* atom){
 	if(atom->isLocalAtom() && atom->testFlag(ATOM_DISCLINATION_BORDER) == false){
 		numDisclinationAtoms++;
 	}
@@ -318,7 +318,7 @@ void DXAClustering::disableDisclinationBorderAtom(InputAtom* atom){
 }
 
 // Calculates the transition matrices between all clusters.
-void DXAClustering::createClusterTransitions(){
+void Clustering::createClusterTransitions(){
 	LOG_INFO() << "Calculating cluster transition matrices.";
 	// Iterate over all local atoms that are part of a crystalline cluster.
 	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != firstGhostAtom; ++atom){
@@ -374,7 +374,7 @@ void DXAClustering::createClusterTransitions(){
 
 // Registers a cluster-cluster transition. Returns the existing
 // transition structure if an identical transition has already been registered before.
-ClusterTransition* DXAClustering::createClusterTransitionOnDemand(Cluster* cluster1, Cluster* cluster2, const LatticeOrientation& transitionTM){
+ClusterTransition* Clustering::createClusterTransitionOnDemand(Cluster* cluster1, Cluster* cluster2, const LatticeOrientation& transitionTM){
 	// Lookup existing transition.
 	ClusterTransition* transition = getClusterTransition(cluster1, cluster2, transitionTM);
 	if(transition) return transition;
@@ -384,7 +384,7 @@ ClusterTransition* DXAClustering::createClusterTransitionOnDemand(Cluster* clust
 }
 
 // Registers a new cluster-cluster transition.
-ClusterTransition* DXAClustering::createClusterTransition(Cluster* cluster1, Cluster* cluster2, const LatticeOrientation& transitionTM){
+ClusterTransition* Clustering::createClusterTransition(Cluster* cluster1, Cluster* cluster2, const LatticeOrientation& transitionTM){
 	DISLOCATIONS_ASSERT(transitionTM.isRotationMatrix());
 	DISLOCATIONS_ASSERT(cluster1 != cluster2);
 	DISLOCATIONS_ASSERT(cluster1 != NULL);
@@ -417,7 +417,7 @@ inline bool transitionCompare(ClusterTransition* t1, ClusterTransition* t2){
 }
 
 // Merge clusters with Union-Fin
-void DXAClustering::createSuperclusters(vector<ClusterTransition*>& edges){
+void Clustering::createSuperclusters(vector<ClusterTransition*>& edges){
 	// TODO: Move this (Disjoint Set Union | Union-Find)
 	struct DSU{
 		std::vector<int> p, r;
@@ -474,7 +474,7 @@ void DXAClustering::createSuperclusters(vector<ClusterTransition*>& edges){
 }
 
 // Joins two adjacent clusters into one larger cluster.
-void DXAClustering::joinClusters(ClusterTransition* transition, list<ClusterTransition*>& priorityStack){
+void Clustering::joinClusters(ClusterTransition* transition, list<ClusterTransition*>& priorityStack){
 	DISLOCATIONS_ASSERT(transition->disabled == false);
 	Cluster* cluster1 = transition->cluster1;
 	Cluster* cluster2 = transition->cluster2;
@@ -597,7 +597,7 @@ void DXAClustering::joinClusters(ClusterTransition* transition, list<ClusterTran
 
 // Joins adjacent crystallite clusters into a supercluster by re-orienting
 // their atoms such that they are all aligned.
-void DXAClustering::alignClusterOrientations(){
+void Clustering::alignClusterOrientations(){
 	LOG_INFO() << "Aligning cluster orientations.";
 
 	// Ensures that each atom points to its root cluster.

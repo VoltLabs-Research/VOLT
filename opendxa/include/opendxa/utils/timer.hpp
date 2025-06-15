@@ -1,5 +1,5 @@
-#ifndef __DXA_TIMER_H
-#define __DXA_TIMER_H
+#ifndef OPENDXA_TIMER_H
+#define OPENDXA_TIMER_H
 
 #include <opendxa/includes.hpp>
 #include <chrono>

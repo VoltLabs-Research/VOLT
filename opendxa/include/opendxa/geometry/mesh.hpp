@@ -1,5 +1,5 @@
-#ifndef __DXA_OUTPUT_MESH_H
-#define __DXA_OUTPUT_MESH_H
+#ifndef OPENDXA_OUTPUT_MESH_H
+#define OPENDXA_OUTPUT_MESH_H
 
 #include <opendxa/includes.hpp>
 #include <opendxa/engine/analysis_environment.hpp>

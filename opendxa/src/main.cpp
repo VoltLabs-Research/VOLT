@@ -68,7 +68,7 @@ int main(int argc, char* argv[]){
 		LoggerManager::initialize(logger);
 
 		OpenDXA::Config config = parseOptions(argc, argv);
-		DXAStackingFaults searcher;
+		StackingFaults searcher;
 		searcher.compute(config);
 		
 	}catch(std::exception &exception){

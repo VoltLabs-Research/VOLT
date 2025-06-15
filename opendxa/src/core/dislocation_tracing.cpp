@@ -4,7 +4,7 @@
 #include <opendxa/structures/dislocations/dislocation_segment.hpp>
 #include <opendxa/utils/timer.hpp>
 
-DXATracing::DXATracing(): DXAInterfaceMesh(), unusedCircuit(nullptr){
+DislocationTracing::DislocationTracing(): InterfaceMesh(), unusedCircuit(nullptr){
 	// TODO: Should I readjust these variables or follow the user's instructions?
 	burgersSearchDepth = (DEFAULT_MAX_BURGERS_CIRCUIT_SIZE - 1) / 2;
 	maxBurgersCircuitSize = DEFAULT_MAX_BURGERS_CIRCUIT_SIZE;
@@ -17,8 +17,8 @@ DXATracing::DXATracing(): DXAInterfaceMesh(), unusedCircuit(nullptr){
 	segmentPool.reserve(expectedSegments);
 }
 
-void DXATracing::cleanup(){
-	DXAInterfaceMesh::cleanup();
+void DislocationTracing::cleanup(){
+	InterfaceMesh::cleanup();
 
 	segments.clear();
 	segmentPool.clear();
@@ -30,7 +30,7 @@ void DXATracing::cleanup(){
 /******************************************************************************
 * Does the actual dislocation detection.
 ******************************************************************************/
-void DXATracing::traceDislocationSegments()
+void DislocationTracing::traceDislocationSegments()
 {
 	if(burgersSearchDepth < 1)
 		raiseError("Invalid settings: Maximum Burgers circuit length (maxcircuitsize) must not be less than 3.");
@@ -84,7 +84,7 @@ void DXATracing::traceDislocationSegments()
 /******************************************************************************
 * Does the actual Burgers circuit search.
 ******************************************************************************/
-void DXATracing::findPrimarySegments()
+void DislocationTracing::findPrimarySegments()
 {
 	LOG_INFO() << "Searching for primary dislocation segments. Maximum recursive search depth: " << burgersSearchDepth;
 	vector<MeshNode*> visitedNodes;
@@ -136,7 +136,7 @@ void DXATracing::findPrimarySegments()
 /******************************************************************************
 * Does the recursive walk along the edge of a facet.
 ******************************************************************************/
-bool DXATracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& edge, vector<MeshNode*>& visitedNodes, deque<MeshNode*>& toprocess)
+bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& edge, vector<MeshNode*>& visitedNodes, deque<MeshNode*>& toprocess)
 {
 	DISLOCATIONS_ASSERT((edge.circuit == NULL) == (edge.nextEdge == NULL));
 	DISLOCATIONS_ASSERT((edge.oppositeEdge->circuit == NULL) == (edge.oppositeEdge->nextEdge == NULL));
@@ -335,7 +335,7 @@ bool DXATracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& edge, ve
 	return false;
 }
 
-BurgersCircuit* DXATracing::buildBackwardCircuit(BurgersCircuit* forwardCircuit)
+BurgersCircuit* DislocationTracing::buildBackwardCircuit(BurgersCircuit* forwardCircuit)
 {
 	BurgersCircuit* backwardCircuit = circuitPool.construct();
 	danglingCircuits.push_back(backwardCircuit);
@@ -432,7 +432,7 @@ BurgersCircuit* DXATracing::buildBackwardCircuit(BurgersCircuit* forwardCircuit)
 /******************************************************************************
 * Traces a dislocation segment in one direction.
 ******************************************************************************/
-void DXATracing::traceSegment(DislocationSegment& segment, BurgersCircuit& circuit, int maxCircuitLength, bool isPrimarySegment)
+void DislocationTracing::traceSegment(DislocationSegment& segment, BurgersCircuit& circuit, int maxCircuitLength, bool isPrimarySegment)
 {
 	DISLOCATIONS_ASSERT(circuit.countEdges() == circuit.edgeCount);
 	DISLOCATIONS_ASSERT(circuit.isDangling);
@@ -512,7 +512,7 @@ void DXATracing::traceSegment(DislocationSegment& segment, BurgersCircuit& circu
 /******************************************************************************
 * Eliminates two edges from a Burgers circuit if they are opposite halfedges.
 ******************************************************************************/
-bool DXATracing::tryRemoveTwoCircuitEdges(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2)
+bool DislocationTracing::tryRemoveTwoCircuitEdges(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2)
 {
 	if(edge1 != edge2->oppositeEdge)
 		return false;
@@ -540,7 +540,7 @@ bool DXATracing::tryRemoveTwoCircuitEdges(MeshEdge*& edge0, MeshEdge*& edge1, Me
 /******************************************************************************
 * Eliminates three edges from a Burgers circuit if they border a triangle.
 ******************************************************************************/
-bool DXATracing::tryRemoveThreeCircuitEdges(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment)
+bool DislocationTracing::tryRemoveThreeCircuitEdges(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment)
 {
 	MeshFacet* facet1 = edge1->facet;
 	MeshFacet* facet2 = edge2->facet;
@@ -583,7 +583,7 @@ bool DXATracing::tryRemoveThreeCircuitEdges(MeshEdge*& edge0, MeshEdge*& edge1, 
 /******************************************************************************
 * Eliminates one edge from a Burgers circuit by replacing two edges with one.
 ******************************************************************************/
-bool DXATracing::tryRemoveOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment)
+bool DislocationTracing::tryRemoveOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment)
 {
 	MeshFacet* facet1 = edge1->facet;
 	MeshFacet* facet2 = edge2->facet;
@@ -640,7 +640,7 @@ bool DXATracing::tryRemoveOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& edge1, Mes
 /******************************************************************************
 * Advances a Burgers circuit by skipping two facets.
 ******************************************************************************/
-bool DXATracing::trySweepTwoFacets(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment)
+bool DislocationTracing::trySweepTwoFacets(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment)
 {
 	MeshFacet* facet1 = edge1->facet;
 	MeshFacet* facet2 = edge2->facet;
@@ -707,7 +707,7 @@ bool DXATracing::trySweepTwoFacets(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*
 /******************************************************************************
 * Advances a Burgers circuit by skipping one facet and inserting an aditional edge.
 ******************************************************************************/
-bool DXATracing::tryInsertOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& edge1, bool isPrimarySegment)
+bool DislocationTracing::tryInsertOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& edge1, bool isPrimarySegment)
 {
 	DISLOCATIONS_ASSERT(edge0 != edge1->oppositeEdge);
 
@@ -757,7 +757,7 @@ bool DXATracing::tryInsertOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& edge1, boo
 /******************************************************************************
 * Appends a new point to a dislocation line.
 ******************************************************************************/
-void DXATracing::recordLinePoint(BurgersCircuit* circuit, bool isPrimarySegment)
+void DislocationTracing::recordLinePoint(BurgersCircuit* circuit, bool isPrimarySegment)
 {
 	DislocationSegment* segment = circuit->segment;
 	DISLOCATIONS_ASSERT(!segment->line.empty());
@@ -771,7 +771,7 @@ void DXATracing::recordLinePoint(BurgersCircuit* circuit, bool isPrimarySegment)
 * If the combined Burgers circuitis below the length threshold then
 * join them together.
 ******************************************************************************/
-int DXATracing::joinSegments(int maxCircuitLength)
+int DislocationTracing::joinSegments(int maxCircuitLength)
 {
 	// First pass over all circuits.
 	// Creating secondary dislocation segments in the holes between existing circuits.
@@ -982,7 +982,7 @@ int DXATracing::joinSegments(int maxCircuitLength)
 	return numJunctions;
 }
 
-void DXATracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCircuit* outerCircuit, int maxCircuitLength)
+void DislocationTracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCircuit* outerCircuit, int maxCircuitLength)
 {
 	// Create circuit along the border of the hole.
 	int edgeCount = 1;
@@ -1135,7 +1135,7 @@ void DislocationSegment::determineWorldBurgersVector()
 /******************************************************************************
 * Determines whether a Burgers circuit is intersected by a SF contour.
 ******************************************************************************/
-void DXATracing::circuitContourIntersection(MeshEdge* contourEdge1, MeshEdge* contourEdge2, MeshEdge* circuitEdge1, MeshEdge* circuitEdge2, int& goingOutside, int& goingInside)
+void DislocationTracing::circuitContourIntersection(MeshEdge* contourEdge1, MeshEdge* contourEdge2, MeshEdge* circuitEdge1, MeshEdge* circuitEdge2, int& goingOutside, int& goingInside)
 {
 	DISLOCATIONS_ASSERT(contourEdge2->node1 == circuitEdge2->node1);
 	DISLOCATIONS_ASSERT(contourEdge1->node2() == circuitEdge2->node1);

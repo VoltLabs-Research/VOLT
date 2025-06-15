@@ -1,5 +1,5 @@
-#ifndef __DXA_FLOATTYPE_H
-#define __DXA_FLOATTYPE_H
+#ifndef OPENDXA_FLOATTYPE_H
+#define OPENDXA_FLOATTYPE_H
 
 #include <opendxa/includes.hpp>
 

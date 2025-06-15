@@ -3,7 +3,7 @@
 /******************************************************************************
 * Reads the atomic coordinates from the input file.
 ******************************************************************************/
-ParserFileType DXAClustering::readAtomsFile(ParserStream& stream, bool shouldIgnoreInvalidFile = false)
+ParserFileType Clustering::readAtomsFile(ParserStream& stream, bool shouldIgnoreInvalidFile = false)
 {
 	// Parse first line.
 	stream.readline();
@@ -25,7 +25,7 @@ ParserFileType DXAClustering::readAtomsFile(ParserStream& stream, bool shouldIgn
 /******************************************************************************
 * Adds an atom to the internal array.
 ******************************************************************************/
-InputAtom& DXAClustering::addInputAtom(const Point3& pos, int id)
+InputAtom& Clustering::addInputAtom(const Point3& pos, int id)
 {
 	InputAtom atom;
 	atom.tag = id;
@@ -45,7 +45,7 @@ InputAtom& DXAClustering::addInputAtom(const Point3& pos, int id)
 /******************************************************************************
 * Applies the given affine transformation to the atoms and the simulation cell.
 ******************************************************************************/
-void DXAClustering::transformSimulationCell(const Matrix3& tm)
+void Clustering::transformSimulationCell(const Matrix3& tm)
 {
 #pragma omp parallel for
 	for(int i = 0; i < inputAtoms.size(); i++) {

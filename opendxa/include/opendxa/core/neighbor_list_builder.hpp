@@ -1,5 +1,5 @@
-#ifndef __DXA_NEIGHBOR_LIST_H
-#define __DXA_NEIGHBOR_LIST_H
+#ifndef OPENDXA_NEIGHBOR_LIST_H
+#define OPENDXA_NEIGHBOR_LIST_H
 
 #include <opendxa/includes.hpp>
 #include <opendxa/utils/linalg/lin_alg.hpp>

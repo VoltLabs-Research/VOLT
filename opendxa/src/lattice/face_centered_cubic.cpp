@@ -81,7 +81,7 @@ const LatticeVector shockleyBurgersVectors[12] = {
 	LatticeVector(-1.0/6,-1.0/6,-1.0/3),
 };
 
-void DXAClustering::orderFCCAtomNeighbors(InputAtom* atom){
+void Clustering::orderFCCAtomNeighbors(InputAtom* atom){
 	DISLOCATIONS_ASSERT(atom->isFCC() && atom->numNeighbors == 12);
 
 	// Generate first Thompson tetrahedron.

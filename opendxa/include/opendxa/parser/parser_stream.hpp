@@ -1,5 +1,5 @@
-#ifndef __DXA_PARSER_STREAM_H
-#define __DXA_PARSER_STREAM_H
+#ifndef OPENDXA_PARSER_STREAM_H
+#define OPENDXA_PARSER_STREAM_H
 
 #include <opendxa/includes.hpp>
 

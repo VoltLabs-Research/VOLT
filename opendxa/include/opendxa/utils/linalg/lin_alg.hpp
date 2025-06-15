@@ -1,5 +1,5 @@
-#ifndef __DXA_LINALG_H
-#define __DXA_LINALG_H
+#ifndef OPENDXA_LINALG_H
+#define OPENDXA_LINALG_H
 
 #include <opendxa/utils/float_type.hpp>
 #include <opendxa/utils/debug.hpp>

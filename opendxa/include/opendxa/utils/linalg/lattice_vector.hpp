@@ -1,5 +1,5 @@
-#ifndef __DXA_LATTICE_VECTOR_H
-#define __DXA_LATTICE_VECTOR_H
+#ifndef OPENDXA_LATTICE_VECTOR_H
+#define OPENDXA_LATTICE_VECTOR_H
 
 #include <opendxa/utils/linalg/lin_alg.hpp>
 #include <opendxa/utils/linalg/vector3.hpp>

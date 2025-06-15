@@ -1,5 +1,5 @@
-#ifndef __DXA_CLUSTERING_H
-#define __DXA_CLUSTERING_H
+#ifndef OPENDXA_CLUSTERING_H
+#define OPENDXA_CLUSTERING_H
 
 #include <opendxa/includes.hpp>
 #include <opendxa/engine/analysis_environment.hpp>
@@ -20,10 +20,10 @@ enum ParserFileType{
 	PARSER_FILETYPE_LAMMPS,
 };
 
-class DXAClustering : public AnalysisEnvironment{
+class Clustering : public AnalysisEnvironment{
 public:
-	DXAClustering();
-	~DXAClustering() { cleanup(); }
+	Clustering();
+	~Clustering() { cleanup(); }
 	void setCNACutoff(FloatType cutoff);
 	FloatType getCNACutoff() const { return cnaCutoff; }
 	ParserFileType readAtomsFile(ParserStream& stream, bool shouldIgnoreInvalidFile);

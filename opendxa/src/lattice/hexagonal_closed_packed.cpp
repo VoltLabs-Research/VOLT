@@ -54,7 +54,7 @@ const int hcpBasalPlaneAtoms[6] = { 6, 8, 7, 3, 4, 5 };
 const int hcpBasalPlaneAtomsReverse[6] = { 5, 4, 3, 7, 8, 6 };
 const int hcpNonBasalPlaneAtoms[6] = { 0, 1, 2, 9, 10, 11 };
 
-void DXAClustering::orderHCPAtomNeighbors(InputAtom* atom){
+void Clustering::orderHCPAtomNeighbors(InputAtom* atom){
 	DISLOCATIONS_ASSERT(atom->isHCP() && atom->numNeighbors == 12);
 
 	int nedges0 = 0;

@@ -298,7 +298,7 @@ static inline void analyzeCNASignature(
 	}
 }
 
-void DXAClustering::buildNearestNeighborLists(){
+void Clustering::buildNearestNeighborLists(){
     LOG_INFO() << "Building nearest neighbor lists.";
     Timer neighborTimer;
 
@@ -344,7 +344,7 @@ void DXAClustering::buildNearestNeighborLists(){
     LOG_INFO()  << "Neighbor list time: " << neighborTimer.elapsedTime()  << " sec.";
 }
 
-void DXAClustering::performCNA(){
+void Clustering::performCNA(){
 	LOG_INFO() << "Performing common neighbor analysis (CNA).";
 	Timer timer;
 	size_t numFCC = 0;

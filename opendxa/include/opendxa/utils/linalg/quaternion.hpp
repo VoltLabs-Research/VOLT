@@ -1,5 +1,5 @@
-#ifndef __DXA_LINALG_QUATERNION_H
-#define __DXA_LINALG_QUATERNION_H
+#ifndef OPENDXA_LINALG_QUATERNION_H
+#define OPENDXA_LINALG_QUATERNION_H
 
 #include <opendxa/utils/linalg/lin_alg.hpp>
 

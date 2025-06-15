@@ -1,5 +1,5 @@
-#ifndef __DXA_TRACING_H
-#define __DXA_TRACING_H
+#ifndef OPENDXA_TRACING_H
+#define OPENDXA_TRACING_H
 
 #include <opendxa/includes.hpp>
 #include <opendxa/structures/mesh/mesh.hpp>
@@ -12,10 +12,10 @@
 
 using json = nlohmann::json;
 
-class DXATracing : public DXAInterfaceMesh{
+class DislocationTracing : public InterfaceMesh{
 public:
-	DXATracing();
-	~DXATracing() { cleanup(); }
+	DislocationTracing();
+	~DislocationTracing() { cleanup(); }
 
 	void setMaximumBurgersCircuitSize(int maxSize) { this->maxBurgersCircuitSize = maxSize; burgersSearchDepth = (maxSize - 1) / 2; }
 	void setMaximumExtendedBurgersCircuitSize(int maxSize) { this->maxExtendedBurgersCircuitSize = maxSize; }
@@ -56,5 +56,5 @@ protected:
 	BurgersCircuit* unusedCircuit;
 };
 
-#endif // __DXA_TRACING_H
+#endif // OPENDXA_TRACING_H
 

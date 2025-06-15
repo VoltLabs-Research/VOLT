@@ -41,7 +41,7 @@ private:
     void validateSFFlatten(double flatten);
 
     OpenDXA::Config config;
-    std::unique_ptr<DXAStackingFaults> analyzer;
+    std::unique_ptr<StackingFaults> analyzer;
 };
 
 }

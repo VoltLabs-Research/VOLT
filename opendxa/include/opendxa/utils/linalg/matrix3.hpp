@@ -1,5 +1,5 @@
-#ifndef __DXA_LINALG_MATRIX3_H
-#define __DXA_LINALG_MATRIX3_H
+#ifndef OPENDXA_LINALG_MATRIX3_H
+#define OPENDXA_LINALG_MATRIX3_H
 
 #include <opendxa/utils/linalg/lin_alg.hpp>
 #include <opendxa/utils/linalg/vector3.hpp>

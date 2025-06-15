@@ -1,5 +1,5 @@
-#ifndef __DXA_LINALG_VECTOR3_H
-#define __DXA_LINALG_VECTOR3_H
+#ifndef OPENDXA_LINALG_VECTOR3_H
+#define OPENDXA_LINALG_VECTOR3_H
 
 #include <opendxa/utils/float_type.hpp>
 

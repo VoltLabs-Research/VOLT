@@ -2,8 +2,8 @@
 #include <opendxa/structures/mesh/mesh.hpp>
 #include <opendxa/utils/timer.hpp>
 
-void DXAInterfaceMesh::cleanup(){
-	DXAClustering::cleanup();
+void InterfaceMesh::cleanup(){
+	Clustering::cleanup();
 	nodes.clear();
 	nodePool.clear();
 	facets.clear();
@@ -12,13 +12,13 @@ void DXAInterfaceMesh::cleanup(){
 	outputMeshCap.clear();
 }
 
-DXAInterfaceMesh::DXAInterfaceMesh(): DXAClustering(){}
+InterfaceMesh::InterfaceMesh(): Clustering(){}
 
 /******************************************************************************
 * For each non-crystalline atom that has at least one crystalline neighbor
 * (the so-called interface atoms) a node is created for the interface mesh.
 ******************************************************************************/
-void DXAInterfaceMesh::createInterfaceMeshNodes()
+void InterfaceMesh::createInterfaceMeshNodes()
 {
 	LOG_INFO() << "Creating interface mesh nodes.";
 	Timer timer;
@@ -85,7 +85,7 @@ void DXAInterfaceMesh::createInterfaceMeshNodes()
 /******************************************************************************************
 * Replaces an input atom with a mesh node in the neighbors list of all surrounding atoms.
 *******************************************************************************************/
-void DXAInterfaceMesh::createMeshNodeRecursive(InputAtom* a, BaseAtom* neighbor, MeshNode* node, int currentDepth, vector<InputAtom*>& visitedAtoms, const Point3& currentCoord)
+void InterfaceMesh::createMeshNodeRecursive(InputAtom* a, BaseAtom* neighbor, MeshNode* node, int currentDepth, vector<InputAtom*>& visitedAtoms, const Point3& currentCoord)
 {
 	visitedAtoms.push_back(a);
 	a->recursiveDepth = currentDepth;
@@ -120,7 +120,7 @@ void DXAInterfaceMesh::createMeshNodeRecursive(InputAtom* a, BaseAtom* neighbor,
 /******************************************************************************
 * Creates the interface mesh edges.
 ******************************************************************************/
-void DXAInterfaceMesh::createInterfaceMeshEdges()
+void InterfaceMesh::createInterfaceMeshEdges()
 {
 	LOG_INFO() << "Creating interface mesh edges.";
 	Timer timer;
@@ -147,7 +147,7 @@ void DXAInterfaceMesh::createInterfaceMeshEdges()
 /******************************************************************************
 * Creates the edges around FCC and HCP atoms.
 ******************************************************************************/
-void DXAInterfaceMesh::createFCCHCPMeshEdges(InputAtom* atom)
+void InterfaceMesh::createFCCHCPMeshEdges(InputAtom* atom)
 {
 	const CrystalLatticeType& lattice = atom->latticeType();
 	for(int tet = 0; tet < lattice.numTetrahedra; tet++) {
@@ -174,7 +174,7 @@ void DXAInterfaceMesh::createFCCHCPMeshEdges(InputAtom* atom)
 }
 
 // Creates the edges around BCC atoms.
-void DXAInterfaceMesh::createBCCMeshEdges(InputAtom* atom){
+void InterfaceMesh::createBCCMeshEdges(InputAtom* atom){
 	const CrystalLatticeType& lattice = atom->latticeType();
 	for(int quad = 0; quad < lattice.numQuads; ++quad){
 		// 4 NN (Nearest Neighbors) + 1 SNN (Second Nearest Neighbor)
@@ -223,7 +223,7 @@ void DXAInterfaceMesh::createBCCMeshEdges(InputAtom* atom){
 /******************************************************************************
 * Creates the facets of the interface mesh.
 ******************************************************************************/
-void DXAInterfaceMesh::createInterfaceMeshFacets()
+void InterfaceMesh::createInterfaceMeshFacets()
 {
 	LOG_INFO() << "Creating interface mesh facets.";
 	Timer timer;
@@ -265,7 +265,7 @@ void DXAInterfaceMesh::createInterfaceMeshFacets()
 /******************************************************************************
 * Creates the triangle facets surrounding a FCC or HCP atom.
 ******************************************************************************/
-void DXAInterfaceMesh::createFCCHCPMeshFacets(InputAtom* atom)
+void InterfaceMesh::createFCCHCPMeshFacets(InputAtom* atom)
 {
 	// Create facets for all tetrahedra and adjacent quads and triangles.
 	// Process each tetrahedron.
@@ -316,7 +316,7 @@ void DXAInterfaceMesh::createFCCHCPMeshFacets(InputAtom* atom)
 /******************************************************************************
 * Creates the triangle facets surrounding a BCC atom.
 ******************************************************************************/
-void DXAInterfaceMesh::createBCCMeshFacets(InputAtom* atom)
+void InterfaceMesh::createBCCMeshFacets(InputAtom* atom)
 {
 	// Create facets for all quads.
 	const CrystalLatticeType& lattice = atom->latticeType();
@@ -371,7 +371,7 @@ void DXAInterfaceMesh::createBCCMeshFacets(InputAtom* atom)
 /******************************************************************************
 * Tries to create a facet adjacent to a FCC/HCP tetrahedron.
 ******************************************************************************/
-bool DXAInterfaceMesh::createAdjacentTriangle(MeshNode* center, MeshNode* vertex1, BaseAtom* vertex2, const LatticeVector& edgeVector1, const LatticeVector& edgeVector2)
+bool InterfaceMesh::createAdjacentTriangle(MeshNode* center, MeshNode* vertex1, BaseAtom* vertex2, const LatticeVector& edgeVector1, const LatticeVector& edgeVector2)
 {
 	for(int n1 = 0; n1 < center->numNeighbors; n1++) {
 		BaseAtom* neighbor1 = center->neighbor(n1);
@@ -431,7 +431,7 @@ bool DXAInterfaceMesh::createAdjacentTriangle(MeshNode* center, MeshNode* vertex
 /******************************************************************************
 * Tries to create a quad facet adjacent to a FCC/HCP tetrahedron.
 ******************************************************************************/
-void DXAInterfaceMesh::createAdjacentQuad(BaseAtom* center, MeshNode* vertex1, MeshNode* vertex2, const LatticeVector& edgeVector1, const LatticeVector& edgeVector2)
+void InterfaceMesh::createAdjacentQuad(BaseAtom* center, MeshNode* vertex1, MeshNode* vertex2, const LatticeVector& edgeVector1, const LatticeVector& edgeVector2)
 {
 	for(int n1 = 0; n1 < center->numNeighbors; n1++) {
 		BaseAtom* neighbor1 = center->neighbor(n1);
@@ -473,7 +473,7 @@ void DXAInterfaceMesh::createAdjacentQuad(BaseAtom* center, MeshNode* vertex1, M
 * Checks whether the facet already exists.
 * Edges are created on demand by this function.
 ******************************************************************************/
-void DXAInterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices, const LatticeVector* edgeVectors)
+void InterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices, const LatticeVector* edgeVectors)
 {
 	DISLOCATIONS_ASSERT(numVertices <= 4);
 	MeshEdge* edges[4];
@@ -520,7 +520,7 @@ void DXAInterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices,
 * Creates a facet with N edges.
 * Triangulates the facet if N >= 4.
 ******************************************************************************/
-void DXAInterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdge** edges, int selection)
+void InterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdge** edges, int selection)
 {
 	DISLOCATIONS_ASSERT(numVertices >= 3);
 
@@ -629,7 +629,7 @@ void DXAInterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdg
 /******************************************************************************
 * Closes the remaining holes in the interface mesh.
 ******************************************************************************/
-void DXAInterfaceMesh::closeFacetHoles()
+void InterfaceMesh::closeFacetHoles()
 {
 	// Creating missing facets.
 	MeshNode* vertices[MAX_FACET_HOLE_EDGE_COUNT];
@@ -647,7 +647,7 @@ void DXAInterfaceMesh::closeFacetHoles()
 /******************************************************************************
 * This recursive function constructs a facet for an open hole.
 ******************************************************************************/
-bool DXAInterfaceMesh::constructFacetRecursive(int numEdges, int maxEdges, MeshNode** vertices, MeshEdge** edges, const LatticeVector& burgersVector)
+bool InterfaceMesh::constructFacetRecursive(int numEdges, int maxEdges, MeshNode** vertices, MeshEdge** edges, const LatticeVector& burgersVector)
 {
 	MeshNode* currentAtom = vertices[numEdges];
 
@@ -686,7 +686,7 @@ bool DXAInterfaceMesh::constructFacetRecursive(int numEdges, int maxEdges, MeshN
 }
 
 
-void DXAInterfaceMesh::validateInterfaceMesh()
+void InterfaceMesh::validateInterfaceMesh()
 {
 	LOG_INFO() << "Validating mesh topology.";
 
@@ -745,7 +745,7 @@ void DXAInterfaceMesh::validateInterfaceMesh()
 	}
 }
 
-void DXAInterfaceMesh::duplicateSharedMeshNodes(){
+void InterfaceMesh::duplicateSharedMeshNodes(){
 	size_t numSharedNodes = 0;
 
 	for(size_t nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
@@ -830,7 +830,7 @@ void DXAInterfaceMesh::duplicateSharedMeshNodes(){
 /******************************************************************************
 * Deletes facets which are not necessary for the interface mesh.
 ******************************************************************************/
-void DXAInterfaceMesh::removeUnnecessaryFacets()
+void InterfaceMesh::removeUnnecessaryFacets()
 {
 
 	size_t oldFacetCount = facets.size();
@@ -981,7 +981,7 @@ void DXAInterfaceMesh::removeUnnecessaryFacets()
 	while(removedSomeFacets);
 }
 
-bool DXAInterfaceMesh::edgeEdgeOrientation(MeshEdge* edge1, MeshEdge* edge3)
+bool InterfaceMesh::edgeEdgeOrientation(MeshEdge* edge1, MeshEdge* edge3)
 {
 	DISLOCATIONS_ASSERT(edge1->node1->tag == edge3->node1->tag);
 	DISLOCATIONS_ASSERT(edge1->node2()->tag == edge3->node2()->tag);
@@ -1062,7 +1062,7 @@ bool DXAInterfaceMesh::edgeEdgeOrientation(MeshEdge* edge1, MeshEdge* edge3)
 /******************************************************************************
 * Fix facet-edge connectivity.
 ******************************************************************************/
-void DXAInterfaceMesh::fixMeshEdges()
+void InterfaceMesh::fixMeshEdges()
 {
 	size_t fixedEdges = 0;
 
@@ -1107,7 +1107,7 @@ void DXAInterfaceMesh::fixMeshEdges()
 /******************************************************************************
 * Determines whether a triangle facet is wrapped at a periodic boundary.
 ******************************************************************************/
-bool DXAInterfaceMesh::isWrappedFacet(MeshFacet* facet) const
+bool InterfaceMesh::isWrappedFacet(MeshFacet* facet) const
 {
 	if(hasPeriodicBoundaries()) {
 		if(isWrappedVector(facet->vertex(1)->pos - facet->vertex(0)->pos) ||
@@ -1121,7 +1121,7 @@ bool DXAInterfaceMesh::isWrappedFacet(MeshFacet* facet) const
 /******************************************************************************
 * Determines whether a mesh edge is wrpapped at a periodic boundary.
 ******************************************************************************/
-bool DXAInterfaceMesh::isWrappedEdge(MeshEdge* edge) const
+bool InterfaceMesh::isWrappedEdge(MeshEdge* edge) const
 {
 	return isWrappedVector(edge->node2()->pos - edge->node1->pos);
 }
