@@ -11,7 +11,7 @@ from opendxa.utils import load_analyses
 # for analisis in load_analyses("/ruta/a/dir"):
 #     procesar(analisis)
 
-analysis = next(load_analyses('/home/rodyherrera/Desktop/tmp/OpenDXA/debug.analysis_2.json'))
+analysis = next(load_analyses('/home/rodyherrera/Desktop/tmp/OpenDXA/debug.analysis.json'))
 
 settings = VisualizationSettings(
     line_width=3.0,
