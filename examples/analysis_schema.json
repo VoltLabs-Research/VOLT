@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "DXA Analysis Complete Schema",
+  "title": "OpenDXA Analysis Complete Schema",
   "type": "object",
   "properties": {
     "dislocations": {

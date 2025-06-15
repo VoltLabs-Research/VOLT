@@ -299,44 +299,49 @@ static inline void analyzeCNASignature(
 }
 
 void DXAClustering::buildNearestNeighborLists(){
-	LOG_INFO() << "Building nearest neighbor lists.";
-	Timer neighborTimer;
+    LOG_INFO() << "Building nearest neighbor lists.";
+    Timer neighborTimer;
 
-	neighborListBuilder.initialize(*this, cnaCutoff);
-    
-	const size_t numAtoms = inputAtoms.size();
-    
-	for(size_t i = 0; i < numAtoms; ++i){
-		if(i + 1 < numAtoms){
-			__builtin_prefetch(&inputAtoms[i + 1], 0, 3);
-		}
-		neighborListBuilder.insertParticle(inputAtoms[i]);
-	}
+    neighborListBuilder.initialize(*this, cnaCutoff);
 
-#pragma omp parallel
-	{
-		BondPool::initializeBuffers();
-        
-#pragma omp for schedule(dynamic, 32) nowait
-		for(int i = 0; i < static_cast<int>(numAtoms); i++){
-			InputAtom* atom = &inputAtoms[i];
-            
-			for(NeighborListBuilder<InputAtom>::iterator neighborIter(neighborListBuilder, atom); 
-				!neighborIter.atEnd(); neighborIter.next()){
-                
-				if(atom->numNeighbors == MAX_ATOM_NEIGHBORS){
-#pragma omp critical
+    const size_t numAtoms = inputAtoms.size();
+
+    // Sequential particle insertion (cache prefetch)
+    for(size_t i = 0; i < numAtoms; ++i){
+        if(i + 1 < numAtoms){
+            __builtin_prefetch(&inputAtoms[i + 1], 0, 3);
+        }
+        neighborListBuilder.insertParticle(inputAtoms[i]);
+    }
+
+    // Now, in parallel, we go through each atom and extract its neighbors.
+	#pragma omp parallel
+    {
+        // Each thread initializes its BondPool buffers
+        BondPool::initializeBuffers();
+
+		#pragma omp for schedule(dynamic, 32) nowait
+        for(int i = 0; i < static_cast<int>(numAtoms); ++i){
+            InputAtom* atom = &inputAtoms[i];
+
+            // We go through the neighbors detected by the builder
+            for(NeighborListBuilder<InputAtom>::iterator it(neighborListBuilder, atom); !it.atEnd(); it.next()){
+                if(atom->numNeighbors == MAX_ATOM_NEIGHBORS){
+					#pragma omp critical
 					{
-						raiseError("Maximum number of nearest neighbors exceeded. Atom %i has more than %i nearest neighbors (built-in maximum number).", atom->tag, MAX_ATOM_NEIGHBORS);
+						raiseError(
+							"Maximum number of nearest neighbors exceeded. "
+							"Atom %i has más de %i vecinos (límite interno).",
+							atom->tag, MAX_ATOM_NEIGHBORS
+						);
 					}
-				}
-                
-				atom->addNeighbor(neighborIter.current());
-			}
-		}
-	}
+				}	
+				atom->addNeighbor(it.current());
+            }
+        }
+    }
 
-	LOG_INFO() << "Neighbor list time: " << neighborTimer.elapsedTime() << " sec.";
+    LOG_INFO()  << "Neighbor list time: " << neighborTimer.elapsedTime()  << " sec.";
 }
 
 void DXAClustering::performCNA(){
