@@ -8,7 +8,7 @@ from opendxa.mesh import (
     build_background_mesh
 )
 
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple
 import pyvista as pv
 import numpy as np
 
@@ -16,17 +16,15 @@ class DislocationVisualizer:
     def __init__(self, analysis: Dict, settings: Optional[VisualizationSettings] = None):
         self.settings = settings or VisualizationSettings()
         self.analysis = analysis
-
         self.stats: Optional[DislocationStats] = None
         self.meshes: Dict[str, Optional[pv.PolyData]] = {}
         self.plotter: Optional[pv.Plotter] = None
 
     def build_meshes(self) -> Dict[str, Optional[pv.PolyData]]:
-        segments = self.analysis['dislocations']['segments']
-        dislocation_mesh, additional_data = build_dislocation_mesh(segments)
-        self.meshes['dislocations'] = dislocation_mesh
-
-        self._build_statistics(segments, additional_data)
+        if 'dislocations' in self.analysis:
+            dislocation_mesh, additional_data = build_dislocation_mesh(self.analysis['dislocations'])
+            self.meshes['dislocations'] = dislocation_mesh
+            self._build_statistics(additional_data)
 
         if 'atoms' in self.analysis:
             self.meshes['atoms'] = build_atom_mesh(self.analysis['atoms'])
@@ -37,14 +35,14 @@ class DislocationVisualizer:
         if 'interface_mesh' in self.analysis:
             self.meshes['interface'] = build_interface_mesh(self.analysis['interface_mesh'])
 
-        if dislocation_mesh is not None:
-            bounds = dislocation_mesh.bounds
+        if self.meshes.get('dislocations') is not None:
+            bounds = self.meshes['dislocations'].bounds
             self.meshes['background'] = build_background_mesh(bounds)
 
         return self.meshes
     
-    def _build_statistics(self, segments: List[Dict], additional_data: Dict):
-        if not segments or not additional_data:
+    def _build_statistics(self, additional_data: Dict):
+        if not additional_data:
             self.stats = DislocationStats(
                 num_segments=0,
                 total_points=0,
@@ -58,14 +56,23 @@ class DislocationVisualizer:
                 segment_info=[]
             )
             return
-    
-        segment_lengths = additional_data['segment_lengths']
-        burgers_magnitudes = additional_data['burgers_magnitudes']
-        segment_ids = additional_data['segment_ids']
-        fractional_burgers_info = additional_data['fractional_burgers_info']
 
+        # Extract data from additional_data
+        segment_lengths = additional_data.get('segment_lengths', [])
+        burgers_magnitudes = additional_data.get('burgers_magnitudes', [])
+        segment_ids = additional_data.get('segment_ids', [])
+        fractional_burgers_info = additional_data.get('fractional_burgers_info', [])
+
+        # Get summary from analysis data
+        dislocations_data = self.analysis.get('dislocations', {})
+        summary = dislocations_data.get('summary', {})
+        
+        total_points = summary.get('total_points', len(self.meshes['dislocations'].points) if self.meshes.get('dislocations') else 0)
+        average_length = summary.get('average_segment_length', np.mean(segment_lengths) if segment_lengths else 0.0)
+
+        # Build segment info
         segment_info = []
-        for segment_id, fractional_burgers, length, magnitudes in zip(
+        for segment_id, fractional_burgers, length, magnitude in zip(
             segment_ids,
             fractional_burgers_info,
             segment_lengths,
@@ -75,14 +82,14 @@ class DislocationVisualizer:
                 'segment_id': segment_id,
                 'fractional_burgers': fractional_burgers,
                 'length': length,
-                'burgers_magnitudes': magnitudes
+                'burgers_magnitudes': magnitude
             })
         
         self.stats = DislocationStats(
-            num_segments=len(segments),
-            total_points=len(self.meshes['dislocations'].points),
+            num_segments=len(segment_ids),
+            total_points=total_points,
             total_length=sum(segment_lengths),
-            average_length=np.mean(segment_lengths) if segment_lengths else 0,
+            average_length=average_length,
             max_length=max(segment_lengths) if segment_lengths else 0,
             min_length=min(segment_lengths) if segment_lengths else 0,
             burgers_magnitudes=burgers_magnitudes,
@@ -97,7 +104,7 @@ class DislocationVisualizer:
         return self.plotter
     
     def add_dislocations(self):
-        if self.meshes['dislocations'] is None or self.plotter is None:
+        if self.meshes.get('dislocations') is None or self.plotter is None:
             return
         
         self.plotter.add_mesh(
@@ -148,7 +155,6 @@ class DislocationVisualizer:
     def add_interface(self):
         if not self.settings.show_interface or self.meshes.get('interface') is None or self.plotter is None:
             return
-        
 
         self.plotter.add_mesh(
             self.meshes['interface'],
@@ -188,7 +194,7 @@ class DislocationVisualizer:
             self.plotter.show_bounds(grid=True)
     
     def to_vtk(self, filename: Optional[str] = None):
-        if self.meshes['dislocations'] is None:
+        if self.meshes.get('dislocations') is None:
             return
         
         output_file = filename or self.settings.vtk_output
@@ -215,7 +221,6 @@ class DislocationVisualizer:
 
     def print_stats(self):
         if self.stats is None:
-            # TODO: use OpenDXA logger
             print('Warning: No statistics available. Run build_meshes() first.')
             return
         
@@ -245,3 +250,4 @@ class DislocationVisualizer:
         
         if len(self.stats.segment_info) > 10:
             print(f'... and {len(self.stats.segment_info) - 10} more segments')
+

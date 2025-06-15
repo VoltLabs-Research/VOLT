@@ -7,7 +7,7 @@ option(DXA_ENABLE_DEBUG "Enable sanity checks (recommended)." ON)
 option(DXA_USE_OPENMP "Enable OpenMP parallelization if available." ON)
 option(DXA_BUILD_TESTS "Build unit tests" OFF)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
@@ -70,10 +70,15 @@ endif()
 
 target_compile_options(opendxapy PRIVATE
     -fPIC
-    $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -O3 -march=native -ffast-math>
-    $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -O3 -march=native -ffast-math>
+    $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -O3 -march=native -ffast-math -funroll-loops>
+    $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -O3 -march=native -ffast-math -funroll-loops>
     $<$<CXX_COMPILER_ID:Intel>:-Wall -O3 -xHost -fp-model fast=2>
     $<$<CXX_COMPILER_ID:MSVC>:/W4 /O2 /fp:fast>
+)
+
+target_compile_definitions(opendxapy PRIVATE
+    JSON_USE_IMPLICIT_CONVERSIONS=0
+    JSON_DISABLE_ENUM_SERIALIZATION=1
 )
 
 if(DXA_BUILD_EXECUTABLE)

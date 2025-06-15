@@ -1,0 +1,807 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DXA Analysis Complete Schema",
+  "type": "object",
+  "properties": {
+    "dislocations": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "const": "dislocation_segments" },
+            "count": { "type": "integer", "minimum": 0 },
+            "description": { "type": "string" }
+          },
+          "required": ["type", "count"]
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "index": { "type": "integer", "minimum": 0 },
+              "point_index_offset": { "type": "integer", "minimum": 0 },
+              "num_points": { "type": "integer", "minimum": 0 },
+              "length": { "type": "number", "minimum": 0 },
+              "points": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": { "type": "number" },
+                  "minItems": 3,
+                  "maxItems": 3
+                }
+              },
+              "burgers": {
+                "type": "object",
+                "properties": {
+                  "vector": {
+                    "type": "array",
+                    "items": { "type": "number" },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "vector_world": {
+                    "type": "array",
+                    "items": { "type": "number" },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "magnitude": { "type": "number", "minimum": 0 },
+                  "fractional": { "type": "string" }
+                },
+                "required": ["vector", "vector_world", "magnitude", "fractional"]
+              },
+              "burgers_circuits": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string", "enum": ["forward", "backward"] },
+                    "metadata": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "const": "burgers_circuit" },
+                        "count": { "type": "integer" },
+                        "description": { "type": "string" }
+                      }
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "points": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "index": { "type": "integer" },
+                              "position": {
+                                "type": "array",
+                                "items": { "type": "number" },
+                                "minItems": 3,
+                                "maxItems": 3
+                              },
+                              "original_position": {
+                                "type": "array",
+                                "items": { "type": "number" },
+                                "minItems": 3,
+                                "maxItems": 3
+                              },
+                              "lattice_vector": {
+                                "type": "array",
+                                "items": { "type": "number" },
+                                "minItems": 3,
+                                "maxItems": 3
+                              }
+                            },
+                            "required": ["index", "position", "original_position", "lattice_vector"]
+                          }
+                        },
+                        "edges": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "index": { "type": "integer" },
+                              "vertices": {
+                                "type": "array",
+                                "items": { "type": "integer" },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": ["index", "vertices"]
+                          }
+                        },
+                        "lattice_vectors": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "items": { "type": "number" },
+                            "minItems": 3,
+                            "maxItems": 3
+                          }
+                        }
+                      },
+                      "required": ["points", "edges", "lattice_vectors"]
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "burgers_vector": {
+                          "type": "array",
+                          "items": { "type": "number" },
+                          "minItems": 3,
+                          "maxItems": 3
+                        },
+                        "burgers_magnitude": { "type": "number" },
+                        "is_closed": { "type": "boolean" },
+                        "circuit_quality": {
+                          "type": "object",
+                          "properties": {
+                            "closure_error": { "type": "number" },
+                            "normalized_closure_error": { "type": "number" },
+                            "edge_count": { "type": "integer" }
+                          },
+                          "required": ["closure_error", "normalized_closure_error", "edge_count"]
+                        }
+                      },
+                      "required": ["burgers_vector", "burgers_magnitude", "is_closed", "circuit_quality"]
+                    }
+                  },
+                  "required": ["type", "metadata", "data", "summary"]
+                }
+              }
+            },
+            "required": ["index", "point_index_offset", "num_points", "length", "points", "burgers"]
+          }
+        },
+        "summary": {
+          "type": "object",
+          "properties": {
+            "total_points": { "type": "integer", "minimum": 0 },
+            "average_segment_length": { "type": "number", "minimum": 0 },
+            "max_segment_length": { "type": "number", "minimum": 0 },
+            "min_segment_length": { "type": "number", "minimum": 0 },
+            "total_length": { "type": "number", "minimum": 0 },
+            "segments_with_circuits": { "type": "integer", "minimum": 0 },
+            "memory_optimization": { "type": "string", "const": "reserve_enabled" }
+          },
+          "required": ["total_points", "average_segment_length", "max_segment_length", "min_segment_length", "total_length", "segments_with_circuits", "memory_optimization"]
+        }
+      },
+      "required": ["metadata", "data", "summary"]
+    },
+    
+    "interface_mesh": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "const": "interface_mesh" },
+            "count": { "type": "integer", "minimum": 0 },
+            "description": { "type": "string" },
+            "components": {
+              "type": "object",
+              "properties": {
+                "num_nodes": { "type": "integer", "minimum": 0 },
+                "num_facets": { "type": "integer", "minimum": 0 },
+                "num_edges": { "type": "integer", "minimum": 0 }
+              },
+              "required": ["num_nodes", "num_facets", "num_edges"]
+            }
+          },
+          "required": ["type", "count", "components"]
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "points": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "index": { "type": "integer" },
+                  "position": {
+                    "type": "array",
+                    "items": { "type": "number" },
+                    "minItems": 3,
+                    "maxItems": 3
+                  }
+                },
+                "required": ["index", "position"]
+              }
+            },
+            "edges": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "vertices": {
+                    "type": "array",
+                    "items": { "type": "integer" },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "edge_count": { "type": "integer" },
+                  "is_stacking_fault": { "type": "boolean" }
+                },
+                "required": ["vertices", "edge_count", "is_stacking_fault"]
+              }
+            },
+            "facets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "vertices": {
+                    "type": "array",
+                    "items": { "type": "integer" },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "segment": { "type": "integer" },
+                  "final_segment": { "type": "integer" },
+                  "is_primary_segment": { "type": "boolean" },
+                  "selection": { "type": "integer" }
+                },
+                "required": ["vertices", "segment", "final_segment", "is_primary_segment", "selection"]
+              }
+            }
+          },
+          "required": ["points", "edges", "facets"]
+        },
+        "summary": {
+          "type": "object",
+          "properties": {
+            "stacking_fault_edges": { "type": "integer", "minimum": 0 },
+            "stacking_fault_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+            "primary_segment_facets": { "type": "integer", "minimum": 0 },
+            "edge_count_distribution": {
+              "type": "object",
+              "patternProperties": {
+                "^[0-9]+$": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "segment_distribution": {
+              "type": "object",
+              "patternProperties": {
+                "^[0-9]+$": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "connectivity_stats": {
+              "type": "object",
+              "properties": {
+                "total_connections": { "type": "integer" },
+                "max_edge_multiplicity": { "type": "integer" },
+                "unique_segments": { "type": "integer" }
+              },
+              "required": ["total_connections", "max_edge_multiplicity", "unique_segments"]
+            }
+          },
+          "required": ["stacking_fault_edges", "stacking_fault_ratio", "primary_segment_facets", "edge_count_distribution", "segment_distribution", "connectivity_stats"]
+        }
+      },
+      "required": ["metadata", "data", "summary"]
+    },
+    
+    "atoms": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "const": "atomic_structure" },
+            "count": { "type": "integer", "minimum": 0 },
+            "description": { "type": "string" }
+          },
+          "required": ["type", "count"]
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "node_id": { "type": "integer" },
+              "position": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "cna": {
+                "type": "object",
+                "properties": {
+                  "atom_type": { "type": "integer" }
+                },
+                "required": ["atom_type"]
+              },
+              "coordination": { "type": "integer", "minimum": 0 },
+              "recursive_depth": { "type": "integer", "minimum": 0 }
+            },
+            "required": ["node_id", "position", "cna", "coordination", "recursive_depth"]
+          }
+        },
+        "summary": {
+          "type": "object",
+          "properties": {
+            "cna_type_distribution": {
+              "type": "object",
+              "patternProperties": {
+                "^[0-9]+$": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "coordination_distribution": {
+              "type": "object",
+              "patternProperties": {
+                "^[0-9]+$": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "most_common_cna_type": { "type": "integer" },
+            "average_coordination": { "type": "number", "minimum": 0 },
+            "unique_cna_types": { "type": "integer", "minimum": 0 },
+            "coordination_range": { "type": "integer", "minimum": 0 }
+          },
+          "required": ["cna_type_distribution", "coordination_distribution", "most_common_cna_type", "average_coordination", "unique_cna_types", "coordination_range"]
+        }
+      },
+      "required": ["metadata", "data", "summary"]
+    },
+    
+    "output_mesh": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "const": "output_mesh" },
+            "count": { "type": "integer", "minimum": 0 },
+            "description": { "type": "string" },
+            "components": {
+              "type": "object",
+              "properties": {
+                "num_vertices": { "type": "integer", "minimum": 0 },
+                "num_facets": { "type": "integer", "minimum": 0 }
+              },
+              "required": ["num_vertices", "num_facets"]
+            }
+          },
+          "required": ["type", "count", "components"]
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "vertices": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "index": { "type": "integer" },
+                  "position": {
+                    "type": "array",
+                    "items": { "type": "number" },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "normal": {
+                    "type": "array",
+                    "items": { "type": "number" },
+                    "minItems": 3,
+                    "maxItems": 3
+                  }
+                },
+                "required": ["index", "position", "normal"]
+              }
+            },
+            "facets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "vertices": {
+                    "type": "array",
+                    "items": { "type": "integer" },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "entity": { "type": "integer" },
+                  "disclination_barrier": { "type": "boolean" }
+                },
+                "required": ["vertices", "entity", "disclination_barrier"]
+              }
+            }
+          },
+          "required": ["vertices", "facets"]
+        },
+        "point_data": {
+          "type": "object",
+          "properties": {
+            "normals": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3
+              }
+            }
+          },
+          "required": ["normals"]
+        },
+        "cell": {
+          "type": "object",
+          "properties": {
+            "entity": {
+              "type": "array",
+              "items": { "type": "integer" }
+            },
+            "disclination_barrier": {
+              "type": "array",
+              "items": { "type": "boolean" }
+            }
+          },
+          "required": ["entity", "disclination_barrier"]
+        },
+        "summary": {
+          "type": "object",
+          "properties": {
+            "disclination_barriers": { "type": "integer", "minimum": 0 },
+            "barrier_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+            "entity_distribution": {
+              "type": "object",
+              "patternProperties": {
+                "^[0-9]+$": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "mesh_quality": {
+              "type": "object",
+              "properties": {
+                "vertex_to_facet_ratio": { "type": "number", "minimum": 0 },
+                "average_facet_entity": { "type": "number" },
+                "unique_entities": { "type": "integer", "minimum": 0 }
+              },
+              "required": ["vertex_to_facet_ratio", "average_facet_entity", "unique_entities"]
+            }
+          },
+          "required": ["disclination_barriers", "barrier_ratio", "entity_distribution", "mesh_quality"]
+        }
+      },
+      "required": ["metadata", "data", "point_data", "cell", "summary"]
+    },
+    
+    "stacking_faults": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "const": "stacking_faults" },
+            "count": { "type": "integer", "minimum": 0 },
+            "description": { "type": "string" }
+          },
+          "required": ["type", "count"]
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "index": { "type": "integer" },
+              "is_invalid": { "type": "boolean" },
+              "normal_vector": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "center": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "base_point": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "atom_counts": {
+                "type": "object",
+                "properties": {
+                  "hcp": { "type": "integer", "minimum": 0 },
+                  "isf": { "type": "integer", "minimum": 0 },
+                  "twin_boundary": { "type": "integer", "minimum": 0 }
+                },
+                "required": ["hcp", "isf", "twin_boundary"]
+              },
+              "is_infinite": {
+                "type": "array",
+                "items": { "type": "boolean" },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "metadata": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "const": "stacking_fault" },
+                  "count": { "type": "integer" },
+                  "description": { "type": "string" },
+                  "totals": {
+                    "type": "object",
+                    "properties": {
+                      "edges": { "type": "integer" },
+                      "points": { "type": "integer" }
+                    },
+                    "required": ["edges", "points"]
+                  }
+                }
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "contours": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "contour_id": { "type": "integer" },
+                        "metadata": {
+                          "type": "object",
+                          "properties": {
+                            "type": { "type": "string", "const": "stacking_fault_contour" },
+                            "count": { "type": "integer" },
+                            "description": { "type": "string" },
+                            "num_points": { "type": "integer" }
+                          }
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "points": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "index": { "type": "integer" },
+                                  "position": {
+                                    "type": "array",
+                                    "items": { "type": "number" },
+                                    "minItems": 3,
+                                    "maxItems": 3
+                                  },
+                                  "node_id": { "type": "integer" },
+                                  "role": { "type": "string", "enum": ["start", "end"] }
+                                },
+                                "required": ["index", "position", "node_id", "role"]
+                              }
+                            },
+                            "edges": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "vertices": {
+                                    "type": "array",
+                                    "items": { "type": "integer" },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "edge_index": { "type": "integer" }
+                                },
+                                "required": ["vertices", "edge_index"]
+                              }
+                            }
+                          },
+                          "required": ["points", "edges"]
+                        },
+                        "cell": {
+                          "type": "object",
+                          "properties": {
+                            "edge_indices": {
+                              "type": "array",
+                              "items": { "type": "integer" }
+                            },
+                            "facet_determinants": {
+                              "type": "array",
+                              "items": { "type": "number" }
+                            },
+                            "node_indices": {
+                              "type": "array",
+                              "items": { "type": "integer" }
+                            },
+                            "stacking_fault_flags": {
+                              "type": "array",
+                              "items": { "type": "boolean" }
+                            }
+                          },
+                          "required": ["edge_indices", "facet_determinants", "node_indices", "stacking_fault_flags"]
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "stacking_fault_edge_count": { "type": "integer" },
+                            "stacking_fault_ratio": { "type": "number" },
+                            "facet_determinant_stats": {
+                              "type": "object",
+                              "properties": {
+                                "min": { "type": "number" },
+                                "max": { "type": "number" },
+                                "mean": { "type": "number" },
+                                "count": { "type": "integer" },
+                                "std_deviation": { "type": "number" },
+                                "range": { "type": "number" }
+                              }
+                            },
+                            "contour_properties": {
+                              "type": "object",
+                              "properties": {
+                                "perimeter_edges": { "type": "integer" },
+                                "geometric_closure": { "type": "boolean" },
+                                "contour_complexity": { "type": "number" }
+                              },
+                              "required": ["perimeter_edges", "geometric_closure", "contour_complexity"]
+                            }
+                          },
+                          "required": ["stacking_fault_edge_count", "stacking_fault_ratio", "contour_properties"]
+                        }
+                      },
+                      "required": ["contour_id", "metadata", "data", "cell", "summary"]
+                    }
+                  },
+                  "consolidated": {
+                    "type": "object",
+                    "properties": {
+                      "points": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "index": { "type": "integer" },
+                            "contour_id": { "type": "integer" },
+                            "position": {
+                              "type": "array",
+                              "items": { "type": "number" },
+                              "minItems": 3,
+                              "maxItems": 3
+                            },
+                            "node_id": { "type": "integer" }
+                          },
+                          "required": ["index", "contour_id", "position", "node_id"]
+                        }
+                      },
+                      "edges": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "vertices": {
+                              "type": "array",
+                              "items": { "type": "integer" },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "contour_id": { "type": "integer" },
+                            "edge_index_global": { "type": "integer" }
+                          },
+                          "required": ["vertices", "contour_id", "edge_index_global"]
+                        }
+                      },
+                      "cell": {
+                        "type": "object",
+                        "properties": {
+                          "contour_ids": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          },
+                          "edge_indices_local": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          },
+                          "edge_indices_global": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          }
+                        },
+                        "required": ["contour_ids", "edge_indices_local", "edge_indices_global"]
+                      }
+                    },
+                    "required": ["points", "edges", "cell"]
+                  }
+                },
+                "required": ["contours", "consolidated"]
+              },
+              "summary": {
+                "type": "object",
+                "properties": {
+                  "total_contours": { "type": "integer" },
+                  "total_edges": { "type": "integer" },
+                  "total_points": { "type": "integer" },
+                  "total_stacking_fault_edges": { "type": "integer" },
+                  "overall_stacking_fault_ratio": { "type": "number" },
+                  "global_facet_determinant_stats": {
+                    "type": "object",
+                    "properties": {
+                      "min": { "type": "number" },
+                      "max": { "type": "number" },
+                      "mean": { "type": "number" },
+                      "count": { "type": "integer" }
+                    }
+                  },
+                  "fault_complexity": {
+                    "type": "object",
+                    "properties": {
+                      "average_contour_size": { "type": "number" },
+                      "contour_size_variance": { "type": "number" },
+                      "complexity_index": { "type": "number" }
+                    },
+                    "required": ["average_contour_size", "contour_size_variance", "complexity_index"]
+                  }
+                },
+                "required": ["total_contours", "total_edges", "total_points", "total_stacking_fault_edges", "overall_stacking_fault_ratio", "fault_complexity"]
+              }
+            },
+            "required": ["index", "is_invalid", "normal_vector", "center", "base_point", "atom_counts", "is_infinite"]
+          }
+        },
+        "summary": {
+          "type": "object",
+          "properties": {
+            "invalid_faults": { "type": "integer", "minimum": 0 },
+            "validity_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+            "atom_statistics": {
+              "type": "object",
+              "properties": {
+                "hcp": {
+                  "type": "object",
+                  "properties": {
+                    "min": { "type": "integer" },
+                    "max": { "type": "integer" },
+                    "mean": { "type": "number" },
+                    "total": { "type": "integer" },
+                    "count": { "type": "integer" }
+                  }
+                },
+                "isf": {
+                  "type": "object",
+                  "properties": {
+                    "min": { "type": "integer" },
+                    "max": { "type": "integer" },
+                    "mean": { "type": "number" },
+                    "total": { "type": "integer" },
+                    "count": { "type": "integer" }
+                  }
+                },
+                "twin_boundary": {
+                  "type": "object",
+                  "properties": {
+                    "min": { "type": "integer" },
+                    "max": { "type": "integer" },
+                    "mean": { "type": "number" },
+                    "total": { "type": "integer" },
+                    "count": { "type": "integer" }
+                  }
+                }
+              },
+              "required": ["hcp", "isf", "twin_boundary"]
+            },
+            "fault_density": {
+              "type": "object",
+              "properties": {
+                "faults_per_1000_atoms": { "type": "number", "minimum": 0 },
+                "total_affected_atoms": { "type": "integer", "minimum": 0 }
+              },
+              "required": ["faults_per_1000_atoms", "total_affected_atoms"]
+            }
+          },
+          "required": ["invalid_faults", "validity_ratio", "atom_statistics", "fault_density"]
+        }
+      },
+      "required": ["metadata", "data", "summary"]
+    }
+  },
+  "required": ["dislocations", "interface_mesh", "atoms", "output_mesh", "stacking_faults"],
+  "additionalProperties": false
+}

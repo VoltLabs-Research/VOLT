@@ -3,92 +3,79 @@
 #include <opendxa/utils/timer.hpp>
 
 void DXAInterfaceMesh::cleanup(){
-    DXAClustering::cleanup();
-    
-    // Parallelize cleaning of large containers
-    #pragma omp parallel sections
-    {
-        #pragma omp section
-        {
-            nodes.clear();
-            nodePool.clear();
-        }
-        #pragma omp section
-        {
-            facets.clear();
-            facetPool.clear();
-        }
-        #pragma omp section
-        {
-            outputMesh.clear();
-            outputMeshCap.clear();
-        }
-    }
+	DXAClustering::cleanup();
+	nodes.clear();
+	nodePool.clear();
+	facets.clear();
+	facetPool.clear();
+	outputMesh.clear();
+	outputMeshCap.clear();
 }
 
 DXAInterfaceMesh::DXAInterfaceMesh(): DXAClustering(){}
 
-// For each non-crystalline atom that has at least one crystalline neighbor
-// (the so-called interface atoms) a node is created for the interface mesh.
-void DXAInterfaceMesh::createInterfaceMeshNodes(){
+/******************************************************************************
+* For each non-crystalline atom that has at least one crystalline neighbor
+* (the so-called interface atoms) a node is created for the interface mesh.
+******************************************************************************/
+void DXAInterfaceMesh::createInterfaceMeshNodes()
+{
 	LOG_INFO() << "Creating interface mesh nodes.";
 	Timer timer;
 
-	// Pre-reserve memory for better performance
-	size_t estimatedNodes = inputAtoms.size() / 8;
-	nodes.reserve(estimatedNodes);
+	// Reset recursive walk counters.
+	// And reset neighbor lists for disordered atoms.
+	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom)
+		atom->recursiveDepth = numeric_limits<int>::max();
 
-	// Reset recursively walk counters
-	#pragma omp parallel for schedule(static)
-	for(size_t idx = 0; idx < inputAtoms.size(); ++idx){
-		inputAtoms[idx].recursiveDepth = numeric_limits<int>::max();
-	}
-
-	// Convert first layer of disordered atoms into mesh nodes
-	for(auto atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom){
+	// Convert first layer of disordered atoms into mesh nodes.
+	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom) {
 		if(atom->isDisordered() || atom->testFlag(ATOM_NON_BULK) == false) continue;
-		// Iterate over all disordered neighbors
-		for(int i = 0; i < atom->numNeighbors; i++){
+
+		// Iterate over all disordered neighbors.
+		for(int i = 0; i < atom->numNeighbors; i++) {
 			BaseAtom* neighbor1 = atom->neighbor(i);
 			if(neighbor1 == NULL || neighbor1->isCrystalline()) continue;
+
 			// Is it already a mesh node?
-			if(neighbor1->isMeshNode() == false){
-				// Replace input atom with mesh node
-				MeshNode *node = nodePool.construct(*neighbor1);
+			if(neighbor1->isMeshNode() == false) {
+
+				// Replace input atom with mesh node.
+				MeshNode* node = nodePool.construct(*neighbor1);
 				node->index = nodes.size();
 				nodes.push_back(node);
-				// Also replace the atom with the node in neighbor lists of all nearby crystallinea toms
+
+				// Also replace the atom with the node in neighbor lists of all nearby crystalline atoms.
 				vector<InputAtom*> visitedAtoms;
 				createMeshNodeRecursive(&*atom, neighbor1, node, 0, visitedAtoms, ORIGIN - atom->latticeNeighborVector(i));
-				// Reset visit flags
-				for(auto visitedAtom = visitedAtoms.begin(); visitedAtom != visitedAtoms.end(); ++visitedAtom){
-					(*visitedAtom)->recursiveDepth = numeric_limits<int>::max();
-				}
+
+				// Reset visit flags.
+				for(vector<InputAtom*>::const_iterator a = visitedAtoms.begin(); a != visitedAtoms.end(); ++a)
+					(*a)->recursiveDepth = numeric_limits<int>::max();
+
 				neighbor1 = node;
 			}
 
-			// Create neighbor list of mesh node
-			for(int j = 0; j < i; j++){
-				if(!atom->neighborBond(i, j)) continue;;
-				BaseAtom* neighbor2 = atom->neighbor(j);
-				if(neighbor2 == NULL || neighbor2->isMeshNode() == false) continue;
-				if(neighbor1->hasNeighbor(neighbor2) == false){
-					DISLOCATIONS_ASSERT(neighbor1->pos != neighbor2->pos);
-					neighbor1->addNeighbor(neighbor2);
-					neighbor2->addNeighbor(neighbor1);
+			// Create neighbor list of mesh node.
+			for(int j = 0; j < i; j++) {
+				if(atom->neighborBond(i, j)) {
+					BaseAtom* neighbor2 = atom->neighbor(j);
+					if(neighbor2 == NULL || neighbor2->isMeshNode() == false) continue;
+					if(neighbor1->hasNeighbor(neighbor2) == false) {
+						DISLOCATIONS_ASSERT(neighbor1->pos != neighbor2->pos);
+						neighbor1->addNeighbor(neighbor2);
+						neighbor2->addNeighbor(neighbor1);
+					}
 				}
 			}
 		}
 	}
 
-	// Determine the maximum number of neighbors
+	// Determine the maximum number of neighbors.
 	int maxNodeNeighbors = 0;
-	#pragma omp parallel for reduction(max:maxNodeNeighbors)
-	for(size_t nodeIdx = 0; nodeIdx < nodes.size(); ++nodeIdx){
-		if(nodes[nodeIdx]->numNeighbors > maxNodeNeighbors){
-			maxNodeNeighbors = nodes[nodeIdx]->numNeighbors;
-		}
-	}
+	for(vector<MeshNode*>::iterator node = nodes.begin(); node != nodes.end(); ++node)
+		if((*node)->numNeighbors > maxNodeNeighbors)
+			maxNodeNeighbors = (*node)->numNeighbors;
 
 	LOG_INFO() << "Generated " << nodes.size() << " interface mesh nodes (" << (nodePool.memoryUsage()/1024/1024) << " mbyte).";
 	LOG_INFO() << "Maximum number of nearest neighbors per node: " << maxNodeNeighbors;
@@ -130,24 +117,29 @@ void DXAInterfaceMesh::createMeshNodeRecursive(InputAtom* a, BaseAtom* neighbor,
 	}
 }
 
-// Creates the interface mesh edges.
-void DXAInterfaceMesh::createInterfaceMeshEdges(){
+/******************************************************************************
+* Creates the interface mesh edges.
+******************************************************************************/
+void DXAInterfaceMesh::createInterfaceMeshEdges()
+{
 	LOG_INFO() << "Creating interface mesh edges.";
 	Timer timer;
-	#pragma omp parallel for schedule(dynamic)
-	for(std::size_t idx = 0; idx < inputAtoms.size(); ++idx){
-		auto &atom = inputAtoms[idx];
-		if(!atom.testFlag(ATOM_NON_BULK)) continue;
-		switch(atom.cnaType){
-			case FCC:
-			case HCP:
-				createFCCHCPMeshEdges(&atom);
-				break;
-			case BCC:
-				createBCCMeshEdges(&atom);
-				break;
+
+	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom) {
+
+		// Do an early rejection of bulk atoms, which are not adjacent to the interface mesh.
+		if(atom->testFlag(ATOM_NON_BULK) == false) continue;
+
+		switch(atom->cnaType) {
+		case FCC:
+		case HCP:
+			createFCCHCPMeshEdges(&*atom);
+			break;
+		case BCC:
+			createBCCMeshEdges(&*atom);
+			break;
 		}
-	}
+}
 
 	LOG_INFO() << "Edge creation time: " << timer.elapsedTime() << " sec.";
 }
@@ -228,15 +220,20 @@ void DXAInterfaceMesh::createBCCMeshEdges(InputAtom* atom){
 	}
 }
 
-// Creates the facets of the interface mesh.
-void DXAInterfaceMesh::createInterfaceMeshFacets(){
+/******************************************************************************
+* Creates the facets of the interface mesh.
+******************************************************************************/
+void DXAInterfaceMesh::createInterfaceMeshFacets()
+{
 	LOG_INFO() << "Creating interface mesh facets.";
 	Timer timer;
 
-	for(auto atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom){
+	for(vector<InputAtom>::iterator atom = inputAtoms.begin(); atom != inputAtoms.end(); ++atom) {
+
 		// Do an early rejection of bulk atoms, which are not adjacent to the interface mesh.
 		if(atom->testFlag(ATOM_NON_BULK) == false) continue;
-		switch(atom->cnaType){
+
+		switch(atom->cnaType) {
 		case FCC:
 		case HCP:
 			createFCCHCPMeshFacets(&*atom);
@@ -246,9 +243,9 @@ void DXAInterfaceMesh::createInterfaceMeshFacets(){
 			break;
 		}
 	}
-
 	// Close the remaining holes in the interface mesh.
 	closeFacetHoles();
+
 	validateInterfaceMesh();
 
 	// Fix facet-edge connectivity.
@@ -471,30 +468,36 @@ void DXAInterfaceMesh::createAdjacentQuad(BaseAtom* center, MeshNode* vertex1, M
 	}
 }
 
-// Creates a facet connecting up to four nodes.
-// Checks whether the facet already exists.
-// Edges are created on demand by this function.
-void DXAInterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices, const LatticeVector* edgeVectors){
+/******************************************************************************
+* Creates a facet connecting up to four nodes.
+* Checks whether the facet already exists.
+* Edges are created on demand by this function.
+******************************************************************************/
+void DXAInterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices, const LatticeVector* edgeVectors)
+{
 	DISLOCATIONS_ASSERT(numVertices <= 4);
 	MeshEdge* edges[4];
 
 	// Lookup free existing edges.
 	// Also check if the facet already exists.
-	for(int v = 0; v < numVertices; v++){
+	for(int v = 0; v < numVertices; v++) {
 		MeshNode* node1 = vertices[v];
-		MeshNode* node2 = vertices[(v + 1) % numVertices];
+		MeshNode* node2 = vertices[(v+1)%numVertices];
 		DISLOCATIONS_ASSERT(node2->tag != node1->tag);
 
 		edges[v] = NULL;
-		for(int e = 0; e < node1->numEdges; e++){
+		for(int e = 0; e < node1->numEdges; e++) {
 			MeshEdge& edge = node1->edges[e];
-			if(edge.node2() == node2 && edge.latticeVector.equals(edgeVectors[v])){
+			if(edge.node2() == node2 && edge.latticeVector.equals(edgeVectors[v])) {
 				const MeshFacet* existingFacet = edge.facet;
-				if(existingFacet == NULL){
+				if(existingFacet == NULL) {
+					//if(edges[v]) LOG_INFO() << "Multiple existing edges: " << edge.node1->tag << " - " << edge.node2()->tag;					
 					edges[v] = &edge;
 					break;
-				}else{
-					if(existingFacet->hasVertex(vertices[(v+2)%numVertices])){
+				}
+				else {
+					if(existingFacet->hasVertex(vertices[(v+2)%numVertices])) {
+						//LOG_INFO() << "Existing facet";
 						return;
 					}
 				}
@@ -502,19 +505,15 @@ void DXAInterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices,
 		}
 	}
 
-	// Create necessary edges with thread safety
-	#pragma omp critical(edge_creation)
-	{
-		for(int v = 0; v < numVertices; v++){
-			DISLOCATIONS_ASSERT(vertices[v]->isMeshNode());
-			if(edges[v] == NULL){
-				edges[v] = vertices[v]->createEdge(vertices[(v+1)%numVertices], edgeVectors[v]);
-			}
-		}
-
-		// Create facet
-		createFacet(numVertices, vertices, edges);
+	// Create necessary edges.
+	for(int v = 0; v < numVertices; v++) {
+		DISLOCATIONS_ASSERT(vertices[v]->isMeshNode());
+		if(edges[v] == NULL)
+			edges[v] = vertices[v]->createEdge(vertices[(v+1)%numVertices], edgeVectors[v]);
 	}
+
+	// Create facet
+	createFacet(numVertices, vertices, edges);
 }
 
 /******************************************************************************
@@ -687,192 +686,118 @@ bool DXAInterfaceMesh::constructFacetRecursive(int numEdges, int maxEdges, MeshN
 }
 
 
-void DXAInterfaceMesh::validateInterfaceMesh(){
+void DXAInterfaceMesh::validateInterfaceMesh()
+{
 	LOG_INFO() << "Validating mesh topology.";
 
-    // Parallelize node validation
-    #pragma omp parallel for schedule(dynamic)
-    for(size_t nodeIdx = 0; nodeIdx < nodes.size(); ++nodeIdx){
-        MeshNode* node = nodes[nodeIdx];
-        for(int e = 0; e < node->numEdges; e++) {
-            MeshNode* neighbor = node->edgeNeighbor(e);
-            
-            if(node->edges[e].oppositeEdge->oppositeEdge != &node->edges[e]){
-                #pragma omp critical(error_reporting)
-                {
-                    raiseError("Detected invalid reference between opposite edges. Edge vertex 1: %i  edge vertex 2: %i", node->tag, neighbor->tag);
-                }
-            }
-            
-            if((node->edges[e].facet != NULL && node->edges[e].oppositeEdge->facet == NULL) ||
-               (node->edges[e].facet == NULL && node->edges[e].oppositeEdge->facet != NULL)){
-                #pragma omp critical(error_reporting)
-                {
-                    raiseError("Detected open interface mesh surface. Edge vertex 1: %i  edge vertex 2: %i", node->tag, neighbor->tag);
-                }
-            }
+	// Check if edges and facets are properly linked together.
+	for(vector<MeshNode*>::const_iterator iter = nodes.begin(); iter != nodes.end(); ++iter) {
+		MeshNode* node = *iter;
+		for(int e = 0; e < node->numEdges; e++) {
+			MeshNode* neighbor = node->edgeNeighbor(e);
+			if(node->edges[e].oppositeEdge->oppositeEdge != &node->edges[e])
+				raiseError("Detected invalid reference between opposite edges. Edge vertex 1: %i  edge vertex 2: %i", node->tag, neighbor->tag);			if((node->edges[e].facet != NULL && node->edges[e].oppositeEdge->facet == NULL)
+					|| (node->edges[e].facet == NULL && node->edges[e].oppositeEdge->facet != NULL)) {
 
-            MeshFacet* facet = node->edges[e].facet;
-            if(facet == NULL) continue;
-            
-            bool found = false;
-            for(int v = 0; v < 3; v++){
-                if(facet->edges[v]->node1 == node){
-                    if(facet->edges[v] != &node->edges[e]) {
-                        #pragma omp critical(error_reporting)
-                        {
-                            raiseError("Detected invalid reference from facet to edge. Edge: %i - %i", node->tag, neighbor->tag);
-                        }
-                    }
-                    found = true;
-                    break;
-                }
-            }
-            if(!found){
-                #pragma omp critical(error_reporting)
-                {
-                    raiseError("Facet does not contain vertex to which it is incident. Vertex: %i", node->tag);
-                }
-            }
-        }
-    }
-    
-    // Parallelize facet validation
-    #pragma omp parallel for schedule(dynamic)
-    for(size_t facetIdx = 0; facetIdx < facets.size(); ++facetIdx){
-        MeshFacet* facet = facets[facetIdx];
-        MeshFacet* lastOppositeFacet = NULL;
-        LatticeVector burgersVector(NULL_VECTOR);
-        
-        for(int v = 0; v < 3; v++){
-            MeshNode* node1 = facet->edges[v]->node1;
-            MeshNode* node2 = facet->edges[(v+1)%3]->node1;
-            DISLOCATIONS_ASSERT(node2 == facet->edges[v]->node2());
-            
-            if(facet->edges[v]->facet != facet){
-                #pragma omp critical(error_reporting)
-                {
-                    raiseError("Edge is not incident to facet which is part of. Edge: %i - %i.", node1->tag, node2->tag);
-                }
-            }
+				raiseError("Detected open interface mesh surface. Edge vertex 1: %i  edge vertex 2: %i", node->tag, neighbor->tag);
+			}
 
-            burgersVector += facet->edges[v]->latticeVector;
+			MeshFacet* facet = node->edges[e].facet;
+			if(facet == NULL) continue;
+			bool found = false;
+			for(int v = 0; v < 3; v++) {
+				if(facet->edges[v]->node1 == node) {
+					if(facet->edges[v] != &node->edges[e])
+						raiseError("Detected invalid reference from facet to edge. Edge: %i - %i", node->tag, neighbor->tag);
+					found = true;
+					break;
+				}
+			}
+			if(!found)
+				raiseError("Facet does not contain vertex to which it is incident. Vertex: %i", node->tag);
+		}
+	}
+	for(vector<MeshFacet*>::const_iterator facet = facets.begin(); facet != facets.end(); ++facet) {
+		MeshFacet* lastOppositeFacet = NULL;
+		LatticeVector burgersVector(NULL_VECTOR);
+		for(int v = 0; v < 3; v++) {
+			MeshNode* node1 = (*facet)->edges[v]->node1;
+			MeshNode* node2 = (*facet)->edges[(v+1)%3]->node1;
+			DISLOCATIONS_ASSERT(node2 == (*facet)->edges[v]->node2());
+			if((*facet)->edges[v]->facet != (*facet))
+				raiseError("Edge is not incident to facet which is part of. Edge: %i - %i.", node1->tag, node2->tag);
 
-            MeshFacet* oppositeFacet = facet->edges[v]->oppositeEdge->facet;
-            if(oppositeFacet == facet){
-                #pragma omp critical(error_reporting)
-                {
-                    raiseError("Facet is opposite to itself.");
-                }
-            }
+			burgersVector += (*facet)->edges[v]->latticeVector;
 
-            if(oppositeFacet == lastOppositeFacet && oppositeFacet != NULL){
-                MeshNode* thirdVertex = facet->edges[(v + 2) % 3]->node1;
-                if(oppositeFacet->hasVertex(thirdVertex) == false) {
-                    #pragma omp critical(error_reporting)
-                    {
-                        raiseError("Facet has two neighbor edges to the same other facet. Edge: %i - %i", node1->tag, node2->tag);
-                    }
-                }
-            }
-            lastOppositeFacet = oppositeFacet;
-        }
-        
-        if(burgersVector.equals(NULL_VECTOR) == false){
-            #pragma omp critical(error_reporting)
-            {
-                raiseError("Facet Burgers vector is non-null: %f %f %f", burgersVector.X, burgersVector.Y, burgersVector.Z);
-            }
-        }
-    }
+			MeshFacet* oppositeFacet = (*facet)->edges[v]->oppositeEdge->facet;
+			if(oppositeFacet == (*facet))
+				raiseError("Facet is opposite to itself.");
+
+			if(oppositeFacet == lastOppositeFacet && oppositeFacet != NULL) {
+				MeshNode* thirdVertex = (*facet)->edges[(v+2)%3]->node1;
+				if(oppositeFacet->hasVertex(thirdVertex) == false)
+					raiseError("Facet has two neighbor edges to the same other facet. Edge: %i - %i", node1->tag, node2->tag);
+			}
+			lastOppositeFacet = oppositeFacet;
+		}
+		if(burgersVector.equals(NULL_VECTOR) == false)
+			raiseError("Facet Burgers vector is non-null: %f %f %f", burgersVector.X, burgersVector.Y, burgersVector.Z);
+	}
 }
 
 void DXAInterfaceMesh::duplicateSharedMeshNodes(){
 	size_t numSharedNodes = 0;
 
-	// Parallelize shared node detection
-	vector<bool> isSharedNode(nodes.size(), false);
-	
-	#pragma omp parallel for schedule(dynamic)
-	for(size_t nodeIndex = 0; nodeIndex < nodes.size(); ++nodeIndex){
+	for(size_t nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
 		MeshNode* node = nodes[nodeIndex];
 		DISLOCATIONS_ASSERT(node->numEdges <= MAX_NODE_EDGES);
-
 		bool edgeVisited[MAX_NODE_EDGES] = { false };
 		MeshEdge* initialEdge = NULL;
-
-		for(int e = 0; e < node->numEdges; e++){
-			if(node->edges[e].facet != NULL || node->edges[e].oppositeEdge->facet != NULL){
+		for(int e = 0; e < node->numEdges; e++) {
+			if(node->edges[e].facet != NULL || node->edges[e].oppositeEdge->facet != NULL)
 				initialEdge = &node->edges[e];
-			}else{
+			else
 				edgeVisited[e] = true;
-			}
 		}
-
 		if(initialEdge == NULL) continue;
 
 		MeshEdge* currentEdge = initialEdge;
-		do{
+		do {
 			edgeVisited[node->edgeIndex(currentEdge)] = true;
 			DISLOCATIONS_ASSERT(currentEdge->facet != NULL);
 			DISLOCATIONS_ASSERT(currentEdge->facet->testFlag(FACET_IS_UNNECESSARY) == false);
 			currentEdge = currentEdge->facet->previousEdge(currentEdge)->oppositeEdge;
-		}while(currentEdge != initialEdge);
+		}
+		while(currentEdge != initialEdge);
 
-		bool shared = false;
-		for(int e = 0; e < node->numEdges; e++){
-			if(edgeVisited[e] == false){
-				shared = true;
+		bool isSharedNode = false;
+		for(int e = 0; e < node->numEdges; e++) {
+			if(edgeVisited[e] == false) {
+				isSharedNode = true;
 				break;
 			}
 		}
-
-		isSharedNode[nodeIndex] = shared;
-	}
-
-	// Process shared nodes in serial 
-	for(size_t nodeIndex = 0; nodeIndex < nodes.size(); ++nodeIndex){
-		if(!isSharedNode[nodeIndex]) continue;
-		
-		MeshNode* node = nodes[nodeIndex];
-		bool edgeVisited[MAX_NODE_EDGES] = { false };
-		MeshEdge* initialEdge = NULL;
-		for(int e = 0; e < node->numEdges; e++){
-			if(node->edges[e].facet != NULL || node->edges[e].oppositeEdge->facet != NULL){
-				initialEdge = &node->edges[e];
-			}else{
-				edgeVisited[e] = true;
-			}
-		}
-
-		MeshEdge* currentEdge = initialEdge;
-		do{
-			edgeVisited[node->edgeIndex(currentEdge)] = true;
-			currentEdge = currentEdge->facet->previousEdge(currentEdge)->oppositeEdge;
-		}while(currentEdge != initialEdge);
+		if(!isSharedNode) continue;
 
 		// Create a second node that takes the edges not visited yet.
 		MeshNode* secondNode = nodePool.construct(*(BaseAtom*)node);
 		DISLOCATIONS_ASSERT(secondNode->numEdges == 0);
 		secondNode->index = nodes.size();
 		nodes.push_back(secondNode);
-
-		for(int e = 0; e < node->numEdges; e++){
-			if(edgeVisited[e] == false){
+		for(int e = 0; e < node->numEdges; e++) {
+			if(edgeVisited[e] == false) {
 				MeshEdge& oldEdge = node->edges[e];
 				MeshEdge* oppositeEdge = oldEdge.oppositeEdge;
 				MeshEdge& newEdge = secondNode->edges[secondNode->numEdges++];
-				
 				// Copy edge data.
 				newEdge.node1 = secondNode;
 				newEdge.latticeVector = oldEdge.latticeVector;
 				newEdge.oppositeEdge = oppositeEdge;
 				newEdge.facet = oldEdge.facet;
-
 				// Adjust pointers.
 				oppositeEdge->oppositeEdge = &newEdge;
 				DISLOCATIONS_ASSERT(oppositeEdge != &newEdge);
-				if(oldEdge.facet){
+				if(oldEdge.facet) {
 					oldEdge.facet->edges[oldEdge.facet->edgeIndex(&oldEdge)] = &newEdge;
 					DISLOCATIONS_ASSERT(oldEdge.facet->hasVertex(secondNode));
 				}
@@ -880,17 +805,15 @@ void DXAInterfaceMesh::duplicateSharedMeshNodes(){
 		}
 
 		// Copy neighbors.
-		for(int nn = 0; nn < node->numNeighbors; nn++){
+		for(int nn = 0; nn < node->numNeighbors; nn++)
 			secondNode->addNeighbor(node->neighbor(nn));
-		}
 
 		// Delete edges from original node.
 		int newNumEdges = 0;
-		for(int e = 0; e < node->numEdges; e++){
-			if(edgeVisited[e]){
-				if(e != newNumEdges){
+		for(int e = 0; e < node->numEdges; e++) {
+			if(edgeVisited[e]) {
+				if(e != newNumEdges)
 					node->moveEdge(e, newNumEdges);
-				}
 				newNumEdges++;
 			}
 		}
@@ -901,8 +824,8 @@ void DXAInterfaceMesh::duplicateSharedMeshNodes(){
 
 		numSharedNodes++;
 	}
-}
 
+}
 
 /******************************************************************************
 * Deletes facets which are not necessary for the interface mesh.
@@ -1136,53 +1059,49 @@ bool DXAInterfaceMesh::edgeEdgeOrientation(MeshEdge* edge1, MeshEdge* edge3)
 	}
 }
 
-// Fix facet-edge connectivity.
-void DXAInterfaceMesh::fixMeshEdges(){
-    size_t fixedEdges = 0;
+/******************************************************************************
+* Fix facet-edge connectivity.
+******************************************************************************/
+void DXAInterfaceMesh::fixMeshEdges()
+{
+	size_t fixedEdges = 0;
 
-    #pragma omp parallel for schedule(dynamic) reduction(+:fixedEdges)
-    for(size_t facetIdx = 0; facetIdx < facets.size(); ++facetIdx){
-        MeshFacet* facet = facets[facetIdx];
+	// Iterate over all edges of the mesh, which are in use.
+	for(vector<MeshFacet*>::const_iterator facet = facets.begin(); facet != facets.end(); ++facet) {
+		for(int e = 0; e < 3; e++) {
+			MeshEdge* edge1 = (*facet)->edges[e];
+			
+			// Look for an identical parallel edge.
+			for(int e2 = 0; e2 < edge1->node1->numEdges; e2++) {
+				MeshEdge* edge2 = &edge1->node1->edges[e2];
+				if(edge2 == edge1) continue;
+				if(edge2->facet == NULL) continue;				
+				if(edge2->node2() == edge1->node2() && edge1->latticeVector.equals(edge2->latticeVector)) {
+			
+					// Check if edge2 can be reached from edge1 by traversing the facets of the first shared node.
+					bool hitEdge2 = false;
+					MeshEdge* currentEdge = edge1;
+					do {
+						if(currentEdge == edge2) hitEdge2 = true;
+						currentEdge = currentEdge->facet->previousEdge(currentEdge)->oppositeEdge;
+					}
+					while(currentEdge != edge1);
 
-        for(int e = 0; e < 3; ++e){
-            MeshEdge* edge1 = facet->edges[e];
+					if(hitEdge2) {
 
-            // We traverse the edges that share the first node
-            for(int e2 = 0; e2 < edge1->node1->numEdges; ++e2){
-                MeshEdge* edge2 = &edge1->node1->edges[e2];
-                if(edge2 == edge1 || edge2->facet == nullptr) continue;
+						if(!edgeEdgeOrientation(edge1, edge2))
+							continue;
 
-                // Same nodes and same network vector?
-                if(edge2->node2() == edge1->node2() && edge1->latticeVector.equals(edge2->latticeVector)){
-                    // Is edge2 reached by walking on the mesh?
-                    bool hitEdge2 = false;
-                    MeshEdge* currentEdge = edge1;
-                    do{
-                        if(currentEdge == edge2){
-							hitEdge2 = true; 
-							break; 
-						}
-                        currentEdge = currentEdge->facet->previousEdge(currentEdge)->oppositeEdge;
-                    }while(currentEdge != edge1);
+						// Swap facets of the two edges.
+						swap(edge1->facet->edges[edge1->facet->edgeIndex(edge1)], edge2->facet->edges[edge2->facet->edgeIndex(edge2)]);
+						swap(edge1->facet, edge2->facet);
+						fixedEdges++;
 
-                    // Correct orientation?
-                    if(hitEdge2 && edgeEdgeOrientation(edge1, edge2)){
-                        // Critical section, we modify shared structures
-                        #pragma omp critical(edge_swap)
-                        {
-                            std::swap(edge1->facet->edges[edge1->facet->edgeIndex(edge1)],
-                                      edge2->facet->edges[edge2->facet->edgeIndex(edge2)]);
-                            std::swap(edge1->facet, edge2->facet);
-                        }
-                        // OpenMP will do the boosting
-                        ++fixedEdges;
-                    }
-                }
-            }
-        }
-    }
-
-    LOG_INFO() << "Fixed " << fixedEdges << " mesh edges.";
+					}
+				}
+			}
+		}
+	}
 }
 
 /******************************************************************************

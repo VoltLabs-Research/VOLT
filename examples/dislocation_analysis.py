@@ -6,14 +6,14 @@ pipeline = DislocationAnalysis()
 # pipeline.compute(dump_file, output_file)
 # pipeline.set_circuit_sizes(36, 128)
 # pipeline.set_smoothing_params(24, 12, 12)
-analysis = pipeline.compute('/home/rodyherrera/Desktop/tmp/OpenDXA/examples/2500_s9.dump', 'dislocations.vtk')
+analysis = pipeline.compute('/home/rodyherrera/Desktop/tmp/OpenDXA/examples/1000000_s9.dump', 'dislocations.vtk')
 
 settings = VisualizationSettings(
     line_width=3.0,
     colormap='plasma',
-    show_atoms=False,
-    show_stacking_faults=False,
-    show_interface=False,
+    show_atoms=True,
+    show_stacking_faults=True,
+    show_interface=True,
     show_grid=True,
     point_size=0.2
 )
