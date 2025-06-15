@@ -7,6 +7,10 @@
 #include <opendxa/structures/dislocations/dislocation_segment.hpp>
 #include <opendxa/structures/dislocations/burgers_circuit.hpp>
 #include <nlohmann/json.hpp>
+#include <filesystem>
+#include <regex>
+
+namespace fs = std::filesystem;
 
 using json = nlohmann::json;
 
@@ -35,7 +39,8 @@ protected:
 	void splitPolylineSegment2(StackingFault* sf, SFContourVertex* vertex1, int dim, const Vector3& projectionDir, multimap<FloatType, SFContourVertex*> clipVertices[2]);
 	bool isInsideStackingFault(StackingFault* sf, SFContourVertex* vertexHead, const Point3 p);
 	bool isInsideStackingFaultRay(StackingFault* sf, SFContourVertex* vertexHead, const Point3 p);
-
+	void writeOutputFile(const fs::path& inputFile, const fs::path& outputDir, const json& data);
+	json processFile(const fs::path& file, const OpenDXA::Config& config, bool outputIsDir, const fs::path& outputPath);
 	SFContourVertex* createSFVertex(StackingFault* sf, const Point3& pos) {
 		SFContourVertex* vertex = stackingFaultVertexPool.construct();
 		vertex->pos = pos;

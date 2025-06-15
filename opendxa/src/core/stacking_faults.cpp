@@ -3,10 +3,6 @@
 #include <opendxa/core/stacking_faults.hpp>
 #include <opendxa/utils/timer.hpp>
 #include <GL/glu.h>
-#include <filesystem>
-#include <regex>
-
-namespace fs = std::filesystem;
 
 DXAStackingFaults::DXAStackingFaults(): DXATracing(){}
 
@@ -19,7 +15,86 @@ void DXAStackingFaults::cleanup(){
 	stackingFaultOutputMesh.clear();
 }
 
-json DXAStackingFaults::compute(const OpenDXA::Config &config){
+json DXAStackingFaults::processFile(const fs::path& file, const OpenDXA::Config& config, bool outputIsDir, const fs::path& outputPath){
+    LOG_INFO() << "Processing file: " << file.string();
+
+    std::ifstream in(file);
+    if(!in) {
+        throw std::runtime_error("Cannot open file: " + file.string());
+    }
+
+    cleanup();
+
+    ParserStream parserStream(in);
+    readAtomsFile(parserStream, fs::is_directory(file.parent_path()));
+    
+    if(config.scaleFactors != Vector3{1,1,1}) {
+        transformSimulationCell(Matrix3{config.scaleFactors.X,0,0,0,config.scaleFactors.Y,0,0,0,config.scaleFactors.Z});
+    }
+    
+    wrapInputAtoms(config.atomOffset);
+
+    Timer fullTimer;
+    
+    buildNearestNeighborLists();
+    performCNA();
+    orderCrystallineAtoms();
+    clusterAtoms();
+    createInterfaceMeshNodes();
+    createStackingFaultEdges();
+    createInterfaceMeshFacets();
+    validateInterfaceMesh();
+    findStackingFaultPlanes();
+    traceDislocationSegments();
+    generateOutputMesh();
+    smoothOutputSurface(config.surfaceSmooth);
+    smoothDislocationSegments(config.lineSmooth, config.lineCoarsen);
+    finishStackingFaults(config.sfFlatten);
+    wrapDislocationSegments();
+
+    json data;
+    data["dislocations"] = exportDislocationsToJson();
+    data["interface_mesh"] = getInterfaceMeshData();
+    data["atoms"] = getAtomsData();
+    data["output_mesh"] = outputMesh.getOutputMeshData();
+    data["stacking_faults"] = getStackingFaults();
+    data["processing_time"] = fullTimer.elapsedTime();
+    data["filename"] = file.filename().string();
+
+    // Escribir archivo de salida si es necesario
+    if(outputIsDir) {
+        writeOutputFile(file, outputPath, data);
+    } else if(!config.outputFile.empty()) {
+        std::ofstream fout(outputPath);
+        if(!fout) {
+            throw std::runtime_error("Cannot open output file: " + outputPath.string());
+        }
+        fout << data.dump() << "\n";
+    }
+
+    return data;
+}
+
+void DXAStackingFaults::writeOutputFile(const fs::path& inputFile, 
+                                       const fs::path& outputDir, 
+                                       const json& data) {
+    std::string stem = inputFile.stem().string();
+    std::smatch m;
+    std::string ts = "0";
+    static const std::regex r(R"((\d+))");
+    if(std::regex_search(stem, m, r)) {
+        ts = m.str(1);
+    }
+    
+    fs::path outFile = outputDir / ("timestep_" + ts + ".json");
+    std::ofstream fout(outFile);
+    if(!fout) {
+        throw std::runtime_error("Cannot open output file: " + outFile.string());
+    }
+    fout << data.dump() << "\n";
+}
+
+json DXAStackingFaults::compute(const OpenDXA::Config &config) {
     setCNACutoff((FloatType) config.cnaCutoff);
     setPBC(config.pbcX, config.pbcY, config.pbcZ);
     setMaximumBurgersCircuitSize(config.maxCircuitSize);
@@ -29,106 +104,81 @@ json DXAStackingFaults::compute(const OpenDXA::Config &config){
     fs::path outputPath(config.outputFile);
 
     bool outputIsDir = false;
-    if(!config.outputFile.empty()){
-        if(fs::exists(outputPath)){
-            if(fs::is_directory(outputPath)){
-                outputIsDir = true;
-            } else {
-                outputIsDir = false;
-            }
-        } else if(fs::is_directory(inputPath)){
+    if(!config.outputFile.empty()) {
+        if(fs::exists(outputPath)) {
+            outputIsDir = fs::is_directory(outputPath);
+        } else if(fs::is_directory(inputPath)) {
             fs::create_directories(outputPath);
             outputIsDir = true;
         }
     }
 
-    json aggregate; 
-    size_t fileIndex = 0;
-
-    auto process_file = [&](const fs::path &file){
-        LOG_INFO() << "Processing file: " << file.string();
-
-        std::ifstream in(file);
-        if(!in){
-            LOG_ERROR() << "Cannot open file: " << file.string();
-            return;
-        }
-        cleanup();
-
-        ParserStream parserStream(in);
-        readAtomsFile(parserStream, fs::is_directory(inputPath));
-        if(config.scaleFactors != Vector3{1,1,1})
-            transformSimulationCell(Matrix3{config.scaleFactors.X,0,0,0,config.scaleFactors.Y,0,0,0,config.scaleFactors.Z});
-        wrapInputAtoms(config.atomOffset);
-
-        Timer t;
-        buildNearestNeighborLists();
-        performCNA();
-        orderCrystallineAtoms();
-        clusterAtoms();
-        createInterfaceMeshNodes();
-        createStackingFaultEdges();
-        createInterfaceMeshFacets();
-        validateInterfaceMesh();
-        findStackingFaultPlanes();
-        traceDislocationSegments();
-        generateOutputMesh();
-        smoothOutputSurface(config.surfaceSmooth);
-        smoothDislocationSegments(config.lineSmooth, config.lineCoarsen);
-        finishStackingFaults(config.sfFlatten);
-        wrapDislocationSegments();
-
-        json data;
-        data["dislocations"] = exportDislocationsToJson();
-        data["interface_mesh"] = getInterfaceMeshData();
-        data["atoms"] = getAtomsData();
-        data["output_mesh"] = outputMesh.getOutputMeshData();
-        data["stacking_faults"] = getStackingFaults();
-
-        if(outputIsDir){
-            std::string stem = file.stem().string();
-            std::smatch m;
-            std::string ts = "0";
-            static const std::regex r(R"((\d+))");
-            if(std::regex_search(stem, m, r)){
-                ts = m.str(1);
-            }
-            fs::path outFile = outputPath / ("timestep_" + ts + ".json");
-            std::ofstream fout(outFile);
-            if(!fout){
-                LOG_ERROR() << "Cannot open output file: " << outFile.string();
-            } else {
-                fout << data.dump() << "\n";
-            }
-        } else if(!config.outputFile.empty()){
-            std::ofstream fout(outputPath);
-            if(!fout){
-                LOG_ERROR() << "Cannot open output file: " << outputPath.string();
-            } else {
-                fout << data.dump() << "\n";
-            }
-        } else {
-            aggregate["files"].push_back(data);
-        }
-
-        cleanup();
+    json aggregate;
+    std::atomic<size_t> fileIndex{0};
+    std::mutex aggregateMutex;
+    auto createConfiguredProcessor = [&config]() {
+        auto processor = std::make_unique<DXAStackingFaults>();
+        processor->setCNACutoff((FloatType) config.cnaCutoff);
+        processor->setPBC(config.pbcX, config.pbcY, config.pbcZ);
+        processor->setMaximumBurgersCircuitSize(config.maxCircuitSize);
+        processor->setMaximumExtendedBurgersCircuitSize(config.extendedCircuitSize);
+        return processor;
     };
+    if(fs::is_directory(inputPath)) {
+        std::vector<fs::path> files;
+        for(auto const& entry : fs::directory_iterator(inputPath)) {
+            if(entry.is_regular_file()) {
+                files.push_back(entry.path());
+            }
+        }
 
-    if(fs::is_directory(inputPath)){
-        for(auto const& entry : fs::directory_iterator(inputPath)){
-            if(entry.is_regular_file()){
-                process_file(entry.path());
-                ++fileIndex;
+        LOG_INFO() << "Found " << files.size() << " files to process";
+
+        #pragma omp parallel
+        {
+            auto localProcessor = createConfiguredProcessor();
+            
+            #pragma omp for schedule(dynamic)
+            for(size_t i = 0; i < files.size(); ++i) {
+                const auto& file = files[i];
+                
+                try {
+                    json data = localProcessor->processFile(file, config, outputIsDir, outputPath);
+                    
+                    if(config.outputFile.empty()) {
+                        std::lock_guard<std::mutex> lock(aggregateMutex);
+                        aggregate["files"].push_back(data);
+                    }
+                    
+                    fileIndex++;
+                    
+                    #pragma omp critical
+                    {
+                        LOG_INFO() << "Processed file " << fileIndex.load() 
+                                   << "/" << files.size() << ": " << file.filename().string();
+                    }
+                    
+                } catch(const std::exception& e) {
+                    #pragma omp critical
+                    {
+                        LOG_ERROR() << "Error processing file " << file.string() 
+                                    << ": " << e.what();
+                    }
+                }
             }
         }
     } else {
-        process_file(inputPath);
+        json data = processFile(inputPath, config, outputIsDir, outputPath);
+        if(config.outputFile.empty()) {
+            aggregate["files"].push_back(data);
+        }
+        fileIndex = 1;
     }
 
-    if(config.outputFile.empty()){
+    if(config.outputFile.empty()) {
         return aggregate;
     }
-    return json{{ "processed_files", fileIndex }};
+    return json{{"processed_files", fileIndex.load()}};
 }
 
 bool DXAStackingFaults::createStackingFaultEdges(){

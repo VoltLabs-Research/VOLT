@@ -17,9 +17,11 @@ settings = VisualizationSettings(
     line_width=3.0,
     colormap='plasma',
     show_atoms=False,
-    show_stacking_faults=False,
-    show_interface=False,
-    show_grid=True,
+    background_color='black',
+    show_stacking_faults=True,
+    show_interface=True,
+    show_grid=False,
+    dislocation_opacity=0.1,
     point_size=0.2
 )
 
