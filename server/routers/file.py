@@ -1,20 +1,28 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from typing import Dict, Any, List
-from config import uploaded_files
 from pathlib import Path
 from config import TRAJECTORY_DIR
 
 import logging
 import traceback
 import uuid
+import shutil
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.delete('/{file_id}', summary='Delete uploaded file and all associated data')
-async def delete_file(file_id: str) -> Dict[str, str]:
-    if file_id not in uploaded_files:
-        raise HTTPException(status_code=404, detail=f'File with ID {file_id} not found')
+@router.delete('/{folder_id}', summary='Delete a trajectory folder and its contents')
+async def delete_folder(folder_id: str) -> Dict[str, str]:
+    folder_path = Path(TRAJECTORY_DIR) / folder_id
+
+    if not folder_path.exists() or not folder_path.is_dir():
+        raise HTTPException(status_code=404, detail=f'Folder "{folder_id}" not found')
+
+    try:
+        shutil.rmtree(folder_path)
+        return {"detail": f'Folder "{folder_id}" deleted successfully'}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to delete folder: {e}')
 
 @router.post('/', summary='Upload multiple trajectory files from a folder')
 async def upload_file(files: List[UploadFile] = File(...)) -> Dict[str, Any]:
@@ -45,17 +53,13 @@ async def upload_file(files: List[UploadFile] = File(...)) -> Dict[str, Any]:
     }
 
 @router.get('/', summary='List all uploaded trajectory folders')
-async def list_folders() -> Dict[str, List[str]]:
+async def list_folders() -> List[str]:
     trajectory_path = Path(TRAJECTORY_DIR)
-
     if not trajectory_path.exists():
         trajectory_path.mkdir(parents=True)
 
     folders = [f.name for f in trajectory_path.iterdir() if f.is_dir()]
-    return {
-        'num_folders': len(folders),
-        'folders': folders
-    }
+    return folders
 
 @router.get('/{folder_id}', summary='List files inside a trajectory folder')
 async def list_files_in_folder(folder_id: str):

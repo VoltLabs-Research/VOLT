@@ -18,6 +18,13 @@ body {
     justify-content: space-between;
 }
 
+.file-list-loading-container{
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .editor-timestep-viewer-container{
     width: 100%;
 }

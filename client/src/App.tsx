@@ -4,6 +4,7 @@ import { Grid, OrbitControls, Environment } from '@react-three/drei';
 import { IoAddOutline } from 'react-icons/io5';
 import { FileUpload } from './components/FileUpload';
 import './App.css';
+import { FileList } from './components/FileList';
 
 const CanvasGrid = () => {
     const { gl } = useThree();
@@ -38,6 +39,7 @@ const App = () => {
     return (
         <main className='editor-container'>
             {/* <AnalysisConfig /> */}
+            <FileList />
 
             <section className='editor-camera-info-container'>
                 <h3 className='editor-camera-info-title'>Perspective Camera</h3>
