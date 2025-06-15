@@ -16,7 +16,33 @@ async def websocket_send_timestep(websocket: WebSocket, folder_id: str, timestep
     await manager.connect(websocket)
 
     try:
-        dump_path = Path(TRAJECTORY_DIR) / folder_id / str(timestep)
+        folder_path = Path(TRAJECTORY_DIR) / folder_id
+        
+        if not folder_path.exists() or not folder_path.is_dir():
+            await websocket.send_text(json.dumps({
+                'status': 'error',
+                'data': { 'code': 'trajectory_folder_not_found' }
+            }))
+            await websocket.close()
+            return
+
+        # If the timestep sent by the client is equal to -1, then we load the 
+        # first timestep in the simulation. When the directory is loaded, all 
+        # timesteps are extracted, assuming each file is an exported timestep. 
+        # The {folder_id} directory contains a list of files in the format {timestep}. 
+        # Therefore, when sorted, the first file will be the first timestep.
+        if timestep == -1:
+            timestep_files = [
+                int(dump_file.name) for dump_file in folder_path.iterdir()
+                if dump_file.is_file() and dump_file.name.isdigit()
+            ]
+            
+            if not timestep_files:
+                raise ValueError('No timestep files found.')
+            
+            timestep = min(timestep_files)
+        
+        dump_path = folder_path / str(timestep)
         if not dump_path.exists():
             await websocket.send_text(json.dumps({
                 'status': 'error',

@@ -41,11 +41,9 @@ const App = () => {
     const handleFolderSelection = (uploadedFolderId: string) => {
         setFolderId(uploadedFolderId);
 
-        // By default, when uploading a directory with simulations 
-        // to the server, after uploading it we load the first timestep.
-        // TODO: It can't always be 0. Well, a simulation can start 
-        // for example with timestep 10000. Handle these cases.
-        setCurrentTimestep(0);
+        // When selecting a directory, we load the first timestep found by default. 
+        // From the server, if timestep == -1, then load the first timestep from the directory.
+        setCurrentTimestep(-1);
     };
 
     return (
