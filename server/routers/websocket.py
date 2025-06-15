@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from services.connection_manager import ConnectionManager
 from utils.lammps import read_lammps_dump
-from config import TRAJECTORY_DIR
+from config import TRAJECTORY_DIR, ANALYSIS_DIR
 from pathlib import Path
 
 import logging
@@ -63,6 +63,55 @@ async def websocket_send_timestep(websocket: WebSocket, folder_id: str, timestep
     
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+    except Exception as e:
+        print(e)
+        await websocket.send_text(json.dumps({
+            'status': 'error',
+            'code': 'unhandled_exception'
+        }))
+        await websocket.close()
+
+@router.websocket('/analysis/{folder_id}/{timestep}')
+async def websocket_send_analysis(websocket: WebSocket, folder_id: str, timestep: int):
+    await manager.connect(websocket)
+    
+    try:
+        folder_path = Path(ANALYSIS_DIR) / folder_id
+        analysis_file = folder_path / f'timestep_{timestep}.json'
+
+        if not folder_path.exists() or not folder_path.is_dir():
+            await websocket.send_text(json.dumps({
+                'status': 'error',
+                'data': { 'code': 'analysis_folder_Not_found' }
+            }))
+
+            await websocket.close()
+            return
+        
+        if not analysis_file.exists():
+            await websocket.send_text(json.dumps({
+                'status': 'error',
+                'data': { 'code': 'analysis_file_not_found' }
+            }))
+            
+            await websocket.close()
+            return
+        
+        with open(analysis_file, 'r') as file:
+            content = json.load(file)
+
+        # There's no need to verify that the properties exist (I think). 
+        # Since they're returned from CPP, it's impossible for them not to exist (I think).
+        dislocations = content['dislocations']
+        
+        await websocket.send_text(json.dumps({
+            'status': 'success',
+            'data': dislocations
+        }))
+
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
     except Exception as e:
         print(e)
         await websocket.send_text(json.dumps({
