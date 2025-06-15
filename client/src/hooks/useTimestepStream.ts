@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useWebSocket from './useWebSocket';
 
 interface TimestepData{
@@ -16,9 +16,10 @@ interface UseTimestepStreamOptions{
 const useTimestepStream = ({ folderId, timestepId, baseUrl = 'ws://127.0.0.1:8000/ws' }: UseTimestepStreamOptions) => {
     const [data, setData] = useState<TimestepData | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [url, setUrl] = useState<string | null>(null);
 
     const { status, connect, disconnect, isConnected } = useWebSocket({
-        url: `${baseUrl}/timesteps/${folderId}/${timestepId}`,
+        url: url ?? '',
         autoConnect: true,
         onMessage: (event) => {
             try{
@@ -36,6 +37,21 @@ const useTimestepStream = ({ folderId, timestepId, baseUrl = 'ws://127.0.0.1:800
             setError('connection_error');
         }
     });
+
+    useEffect(() => {
+        if(!folderId || timestepId == null){
+            return;
+        }
+
+        const newUrl = `${baseUrl}/timesteps/${folderId}/${timestepId}`;
+        setUrl(newUrl);
+
+        disconnect();
+    }, [folderId, timestepId]);
+
+    useEffect(() => {
+        if(url) connect();
+    }, [url]);
 
     return {
         data,

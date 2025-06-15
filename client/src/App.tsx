@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls, Environment } from '@react-three/drei';
 import { IoAddOutline } from 'react-icons/io5';
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
 import TimestepViewer from './components/TimestepViewer';
+import useTimestepStream from './hooks/useTimestepStream';
+import TimestepControls from './components/TimestepControls';
 import './App.css';
 
 const CanvasGrid = () => {
@@ -31,25 +33,72 @@ const CanvasGrid = () => {
 
 const App = () => {
     // TODO: use react redux
-    const [folderId, setFolderId] = useState<string | null>(null);
-    const [currentTimestep, setCurrentTimestep] = useState<number>(0);
+    const [folder, setFolder] = useState<object | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [playSpeed, setPlaySpeed] = useState(1);
+    const [currentTimestep, setCurrentTimestep] = useState(0);
+    const { data, error } = useTimestepStream({ folderId: folder?.folder_id || null, timestepId: currentTimestep });
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const currentIndexRef = useRef(0);
+
+    useEffect(() => {
+        if(!folder) return;
+        console.log(folder)
+        currentIndexRef.current = folder.timesteps.indexOf(currentTimestep);
+    }, [currentTimestep, folder]);
+
+    useEffect(() => {
+        if(!folder) return;
+
+        if (!isPlaying || folder.timesteps.length === 0) return;
+
+        const advance = () => {
+            if(!folder) return;
+
+            currentIndexRef.current = (currentIndexRef.current + 1) % folder.timesteps.length;
+            setCurrentTimestep(folder.timesteps[currentIndexRef.current]);
+
+            timeoutRef.current = setTimeout(advance, 1000 / playSpeed);
+        };
+
+        timeoutRef.current = setTimeout(advance, 1000 / playSpeed);
+
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, [isPlaying, playSpeed, folder, currentTimestep]);
 
     const handleUploadError = (error: string) => {
         console.error('OpenDXA: Upload error:', error);
     };
 
-    const handleFolderSelection = (uploadedFolderId: string) => {
-        setFolderId(uploadedFolderId);
-
-        // When selecting a directory, we load the first timestep found by default. 
-        // From the server, if timestep == -1, then load the first timestep from the directory.
-        setCurrentTimestep(-1);
+    const handleFolderSelection = (folder_data) => {
+        setFolder(folder_data);
+        setCurrentTimestep(folder_data.min_timestep);
     };
 
     return (
         <main className='editor-container'>
             {/* <AnalysisConfig /> */}
             <FileList onFileSelect={handleFolderSelection} />
+
+            {folder && (
+                <TimestepControls
+                    folderInfo={folder}
+                    currentTimestep={currentTimestep}
+                    onTimestepChange={setCurrentTimestep}
+                    isPlaying={isPlaying}
+                    onPlayPause={() => setIsPlaying(p => !p)}
+                    playSpeed={playSpeed}
+                    onSpeedChange={setPlaySpeed}
+                    isConnected={!!data}
+                    isStreaming={isPlaying}
+                    streamProgress={{
+                        current: currentTimestep,
+                        total: folder?.max_timestep ?? 1
+                    }}
+                />
+            )}
 
             <section className='editor-camera-info-container'>
                 <h3 className='editor-camera-info-title'>Perspective Camera</h3>
@@ -86,15 +135,8 @@ const App = () => {
                         />
                         <Environment preset='city' />
 
-                        {folderId && (
-                            <TimestepViewer
-                                folderId={folderId}
-                                currentTimestep={currentTimestep}
-                                isPlaying={false}
-                                playSpeed={1}
-                                timesteps={[0]}
-                                onTimestepChange={setCurrentTimestep}
-                            />
+                        {folder && (
+                            <TimestepViewer data={data} />
                         )}
                     </Canvas>
                 </FileUpload>

@@ -1,24 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import AtomParticles from './AtomParticles';
-import DislocationViewer from './DislocationViewer';
-import TimestepAnimator from './TimestepAnimator';
-import useTimestepStream from '../hooks/useTimestepStream';
 
-const TimestepViewer: React.FC<any & {
-    folderId: string;
-    showDislocations?: boolean;
-    analysis?: any | null
-}> = ({
-    folderId,
-    currentTimestep,
-    isPlaying,
-    playSpeed,
-    timesteps,
-    onTimestepChange,
-    analysis,
-    showDislocations = false
-}) => {
-    const { data, error } = useTimestepStream({ folderId, timestepId: currentTimestep });
+const TimestepViewer: React.FC<any> = ({ data }) => {
 
     useEffect(() => {
         console.log(data)

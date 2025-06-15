@@ -18,14 +18,14 @@ const FileList: React.FC<FileListProps> = ({
     refreshTrigger
 }) => {
     const {
-        data: folders,
+        data,
         loading,
         error,
         execute: loadFolders
     } = useAPI<string[]>(listFolders);
 
     useEffect(() => {
-            loadFolders();
+        loadFolders();
     }, [refreshTrigger]);
 
     const handleDelete = async (folderId: string, e: React.MouseEvent) => {
@@ -43,7 +43,7 @@ const FileList: React.FC<FileListProps> = ({
         <EditorWidget className='editor-file-list-container'>
             <div className='editor-floating-header-container'>
                 <h3 className='editor-floating-header-title'>
-                    Uploaded Folders ({folders?.length})
+                    Uploaded Folders ({data?.length})
                 </h3>
                 <IoIosArrowDown className='editor-floating-header-icon' />
             </div>
@@ -54,17 +54,17 @@ const FileList: React.FC<FileListProps> = ({
                         <Loader scale={0.5} />
                     </div>
                 ) : (
-                    folders?.map((folderId) => (
+                    data?.map(({ folder_id, ...folder_data }) => (
                         <div
-                            key={folderId}
-                            className={`file-item ${selectedFile === folderId ? 'selected' : ''}`}
-                            onClick={() => onFileSelect(folderId)}
+                            key={folder_id}
+                            className={`file-item ${selectedFile === folder_id ? 'selected' : ''}`}
+                            onClick={() => onFileSelect({ folder_id, ...folder_data })}
                         >
                             <div className='file-header-container'>
-                                <h4>{folderId}</h4>
+                                <h4>{folder_id}</h4>
                                 <i className='file-delete-icon-container'>
                                     <BsThreeDots
-                                        onClick={(e) => handleDelete(folderId, e)}
+                                        onClick={(e) => handleDelete(folder_id, e)}
                                         className='file-delete-icon'
                                     />
                                 </i>

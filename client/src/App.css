@@ -452,11 +452,4 @@ body {
     .editor-floating-container{
         left: 0;
     }
-
-    .editor-dislocations-containerm
-    .editor-timestep-controls{
-        display: none !important;
-        visibility: hidden;
-    }
-    
 }

@@ -64,24 +64,38 @@ async def upload_file(files: List[UploadFile] = File(...)) -> Dict[str, Any]:
         'folder_id': folder_id,
     }
 
-@router.get('/', summary='List all uploaded trajectory folders')
-async def list_folders() -> List[str]:
+def get_simulation_info(folder_path: Path) -> Dict[str, Any]:
+    files = sorted([
+        file for file in folder_path.iterdir()
+        if file.is_file() and file.name.isdigit()
+    ], key=lambda x: int(x.name))
+
+    timesteps = [int(file.name) for file in files]
+
+    return {
+        'folder_id': folder_path.name,
+        'timesteps': timesteps,
+        'min_timestep': timesteps[0] if timesteps else -1,
+        'max_timestep': timesteps[-1] if timesteps else -1
+    }
+
+@router.get('/', summary='List all uploaded trajectory folders with metadata')
+async def list_all_simulations() -> List[Dict[str, Any]]:
     trajectory_path = Path(TRAJECTORY_DIR)
     if not trajectory_path.exists():
         trajectory_path.mkdir(parents=True)
 
-    folders = [f.name for f in trajectory_path.iterdir() if f.is_dir()]
-    return folders
+    folders_info = []
+    for folder in trajectory_path.iterdir():
+        if folder.is_dir():
+            folders_info.append(get_simulation_info(folder))
 
-@router.get('/{folder_id}', summary='List files inside a trajectory folder')
-async def list_files_in_folder(folder_id: str):
+    return folders_info
+
+@router.get('/{folder_id}', summary='Get simulation info for a trajectory folder')
+async def get_simulation_info_single(folder_id: str):
     folder_path = Path(TRAJECTORY_DIR) / folder_id
-    if not folder_path.exists():
+    if not folder_path.exists() or not folder_path.is_dir():
         raise HTTPException(status_code=404, detail='Folder not found')
 
-    files = [str(p.relative_to(folder_path)) for p in folder_path.rglob('*') if p.is_file()]
-    return {
-        'folder_id': folder_id,
-        'num_files': len(files),
-        'files': files
-    }
+    return get_simulation_info(folder_path)
