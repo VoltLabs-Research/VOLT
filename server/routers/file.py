@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from config import TRAJECTORY_DIR, ANALYSIS_DIR
+from utils.lammps import extract_timesteps
 from typing import Dict, Any, List
 from pathlib import Path
 
@@ -35,12 +36,24 @@ async def upload_file(files: List[UploadFile] = File(...)) -> Dict[str, Any]:
     for upload_file in files:
         try:
             filename = Path(upload_file.filename).name
-            save_path = folder_path / filename
             folder_path.mkdir(parents=True, exist_ok=True)
 
             content = await upload_file.read()
-            with open(save_path, 'wb') as dest_file:
-                dest_file.write(content)
+            text = content.decode('utf-8', errors='ignore')
+            lines = text.splitlines()
+
+            # Since we're loading a directory, we assume each dump file 
+            # corresponds to a specific timestep. Given this, we should only
+            # get a list with one item. If it doesn't exist, it's simply because 
+            # a file was placed in the folder that wasn't a dump, we ignore it.
+            timesteps = extract_timesteps(lines)
+            if not len(timesteps):
+                continue
+
+            filename = Path(str(timesteps[0]))
+            save_path = folder_path / filename
+            with open(save_path, 'wb') as file:
+                file.write(content)
 
         except Exception as e:
             logger.error(f'Error saving {upload_file.filename}: {e}')
