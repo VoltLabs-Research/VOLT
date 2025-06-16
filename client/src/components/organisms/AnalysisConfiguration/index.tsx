@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import type { AnalysisConfig } from '../types/index';
 import { IoIosArrowDown } from 'react-icons/io';
-import EditorWidget from './EditorWidget';
+import FormField from '../../molecules/FormField';
+import EditorWidget from '../EditorWidget';
 
-const AnalysisConfig: React.FC = () => {
+const AnalysisConfiguration: React.FC = () => {
     const [internalConfig, setInternalConfig] = useState({
         cutoffDistance: 0,
         neighbors: 0,
@@ -116,37 +116,6 @@ const AnalysisConfig: React.FC = () => {
         }));
     };
 
-    const renderInput = (field: any) => {
-        const { key, inputProps } = field;
-        
-        if(inputProps.type === 'select'){
-            return (
-                <select
-                    value={internalConfig[key as keyof typeof internalConfig] || ''}
-                    onChange={(e) => handleChange(key, e.target.value)}
-                    className='labeled-input'
-                >
-                    {inputProps.options?.map((option: any) => (
-                        <option key={option.value} value={option.value}>
-                            {option.title}
-                        </option>
-                    ))}
-                </select>
-            );
-        }
-
-        return (
-            <input
-                {...inputProps}
-                value={internalConfig[key as keyof typeof internalConfig] || ''}
-                onChange={(e) => handleChange(key, 
-                    inputProps.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value
-                )}
-                className='labeled-input'
-            />
-        );
-    };
-
     return (
         <EditorWidget className='editor-analysis-config'>
             <div className='editor-analysis-config-header-container'>
@@ -156,16 +125,18 @@ const AnalysisConfig: React.FC = () => {
 
             <div className='editor-analysis-config-body-container'>
                 {configFields.map((field, index) => (
-                    <div className='labeled-input-container' key={index}>
-                        <h4 className='labeled-input-label'>{field.label}</h4>
-                        <div className='labeled-input-tag-container'>
-                            {renderInput(field)}
-                        </div>
-                    </div>
+                    <FormField
+                        key={index}
+                        label={field.label}
+                        fieldKey={field.key}
+                        inputProps={field.inputProps}
+                        field={internalConfig}
+                        onFieldChange={handleChange}
+                    />
                 ))}
             </div>
         </EditorWidget>
     );
 };
 
-export default AnalysisConfig;
+export default AnalysisConfiguration;

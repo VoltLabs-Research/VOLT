@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DislocationResults from './DislocationResults';
 import type { Dislocation, DislocationAnalyzerProps } from '../types/index';
 import EditorWidget from './EditorWidget';
-import Loader from './Loader';
+import Loader from './atoms/Loader';
 import { LiaAtomSolid } from "react-icons/lia";
 
 const DislocationAnalyzer: React.FC<DislocationAnalyzerProps> = ({ 

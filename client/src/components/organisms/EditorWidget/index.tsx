@@ -1,5 +1,9 @@
 import React, { useRef, useCallback } from 'react';
-import type { EditorWidgetProps } from '../types/index';
+
+interface EditorWidgetProps {
+    children: React.ReactNode;
+    className?: string;
+}
 
 const EditorWidget: React.FC<EditorWidgetProps> = ({ 
     children, 
@@ -11,7 +15,7 @@ const EditorWidget: React.FC<EditorWidgetProps> = ({
     const currentTranslateRef = useRef({ x: 0, y: 0 });
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
-        if(!isDraggingRef.current || !widgetRef.current) return;
+        if (!isDraggingRef.current || !widgetRef.current) return;
 
         const deltaX = e.clientX - startPosRef.current.x;
         const deltaY = e.clientY - startPosRef.current.y;
@@ -28,7 +32,7 @@ const EditorWidget: React.FC<EditorWidgetProps> = ({
     const handleMouseUp = useCallback(() => {
         isDraggingRef.current = false;
         
-        if(widgetRef.current){
+        if (widgetRef.current) {
             const { x, y } = currentTranslateRef.current;
             widgetRef.current.style.transform = `translate(${x}px, ${y}px) scale(1)`;
         }
@@ -43,7 +47,7 @@ const EditorWidget: React.FC<EditorWidgetProps> = ({
         isDraggingRef.current = true;
         startPosRef.current = { x: e.clientX, y: e.clientY };
         
-        if(widgetRef.current){
+        if (widgetRef.current) {
             const { x, y } = currentTranslateRef.current;
             widgetRef.current.style.transform = `translate(${x}px, ${y}px) scale(0.95)`;
         }

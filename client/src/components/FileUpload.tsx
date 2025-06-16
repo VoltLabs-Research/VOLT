@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { uploadFolder, analyzeFolder } from '../services/api';
-import Loader from './Loader';
+import Loader from './atoms/Loader';
 
 interface FileUploadProps {
     onUploadSuccess?: (res: any) => void;

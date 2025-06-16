@@ -1,41 +1,17 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
-import { Grid, OrbitControls, Environment } from '@react-three/drei';
 import { IoAddOutline } from 'react-icons/io5';
-import FileUpload from './components/FileUpload';
-import FileList from './components/FileList';
+import FileManager from './components/organisms/FileManager/';
+import TimestepControls from './components/organisms/TimestepControls/';
+import AnalysisConfiguration from './components/organisms/AnalysisConfiguration/';
+import Scene3D from './components/organisms/Scene3D/';
 import TimestepViewer from './components/TimestepViewer';
 import DislocationViewer from './components/DislocationViewer';
-import TimestepControls from './components/TimestepControls';
+import FileUpload from './components/FileUpload';
 import useTimestepStream from './hooks/useTimestepStream';
 import useAnalysisStream from './hooks/useAnalysisStream';
 import './App.css';
 
-const CanvasGrid = () => {
-    const { gl } = useThree();
-
-    useEffect(() => {
-        gl.setClearColor('#1a1a1a');
-    }, [gl]);
-
-    return (
-        <Grid
-            infiniteGrid
-            cellSize={0.75}
-            sectionSize={3}
-            cellThickness={0.5}
-            sectionThickness={1}
-            fadeDistance={100}
-            fadeStrength={2}
-            color='#333333'
-            sectionColor='#555555'
-        />
-    );
-};
-
-const MemoizedCanvasGrid = React.memo(CanvasGrid);
-
-const App = () => {
+const EditorPage: React.FC = () => {
     const [folder, setFolder] = useState<object | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playSpeed, setPlaySpeed] = useState(1);
@@ -55,7 +31,7 @@ const App = () => {
 
     const handleCameraControlsEnable = useCallback((enabled: boolean) => {
         setCameraControlsEnabled(enabled);
-        if(orbitControlsRef.current){
+        if (orbitControlsRef.current) {
             orbitControlsRef.current.enabled = enabled;
         }
     }, []);
@@ -73,7 +49,7 @@ const App = () => {
     }), [folder?.min_timestep, folder?.max_timestep]);
 
     const clearPlayTimeout = useCallback(() => {
-        if(timeoutRef.current){
+        if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
         }
@@ -82,7 +58,7 @@ const App = () => {
     useEffect(() => {
         clearPlayTimeout();
         
-        if(!folder || !isPlaying || timesteps.length === 0 || playSpeed <= 0){
+        if (!folder || !isPlaying || timesteps.length === 0 || playSpeed <= 0) {
             return;
         }
 
@@ -101,10 +77,10 @@ const App = () => {
     }, [isPlaying, playSpeed, folder, timesteps, clearPlayTimeout, currentTimestep]);
 
     useEffect(() => {
-        if(!folder || !timesteps.length) return;
+        if (!folder || !timesteps.length) return;
         
         const index = timesteps.indexOf(currentTimestep);
-        if(index >= 0){
+        if (index >= 0) {
             currentIndexRef.current = index;
         }
     }, [currentTimestep, folder, timesteps]);
@@ -131,38 +107,9 @@ const App = () => {
         total: maxTimestep
     }), [currentTimestep, maxTimestep]);
 
-    const cameraConfig = useMemo(() => ({
-        position: [12, 8, 12] as [number, number, number],
-        fov: 50
-    }), []);
-
-    const lightConfig = useMemo(() => ({
-        ambient: { intensity: 0.4 },
-        directional: {
-            position: [15, 15, 15] as [number, number, number],
-            intensity: 1.0,
-            'shadow-mapSize': [2048, 2048] as [number, number],
-            'shadow-camera-far': 100,
-            'shadow-camera-left': -15,
-            'shadow-camera-right': 15,
-            'shadow-camera-top': 15,
-            'shadow-camera-bottom': -15
-        }
-    }), []);
-
-    const orbitControlsConfig = useMemo(() => ({
-        makeDefault: true,
-        enableDamping: true,
-        dampingFactor: 0.05,
-        rotateSpeed: 0.7,
-        maxDistance: 30,
-        minDistance: 2,
-        target: [0, 3, 0] as [number, number, number]
-    }), []);
-
     return (
         <main className='editor-container'>
-            <FileList onFileSelect={handleFolderSelection} />
+            <FileManager onFileSelect={handleFolderSelection} selectedFile={folder?.folder_id || null} />
 
             {folder && (
                 <TimestepControls
@@ -188,30 +135,10 @@ const App = () => {
 
             <div className='editor-timestep-viewer-container'>
                 <FileUpload onUploadError={handleUploadError} onUploadSuccess={handleFolderSelection}>
-                    <Canvas shadows camera={cameraConfig}>
-                        <ambientLight intensity={lightConfig.ambient.intensity} />
-                        <directionalLight
-                            castShadow
-                            position={lightConfig.directional.position}
-                            intensity={lightConfig.directional.intensity}
-                            shadow-mapSize={lightConfig.directional['shadow-mapSize']}
-                            shadow-camera-far={lightConfig.directional['shadow-camera-far']}
-                            shadow-camera-left={lightConfig.directional['shadow-camera-left']}
-                            shadow-camera-right={lightConfig.directional['shadow-camera-right']}
-                            shadow-camera-top={lightConfig.directional['shadow-camera-top']}
-                            shadow-camera-bottom={lightConfig.directional['shadow-camera-bottom']}
-                        />
-                        
-                        <MemoizedCanvasGrid />
-                        
-                        <OrbitControls 
-                            ref={orbitControlsRef}
-                            {...orbitControlsConfig}
-                            enabled={cameraControlsEnabled}
-                        />
-                                                
-                        <Environment preset='city' />
-
+                    <Scene3D
+                        cameraControlsEnabled={cameraControlsEnabled}
+                        onCameraControlsRef={(ref) => { orbitControlsRef.current = ref; }}
+                    >
                         {folder && data && (
                             <TimestepViewer
                                 data={data}
@@ -224,9 +151,10 @@ const App = () => {
                                 segments={analysisStream.data}
                                 scale={0.2}
                                 centerOffset={[-5, 0, 10]}
+                                onCameraControlsEnable={handleCameraControlsEnable}
                             />
                         )}
-                    </Canvas>
+                    </Scene3D>
                 </FileUpload>
             </div>
 
@@ -236,8 +164,10 @@ const App = () => {
                     Dislocation Analysis
                 </span>
             </section>
+
+            <AnalysisConfiguration />
         </main>
     );
 };
 
-export default App;
+export default EditorPage;
