@@ -4,6 +4,7 @@ from utils.lammps import read_lammps_dump
 from config import TRAJECTORY_DIR, ANALYSIS_DIR
 from pathlib import Path
 import numpy as np
+import asyncio
 
 import logging
 import json
@@ -38,26 +39,12 @@ def get_dislocation_type(segment: dict) -> str:
     except Exception:
         return 'other'
 
-@router.websocket('/timestep_data/{folder_id}/{timestep}')
-async def websocket_send_combined_data(websocket: WebSocket, folder_id: str, timestep: int):
-    await manager.connect(websocket)
-
+def process_single_timestep(folder_id: str, timestep: int) -> dict | None:
     try:
         folder_path = Path(TRAJECTORY_DIR) / folder_id
-        if not folder_path.is_dir():
-            await websocket.send_text(json.dumps({'status': 'error', 'data': {'code': 'trajectory_folder_not_found'}}))
-            await websocket.close(); return
-
-        if timestep == -1:
-            timestep_files = [int(f.name) for f in folder_path.iterdir() if f.is_file() and f.name.isdigit()]
-            if not timestep_files:
-                raise ValueError('No timestep files found.')
-            timestep = min(timestep_files)
-        
         dump_path = folder_path / str(timestep)
         if not dump_path.exists():
-            await websocket.send_text(json.dumps({'status': 'error', 'data': {'code': 'trajectory_not_found'}}))
-            await websocket.close(); return
+            return None
 
         atoms_data = read_lammps_dump(str(dump_path))
         atoms_data['timestep'] = timestep
@@ -65,51 +52,61 @@ async def websocket_send_combined_data(websocket: WebSocket, folder_id: str, tim
         pruned_dislocation_data = []
         dislocation_results = {}
 
-        try:
-            analysis_file_path = Path(ANALYSIS_DIR) / folder_id / f'timestep_{timestep}.json'
-            if analysis_file_path.exists():
-                with open(analysis_file_path, 'r') as file:
-                    analysis_content = json.load(file).get('dislocations', {})
-                
-                raw_data = analysis_content.get('data', [])
-                if raw_data:
-                    summary = analysis_content.get('summary', {})
-                    metadata = analysis_content.get('metadata', {})
-                    
-                    dislocation_results = {
-                        'total_dislocations': metadata.get('count', 0),
-                        'total_length': summary.get('total_length', 0),
-                        'density': summary.get('density', {}).get('dislocation_density', 0),
-                    }
-                    
-                    for d in raw_data:
-                        pruned_dislocation_data.append({
-                            'id': d.get('index'),
-                            'points': d.get('points'),
-                            'length': d.get('length'),
-                            'type': get_dislocation_type(d),
-                            'burgers': {
-                                'vector': d.get('burgers', {}).get('vector'),
-                                'magnitude': d.get('burgers', {}).get('magnitude')
-                            },
-                            'is_closed': d.get('burgers_circuits', [{}])[0].get('summary', {}).get('is_closed')
-                        })
-
-        except Exception as e:
-            logger.error(f"Could not read or process analysis file for {folder_id}/{timestep}: {e}")
-
-        combined_data = {
+        analysis_file_path = Path(ANALYSIS_DIR) / folder_id / f'timestep_{timestep}.json'
+        if analysis_file_path.exists():
+            with open(analysis_file_path, 'r') as file:
+                analysis_content = json.load(file).get('dislocations', {})
+            
+            raw_data = analysis_content.get('data', [])
+            if raw_data:
+                summary = analysis_content.get('summary', {})
+                metadata = analysis_content.get('metadata', {})
+                dislocation_results = {
+                    'total_dislocations': metadata.get('count', 0),
+                    'total_length': summary.get('total_length', 0),
+                    'density': summary.get('density', {}).get('dislocation_density', 0),
+                }
+                for d in raw_data:
+                    pruned_dislocation_data.append({
+                        'id': d.get('index'), 'points': d.get('points'), 'length': d.get('length'),
+                        'type': get_dislocation_type(d),
+                        'burgers': {'vector': d.get('burgers', {}).get('vector'), 'magnitude': d.get('burgers', {}).get('magnitude')}
+                    })
+        
+        return {
             'atoms_data': atoms_data,
             'dislocation_data': pruned_dislocation_data,
             'dislocation_results': dislocation_results
         }
+    except Exception as e:
+        logger.error(f"Error processing timestep {timestep} for folder {folder_id}: {e}")
+        return None
 
-        await websocket.send_text(json.dumps({'status': 'success', 'data': combined_data}))
+@router.websocket('/stream_timesteps/{folder_id}')
+async def websocket_stream_timesteps(websocket: WebSocket, folder_id: str):
+    await manager.connect(websocket)
+    try:
+        while True:
+            message = await websocket.receive_json()
+            if message.get('action') == 'request_timesteps':
+                requested_ids = message.get('timesteps', [])
+                
+                for timestep_id in requested_ids:
+                    data = process_single_timestep(folder_id, timestep_id)
+                    if data:
+                        await websocket.send_json({
+                            'status': 'success',
+                            'type': 'timestep_data',
+                            'data': data
+                        })
+                        await asyncio.sleep(0.01)
+
+                await websocket.send_json({'status': 'success', 'type': 'stream_complete'})
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:
-        logger.error(f"Unhandled exception in combined data endpoint: {e}")
-        await websocket.send_text(json.dumps({'status': 'error', 'data': {'code': 'unhandled_exception'}}))
+        logger.error(f"Unhandled exception in stream endpoint: {e}")
+        await websocket.send_json({'status': 'error', 'message': str(e)})
     finally:
-        await websocket.close()
+        await manager.disconnect(websocket)

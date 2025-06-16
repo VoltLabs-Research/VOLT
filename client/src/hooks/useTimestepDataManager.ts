@@ -1,12 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-
-
-export interface AtomsData {
-    positions: number[][];
-    total_atoms: number;
-    timestep: number;
-    [key: string]: any;
-}
+import { useState, useEffect, useRef } from 'react';
 
 export interface DislocationSegment {
     id: number;
@@ -17,7 +9,15 @@ export interface DislocationSegment {
     burgers: {
         vector: number[];
         magnitude: number;
+        fractional: string;
     };
+}
+
+export interface AtomsData {
+    positions: number[][];
+    total_atoms: number;
+    timestep: number;
+    [key: string]: any;
 }
 
 export interface DislocationResultsData {
@@ -36,7 +36,6 @@ interface UseTimestepDataManagerOptions {
     folderId: string | null;
     currentTimestep: number;
     timesteps: number[];
-    preloadCount?: number;
     baseUrl?: string;
 }
 
@@ -44,82 +43,17 @@ const useTimestepDataManager = ({
     folderId,
     currentTimestep,
     timesteps,
-    preloadCount = 5,
     baseUrl = 'ws://127.0.0.1:8000/ws'
 }: UseTimestepDataManagerOptions) => {
     const [cache, setCache] = useState<Map<number, CombinedTimestepData>>(new Map());
     const [data, setData] = useState<CombinedTimestepData | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-    const activeSockets = useRef<Map<number, WebSocket>>(new Map());
     
-    const currentTimestepRef = useRef(currentTimestep);
-    useEffect(() => {
-        currentTimestepRef.current = currentTimestep;
-    }, [currentTimestep]);
-
-    const fetchTimestep = useCallback((timestepId: number) => {
-        if (!folderId || cache.has(timestepId) || activeSockets.current.has(timestepId)) {
-            return;
-        }
-
-        const url = `${baseUrl}/timestep_data/${folderId}/${timestepId}`;
-        const ws = new WebSocket(url);
-        activeSockets.current.set(timestepId, ws);
-
-        ws.onopen = () => {
-            if (timestepId === currentTimestepRef.current) {
-                setIsLoading(true);
-            }
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const response = JSON.parse(event.data);
-                if (response.status === 'success') {
-                    const receivedData = response.data as CombinedTimestepData;
-                    setCache(prevCache => new Map(prevCache).set(timestepId, receivedData));
-                    
-                    if (timestepId === currentTimestepRef.current) {
-                        setData(receivedData);
-                        setIsLoading(false);
-                        setError(null);
-                    }
-                } else if (response.status === 'error') {
-                    if (timestepId === currentTimestepRef.current) {
-                        setError(response.data?.code || 'unhandled_exception');
-                        setIsLoading(false);
-                    }
-                }
-            } catch (err) {
-                if (timestepId === currentTimestepRef.current) {
-                    setError('malformed_response');
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        ws.onerror = () => {
-            if (timestepId === currentTimestepRef.current) {
-                setError('connection_error');
-                setIsLoading(false);
-            }
-        };
-
-        ws.onclose = () => {
-            activeSockets.current.delete(timestepId);
-        };
-
-    }, [folderId, baseUrl]);
+    const streamSocketRef = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        if (!folderId || timesteps.length === 0) {
-            setData(null);
-            setCache(new Map());
-            activeSockets.current.forEach(ws => ws.close());
-            activeSockets.current.clear();
-            return;
-        }
+        if (!folderId) return;
 
         if (cache.has(currentTimestep)) {
             setData(cache.get(currentTimestep)!);
@@ -127,24 +61,61 @@ const useTimestepDataManager = ({
             setError(null);
         } else {
             setData(null);
-            setError(null);
-            fetchTimestep(currentTimestep);
+            setIsLoading(true);
         }
+    }, [currentTimestep, cache, folderId]);
 
-        const currentIndex = timesteps.indexOf(currentTimestep);
-        if (currentIndex !== -1) {
-            for (let i = 1; i <= preloadCount; i++) {
-                const nextIndex = currentIndex + i;
-                if (nextIndex < timesteps.length) {
-                    const nextTimestepId = timesteps[nextIndex];
-                    fetchTimestep(nextTimestepId);
-                }
+    useEffect(() => {
+        if (!folderId || timesteps.length === 0) {
+            setCache(new Map());
+            if (streamSocketRef.current) {
+                streamSocketRef.current.close();
+                streamSocketRef.current = null;
             }
+            return;
         }
         
-    }, [currentTimestep, folderId, timesteps, fetchTimestep, preloadCount]);
+        if (streamSocketRef.current) return;
+
+        const timestepsToLoad = timesteps.filter(t => !cache.has(t));
+        if (timestepsToLoad.length === 0) return;
+
+        const url = `${baseUrl}/stream_timesteps/${folderId}`;
+        const ws = new WebSocket(url);
+        streamSocketRef.current = ws;
+
+        ws.onopen = () => {
+            ws.send(JSON.stringify({
+                action: 'request_timesteps',
+                timesteps: timestepsToLoad
+            }));
+        };
+
+        ws.onmessage = (event) => {
+            const response = JSON.parse(event.data);
+            if (response.status === 'success' && response.type === 'timestep_data') {
+                const receivedData = response.data as CombinedTimestepData;
+                const receivedTimestep = receivedData.atoms_data.timestep;
+                setCache(prevCache => new Map(prevCache).set(receivedTimestep, receivedData));
+            } else if (response.status === 'success' && response.type === 'stream_complete') {
+                ws.close();
+            } else {
+                setError('stream_error');
+            }
+        };
+
+        ws.onerror = () => setError('stream_connection_error');
+        ws.onclose = () => streamSocketRef.current = null;
+
+        return () => {
+            if(ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)){
+                ws.close();
+            }
+            streamSocketRef.current = null;
+        };
+    }, [folderId, timesteps, baseUrl]);
     
-    return { data, isLoading, error };
+    return { data, isLoading, error, cacheSize: cache.size };
 };
 
 export default useTimestepDataManager;

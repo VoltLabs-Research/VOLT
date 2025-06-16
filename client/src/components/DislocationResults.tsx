@@ -81,7 +81,7 @@ const DislocationResults: React.FC<DislocationResultsProps> = ({
             <div className='dislocation-results-body-container'>
                 {segments.map((segment, index) => (
                     <div
-                        key={segment.id || index}
+                        key={`ts-${timestep}-disloc-${segment.id}-${index}`}
                         className='dislocation-result-item'
                         onClick={() => onDislocationSelect?.(segment)}
                     >   
