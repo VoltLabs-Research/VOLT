@@ -125,6 +125,7 @@ const EditorPage: React.FC = () => {
                     >
                         {data?.atoms_data && (
                             <TimestepViewer
+                                key={folderId}
                                 data={data.atoms_data}
                                 onCameraControlsEnable={handleCameraControlsEnable}
                             />

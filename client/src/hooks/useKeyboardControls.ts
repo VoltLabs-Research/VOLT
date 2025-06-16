@@ -1,37 +1,43 @@
 import { useEffect } from 'react';
-import type { AtomPosition } from '../types';
 import * as THREE from 'three';
+
+interface AtomPosition {
+    x: number;
+    y: number;
+    z: number;
+    type: number;
+}
 
 interface UseKeyboardControlsProps {
     ctrlPressed: boolean;
     shiftPressed: boolean;
     isGroupSelected: boolean;
-    setAtomPositions: React.Dispatch<React.SetStateAction<AtomPosition[]>>;
+    setGroupPosition: React.Dispatch<React.SetStateAction<THREE.Vector3>>;
     setGroupRotation: React.Dispatch<React.SetStateAction<THREE.Euler>>;
     setIsGroupSelected: React.Dispatch<React.SetStateAction<boolean>>;
     resetTransforms: () => void;
     resetRotation: () => void;
-    atomPositions: AtomPosition[];
 }
 
 const useKeyboardControls = ({
     ctrlPressed,
     shiftPressed,
     isGroupSelected,
-    setAtomPositions,
+    setGroupPosition,
     setGroupRotation,
     setIsGroupSelected,
     resetTransforms,
     resetRotation,
-    atomPositions
 }: UseKeyboardControlsProps) => {
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
+            if (!isGroupSelected) return;
+
             if((ctrlPressed || shiftPressed) && 
                 ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'q', 'Q', 'e', 'E'].includes(event.key)){
                 event.preventDefault();
                 
-                const moveStep = 2.0;
+                const moveStep = 0.5;
                 const rotationStep = 0.1;
                 
                 if(shiftPressed){
@@ -39,10 +45,10 @@ const useKeyboardControls = ({
                     
                     switch (event.key){
                         case 'ArrowUp':
-                            deltaY = moveStep;
+                            deltaZ = -moveStep;
                             break;
                         case 'ArrowDown':
-                            deltaY = -moveStep;
+                            deltaZ = moveStep;
                             break;
                         case 'ArrowLeft':
                             deltaX = -moveStep;
@@ -52,23 +58,19 @@ const useKeyboardControls = ({
                             break;
                         case 'q':
                         case 'Q':
-                            deltaZ = moveStep;
+                             deltaY = moveStep;
                             break;
                         case 'e':
                         case 'E':
-                            deltaZ = -moveStep;
+                            deltaY = -moveStep;
                             break;
                     }
 
-                    setAtomPositions(prev => {
-                        return prev.map(atom => ({
-                            ...atom,
-                            x: atom.x + deltaX,
-                            y: atom.y + deltaY,
-                            z: atom.z + deltaZ
-                        }));
-                    });
-                    setIsGroupSelected(true);
+                    setGroupPosition(prev => new THREE.Vector3(
+                        prev.x + deltaX,
+                        prev.y + deltaY,
+                        prev.z + deltaZ
+                    ));
                     
                 }else if(ctrlPressed){
                     if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)){
@@ -94,7 +96,6 @@ const useKeyboardControls = ({
                             prev.y + deltaRotY,
                             prev.z
                         ));
-                        setIsGroupSelected(true);
                     }
                 }
             }
@@ -105,30 +106,12 @@ const useKeyboardControls = ({
                 resetTransforms();
             }else if(event.key === 'r' || event.key === 'R'){
                 resetRotation();
-            }else if(event.key === 'c' || event.key === 'C'){
-                const center = atomPositions.reduce((acc, atom) => {
-                    acc.x += atom.x;
-                    acc.y += atom.y;
-                    acc.z += atom.z;
-                    return acc;
-                }, { x: 0, y: 0, z: 0 });
-                
-                center.x /= atomPositions.length;
-                center.y /= atomPositions.length;
-                center.z /= atomPositions.length;
-                
-                setAtomPositions(prev => prev.map(atom => ({
-                    ...atom,
-                    x: atom.x - center.x,
-                    y: atom.y - center.y,
-                    z: atom.z - center.z
-                })));
             }
         };
         
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [ctrlPressed, shiftPressed, isGroupSelected, setAtomPositions, setGroupRotation, setIsGroupSelected, resetTransforms, resetRotation, atomPositions]);
+    }, [ctrlPressed, shiftPressed, isGroupSelected, setGroupPosition, setGroupRotation, setIsGroupSelected, resetTransforms, resetRotation]);
 };
 
 export default useKeyboardControls;

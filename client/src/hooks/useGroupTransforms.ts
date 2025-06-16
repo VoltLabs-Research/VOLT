@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import * as THREE from 'three';
 
 const useGroupTransforms = () => {
@@ -6,15 +6,19 @@ const useGroupTransforms = () => {
     const [groupPosition, setGroupPosition] = useState(new THREE.Vector3(0, 0, 0));
     const [isGroupSelected, setIsGroupSelected] = useState(false);
 
-    const resetTransforms = () => {
+    const resetTransforms = useCallback(() => {
         setGroupRotation(new THREE.Euler(0, 0, 0));
         setGroupPosition(new THREE.Vector3(0, 0, 0));
         setIsGroupSelected(false);
-    };
+    }, [setGroupRotation, setGroupPosition, setIsGroupSelected]);
 
-    const resetRotation = () => {
+    const deselectGroup = useCallback(() => {
+        setIsGroupSelected(false);
+    }, [setIsGroupSelected]);
+
+    const resetRotation = useCallback(() => {
         setGroupRotation(new THREE.Euler(0, 0, 0));
-    };
+    }, [setGroupRotation]);
 
     return {
         groupRotation,
@@ -24,6 +28,7 @@ const useGroupTransforms = () => {
         isGroupSelected,
         setIsGroupSelected,
         resetTransforms,
+        deselectGroup,
         resetRotation
     };
 };

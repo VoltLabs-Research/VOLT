@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import useInputStates from '../hooks/useInputStates';
 import useGroupTransforms from '../hooks/useGroupTransforms';
@@ -22,7 +21,6 @@ const AtomParticles: React.FC<{
     const meshRef = useRef<THREE.InstancedMesh>(null);
     const groupRef = useRef<THREE.Group>(null);
     
-    const [atomPositions, setAtomPositions] = useState<AtomPosition[]>(atoms);
     const yOffset = 5;
     const tempMatrix = useMemo(() => new THREE.Matrix4(), []);
 
@@ -35,6 +33,7 @@ const AtomParticles: React.FC<{
         isGroupSelected, 
         setIsGroupSelected,
         resetTransforms,
+        deselectGroup,
         resetRotation 
     } = useGroupTransforms();
     
@@ -52,21 +51,21 @@ const AtomParticles: React.FC<{
         ctrlPressed,
         shiftPressed,
         isGroupSelected,
-        setAtomPositions,
+        setGroupPosition,
         setGroupRotation,
         setIsGroupSelected,
         resetTransforms,
-        resetRotation,
-        atomPositions
+        resetRotation
     });
 
     useMouseEvents({
-        atomPositions,
+        atoms,
         scale,
         yOffset,
         ctrlPressed,
         shiftPressed,
         isDragging,
+        isGroupSelected,
         dragMode,
         dragStartPos,
         dragStartMouse,
@@ -75,19 +74,15 @@ const AtomParticles: React.FC<{
         groupRotation,
         startDrag,
         endDrag,
+        deselectGroup,
         setGroupPosition,
         setGroupRotation,
         setIsGroupSelected,
-        setAtomPositions,
         onCameraControlsEnable
     });
 
-    useEffect(() => {
-        setAtomPositions([...atoms]);
-    }, [atoms]);
-
     const baseColors = useMemo(() => {
-        const colors = new Float32Array(atomPositions.length * 3);
+        const colors = new Float32Array(atoms.length * 3);
         const typeColors = {
             1: new THREE.Color(0xff4444),
             2: new THREE.Color(0x44ff44),
@@ -97,104 +92,69 @@ const AtomParticles: React.FC<{
             6: new THREE.Color(0x44ffff),
         };
         
-        atomPositions.forEach((atom, i) => {
+        atoms.forEach((atom, i) => {
             const color = typeColors[atom.type as keyof typeof typeColors] || new THREE.Color(0xffffff);
             color.toArray(colors, i * 3);
         });
         
         return colors;
-    }, [atomPositions]);
+    }, [atoms]);
 
     const [persistentColors, setPersistentColors] = useState(baseColors);
 
     useEffect(() => {
-        setPersistentColors(baseColors);
-    }, [baseColors]);
-    
-    useEffect(() => {
         if (isGroupSelected) {
-            const newColors = new Float32Array(atomPositions.length * 3);
+            const newColors = new Float32Array(atoms.length * 3);
             const selectedColor = new THREE.Color(0x9d4edd);
-            for (let i = 0; i < atomPositions.length; i++) {
+            for (let i = 0; i < atoms.length; i++) {
                 selectedColor.toArray(newColors, i * 3);
             }
             setPersistentColors(newColors);
+        } else {
+            setPersistentColors(baseColors);
         }
-    }, [isGroupSelected, atomPositions.length]);
-
+    }, [isGroupSelected, atoms.length, baseColors]);
 
     useEffect(() => {
-        if(!meshRef.current || atomPositions.length === 0) return;
+        if(!meshRef.current || atoms.length === 0) return;
 
-        const center = atomPositions.reduce((acc, atom) => {
+        const center = atoms.reduce((acc, atom) => {
             acc.x += atom.x * scale;
             acc.y += (atom.z * scale) + yOffset;
             acc.z += atom.y * scale;
             return acc;
         }, new THREE.Vector3(0, 0, 0));
-        center.divideScalar(atomPositions.length);
+        center.divideScalar(atoms.length);
 
-        atomPositions.forEach((atom, i) => {
+        atoms.forEach((atom, i) => {
             const position = new THREE.Vector3(
                 atom.x * scale,
                 (atom.z * scale) + yOffset,
                 atom.y * scale
             );
             
-            position.add(groupPosition);
-            
             if(!groupRotation.equals(new THREE.Euler(0, 0, 0))){
-                position.sub(center);
-                position.applyEuler(groupRotation);
-                position.add(center);
+                const relativePos = position.clone().sub(center);
+                relativePos.applyEuler(groupRotation);
+                position.copy(center).add(relativePos);
             }
+            
+            position.add(groupPosition);
             
             tempMatrix.setPosition(position);
             meshRef.current!.setMatrixAt(i, tempMatrix);
         });
         
         meshRef.current.instanceMatrix.needsUpdate = true;
-    }, [atomPositions, scale, yOffset, groupRotation, groupPosition, tempMatrix]);
+    }, [atoms, scale, yOffset, groupRotation, groupPosition, tempMatrix]);
 
     useEffect(() => {
         if (!meshRef.current?.geometry.attributes.color) return;
-
-        const colors = persistentColors.slice();
-        let scaleMultiplier = 1.0;
-
-        if (isGroupSelected) {
-            scaleMultiplier = 1;
-        }
-
-        if (isDragging) {
-            scaleMultiplier = 1;
-            const colorModifiers = {
-                rotate: { r: 1.5, g: 1.3, gAdd: 0.3, b: 0.7 },
-                vertical: { r: 1.3, rAdd: 0.3, g: 0.8, b: 1.5 },
-                move: { r: 0.8, rAdd: 0.2, g: 1.5, b: 0.8, bAdd: 0.2 }
-            };
-            const modifier = colorModifiers[dragMode];
-            for (let i = 0; i < atomPositions.length; i++) {
-                colors[i * 3] = Math.min(1.0, colors[i * 3] * modifier.r + (modifier.rAdd || 0));
-                colors[i * 3 + 1] = Math.min(1.0, colors[i * 3 + 1] * modifier.g + (modifier.gAdd || 0));
-                colors[i * 3 + 2] = Math.min(1.0, colors[i * 3 + 2] * modifier.b + (modifier.bAdd || 0));
-            }
-        } else if (ctrlPressed) {
-            scaleMultiplier = 1;
-        } else if (shiftPressed) {
-            scaleMultiplier = 1;
-        }
-
-        (meshRef.current.geometry.attributes.color as THREE.InstancedBufferAttribute).array = colors;
+        (meshRef.current.geometry.attributes.color as THREE.InstancedBufferAttribute).array = persistentColors;
         meshRef.current.geometry.attributes.color.needsUpdate = true;
-
-        if (meshRef.current.scale.x !== scaleMultiplier) {
-            meshRef.current.scale.set(scaleMultiplier, scaleMultiplier, scaleMultiplier);
-        }
-
-    }, [isDragging, ctrlPressed, shiftPressed, isGroupSelected, dragMode, atomPositions.length, persistentColors]);
+    }, [persistentColors]);
     
-    if (atomPositions.length === 0) {
+    if (atoms.length === 0) {
         return null;
     }
 
@@ -204,8 +164,8 @@ const AtomParticles: React.FC<{
         <group ref={groupRef}>
             <instancedMesh 
                 ref={meshRef} 
-                args={[undefined, undefined, atomPositions.length]}
-                key={atomPositions.length}
+                args={[undefined, undefined, atoms.length]}
+                key={atoms.length}
             >
                 <sphereGeometry args={[sphereRadius, 8, 6]}>
                     <instancedBufferAttribute

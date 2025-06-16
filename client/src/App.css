@@ -57,3 +57,21 @@
 .editor-dislocations-button-text {
     font-weight: 500;
 }
+
+.file-upload-loader-container{
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, .2);
+    backdrop-filter: blur(1px);
+    display: flex;
+    top: 0;
+    position: absolute;
+    justify-content: center;
+    align-items: center;
+    z-index: 500;
+}
+
+.file-upload-loader-container p{
+    margin-top: 7rem;
+    color: #dadada;
+}
