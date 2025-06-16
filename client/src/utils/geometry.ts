@@ -21,7 +21,7 @@ export const getPlaneIntersection = (
 
 export const isClickNearAtoms = (
     mouseCoords: { x: number; y: number },
-    atomPositions: any[],
+    atomPositions: AtomPosition[],
     scale: number,
     yOffset: number,
     groupPosition: THREE.Vector3,
@@ -30,27 +30,28 @@ export const isClickNearAtoms = (
     camera: THREE.Camera
 ): boolean => {
     raycaster.setFromCamera(mouseCoords, camera);
-
+    
     const sphereRadius = Math.max(0.02, 1 * scale);
     const tempSphere = new THREE.SphereGeometry(sphereRadius, 8, 6);
     const tempMesh = new THREE.Mesh(tempSphere);
-
+    
     for(let i = 0; i < atomPositions.length; i++){
         const atom = atomPositions[i];
+        
         const position = new THREE.Vector3(
             atom.x * scale,
             (atom.z * scale) + yOffset,
             atom.y * scale
         );
-
+        
         position.add(groupPosition);
-
-        if(!groupRotation.equals(new THREE.Euler(0, 0, 0))){
+        
+        if (!groupRotation.equals(new THREE.Euler(0, 0, 0))) {
             const center = atomPositions.reduce((acc, a) => {
                 acc.x += a.x * scale;
                 acc.y += (a.z * scale) + yOffset;
                 acc.z += a.y * scale;
-                return acc;  
+                return acc;
             }, new THREE.Vector3(0, 0, 0));
             center.divideScalar(atomPositions.length);
             
@@ -58,17 +59,17 @@ export const isClickNearAtoms = (
             position.applyEuler(groupRotation);
             position.add(center);
         }
-
+        
         tempMesh.position.copy(position);
         tempMesh.updateMatrixWorld();
-
+        
         const intersects = raycaster.intersectObject(tempMesh);
         if(intersects.length > 0){
             tempSphere.dispose();
             return true;
         }
     }
-
+    
     tempSphere.dispose();
     return false;
 };
