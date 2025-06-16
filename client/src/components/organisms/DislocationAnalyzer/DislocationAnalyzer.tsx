@@ -4,6 +4,7 @@ import type { Dislocation, DislocationAnalyzerProps } from '../types/index';
 import EditorWidget from './EditorWidget';
 import Loader from './atoms/Loader';
 import { LiaAtomSolid } from "react-icons/lia";
+import './DislocationAnalyzer.css';
 
 const DislocationAnalyzer: React.FC<DislocationAnalyzerProps> = ({ 
     currentTimestep, 

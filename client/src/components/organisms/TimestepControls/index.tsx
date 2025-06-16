@@ -3,6 +3,7 @@ import PlayControls from '../../molecules/PlayControls';
 import TimestepSlider from '../../molecules/TimestepSlider';
 import SpeedControl from '../../molecules/SpeedControl';
 import EditorWidget from '../EditorWidget';
+import './TimestepControls.css';
 
 interface TimestepControlsProps {
     folderInfo: {

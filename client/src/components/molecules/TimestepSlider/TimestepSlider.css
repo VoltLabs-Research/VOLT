@@ -1,0 +1,21 @@
+.editor-timesteps-controls-slider {
+    display: flex;
+    align-items: center;
+    color: #dadada;
+    gap: 8px;
+}
+
+@media screen and (max-width: 768px) {
+    .editor-timesteps-controls-slider {
+        width: auto;
+        min-width: 120px;
+        flex: 1;
+    }
+    
+    .editor-timesteps-controls-slider label {
+        font-size: 0.75rem;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+    }
+}

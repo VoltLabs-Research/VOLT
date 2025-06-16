@@ -1,4 +1,5 @@
 import React from 'react';
+import './Input.css';
 
 interface InputProps {
     type?: 'text' | 'number' | 'email' | 'password';

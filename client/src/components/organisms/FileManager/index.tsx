@@ -5,6 +5,7 @@ import { deleteFolder, listFolders } from '../../../services/api';
 import FileItem from '../../molecules/FileItem';
 import Loader from '../../atoms/Loader';
 import EditorWidget from '../EditorWidget';
+import './FileManager.css';
 
 interface FileManagerProps {
     onFileSelect: (folderId: string) => void;

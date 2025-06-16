@@ -1,4 +1,5 @@
 import React, { useRef, useCallback } from 'react';
+import './EditorWidget.css';
 
 interface EditorWidgetProps {
     children: React.ReactNode;

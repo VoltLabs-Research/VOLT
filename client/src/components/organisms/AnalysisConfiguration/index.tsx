@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { IoIosArrowDown } from 'react-icons/io';
 import FormField from '../../molecules/FormField';
 import EditorWidget from '../EditorWidget';
+import './AnalysisConfiguration.css';
 
 const AnalysisConfiguration: React.FC = () => {
     const [internalConfig, setInternalConfig] = useState({

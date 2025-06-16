@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls, Environment } from '@react-three/drei';
+import './Scene3D.css';
 
 interface Scene3DProps {
     children?: React.ReactNode;

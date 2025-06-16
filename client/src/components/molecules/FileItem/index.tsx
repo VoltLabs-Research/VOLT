@@ -1,5 +1,6 @@
 import React from 'react';
 import { BsThreeDots } from 'react-icons/bs';
+import './FileItem.css';
 
 interface FileItemProps {
     folderId: string;

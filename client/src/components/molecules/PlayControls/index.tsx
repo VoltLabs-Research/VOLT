@@ -1,6 +1,7 @@
 import React from 'react';
 import { CiPlay1, CiPause1 } from 'react-icons/ci';
 import Button from '../../atoms/Button';
+import './PlayControls.css'
 
 interface PlayControlsProps {
     isPlaying: boolean;

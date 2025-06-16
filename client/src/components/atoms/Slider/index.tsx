@@ -1,4 +1,5 @@
 import React from 'react';
+import './Slider.css';
 
 interface SliderProps {
     min: number;

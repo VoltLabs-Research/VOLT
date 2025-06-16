@@ -1,0 +1,69 @@
+.editor-timestep-controls input[type='range'] {
+    flex: 1;
+    height: 6px;
+    background: transparent;
+    border-radius: 3px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    position: relative;
+}
+
+.editor-timestep-controls input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 2px #0002;
+    margin-top: -5px;
+}
+
+.editor-timestep-controls input[type='range']::-webkit-slider-runnable-track {
+    height: 6px;
+    background: linear-gradient(
+        to right,
+        #fff 0%,
+        #fff var(--progress),
+        #555 var(--progress),
+        #555 100%
+    );
+    border-radius: 3px;
+}
+
+.editor-timestep-controls input[type='range']::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 2px #0002;
+}
+
+.editor-timestep-controls input[type='range']::-moz-range-track {
+    height: 6px;
+    background: linear-gradient(
+        to right,
+        #fff 0%,
+        #fff var(--progress),
+        #555 var(--progress),
+        #555 100%
+    );
+    border-radius: 3px;
+}
+
+.editor-timestep-controls-slider {
+    width: 120px;
+}
+
+.speed-slider {
+    width: 80px;
+    height: 4px;
+}

@@ -1,0 +1,54 @@
+.editor-dislocations-container {
+    gap: 1rem;
+    top: 8rem;
+    left: 2rem;
+}
+
+.editor-dislocations-not-ready-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 250px;
+}
+
+.dislocation-results-header-stats {
+    font-size: .95rem;
+    font-weight: 400;
+}
+
+.dislocation-result-type {
+    width: .5rem;
+    height: .5rem;
+    border-radius: 50%;
+}
+
+.dislocation-result-item-title {
+    font-size: 1rem;
+}
+
+.dislocation-result-item-header-container {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.dislocation-results-body-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-right: .8rem;
+}
+
+.dislocation-result-data-title {
+    font-size: .9rem;
+}
+
+.dislocation-result-data-value {
+    font-size: .9rem;
+}
+
+.dislocation-result-data {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

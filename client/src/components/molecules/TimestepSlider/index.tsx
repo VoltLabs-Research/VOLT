@@ -1,5 +1,6 @@
 import React from 'react';
 import Slider from '../../atoms/Slider';
+import './TimestepSlider.css';
 
 interface TimestepSliderProps {
     currentTimestep: number;
