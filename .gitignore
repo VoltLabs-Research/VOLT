@@ -23,6 +23,8 @@ dist-ssr
 
 debug.analysis*
 
+execution_sandboxes/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

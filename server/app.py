@@ -5,7 +5,8 @@ from routers import (
     file_router,
     server_router,
     websocket_router,
-    dislocation_router
+    dislocation_router,
+    execution_router
 )
 
 import logging
@@ -33,6 +34,7 @@ app.add_middleware(
 app.include_router(file_router, prefix='/files')
 app.include_router(websocket_router, prefix='/ws')
 app.include_router(dislocation_router, prefix='/dislocations')
+app.include_router(execution_router, prefix='/execute')
 app.include_router(server_router)
 
 if __name__ == '__main__':

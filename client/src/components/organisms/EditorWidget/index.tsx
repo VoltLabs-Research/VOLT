@@ -1,19 +1,45 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import './EditorWidget.css';
 
 interface EditorWidgetProps {
     children: React.ReactNode;
     className?: string;
+    style?: React.CSSProperties;
 }
 
-const EditorWidget: React.FC<EditorWidgetProps> = ({ 
+export interface EditorWidgetRef {
+    getElement: () => HTMLDivElement | null;
+    resetPosition: () => void;
+    setPosition: (x: number, y: number) => void;
+    getPosition: () => { x: number; y: number };
+}
+
+const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>(({ 
     children, 
-    className = ''
-}) => {
+    className = '',
+    style = {}
+}, ref) => {
     const widgetRef = useRef<HTMLDivElement>(null);
     const isDraggingRef = useRef(false);
     const startPosRef = useRef({ x: 0, y: 0 });
     const currentTranslateRef = useRef({ x: 0, y: 0 });
+
+    useImperativeHandle(ref, () => ({
+        getElement: () => widgetRef.current,
+        resetPosition: () => {
+            currentTranslateRef.current = { x: 0, y: 0 };
+            if (widgetRef.current) {
+                widgetRef.current.style.transform = 'translate(0px, 0px) scale(1)';
+            }
+        },
+        setPosition: (x: number, y: number) => {
+            currentTranslateRef.current = { x, y };
+            if (widgetRef.current) {
+                widgetRef.current.style.transform = `translate(${x}px, ${y}px) scale(1)`;
+            }
+        },
+        getPosition: () => ({ ...currentTranslateRef.current })
+    }), []);
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
         if (!isDraggingRef.current || !widgetRef.current) return;
@@ -65,12 +91,15 @@ const EditorWidget: React.FC<EditorWidgetProps> = ({
             onDoubleClick={handleDoubleClick}
             style={{ 
                 willChange: 'transform',
-                transition: 'transform 0.1s ease-out'
+                transition: 'transform 0.1s ease-out',
+                ...style
             }}
         >
             {children}
         </div>
     );
-};
+});
+
+EditorWidget.displayName = 'EditorWidget';
 
 export default EditorWidget;

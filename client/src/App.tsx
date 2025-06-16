@@ -114,7 +114,7 @@ const EditorPage: React.FC = () => {
                 />
             )}
 
-            <MonacoEditor language='python' />
+            <MonacoEditor />
 
             {folder && (
                 <TimestepControls
