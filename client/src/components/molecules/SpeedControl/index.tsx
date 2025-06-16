@@ -15,22 +15,20 @@ const SpeedControl: React.FC<SpeedControlProps> = ({
 }) => {
     return (
         <div className='editor-timesteps-controls-speed'>
-            <label>
-                Speed:
-                <Slider
-                    min={0.1}
-                    max={2}
-                    value={playSpeed}
-                    onChange={onSpeedChange}
-                    step={0.1}
-                    disabled={disabled}
-                    className='speed-slider'
-                    style={{
-                        '--progress': `${playSpeed / 2 * 100}%`
-                    } as React.CSSProperties}
-                />
-                {playSpeed.toFixed(1)}x
-            </label>
+            Speed:
+            <Slider
+                min={0.1}
+                max={2}
+                value={playSpeed}
+                onChange={onSpeedChange}
+                step={0.1}
+                disabled={disabled}
+                className='speed-slider'
+                style={{
+                    '--progress': `${playSpeed / 2 * 100}%`
+                } as React.CSSProperties}
+            />
+            {playSpeed.toFixed(1)}x
         </div>
     );
 };

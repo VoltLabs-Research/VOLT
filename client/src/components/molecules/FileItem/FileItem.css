@@ -1,17 +1,7 @@
 .file-item {
-    padding: 0.5rem;
     border-radius: 0.5rem;
     cursor: pointer;
     transition: all 0.2s;
-}
-
-.file-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-.file-item.selected {
-    background-color: rgba(253, 91, 1, 0.2);
-    border: 1px solid rgba(253, 91, 1, 0.5);
 }
 
 .file-header-container {

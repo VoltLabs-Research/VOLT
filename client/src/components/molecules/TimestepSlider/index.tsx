@@ -26,20 +26,18 @@ const TimestepSlider: React.FC<TimestepSliderProps> = ({
 
     return (
         <div className='editor-timesteps-controls-slider'>
-            <label>
-                <Slider
-                    min={0}
-                    max={maxIndex}
-                    value={currentIndex}
-                    onChange={handleSliderChange}
-                    disabled={disabled}
-                    className='editor-timestep-controls-slider'
-                    style={{
-                        '--progress': `${(currentIndex / maxIndex) * 100}%`
-                    } as React.CSSProperties}
-                />
-                {currentTimestep} / {maxTimestep}
-            </label>
+            <Slider
+                min={0}
+                max={maxIndex}
+                value={currentIndex}
+                onChange={handleSliderChange}
+                disabled={disabled}
+                className='editor-timestep-controls-slider'
+                style={{
+                    '--progress': `${(currentIndex / maxIndex) * 100}%`
+                } as React.CSSProperties}
+            />
+            {currentTimestep} / {maxTimestep}
         </div>
     );
 };
