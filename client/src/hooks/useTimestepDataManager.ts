@@ -1,12 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export interface DislocationSegment {
-    id: number;
-    points: number[][];
-    burgers_vector: number[];
-    magnitude: number;
-    length: number;
-}
 
 export interface AtomsData {
     positions: number[][];
@@ -15,9 +8,28 @@ export interface AtomsData {
     [key: string]: any;
 }
 
+export interface DislocationSegment {
+    id: number;
+    points: number[][];
+    length: number;
+    type: string;
+    is_closed: boolean | null;
+    burgers: {
+        vector: number[];
+        magnitude: number;
+    };
+}
+
+export interface DislocationResultsData {
+    total_dislocations: number;
+    total_length: number;
+    density: number;
+}
+
 export interface CombinedTimestepData {
     atoms_data: AtomsData;
     dislocation_data: DislocationSegment[];
+    dislocation_results: DislocationResultsData;
 }
 
 interface UseTimestepDataManagerOptions {

@@ -9,6 +9,7 @@ import DislocationViewer from './components/DislocationViewer';
 import FileUpload from './components/FileUpload';
 import DislocationResults from './components/DislocationResults';
 import useTimestepDataManager from './hooks/useTimestepDataManager';
+import type { DislocationSegment } from './hooks/useTimestepDataManager';
 import './App.css';
 
 const EditorPage: React.FC = () => {
@@ -17,6 +18,8 @@ const EditorPage: React.FC = () => {
     const [playSpeed, setPlaySpeed] = useState(1);
     const [currentTimestep, setCurrentTimestep] = useState(0);
     const [cameraControlsEnabled, setCameraControlsEnabled] = useState(true);
+    const [selectedDislocation, setSelectedDislocation] = useState<DislocationSegment | null>(null);
+
     const orbitControlsRef = useRef<any>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -77,6 +80,7 @@ const EditorPage: React.FC = () => {
         setFolder(folder_data);
         setCurrentTimestep(folder_data.min_timestep || 0);
         setIsPlaying(false);
+        setSelectedDislocation(null);
     }, []);
 
     const handlePlayPause = useCallback(() => {
@@ -87,6 +91,10 @@ const EditorPage: React.FC = () => {
         setCurrentTimestep(timestep);
     }, []);
 
+    const handleDislocationSelect = useCallback((segment: DislocationSegment) => {
+        setSelectedDislocation(segment);
+    }, []);
+
     const streamProgress = useMemo(() => ({
         current: currentTimestep,
         total: maxTimestep
@@ -95,6 +103,15 @@ const EditorPage: React.FC = () => {
     return (
         <main className='editor-container'>
             <FileManager onFileSelect={handleFolderSelection} selectedFile={folder?.folder_id || null} />
+            
+            {data?.dislocation_results && Object.keys(data.dislocation_results).length > 0 && (
+                <DislocationResults 
+                    results={data.dislocation_results}
+                    segments={data.dislocation_data}
+                    timestep={data.atoms_data.timestep}
+                    onDislocationSelect={handleDislocationSelect}
+                />
+            )}
 
             {folder && (
                 <TimestepControls
@@ -137,6 +154,7 @@ const EditorPage: React.FC = () => {
                                 segments={data.dislocation_data}
                                 scale={0.2}
                                 centerOffset={[-5, 0, 10]}
+                                selectedDislocationId={selectedDislocation?.id}
                             />
                         )}
                     </Scene3D>

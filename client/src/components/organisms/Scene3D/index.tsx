@@ -50,10 +50,10 @@ const Scene3D: React.FC<Scene3DProps> = ({
     }), []);
 
     const lightConfig = useMemo(() => ({
-        ambient: { intensity: 0.4 },
+        ambient: { intensity: 0.8 }, 
         directional: {
             position: [15, 15, 15] as [number, number, number],
-            intensity: 1.0,
+            intensity: 2.0, 
             'shadow-mapSize': [2048, 2048] as [number, number],
             'shadow-camera-far': 100,
             'shadow-camera-left': -15,
@@ -86,6 +86,18 @@ const Scene3D: React.FC<Scene3DProps> = ({
                 shadow-camera-right={lightConfig.directional['shadow-camera-right']}
                 shadow-camera-top={lightConfig.directional['shadow-camera-top']}
                 shadow-camera-bottom={lightConfig.directional['shadow-camera-bottom']}
+            />
+
+            <directionalLight
+                position={[-10, 10, -10]}
+                intensity={0.8}
+                color="#ffffff"
+            />
+            
+            <hemisphereLight
+                skyColor="#87CEEB"
+                groundColor="#362d1d"
+                intensity={0.5}
             />
             
             <CanvasGrid />
