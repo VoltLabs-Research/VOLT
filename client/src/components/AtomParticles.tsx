@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import * as THREE from 'three';
 import useInputStates from '../hooks/useInputStates';
 import useGroupTransforms from '../hooks/useGroupTransforms';
 import useDragState from '../hooks/useDragState';
 import useKeyboardControls from '../hooks/useKeyboardControls';
 import useMouseEvents from '../hooks/useMouseEvents';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 
 interface AtomPosition {
     x: number;
@@ -100,31 +101,36 @@ const AtomParticles: React.FC<{
         return colors;
     }, [atoms]);
 
+    const selectedColors = useMemo(() => {
+        const colors = new Float32Array(atoms.length * 3);
+        const selectedColor = new THREE.Color(0x9d4edd);
+        for (let i = 0; i < atoms.length; i++) {
+            selectedColor.toArray(colors, i * 3);
+        }
+        return colors;
+    }, [atoms.length]);
+
     const [persistentColors, setPersistentColors] = useState(baseColors);
 
     useEffect(() => {
-        if (isGroupSelected) {
-            const newColors = new Float32Array(atoms.length * 3);
-            const selectedColor = new THREE.Color(0x9d4edd);
-            for (let i = 0; i < atoms.length; i++) {
-                selectedColor.toArray(newColors, i * 3);
-            }
-            setPersistentColors(newColors);
-        } else {
-            setPersistentColors(baseColors);
-        }
-    }, [isGroupSelected, atoms.length, baseColors]);
-
-    useEffect(() => {
-        if(!meshRef.current || atoms.length === 0) return;
-
-        const center = atoms.reduce((acc, atom) => {
+        setPersistentColors(isGroupSelected ? selectedColors : baseColors);
+    }, [isGroupSelected, baseColors, selectedColors]);
+    
+    const center = useMemo(() => {
+        if (atoms.length === 0) return new THREE.Vector3(0, 0, 0);
+        
+        const centerVec = atoms.reduce((acc, atom) => {
             acc.x += atom.x * scale;
             acc.y += (atom.z * scale) + yOffset;
             acc.z += atom.y * scale;
             return acc;
         }, new THREE.Vector3(0, 0, 0));
-        center.divideScalar(atoms.length);
+
+        return centerVec.divideScalar(atoms.length);
+    }, [atoms, scale, yOffset]);
+
+    useEffect(() => {
+        if(!meshRef.current || atoms.length === 0) return;
 
         atoms.forEach((atom, i) => {
             const position = new THREE.Vector3(
@@ -132,21 +138,20 @@ const AtomParticles: React.FC<{
                 (atom.z * scale) + yOffset,
                 atom.y * scale
             );
-            
-            if(!groupRotation.equals(new THREE.Euler(0, 0, 0))){
-                const relativePos = position.clone().sub(center);
-                relativePos.applyEuler(groupRotation);
-                position.copy(center).add(relativePos);
-            }
-            
-            position.add(groupPosition);
-            
+            position.sub(center);
             tempMatrix.setPosition(position);
             meshRef.current!.setMatrixAt(i, tempMatrix);
         });
         
         meshRef.current.instanceMatrix.needsUpdate = true;
-    }, [atoms, scale, yOffset, groupRotation, groupPosition, tempMatrix]);
+    }, [atoms, scale, yOffset, center, tempMatrix]);
+
+    useFrame(() => {
+        if (groupRef.current) {
+            groupRef.current.position.copy(center).add(groupPosition);
+            groupRef.current.rotation.copy(groupRotation);
+        }
+    });
 
     useEffect(() => {
         if (!meshRef.current?.geometry.attributes.color) return;

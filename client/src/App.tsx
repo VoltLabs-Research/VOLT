@@ -7,6 +7,7 @@ import Scene3D from './components/organisms/Scene3D/';
 import TimestepViewer from './components/TimestepViewer';
 import DislocationViewer from './components/DislocationViewer';
 import FileUpload from './components/FileUpload';
+import DislocationResults from './components/DislocationResults';
 import useTimestepDataManager from './hooks/useTimestepDataManager';
 import './App.css';
 

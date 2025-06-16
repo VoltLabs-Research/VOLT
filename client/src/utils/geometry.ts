@@ -1,5 +1,12 @@
 import * as THREE from 'three';
 
+interface AtomPosition {
+    x: number;
+    y: number;
+    z: number;
+    type: number;
+}
+
 export const getMouseCoordinates = (event: MouseEvent | PointerEvent, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -32,45 +39,42 @@ export const isClickNearAtoms = (
     raycaster.setFromCamera(mouseCoords, camera);
     
     const sphereRadius = Math.max(0.02, 1 * scale);
-    const tempSphere = new THREE.SphereGeometry(sphereRadius, 8, 6);
-    const tempMesh = new THREE.Mesh(tempSphere);
-    
-    for(let i = 0; i < atomPositions.length; i++){
-        const atom = atomPositions[i];
-        
-        const position = new THREE.Vector3(
+    const tempAtomPosition = new THREE.Vector3();
+    const tempRay = raycaster.ray;
+
+    let center: THREE.Vector3 | null = null;
+    if (!groupRotation.equals(new THREE.Euler(0, 0, 0))) {
+        center = new THREE.Vector3(0, 0, 0);
+        atomPositions.forEach(atom => {
+            center.x += atom.x * scale;
+            center.y += (atom.z * scale) + yOffset;
+            center.z += atom.y * scale;
+        });
+        center.divideScalar(atomPositions.length);
+    }
+
+    for (const atom of atomPositions) {
+        tempAtomPosition.set(
             atom.x * scale,
             (atom.z * scale) + yOffset,
             atom.y * scale
         );
-        
-        position.add(groupPosition);
-        
-        if(!groupRotation.equals(new THREE.Euler(0, 0, 0))){
-            const center = atomPositions.reduce((acc, a) => {
-                acc.x += a.x * scale;
-                acc.y += (a.z * scale) + yOffset;
-                acc.z += a.y * scale;
-                return acc;
-            }, new THREE.Vector3(0, 0, 0));
-            center.divideScalar(atomPositions.length);
-            
-            position.sub(center);
-            position.applyEuler(groupRotation);
-            position.add(center);
+
+        if (center) {
+            tempAtomPosition.sub(center);
+            tempAtomPosition.applyEuler(groupRotation);
+            tempAtomPosition.add(center);
         }
+
+        tempAtomPosition.add(groupPosition);
         
-        tempMesh.position.copy(position);
-        tempMesh.updateMatrixWorld();
+        const distance = tempRay.distanceSqToPoint(tempAtomPosition);
         
-        const intersects = raycaster.intersectObject(tempMesh);
-        if(intersects.length > 0){
-            tempSphere.dispose();
+        if (distance < sphereRadius * sphereRadius) {
             return true;
         }
     }
-    
-    tempSphere.dispose();
+
     return false;
 };
 
