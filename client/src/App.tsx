@@ -114,7 +114,10 @@ const EditorPage: React.FC = () => {
                 />
             )}
 
-            <MonacoEditor />
+            <MonacoEditor 
+                folderId={folderId}
+                currentTimestamp={currentTimestep}
+            />
 
             {folder && (
                 <TimestepControls

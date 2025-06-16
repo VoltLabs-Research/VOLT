@@ -5,6 +5,7 @@ import EditorWidget from '../EditorWidget';
 import type { EditorWidgetRef } from '../EditorWidget';
 import './MonacoEditor.css';
 
+// Interfaces (sin cambios)
 interface ExecutionResponse {
     exit_code: number;
     stdout: string;
@@ -16,6 +17,8 @@ interface ExecutionResponse {
 interface MonacoEditorProps {
     defaultVisible?: boolean;
     onToggle?: (visible: boolean) => void;
+    folderId: string | null;
+    currentTimestamp: number;
 }
 
 interface TerminalLine {
@@ -26,11 +29,14 @@ interface TerminalLine {
 
 const MonacoEditor: React.FC<MonacoEditorProps> = ({ 
     defaultVisible = false,
-    onToggle 
+    onToggle,
+    folderId,
+    currentTimestamp
 }) => {
+    // State and basic refs
     const [isVisible, setIsVisible] = useState(defaultVisible);
     const [code, setCode] = useState<string>(
-        '# Write your code here\nimport sys\nimport time\n\nprint("Hello from stdout!")\nprint("This is an error", file=sys.stderr)'
+        '# The "context" variable is preloaded with data from the current timestep.\n# Try printing it to see the available data.\n\nprint(context[\'dislocations\'][\'summary\'])'
     );
     const [output, setOutput] = useState<ExecutionResponse | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -45,16 +51,22 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     const editorRef = useRef<any>(null);
     const terminalEndRef = useRef<HTMLDivElement>(null);
     const lineIdCounter = useRef<number>(0);
+    
+    // Ref para almacenar los parámetros más recientes y evitar cierres rancios
+    const executionParamsRef = useRef({ folderId, currentTimestamp, code, language });
 
+    useEffect(() => {
+        executionParamsRef.current = { folderId, currentTimestamp, code, language };
+    }, [folderId, currentTimestamp, code, language]);
+
+    // Funciones de terminal
     const addTerminalLine = useCallback((text: string, type: TerminalLine['type'] = 'info') => {
         const newLine: TerminalLine = {
             id: lineIdCounter.current++,
             text,
             type
         };
-        
         setTerminalLines(prev => [...prev, newLine]);
-        
         setTimeout(() => {
             terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
@@ -65,9 +77,18 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         lineIdCounter.current = 0;
     }, []);
 
+    // `handleRunCode` con las correcciones
     const handleRunCode = useCallback(async () => {
-        // This function now correctly uses the latest `code` state
-        if (!code.trim()) {
+        const params = executionParamsRef.current;
+        
+        // MEJORA: Validar que se ha seleccionado una carpeta
+        if (!params.folderId) {
+            clearTerminal();
+            addTerminalLine("Please select a data folder before running.", "error");
+            return;
+        }
+        
+        if (!params.code.trim()) {
             return;
         }
 
@@ -77,6 +98,11 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         setOutput(null);
 
         try {
+            const contextData = {
+                folder_id: params.folderId,
+                timestep: params.currentTimestamp,
+            };
+            
             const response = await fetch('http://127.0.0.1:8000/execute/run_sandboxed', {
                 method: 'POST',
                 headers: { 
@@ -84,9 +110,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
                     'X-User': 'rodyherrera'
                 },
                 body: JSON.stringify({ 
-                    code: code, // Uses the `code` from state, which is up-to-date
-                    language: language,
-                    timeout: 30
+                    code: params.code,
+                    language: params.language,
+                    timeout: 30,
+                    context_data: contextData
                 }),
             });
 
@@ -104,15 +131,15 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         } finally {
             setIsLoading(false);
         }
-    }, [code, language, clearTerminal]);
+    }, [clearTerminal, addTerminalLine]); // Se añade addTerminalLine como dependencia
 
-    // Create a ref to hold the `handleRunCode` function.
-    // This allows the `onMount` callback to always access the latest version of the function.
+    // Ref para la función `handleRunCode`
     const handleRunCodeRef = useRef(handleRunCode);
     useEffect(() => {
         handleRunCodeRef.current = handleRunCode;
     }, [handleRunCode]);
 
+    // Atajos de teclado
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if ((event.ctrlKey || event.metaKey) && event.key === 'j') {
@@ -121,12 +148,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
                 setIsVisible(newVisible);
                 onToggle?.(newVisible);
             }
-            
             if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && isVisible) {
                 event.preventDefault();
-                handleRunCode(); // This works because `handleRunCode` is a dependency of this useEffect
+                handleRunCodeRef.current(); // Llama a la función a través del ref
             }
-            
             if ((event.ctrlKey || event.metaKey) && event.key === 'k' && isVisible) {
                 event.preventDefault();
                 clearTerminal();
@@ -135,14 +160,15 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isVisible, onToggle, handleRunCode, clearTerminal]);
+    }, [isVisible, onToggle, clearTerminal]); // handleRunCode se quita porque se usa el ref
 
     const handleEditorChange = useCallback((value: string | undefined) => {
         if (value !== undefined) {
             setCode(value);
         }
     }, []);
-
+    
+    // Procesamiento de salida
     useEffect(() => {
         if (isLoading) return;
 
@@ -151,23 +177,28 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
             return;
         }
 
+        console.log(output)
+
         if (output) {
-            // Stdout
             if (output.stdout) {
                 output.stdout.split('\n').forEach(line => {
-                    if (line.trim()) addTerminalLine(line, 'stdout');
+                    if (line) addTerminalLine(line, 'stdout');
                 });
             }
-            
-            // Stderr
             if (output.stderr) {
                 output.stderr.split('\n').forEach(line => {
-                    if (line.trim()) addTerminalLine(line, 'stderr');
+                    if (line) addTerminalLine(line, 'stderr');
                 });
+            }
+            if (output.result !== null && output.result !== undefined) {
+                addTerminalLine('--- Result ---', 'info');
+                const resultString = JSON.stringify(output.result, null, 2);
+                addTerminalLine(resultString, 'success');
             }
         }
     }, [output, error, isLoading, addTerminalLine]);
-
+    
+    // Opciones del editor
     const editorOptions = useMemo(() => ({
         selectOnLineNumbers: true,
         minimap: { enabled: false },
@@ -201,14 +232,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
                 onChange={handleEditorChange}
                 onMount={(editor, monaco) => {
                     editorRef.current = editor;
-                    
-                    // The editor command now calls the function through the ref,
-                    // ensuring it's always the latest version.
                     editor.addCommand(
                         monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, 
                         () => handleRunCodeRef.current()
                     );
-                    
                     editor.addCommand(
                         monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, 
                         clearTerminal
