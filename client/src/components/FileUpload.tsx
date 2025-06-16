@@ -22,26 +22,26 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
     const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
-        if (uploading) return;
+        if(uploading) return;
 
         const items = event.dataTransfer.items;
-        if (!items) return;
+        if(!items) return;
 
         const allFiles: File[] = [];
 
         const traverseFileTree = async (item: any, path = ''): Promise<void> => {
-            if (item.isFile) {
+            if(item.isFile){
                 const file = await new Promise<File>(resolve => item.file(resolve));
                 Object.defineProperty(file, 'webkitRelativePath', {
                     value: path + file.name
                 });
                 allFiles.push(file);
-            } else if (item.isDirectory) {
+            }else if(item.isDirectory){
                 const dirReader = item.createReader();
                 const readEntries = (): Promise<void> =>
                     new Promise((resolve) => {
                         dirReader.readEntries(async (entries: any[]) => {
-                            for (const entry of entries) {
+                            for(const entry of entries){
                                 await traverseFileTree(entry, path + item.name + '/');
                             }
                             resolve();
@@ -55,9 +55,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
         setUploadProgress(0);
 
         try {
-            for (let i = 0; i < items.length; i++) {
+            for(let i = 0; i < items.length; i++){
                 const item = items[i].webkitGetAsEntry();
-                if (item) await traverseFileTree(item);
+                if(item) await traverseFileTree(item);
             }
 
             const res = await uploadFolder(allFiles);
@@ -70,7 +70,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             }finally{
                 setAnalyzing(false);
             }
-        } catch (err) {
+        } catch (err){
             console.error('Upload failed', err);
             onUploadError?.(err);
         } finally {

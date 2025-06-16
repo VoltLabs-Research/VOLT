@@ -8,7 +8,7 @@ const useAPI = <T>(defaultCall?: () => Promise<T>) => {
     const execute = useCallback(
         async (apiCall?: () => Promise<T>) => {
             const fn = apiCall || defaultCall;
-            if (!fn) {
+            if(!fn){
                 setError('No API call function provided');
                 return;
             }
@@ -19,7 +19,7 @@ const useAPI = <T>(defaultCall?: () => Promise<T>) => {
                 const result = await fn();
                 setData(result);
                 return result;
-            } catch (error) {
+            } catch (error){
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                 setError(errorMessage);
                 throw error;

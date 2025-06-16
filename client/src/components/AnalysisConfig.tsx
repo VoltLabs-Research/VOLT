@@ -119,7 +119,7 @@ const AnalysisConfig: React.FC = () => {
     const renderInput = (field: any) => {
         const { key, inputProps } = field;
         
-        if (inputProps.type === 'select') {
+        if(inputProps.type === 'select'){
             return (
                 <select
                     value={internalConfig[key as keyof typeof internalConfig] || ''}

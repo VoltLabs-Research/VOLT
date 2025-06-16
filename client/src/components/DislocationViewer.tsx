@@ -69,7 +69,7 @@ const DislocationViewer: React.FC<DislocationViewerProps> = ({
         // Calcular la magnitud del vector de Burgers
         const magnitude = Math.sqrt(bx * bx + by * by + bz * bz);
         
-        if (magnitude === 0) {
+        if(magnitude === 0){
             // Vector nulo - color gris más fuerte
             return new THREE.Color(0.7, 0.7, 0.7);
         }

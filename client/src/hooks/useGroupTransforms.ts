@@ -13,7 +13,7 @@ const useGroupTransforms = () => {
     };
 
     const resetRotation = () => {
-        setGroupPosition(new THREE.Euler(0, 0, 0));
+        setGroupRotation(new THREE.Euler(0, 0, 0));
     };
 
     return {
@@ -25,7 +25,7 @@ const useGroupTransforms = () => {
         setIsGroupSelected,
         resetTransforms,
         resetRotation
-    }
+    };
 };
 
 export default useGroupTransforms;

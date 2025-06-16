@@ -13,9 +13,9 @@ const DislocationVisualizer: React.FC<DislocationVisualizerProps> = ({
     const groupRef = useRef<THREE.Group>(null);
 
     const getDislocationColor = (type: string, isSelected: boolean): string => {
-        if (isSelected) return '#ffff00';
+        if(isSelected) return '#ffff00';
         
-        switch (type.toLowerCase()) {
+        switch (type.toLowerCase()){
             case 'edge': return '#3b82f6';
             case 'screw': return '#ef4444';
             case 'mixed': return '#8b5cf6';
@@ -25,7 +25,7 @@ const DislocationVisualizer: React.FC<DislocationVisualizerProps> = ({
     };
 
     const dislocationComponents = useMemo(() => {
-        if (!visible || dislocations.length === 0) return [];
+        if(!visible || dislocations.length === 0) return [];
 
         return dislocations.map((dislocation, index) => {
             const isSelected = selectedDislocationId === dislocation.id;
@@ -111,20 +111,20 @@ const DislocationVisualizer: React.FC<DislocationVisualizerProps> = ({
     }, [dislocations, selectedDislocationId, visible, scale]);
 
     useFrame((state) => {
-        if (groupRef.current && selectedDislocationId) {
+        if(groupRef.current && selectedDislocationId){
             const time = state.clock.getElapsedTime();
             groupRef.current.children.forEach((child, index) => {
                 const dislocation = dislocations[index];
-                if (dislocation?.id === selectedDislocationId) {
+                if(dislocation?.id === selectedDislocationId){
                     child.scale.setScalar(1 + Math.sin(time * 3) * 0.05);
-                } else {
+                }else {
                     child.scale.setScalar(1);
                 }
             });
         }
     });
 
-    if (!visible) return null;
+    if(!visible) return null;
 
     return (
         <group ref={groupRef}>

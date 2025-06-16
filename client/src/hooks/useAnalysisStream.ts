@@ -54,7 +54,7 @@ const useAnalysisStream = ({ folderId, timestep, baseUrl = 'ws://127.0.0.1:8000/
     });
 
     useEffect(() => {
-        if (!folderId || timestep == null) return;
+        if(!folderId || timestep == null) return;
         const newUrl = `${baseUrl}/analysis/${folderId}/${timestep}`;
         setUrl(newUrl);
         disconnect();

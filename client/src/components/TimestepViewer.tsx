@@ -7,22 +7,20 @@ interface TimestepViewerProps {
 }
 
 const TimestepViewer: React.FC<TimestepViewerProps> = ({ data, onCameraControlsEnable }) => {
-    const orbitControlsRef = useRef<any>(null);
 
     useEffect(() => {
         console.log(data)
     }, [data]);
 
-    // Función para controlar OrbitControls
     const handleCameraControlsEnable = (enabled: boolean) => {
         console.log('Controles de cámara:', enabled ? 'habilitados' : 'deshabilitados');
-        if (onCameraControlsEnable) {
+        if(onCameraControlsEnable){
             onCameraControlsEnable(enabled);
         }
     };
 
     const { atoms, scale, centerOffset } = useMemo(() => {
-        if (!data?.atoms || data.atoms.length === 0) {
+        if(!data?.atoms || data.atoms.length === 0){
             return {
                 atoms: [],
                 scale: 1,

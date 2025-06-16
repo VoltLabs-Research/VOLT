@@ -1,16 +1,17 @@
 import { useEffect } from 'react';
+import type { AtomPosition } from '../types';
 import * as THREE from 'three';
 
-interface UseKeyboardControlProps{
+interface UseKeyboardControlsProps {
     ctrlPressed: boolean;
     shiftPressed: boolean;
     isGroupSelected: boolean;
-    setAtomPositions: React.Dispatch<React.SetStateAction<any[]>>;
+    setAtomPositions: React.Dispatch<React.SetStateAction<AtomPosition[]>>;
     setGroupRotation: React.Dispatch<React.SetStateAction<THREE.Euler>>;
     setIsGroupSelected: React.Dispatch<React.SetStateAction<boolean>>;
     resetTransforms: () => void;
     resetRotation: () => void;
-    atomPositions: any[];
+    atomPositions: AtomPosition[];
 }
 
 const useKeyboardControls = ({
@@ -23,24 +24,20 @@ const useKeyboardControls = ({
     resetTransforms,
     resetRotation,
     atomPositions
-}: UseKeyboardControlProps) => {
-
+}: UseKeyboardControlsProps) => {
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if((ctrlPressed || shiftPressed) && 
-                    ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'q', 'Q', 'e', 'E'].includes(event.key)){
+                ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'q', 'Q', 'e', 'E'].includes(event.key)){
                 event.preventDefault();
-
+                
                 const moveStep = 2.0;
                 const rotationStep = 0.1;
-
+                
                 if(shiftPressed){
-                    // SHIFT + Keys = MOVE group (including Z axis)
-                    let deltaX = 0;
-                    let deltaY = 0;
-                    let deltaZ = 0;
-
-                    switch(event.key){
+                    let deltaX = 0, deltaY = 0, deltaZ = 0;
+                    
+                    switch (event.key){
                         case 'ArrowUp':
                             deltaY = moveStep;
                             break;
@@ -63,23 +60,21 @@ const useKeyboardControls = ({
                             break;
                     }
 
-                    setAtomPositions((prev) => {
-                        return prev.map((atom) => ({
+                    setAtomPositions(prev => {
+                        return prev.map(atom => ({
                             ...atom,
                             x: atom.x + deltaX,
                             y: atom.y + deltaY,
                             z: atom.z + deltaZ
                         }));
                     });
-
                     setIsGroupSelected(true);
+                    
                 }else if(ctrlPressed){
-                    // CTRL + Arrows = ROTATE group
                     if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)){
-                        let deltaRotX = 0;
-                        let deltaRotY = 0;
-
-                        switch(event.key){
+                        let deltaRotX = 0, deltaRotY = 0;
+                        
+                        switch (event.key){
                             case 'ArrowUp':
                                 deltaRotX = -rotationStep;
                                 break;
@@ -94,12 +89,11 @@ const useKeyboardControls = ({
                                 break;
                         }
 
-                        setGroupRotation((prev) => new THREE.Euler(
+                        setGroupRotation(prev => new THREE.Euler(
                             prev.x + deltaRotX,
                             prev.y + deltaRotY,
                             prev.z
                         ));
-
                         setIsGroupSelected(true);
                     }
                 }
@@ -109,7 +103,7 @@ const useKeyboardControls = ({
                 setIsGroupSelected(true);
             }else if(event.key === 'Escape'){
                 resetTransforms();
-            }else if(event.key === 'r' || event.key == 'R'){
+            }else if(event.key === 'r' || event.key === 'R'){
                 resetRotation();
             }else if(event.key === 'c' || event.key === 'C'){
                 const center = atomPositions.reduce((acc, atom) => {
@@ -118,11 +112,11 @@ const useKeyboardControls = ({
                     acc.z += atom.z;
                     return acc;
                 }, { x: 0, y: 0, z: 0 });
-
+                
                 center.x /= atomPositions.length;
                 center.y /= atomPositions.length;
                 center.z /= atomPositions.length;
-
+                
                 setAtomPositions(prev => prev.map(atom => ({
                     ...atom,
                     x: atom.x - center.x,
@@ -131,11 +125,9 @@ const useKeyboardControls = ({
                 })));
             }
         };
-
+        
         document.addEventListener('keydown', handleKeyDown);
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
+        return () => document.removeEventListener('keydown', handleKeyDown);
     }, [ctrlPressed, shiftPressed, isGroupSelected, setAtomPositions, setGroupRotation, setIsGroupSelected, resetTransforms, resetRotation, atomPositions]);
 };
 

@@ -46,7 +46,7 @@ export const isClickNearAtoms = (
         
         position.add(groupPosition);
         
-        if (!groupRotation.equals(new THREE.Euler(0, 0, 0))) {
+        if(!groupRotation.equals(new THREE.Euler(0, 0, 0))){
             const center = atomPositions.reduce((acc, a) => {
                 acc.x += a.x * scale;
                 acc.y += (a.z * scale) + yOffset;

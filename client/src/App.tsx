@@ -55,7 +55,7 @@ const App = () => {
 
     const handleCameraControlsEnable = useCallback((enabled: boolean) => {
         setCameraControlsEnabled(enabled);
-        if (orbitControlsRef.current) {
+        if(orbitControlsRef.current){
             orbitControlsRef.current.enabled = enabled;
         }
     }, []);
@@ -73,7 +73,7 @@ const App = () => {
     }), [folder?.min_timestep, folder?.max_timestep]);
 
     const clearPlayTimeout = useCallback(() => {
-        if (timeoutRef.current) {
+        if(timeoutRef.current){
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
         }
@@ -82,7 +82,7 @@ const App = () => {
     useEffect(() => {
         clearPlayTimeout();
         
-        if (!folder || !isPlaying || timesteps.length === 0 || playSpeed <= 0) {
+        if(!folder || !isPlaying || timesteps.length === 0 || playSpeed <= 0){
             return;
         }
 
@@ -101,10 +101,10 @@ const App = () => {
     }, [isPlaying, playSpeed, folder, timesteps, clearPlayTimeout, currentTimestep]);
 
     useEffect(() => {
-        if (!folder || !timesteps.length) return;
+        if(!folder || !timesteps.length) return;
         
         const index = timesteps.indexOf(currentTimestep);
-        if (index >= 0) {
+        if(index >= 0){
             currentIndexRef.current = index;
         }
     }, [currentTimestep, folder, timesteps]);

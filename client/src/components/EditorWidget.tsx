@@ -11,7 +11,7 @@ const EditorWidget: React.FC<EditorWidgetProps> = ({
     const currentTranslateRef = useRef({ x: 0, y: 0 });
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
-        if (!isDraggingRef.current || !widgetRef.current) return;
+        if(!isDraggingRef.current || !widgetRef.current) return;
 
         const deltaX = e.clientX - startPosRef.current.x;
         const deltaY = e.clientY - startPosRef.current.y;
@@ -28,7 +28,7 @@ const EditorWidget: React.FC<EditorWidgetProps> = ({
     const handleMouseUp = useCallback(() => {
         isDraggingRef.current = false;
         
-        if (widgetRef.current) {
+        if(widgetRef.current){
             const { x, y } = currentTranslateRef.current;
             widgetRef.current.style.transform = `translate(${x}px, ${y}px) scale(1)`;
         }

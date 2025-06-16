@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
+import type { AtomPosition } from '../types';
 import type { DragMode } from './useDragState';
 import * as THREE from 'three';
 import { getMouseCoordinates, getPlaneIntersection, isClickNearAtoms } from '../utils/geometry';
 
 interface UseMouseEventsProps {
-    anys: any[];
+    atomPositions: AtomPosition[];
     scale: number;
     yOffset: number;
     ctrlPressed: boolean;
@@ -22,12 +23,12 @@ interface UseMouseEventsProps {
     setGroupPosition: React.Dispatch<React.SetStateAction<THREE.Vector3>>;
     setGroupRotation: React.Dispatch<React.SetStateAction<THREE.Euler>>;
     setIsGroupSelected: React.Dispatch<React.SetStateAction<boolean>>;
-    setanys: React.Dispatch<React.SetStateAction<any[]>>;
+    setAtomPositions: React.Dispatch<React.SetStateAction<AtomPosition[]>>;
     onCameraControlsEnable?: (enabled: boolean) => void;
 }
 
 const useMouseEvents = ({
-    anys,
+    atomPositions,
     scale,
     yOffset,
     ctrlPressed,
@@ -44,7 +45,7 @@ const useMouseEvents = ({
     setGroupPosition,
     setGroupRotation,
     setIsGroupSelected,
-    setanys,
+    setAtomPositions,
     onCameraControlsEnable
 }: UseMouseEventsProps) => {
     const { camera, raycaster, gl } = useThree();
@@ -57,7 +58,7 @@ const useMouseEvents = ({
             
             const mouseCoords = getMouseCoordinates(event, canvas);
             
-            if(!isClickNearAtoms(mouseCoords, anys, scale, yOffset, groupPosition, groupRotation, raycaster, camera)){
+            if(!isClickNearAtoms(mouseCoords, atomPositions, scale, yOffset, groupPosition, groupRotation, raycaster, camera)){
                 return;
             }
             
@@ -74,7 +75,7 @@ const useMouseEvents = ({
         };
 
         const handleMouseMove = (event: MouseEvent) => {
-            if (!isDragging) return;
+            if(!isDragging) return;
             
             event.preventDefault();
             event.stopPropagation();
@@ -92,7 +93,7 @@ const useMouseEvents = ({
                 );
                 
                 setGroupRotation(newRotation);
-            }else{
+            }else {
                 const intersection = getPlaneIntersection(mouseCoords, raycaster, camera, yOffset);
                 if(intersection){
                     const delta = intersection.clone().sub(dragStartPos);
@@ -112,7 +113,7 @@ const useMouseEvents = ({
             
             if(dragMode === 'move' || dragMode === 'vertical'){
                 if(!groupPosition.equals(new THREE.Vector3(0, 0, 0))){
-                    setanys(prev => {
+                    setAtomPositions(prev => {
                         return prev.map(atom => ({
                             ...atom,
                             x: atom.x + groupPosition.x / scale,
@@ -136,7 +137,7 @@ const useMouseEvents = ({
             canvas.removeEventListener('mouseup', handleMouseUp);
             canvas.removeEventListener('mouseleave', handleMouseUp);
         };
-    }, [isDragging, dragStartPos, dragStartMouse, dragStartRotation, groupPosition, groupRotation, scale, gl.domElement, camera, raycaster, onCameraControlsEnable, anys, yOffset, ctrlPressed, shiftPressed, dragMode, startDrag, endDrag, setGroupPosition, setGroupRotation, setIsGroupSelected, setanys]);
+    }, [isDragging, dragStartPos, dragStartMouse, dragStartRotation, groupPosition, groupRotation, scale, gl.domElement, camera, raycaster, onCameraControlsEnable, atomPositions, yOffset, ctrlPressed, shiftPressed, dragMode, startDrag, endDrag, setGroupPosition, setGroupRotation, setIsGroupSelected, setAtomPositions]);
 };
 
 export default useMouseEvents;

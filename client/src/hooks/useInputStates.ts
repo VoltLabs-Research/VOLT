@@ -1,27 +1,25 @@
 import { useState, useEffect } from 'react';
 
 const useInputStates = () => {
-    const [isCtrlPressed, setIsCtrlPressed] = useState(false);
-    const [isShiftPressed, setIsShiftPressed] = useState(false);
+    const [ctrlPressed, setCtrlPressed] = useState(false);
+    const [shiftPressed, setShiftPressed] = useState(false);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if(event.key === 'Control'){
-                setIsCtrlPressed(true);
+                setCtrlPressed(true);
             }
-
             if(event.key === 'Shift'){
-                setIsShiftPressed(true);
+                setShiftPressed(true);
             }
         };
 
         const handleKeyUp = (event: KeyboardEvent) => {
             if(event.key === 'Control'){
-                setIsCtrlPressed(false);
+                setCtrlPressed(false);
             }
-
             if(event.key === 'Shift'){
-                setIsShiftPressed(false);
+                setShiftPressed(false);
             }
         };
 
@@ -30,11 +28,11 @@ const useInputStates = () => {
 
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
-            document.removeEventListener('keyup', handleKeyUp);    
+            document.removeEventListener('keyup', handleKeyUp);
         };
     }, []);
 
-    return { isCtrlPressed, isShiftPressed };
+    return { ctrlPressed, shiftPressed };
 };
 
 export default useInputStates;

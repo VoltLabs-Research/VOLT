@@ -9,11 +9,11 @@ export const TimestepSelector: React.FC<TimestepSelectorProps> = ({
 }) => {
     const { isConnected, connectionInfo, connectionError } = useWebSocket(fileId);
 
-    if (!isConnected && !connectionError) {
+    if(!isConnected && !connectionError){
         return <div className="loading">Conectando WebSocket...</div>;
     }
     
-    if (connectionError) {
+    if(connectionError){
         return <div className="error">Error: {connectionError}</div>;
     }
 
