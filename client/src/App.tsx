@@ -7,26 +7,25 @@ import Scene3D from './components/organisms/Scene3D/';
 import TimestepViewer from './components/TimestepViewer';
 import DislocationViewer from './components/DislocationViewer';
 import FileUpload from './components/FileUpload';
-import useTimestepStream from './hooks/useTimestepStream';
-import useAnalysisStream from './hooks/useAnalysisStream';
+import useTimestepDataManager from './hooks/useTimestepDataManager';
 import './App.css';
 
 const EditorPage: React.FC = () => {
-    const [folder, setFolder] = useState<object | null>(null);
+    const [folder, setFolder] = useState<any | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playSpeed, setPlaySpeed] = useState(1);
     const [currentTimestep, setCurrentTimestep] = useState(0);
     const [cameraControlsEnabled, setCameraControlsEnabled] = useState(true);
     const orbitControlsRef = useRef<any>(null);
-
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const currentIndexRef = useRef(0);
 
-    const folderId = useMemo(() => folder?.folder_id || null, [folder?.folder_id]);
+    const folderId = useMemo(() => folder?.folder_id || null, [folder]);
+    const timesteps = useMemo(() => folder?.timesteps || [], [folder]);
     
-    const { data, error } = useTimestepStream({ 
+    const { data, isLoading } = useTimestepDataManager({ 
         folderId, 
-        timestepId: currentTimestep 
+        currentTimestep,
+        timesteps
     });
 
     const handleCameraControlsEnable = useCallback((enabled: boolean) => {
@@ -36,17 +35,9 @@ const EditorPage: React.FC = () => {
         }
     }, []);
     
-    const analysisStream = useAnalysisStream({
-        folderId: folderId ?? '',
-        timestep: currentTimestep,
-    });
-
-    const timesteps = useMemo(() => folder?.timesteps || [], [folder?.timesteps]);
-    
-    const { minTimestep, maxTimestep } = useMemo(() => ({
-        minTimestep: folder?.min_timestep || 0,
+    const { maxTimestep } = useMemo(() => ({
         maxTimestep: folder?.max_timestep || 1
-    }), [folder?.min_timestep, folder?.max_timestep]);
+    }), [folder]);
 
     const clearPlayTimeout = useCallback(() => {
         if (timeoutRef.current) {
@@ -66,32 +57,25 @@ const EditorPage: React.FC = () => {
             setCurrentTimestep(prevTimestep => {
                 const currentIndex = timesteps.indexOf(prevTimestep);
                 const nextIndex = (currentIndex + 1) % timesteps.length;
-                currentIndexRef.current = nextIndex;
                 return timesteps[nextIndex];
             });
         };
 
-        timeoutRef.current = setTimeout(advance, 1000 / playSpeed);
+        if (!isLoading) {
+            timeoutRef.current = setTimeout(advance, 1000 / playSpeed);
+        }
 
         return clearPlayTimeout;
-    }, [isPlaying, playSpeed, folder, timesteps, clearPlayTimeout, currentTimestep]);
-
-    useEffect(() => {
-        if (!folder || !timesteps.length) return;
-        
-        const index = timesteps.indexOf(currentTimestep);
-        if (index >= 0) {
-            currentIndexRef.current = index;
-        }
-    }, [currentTimestep, folder, timesteps]);
+    }, [isPlaying, playSpeed, folder, timesteps, clearPlayTimeout, currentTimestep, isLoading]);
 
     const handleUploadError = useCallback((error: string) => {
         console.error('OpenDXA: Upload error:', error);
     }, []);
 
-    const handleFolderSelection = useCallback((folder_data) => {
+    const handleFolderSelection = useCallback((folder_data: any) => {
         setFolder(folder_data);
         setCurrentTimestep(folder_data.min_timestep || 0);
+        setIsPlaying(false);
     }, []);
 
     const handlePlayPause = useCallback(() => {
@@ -120,7 +104,7 @@ const EditorPage: React.FC = () => {
                     onPlayPause={handlePlayPause}
                     playSpeed={playSpeed}
                     onSpeedChange={setPlaySpeed}
-                    isConnected={!!data}
+                    isConnected={!isLoading && !!data}
                     isStreaming={isPlaying}
                     streamProgress={streamProgress}
                 />
@@ -139,19 +123,18 @@ const EditorPage: React.FC = () => {
                         cameraControlsEnabled={cameraControlsEnabled}
                         onCameraControlsRef={(ref) => { orbitControlsRef.current = ref; }}
                     >
-                        {folder && data && (
+                        {data?.atoms_data && (
                             <TimestepViewer
-                                data={data}
+                                data={data.atoms_data}
                                 onCameraControlsEnable={handleCameraControlsEnable}
                             />
                         )}
 
-                        {analysisStream.data && (
+                        {data?.dislocation_data && data.dislocation_data.length > 0 && (
                             <DislocationViewer
-                                segments={analysisStream.data}
+                                segments={data.dislocation_data}
                                 scale={0.2}
                                 centerOffset={[-5, 0, 10]}
-                                onCameraControlsEnable={handleCameraControlsEnable}
                             />
                         )}
                     </Scene3D>
