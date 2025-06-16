@@ -5,113 +5,34 @@ import EditorWidget from '../EditorWidget';
 import './AnalysisConfiguration.css';
 
 const AnalysisConfiguration: React.FC = () => {
-    const [internalConfig, setInternalConfig] = useState({
-        cutoffDistance: 0,
-        neighbors: 0,
-        latticeParameter: 0,
-        maxLoopLength: 0,
-        burgersThreshold: 0,
-        tolerance: 0,
-        crystal_type: 'auto'
+    const [config, setConfig] = useState({
+        cna_cutoff: 3.5,
+        pbc: '1,1,1',
+        offset: '0,0,0',
+        scale: '1,1,1',
+        maxcircuitsize: 12,
+        extcircuitsize: 14,
+        smoothsurface: 8,
+        smoothlines: 1,
+        coarsenlines: 1,
+        flattensf: 0.0
     });
 
     const configFields = [
-        {
-            key: 'cutoffDistance',
-            label: 'Cutoff Distance',
-            inputProps: {
-                type: 'number',
-                step: '0.1'
-            }
-        },
-        {
-            key: 'neighbors',
-            label: 'Neighbors',
-            inputProps: {
-                type: 'number'
-            }
-        },
-        {
-            key: 'latticeParameter',
-            label: 'Lattice Parameter (Å)',
-            inputProps: {
-                type: 'number',
-                step: '0.1'
-            }
-        },
-        {
-            key: 'maxLoopLength',
-            label: 'Maximum Loop Length',
-            inputProps: {
-                type: 'number'
-            }
-        },
-        {
-            key: 'burgersThreshold',
-            label: 'Burgers Threshold',
-            inputProps: {
-                type: 'number',
-                step: '1e-5'
-            }
-        },
-        {
-            key: 'tolerance',
-            label: 'Tolerance',
-            inputProps: {
-                type: 'number',
-                step: '0.01'
-            }
-        },
-        {
-            key: 'crystalType',
-            label: 'Crystal Type',
-            inputProps: {
-                type: 'select',
-                options: [
-                    { value: 'fcc', title: 'FCC' },
-                    { value: 'bcc', title: 'BCC' },
-                    { value: 'hcp', title: 'HCP' },
-                    { value: 'auto', title: 'Auto' }
-                ]
-            }
-        },
-        {
-            key: 'fastMode',
-            label: 'Fast Mode',
-            inputProps: {
-                type: 'select',
-                options: [
-                    { value: 'yes', title: 'Yes' },
-                    { value: 'no', title: 'No' }
-                ]
-            }
-        },
-        {
-            key: 'allowNonStandardBurgers',
-            label: 'Allow Non-Standard Burger Vectors',
-            inputProps: {
-                type: 'select',
-                options: [
-                    { value: 'enabled', title: 'Enabled' },
-                    { value: 'disabled', title: 'Disabled' }
-                ]
-            }
-        },
-        {
-            key: 'includeSegments',
-            label: 'Include Segments',
-            inputProps: {
-                type: 'select',
-                options: [
-                    { value: 'include', title: 'Include' },
-                    { value: 'exclude', title: 'Exclude' }
-                ]
-            }
-        }
+        { key: 'cna_cutoff', label: 'CNA Cutoff Radius', inputProps: { type: 'number', step: '0.1' }},
+        { key: 'pbc', label: 'Periodic Boundaries (X,Y,Z)', inputProps: { type: 'text', placeholder: '1,1,0' }},
+        { key: 'offset', label: 'Atom Position Offset (X,Y,Z)', inputProps: { type: 'text', placeholder: '0,0,0' }},
+        { key: 'scale', label: 'Cell Scaling Factors (X,Y,Z)', inputProps: { type: 'text', placeholder: '1,1,1' }},
+        { key: 'maxcircuitsize', label: 'Max Circuit Size', inputProps: { type: 'number', step: '1' }},
+        { key: 'extcircuitsize', label: 'Extended Circuit Size', inputProps: { type: 'number', step: '1' }},
+        { key: 'smoothsurface', label: 'Surface Smoothing', inputProps: { type: 'number', step: '1' }},
+        { key: 'smoothlines', label: 'Line Smoothing', inputProps: { type: 'number', step: '1' }},
+        { key: 'coarsenlines', label: 'Line Coarsening', inputProps: { type: 'number', step: '1' }},
+        { key: 'flattensf', label: 'Stacking Fault Flattening', inputProps: { type: 'number', step: '0.01' }},
     ];
 
-    const handleChange = (key: string, value: any) => {
-        setInternalConfig(prev => ({
+    const handleChange = (key: string, value: string | number) => {
+        setConfig(prev => ({
             ...prev,
             [key]: value
         }));
@@ -120,18 +41,18 @@ const AnalysisConfiguration: React.FC = () => {
     return (
         <EditorWidget className='editor-analysis-config'>
             <div className='editor-analysis-config-header-container'>
-                <h3 className='editor-analysis-config-header-title'>Analysis</h3>
+                <h3 className='editor-analysis-config-header-title'>Analysis Configuration</h3>
                 <IoIosArrowDown />
             </div>
 
             <div className='editor-analysis-config-body-container'>
-                {configFields.map((field, index) => (
+                {configFields.map((field) => (
                     <FormField
-                        key={index}
+                        key={field.key}
                         label={field.label}
                         fieldKey={field.key}
                         inputProps={field.inputProps}
-                        field={internalConfig}
+                        field={config} // ✅ Cambié 'config' por 'field'
                         onFieldChange={handleChange}
                     />
                 ))}

@@ -9,6 +9,7 @@ import DislocationViewer from './components/DislocationViewer';
 import FileUpload from './components/FileUpload';
 import DislocationResults from './components/DislocationResults';
 import useTimestepDataManager from './hooks/useTimestepDataManager';
+import MonacoEditor from './components/organisms/MonacoEditor';
 import type { DislocationSegment } from './hooks/useTimestepDataManager';
 import './App.css';
 
@@ -112,6 +113,8 @@ const EditorPage: React.FC = () => {
                     onDislocationSelect={handleDislocationSelect}
                 />
             )}
+
+            <MonacoEditor language='python' />
 
             {folder && (
                 <TimestepControls

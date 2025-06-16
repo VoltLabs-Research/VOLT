@@ -109,4 +109,4 @@ async def websocket_stream_timesteps(websocket: WebSocket, folder_id: str):
         logger.error(f"Unhandled exception in stream endpoint: {e}")
         await websocket.send_json({'status': 'error', 'message': str(e)})
     finally:
-        await manager.disconnect(websocket)
+        manager.disconnect(websocket)
