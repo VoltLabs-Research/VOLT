@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls, Environment } from '@react-three/drei';
 import { IoAddOutline } from 'react-icons/io5';
@@ -33,77 +33,149 @@ const CanvasGrid = () => {
     );
 };
 
+const MemoizedCanvasGrid = React.memo(CanvasGrid);
+
 const App = () => {
-    // TODO: use react redux
     const [folder, setFolder] = useState<object | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playSpeed, setPlaySpeed] = useState(1);
     const [currentTimestep, setCurrentTimestep] = useState(0);
-    const { data, error } = useTimestepStream({ folderId: folder?.folder_id || null, timestepId: currentTimestep });
+    const [cameraControlsEnabled, setCameraControlsEnabled] = useState(true);
+    const orbitControlsRef = useRef<any>(null);
+
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const currentIndexRef = useRef(0);
 
+    const folderId = useMemo(() => folder?.folder_id || null, [folder?.folder_id]);
+    
+    const { data, error } = useTimestepStream({ 
+        folderId, 
+        timestepId: currentTimestep 
+    });
+
+    const handleCameraControlsEnable = useCallback((enabled: boolean) => {
+        setCameraControlsEnabled(enabled);
+        if (orbitControlsRef.current) {
+            orbitControlsRef.current.enabled = enabled;
+        }
+    }, []);
+    
     const analysisStream = useAnalysisStream({
-        folderId: folder?.folder_id ?? '',
+        folderId: folderId ?? '',
         timestep: currentTimestep,
     });
 
-    useEffect(() => {
-        if(!folder) return;
-        console.log(folder)
-        currentIndexRef.current = folder.timesteps.indexOf(currentTimestep);
-    }, [currentTimestep, folder]);
+    const timesteps = useMemo(() => folder?.timesteps || [], [folder?.timesteps]);
+    
+    const { minTimestep, maxTimestep } = useMemo(() => ({
+        minTimestep: folder?.min_timestep || 0,
+        maxTimestep: folder?.max_timestep || 1
+    }), [folder?.min_timestep, folder?.max_timestep]);
+
+    const clearPlayTimeout = useCallback(() => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+    }, []);
 
     useEffect(() => {
-        if(!folder) return;
-
-        if (!isPlaying || folder.timesteps.length === 0) return;
+        clearPlayTimeout();
+        
+        if (!folder || !isPlaying || timesteps.length === 0 || playSpeed <= 0) {
+            return;
+        }
 
         const advance = () => {
-            if(!folder) return;
-
-            currentIndexRef.current = (currentIndexRef.current + 1) % folder.timesteps.length;
-            setCurrentTimestep(folder.timesteps[currentIndexRef.current]);
-
-            timeoutRef.current = setTimeout(advance, 1000 / playSpeed);
+            setCurrentTimestep(prevTimestep => {
+                const currentIndex = timesteps.indexOf(prevTimestep);
+                const nextIndex = (currentIndex + 1) % timesteps.length;
+                currentIndexRef.current = nextIndex;
+                return timesteps[nextIndex];
+            });
         };
 
         timeoutRef.current = setTimeout(advance, 1000 / playSpeed);
 
-        return () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        };
-    }, [isPlaying, playSpeed, folder, currentTimestep]);
+        return clearPlayTimeout;
+    }, [isPlaying, playSpeed, folder, timesteps, clearPlayTimeout, currentTimestep]);
 
-    const handleUploadError = (error: string) => {
+    useEffect(() => {
+        if (!folder || !timesteps.length) return;
+        
+        const index = timesteps.indexOf(currentTimestep);
+        if (index >= 0) {
+            currentIndexRef.current = index;
+        }
+    }, [currentTimestep, folder, timesteps]);
+
+    const handleUploadError = useCallback((error: string) => {
         console.error('OpenDXA: Upload error:', error);
-    };
+    }, []);
 
-    const handleFolderSelection = (folder_data) => {
+    const handleFolderSelection = useCallback((folder_data) => {
         setFolder(folder_data);
-        setCurrentTimestep(folder_data.min_timestep);
-    };
+        setCurrentTimestep(folder_data.min_timestep || 0);
+    }, []);
+
+    const handlePlayPause = useCallback(() => {
+        setIsPlaying(prev => !prev);
+    }, []);
+
+    const handleTimestepChange = useCallback((timestep: number) => {
+        setCurrentTimestep(timestep);
+    }, []);
+
+    const streamProgress = useMemo(() => ({
+        current: currentTimestep,
+        total: maxTimestep
+    }), [currentTimestep, maxTimestep]);
+
+    const cameraConfig = useMemo(() => ({
+        position: [12, 8, 12] as [number, number, number],
+        fov: 50
+    }), []);
+
+    const lightConfig = useMemo(() => ({
+        ambient: { intensity: 0.4 },
+        directional: {
+            position: [15, 15, 15] as [number, number, number],
+            intensity: 1.0,
+            'shadow-mapSize': [2048, 2048] as [number, number],
+            'shadow-camera-far': 100,
+            'shadow-camera-left': -15,
+            'shadow-camera-right': 15,
+            'shadow-camera-top': 15,
+            'shadow-camera-bottom': -15
+        }
+    }), []);
+
+    const orbitControlsConfig = useMemo(() => ({
+        makeDefault: true,
+        enableDamping: true,
+        dampingFactor: 0.05,
+        rotateSpeed: 0.7,
+        maxDistance: 30,
+        minDistance: 2,
+        target: [0, 3, 0] as [number, number, number]
+    }), []);
 
     return (
         <main className='editor-container'>
-            {/* <AnalysisConfig /> */}
             <FileList onFileSelect={handleFolderSelection} />
 
             {folder && (
                 <TimestepControls
                     folderInfo={folder}
                     currentTimestep={currentTimestep}
-                    onTimestepChange={setCurrentTimestep}
+                    onTimestepChange={handleTimestepChange}
                     isPlaying={isPlaying}
-                    onPlayPause={() => setIsPlaying(p => !p)}
+                    onPlayPause={handlePlayPause}
                     playSpeed={playSpeed}
                     onSpeedChange={setPlaySpeed}
                     isConnected={!!data}
                     isStreaming={isPlaying}
-                    streamProgress={{
-                        current: currentTimestep,
-                        total: folder?.max_timestep ?? 1
-                    }}
+                    streamProgress={streamProgress}
                 />
             )}
 
@@ -116,37 +188,38 @@ const App = () => {
 
             <div className='editor-timestep-viewer-container'>
                 <FileUpload onUploadError={handleUploadError} onUploadSuccess={handleFolderSelection}>
-                    <Canvas shadows camera={{ position: [12, 8, 12], fov: 50 }}>
-                        {/* @ts-ignore */}
-                        <ambientLight intensity={0.4} />
-                        {/* @ts-ignore */}
+                    <Canvas shadows camera={cameraConfig}>
+                        <ambientLight intensity={lightConfig.ambient.intensity} />
                         <directionalLight
                             castShadow
-                            position={[15, 15, 15]}
-                            intensity={1.0}
-                            shadow-mapSize={[2048, 2048]}
-                            shadow-camera-far={100}
-                            shadow-camera-left={-15}
-                            shadow-camera-right={15}
-                            shadow-camera-top={15}
-                            shadow-camera-bottom={-15}
+                            position={lightConfig.directional.position}
+                            intensity={lightConfig.directional.intensity}
+                            shadow-mapSize={lightConfig.directional['shadow-mapSize']}
+                            shadow-camera-far={lightConfig.directional['shadow-camera-far']}
+                            shadow-camera-left={lightConfig.directional['shadow-camera-left']}
+                            shadow-camera-right={lightConfig.directional['shadow-camera-right']}
+                            shadow-camera-top={lightConfig.directional['shadow-camera-top']}
+                            shadow-camera-bottom={lightConfig.directional['shadow-camera-bottom']}
                         />
-                        <CanvasGrid />
+                        
+                        <MemoizedCanvasGrid />
+                        
                         <OrbitControls 
-                            enableDamping 
-                            dampingFactor={0.05} 
-                            rotateSpeed={0.7}
-                            maxDistance={30}
-                            minDistance={2}
-                            target={[0, 3, 0]}
+                            ref={orbitControlsRef}
+                            {...orbitControlsConfig}
+                            enabled={cameraControlsEnabled}
                         />
+                                                
                         <Environment preset='city' />
 
-                        {folder && (
-                            <TimestepViewer data={data} />
+                        {folder && data && (
+                            <TimestepViewer
+                                data={data}
+                                onCameraControlsEnable={handleCameraControlsEnable}
+                            />
                         )}
 
-                        {analysisStream && (
+                        {analysisStream.data && (
                             <DislocationViewer
                                 segments={analysisStream.data}
                                 scale={0.2}

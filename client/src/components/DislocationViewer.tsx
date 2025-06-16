@@ -64,8 +64,37 @@ const DislocationViewer: React.FC<DislocationViewerProps> = ({
     if(!segments || segments.length === 0) return null;
 
     const getLineColor = (segment: DislocationSegment): THREE.Color => {
-        // TODO: Color segment according to vector
-        return new THREE.Color(0, 1, 0);
+        const [bx, by, bz] = segment.burgers_vector;
+        
+        // Calcular la magnitud del vector de Burgers
+        const magnitude = Math.sqrt(bx * bx + by * by + bz * bz);
+        
+        if (magnitude === 0) {
+            // Vector nulo - color gris más fuerte
+            return new THREE.Color(0.7, 0.7, 0.7);
+        }
+        
+        // Normalizar componentes y tomar valores absolutos
+        const normalizedBx = Math.abs(bx) / magnitude;
+        const normalizedBy = Math.abs(by) / magnitude;
+        const normalizedBz = Math.abs(bz) / magnitude;
+        
+        // Aplicar función de potencia para intensificar los colores
+        const powerFactor = 0.6; // Valores menores = colores más vibrantes
+        const red = Math.pow(normalizedBx, powerFactor);
+        const green = Math.pow(normalizedBy, powerFactor);
+        const blue = Math.pow(normalizedBz, powerFactor);
+        
+        // Intensidad mínima más alta para colores más fuertes
+        const minIntensity = 0.4;
+        
+        // Aplicar intensidad mínima y amplificar
+        const intensityBoost = 1.3; // Factor de amplificación
+        const adjustedRed = Math.min(1.0, Math.max(red, minIntensity) * intensityBoost);
+        const adjustedGreen = Math.min(1.0, Math.max(green, minIntensity) * intensityBoost);
+        const adjustedBlue = Math.min(1.0, Math.max(blue, minIntensity) * intensityBoost);
+        
+        return new THREE.Color(adjustedRed, adjustedGreen, adjustedBlue);
     };
 
     const getLineWidth = (segment: DislocationSegment): number => {

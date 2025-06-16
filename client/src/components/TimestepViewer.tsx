@@ -1,10 +1,25 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import AtomParticles from './AtomParticles';
 
-const TimestepViewer: React.FC<any> = ({ data }) => {
+interface TimestepViewerProps {
+    data: any;
+    onCameraControlsEnable?: (enabled: boolean) => void;
+}
+
+const TimestepViewer: React.FC<TimestepViewerProps> = ({ data, onCameraControlsEnable }) => {
+    const orbitControlsRef = useRef<any>(null);
+
     useEffect(() => {
         console.log(data)
     }, [data]);
+
+    // Función para controlar OrbitControls
+    const handleCameraControlsEnable = (enabled: boolean) => {
+        console.log('Controles de cámara:', enabled ? 'habilitados' : 'deshabilitados');
+        if (onCameraControlsEnable) {
+            onCameraControlsEnable(enabled);
+        }
+    };
 
     const { atoms, scale, centerOffset } = useMemo(() => {
         if (!data?.atoms || data.atoms.length === 0) {
@@ -66,7 +81,13 @@ const TimestepViewer: React.FC<any> = ({ data }) => {
 
     return (
         <>
-            {atoms.length > 0 && <AtomParticles atoms={atoms} scale={scale} />}
+            {atoms.length > 0 && (
+                <AtomParticles 
+                    atoms={atoms} 
+                    scale={scale} 
+                    onCameraControlsEnable={handleCameraControlsEnable}
+                />
+            )}
         </>
     );
 };

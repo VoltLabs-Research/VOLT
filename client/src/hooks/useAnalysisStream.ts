@@ -27,8 +27,10 @@ const useAnalysisStream = ({ folderId, timestep, baseUrl = 'ws://127.0.0.1:8000/
         onMessage: (event) => {
             try{
                 const response = JSON.parse(event.data);
+                console.log(response)
                 if(response.status === 'success'){
-                    const rawSegments = response.data.data;
+                    const rawSegments = response.data;
+                    console.log(rawSegments)
                     console.log(`OpenDXA [DEBUG]: useAnalysisTream hook (${folderId}/${timestep}) ${rawSegments.length} dislocations`)
                     const segments: DislocationSegment[] = rawSegments.map((s: any, i: number) => ({
                         id: s.index ?? i,
