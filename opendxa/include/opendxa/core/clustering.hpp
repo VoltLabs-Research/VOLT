@@ -14,6 +14,9 @@
 #include <limits>
 #include <stack>
 
+#include "ptm_functions.h"
+#include "ptm_initialize_data.h"
+
 using json = nlohmann::json;
 
 enum ParserFileType{
@@ -30,7 +33,10 @@ public:
 	void transformSimulationCell(const Matrix3& tm);
 	void wrapInputAtoms(const Vector3 offset = NULL_VECTOR);
 	void buildNearestNeighborLists();
+	
 	void performCNA();
+	void performPTM();
+
 	void clusterAtoms();
 	void orderCrystallineAtoms();
 	void determineDistanceFromDefects();
@@ -42,6 +48,8 @@ public:
     vector<InputAtom>& getInputAtoms() { return inputAtoms; }
 	void cleanup();
 	const vector<InputAtom>& getInputAtoms() const { return inputAtoms; }
+
+	NeighborListBuilder<InputAtom> neighborListBuilder;
 
 protected:
 	void readLAMMPSAtomsFile(ParserStream& stream);
@@ -55,7 +63,7 @@ protected:
 	void clusterNeighbor(InputAtom* currentAtom, InputAtom* neighbor, const LatticeOrientation& neighborLatticeOrientation, deque<InputAtom*>& toprocess, int level);
 	bool isValidClusterNeighbor(InputAtom* currentAtom, int neighborIndex, int level);
 	void disableDisclinationBorderAtom(InputAtom* atom);
-	void setPTMCutoff(FloatType cutoff);
+
 	ClusterTransition* createClusterTransition(Cluster* cluster1, Cluster* cluster2, const LatticeOrientation& transitionTM);
 	ClusterTransition* createClusterTransitionOnDemand(Cluster* cluster1, Cluster* cluster2, const LatticeOrientation& transitionTM);
 	ClusterTransition* getClusterTransition(Cluster* cluster1, Cluster* cluster2, const LatticeOrientation& transitionTM) const {
@@ -67,7 +75,6 @@ protected:
 		}
 		return NULL;
 	}
-	FloatType estimatePTMCutoff();
 
 	Cluster* createCluster(int id, int processor);
 	Cluster* createClusterOnDemand(int id, int processor);
@@ -78,14 +85,12 @@ protected:
 		return i->second;
 	}
 	void joinClusters(ClusterTransition* transition, list<ClusterTransition*>& priorityStack);
-	void performPTM();
 
-	FloatType ptmCutoff;
+	ptm_local_handle_t ptmLocalHandle;
 	FloatType cnaCutoff;
 	vector<InputAtom> inputAtoms;
 	int numLocalInputAtoms;
 	vector<InputAtom>::iterator firstGhostAtom;
-	NeighborListBuilder<InputAtom> neighborListBuilder;
 	int numClusters;
 	int numDisclinationAtoms;
 	int numClusterDisclinations;

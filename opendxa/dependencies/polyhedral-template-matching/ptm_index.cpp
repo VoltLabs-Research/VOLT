@@ -118,7 +118,7 @@ int ptm_index(ptm_local_handle_t local_handle,
 {
     int ret = 0;
     assert(ptm_initialized);
-    if (!ptm_initialized)    //assert is not active in OVITO release build
+    if (!ptm_initialized) 
         return -1;
 
     //-------- initialize output values with failure case --------

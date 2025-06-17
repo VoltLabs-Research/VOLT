@@ -25,3 +25,33 @@ Matrix3 Matrix3::scaling(const Scaling& scaling){
 						0.0, 0.0, scaling.S.Z);
 	return U * K * U.transposed();
 }
+
+
+Matrix3::Matrix3(const Quaternion& q){
+	DISLOCATIONS_ASSERT_MSG(fabs(q.X*q.X + q.Y*q.Y + q.Z*q.Z + q.W*q.W - 1.0) <= FLOATTYPE_EPSILON, "Matrix3 from Quaternion", "Quaternion must be normalized.");
+
+    FloatType xx = q.X * q.X;
+    FloatType xy = q.X * q.Y;
+    FloatType xz = q.X * q.Z;
+    FloatType xw = q.X * q.W;
+
+    FloatType yy = q.Y * q.Y;
+    FloatType yz = q.Y * q.Z;
+    FloatType yw = q.Y * q.W;
+
+    FloatType zz = q.Z * q.Z;
+    FloatType zw = q.Z * q.W;
+
+    // m[col][row]
+    m[0][0] = 1.0 - 2.0 * (yy + zz);
+    m[1][0] = 2.0 * (xy - zw);
+    m[2][0] = 2.0 * (xz + yw);
+
+    m[0][1] = 2.0 * (xy + zw);
+    m[1][1] = 1.0 - 2.0 * (xx + zz);
+    m[2][1] = 2.0 * (yz - xw);
+
+    m[0][2] = 2.0 * (xz - yw);
+    m[1][2] = 2.0 * (yz + xw);
+    m[2][2] = 1.0 - 2.0 * (xx + yy);
+}

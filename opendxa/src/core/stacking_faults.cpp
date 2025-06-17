@@ -37,7 +37,8 @@ json StackingFaults::processFile(const fs::path& file, const OpenDXA::Config& co
     Timer fullTimer;
     
     buildNearestNeighborLists();
-    performCNA();
+    // performCNA();
+	performPTM();
     orderCrystallineAtoms();
     clusterAtoms();
     createInterfaceMeshNodes();

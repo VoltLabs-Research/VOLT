@@ -27,6 +27,8 @@ public:
 		m[2][0] = m13; m[2][1] = m23; m[2][2] = m33;
 	}
 
+	explicit Matrix3(const Quaternion& q);
+
 	explicit Matrix3(const Vector3& col1, const Vector3& col2, const Vector3& col3){
 		m[0][0] = col1.X; m[0][1] = col1.Y; m[0][2] = col1.Z;
 		m[1][0] = col2.X; m[1][1] = col2.Y; m[1][2] = col2.Z;
