@@ -84,16 +84,6 @@ try:
 {textwrap.indent(request.code, ' ' * 4)}
 except Exception as e:
     print("Unhandled exception:", e, file=sys.stderr)
-
-if 'result' not in locals():
-    result = None
-
-try:
-    with open('/workspace/output.json', 'w') as f:
-        json.dump({{'result': result}}, f, indent=2)
-except Exception as e:
-    with open('/workspace/output.json', 'w') as f:
-        json.dump({{'result': str(result), 'error': str(e)}}, f, indent=2)
 ''')
 
         with open(script_path, 'w') as f:

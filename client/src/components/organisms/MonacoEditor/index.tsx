@@ -5,7 +5,6 @@ import EditorWidget from '../EditorWidget';
 import type { EditorWidgetRef } from '../EditorWidget';
 import './MonacoEditor.css';
 
-// Interfaces (sin cambios)
 interface ExecutionResponse {
     exit_code: number;
     stdout: string;
@@ -36,7 +35,47 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     // State and basic refs
     const [isVisible, setIsVisible] = useState(defaultVisible);
     const [code, setCode] = useState<string>(
-        '# The "context" variable is preloaded with data from the current timestep.\n# Try printing it to see the available data.\n\nprint(context[\'dislocations\'][\'summary\'])'
+`'''
+Access the full analysis for each timestep through the \`context\` variable. This variable is automatically populated with all data from the OpenDXA dislocation analysis, ready for your script.
+'''
+
+import numpy as np
+
+dislocation_info = context['dislocations']
+metadata = dislocation_info['metadata']
+summary = dislocation_info['summary']
+dislocation_data = dislocation_info['data']
+
+segment_count = metadata['count']
+total_length = summary['total_length']
+density = summary['density']['dislocation_density']
+
+print('Dislocation Analysis Summary')
+print(f'Total Dislocation Segments: {segment_count}')
+print(f'Total Dislocation Length: {total_length:.4f} (units)')
+print(f'Dislocation Density: {density:.4e} (1/units^2)')
+
+segment_lengths = np.array([segment['length'] for segment in dislocation_data])
+
+print('Segment Length Statistics')
+print(f'Longest Segment: {np.max(segment_lengths):.4f}')
+print(f'Shortest Segment: {np.min(segment_lengths):.4f}')
+print(f'Average Segment Length: {np.mean(segment_lengths):.4f}')
+
+result = {
+    'analysis_summary': {
+        'segment_count': segment_count,
+        'total_length': round(total_length, 4),
+        'density': f'{density:.4e}'
+    },
+    'length_stats': {
+        'max': round(float(np.max(segment_lengths)), 4),
+        'min': round(float(np.min(segment_lengths)), 4),
+        'mean': round(float(np.mean(segment_lengths)), 4)
+    }
+}
+
+print(result)`
     );
     const [output, setOutput] = useState<ExecutionResponse | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -52,14 +91,12 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     const terminalEndRef = useRef<HTMLDivElement>(null);
     const lineIdCounter = useRef<number>(0);
     
-    // Ref para almacenar los parámetros más recientes y evitar cierres rancios
     const executionParamsRef = useRef({ folderId, currentTimestamp, code, language });
 
     useEffect(() => {
         executionParamsRef.current = { folderId, currentTimestamp, code, language };
     }, [folderId, currentTimestamp, code, language]);
 
-    // Funciones de terminal
     const addTerminalLine = useCallback((text: string, type: TerminalLine['type'] = 'info') => {
         const newLine: TerminalLine = {
             id: lineIdCounter.current++,
@@ -77,11 +114,9 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         lineIdCounter.current = 0;
     }, []);
 
-    // `handleRunCode` con las correcciones
     const handleRunCode = useCallback(async () => {
         const params = executionParamsRef.current;
         
-        // MEJORA: Validar que se ha seleccionado una carpeta
         if (!params.folderId) {
             clearTerminal();
             addTerminalLine("Please select a data folder before running.", "error");
@@ -131,15 +166,13 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         } finally {
             setIsLoading(false);
         }
-    }, [clearTerminal, addTerminalLine]); // Se añade addTerminalLine como dependencia
+    }, [clearTerminal, addTerminalLine]);
 
-    // Ref para la función `handleRunCode`
     const handleRunCodeRef = useRef(handleRunCode);
     useEffect(() => {
         handleRunCodeRef.current = handleRunCode;
     }, [handleRunCode]);
 
-    // Atajos de teclado
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if ((event.ctrlKey || event.metaKey) && event.key === 'j') {
@@ -160,7 +193,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isVisible, onToggle, clearTerminal]); // handleRunCode se quita porque se usa el ref
+    }, [isVisible, onToggle, clearTerminal]); 
 
     const handleEditorChange = useCallback((value: string | undefined) => {
         if (value !== undefined) {
@@ -168,7 +201,6 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         }
     }, []);
     
-    // Procesamiento de salida
     useEffect(() => {
         if (isLoading) return;
 
@@ -198,7 +230,6 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         }
     }, [output, error, isLoading, addTerminalLine]);
     
-    // Opciones del editor
     const editorOptions = useMemo(() => ({
         selectOnLineNumbers: true,
         minimap: { enabled: false },

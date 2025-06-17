@@ -63,19 +63,33 @@ const DislocationViewer: React.FC<DislocationViewerProps> = ({
 }) => {
     if(!segments || segments.length === 0) return null;
 
-        const getLineColor = (segment: DislocationSegment): THREE.Color => {
-        const type = segment.type?.toLowerCase();
-
-        switch (type) {
-            case 'edge':
-                return new THREE.Color(0xff4444); 
-            case 'screw':
-                return new THREE.Color(0x4444ff); 
-            case 'mixed':
-                return new THREE.Color(0x44ff44); 
-            default:
-                return new THREE.Color(0xaaaaaa); 
+    const getLineColor = (segment: DislocationSegment): THREE.Color => {
+        const burgers_vector = segment.burgers_vector ?? [0, 0, 0];
+        const [bx, by, bz] = burgers_vector;
+        
+        const magnitude = Math.sqrt(bx * bx + by * by + bz * bz);
+        
+        if(magnitude === 0){
+            return new THREE.Color(0.7, 0.7, 0.7);
         }
+        
+        const normalizedBx = Math.abs(bx) / magnitude;
+        const normalizedBy = Math.abs(by) / magnitude;
+        const normalizedBz = Math.abs(bz) / magnitude;
+        
+        const powerFactor = 0.6;
+        const red = Math.pow(normalizedBx, powerFactor);
+        const green = Math.pow(normalizedBy, powerFactor);
+        const blue = Math.pow(normalizedBz, powerFactor);
+        
+        const minIntensity = 0.4;
+        
+        const intensityBoost = 1.3;
+        const adjustedRed = Math.min(1.0, Math.max(red, minIntensity) * intensityBoost);
+        const adjustedGreen = Math.min(1.0, Math.max(green, minIntensity) * intensityBoost);
+        const adjustedBlue = Math.min(1.0, Math.max(blue, minIntensity) * intensityBoost);
+        
+        return new THREE.Color(adjustedRed, adjustedGreen, adjustedBlue);
     };
 
     const getLineWidth = (segment: DislocationSegment): number => {

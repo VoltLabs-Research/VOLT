@@ -55,6 +55,7 @@ protected:
 	void clusterNeighbor(InputAtom* currentAtom, InputAtom* neighbor, const LatticeOrientation& neighborLatticeOrientation, deque<InputAtom*>& toprocess, int level);
 	bool isValidClusterNeighbor(InputAtom* currentAtom, int neighborIndex, int level);
 	void disableDisclinationBorderAtom(InputAtom* atom);
+	void setPTMCutoff(FloatType cutoff);
 	ClusterTransition* createClusterTransition(Cluster* cluster1, Cluster* cluster2, const LatticeOrientation& transitionTM);
 	ClusterTransition* createClusterTransitionOnDemand(Cluster* cluster1, Cluster* cluster2, const LatticeOrientation& transitionTM);
 	ClusterTransition* getClusterTransition(Cluster* cluster1, Cluster* cluster2, const LatticeOrientation& transitionTM) const {
@@ -66,6 +67,8 @@ protected:
 		}
 		return NULL;
 	}
+	FloatType estimatePTMCutoff();
+
 	Cluster* createCluster(int id, int processor);
 	Cluster* createClusterOnDemand(int id, int processor);
 	Cluster* getCluster(int id) const {
@@ -75,7 +78,9 @@ protected:
 		return i->second;
 	}
 	void joinClusters(ClusterTransition* transition, list<ClusterTransition*>& priorityStack);
+	void performPTM();
 
+	FloatType ptmCutoff;
 	FloatType cnaCutoff;
 	vector<InputAtom> inputAtoms;
 	int numLocalInputAtoms;

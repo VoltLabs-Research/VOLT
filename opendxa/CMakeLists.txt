@@ -32,16 +32,9 @@ if(DXA_BUILD_PYTHON_BINDINGS)
     endif()
 endif()
 
-file(GLOB_RECURSE OPENDXA_SOURCES
-    "src/*.cpp"
-)
-
+# ==================== Fuentes principales ====================
+file(GLOB_RECURSE OPENDXA_SOURCES "src/*.cpp")
 list(FILTER OPENDXA_SOURCES EXCLUDE REGEX ".*Main\\.cpp$")
-
-message(STATUS "Found source files:")
-foreach(source_file ${OPENDXA_SOURCES})
-    message(STATUS "  ${source_file}")
-endforeach()
 
 add_library(opendxapy ${OPENDXA_SOURCES})
 
@@ -56,6 +49,7 @@ target_include_directories(opendxapy
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/cxxopts/include
         ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/json/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/polyhedral-template-matching/
         ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/pybind11_json/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -81,19 +75,43 @@ target_compile_definitions(opendxapy PRIVATE
     JSON_DISABLE_ENUM_SERIALIZATION=1
 )
 
+set(PTM_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/polyhedral-template-matching)
+
+file(GLOB PTM_SOURCES
+    "${PTM_LIB_DIR}/ptm_alloy_types.cpp"
+    "${PTM_LIB_DIR}/ptm_canonical_coloured.cpp"
+    "${PTM_LIB_DIR}/ptm_convex_hull_incremental.cpp"
+    "${PTM_LIB_DIR}/ptm_deformation_gradient.cpp"
+    "${PTM_LIB_DIR}/ptm_graph_data.cpp"
+    "${PTM_LIB_DIR}/ptm_graph_tools.cpp"
+    "${PTM_LIB_DIR}/ptm_index.cpp"
+    "${PTM_LIB_DIR}/ptm_initialize_data.cpp"
+    "${PTM_LIB_DIR}/ptm_multishell.cpp"
+    "${PTM_LIB_DIR}/ptm_neighbour_ordering.cpp"
+    "${PTM_LIB_DIR}/ptm_normalize_vertices.cpp"
+    "${PTM_LIB_DIR}/ptm_polar.cpp"
+    "${PTM_LIB_DIR}/ptm_quat.cpp"
+    "${PTM_LIB_DIR}/ptm_structure_matcher.cpp"
+    "${PTM_LIB_DIR}/ptm_voronoi_cell.cpp"
+)
+
+add_library(ptm_lib STATIC ${PTM_SOURCES})
+target_include_directories(ptm_lib PUBLIC ${PTM_LIB_DIR})
+
+target_link_libraries(opendxapy PUBLIC ptm_lib)
+
 if(DXA_BUILD_EXECUTABLE)
     find_package(OpenGL REQUIRED)
     message(STATUS "OpenGL found - visualization support enabled")
 
-    add_executable(opendxa 
-        src/main.cpp
-    )
+    add_executable(opendxa src/main.cpp)
 
     target_link_libraries(opendxa PRIVATE 
         opendxapy 
+        ptm_lib
         OpenGL::GLU
     )
-    
+
     target_compile_options(opendxa PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-O3 -march=native -ffast-math>
         $<$<CXX_COMPILER_ID:Clang>:-O3 -march=native -ffast-math>
@@ -115,11 +133,11 @@ if(DXA_BUILD_PYTHON_BINDINGS AND pybind11_FOUND)
         OpenGL::GL
         OpenGL::GLU
     )
-    
+
     target_compile_definitions(opendxa_py PRIVATE 
         VERSION_INFO="${PROJECT_VERSION}"
     )
-    
+
     set_target_properties(opendxa_py PROPERTIES
         OUTPUT_NAME "opendxa"
         PREFIX "${PYTHON_MODULE_PREFIX}"
@@ -147,7 +165,6 @@ if(DXA_BUILD_PYTHON_BINDINGS AND pybind11_FOUND)
     )
 endif()
 
-message(STATUS "=== Build Configuration Summary ===")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "Build executable: ${DXA_BUILD_EXECUTABLE}")
