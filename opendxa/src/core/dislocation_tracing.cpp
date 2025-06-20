@@ -35,6 +35,9 @@ void DislocationTracing::traceDislocationSegments(){
 	// Initialize random number generator to make the algorithm predictive.
 	srand(1);
 
+	// First find dislocation segments by tracing short Burgers circuits around dislocation cores.
+	findPrimarySegments();
+
 	size_t numPrimarySegments = segments.size();
 	LOG_INFO() << "Extending and joining dislocation segments. Extended circuit length limit: " << maxExtendedBurgersCircuitSize;
 
@@ -42,21 +45,15 @@ void DislocationTracing::traceDislocationSegments(){
 	// Try to join two or more segments to form a dislocation junction.
 	int numJunctions = joinSegments(maxBurgersCircuitSize);
 	
-	for(int circuitLength = 3; circuitLength <= maxExtendedBurgersCircuitSize; circuitLength++){
-		std::cout << "Searching for dislocation segments with Burgers circuit of length " << circuitLength << std::endl;
+	// Then incrementally extend the segments until they meet each other.
+	for(int circuitLength = maxBurgersCircuitSize; circuitLength <= maxExtendedBurgersCircuitSize; circuitLength++){
+		// Extend the existing segments along the interface mesh up to the current maximum circuit length.
 		for(auto circuit_iter = danglingCircuits.begin(); circuit_iter != danglingCircuits.end(); ++circuit_iter){
 			BurgersCircuit* circuit = *circuit_iter;
 			DISLOCATIONS_ASSERT(circuit->isDangling);
 			DISLOCATIONS_ASSERT(circuit->countEdges() == circuit->edgeCount);
 
-			// Trace segment a bit further
-			traceSegment(*circuit->segment, *circuit, circuitLength, circuitLength <= maxBurgersCircuitSize);
-		}
-
-		// Find dislocation segments by generating trial Burgers circuits on the interface mesh
-		// and then moving them in both directions along the dislocation segment
-		if(circuitLength <= maxBurgersCircuitSize && (circuitLength % 2) != 0){
-			findPrimarySegments();
+			traceSegment(*circuit->segment, *circuit, circuitLength, false);
 		}
 
 		// Try to join two or more segments to form a dislocation junction.
