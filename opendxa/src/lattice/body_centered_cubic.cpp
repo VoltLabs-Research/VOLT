@@ -1,21 +1,21 @@
 #include <opendxa/core/clustering.hpp>
 #include <opendxa/structures/lattice.hpp>
 
-static const LatticeVector bccNeighborVectors[16] = {
-	LatticeVector(-1.0/2,-1.0/2,-1.0/2),
-	LatticeVector( 1.0/2,-1.0/2,-1.0/2),
-	LatticeVector( 1.0/2, 1.0/2,-1.0/2),
-	LatticeVector(-1.0/2, 1.0/2,-1.0/2),
-	LatticeVector(-1.0/2,-1.0/2, 1.0/2),
-	LatticeVector( 1.0/2,-1.0/2, 1.0/2),
-	LatticeVector( 1.0/2, 1.0/2, 1.0/2),
-	LatticeVector(-1.0/2, 1.0/2, 1.0/2),
-	LatticeVector(0, 0, -1.0),
-	LatticeVector(0, 0,  1.0),
-	LatticeVector(0, -1.0, 0),
-	LatticeVector(0,  1.0, 0),
-	LatticeVector(-1.0, 0, 0),
-	LatticeVector( 1.0, 0, 0),
+static const Vector3 bccNeighborVectors[16] = {
+	Vector3(-1.0/2,-1.0/2,-1.0/2),
+	Vector3( 1.0/2,-1.0/2,-1.0/2),
+	Vector3( 1.0/2, 1.0/2,-1.0/2),
+	Vector3(-1.0/2, 1.0/2,-1.0/2),
+	Vector3(-1.0/2,-1.0/2, 1.0/2),
+	Vector3( 1.0/2,-1.0/2, 1.0/2),
+	Vector3( 1.0/2, 1.0/2, 1.0/2),
+	Vector3(-1.0/2, 1.0/2, 1.0/2),
+	Vector3(0, 0, -1.0),
+	Vector3(0, 0,  1.0),
+	Vector3(0, -1.0, 0),
+	Vector3(0,  1.0, 0),
+	Vector3(-1.0, 0, 0),
+	Vector3( 1.0, 0, 0),
 };
 
 static const NearestNeighborQuad bccQuads[6] = {

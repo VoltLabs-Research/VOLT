@@ -1,19 +1,19 @@
 #include <opendxa/core/clustering.hpp>
 #include <opendxa/structures/lattice.hpp>
 
-static const LatticeVector hcpNeighborVectors[12] = {
-	LatticeVector( 1.0/2, 0, 1.0/2),
-	LatticeVector( 1.0/2, 1.0/2, 0),
-	LatticeVector( 0, 1.0/2, 1.0/2),
-	LatticeVector(-1.0/2, 1.0/2, 0),
-	LatticeVector( 0, 1.0/2,-1.0/2),
-	LatticeVector( 1.0/2, 0,-1.0/2),
-	LatticeVector( 1.0/2,-1.0/2, 0),
-	LatticeVector(-1.0/2, 0, 1.0/2),
-	LatticeVector( 0,-1.0/2, 1.0/2),
-	LatticeVector(-1.0/6, -(1.0*2)/3, -1.0/6),
-	LatticeVector(-(1.0*2)/3, -1.0/6, -1.0/6),
-	LatticeVector(-1.0/6, -1.0/6, -(1.0*2)/3)
+static const Vector3 hcpNeighborVectors[12] = {
+	Vector3( 1.0/2, 0, 1.0/2),
+	Vector3( 1.0/2, 1.0/2, 0),
+	Vector3( 0, 1.0/2, 1.0/2),
+	Vector3(-1.0/2, 1.0/2, 0),
+	Vector3( 0, 1.0/2,-1.0/2),
+	Vector3( 1.0/2, 0,-1.0/2),
+	Vector3( 1.0/2,-1.0/2, 0),
+	Vector3(-1.0/2, 0, 1.0/2),
+	Vector3( 0,-1.0/2, 1.0/2),
+	Vector3(-1.0/6, -(1.0*2)/3, -1.0/6),
+	Vector3(-(1.0*2)/3, -1.0/6, -1.0/6),
+	Vector3(-1.0/6, -1.0/6, -(1.0*2)/3)
 };
 
 static const NearestNeighborTetrahedron hcpTetrahedra[8] = {

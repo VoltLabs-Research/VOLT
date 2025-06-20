@@ -2,19 +2,19 @@
 #include <opendxa/structures/lattice.hpp>
 
 // Coordinates of the nearest neighbors in the FCC lattice:
-static const LatticeVector fccNeighborVectors[12] = {
-	LatticeVector( 1.0/2, 0, 1.0/2),
-	LatticeVector( 1.0/2, 1.0/2, 0),
-	LatticeVector( 0, 1.0/2, 1.0/2),
-	LatticeVector( 1.0/2, 0,-1.0/2),
-	LatticeVector( 0, 1.0/2,-1.0/2),
-	LatticeVector(-1.0/2, 0,-1.0/2),
-	LatticeVector(-1.0/2, 1.0/2, 0),
-	LatticeVector(-1.0/2, 0, 1.0/2),
-	LatticeVector( 0,-1.0/2, 1.0/2),
-	LatticeVector( 1.0/2,-1.0/2, 0),
-	LatticeVector( 0,-1.0/2,-1.0/2),
-	LatticeVector(-1.0/2,-1.0/2, 0)
+static const Vector3 fccNeighborVectors[12] = {
+	Vector3( 1.0/2, 0, 1.0/2),
+	Vector3( 1.0/2, 1.0/2, 0),
+	Vector3( 0, 1.0/2, 1.0/2),
+	Vector3( 1.0/2, 0,-1.0/2),
+	Vector3( 0, 1.0/2,-1.0/2),
+	Vector3(-1.0/2, 0,-1.0/2),
+	Vector3(-1.0/2, 1.0/2, 0),
+	Vector3(-1.0/2, 0, 1.0/2),
+	Vector3( 0,-1.0/2, 1.0/2),
+	Vector3( 1.0/2,-1.0/2, 0),
+	Vector3( 0,-1.0/2,-1.0/2),
+	Vector3(-1.0/2,-1.0/2, 0)
 };
 
 static const NearestNeighborTetrahedron fccTetrahedra[8] = {
@@ -51,34 +51,34 @@ const CrystalLatticeType fccLattice = {
 	}
 };
 
-const LatticeVector shockleyBurgersVectors[12] = {
+const Vector3 shockleyBurgersVectors[12] = {
 	// 1/6[-2 -1 -1]
-	LatticeVector(-1.0/3,-1.0/6,-1.0/6),
+	Vector3(-1.0/3,-1.0/6,-1.0/6),
 	// 1/6[ 1  2  1]
-	LatticeVector( 1.0/6, 1.0/3, 1.0/6),
+	Vector3( 1.0/6, 1.0/3, 1.0/6),
 	// 1/6[-1  1 -2]
-	LatticeVector(-1.0/6, 1.0/6,-1.0/3),
+	Vector3(-1.0/6, 1.0/6,-1.0/3),
 
 	// 1/6[ 1  1 -2]
-	LatticeVector( 1.0/6, 1.0/6,-1.0/3),
+	Vector3( 1.0/6, 1.0/6,-1.0/3),
 	// 1/6[-2  1  1]
-	LatticeVector(-1.0/3, 1.0/6, 1.0/6),
+	Vector3(-1.0/3, 1.0/6, 1.0/6),
 	// 1/6[-1  2 -1]
-	LatticeVector(-1.0/6, 1.0/3,-1.0/6),
+	Vector3(-1.0/6, 1.0/3,-1.0/6),
 
 	// 1/6[ 2  1 -1]
-	LatticeVector( 1.0/3, 1.0/6,-1.0/6),
+	Vector3( 1.0/3, 1.0/6,-1.0/6),
 	// 1/6[ 1  2  1]
-	LatticeVector( 1.0/6, 1.0/3, 1.0/6),
+	Vector3( 1.0/6, 1.0/3, 1.0/6),
 	// 1/6[-1  1  2]
-	LatticeVector(-1.0/6, 1.0/6, 1.0/3),
+	Vector3(-1.0/6, 1.0/6, 1.0/3),
 
 	// 1/6[-2  1 -1]
-	LatticeVector(-1.0/3, 1.0/6,-1.0/6),
+	Vector3(-1.0/3, 1.0/6,-1.0/6),
 	// 1/6[-1  2  1]
-	LatticeVector(-1.0/6, 1.0/3, 1.0/6),
+	Vector3(-1.0/6, 1.0/3, 1.0/6),
 	// 1/6[-1 -1 -2]
-	LatticeVector(-1.0/6,-1.0/6,-1.0/3),
+	Vector3(-1.0/6,-1.0/6,-1.0/3),
 };
 
 void Clustering::orderFCCAtomNeighbors(InputAtom* atom){
@@ -190,12 +190,12 @@ LatticeOrientation InputAtom::determineTransitionMatrixFCCHCP(int neighborIndex)
 	for(int tet = 0; tet < currentLattice.numTetrahedra; tet++) {
 		// Get the three neighbors that form the tetrahedron.
 		InputAtom* vertices[3];
-		LatticeVector latticeVectors[3];
+		Vector3 Vector3s[3];
 		int v = -1;
 		for(int i=0; i<3; i++) {
 			if(currentLattice.tetrahedra[tet].neighborIndices[i] == neighborIndex) v = i;
 			vertices[i] = neighborAtom(currentLattice.tetrahedra[tet].neighborIndices[i]);
-			latticeVectors[i] = latticeOrientation * currentLattice.tetrahedra[tet].neighborVectors[i];
+			Vector3s[i] = latticeOrientation * currentLattice.tetrahedra[tet].neighborVectors[i];
 		}
 		if(v == -1) continue;
 
@@ -234,9 +234,9 @@ LatticeOrientation InputAtom::determineTransitionMatrixFCCHCP(int neighborIndex)
 		DISLOCATIONS_ASSERT_GLOBAL(match);
 
 		LatticeOrientation lefttm(
-				-latticeVectors[v],
-				latticeVectors[vother2] - latticeVectors[v],
-				latticeVectors[vother1] - latticeVectors[v]
+				-Vector3s[v],
+				Vector3s[vother2] - Vector3s[v],
+				Vector3s[vother1] - Vector3s[v]
 			);
 		LatticeOrientation transitionTM = lefttm * righttm.inverse();
 		DISLOCATIONS_ASSERT_GLOBAL(transitionTM.isRotationMatrix());
