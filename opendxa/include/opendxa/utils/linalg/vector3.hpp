@@ -60,6 +60,10 @@ public:
 	void sety(const ValueType& value) { Y = value; }
 	void setz(const ValueType& value) { Z = value; }
 
+	bool isZero(ValueType tolerance = FLOATTYPE_EPSILON) const{
+		return fabs(X) <= tolerance && fabs(Y) <= tolerance && fabs(Z) <= tolerance;
+	}
+
 	bool operator==(const Vector_3<ValueType>& v) const { return (v.X==X) && (v.Y==Y) && (v.Z==Z); }
 	bool operator!=(const Vector_3<ValueType>& v) const { return (v.X!=X) || (v.Y!=Y) || (v.Z!=Z); }
 	bool operator==(const NullVector&) const { return (X==(ValueType)0) && (Y==(ValueType)0) && (Z==(ValueType)0); }

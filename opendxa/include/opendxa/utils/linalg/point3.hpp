@@ -42,6 +42,10 @@ public:
 		return (const T*)this;
 	}
 
+	bool isZero(T tolerance = FLOATTYPE_EPSILON) const{
+		return fabs(X) <= tolerance && fabs(Y) <= tolerance && fabs(Z) <= tolerance;
+	}
+
 	Point_3<T>& operator+=(const Vector_3<T>& v) { X += v.X; Y += v.Y; Z += v.Z; return *this; }
 	Point_3<T>& operator-=(const Vector_3<T>& v) { X -= v.X; Y -= v.Y; Z -= v.Z; return *this; }
 	Point_3<T>& operator+=(const Point_3<T>& p) { X += p.X; Y += p.Y; Z += p.Z; return *this; }

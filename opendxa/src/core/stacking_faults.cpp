@@ -28,23 +28,21 @@ json StackingFaults::processFile(const fs::path& file, const OpenDXA::Config& co
     ParserStream parserStream(in);
     readAtomsFile(parserStream, fs::is_directory(file.parent_path()));
     
-    if(config.scaleFactors != Vector3{1,1,1}) {
+    if(config.scaleFactors != Vector3{1,1,1}){
         transformSimulationCell(Matrix3{config.scaleFactors.X,0,0,0,config.scaleFactors.Y,0,0,0,config.scaleFactors.Z});
     }
     
     wrapInputAtoms(config.atomOffset);
-
     Timer fullTimer;
     
     buildNearestNeighborLists();
-    // performCNA();
-	performPTM();
+    performCNA();
     orderCrystallineAtoms();
     clusterAtoms();
     createInterfaceMeshNodes();
     createStackingFaultEdges();
     createInterfaceMeshFacets();
-    validateInterfaceMesh();
+    validateInterfaceMesh(true);
     findStackingFaultPlanes();
     traceDislocationSegments();
     generateOutputMesh();
@@ -62,12 +60,11 @@ json StackingFaults::processFile(const fs::path& file, const OpenDXA::Config& co
     data["processing_time"] = fullTimer.elapsedTime();
     data["filename"] = file.filename().string();
 
-    // Escribir archivo de salida si es necesario
-    if(outputIsDir) {
+    if(outputIsDir){
         writeOutputFile(file, outputPath, data);
-    } else if(!config.outputFile.empty()) {
+    }else if(!config.outputFile.empty()){
         std::ofstream fout(outputPath);
-        if(!fout) {
+        if(!fout){
             throw std::runtime_error("Cannot open output file: " + outputPath.string());
         }
         fout << data.dump() << "\n";
@@ -76,26 +73,27 @@ json StackingFaults::processFile(const fs::path& file, const OpenDXA::Config& co
     return data;
 }
 
-void StackingFaults::writeOutputFile(const fs::path& inputFile, 
-                                       const fs::path& outputDir, 
-                                       const json& data) {
+void StackingFaults::writeOutputFile(
+		const fs::path& inputFile, 
+		const fs::path& outputDir, 
+		const json& data){
     std::string stem = inputFile.stem().string();
     std::smatch m;
     std::string ts = "0";
     static const std::regex r(R"((\d+))");
-    if(std::regex_search(stem, m, r)) {
+    if(std::regex_search(stem, m, r)){
         ts = m.str(1);
     }
     
     fs::path outFile = outputDir / ("timestep_" + ts + ".json");
     std::ofstream fout(outFile);
-    if(!fout) {
+    if(!fout){
         throw std::runtime_error("Cannot open output file: " + outFile.string());
     }
     fout << data.dump() << "\n";
 }
 
-json StackingFaults::compute(const OpenDXA::Config &config) {
+json StackingFaults::compute(const OpenDXA::Config &config){
     setCNACutoff((FloatType) config.cnaCutoff);
     setPBC(config.pbcX, config.pbcY, config.pbcZ);
     setMaximumBurgersCircuitSize(config.maxCircuitSize);
@@ -105,10 +103,10 @@ json StackingFaults::compute(const OpenDXA::Config &config) {
     fs::path outputPath(config.outputFile);
 
     bool outputIsDir = false;
-    if(!config.outputFile.empty()) {
-        if(fs::exists(outputPath)) {
+    if(!config.outputFile.empty()){
+        if(fs::exists(outputPath)){
             outputIsDir = fs::is_directory(outputPath);
-        } else if(fs::is_directory(inputPath)) {
+        }else if(fs::is_directory(inputPath)){
             fs::create_directories(outputPath);
             outputIsDir = true;
         }
@@ -117,7 +115,7 @@ json StackingFaults::compute(const OpenDXA::Config &config) {
     json aggregate;
     std::atomic<size_t> fileIndex{0};
     std::mutex aggregateMutex;
-    auto createConfiguredProcessor = [&config]() {
+    auto createConfiguredProcessor = [&config](){
         auto processor = std::make_unique<StackingFaults>();
         processor->setCNACutoff((FloatType) config.cnaCutoff);
         processor->setPBC(config.pbcX, config.pbcY, config.pbcZ);
@@ -127,7 +125,7 @@ json StackingFaults::compute(const OpenDXA::Config &config) {
     };
     if(fs::is_directory(inputPath)) {
         std::vector<fs::path> files;
-        for(auto const& entry : fs::directory_iterator(inputPath)) {
+        for(auto const& entry : fs::directory_iterator(inputPath)){
             if(entry.is_regular_file()) {
                 files.push_back(entry.path());
             }
@@ -140,10 +138,10 @@ json StackingFaults::compute(const OpenDXA::Config &config) {
             auto localProcessor = createConfiguredProcessor();
             
             #pragma omp for schedule(dynamic)
-            for(size_t i = 0; i < files.size(); ++i) {
+            for(size_t i = 0; i < files.size(); ++i){
                 const auto& file = files[i];
                 
-                try {
+                try{
                     json data = localProcessor->processFile(file, config, outputIsDir, outputPath);
                     
                     if(config.outputFile.empty()) {
@@ -155,20 +153,17 @@ json StackingFaults::compute(const OpenDXA::Config &config) {
                     
                     #pragma omp critical
                     {
-                        LOG_INFO() << "Processed file " << fileIndex.load() 
-                                   << "/" << files.size() << ": " << file.filename().string();
+                        LOG_INFO() << "Processed file " << fileIndex.load()  << "/" << files.size() << ": " << file.filename().string();
                     }
-                    
-                } catch(const std::exception& e) {
+                }catch(const std::exception& e){
                     #pragma omp critical
                     {
-                        LOG_ERROR() << "Error processing file " << file.string() 
-                                    << ": " << e.what();
+                        LOG_ERROR() << "Error processing file " << file.string() << ": " << e.what();
                     }
                 }
             }
         }
-    } else {
+    }else{
         json data = processFile(inputPath, config, outputIsDir, outputPath);
         if(config.outputFile.empty()) {
             aggregate["files"].push_back(data);
@@ -176,32 +171,29 @@ json StackingFaults::compute(const OpenDXA::Config &config) {
         fileIndex = 1;
     }
 
-    if(config.outputFile.empty()) {
-        return aggregate;
-    }
+    if(config.outputFile.empty()) return aggregate;
+
     return json{{"processed_files", fileIndex.load()}};
 }
 
 bool StackingFaults::createStackingFaultEdges(){
 	LOG_INFO() << "Creating stacking fault contour edges.";
-
 	bool isInvalidInput = false;
 	int numExtraEdgesCreated = 0;
 
-	for(vector<InputAtom>::iterator atom = getInputAtoms().begin(); atom != getInputAtoms().end(); ++atom) {
+	for(auto atom = getInputAtoms().begin(); atom != getInputAtoms().end(); ++atom){
 		if(atom->isNonHCP()) continue;
-
 		BaseAtom* neighbor1 = atom->neighbor(hcpBasalPlaneAtoms[5]);
-		for(int n = 0; n < 6; n++) {
+		for(int n = 0; n < 6; n++){
 			BaseAtom* neighbor2 = atom->neighbor(hcpBasalPlaneAtoms[n]);
-			if(neighbor1 == NULL || neighbor2 == NULL) {
+			if(neighbor1 == NULL || neighbor2 == NULL){
 				isInvalidInput = true;
 				neighbor1 = neighbor2;
 				continue;
 			}
 			DISLOCATIONS_ASSERT(neighbor1 != NULL && neighbor2 != NULL);
 
-			if(neighbor1->isDisordered() && neighbor2->isDisordered()) {
+			if(neighbor1->isDisordered() && neighbor2->isDisordered()){
 				MeshNode* node1 = (MeshNode*)neighbor1;
 				MeshNode* node2 = (MeshNode*)neighbor2;
 				Vector3 latticeVector = atom->latticeOrientation *
@@ -210,9 +202,9 @@ bool StackingFaults::createStackingFaultEdges(){
 				MeshEdge* meshEdge = NULL;
 				int numExistingEdges = 0;
 				// Find existing interface mesh edges, which border the HCP plane.
-				for(int e = 0; e < node1->numEdges; e++) {
+				for(int e = 0; e < node1->numEdges; e++){
 					MeshEdge* edge = &node1->edges[e];
-					if(edge->node2() == node2 && edge->latticeVector.equals(latticeVector)) {
+					if(edge->node2() == node2 && edge->latticeVector.equals(latticeVector)){
 						meshEdge = edge;
 						// Mark edge as border edge.
 						meshEdge->isSFEdge = true;
@@ -220,7 +212,8 @@ bool StackingFaults::createStackingFaultEdges(){
 						numExistingEdges++;
 					}
 				}
-				if(meshEdge == NULL) {
+
+				if(meshEdge == NULL){
 					numExtraEdgesCreated++;
 					// Create a new edge.
 					meshEdge = node1->createEdge(node2, latticeVector);
@@ -234,12 +227,12 @@ bool StackingFaults::createStackingFaultEdges(){
 
 		// Identify intrinsic stacking fault (ISF) atoms.
 		// ISF atoms have at least one HCP neighbor, which is not in the basal plane.
-		for(int n = 0; n < 6; n++) {
+		for(int n = 0; n < 6; n++){
 			BaseAtom* neighbor = atom->neighbor(hcpNonBasalPlaneAtoms[n]);
 			if(neighbor == NULL) continue;
 			if(neighbor->isDisordered() || ((InputAtom*)neighbor)->isNonHCP()) continue;
-			for(int n2 = 0; n2 < 6; n2++) {
-				if(neighbor->neighbor(hcpNonBasalPlaneAtoms[n2]) == &*atom) {
+			for(int n2 = 0; n2 < 6; n2++){
+				if(neighbor->neighbor(hcpNonBasalPlaneAtoms[n2]) == &*atom){
 					atom->setFlag(ATOM_ISF);
 					break;
 				}
@@ -248,11 +241,11 @@ bool StackingFaults::createStackingFaultEdges(){
 
 		// Identify twin boundary (TB) atoms.
 		// TB atoms have at least one FCC neighbor on each side of the basal plane.
-		for(int n = 0; n < 3; n++) {
+		for(int n = 0; n < 3; n++){
 			BaseAtom* neighbor = atom->neighbor(hcpNonBasalPlaneAtoms[n]);
 			if(neighbor == NULL) continue;
 			if(neighbor->isDisordered() || ((InputAtom*)neighbor)->isNonFCC()) continue;
-			for(int n2 = 3; n2 < 6; n2++) {
+			for(int n2 = 3; n2 < 6; n2++){
 				BaseAtom* neighbor = atom->neighbor(hcpNonBasalPlaneAtoms[n2]);
 				if(neighbor == NULL) continue;
 				if(neighbor->isDisordered() || ((InputAtom*)neighbor)->isNonFCC()) continue;
@@ -263,11 +256,11 @@ bool StackingFaults::createStackingFaultEdges(){
 		}
 	}
 
-	if(isInvalidInput)
+	if(isInvalidInput){
 		LOG_INFO() << "*** WARNING ***: Cannot extract stacking faults due to invalid input file. No stacking fault output will be generated.";
+	}
 
 	LOG_INFO() << "Created " << numExtraEdgesCreated << " extra SF border edges.";
-
 	return !isInvalidInput;
 }
 
@@ -430,11 +423,8 @@ void StackingFaults::findStackingFaultPlanes(){
 	LOG_INFO() << "Found " << stackingFaults.size() << " stacking faults.";
 }
 
-/******************************************************************************
-* Puts the atom onto the recusrive stack.
-******************************************************************************/
-void StackingFaults::recursiveWalkSFAtom(InputAtom* atom, StackingFault* sf, Point3 unwrappedPos, deque< pair<InputAtom*, Point3> >& toprocess)
-{
+// Puts the atom onto the recusrive stack.
+void StackingFaults::recursiveWalkSFAtom(InputAtom* atom, StackingFault* sf, Point3 unwrappedPos, deque< pair<InputAtom*, Point3> >& toprocess){
 	// Round unwrapped pos.
 	Vector3 shift = absoluteToReduced(unwrappedPos - atom->pos);
 	shift.X = floor(shift.X + 0.5);
@@ -443,31 +433,27 @@ void StackingFaults::recursiveWalkSFAtom(InputAtom* atom, StackingFault* sf, Poi
 	unwrappedPos = atom->pos + reducedToAbsolute(shift);
 
 	DISLOCATIONS_ASSERT(atom->isHCP());
-	if(atom->wasVisited() == false) {
+	if(atom->wasVisited() == false){
 		atom->setVisitFlag();
 		atom->pbcImage = periodicImage(unwrappedPos);
 		toprocess.push_back(make_pair(atom, unwrappedPos));
 	}
-	else {
-		Vector3I pbcShift = (atom->pbcImage - periodicImage(unwrappedPos));
-		if(pbcShift.X != 0) sf->isInfinite[0] = true;
-		if(pbcShift.Y != 0) sf->isInfinite[1] = true;
-		if(pbcShift.Z != 0) sf->isInfinite[2] = true;
-	}
+
+	Vector3I pbcShift = (atom->pbcImage - periodicImage(unwrappedPos));
+	if(pbcShift.X != 0) sf->isInfinite[0] = true;
+	if(pbcShift.Y != 0) sf->isInfinite[1] = true;
+	if(pbcShift.Z != 0) sf->isInfinite[2] = true;
 }
 
-/******************************************************************************
-* Finds the basal plane HCP atom for a contour edge.
-******************************************************************************/
-BaseAtom* StackingFaults::findEdgeBasalPlaneNeighbor(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const
-{
+// Finds the basal plane HCP atom for a contour edge.
+BaseAtom* StackingFaults::findEdgeBasalPlaneNeighbor(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const{
 	MeshNode* currentNode = edge->node1;
 	MeshNode* nextNode = edge->node2();
 
-	for(int nn = 0; nn < currentNode->numNeighbors; nn++) {
+	for(int nn = 0; nn < currentNode->numNeighbors; nn++){
 		BaseAtom* neighbor = currentNode->neighbor(nn);
-		if(neighbor->isMeshNode() == false && ((InputAtom*)neighbor)->isHCP()) {
-			if(!neighbor->hasNeighborTag(nextNode->tag)) {
+		if(neighbor->isMeshNode() == false && ((InputAtom*)neighbor)->isHCP()){
+			if(!neighbor->hasNeighborTag(nextNode->tag)){
 				continue;
 			}
 			DISLOCATIONS_ASSERT(neighbor->hasNeighborTag(currentNode->tag));
@@ -489,20 +475,17 @@ BaseAtom* StackingFaults::findEdgeBasalPlaneNeighbor(MeshEdge* edge, const Latti
 	return NULL;
 }
 
-/******************************************************************************
-* Checks whether this mesh edge borders a stacking fault.
-******************************************************************************/
-bool StackingFaults::isValidStackingFaultContourEdge(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const
-{
+// Checks whether this mesh edge borders a stacking fault.
+bool StackingFaults::isValidStackingFaultContourEdge(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const{
 	// A valid border edge must be have two adjacent facets.
 	MeshFacet* facet1 = edge->facet;
 	MeshFacet* facet2 = edge->oppositeEdge->facet;
-	if(facet1 == NULL) {
+	if(facet1 == NULL){
 		return false;
 	}
 	DISLOCATIONS_ASSERT(facet2 != NULL);
 
-	//MeshNode* currentNode = edge->node1;
+	// MeshNode* currentNode = edge->node1;
 	MeshNode* nextNode = edge->node2();
 
 	MeshEdge* node1edge = facet1->previousEdge(edge)->oppositeEdge;
@@ -530,46 +513,36 @@ bool StackingFaults::isValidStackingFaultContourEdge(MeshEdge* edge, const Latti
 	DISLOCATIONS_ASSERT(parallelEdge2b->node1 == node2);
 	MeshNode* node2_quad_b = parallelEdge2b->node2();
 
-
 	if(fabs(facet_det) <= FLOATTYPE_EPSILON || node1->tag == node2->tag ||
 			(node1_quad_a->tag == node2->tag && parallelEdge1a->latticeVector.equals(edge->latticeVector)) ||
 			(node2_quad_a->tag == node1->tag && parallelEdge2a->latticeVector.equals(edge->latticeVector)) ||
 			(node1_quad_b->tag == node2->tag && parallelEdge1b->latticeVector.equals(edge->latticeVector)) ||
-			(node2_quad_b->tag == node1->tag && parallelEdge2b->latticeVector.equals(edge->latticeVector))) {
-		if(edge->isSFEdge) {	// sfcontour5.png
+			(node2_quad_b->tag == node1->tag && parallelEdge2b->latticeVector.equals(edge->latticeVector))){
+		if(edge->isSFEdge){
 			FloatType tet1_det = Matrix3(edge->latticeVector, node1edge->latticeVector, node1LatticeVector).determinant();
 			FloatType tet2_det = Matrix3(edge->latticeVector, node2edge->latticeVector, node1LatticeVector).determinant();
-			if(!(tet1_det < -FLOATTYPE_EPSILON && tet2_det > FLOATTYPE_EPSILON))	// sfcontour6.png
-				return true;
+			if(!(tet1_det < -FLOATTYPE_EPSILON && tet2_det > FLOATTYPE_EPSILON)) return true;
 		}
 		Vector3 facet1normal = CrossProduct(node1edge->latticeVector, edge->latticeVector);
 		Vector3 facet2normal = CrossProduct(edge->latticeVector, node2edge->latticeVector);
 		return DotProduct(facet1normal, facet2normal) < 0.0;
-	}
-	else if(facet_det < -FLOATTYPE_EPSILON) {
+	}else if(facet_det < -FLOATTYPE_EPSILON){
 		Vector3 facet1normal = CrossProduct(node1edge->latticeVector, edge->latticeVector);
 		Vector3 facet2normal = CrossProduct(edge->latticeVector, node2edge->latticeVector);
 		return DotProduct(facet1normal, node1LatticeVector) < FLOATTYPE_EPSILON &&
 				DotProduct(facet2normal, node1LatticeVector) < FLOATTYPE_EPSILON;
 	}
-	else {
-		FloatType tet1_det = Matrix3(edge->latticeVector, node1edge->latticeVector, node1LatticeVector).determinant();
-		FloatType tet2_det = Matrix3(edge->latticeVector, node2edge->latticeVector, node1LatticeVector).determinant();
-		return !((tet1_det < -FLOATTYPE_EPSILON) && (tet2_det > FLOATTYPE_EPSILON));	// sfcontour7.png
-	}
+	FloatType tet1_det = Matrix3(edge->latticeVector, node1edge->latticeVector, node1LatticeVector).determinant();
+	FloatType tet2_det = Matrix3(edge->latticeVector, node2edge->latticeVector, node1LatticeVector).determinant();
+	return !((tet1_det < -FLOATTYPE_EPSILON) && (tet2_det > FLOATTYPE_EPSILON));
 }
 
-/******************************************************************************
-* Finds all mesh edges forming a closed contour of a stacking fault.
-******************************************************************************/
-void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultContour& contour, deque< pair<InputAtom*, Point3> >& toprocess, Point3 currentUnwrappedPos, set<MeshEdge*>& visitedEdges, const LatticeVector basalPlaneLatticeVectors[6], int lastDir)
-{
+// Finds all mesh edges forming a closed contour of a stacking fault.
+void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultContour& contour, deque< pair<InputAtom*, Point3> >& toprocess, Point3 currentUnwrappedPos, set<MeshEdge*>& visitedEdges, const LatticeVector basalPlaneLatticeVectors[6], int lastDir){
 	MeshEdge* lastEdge = contour.edges.back();
 	MeshNode* currentNode = lastEdge->node2();
 	DISLOCATIONS_ASSERT(lastEdge->latticeVector.equals(basalPlaneLatticeVectors[lastDir]));
-
-	for(;;) {
-
+	for(;;){
 		// Determine next edge.
 		MeshEdge* nextEdge = NULL;
 		int inverseDir = (lastDir + 3) % 6;
@@ -580,34 +553,34 @@ void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultC
 		int bestInvalidEdgeDir = -1;
 
 		// Iterate over all outgoing edges of the current node.
-		for(int e = 0; e < currentNode->numEdges; e++) {
+		for(int e = 0; e < currentNode->numEdges; e++){
 			MeshEdge* edge = &currentNode->edges[e];
 			MeshNode* nextNode = edge->node2();
 
 			// Determine lattice direction in basal plane of this edge.
 			int dir = -1;
-			for(int nn = 0; nn < 6; nn++) {
-				if(edge->latticeVector.equals(basalPlaneLatticeVectors[nn])) {
+			for(int nn = 0; nn < 6; nn++){
+				if(edge->latticeVector.equals(basalPlaneLatticeVectors[nn])){
 					dir = nn;
 					break;
 				}
 			}
-			if(dir == -1) continue;	// The edge is off-lattice.
+
+			// The edge is off-lattice.
+			if(dir == -1) continue;
 
 			// We take the edge, which is pointing towards the stacking fault region.
 			dir = (dir - inverseDir + 6) % 6;
 
-
-			if(dir == 0 && nextNode != lastEdge->node1 && edge->facet != NULL && nextNode->tag == lastEdge->node1->tag && edgeEdgeOrientation(lastEdge, edge->oppositeEdge)) {
+			if(dir == 0 && nextNode != lastEdge->node1 && edge->facet != NULL && nextNode->tag == lastEdge->node1->tag && edgeEdgeOrientation(lastEdge, edge->oppositeEdge)){
 				dir = 6;
 			}
 
-			if(dir == 5 && nextNode->tag == lastEdge->node1->tag)
-				continue;
+			if(dir == 5 && nextNode->tag == lastEdge->node1->tag) continue;
 
-			if(edge->facet != NULL && dir > 3) {
+			if(edge->facet != NULL && dir > 3){
 				bool isInvalidEdge = false;
-				for(int e2 = 0; e2 < currentNode->numEdges; e2++) {
+				for(int e2 = 0; e2 < currentNode->numEdges; e2++){
 					if(e2 == e) continue;
 					MeshEdge* parallelEdge = &currentNode->edges[e2];
 					if(parallelEdge->node2() != nextNode) continue;
@@ -619,7 +592,7 @@ void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultC
 						break;
 					}
 				}
-				if(isInvalidEdge) {
+				if(isInvalidEdge){
 					// Skewed edge
 					continue;
 				}
@@ -630,7 +603,7 @@ void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultC
 			// Is this edge already part of the current contour?
 			// TODO: Check if prevent infinite loops. It also prevents duplicate edges from being added
 			bool hasBeenVisitedBefore = false;
-			for(vector<MeshEdge*>::const_iterator edge_iter = contour.edges.begin()+1; edge_iter != contour.edges.end(); ++edge_iter) {
+			for(auto edge_iter = contour.edges.begin()+1; edge_iter != contour.edges.end(); ++edge_iter){
 				if(*edge_iter == edge) {
 					hasBeenVisitedBefore = true;
 					break;
@@ -641,14 +614,14 @@ void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultC
 			// Check edge.
 			LatticeVector node1LatticeVector = basalPlaneLatticeVectors[(dir - 2 + inverseDir + 6) % 6];
 			LatticeVector node2LatticeVector = basalPlaneLatticeVectors[(dir - 1 + inverseDir + 6) % 6];
-			if(!isValidStackingFaultContourEdge(edge, node1LatticeVector, node2LatticeVector)) {
-				if(dir > bestInvalidEdgeDir && edge->facet == NULL) {
+			if(!isValidStackingFaultContourEdge(edge, node1LatticeVector, node2LatticeVector)){
+				if(dir > bestInvalidEdgeDir && edge->facet == NULL){
 					// TODO: Check if prevents shortcuts that can create poorly formed outlines
 					// and maintains the geometric integrity of the stacking fault (valid geometry)
 					bool isInvalidShortcut = false;
-					if(contour.edges.size() >= 2) {
+					if(contour.edges.size() >= 2){
 						MeshEdge* previousEdge = contour.edges[contour.edges.size() - 2];
-						if(previousEdge->node1 == nextNode) {
+						if(previousEdge->node1 == nextNode){
 							isInvalidShortcut = true;
 						}
 					}
@@ -669,13 +642,13 @@ void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultC
 		MeshEdge* bypassEdge1 = NULL;
 		MeshEdge* bypassEdge2 = NULL;
 
-		if(nextEdge == NULL && bestInvalidEdge != NULL && bestInvalidEdgeDir > nextDir) {
+		if(nextEdge == NULL && bestInvalidEdge != NULL && bestInvalidEdgeDir > nextDir){
 			bool isInvalidShortcut = false;
-			if(!isInvalidShortcut) {
-				for(int e1 = 0; e1 < currentNode->numEdges; e1++) {
+			if(!isInvalidShortcut){
+				for(int e1 = 0; e1 < currentNode->numEdges; e1++){
 					MeshEdge* edge1 = &currentNode->edges[e1];
 					MeshNode* bypassNode = edge1->node2();
-					for(int e2 = 0; e2 < bypassNode->numEdges; e2++) {
+					for(int e2 = 0; e2 < bypassNode->numEdges; e2++){
 						MeshEdge* edge2 = &bypassNode->edges[e2];
 						if(edge2->node2() != bestInvalidEdge->node2()) continue;
 
@@ -701,11 +674,11 @@ void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultC
 		nextDir = (nextDir + inverseDir) % 6;
 
 		// Put the HCP atom onto the recursive stack because it is part of the same stacking fault.
-		if(basalPlaneAtom != NULL && basalPlaneAtom->isMeshNode() == false && ((InputAtom*)basalPlaneAtom)->isHCP()) {
+		if(basalPlaneAtom != NULL && basalPlaneAtom->isMeshNode() == false && ((InputAtom*)basalPlaneAtom)->isHCP()){
 			recursiveWalkSFAtom((InputAtom*)basalPlaneAtom, sf, currentUnwrappedPos + wrapVector(basalPlaneAtom->pos - currentNode->pos), toprocess);
 		}
 
-		if(nextEdge == contour.edges.front()) {
+		if(nextEdge == contour.edges.front()){
 			// We arrived at the beginning of the contour. We're done.
 			return;
 		}
@@ -716,9 +689,9 @@ void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultC
 		DISLOCATIONS_ASSERT(nextEdge->node1 == currentNode);
 
 		visitedEdges.insert(nextEdge);
-		if(bypassEdge1 == NULL)
+		if(bypassEdge1 == NULL){
 			contour.edges.push_back(nextEdge);
-		else {
+		}else{
 			contour.edges.push_back(bypassEdge1);
 			contour.edges.push_back(bypassEdge2);
 		}
@@ -731,14 +704,11 @@ void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultC
 	}
 }
 
-/**
- * This helper class invokes The OpenGL utility library to tessellate
- * a stacking fault polygon into triangle facets.
- */
-class SFTessellator
-{
+// This helper class invokes The OpenGL utility library to tessellate
+// a stacking fault polygon into triangle facets.
+class SFTessellator{
 public:
-	SFTessellator(StackingFaults& _caller) : caller(_caller) {
+	SFTessellator(StackingFaults& _caller) : caller(_caller){
 		tess = gluNewTess();
 		if(!tess) caller.raiseError("Could not create OpenGL polygon tessellation object.");
 		gluTessCallback(tess, GLU_TESS_ERROR_DATA, (GLvoid (*)())errorData);
@@ -749,47 +719,44 @@ public:
 		gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_POSITIVE);
 	}
 
-	~SFTessellator() {
+	~SFTessellator(){
 		// Cleanup.
 		if(tess) gluDeleteTess(tess);
 	}
 
 	/// Sends the vertices of the stacking fault contours to the tessellation engine.
-	void tessellateSF(StackingFault* sf) {
+	void tessellateSF(StackingFault* sf){
 		this->sf = sf;
 		gluTessNormal(tess, sf->normalVector.X, sf->normalVector.Y, sf->normalVector.Z);
 		gluTessBeginPolygon(tess, this);
-		for(SFContourVertex* seedVertex = sf->globalVertexList; seedVertex != NULL; seedVertex = seedVertex->globalNext) {
-			if(seedVertex->wasVisited() == false) {
-				gluTessBeginContour(tess);
-				SFContourVertex* vertex = seedVertex;
-				do {
-					DISLOCATIONS_ASSERT(vertex != NULL);
-					DISLOCATIONS_ASSERT(vertex->next != NULL);
-					DISLOCATIONS_ASSERT(vertex->wasVisited() == false);
-					vertex->setVisited();
-					OutputVertex* outputVertex = caller.stackingFaultOutputMesh.createVertex(vertex->pos);
-					outputVertex->normal = sf->normalVector;
-					double vertexCoord[3] = {vertex->pos.X, vertex->pos.Y, vertex->pos.Z};
-					gluTessVertex(tess, vertexCoord, outputVertex);
-					vertex = vertex->next;
-				}
-				while(vertex != seedVertex);
-				gluTessEndContour(tess);
-			}
+		for(SFContourVertex* seedVertex = sf->globalVertexList; seedVertex != NULL; seedVertex = seedVertex->globalNext){
+			if(seedVertex->wasVisited()) continue;
+			gluTessBeginContour(tess);
+			SFContourVertex* vertex = seedVertex;
+			do{
+				DISLOCATIONS_ASSERT(vertex != NULL);
+				DISLOCATIONS_ASSERT(vertex->next != NULL);
+				DISLOCATIONS_ASSERT(vertex->wasVisited() == false);
+				vertex->setVisited();
+				OutputVertex* outputVertex = caller.stackingFaultOutputMesh.createVertex(vertex->pos);
+				outputVertex->normal = sf->normalVector;
+				double vertexCoord[3] = {vertex->pos.X, vertex->pos.Y, vertex->pos.Z};
+				gluTessVertex(tess, vertexCoord, outputVertex);
+				vertex = vertex->next;
+			}while(vertex != seedVertex);
+			gluTessEndContour(tess);
 		}
 		gluTessEndPolygon(tess);
 	}
 
 private:
-
-	static void beginData(GLenum type, void* polygon_data) {
+	static void beginData(GLenum type, void* polygon_data){
 		SFTessellator* tessellator = (SFTessellator*)polygon_data;
 		tessellator->primitiveType = type;
 		tessellator->vertices.clear();
 	}
 
-	static void endData(void* polygon_data) {
+	static void endData(void* polygon_data){
 		SFTessellator* tessellator = (SFTessellator*)polygon_data;
 
 		if(tessellator->primitiveType == GL_TRIANGLE_FAN) {
@@ -797,58 +764,53 @@ private:
 			OutputVertex* facetVertices[3];
 			facetVertices[0] = tessellator->vertices[0];
 			facetVertices[1] = tessellator->vertices[1];
-			for(vector<OutputVertex*>::iterator v = tessellator->vertices.begin() + 2; v != tessellator->vertices.end(); ++v) {
+			for(auto v = tessellator->vertices.begin() + 2; v != tessellator->vertices.end(); ++v){
 				facetVertices[2] = *v;
 				tessellator->caller.stackingFaultOutputMesh.createFacetAndEdges(facetVertices, tessellator->sf->index);
 				facetVertices[1] = facetVertices[2];
 			}
-		}
-		else if(tessellator->primitiveType == GL_TRIANGLE_STRIP) {
+		}else if(tessellator->primitiveType == GL_TRIANGLE_STRIP){
 			DISLOCATIONS_ASSERT_GLOBAL(tessellator->vertices.size() >= 3);
 			OutputVertex* facetVertices[3];
 			facetVertices[0] = tessellator->vertices[0];
 			facetVertices[1] = tessellator->vertices[1];
 			bool even = true;
-			for(vector<OutputVertex*>::iterator v = tessellator->vertices.begin() + 2; v != tessellator->vertices.end(); ++v) {
+			for(auto v = tessellator->vertices.begin() + 2; v != tessellator->vertices.end(); ++v){
 				facetVertices[2] = *v;
 				tessellator->caller.stackingFaultOutputMesh.createFacetAndEdges(facetVertices, tessellator->sf->index);
-				if(even)
-					facetVertices[0] = facetVertices[2];
-				else
-					facetVertices[1] = facetVertices[2];
+				if(even) facetVertices[0] = facetVertices[2];
+				else facetVertices[1] = facetVertices[2];
 				even = !even;
 			}
-		}
-		else if(tessellator->primitiveType == GL_TRIANGLES) {
-			for(vector<OutputVertex*>::iterator v = tessellator->vertices.begin(); v != tessellator->vertices.end(); v += 3) {
+		}else if(tessellator->primitiveType == GL_TRIANGLES){
+			for(auto v = tessellator->vertices.begin(); v != tessellator->vertices.end(); v += 3){
 				tessellator->caller.stackingFaultOutputMesh.createFacetAndEdges(&*v, tessellator->sf->index);
 			}
 		}
 	}
 
-	static void vertexData(void* vertex_data, void* polygon_data) {
+	static void vertexData(void* vertex_data, void* polygon_data){
 		SFTessellator* tessellator = (SFTessellator*)polygon_data;
 		tessellator->vertices.push_back((OutputVertex*)vertex_data);
 	}
 
-	static void combineData(GLdouble coords[3], void* vertex_data[4], GLfloat weight[4], void** outDatab, void* polygon_data) {
+	static void combineData(GLdouble coords[3], void* vertex_data[4], GLfloat weight[4], void** outDatab, void* polygon_data){
 		SFTessellator* tessellator = (SFTessellator*)polygon_data;
 		OutputVertex* outputVertex = tessellator->caller.stackingFaultOutputMesh.createVertex(Point3(coords[0], coords[1], coords[2]));
 		outputVertex->normal = tessellator->sf->normalVector;
 		*outDatab = outputVertex;
 	}
 
-	static void errorData(GLenum errno, void* polygon_data) {
+	static void errorData(GLenum errno, void* polygon_data){
 		SFTessellator* tessellator = (SFTessellator*)polygon_data;
 		LOG_INFO() << "GLU error: " << errno;
-		if(errno == GLU_TESS_NEED_COMBINE_CALLBACK) {
+		if(errno == GLU_TESS_NEED_COMBINE_CALLBACK){
 			tessellator->caller.raiseError("Could not tessellate stacking fault polygon. It contains overlapping contours.");
-		}
-		else
+		}else{
 			tessellator->caller.raiseError("Could not tessellate stacking fault polygon.");
+		}
 	}
 
-private:
 	StackingFaults& caller;
 	GLUtesselator* tess;
 	StackingFault* sf;
@@ -856,18 +818,15 @@ private:
 	vector<OutputVertex*> vertices;
 };
 
-/******************************************************************************
-* Links stacking faults to dislocation segments and triangulates the SF planes.
-******************************************************************************/
-void StackingFaults::finishStackingFaults(FloatType flatten)
-{
+// Links stacking faults to dislocation segments and triangulates the SF planes.
+void StackingFaults::finishStackingFaults(FloatType flatten){
 	createSFPolylines(flatten);
 
 	LOG_INFO() << "Wrapping infinite stacking faults at periodic boundaries.";
 
 	bool hasInfiniteSF = false;
 
-	for(int sfindex = 0; sfindex < (int)stackingFaults.size(); sfindex++) {
+	for(int sfindex = 0; sfindex < (int)stackingFaults.size(); sfindex++){
 		StackingFault* sf = stackingFaults[sfindex];
 		if(sf->isInvalid) continue;
 
@@ -880,15 +839,16 @@ void StackingFaults::finishStackingFaults(FloatType flatten)
 		// Convert original polyline into a linked list of vertices.
 		Point3I bbminSF(+100);
 		Point3I bbmaxSF(-100);
-		for(vector<StackingFaultContour>::iterator contour = sf->contours.begin(); contour != sf->contours.end(); ++contour) {
+		for(vector<StackingFaultContour>::iterator contour = sf->contours.begin(); contour != sf->contours.end(); ++contour){
 			if(contour->polyline.size() <= 2) continue;
 			Point3I bbminContour(+100);
 			Point3I bbmaxContour(-100);
 			SFContourVertex* firstContourVertex = NULL;
 			SFContourVertex* lastContourVertex = NULL;
-			for(vector<Point3>::iterator p = contour->polyline.begin(); p != contour->polyline.end(); ++p) {
+
+			for(vector<Point3>::iterator p = contour->polyline.begin(); p != contour->polyline.end(); ++p){
 				SFContourVertex* vertex = createSFVertex(sf, ORIGIN + (getReciprocalSimulationCell() * (*p - getSimulationCellOrigin())));
-				for(int dim = 0; dim < 3; dim++) {
+				for(int dim = 0; dim < 3; dim++){
 					if(vertex->image[dim] < bbminContour[dim]) bbminContour[dim] = vertex->image[dim];
 					if(vertex->image[dim] > bbmaxContour[dim]) bbmaxContour[dim] = vertex->image[dim];
 					if(vertex->pos[dim] < bbminSFfOld[dim]) bbminSFfOld[dim] = vertex->pos[dim];
@@ -899,18 +859,19 @@ void StackingFaults::finishStackingFaults(FloatType flatten)
 				lastContourVertex = vertex;
 				if(firstContourVertex == NULL) firstContourVertex = vertex;
 			}
+
 			firstContourVertex->previous = lastContourVertex;
 			lastContourVertex->next = firstContourVertex;
 
-			for(int dim = 0; dim < 3; dim++) {
-				if(sf->isInfinite[dim]) {
+			for(int dim = 0; dim < 3; dim++){
+				if(sf->isInfinite[dim]){
 					DISLOCATIONS_ASSERT(pbcFlags()[dim]);
 					DISLOCATIONS_ASSERT(sf->reducedNormalVector[dim] == 0);
 					int shift = 0;
 					if(bbmaxContour[dim] > 0) shift = -bbmaxContour[dim];
 					if(bbminContour[dim] < -1) shift = (-1) - bbminContour[dim];
-					if(shift != 0) {
-						for(SFContourVertex* vertex = firstContourVertex; ; vertex = vertex->next) {
+					if(shift != 0){
+						for(SFContourVertex* vertex = firstContourVertex; ; vertex = vertex->next){
 							vertex->pos[dim] += shift;
 							vertex->image[dim] += shift;
 							if(vertex == lastContourVertex) break;
@@ -924,18 +885,18 @@ void StackingFaults::finishStackingFaults(FloatType flatten)
 			}
 		}
 
-		if(sf->isInfinite[0] || sf->isInfinite[1] || sf->isInfinite[2]) {
+		if(sf->isInfinite[0] || sf->isInfinite[1] || sf->isInfinite[2]){
 			sf->isInvalid = true;
 			hasInfiniteSF = true;
 			continue;
 		}
 
-		if(sf->globalVertexList == NULL) {
+		if(sf->globalVertexList == NULL){
 			sf->isInvalid = true;
 			continue;
 		}
 
-		for(SFContourVertex* vertex = sf->globalVertexList; vertex != NULL; vertex = vertex->globalNext) {
+		for(SFContourVertex* vertex = sf->globalVertexList; vertex != NULL; vertex = vertex->globalNext){
 			vertex->pos = reducedToAbsolute(vertex->pos);
 		}
 	}
@@ -943,20 +904,21 @@ void StackingFaults::finishStackingFaults(FloatType flatten)
 	if(hasInfiniteSF){
 		LOG_INFO() << "WARNING: Detected infinite stacking faults in the periodic simulation cell. They cannot be processed yet.";
 	}
+	
 	LOG_INFO() << "Triangulating stacking fault polygons.";
 	SFTessellator tessellator(*this);
-	for(vector<StackingFault*>::const_iterator sf = stackingFaults.begin(); sf != stackingFaults.end(); ++sf) {
-		if((*sf)->isInvalid == false)
-			tessellator.tessellateSF(*sf);
+	for(auto sf = stackingFaults.begin(); sf != stackingFaults.end(); ++sf) {
+		if((*sf)->isInvalid == false) tessellator.tessellateSF(*sf);
 	}
 
 	LOG_INFO() << "Refining triangulation of stacking fault polygons.";
 	stackingFaultOutputMesh.refineFacets(*this, 40.0);
 
 	LOG_INFO() << "Smoothing stacking faults.";
-	for(int iteration = 0; iteration < 20; iteration++) {
+	for(int iteration = 0; iteration < 20; iteration++){
 		stackingFaultOutputMesh.smoothMesh(0.5, *this, true);
 	}
+
 	// Refine again to split too long facets which might result from slight displacement of vertices during smoothing.
 	stackingFaultOutputMesh.refineFacets(*this);
 
@@ -964,14 +926,8 @@ void StackingFaults::finishStackingFaults(FloatType flatten)
 	stackingFaultOutputMesh.wrapMesh(*this);
 }
 
-
-
-/******************************************************************************
-* Splits a polyline segment at periodic boundaries of the simulation
-* cell.
-******************************************************************************/
-void StackingFaults::splitPolylineSegment2(StackingFault* sf, SFContourVertex* vertex1, int dim, const Vector3& projectionDir, multimap<FloatType, SFContourVertex*> clipVertices[2])
-{
+// Splits a polyline segment at periodic boundaries of the simulation cell.
+void StackingFaults::splitPolylineSegment2(StackingFault* sf, SFContourVertex* vertex1, int dim, const Vector3& projectionDir, multimap<FloatType, SFContourVertex*> clipVertices[2]){
 	SFContourVertex* vertex2 = vertex1->next;
 	if(vertex2 == NULL) return;
 
@@ -984,7 +940,7 @@ void StackingFaults::splitPolylineSegment2(StackingFault* sf, SFContourVertex* v
 	DISLOCATIONS_ASSERT((cell1 == -1 && cell2 == 0) || (cell2 == -1 && cell1 == 0));
 
 	FloatType rvdelta = rv2 - rv1;
-	if(fabs(rvdelta) >= 0.5) {
+	if(fabs(rvdelta) >= 0.5){
 		DISLOCATIONS_ASSERT(sf->isInfinite[dim]);
 		return;
 	}
@@ -1002,9 +958,10 @@ void StackingFaults::splitPolylineSegment2(StackingFault* sf, SFContourVertex* v
 	SFContourVertex* intersectionPoint2 = createSFVertex(sf, ipoint);
 	intersectionPoint1->image[dim] = cell1;
 	intersectionPoint2->image[dim] = cell2;
-	for(int d = 0; d < 3; d++) {
-		if(vertex1->image[d] == vertex2->image[d])
+	for(int d = 0; d < 3; d++){
+		if(vertex1->image[d] == vertex2->image[d]){
 			intersectionPoint1->image[d] = intersectionPoint2->image[d] = vertex1->image[d];
+		}
 	}
 
 	intersectionPoint1->previous = vertex1;
@@ -1020,85 +977,80 @@ void StackingFaults::splitPolylineSegment2(StackingFault* sf, SFContourVertex* v
 	FloatType tsort = DotProduct(projectionDir, ipoint - sf->reducedCenter);
 	tsort -= DotProduct(projectionDir, Vector3(intersectionPoint1->image.X, intersectionPoint1->image.Y, intersectionPoint1->image.Z));
 
-	if(cell1 < cell2) {
+	if(cell1 < cell2){
 		clipVertices[0].insert(make_pair(-tsort, intersectionPoint1));
 		clipVertices[1].insert(make_pair(+tsort, intersectionPoint2));
-	}
-	else {
+	}else{
 		clipVertices[0].insert(make_pair(-tsort, intersectionPoint2));
 		clipVertices[1].insert(make_pair(+tsort, intersectionPoint1));
 	}
 }
 
-void StackingFaults::findSFDislocationContours()
-{
-LOG_INFO() << "Finding stacking fault border dislocations.";
-
+void StackingFaults::findSFDislocationContours(){
+	LOG_INFO() << "Finding stacking fault border dislocations.";
 	for(int sfindex = 0; sfindex < (int)stackingFaults.size(); sfindex++) {
 		StackingFault* sf = stackingFaults[sfindex];
-		for(vector<StackingFaultContour>::iterator contour = sf->contours.begin(); contour != sf->contours.end(); ++contour) {
+		for(auto contour = sf->contours.begin(); contour != sf->contours.end(); ++contour){
 			// Find intersections of SF contour with Burgers circuits on the interface mesh.
 			int stopEdge = 0;
 			vector<MeshEdge*>::const_iterator edge = contour->edges.begin();
-			do {
+			do{
 				MeshFacet* facet1 = (*edge)->facet;
 				MeshFacet* facet2 = (*edge)->oppositeEdge->facet;
 				DISLOCATIONS_ASSERT(facet1 != NULL && facet2 != NULL);
 
 				if(facet1->circuit != NULL && facet2->circuit != NULL &&
 						(facet1->testFlag(FACET_IS_PRIMARY_SEGMENT) || facet1->circuit->isDangling == false) &&
-						(facet2->testFlag(FACET_IS_PRIMARY_SEGMENT) || facet2->circuit->isDangling == false)) {
-
+						(facet2->testFlag(FACET_IS_PRIMARY_SEGMENT) || facet2->circuit->isDangling == false)){
 					DislocationSegment* segment1 = facet1->circuit->segment;
 					DislocationSegment* segment2 = facet2->circuit->segment;
 					while(segment1->replacedWith != NULL) segment1 = segment1->replacedWith;
 					while(segment2->replacedWith != NULL) segment2 = segment2->replacedWith;
-					if(segment1 == segment2) {
-
+					if(segment1 == segment2){
 						pair<int,int> startstop = findSFContourSegmentIntersection(*contour, segment1, edge);
-
 						int currentEdgeIndex = edge - contour->edges.begin();
-						if(stopEdge == 0) {
-							if(startstop.first >= startstop.second) {
+						if(stopEdge == 0){
+							if(startstop.first >= startstop.second){
 								stopEdge = startstop.first;
-								if(startstop.second == startstop.first || currentEdgeIndex >= stopEdge)
-									break;
+								if(startstop.second == startstop.first || currentEdgeIndex >= stopEdge) break;
 							}
-						}
-						else if(stopEdge != 0) {
-							if(startstop.first >= startstop.second && startstop.first < stopEdge)
-								stopEdge = startstop.first;
-							if(startstop.second >= stopEdge)
-								break;
+						}else if(stopEdge != 0){
+							if(startstop.first >= startstop.second && startstop.first < stopEdge) stopEdge = startstop.first;
+							if(startstop.second >= stopEdge) break;
 						}
 						edge = contour->edges.begin() + startstop.second;
 						DISLOCATIONS_ASSERT(stopEdge != contour->edges.size());
+					}else{
+						++edge;
 					}
-					else ++edge;
+				}else{
+					++edge;
 				}
-				else ++edge;
-				DISLOCATIONS_ASSERT(stopEdge != contour->edges.size());
-				if(edge == contour->edges.end())
-					edge = contour->edges.begin();
-			}
-			while(edge - contour->edges.begin() != stopEdge);
 
-			if(contour->borderSegments.size() >= 2) {
+				DISLOCATIONS_ASSERT(stopEdge != contour->edges.size());
+
+				if(edge == contour->edges.end()){
+					edge = contour->edges.begin();
+				}
+			}while(edge - contour->edges.begin() != stopEdge);
+
+			if(contour->borderSegments.size() >= 2){
 				BurgersCircuit* startCircuit = contour->borderSegments.front();
 				BurgersCircuit* endCircuit = contour->borderSegments.back()->oppositeCircuit;
-				if(startCircuit->isDangling == false && endCircuit->isDangling == false && startCircuit->isInRing(endCircuit))
+				if(startCircuit->isDangling == false && endCircuit->isDangling == false && startCircuit->isInRing(endCircuit)){
 					contour->segmentIntervals.back().second = contour->segmentIntervals.front().first;
+				}
 			}
 		}
 	}
 
 	// Project dislocation lines onto stacking fault planes.
-	for(int sfindex = 0; sfindex < (int)stackingFaults.size(); sfindex++) {
+	for(int sfindex = 0; sfindex < (int)stackingFaults.size(); sfindex++){
 		StackingFault* sf = stackingFaults[sfindex];
-		for(vector<StackingFaultContour>::iterator contour = sf->contours.begin(); contour != sf->contours.end(); ++contour) {
-			for(size_t segmentIndex = 0; segmentIndex < contour->borderSegments.size(); segmentIndex++) {
+		for(auto contour = sf->contours.begin(); contour != sf->contours.end(); ++contour){
+			for(size_t segmentIndex = 0; segmentIndex < contour->borderSegments.size(); segmentIndex++){
 				DislocationSegment* segment = contour->borderSegments[segmentIndex]->segment;
-				if(segment->displacement.empty()) {
+				if(segment->displacement.empty()){
 					segment->displacement.resize(segment->line.size(), NULL_VECTOR);
 				}
 				segment->displacementCount++;
@@ -1108,16 +1060,18 @@ LOG_INFO() << "Finding stacking fault border dislocations.";
 				DISLOCATIONS_ASSERT(wrapVector(unwrappedPoint - wrappedPoint).equals(NULL_VECTOR));
 
 				int dislocationStartIndex = contour->segmentIntervals[segmentIndex].first;
-				if(contour->borderSegments[segmentIndex]->isForwardCircuit())
+				if(contour->borderSegments[segmentIndex]->isForwardCircuit()){
 					dislocationStartIndex = contour->segmentIntervals[segmentIndex].second;
-				for(vector<MeshEdge*>::const_iterator edge = contour->edges.begin(); edge != contour->edges.begin() + dislocationStartIndex; ++edge) {
+				}
+
+				for(auto edge = contour->edges.begin(); edge != contour->edges.begin() + dislocationStartIndex; ++edge){
 					Vector3 delta = wrapVector((*edge)->node1->pos - wrappedPoint);
 					wrappedPoint += delta;
 					unwrappedPoint += delta;
 				}
 
 				vector<Vector3>::iterator d = segment->displacement.begin();
-				for(deque<Point3>::iterator p = segment->line.begin(); p != segment->line.end(); ++p) {
+				for(auto p = segment->line.begin(); p != segment->line.end(); ++p){
 					Vector3 delta = wrapVector(*p - wrappedPoint);
 					unwrappedPoint += delta;
 					wrappedPoint += delta;
@@ -1130,23 +1084,23 @@ LOG_INFO() << "Finding stacking fault border dislocations.";
 		}
 	}
 
-#pragma omp parallel for
-	for(int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++) {
+	#pragma omp parallel for
+	for(int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++){
 		DislocationSegment* segment = segments[segmentIndex];
 		DISLOCATIONS_ASSERT(segment);
 		deque<Point3>& line = segments[segmentIndex]->line;
 		if(segment->displacementCount == 0) continue;
 		vector<Vector3>::const_iterator d = segment->displacement.begin();
-		for(deque<Point3>::iterator p = line.begin(); p != line.end(); ++p) {
+		for(deque<Point3>::iterator p = line.begin(); p != line.end(); ++p){
 			*p += *d++ / segment->displacementCount;
 		}
 		DISLOCATIONS_ASSERT(d == segment->displacement.end());
 	}
 
-	for(int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++) {
+	for(int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++){
 		DislocationSegment* segment = segments[segmentIndex];
 		if(segment->replacedWith != NULL) continue;
-		for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++) {
+		for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++){
 			BurgersCircuit* circuit = segment->circuits[circuitIndex];
 			DISLOCATIONS_ASSERT(circuit);
 			if(circuit->isDangling) continue;
@@ -1155,58 +1109,52 @@ LOG_INFO() << "Finding stacking fault border dislocations.";
 			Vector3 junctionVector(NULL_VECTOR);
 			Point3 refPoint = circuit->center();
 			BurgersCircuit* c = circuit->junctionRing;
-			do {
+			do{
 				DISLOCATIONS_ASSERT(c);
 				DISLOCATIONS_ASSERT(c->isDangling == false);
 				DISLOCATIONS_ASSERT(c->segment->line.size() >= 2);
 				DISLOCATIONS_ASSERT(c->segment->replacedWith == NULL);
 				circuitCount++;
-				if(c->isForwardCircuit())
+				if(c->isForwardCircuit()){
 					junctionVector += wrapVector(c->segment->line.back() - refPoint);
-				else
+				}else{
 					junctionVector += wrapVector(c->segment->line.front() - refPoint);
+				}
 				c = c->junctionRing;
-			}
-			while(c != circuit->junctionRing);
+			}while(c != circuit->junctionRing);
 
-			if(circuitCount >= 3) {
+			if(circuitCount >= 3){
 				junctionVector /= circuitCount;
-				do {
+				do{
 					DISLOCATIONS_ASSERT(c->segment->line.size() >= 2);
 					DISLOCATIONS_ASSERT(c->segment->replacedWith == NULL);
-					if(c->isForwardCircuit()) {
+					if(c->isForwardCircuit()){
 						c->segment->line.back() += wrapVector(refPoint + junctionVector - c->segment->line.back());
-					}
-					else {
+					}else{
 						c->segment->line.front() += wrapVector(refPoint + junctionVector - c->segment->line.front());
 					}
 					c = c->junctionRing;
-				}
-				while(c != circuit->junctionRing);
+				}while(c != circuit->junctionRing);
 			}
 		}
 	}
 }
 
-/******************************************************************************
-* Create the polylines that border the stacking faults.
-******************************************************************************/
-void StackingFaults::createSFPolylines(FloatType flatten)
-{
-LOG_INFO() << "Creating stacking fault contour lines.";
+// Create the polylines that border the stacking faults.
+void StackingFaults::createSFPolylines(FloatType flatten){
+	LOG_INFO() << "Creating stacking fault contour lines.";
 
-	for(int sfindex = 0; sfindex < (int)stackingFaults.size(); sfindex++) {
+	for(int sfindex = 0; sfindex < (int)stackingFaults.size(); sfindex++){
 		StackingFault* sf = stackingFaults[sfindex];
-		for(vector<StackingFaultContour>::iterator contour = sf->contours.begin(); contour != sf->contours.end(); ++contour) {
+		for(auto contour = sf->contours.begin(); contour != sf->contours.end(); ++contour){
 			Point3 unwrappedPoint = contour->basePoint;
 			Point3 wrappedPoint = contour->edges.front()->node1->pos;
 			DISLOCATIONS_ASSERT(wrapVector(unwrappedPoint - wrappedPoint).equals(NULL_VECTOR));
-			if(contour->borderSegments.empty()) {
+			if(contour->borderSegments.empty()){
 				addMeshIntervalToSFPolyline(*contour, 0, contour->edges.size(), wrappedPoint, unwrappedPoint);
-			}
-			else {
+			}else{
 				LOG_INFO() << "New contour: sf=" << sf->index;
-				for(size_t segmentIndex1 = 0; segmentIndex1 < contour->borderSegments.size(); segmentIndex1++) {
+				for(size_t segmentIndex1 = 0; segmentIndex1 < contour->borderSegments.size(); segmentIndex1++){
 					size_t segmentIndex2 = segmentIndex1 + 1;
 					if(segmentIndex2 == contour->borderSegments.size()) segmentIndex2 = 0;
 
@@ -1216,7 +1164,7 @@ LOG_INFO() << "Creating stacking fault contour lines.";
 					// Advance base point to beginning of first dislocation interval.
 					if(segmentIndex1 == 0) {
 						int dislocationStartIndex = contour->segmentIntervals[segmentIndex1].first;
-						for(vector<MeshEdge*>::const_iterator edge = contour->edges.begin(); edge != contour->edges.begin() + dislocationStartIndex; ++edge) {
+						for(auto edge = contour->edges.begin(); edge != contour->edges.begin() + dislocationStartIndex; ++edge){
 							Vector3 delta = wrapVector((*edge)->node1->pos - wrappedPoint);
 							wrappedPoint += delta;
 							unwrappedPoint += delta;
@@ -1229,8 +1177,8 @@ LOG_INFO() << "Creating stacking fault contour lines.";
 			}
 
 			// Project polyline points onto stacking fault plane.
-			if(flatten != 0) {
-				for(vector<Point3>::iterator p = contour->polyline.begin(); p != contour->polyline.end(); ++p) {
+			if(flatten != 0){
+				for(auto p = contour->polyline.begin(); p != contour->polyline.end(); ++p){
 					Vector3 d = (*p - sf->center);
 					FloatType t = DotProduct(d, sf->normalVector);
 					*p -= (flatten * t) * sf->normalVector;
@@ -1240,36 +1188,31 @@ LOG_INFO() << "Creating stacking fault contour lines.";
 	}
 }
 
-/******************************************************************************
-* Finds the intersection points where the SF contour line enters and exists the
-* defect surface area swept by the dislocation segment's Burgers circuits.
-******************************************************************************/
-pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultContour& contour, DislocationSegment* segment, const vector<MeshEdge*>::const_iterator& interiorEdge)
-{
+// Finds the intersection points where the SF contour line enters and exists the
+// defect surface area swept by the dislocation segment's Burgers circuits.
+pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultContour& contour, DislocationSegment* segment, const vector<MeshEdge*>::const_iterator& interiorEdge){
 	DISLOCATIONS_ASSERT(find(segments.begin(), segments.end(), segment) != segments.end());
 
 	LOG_INFO() << "sf=" << contour.sf->index << "  segment=" << segment->index << "  startIndex=" << (interiorEdge - contour.edges.begin());
 
 	// Check if the start edge is on one of the Burgers circuits.
-	for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++) {
+	for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++){
 		BurgersCircuit* circuit = segment->circuits[circuitIndex];
 		if(circuit->isDangling == false) {
 			// Iterate over the circuit's edges.
 			MeshEdge* circuitEdge = circuit->firstEdge;
-			do {
-				if(*interiorEdge == circuitEdge) {
+			do{
+				if(*interiorEdge == circuitEdge){
 					int startIntersection = interiorEdge - contour.edges.begin();
 					int endIntersection = startIntersection + 1;
 					if(endIntersection == contour.edges.size()) endIntersection = 0;
 					return make_pair(startIntersection, endIntersection);
 				}
 				circuitEdge = circuitEdge->nextEdge;
-			}
-			while(circuitEdge != circuit->firstEdge);
-		}
-		else {
-			for(vector<MeshEdge*>::const_iterator i = circuit->primarySegmentCap.begin(); i != circuit->primarySegmentCap.end(); ++i) {
-				if(*interiorEdge == *i) {
+			}while(circuitEdge != circuit->firstEdge);
+		}else{
+			for(auto i = circuit->primarySegmentCap.begin(); i != circuit->primarySegmentCap.end(); ++i){
+				if(*interiorEdge == *i){
 					int startIntersection = interiorEdge - contour.edges.begin();
 					int endIntersection = startIntersection + 1;
 					if(endIntersection == contour.edges.size()) endIntersection = 0;
@@ -1284,7 +1227,7 @@ pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultCont
 	bool isInside = true;
 	vector<int> intersectionPoints;
 	vector<int> intersectionCircuits;
-	do {
+	do{
 		vector<MeshEdge*>::const_iterator ci2 = ci1 + 1;
 		if(ci2 == contour.edges.end()) ci2 = contour.edges.begin();
 		DISLOCATIONS_ASSERT((*ci1)->node2() == (*ci2)->node1);
@@ -1304,12 +1247,14 @@ pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultCont
 			DislocationSegment* segment2 = facet2->circuit->segment;
 			while(segment1->replacedWith != NULL) segment1 = segment1->replacedWith;
 			while(segment2->replacedWith != NULL) segment2 = segment2->replacedWith;
-			if(segment1 == segment && segment2 == segment)
+			if(segment1 == segment && segment2 == segment){
 				isFullyInside = true;
-			else if(segment1 != segment && segment2 != segment)
+			}else if(segment1 != segment && segment2 != segment){
 				isFullyOutside = true;
+			}
+		}else{
+			isFullyOutside = true;
 		}
-		else isFullyOutside = true;
 
 		int goingOutside[2] = { 0, 0 };
 		int goingInside[2] = { 0, 0 };
@@ -1317,23 +1262,21 @@ pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultCont
 		// Check for intersection with any of the two Burgers circuits.
 		for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++) {
 			BurgersCircuit* circuit = segment->circuits[circuitIndex];
-			if(circuit->isDangling == false) {
+			if(circuit->isDangling == false){
 				// Iterate over the circuit's edges.
 				MeshEdge* circuitEdge1 = circuit->firstEdge;
 				do {
 					MeshEdge* circuitEdge2 = circuitEdge1->nextEdge;
-					if(contourEdge2->node1 == circuitEdge2->node1) {
+					if(contourEdge2->node1 == circuitEdge2->node1){
 						circuitContourIntersection(contourEdge1, contourEdge2, circuitEdge1, circuitEdge2, goingOutside[circuitIndex], goingInside[circuitIndex]);
 					}
 					circuitEdge1 = circuitEdge2;
-				}
-				while(circuitEdge1 != circuit->firstEdge);
-			}
-			else {
-				for(vector<MeshEdge*>::const_iterator i1 = circuit->primarySegmentCap.begin(); i1 != circuit->primarySegmentCap.end(); ++i1) {
-					vector<MeshEdge*>::const_iterator i2 = i1 + 1;
+				}while(circuitEdge1 != circuit->firstEdge);
+			}else{
+				for(auto i1 = circuit->primarySegmentCap.begin(); i1 != circuit->primarySegmentCap.end(); ++i1){
+					auto i2 = i1 + 1;
 					if(i2 == circuit->primarySegmentCap.end()) i2 = circuit->primarySegmentCap.begin();
-					if(contourEdge2->node1 == (*i2)->node1) {
+					if(contourEdge2->node1 == (*i2)->node1){
 						circuitContourIntersection(contourEdge1, contourEdge2, *i1, *i2, goingOutside[circuitIndex], goingInside[circuitIndex]);
 					}
 				}
@@ -1341,9 +1284,9 @@ pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultCont
 		}
 
 		bool wentOutside = false;
-		if(isInside) {
-			for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++) {
-				if(goingOutside[circuitIndex] > 0 && goingOutside[circuitIndex] >= goingInside[circuitIndex]) {
+		if(isInside){
+			for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++){
+				if(goingOutside[circuitIndex] > 0 && goingOutside[circuitIndex] >= goingInside[circuitIndex]){
 					isInside = false;
 					wentOutside = true;
 					intersectionPoints.push_back(ci2 - contour.edges.begin());
@@ -1352,9 +1295,10 @@ pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultCont
 				}
 			}
 		}
-		if(!isInside && !isFullyOutside) {
-			for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++) {
-				if(goingInside[circuitIndex] > 0 && goingInside[circuitIndex] >= goingOutside[circuitIndex]) {
+		
+		if(!isInside && !isFullyOutside){
+			for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++){
+				if(goingInside[circuitIndex] > 0 && goingInside[circuitIndex] >= goingOutside[circuitIndex]){
 					isInside = true;
 					intersectionPoints.push_back(ci2 - contour.edges.begin());
 					intersectionCircuits.push_back(circuitIndex);
@@ -1362,9 +1306,10 @@ pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultCont
 				}
 			}
 		}
-		if(isInside && !wentOutside && !isFullyInside) {
-			for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++) {
-				if(goingOutside[circuitIndex] > 0 && goingOutside[circuitIndex] >= goingInside[circuitIndex]) {
+		
+		if(isInside && !wentOutside && !isFullyInside){
+			for(int circuitIndex = 0; circuitIndex < 2; circuitIndex++){
+				if(goingOutside[circuitIndex] > 0 && goingOutside[circuitIndex] >= goingInside[circuitIndex]){
 					isInside = false;
 					intersectionPoints.push_back(ci2 - contour.edges.begin());
 					intersectionCircuits.push_back(circuitIndex);
@@ -1372,30 +1317,32 @@ pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultCont
 				}
 			}
 		}
+
 		ci1 = ci2;
-	}
-	while(ci1 != interiorEdge);
+	}while(ci1 != interiorEdge);
 
 	DISLOCATIONS_ASSERT((intersectionPoints.size() % 2) == 0);
-	for(int i = 0; i < (int)intersectionPoints.size();) {
+	for(int i = 0; i < (int)intersectionPoints.size();){
 		if(intersectionPoints[i] == intersectionPoints[i+1] &&
-				intersectionCircuits[i] == intersectionCircuits[i+1]) {
+				intersectionCircuits[i] == intersectionCircuits[i+1]){
 			intersectionPoints.erase(intersectionPoints.begin() + i, intersectionPoints.begin() + i + 2);
 			intersectionCircuits.erase(intersectionCircuits.begin() + i, intersectionCircuits.begin() + i + 2);
 		}
 		else i += 2;
 	}
-	for(int i = 1; i < (int)intersectionPoints.size() - 1; ) {
+
+	for(int i = 1; i < (int)intersectionPoints.size() - 1; ){
 		if(intersectionPoints[i] == intersectionPoints[i+1] &&
-				intersectionCircuits[i] == intersectionCircuits[i+1]) {
+				intersectionCircuits[i] == intersectionCircuits[i+1]){
 			intersectionPoints.erase(intersectionPoints.begin() + i, intersectionPoints.begin() + i + 2);
 			intersectionCircuits.erase(intersectionCircuits.begin() + i, intersectionCircuits.begin() + i + 2);
 		}
 		else i += 2;
 	}
+
 	DISLOCATIONS_ASSERT((intersectionPoints.size() % 2) == 0);
 	// After we have traversed the complete contour, we should be inside the segment area again.
-	if(intersectionCircuits.empty() || intersectionCircuits.front() == intersectionCircuits.back()) {
+	if(intersectionCircuits.empty() || intersectionCircuits.front() == intersectionCircuits.back()){
 		int startIntersection = interiorEdge - contour.edges.begin();
 		int endIntersection = startIntersection + 1;
 		if(endIntersection == contour.edges.size()) endIntersection = 0;
@@ -1407,9 +1354,9 @@ pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultCont
 	BurgersCircuit* startCircuit = segment->circuits[intersectionCircuits.back()];
 	BurgersCircuit* endCircuit = segment->circuits[intersectionCircuits.front()];
 
-	if(contour.borderSegments.empty() == false && startCircuit->isDangling == false) {
+	if(contour.borderSegments.empty() == false && startCircuit->isDangling == false){
 		BurgersCircuit* otherCircuit = contour.borderSegments.back()->oppositeCircuit;
-		if(otherCircuit->isDangling == false && otherCircuit->isInRing(startCircuit)) {
+		if(otherCircuit->isDangling == false && otherCircuit->isInRing(startCircuit)){
 			startIntersection = contour.segmentIntervals.back().second;
 		}
 	}
@@ -1420,74 +1367,63 @@ pair<int,int> StackingFaults::findSFContourSegmentIntersection(StackingFaultCont
 	return make_pair(startIntersection, endIntersection);
 }
 
-
-/******************************************************************************
-* Converts a part of an SF contour, which runs along the interface mesh, into
-* a polyline.
-******************************************************************************/
-void StackingFaults::addMeshIntervalToSFPolyline(StackingFaultContour& contour, int startIndex, int endIndex, Point3& wrappedPoint, Point3& unwrappedPoint)
-{
+// Converts a part of an SF contour, which runs along the interface mesh, into a polyline.
+void StackingFaults::addMeshIntervalToSFPolyline(StackingFaultContour& contour, int startIndex, int endIndex, Point3& wrappedPoint, Point3& unwrappedPoint){
 	// Number of mesh edges.
 	int edgeCount = endIndex - startIndex;
 	if(edgeCount < 0) edgeCount += contour.edges.size();
 
 	// Iterate over mesh edges in the contour interval.
 	vector<MeshEdge*>::const_iterator edge = contour.edges.begin() + startIndex;
-	while(edgeCount > 0) {
+	while(edgeCount > 0){
 		if(edge == contour.edges.end()) edge = contour.edges.begin();
 		MeshNode* meshNode = (*edge)->node1;
 		Point3* p;
-		if(meshNode->outputVertex == NULL)
+		if(meshNode->outputVertex == NULL){
 			p = &meshNode->pos;
-		else
+		}else{
 			p = &meshNode->outputVertex->pos;
+		}
 		// Unwrap contour.
 		Vector3 delta = wrapVector(*p - wrappedPoint);
 		unwrappedPoint += delta;
 		wrappedPoint += delta;
-		if(meshNode->outputVertex != NULL)
-			contour.polyline.push_back(unwrappedPoint);
+		if(meshNode->outputVertex != NULL) contour.polyline.push_back(unwrappedPoint);
 		edgeCount--;
 		++edge;
 	}
 }
 
-/******************************************************************************
-* Converts a part of an SF contour, which runs along a dislocation line, into
-* a polyline.
-******************************************************************************/
-void StackingFaults::addDislocationIntervalToSFPolyline(StackingFaultContour& contour, BurgersCircuit* startCircuit, Point3& wrappedPoint, Point3& unwrappedPoint)
-{
+// Converts a part of an SF contour, which runs along a dislocation line, into
+// a polyline.
+void StackingFaults::addDislocationIntervalToSFPolyline(StackingFaultContour& contour, BurgersCircuit* startCircuit, Point3& wrappedPoint, Point3& unwrappedPoint){
 	// The dislocation segment should be a real one.
 	DISLOCATIONS_ASSERT(startCircuit->segment->replacedWith == NULL);
 	DISLOCATIONS_ASSERT(startCircuit->segment->line.size() >= 2);
 
-	if(startCircuit->isBackwardCircuit()) {
-		for(deque<Point3>::const_iterator p = startCircuit->segment->line.begin(); p != startCircuit->segment->line.end(); ++p) {
+	if(startCircuit->isBackwardCircuit()){
+		for(deque<Point3>::const_iterator p = startCircuit->segment->line.begin(); p != startCircuit->segment->line.end(); ++p){
 			// Unwrap contour.
 			Vector3 delta = wrapVector(*p - wrappedPoint);
 			unwrappedPoint += delta;
 			wrappedPoint += delta;
 			contour.polyline.push_back(unwrappedPoint);
 		}
+		return;
 	}
-	else {
-		for(size_t p = startCircuit->segment->line.size(); p != 0; ) {
-			// Unwrap contour.
-			Vector3 delta = wrapVector(startCircuit->segment->line[--p] - wrappedPoint);
-			unwrappedPoint += delta;
-			wrappedPoint += delta;
-			contour.polyline.push_back(unwrappedPoint);
-		}
+
+	for(size_t p = startCircuit->segment->line.size(); p != 0; ){
+		// Unwrap contour.
+		Vector3 delta = wrapVector(startCircuit->segment->line[--p] - wrappedPoint);
+		unwrappedPoint += delta;
+		wrappedPoint += delta;
+		contour.polyline.push_back(unwrappedPoint);
 	}
 }
 
-/******************************************************************************
-* Determines whether the given point (in reduced coordinates) is inside the
-* stacking fault polygon.
-******************************************************************************/
-bool StackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex* vertexHead, const Point3 p)
-{
+// Determines whether the given point (in reduced coordinates) is inside the
+// stacking fault polygon.
+bool StackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex* vertexHead, const Point3 p){
 	// Point must be in the SF plane.
 	DISLOCATIONS_ASSERT(fabs(DotProduct(p - sf->reducedCenter, sf->reducedNormalVector)) <= FLOATTYPE_EPSILON);
 
@@ -1495,16 +1431,16 @@ bool StackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex* v
 	SFContourVertex* closestVertex = NULL;
 	FloatType closestDistance2 = FLOATTYPE_MAX;
 	Vector3 closestNormal = NULL_VECTOR, closestVector = NULL_VECTOR;
-	for(SFContourVertex* vertex = vertexHead; vertex != NULL; vertex = vertex->globalNext) {
+	for(SFContourVertex* vertex = vertexHead; vertex != NULL; vertex = vertex->globalNext){
 		Vector3 r = vertex->pos - p;
-		for(int dim = 0; dim < 3; dim++) {
-			if(sf->isInfinite[dim]) {
+		for(int dim = 0; dim < 3; dim++){
+			if(sf->isInfinite[dim]){
 				while(r[dim] < -0.5) r[dim] += 1;
 				while(r[dim] > +0.5) r[dim] -= 1;
 			}
 		}
 		FloatType dist2 = LengthSquared(r);
-		if(dist2 < closestDistance2) {
+		if(dist2 < closestDistance2){
 			closestDistance2 = dist2;
 			closestVertex = vertex;
 			closestVector = r;
@@ -1513,12 +1449,12 @@ bool StackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex* v
 
 	// Check if any edge is closer to the test point than the closest vertex.
 	SFContourVertex* closestEdge = NULL;
-	for(SFContourVertex* vertex = vertexHead; vertex != NULL; vertex = vertex->globalNext) {
+	for(SFContourVertex* vertex = vertexHead; vertex != NULL; vertex = vertex->globalNext){
 		DISLOCATIONS_ASSERT(vertex->next != NULL);
 		Vector3 lineDir = wrapReducedVector(vertex->next->pos - vertex->pos);
 		Vector3 r = p - vertex->pos;
-		for(int dim = 0; dim < 3; dim++) {
-			if(sf->isInfinite[dim]) {
+		for(int dim = 0; dim < 3; dim++){
+			if(sf->isInfinite[dim]){
 				while(r[dim] < 0.0) r[dim] += 1;
 				while(r[dim] > 1.0) r[dim] -= 1;
 			}
@@ -1530,14 +1466,14 @@ bool StackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex* v
 		if(d >= edgeLength || d <= 0.0) continue;
 		Point3 c = vertex->pos + lineDir * d;
 		Vector3 r2 = c - p;
-		for(int dim = 0; dim < 3; dim++) {
-			if(sf->isInfinite[dim]) {
+		for(int dim = 0; dim < 3; dim++){
+			if(sf->isInfinite[dim]){
 				while(r2[dim] < -0.5) r2[dim] += 1;
 				while(r2[dim] > +0.5) r2[dim] -= 1;
 			}
 		}
 		FloatType dist2 = LengthSquared(r2);
-		if(dist2 < closestDistance2) {
+		if(dist2 < closestDistance2){
 			closestDistance2 = dist2;
 			closestVertex = NULL;
 			closestEdge = vertex;
@@ -1547,35 +1483,34 @@ bool StackingFaults::isInsideStackingFault(StackingFault* sf, SFContourVertex* v
 		}
 	}
 
-	if(closestVertex != NULL) {
+	if(closestVertex != NULL){
 		// Calculate pseudo-normal at vertex.
 		Vector3 lineDir1 = wrapReducedVector(closestVertex->next->pos - closestVertex->pos);
 		Vector3 lineDir2 = wrapReducedVector(closestVertex->pos - closestVertex->previous->pos);
 		closestNormal = NormalizeSafely(CrossProduct(lineDir1, sf->reducedNormalVector)) + NormalizeSafely(CrossProduct(lineDir2, sf->reducedNormalVector));
+	}else if(closestEdge == NULL){
+		return true;
 	}
-	else if(closestEdge == NULL) return true;
 
 	return DotProduct(closestNormal, closestVector) > 0.0;
 }
 
-/******************************************************************************
-* Determines whether the given point (in reduced coordinates) is inside the
-* stacking fault polygon.
-******************************************************************************/
-bool StackingFaults::isInsideStackingFaultRay(StackingFault* sf, SFContourVertex* vertexHead, const Point3 p)
-{
+// Determines whether the given point (in reduced coordinates) is inside the
+// stacking fault polygon.
+bool StackingFaults::isInsideStackingFaultRay(StackingFault* sf, SFContourVertex* vertexHead, const Point3 p){
 	// Test point must be in the SF plane.
 	DISLOCATIONS_ASSERT(fabs(DotProduct(p - sf->reducedCenter, sf->reducedNormalVector)) <= FLOATTYPE_EPSILON);
 
 	// Determine a good ray direction.
 	Vector3 rayDir = CrossProduct(sf->reducedNormalVector, Vector3(0,0,1));
-	if(LengthSquared(rayDir) < FLOATTYPE_EPSILON)
+	if(LengthSquared(rayDir) < FLOATTYPE_EPSILON){
 		rayDir = CrossProduct(sf->reducedNormalVector, Vector3(1,0,0));
+	}
 	DISLOCATIONS_ASSERT(LengthSquared(rayDir) >= FLOATTYPE_EPSILON);
 	rayDir = Normalize(rayDir);
 
 	int intersectioncount = 0;
-	for(SFContourVertex* vertex = vertexHead; vertex != NULL; vertex = vertex->globalNext) {
+	for(SFContourVertex* vertex = vertexHead; vertex != NULL; vertex = vertex->globalNext){
 		DISLOCATIONS_ASSERT(vertex->next != NULL);
 		Vector3 a = wrapReducedVector(vertex->next->pos - vertex->pos);
 		Vector3 b = rayDir;

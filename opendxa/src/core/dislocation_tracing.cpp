@@ -5,7 +5,6 @@
 #include <opendxa/utils/timer.hpp>
 
 DislocationTracing::DislocationTracing(): InterfaceMesh(), unusedCircuit(nullptr){
-	// TODO: Should I readjust these variables or follow the user's instructions?
 	burgersSearchDepth = (DEFAULT_MAX_BURGERS_CIRCUIT_SIZE - 1) / 2;
 	maxBurgersCircuitSize = DEFAULT_MAX_BURGERS_CIRCUIT_SIZE;
 	maxExtendedBurgersCircuitSize = DEFAULT_MAX_EXTENDED_BURGERS_CIRCUIT_SIZE;
@@ -27,15 +26,11 @@ void DislocationTracing::cleanup(){
 	unusedCircuit = NULL;
 }
 
-/******************************************************************************
-* Does the actual dislocation detection.
-******************************************************************************/
-void DislocationTracing::traceDislocationSegments()
-{
-	if(burgersSearchDepth < 1)
-		raiseError("Invalid settings: Maximum Burgers circuit length (maxcircuitsize) must not be less than 3.");
-	if(maxBurgersCircuitSize > maxExtendedBurgersCircuitSize)
-		raiseError("Invalid settings: Maximum Burgers circuit length must not be larger than the extended Burgers circuit limit (i.e. maxcircuitsize <= extcircuitsize).");
+// Does the actual dislocation detection.
+void DislocationTracing::traceDislocationSegments(){
+	if(burgersSearchDepth < 1 || (maxBurgersCircuitSize > maxExtendedBurgersCircuitSize)){
+		raiseError("Invalid settings: Burgers search should be >= 1. Maximum Burgers circuit length must not be larger than the extended Burgers circuit limit (i.e. maxcircuitsize <= extcircuitsize).");
+	}
 
 	// Initialize random number generator to make the algorithm predictive.
 	srand(1);
@@ -47,16 +42,13 @@ void DislocationTracing::traceDislocationSegments()
 	LOG_INFO() << "Extending and joining dislocation segments. Extended circuit length limit: " << maxExtendedBurgersCircuitSize;
 
 	// Count the number of created dislocation junctions.
-	int numJunctions = 0;
-
 	// Try to join two or more segments to form a dislocation junction.
-	numJunctions += joinSegments(maxBurgersCircuitSize);
+	int numJunctions = joinSegments(maxBurgersCircuitSize);
 
 	// Then incrementally extend the segments until they meet each other.
-	for(int circuitLength = maxBurgersCircuitSize; circuitLength <= maxExtendedBurgersCircuitSize; circuitLength++) {
-
+	for(int circuitLength = maxBurgersCircuitSize; circuitLength <= maxExtendedBurgersCircuitSize; circuitLength++){
 		// Extend the existing segments along the interface mesh up to the current maximum circuit length.
-		for(vector<BurgersCircuit*>::const_iterator circuit_iter = danglingCircuits.begin(); circuit_iter != danglingCircuits.end(); ++circuit_iter) {
+		for(auto circuit_iter = danglingCircuits.begin(); circuit_iter != danglingCircuits.end(); ++circuit_iter){
 			BurgersCircuit* circuit = *circuit_iter;
 			DISLOCATIONS_ASSERT(circuit->isDangling);
 			DISLOCATIONS_ASSERT(circuit->countEdges() == circuit->edgeCount);
@@ -69,8 +61,8 @@ void DislocationTracing::traceDislocationSegments()
 	}
 
 	// Remove extra line points from segments which have not been joined.
-#pragma omp parallel for
-	for(int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++) {
+	#pragma omp parallel for
+	for(int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++){
 		DislocationSegment* segment = segments[segmentIndex];
 		deque<Point3>& line = segments[segmentIndex]->line;
 		line.erase(line.begin() + segment->primarySegmentEnd, line.end());
@@ -81,22 +73,19 @@ void DislocationTracing::traceDislocationSegments()
 	LOG_INFO() << "Created " << numJunctions << " dislocation junctions.";
 }
 
-/******************************************************************************
-* Does the actual Burgers circuit search.
-******************************************************************************/
-void DislocationTracing::findPrimarySegments()
-{
+// Does the actual Burgers circuit search.
+void DislocationTracing::findPrimarySegments(){
 	LOG_INFO() << "Searching for primary dislocation segments. Maximum recursive search depth: " << burgersSearchDepth;
 	vector<MeshNode*> visitedNodes;
 
 	// Stack of nodes that still have to be visited during the current recursive walk.
 	deque<MeshNode*> toprocess;
 
-	for(vector<MeshNode*>::iterator startNode = nodes.begin(); startNode != nodes.end(); ++startNode) {
-
+	for(auto startNode = nodes.begin(); startNode != nodes.end(); ++startNode){
 		// Clear the flags of the nodes that have been visited during the last walk.
-		for(vector<MeshNode*>::iterator node = visitedNodes.begin(); node != visitedNodes.end(); ++node)
+		for(auto node = visitedNodes.begin(); node != visitedNodes.end(); ++node){
 			(*node)->clearVisitFlag();
+		}
 
 		// The first node is the seed of our recursive walk.
 		// It is mapped to the origin of the perfect reference lattice.
@@ -111,33 +100,28 @@ void DislocationTracing::findPrimarySegments()
 		visitedNodes[0] = *startNode;
 		(*startNode)->setVisitFlag();
 
-		do {
+		do{
 			// Take the next node from the stack of nodes to be visited.
 			MeshNode* currentNode = toprocess.front();
 			toprocess.pop_front();
 
 			bool foundBurgersCircuit = false;
-			for(int e = 0; e < currentNode->numEdges; e++) {
-				if(burgersSearchWalkEdge(currentNode, currentNode->edges[e], visitedNodes, toprocess)) {
+			for(int e = 0; e < currentNode->numEdges; e++){
+				if(burgersSearchWalkEdge(currentNode, currentNode->edges[e], visitedNodes, toprocess)){
 					foundBurgersCircuit = true;
 					break;
 				}
 			}
 			// Stop as soon as a Burgers circuit has been found.
-			if(foundBurgersCircuit)
-				break;
-		}
-		while(toprocess.empty() == false);
+			if(foundBurgersCircuit) break;
+		}while(toprocess.empty() == false);
 	}
 
 	LOG_INFO() << "Found " << segments.size() << " primary dislocation segments.";
 }
 
-/******************************************************************************
-* Does the recursive walk along the edge of a facet.
-******************************************************************************/
-bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& edge, vector<MeshNode*>& visitedNodes, deque<MeshNode*>& toprocess)
-{
+// Does the recursive walk along the edge of a facet.
+bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& edge, vector<MeshNode*>& visitedNodes, deque<MeshNode*>& toprocess){
 	DISLOCATIONS_ASSERT((edge.circuit == NULL) == (edge.nextEdge == NULL));
 	DISLOCATIONS_ASSERT((edge.oppositeEdge->circuit == NULL) == (edge.oppositeEdge->nextEdge == NULL));
 	DISLOCATIONS_ASSERT(edge.node1 == currentNode);
@@ -153,16 +137,16 @@ bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& 
 
 	// If this neighbor has been assigned lattice coordinates before, then
 	// perform Burgers test.
-	if(neighbor->wasVisited()) {
-		if(neighbor->latticeCoord.equals(neighborCoord) == false) {
+	if(neighbor->wasVisited()){
+		if(neighbor->latticeCoord.equals(neighborCoord) == false){
 			// Found non-closed Burgers circuit.
 			LatticeVector burgersVector = neighbor->latticeCoord - neighborCoord;
 
 			// Reconstruct the first Burgers circuit.
 			BurgersCircuit* forwardCircuit;
-			if(unusedCircuit == NULL)
+			if(unusedCircuit == NULL){
 				forwardCircuit = circuitPool.construct();
-			else {
+			}else{
 				forwardCircuit = unusedCircuit;
 				unusedCircuit = NULL;
 			}
@@ -173,15 +157,16 @@ bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& 
 
 			// First mark all nodes on the first branch of the recursive walk.
 			MeshNode* a = currentNode;
-			for(;;) {
+			for(;;){
 				a->clearVisitFlag();
 				if(a->predecessorEdge == NULL) break;
 				a = a->predecessorEdge->node1;
 			}
+
 			// Then walk on the second branch until the first branch is hit.
 			a = neighbor;
-			for(;;) {
-				if(a->wasVisited() == false) {
+			for(;;){
+				if(a->wasVisited() == false){
 					a->setVisitFlag();
 					break;
 				}
@@ -196,7 +181,7 @@ bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& 
 			}
 			// Last, walk along the first branch again until the second branch is hit.
 			a = currentNode;
-			for(;;) {
+			for(;;){
 				if(a->wasVisited()) break;
 				DISLOCATIONS_ASSERT(a->predecessorEdge != NULL);
 				DISLOCATIONS_ASSERT(a->predecessorEdge->circuit == NULL);
@@ -216,33 +201,33 @@ bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& 
 			// This can be checked by summing up the bond vectors of the circuit's edges. The sum should be zero for valid circuits.
 			MeshEdge* edge = forwardCircuit->firstEdge;
 			Vector3 edgeSum(NULL_VECTOR);
-			do {
+			do{
 				edgeSum += wrapVector(edge->node2()->pos - edge->node1->pos);
 				edge = edge->nextEdge;
-			}
-			while(edge != forwardCircuit->firstEdge);
-			if(edgeSum.equals(NULL_VECTOR) == false) {
+			}while(edge != forwardCircuit->firstEdge);
+			if(edgeSum.equals(NULL_VECTOR) == false){
 				// Reject circuit.
 				// Clear edges.
 				MeshEdge* e = forwardCircuit->firstEdge;
-				do {
+				do{
 					MeshEdge* nextEdge = e->nextEdge;
 					e->nextEdge = NULL;
 					e->circuit = NULL;
 					e = nextEdge;
-				}
-				while(e != forwardCircuit->firstEdge);
+				}while(e != forwardCircuit->firstEdge);
+
 				unusedCircuit = forwardCircuit;
 
 				// Re-set node flags
 				MeshNode* a = currentNode;
-				for(;;) {
+				for(;;){
 					a->setVisitFlag();
 					if(a->predecessorEdge == NULL) break;
 					a = a->predecessorEdge->node1;
 				}
+				
 				a = neighbor;
-				for(;;) {
+				for(;;){
 					a->setVisitFlag();
 					if(a->predecessorEdge == NULL) break;
 					a = a->predecessorEdge->node1;
@@ -254,27 +239,26 @@ bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& 
 			// Test for intersections with existing circuits.
 			MeshEdge* edge1 = forwardCircuit->firstEdge;
 			MeshEdge* edge2 = edge1->nextEdge;
-			do {
-				if(edge1 != edge2->oppositeEdge) {
+			do{
+				if(edge1 != edge2->oppositeEdge){
 					MeshEdge* currentEdge = edge1->oppositeEdge;
-					do {
+					do{
 						DISLOCATIONS_ASSERT(currentEdge->facet != NULL);
 						MeshEdge* nextEdge = currentEdge->facet->previousEdge(currentEdge);
-						if(nextEdge != edge2 && nextEdge->circuit != NULL) {
+						if(nextEdge != edge2 && nextEdge->circuit != NULL){
 							DISLOCATIONS_ASSERT(nextEdge->circuit == nextEdge->nextEdge->circuit);
 							int goingOutside = 0, goingInside = 0;
 							circuitContourIntersection(edge2->oppositeEdge, edge1->oppositeEdge, nextEdge, nextEdge->nextEdge, goingOutside, goingInside);
 							DISLOCATIONS_ASSERT(goingInside == 0);
-							if(goingOutside) {
+							if(goingOutside){
 								// Clear edges.
 								MeshEdge* e = forwardCircuit->firstEdge;
-								do {
+								do{
 									MeshEdge* nextEdge = e->nextEdge;
 									e->nextEdge = NULL;
 									e->circuit = NULL;
 									e = nextEdge;
-								}
-								while(e != forwardCircuit->firstEdge);
+								}while(e != forwardCircuit->firstEdge);
 								unusedCircuit = forwardCircuit;
 								// Stop recursive walk.
 								toprocess.resize(0);
@@ -282,13 +266,11 @@ bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& 
 							}
 						}
 						currentEdge = nextEdge->oppositeEdge;
-					}
-					while(currentEdge != edge2);
+					}while(currentEdge != edge2);
 				}
 				edge1 = edge2;
 				edge2 = edge2->nextEdge;
-			}
-			while(edge1 != forwardCircuit->firstEdge);
+			}while(edge1 != forwardCircuit->firstEdge);
 
 			// We can accept this circuit.
 			danglingCircuits.push_back(forwardCircuit);
@@ -301,11 +283,11 @@ bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& 
 			segment->index = segments.size();
 			segments.push_back(segment);
 
-			//segment->determineWorldBurgersVector(*this);
+			// segment->determineWorldBurgersVector(*this);
 			forwardCircuit->updateLatticeToWorldTransformation(*this);
 
 			// Trace the segment in both directions.
-			for(size_t circuitIndex = 0; circuitIndex < 2; circuitIndex++) {
+			for(size_t circuitIndex = 0; circuitIndex < 2; circuitIndex++){
 				BurgersCircuit* circuit = segment->circuits[circuitIndex];
 				traceSegment(*segment, *circuit, maxBurgersCircuitSize, true);
 				DISLOCATIONS_ASSERT(circuit->countEdges() == circuit->edgeCount);
@@ -320,8 +302,7 @@ bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& 
 			toprocess.resize(0);
 			return true;
 		}
-	}
-	else if(currentNode->recursiveDepth < burgersSearchDepth) {
+	}else if(currentNode->recursiveDepth < burgersSearchDepth){
 		// This neighbor has not been visited before.
 		// Continue with this node. Put it onto the recursive walk stack.
 		neighbor->latticeCoord = neighborCoord;
@@ -335,8 +316,7 @@ bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& 
 	return false;
 }
 
-BurgersCircuit* DislocationTracing::buildBackwardCircuit(BurgersCircuit* forwardCircuit)
-{
+BurgersCircuit* DislocationTracing::buildBackwardCircuit(BurgersCircuit* forwardCircuit){
 	BurgersCircuit* backwardCircuit = circuitPool.construct();
 	danglingCircuits.push_back(backwardCircuit);
 
@@ -345,7 +325,7 @@ BurgersCircuit* DislocationTracing::buildBackwardCircuit(BurgersCircuit* forward
 	backwardCircuit->firstEdge = NULL;
 	backwardCircuit->lastEdge = NULL;
 	MeshEdge* edge1 = forwardCircuit->firstEdge;
-	do {
+	do{
 		MeshEdge* edge2 = edge1->nextEdge;
 		MeshEdge* oppositeEdge1 = edge1->oppositeEdge;
 		MeshEdge* oppositeEdge2 = edge2->oppositeEdge;
@@ -358,17 +338,17 @@ BurgersCircuit* DislocationTracing::buildBackwardCircuit(BurgersCircuit* forward
 		DISLOCATIONS_ASSERT(edge1->latticeVector.equals(-oppositeEdge1->latticeVector));
 		DISLOCATIONS_ASSERT(edge2->latticeVector.equals(-oppositeEdge2->latticeVector));
 
-		if(facet1 != facet2) {
+		if(facet1 != facet2){
 			MeshEdge* outerEdge1 = NULL;
 			MeshEdge* innerEdge1 = NULL;
 			MeshEdge* outerEdge2 = NULL;
 			MeshEdge* innerEdge2 = NULL;
-			for(int e = 0; e < 3; e++) {
-				if(facet1->edges[e] == oppositeEdge1) {
+			for(int e = 0; e < 3; e++){
+				if(facet1->edges[e] == oppositeEdge1){
 					innerEdge1 = facet1->edges[(e+2)%3]->oppositeEdge;
 					outerEdge1 = facet1->edges[(e+1)%3]->oppositeEdge;
 				}
-				if(facet2->edges[e] == oppositeEdge2) {
+				if(facet2->edges[e] == oppositeEdge2){
 					innerEdge2 = facet2->edges[(e+1)%3]->oppositeEdge;
 					outerEdge2 = facet2->edges[(e+2)%3]->oppositeEdge;
 				}
@@ -388,24 +368,21 @@ BurgersCircuit* DislocationTracing::buildBackwardCircuit(BurgersCircuit* forward
 			innerEdge1->circuit = backwardCircuit;
 			innerEdge2->circuit = backwardCircuit;
 			innerEdge2->nextEdge = innerEdge1;
-			if(backwardCircuit->lastEdge == NULL) {
+			if(backwardCircuit->lastEdge == NULL){
 				DISLOCATIONS_ASSERT(backwardCircuit->firstEdge == NULL);
 				DISLOCATIONS_ASSERT(innerEdge1->nextEdge == NULL);
 				backwardCircuit->lastEdge = innerEdge1;
 				backwardCircuit->firstEdge = innerEdge2;
 				backwardCircuit->edgeCount += 2;
-			}
-			else if(backwardCircuit->lastEdge != innerEdge2) {
-				if(innerEdge1 != backwardCircuit->firstEdge) {
+			}else if(backwardCircuit->lastEdge != innerEdge2){
+				if(innerEdge1 != backwardCircuit->firstEdge){
 					innerEdge1->nextEdge = backwardCircuit->firstEdge;
 					backwardCircuit->edgeCount += 2;
-				}
-				else {
+				}else{
 					backwardCircuit->edgeCount += 1;
 				}
 				backwardCircuit->firstEdge = innerEdge2;
-			}
-			else if(backwardCircuit->firstEdge != innerEdge1) {
+			}else if(backwardCircuit->firstEdge != innerEdge1){
 				innerEdge1->nextEdge = backwardCircuit->firstEdge;
 				backwardCircuit->firstEdge = innerEdge1;
 				backwardCircuit->edgeCount += 1;
@@ -415,8 +392,7 @@ BurgersCircuit* DislocationTracing::buildBackwardCircuit(BurgersCircuit* forward
 		}
 
 		edge1 = edge2;
-	}
-	while(edge1 != forwardCircuit->firstEdge);
+	}while(edge1 != forwardCircuit->firstEdge);
 	DISLOCATIONS_ASSERT(backwardCircuit->edgeCount > 0);
 	DISLOCATIONS_ASSERT(backwardCircuit->lastEdge->node2() == backwardCircuit->firstEdge->node1);
 	DISLOCATIONS_ASSERT(backwardCircuit->lastEdge->nextEdge == NULL || backwardCircuit->lastEdge->nextEdge == backwardCircuit->firstEdge);
@@ -429,17 +405,13 @@ BurgersCircuit* DislocationTracing::buildBackwardCircuit(BurgersCircuit* forward
 	return backwardCircuit;
 }
 
-/******************************************************************************
-* Traces a dislocation segment in one direction.
-******************************************************************************/
-void DislocationTracing::traceSegment(DislocationSegment& segment, BurgersCircuit& circuit, int maxCircuitLength, bool isPrimarySegment)
-{
+// Traces a dislocation segment in one direction.
+void DislocationTracing::traceSegment(DislocationSegment& segment, BurgersCircuit& circuit, int maxCircuitLength, bool isPrimarySegment){
 	DISLOCATIONS_ASSERT(circuit.countEdges() == circuit.edgeCount);
 	DISLOCATIONS_ASSERT(circuit.isDangling);
 
 	// Advance circuit as far as possible.
-	for(;;) {
-
+	for(;;){
 		// During each iteration, first shorten circuit as much as possible.
 		// Pick a random start edge to distribute the removal of edges
 		// over the whole circuit.
@@ -451,7 +423,7 @@ void DislocationTracing::traceSegment(DislocationSegment& segment, BurgersCircui
 		MeshEdge* edge2 = edge1->nextEdge;
 		DISLOCATIONS_ASSERT(edge1->circuit == &circuit);
 		int counter = 0;
-		do {
+		do{
 			// Check Burgers circuit.
 			DISLOCATIONS_ASSERT(circuit.edgeCount >= 2);
 			DISLOCATIONS_ASSERT(circuit.countEdges() == circuit.edgeCount);
@@ -459,16 +431,17 @@ void DislocationTracing::traceSegment(DislocationSegment& segment, BurgersCircui
 			DISLOCATIONS_ASSERT(circuit.isForwardCircuit() == true || circuit.calculateBurgersVector().equals(-segment.burgersVector));
 
 			bool wasShortened = false;
-			if(tryRemoveTwoCircuitEdges(edge0, edge1, edge2))
+			if(tryRemoveTwoCircuitEdges(edge0, edge1, edge2)){
 				wasShortened = true;
-			else if(tryRemoveThreeCircuitEdges(edge0, edge1, edge2, isPrimarySegment))
+			}else if(tryRemoveThreeCircuitEdges(edge0, edge1, edge2, isPrimarySegment)){
 				wasShortened = true;
-			else if(tryRemoveOneCircuitEdge(edge0, edge1, edge2, isPrimarySegment))
+			}else if(tryRemoveOneCircuitEdge(edge0, edge1, edge2, isPrimarySegment)){
 				wasShortened = true;
-			else if(trySweepTwoFacets(edge0, edge1, edge2, isPrimarySegment))
+			}else if(trySweepTwoFacets(edge0, edge1, edge2, isPrimarySegment)){
 				wasShortened = true;
+			}
 
-			if(wasShortened) {
+			if(wasShortened){
 				recordLinePoint(&circuit, isPrimarySegment);
 				counter = -1;
 			}
@@ -477,13 +450,14 @@ void DislocationTracing::traceSegment(DislocationSegment& segment, BurgersCircui
 			edge1 = edge2;
 			edge2 = edge2->nextEdge;
 			counter++;
-		}
-		while(counter <= circuit.edgeCount);
+		}while(counter <= circuit.edgeCount);
+
 		DISLOCATIONS_ASSERT(circuit.edgeCount >= 2);
 		DISLOCATIONS_ASSERT(circuit.countEdges() == circuit.edgeCount);
 
-		if(circuit.edgeCount >= maxCircuitLength)
+		if(circuit.edgeCount >= maxCircuitLength){
 			break;
+		}
 
 		// In the second step, extend circuit by inserting an edge if possible.
 		bool wasExtended = false;
@@ -494,8 +468,8 @@ void DislocationTracing::traceSegment(DislocationSegment& segment, BurgersCircui
 
 		edge0 = firstEdge;
 		edge1 = firstEdge->nextEdge;
-		do {
-			if(tryInsertOneCircuitEdge(edge0, edge1, isPrimarySegment)) {
+		do{
+			if(tryInsertOneCircuitEdge(edge0, edge1, isPrimarySegment)){
 				wasExtended = true;
 				recordLinePoint(&circuit, isPrimarySegment);
 				break;
@@ -503,31 +477,27 @@ void DislocationTracing::traceSegment(DislocationSegment& segment, BurgersCircui
 
 			edge0 = edge1;
 			edge1 = edge1->nextEdge;
-		}
-		while(edge0 != firstEdge);
+		}while(edge0 != firstEdge);
+		
 		if(!wasExtended) break;
 	}
 }
 
-/******************************************************************************
-* Eliminates two edges from a Burgers circuit if they are opposite halfedges.
-******************************************************************************/
-bool DislocationTracing::tryRemoveTwoCircuitEdges(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2)
-{
-	if(edge1 != edge2->oppositeEdge)
+// Eliminates two edges from a Burgers circuit if they are opposite halfedges.
+bool DislocationTracing::tryRemoveTwoCircuitEdges(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2){
+	if(edge1 != edge2->oppositeEdge){
 		return false;
+	}
 
 	BurgersCircuit* circuit = edge0->circuit;
 	DISLOCATIONS_ASSERT(circuit->edgeCount >= 4);
 	edge0->nextEdge = edge2->nextEdge;
-	if(edge0 == circuit->lastEdge) {
+	if(edge0 == circuit->lastEdge){
 		circuit->firstEdge = circuit->lastEdge->nextEdge;
-	}
-	else if(edge1 == circuit->lastEdge) {
+	}else if(edge1 == circuit->lastEdge){
 		circuit->lastEdge = edge0;
 		circuit->firstEdge = edge0->nextEdge;
-	}
-	else if(edge2 == circuit->lastEdge) {
+	}else if(edge2 == circuit->lastEdge){
 		circuit->lastEdge = edge0;
 	}
 	circuit->edgeCount -= 2;
@@ -537,17 +507,15 @@ bool DislocationTracing::tryRemoveTwoCircuitEdges(MeshEdge*& edge0, MeshEdge*& e
 	return true;
 }
 
-/******************************************************************************
-* Eliminates three edges from a Burgers circuit if they border a triangle.
-******************************************************************************/
-bool DislocationTracing::tryRemoveThreeCircuitEdges(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment)
-{
+// Eliminates three edges from a Burgers circuit if they border a triangle.
+bool DislocationTracing::tryRemoveThreeCircuitEdges(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment){
 	MeshFacet* facet1 = edge1->facet;
 	MeshFacet* facet2 = edge2->facet;
 	DISLOCATIONS_ASSERT(facet1 != NULL && facet2 != NULL);
 
-	if(facet2 != facet1 || facet1->circuit != NULL)
+	if(facet2 != facet1 || facet1->circuit != NULL){
 		return false;
+	}
 
 	BurgersCircuit* circuit = edge0->circuit;
 	DISLOCATIONS_ASSERT(circuit->edgeCount > 2);
@@ -558,15 +526,13 @@ bool DislocationTracing::tryRemoveThreeCircuitEdges(MeshEdge*& edge0, MeshEdge*&
 
 	edge0->nextEdge = edge3->nextEdge;
 
-	if(edge2 == circuit->firstEdge || edge3 == circuit->firstEdge) {
+	if(edge2 == circuit->firstEdge || edge3 == circuit->firstEdge){
 		circuit->firstEdge = edge3->nextEdge;
 		circuit->lastEdge = edge0;
-	}
-	else if(edge1 == circuit->firstEdge) {
+	}else if(edge1 == circuit->firstEdge) {
 		circuit->firstEdge = edge3->nextEdge;
 		DISLOCATIONS_ASSERT(circuit->lastEdge == edge0);
-	}
-	else if(edge3 == circuit->lastEdge) {
+	}else if(edge3 == circuit->lastEdge) {
 		circuit->lastEdge = edge0;
 	}
 	circuit->edgeCount -= 3;
@@ -574,17 +540,15 @@ bool DislocationTracing::tryRemoveThreeCircuitEdges(MeshEdge*& edge0, MeshEdge*&
 	edge2 = edge1->nextEdge;
 
 	facet1->circuit = circuit;
-	if(isPrimarySegment)
+	if(isPrimarySegment){
 		facet1->setFlag(FACET_IS_PRIMARY_SEGMENT);
+	}
 
 	return true;
 }
 
-/******************************************************************************
-* Eliminates one edge from a Burgers circuit by replacing two edges with one.
-******************************************************************************/
-bool DislocationTracing::tryRemoveOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment)
-{
+// Eliminates one edge from a Burgers circuit by replacing two edges with one.
+bool DislocationTracing::tryRemoveOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment){
 	MeshFacet* facet1 = edge1->facet;
 	MeshFacet* facet2 = edge2->facet;
 	DISLOCATIONS_ASSERT(facet1 != NULL && facet2 != NULL);
@@ -596,8 +560,8 @@ bool DislocationTracing::tryRemoveOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& ed
 	if(edge0->facet == facet1) return false;
 
 	MeshEdge* shortEdge = NULL;
-	for(int e = 0; e < 3; e++) {
-		if(facet1->edges[e] != edge1 && facet1->edges[e] != edge2) {
+	for(int e = 0; e < 3; e++){
+		if(facet1->edges[e] != edge1 && facet1->edges[e] != edge2){
 			shortEdge = facet1->edges[e]->oppositeEdge;
 			break;
 		}
@@ -611,17 +575,16 @@ bool DislocationTracing::tryRemoveOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& ed
 	DISLOCATIONS_ASSERT(shortEdge != edge2->nextEdge->oppositeEdge);
 	DISLOCATIONS_ASSERT(shortEdge != edge0->oppositeEdge);
 	edge0->nextEdge = shortEdge;
-	if(edge0 == circuit->lastEdge) {
+	if(edge0 == circuit->lastEdge){
 		DISLOCATIONS_ASSERT(circuit->lastEdge != edge2);
 		DISLOCATIONS_ASSERT(circuit->firstEdge == edge1);
 		DISLOCATIONS_ASSERT(shortEdge != circuit->lastEdge->oppositeEdge);
 		circuit->firstEdge = shortEdge;
 	}
 
-	if(edge2 == circuit->lastEdge) {
+	if(edge2 == circuit->lastEdge){
 		circuit->lastEdge = shortEdge;
-	}
-	else if(edge2 == circuit->firstEdge) {
+	}else if(edge2 == circuit->firstEdge){
 		circuit->firstEdge = shortEdge->nextEdge;
 		circuit->lastEdge = shortEdge;
 	}
@@ -631,17 +594,15 @@ bool DislocationTracing::tryRemoveOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& ed
 	shortEdge->circuit = circuit;
 
 	facet1->circuit = circuit;
-	if(isPrimarySegment)
+	if(isPrimarySegment){
 		facet1->setFlag(FACET_IS_PRIMARY_SEGMENT);
+	}
 
 	return true;
 }
 
-/******************************************************************************
-* Advances a Burgers circuit by skipping two facets.
-******************************************************************************/
-bool DislocationTracing::trySweepTwoFacets(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment)
-{
+// Advances a Burgers circuit by skipping two facets.
+bool DislocationTracing::trySweepTwoFacets(MeshEdge*& edge0, MeshEdge*& edge1, MeshEdge*& edge2, bool isPrimarySegment){
 	MeshFacet* facet1 = edge1->facet;
 	MeshFacet* facet2 = edge2->facet;
 	DISLOCATIONS_ASSERT(facet1 != NULL && facet2 != NULL);
@@ -655,34 +616,33 @@ bool DislocationTracing::trySweepTwoFacets(MeshEdge*& edge0, MeshEdge*& edge1, M
 	MeshEdge* innerEdge1 = NULL;
 	MeshEdge* outerEdge2 = NULL;
 	MeshEdge* innerEdge2 = NULL;
-	for(int e = 0; e < 3; e++) {
-		if(facet1->edges[e] == edge1) {
+	for(int e = 0; e < 3; e++){
+		if(facet1->edges[e] == edge1){
 			outerEdge1 = facet1->edges[(e+2)%3]->oppositeEdge;
 			innerEdge1 = facet1->edges[(e+1)%3];
 		}
-		if(facet2->edges[e] == edge2) {
+		if(facet2->edges[e] == edge2){
 			outerEdge2 = facet2->edges[(e+1)%3]->oppositeEdge;
 			innerEdge2 = facet2->edges[(e+2)%3];
 		}
 	}
 	DISLOCATIONS_ASSERT(outerEdge1 != NULL && outerEdge2 != NULL);
 
-	if(innerEdge1 != innerEdge2->oppositeEdge || outerEdge1->circuit != NULL || outerEdge2->circuit != NULL)
+	if(innerEdge1 != innerEdge2->oppositeEdge || outerEdge1->circuit != NULL || outerEdge2->circuit != NULL){
 		return false;
+	}
 
 	DISLOCATIONS_ASSERT(outerEdge1->nextEdge == NULL);
 	DISLOCATIONS_ASSERT(outerEdge2->nextEdge == NULL);
 	outerEdge1->nextEdge = outerEdge2;
 	outerEdge2->nextEdge = edge2->nextEdge;
 	edge0->nextEdge = outerEdge1;
-	if(edge0 == circuit->lastEdge) {
+	if(edge0 == circuit->lastEdge){
 		circuit->firstEdge = outerEdge1;
-	}
-	else if(edge1 == circuit->lastEdge) {
+	}else if(edge1 == circuit->lastEdge){
 		circuit->lastEdge = outerEdge1;
 		circuit->firstEdge = outerEdge2;
-	}
-	else if(edge2 == circuit->lastEdge) {
+	}else if(edge2 == circuit->lastEdge){
 		circuit->lastEdge = outerEdge2;
 	}
 	outerEdge1->circuit = circuit;
@@ -690,7 +650,7 @@ bool DislocationTracing::trySweepTwoFacets(MeshEdge*& edge0, MeshEdge*& edge1, M
 
 	facet1->circuit = circuit;
 	facet2->circuit = circuit;
-	if(isPrimarySegment) {
+	if(isPrimarySegment){
 		facet1->setFlag(FACET_IS_PRIMARY_SEGMENT);
 		facet2->setFlag(FACET_IS_PRIMARY_SEGMENT);
 	}
@@ -704,25 +664,19 @@ bool DislocationTracing::trySweepTwoFacets(MeshEdge*& edge0, MeshEdge*& edge1, M
 	return true;
 }
 
-/******************************************************************************
-* Advances a Burgers circuit by skipping one facet and inserting an aditional edge.
-******************************************************************************/
-bool DislocationTracing::tryInsertOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& edge1, bool isPrimarySegment)
-{
+// Advances a Burgers circuit by skipping one facet and inserting an aditional edge.
+bool DislocationTracing::tryInsertOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& edge1, bool isPrimarySegment){
 	DISLOCATIONS_ASSERT(edge0 != edge1->oppositeEdge);
 
 	MeshFacet* facet = edge1->facet;
 	DISLOCATIONS_ASSERT(facet != NULL);
-	if(facet->circuit != NULL)
-		return false;
+	if(facet->circuit != NULL) return false;
 
 	MeshEdge* insertEdge1 = facet->previousEdge(edge1)->oppositeEdge;
-	if(insertEdge1->circuit != NULL)
-		return false;
+	if(insertEdge1->circuit != NULL) return false;
 
 	MeshEdge* insertEdge2 = facet->nextEdge(edge1)->oppositeEdge;
-	if(insertEdge2->circuit != NULL)
-		return false;
+	if(insertEdge2->circuit != NULL) return false;
 
 	DISLOCATIONS_ASSERT(insertEdge1->nextEdge == NULL);
 	DISLOCATIONS_ASSERT(insertEdge2->nextEdge == NULL);
@@ -730,12 +684,13 @@ bool DislocationTracing::tryInsertOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& ed
 	insertEdge1->nextEdge = insertEdge2;
 	insertEdge2->nextEdge = edge1->nextEdge;
 	edge0->nextEdge = insertEdge1;
-	if(edge0 == circuit->lastEdge) {
+	
+	if(edge0 == circuit->lastEdge){
 		circuit->firstEdge = insertEdge1;
-	}
-	else if(edge1 == circuit->lastEdge) {
+	}else if(edge1 == circuit->lastEdge){
 		circuit->lastEdge = insertEdge2;
 	}
+
 	insertEdge1->circuit = circuit;
 	insertEdge2->circuit = circuit;
 	circuit->edgeCount++;
@@ -746,19 +701,17 @@ bool DislocationTracing::tryInsertOneCircuitEdge(MeshEdge*& edge0, MeshEdge*& ed
 	DISLOCATIONS_ASSERT(circuit->isForwardCircuit() == true || circuit->calculateBurgersVector().equals(-circuit->segment->burgersVector));
 
 	facet->circuit = circuit;
-	if(isPrimarySegment)
+	if(isPrimarySegment){
 		facet->setFlag(FACET_IS_PRIMARY_SEGMENT);
+	}
 
 	circuit->updateLatticeToWorldTransformation(*this, insertEdge2->node1);
 
 	return true;
 }
 
-/******************************************************************************
-* Appends a new point to a dislocation line.
-******************************************************************************/
-void DislocationTracing::recordLinePoint(BurgersCircuit* circuit, bool isPrimarySegment)
-{
+// Appends a new point to a dislocation line.
+void DislocationTracing::recordLinePoint(BurgersCircuit* circuit, bool isPrimarySegment){
 	DislocationSegment* segment = circuit->segment;
 	DISLOCATIONS_ASSERT(!segment->line.empty());
 
@@ -766,42 +719,40 @@ void DislocationTracing::recordLinePoint(BurgersCircuit* circuit, bool isPrimary
 }
 
 
-/******************************************************************************
-* Look for dislocation segments whose front circuits touch each other.
-* If the combined Burgers circuitis below the length threshold then
-* join them together.
-******************************************************************************/
-int DislocationTracing::joinSegments(int maxCircuitLength)
-{
+// Look for dislocation segments whose front circuits touch each other.
+// If the combined Burgers circuitis below the length threshold then
+// join them together.
+int DislocationTracing::joinSegments(int maxCircuitLength){
 	// First pass over all circuits.
 	// Creating secondary dislocation segments in the holes between existing circuits.
-	for(size_t circuitIndex = 0; circuitIndex < danglingCircuits.size(); circuitIndex++) {
+	for(size_t circuitIndex = 0; circuitIndex < danglingCircuits.size(); circuitIndex++){
 		BurgersCircuit* circuit = danglingCircuits[circuitIndex];
 		DISLOCATIONS_ASSERT(circuit->isDangling);
 
 		// Go around the circuit to find holes.
 		MeshEdge* edge = circuit->firstEdge;
-		do {
+		do{
 			BurgersCircuit* oppositeCircuit = edge->oppositeEdge->circuit;
 			DISLOCATIONS_ASSERT(edge->circuit == circuit);
-			if(oppositeCircuit == NULL) {
+			if(oppositeCircuit == NULL){
 				DISLOCATIONS_ASSERT(edge->oppositeEdge->nextEdge == NULL);
 
 				// Try to create a new circuit inside the hole.
 				createSecondarySegment(edge, circuit, maxCircuitLength);
 
 				// Continue along circuit until next junction.
-				while(edge->oppositeEdge->circuit == NULL && edge != circuit->firstEdge)
+				while(edge->oppositeEdge->circuit == NULL && edge != circuit->firstEdge){
 					edge = edge->nextEdge;
+				}
+			}else{
+				edge = edge->nextEdge;
 			}
-			else edge = edge->nextEdge;
-		}
-		while(edge != circuit->firstEdge);
+		}while(edge != circuit->firstEdge);
 	}
 
 	// Second pass over all circuits.
 	// Gather circuits which are completely surrounded by other circuits. They are candidates for the creation of junctions.
-	for(vector<BurgersCircuit*>::const_iterator circuit_iter = danglingCircuits.begin(); circuit_iter != danglingCircuits.end(); ++circuit_iter) {
+	for(auto circuit_iter = danglingCircuits.begin(); circuit_iter != danglingCircuits.end(); ++circuit_iter){
 		BurgersCircuit* circuit = *circuit_iter;
 		DISLOCATIONS_ASSERT(circuit->isDangling);
 
@@ -809,22 +760,20 @@ int DislocationTracing::joinSegments(int maxCircuitLength)
 		// Also put it into the same ring as its neighbors.
 		circuit->isEnclosed = true;
 		MeshEdge* edge = circuit->firstEdge;
-		do {
+		do{
 			DISLOCATIONS_ASSERT(edge->circuit == circuit);
 			BurgersCircuit* oppositeCircuit = edge->oppositeEdge->circuit;
-			if(oppositeCircuit == NULL) {
+			if(oppositeCircuit == NULL){
 				circuit->isEnclosed = false;
-			}
-			else {
+			}else{
 				DISLOCATIONS_ASSERT(oppositeCircuit->isDangling);
-				if(circuit->isInRing(oppositeCircuit) == false) {
+				if(circuit->isInRing(oppositeCircuit) == false){
 					DISLOCATIONS_ASSERT(oppositeCircuit->isInRing(circuit) == false);
 					circuit->joinRings(oppositeCircuit);
 				}
 			}
 			edge = edge->nextEdge;
-		}
-		while(edge != circuit->firstEdge);
+		}while(edge != circuit->firstEdge);
 	}
 
 	// Count the number of created dislocation junctions.
@@ -832,7 +781,7 @@ int DislocationTracing::joinSegments(int maxCircuitLength)
 
 	// Last pass over all circuits.
 	// Create junctions for completed rings.
-	for(vector<BurgersCircuit*>::const_iterator circuit_iter = danglingCircuits.begin(); circuit_iter != danglingCircuits.end(); ++circuit_iter) {
+	for(auto circuit_iter = danglingCircuits.begin(); circuit_iter != danglingCircuits.end(); ++circuit_iter){
 		BurgersCircuit* circuit = *circuit_iter;
 
 		// Skip circuits which are already part of a junction.
@@ -845,7 +794,7 @@ int DislocationTracing::joinSegments(int maxCircuitLength)
 		Point3 refPoint = circuit->center();
 		BurgersCircuit* c = circuit->junctionRing;
 		LatticeVector burgersVector(NULL_VECTOR);
-		do {
+		do{
 			DISLOCATIONS_ASSERT(c->isDangling);
 			if(c->isEnclosed == false) {
 				isCompleteRing = false;
@@ -855,8 +804,8 @@ int DislocationTracing::joinSegments(int maxCircuitLength)
 			junctionVector += wrapVector(c->center() - refPoint);
 			burgersVector += c->burgersVector();
 			c = c->junctionRing;
-		}
-		while(c != circuit->junctionRing);
+		}while(c != circuit->junctionRing);
+
 		if(isCompleteRing == false) continue;
 
 		// Junction must follow the Frank rule (Burgers vector conservation).
@@ -866,30 +815,25 @@ int DislocationTracing::joinSegments(int maxCircuitLength)
 		DISLOCATIONS_ASSERT(circuitCount >= 2);
 
 		// Create a new junction for three or more segments.
-		if(circuitCount >= 3) {
+		if(circuitCount >= 3){
 			numJunctions++;
 			junctionVector /= circuitCount;
 
-			//LOG_INFO() << "Created junction with " << circuitCount << " segments.";
-
 			// Extend segment lines up to junction.
 			DISLOCATIONS_ASSERT(c == circuit->junctionRing);
-			do {
+			do{
 				c->isDangling = false;
-				if(c->isForwardCircuit()) {
+				if(c->isForwardCircuit()){
 					c->segment->line.push_back(c->segment->line.back() + wrapVector(refPoint + junctionVector - c->segment->line.back()));
 					c->segment->primarySegmentEnd = c->segment->line.size();
-				}
-				else {
+				}else{
 					c->segment->line.push_front(c->segment->line.front() + wrapVector(refPoint + junctionVector - c->segment->line.front()));
 					c->segment->primarySegmentStart = 0;
 					c->segment->primarySegmentEnd++;
 				}
 				c = c->junctionRing;
-			}
-			while(c != circuit->junctionRing);
-		}
-		else {
+			}while(c != circuit->junctionRing);
+		}else{
 			// For a two-segment junction, just join the two segments into a single segment.
 			BurgersCircuit* circuit1 = circuit;
 			BurgersCircuit* circuit2 = circuit->junctionRing;
@@ -899,52 +843,51 @@ int DislocationTracing::joinSegments(int maxCircuitLength)
 			circuit1->isDangling = false;
 			circuit2->isDangling = false;
 			// Join segments only if it is not a closed loop.
-			if(circuit1->oppositeCircuit != circuit2) {
+			if(circuit1->oppositeCircuit != circuit2){
 				BurgersCircuit* endCircuit1 = circuit1->oppositeCircuit;
 				BurgersCircuit* endCircuit2 = circuit2->oppositeCircuit;
 				DislocationSegment* segment1 = endCircuit1->segment;
 				DislocationSegment* segment2 = endCircuit2->segment;
 				DISLOCATIONS_ASSERT(segment1->primarySegmentEnd <= segment1->line.size());
 				DISLOCATIONS_ASSERT(segment1->primarySegmentEnd > segment1->primarySegmentStart);
-				if(endCircuit1->isForwardCircuit()) {
+				if(endCircuit1->isForwardCircuit()){
 					segment1->circuits[1] = endCircuit2;
 					segment1->primarySegmentEnd += segment2->line.size() - 1;
 					Vector3 shiftVector;
-					if(endCircuit2->isForwardCircuit()) {
+					if(endCircuit2->isForwardCircuit()){
 						shiftVector = segment2->line.front() - segment1->line.front();
 						segment1->line.insert(segment1->line.begin(), segment2->line.rbegin(), segment2->line.rend() - 1);
 						segment1->primarySegmentStart = segment2->line.size() - segment2->primarySegmentEnd;
 						DISLOCATIONS_ASSERT(segment1->primarySegmentEnd <= segment1->line.size());
-					}
-					else {
+					}else{
 						shiftVector = segment2->line.back() - segment1->line.front();
 						segment1->line.insert(segment1->line.begin(), segment2->line.begin(), segment2->line.end() - 1);
 						segment1->primarySegmentStart = segment2->primarySegmentStart;
 						DISLOCATIONS_ASSERT(segment1->primarySegmentEnd <= segment1->line.size());
 					}
-					if(LengthSquared(shiftVector) > cnaCutoff*cnaCutoff) {
-						for(deque<Point3>::iterator p = segment1->line.begin(); p != segment1->line.begin() + segment2->line.size() - 1; ++p)
+					if(LengthSquared(shiftVector) > cnaCutoff*cnaCutoff){
+						for(auto p = segment1->line.begin(); p != segment1->line.begin() + segment2->line.size() - 1; ++p){
 							*p -= shiftVector;
+						}
 					}
-				}
-				else {
+				}else{
 					segment1->circuits[0] = endCircuit2;
 					Vector3 shiftVector;
-					if(endCircuit2->isForwardCircuit()) {
+					if(endCircuit2->isForwardCircuit()){
 						shiftVector = segment2->line.front() - segment1->line.back();
 						segment1->primarySegmentEnd = segment2->primarySegmentEnd + segment1->line.size() - 1;
 						segment1->line.insert(segment1->line.end(), segment2->line.begin() + 1, segment2->line.end());
 						DISLOCATIONS_ASSERT(segment1->primarySegmentEnd <= segment1->line.size());
-					}
-					else {
+					}else{
 						shiftVector = segment2->line.back() - segment1->line.back();
 						segment1->line.insert(segment1->line.end(), segment2->line.rbegin() + 1, segment2->line.rend());
 						segment1->primarySegmentEnd = segment1->line.size() - segment2->primarySegmentStart;
 						DISLOCATIONS_ASSERT(segment1->primarySegmentEnd <= segment1->line.size());
 					}
-					if(LengthSquared(shiftVector) > cnaCutoff*cnaCutoff) {
-						for(deque<Point3>::iterator p = segment1->line.end() - segment2->line.size() + 1; p != segment1->line.end(); ++p)
+					if(LengthSquared(shiftVector) > cnaCutoff*cnaCutoff){
+						for(auto p = segment1->line.end() - segment2->line.size() + 1; p != segment1->line.end(); ++p){
 							*p -= shiftVector;
+						}
 					}
 				}
 				DISLOCATIONS_ASSERT(segment1->primarySegmentEnd > segment1->primarySegmentStart);
@@ -955,11 +898,10 @@ int DislocationTracing::joinSegments(int maxCircuitLength)
 				endCircuit1->oppositeCircuit = endCircuit2;
 				endCircuit2->oppositeCircuit = endCircuit1;
 				segments.erase(find(segments.begin(), segments.end(), segment2));
-			}
-			else {
+			}else{
 				DISLOCATIONS_ASSERT(circuit1->segment == circuit2->segment);
 				DISLOCATIONS_ASSERT(circuit1->segment->isClosedLoop());
-				if(!wrapVector(circuit1->segment->line.front() - circuit1->segment->line.back()).equals(NULL_VECTOR)) {
+				if(!wrapVector(circuit1->segment->line.front() - circuit1->segment->line.back()).equals(NULL_VECTOR)){
 					circuit1->segment->line.push_back(circuit1->segment->line.back() +
 							wrapVector(circuit1->segment->line.front() - circuit1->segment->line.back()));
 				}
@@ -973,17 +915,17 @@ int DislocationTracing::joinSegments(int maxCircuitLength)
 
 	// Clean up list of dangling circuits. Remove joined circuits.
 	vector<BurgersCircuit*>::iterator destination = danglingCircuits.begin();
-	for(vector<BurgersCircuit*>::const_iterator circuit_iter = danglingCircuits.begin(); circuit_iter != danglingCircuits.end(); ++circuit_iter) {
-		if((*circuit_iter)->isDangling)
+	for(vector<BurgersCircuit*>::const_iterator circuit_iter = danglingCircuits.begin(); circuit_iter != danglingCircuits.end(); ++circuit_iter){
+		if((*circuit_iter)->isDangling){
 			*destination++ = *circuit_iter;
+		}
 	}
-	danglingCircuits.erase(destination, danglingCircuits.end());
 
+	danglingCircuits.erase(destination, danglingCircuits.end());
 	return numJunctions;
 }
 
-void DislocationTracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCircuit* outerCircuit, int maxCircuitLength)
-{
+void DislocationTracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCircuit* outerCircuit, int maxCircuitLength){
 	// Create circuit along the border of the hole.
 	int edgeCount = 1;
 	LatticeVector burgersVector(NULL_VECTOR);
@@ -992,44 +934,47 @@ void DislocationTracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCirc
 	MeshEdge* circuitStart = firstEdge->oppositeEdge;
 	MeshEdge* circuitEnd = circuitStart;
 	MeshEdge* edge = circuitStart;
-	for(;;) {
-		for(;;) {
+	for(;;){
+		for(;;){
 			DISLOCATIONS_ASSERT(edge->facet != NULL);
 			DISLOCATIONS_ASSERT(edge->circuit == NULL);
 			MeshEdge* oppositeEdge = edge->oppositeEdge;
 			MeshFacet* oppositeFacet = oppositeEdge->facet;
-			if(oppositeFacet == NULL) {
+			if(oppositeFacet == NULL){
 				isBorder = true;
 				break;
 			}
+
 			MeshEdge* nextEdge = oppositeFacet->edges[(oppositeFacet->edgeIndex(oppositeEdge)+2) % 3];
 			DISLOCATIONS_ASSERT(nextEdge->node2() == oppositeEdge->node1);
 			DISLOCATIONS_ASSERT(nextEdge->node2() == edge->node2());
-			if(nextEdge->circuit != NULL) {
-				if(nextEdge->circuit != outerCircuit) {
+			if(nextEdge->circuit != NULL){
+				if(nextEdge->circuit != outerCircuit){
 					outerCircuit = nextEdge->circuit;
 					numCircuits++;
 				}
+
 				edge = nextEdge->oppositeEdge;
 				break;
 			}
 			edge = nextEdge;
 		}
+
 		if(isBorder) break;
 		DISLOCATIONS_ASSERT(edgeCount < 1000);
 		circuitEnd->nextEdge = edge;
 		burgersVector += edge->latticeVector;
-		if(edge == circuitStart)
-			break;
+
+		if(edge == circuitStart) break;
 		circuitEnd = edge;
 		edgeCount++;
 	}
 
 	// Create secondary segment only for dislocations (b != 0) and thin enough dislocation cores.
-	if(numCircuits == 1 || isBorder || edgeCount > maxCircuitLength || burgersVector.equals(NULL_VECTOR)) {
+	if(numCircuits == 1 || isBorder || edgeCount > maxCircuitLength || burgersVector.equals(NULL_VECTOR)){
 		// Clear unused circuit.
 		edge = circuitStart;
-		for(;;) {
+		for(;;){
 			DISLOCATIONS_ASSERT(edge->circuit == NULL);
 			MeshEdge* nextEdge = edge->nextEdge;
 			edge->nextEdge = NULL;
@@ -1038,6 +983,7 @@ void DislocationTracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCirc
 		}
 		return;
 	}
+
 	DISLOCATIONS_ASSERT(circuitStart != circuitEnd);
 
 	// Create forward circuit.
@@ -1048,12 +994,11 @@ void DislocationTracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCirc
 	forwardCircuit->edgeCount = edgeCount;
 	forwardCircuit->isEnclosed = true;
 	edge = circuitStart;
-	do {
+	do{
 		DISLOCATIONS_ASSERT(edge->circuit == NULL);
 		edge->circuit = forwardCircuit;
 		edge = edge->nextEdge;
-	}
-	while(edge != circuitStart);
+	}while(edge != circuitStart);
 	DISLOCATIONS_ASSERT(forwardCircuit->countEdges() == forwardCircuit->edgeCount);
 
 	LOG_INFO() << "Creating secondary segment";
@@ -1078,44 +1023,39 @@ void DislocationTracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCirc
 	backwardCircuit->createPrimaryCap();
 }
 
-void BurgersCircuit::updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell) const
-{
+void BurgersCircuit::updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell) const{
 	MeshEdge* e = firstEdge;
-	do {
+	do{
 		updateLatticeToWorldTransformation(simCell, e->node1);
 		e = e->nextEdge;
-	}
-	while(e != firstEdge);
+	}while(e != firstEdge);
 }
 
-void BurgersCircuit::updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell, MeshNode* node) const
-{
+void BurgersCircuit::updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell, MeshNode* node) const{
 	DISLOCATIONS_ASSERT(segment != NULL);
-	for(int nindex = 0; nindex < node->numNeighbors; nindex++) {
+	for(int nindex = 0; nindex < node->numNeighbors; nindex++){
 		BaseAtom* atom = node->neighbor(nindex);
-		if(atom == NULL) continue;
-		if(atom->isCrystalline()) {
-			for(int n2 = 0; n2 < atom->numNeighbors; n2++) {
-				if(atom->neighbor(n2) == NULL) continue;
-				const Vector3& nv = simCell.wrapVector(atom->neighbor(n2)->pos - atom->pos);
-				const LatticeVector& lv = ((InputAtom*)atom)->latticeNeighborVector(n2);
-				for(int i = 0; i < 3; i++) {
-					for(int j = 0; j < 3; j++) {
-						segment->V(i,j) += lv[j] * lv[i];
-						segment->W(i,j) += lv[j] * nv[i];
-					}
+		if(atom == NULL || !atom->isCrystalline()) continue;
+		for(int n2 = 0; n2 < atom->numNeighbors; n2++){
+			if(atom->neighbor(n2) == NULL) continue;
+			const Vector3& nv = simCell.wrapVector(atom->neighbor(n2)->pos - atom->pos);
+			const LatticeVector& lv = ((InputAtom*)atom)->latticeNeighborVector(n2);
+			for(int i = 0; i < 3; i++){
+				for(int j = 0; j < 3; j++){
+					segment->V(i,j) += lv[j] * lv[i];
+					segment->W(i,j) += lv[j] * nv[i];
 				}
-				BaseAtom* neighbor = atom->neighbor(n2);
-				if(neighbor->isCrystalline()) {
-					for(int n3 = 0; n3 < neighbor->numNeighbors; n3++) {
-						if(neighbor->neighbor(n3) == NULL) continue;
-						const Vector3& nv = simCell.wrapVector(neighbor->neighbor(n3)->pos - neighbor->pos);
-						const LatticeVector& lv = ((InputAtom*)neighbor)->latticeNeighborVector(n3);
-						for(int i = 0; i < 3; i++) {
-							for(int j = 0; j < 3; j++) {
-								segment->V(i,j) += lv[j] * lv[i];
-								segment->W(i,j) += lv[j] * nv[i];
-							}
+			}
+			BaseAtom* neighbor = atom->neighbor(n2);
+			if(neighbor->isCrystalline()){
+				for(int n3 = 0; n3 < neighbor->numNeighbors; n3++){
+					if(neighbor->neighbor(n3) == NULL) continue;
+					const Vector3& nv = simCell.wrapVector(neighbor->neighbor(n3)->pos - neighbor->pos);
+					const LatticeVector& lv = ((InputAtom*)neighbor)->latticeNeighborVector(n3);
+					for(int i = 0; i < 3; i++){
+						for(int j = 0; j < 3; j++){
+							segment->V(i,j) += lv[j] * lv[i];
+							segment->W(i,j) += lv[j] * nv[i];
 						}
 					}
 				}
@@ -1124,19 +1064,15 @@ void BurgersCircuit::updateLatticeToWorldTransformation(const AnalysisEnvironmen
 	}
 }
 
-void DislocationSegment::determineWorldBurgersVector()
-{
+void DislocationSegment::determineWorldBurgersVector(){
 	DISLOCATIONS_ASSERT(fabs(V.determinant()) > FLOATTYPE_EPSILON);
 	DISLOCATIONS_ASSERT(fabs(W.determinant()) > FLOATTYPE_EPSILON);
 	Matrix3 latticeToWorld = W * V.inverse();
 	burgersVectorWorld = latticeToWorld * burgersVector;
 }
 
-/******************************************************************************
-* Determines whether a Burgers circuit is intersected by a SF contour.
-******************************************************************************/
-void DislocationTracing::circuitContourIntersection(MeshEdge* contourEdge1, MeshEdge* contourEdge2, MeshEdge* circuitEdge1, MeshEdge* circuitEdge2, int& goingOutside, int& goingInside)
-{
+// Determines whether a Burgers circuit is intersected by a SF contour.
+void DislocationTracing::circuitContourIntersection(MeshEdge* contourEdge1, MeshEdge* contourEdge2, MeshEdge* circuitEdge1, MeshEdge* circuitEdge2, int& goingOutside, int& goingInside){
 	DISLOCATIONS_ASSERT(contourEdge2->node1 == circuitEdge2->node1);
 	DISLOCATIONS_ASSERT(contourEdge1->node2() == circuitEdge2->node1);
 	DISLOCATIONS_ASSERT(circuitEdge1->node2() == circuitEdge2->node1);
@@ -1145,10 +1081,10 @@ void DislocationTracing::circuitContourIntersection(MeshEdge* contourEdge1, Mesh
 	MeshEdge* edge = circuitEdge2;
 	bool contour1inside = false;
 	bool contour2inside = false;
-	for(;;) {
+	for(;;){
 		MeshEdge* oppositeEdge = edge->oppositeEdge;
 		if(oppositeEdge == circuitEdge1) break;
-		if(edge != circuitEdge2) {
+		if(edge != circuitEdge2){
 			if(oppositeEdge == contourEdge1) contour1inside = true;
 			if(edge == contourEdge2) contour2inside = true;
 		}
@@ -1164,7 +1100,7 @@ void DislocationTracing::circuitContourIntersection(MeshEdge* contourEdge1, Mesh
 	bool contour1outside = false;
 	bool contour2outside = false;
 	edge = circuitEdge1;
-	for(;;) {
+	for(;;){
 		MeshFacet* facet = edge->facet;
 		DISLOCATIONS_ASSERT(facet != NULL);
 		MeshEdge* nextEdge = facet->nextEdge(edge);
@@ -1179,10 +1115,9 @@ void DislocationTracing::circuitContourIntersection(MeshEdge* contourEdge1, Mesh
 	DISLOCATIONS_ASSERT(contour1outside == false || contour1inside == false);
 	DISLOCATIONS_ASSERT(contour2outside == false || contour2inside == false);
 
-	if(contour2outside == true && contour1outside == false) {
+	if(contour2outside == true && contour1outside == false){
 		goingOutside += 1;
-	}
-	else if(contour2inside == true && contour1inside == false) {
+	}else if(contour2inside == true && contour1inside == false){
 		goingInside += 1;
 	}
 }

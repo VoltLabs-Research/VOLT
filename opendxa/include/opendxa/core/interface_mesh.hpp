@@ -14,15 +14,15 @@ public:
 	InterfaceMesh();
 	~InterfaceMesh() { cleanup(); }
 
+	json getInterfaceMeshData();
+
 	void createInterfaceMeshNodes();
 	void createInterfaceMeshEdges();
 	void createInterfaceMeshFacets();
 	void smoothOutputSurface(int smoothingLevel);
 	void finishOutputSurface(bool createCapSurface);
-
-	json getInterfaceMeshData();
+	void validateInterfaceMesh(bool x) const;
 	void cleanup();
-	void validateInterfaceMesh();
 
 protected:
 	void createFCCHCPMeshEdges(InputAtom* atom);
@@ -30,17 +30,17 @@ protected:
 	void createFCCHCPMeshFacets(InputAtom* atom);
 	void createBCCMeshFacets(InputAtom* atom);
 	void createMeshNodeRecursive(InputAtom* a, BaseAtom* neighbor, MeshNode* node, int depth, vector<InputAtom*>& visitedAtoms, const Point3& currentCoord);
-	bool createAdjacentTriangle(MeshNode* center, MeshNode* vertex1, BaseAtom* vertex2, const LatticeVector& edgeVector1, const LatticeVector& edgeVector2);
 	void createAdjacentQuad(BaseAtom* center, MeshNode* vertex1, MeshNode* vertex2, const LatticeVector& edgeVector1, const LatticeVector& edgeVector2);
 	void closeFacetHoles();
-	bool constructFacetRecursive(int numEdges, int maxEdges, MeshNode** vertices, MeshEdge** edges, const LatticeVector& burgersVector);
 	void createFacetAndEdges(int numVertices, MeshNode** vertices, const LatticeVector* edgeVectors);
 	void createFacet(int numVertices, MeshNode** vertices, MeshEdge** edges, int selection = 0);
-	bool edgeEdgeOrientation(MeshEdge* edge1, MeshEdge* edge2);
 	void fixMeshEdges();
 	void removeUnnecessaryFacets();
 	void duplicateSharedMeshNodes();
 
+	bool constructFacetRecursive(int numEdges, int maxEdges, MeshNode** vertices, MeshEdge** edges, const LatticeVector& burgersVector);
+	bool edgeEdgeOrientation(MeshEdge* edge1, MeshEdge* edge2);
+	bool createAdjacentTriangle(MeshNode* center, MeshNode* vertex1, BaseAtom* vertex2, const LatticeVector& edgeVector1, const LatticeVector& edgeVector2);
 	bool isWrappedFacet(MeshFacet* facet) const;
 	bool isWrappedEdge(MeshEdge* edge) const;
 

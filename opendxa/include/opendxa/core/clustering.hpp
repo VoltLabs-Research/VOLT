@@ -14,9 +14,6 @@
 #include <limits>
 #include <stack>
 
-#include "ptm_functions.h"
-#include "ptm_initialize_data.h"
-
 using json = nlohmann::json;
 
 enum ParserFileType{
@@ -35,7 +32,6 @@ public:
 	void buildNearestNeighborLists();
 	
 	void performCNA();
-	void performPTM();
 
 	void clusterAtoms();
 	void orderCrystallineAtoms();
@@ -86,7 +82,6 @@ protected:
 	}
 	void joinClusters(ClusterTransition* transition, list<ClusterTransition*>& priorityStack);
 
-	ptm_local_handle_t ptmLocalHandle;
 	FloatType cnaCutoff;
 	vector<InputAtom> inputAtoms;
 	int numLocalInputAtoms;

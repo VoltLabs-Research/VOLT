@@ -39,6 +39,7 @@ execution_sandboxes/
 ./data/*
 
 reports/
+fix.md
 
 *dump
 
