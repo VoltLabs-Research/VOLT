@@ -21,7 +21,7 @@ public:
 	void createInterfaceMeshFacets();
 	void smoothOutputSurface(int smoothingLevel);
 	void finishOutputSurface(bool createCapSurface);
-	void validateInterfaceMesh(bool x) const;
+	void validateInterfaceMesh();
 	void cleanup();
 
 protected:

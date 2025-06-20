@@ -42,7 +42,7 @@ json StackingFaults::processFile(const fs::path& file, const OpenDXA::Config& co
     createInterfaceMeshNodes();
     createStackingFaultEdges();
     createInterfaceMeshFacets();
-    validateInterfaceMesh(true);
+    validateInterfaceMesh();
     findStackingFaultPlanes();
     traceDislocationSegments();
     generateOutputMesh();
