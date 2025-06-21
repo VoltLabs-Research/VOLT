@@ -17,18 +17,18 @@ enum CNAAtomType {
 
 struct NearestNeighborTetrahedron {
 	int neighborIndices[3];
-	LatticeVector neighborVectors[3];
+	Vector3 neighborVectors[3];
 };
 
 struct NearestNeighborQuad {
 	int neighborIndices[4];
 	int secondNearestNeighbor;
-	LatticeVector neighborVectors[4];
+	Vector3 neighborVectors[4];
 };
 
 struct CrystalLatticeType {
 	int numNeighbors;
-	LatticeVector const* neighborVectors;
+	Vector3 const* neighborVectors;
 	int numTetrahedra;
 	NearestNeighborTetrahedron const* tetrahedra;
 	int numQuads;
@@ -37,7 +37,7 @@ struct CrystalLatticeType {
 };
 
 extern const CrystalLatticeType fccLattice;
-extern const LatticeVector shockleyBurgersVectors[12];
+extern const Vector3 shockleyBurgersVectors[12];
 
 extern const CrystalLatticeType hcpLattice;
 extern const int hcpBasalPlaneAtoms[6];

@@ -30,7 +30,7 @@ MeshNode::MeshNode(const BaseAtom& other)
     }
 }
 
-MeshEdge* MeshNode::createEdge(MeshNode* other, const LatticeVector& edgeVector){
+MeshEdge* MeshNode::createEdge(MeshNode* other, const Vector3& edgeVector){
     DISLOCATIONS_ASSERT_MSG_GLOBAL(numEdges < MAX_NODE_EDGES, "createEdge()", "Maximum number of edges per node exceeded.");
     DISLOCATIONS_ASSERT_MSG_GLOBAL(other->numEdges < MAX_NODE_EDGES, "createEdge()", "Maximum number of edges per node exceeded.");
     

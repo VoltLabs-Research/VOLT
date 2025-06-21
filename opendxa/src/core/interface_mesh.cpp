@@ -141,7 +141,7 @@ void InterfaceMesh::createFCCHCPMeshEdges(InputAtom* atom){
 	const CrystalLatticeType& lattice = atom->latticeType();
 	for(int tet = 0; tet < lattice.numTetrahedra; tet++){
 		MeshNode* vertices[3];
-		LatticeVector latticeVectors[3];
+		Vector3 latticeVectors[3];
 		for(int v = 0; v < 3; v++){
 			BaseAtom* neighbor = atom->neighbor(lattice.tetrahedra[tet].neighborIndices[v]);
 			if(neighbor && neighbor->isMeshNode()){
@@ -168,7 +168,7 @@ void InterfaceMesh::createBCCMeshEdges(InputAtom* atom){
 	for(int quad = 0; quad < lattice.numQuads; ++quad){
 		// 4 NN (Nearest Neighbors) + 1 SNN (Second Nearest Neighbor)
 		MeshNode *v[5] = { nullptr };
-		LatticeVector lv[5];
+		Vector3 lv[5];
 		// first-order neighbors (contour)
 		bool allNN = true;
 		for(int i = 0; i < 4; ++i){
@@ -202,7 +202,7 @@ void InterfaceMesh::createBCCMeshEdges(InputAtom* atom){
 			for(int i = 0; i < 4; ++i){
 				if(!v[i]) continue;
 				// vector = r_center - r_i in grid coordinates
-				LatticeVector rel = lv[4] - lv[i];
+				Vector3 rel = lv[4] - lv[i];
 				v[i]->createEdge(v[4], rel);
 			}
 		}
@@ -253,7 +253,7 @@ void InterfaceMesh::createFCCHCPMeshFacets(InputAtom* atom){
 	const CrystalLatticeType& lattice = atom->latticeType();
 	for(int tet = 0; tet < lattice.numTetrahedra; tet++){
 		MeshNode* vertices[3];
-		LatticeVector latticeVectors[3];
+		Vector3 latticeVectors[3];
 		bool allNeighborsAreNodes = true;
 		for(int v = 0; v < 3; v++){
 			BaseAtom* neighbor = atom->neighbor(lattice.tetrahedra[tet].neighborIndices[v]);
@@ -267,7 +267,7 @@ void InterfaceMesh::createFCCHCPMeshFacets(InputAtom* atom){
 		}
 
 		// Calculate lattice vectors from neighbor to neighbor.
-		LatticeVector edgeLatticeVectors[3];
+		Vector3 edgeLatticeVectors[3];
 		edgeLatticeVectors[0] = latticeVectors[1] - latticeVectors[0];
 		edgeLatticeVectors[1] = latticeVectors[2] - latticeVectors[1];
 		edgeLatticeVectors[2] = latticeVectors[0] - latticeVectors[2];
@@ -298,7 +298,7 @@ void InterfaceMesh::createBCCMeshFacets(InputAtom* atom){
 	const CrystalLatticeType& lattice = atom->latticeType();
 	for(int quad = 0; quad < lattice.numQuads; quad++){
 		MeshNode* vertices[5];
-		LatticeVector latticeVectors[5];
+		Vector3 latticeVectors[5];
 		bool allNearestNeighborsAreNodes = true;
 
 		BaseAtom* secondNeighbor = atom->neighbor(lattice.quads[quad].secondNearestNeighbor);
@@ -319,7 +319,7 @@ void InterfaceMesh::createBCCMeshFacets(InputAtom* atom){
 		}
 
 		// Calculate lattice vectors from neighbor to neighbor.
-		LatticeVector edgeLatticeVectors[4];
+		Vector3 edgeLatticeVectors[4];
 		edgeLatticeVectors[0] = latticeVectors[1] - latticeVectors[0];
 		edgeLatticeVectors[1] = latticeVectors[2] - latticeVectors[1];
 		edgeLatticeVectors[2] = latticeVectors[3] - latticeVectors[2];
@@ -333,7 +333,7 @@ void InterfaceMesh::createBCCMeshFacets(InputAtom* atom){
 				int v2 = (v1 + 1) % 4;
 				if(vertices[v1] != NULL && vertices[v2] != NULL){
 					MeshNode* triangleVertices[3] = { vertices[v1], vertices[v2], vertices[4] };
-					LatticeVector triangleEdgeLatticeVectors[3] = { latticeVectors[v2] - latticeVectors[v1], latticeVectors[4] - latticeVectors[v2], latticeVectors[v1] - latticeVectors[4] };
+					Vector3 triangleEdgeLatticeVectors[3] = { latticeVectors[v2] - latticeVectors[v1], latticeVectors[4] - latticeVectors[v2], latticeVectors[v1] - latticeVectors[4] };
 					createFacetAndEdges(3, triangleVertices, triangleEdgeLatticeVectors);
 				}
 			}
@@ -342,7 +342,7 @@ void InterfaceMesh::createBCCMeshFacets(InputAtom* atom){
 }
 
 // Tries to create a facet adjacent to a FCC/HCP tetrahedron.
-bool InterfaceMesh::createAdjacentTriangle(MeshNode* center, MeshNode* vertex1, BaseAtom* vertex2, const LatticeVector& edgeVector1, const LatticeVector& edgeVector2){
+bool InterfaceMesh::createAdjacentTriangle(MeshNode* center, MeshNode* vertex1, BaseAtom* vertex2, const Vector3& edgeVector1, const Vector3& edgeVector2){
 	for(int n1 = 0; n1 < center->numNeighbors; n1++){
 		BaseAtom* neighbor1 = center->neighbor(n1);
 
@@ -381,7 +381,7 @@ bool InterfaceMesh::createAdjacentTriangle(MeshNode* center, MeshNode* vertex1, 
 
 				if(isValid){
 					MeshNode* vertices[3] = { center, (MeshNode*)neighbor1, vertex1 };
-					LatticeVector edgeVectors[3] = { -edgeVector1, edgeVector1 + edgeVector2, -edgeVector2 };
+					Vector3 edgeVectors[3] = { -edgeVector1, edgeVector1 + edgeVector2, -edgeVector2 };
 					createFacetAndEdges(3, vertices, edgeVectors);
 
 					return true;
@@ -397,7 +397,7 @@ bool InterfaceMesh::createAdjacentTriangle(MeshNode* center, MeshNode* vertex1, 
 }
 
 // Tries to create a quad facet adjacent to a FCC/HCP tetrahedron.
-void InterfaceMesh::createAdjacentQuad(BaseAtom* center, MeshNode* vertex1, MeshNode* vertex2, const LatticeVector& edgeVector1, const LatticeVector& edgeVector2){
+void InterfaceMesh::createAdjacentQuad(BaseAtom* center, MeshNode* vertex1, MeshNode* vertex2, const Vector3& edgeVector1, const Vector3& edgeVector2){
 	for(int n1 = 0; n1 < center->numNeighbors; n1++){
 		BaseAtom* neighbor1 = center->neighbor(n1);
 		if(neighbor1 == NULL) continue;
@@ -419,11 +419,11 @@ void InterfaceMesh::createAdjacentQuad(BaseAtom* center, MeshNode* vertex1, Mesh
 			if(neighbor1->isMeshNode()){
 				if(neighbor2->isMeshNode()){
 					MeshNode* vertices[4] = { (MeshNode*)vertex1, (MeshNode*)vertex2, (MeshNode*)neighbor2, (MeshNode*)neighbor1 };
-					LatticeVector edgeVectors[4] = { -edgeVector1, -edgeVector2, edgeVector1, edgeVector2 };
+					Vector3 edgeVectors[4] = { -edgeVector1, -edgeVector2, edgeVector1, edgeVector2 };
 					createFacetAndEdges(4, vertices, edgeVectors);
 				}else{
 					MeshNode* vertices[3] = { (MeshNode*)vertex1, (MeshNode*)vertex2, (MeshNode*)neighbor1 };
-					LatticeVector edgeVectors[4] = { -edgeVector1, edgeVector1 - edgeVector2, edgeVector2 };
+					Vector3 edgeVectors[4] = { -edgeVector1, edgeVector1 - edgeVector2, edgeVector2 };
 					createFacetAndEdges(3, vertices, edgeVectors);
 				}
 			}
@@ -436,7 +436,7 @@ void InterfaceMesh::createAdjacentQuad(BaseAtom* center, MeshNode* vertex1, Mesh
 // Creates a facet connecting up to four nodes.
 // Checks whether the facet already exists.
 // Edges are created on demand by this function.
-void InterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices, const LatticeVector* edgeVectors){
+void InterfaceMesh::createFacetAndEdges(int numVertices, MeshNode** vertices, const Vector3* edgeVectors){
 	DISLOCATIONS_ASSERT(numVertices <= 4);
 	MeshEdge* edges[4];
 
@@ -529,7 +529,7 @@ void InterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdge**
 
 		MeshNode* vertices1[MAX_FACET_HOLE_EDGE_COUNT];
 		MeshEdge* edges1[MAX_FACET_HOLE_EDGE_COUNT];
-		LatticeVector b1(NULL_VECTOR);
+		Vector3 b1(NULL_VECTOR);
 		for(int v = 0; v < numVertices1 - 1; v++){
 			vertices1[v] = vertices[v + split_v1];
 			edges1[v] = edges[v + split_v1];
@@ -542,7 +542,7 @@ void InterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdge**
 
 		MeshNode* vertices2[MAX_FACET_HOLE_EDGE_COUNT];
 		MeshEdge* edges2[MAX_FACET_HOLE_EDGE_COUNT];
-		LatticeVector b2(NULL_VECTOR);
+		Vector3 b2(NULL_VECTOR);
 		for(int v = 0; v < numVertices2 - 1; v++){
 			vertices2[v] = vertices[(v + split_v2) % numVertices];
 			edges2[v] = edges[(v + split_v2) % numVertices];
@@ -562,7 +562,7 @@ void InterfaceMesh::createFacet(int numVertices, MeshNode** vertices, MeshEdge**
 	facet->edges[1] = edges[1];
 	edges[0]->facet = facet;
 	edges[1]->facet = facet;
-	LatticeVector edgeVector = edges[0]->latticeVector + edges[1]->latticeVector;
+	Vector3 edgeVector = edges[0]->latticeVector + edges[1]->latticeVector;
 	for(int v = 2; v < numVertices - 1; v++){
 		// Create a new edge.
 		MeshEdge* extraEdge = vertices[0]->createEdge(vertices[v], edgeVector);
@@ -601,7 +601,7 @@ void InterfaceMesh::closeFacetHoles(){
 }
 
 // This recursive function constructs a facet for an open hole.
-bool InterfaceMesh::constructFacetRecursive(int numEdges, int maxEdges, MeshNode** vertices, MeshEdge** edges, const LatticeVector& burgersVector){
+bool InterfaceMesh::constructFacetRecursive(int numEdges, int maxEdges, MeshNode** vertices, MeshEdge** edges, const Vector3& burgersVector){
 	MeshNode* currentAtom = vertices[numEdges];
 
 	for(int e = 0; e < currentAtom->numEdges; e++){
@@ -609,7 +609,7 @@ bool InterfaceMesh::constructFacetRecursive(int numEdges, int maxEdges, MeshNode
 		if(edge.facet != NULL) continue;
 		edges[numEdges] = const_cast<MeshEdge*>(&edge);
 		MeshNode* neighbor = edge.node2();
-		LatticeVector burgersVector2 = burgersVector + edge.latticeVector;
+		Vector3 burgersVector2 = burgersVector + edge.latticeVector;
 		// Is the circuit closed?
 		if(neighbor == vertices[0] && numEdges >= 2){
 			// Create only facets that have a null Burgers vector.
@@ -674,7 +674,7 @@ void InterfaceMesh::validateInterfaceMesh(){
 
 	for(auto facet = facets.begin(); facet != facets.end(); ++facet){
 		MeshFacet* lastOppositeFacet = NULL;
-		LatticeVector burgersVector(NULL_VECTOR);
+		Vector3 burgersVector(NULL_VECTOR);
 		for(int v = 0; v < 3; v++){
 			MeshNode* node1 = (*facet)->edges[v]->node1;
 			MeshNode* node2 = (*facet)->edges[(v+1)%3]->node1;
@@ -827,7 +827,7 @@ void InterfaceMesh::removeUnnecessaryFacets(){
 					MeshEdge* backEdge21 = backFacet2->nextEdge(backDiag2);
 					MeshEdge* backEdge22 = backFacet2->previousEdge(backDiag2);
 
-					LatticeVector diagVector = backEdge22->latticeVector + backEdge11->latticeVector;
+					Vector3 diagVector = backEdge22->latticeVector + backEdge11->latticeVector;
 					DISLOCATIONS_ASSERT(backEdge22->node1->findEdgeTo(backEdge12->node1) != NULL);
 
 					MeshEdge* newDiagEdge = backEdge22->node1->createEdge(backEdge12->node1, diagVector);

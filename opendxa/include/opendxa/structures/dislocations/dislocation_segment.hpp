@@ -9,7 +9,7 @@
 struct BurgersCircuit;
 
 struct DislocationSegment{
-    DislocationSegment(const LatticeVector& b, const Vector3& bWorld)
+    DislocationSegment(const Vector3& b, const Vector3& bWorld)
             : burgersVector(b)
             , burgersVectorWorld(bWorld)
             , replacedWith(NULL)
@@ -20,7 +20,7 @@ struct DislocationSegment{
     }
 
     DislocationSegment(
-            const LatticeVector& b, 
+            const Vector3& b, 
             BurgersCircuit* forwardCircuit, 
             BurgersCircuit* backwardCircuit, 
             const Point3& refPoint, 
@@ -89,7 +89,7 @@ struct DislocationSegment{
 	deque<Point3> line;
 	vector<Vector3> displacement;
 	int displacementCount;
-	LatticeVector burgersVector;
+	Vector3 burgersVector;
 	Vector3 burgersVectorWorld;
 	BurgersCircuit* circuits[2];
 	size_t primarySegmentStart;

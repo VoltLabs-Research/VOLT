@@ -11,7 +11,7 @@ struct MeshNode : public BaseAtom {
     int index;
     int numEdges;
     MeshEdge edges[MAX_NODE_EDGES];
-    LatticeVector latticeCoord;
+    Vector3 latticeCoord;
     int recursiveDepth;
     MeshEdge* predecessorEdge;
     OutputVertex* outputVertex;
@@ -29,7 +29,7 @@ struct MeshNode : public BaseAtom {
         return edge - edges;
     }
 
-    MeshEdge* createEdge(MeshNode* other, const LatticeVector& edgeVector);
+    MeshEdge* createEdge(MeshNode* other, const Vector3& edgeVector);
     void moveEdge(int oldIndex, int newIndex);
     
     MeshEdge* findEdgeTo(MeshNode* node) const;

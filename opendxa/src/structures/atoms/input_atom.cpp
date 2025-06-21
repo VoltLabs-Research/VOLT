@@ -59,7 +59,7 @@ const CrystalLatticeType& InputAtom::latticeType() const{
     return latticeTypeFromCNA(cnaType);
 }
 
-LatticeVector InputAtom::latticeNeighborVector(int neighborIndex) const{
+Vector3 InputAtom::latticeNeighborVector(int neighborIndex) const{
     const CrystalLatticeType& lattice = latticeType();
     DISLOCATIONS_ASSERT(neighborIndex >= 0 && neighborIndex < lattice.numNeighbors);
     return latticeOrientation * lattice.neighborVectors[neighborIndex];

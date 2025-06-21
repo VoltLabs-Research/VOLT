@@ -28,9 +28,9 @@ public:
 	json getStackingFaults() const;
 
 protected:
-	void traceStackingFaultContour(StackingFault* sf, StackingFaultContour& contour, deque< pair<InputAtom*, Point3> >& toprocess, Point3 currentUnwrappedPos, set<MeshEdge*>& visitedEdges, const LatticeVector hexagonalLatticeVectors[6], int currentDir);
-	bool isValidStackingFaultContourEdge(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const;
-	BaseAtom* findEdgeBasalPlaneNeighbor(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const;
+	void traceStackingFaultContour(StackingFault* sf, StackingFaultContour& contour, deque< pair<InputAtom*, Point3> >& toprocess, Point3 currentUnwrappedPos, set<MeshEdge*>& visitedEdges, const Vector3 hexagonalLatticeVectors[6], int currentDir);
+	bool isValidStackingFaultContourEdge(MeshEdge* edge, const Vector3& node1LatticeVector, const Vector3& node2LatticeVector) const;
+	BaseAtom* findEdgeBasalPlaneNeighbor(MeshEdge* edge, const Vector3& node1LatticeVector, const Vector3& node2LatticeVector) const;
 	void recursiveWalkSFAtom(InputAtom* atom, StackingFault* sf, Point3 unwrappedPos, deque< pair<InputAtom*, Point3> >& toprocess);
 	void createSFPolylines(FloatType flatten);
 	pair<int,int> findSFContourSegmentIntersection(StackingFaultContour& contour, DislocationSegment* segment, const vector<MeshEdge*>::const_iterator& interiorEdge);

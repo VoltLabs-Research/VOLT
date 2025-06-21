@@ -287,7 +287,7 @@ void StackingFaults::findStackingFaultPlanes(){
 		DISLOCATIONS_ASSERT(periodicImage(seedAtom->pos) == NULL_VECTOR);
 
 		// Calculate normal vector of HCP basal plane ({111} plane) in lattice space.
-		LatticeVector sfPlaneNormal = seedAtom->latticeOrientation * LatticeVector(1.0, 1.0, 1.0);
+		Vector3 sfPlaneNormal = seedAtom->latticeOrientation * Vector3(1.0, 1.0, 1.0);
 
 		// Allocate a new stacking fault object.
 		StackingFault* sf = stackingFaultPool.construct();
@@ -319,7 +319,7 @@ void StackingFaults::findStackingFaultPlanes(){
 			if(currentAtom->testFlag(ATOM_TB)) sf->numTBAtoms++;
 
 			// Align local orientation of HCP basal plane with global SF orientation.
-			LatticeVector planeNormalLocal = currentAtom->latticeOrientation * LatticeVector(1.0, 1.0, 1.0);
+			Vector3 planeNormalLocal = currentAtom->latticeOrientation * Vector3(1.0, 1.0, 1.0);
 			const int* hcpBasalPlaneIndices;
 			if(isDotProductPositive(sfPlaneNormal, planeNormalLocal))
 				hcpBasalPlaneIndices = hcpBasalPlaneAtoms;
@@ -327,7 +327,7 @@ void StackingFaults::findStackingFaultPlanes(){
 				hcpBasalPlaneIndices = hcpBasalPlaneAtomsReverse;
 
 			// The 6 lattice vectors in the basal plane.
-			LatticeVector basalPlaneLatticeVectors[6];
+			Vector3 basalPlaneLatticeVectors[6];
 			for(int n = 0; n < 6; n++)
 				basalPlaneLatticeVectors[n] = currentAtom->latticeNeighborVector(hcpBasalPlaneIndices[n]);
 
@@ -351,9 +351,9 @@ void StackingFaults::findStackingFaultPlanes(){
 					MeshNode* node2 = (MeshNode*)neighbor2;
 
 					// Calculate expected direction of edge in lattice space.
-					LatticeVector node1LatticeVector = basalPlaneLatticeVectors[n];
-					LatticeVector node2LatticeVector = basalPlaneLatticeVectors[(n+1)%6];
-					LatticeVector edgeLatticeVector = node2LatticeVector - node1LatticeVector;
+					Vector3 node1LatticeVector = basalPlaneLatticeVectors[n];
+					Vector3 node2LatticeVector = basalPlaneLatticeVectors[(n+1)%6];
+					Vector3 edgeLatticeVector = node2LatticeVector - node1LatticeVector;
 					DISLOCATIONS_ASSERT(edgeLatticeVector.equals(basalPlaneLatticeVectors[(n+2) % 6]));
 
 					// Find actual interface mesh edge, which borders the HCP plane.
@@ -446,7 +446,7 @@ void StackingFaults::recursiveWalkSFAtom(InputAtom* atom, StackingFault* sf, Poi
 }
 
 // Finds the basal plane HCP atom for a contour edge.
-BaseAtom* StackingFaults::findEdgeBasalPlaneNeighbor(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const{
+BaseAtom* StackingFaults::findEdgeBasalPlaneNeighbor(MeshEdge* edge, const Vector3& node1LatticeVector, const Vector3& node2LatticeVector) const{
 	MeshNode* currentNode = edge->node1;
 	MeshNode* nextNode = edge->node2();
 
@@ -476,7 +476,7 @@ BaseAtom* StackingFaults::findEdgeBasalPlaneNeighbor(MeshEdge* edge, const Latti
 }
 
 // Checks whether this mesh edge borders a stacking fault.
-bool StackingFaults::isValidStackingFaultContourEdge(MeshEdge* edge, const LatticeVector& node1LatticeVector, const LatticeVector& node2LatticeVector) const{
+bool StackingFaults::isValidStackingFaultContourEdge(MeshEdge* edge, const Vector3& node1LatticeVector, const Vector3& node2LatticeVector) const{
 	// A valid border edge must be have two adjacent facets.
 	MeshFacet* facet1 = edge->facet;
 	MeshFacet* facet2 = edge->oppositeEdge->facet;
@@ -538,7 +538,7 @@ bool StackingFaults::isValidStackingFaultContourEdge(MeshEdge* edge, const Latti
 }
 
 // Finds all mesh edges forming a closed contour of a stacking fault.
-void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultContour& contour, deque< pair<InputAtom*, Point3> >& toprocess, Point3 currentUnwrappedPos, set<MeshEdge*>& visitedEdges, const LatticeVector basalPlaneLatticeVectors[6], int lastDir){
+void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultContour& contour, deque< pair<InputAtom*, Point3> >& toprocess, Point3 currentUnwrappedPos, set<MeshEdge*>& visitedEdges, const Vector3 basalPlaneLatticeVectors[6], int lastDir){
 	MeshEdge* lastEdge = contour.edges.back();
 	MeshNode* currentNode = lastEdge->node2();
 	DISLOCATIONS_ASSERT(lastEdge->latticeVector.equals(basalPlaneLatticeVectors[lastDir]));
@@ -612,8 +612,8 @@ void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultC
 			if(hasBeenVisitedBefore) continue;
 
 			// Check edge.
-			LatticeVector node1LatticeVector = basalPlaneLatticeVectors[(dir - 2 + inverseDir + 6) % 6];
-			LatticeVector node2LatticeVector = basalPlaneLatticeVectors[(dir - 1 + inverseDir + 6) % 6];
+			Vector3 node1LatticeVector = basalPlaneLatticeVectors[(dir - 2 + inverseDir + 6) % 6];
+			Vector3 node2LatticeVector = basalPlaneLatticeVectors[(dir - 1 + inverseDir + 6) % 6];
 			if(!isValidStackingFaultContourEdge(edge, node1LatticeVector, node2LatticeVector)){
 				if(dir > bestInvalidEdgeDir && edge->facet == NULL){
 					// TODO: Check if prevents shortcuts that can create poorly formed outlines
@@ -652,8 +652,8 @@ void StackingFaults::traceStackingFaultContour(StackingFault* sf, StackingFaultC
 						MeshEdge* edge2 = &bypassNode->edges[e2];
 						if(edge2->node2() != bestInvalidEdge->node2()) continue;
 
-						LatticeVector node1LatticeVector = -bestInvalidEdge->latticeVector;
-						LatticeVector node2LatticeVector = -edge2->latticeVector;
+						Vector3 node1LatticeVector = -bestInvalidEdge->latticeVector;
+						Vector3 node2LatticeVector = -edge2->latticeVector;
 						if(!isValidStackingFaultContourEdge(edge1, node1LatticeVector, node2LatticeVector)) continue;
 
 						node1LatticeVector = edge1->latticeVector;

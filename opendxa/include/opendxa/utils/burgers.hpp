@@ -68,7 +68,7 @@ std::string toFraction(double value){
     return result;
 }
 
-std::string burgersToFractionalString(const LatticeVector& bv){
+std::string burgersToFractionalString(const Vector3& bv){
     std::string result;
     result.reserve(32);
     

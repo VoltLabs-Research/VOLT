@@ -133,14 +133,14 @@ bool DislocationTracing::burgersSearchWalkEdge(MeshNode* currentNode, MeshEdge& 
 	if(edge.facet == NULL || edge.facet->circuit != NULL) return false;
 
 	MeshNode* neighbor = edge.node2();
-	LatticeVector neighborCoord = currentNode->latticeCoord + edge.latticeVector;
+	Vector3 neighborCoord = currentNode->latticeCoord + edge.latticeVector;
 
 	// If this neighbor has been assigned lattice coordinates before, then
 	// perform Burgers test.
 	if(neighbor->wasVisited()){
 		if(neighbor->latticeCoord.equals(neighborCoord) == false){
 			// Found non-closed Burgers circuit.
-			LatticeVector burgersVector = neighbor->latticeCoord - neighborCoord;
+			Vector3 burgersVector = neighbor->latticeCoord - neighborCoord;
 
 			// Reconstruct the first Burgers circuit.
 			BurgersCircuit* forwardCircuit;
@@ -793,7 +793,7 @@ int DislocationTracing::joinSegments(int maxCircuitLength){
 		Vector3 junctionVector(NULL_VECTOR);
 		Point3 refPoint = circuit->center();
 		BurgersCircuit* c = circuit->junctionRing;
-		LatticeVector burgersVector(NULL_VECTOR);
+		Vector3 burgersVector(NULL_VECTOR);
 		do{
 			DISLOCATIONS_ASSERT(c->isDangling);
 			if(c->isEnclosed == false) {
@@ -928,7 +928,7 @@ int DislocationTracing::joinSegments(int maxCircuitLength){
 void DislocationTracing::createSecondarySegment(MeshEdge* firstEdge, BurgersCircuit* outerCircuit, int maxCircuitLength){
 	// Create circuit along the border of the hole.
 	int edgeCount = 1;
-	LatticeVector burgersVector(NULL_VECTOR);
+	Vector3 burgersVector(NULL_VECTOR);
 	bool isBorder = false;
 	int numCircuits = 1;
 	MeshEdge* circuitStart = firstEdge->oppositeEdge;
@@ -1039,7 +1039,7 @@ void BurgersCircuit::updateLatticeToWorldTransformation(const AnalysisEnvironmen
 		for(int n2 = 0; n2 < atom->numNeighbors; n2++){
 			if(atom->neighbor(n2) == NULL) continue;
 			const Vector3& nv = simCell.wrapVector(atom->neighbor(n2)->pos - atom->pos);
-			const LatticeVector& lv = ((InputAtom*)atom)->latticeNeighborVector(n2);
+			const Vector3& lv = ((InputAtom*)atom)->latticeNeighborVector(n2);
 			for(int i = 0; i < 3; i++){
 				for(int j = 0; j < 3; j++){
 					segment->V(i,j) += lv[j] * lv[i];
@@ -1051,7 +1051,7 @@ void BurgersCircuit::updateLatticeToWorldTransformation(const AnalysisEnvironmen
 				for(int n3 = 0; n3 < neighbor->numNeighbors; n3++){
 					if(neighbor->neighbor(n3) == NULL) continue;
 					const Vector3& nv = simCell.wrapVector(neighbor->neighbor(n3)->pos - neighbor->pos);
-					const LatticeVector& lv = ((InputAtom*)neighbor)->latticeNeighborVector(n3);
+					const Vector3& lv = ((InputAtom*)neighbor)->latticeNeighborVector(n3);
 					for(int i = 0; i < 3; i++){
 						for(int j = 0; j < 3; j++){
 							segment->V(i,j) += lv[j] * lv[i];

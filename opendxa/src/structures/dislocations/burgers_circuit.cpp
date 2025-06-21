@@ -21,7 +21,7 @@ bool BurgersCircuit::isBackwardCircuit() const{
     return segment->backwardCircuit() == this;
 }
 
-LatticeVector BurgersCircuit::burgersVector() const{
+Vector3 BurgersCircuit::burgersVector() const{
     if(isForwardCircuit()){
         return segment->burgersVector;
     }else{
@@ -84,8 +84,8 @@ Point3 BurgersCircuit::calculateCenter(const Point3& refPoint, const AnalysisEnv
     return refPoint + center;
 }
 
-LatticeVector BurgersCircuit::calculateBurgersVector() const{
-    LatticeVector b(NULL_VECTOR);
+Vector3 BurgersCircuit::calculateBurgersVector() const{
+    Vector3 b(NULL_VECTOR);
     MeshEdge* edge = firstEdge;
     do{
         DISLOCATIONS_ASSERT_GLOBAL(edge != nullptr);

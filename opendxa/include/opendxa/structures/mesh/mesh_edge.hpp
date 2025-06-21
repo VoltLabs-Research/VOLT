@@ -7,7 +7,7 @@
 
 struct MeshEdge {
     MeshNode* node1;
-    LatticeVector latticeVector;
+    Vector3 latticeVector;
     MeshFacet* facet;
     MeshEdge* oppositeEdge;
     BurgersCircuit* circuit;

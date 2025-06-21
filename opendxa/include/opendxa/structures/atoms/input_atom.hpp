@@ -67,7 +67,7 @@ struct InputAtom : public BaseAtom{
 
     void setCNAType(CNAAtomType type);
     const CrystalLatticeType& latticeType() const;
-    LatticeVector latticeNeighborVector(int neighborIndex) const;
+    Vector3 latticeNeighborVector(int neighborIndex) const;
     bool isValidTransitionNeighbor(int neighborIndex) const;
     LatticeOrientation determineTransitionMatrix(int neighborIndex) const;
 

@@ -4,8 +4,6 @@
 #include <opendxa/utils/linalg/lin_alg.hpp>
 #include <opendxa/utils/linalg/vector3.hpp>
 
-typedef Vector3 LatticeVector;
-
 #define CHECKED_FP_PRODUCT(x,y) ((x)*(y))
 #define CHECKED_FP_DIVISION(x,y) ((x)/(y))
 #define CHECKED_FP_PRODUCT_SUM3(a1,b1, a2,b2, a3,b3) ((a1)*(b1) + (a2)*(b2) + (a3)*(b3))

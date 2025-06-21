@@ -26,7 +26,7 @@ struct BurgersCircuit{
 
     BurgersCircuit();
 
-    LatticeVector burgersVector() const;
+    Vector3 burgersVector() const;
     const Point3& center() const;
     bool isForwardCircuit() const;
     bool isBackwardCircuit() const;
@@ -35,7 +35,7 @@ struct BurgersCircuit{
     MeshEdge* getEdge(int index) const;
     int countEdges() const;
     Point3 calculateCenter(const Point3& refPoint, const AnalysisEnvironment& simCell) const;
-    LatticeVector calculateBurgersVector() const;
+    Vector3 calculateBurgersVector() const;
     
     void updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell) const;
     void updateLatticeToWorldTransformation(const AnalysisEnvironment& simCell, MeshNode* node) const;
