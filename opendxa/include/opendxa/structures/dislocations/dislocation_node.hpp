@@ -2,6 +2,7 @@
 #define OPENDXA_DISLOCATION_NODE_HPP
 
 #include <opendxa/structures/dislocations/dislocation_segment.hpp>
+#include <opendxa/structures/cluster/cluster_vector.hpp>
 
 /**
  * A start or end node of a dislocation segment.
@@ -93,5 +94,38 @@ struct DislocationNode{
 		return (junctionRing == this);
 	}
 };
+
+// Returns true if this node is the forward node of its segment, that is,
+// when it is at the end of the associated dislocation segment.
+inline bool DislocationNode::isForwardNode() const{
+    return &segment->forwardCircuit() == this;
+}
+
+// Returns true if this node is the backward node of its segment, that is,
+// when it is at the beginning of the associated dislocation segment.
+inline bool DislocationNode::isBackwardNode() const{
+	return &segment->backwardCircuit() == this;
+}
+
+// Returns the (signed) Burgers vector of the node.
+// This is the Burgers vector of the segment if this node is a forward node,
+// or the negative Burgers vector if this node is a backward node.
+inline ClusterVector DislocationNode::burgersVector() const{
+    if(isForwardNode()){
+        return segment->burgersVector;
+    }
+
+    return -segment->burgersVector;
+}
+
+// Returns the position of the node by looking up the coordinates of the
+// start or end point of the dislocation segment to which the node belongs.
+inline const Point3& DislocationNode::position() const{
+    if(isForwardNode()){
+        return segment->line.back();
+    }
+
+    return segment->line.front();
+}
 
 #endif
