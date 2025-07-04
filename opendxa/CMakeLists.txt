@@ -74,6 +74,7 @@ set(CORE_SOURCES
     src/core/particle_property.cpp
     src/core/lammps_parser.cpp
     src/core/dislocation_analysis.cpp
+    src/core/coordination_structures.cpp
 )
 
 set(STRUCTURES_SOURCES

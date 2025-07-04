@@ -78,7 +78,7 @@ bool InterfaceMesh::createMesh(double maxNeighborDist, ParticleProperty* crystal
                         structureAnalysis().cell().inverseMatrix().prodrow(e->physicalVector, d)
 					) >= double{0.5} + EPSILON)
                     {
-                        StructureAnalysis::generateCellTooSmallError(d);
+                        CoordinationStructures::generateCellTooSmallError(d);
                     }
                 }
             }

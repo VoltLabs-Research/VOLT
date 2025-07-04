@@ -1,7 +1,6 @@
 #pragma once
 
 #include <opendxa/core/opendxa.h>
-#include <opendxa/analysis/nearest_neighbor_finder.h>
 #include <opendxa/core/particle_property.h>
 #include <opendxa/core/simulation_cell.h>
 #include <opendxa/structures/cluster_graph.h>
@@ -9,38 +8,11 @@
 #include <opendxa/structures/neighbor_bond_array.h>
 #include <opendxa/structures/coordination_structure.h>
 #include <opendxa/structures/lattice_structure.h>
+#include <opendxa/core/coordination_structures.h>
 
 namespace OpenDXA{
 
 class StructureAnalysis{
-public:
-	enum CNAMode{
-		FixedCutoffMode,
-		AdaptiveCutoffMode
-	};
-	
-	typedef unsigned int CNAPairBond;
-
-	double cutoff() const{
-        return _cutoff;
-    }
-
-    void setCutoff(double newCutoff){
-        _cutoff = newCutoff;
-    }
-
-    CNAMode mode() const{
-        return _cnaMode;
-    }
-
-    void setMode(CNAMode mode){
-        _cnaMode = mode;
-    }
-
-    static int findCommonNeighbors(const NeighborBondArray& neighborArray, int neighborIndex, unsigned int &commonNeighbors, int numNeighbors);
-    static int findNeighborBonds(const NeighborBondArray& neighborArray, unsigned int commonNeighbors, int numNeighbors, CNAPairBond* neighborBonds);
-    static int calcMaxChainLength(CNAPairBond* neighborBonds, int numBonds);
-
 public:
 	StructureAnalysis(
 			ParticleProperty* positions,
@@ -107,10 +79,6 @@ public:
 		return _neighborLists->getIntComponent(centralAtomIndex, neighborListIndex);
 	}
 
-	void setNeighbor(int centralAtomIndex, int neighborListIndex, int neighborAtomIndex) const{
-		_neighborLists->setIntComponent(centralAtomIndex, neighborListIndex, neighborAtomIndex);
-	}
-
 	int findNeighbor(int centralAtomIndex, int neighborAtomIndex) const{
 		assert(_neighborLists);
 		const int* neighborList = _neighborLists->constDataInt() + (size_t)centralAtomIndex * _neighborLists->componentCount();
@@ -130,27 +98,17 @@ public:
 	const Vector3& neighborLatticeVector(int centralAtomIndex, int neighborIndex) const{
 		assert(_atomSymmetryPermutations);
 		int structureType = _structureTypes->getInt(centralAtomIndex);
-		const LatticeStructure& latticeStructure = _latticeStructures[structureType];
-		assert(neighborIndex >= 0 && neighborIndex < _coordinationStructures[structureType].numNeighbors);
+		const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
+		assert(neighborIndex >= 0 && neighborIndex < CoordinationStructures::_coordinationStructures[structureType].numNeighbors);
 		int symmetryPermutationIndex = _atomSymmetryPermutations->getInt(centralAtomIndex);
 		assert(symmetryPermutationIndex >= 0 && symmetryPermutationIndex < latticeStructure.permutations.size());
 		const auto& permutation = latticeStructure.permutations[symmetryPermutationIndex].permutation;
 		return latticeStructure.latticeVectors[permutation[neighborIndex]];
 	}
 
-	static const LatticeStructure& latticeStructure(int structureIndex){
-		return _latticeStructures[structureIndex];
-	}
-
-	static void generateCellTooSmallError(int dimension);
-
 private:
-	double determineLocalStructure(NearestNeighborFinder& neighList, size_t particleIndex);
-	static void initializeListOfStructures();
-
-private:
+	CoordinationStructures _coordStructures;
 	LatticeStructureType _inputCrystalType;
-	bool _identifyPlanarDefects;
 	ParticleProperty* _positions; 
 	ParticleProperty* _structureTypes; 
 	std::shared_ptr<ParticleProperty> _neighborLists; 
@@ -161,11 +119,6 @@ private:
 	std::atomic<double> _maximumNeighborDistance;
 	SimulationCell _simCell;
 	std::vector<Matrix3> _preferredCrystalOrientations;
-	double _cutoff;
-    CNAMode _cnaMode;
-
-	static CoordinationStructure _coordinationStructures[NUM_COORD_TYPES];
-	static LatticeStructure _latticeStructures[NUM_LATTICE_TYPES];
 };
 
 }
