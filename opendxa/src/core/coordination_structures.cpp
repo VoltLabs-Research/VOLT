@@ -44,84 +44,6 @@ void CoordinationStructures::generateCellTooSmallError(int dimension){
 	// TODO
 }
 
-int CoordinationStructures::findCommonNeighbors(
-	const NeighborBondArray& neighborArray,
-	int neighborIndex,
-	unsigned int &commonNeighbors,
-	int numNeighbors
-){
-	commonNeighbors = neighborArray.neighborArray[neighborIndex];
-	return __builtin_popcount(commonNeighbors);
-}
-
-int CoordinationStructures::findNeighborBonds(
-	const NeighborBondArray& neighborArray, 
-	unsigned int commonNeighbors,
-	int numNeighbors, 
-	CNAPairBond* neighborBonds
-){
-    int numBonds = 0;
-	unsigned int nib[32];
-	int nibn = 0;
-	unsigned int ni1b = 1;
-    for(int ni1 = 0; ni1 < numNeighbors; ni1++, ni1b <<= 1){
-        if(commonNeighbors & ni1b){
-            unsigned int b = commonNeighbors & neighborArray.neighborArray[ni1];
-            for(int n = 0; n < nibn; n++){
-                if(b & nib[n]){
-                    neighborBonds[numBonds++] = ni1b | nib[n];
-                }
-            }
-            nib[nibn++] = ni1b;
-        }
-    }
-
-    return numBonds;
-}
-
-// Helper: find adjacent bonds and update processing queues.
-int CoordinationStructures::getAdjacentBonds(
-	unsigned int atom, 
-	CNAPairBond* bondsToProcess, 
-	int& numBonds, 
-	unsigned int& atomsToProcess, 
-	unsigned int& atomsProcessed
-){
-    int adjacentBonds = 0;
-    for(int b = numBonds - 1; b >= 0; --b){
-        if(atom & bondsToProcess[b]){
-            ++adjacentBonds;
-            atomsToProcess |= bondsToProcess[b] & (~atomsProcessed);
-            // Remove bond from list by shifting following elements left.
-            memmove(&bondsToProcess[b], &bondsToProcess[b+1], sizeof(CNAPairBond) * (numBonds - b - 1));
-            --numBonds;
-        }
-    }
-    return adjacentBonds;
-}
-
-int CoordinationStructures::calcMaxChainLength(CNAPairBond* neighborBonds, int numBonds){
-    int maxChainLength = 0;
-    while(numBonds){
-        numBonds--;
-        unsigned int atomsToProcess = neighborBonds[numBonds];
-        unsigned int atomsProcessed = 0;
-        int clusterSize = 1;
-        do{
-			int nextAtomIndex = __builtin_ctz(atomsToProcess);
-            unsigned int nextAtom = 1 << nextAtomIndex;
-            atomsProcessed |= nextAtom;
-            atomsToProcess &= ~nextAtom;
-            clusterSize += getAdjacentBonds(nextAtom, neighborBonds, numBonds, atomsToProcess, atomsProcessed);
-        }while(atomsToProcess);
-        if(clusterSize > maxChainLength){
-            maxChainLength = clusterSize;
-        }
-    }
-
-    return maxChainLength;
-}
-
 double CoordinationStructures::determineLocalStructure(
 	NearestNeighborFinder& neighList, 
 	size_t particleIndex,
@@ -236,16 +158,16 @@ double CoordinationStructures::determineLocalStructure(
 		for(int ni = 0; ni < coordinationNumber; ni++){
 			// Determine number of neighbors the two atoms have in common.
 			unsigned int commonNeighbors;
-			int numCommonNeighbors = findCommonNeighbors(neighborArray, ni, commonNeighbors, coordinationNumber);
+			int numCommonNeighbors = CommonNeighborAnalysis::findCommonNeighbors(neighborArray, ni, commonNeighbors, coordinationNumber);
 			if(numCommonNeighbors != 4) break;
 
 			// Determine the number of bonds among the common neighbors.
 			CNAPairBond neighborBonds[MAX_NEIGHBORS*MAX_NEIGHBORS];
-			int numNeighborBonds = findNeighborBonds(neighborArray, commonNeighbors, coordinationNumber, neighborBonds);
+			int numNeighborBonds = CommonNeighborAnalysis::findNeighborBonds(neighborArray, commonNeighbors, coordinationNumber, neighborBonds);
 			if(numNeighborBonds != 2) break;
 
 			// Determine the number of bonds in the longest continuous chain.
-			int maxChainLength = calcMaxChainLength(neighborBonds, numNeighborBonds);
+			int maxChainLength = CommonNeighborAnalysis::calcMaxChainLength(neighborBonds, numNeighborBonds);
 			if(maxChainLength == 1){
 				n421++;
 				cnaSignatures[ni] = 0;
@@ -269,16 +191,16 @@ double CoordinationStructures::determineLocalStructure(
 		for(int ni = 0; ni < coordinationNumber; ni++){
 			// Determine number of neighbors the two atoms have in common.
 			unsigned int commonNeighbors;
-			int numCommonNeighbors = findCommonNeighbors(neighborArray, ni, commonNeighbors, 14);
+			int numCommonNeighbors = CommonNeighborAnalysis::findCommonNeighbors(neighborArray, ni, commonNeighbors, 14);
 			if(numCommonNeighbors != 4 && numCommonNeighbors != 6) break;
 
 			// Determine the number of bonds among the common neighbors.
-			CNAPairBond neighborBonds[MAX_NEIGHBORS*MAX_NEIGHBORS];
-			int numNeighborBonds = findNeighborBonds(neighborArray, commonNeighbors, 14, neighborBonds);
+			CNAPairBond neighborBonds[MAX_NEIGHBORS * MAX_NEIGHBORS];
+			int numNeighborBonds = CommonNeighborAnalysis::findNeighborBonds(neighborArray, commonNeighbors, 14, neighborBonds);
 			if(numNeighborBonds != 4 && numNeighborBonds != 6) break;
 
 			// Determine the number of bonds in the longest continuous chain.
-			int maxChainLength = calcMaxChainLength(neighborBonds, numNeighborBonds);
+			int maxChainLength = CommonNeighborAnalysis::calcMaxChainLength(neighborBonds, numNeighborBonds);
 			if(numCommonNeighbors == 4 && numNeighborBonds == 4 && maxChainLength == 4){
 				n444++;
 				cnaSignatures[ni] = 1;
@@ -299,7 +221,7 @@ double CoordinationStructures::determineLocalStructure(
 		for(int ni = 0; ni < 4; ni++){
 			cnaSignatures[ni] = 0;
 			unsigned int commonNeighbors;
-			if(findCommonNeighbors(neighborArray, ni, commonNeighbors, coordinationNumber) != 3) return 0.0;
+			if(CommonNeighborAnalysis::findCommonNeighbors(neighborArray, ni, commonNeighbors, coordinationNumber) != 3) return 0.0;
 		}
 
 		int n543 = 0;
@@ -307,16 +229,16 @@ double CoordinationStructures::determineLocalStructure(
 		for(int ni = 4; ni < coordinationNumber; ni++){
 			// Determine number of neighbors the two atoms have in common.
 			unsigned int commonNeighbors;
-			int numCommonNeighbors = findCommonNeighbors(neighborArray, ni, commonNeighbors, coordinationNumber);
+			int numCommonNeighbors = CommonNeighborAnalysis::findCommonNeighbors(neighborArray, ni, commonNeighbors, coordinationNumber);
 			if(numCommonNeighbors != 5) break;
 
 			// Determine the number of bonds among the common neighbors.
 			CNAPairBond neighborBonds[MAX_NEIGHBORS*MAX_NEIGHBORS];
-			int numNeighborBonds = findNeighborBonds(neighborArray, commonNeighbors, coordinationNumber, neighborBonds);
+			int numNeighborBonds = CommonNeighborAnalysis::findNeighborBonds(neighborArray, commonNeighbors, coordinationNumber, neighborBonds);
 			if(numNeighborBonds != 4) break;
 
 			// Determine the number of bonds in the longest continuous chain.
-			int maxChainLength = calcMaxChainLength(neighborBonds, numNeighborBonds);
+			int maxChainLength = CommonNeighborAnalysis::calcMaxChainLength(neighborBonds, numNeighborBonds);
 			if(maxChainLength == 3){
 				n543++;
 				cnaSignatures[ni] = 1;

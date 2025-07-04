@@ -89,6 +89,7 @@ set(ANALYSIS_SOURCES
     src/analysis/elastic_mapping.cpp
     src/analysis/smooth_dislocations_modifier.cpp
     src/analysis/structure_analysis.cpp
+    src/analysis/common_neighbor_analysis.cpp
 )
 
 set(GEOMETRY_SOURCES
