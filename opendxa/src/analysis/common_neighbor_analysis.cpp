@@ -9,6 +9,12 @@ int CommonNeighborAnalysis::findCommonNeighbors(
 	int numNeighbors
 ){
 	commonNeighbors = neighborArray.neighborArray[neighborIndex];
+    // __builtin_popcount(x) is an intrinsic function of the GCC/Clang 
+    // compiler that allows to count how many bits are "1" in the binary representation of "x".
+    // Used to know how many common neighbors exist (bits in "1") after calculating 
+    // the common neighbors of the "neighborIndex" atom (already encoded as a binary mask).
+    // Perhaps using a loop is more human-readable, however it is extremely fast, 
+    // it translates directly to a CPU instruction (popcnt)
 	return __builtin_popcount(commonNeighbors);
 }
 

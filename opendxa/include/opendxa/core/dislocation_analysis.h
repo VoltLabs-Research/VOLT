@@ -27,7 +27,6 @@ public:
     void setOnlyPerfectDislocations(bool flag);
     bool compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile = "");
     
-    // Nuevo método para exportar resultados a JSON
     json exportResultsToJson(const std::string& filename = "") const;
 
 private:
@@ -36,7 +35,6 @@ private:
     int _circuitStretchability;
     bool _onlyPerfectDislocations;
     
-    // Datos del último análisis para exportación JSON
     mutable json _lastJsonData;
     mutable LammpsParser::Frame _lastFrame;
     mutable DXAJsonExporter _jsonExporter;
