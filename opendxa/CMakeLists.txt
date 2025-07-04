@@ -1,183 +1,181 @@
-cmake_minimum_required(VERSION 3.12)
-project(DislocationAnalysis VERSION 1.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
-option(DXA_BUILD_EXECUTABLE "Build the standalone DXA executable." ON)
-option(DXA_BUILD_PYTHON_BINDINGS "Build Python bindings with pybind11." OFF)
-option(DXA_ENABLE_DEBUG "Enable sanity checks (recommended)." ON)
-option(DXA_USE_OPENMP "Enable OpenMP parallelization if available." ON)
-option(DXA_BUILD_TESTS "Build unit tests" OFF)
+# Set policy for Boost module
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
 
-set(CMAKE_CXX_STANDARD 20)
+project(OpenDXA VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(Eigen3 3.3 REQUIRED NO_MODULE)
-message(STATUS "Found Eigen3 version: ${Eigen3_VERSION}")
+message(STATUS "Using C++${CMAKE_CXX_STANDARD} standard")
 
-if(DXA_USE_OPENMP)
-    find_package(OpenMP)
-    if(OpenMP_CXX_FOUND)
-        message(STATUS "OpenMP found - parallel processing enabled")
-    else()
-        message(WARNING "OpenMP not found - falling back to sequential processing")
-    endif()
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+
+# Minimal optimization flags for numerical accuracy
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra")
+    # Minimal optimization - only basic -O1 to maintain precision
+    set(CMAKE_CXX_FLAGS_RELEASE "-O1 -DNDEBUG")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra")
+    # Minimal optimization - only basic -O1 to maintain precision
+    set(CMAKE_CXX_FLAGS_RELEASE "-O1 -DNDEBUG")
 endif()
 
-if(DXA_BUILD_PYTHON_BINDINGS)
-    find_package(pybind11 QUIET)
-    if(NOT pybind11_FOUND)
-        message(WARNING "pybind11 not found - Python bindings will not be built")
-        set(DXA_BUILD_PYTHON_BINDINGS OFF)
-    else()
-        message(STATUS "pybind11 found - Python bindings enabled")
-    endif()
+# Enable Link Time Optimization for maximum performance
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    # Disable LTO to avoid numerical precision issues
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
 endif()
 
-# ==================== Fuentes principales ====================
-file(GLOB_RECURSE OPENDXA_SOURCES "src/*.cpp")
-list(FILTER OPENDXA_SOURCES EXCLUDE REGEX ".*Main\\.cpp$")
+# Options
+option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_DOCS "Build documentation" OFF)
 
-add_library(opendxapy ${OPENDXA_SOURCES})
+if(BUILD_TESTS)
+    enable_testing()
+endif()
 
-set_target_properties(opendxapy PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    CXX_VISIBILITY_PRESET hidden
-    VISIBILITY_INLINES_HIDDEN ON
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
+find_package(Boost 1.88 REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(Threads REQUIRED)
+find_package(OpenMP REQUIRED)
+
+find_package(nlohmann_json QUIET)
+if(NOT nlohmann_json_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.3
+    )
+    FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
+message(STATUS "Found Eigen3: ${EIGEN3_INCLUDE_DIR}")
+message(STATUS "Found Boost version: ${Boost_VERSION}")
+message(STATUS "nlohmann_json available")
+
+include_directories(${EIGEN3_INCLUDE_DIR})
+
+# Source files organized by module
+set(CORE_SOURCES
+    src/core/main.cpp
+    src/core/property_base.cpp
+    src/core/particle_property.cpp
+    src/core/lammps_parser.cpp
+    src/core/dislocation_analysis.cpp
 )
 
-target_include_directories(opendxapy 
-    PUBLIC 
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/cxxopts/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/json/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/polyhedral-template-matching/
-        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/pybind11_json/include
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+set(STRUCTURES_SOURCES
+    src/structures/cluster_graph.cpp
+    src/structures/dislocation_network.cpp
 )
 
-target_link_libraries(opendxapy PUBLIC Eigen3::Eigen)
-
-if(DXA_USE_OPENMP AND OpenMP_CXX_FOUND)
-    target_link_libraries(opendxapy PUBLIC OpenMP::OpenMP_CXX)
-    target_compile_definitions(opendxapy PUBLIC DXA_USE_OPENMP)
-endif()
-
-target_compile_options(opendxapy PRIVATE
-    -fPIC
-    $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -O3 -march=native -ffast-math -funroll-loops>
-    $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -O3 -march=native -ffast-math -funroll-loops>
-    $<$<CXX_COMPILER_ID:Intel>:-Wall -O3 -xHost -fp-model fast=2>
-    $<$<CXX_COMPILER_ID:MSVC>:/W4 /O2 /fp:fast>
+set(ANALYSIS_SOURCES
+    src/analysis/nearest_neighbor_finder.cpp
+    src/analysis/crystal_path_finder.cpp
+    src/analysis/dislocation_tracer.cpp
+    src/analysis/elastic_mapping.cpp
+    src/analysis/smooth_dislocations_modifier.cpp
+    src/analysis/structure_analysis.cpp
 )
 
-target_compile_definitions(opendxapy PRIVATE
-    JSON_USE_IMPLICIT_CONVERSIONS=0
-    JSON_DISABLE_ENUM_SERIALIZATION=1
+set(GEOMETRY_SOURCES
+    src/geometry/interface_mesh.cpp
+    src/geometry/delaunay_tessellation.cpp
+    src/geometry/tri_mesh.cpp
 )
 
-set(PTM_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/polyhedral-template-matching)
-
-file(GLOB PTM_SOURCES
-    "${PTM_LIB_DIR}/ptm_alloy_types.cpp"
-    "${PTM_LIB_DIR}/ptm_canonical_coloured.cpp"
-    "${PTM_LIB_DIR}/ptm_convex_hull_incremental.cpp"
-    "${PTM_LIB_DIR}/ptm_correspondences.cpp"
-    "${PTM_LIB_DIR}/ptm_deformation_gradient.cpp"
-    "${PTM_LIB_DIR}/ptm_graph_data.cpp"
-    "${PTM_LIB_DIR}/ptm_graph_tools.cpp"
-    "${PTM_LIB_DIR}/ptm_index.cpp"
-    "${PTM_LIB_DIR}/ptm_initialize_data.cpp"
-    "${PTM_LIB_DIR}/ptm_map_templates.cpp" 
-    "${PTM_LIB_DIR}/ptm_multishell.cpp"
-    "${PTM_LIB_DIR}/ptm_neighbour_ordering.cpp"
-    "${PTM_LIB_DIR}/ptm_normalize_vertices.cpp"
-    "${PTM_LIB_DIR}/ptm_polar.cpp"
-    "${PTM_LIB_DIR}/ptm_quat.cpp"
-    "${PTM_LIB_DIR}/ptm_solid_angles.cpp" 
-    "${PTM_LIB_DIR}/ptm_structure_matcher.cpp"
-    "${PTM_LIB_DIR}/ptm_voronoi_cell.cpp"
+set(MATH_SOURCES
+    src/math/affine_decomposition.cpp
 )
 
-add_library(ptm_lib STATIC ${PTM_SOURCES})
-target_include_directories(ptm_lib PUBLIC ${PTM_LIB_DIR})
-
-target_link_libraries(opendxapy PUBLIC ptm_lib)
-
-if(DXA_BUILD_EXECUTABLE)
-    find_package(OpenGL REQUIRED)
-    message(STATUS "OpenGL found - visualization support enabled")
-
-    add_executable(opendxa src/main.cpp)
-
-    target_link_libraries(opendxa PRIVATE 
-        opendxapy 
-        ptm_lib
-        OpenGL::GLU
-    )
-
-    target_compile_options(opendxa PRIVATE
-        $<$<CXX_COMPILER_ID:GNU>:-O3 -march=native -ffast-math>
-        $<$<CXX_COMPILER_ID:Clang>:-O3 -march=native -ffast-math>
-        $<$<CXX_COMPILER_ID:Intel>:-O3 -xHost -fp-model fast=2>
-        $<$<CXX_COMPILER_ID:MSVC>:/O2 /fp:fast>
-    )
-endif()
-
-if(DXA_BUILD_PYTHON_BINDINGS AND pybind11_FOUND)
-    find_package(OpenGL REQUIRED)
-    message(STATUS "OpenGL found for Python bindings")
-
-    pybind11_add_module(opendxa_py
-        ${CMAKE_CURRENT_SOURCE_DIR}/../bindings/python/PyBindModule.cpp
-    )
-
-    target_link_libraries(opendxa_py PRIVATE 
-        opendxapy 
-        OpenGL::GL
-        OpenGL::GLU
-    )
-
-    target_compile_definitions(opendxa_py PRIVATE 
-        VERSION_INFO="${PROJECT_VERSION}"
-    )
-
-    set_target_properties(opendxa_py PROPERTIES
-        OUTPUT_NAME "opendxa"
-        PREFIX "${PYTHON_MODULE_PREFIX}"
-        SUFFIX "${PYTHON_MODULE_EXTENSION}"
-    )
-
-    message(STATUS "Python bindings target 'opendxa_py' configured")
-endif()
-
-install(TARGETS opendxapy
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
+set(UTILITIES_SOURCES
+    src/utilities/json_exporter.cpp
 )
 
-if(DXA_BUILD_EXECUTABLE)
-    install(TARGETS opendxa
-        RUNTIME DESTINATION bin
-    )
-endif()
+# Combine all sources except Main.cpp for library
+set(LIBRARY_SOURCES
+    ${CORE_SOURCES}
+    ${STRUCTURES_SOURCES}
+    ${ANALYSIS_SOURCES}
+    ${GEOMETRY_SOURCES}
+    ${MATH_SOURCES}
+    ${UTILITIES_SOURCES}
+)
+list(REMOVE_ITEM LIBRARY_SOURCES src/core/main.cpp)
 
-if(DXA_BUILD_PYTHON_BINDINGS AND pybind11_FOUND)
-    install(TARGETS opendxa_py
-        LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
-    )
-endif()
+# Add dependencies subdirectory
+add_subdirectory(dependencies)
 
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
-message(STATUS "Build executable: ${DXA_BUILD_EXECUTABLE}")
-message(STATUS "Build Python bindings: ${DXA_BUILD_PYTHON_BINDINGS}")
-message(STATUS "Debug mode: ${DXA_ENABLE_DEBUG}")
-message(STATUS "OpenMP support: ${DXA_USE_OPENMP}")
-if(DXA_USE_OPENMP AND OpenMP_CXX_FOUND)
-    message(STATUS "OpenMP version: ${OpenMP_CXX_VERSION}")
-endif()
-message(STATUS "Eigen3 version: ${Eigen3_VERSION}")
-if(DXA_BUILD_PYTHON_BINDINGS)
-    message(STATUS "pybind11 found: ${pybind11_FOUND}")
-endif()
+# Create static library with optimizations
+add_library(CrystalAnalysis STATIC ${LIBRARY_SOURCES})
+
+# No additional compile options - keep it simple for accuracy
+target_compile_options(CrystalAnalysis PRIVATE
+    # No optimization flags
+)
+
+target_compile_definitions(CrystalAnalysis PRIVATE
+    # Minimal definitions for release
+    $<$<CONFIG:Release>:NDEBUG>
+)
+
+target_include_directories(CrystalAnalysis PUBLIC 
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/dependencies
+    ${CMAKE_SOURCE_DIR}/dependencies/geogram
+    ${CMAKE_SOURCE_DIR}/dependencies/ptm
+    ${EIGEN3_INCLUDE_DIR}
+)
+
+# Link dependencies to library
+target_link_libraries(CrystalAnalysis
+    PUBLIC
+    Threads::Threads
+    ${Boost_LIBRARIES}
+    geogram
+    PolyhedralTemplateMatching
+    nlohmann_json::nlohmann_json
+    OpenMP::OpenMP_CXX
+)
+
+# Create executable with optimizations
+add_executable(opendxa src/core/main.cpp)
+
+# No additional compile options - keep it simple for accuracy
+target_compile_options(opendxa PRIVATE
+    # No optimization flags
+)
+
+target_compile_definitions(opendxa PRIVATE
+    # Minimal definitions for release
+    $<$<CONFIG:Release>:NDEBUG>
+)
+
+target_include_directories(opendxa PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/dependencies
+    ${CMAKE_SOURCE_DIR}/dependencies/geogram
+    ${CMAKE_SOURCE_DIR}/dependencies/ptm
+    ${EIGEN3_INCLUDE_DIR}
+)
+target_link_libraries(opendxa 
+    PRIVATE 
+    CrystalAnalysis
+)
+
+# Installation
+install(TARGETS opendxa DESTINATION bin)
+install(TARGETS CrystalAnalysis DESTINATION lib)
+install(DIRECTORY include/ DESTINATION include)
