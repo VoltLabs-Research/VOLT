@@ -44,6 +44,21 @@ void CoordinationStructures::generateCellTooSmallError(int dimension){
 	// TODO
 }
 
+int CoordinationStructures::getCoordinationNumber() const{
+	switch(_inputCrystalType){
+		case LATTICE_FCC:
+		case LATTICE_HCP:
+			return 12;
+		case LATTICE_BCC:
+			return 14;
+		case LATTICE_CUBIC_DIAMOND:
+		case LATTICE_HEX_DIAMOND:
+			return 16;
+		default:
+			return 0;
+	}
+}
+
 double CoordinationStructures::determineLocalStructure(
 	NearestNeighborFinder& neighList, 
 	size_t particleIndex,
@@ -59,16 +74,7 @@ double CoordinationStructures::determineLocalStructure(
     Vector3 neighborVectors[MAX_NEIGHBORS];
 
     // Number of neighbors to analyze
-    int coordinationNumber;
-	if(_inputCrystalType == LATTICE_FCC || _inputCrystalType == LATTICE_HCP){
-		coordinationNumber = 12;
-	}else if(_inputCrystalType == LATTICE_BCC){
-		coordinationNumber = 14;
-	}else if(_inputCrystalType == LATTICE_CUBIC_DIAMOND || _inputCrystalType == LATTICE_HEX_DIAMOND){
-		coordinationNumber = 16;
-	}else{
-		return 0.0;
-	}
+    int coordinationNumber = getCoordinationNumber();
 
     // Early rejection of under-coordinated atoms
     if(numNeighbors < coordinationNumber) return 0.0;

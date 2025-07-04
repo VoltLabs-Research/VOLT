@@ -30,6 +30,8 @@ public:
     static void generateCellTooSmallError(int dimension);
 
 private:
+    int getCoordinationNumber() const;
+
     const SimulationCell& _simCell;
     bool _identifyPlanarDefects;
     ParticleProperty* _structureTypes;
