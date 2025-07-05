@@ -306,26 +306,35 @@ inline Matrix_3<T> Matrix_3<T>::rotation(T ai, T aj, T ak, EulerAxisSequence axi
 
 template<typename T>
 inline Vector_3<T> operator*(const Matrix_3<T>& m, const Vector_3<T>& v){
-	auto eigenMatrix = toEigenMatrix(m);
-	Eigen::Matrix<T, 3, 1> eigenVector(v.x(), v.y(), v.z());
-	Eigen::Matrix<T, 3, 1> result = eigenMatrix * eigenVector;
-	return Vector_3<T>(result[0], result[1], result[2]);
+	return { m(0,0)*v[0] + m(0,1)*v[1] + m(0,2)*v[2],
+			 m(1,0)*v[0] + m(1,1)*v[1] + m(1,2)*v[2],
+			 m(2,0)*v[0] + m(2,1)*v[1] + m(2,2)*v[2] };
+
 }
 
 template<typename T>
 inline Point_3<T> operator*(const Matrix_3<T>& m, const Point_3<T>& p){
-	auto eigenMatrix = toEigenMatrix(m);
-	Eigen::Matrix<T, 3, 1> eigenPoint(p.x(), p.y(), p.z());
-	Eigen::Matrix<T, 3, 1> result = eigenMatrix * eigenPoint;
-	return Point_3<T>(result[0], result[1], result[2]);
+	return { m(0,0)*p[0] + m(0,1)*p[1] + m(0,2)*p[2],
+			 m(1,0)*p[0] + m(1,1)*p[1] + m(1,2)*p[2],
+			 m(2,0)*p[0] + m(2,1)*p[1] + m(2,2)*p[2] };
+
 }
 
 template<typename T>
 inline Matrix_3<T> operator*(const Matrix_3<T>& a, const Matrix_3<T>& b){
-	auto eigenA = toEigenMatrix(a);
-	auto eigenB = toEigenMatrix(b);
-	auto result = eigenA * eigenB;
-	return fromEigenMatrix<T>(result);
+	return Matrix_3<T>(
+			a(0,0)*b(0,0) + a(0,1)*b(1,0) + a(0,2)*b(2,0),
+			a(0,0)*b(0,1) + a(0,1)*b(1,1) + a(0,2)*b(2,1),
+			a(0,0)*b(0,2) + a(0,1)*b(1,2) + a(0,2)*b(2,2),
+
+			a(1,0)*b(0,0) + a(1,1)*b(1,0) + a(1,2)*b(2,0),
+			a(1,0)*b(0,1) + a(1,1)*b(1,1) + a(1,2)*b(2,1),
+			a(1,0)*b(0,2) + a(1,1)*b(1,2) + a(1,2)*b(2,2),
+
+			a(2,0)*b(0,0) + a(2,1)*b(1,0) + a(2,2)*b(2,0),
+			a(2,0)*b(0,1) + a(2,1)*b(1,1) + a(2,2)*b(2,1),
+			a(2,0)*b(0,2) + a(2,1)*b(1,2) + a(2,2)*b(2,2)
+	);
 }
 
 template<typename T>
