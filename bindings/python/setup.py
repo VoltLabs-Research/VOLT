@@ -1,12 +1,8 @@
-#!/usr/bin/env python3
-import os
-import sys
-from pathlib import Path
 from pybind11.setup_helpers import Pybind11Extension, build_ext
-from pybind11 import get_cmake_dir
-import pybind11
-from setuptools import setup, Extension
+from pathlib import Path
+from setuptools import setup
 import numpy
+import pybind11
 
 # Get the project root directory
 PROJECT_ROOT = Path("/home/rodyherrera/Escritorio/OpenDXA")
@@ -53,13 +49,12 @@ source_files = [
     str(OPENDXA_PY_ROOT / "src" / "main.cpp"),
     str(OPENDXA_PY_ROOT / "src" / "bindings" / "module.cpp"),
     str(OPENDXA_PY_ROOT / "src" / "bindings" / "dislocation_analysis.cpp"),
-    str(OPENDXA_PY_ROOT / "src" / "wrappers" / "dislocation_analysis_wrapper.cpp"),
+    str(OPENDXA_PY_ROOT / "src" / "wrappers" / "dislocation_analysis.cpp"),
 ]
 
 # Compiler flags
 extra_compile_args = [
     "-std=c++23",
-    "-O1",  # Minimal optimization for numerical accuracy
     "-DWITH_OGR",
     "-DGEOGRAM_WITH_GRAPHICS=OFF",
 ]
