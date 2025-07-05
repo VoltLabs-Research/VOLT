@@ -107,6 +107,24 @@ public:
 	}
 
 private:
+	bool shouldSkipSeed(int index);
+	bool calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition);
+	void connectClusterNeighbors(int atomIndex, Cluster* cluster1);
+
+	Cluster* getParentGrain(Cluster* c);
+	void processDefectCluster(Cluster* defectCluster);
+	void reorientAtomsToAlignClusters();
+	void applyPreferredOrientation(Cluster* cluster);
+	void growCluster(
+		Cluster* cluster,
+		std::deque<int>& atomsToVisit,
+		Matrix_3<double>& orientationV,
+		Matrix_3<double>& orientationW,
+		int structureType
+	);
+
+	Cluster* startNewCluster(int atomIndex, int structureType);
+
 	CoordinationStructures _coordStructures;
 	LatticeStructureType _inputCrystalType;
 	ParticleProperty* _positions; 
