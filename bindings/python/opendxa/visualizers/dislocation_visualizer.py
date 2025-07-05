@@ -4,11 +4,10 @@ from opendxa.mesh import (
     build_dislocation_mesh, 
     build_atom_mesh, 
     build_interface_mesh, 
-    build_stacking_faults_mesh,
     build_background_mesh
 )
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Any
 import pyvista as pv
 import numpy as np
 
@@ -29,9 +28,6 @@ class DislocationVisualizer:
         if 'atoms' in self.analysis:
             self.meshes['atoms'] = build_atom_mesh(self.analysis['atoms'])
 
-        if 'stacking_faults' in self.analysis:
-            self.meshes['stacking_faults'] = build_stacking_faults_mesh(self.analysis['stacking_faults'])
-
         if 'interface_mesh' in self.analysis:
             self.meshes['interface'] = build_interface_mesh(self.analysis['interface_mesh'])
 
@@ -42,22 +38,12 @@ class DislocationVisualizer:
         return self.meshes
     
     def _build_statistics(self, additional_data: Dict):
+        """Build enhanced statistics from additional mesh data and analysis data."""
         if not additional_data:
-            self.stats = DislocationStats(
-                num_segments=0,
-                total_points=0,
-                total_length=0,
-                average_length=0.0,
-                max_length=0.0,
-                min_length=0.0,
-                burgers_magnitudes=[],
-                unique_burgers_magnitudes=[],
-                fractional_burgers=[],
-                segment_info=[]
-            )
+            self.stats = self._empty_stats()
             return
 
-        # Extract data from additional_data
+        # Get data from mesh builder
         segment_lengths = additional_data.get('segment_lengths', [])
         burgers_magnitudes = additional_data.get('burgers_magnitudes', [])
         segment_ids = additional_data.get('segment_ids', [])
@@ -70,7 +56,7 @@ class DislocationVisualizer:
         total_points = summary.get('total_points', len(self.meshes['dislocations'].points) if self.meshes.get('dislocations') else 0)
         average_length = summary.get('average_segment_length', np.mean(segment_lengths) if segment_lengths else 0.0)
 
-        # Build segment info
+        # Build basic segment info
         segment_info = []
         for segment_id, fractional_burgers, length, magnitude in zip(
             segment_ids,
@@ -85,17 +71,38 @@ class DislocationVisualizer:
                 'burgers_magnitudes': magnitude
             })
         
-        self.stats = DislocationStats(
-            num_segments=len(segment_ids),
-            total_points=total_points,
-            total_length=sum(segment_lengths),
-            average_length=average_length,
-            max_length=max(segment_lengths) if segment_lengths else 0,
-            min_length=min(segment_lengths) if segment_lengths else 0,
-            burgers_magnitudes=burgers_magnitudes,
-            unique_burgers_magnitudes=list(set(burgers_magnitudes)),
-            fractional_burgers=fractional_burgers_info,
-            segment_info=segment_info
+        # Use the enhanced stats aggregator to get full statistics
+        from opendxa.stats.dislocation_stats_aggregator import compute_stats_static
+        self.stats = compute_stats_static(self.analysis)
+        
+        # If that fails, fall back to basic stats
+        if not self.stats or self.stats.num_segments == 0:
+            self.stats = DislocationStats(
+                num_segments=len(segment_ids),
+                total_points=total_points,
+                total_length=sum(segment_lengths),
+                average_length=average_length,
+                max_length=max(segment_lengths) if segment_lengths else 0,
+                min_length=min(segment_lengths) if segment_lengths else 0,
+                burgers_magnitudes=burgers_magnitudes,
+                unique_burgers_magnitudes=list(set(burgers_magnitudes)),
+                fractional_burgers=fractional_burgers_info,
+                segment_info=segment_info
+            )
+    
+    def _empty_stats(self):
+        """Return empty stats for error cases."""
+        return DislocationStats(
+            num_segments=0,
+            total_points=0,
+            total_length=0,
+            average_length=0.0,
+            max_length=0.0,
+            min_length=0.0,
+            burgers_magnitudes=[],
+            unique_burgers_magnitudes=[],
+            fractional_burgers=[],
+            segment_info=[]
         )
 
     def create_plotter(self) -> pv.Plotter:
@@ -250,4 +257,146 @@ class DislocationVisualizer:
         
         if len(self.stats.segment_info) > 10:
             print(f'... and {len(self.stats.segment_info) - 10} more segments')
+    
+    def print_enhanced_statistics(self):
+        """Print comprehensive statistics including network and junction information."""
+        if not self.stats:
+            print("No statistics available")
+            return
+        
+        print("\n" + "="*60)
+        print("ENHANCED DISLOCATION ANALYSIS STATISTICS")
+        print("="*60)
+        
+        # Basic statistics
+        print(f"Basic Statistics:")
+        print(f"  Number of segments: {self.stats.num_segments}")
+        print(f"  Total points: {self.stats.total_points}")
+        print(f"  Total length: {self.stats.total_length:.4f}")
+        print(f"  Average length: {self.stats.average_length:.4f}")
+        print(f"  Max length: {self.stats.max_length:.4f}")
+        print(f"  Min length: {self.stats.min_length:.4f}")
+        
+        # Network statistics
+        if self.stats.network_statistics:
+            ns = self.stats.network_statistics
+            print(f"\nNetwork Statistics:")
+            print(f"  Total network length: {ns.total_network_length:.4f}")
+            print(f"  Valid segment count: {ns.segment_count}")
+            print(f"  Junction count: {ns.junction_count}")
+            print(f"  Dangling segments: {ns.dangling_segments}")
+            print(f"  Network density: {ns.density:.6f}")
+            print(f"  Total segments (incl. degenerate): {ns.total_segments_including_degenerate}")
+        
+        # Junction information
+        if self.stats.junction_information:
+            ji = self.stats.junction_information
+            print(f"\nJunction Information:")
+            print(f"  Total junctions: {ji.total_junctions}")
+            if ji.junction_arm_distribution:
+                print(f"  Junction arm distribution:")
+                for arms, count in sorted(ji.junction_arm_distribution.items()):
+                    print(f"    {arms} arms: {count} junctions")
+        
+        # Circuit information
+        if self.stats.circuit_information:
+            ci = self.stats.circuit_information
+            print(f"\nCircuit Information:")
+            print(f"  Total circuits: {ci.total_circuits}")
+            print(f"  Dangling circuits: {ci.dangling_circuits}")
+            print(f"  Blocked circuits: {ci.blocked_circuits}")
+            print(f"  Average edge count: {ci.average_edge_count:.2f}")
+            if ci.edge_count_range:
+                print(f"  Edge count range: {ci.edge_count_range['min']} - {ci.edge_count_range['max']}")
+        
+        # Burgers vector analysis
+        print(f"\nBurgers Vector Analysis:")
+        print(f"  Unique magnitudes: {len(self.stats.unique_burgers_magnitudes)}")
+        if self.stats.unique_burgers_magnitudes:
+            print(f"  Magnitude range: {min(self.stats.unique_burgers_magnitudes):.4f} - {max(self.stats.unique_burgers_magnitudes):.4f}")
+        
+        # Core size analysis (if available)
+        if self.stats.detailed_segment_info:
+            core_sizes = []
+            for detail in self.stats.detailed_segment_info:
+                if detail.core_sizes:
+                    core_sizes.extend(detail.core_sizes)
+                if detail.average_core_size > 0:
+                    core_sizes.append(detail.average_core_size)
+            
+            if core_sizes:
+                print(f"\nCore Size Analysis:")
+                print(f"  Average core size: {np.mean(core_sizes):.2f}")
+                print(f"  Core size range: {min(core_sizes):.2f} - {max(core_sizes):.2f}")
+        
+        print("="*60)
+    
+    def print_detailed_segment_info(self, limit: int = 10):
+        """Print detailed information for individual segments."""
+        if not self.stats or not self.stats.detailed_segment_info:
+            print("No detailed segment information available")
+            return
+        
+        print(f"\nDETAILED SEGMENT INFORMATION (showing first {limit} segments):")
+        print("-" * 80)
+        
+        for i, detail in enumerate(self.stats.detailed_segment_info[:limit]):
+            print(f"Segment {detail.segment_id}:")
+            print(f"  Length: {detail.length:.4f}")
+            print(f"  Burgers: {detail.fractional_burgers} (magnitude: {detail.burgers_magnitude:.4f})")
+            print(f"  Line direction: {detail.line_direction_string}")
+            print(f"  Closed loop: {detail.is_closed_loop}")
+            print(f"  Infinite line: {detail.is_infinite_line}")
+            
+            if detail.core_sizes:
+                print(f"  Core sizes: {detail.core_sizes}")
+                print(f"  Average core size: {detail.average_core_size:.2f}")
+            
+            if detail.junction_info:
+                ji = detail.junction_info
+                print(f"  Junction info: forms_junction={ji.get('forms_junction', False)}, arms={ji.get('junction_arms_count', 0)}")
+            
+            print()
+    
+    def get_analysis_summary(self) -> Dict[str, Any]:
+        """Get a comprehensive summary of the analysis for external use."""
+        summary = {
+            'basic_stats': {
+                'num_segments': self.stats.num_segments if self.stats else 0,
+                'total_length': self.stats.total_length if self.stats else 0.0,
+                'total_points': self.stats.total_points if self.stats else 0
+            }
+        }
+        
+        if self.stats:
+            if self.stats.network_statistics:
+                summary['network_stats'] = {
+                    'junction_count': self.stats.network_statistics.junction_count,
+                    'dangling_segments': self.stats.network_statistics.dangling_segments,
+                    'density': self.stats.network_statistics.density
+                }
+            
+            if self.stats.junction_information:
+                summary['junction_stats'] = {
+                    'total_junctions': self.stats.junction_information.total_junctions,
+                    'arm_distribution': self.stats.junction_information.junction_arm_distribution
+                }
+            
+            if self.stats.circuit_information:
+                summary['circuit_stats'] = {
+                    'total_circuits': self.stats.circuit_information.total_circuits,
+                    'dangling_circuits': self.stats.circuit_information.dangling_circuits,
+                    'blocked_circuits': self.stats.circuit_information.blocked_circuits
+                }
+        
+        # Add mesh information
+        if 'simulation_cell' in self.analysis:
+            cell = self.analysis['simulation_cell']
+            summary['simulation_cell'] = {
+                'volume': cell.get('volume', 0.0),
+                'is_2d': cell.get('is_2d', False),
+                'periodic_boundary_conditions': cell.get('periodic_boundary_conditions', {})
+            }
+        
+        return summary
 

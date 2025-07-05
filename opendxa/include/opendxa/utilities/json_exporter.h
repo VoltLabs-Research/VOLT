@@ -30,7 +30,7 @@ public:
         bool includeTopologyInfo = true
     );
 
-    json exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo = false);
+    json exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo = false, const SimulationCell* simulationCell = nullptr);
     json getInterfaceMeshData(const InterfaceMesh* interfaceMesh, bool includeTopologyInfo = false);
     json getAtomsData(const LammpsParser::Frame& frame, const std::vector<int>* structureTypes = nullptr);
     json getProcessingTime();

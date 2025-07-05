@@ -20,7 +20,7 @@ json DXAJsonExporter::exportAnalysisData(
     
     json data;
 
-    data["dislocations"] = exportDislocationsToJson(network, includeDetailedNetworkInfo);
+    data["dislocations"] = exportDislocationsToJson(network, includeDetailedNetworkInfo, &frame.simulationCell);
     data["interface_mesh"] = getInterfaceMeshData(interfaceMesh, includeTopologyInfo);
     data["atoms"] = getAtomsData(frame, structureTypes);
     
@@ -47,7 +47,7 @@ json DXAJsonExporter::exportAnalysisData(
     return data;
 }
 
-json DXAJsonExporter::exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo){
+json DXAJsonExporter::exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo, const SimulationCell* simulationCell){
     json dislocations;
     const auto& segments = network->segments();
     
@@ -75,8 +75,49 @@ json DXAJsonExporter::exportDislocationsToJson(const DislocationNetwork* network
             segmentJson["length"] = length;
             
             json points = json::array();
-            for(const auto& point : segment->line){
-                points.push_back({point.x(), point.y(), point.z()});
+            
+            // Ensure segment continuity across periodic boundaries
+            if(simulationCell && !segment->line.empty()){
+                // Start with the first point
+                Point3 prevWrappedPoint = simulationCell->wrapPoint(segment->line[0]);
+                points.push_back({prevWrappedPoint.x(), prevWrappedPoint.y(), prevWrappedPoint.z()});
+                
+                // For subsequent points, ensure continuity by choosing the periodic image closest to the previous point
+                for(size_t ptIdx = 1; ptIdx < segment->line.size(); ++ptIdx){
+                    const Point3& currentPoint = segment->line[ptIdx];
+                    Point3 bestPoint = currentPoint;
+                    double minDistance = (currentPoint - prevWrappedPoint).length();
+                    
+                    // Check all periodic images to find the one closest to the previous point
+                    for(int dx = -1; dx <= 1; ++dx){
+                        for(int dy = -1; dy <= 1; ++dy){
+                            for(int dz = -1; dz <= 1; ++dz){
+                                if(!simulationCell->pbcFlags()[0] && dx != 0) continue;
+                                if(!simulationCell->pbcFlags()[1] && dy != 0) continue; 
+                                if(!simulationCell->pbcFlags()[2] && dz != 0) continue;
+                                
+                                Vector3 translation = dx * simulationCell->matrix().column(0) +
+                                                    dy * simulationCell->matrix().column(1) +
+                                                    dz * simulationCell->matrix().column(2);
+                                Point3 candidatePoint = currentPoint + translation;
+                                double distance = (candidatePoint - prevWrappedPoint).length();
+                                
+                                if(distance < minDistance){
+                                    minDistance = distance;
+                                    bestPoint = candidatePoint;
+                                }
+                            }
+                        }
+                    }
+                    
+                    points.push_back({bestPoint.x(), bestPoint.y(), bestPoint.z()});
+                    prevWrappedPoint = bestPoint;
+                }
+            } else {
+                // Fallback: just export points as-is
+                for(const auto& point : segment->line){
+                    points.push_back({point.x(), point.y(), point.z()});
+                }
             }
 
             segmentJson["points"] = points;

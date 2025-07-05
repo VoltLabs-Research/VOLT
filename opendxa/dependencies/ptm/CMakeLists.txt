@@ -18,3 +18,6 @@ ADD_LIBRARY(PolyhedralTemplateMatching
     ptm_structure_matcher.cpp
     ptm_voronoi_cell.cpp
 )
+
+# Set position independent code for Python extension
+set_target_properties(PolyhedralTemplateMatching PROPERTIES POSITION_INDEPENDENT_CODE ON)

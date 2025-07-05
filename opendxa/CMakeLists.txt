@@ -16,19 +16,6 @@ message(STATUS "Using C++${CMAKE_CXX_STANDARD} standard")
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 
-# Minimal optimization flags for numerical accuracy
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts -fPIC")
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -fPIC")
-    # Minimal optimization - only basic -O1 to maintain precision
-    set(CMAKE_CXX_FLAGS_RELEASE "-O1 -DNDEBUG -fPIC")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts -fPIC")
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -fPIC")
-    # Minimal optimization - only basic -O1 to maintain precision
-    set(CMAKE_CXX_FLAGS_RELEASE "-O1 -DNDEBUG -fPIC")
-endif()
-
 # Enable Link Time Optimization for maximum performance
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     # Disable LTO to avoid numerical precision issues
@@ -122,6 +109,9 @@ add_subdirectory(dependencies)
 
 # Create static library with optimizations
 add_library(CrystalAnalysis STATIC ${LIBRARY_SOURCES})
+
+# Add -fPIC for creating shared libraries from static libraries
+set_target_properties(CrystalAnalysis PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # No additional compile options - keep it simple for accuracy
 target_compile_options(CrystalAnalysis PRIVATE

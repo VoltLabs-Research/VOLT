@@ -4,6 +4,9 @@
 #include <opendxa/utilities/memory_pool.h>
 #include <opendxa/structures/dislocation_network.h>
 #include <opendxa/geometry/interface_mesh.h>
+#include <boost/random/uniform_int_distribution.hpp>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int.hpp>
 
 namespace OpenDXA{
 
@@ -84,10 +87,10 @@ private:
 	int _maxExtendedBurgersCircuitSize;
 
 	MemoryPool<BurgersCircuit> _circuitPool;
-	
+	boost::random::mt19937 _rng;
 	std::vector<DislocationNode*> _danglingNodes;
 	BurgersCircuit* _unusedCircuit;
-	mutable size_t _edgeStartIndex;  // Deterministic edge selection counter
+	mutable size_t _edgeStartIndex;  
 };
 
 }
