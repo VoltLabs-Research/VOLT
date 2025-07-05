@@ -4,9 +4,7 @@
 #include <memory>
 #include <string>
 #include <pybind11/pybind11.h>
-#include <opendxa/core/stacking_faults.hpp>
-#include <opendxa/engine/config.hpp>
-#include <opendxa/core/dislocation_tracing.hpp>
+#include <opendxa/core/dislocation_analysis.h>
 #include <nlohmann/json.hpp>
 #include <pybind11_json/pybind11_json.hpp>
 
@@ -21,27 +19,24 @@ public:
     AnalysisWrapper();
     ~AnalysisWrapper() = default;
 
+    // Configuration methods
     void resetConfig();
-    void setCutoff(double cutoff);
-    void setPBC(bool x, bool y, bool z);
-    void setAtomOffset(double x, double y, double z);
-    void setScaleFactors(double x, double y, double z);
-    void setCircuitSizes(int maxCircuit, int extendedCircuit);
-    void setSmoothingParams(int surfaceSmooth, int lineSmooth, int lineCoarsen);
-    void setSFFlatten(double flatten);
-    void setOutputFiles(const std::string& mainOutput = "");
+    void setInputCrystalStructure(int structure);
+    void setMaxTrialCircuitSize(int size);
+    void setCircuitStretchability(int stretch);
+    void setOnlyPerfectDislocations(bool flag);
     
+    // Main computation method
     json compute(const std::string& inputFile, const std::string& outputFile = "");
     py::dict getConfig() const;
 
 private:
-    void validateCutoff(double cutoff);
-    void validateCircuitSizes(int maxCircuit, int extendedCircuit);
-    void validateSmoothingParams(int surfaceSmooth, int lineSmooth, int lineCoarsen);
-    void validateSFFlatten(double flatten);
-
-    OpenDXA::Config config;
-    std::unique_ptr<StackingFaults> analyzer;
+    std::unique_ptr<OpenDXA::DislocationAnalysis> analyzer;
+    
+    // Validation methods
+    void validateInputFile(const std::string& filePath) const;
+    void validateCircuitSize(int size) const;
+    void validateStretchability(int stretch) const;
 };
 
 }

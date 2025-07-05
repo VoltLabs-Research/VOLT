@@ -1,3 +1,5 @@
+#pragma once
+
 #include <opendxa/core/opendxa.h>
 #include <opendxa/structures/crystal_structure_types.h>
 #include <opendxa/structures/dislocation_network.h>
@@ -44,3 +46,4 @@ private:
 };
 
 }
+

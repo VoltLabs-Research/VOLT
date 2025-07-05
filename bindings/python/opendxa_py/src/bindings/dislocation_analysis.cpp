@@ -1,5 +1,7 @@
 #include <opendxa_py/bindings/dislocation_analysis.hpp>
 #include <opendxa_py/wrappers/dislocation_analysis.hpp>
+#include <opendxa/structures/crystal_structure_types.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -7,38 +9,73 @@ using namespace pybind11::literals;
 namespace OpenDXA::Bindings::Python{
 
 void bindDislocationAnalysis(py::module &m){
-    py::class_<Wrappers::AnalysisWrapper>(
-        m, "DislocationAnalysis", "High-level dislocation analysis interface")
+    // Bind crystal structure enum
+    py::enum_<LatticeStructureType>(m, "LatticeStructureType", "Crystal lattice structure types")
+        .value("FCC", LATTICE_FCC, "Face-centered cubic")
+        .value("BCC", LATTICE_BCC, "Body-centered cubic")
+        .value("HCP", LATTICE_HCP, "Hexagonal close-packed")
+        .value("CUBIC_DIAMOND", LATTICE_CUBIC_DIAMOND, "Cubic diamond")
+        .value("HEX_DIAMOND", LATTICE_HEX_DIAMOND, "Hexagonal diamond")
+        .export_values();
+
+    // Bind the main analysis wrapper class
+    py::class_<Wrappers::AnalysisWrapper>(m, "DislocationAnalysis", 
+        "High-level interface for dislocation analysis using the DXA algorithm")
         .def(py::init<>(), "Create a new dislocation analyzer")
-        .def("reset_config", &Wrappers::AnalysisWrapper::resetConfig, 
-             "Reset all configuration parameters to defaults")
-        .def("set_cutoff", &Wrappers::AnalysisWrapper::setCutoff, 
-             "Set CNA cutoff radius", py::arg("cutoff"))
-        .def("set_pbc", &Wrappers::AnalysisWrapper::setPBC,
-             "Set periodic boundary conditions",
-             py::arg("x"), py::arg("y"), py::arg("z"))
-        .def("set_atom_offset", &Wrappers::AnalysisWrapper::setAtomOffset,
-             "Set atom coordinate offset",
-             py::arg("x"), py::arg("y"), py::arg("z"))
-        .def("set_scale_factors", &Wrappers::AnalysisWrapper::setScaleFactors,
-             "Set cell scaling factors",
-             py::arg("x"), py::arg("y"), py::arg("z"))
-        .def("set_circuit_sizes", &Wrappers::AnalysisWrapper::setCircuitSizes,
-             "Set Burgers circuit parameters",
-             py::arg("max_circuit"), py::arg("extended_circuit"))
-        .def("set_smoothing_params", &Wrappers::AnalysisWrapper::setSmoothingParams,
-             "Set smoothing and coarsening parameters",
-             py::arg("surface_smooth"), py::arg("line_smooth"), py::arg("line_coarsen"))
-        .def("set_sf_flatten", &Wrappers::AnalysisWrapper::setSFFlatten,
-             "Set stacking fault flattening level", py::arg("flatten"))
-        .def("set_output_files", &Wrappers::AnalysisWrapper::setOutputFiles,
-             "Set output file paths",
-             py::arg("main_output") = "")
+        
+        // Configuration methods
+        .def("reset_config", &Wrappers::AnalysisWrapper::resetConfig,
+             "Reset the analyzer to default configuration")
+        
+        .def("set_input_crystal_structure", &Wrappers::AnalysisWrapper::setInputCrystalStructure,
+             "Set the input crystal structure type",
+             py::arg("structure"))
+        
+        .def("set_max_trial_circuit_size", &Wrappers::AnalysisWrapper::setMaxTrialCircuitSize,
+             "Set the maximum trial circuit size for Burgers circuit analysis",
+             py::arg("size"))
+        
+        .def("set_circuit_stretchability", &Wrappers::AnalysisWrapper::setCircuitStretchability,
+             "Set the circuit stretchability parameter",
+             py::arg("stretch"))
+        
+        .def("set_only_perfect_dislocations", &Wrappers::AnalysisWrapper::setOnlyPerfectDislocations,
+             "Set whether to analyze only perfect dislocations",
+             py::arg("flag"))
+        
+        // Main computation method
         .def("compute", &Wrappers::AnalysisWrapper::compute,
-             "Run analysis from input file",
-             py::arg("input_file"), py::arg("output_file") = "")
+             "Run dislocation analysis on the input file",
+             py::arg("input_file"), 
+             py::arg("output_file") = "",
+             R"doc(
+             Run the dislocation analysis algorithm.
+             
+             Parameters:
+             -----------
+             input_file : str
+                 Path to the input atomic structure file (LAMMPS dump, xyz, etc.)
+             output_file : str, optional
+                 Path for output JSON file. If empty, results are only returned.
+                 
+             Returns:
+             --------
+             dict
+                 Analysis results as a JSON-like dictionary containing:
+                 - dislocation_segments: List of identified dislocation segments
+                 - burgers_vectors: Burgers vectors for each segment
+                 - line_directions: Line directions for each segment
+                 - coordinates: 3D coordinates of dislocation lines
+                 - metadata: Analysis parameters and statistics
+             )doc")
+        
         .def("get_config", &Wrappers::AnalysisWrapper::getConfig,
-             "Get current configuration as dictionary");
+             "Get current analyzer configuration as a dictionary")
+        
+        // Documentation
+        .def("__repr__", [](const Wrappers::AnalysisWrapper &a) {
+            return "<DislocationAnalysis: OpenDXA dislocation analysis engine>";
+        });
 }
 
 }

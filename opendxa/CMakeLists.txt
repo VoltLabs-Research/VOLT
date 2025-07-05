@@ -18,15 +18,15 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeR
 
 # Minimal optimization flags for numerical accuracy
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts")
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts -fPIC")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -fPIC")
     # Minimal optimization - only basic -O1 to maintain precision
-    set(CMAKE_CXX_FLAGS_RELEASE "-O1 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O1 -DNDEBUG -fPIC")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts")
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts -fPIC")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -fPIC")
     # Minimal optimization - only basic -O1 to maintain precision
-    set(CMAKE_CXX_FLAGS_RELEASE "-O1 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O1 -DNDEBUG -fPIC")
 endif()
 
 # Enable Link Time Optimization for maximum performance

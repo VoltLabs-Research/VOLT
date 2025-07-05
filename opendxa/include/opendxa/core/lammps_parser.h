@@ -1,3 +1,5 @@
+#pragma once
+
 #include <opendxa/core/opendxa.h>
 #include <opendxa/core/simulation_cell.h>
 #include <opendxa/math/lin_alg.h>
@@ -32,3 +34,4 @@ private:
 };
 
 }
+
