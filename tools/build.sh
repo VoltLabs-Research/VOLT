@@ -1,25 +1,7 @@
-# Default values
 BUILD_TYPE="Release"
 BUILD_DIR="opendxa/build"
 PARALLEL_JOBS=$(nproc)
 
-# Function to print usage
-print_usage() {
-    echo "OpenDXA Build Script"
-    echo "Usage: $0 [mode]"
-    echo ""
-    echo "Build Modes:"
-    echo "  release       Build in Release mode (default, optimized for production)"
-    echo "  debug         Build in Debug mode (with debug symbols, good for segfaults)"
-    echo "  clean         Clean build directory and exit"
-    echo ""
-    echo "Examples:"
-    echo "  $0                   # Build in release mode"
-    echo "  $0 debug             # Build in debug mode"
-    echo "  $0 clean             # Clean build directory"
-}
-
-# Function to check dependencies
 check_dependencies(){
     echo "[INFO] Checking dependencies..."
     
@@ -38,10 +20,11 @@ check_dependencies(){
         exit 1
     fi
     
+    bash tools/install_deps.sh
+
     echo "[SUCCESS] All dependencies found"
 }
 
-# Function to clean build directory
 clean_build() {
     echo "[INFO] Cleaning build directory: $BUILD_DIR"
     if [ -d "$BUILD_DIR" ]; then
@@ -78,7 +61,6 @@ configure_cmake() {
     echo "[SUCCESS] CMake configuration completed"
 }
 
-# Function to build project
 build_project() {
     echo "[INFO] Building project with $PARALLEL_JOBS parallel jobs..."
     
@@ -97,7 +79,6 @@ build_project() {
     echo "[SUCCESS] Build completed in ${build_time}s"
 }
 
-# Parse command line arguments
 case "${1:-}" in
     release|Release|RELEASE|"")
         BUILD_TYPE="Release"
@@ -109,23 +90,16 @@ case "${1:-}" in
         clean_build
         exit 0
         ;;
-    -h|--help|help)
-        print_usage
-        exit 0
-        ;;
     *)
         echo "[ERROR] Unknown option: $1"
-        print_usage
         exit 1
         ;;
 esac
 
-# Main execution
 echo "[INFO] Starting OpenDXA build process..."
 echo "[INFO] Build Type: $BUILD_TYPE"
 echo "[INFO] Using $PARALLEL_JOBS parallel jobs"
 
-# Check if we're in the right directory
 if [ ! -f "opendxa/CMakeLists.txt" ]; then
     echo "[ERROR] opendxa/CMakeLists.txt not found. Please run this script from the project root directory."
     exit 1

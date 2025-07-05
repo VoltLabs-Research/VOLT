@@ -4,6 +4,9 @@ dislocations.json
 
 __pycache__
 
+opendxa/dependencies/
+!opendxa/ptm
+
 # Logs
 logs
 *.log

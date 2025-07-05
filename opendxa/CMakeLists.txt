@@ -4,32 +4,16 @@ if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif()
 
+set(GEOGRAM_SUB_BUILD ON CACHE BOOL "")
+set(GEOGRAM_LIB_ONLY ON CACHE BOOL "")   
+set(GEOGRAM_WITH_GRAPHICS OFF CACHE BOOL "")
+
+include(${CMAKE_SOURCE_DIR}/dependencies/geogram/cmake/geo_detect_platform.cmake)
+
 project(OpenDXA VERSION 1.0.0 LANGUAGES CXX)
 
-# Enable superbuild via FetchContent
-include(FetchContent)
-
-# Kokkos for GPU/CPU parallel
-FetchContent_Declare(
-    kokkos
-    GIT_REPOSITORY https://github.com/kokkos/kokkos.git
-    GIT_TAG master
-)
-
-FetchContent_Declare(
-    nlohmann_json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.11.3
-)
-    
-FetchContent_Declare(
-    geogram
-    GIT_REPOSITORY https://github.com/BrunoLevy/geogram.git
-    GIT_TAG main
-)
-
-# Make available for kokkos, json, geogram
-FetchContent_MakeAvailable(kokkos nlohmann_json geogram)
+add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/json)
+add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/geogram)
 
 # Add local PTM dependency
 add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/ptm)
@@ -146,22 +130,20 @@ target_compile_options(opendxa_lib PRIVATE
 target_compile_definitions(opendxa_lib PRIVATE
     $<$<CONFIG:Release>:NDEBUG>
 )
+
 target_include_directories(opendxa_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/include
-    ${nlohmann_json_SOURCE_DIR}/include
-    ${geogram_SOURCE_DIR}/include
-    ${kokkos_SOURCE_DIR}/core/src
     ${EIGEN3_INCLUDE_DIR}
     ${CMAKE_SOURCE_DIR}/dependencies/ptm/include
 )
+
 target_link_libraries(opendxa_lib PUBLIC
     Threads::Threads
-    ${Boost_LIBRARIES}
+    Boost::boost
     geogram
     PolyhedralTemplateMatching
     nlohmann_json::nlohmann_json
     OpenMP::OpenMP_CXX
-    Kokkos::kokkos
 )
 
 # Executable
