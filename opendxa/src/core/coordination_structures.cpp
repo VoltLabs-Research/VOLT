@@ -59,6 +59,119 @@ int CoordinationStructures::getCoordinationNumber() const{
 	}
 }
 
+double CoordinationStructures::computeLocalCutoff(
+	NearestNeighborFinder& neighList,
+	const NearestNeighborFinder::Query<MAX_NEIGHBORS>& neighQuery,
+	int numNeighbors,
+	int coordinationNumber,
+	size_t particleIndex,
+	int* neighborIndices,
+	Vector3* neighborVectors,
+	NeighborBondArray& neighborArray
+){
+	double localScaling = 0;
+	double localCutoff = 0;
+	
+	switch(_inputCrystalType){
+		case LATTICE_FCC:
+		case LATTICE_HCP:
+			for(int neighbor = 0; neighbor < 12; neighbor++){
+				localScaling += sqrt(neighQuery.results()[neighbor].distanceSq);
+			}
+			localScaling /= 12;
+			localCutoff = localScaling * (1.0f + sqrt(2.0f)) * 0.5f;
+			break;
+		case LATTICE_BCC:
+			for(int neighbor = 0; neighbor < 8; neighbor++){
+				localScaling += sqrt(neighQuery.results()[neighbor].distanceSq);
+			}
+			localScaling /= 8;
+			localCutoff = localScaling / (sqrt(3.0) / 2.0) * 0.5 * (1.0 + sqrt(2.0));
+			break;
+		case LATTICE_CUBIC_DIAMOND:
+		case LATTICE_HEX_DIAMOND: {
+			// Generate list of second nearest neighbors
+			int outputIndex = 4;
+			for(size_t i = 0; i < 4; i++){
+				const Vector3& v0 = neighQuery.results()[i].delta;
+				neighborVectors[i] = v0;
+				neighborIndices[i] = neighQuery.results()[i].index;
+				
+				NearestNeighborFinder::Query<MAX_NEIGHBORS> neighQuery2(neighList);
+				neighQuery2.findNeighbors(neighList.particlePos(neighborIndices[i]));
+				if(neighQuery2.results().size() < 4) return 0.0;
+
+				for(size_t j = 0; j < 4; j++){
+					Vector3 v = v0 + neighQuery2.results()[j].delta;
+					if(neighQuery2.results()[j].index == particleIndex && v.isZero()) continue;
+					if(outputIndex == 16) return 0;
+
+					neighborIndices[outputIndex] = neighQuery2.results()[j].index;
+					neighborVectors[outputIndex] = v;
+					neighborArray.setNeighborBond(i, outputIndex, true);
+					outputIndex++;
+				}
+
+				if(outputIndex != (i * 3) + 7) return 0;
+			}
+
+			// Compute local scale factor
+			localScaling = 0;
+			for(int neighbor = 4; neighbor< 16; neighbor++){
+				localScaling += neighborVectors[neighbor].length();
+			}
+
+			localScaling /= 12;
+			// 1.2071068 is a geometric constant used to calculate 
+			// the local shear radius in diamond-type structures, and is equal to ((1 + sqrt(2)) / 2).
+			// That is, it allows to delimit the maximum distance allowed between secondary 
+			// neighbors that could still form links coherent with the ideal network.
+			localCutoff = localScaling * 1.2071068;
+			break;
+		}
+		default:
+			return 0.0;
+	}
+
+	double localCutoffSquared = localCutoff * localCutoff;
+
+	switch(_inputCrystalType){
+		case LATTICE_FCC:
+		case LATTICE_HCP:
+		case LATTICE_BCC:
+			// Make sure the (N + 1) -th atom is beyond the cutoff radius (if it exists)
+			if(numNeighbors > coordinationNumber && neighQuery.results()[coordinationNumber].distanceSq <= localCutoffSquared){
+				return 0.0;
+			}
+
+			// Compute common neighbor fit-flag array
+			for(int ni1 = 0; ni1 < coordinationNumber; ni1++){
+				neighborIndices[ni1] = neighQuery.results()[ni1].index;
+				neighborVectors[ni1] = neighQuery.results()[ni1].delta;
+				neighborArray.setNeighborBond(ni1, ni1, false);
+				for(int ni2 = ni1 + 1; ni2 < coordinationNumber; ni2++){
+					neighborArray.setNeighborBond(ni1, ni2, (neighQuery.results()[ni1].delta - neighQuery.results()[ni2].delta).squaredLength() <= localCutoffSquared);
+				}
+			}
+			break;
+		case LATTICE_CUBIC_DIAMOND:
+		case LATTICE_HEX_DIAMOND:
+			// Compute common neighbor bit-flag array
+			for(int ni1 = 4; ni1 < coordinationNumber; ni1++){
+				for(int ni2 = ni1 + 1; ni2 < coordinationNumber; ni2++){
+					auto distance = (neighborVectors[ni1] - neighborVectors[ni2]);
+					bool isBonded = distance.squaredLength() <= localCutoffSquared;
+					neighborArray.setNeighborBond(ni1, ni2, isBonded);
+				}
+			}
+			break;
+		default:
+			return 0.0;
+	}
+
+	return localCutoff;
+}
+
 double CoordinationStructures::determineLocalStructure(
 	NearestNeighborFinder& neighList, 
 	size_t particleIndex,
@@ -79,82 +192,18 @@ double CoordinationStructures::determineLocalStructure(
     // Early rejection of under-coordinated atoms
     if(numNeighbors < coordinationNumber) return 0.0;
 
-    double localScaling = 0;
-    double localCutoff = 0;
-    NeighborBondArray neighborArray;
+	NeighborBondArray neighborArray;
 
-	if(_inputCrystalType != LATTICE_CUBIC_DIAMOND && _inputCrystalType != LATTICE_HEX_DIAMOND){
-		// Compute local scale factor.
-		if(_inputCrystalType == LATTICE_FCC || _inputCrystalType == LATTICE_HCP){
-			for(int n = 0; n < 12; n++){
-				localScaling += sqrt(neighQuery.results()[n].distanceSq);
-			}
-
-			localScaling /= 12;
-			localCutoff = localScaling * (1.0f + sqrt(2.0f)) * 0.5f;
-		}else if(_inputCrystalType == LATTICE_BCC){
-			for(int n = 0; n < 8; n++){
-				localScaling += sqrt(neighQuery.results()[n].distanceSq);
-			}
-
-			localScaling /= 8;
-			localCutoff = localScaling / (sqrt(3.0)/2.0) * 0.5 * (1.0 + sqrt(2.0));
-		}
-
-		double localCutoffSquared =  localCutoff * localCutoff;
-
-		// Make sure the (N+1)-th atom is beyond the cutoff radius (if it exists).
-		if(numNeighbors > coordinationNumber && neighQuery.results()[coordinationNumber].distanceSq <= localCutoffSquared){
-			return 0.0;
-		}
-
-		// Compute common neighbor bit-flag array.
-		for(int ni1 = 0; ni1 < coordinationNumber; ni1++){
-			neighborIndices[ni1] = neighQuery.results()[ni1].index;
-			neighborVectors[ni1] = neighQuery.results()[ni1].delta;
-			neighborArray.setNeighborBond(ni1, ni1, false);
-			for(int ni2 = ni1+1; ni2 < coordinationNumber; ni2++){
-				neighborArray.setNeighborBond(ni1, ni2, (neighQuery.results()[ni1].delta - neighQuery.results()[ni2].delta).squaredLength() <= localCutoffSquared);
-			}
-		}
-	}else{
-		// Generate list of second nearest neighbors.
-		int outputIndex = 4;
-		for(size_t i = 0; i < 4; i++){
-			const Vector3& v0 = neighQuery.results()[i].delta;
-			neighborVectors[i] = v0;
-			neighborIndices[i] = neighQuery.results()[i].index;
-			NearestNeighborFinder::Query<MAX_NEIGHBORS> neighQuery2(neighList);
-			neighQuery2.findNeighbors(neighList.particlePos(neighborIndices[i]));
-			if(neighQuery2.results().size() < 4) return 0.0;
-			for(size_t j = 0; j < 4; j++){
-				Vector3 v = v0 + neighQuery2.results()[j].delta;
-				if(neighQuery2.results()[j].index == particleIndex && v.isZero()) continue;
-				if(outputIndex == 16) return 0.0;
-				neighborIndices[outputIndex] = neighQuery2.results()[j].index;
-				neighborVectors[outputIndex] = v;
-				neighborArray.setNeighborBond(i, outputIndex, true);
-				outputIndex++;
-			}
-			if(outputIndex != i*3 + 7) return 0.0;
-		}
-
-		// Compute local scale factor.
-		localScaling = 0;
-		for(int n = 4; n < 16; n++){
-			localScaling += neighborVectors[n].length();
-		}
-		localScaling /= 12;
-		localCutoff = localScaling * double(1.2071068);
-		double localCutoffSquared =  localCutoff * localCutoff;
-
-		// Compute common neighbor bit-flag array.
-		for(int ni1 = 4; ni1 < coordinationNumber; ni1++){
-			for(int ni2 = ni1+1; ni2 < coordinationNumber; ni2++){
-				neighborArray.setNeighborBond(ni1, ni2, (neighborVectors[ni1] - neighborVectors[ni2]).squaredLength() <= localCutoffSquared);
-			}
-		}
-	}
+	double localCutoff = computeLocalCutoff(
+		neighList,
+		neighQuery,
+		numNeighbors,
+		coordinationNumber,
+		particleIndex,
+		neighborIndices,
+		neighborVectors,
+		neighborArray
+	);
 
 	CoordinationStructureType coordinationType;
 	int cnaSignatures[MAX_NEIGHBORS];

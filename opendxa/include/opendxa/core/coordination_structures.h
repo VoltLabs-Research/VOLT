@@ -31,6 +31,16 @@ public:
 
 private:
     int getCoordinationNumber() const;
+    double computeLocalCutoff(
+        NearestNeighborFinder& neighList,
+        const NearestNeighborFinder::Query<MAX_NEIGHBORS>& neighQuery,
+        int numNeighbors,
+        int coordinationNumber,
+        size_t particleIndex,
+        int* neighborIndices,
+        Vector3* neighborVectors,
+        NeighborBondArray& neighborArray
+    );
 
     const SimulationCell& _simCell;
     bool _identifyPlanarDefects;
