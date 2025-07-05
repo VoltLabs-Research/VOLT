@@ -31,6 +31,22 @@ public:
 
 private:
     int getCoordinationNumber() const;
+
+    CoordinationStructureType computeCoordinationType(
+        const NeighborBondArray& neighborArray,
+        int coordinationNumber,
+        int* cnaSignatures
+    );
+
+    bool findMatchingNeighborPermutation(
+        CoordinationStructureType coordinationType,
+        int* neighborMapping,
+        int* previousMapping,
+        int coordinationNumber,
+        const int* cnaSignatures,
+        const NeighborBondArray& neighborArray
+    );
+
     double computeLocalCutoff(
         NearestNeighborFinder& neighList,
         const NearestNeighborFinder::Query<MAX_NEIGHBORS>& neighQuery,
