@@ -88,20 +88,29 @@ bool DelaunayTessellation::generateTessellation(
 	}
 
 	static bool isGeogramInitialized = false;
-	if(!isGeogramInitialized) {
-		isGeogramInitialized = true;
-		GEO::initialize();
-		GEO::set_assert_mode(GEO::ASSERT_ABORT);
-	}
+	if(!isGeogramInitialized){
+		// TODO: this is ugly
+        isGeogramInitialized = true;
+        auto* old_cout = std::cout.rdbuf();
+        auto* old_cerr = std::cerr.rdbuf();
+        auto* old_clog = std::clog.rdbuf();
+        std::cout.rdbuf(nullptr);
+        std::cerr.rdbuf(nullptr);
+        std::clog.rdbuf(nullptr);
+        GEO::initialize();
+        GEO::set_assert_mode(GEO::ASSERT_ABORT);
+        std::cout.rdbuf(old_cout);
+        std::cerr.rdbuf(old_cerr);
+        std::clog.rdbuf(old_clog);
+        GEO::Logger::instance()->set_quiet(true);
+    }
 
 	_dt = new GEO::Delaunay3d();
 	_dt->set_keeps_infinite(true);
 	_dt->set_reorder(true);
 
-	bool result = _dt->set_vertices(_pointData.size() / 3, _pointData.data(), [](int, int) {
-		return true;
-	});
-	if(!result) return false;
+	GEO::index_t nv = static_cast<GEO::index_t>(_pointData.size() / 3);
+	_dt->set_vertices(nv, _pointData.data());
 
 	_numPrimaryTetrahedra = 0;
 	_cellInfo.resize(_dt->nb_cells());
@@ -110,6 +119,7 @@ bool DelaunayTessellation::generateTessellation(
 		_cellInfo[cell] = { isGhost, isGhost ? -1 : static_cast<int>(_numPrimaryTetrahedra++) };
 	}
 
+	// TODO: dt is valid?
 	return true;
 }
 
