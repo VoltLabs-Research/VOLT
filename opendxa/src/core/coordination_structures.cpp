@@ -426,14 +426,7 @@ double CoordinationStructures::determineLocalStructure(
 	return localCutoff;
 }
 
-void CoordinationStructures::initializeStructures(){
-    _coordinationStructures[COORD_OTHER].numNeighbors = 0;
-    _latticeStructures[LATTICE_OTHER].coordStructure = &_coordinationStructures[COORD_OTHER];
-	_latticeStructures[LATTICE_OTHER].primitiveCell.setZero();
-	_latticeStructures[LATTICE_OTHER].primitiveCellInverse.setZero();
-	_latticeStructures[LATTICE_OTHER].maxNeighbors = 0;
-
-	// FCC
+void CoordinationStructures::initializeFCC(){
 	Vector3 fccVec[12] = {
 		Vector3( 0.5,  0.5,  0.0),
 		Vector3( 0.0,  0.5,  0.5),
@@ -449,25 +442,17 @@ void CoordinationStructures::initializeStructures(){
 		Vector3( 0.5,  0.0, -0.5)
 	};
 
-	_coordinationStructures[COORD_FCC].numNeighbors = 12;
-	for(int ni1 = 0; ni1 < 12; ni1++){
-		_coordinationStructures[COORD_FCC].neighborArray.setNeighborBond(ni1, ni1, false);
-		for(int ni2 = ni1 + 1; ni2 < 12; ni2++){
-			bool bonded = (fccVec[ni1] - fccVec[ni2]).length() < (sqrt(0.5f)+1.0)*0.5;
-			_coordinationStructures[COORD_FCC].neighborArray.setNeighborBond(ni1, ni2, bonded);
-		}
-		_coordinationStructures[COORD_FCC].cnaSignatures[ni1] = 0;
-	}
+	initializeCoordinationStructure(COORD_FCC, fccVec, 12, [&](const Vector3& v1, const Vector3& v2){
+		return (v1 - v2).length() < (sqrt(0.5f) + 1.0) * 0.5;
+	}, [](int ni){ return 0; });
 
-	_coordinationStructures[COORD_FCC].latticeVectors.assign(std::begin(fccVec), std::end(fccVec));
-	_latticeStructures[LATTICE_FCC].latticeVectors.assign(std::begin(fccVec), std::end(fccVec));
-	_latticeStructures[LATTICE_FCC].coordStructure = &_coordinationStructures[COORD_FCC];
-	_latticeStructures[LATTICE_FCC].primitiveCell.column(0) = Vector3(0.5,0.5,0.0);
-	_latticeStructures[LATTICE_FCC].primitiveCell.column(1) = Vector3(0.0,0.5,0.5);
-	_latticeStructures[LATTICE_FCC].primitiveCell.column(2) = Vector3(0.5,0.0,0.5);
-	_latticeStructures[LATTICE_FCC].maxNeighbors = 12;
+	initializeLatticeStructure(LATTICE_FCC, fccVec, 12, &_coordinationStructures[COORD_FCC]);
+    _latticeStructures[LATTICE_FCC].primitiveCell.column(0) = Vector3(0.5, 0.5, 0.0);
+    _latticeStructures[LATTICE_FCC].primitiveCell.column(1) = Vector3(0.0, 0.5, 0.5);
+    _latticeStructures[LATTICE_FCC].primitiveCell.column(2) = Vector3(0.5, 0.0, 0.5);
+}
 
-	// HCP
+void CoordinationStructures::initializeHCP(){
 	Vector3 hcpVec[18] = {
 		Vector3(sqrt(2.0)/4.0, -sqrt(6.0)/4.0, 0.0),
 		Vector3(-sqrt(2.0)/2.0, 0.0, 0.0),
@@ -481,7 +466,6 @@ void CoordinationStructures::initializeStructures(){
 		Vector3(0.0, -sqrt(6.0)/6.0, sqrt(3.0)/3.0),
 		Vector3(sqrt(2.0)/4.0, sqrt(6.0)/12.0, sqrt(3.0)/3.0),
 		Vector3(-sqrt(2.0)/4.0, sqrt(6.0)/12.0, sqrt(3.0)/3.0),
-
 		Vector3(0.0, sqrt(6.0)/6.0, sqrt(3.0)/3.0),
 		Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
 		Vector3(sqrt(2.0)/4.0, -sqrt(6.0)/12.0, sqrt(3.0)/3.0),
@@ -490,24 +474,17 @@ void CoordinationStructures::initializeStructures(){
 		Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/12.0, sqrt(3.0)/3.0)
 	};
 
-	_coordinationStructures[COORD_HCP].numNeighbors = 12;
-	for(int ni1 = 0; ni1 < 12; ni1++){
-		_coordinationStructures[COORD_HCP].neighborArray.setNeighborBond(ni1, ni1, false);
-		for(int ni2 = ni1 + 1; ni2 < 12; ni2++){
-			bool bonded = (hcpVec[ni1] - hcpVec[ni2]).length() < (sqrt(0.5)+1.0)*0.5;
-			_coordinationStructures[COORD_HCP].neighborArray.setNeighborBond(ni1, ni2, bonded);
-		}
-		_coordinationStructures[COORD_HCP].cnaSignatures[ni1] = (hcpVec[ni1].z() == 0) ? 1 : 0;
-	}
-	_coordinationStructures[COORD_HCP].latticeVectors.assign(std::begin(hcpVec), std::begin(hcpVec) + 12);
-	_latticeStructures[LATTICE_HCP].latticeVectors.assign(std::begin(hcpVec), std::end(hcpVec));
-	_latticeStructures[LATTICE_HCP].coordStructure = &_coordinationStructures[COORD_HCP];
-	_latticeStructures[LATTICE_HCP].primitiveCell.column(0) = Vector3(sqrt(0.5)/2, -sqrt(6.0)/4, 0.0);
-	_latticeStructures[LATTICE_HCP].primitiveCell.column(1) = Vector3(sqrt(0.5)/2, sqrt(6.0)/4, 0.0);
-	_latticeStructures[LATTICE_HCP].primitiveCell.column(2) = Vector3(0.0, 0.0, sqrt(8.0/6.0));
-	_latticeStructures[LATTICE_HCP].maxNeighbors = 12;
+	initializeCoordinationStructure(COORD_HCP, hcpVec, 12, [&](const Vector3& v1, const Vector3& v2){
+		return (v1 - v2).length() < (sqrt(0.5) + 1.0) * 0.5;
+	}, [&](int ni){ return (hcpVec[ni].z() == 0) ? 1 : 0; });
 
-	// BCC
+	initializeLatticeStructure(LATTICE_HCP, hcpVec, 18, &_coordinationStructures[COORD_HCP]);
+    _latticeStructures[LATTICE_HCP].primitiveCell.column(0) = Vector3(sqrt(0.5)/2, -sqrt(6.0)/4, 0.0);
+    _latticeStructures[LATTICE_HCP].primitiveCell.column(1) = Vector3(sqrt(0.5)/2, sqrt(6.0)/4, 0.0);
+    _latticeStructures[LATTICE_HCP].primitiveCell.column(2) = Vector3(0.0, 0.0, sqrt(8.0/6.0));
+}
+
+void CoordinationStructures::initializeBCC(){
 	Vector3 bccVec[14] = {
 		Vector3( 0.5,  0.5,  0.5),
 		Vector3(-0.5,  0.5,  0.5),
@@ -525,25 +502,17 @@ void CoordinationStructures::initializeStructures(){
 		Vector3( 0.0,  0.0, -1.0)
 	};
 
-	_coordinationStructures[COORD_BCC].numNeighbors = 14;
-	for(int ni1 = 0; ni1 < 14; ni1++){
-		_coordinationStructures[COORD_BCC].neighborArray.setNeighborBond(ni1, ni1, false);
-		for(int ni2 = ni1 + 1; ni2 < 14; ni2++){
-			bool bonded = (bccVec[ni1] - bccVec[ni2]).length() < (double(1)+sqrt(double(2)))*double(0.5);
-			_coordinationStructures[COORD_BCC].neighborArray.setNeighborBond(ni1, ni2, bonded);
-		}
-		_coordinationStructures[COORD_BCC].cnaSignatures[ni1] = (ni1 < 8) ? 0 : 1;
-	}
+	initializeCoordinationStructure(COORD_BCC, bccVec, 14, [&](const Vector3& v1, const Vector3& v2){
+		return (v1 - v2).length() < (double(1) + sqrt(double(2))) * double(0.5);
+	}, [](int ni) { return (ni < 8) ? 0 : 1; });
 
-	_coordinationStructures[COORD_BCC].latticeVectors.assign(std::begin(bccVec), std::end(bccVec));
-	_latticeStructures[LATTICE_BCC].latticeVectors.assign(std::begin(bccVec), std::end(bccVec));
-	_latticeStructures[LATTICE_BCC].coordStructure = &_coordinationStructures[COORD_BCC];
-	_latticeStructures[LATTICE_BCC].primitiveCell.column(0) = Vector3(1.0,0.0,0.0);
-	_latticeStructures[LATTICE_BCC].primitiveCell.column(1) = Vector3(0.0,1.0,0.0);
-	_latticeStructures[LATTICE_BCC].primitiveCell.column(2) = Vector3(0.5,0.5,0.5);
-	_latticeStructures[LATTICE_BCC].maxNeighbors = 14;
+	initializeLatticeStructure(LATTICE_BCC, bccVec, 14, &_coordinationStructures[COORD_BCC]);
+    _latticeStructures[LATTICE_BCC].primitiveCell.column(0) = Vector3(1.0, 0.0, 0.0);
+    _latticeStructures[LATTICE_BCC].primitiveCell.column(1) = Vector3(0.0, 1.0, 0.0);
+    _latticeStructures[LATTICE_BCC].primitiveCell.column(2) = Vector3(0.5, 0.5, 0.5);
+}
 
-	// Cubic diamond
+void CoordinationStructures::initializeCubicDiamond(){
 	Vector3 diamondCubicVec[] = {
 		Vector3(0.25, 0.25, 0.25),
 		Vector3(0.25, -0.25, -0.25),
@@ -568,32 +537,15 @@ void CoordinationStructures::initializeStructures(){
 		Vector3(-0.25, 0.25, 0.25),
 		Vector3(-0.25, -0.25, -0.25)
 	};
-	_coordinationStructures[COORD_CUBIC_DIAMOND].numNeighbors = 16;
 
-	for(int ni1 = 0; ni1 < 16; ni1++){
-		_coordinationStructures[COORD_CUBIC_DIAMOND].neighborArray.setNeighborBond(ni1, ni1, false);
-		double cutoff = (ni1 < 4) ? (sqrt(3.0)*0.25+sqrt(0.5))/2 : (1.0+sqrt(0.5))/2;
+    initializeDiamondStructure(COORD_CUBIC_DIAMOND, LATTICE_CUBIC_DIAMOND, diamondCubicVec, 16, 20);
+    
+    _latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(0) = Vector3(0.5, 0.5, 0.0);
+    _latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(1) = Vector3(0.0, 0.5, 0.5);
+    _latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(2) = Vector3(0.5, 0.0, 0.5);
+}
 
-		for(int ni2 = ni1 + 1; ni2 < 4; ni2++){
-			_coordinationStructures[COORD_CUBIC_DIAMOND].neighborArray.setNeighborBond(ni1, ni2, false);
-		}
-
-		for(int ni2 = std::max(ni1 + 1, 4); ni2 < 16; ni2++){
-			bool bonded = (diamondCubicVec[ni1] - diamondCubicVec[ni2]).length() < cutoff;
-			_coordinationStructures[COORD_CUBIC_DIAMOND].neighborArray.setNeighborBond(ni1, ni2, bonded);
-		}
-		_coordinationStructures[COORD_CUBIC_DIAMOND].cnaSignatures[ni1] = (ni1 < 4) ? 0 : 1;
-	}
-
-	_coordinationStructures[COORD_CUBIC_DIAMOND].latticeVectors.assign(std::begin(diamondCubicVec), std::begin(diamondCubicVec) + 16);
-	_latticeStructures[LATTICE_CUBIC_DIAMOND].latticeVectors.assign(std::begin(diamondCubicVec), std::end(diamondCubicVec));
-	_latticeStructures[LATTICE_CUBIC_DIAMOND].coordStructure = &_coordinationStructures[COORD_CUBIC_DIAMOND];
-	_latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(0) = Vector3(0.5,0.5,0.0);
-	_latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(1) = Vector3(0.0,0.5,0.5);
-	_latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(2) = Vector3(0.5,0.0,0.5);
-	_latticeStructures[LATTICE_CUBIC_DIAMOND].maxNeighbors = 16;
-
-	// Hexagonal diamond
+void CoordinationStructures::initializeHexagonalDiamond(){
 	Vector3 diamondHexVec[] = {
 		Vector3(-sqrt(2.0)/4, sqrt(3.0/2.0)/6, -sqrt(3.0)/12),
 		Vector3(0, -sqrt(3.0/2.0)/3, -sqrt(3.0)/12),
@@ -634,29 +586,94 @@ void CoordinationStructures::initializeStructures(){
 		Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/12.0, sqrt(3.0)/3.0)
 	};
 
-	_coordinationStructures[COORD_HEX_DIAMOND].numNeighbors = 16;
-	for(int ni1 = 0; ni1 < 16; ni1++){
-		_coordinationStructures[COORD_HEX_DIAMOND].neighborArray.setNeighborBond(ni1, ni1, false);
-		double cutoff = (ni1 < 4) ? (sqrt(3.0)*0.25+sqrt(0.5))/2 : (1.0+sqrt(0.5))/2;
-		for(int ni2 = ni1 + 1; ni2 < 4; ni2++){
-			_coordinationStructures[COORD_HEX_DIAMOND].neighborArray.setNeighborBond(ni1, ni2, false);
-		}
+	initializeDiamondStructure(COORD_HEX_DIAMOND, LATTICE_HEX_DIAMOND, diamondHexVec, 16, 32);
+    
+    _latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(0) = Vector3(sqrt(0.5)/2, -sqrt(6.0)/4, 0.0);
+    _latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(1) = Vector3(sqrt(0.5)/2, sqrt(6.0)/4, 0.0);
+    _latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(2) = Vector3(0.0, 0.0, sqrt(8.0/6.0));
+}
 
-		for(int ni2 = std::max(ni1 + 1, 4); ni2 < 16; ni2++){
-			bool bonded = (diamondHexVec[ni1] - diamondHexVec[ni2]).length() < cutoff;
-			_coordinationStructures[COORD_HEX_DIAMOND].neighborArray.setNeighborBond(ni1, ni2, bonded);
-		}
+void CoordinationStructures::initializeOther(){
+    _coordinationStructures[COORD_OTHER].numNeighbors = 0;
+    _latticeStructures[LATTICE_OTHER].coordStructure = &_coordinationStructures[COORD_OTHER];
+    _latticeStructures[LATTICE_OTHER].primitiveCell.setZero();
+    _latticeStructures[LATTICE_OTHER].primitiveCellInverse.setZero();
+    _latticeStructures[LATTICE_OTHER].maxNeighbors = 0;
+}
 
-		_coordinationStructures[COORD_HEX_DIAMOND].cnaSignatures[ni1] = (ni1 < 4) ? 0 : ((diamondHexVec[ni1].z() == 0) ? 2 : 1);
-	}
+template <typename BondPredicate, typename SignatureFunction>
+void CoordinationStructures::initializeCoordinationStructure(
+	int coordType,
+	const Vector3* vectors,
+	int numNeighbors,
+	BondPredicate bondPred,
+	SignatureFunction sigFunc
+){
+	_coordinationStructures[coordType].numNeighbors = numNeighbors;
+	for(int ni1 = 0; ni1 < numNeighbors; ni1++){
+        _coordinationStructures[coordType].neighborArray.setNeighborBond(ni1, ni1, false);
+        for(int ni2 = ni1 + 1; ni2 < numNeighbors; ni2++){
+            bool bonded = bondPred(vectors[ni1], vectors[ni2]);
+            _coordinationStructures[coordType].neighborArray.setNeighborBond(ni1, ni2, bonded);
+        }
+        _coordinationStructures[coordType].cnaSignatures[ni1] = sigFunc(ni1);
+    }
+    
+    _coordinationStructures[coordType].latticeVectors.assign(vectors, vectors + numNeighbors);
+}
 
-	_coordinationStructures[COORD_HEX_DIAMOND].latticeVectors.assign(std::begin(diamondHexVec), std::begin(diamondHexVec) + 16);
-	_latticeStructures[LATTICE_HEX_DIAMOND].latticeVectors.assign(std::begin(diamondHexVec), std::end(diamondHexVec));
-	_latticeStructures[LATTICE_HEX_DIAMOND].coordStructure = &_coordinationStructures[COORD_HEX_DIAMOND];
-	_latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(0) = Vector3(sqrt(0.5)/2, -sqrt(6.0)/4, 0.0);
-	_latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(1) = Vector3(sqrt(0.5)/2, sqrt(6.0)/4, 0.0);
-	_latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(2) = Vector3(0.0, 0.0, sqrt(8.0/6.0));
-	_latticeStructures[LATTICE_HEX_DIAMOND].maxNeighbors = 16;
+void CoordinationStructures::initializeLatticeStructure(
+    int latticeType, 
+    const Vector3* vectors, 
+    int totalVectors,
+    CoordinationStructure* coordStruct
+){
+    _latticeStructures[latticeType].latticeVectors.assign(vectors, vectors + totalVectors);
+    _latticeStructures[latticeType].coordStructure = coordStruct;
+    _latticeStructures[latticeType].maxNeighbors = coordStruct->numNeighbors;
+}
+
+void CoordinationStructures::initializeDiamondStructure(
+    int coordType, 
+    int latticeType,
+    const Vector3* vectors, 
+    int numNeighbors, 
+    int totalVectors
+){
+    _coordinationStructures[coordType].numNeighbors = numNeighbors;
+    
+    for(int ni1 = 0; ni1 < numNeighbors; ni1++){
+        _coordinationStructures[coordType].neighborArray.setNeighborBond(ni1, ni1, false);
+        double cutoff = (ni1 < 4) ? (sqrt(3.0)*0.25+sqrt(0.5))/2 : (1.0+sqrt(0.5))/2;
+
+        for(int ni2 = ni1 + 1; ni2 < 4; ni2++){
+            _coordinationStructures[coordType].neighborArray.setNeighborBond(ni1, ni2, false);
+        }
+
+        for(int ni2 = std::max(ni1 + 1, 4); ni2 < numNeighbors; ni2++){
+            bool bonded = (vectors[ni1] - vectors[ni2]).length() < cutoff;
+            _coordinationStructures[coordType].neighborArray.setNeighborBond(ni1, ni2, bonded);
+        }
+        
+        if(coordType == COORD_HEX_DIAMOND){
+            _coordinationStructures[coordType].cnaSignatures[ni1] = 
+                (ni1 < 4) ? 0 : ((vectors[ni1].z() == 0) ? 2 : 1);
+        }else{
+            _coordinationStructures[coordType].cnaSignatures[ni1] = (ni1 < 4) ? 0 : 1;
+        }
+    }
+
+    _coordinationStructures[coordType].latticeVectors.assign(vectors, vectors + numNeighbors);
+    initializeLatticeStructure(latticeType, vectors, totalVectors, &_coordinationStructures[coordType]);
+}
+
+void CoordinationStructures::initializeStructures(){
+	initializeOther();
+	initializeFCC();
+	initializeHCP();
+	initializeBCC();
+	initializeCubicDiamond();
+	initializeHexagonalDiamond();
 
 	for(auto coordStruct = std::begin(_coordinationStructures); coordStruct != std::end(_coordinationStructures); ++coordStruct){
 		// Find two non-coplanar common neighbors for every neighbor bond.

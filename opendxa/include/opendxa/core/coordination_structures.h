@@ -47,6 +47,37 @@ private:
         const NeighborBondArray& neighborArray
     );
 
+    static void initializeDiamondStructure(
+        int coordType, 
+        int latticeType,
+        const Vector3* vectors, 
+        int numNeighbors, 
+        int totalVectors
+    );
+
+    static void initializeLatticeStructure(
+        int latticeType, 
+        const Vector3* vectors, 
+        int totalVectors,
+        CoordinationStructure* coordStruct
+    );
+
+    template <typename BondPredicate, typename SignatureFunction>
+    static void initializeCoordinationStructure(
+        int coordType,
+        const Vector3* vectors,
+        int numNeighbors,
+        BondPredicate bondPredicate,
+        SignatureFunction signatureFunction
+    );
+
+    static void initializeFCC();
+    static void initializeHCP();
+    static void initializeBCC();
+    static void initializeCubicDiamond();
+    static void initializeHexagonalDiamond();
+    static void initializeOther();
+    
     double computeLocalCutoff(
         NearestNeighborFinder& neighList,
         const NearestNeighborFinder::Query<MAX_NEIGHBORS>& neighQuery,
