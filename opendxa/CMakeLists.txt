@@ -6,6 +6,34 @@ endif()
 
 project(OpenDXA VERSION 1.0.0 LANGUAGES CXX)
 
+# Enable superbuild via FetchContent
+include(FetchContent)
+
+# Kokkos for GPU/CPU parallel
+FetchContent_Declare(
+    kokkos
+    GIT_REPOSITORY https://github.com/kokkos/kokkos.git
+    GIT_TAG master
+)
+
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+)
+    
+FetchContent_Declare(
+    geogram
+    GIT_REPOSITORY https://github.com/BrunoLevy/geogram.git
+    GIT_TAG main
+)
+
+# Make available for kokkos, json, geogram
+FetchContent_MakeAvailable(kokkos nlohmann_json geogram)
+
+# Add local PTM dependency
+add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/ptm)
+
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
     message(STATUS "ccache: ${CCACHE_PROGRAM}")
@@ -27,18 +55,20 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
 
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTO_SUPPORTED OUTPUT _)
+
 if(LTO_SUPPORTED)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
 endif()
 
-set(RELEASE_OPTS
-  -O3
-  -march=native
-  -flto=thin
-  -funroll-loops
-  -fstrict-aliasing
-  -ffp-contract=off
-  -fno-unsafe-math-optimizations
+set(RELEASE_CXX_OPTS
+    -O3
+    -Ofast
+    -march=native
+    -flto=thin
+    -funroll-loops
+    -fstrict-aliasing
+    -ffp-contract=off
+    -fno-unsafe-math-optimizations
 )
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -55,23 +85,11 @@ find_package(Eigen3 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenMP REQUIRED)
 
-find_package(nlohmann_json QUIET)
-if(NOT nlohmann_json_FOUND)
-    include(FetchContent)
-    FetchContent_Declare(
-        nlohmann_json
-        GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG        v3.11.3
-    )
-    FetchContent_MakeAvailable(nlohmann_json)
-endif()
-
 message(STATUS "Eigen3: ${EIGEN3_INCLUDE_DIR}")
 message(STATUS "Boost version: ${Boost_VERSION}")
-message(STATUS "nlohmann_json disponible")
+message(STATUS "nlohmann_json disponible: ${nlohmann_json_SOURCE_DIR}")
 
-include_directories(${EIGEN3_INCLUDE_DIR})
-
+# Source groups
 set(CORE_SOURCES
     src/core/main.cpp
     src/core/property_base.cpp
@@ -80,12 +98,10 @@ set(CORE_SOURCES
     src/core/dislocation_analysis.cpp
     src/core/coordination_structures.cpp
 )
-
 set(STRUCTURES_SOURCES
     src/structures/cluster_graph.cpp
     src/structures/dislocation_network.cpp
 )
-
 set(ANALYSIS_SOURCES
     src/analysis/nearest_neighbor_finder.cpp
     src/analysis/crystal_path_finder.cpp
@@ -95,17 +111,14 @@ set(ANALYSIS_SOURCES
     src/analysis/structure_analysis.cpp
     src/analysis/common_neighbor_analysis.cpp
 )
-
 set(GEOMETRY_SOURCES
     src/geometry/interface_mesh.cpp
     src/geometry/delaunay_tessellation.cpp
     src/geometry/tri_mesh.cpp
 )
-
 set(MATH_SOURCES
     src/math/affine_decomposition.cpp
 )
-
 set(UTILITIES_SOURCES
     src/utilities/json_exporter.cpp
 )
@@ -119,36 +132,39 @@ set(LIBRARY_SOURCES
     ${UTILITIES_SOURCES}
 )
 list(REMOVE_ITEM LIBRARY_SOURCES src/core/main.cpp)
-add_subdirectory(dependencies)
 
-add_library(CrystalAnalysis STATIC ${LIBRARY_SOURCES})
-set_target_properties(CrystalAnalysis PROPERTIES
+# Library
+add_library(opendxa_lib STATIC ${LIBRARY_SOURCES})
+set_target_properties(opendxa_lib PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     INTERPROCEDURAL_OPTIMIZATION TRUE
     LINK_FLAGS_RELEASE "${LINKER_FAST}"
 )
-target_compile_options(CrystalAnalysis PRIVATE
+target_compile_options(opendxa_lib PRIVATE
     $<$<CONFIG:Release>:${RELEASE_CXX_OPTS}>
 )
-target_compile_definitions(CrystalAnalysis PRIVATE
+target_compile_definitions(opendxa_lib PRIVATE
     $<$<CONFIG:Release>:NDEBUG>
 )
-target_include_directories(CrystalAnalysis PUBLIC
+target_include_directories(opendxa_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/dependencies
-    ${CMAKE_SOURCE_DIR}/dependencies/geogram
-    ${CMAKE_SOURCE_DIR}/dependencies/ptm
+    ${nlohmann_json_SOURCE_DIR}/include
+    ${geogram_SOURCE_DIR}/include
+    ${kokkos_SOURCE_DIR}/core/src
     ${EIGEN3_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/dependencies/ptm/include
 )
-target_link_libraries(CrystalAnalysis PUBLIC
+target_link_libraries(opendxa_lib PUBLIC
     Threads::Threads
     ${Boost_LIBRARIES}
     geogram
     PolyhedralTemplateMatching
     nlohmann_json::nlohmann_json
     OpenMP::OpenMP_CXX
+    Kokkos::kokkos
 )
 
+# Executable
 add_executable(opendxa src/core/main.cpp)
 set_target_properties(opendxa PROPERTIES
     LINK_FLAGS_RELEASE "${LINKER_FAST}"
@@ -159,15 +175,9 @@ target_compile_options(opendxa PRIVATE
 target_compile_definitions(opendxa PRIVATE
     $<$<CONFIG:Release>:NDEBUG>
 )
-target_include_directories(opendxa PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/dependencies
-    ${CMAKE_SOURCE_DIR}/dependencies/geogram
-    ${CMAKE_SOURCE_DIR}/dependencies/ptm
-    ${EIGEN3_INCLUDE_DIR}
-)
-target_link_libraries(opendxa PRIVATE CrystalAnalysis)
+target_link_libraries(opendxa PRIVATE opendxa_lib)
 
-install(TARGETS opendxa       DESTINATION bin)
-install(TARGETS CrystalAnalysis DESTINATION lib)
-install(DIRECTORY include/     DESTINATION include)
+# Installation
+install(TARGETS opendxa DESTINATION bin)
+install(TARGETS opendxa_lib DESTINATION lib)
+install(DIRECTORY include/ DESTINATION include)

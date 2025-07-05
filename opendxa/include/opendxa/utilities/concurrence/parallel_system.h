@@ -36,19 +36,18 @@ public:
         const int maxThreads = std::thread::hardware_concurrency();
         omp_set_num_threads(maxThreads);
         omp_set_dynamic(0);
+        omp_set_nested(1);
     }
 
     template <typename IndexType, typename Function>
     static void parallelFor(IndexType count, Function &&func){
         if(count <= 0) return;
-        parallelForOpenMP(count, std::forward<Function>(func));
-    }
-
-    template <typename IndexType, typename Function>
-    static void parallelForOpenMP(IndexType count, Function &&func){
-        #pragma omp parallel for schedule(dynamic, 1)
-        for(IndexType i = 0; i < count; ++i){
-            func(i);
+        #pragma omp parallel
+        {
+            #pragma omp for schedule(static)
+            for(IndexType i = 0; i < count; ++i){
+                func(i);
+            }
         }
     }
 
@@ -56,9 +55,6 @@ public:
         return omp_get_max_threads();
     }
 };
-
-#define OPENDXA_PARALLEL_FOR(count, lambda) \
-    OpenDXA::ParallelSystem::parallelFor(count, lambda)
 
 #define PROFILE(name) OpenDXA::PerfomanceProfiler _prof(name)
 
