@@ -192,22 +192,19 @@ void StructureAnalysis::applyPreferredOrientation(Cluster* cluster){
 }
 
 void StructureAnalysis::reorientAtomsToAlignClusters(){
-    size_t N = positions()->size();
-    ParallelSystem::parallelFor(N, [this](size_t atomIndex){
-        int clusterId = _atomClusters->getInt(atomIndex);
-        if(clusterId == 0) return;
+	for(size_t atomIndex = 0; atomIndex < positions()->size(); atomIndex++){
+		int clusterId = _atomClusters->getInt(atomIndex);
+		if(clusterId == 0) continue;
 
-        Cluster* cluster = clusterGraph().findCluster(clusterId);
-        assert(cluster);
-        if(cluster->symmetryTransformation == 0) return;
+		Cluster* cluster = clusterGraph().findCluster(clusterId);
+		assert(cluster);
+		if(cluster->symmetryTransformation == 0) continue;
 
-        const auto& latticeStructure =
-            CoordinationStructures::_latticeStructures[ cluster->structure ];
-        int oldSym = _atomSymmetryPermutations->getInt(atomIndex);
-        int newSym = latticeStructure.permutations[oldSym]
-                                        .inverseProduct[ cluster->symmetryTransformation ];
-        _atomSymmetryPermutations->setInt(atomIndex, newSym);
-    });
+		const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[cluster->structure];
+		int oldSymmetry = _atomSymmetryPermutations->getInt(atomIndex);
+		int newSymmetry = latticeStructure.permutations[oldSymmetry].inverseProduct[cluster->symmetryTransformation];
+		_atomSymmetryPermutations->setInt(atomIndex, newSymmetry);
+	}
 }
 
 bool StructureAnalysis::buildClusters(){
@@ -234,15 +231,15 @@ bool StructureAnalysis::buildClusters(){
 }
 
 bool StructureAnalysis::connectClusters(){
-    size_t N = positions()->size();
-    ParallelSystem::parallelFor(N, [this](size_t atomIndex){
-        int clusterId = _atomClusters->getInt(atomIndex);
-        if(clusterId == 0) return;
-        Cluster* cluster1 = clusterGraph().findCluster(clusterId);
-        assert(cluster1);
-        connectClusterNeighbors(atomIndex, cluster1);
-    });
-    return true;
+	for(size_t atomIndex = 0; atomIndex < positions()->size(); atomIndex++){
+		int clusterId = _atomClusters->getInt(atomIndex);
+		if(clusterId == 0) continue;
+
+		Cluster* cluster1 = clusterGraph().findCluster(clusterId);
+		assert(cluster1);
+		connectClusterNeighbors(atomIndex, cluster1);
+	}
+	return true;
 }
 
 void StructureAnalysis::connectClusterNeighbors(int atomIndex, Cluster* cluster1){
@@ -329,19 +326,15 @@ bool StructureAnalysis::calculateMisorientation(int atomIndex, int neighbor, int
 bool StructureAnalysis::formSuperClusters(){
 	size_t oldTransitionCount = clusterGraph().clusterTransitions().size();
 
-	ParallelSystem::parallelFor(
-		clusterGraph().clusters().size(),
-		[this](size_t ci){
-			auto& clusters = clusterGraph().clusters();
-			Cluster* cluster = clusters[ci];
-			if(!cluster || cluster->id == 0) return;
-			cluster->rank = 0;
-			cluster->parentTransition = nullptr;
-			if(cluster->structure != _inputCrystalType){
-				processDefectCluster(cluster);
-			}
+	for(Cluster* cluster : clusterGraph().clusters()){
+		if(!cluster || cluster->id == 0) continue;
+		cluster->rank = 0;
+		assert(cluster->parentTransition == nullptr);
+
+		if(cluster->structure != _inputCrystalType){
+			processDefectCluster(cluster);
 		}
-	);
+	}
 
 	size_t newTransitionCount = clusterGraph().clusterTransitions().size();
 

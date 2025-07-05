@@ -20,11 +20,11 @@ else
     echo "Geogram already exists."
 fi
 
-if [ ! -d "pybind11" ]; then
-    echo "Downloading pybind11..."
-    git clone --depth 1 https://github.com/pybind/pybind11.git pybind11
+if [ ! -d "pybind11_json" ]; then
+    echo "Downloading pybind11_json..."
+    git clone --depth 1 https://github.com/pybind/pybind11_json pybind11_json
 else
-    echo "pybind11 already exists."
+    echo "pybind11_json already exists."
 fi
 
 cd ..
