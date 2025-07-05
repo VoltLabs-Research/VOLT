@@ -89,6 +89,26 @@ private:
         NeighborBondArray& neighborArray
     );
 
+    static void calculateSymmetryProducts(LatticeStructure& latticeStruct);
+    static void findNonCoplanarVectors(const CoordinationStructure& coordStruct, int nindices[3], Matrix3& tm1);
+    static void generateSymmetryPermutations(LatticeStructure& latticeStruct);
+    static void initializeSymmetryInformation();
+    static void findCommonNeighborsForBond(CoordinationStructure& coordStruct, int neighborIndex);
+    static void initializeCommonNeighbors();
+
+    static void calculateProductForPermutation(
+        LatticeStructure& latticeStruct, 
+        size_t s1, 
+        size_t s2);
+
+    static void findAllSymmetryPermutations(
+        LatticeStructure& latticeStruct,
+        const CoordinationStructure& coordStruct,
+        std::vector<int>& permutation,
+        const int nindices[3],
+        const Matrix3& tm1,
+        const Matrix3& tm1inverse);
+        
     const SimulationCell& _simCell;
     bool _identifyPlanarDefects;
     ParticleProperty* _structureTypes;

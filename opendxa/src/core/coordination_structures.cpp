@@ -667,6 +667,179 @@ void CoordinationStructures::initializeDiamondStructure(
     initializeLatticeStructure(latticeType, vectors, totalVectors, &_coordinationStructures[coordType]);
 }
 
+void CoordinationStructures::initializeCommonNeighbors(){
+	for(auto coordStruct = std::begin(_coordinationStructures); coordStruct != std::end(_coordinationStructures); ++coordStruct){
+		for(int neighborIndex = 0; neighborIndex < coordStruct->numNeighbors; neighborIndex++){
+			findCommonNeighborsForBond(*coordStruct, neighborIndex);
+		}
+	}
+}
+
+void CoordinationStructures::findCommonNeighborsForBond(CoordinationStructure& coordStruct, int neighborIndex){
+	Matrix3 tm;
+	tm.column(0) = coordStruct.latticeVectors[neighborIndex];
+    bool found = false;
+
+    for(int i1 = 0; i1 < coordStruct.numNeighbors && !found; i1++){
+        if(!coordStruct.neighborArray.neighborBond(neighborIndex, i1)) continue;
+        tm.column(1) = coordStruct.latticeVectors[i1];
+        
+        for(int i2 = i1 + 1; i2 < coordStruct.numNeighbors; i2++){
+            if(!coordStruct.neighborArray.neighborBond(neighborIndex, i2)) continue;
+            tm.column(2) = coordStruct.latticeVectors[i2];
+            
+            if(std::abs(tm.determinant()) > EPSILON){
+                coordStruct.commonNeighbors[neighborIndex][0] = i1;
+                coordStruct.commonNeighbors[neighborIndex][1] = i2;
+                found = true;
+                break;
+            }
+        }
+    }
+    assert(found);
+}
+
+void CoordinationStructures::initializeSymmetryInformation(){
+    for(auto latticeStruct = std::begin(_latticeStructures); 
+        latticeStruct != std::end(_latticeStructures); ++latticeStruct){
+        
+        if(latticeStruct->latticeVectors.empty()) continue;
+        
+        latticeStruct->primitiveCellInverse = latticeStruct->primitiveCell.inverse();
+        generateSymmetryPermutations(*latticeStruct);
+        calculateSymmetryProducts(*latticeStruct);
+    }
+}
+
+void CoordinationStructures::generateSymmetryPermutations(LatticeStructure& latticeStruct){
+    const CoordinationStructure& coordStruct = *latticeStruct.coordStructure;
+    
+    // Find three non-coplanar vectors
+    int nindices[3];
+    Matrix3 tm1;
+    findNonCoplanarVectors(coordStruct, nindices, tm1);
+    
+    Matrix3 tm1inverse = tm1.inverse();
+    
+    // Finding symmetry permutations
+    std::vector<int> permutation(latticeStruct.latticeVectors.size());
+    std::iota(permutation.begin(), permutation.end(), 0);
+    
+    findAllSymmetryPermutations(latticeStruct, coordStruct, permutation, nindices, tm1, tm1inverse);
+}
+
+void CoordinationStructures::findAllSymmetryPermutations(
+    LatticeStructure& latticeStruct,
+    const CoordinationStructure& coordStruct,
+    std::vector<int>& permutation,
+    const int nindices[3],
+    const Matrix3& tm1,
+    const Matrix3& tm1inverse
+){
+    std::vector<int> lastPermutation(latticeStruct.latticeVectors.size(), -1);
+    SymmetryPermutation symmetryPermutation;
+
+    do{
+        int changedFrom = std::mismatch(permutation.begin(), permutation.end(), lastPermutation.begin()).first - permutation.begin();
+        assert(changedFrom < coordStruct.numNeighbors);
+        std::copy(permutation.begin(), permutation.end(), lastPermutation.begin());
+
+        if(changedFrom <= nindices[2]){
+            Matrix3 tm2;
+            tm2.column(0) = latticeStruct.latticeVectors[permutation[nindices[0]]];
+            tm2.column(1) = latticeStruct.latticeVectors[permutation[nindices[1]]];
+            tm2.column(2) = latticeStruct.latticeVectors[permutation[nindices[2]]];
+            symmetryPermutation.transformation = tm2 * tm1inverse;
+
+            if(!symmetryPermutation.transformation.isOrthogonalMatrix()) {
+                bitmapSort(permutation.begin() + nindices[2] + 1, permutation.end(), permutation.size());
+                continue;
+            }
+            changedFrom = 0;
+        }
+        
+        int sortFrom = nindices[2];
+        int invalidFrom;
+
+        for(invalidFrom = changedFrom; invalidFrom < coordStruct.numNeighbors; invalidFrom++){
+            Vector3 v = symmetryPermutation.transformation * coordStruct.latticeVectors[invalidFrom];
+            if(!v.equals(latticeStruct.latticeVectors[permutation[invalidFrom]])) break;
+        }
+
+        if(invalidFrom == coordStruct.numNeighbors){
+            std::copy(permutation.begin(), permutation.begin() + coordStruct.numNeighbors, symmetryPermutation.permutation.begin());
+            bool isDuplicate = false;
+            for(const auto& entry : latticeStruct.permutations){
+                if(entry.transformation.equals(symmetryPermutation.transformation)){
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            
+            if(!isDuplicate){
+                latticeStruct.permutations.push_back(symmetryPermutation);
+            }
+        }else{
+            sortFrom = invalidFrom;
+        }
+        
+        bitmapSort(permutation.begin() + sortFrom + 1, permutation.end(), permutation.size());
+    }while(std::next_permutation(permutation.begin(), permutation.end()));
+
+    assert(latticeStruct.permutations.size() >= 1);
+    assert(latticeStruct.permutations.front().transformation.equals(Matrix3::Identity()));
+}
+
+void CoordinationStructures::findNonCoplanarVectors(const CoordinationStructure& coordStruct, int nindices[3], Matrix3& tm1){
+    int n = 0;
+    for(int i = 0; i < coordStruct.numNeighbors && n < 3; i++){
+        tm1.column(n) = coordStruct.latticeVectors[i];
+        
+        if(n == 1){
+            if(tm1.column(0).cross(tm1.column(1)).squaredLength() <= EPSILON) continue;
+        }else if(n == 2){
+            if(std::abs(tm1.determinant()) <= EPSILON) continue;
+        }
+        
+        nindices[n++] = i;
+    }
+    
+    assert(n == 3);
+    assert(std::abs(tm1.determinant()) > EPSILON);
+}
+
+void CoordinationStructures::calculateSymmetryProducts(LatticeStructure& latticeStruct){
+    for(int s1 = 0; s1 < latticeStruct.permutations.size(); s1++) {
+        for(int s2 = 0; s2 < latticeStruct.permutations.size(); s2++) {
+            calculateProductForPermutation(latticeStruct, s1, s2);
+        }
+    }
+}
+
+void CoordinationStructures::calculateProductForPermutation(LatticeStructure& latticeStruct, size_t s1, size_t s2){
+    Matrix3 product = latticeStruct.permutations[s2].transformation * latticeStruct.permutations[s1].transformation;
+    
+    for(size_t i = 0; i < latticeStruct.permutations.size(); i++){
+        if(latticeStruct.permutations[i].transformation.equals(product)){
+            latticeStruct.permutations[s1].product.push_back(i);
+            break;
+        }
+    }
+
+    assert(latticeStruct.permutations[s1].product.size() == s2 + 1);
+    
+    Matrix3 inverseProduct = latticeStruct.permutations[s2].transformation.inverse() * latticeStruct.permutations[s1].transformation;
+    
+    for(size_t i = 0; i < latticeStruct.permutations.size(); i++){
+        if(latticeStruct.permutations[i].transformation.equals(product)){ 
+            latticeStruct.permutations[s1].inverseProduct.push_back(i);
+            break;
+        }
+    }
+
+    assert(latticeStruct.permutations[s1].inverseProduct.size() == s2 + 1);
+}
+
 void CoordinationStructures::initializeStructures(){
 	initializeOther();
 	initializeFCC();
@@ -674,131 +847,8 @@ void CoordinationStructures::initializeStructures(){
 	initializeBCC();
 	initializeCubicDiamond();
 	initializeHexagonalDiamond();
-
-	for(auto coordStruct = std::begin(_coordinationStructures); coordStruct != std::end(_coordinationStructures); ++coordStruct){
-		// Find two non-coplanar common neighbors for every neighbor bond.
-		for(int neighIndex = 0; neighIndex < coordStruct->numNeighbors; neighIndex++){
-			Matrix3 tm;
-			tm.column(0) = coordStruct->latticeVectors[neighIndex];
-			bool found = false;
-			for(int i1 = 0; i1 < coordStruct->numNeighbors && !found; i1++){
-				if(!coordStruct->neighborArray.neighborBond(neighIndex, i1)) continue;
-				tm.column(1) = coordStruct->latticeVectors[i1];
-				for(int i2 = i1 + 1; i2 < coordStruct->numNeighbors; i2++){
-					if(!coordStruct->neighborArray.neighborBond(neighIndex, i2)) continue;
-					tm.column(2) = coordStruct->latticeVectors[i2];
-					if(std::abs(tm.determinant()) > EPSILON){
-						coordStruct->commonNeighbors[neighIndex][0] = i1;
-						coordStruct->commonNeighbors[neighIndex][1] = i2;
-						found = true;
-						break;
-					}
-				}
-			}
-			assert(found);
-		}
-	}
-
-	// Generate symmetry information
-	for(auto latticeStruct = std::begin(_latticeStructures); latticeStruct != std::end(_latticeStructures); ++latticeStruct){
-		if(latticeStruct->latticeVectors.empty()) continue;
-
-		latticeStruct->primitiveCellInverse = latticeStruct->primitiveCell.inverse();
-
-		const CoordinationStructure& coordStruct = *latticeStruct->coordStructure;
-		assert(latticeStruct->latticeVectors.size() >= coordStruct.latticeVectors.size());
-		assert(coordStruct.latticeVectors.size() == coordStruct.numNeighbors);
-
-		// Find three non-coplanar neighbor vectors.
-		int nindices[3];
-		Matrix3 tm1;
-		int n = 0;
-		for(int i = 0; i < coordStruct.numNeighbors && n < 3; i++){
-			tm1.column(n) = coordStruct.latticeVectors[i];
-			if(n == 1){
-				if(tm1.column(0).cross(tm1.column(1)).squaredLength() <= EPSILON) continue;
-			}else if(n == 2){
-				if(std::abs(tm1.determinant()) <= EPSILON) continue;
-			}
-			nindices[n++] = i;
-		}
-		
-		assert(n == 3);
-		assert(std::abs(tm1.determinant()) > EPSILON);
-		Matrix3 tm1inverse = tm1.inverse();
-
-		// Find symmetry permutations.
-		std::vector<int> permutation(latticeStruct->latticeVectors.size());
-		std::vector<int> lastPermutation(latticeStruct->latticeVectors.size(), -1);
-		std::iota(permutation.begin(), permutation.end(), 0);
-		SymmetryPermutation symmetryPermutation;
-
-		do{
-			int changedFrom = std::mismatch(permutation.begin(), permutation.end(), lastPermutation.begin()).first - permutation.begin();
-			assert(changedFrom < coordStruct.numNeighbors);
-			std::copy(permutation.begin(), permutation.end(), lastPermutation.begin());
-
-			if(changedFrom <= nindices[2]){
-				Matrix3 tm2;
-				tm2.column(0) = latticeStruct->latticeVectors[permutation[nindices[0]]];
-				tm2.column(1) = latticeStruct->latticeVectors[permutation[nindices[1]]];
-				tm2.column(2) = latticeStruct->latticeVectors[permutation[nindices[2]]];
-				symmetryPermutation.transformation = tm2 * tm1inverse;
-
-				if(!symmetryPermutation.transformation.isOrthogonalMatrix()){
-					bitmapSort(permutation.begin() + nindices[2] + 1, permutation.end(), permutation.size());
-					continue;
-				}
-				changedFrom = 0;
-			}
-			
-			int sortFrom = nindices[2];
-			int invalidFrom;
-
-			for(invalidFrom = changedFrom; invalidFrom < coordStruct.numNeighbors; invalidFrom++){
-				Vector3 v = symmetryPermutation.transformation * coordStruct.latticeVectors[invalidFrom];
-				if(!v.equals(latticeStruct->latticeVectors[permutation[invalidFrom]])) break;
-			}
-
-			if(invalidFrom == coordStruct.numNeighbors){
-				std::copy(permutation.begin(), permutation.begin() + coordStruct.numNeighbors, symmetryPermutation.permutation.begin());
-				for(const auto& entry : latticeStruct->permutations){
-					assert(!entry.transformation.equals(symmetryPermutation.transformation));
-				}
-				latticeStruct->permutations.push_back(symmetryPermutation);
-			}else{
-				sortFrom = invalidFrom;
-			}
-			bitmapSort(permutation.begin() + sortFrom + 1, permutation.end(), permutation.size());
-		}while(std::next_permutation(permutation.begin(), permutation.end()));
-
-		assert(latticeStruct->permutations.size() >= 1);
-		assert(latticeStruct->permutations.front().transformation.equals(Matrix3::Identity()));
-
-		// Determine products of symmetry transformations.
-		for(int s1 = 0; s1 < latticeStruct->permutations.size(); s1++){
-			for(int s2 = 0; s2 < latticeStruct->permutations.size(); s2++){
-				Matrix3 product = latticeStruct->permutations[s2].transformation * latticeStruct->permutations[s1].transformation;
-				for(int i = 0; i < latticeStruct->permutations.size(); i++){
-					if(latticeStruct->permutations[i].transformation.equals(product)){
-						latticeStruct->permutations[s1].product.push_back(i);
-						break;
-					}
-				}
-
-				assert(latticeStruct->permutations[s1].product.size() == s2 + 1);
-				Matrix3 inverseProduct = latticeStruct->permutations[s2].transformation.inverse() * latticeStruct->permutations[s1].transformation;
-				for(int i = 0; i < latticeStruct->permutations.size(); i++){
-					if(latticeStruct->permutations[i].transformation.equals(product)){
-						latticeStruct->permutations[s1].inverseProduct.push_back(i);
-						break;
-					}
-				}
-
-				assert(latticeStruct->permutations[s1].inverseProduct.size() == s2 + 1);
-			}
-		}
-	}
+	initializeCommonNeighbors();
+	initializeSymmetryInformation();
 }
 
 }
