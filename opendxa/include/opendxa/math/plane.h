@@ -43,13 +43,6 @@ public:
 		dist = normal.dot(p - typename Point_3<T>::Origin());
 	}
 
-	void normalizePlane() {
-		T len = normal.length();
-		dist /= len;
-		normal /= len;
-		assert(std::abs(normal.squaredLength() - T(1)) <= T(EPSILON));
-	}
-
 	Plane_3<T> operator-() const { return Plane_3<T>(-normal, -dist); }
 
 	bool operator==(const Plane_3<T>& other) const { return normal == other.normal && dist == other.dist; }
@@ -64,23 +57,6 @@ public:
 	T pointDistance(const Point_3<T>& p) const {
 		return (normal.x() * p.x() + normal.y() * p.y() + normal.z() * p.z()) - dist;
 	}
-
-	Point_3<T> intersection(const Ray3& ray, T epsilon = T(0)) const {
-		T t = intersectionT(ray, epsilon);
-		return ray.point(t);
-	}
-
-	T intersectionT(const Ray3& ray, T epsilon = T(0)) const {
-		// The plane's normal vector should be normalized.
-		assert(std::abs(normal.squaredLength() - T(1)) <= T(EPSILON));
-		T dot = normal.dot(ray.dir);
-		if(std::abs(dot) <= epsilon) return std::numeric_limits<T>::max();
-		return -pointDistance(ray.base) / dot;
-	}
-
-	Point_3<T> projectPoint(const Point_3<T>& p) const {
-		return p - pointDistance(p) * normal;
-	}
 };
 
 template<typename T>
@@ -90,11 +66,6 @@ inline Plane_3<T> operator*(const AffineTransformationT<T>& tm, const Plane_3<T>
 	Point_3<T> base = tm * (typename Point_3<T>::Origin() + plane.normal * plane.dist);
 	p2.dist = p2.normal.dot(base - typename Point_3<T>::Origin());
 	return p2;
-}
-
-template<typename T>
-inline std::ostream& operator<<(std::ostream &os, const Plane_3<T>& p) {
-	return os << '[' << p.normal.x() << ' ' << p.normal.y()  << ' ' << p.normal.z() << "], " << p.dist;
 }
 
 using Plane3 = Plane_3<double>;

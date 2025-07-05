@@ -67,19 +67,6 @@ public:
 	inline Vector_4 normalized() const{
 		return *this / length();
 	}
-
-	inline void normalizeSafely(T epsilon = T(EPSILON)){
-		T l = length();
-		if(l > epsilon) *this /= l;
-	}
-
-	inline size_type maxComponent() const{
-	    return std::distance(std::array<T, 4>::begin(), std::max_element(std::array<T, 4>::begin(), std::array<T, 4>::end()));
-	}
-
-	inline size_type minComponent() const{
-	    return std::distance(std::array<T, 4>::begin(), std::min_element(std::array<T, 4>::begin(), std::array<T, 4>::end()));
-	}
 };
 
 template<typename T>
@@ -105,11 +92,6 @@ Vector_4<T> operator*(T s, const Vector_4<T>& a) {
 template<typename T>
 Vector_4<T> operator/(const Vector_4<T>& a, T s) {
 	return Vector_4<T>( a.x() / s, a.y() / s, a.z() / s, a.w() / s );
-}
-
-template<typename T>
-inline std::ostream& operator<<(std::ostream& os, const Vector_4<T>& v) {
-	return os << "(" << v.x() << ", " << v.y()  << ", " << v.z() << ", " << v.w() << ")";
 }
 
 using Vector4 = Vector_4<double>;

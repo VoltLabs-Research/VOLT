@@ -1,34 +1,50 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
-# Set policy for Boost module
 if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif()
 
 project(OpenDXA VERSION 1.0.0 LANGUAGES CXX)
 
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    message(STATUS "ccache: ${CCACHE_PROGRAM}")
+    set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+endif()
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-message(STATUS "Using C++${CMAKE_CXX_STANDARD} standard")
-
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
-set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    Debug Release MinSizeRel RelWithDebInfo
+)
 
-# Enable Link Time Optimization for maximum performance
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    # Disable LTO to avoid numerical precision issues
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+include(CheckIPOSupported)
+check_ipo_supported(RESULT LTO_SUPPORTED OUTPUT _)
+if(LTO_SUPPORTED)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
 endif()
 
-# Options
-option(BUILD_TESTS "Build tests" OFF)
-option(BUILD_DOCS "Build documentation" OFF)
+set(RELEASE_OPTS
+  -O3
+  -march=native
+  -flto=thin
+  -funroll-loops
+  -fstrict-aliasing
+  -ffp-contract=off
+  -fno-unsafe-math-optimizations
+)
 
-if(BUILD_TESTS)
-    enable_testing()
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set(LINKER_FAST "-fuse-ld=gold")
 endif()
+
+set(CMAKE_SKIP_BUILD_RPATH TRUE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
@@ -43,18 +59,17 @@ if(NOT nlohmann_json_FOUND)
     FetchContent_Declare(
         nlohmann_json
         GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG v3.11.3
+        GIT_TAG        v3.11.3
     )
     FetchContent_MakeAvailable(nlohmann_json)
 endif()
 
-message(STATUS "Found Eigen3: ${EIGEN3_INCLUDE_DIR}")
-message(STATUS "Found Boost version: ${Boost_VERSION}")
-message(STATUS "nlohmann_json available")
+message(STATUS "Eigen3: ${EIGEN3_INCLUDE_DIR}")
+message(STATUS "Boost version: ${Boost_VERSION}")
+message(STATUS "nlohmann_json disponible")
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-# Source files organized by module
 set(CORE_SOURCES
     src/core/main.cpp
     src/core/property_base.cpp
@@ -93,7 +108,6 @@ set(UTILITIES_SOURCES
     src/utilities/json_exporter.cpp
 )
 
-# Combine all sources except Main.cpp for library
 set(LIBRARY_SOURCES
     ${CORE_SOURCES}
     ${STRUCTURES_SOURCES}
@@ -104,36 +118,28 @@ set(LIBRARY_SOURCES
 )
 list(REMOVE_ITEM LIBRARY_SOURCES src/core/main.cpp)
 
-# Add dependencies subdirectory
 add_subdirectory(dependencies)
 
-# Create static library with optimizations
 add_library(CrystalAnalysis STATIC ${LIBRARY_SOURCES})
-
-# Add -fPIC for creating shared libraries from static libraries
-set_target_properties(CrystalAnalysis PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-# No additional compile options - keep it simple for accuracy
-target_compile_options(CrystalAnalysis PRIVATE
-    # No optimization flags
+set_target_properties(CrystalAnalysis PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+    INTERPROCEDURAL_OPTIMIZATION TRUE
+    LINK_FLAGS_RELEASE "${LINKER_FAST}"
 )
-
+target_compile_options(CrystalAnalysis PRIVATE
+    $<$<CONFIG:Release>:${RELEASE_CXX_OPTS}>
+)
 target_compile_definitions(CrystalAnalysis PRIVATE
-    # Minimal definitions for release
     $<$<CONFIG:Release>:NDEBUG>
 )
-
-target_include_directories(CrystalAnalysis PUBLIC 
+target_include_directories(CrystalAnalysis PUBLIC
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/dependencies
     ${CMAKE_SOURCE_DIR}/dependencies/geogram
     ${CMAKE_SOURCE_DIR}/dependencies/ptm
     ${EIGEN3_INCLUDE_DIR}
 )
-
-# Link dependencies to library
-target_link_libraries(CrystalAnalysis
-    PUBLIC
+target_link_libraries(CrystalAnalysis PUBLIC
     Threads::Threads
     ${Boost_LIBRARIES}
     geogram
@@ -142,19 +148,16 @@ target_link_libraries(CrystalAnalysis
     OpenMP::OpenMP_CXX
 )
 
-# Create executable with optimizations
 add_executable(opendxa src/core/main.cpp)
-
-# No additional compile options - keep it simple for accuracy
-target_compile_options(opendxa PRIVATE
-    # No optimization flags
+set_target_properties(opendxa PROPERTIES
+    LINK_FLAGS_RELEASE "${LINKER_FAST}"
 )
-
+target_compile_options(opendxa PRIVATE
+    $<$<CONFIG:Release>:${RELEASE_CXX_OPTS}>
+)
 target_compile_definitions(opendxa PRIVATE
-    # Minimal definitions for release
     $<$<CONFIG:Release>:NDEBUG>
 )
-
 target_include_directories(opendxa PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/dependencies
@@ -162,12 +165,8 @@ target_include_directories(opendxa PRIVATE
     ${CMAKE_SOURCE_DIR}/dependencies/ptm
     ${EIGEN3_INCLUDE_DIR}
 )
-target_link_libraries(opendxa 
-    PRIVATE 
-    CrystalAnalysis
-)
+target_link_libraries(opendxa PRIVATE CrystalAnalysis)
 
-# Installation
-install(TARGETS opendxa DESTINATION bin)
+install(TARGETS opendxa       DESTINATION bin)
 install(TARGETS CrystalAnalysis DESTINATION lib)
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/     DESTINATION include)

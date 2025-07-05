@@ -82,8 +82,6 @@ public:
 				static_cast<U>((*this)(2,0)), static_cast<U>((*this)(2,1)), static_cast<U>((*this)(2,2)));
 	}
 
-    Vector_3<T> toEuler(EulerAxisSequence axisSequence) const;
-
 	static  size_type row_count() { return 3; }
 	static  size_type col_count() { return 3; }
 	inline T operator()(size_type row, size_type col) const {
@@ -204,30 +202,6 @@ public:
 			(std::abs((*this)[2][0]*(*this)[2][0] + (*this)[2][1]*(*this)[2][1] + (*this)[2][2]*(*this)[2][2] - T(1)) <= epsilon);
 	}
 
-	bool isRotationMatrix(T epsilon = T(EPSILON)) const {
-		return isOrthogonalMatrix(epsilon) && (std::abs(determinant() - T(1)) <= epsilon);
-	}
-
-	void orthonormalize() {
-		// Compute q0.
-		(*this)[0].normalize();
-
-	    // Compute q1.
-		T dot0 = (*this)[0].dot((*this)[1]);
-		(*this)[1][0] -= dot0 * (*this)[0][0];
-		(*this)[1][1] -= dot0 * (*this)[0][1];
-		(*this)[1][2] -= dot0 * (*this)[0][2];
-		(*this)[1].normalize();
-
-	    // compute q2
-	    dot0 = (*this)[0].dot((*this)[2]);
-	    T dot1 = (*this)[1].dot((*this)[2]);
-	    (*this)[2][0] -= dot0*(*this)[0][0] + dot1*(*this)[1][0];
-	    (*this)[2][1] -= dot0*(*this)[0][1] + dot1*(*this)[1][1];
-	    (*this)[2][2] -= dot0*(*this)[0][2] + dot1*(*this)[1][2];
-	    (*this)[2].normalize();
-	}
-
 	static inline Matrix_3 rotationX(T angle) {
 		const T c = cos(angle);
 		const T s = sin(angle);
@@ -255,8 +229,6 @@ public:
 	static Matrix_3 rotation(const RotationT<T>& rot);
 	static Matrix_3 rotation(const QuaternionT<T>& q);
 	static Matrix_3 rotation(T ai, T aj, T ak, EulerAxisSequence axisSequence);
-
-	static Matrix_3 scaling(const ScalingT<T>& scaling);
 };
 
 template<typename T>
@@ -333,96 +305,27 @@ inline Matrix_3<T> Matrix_3<T>::rotation(T ai, T aj, T ak, EulerAxisSequence axi
 }
 
 template<typename T>
-inline Vector_3<T> Matrix_3<T>::toEuler(EulerAxisSequence axisSequence) const{
-	assert(axisSequence == Matrix_3<T>::szyx);
-	int firstaxis = 2;
-	int parity = 1;
-	bool repetition = false;
-	bool frame = false;
-
-	int i = firstaxis;
-	int j = (i + parity + 1) % 3;
-	int k = (i - parity + 2) % 3;
-
-	T ax, ay, az;
-	const Matrix_3<T>& M = *this;
-    if(repetition) {
-        T sy = std::sqrt(M(i, j)*M(i, j) + M(i, k)*M(i, k));
-        if(sy > T(EPSILON)) {
-            ax = std::atan2( M(i, j),  M(i, k));
-            ay = std::atan2( sy,       M(i, i));
-            az = std::atan2( M(j, i), -M(k, i));
-        }
-        else {
-            ax = std::atan2(-M(j, k),  M(j, j));
-            ay = std::atan2( sy,       M(i, i));
-            az = 0;
-        }
-    }
-    else {
-        T cy = std::sqrt(M(i, i)*M(i, i) + M(j, i)*M(j, i));
-        if(cy > T(EPSILON)) {
-            ax = std::atan2( M(k, j),  M(k, k));
-            ay = std::atan2(-M(k, i),  cy);
-            az = std::atan2( M(j, i),  M(i, i));
-        }
-        else {
-            ax = std::atan2(-M(j, k),  M(j, j));
-            ay = std::atan2(-M(k, i),  cy);
-            az = 0;
-        }
-    }
-
-    if(parity) {
-    	ax = -ax;
-    	ay = -ay;
-    	az = -az;
-    }
-    if(frame)
-    	std::swap(ax, az);
-    return Vector_3<T>(ax, ay, az);
-}
-
-template<typename T>
-inline Matrix_3<T> Matrix_3<T>::scaling(const ScalingT<T>& scaling){
-	Matrix_3<T> K(scaling.S.x(), T(0), T(0),
-				  T(0), scaling.S.y(), T(0),
-				  T(0), T(0), scaling.S.z());
-	if(std::abs(scaling.Q.w()) >= T(1))
-		return K;
-	Matrix_3<T> U = Matrix_3<T>::rotation(scaling.Q);
-	return U * K * U.transposed();
-}
-
-template<typename T>
 inline Vector_3<T> operator*(const Matrix_3<T>& m, const Vector_3<T>& v){
-	return { m(0,0)*v[0] + m(0,1)*v[1] + m(0,2)*v[2],
-			 m(1,0)*v[0] + m(1,1)*v[1] + m(1,2)*v[2],
-			 m(2,0)*v[0] + m(2,1)*v[1] + m(2,2)*v[2] };
+	auto eigenMatrix = toEigenMatrix(m);
+	Eigen::Matrix<T, 3, 1> eigenVector(v.x(), v.y(), v.z());
+	Eigen::Matrix<T, 3, 1> result = eigenMatrix * eigenVector;
+	return Vector_3<T>(result[0], result[1], result[2]);
 }
 
 template<typename T>
 inline Point_3<T> operator*(const Matrix_3<T>& m, const Point_3<T>& p){
-	return { m(0,0)*p[0] + m(0,1)*p[1] + m(0,2)*p[2],
-			 m(1,0)*p[0] + m(1,1)*p[1] + m(1,2)*p[2],
-			 m(2,0)*p[0] + m(2,1)*p[1] + m(2,2)*p[2] };
+	auto eigenMatrix = toEigenMatrix(m);
+	Eigen::Matrix<T, 3, 1> eigenPoint(p.x(), p.y(), p.z());
+	Eigen::Matrix<T, 3, 1> result = eigenMatrix * eigenPoint;
+	return Point_3<T>(result[0], result[1], result[2]);
 }
 
 template<typename T>
 inline Matrix_3<T> operator*(const Matrix_3<T>& a, const Matrix_3<T>& b){
-	return Matrix_3<T>(
-			a(0,0)*b(0,0) + a(0,1)*b(1,0) + a(0,2)*b(2,0),
-			a(0,0)*b(0,1) + a(0,1)*b(1,1) + a(0,2)*b(2,1),
-			a(0,0)*b(0,2) + a(0,1)*b(1,2) + a(0,2)*b(2,2),
-
-			a(1,0)*b(0,0) + a(1,1)*b(1,0) + a(1,2)*b(2,0),
-			a(1,0)*b(0,1) + a(1,1)*b(1,1) + a(1,2)*b(2,1),
-			a(1,0)*b(0,2) + a(1,1)*b(1,2) + a(1,2)*b(2,2),
-
-			a(2,0)*b(0,0) + a(2,1)*b(1,0) + a(2,2)*b(2,0),
-			a(2,0)*b(0,1) + a(2,1)*b(1,1) + a(2,2)*b(2,1),
-			a(2,0)*b(0,2) + a(2,1)*b(1,2) + a(2,2)*b(2,2)
-	);
+	auto eigenA = toEigenMatrix(a);
+	auto eigenB = toEigenMatrix(b);
+	auto result = eigenA * eigenB;
+	return fromEigenMatrix<T>(result);
 }
 
 template<typename T>

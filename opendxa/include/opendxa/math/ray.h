@@ -24,11 +24,6 @@ inline Ray_3<T> operator*(const AffineTransformationT<T>& tm, const Ray_3<T>& ra
 	return { tm * ray.base, (tm * ray.dir).normalized() };
 }
 
-template<typename T>
-inline std::ostream& operator<<(std::ostream &os, const Ray_3<T> &r){
-	return os << '[' << r.base.x() << ' ' << r.base.y()  << ' ' << r.base.z() << "], (" << r.dir.x() << ' ' << r.dir.y()  << ' ' << r.dir.z() << ')';
-}
-
 using Ray3 = Ray_3<double>;
 
 }

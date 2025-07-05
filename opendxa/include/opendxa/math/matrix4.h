@@ -196,39 +196,6 @@ public:
 				det3x3( a1, a2, a3, b1, b2, b3, c1, c2, c3) / det);
 	}
 
-	static Matrix_4<T> translation(const Vector_3<T>& t) {
-		return { T(1), T(0), T(0), t.x(),
-				 T(0), T(1), T(0), t.y(),
-				 T(0), T(0), T(1), t.z(),
-				 T(0), T(0), T(0), T(1) };
-	}
-
-	static Matrix_4<T> perspective(T fovy, T aspect, T znear, T zfar) {
-		T f = tan(fovy * T(0.5));
-		assert(f != T(0));
-		assert(zfar > znear);
-		return { T(1)/(aspect*f), T(0), T(0), T(0),
-				 T(0), T(1)/f, T(0), T(0),
-				 T(0), T(0), -(zfar+znear)/(zfar-znear), -(T(2)*zfar*znear)/(zfar-znear),
-				 T(0), T(0), T(-1), T(0) };
-	}
-
-	static Matrix_4<T> ortho(T left, T right, T bottom, T top, T znear, T zfar) {
-		assert(znear < zfar);
-		return { T(2)/(right-left), T(0),  T(0), -(right+left)/(right-left),
-				 T(0), T(2)/(top-bottom), T(0), -(top+bottom)/(top-bottom),
-				 T(0), T(0), T(-2)/(zfar-znear), -(zfar+znear)/(zfar-znear),
-				 T(0), T(0), T(0), T(1) };
-	}
-
-	static Matrix_4<T> frustum(T left, T right, T bottom, T top, T znear, T zfar) {
-		assert(znear < zfar);
-		return { T(2)*znear/(right-left), T(0),  (right + left) / (right - left), T(0),
-				 T(0), T(2)*znear/(top-bottom), (top + bottom) / (top - bottom), T(0),
-				 T(0), T(0), -(zfar + znear) / (zfar - znear), -(T(2)*zfar*znear)/(zfar - znear),
-				 T(0), T(0), T(-1), T(0) };
-	}
-
 private:
 	static  inline T det2x2(T a, T b, T c, T d) { return (a * d - b * c); }
 	static  inline T det3x3(T a1, T a2, T a3, T b1, T b2, T b3, T c1, T c2, T c3) {
@@ -257,56 +224,6 @@ inline Vector_3<T> operator*(const Matrix_4<T>& a, const Vector_3<T>& v){
 		(a(1,0)*v[0] + a(1,1)*v[1] + a(1,2)*v[2]) / s,
 		(a(2,0)*v[0] + a(2,1)*v[1] + a(2,2)*v[2]) / s
 	};
-}
-
-template<typename T>
-inline Point_3<T> operator*(const Matrix_4<T>& a, const Point_3<T>& v){
-	T s = a(3,0)*v[0] + a(3,1)*v[1] + a(3,2)*v[2] + a(3,3);
-	return {
-		(a(0,0)*v[0] + a(0,1)*v[1] + a(0,2)*v[2] + a(0,3)) / s,
-		(a(1,0)*v[0] + a(1,1)*v[1] + a(1,2)*v[2] + a(1,3)) / s,
-		(a(2,0)*v[0] + a(2,1)*v[1] + a(2,2)*v[2] + a(2,3)) / s
-	};
-}
-
-template<typename T>
-inline Matrix_4<T> operator*(const Matrix_4<T>& a, const Matrix_4<T>& b){
-	Matrix_4<T> res;
-	for(typename Matrix_4<T>::size_type i = 0; i < 4; i++) {
-		for(typename Matrix_4<T>::size_type j = 0; j < 4; j++) {
-			res(i,j) = a(i,0)*b(0,j) + a(i,1)*b(1,j) + a(i,2)*b(2,j) + a(i,3)*b(3,j);
-		}
-	}
-	return res;
-}
-
-template<typename T>
-inline Matrix_4<T> operator*(const Matrix_4<T>& a, const AffineTransformationT<T>& b){
-	Matrix_4<T> res;
-	for(typename Matrix_4<T>::size_type i = 0; i < 4; i++) {
-		for(typename Matrix_4<T>::size_type j = 0; j < 3; j++) {
-			res(i,j) = a(i,0)*b(0,j) + a(i,1)*b(1,j) + a(i,2)*b(2,j);
-		}
-		res(i,3) = a(i,0)*b(0,3) + a(i,1)*b(1,3) + a(i,2)*b(2,3) + a(i,3);
-	}
-	return res;
-}
-
-template<typename T>
-inline Matrix_4<T> operator*(const Matrix_4<T>& a, T s){
-	return { a.column(0)*s, a.column(1)*s, a.column(2)*s, a.column(3)*s };
-}
-
-template<typename T>
-inline Matrix_4<T> operator*(T s, const Matrix_4<T>& a){
-	return a * s;
-}
-
-template<typename T>
-inline std::ostream& operator<<(std::ostream &os, const Matrix_4<T>& m) {
-	for(typename Matrix_4<T>::size_type row = 0; row < m.row_count(); row++)
-		os << m.row(row) << std::endl;
-	return os;
 }
 
 using Matrix4 = Matrix_4<double>;

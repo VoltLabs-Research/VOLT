@@ -71,26 +71,12 @@ public:
 		return *this / length();
 	}
 
-	inline void normalizeSafely(T epsilon = T(EPSILON)) {
-		T l = length();
-		if(l > epsilon)
-			*this /= l;
-	}
-
 	inline void resize(T len) {
 		*this *= (len / length());
 	}
 
 	inline Vector_3 resized(T len) const {
 		return *this * (len / length());
-	}
-
-	inline size_type maxComponent() const {
-	    return ((x() >= y()) ? ((x() >= z()) ? 0 : 2) : ((y() >= z()) ? 1 : 2));
-	}
-
-	inline size_type minComponent() const {
-	    return ((x() <= y()) ? ((x() <= z()) ? 0 : 2) : ((y() <= z()) ? 1 : 2));
 	}
 };
 
@@ -137,11 +123,6 @@ Vector_3<T> operator*(int s, const Vector_3<T>& a) {
 template<typename T, typename S>
 Vector_3<T> operator/(const Vector_3<T>& a, S s) {
 	return Vector_3<T>( a.x() / s, a.y() / s, a.z() / s );
-}
-
-template<typename T>
-inline std::ostream& operator<<(std::ostream& os, const Vector_3<T>& v) {
-	return os << "(" << v.x() << ", " << v.y()  << ", " << v.z() << ")";
 }
 
 using Vector3 = Vector_3<double>;

@@ -66,38 +66,6 @@ public:
 		T c = sqrt(dot(*this));
 		return { x() / c, y() / c, z() / c, w() / c };
 	}
-
-    static QuaternionT interpolate(const QuaternionT& q1, const QuaternionT& q2, T alpha) {
-    	T cos_t = q1.dot(q2);
-
-    	// Same quaternion? (avoid domain error)
-    	if(T(1) <= std::abs(cos_t))
-    		return q1;
-
-    	// t is now theta.
-    	T theta = std::acos(cos_t);
-    	T sin_t = std::sin(theta);
-
-    	// Same quaternion? (avoid zero-div)
-    	if(sin_t == 0)
-    		return q1;
-
-    	T s = std::sin((T(1)-alpha)*theta)/sin_t;
-    	T t = std::sin(alpha*theta)/sin_t;
-
-    	QuaternionT res(s*q1.x() + t*q2.x(), s*q1.y() + t*q2.y(), s*q1.z() + t*q2.z(), s*q1.w() + t*q2.w());
-    	res.normalize();
-    	return res;
-    }
-
-	static QuaternionT interpolateQuad(const QuaternionT& q1, const QuaternionT& q2, const QuaternionT& out, const QuaternionT& in, T alpha){
-		QuaternionT slerpP = interpolate(q1, q2, alpha);
-		QuaternionT slerpQ = interpolate(out, in, alpha);
-		T Ti = 2 * alpha * (1 - alpha);
-		return interpolate(slerpP, slerpQ, Ti);
-	}
-
-	static QuaternionT fromEuler(T ai, T aj, T ak, typename Matrix_3<T>::EulerAxisSequence axisSequence);
 };
 
 template<typename T>
@@ -148,62 +116,6 @@ inline Vector_3<T> operator*(const QuaternionT<T>& q, const Vector_3<T>& v){
 	return Matrix_3<T>(T(1) - T(2)*(q.y()*q.y() + q.z()*q.z()),        T(2)*(q.x()*q.y() - q.w()*q.z()),        T(2)*(q.x()*q.z() + q.w()*q.y()),
 						  T(2)*(q.x()*q.y() + q.w()*q.z()), T(1) - T(2)*(q.x()*q.x() + q.z()*q.z()),        T(2)*(q.y()*q.z() - q.w()*q.x()),
 						  T(2)*(q.x()*q.z() - q.w()*q.y()),        T(2)*(q.y()*q.z() + q.w()*q.x()), T(1) - T(2)*(q.x()*q.x() + q.y()*q.y())) * v;
-}
-
-// Constructs a quaternion from three Euler angles.
-template<typename T>
-inline QuaternionT<T> QuaternionT<T>::fromEuler(T ai, T aj, T ak, typename Matrix_3<T>::EulerAxisSequence axisSequence){
-	assert(axisSequence == Matrix_3<T>::szyx);
-	int firstaxis = 2;
-	int parity = 1;
-	bool repetition = false;
-	bool frame = false;
-
-	int i = firstaxis;
-	int j = (i + parity + 1) % 3;
-	int k = (i - parity + 2) % 3;
-
-	if(frame)
-		std::swap(ai, ak);
-	if(parity)
-		aj = -aj;
-
-	ai *= T(0.5);
-	aj *= T(0.5);
-	ak *= T(0.5);
-	T ci = std::cos(ai);
-	T si = std::sin(ai);
-	T cj = std::cos(aj);
-	T sj = std::sin(aj);
-	T ck = std::cos(ak);
-	T sk = std::sin(ak);
-	T cc = ci*ck;
-	T cs = ci*sk;
-	T sc = si*ck;
-	T ss = si*sk;
-
-	QuaternionT<T> quaternion;
-	if(repetition) {
-		quaternion[i] = cj*(cs + sc);
-		quaternion[j] = sj*(cc + ss);
-		quaternion[k] = sj*(cs - sc);
-		quaternion[3] = cj*(cc - ss);
-	}
-	else {
-		quaternion[i] = cj*sc - sj*cs;
-		quaternion[j] = cj*ss + sj*cc;
-		quaternion[k] = cj*cs - sj*sc;
-		quaternion[3] = cj*cc + sj*ss;
-	}
-	if(parity)
-		quaternion[j] = -quaternion[j];
-
-	return quaternion;
-}
-
-template<typename T>
-inline std::ostream& operator<<(std::ostream &os, const QuaternionT<T>& q) {
-	return os << '[' << q.x() << ' ' << q.y() << ' ' << q.z() << ' ' << q.w() << ']';
 }
 
 using Quaternion = QuaternionT<double>;

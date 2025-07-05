@@ -56,10 +56,5 @@ private:
 	Cluster* _cluster;
 };
 
-[[nodiscard]]
-inline std::ostream& operator<<(std::ostream& stream, const ClusterVector& v){
-	const int clusterId = v.cluster() ? v.cluster()->id : -1;
-	return stream << v.localVec() << " [cluster " << clusterId << "]";
-}
 
 }

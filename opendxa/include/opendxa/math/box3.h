@@ -73,47 +73,6 @@ public:
 		return 0;
 	}
 
-	bool containsBox(const Box_3<T>& b) const {
-		return (b.minc.x() >= minc.x() && b.maxc.x() <= maxc.x()) &&
-			   (b.minc.y() >= minc.y() && b.maxc.y() <= maxc.y()) &&
-			   (b.minc.z() >= minc.z() && b.maxc.z() <= maxc.z());
-	}
-
-	bool intersects(const Box_3<T>& b) const {
-		if(maxc.x() <= b.minc.x() || minc.x() >= b.maxc.x()) return false;
-		if(maxc.y() <= b.minc.y() || minc.y() >= b.maxc.y()) return false;
-		if(maxc.z() <= b.minc.z() || minc.z() >= b.maxc.z()) return false;
-		if(isEmpty() || b.isEmpty()) return false;
-		return true;
-	}
-
-	inline void addPoint(const Point_3<T>& p) {
-		if(p.x() < minc.x()) minc.x() = p.x();
-		if(p.x() > maxc.x()) maxc.x() = p.x();
-		if(p.y() < minc.y()) minc.y() = p.y();
-		if(p.y() > maxc.y()) maxc.y() = p.y();
-		if(p.z() < minc.z()) minc.z() = p.z();
-		if(p.z() > maxc.z()) maxc.z() = p.z();
-	}
-
-	void addPoints(const Point_3<T>* points, std::size_t count) {
-		const Point_3<T>* const points_end = points + count;
-		for(; points != points_end; ++points)
-			addPoint(*points);
-	}
-
-	void addBox(const Box_3& b) {
-		minc.x() = std::min(minc.x(), b.minc.x()); maxc.x() = std::max(maxc.x(), b.maxc.x());
-		minc.y() = std::min(minc.y(), b.minc.y()); maxc.y() = std::max(maxc.y(), b.maxc.y());
-		minc.z() = std::min(minc.z(), b.minc.z()); maxc.z() = std::max(maxc.z(), b.maxc.z());
-	}
-
-	void clip(const Box_3& b) {
-		minc.x() = std::max(minc.x(), b.minc.x()); maxc.x() = std::min(maxc.x(), b.maxc.x());
-		minc.y() = std::max(minc.y(), b.minc.y()); maxc.y() = std::min(maxc.y(), b.maxc.y());
-		minc.z() = std::max(minc.z(), b.minc.z()); maxc.z() = std::min(maxc.z(), b.maxc.z());
-	}
-
 	Box_3 transformed(const AffineTransformationT<T>& tm) const {
 		if(isEmpty()) return *this;
 		Box_3 b;
@@ -122,17 +81,6 @@ public:
 		for(size_t i = 0; i < 8; i++)
 			b.addPoint(tm * Point_3<T>(c[i&1].x(), c[(i>>1)&1].y(), c[(i>>2)&1].z()));
 		return b;
-	}
-
-	Box_3 centerScale(T factor) const {
-		if(isEmpty()) return *this;
-		Point_3<T> c = center();
-		return Box_3(c + ((minc - c) * factor), c + ((maxc - c) * factor));
-	}
-
-	Box_3 padBox(T amount) const {
-		if(isEmpty()) return *this;		
-		return Box_3(minc - Vector_3<T>(amount), maxc + Vector_3<T>(amount));
 	}
 };
 

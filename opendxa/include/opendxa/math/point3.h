@@ -49,18 +49,6 @@ public:
 	bool equals(const Point_3& p, T tolerance = T(EPSILON)) const {
 		return std::abs(p.x() - x()) <= tolerance && std::abs(p.y() - y()) <= tolerance && std::abs(p.z() - z()) <= tolerance;
 	}
-
-	bool isOrigin(T tolerance = T(EPSILON)) const {
-		return std::abs(x()) <= tolerance && std::abs(y()) <= tolerance && std::abs(z()) <= tolerance;
-	}
-
-	inline size_type maxComponent() const {
-	    return ((x() >= y()) ? ((x() >= z()) ? 0 : 2) : ((y() >= z()) ? 1 : 2));
-	}
-
-	inline size_type minComponent() const {
-	    return ((x() <= y()) ? ((x() <= z()) ? 0 : 2) : ((y() <= z()) ? 1 : 2));
-	}
 };
 
 template<typename T>

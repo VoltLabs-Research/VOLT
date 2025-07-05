@@ -199,60 +199,12 @@ public:
 		return true;
 	}
 
-	void orthonormalize() {
-		// Compute q0.
-		(*this)[0].normalize();
-
-	    // Compute q1.
-		T dot0 = (*this)[0].dot((*this)[1]);
-		(*this)[1][0] -= dot0 * (*this)[0][0];
-		(*this)[1][1] -= dot0 * (*this)[0][1];
-		(*this)[1][2] -= dot0 * (*this)[0][2];
-		(*this)[1].normalize();
-
-	    // compute q2
-	    dot0 = (*this)[0].dot((*this)[2]);
-	    T dot1 = (*this)[1].dot((*this)[2]);
-	    (*this)[2][0] -= dot0*(*this)[0][0] + dot1*(*this)[1][0];
-	    (*this)[2][1] -= dot0*(*this)[0][1] + dot1*(*this)[1][1];
-	    (*this)[2][2] -= dot0*(*this)[0][2] + dot1*(*this)[1][2];
-	    (*this)[2].normalize();
-	}
-
 	inline  T prodrow(const Point_3<T>& p, typename Point_3<T>::size_type index) const {
 		return (*this)[0][index] * p[0] + (*this)[1][index] * p[1] + (*this)[2][index] * p[2] + (*this)[3][index];
 	}
 
 	inline  T prodrow(const Vector_3<T>& v, typename Vector_3<T>::size_type index) const {
 		return (*this)[0][index] * v[0] + (*this)[1][index] * v[1] + (*this)[2][index] * v[2];
-	}
-
-	inline  const Matrix_3<T>& linear() const {
-		return *reinterpret_cast<const Matrix_3<T>*>(this);
-	}
-
-	static inline AffineTransformationT rotationX(T angle) {
-		const T c = cos(angle);
-		const T s = sin(angle);
-		return AffineTransformationT{T(1), T(0), T(0), T(0),
-									 T(0),    c,   -s, T(0),
-									 T(0),    s,    c, T(0)};
-	}
-
-	static inline AffineTransformationT rotationY(T angle) {
-		const T c = cos(angle);
-		const T s = sin(angle);
-		return AffineTransformationT{   c, T(0),    s, T(0),
-									 T(0), T(1), T(0), T(0),
-									   -s, T(0),    c, T(0)};
-	}
-
-	static inline AffineTransformationT rotationZ(T angle) {
-		const T c = cos(angle);
-		const T s = sin(angle);
-		return AffineTransformationT{   c,   -s, T(0), T(0),
-										s,    c, T(0), T(0),
-									 T(0), T(0), T(1), T(0)};
 	}
 
 	static AffineTransformationT rotation(const RotationT<T>& rot);
@@ -271,23 +223,6 @@ public:
 	}
 
 	static AffineTransformationT scaling(const ScalingT<T>& scaling);
-	static  AffineTransformationT shear(T gammaX, T gammaY) {
-		return AffineTransformationT(
-				         T(1), T(0), gammaX, T(0),
-						 T(0), T(1), gammaY, T(0),
-						 T(0), T(0), T(1),   T(0));
-	}
-
-	static AffineTransformationT fromOpenGL(const T tm[16]) {
-		assert(tm[3] == 0 && tm[7] == 0 && tm[11] == 0 && tm[15] == 1);
-		return AffineTransformationT{tm[0], tm[4], tm[8], tm[12],
-									 tm[1], tm[5], tm[9], tm[13],
-									 tm[2], tm[6], tm[10], tm[14]};
-	}
-
-	static AffineTransformationT lookAt(const Point_3<T>& camera, const Point_3<T>& target, const Vector_3<T>& upVector) {
-		return lookAlong(camera, target - camera, upVector);
-	}
 
 	static AffineTransformationT lookAlong(const Point_3<T>& camera, const Vector_3<T>& direction, const Vector_3<T>& upVector) {
 		auto zaxis = -direction.normalized();
@@ -318,11 +253,6 @@ public:
 			(std::abs((*this)[1][0]*(*this)[1][0] + (*this)[1][1]*(*this)[1][1] + (*this)[1][2]*(*this)[1][2] - T(1)) <= epsilon) &&
 			(std::abs((*this)[2][0]*(*this)[2][0] + (*this)[2][1]*(*this)[2][1] + (*this)[2][2]*(*this)[2][2] - T(1)) <= epsilon);
 	}
-
-	bool isRotationMatrix(T epsilon = T(EPSILON)) const {
-		return isOrthogonalMatrix(epsilon) && (std::abs(determinant() - T(1)) <= epsilon);
-	}
-
 };
 
 template<typename T>
@@ -435,13 +365,6 @@ inline AffineTransformationT<T> AffineTransformationT<T>::scaling(const ScalingT
 								T(0), scaling.S.y(), T(0),
 								T(0), T(0), scaling.S.z());
 	return AffineTransformationT<T>(U * K * U.transposed());
-}
-
-template<typename T>
-inline std::ostream& operator<<(std::ostream &os, const AffineTransformationT<T>& m) {
-	for(typename AffineTransformationT<T>::size_type row = 0; row < m.row_count(); row++)
-		os << m.row(row) << std::endl;
-	return os;
 }
 
 using AffineTransformation = AffineTransformationT<double>;
