@@ -78,10 +78,10 @@ private:
 		return cell().reducedToAbsolute(d);
 	}
 
-private:
 	InterfaceMesh& _mesh;
 	std::shared_ptr<DislocationNetwork> _network;
-	ClusterGraph* _clusterGraph;  // Changed from shared_ptr to raw pointer to match constructor
+	ClusterGraph* _clusterGraph; 
+	tbb::spin_mutex _circuit_pool_mutex;
 	
 	int _maxBurgersCircuitSize;
 	int _maxExtendedBurgersCircuitSize;

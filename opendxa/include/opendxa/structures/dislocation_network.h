@@ -5,6 +5,7 @@
 #include <opendxa/geometry/interface_mesh.h>
 #include <opendxa/analysis/burgers_circuit.h>
 #include <opendxa/structures/cluster_vector.h>
+#include <tbb/spin_mutex.h>
 #include <memory>
 #include <vector>
 #include <deque>
@@ -21,7 +22,7 @@ struct DislocationNode{
 	DislocationNode* oppositeNode = nullptr;
 	DislocationNode* junctionRing = nullptr;
 	BurgersCircuit* circuit = nullptr;
-
+	
 	DislocationNode() = default;
 
 	[[nodiscard]] inline ClusterVector burgersVector() const;

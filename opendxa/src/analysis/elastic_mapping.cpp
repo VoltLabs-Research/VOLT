@@ -49,7 +49,6 @@ bool ElasticMapping::generateTessellationEdges(){
 bool ElasticMapping::assignVerticesToClusters(){
     const size_t vertex_count = _vertexClusters.size();
     
-    // Paralelizar asignación de vértices a clusters
     #pragma omp parallel for schedule(static) 
     for(size_t i = 0; i < vertex_count; ++i){
         _vertexClusters[i] = structureAnalysis().atomCluster(int(i));

@@ -2,138 +2,141 @@
 #include <opendxa/analysis/dislocation_tracer.h>
 #include <opendxa/geometry/interface_mesh.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>
-#include <omp.h>
+#include <tbb/parallel_for.h>
+#include <tbb/parallel_for_each.h>
+#include <tbb/blocked_range.h>
+#include <tbb/spin_mutex.h>
+#include <vector>
+#include <ranges>
+#include <atomic>
+#include <algorithm> 
 
 namespace OpenDXA{
 
 BurgersCircuit* DislocationTracer::allocateCircuit(){
-	if(_unusedCircuit == nullptr){
-		return _circuitPool.construct();
-	}
-
-	BurgersCircuit* circuit = _unusedCircuit;
-	_unusedCircuit = nullptr;
-	return circuit;
-}
-
-void DislocationTracer::discardCircuit(BurgersCircuit* circuit){
-	assert(_unusedCircuit == nullptr);
-	_unusedCircuit = circuit;
+    BurgersCircuit* circuit = nullptr;
+    tbb::spin_mutex::scoped_lock lock(_circuit_pool_mutex);
+    
+    if(_unusedCircuit != nullptr){
+        circuit = _unusedCircuit;
+        _unusedCircuit = nullptr;
+    }
+    
+    if(circuit == nullptr){
+        return _circuitPool.construct();
+    }
+    return circuit;
 }
 
 bool DislocationTracer::traceDislocationSegments(){
     mesh().clearFaceFlag(0);
-    std::vector<DislocationNode*> dangling = _danglingNodes;
-    dangling.reserve(_danglingNodes.size());
+    std::vector<DislocationNode*> dangling;
 
     for(int L : std::views::iota(3, _maxExtendedBurgersCircuitSize + 1)){
-        // Paralelizar extensión de segmentos colgantes
+        dangling = _danglingNodes;
+
         if(!dangling.empty()){
-            #pragma omp parallel for schedule(dynamic, 4)
-            for(size_t i = 0; i < dangling.size(); ++i){
-                auto* node = dangling[i];
-                #pragma omp critical(trace_segment)
-                {
-                    traceSegment(*node->segment, *node, L, L <= _maxBurgersCircuitSize);
-                }
+            for(auto* node : dangling){
+                traceSegment(*node->segment, *node, L, L <= _maxBurgersCircuitSize);
             }
         }
 
-        // Search for new segments in odd L and within the primary range
         if((L & 1) && L <= _maxBurgersCircuitSize){
             if(!findPrimarySegments(L)){
                 return false;
             }
         }
-
-        // Join segments that form joints
         (void) joinSegments(L);
 
-        // For large L's, store the "cap" of each hanging circuit
-        if(L >= _maxBurgersCircuitSize){
-            #pragma omp parallel for schedule(dynamic)
-            for(size_t i = 0; i < dangling.size(); ++i){
-                auto* node = dangling[i];
+        if(L >= _maxBurgersCircuitSize && !dangling.empty()){
+            tbb::parallel_for_each(dangling.begin(), dangling.end(), [&](DislocationNode* node){
                 auto* C = node->circuit;
                 if(C->isDangling && C->segmentMeshCap.empty()){
-                    #pragma omp critical(store_circuit)
-                    {
-                        C->storeCircuit();
-                        C->numPreliminaryPoints = 0;
-                    }
+                    C->storeCircuit();
+                    C->numPreliminaryPoints = 0;
                 }
-            }
+            });
         }
-
-        dangling = _danglingNodes;
     }
 
     return true;
 }
 
+void DislocationTracer::discardCircuit(BurgersCircuit* circuit){
+    tbb::spin_mutex::scoped_lock lock(_circuit_pool_mutex);
+    assert(_unusedCircuit == nullptr);
+    _unusedCircuit = circuit;
+}
+
 void DislocationTracer::finishDislocationSegments(int crystalStructure){
     auto& segs = network().segments();
-    // Paralelizar el procesamiento inicial de segmentos
-    #pragma omp parallel for schedule(dynamic)
-    for(size_t i = 0; i < segs.size(); ++i){
-        auto* s = segs[i];
-        auto pre  = s->backwardNode().circuit->numPreliminaryPoints;
-        auto post = s->forwardNode().circuit->numPreliminaryPoints;
-        s->id = static_cast<int>(i);
 
-        auto& line = s->line;
-        auto& core = s->coreSize;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, segs.size()), 
+        [&](const tbb::blocked_range<size_t>& r){
+            for(size_t i = r.begin(); i != r.end(); ++i){
+                auto* s = segs[i];
+                auto pre  = s->backwardNode().circuit->numPreliminaryPoints;
+                auto post = s->forwardNode().circuit->numPreliminaryPoints;
+                s->id = static_cast<int>(i);
 
-        line.erase(line.begin(), line.begin() + pre);
-        line.erase(line.end() - post, line.end());
-        core.erase(core.begin(), core.begin() + pre);
-        core.erase(core.end() - post, core.end());
-    }
+                auto& line = s->line;
+                auto& core = s->coreSize;
 
-    // Re-express Burgers vectors in the desired structure (paralelizable)
-    #pragma omp parallel for schedule(dynamic)
-    for(size_t i = 0; i < segs.size(); ++i){
-        auto* s = segs[i];
-        auto* orig = s->burgersVector.cluster();
-        if(orig->structure != crystalStructure){
-            for(auto* t = orig->transitions; t && t->distance <= 1; t = t->next){
-                if(t->cluster2->structure == crystalStructure){
-                    s->burgersVector = ClusterVector(
-                        t->transform(s->burgersVector.localVec()),
-                        t->cluster2
-                    );
-                    break;
+                line.erase(line.begin(), line.begin() + pre);
+                line.erase(line.end() - post, line.end());
+                core.erase(core.begin(), core.begin() + pre);
+                core.erase(core.end() - post, core.end());
+            }
+	});
+
+    // Re-express Burgers vectors in the desired structure
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, segs.size()), 
+        [&](const tbb::blocked_range<size_t>& r){
+            for(size_t i = r.begin(); i != r.end(); ++i){
+                auto* s = segs[i];
+                auto* orig = s->burgersVector.cluster();
+                if(orig->structure != crystalStructure){
+                    for(auto* t = orig->transitions; t && t->distance <= 1; t = t->next){
+                        if(t->cluster2->structure == crystalStructure){
+                            s->burgersVector = ClusterVector(
+                                t->transform(s->burgersVector.localVec()),
+                                t->cluster2
+                            );
+                            break;
+                        }
+                    }
                 }
             }
-        }
-    }
+	});
 
-    // Align the orientation of each segment concisely (paralelizable)
-    #pragma omp parallel for schedule(dynamic)
-    for(size_t i = 0; i < segs.size(); ++i){
-        auto* s = segs[i];
-        auto& line = s->line;
-        Vector3 dir = line.back() - line.front();
-        if(dir.isZero(CA_ATOM_VECTOR_EPSILON)) continue;
+    // Align the orientation of each segment
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, segs.size()), 
+        [&](const tbb::blocked_range<size_t>& r){
+            for(size_t i = r.begin(); i != r.end(); ++i){
+                auto* s = segs[i];
+                auto& line = s->line;
+                if (line.empty()) continue;
+                Vector3 dir = line.back() - line.front();
+                if(dir.isZero(CA_ATOM_VECTOR_EPSILON)) continue;
 
-        // Determine which component dominates and if it is negative
-        auto absx = std::abs(dir.x()), absy = std::abs(dir.y()), absz = std::abs(dir.z());
-        if((absx >= absy && absx >= absz && dir.x() < 0) ||
-            (absy >= absx && absy >= absz && dir.y() < 0) ||
-            (absz >= absx && absz >= absy && dir.z() < 0)
-		){
-            s->flipOrientation();
-        }
-    }
+                auto absx = std::abs(dir.x()), absy = std::abs(dir.y()), absz = std::abs(dir.z());
+                if((absx >= absy && absx >= absz && dir.x() < 0) ||
+                   (absy >= absx && absy >= absz && dir.y() < 0) ||
+                   (absz >= absx && absz >= absy && dir.z() < 0))
+                {
+                    s->flipOrientation();
+                }
+            }
+	});
 }
 
 struct BurgersCircuitSearchStruct{
-	InterfaceMesh::Vertex* node;
-	Point3 latticeCoord;
-	Matrix3 tm;
-	int recursiveDepth;
-	InterfaceMesh::Edge* predecessorEdge;
-	BurgersCircuitSearchStruct* nextToProcess;
+    InterfaceMesh::Vertex* node;
+    Point3 latticeCoord;
+    Matrix3 tm;
+    int recursiveDepth;
+    InterfaceMesh::Edge* predecessorEdge;
+    BurgersCircuitSearchStruct* nextToProcess;
 };
 
 bool DislocationTracer::findPrimarySegments(int maxBurgersCircuitSize){
@@ -190,8 +193,8 @@ bool DislocationTracer::findPrimarySegments(int maxBurgersCircuitSize){
                     nb->depth = cur->depth + 1;
                     nb->viaEdge = edge;
                     nb->tm = edge->clusterTransition->isSelfTransition()
-						? cur->tm
-						: cur->tm * edge->clusterTransition->reverse->tm;
+                        ? cur->tm
+                        : cur->tm * edge->clusterTransition->reverse->tm;
                     nbVert->burgersSearchStruct = reinterpret_cast<BurgersCircuitSearchStruct*>(nb);
                     queue.push_back(nb);
                 }

@@ -17,7 +17,6 @@ json DXAJsonExporter::exportAnalysisData(
     bool includeDetailedNetworkInfo,
     bool includeTopologyInfo
 ){
-    
     json data;
 
     data["dislocations"] = exportDislocationsToJson(network, includeDetailedNetworkInfo, &frame.simulationCell);

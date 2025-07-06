@@ -69,6 +69,7 @@ find_package(Boost 1.88 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenMP REQUIRED)
+find_package(TBB REQUIRED)
 
 message(STATUS "Eigen3: ${EIGEN3_INCLUDE_DIR}")
 message(STATUS "Boost version: ${Boost_VERSION}")
@@ -145,6 +146,7 @@ target_link_libraries(opendxa_lib PUBLIC
     Threads::Threads
     Boost::boost
     OpenMP::OpenMP_CXX
+    TBB::tbb
 )
 
 # Executable
