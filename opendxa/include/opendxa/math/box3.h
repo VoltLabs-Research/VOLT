@@ -73,6 +73,32 @@ public:
 		return 0;
 	}
 
+    template<typename PointsRange>
+    void addPoints(const PointsRange& points){
+        for(const Point_3<T>& p : points)
+            addPoint(p);
+    }
+
+    Box_3 padBox(T amount) const{
+        if(isEmpty()) return *this;
+        return Box_3(minc - Vector_3<T>(amount), maxc + Vector_3<T>(amount));
+    }
+
+	void addPoints(const Point_3<T>* points, std::size_t count){
+        const Point_3<T>* const points_end = points + count;
+        for(; points != points_end; ++points)
+            addPoint(*points);
+    }
+
+	inline void addPoint(const Point_3<T>& p) {
+        if(p.x() < minc.x()) minc.x() = p.x();
+        if(p.x() > maxc.x()) maxc.x() = p.x();
+        if(p.y() < minc.y()) minc.y() = p.y();
+        if(p.y() > maxc.y()) maxc.y() = p.y();
+        if(p.z() < minc.z()) minc.z() = p.z();
+        if(p.z() > maxc.z()) maxc.z() = p.z();
+    }
+
 	Box_3 transformed(const AffineTransformationT<T>& tm) const {
 		if(isEmpty()) return *this;
 		Box_3 b;

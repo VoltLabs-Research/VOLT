@@ -58,7 +58,7 @@ private:
 		_numSolidCells = 0;
 		_spaceFillingRegion = -2;
 
-		for(auto cell = _tessellation.begin_cells(); cell != _tessellation.end_cells(); ++cell){
+        for(DelaunayTessellation::CellHandle cell : _tessellation.cells()) {
 			bool isSolid = _tessellation.isValidCell(cell) && _tessellation.alphaTest(cell, _alpha);
 			if(!isSolid){
 				_tessellation.setUserField(cell, 0);
@@ -91,7 +91,7 @@ private:
 		_tetrahedraFaceList.clear();
 		_faceLookupMap.clear();
 
-		for(auto cell = _tessellation.begin_cells(); cell != _tessellation.end_cells(); ++cell){
+        for(DelaunayTessellation::CellHandle cell : _tessellation.cells()){
 			if(_tessellation.getCellIndex(cell) == -1) continue;
 			int solidRegion = _tessellation.getUserField(cell);
 			Point3 unwrappedVerts[4];
@@ -177,7 +177,7 @@ private:
 	template<typename LinkManifoldsFunc>
 	bool linkHalfedges(LinkManifoldsFunc&& linkManifoldsFunc){
 		auto tet = _tetrahedraFaceList.cbegin();
-		for(auto cell = _tessellation.begin_cells(); cell != _tessellation.end_cells(); ++cell){
+        for(DelaunayTessellation::CellHandle cell : _tessellation.cells()){
 			if(_tessellation.getCellIndex(cell) == -1) continue;
 
 			for(int f = 0; f < 4; f++){

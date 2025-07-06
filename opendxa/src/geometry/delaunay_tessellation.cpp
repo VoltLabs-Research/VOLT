@@ -8,42 +8,71 @@
 namespace OpenDXA{
 
 bool DelaunayTessellation::generateTessellation(
-	const SimulationCell &simCell,
+	const SimulationCell& simCell,
 	const Point3* positions,
 	size_t numPoints,
 	double ghostLayerSize,
+	bool coverDomainWithFiniteTets,
 	const int* selectedPoints
 ){
-	const double epsilon = 2e-5;
-	boost::mt19937 rng;
-	boost::uniform_real<> displacement(-epsilon, epsilon);
-	rng.seed(4);
+	// Initialize Geogram library (in a thread-safe way)
+	static std::mutex geogramMutex;
+	{
+		std::lock_guard<std::mutex> lock(geogramMutex);
+		GEO::initialize(GEO::GEOGRAM_NO_HANDLER);
+		GEO::set_assert_mode(GEO::ASSERT_ABORT);
+	}
+
+	// Make the magnitude of the randomly perturbed particle 
+	// positions dependent on the size of the system
+	double lengthScale = (simCell.matrix().column(0) + simCell.matrix().column(1) + simCell.matrix().column(2)).length();
+
+	double epsilon = 1e-10 * lengthScale;
+
+	// Set up random number generator to generate random perturbations.
+	// Use a fixed seed value for reproducibility reasons.
+	std::mt19937 rng(4);
+	boost::random::uniform_real_distribution<double> displacement(-epsilon, epsilon);
 	_simCell = simCell;
+
+	// Build the list of input points
 	_particleIndices.clear();
 	_pointData.clear();
+
 	for(size_t i = 0; i < numPoints; i++, ++positions){
+		// Skip points which are not inclued
 		if(selectedPoints && !*selectedPoints++){
 			continue;
 		}
-	
+
+		// Add a small random perturbation to the particle positions to 
+		// make the Delaunay triangulation more robust against singular 
+		// input data, e.g. all particle positioned on ideal crystal lattice sites
 		Point3 wp = simCell.wrapPoint(*positions);
-		_pointData.push_back(static_cast<double>(wp.x()) + displacement(rng));
-		_pointData.push_back(static_cast<double>(wp.y()) + displacement(rng));
-		_pointData.push_back(static_cast<double>(wp.z()) + displacement(rng));
-		_particleIndices.push_back(static_cast<int>(i));	
+		_pointData.emplace_back(
+            (double) wp.x() + displacement(rng),
+            (double) wp.y() + displacement(rng),
+            (double) wp.z() + displacement(rng)
+		);
+
+		_particleIndices.push_back(i);
 	}
 
 	_primaryVertexCount = _particleIndices.size();
+
+	// Determine how many periodic copies of the input particles are
+	// needed in each direction to ensure a consistent periodic
+	// topology in the border region
 	Vector3I stencilCount;
 	double cuts[3][2];
 	Vector3 cellNormals[3];
 	for(size_t dim = 0; dim < 3; dim++){
 		cellNormals[dim] = simCell.cellNormalVector(dim);
-		cuts[dim][0] = cellNormals[dim].dot(Vector3(simCell.reducedToAbsolute(Point3(0, 0, 0))));
-		cuts[dim][1] = cellNormals[dim].dot(Vector3(simCell.reducedToAbsolute(Point3(1, 1, 1))));
+		cuts[dim][0] = cellNormals[dim].dot(simCell.reducedToAbsolute(Point3(0,0,0)) - Point3::Origin());
+		cuts[dim][1] = cellNormals[dim].dot(simCell.reducedToAbsolute(Point3(1,1,1)) - Point3::Origin());
 
-		if(simCell.pbcFlags()[dim]){
-			stencilCount[dim] = static_cast<int>(ceil(ghostLayerSize / simCell.matrix().column(dim).dot(cellNormals[dim])));
+		if(simCell.hasPbc(dim)){
+			stencilCount[dim] = (int) ceil(ghostLayerSize / simCell.matrix().column(dim).dot(cellNormals[dim]));
 			cuts[dim][0] -= ghostLayerSize;
 			cuts[dim][1] += ghostLayerSize;
 		}else{
@@ -53,33 +82,27 @@ bool DelaunayTessellation::generateTessellation(
 		}
 	}
 
+	// Create ghost images of input vertices
 	for(int ix = -stencilCount[0]; ix <= +stencilCount[0]; ix++){
 		for(int iy = -stencilCount[1]; iy <= +stencilCount[1]; iy++){
 			for(int iz = -stencilCount[2]; iz <= +stencilCount[2]; iz++){
 				if(ix == 0 && iy == 0 && iz == 0) continue;
 
 				Vector3 shift = simCell.reducedToAbsolute(Vector3(ix, iy, iz));
-				Vector_3<double> shiftd = static_cast<Vector_3<double>>(shift);
-
 				for(size_t vertexIndex = 0; vertexIndex < _primaryVertexCount; vertexIndex++){
-					double x = _pointData[vertexIndex * 3 + 0] + shiftd.x();
-					double y = _pointData[vertexIndex * 3 + 1] + shiftd.y();
-					double z = _pointData[vertexIndex * 3 + 2] + shiftd.z();
-
-					Point3 pimage = Point3(x, y, z);
+					Point3 pimage = _pointData[vertexIndex] + shift;
 					bool isClipped = false;
 					for(size_t dim = 0; dim < 3; dim++){
-						double d = cellNormals[dim].dot(Vector3(pimage));
-						if(d < cuts[dim][0] || d > cuts[dim][1]){
-							isClipped = true;
-							break;
+						if(simCell.hasPbc(dim)){
+							double d = cellNormals[dim].dot(pimage - Point3::Origin());
+							if(d < cuts[dim][0] || d > cuts[dim][1]){
+								isClipped = true;
+								break;
+							}
 						}
 					}
-
 					if(!isClipped){
-						_pointData.push_back(x);
-						_pointData.push_back(y);
-						_pointData.push_back(z);
+						_pointData.push_back(pimage);
 						_particleIndices.push_back(_particleIndices[vertexIndex]);
 					}
 				}
@@ -87,28 +110,44 @@ bool DelaunayTessellation::generateTessellation(
 		}
 	}
 
-    static std::mutex geogramMutex;
-    {
-        std::lock_guard<std::mutex> lock(geogramMutex);
-        GEO::initialize(GEO::GEOGRAM_NO_HANDLER);
-        GEO::set_assert_mode(GEO::ASSERT_ABORT);
-    }
+	// In order to cover the simulation box completely with finite tetrahedra, add 8 extra
+	// input points to the Delaunay tesselation, far away from the simulation cell and real praticles.
+	// These 8 points form a convex hull, whose interior will get completely tessellated.
+	if(coverDomainWithFiniteTets){
+		assert(simCell);
+		// Compute bounding box of inputs points and simulation cell
+		Box3 bb = Box3(Point3(0), Point3(1)).transformed(simCell.matrix());
+		bb.addPoints(_pointData.data(), _pointData.size());
+		// Add extra padding
+		bb = bb.padBox(ghostLayerSize);
+		// Create 8 helper points at the corners of the bounding box
+		for(size_t i = 0; i < 8; i++){
+			Point3 corner = bb[i];
+			_pointData.push_back(corner);
+			_particleIndices.push_back(std::numeric_limits<size_t>::max());
+		}
+	}
 
-    _dt = GEO::Delaunay::create(3, "BDEL");
+	// Internal Delaunay generator object
+	_dt = GEO::Delaunay::create(3, "BDEL");
 	_dt->set_keeps_infinite(true);
 	_dt->set_reorder(true);
 
-	GEO::index_t nv = static_cast<GEO::index_t>(_pointData.size() / 3);
-	_dt->set_vertices(nv, _pointData.data());
+	// Construct Delaunay tessellation
+	_dt->set_vertices(_pointData.size(), reinterpret_cast<const double*>(_pointData.data()));
 
+	// Classify tessellation cells as ghost or local cells
 	_numPrimaryTetrahedra = 0;
 	_cellInfo.resize(_dt->nb_cells());
-	for(CellIterator cell = begin_cells(); cell != end_cells(); ++cell) {
-		bool isGhost = classifyGhostCell(cell);
-		_cellInfo[cell] = { isGhost, isGhost ? -1 : static_cast<int>(_numPrimaryTetrahedra++) };
+	for(CellHandle cell : cells()){
+		if(classifyGhostCell(cell)){
+			_cellInfo[cell].isGhost = true;
+            _cellInfo[cell].index = -1;
+		}else{
+			_cellInfo[cell].isGhost = false;
+			_cellInfo[cell].index = _numPrimaryTetrahedra++;
+		}
 	}
-
-	// TODO: VOID
 	return true;
 }
 
@@ -131,39 +170,49 @@ bool DelaunayTessellation::classifyGhostCell(CellHandle cell) const{
 }
 
 static inline double determinant(double a00, double a01, double a02,
-								 double a10, double a11, double a12,
-								 double a20, double a21, double a22){
-	return a00*a11*a22 + a01*a12*a20 + a02*a10*a21
-		 - a02*a11*a20 - a01*a10*a22 - a00*a12*a21;
+                                 double a10, double a11, double a12,
+                                 double a20, double a21, double a22){
+    double m02 = a00*a21 - a20*a01;
+    double m01 = a00*a11 - a10*a01;
+    double m12 = a10*a21 - a20*a11;
+    double m012 = m01*a22 - m02*a12 + m12*a02;
+    return m012;
 }
 
-bool DelaunayTessellation::alphaTest(CellHandle cell, double alpha) const{
-	auto v0 = _dt->vertex_ptr(_dt->cell_vertex(cell, 0));
-	auto v1 = _dt->vertex_ptr(_dt->cell_vertex(cell, 1));
-	auto v2 = _dt->vertex_ptr(_dt->cell_vertex(cell, 2));
-	auto v3 = _dt->vertex_ptr(_dt->cell_vertex(cell, 3));
+std::optional<bool> DelaunayTessellation::alphaTest(CellHandle cell, double alpha) const{
+    auto v0 = _dt->vertex_ptr(cellVertex(cell, 0));
+    auto v1 = _dt->vertex_ptr(cellVertex(cell, 1));
+    auto v2 = _dt->vertex_ptr(cellVertex(cell, 2));
+    auto v3 = _dt->vertex_ptr(cellVertex(cell, 3));
 
-	auto qpx = v1[0] - v0[0];
-	auto qpy = v1[1] - v0[1];
-	auto qpz = v1[2] - v0[2];
-	auto qp2 = qpx*qpx + qpy*qpy + qpz*qpz;
+    auto qpx = v1[0]-v0[0];
+    auto qpy = v1[1]-v0[1];
+    auto qpz = v1[2]-v0[2];
+    auto qp2 = qpx*qpx + qpy*qpy + qpz*qpz;
+    auto rpx = v2[0]-v0[0];
+    auto rpy = v2[1]-v0[1];
+    auto rpz = v2[2]-v0[2];
+    auto rp2 = rpx*rpx + rpy*rpy + rpz*rpz;
+    auto spx = v3[0]-v0[0];
+    auto spy = v3[1]-v0[1];
+    auto spz = v3[2]-v0[2];
+    auto sp2 = spx*spx + spy*spy + spz*spz;
 
-	auto rpx = v2[0] - v0[0];
-	auto rpy = v2[1] - v0[1];
-	auto rpz = v2[2] - v0[2];
-	auto rp2 = rpx*rpx + rpy*rpy + rpz*rpz;
+    auto num_x = determinant(qpy,qpz,qp2,rpy,rpz,rp2,spy,spz,sp2);
+    auto num_y = determinant(qpx,qpz,qp2,rpx,rpz,rp2,spx,spz,sp2);
+    auto num_z = determinant(qpx,qpy,qp2,rpx,rpy,rp2,spx,spy,sp2);
+    auto den   = determinant(qpx,qpy,qpz,rpx,rpy,rpz,spx,spy,spz);
 
-	auto spx = v3[0] - v0[0];
-	auto spy = v3[1] - v0[1];
-	auto spz = v3[2] - v0[2];
-	auto sp2 = spx*spx + spy*spy + spz*spz;
+    double nomin = (num_x*num_x + num_y*num_y + num_z*num_z);
+    double denom = (4 * den * den);
 
-	auto num_x = determinant(qpy, qpz, qp2, rpy, rpz, rp2, spy, spz, sp2);
-	auto num_y = determinant(qpx, qpz, qp2, rpx, rpz, rp2, spx, spz, sp2);
-	auto num_z = determinant(qpx, qpy, qp2, rpx, rpy, rp2, spx, spy, sp2);
-	auto den = determinant(qpx, qpy, qpz, rpx, rpy, rpz, spx, spy, spz);
+    // Detect degenerate sliver elements, for which we cannot compute a reliable alpha value.
+    if(std::abs(denom) < 1e-9 && std::abs(nomin) < 1e-9){
+		// Indeterminate result
+        return std::nullopt;
+    }
 
-	return (num_x*num_x + num_y*num_y + num_z*num_z) / (4.0 * den * den) < alpha;
+    return (nomin / denom) < alpha;
 }
 
 }

@@ -14,8 +14,7 @@ static constexpr std::array<std::pair<int, int>, 6> tetraEdgeVertices{{
 }};
 
 bool ElasticMapping::generateTessellationEdges(){
-    for(auto cellIt = tessellation().begin_cells(); cellIt != tessellation().end_cells(); ++cellIt){
-        DelaunayTessellation::CellHandle cell = cellIt;
+    for(DelaunayTessellation::CellHandle cell : tessellation().cells()){
         if(tessellation().isGhostCell(cell)){
             continue;
 		}

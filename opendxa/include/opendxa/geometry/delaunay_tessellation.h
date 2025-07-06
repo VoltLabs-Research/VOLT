@@ -3,6 +3,7 @@
 #include <opendxa/core/opendxa.h>
 #include <opendxa/core/simulation_cell.h>
 #include <opendxa/core/particle_property.h>
+#include <boost/iterator/counting_iterator.hpp>
 
 #include <Delaunay_psm.h>
 #include <vector>
@@ -15,7 +16,7 @@ public:
     using size_type = GEO::index_t;
     using CellHandle = GEO::index_t;
     using VertexHandle = GEO::index_t;
-    using CellIterator = size_type;
+    using CellIterator = boost::counting_iterator<size_type>;
     using Facet = std::pair<CellHandle, int>;
 
 	struct CellInfo{
@@ -91,7 +92,7 @@ public:
 	};
 
 	[[nodiscard]] bool generateTessellation(const SimulationCell& simCell, const Point3* positions,
-		size_t numPoints, double ghostLayerSize, const int* selectedPoints = nullptr);
+		size_t numPoints, double ghostLayerSize, bool coverDomainWithFiniteTets, const int* selectedPoints = nullptr);
 	
     [[nodiscard]] size_type numberOfTetrahedra() const{
 		return _dt->nb_cells();
@@ -99,14 +100,6 @@ public:
 
     [[nodiscard]] size_type numberOfPrimaryTetrahedra() const{
 		return _numPrimaryTetrahedra;
-	}
-
-    [[nodiscard]] CellIterator begin_cells() const{
-		return 0;
-	}
-
-    [[nodiscard]] CellIterator end_cells() const{
-		return _dt->nb_cells();
 	}
 
     void setCellIndex(CellHandle cell, int value){
@@ -146,7 +139,7 @@ public:
         return { static_cast<double>(xyz[0]), static_cast<double>(xyz[1]), static_cast<double>(xyz[2]) };
     }
 
-    [[nodiscard]] bool alphaTest(CellHandle cell, double alpha) const;
+    [[nodiscard]] std::optional<bool> alphaTest(CellHandle cell, double alpha) const;
 
     [[nodiscard]] int vertexIndex(VertexHandle vertex) const{
         assert(vertex < _particleIndices.size());
@@ -181,11 +174,24 @@ public:
 		return _simCell;
 	}
 	
+    auto cells() const{
+        return boost::make_iterator_range(begin_cells(), end_cells());
+    }
+
+    CellIterator begin_cells() const{
+        return boost::make_counting_iterator<size_type>(0);
+    }
+
+    CellIterator end_cells() const{
+        return boost::make_counting_iterator<size_type>(_dt->nb_cells());
+    }
+
+
 private:
     bool classifyGhostCell(CellHandle cell) const;
 
     GEO::Delaunay_var _dt;
-    std::vector<double> _pointData;
+    std::vector<Point3> _pointData;
     std::vector<CellInfo> _cellInfo;
     std::vector<int> _particleIndices;
 

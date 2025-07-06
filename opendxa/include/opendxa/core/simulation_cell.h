@@ -13,6 +13,11 @@ public:
 		_is2D = false;
 	}
 
+	[[nodiscard]] bool hasPbc(size_t dim) const noexcept {
+        assert(dim < 3);
+        return _pbcFlags[dim];
+    }
+
 	[[nodiscard]] constexpr bool is2D() const noexcept{
 		return _is2D;
 	}

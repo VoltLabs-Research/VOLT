@@ -106,7 +106,7 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         PROFILE("Delaunay Tessellation");
         ghostLayerSize = 3.0f * structureAnalysis->maximumNeighborDistance();
         if(!tesselation.generateTessellation(structureAnalysis->cell(), structureAnalysis->positions()->constDataPoint3(), 
-                structureAnalysis->atomCount(), ghostLayerSize, nullptr)){
+                structureAnalysis->atomCount(), ghostLayerSize, false, nullptr)){
             std::cerr << "Failed Delaunay tessellation" << std::endl;
             return false;
         }
