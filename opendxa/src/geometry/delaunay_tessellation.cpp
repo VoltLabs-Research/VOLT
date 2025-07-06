@@ -87,25 +87,14 @@ bool DelaunayTessellation::generateTessellation(
 		}
 	}
 
-	static bool isGeogramInitialized = false;
-	if(!isGeogramInitialized){
-		// TODO: this is ugly
-        isGeogramInitialized = true;
-        auto* old_cout = std::cout.rdbuf();
-        auto* old_cerr = std::cerr.rdbuf();
-        auto* old_clog = std::clog.rdbuf();
-        std::cout.rdbuf(nullptr);
-        std::cerr.rdbuf(nullptr);
-        std::clog.rdbuf(nullptr);
-        GEO::initialize();
+    static std::mutex geogramMutex;
+    {
+        std::lock_guard<std::mutex> lock(geogramMutex);
+        GEO::initialize(GEO::GEOGRAM_NO_HANDLER);
         GEO::set_assert_mode(GEO::ASSERT_ABORT);
-        std::cout.rdbuf(old_cout);
-        std::cerr.rdbuf(old_cerr);
-        std::clog.rdbuf(old_clog);
-        GEO::Logger::instance()->set_quiet(true);
     }
 
-	_dt = new GEO::Delaunay3d();
+    _dt = GEO::Delaunay::create(3, "BDEL");
 	_dt->set_keeps_infinite(true);
 	_dt->set_reorder(true);
 
@@ -119,7 +108,7 @@ bool DelaunayTessellation::generateTessellation(
 		_cellInfo[cell] = { isGhost, isGhost ? -1 : static_cast<int>(_numPrimaryTetrahedra++) };
 	}
 
-	// TODO: dt is valid?
+	// TODO: VOID
 	return true;
 }
 

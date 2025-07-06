@@ -4,12 +4,6 @@ if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif()
 
-set(GEOGRAM_SUB_BUILD ON CACHE BOOL "")
-set(GEOGRAM_LIB_ONLY ON CACHE BOOL "")   
-set(GEOGRAM_WITH_GRAPHICS OFF CACHE BOOL "")
-
-include(${CMAKE_SOURCE_DIR}/dependencies/geogram/cmake/geo_detect_platform.cmake)
-
 project(OpenDXA VERSION 1.0.0 LANGUAGES CXX)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/json)
@@ -30,7 +24,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build all libs static" FORCE)
 
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
@@ -44,11 +37,18 @@ if(LTO_SUPPORTED)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
 endif()
 
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-flto=thin" HAS_THIN_LTO)
+if(HAS_THIN_LTO)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -flto=thin")
+else()
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -flto")
+endif()
+
 set(RELEASE_CXX_OPTS
     -O3
     -Ofast
     -march=native
-    -flto=thin
     -funroll-loops
     -fstrict-aliasing
     -ffp-contract=off
@@ -61,6 +61,7 @@ endif()
 
 set(CMAKE_SKIP_BUILD_RPATH TRUE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build all libs static" FORCE)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
@@ -133,16 +134,17 @@ target_compile_definitions(opendxa_lib PRIVATE
 
 target_include_directories(opendxa_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/dependencies/geogram
     ${EIGEN3_INCLUDE_DIR}
     ${CMAKE_SOURCE_DIR}/dependencies/ptm/include
 )
 
 target_link_libraries(opendxa_lib PUBLIC
-    Threads::Threads
-    Boost::boost
     geogram
     PolyhedralTemplateMatching
     nlohmann_json::nlohmann_json
+    Threads::Threads
+    Boost::boost
     OpenMP::OpenMP_CXX
 )
 

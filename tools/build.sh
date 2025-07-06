@@ -76,6 +76,8 @@ build_project() {
     end_time=$(date +%s)
     build_time=$((end_time - start_time))
     
+    pip install -e ../../bindings/python/ --no-build-isolation
+
     echo "[SUCCESS] Build completed in ${build_time}s"
 }
 

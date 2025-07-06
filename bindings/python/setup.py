@@ -5,7 +5,7 @@ import numpy
 import pybind11
 
 # Get the project root directory
-PROJECT_ROOT = Path("/home/rodyherrera/Escritorio/OpenDXA")
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 OPENDXA_ROOT = PROJECT_ROOT / "opendxa"
 OPENDXA_PY_ROOT = Path(__file__).parent / "opendxa_py"
 
@@ -33,23 +33,24 @@ include_dirs = [
 # Define library directories
 library_dirs = [
     str(OPENDXA_ROOT / "build"),
-    str(OPENDXA_ROOT / "build" / "dependencies" / "geogram"),
+    str(OPENDXA_ROOT / "build" / "lib"),
     str(OPENDXA_ROOT / "build" / "dependencies" / "ptm"),
+    str(OPENDXA_ROOT / "build" / "dependencies" / "geogram"),  
 ]
 
 # Define libraries to link
 libraries = [
-    "CrystalAnalysis",
-    "geogram", 
+    "opendxa_lib",
     "PolyhedralTemplateMatching",
+    "geogram", 
 ]
 
 # Source files for the Python extension
 source_files = [
-    str(OPENDXA_PY_ROOT / "src" / "main.cpp"),
-    str(OPENDXA_PY_ROOT / "src" / "bindings" / "module.cpp"),
-    str(OPENDXA_PY_ROOT / "src" / "bindings" / "dislocation_analysis.cpp"),
-    str(OPENDXA_PY_ROOT / "src" / "wrappers" / "dislocation_analysis.cpp"),
+    "opendxa_py/src/main.cpp",
+    "opendxa_py/src/bindings/module.cpp",
+    "opendxa_py/src/bindings/dislocation_analysis.cpp",
+    "opendxa_py/src/wrappers/dislocation_analysis.cpp",
 ]
 
 # Compiler flags
@@ -62,6 +63,7 @@ extra_compile_args = [
 # Linker flags
 extra_link_args = [
     "-fopenmp",
+    "-Wl,-rpath,'$ORIGIN'",
 ]
 
 # Create the extension

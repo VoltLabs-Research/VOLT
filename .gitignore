@@ -4,8 +4,12 @@ dislocations.json
 
 __pycache__
 
-opendxa/dependencies/
-!opendxa/ptm
+/opendxa/dependencies/*
+
+!/opendxa/dependencies/ptm/
+!/opendxa/dependencies/ptm/**
+!/opendxa/dependencies/geogram/
+!/opendxa/dependencies/geogram/**
 
 # Logs
 logs

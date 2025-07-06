@@ -4,7 +4,7 @@
 #include <opendxa/core/simulation_cell.h>
 #include <opendxa/core/particle_property.h>
 
-#include <geogram/delaunay/delaunay_3d.h>
+#include <Delaunay_psm.h>
 #include <vector>
 #include <utility>
 
@@ -184,7 +184,7 @@ public:
 private:
     bool classifyGhostCell(CellHandle cell) const;
 
-    GEO::SmartPointer<GEO::Delaunay3d> _dt;
+    GEO::Delaunay_var _dt;
     std::vector<double> _pointData;
     std::vector<CellInfo> _cellInfo;
     std::vector<int> _particleIndices;
