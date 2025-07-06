@@ -77,6 +77,7 @@ json DXAJsonExporter::exportDislocationsToJson(const DislocationNetwork* network
             json points = json::array();
             
             // Ensure segment continuity across periodic boundaries
+            // TODO: NO!
             if(simulationCell && !segment->line.empty()){
                 // Start with the first point
                 Point3 prevWrappedPoint = simulationCell->wrapPoint(segment->line[0]);
