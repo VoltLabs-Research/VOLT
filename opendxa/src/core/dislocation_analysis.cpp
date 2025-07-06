@@ -26,6 +26,14 @@ void DislocationAnalysis::setOnlyPerfectDislocations(bool flag){
     _onlyPerfectDislocations = flag;
 }
 
+void DislocationAnalysis::setLineSmoothingLevel(int lineSmoothingLevel){
+    _lineSmoothingLevel = lineSmoothingLevel;
+}
+
+void DislocationAnalysis::setLinePointInterval(int linePointInterval){
+    _linePointInterval = linePointInterval;
+}
+
 bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
     std::cout << "Setting up DXA analysis..." << std::endl;
     
@@ -155,12 +163,8 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex> defectMesh;
 
-    SmoothDislocationsModifier smoother;
-    smoother.setSmoothingEnabled(true);
-    smoother.setSmoothingLevel(2);
-    smoother.setCoarseningEnabled(true);
-    smoother.setLinePointInterval(2.5);
-    smoother.smoothDislocationLines(networkUptr.get());
+    // Post process dislocation lines
+    networkUptr->smoothDislocationLines(_lineSmoothingLevel, _linePointInterval);
 
     std::cout << "Defect mesh facets: " << defectMesh.faces().size() << std::endl;
     std::cout << "Analysis completed successfully" << std::endl;
@@ -170,7 +174,6 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     double totalLineLength = 0.0;
     const auto& segments = networkUptr->segments();
     
-    // Paralelizar el cálculo de longitud total
     #pragma omp parallel for reduction(+:totalLineLength) schedule(dynamic)
     for(size_t i = 0; i < segments.size(); ++i){
         DislocationSegment* segment = segments[i];

@@ -5,7 +5,6 @@
 #include <opendxa/structures/dislocation_network.h>
 #include <opendxa/geometry/delaunay_tessellation.h>
 #include <opendxa/analysis/elastic_mapping.h>
-#include <opendxa/analysis/smooth_dislocations_modifier.h>
 #include <opendxa/analysis/dislocation_tracer.h>
 #include <opendxa/geometry/interface_mesh.h>
 #include <opendxa/math/lin_alg.h>
@@ -27,14 +26,20 @@ public:
     void setMaxTrialCircuitSize(int size);
     void setCircuitStretchability(int stretch);
     void setOnlyPerfectDislocations(bool flag);
+    void setLineSmoothingLevel(int lineSmoothingLevel);
+    void setLinePointInterval(int linePointInterval);
     bool compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile = "");
-    
+
     json exportResultsToJson(const std::string& filename = "") const;
 
 private:
     LatticeStructureType _inputCrystalStructure;
+
     int _maxTrialCircuitSize;
     int _circuitStretchability;
+    int _lineSmoothingLevel = 1;
+    double _linePointInterval = 2.5;
+
     bool _onlyPerfectDislocations;
     
     mutable json _lastJsonData;

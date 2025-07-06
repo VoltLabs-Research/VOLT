@@ -92,7 +92,6 @@ set(ANALYSIS_SOURCES
     src/analysis/crystal_path_finder.cpp
     src/analysis/dislocation_tracer.cpp
     src/analysis/elastic_mapping.cpp
-    src/analysis/smooth_dislocations_modifier.cpp
     src/analysis/structure_analysis.cpp
     src/analysis/common_neighbor_analysis.cpp
 )
