@@ -8,32 +8,7 @@
 
 namespace OpenDXA{
 
-template<typename T>
-auto most_common(std::span<const T> s) -> T{
-    assert(!s.empty());
-    T best = s[0];
-	size_t bestCount = 1;
-	size_t currentCount = 1;
-	for(size_t i = 1; i < s.size(); ++i){
-		if(s[i] == s[i - 1]){
-			++currentCount;
-		}else{
-			if(currentCount > bestCount){
-				bestCount = currentCount;
-				best = s[i - 1];
-			}
-			currentCount = 1;
-		}
-	}
-
-	if(currentCount > bestCount){
-        best = s.back();
-    }
-
-    return best;
-}
-
-bool InterfaceMesh::createMesh(double maxNeighborDist, ParticleProperty* crystalClusters){
+bool InterfaceMesh::createMesh(double maxNeighborDist){
     _isCompletelyGood = true;
     _isCompletelyBad  = true;
 
@@ -44,15 +19,6 @@ bool InterfaceMesh::createMesh(double maxNeighborDist, ParticleProperty* crystal
 		}
 
 		_isCompletelyBad = false;
-		if(crystalClusters){
-			std::array<int, 4> cls;
-			for(int vi = 0; vi < 4; ++vi){
-				cls[vi] = crystalClusters->getInt(tessellation().vertexIndex(tessellation().cellVertex(cell, vi)));
-			}
-
-			std::ranges::sort(cls);
-			return most_common(std::span<const int>{cls.data(), cls.size()}) + 1;
-		}
 		return 1;
     };
 

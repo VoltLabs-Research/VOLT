@@ -6,20 +6,11 @@ endif()
 
 project(OpenDXA VERSION 1.0.0 LANGUAGES CXX)
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
-
-# TODO: When I compile from the bash script, for some reason 
-# (perhaps also the setup.py build), it causes numerical inconsistencies. 
-# I spent HOURS trying to figure out why and changing things in the code, 
-# only to realize by chance that when I compiled without building the 
-# library in pip, it worked fine.
-
 add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/json)
 add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/geogram)
 
 # Add local PTM dependency
 add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/ptm)
-set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -49,13 +40,14 @@ endif()
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-flto=thin" HAS_THIN_LTO)
 if(HAS_THIN_LTO)
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -flto=thin")
 else()
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -flto")
 endif()
 
 set(RELEASE_CXX_OPTS
     -O3
+    -Ofast
     -march=native
     -funroll-loops
     -fstrict-aliasing
@@ -69,6 +61,7 @@ endif()
 
 set(CMAKE_SKIP_BUILD_RPATH TRUE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build all libs static" FORCE)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
@@ -126,7 +119,7 @@ set(LIBRARY_SOURCES
 list(REMOVE_ITEM LIBRARY_SOURCES src/core/main.cpp)
 
 # Library
-add_library(opendxa_lib SHARED ${LIBRARY_SOURCES}) 
+add_library(opendxa_lib STATIC ${LIBRARY_SOURCES})
 set_target_properties(opendxa_lib PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     INTERPROCEDURAL_OPTIMIZATION TRUE

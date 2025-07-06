@@ -159,6 +159,13 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         }
     }
 
+    {
+        PROFILE("Form Super Clusters");
+        if(!structureAnalysis->formSuperClusters()){
+            return false;
+        }
+    }
+
     DelaunayTessellation tesselation;
     double ghostLayerSize;
     {
@@ -196,7 +203,7 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     structureAnalysis->freeNeighborLists();
 
     InterfaceMesh interfaceMesh(elasticMap);
-    if(!interfaceMesh.createMesh(structureAnalysis->maximumNeighborDistance(), nullptr)){
+    if(!interfaceMesh.createMesh(structureAnalysis->maximumNeighborDistance())){
         std::cerr << "Failed InterfaceMesh::createMesh()" << std::endl;
         return false;
     }
