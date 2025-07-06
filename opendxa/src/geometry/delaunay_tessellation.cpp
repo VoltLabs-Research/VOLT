@@ -21,7 +21,6 @@ bool DelaunayTessellation::generateTessellation(
 		std::lock_guard<std::mutex> lock(geogramMutex);
 		GEO::initialize(GEO::GEOGRAM_NO_HANDLER);
 		GEO::set_assert_mode(GEO::ASSERT_ABORT);
-		GEO::Process::set_max_threads(std::thread::hardware_concurrency());
 	}
 
 	// Make the magnitude of the randomly perturbed particle 
@@ -115,7 +114,6 @@ bool DelaunayTessellation::generateTessellation(
 	// input points to the Delaunay tesselation, far away from the simulation cell and real praticles.
 	// These 8 points form a convex hull, whose interior will get completely tessellated.
 	if(coverDomainWithFiniteTets){
-		assert(simCell);
 		// Compute bounding box of inputs points and simulation cell
 		Box3 bb = Box3(Point3(0), Point3(1)).transformed(simCell.matrix());
 		bb.addPoints(_pointData.data(), _pointData.size());

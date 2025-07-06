@@ -3,10 +3,15 @@
 
 #include <memory>
 #include <string>
-#include <pybind11/pybind11.h>
 #include <opendxa/core/dislocation_analysis.h>
 #include <nlohmann/json.hpp>
 #include <pybind11_json/pybind11_json.hpp>
+#include <opendxa/core/lammps_parser.h>
+#include <stdexcept>
+#include <filesystem>
+#include <iostream>
+#include <vector>
+#include <string>
 
 using json = nlohmann::json;
 
@@ -25,7 +30,8 @@ public:
     void setMaxTrialCircuitSize(int size);
     void setCircuitStretchability(int stretch);
     void setOnlyPerfectDislocations(bool flag);
-    
+    bool computeTrajectory(const std::vector<std::string>& input_files, const std::string& output_file_template);
+
     // Main computation method
     json compute(const std::string& inputFile, const std::string& outputFile = "");
     py::dict getConfig() const;

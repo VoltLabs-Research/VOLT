@@ -193,7 +193,7 @@ private:
     GEO::Delaunay_var _dt;
     std::vector<Point3> _pointData;
     std::vector<CellInfo> _cellInfo;
-    std::vector<int> _particleIndices;
+    std::vector<size_t> _particleIndices;
 
     size_type _primaryVertexCount = 0;
     size_type _numPrimaryTetrahedra = 0;

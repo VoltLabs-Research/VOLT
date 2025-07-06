@@ -145,8 +145,9 @@ public:
     }
 
     TriMeshFace& addFace();
-
-    void invalidateFaces();
+    
+    // TODO:
+    void invalidateFaces(){}
 
     void flipFaces();
 

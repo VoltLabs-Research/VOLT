@@ -30,6 +30,7 @@ public:
     void setLinePointInterval(int linePointInterval);
     void setDefectMeshSmoothingLevel(int defectMeshSmoothingLevel);
     bool compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile = "");
+    bool compute(const std::vector<LammpsParser::Frame>& frames, const std::string& output_file_template);
 
     json exportResultsToJson(const std::string& filename = "") const;
 

@@ -33,16 +33,11 @@ include_dirs = [
 # Define library directories
 library_dirs = [
     str(OPENDXA_ROOT / "build"),
-    str(OPENDXA_ROOT / "build" / "lib"),
-    str(OPENDXA_ROOT / "build" / "dependencies" / "ptm"),
-    str(OPENDXA_ROOT / "build" / "dependencies" / "geogram"),  
 ]
 
 # Define libraries to link
 libraries = [
     "opendxa_lib",
-    "PolyhedralTemplateMatching",
-    "geogram", 
 ]
 
 # Source files for the Python extension
@@ -56,6 +51,7 @@ source_files = [
 # Compiler flags
 extra_compile_args = [
     "-std=c++23",
+    "-fopenmp", # Asegura que el código se compila con soporte OpenMP
     "-DWITH_OGR",
     "-DGEOGRAM_WITH_GRAPHICS=OFF",
 ]
@@ -63,7 +59,7 @@ extra_compile_args = [
 # Linker flags
 extra_link_args = [
     "-fopenmp",
-    "-Wl,-rpath,'$ORIGIN'",
+    "-Wl,-rpath," + str(OPENDXA_ROOT / "build"), 
 ]
 
 # Create the extension

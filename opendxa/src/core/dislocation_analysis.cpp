@@ -2,6 +2,10 @@
 #include <opendxa/analysis/structure_analysis.h>
 #include <opendxa/core/property_base.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>
+#include <tbb/parallel_for_each.h>
+#include <vector>
+#include <string>
+#include <cstdio>
 #include <omp.h>
 #include <cmath>
 #include <iostream>
@@ -38,9 +42,53 @@ void DislocationAnalysis::setDefectMeshSmoothingLevel(int defectMeshSmoothingLev
     _defectMeshSmoothingLevel = defectMeshSmoothingLevel;
 }
 
+bool DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames, const std::string& output_file_template){
+    auto total_start_time = std::chrono::high_resolution_clock::now();
+    std::atomic<bool> all_ok = true;
+    std::vector<size_t> frame_indices(frames.size());
+    std::iota(frame_indices.begin(), frame_indices.end(), 0);
+    tbb::parallel_for_each(frame_indices.begin(), frame_indices.end(), 
+        [&](size_t i) {
+            if(!all_ok) return;
+
+            std::cout << "--- Starting analysis for frame " << i << " on thread " << tbb::this_task_arena::current_thread_index() << " ---" << std::endl;
+
+            DislocationAnalysis frame_analyzer;
+            
+            frame_analyzer.setInputCrystalStructure(this->_inputCrystalStructure);
+            frame_analyzer.setMaxTrialCircuitSize(this->_maxTrialCircuitSize);
+            frame_analyzer.setCircuitStretchability(this->_circuitStretchability);
+            frame_analyzer.setOnlyPerfectDislocations(this->_onlyPerfectDislocations);
+            frame_analyzer.setLineSmoothingLevel(this->_lineSmoothingLevel);
+            frame_analyzer.setLinePointInterval(this->_linePointInterval);
+            frame_analyzer.setDefectMeshSmoothingLevel(this->_defectMeshSmoothingLevel);
+
+            char output_filename[256];
+            snprintf(output_filename, sizeof(output_filename), output_file_template.c_str(), (int)i);
+
+            bool success = frame_analyzer.compute(frames[i], std::string(output_filename));
+
+            if(!success){
+                std::cerr << "!!! Analysis failed for frame " << i << " !!!" << std::endl;
+                all_ok = false;
+            }
+
+            std::cout << "--- Finished analysis for frame " << i << " ---" << std::endl;
+        }
+    );
+
+    auto total_end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(total_end_time - total_start_time);
+    std::cout << "\n[OVERALL TIME] Parallel analysis of " << frames.size() << " frames took " << duration.count() << " seconds." << std::endl;
+
+    return all_ok;
+}
+
 bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
+    auto start_time = std::chrono::high_resolution_clock::now();
+
     std::cout << "Setting up DXA analysis..." << std::endl;
-    
+
     ParallelSystem::initialize();
     std::cout << "Using " << ParallelSystem::getNumThreads() << " threads for parallel processing" << std::endl;
     
@@ -213,6 +261,10 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     structureAnalysis.reset();
     structureTypes.reset();
     positions.reset();
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    std::cout << "[TOTAL TIME] DislocationAnalysis::compute took " << duration.count() << " ms" << std::endl;
 
     return true;
 }

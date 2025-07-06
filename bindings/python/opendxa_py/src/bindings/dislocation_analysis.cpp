@@ -47,35 +47,15 @@ void bindDislocationAnalysis(py::module &m){
         .def("compute", &Wrappers::AnalysisWrapper::compute,
              "Run dislocation analysis on the input file",
              py::arg("input_file"), 
-             py::arg("output_file") = "",
-             R"doc(
-             Run the dislocation analysis algorithm.
+             py::arg("output_file") = "")
+        
+          .def("compute_trajectory", &Wrappers::AnalysisWrapper::computeTrajectory,
+             "Run dislocation analysis on a list of input files in parallel",
+             py::arg("input_files"),
+             py::arg("output_file_template"))
              
-             Parameters:
-             -----------
-             input_file : str
-                 Path to the input atomic structure file (LAMMPS dump, xyz, etc.)
-             output_file : str, optional
-                 Path for output JSON file. If empty, results are only returned.
-                 
-             Returns:
-             --------
-             dict
-                 Analysis results as a JSON-like dictionary containing:
-                 - dislocation_segments: List of identified dislocation segments
-                 - burgers_vectors: Burgers vectors for each segment
-                 - line_directions: Line directions for each segment
-                 - coordinates: 3D coordinates of dislocation lines
-                 - metadata: Analysis parameters and statistics
-             )doc")
-        
         .def("get_config", &Wrappers::AnalysisWrapper::getConfig,
-             "Get current analyzer configuration as a dictionary")
-        
-        // Documentation
-        .def("__repr__", [](const Wrappers::AnalysisWrapper &a) {
-            return "<DislocationAnalysis: OpenDXA dislocation analysis engine>";
-        });
+             "Get current analyzer configuration as a dictionary");
 }
 
 }

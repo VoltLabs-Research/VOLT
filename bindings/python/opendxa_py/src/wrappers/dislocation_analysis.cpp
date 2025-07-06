@@ -1,6 +1,5 @@
 #include <opendxa_py/wrappers/dislocation_analysis.hpp>
 #include <opendxa/core/dislocation_analysis.h>
-#include <opendxa/core/lammps_parser.h>
 #include <stdexcept>
 #include <filesystem>
 
@@ -67,6 +66,35 @@ py::dict AnalysisWrapper::getConfig() const {
     config["description"] = "OpenDXA Dislocation Analysis Configuration";
     
     return config;
+}
+
+bool AnalysisWrapper::computeTrajectory(const std::vector<std::string>& input_files, const std::string& output_file_template) {
+    if(input_files.empty()){
+        throw std::invalid_argument("Input file list cannot be empty.");
+    }
+
+    if(output_file_template.find("%d") == std::string::npos && output_file_template.find("%i") == std::string::npos){
+         throw std::invalid_argument("Output file template must contain a placeholder like %d or %i.");
+    }
+
+    std::cout << "Loading " << input_files.size() << " frames from disk..." << std::endl;
+    std::vector<LammpsParser::Frame> frames;
+    frames.reserve(input_files.size());
+    LammpsParser parser;
+    
+    for(const auto& file_path : input_files){
+        validateInputFile(file_path);
+        LammpsParser::Frame frame;
+        if(!parser.parseFile(file_path, frame)){
+            throw std::runtime_error("Failed to parse input file: " + file_path);
+        }
+        frames.push_back(frame);
+    }
+
+    std::cout << "All frames loaded. Starting parallel analysis..." << std::endl;
+    bool success = analyzer->compute(frames, output_file_template);
+
+    return success;
 }
 
 void AnalysisWrapper::validateInputFile(const std::string& filePath) const {
