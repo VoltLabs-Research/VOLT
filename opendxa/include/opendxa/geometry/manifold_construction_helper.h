@@ -56,20 +56,41 @@ private:
 	template<typename CellRegionFunc>
 	bool classifyTetrahedra(CellRegionFunc&& determineCellRegion){
 		_numSolidCells = 0;
+		// -2 = indeterminate, -1 = multiple
 		_spaceFillingRegion = -2;
 
-        for(DelaunayTessellation::CellHandle cell : _tessellation.cells()) {
-			bool isSolid = _tessellation.isValidCell(cell) && _tessellation.alphaTest(cell, _alpha);
-			if(!isSolid){
+		for(auto cell : _tessellation.cells()){
+			// shape + fallback neighbors
+			bool isFilled = false;
+			if(_tessellation.isValidCell(cell)){
+				if (auto res = _tessellation.alphaTest(cell, _alpha)){
+					isFilled = *res;
+				}else{
+					// sliver, only if all 4 neighbors are not clearly empty
+					int f = 0;
+					for(; f < 4; ++f){
+						auto nbr = _tessellation.mirrorFacet(cell, f).first;
+						if(!_tessellation.isValidCell(nbr)) break;
+						auto nr = _tessellation.alphaTest(nbr, _alpha);
+						if(nr.has_value() && !nr.value()) break;
+					}
+					if (f == 4) isFilled = true;
+				}
+			}
+
+			// userField: 0 = empty, >0 = region
+			if(!isFilled){
 				_tessellation.setUserField(cell, 0);
 			}else{
 				_tessellation.setUserField(cell, determineCellRegion(cell));
 			}
 
+			// Update spaceFillingRegion with only local cells
 			if(!_tessellation.isGhostCell(cell)){
+				int reg = _tessellation.getUserField(cell);
 				if(_spaceFillingRegion == -2){
-					_spaceFillingRegion = _tessellation.getUserField(cell);
-				}else if(_spaceFillingRegion != _tessellation.getUserField(cell)){
+					_spaceFillingRegion = reg;
+				}else if(_spaceFillingRegion != reg){
 					_spaceFillingRegion = -1;
 				}
 			}
@@ -81,7 +102,10 @@ private:
 			}
 		}
 
+		// If there was never a local cell, we assign 0
 		if(_spaceFillingRegion == -2) _spaceFillingRegion = 0;
+		
+		// TODO: void.
 		return true;
 	}
 
