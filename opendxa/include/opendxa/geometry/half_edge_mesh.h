@@ -251,6 +251,52 @@ public:
         _facePool.clear();
     }
 
+    void smoothVertices(int iterations){
+        // TODO: parallelFor
+        if(iterations <= 0) return;
+
+        double lambda = 0.5;
+        double mu = -0.52;
+
+        std::vector<Point3> newPositions(vertexCount());
+
+        for(int iter = 0; iter < iterations; ++iter){
+            for(Vertex* v : _vertices) {
+                Vector3 sum = Vector3::Zero();
+                int count = 0;
+
+                for(Edge* e = v->edges(); e; e = e->nextVertexEdge()){
+                    sum += e->vertex2()->pos() - v->pos();
+                    ++count;
+                }
+
+                Vector3 avg = (count > 0) ? (sum / count) : Vector3::Zero();
+                newPositions[v->index()] = v->pos() + lambda * avg;
+            }
+
+            for(Vertex* v : _vertices){
+                v->setPos(newPositions[v->index()]);
+            }
+
+            for(Vertex* v : _vertices){
+                Vector3 sum = Vector3::Zero();
+                int count = 0;
+
+                for(Edge* e = v->edges(); e; e = e->nextVertexEdge()){
+                    sum += e->vertex2()->pos() - v->pos();
+                    ++count;
+                }
+
+                Vector3 avg = (count > 0) ? (sum / count) : Vector3::Zero();
+                newPositions[v->index()] = v->pos() + mu * avg;
+            }
+
+            for(Vertex* v : _vertices){
+                v->setPos(newPositions[v->index()]);
+            }
+        }
+    }
+
     [[nodiscard]] const std::vector<Vertex*>& vertices() const noexcept{
 		return _vertices;
 	}

@@ -28,6 +28,7 @@ public:
     void setOnlyPerfectDislocations(bool flag);
     void setLineSmoothingLevel(int lineSmoothingLevel);
     void setLinePointInterval(int linePointInterval);
+    void setDefectMeshSmoothingLevel(int defectMeshSmoothingLevel);
     bool compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile = "");
 
     json exportResultsToJson(const std::string& filename = "") const;
@@ -39,6 +40,7 @@ private:
     int _circuitStretchability;
     int _lineSmoothingLevel = 1;
     double _linePointInterval = 2.5;
+    int _defectMeshSmoothingLevel = 8;
 
     bool _onlyPerfectDislocations;
     

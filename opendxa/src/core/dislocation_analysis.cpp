@@ -34,10 +34,13 @@ void DislocationAnalysis::setLinePointInterval(int linePointInterval){
     _linePointInterval = linePointInterval;
 }
 
+void DislocationAnalysis::setDefectMeshSmoothingLevel(int defectMeshSmoothingLevel){
+    _defectMeshSmoothingLevel = defectMeshSmoothingLevel;
+}
+
 bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
     std::cout << "Setting up DXA analysis..." << std::endl;
     
-    // Inicializar configuración paralela al inicio
     ParallelSystem::initialize();
     std::cout << "Using " << ParallelSystem::getNumThreads() << " threads for parallel processing" << std::endl;
     
@@ -162,6 +165,9 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     std::cout << "Found " << networkUptr->segments().size() << " dislocation segments" << std::endl;
 
     HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex> defectMesh;
+
+    // Post-process surface mesh.
+    defectMesh.smoothVertices(_defectMeshSmoothingLevel);
 
     // Post process dislocation lines
     networkUptr->smoothDislocationLines(_lineSmoothingLevel, _linePointInterval);
