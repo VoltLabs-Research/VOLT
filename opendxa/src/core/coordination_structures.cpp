@@ -60,7 +60,7 @@ int CoordinationStructures::getCoordinationNumber() const{
 }
 
 double CoordinationStructures::computeLocalCutoff(
-	NearestNeighborFinder& neighList,
+	const NearestNeighborFinder& neighList, 
 	const NearestNeighborFinder::Query<MAX_NEIGHBORS>& neighQuery,
 	int numNeighbors,
 	int coordinationNumber,
@@ -68,7 +68,7 @@ double CoordinationStructures::computeLocalCutoff(
 	int* neighborIndices,
 	Vector3* neighborVectors,
 	NeighborBondArray& neighborArray
-){
+) const { 
 	double localScaling = 0;
 	double localCutoff = 0;
 	
@@ -176,7 +176,7 @@ CoordinationStructureType CoordinationStructures::computeCoordinationType(
 	const NeighborBondArray& neighborArray,
     int coordinationNumber,
     int* cnaSignatures
-){
+) const { 
 	CoordinationStructureType coordinationType;
 
 	switch(_inputCrystalType){
@@ -309,7 +309,7 @@ bool CoordinationStructures::findMatchingNeighborPermutation(
 	int coordinationNumber,
 	const int* cnaSignatures,
 	const NeighborBondArray& neighborArray
-){
+) const { 
 	// Find first matching neighbor permutation
 	const CoordinationStructure& coordStructure = _coordinationStructures[coordinationType];
 	for(;;){
@@ -351,78 +351,66 @@ bool CoordinationStructures::findMatchingNeighborPermutation(
 }
 
 double CoordinationStructures::determineLocalStructure(
-	NearestNeighborFinder& neighList, 
+	const NearestNeighborFinder& neighList, 
 	size_t particleIndex,
 	std::shared_ptr<ParticleProperty> neighborLists
-){
-    assert(_structureTypes->getInt(particleIndex) == COORD_OTHER);
-    // Construct local neighbor list builder
-    NearestNeighborFinder::Query<MAX_NEIGHBORS> neighQuery(neighList);
-    // Find N nearest neighbors of current atom
-    neighQuery.findNeighbors(neighList.particlePos(particleIndex));
-    int numNeighbors = neighQuery.results().size();
-    int neighborIndices[MAX_NEIGHBORS];
-    Vector3 neighborVectors[MAX_NEIGHBORS];
+) const { 
+    std::vector<int> neighborIndices(MAX_NEIGHBORS);
+    std::vector<Vector3> neighborVectors(MAX_NEIGHBORS);
+    NeighborBondArray neighborArray;
+    std::vector<int> cnaSignatures(MAX_NEIGHBORS);
+    std::vector<int> neighborMapping(MAX_NEIGHBORS);
+    std::vector<int> previousMapping(MAX_NEIGHBORS);
 
-    // Number of neighbors to analyze
+    assert(_structureTypes->getInt(particleIndex) == COORD_OTHER);
+    
+    NearestNeighborFinder::Query<MAX_NEIGHBORS> neighQuery(neighList);
+    neighQuery.findNeighbors(neighList.particlePos(particleIndex));
+    
+    int numNeighbors = neighQuery.results().size();
     int coordinationNumber = getCoordinationNumber();
 
-    // Early rejection of under-coordinated atoms
     if(numNeighbors < coordinationNumber) return 0.0;
 
-	NeighborBondArray neighborArray;
-
 	double localCutoff = computeLocalCutoff(
-		neighList,
-		neighQuery,
-		numNeighbors,
-		coordinationNumber,
-		particleIndex,
-		neighborIndices,
-		neighborVectors,
-		neighborArray
+		neighList, neighQuery, numNeighbors, coordinationNumber,
+		particleIndex, 
+        neighborIndices.data(), 
+        neighborVectors.data(), 
+        neighborArray
 	);
 
-	int cnaSignatures[MAX_NEIGHBORS];
-	CoordinationStructureType coordinationType = computeCoordinationType(neighborArray, coordinationNumber, cnaSignatures);
+    if (localCutoff == 0.0) return 0.0;
+
+	CoordinationStructureType coordinationType = computeCoordinationType(neighborArray, coordinationNumber, cnaSignatures.data());
 
 	if(coordinationType == COORD_OTHER) return 0.0;
 
-	// Initialize permutation.
-	int neighborMapping[MAX_NEIGHBORS];
-	int previousMapping[MAX_NEIGHBORS];
 	for(int n = 0; n < coordinationNumber; n++){
 		neighborMapping[n] = n;
 		previousMapping[n] = -1;
 	}
 
-	// Find first matching neighbor permutation.
 	bool found = findMatchingNeighborPermutation(
-		coordinationType, neighborMapping, previousMapping,
-		coordinationNumber, cnaSignatures, neighborArray);
+		coordinationType, neighborMapping.data(), previousMapping.data(),
+		coordinationNumber, cnaSignatures.data(), neighborArray);
 
 	if(!found) return 0.0;
 
-	// Assign coordination structure type to atom.
 	_structureTypes->setInt(particleIndex, coordinationType);
 
-	// Save the atom's neighbor list.
 	for(int i = 0; i < coordinationNumber; i++){
 		const Vector3& neighborVector = neighborVectors[neighborMapping[i]];
-		// Check if neighbor vectors spans more than half of a periodic simulation cell.
 		for(size_t dim = 0; dim < 3; dim++){
 			if(cell().pbcFlags()[dim]){
-				if(std::abs(cell().inverseMatrix().prodrow(neighborVector, dim)) >= double(0.5) + EPSILON){
-					CoordinationStructures::generateCellTooSmallError(dim);
+				if(std::abs(cell().inverseMatrix().prodrow(neighborVector, dim)) >= 0.5 + EPSILON){
+					generateCellTooSmallError(dim);
 				}
 			}
 		}
-		// Set neighbor (centralAtomIndex, neighborListIndex, neighborAtomIndex) (REFACTOR - DUPLICATED CODE STRUCTURE ANALYSIS CPP)
 		neighborLists->setIntComponent(particleIndex, i, neighborIndices[neighborMapping[i]]);
 	}
 
-	// Determine maximum neighbor distance.
-	// Return the local cutoff distance for thread-safe aggregation
 	return localCutoff;
 }
 

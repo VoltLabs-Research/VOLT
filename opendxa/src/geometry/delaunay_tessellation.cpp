@@ -21,6 +21,7 @@ bool DelaunayTessellation::generateTessellation(
 		std::lock_guard<std::mutex> lock(geogramMutex);
 		GEO::initialize(GEO::GEOGRAM_NO_HANDLER);
 		GEO::set_assert_mode(GEO::ASSERT_ABORT);
+		GEO::Process::set_max_threads(std::thread::hardware_concurrency());
 	}
 
 	// Make the magnitude of the randomly perturbed particle 

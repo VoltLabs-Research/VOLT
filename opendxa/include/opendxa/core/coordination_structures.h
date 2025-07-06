@@ -13,7 +13,11 @@ class CoordinationStructures{
 public:
     CoordinationStructures(ParticleProperty* structureTypes, LatticeStructureType inputCrystalType, bool identifyPlanarDefects, const SimulationCell& simCell);
 
-    double determineLocalStructure(NearestNeighborFinder& neighList, size_t particleIndex, std::shared_ptr<ParticleProperty> neighborLists);
+double determineLocalStructure(
+	const NearestNeighborFinder& neighList, 
+	size_t particleIndex,
+	std::shared_ptr<ParticleProperty> neighborLists
+) const;
     static void initializeStructures();
 
     static const LatticeStructure& latticeStructure(int structureIndex){
@@ -36,7 +40,7 @@ private:
         const NeighborBondArray& neighborArray,
         int coordinationNumber,
         int* cnaSignatures
-    );
+    ) const;
 
     bool findMatchingNeighborPermutation(
         CoordinationStructureType coordinationType,
@@ -45,7 +49,7 @@ private:
         int coordinationNumber,
         const int* cnaSignatures,
         const NeighborBondArray& neighborArray
-    );
+    ) const;
 
     static void initializeDiamondStructure(
         int coordType, 
@@ -79,7 +83,7 @@ private:
     static void initializeOther();
     
     double computeLocalCutoff(
-        NearestNeighborFinder& neighList,
+        const NearestNeighborFinder& neighList, 
         const NearestNeighborFinder::Query<MAX_NEIGHBORS>& neighQuery,
         int numNeighbors,
         int coordinationNumber,
@@ -87,7 +91,7 @@ private:
         int* neighborIndices,
         Vector3* neighborVectors,
         NeighborBondArray& neighborArray
-    );
+    ) const;
 
     static void calculateSymmetryProducts(LatticeStructure& latticeStruct);
     static void findNonCoplanarVectors(const CoordinationStructure& coordStruct, int nindices[3], Matrix3& tm1);

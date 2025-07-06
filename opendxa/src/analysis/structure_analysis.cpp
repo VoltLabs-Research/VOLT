@@ -1,6 +1,9 @@
 #include <opendxa/core/opendxa.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/structure_analysis.h>
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_reduce.h> 
 #include <cstring>
 
 namespace OpenDXA{
@@ -35,41 +38,35 @@ StructureAnalysis::StructureAnalysis(ParticleProperty* positions, const Simulati
 }
 
 bool StructureAnalysis::identifyStructures(){
-	// Prepare the neighbor list.
-	int maxNeighborListSize = std::min((int)_neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
-	NearestNeighborFinder neighFinder(maxNeighborListSize);
-	if(!neighFinder.prepare(positions(), cell(), _particleSelection)) return false;
+    int maxNeighborListSize = std::min((int)_neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
+    NearestNeighborFinder neighFinder(maxNeighborListSize);
+    if(!neighFinder.prepare(positions(), cell(), _particleSelection)) return false;
 
-	// Identify local structure around each particle.
-	_maximumNeighborDistance = 0;
-	
-	// Thread-safe collection of maximum distances
-	std::vector<std::atomic<double>> threadMaxDistances(std::thread::hardware_concurrency());
-	for(auto& dist : threadMaxDistances) {
-		dist.store(0.0, std::memory_order_relaxed);
-	}
+    // Identify local structure and find maximum neighbor distance
+    _maximumNeighborDistance = tbb::parallel_reduce(
+        // The Iteration Range, from 0 to the total number of particles.
+        tbb::blocked_range<size_t>(0, positions()->size()),
+        0.0,
+		// Executes for subranges of particles. 
+		// Calculates the local structure and returns the local maximum found within its subrange.
+        [this, &neighFinder](const tbb::blocked_range<size_t>& r, double max_dist_so_far) -> double {
+            for(size_t index = r.begin(); index != r.end(); ++index){
+                double localMaxDistance = _coordStructures.determineLocalStructure(neighFinder, index, _neighborLists);
+                if(localMaxDistance > max_dist_so_far){
+                    max_dist_so_far = localMaxDistance;
+                }
+            }
+            return max_dist_so_far;
+        },
+        // The Join Function, combines the results of two subranges.
+		// In this case, simply take the maximum of the two local maxima..
+        [](double a, double b) -> double {
+            return std::max(a, b);
+        }
+    );
 
-	ParallelSystem::parallelFor(positions()->size(), [this, &neighFinder, &threadMaxDistances](size_t index){
-		double localMaxDistance = _coordStructures.determineLocalStructure(neighFinder, index, _neighborLists);
-		
-		// Update thread-local maximum
-		size_t threadId = index % threadMaxDistances.size();
-		double current = threadMaxDistances[threadId].load(std::memory_order_relaxed);
-		while(current < localMaxDistance && 
-			  !threadMaxDistances[threadId].compare_exchange_weak(current, localMaxDistance, std::memory_order_relaxed)) {}
-	});
-	
-	// Deterministically find the global maximum
-	for(const auto& dist : threadMaxDistances) {
-		double val = dist.load(std::memory_order_relaxed);
-		if(val > _maximumNeighborDistance) {
-			_maximumNeighborDistance = val;
-		}
-	}
-
-	return true;
+    return true;
 }
-
 bool StructureAnalysis::shouldSkipSeed(int index){
 	return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == COORD_OTHER;
 }
@@ -192,19 +189,24 @@ void StructureAnalysis::applyPreferredOrientation(Cluster* cluster){
 }
 
 void StructureAnalysis::reorientAtomsToAlignClusters(){
-	for(size_t atomIndex = 0; atomIndex < positions()->size(); atomIndex++){
-		int clusterId = _atomClusters->getInt(atomIndex);
-		if(clusterId == 0) continue;
+    tbb::parallel_for(
+        tbb::blocked_range<size_t>(0, positions()->size()),
+        [this](const tbb::blocked_range<size_t>& r) {
+            for(size_t atomIndex = r.begin(); atomIndex != r.end(); ++atomIndex){
+                int clusterId = _atomClusters->getInt(atomIndex);
+                if(clusterId == 0) continue;
 
-		Cluster* cluster = clusterGraph().findCluster(clusterId);
-		assert(cluster);
-		if(cluster->symmetryTransformation == 0) continue;
+                Cluster* cluster = clusterGraph().findCluster(clusterId);
+                assert(cluster);
+                if(cluster->symmetryTransformation == 0) continue;
 
-		const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[cluster->structure];
-		int oldSymmetry = _atomSymmetryPermutations->getInt(atomIndex);
-		int newSymmetry = latticeStructure.permutations[oldSymmetry].inverseProduct[cluster->symmetryTransformation];
-		_atomSymmetryPermutations->setInt(atomIndex, newSymmetry);
-	}
+                const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[cluster->structure];
+                int oldSymmetry = _atomSymmetryPermutations->getInt(atomIndex);
+                int newSymmetry = latticeStructure.permutations[oldSymmetry].inverseProduct[cluster->symmetryTransformation];
+                _atomSymmetryPermutations->setInt(atomIndex, newSymmetry);
+            }
+        }
+    );
 }
 
 bool StructureAnalysis::buildClusters(){
