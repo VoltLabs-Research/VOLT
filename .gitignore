@@ -10,6 +10,7 @@ __pycache__
 !/opendxa/dependencies/ptm/**
 !/opendxa/dependencies/geogram/
 !/opendxa/dependencies/geogram/**
+debug-data/
 
 # Logs
 logs

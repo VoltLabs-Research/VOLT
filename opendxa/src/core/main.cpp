@@ -4,6 +4,9 @@
 #include <fstream>
 #include <iomanip>
 #include <opendxa/core/dislocation_analysis.h>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 int main(int argc, char* argv[]){
     if (argc < 2) {
@@ -43,9 +46,9 @@ int main(int argc, char* argv[]){
         outputFile = inputPath.stem().string() + "_dxa_results.json";
     }
     
-    bool isSuccess = analyzer.compute(frame, outputFile);
+    json result = analyzer.compute(frame, outputFile);
     
-    if(!isSuccess){
+    if(result["is_failed"]){
         std::cerr << "Error: DXA analysis failed" << std::endl;
         return 1;
     }

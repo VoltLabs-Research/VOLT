@@ -17,3 +17,5 @@ analyzer.set_only_perfect_dislocations(False)
 #], 'dislocation_results_%i.json')
 
 result = analyzer.compute('/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps', 'debug-data/dislocation_results.json')
+
+print(result)

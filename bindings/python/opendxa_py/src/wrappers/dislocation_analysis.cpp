@@ -47,13 +47,8 @@ json AnalysisWrapper::compute(const std::string& inputFile, const std::string& o
     }
     
     // Run the analysis
-    bool success = analyzer->compute(frame, outputFile);
-    if (!success) {
-        throw std::runtime_error("Dislocation analysis failed");
-    }
-    
-    // Export results to JSON
-    json results = analyzer->exportResultsToJson(outputFile);
+    json results = analyzer->compute(frame, outputFile);
+
     return results;
 }
 

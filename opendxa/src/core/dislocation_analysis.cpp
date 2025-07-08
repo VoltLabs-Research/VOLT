@@ -42,64 +42,46 @@ void DislocationAnalysis::setDefectMeshSmoothingLevel(int defectMeshSmoothingLev
     _defectMeshSmoothingLevel = defectMeshSmoothingLevel;
 }
 
-bool DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames, const std::string& output_file_template){
-    auto total_start_time = std::chrono::high_resolution_clock::now();
-    std::atomic<bool> all_ok = true;
-    std::vector<size_t> frame_indices(frames.size());
-    std::iota(frame_indices.begin(), frame_indices.end(), 0);
-    tbb::parallel_for_each(frame_indices.begin(), frame_indices.end(), 
-        [&](size_t i) {
-            if(!all_ok) return;
-
-            std::cout << "--- Starting analysis for frame " << i << " on thread " << tbb::this_task_arena::current_thread_index() << " ---" << std::endl;
-
-            DislocationAnalysis frame_analyzer;
-            
-            frame_analyzer.setInputCrystalStructure(this->_inputCrystalStructure);
-            frame_analyzer.setMaxTrialCircuitSize(this->_maxTrialCircuitSize);
-            frame_analyzer.setCircuitStretchability(this->_circuitStretchability);
-            frame_analyzer.setOnlyPerfectDislocations(this->_onlyPerfectDislocations);
-            frame_analyzer.setLineSmoothingLevel(this->_lineSmoothingLevel);
-            frame_analyzer.setLinePointInterval(this->_linePointInterval);
-            frame_analyzer.setDefectMeshSmoothingLevel(this->_defectMeshSmoothingLevel);
-
-            char output_filename[256];
-            snprintf(output_filename, sizeof(output_filename), output_file_template.c_str(), (int)i);
-
-            bool success = frame_analyzer.compute(frames[i], std::string(output_filename));
-
-            if(!success){
-                std::cerr << "!!! Analysis failed for frame " << i << " !!!" << std::endl;
-                all_ok = false;
-            }
-
-            std::cout << "--- Finished analysis for frame " << i << " ---" << std::endl;
+json DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames, const std::string& output_file_template){
+    auto totalStart = std::chrono::high_resolution_clock::now();
+    json overall;
+    overall["is_failed"] = false;
+    overall["frames"] = json::array();
+    for(size_t i = 0; i < frames.size(); ++i){
+        char frameName[256];
+        snprintf(frameName, sizeof(frameName), output_file_template.c_str(), int(i));
+        json frameJson = compute(frames[i], std::string(frameName));
+        if(frameJson.value("is_failed", true)){
+            overall["is_failed"] = true;
         }
-    );
-
-    auto total_end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(total_end_time - total_start_time);
-    std::cout << "\n[OVERALL TIME] Parallel analysis of " << frames.size() << " frames took " << duration.count() << " seconds." << std::endl;
-
-    return all_ok;
+        overall["frames"].push_back(std::move(frameJson));
+    }
+    auto totalEnd = std::chrono::high_resolution_clock::now();
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(totalEnd - totalStart).count();
+    overall["total_time"] = seconds;
+    return overall;
 }
 
-bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
+json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
     auto start_time = std::chrono::high_resolution_clock::now();
-
-    std::cout << "Setting up DXA analysis..." << std::endl;
+    std::cout << "Setting up DXA analysis" << std::endl;
 
     ParallelSystem::initialize();
     std::cout << "Using " << ParallelSystem::getNumThreads() << " threads for parallel processing" << std::endl;
     
+    json result;
+    result["is_Failed"] = false;
+
     if(frame.natoms <= 0){
-        std::cerr << "Error: Invalid number of atoms: " << frame.natoms << std::endl;
-        return false;
+        result["is_failed"] = true;
+        result["error"] = "Invalid number of atoms: " + std::to_string(frame.natoms);
+        return result;
     }
 
     if(frame.positions.empty()){
-        std::cerr << "Error: No position data available" << std::endl;
-        return false;
+        result["is_failed"] = true;
+        result["error"] = "No position data available";
+        return result;
     }
 
     std::shared_ptr<ParticleProperty> positions;
@@ -107,14 +89,16 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         PROFILE("Create Position Property");
         positions = createPositionProperty(frame);
         if(!positions){
-            std::cerr << "Error: Failed to create position property" << std::endl;
-            return false;
+            result["is_failed"] = true;
+            result["error"] = "Failed to create position property";
+            return result;
         }
     }
 
     if(!validateSimulationCell(frame.simulationCell)){
-        std::cerr << "Error: Invalid simulation cell" << std::endl;
-        return false;
+        result["is_failed"] = true;
+        result["error"] = "Invalid simulation cell";
+        return result;
     }
 
     std::vector<Matrix3> preferredOrientations;
@@ -141,28 +125,36 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     {
         PROFILE("Identify Structures");
         if(!structureAnalysis->identifyStructures()){
-            return false;
+            result["is_failed"] = true;
+            result["error"] = "identifyStructures() failed";
+            return result;
         }
     }
 
     {
         PROFILE("Build Clusters");
         if(!structureAnalysis->buildClusters()){
-            return false;
+            result["is_failed"] = true;
+            result["error"] = "buildClusters() failed";
+            return result;
         }
     }
 
     {
         PROFILE("Connect Clusters");
         if(!structureAnalysis->connectClusters()){
-            return false;
+            result["is_failed"] = true;
+            result["error"] = "connectClusters() failed";
+            return result;
         }
     }
 
     {
         PROFILE("Form Super Clusters");
         if(!structureAnalysis->formSuperClusters()){
-            return false;
+            result["is_failed"] = true;
+            result["error"] = "formSuperClusters() failed";
+            return result;
         }
     }
 
@@ -173,8 +165,9 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         ghostLayerSize = 3.5f * structureAnalysis->maximumNeighborDistance();
         if(!tesselation.generateTessellation(structureAnalysis->cell(), structureAnalysis->positions()->constDataPoint3(), 
                 structureAnalysis->atomCount(), ghostLayerSize, false, nullptr)){
-            std::cerr << "Failed Delaunay tessellation" << std::endl;
-            return false;
+            result["is_failed"] = true;
+            result["error"] = "Delaunay tessellation failed";
+            return result;
         }
     }
 
@@ -182,21 +175,27 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     {
         PROFILE("Elastic Mapping - Generate Edges");
         if(!elasticMap.generateTessellationEdges()){
-            return false;
+            result["is_failed"] = true;
+            result["error"] = "generateTessellationEdges() failed";
+            return result;
         }
     }
 
     {
         PROFILE("Elastic Mapping - Assign Vertices");
         if(!elasticMap.assignVerticesToClusters()){
-            return false;
+            result["is_failed"] = true;
+            result["error"] = "assignVerticesToClusters() failed";
+            return result;
         }
     }
 
     {
         PROFILE("Elastic Mapping - Assign Ideal Vectors");
         if(!elasticMap.assignIdealVectorsToEdges(false, 4)){
-            return false;
+            result["is_failed"] = true;
+            result["error"] = "assignIdealVectorsToEdges() failed";
+            return result;
         }
     }
     
@@ -204,14 +203,16 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     InterfaceMesh interfaceMesh(elasticMap);
     if(!interfaceMesh.createMesh(structureAnalysis->maximumNeighborDistance())){
-        std::cerr << "Failed InterfaceMesh::createMesh()" << std::endl;
-        return false;
+        result["is_failed"] = true;
+        result["error"] = "InterfaceMesh::createMesh() failed";
+        return result;
     }
 
     DislocationTracer tracer(interfaceMesh, &structureAnalysis->clusterGraph(), _maxTrialCircuitSize, _circuitStretchability);
     if(!tracer.traceDislocationSegments()){
-        std::cerr << "Failed traceDislocationSegments()" << std::endl;
-        return false;
+        result["is_failed"] = true;
+        result["error"] = "traceDislocationSegments() failed";
+        return result;
     }
 
     tracer.finishDislocationSegments(_inputCrystalStructure);
@@ -246,22 +247,18 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     std::cout << "Total line length: " << totalLineLength << std::endl;
 
+    // Export analysis data to JSON
+    try{
+        result = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame);
+    }catch(const std::exception& e){
+        result["is_failed"] = true;
+        result["error"] = e.what();
+        return result;
+    }
+
     if(!jsonOutputFile.empty()){
-        try{
-            _lastFrame = frame;
-            _lastJsonData = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame);
-            
-            std::ofstream outputFile(jsonOutputFile);
-            if(outputFile.is_open()){
-                outputFile << _lastJsonData.dump(2);
-                outputFile.close();
-                std::cout << "JSON export saved to: " << jsonOutputFile << std::endl;
-            }else{
-                std::cerr << "Warning: Could not open output file: " << jsonOutputFile << std::endl;
-            }
-        }catch(const std::exception& e){
-            std::cerr << "Error during JSON export: " << e.what() << std::endl;
-        }
+        std::ofstream of(jsonOutputFile);
+        of << result.dump(2);
     }
 
     networkUptr.reset();
@@ -270,10 +267,10 @@ bool DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     positions.reset();
 
     auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    std::cout << "[TOTAL TIME] DislocationAnalysis::compute took " << duration.count() << " ms" << std::endl;
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    result["total_time"] = duration;
 
-    return true;
+    return result;
 }
 
 std::shared_ptr<ParticleProperty> DislocationAnalysis::createPositionProperty(const LammpsParser::Frame &frame){
