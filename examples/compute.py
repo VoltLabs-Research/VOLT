@@ -16,6 +16,19 @@ analyzer.set_only_perfect_dislocations(False)
 #    '/home/rodyherrera/Escritorio/OpenDXA/debug.analysis.dump'
 #], 'dislocation_results_%i.json')
 
-result = analyzer.compute('/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps', 'debug-data/dislocation_results.json')
+result = analyzer.compute_trajectory([
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+    '/home/rodyherrera/Escritorio/OpenDXA/debug-data/debug.analysis.lammps',
+], '%i_debug-data/dislocation_results.json')
 
 print(result)

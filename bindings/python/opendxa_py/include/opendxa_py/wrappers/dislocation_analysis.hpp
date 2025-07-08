@@ -30,7 +30,7 @@ public:
     void setMaxTrialCircuitSize(int size);
     void setCircuitStretchability(int stretch);
     void setOnlyPerfectDislocations(bool flag);
-    bool computeTrajectory(const std::vector<std::string>& input_files, const std::string& output_file_template);
+    json computeTrajectory(const std::vector<std::string>& input_files, const std::string& output_file_template);
 
     // Main computation method
     json compute(const std::string& inputFile, const std::string& outputFile = "");

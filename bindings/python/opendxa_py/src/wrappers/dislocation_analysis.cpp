@@ -16,7 +16,7 @@ void AnalysisWrapper::resetConfig() {
 }
 
 void AnalysisWrapper::setInputCrystalStructure(int structure) {
-    if (structure < 0 || structure > 10) { // Assuming enum range
+    if (structure < 0 || structure > 10) { 
         throw std::invalid_argument("Invalid crystal structure type");
     }
     analyzer->setInputCrystalStructure(static_cast<LatticeStructureType>(structure));
@@ -63,7 +63,7 @@ py::dict AnalysisWrapper::getConfig() const {
     return config;
 }
 
-bool AnalysisWrapper::computeTrajectory(const std::vector<std::string>& input_files, const std::string& output_file_template) {
+json AnalysisWrapper::computeTrajectory(const std::vector<std::string>& input_files, const std::string& output_file_template) {
     if(input_files.empty()){
         throw std::invalid_argument("Input file list cannot be empty.");
     }
@@ -87,9 +87,8 @@ bool AnalysisWrapper::computeTrajectory(const std::vector<std::string>& input_fi
     }
 
     std::cout << "All frames loaded. Starting parallel analysis..." << std::endl;
-    bool success = analyzer->compute(frames, output_file_template);
 
-    return success;
+    return analyzer->compute(frames, output_file_template);
 }
 
 void AnalysisWrapper::validateInputFile(const std::string& filePath) const {
