@@ -96,6 +96,10 @@ const EditorPage: React.FC = () => {
         setSelectedDislocation(segment);
     }, []);
 
+    useEffect(() => {
+        console.log(data)
+    }, [data]);
+
     const streamProgress = useMemo(() => ({
         current: currentTimestep,
         total: maxTimestep

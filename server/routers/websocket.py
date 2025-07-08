@@ -48,15 +48,16 @@ def process_single_timestep(folder_id: str, timestep: int) -> dict | None:
 
         atoms_data = read_lammps_dump(str(dump_path))
         atoms_data['timestep'] = timestep
-
         pruned_dislocation_data = []
         dislocation_results = {}
 
         analysis_file_path = Path(ANALYSIS_DIR) / folder_id / f'timestep_{timestep}.json'
+        print(analysis_file_path, analysis_file_path.exists())
         if analysis_file_path.exists():
             with open(analysis_file_path, 'r') as file:
                 analysis_content = json.load(file).get('dislocations', {})
-            
+            print('x')
+            print(analysis_content)
             raw_data = analysis_content.get('data', [])
             if raw_data:
                 summary = analysis_content.get('summary', {})

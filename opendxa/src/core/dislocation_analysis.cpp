@@ -4,6 +4,7 @@
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <tbb/parallel_for_each.h>
 #include <vector>
+#include <filesystem>
 #include <string>
 #include <cstdio>
 #include <omp.h>
@@ -49,7 +50,7 @@ json DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames
     overall["frames"] = json::array();
     for(size_t i = 0; i < frames.size(); ++i){
         char frameName[256];
-        snprintf(frameName, sizeof(frameName), output_file_template.c_str(), int(i));
+        snprintf(frameName, sizeof(frameName), output_file_template.c_str(), frames[i].timestep);
         json frameJson = compute(frames[i], std::string(frameName));
         if(frameJson.value("is_failed", true)){
             overall["is_failed"] = true;
