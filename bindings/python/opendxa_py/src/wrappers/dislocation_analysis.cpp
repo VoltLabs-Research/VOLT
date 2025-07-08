@@ -105,13 +105,6 @@ void AnalysisWrapper::validateInputFile(const std::string& filePath) const {
     if (!std::filesystem::exists(filePath)) {
         throw std::runtime_error("Input file does not exist: " + filePath);
     }
-    
-    // Check file extension
-    std::filesystem::path path(filePath);
-    std::string ext = path.extension().string();
-    if (ext != ".dump" && ext != ".lammpstrj" && ext != ".xyz") {
-        throw std::invalid_argument("Unsupported file format. Expected .dump, .lammpstrj, or .xyz");
-    }
 }
 
 void AnalysisWrapper::validateCircuitSize(int size) const {
