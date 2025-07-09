@@ -8,27 +8,6 @@ CoordinationStructure CoordinationStructures::_coordinationStructures[NUM_COORD_
 // Contains the known lattice types.
 LatticeStructure CoordinationStructures::_latticeStructures[NUM_LATTICE_TYPES];
 
-// Fast sorting function for an array of (bounded) integers.
-// Sorts values in descending order.
-template<typename iterator>
-void bitmapSort(iterator begin, iterator end, int max){
-	assert(max <= 32);
-	assert(end >= begin);
-	int bitarray = 0;
-	for(iterator pin = begin; pin != end; ++pin){
-		assert(*pin >= 0 && *pin < max);
-		bitarray |= 1 << (*pin);
-	}
-
-	iterator pout = begin;
-	for(int i = max - 1; i >= 0; i--){
-		if(bitarray & (1 << i)){
-			*pout++ = i;
-		}
-	}
-	assert(pout == end);
-}
-
 CoordinationStructures::CoordinationStructures(
 	ParticleProperty* structureTypes,
 	LatticeStructureType inputCrystalType,
@@ -172,184 +151,6 @@ double CoordinationStructures::computeLocalCutoff(
 	return localCutoff;
 }
 
-CoordinationStructureType CoordinationStructures::computeCoordinationType(
-	const NeighborBondArray& neighborArray,
-    int coordinationNumber,
-    int* cnaSignatures
-) const { 
-	CoordinationStructureType coordinationType;
-
-	switch(_inputCrystalType){
-		case LATTICE_FCC:
-		case LATTICE_HCP: {
-			size_t n421 = 0;
-			size_t n422 = 0;
-			for(size_t neighborIndex = 0; neighborIndex < coordinationNumber; neighborIndex++){
-				// Determine number of neighbors the two atoms have in common
-				unsigned int commonNeighbors;
-				size_t numCommonNeighbors = CommonNeighborAnalysis::findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, coordinationNumber);
-				if(numCommonNeighbors != 4) break;
-
-				// Determine the number of bonds among the common neighbors
-				CNAPairBond neighborBonds[MAX_NEIGHBORS * MAX_NEIGHBORS];
-				size_t numNeighborBonds = CommonNeighborAnalysis::findNeighborBonds(neighborArray, commonNeighbors, coordinationNumber, neighborBonds);
-				if(numNeighborBonds != 2) break;
-
-				// Determine the number of bonds in the longest continuous chain
-				size_t maxChainLength = CommonNeighborAnalysis::calcMaxChainLength(neighborBonds, numNeighborBonds);
-
-				if(maxChainLength == 1){
-					n421++;
-					cnaSignatures[neighborIndex] = 0;
-				}else if(maxChainLength == 2){
-					n422++;
-					cnaSignatures[neighborIndex] = 1;
-				}else{
-					break;
-				}
-			}
-		
-			if(n421 == 12 && (_identifyPlanarDefects || _inputCrystalType == LATTICE_FCC)){
-				coordinationType = COORD_FCC;
-			}else if(n421 == 6 && n422 == 6 && (_identifyPlanarDefects || _inputCrystalType == LATTICE_HCP)){
-				coordinationType = COORD_HCP;
-			}else{
-				return COORD_OTHER;
-			}
-
-			break;
-		}
-		case LATTICE_BCC: {
-			size_t n444 = 0;
-			size_t n666 = 0;
-			for(size_t neighborIndex = 0; neighborIndex < coordinationNumber; neighborIndex++){
-				// Determine number of neighbors the two atoms have in common 
-				unsigned int commonNeighbors;
-				size_t numCommonNeighbors = CommonNeighborAnalysis::findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, 14);
-				if(numCommonNeighbors != 4 && numCommonNeighbors != 6) break;
-
-				// Determine the number of bonds among the common neighbors
-				CNAPairBond neighborBonds[MAX_NEIGHBORS * MAX_NEIGHBORS];
-				size_t numNeighborBonds = CommonNeighborAnalysis::findNeighborBonds(neighborArray, commonNeighbors, 14, neighborBonds);
-				if(numNeighborBonds != 4 && numNeighborBonds != 6) break;
-
-				// Determine the number of bonds in the longest continuous chain
-				size_t maxChainLength = CommonNeighborAnalysis::calcMaxChainLength(neighborBonds, numNeighborBonds);
-				if(numCommonNeighbors == 4 && numNeighborBonds == 4 && maxChainLength == 4){
-					n444++;
-					cnaSignatures[neighborIndex] = 1;
-				}else if(numCommonNeighbors == 6 && numNeighborBonds == 6 && maxChainLength == 6){
-					n666++;
-					cnaSignatures[neighborIndex] = 0;
-				}else{
-					break;
-				}
-			}
-
-			if(n666 == 8 && n444 == 6){
-				coordinationType = COORD_BCC;
-			}else{
-				return COORD_OTHER;
-			}
-			
-			break;
-		}
-		case LATTICE_CUBIC_DIAMOND:
-		case LATTICE_HEX_DIAMOND: {
-			for(int neighborIndex = 0; neighborIndex < 4; neighborIndex++){
-				cnaSignatures[neighborIndex] = 0;
-				unsigned int commonNeighbors;
-				size_t numCommonNeighbors = CommonNeighborAnalysis::findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, coordinationNumber);
-				if(numCommonNeighbors != 3) return COORD_OTHER;
-			}
-
-			int n543 = 0;
-			int n544 = 0;
-			for(int neighborIndex = 4; neighborIndex < coordinationNumber; neighborIndex++){
-				// Determine number of neighbors the two atoms have in common
-				unsigned int commonNeighbors;
-				size_t numCommonNeighbors = CommonNeighborAnalysis::findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, coordinationNumber);
-				if(numCommonNeighbors != 5) break;
-
-				// Determine the number of bonds among the common neighbors
-				CNAPairBond neighborBonds[MAX_NEIGHBORS * MAX_NEIGHBORS];
-				size_t numNeighborBonds = CommonNeighborAnalysis::findNeighborBonds(neighborArray, commonNeighbors, coordinationNumber, neighborBonds);
-				if(numNeighborBonds != 4) break;
-
-				// Determine the number of bonds in the longest continuous chain
-				size_t maxChainLength = CommonNeighborAnalysis::calcMaxChainLength(neighborBonds, numNeighborBonds);
-				if(maxChainLength == 3){
-					n543++;
-					cnaSignatures[neighborIndex] = 1;
-				}else if(maxChainLength == 4){
-					n544++;
-					cnaSignatures[neighborIndex] = 2;
-				}else{
-					break;
-				}
-			}
-
-			if(n543 == 12 && (_identifyPlanarDefects || _inputCrystalType == LATTICE_CUBIC_DIAMOND)){
-				coordinationType = COORD_CUBIC_DIAMOND;
-			}else if(n543 == 6 && n544 == 6 && (_identifyPlanarDefects || _inputCrystalType == LATTICE_HEX_DIAMOND)){
-				coordinationType = COORD_HEX_DIAMOND;
-			}else{
-				return COORD_OTHER;
-			}
-		}
-	}
-
-	return coordinationType;
-}
-
-bool CoordinationStructures::findMatchingNeighborPermutation(
-	CoordinationStructureType coordinationType,
-	int* neighborMapping,
-	int* previousMapping,
-	int coordinationNumber,
-	const int* cnaSignatures,
-	const NeighborBondArray& neighborArray
-) const { 
-	// Find first matching neighbor permutation
-	const CoordinationStructure& coordStructure = _coordinationStructures[coordinationType];
-	for(;;){
-		int ni1 = 0;
-		
-		while(neighborMapping[ni1] == previousMapping[ni1]){
-			ni1++;
-			assert(ni1 < coordinationNumber);
-		}
-
-		for(; ni1 < coordinationNumber; ni1++){
-			int atomNeighborIndex1 = neighborMapping[ni1];
-			previousMapping[ni1] = atomNeighborIndex1;
-			
-			if(cnaSignatures[atomNeighborIndex1] != coordStructure.cnaSignatures[ni1]){
-				break;
-			}
-			
-			int ni2;
-
-			for(ni2 = 0; ni2 < ni1; ni2++){
-				int atomNeighborIndex2 = neighborMapping[ni2];
-				if(neighborArray.neighborBond(atomNeighborIndex1, atomNeighborIndex2) != coordStructure.neighborArray.neighborBond(ni1, ni2)){
-					break;
-				}
-			}
-
-			if(ni2 != ni1) break;
-		}
-
-		if(ni1 == coordinationNumber) return true;
-
-		bitmapSort(neighborMapping + ni1 + 1, neighborMapping + coordinationNumber, coordinationNumber);
-		if(!std::next_permutation(neighborMapping, neighborMapping + coordinationNumber)){
-			assert(false);
-			return false;
-		}
-	}
-}
-
 double CoordinationStructures::determineLocalStructure(
 	const NearestNeighborFinder& neighList, 
 	size_t particleIndex,
@@ -382,7 +183,9 @@ double CoordinationStructures::determineLocalStructure(
 
     if (localCutoff == 0.0) return 0.0;
 
-	CoordinationStructureType coordinationType = computeCoordinationType(neighborArray, coordinationNumber, cnaSignatures.data());
+	CoordinationStructureType coordinationType = CommonNeighborAnalysis::computeCoordinationType(
+		neighborArray, coordinationNumber, cnaSignatures.data(),
+		_inputCrystalType, _identifyPlanarDefects);
 
 	if(coordinationType == COORD_OTHER) return 0.0;
 
@@ -391,9 +194,9 @@ double CoordinationStructures::determineLocalStructure(
 		previousMapping[n] = -1;
 	}
 
-	bool found = findMatchingNeighborPermutation(
+	bool found = CommonNeighborAnalysis::findMatchingNeighborPermutation(
 		coordinationType, neighborMapping.data(), previousMapping.data(),
-		coordinationNumber, cnaSignatures.data(), neighborArray);
+		coordinationNumber, cnaSignatures.data(), neighborArray, _coordinationStructures);
 
 	if(!found) return 0.0;
 

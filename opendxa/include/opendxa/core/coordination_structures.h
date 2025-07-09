@@ -42,15 +42,6 @@ private:
         int* cnaSignatures
     ) const;
 
-    bool findMatchingNeighborPermutation(
-        CoordinationStructureType coordinationType,
-        int* neighborMapping,
-        int* previousMapping,
-        int coordinationNumber,
-        const int* cnaSignatures,
-        const NeighborBondArray& neighborArray
-    ) const;
-
     static void initializeDiamondStructure(
         int coordType, 
         int latticeType,

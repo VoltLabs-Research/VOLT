@@ -2,6 +2,7 @@
 
 #include <opendxa/core/opendxa.h>
 #include <opendxa/structures/neighbor_bond_array.h>
+#include <opendxa/structures/coordination_structure.h>
 
 namespace OpenDXA{
 
@@ -44,6 +45,23 @@ public:
 
     static int calcMaxChainLength(CNAPairBond* neighborBonds, int numBonds);
 	static void generateCellTooSmallError(int dimension);
+    static bool findMatchingNeighborPermutation(
+        CoordinationStructureType coordinationType,
+        int* neighborMapping,
+        int* previousMapping,
+        int coordinationNumber,
+        const int* cnaSignatures,
+        const NeighborBondArray& neighborArray,
+        const CoordinationStructure* coordinationStructures
+    );
+
+    static CoordinationStructureType computeCoordinationType(
+        const NeighborBondArray& neighborArray,
+        int coordinationNumber,
+        int* cnaSignatures,
+        LatticeStructureType inputCrystalType,
+        bool identifyPlanarDefects
+    );
 
 private:
     static int getAdjacentBonds(
