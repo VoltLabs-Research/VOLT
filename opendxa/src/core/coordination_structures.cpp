@@ -218,170 +218,52 @@ double CoordinationStructures::determineLocalStructure(
 }
 
 void CoordinationStructures::initializeFCC(){
-	Vector3 fccVec[12] = {
-		Vector3( 0.5,  0.5,  0.0),
-		Vector3( 0.0,  0.5,  0.5),
-		Vector3( 0.5,  0.0,  0.5),
-		Vector3(-0.5, -0.5,  0.0),
-		Vector3( 0.0, -0.5, -0.5),
-		Vector3(-0.5,  0.0, -0.5),
-		Vector3(-0.5,  0.5,  0.0),
-		Vector3( 0.0, -0.5,  0.5),
-		Vector3(-0.5,  0.0,  0.5),
-		Vector3( 0.5, -0.5,  0.0),
-		Vector3( 0.0,  0.5, -0.5),
-		Vector3( 0.5,  0.0, -0.5)
-	};
-
-	initializeCoordinationStructure(COORD_FCC, fccVec, 12, [&](const Vector3& v1, const Vector3& v2){
+	initializeCoordinationStructure(COORD_FCC, FCC_VECTORS, 12, [&](const Vector3& v1, const Vector3& v2){
 		return (v1 - v2).length() < (sqrt(0.5f) + 1.0) * 0.5;
 	}, [](int ni){ return 0; });
 
-	initializeLatticeStructure(LATTICE_FCC, fccVec, 12, &_coordinationStructures[COORD_FCC]);
-    _latticeStructures[LATTICE_FCC].primitiveCell.column(0) = Vector3(0.5, 0.5, 0.0);
-    _latticeStructures[LATTICE_FCC].primitiveCell.column(1) = Vector3(0.0, 0.5, 0.5);
-    _latticeStructures[LATTICE_FCC].primitiveCell.column(2) = Vector3(0.5, 0.0, 0.5);
+	initializeLatticeStructure(LATTICE_FCC, FCC_VECTORS, 12, &_coordinationStructures[COORD_FCC]);
+    _latticeStructures[LATTICE_FCC].primitiveCell.column(0) = FCC_PRIMITIVE_CELL[0];
+    _latticeStructures[LATTICE_FCC].primitiveCell.column(1) = FCC_PRIMITIVE_CELL[1];
+    _latticeStructures[LATTICE_FCC].primitiveCell.column(2) = FCC_PRIMITIVE_CELL[2];
 }
 
 void CoordinationStructures::initializeHCP(){
-	Vector3 hcpVec[18] = {
-		Vector3(sqrt(2.0)/4.0, -sqrt(6.0)/4.0, 0.0),
-		Vector3(-sqrt(2.0)/2.0, 0.0, 0.0),
-		Vector3(-sqrt(2.0)/4.0, sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-		Vector3(sqrt(2.0)/4.0, sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-		Vector3(0.0, -sqrt(6.0)/6.0, -sqrt(3.0)/3.0),
-		Vector3(-sqrt(2.0)/4.0, sqrt(6.0)/4.0, 0.0),
-		Vector3(sqrt(2.0)/4.0, sqrt(6.0)/4.0, 0.0),
-		Vector3(sqrt(2.0)/2.0, 0.0, 0.0),
-		Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/4.0, 0.0),
-		Vector3(0.0, -sqrt(6.0)/6.0, sqrt(3.0)/3.0),
-		Vector3(sqrt(2.0)/4.0, sqrt(6.0)/12.0, sqrt(3.0)/3.0),
-		Vector3(-sqrt(2.0)/4.0, sqrt(6.0)/12.0, sqrt(3.0)/3.0),
-		Vector3(0.0, sqrt(6.0)/6.0, sqrt(3.0)/3.0),
-		Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-		Vector3(sqrt(2.0)/4.0, -sqrt(6.0)/12.0, sqrt(3.0)/3.0),
-		Vector3(0.0, sqrt(6.0)/6.0, -sqrt(3.0)/3.0),
-		Vector3(sqrt(2.0)/4.0, -sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-		Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/12.0, sqrt(3.0)/3.0)
-	};
-
-	initializeCoordinationStructure(COORD_HCP, hcpVec, 12, [&](const Vector3& v1, const Vector3& v2){
+	initializeCoordinationStructure(COORD_HCP, HCP_VECTORS, 12, [&](const Vector3& v1, const Vector3& v2){
 		return (v1 - v2).length() < (sqrt(0.5) + 1.0) * 0.5;
-	}, [&](int ni){ return (hcpVec[ni].z() == 0) ? 1 : 0; });
+	}, [&](int ni){ return (HCP_VECTORS[ni].z() == 0) ? 1 : 0; });
 
-	initializeLatticeStructure(LATTICE_HCP, hcpVec, 18, &_coordinationStructures[COORD_HCP]);
-    _latticeStructures[LATTICE_HCP].primitiveCell.column(0) = Vector3(sqrt(0.5)/2, -sqrt(6.0)/4, 0.0);
-    _latticeStructures[LATTICE_HCP].primitiveCell.column(1) = Vector3(sqrt(0.5)/2, sqrt(6.0)/4, 0.0);
-    _latticeStructures[LATTICE_HCP].primitiveCell.column(2) = Vector3(0.0, 0.0, sqrt(8.0/6.0));
+	initializeLatticeStructure(LATTICE_HCP, HCP_VECTORS, 18, &_coordinationStructures[COORD_HCP]);
+    _latticeStructures[LATTICE_HCP].primitiveCell.column(0) = HCP_PRIMITIVE_CELL[0];
+    _latticeStructures[LATTICE_HCP].primitiveCell.column(1) = HCP_PRIMITIVE_CELL[1];
+    _latticeStructures[LATTICE_HCP].primitiveCell.column(2) = HCP_PRIMITIVE_CELL[2];
 }
 
 void CoordinationStructures::initializeBCC(){
-	Vector3 bccVec[14] = {
-		Vector3( 0.5,  0.5,  0.5),
-		Vector3(-0.5,  0.5,  0.5),
-		Vector3( 0.5,  0.5, -0.5),
-		Vector3(-0.5, -0.5,  0.5),
-		Vector3( 0.5, -0.5,  0.5),
-		Vector3(-0.5,  0.5, -0.5),
-		Vector3(-0.5, -0.5, -0.5),
-		Vector3( 0.5, -0.5, -0.5),
-		Vector3( 1.0,  0.0,  0.0),
-		Vector3(-1.0,  0.0,  0.0),
-		Vector3( 0.0,  1.0,  0.0),
-		Vector3( 0.0, -1.0,  0.0),
-		Vector3( 0.0,  0.0,  1.0),
-		Vector3( 0.0,  0.0, -1.0)
-	};
-
-	initializeCoordinationStructure(COORD_BCC, bccVec, 14, [&](const Vector3& v1, const Vector3& v2){
+	initializeCoordinationStructure(COORD_BCC, BCC_VECTORS, 14, [&](const Vector3& v1, const Vector3& v2){
 		return (v1 - v2).length() < (double(1) + sqrt(double(2))) * double(0.5);
 	}, [](int ni) { return (ni < 8) ? 0 : 1; });
 
-	initializeLatticeStructure(LATTICE_BCC, bccVec, 14, &_coordinationStructures[COORD_BCC]);
-    _latticeStructures[LATTICE_BCC].primitiveCell.column(0) = Vector3(1.0, 0.0, 0.0);
-    _latticeStructures[LATTICE_BCC].primitiveCell.column(1) = Vector3(0.0, 1.0, 0.0);
-    _latticeStructures[LATTICE_BCC].primitiveCell.column(2) = Vector3(0.5, 0.5, 0.5);
+	initializeLatticeStructure(LATTICE_BCC, BCC_VECTORS, 14, &_coordinationStructures[COORD_BCC]);
+    _latticeStructures[LATTICE_BCC].primitiveCell.column(0) = BCC_PRIMITIVE_CELL[0];
+    _latticeStructures[LATTICE_BCC].primitiveCell.column(1) = BCC_PRIMITIVE_CELL[1];
+    _latticeStructures[LATTICE_BCC].primitiveCell.column(2) = BCC_PRIMITIVE_CELL[2];
 }
 
 void CoordinationStructures::initializeCubicDiamond(){
-	Vector3 diamondCubicVec[] = {
-		Vector3(0.25, 0.25, 0.25),
-		Vector3(0.25, -0.25, -0.25),
-		Vector3(-0.25, -0.25, 0.25),
-		Vector3(-0.25, 0.25, -0.25),
-
-		Vector3(0, -0.5, 0.5),
-		Vector3(0.5, 0.5, 0),
-		Vector3(-0.5, 0, 0.5),
-		Vector3(-0.5, 0.5, 0),
-		Vector3(0, 0.5, 0.5),
-		Vector3(0.5, -0.5, 0),
-		Vector3(0.5, 0, 0.5),
-		Vector3(0.5, 0, -0.5),
-		Vector3(-0.5, -0.5, 0),
-		Vector3(0, -0.5, -0.5),
-		Vector3(0, 0.5, -0.5),
-		Vector3(-0.5, 0, -0.5),
-
-		Vector3(0.25, -0.25, 0.25),
-		Vector3(0.25, 0.25, -0.25),
-		Vector3(-0.25, 0.25, 0.25),
-		Vector3(-0.25, -0.25, -0.25)
-	};
-
-    initializeDiamondStructure(COORD_CUBIC_DIAMOND, LATTICE_CUBIC_DIAMOND, diamondCubicVec, 16, 20);
+    initializeDiamondStructure(COORD_CUBIC_DIAMOND, LATTICE_CUBIC_DIAMOND, DIAMOND_CUBIC_VECTORS, 16, 20);
     
-    _latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(0) = Vector3(0.5, 0.5, 0.0);
-    _latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(1) = Vector3(0.0, 0.5, 0.5);
-    _latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(2) = Vector3(0.5, 0.0, 0.5);
+    _latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(0) = CUBIC_DIAMOND_PRIMITIVE_CELL[0];
+    _latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(1) = CUBIC_DIAMOND_PRIMITIVE_CELL[1];
+    _latticeStructures[LATTICE_CUBIC_DIAMOND].primitiveCell.column(2) = CUBIC_DIAMOND_PRIMITIVE_CELL[2];
 }
 
 void CoordinationStructures::initializeHexagonalDiamond(){
-	Vector3 diamondHexVec[] = {
-		Vector3(-sqrt(2.0)/4, sqrt(3.0/2.0)/6, -sqrt(3.0)/12),
-		Vector3(0, -sqrt(3.0/2.0)/3, -sqrt(3.0)/12),
-		Vector3(sqrt(2.0)/4, sqrt(3.0/2.0)/6, -sqrt(3.0)/12),
-		Vector3(0, 0, sqrt(3.0)/4),
-
-		Vector3(sqrt(2.0)/4.0, -sqrt(6.0)/4.0, 0.0),
-		Vector3(-sqrt(2.0)/2.0, 0.0, 0.0),
-		Vector3(-sqrt(2.0)/4.0, sqrt(6.0)/4.0, 0.0),
-		Vector3(sqrt(2.0)/4.0, sqrt(6.0)/4.0, 0.0),
-		Vector3(sqrt(2.0)/2.0, 0.0, 0.0),
-		Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/4.0, 0.0),
-		Vector3(-sqrt(2.0)/4.0, sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-		Vector3(sqrt(2.0)/4.0, sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-		Vector3(0.0, -sqrt(6.0)/6.0, -sqrt(3.0)/3.0),
-		Vector3(0.0, -sqrt(6.0)/6.0, sqrt(3.0)/3.0),
-		Vector3(sqrt(2.0)/4.0, sqrt(6.0)/12.0, sqrt(3.0)/3.0),
-		Vector3(-sqrt(2.0)/4.0, sqrt(6.0)/12.0, sqrt(3.0)/3.0),
-
-		Vector3(-sqrt(2.0)/4, sqrt(3.0/2.0)/6, sqrt(3.0)/12),
-		Vector3(0, -sqrt(3.0/2.0)/3, sqrt(3.0)/12),
-		Vector3(sqrt(2.0)/4, sqrt(3.0/2.0)/6, sqrt(3.0)/12),
-		Vector3(0, 0, -sqrt(3.0)/4),
-
-		Vector3(-sqrt(2.0)/4, -sqrt(3.0/2.0)/6, -sqrt(3.0)/12),
-		Vector3(0, sqrt(3.0/2.0)/3, -sqrt(3.0)/12),
-		Vector3(sqrt(2.0)/4, -sqrt(3.0/2.0)/6, -sqrt(3.0)/12),
-
-		Vector3(-sqrt(2.0)/4, -sqrt(3.0/2.0)/6, sqrt(3.0)/12),
-		Vector3(0, sqrt(3.0/2.0)/3, sqrt(3.0)/12),
-		Vector3(sqrt(2.0)/4, -sqrt(3.0/2.0)/6, sqrt(3.0)/12),
-
-		Vector3(0.0, sqrt(6.0)/6.0, sqrt(3.0)/3.0),
-		Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-		Vector3(sqrt(2.0)/4.0, -sqrt(6.0)/12.0, sqrt(3.0)/3.0),
-		Vector3(0.0, sqrt(6.0)/6.0, -sqrt(3.0)/3.0),
-		Vector3(sqrt(2.0)/4.0, -sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-		Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/12.0, sqrt(3.0)/3.0)
-	};
-
-	initializeDiamondStructure(COORD_HEX_DIAMOND, LATTICE_HEX_DIAMOND, diamondHexVec, 16, 32);
+	initializeDiamondStructure(COORD_HEX_DIAMOND, LATTICE_HEX_DIAMOND, DIAMOND_HEX_VECTORS, 16, 32);
     
-    _latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(0) = Vector3(sqrt(0.5)/2, -sqrt(6.0)/4, 0.0);
-    _latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(1) = Vector3(sqrt(0.5)/2, sqrt(6.0)/4, 0.0);
-    _latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(2) = Vector3(0.0, 0.0, sqrt(8.0/6.0));
+    _latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(0) = HEXAGONAL_DIAMOND_PRIMITIVE_CELL[0];
+    _latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(1) = HEXAGONAL_DIAMOND_PRIMITIVE_CELL[1];
+    _latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(2) = HEXAGONAL_DIAMOND_PRIMITIVE_CELL[2];
 }
 
 void CoordinationStructures::initializeOther(){

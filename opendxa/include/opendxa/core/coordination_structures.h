@@ -6,6 +6,7 @@
 #include <opendxa/analysis/nearest_neighbor_finder.h>
 #include <opendxa/core/particle_property.h>
 #include <opendxa/analysis/common_neighbor_analysis.h>
+#include <opendxa/structures/lattice_vectors.h>
 
 namespace OpenDXA{
     
