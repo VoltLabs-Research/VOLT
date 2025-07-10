@@ -8,6 +8,8 @@
 
 namespace OpenDXA{
 
+// Converts a raw integer code from the PTM library into our high-level enum.
+// This bridges the C API (which returns PTM_MATCH_*) to our StructureType values.
 PTM::StructureType PTM::ptmToStructureType(int type){
     switch(type){
         case PTM_MATCH_NONE: return StructureType::OTHER;
@@ -23,6 +25,8 @@ PTM::StructureType PTM::ptmToStructureType(int type){
     }
 }
 
+// Maps our enum values back into the integer codes expected by the PTM C routines.
+// This lets us selectively enable or disable each lattice type in the library calls.
 int PTM::toPtmStructureType(StructureType type){
     switch (type) {
         case StructureType::OTHER: return PTM_MATCH_NONE;
@@ -38,26 +42,21 @@ int PTM::toPtmStructureType(StructureType type){
     }
 }
 
+// Initialize the PTM algorithm, including global one-time setup and neighbor-search capacity.
+// By deriving from NearestNeighborFinder, we reserve space for the maximum neighbor PTM needs
 PTM::PTM() : NearestNeighborFinder(MAX_INPUT_NEIGHBORS){
     ptm_initialize_global();
 }
 
-void PTM::setStructureTypeIdentification(StructureType structureType, bool enableIdentification){
-    _typesToIdentify[static_cast<size_t>(structureType)] = enableIdentification;
-}
-
-bool PTM::isAnyStructureTypeEnabled() const{
-    for(size_t i = 1; i < static_cast<size_t>(StructureType::NUM_STRUCTURE_TYPES); ++i){
-        if(_typesToIdentify[i]) return true;
-    }
-    return false;
-}
-
+// If provided, we will pass the per-atom type array into PTM so it can consider multi-component ordering.
+// Setting thins pointer enables the library to include atom type in its matching logic.
 void PTM::setIdentifyOrdering(const int* particleTypes){
     _particleTypes = particleTypes;
     _identifyOrdering = (_particleTypes != nullptr);
 }
 
+// Collects and encodes the local neighbor shell around a particle into a bitmask.
+// This lets the PTM algorithm quickly refer back to which neighbor belong where.
 int PTM::Kernel::cacheNeighbors(size_t particleIndex, uint64_t* res){
     assert(particleIndex < _algo.particleCount());
     
@@ -74,6 +73,8 @@ int PTM::Kernel::cacheNeighbors(size_t particleIndex, uint64_t* res){
     return ptm_preorder_neighbours(_handle, numNeighbors, points, res);
 }
 
+// Initializes all spatial indexing, periodic-image offsets, and builds
+// a shallow k-d tree for fast neighbor searches in the current simulation frame.
 bool PTM::prepare(
     const Point3* positions,
     size_t particleCount,
@@ -173,15 +174,18 @@ bool PTM::prepare(
     return true;
 }
 
+// Allocates and initializes the per-thread PTM state needed by the C library
 PTM::Kernel::Kernel(const PTM& algorithm) : NeighborQuery(algorithm), _algorithm(algorithm){
     _handle = ptm_initialize_local();
     _F.setZero();
 }
 
+// Cleans up the per-thread PTM state on destruction.
 PTM::Kernel::~Kernel(){
     ptm_uninitialize_local(_handle);
 }
 
+// Convert the raw quaternion array returned by PTM into our Quaternion class
 Quaternion PTM::Kernel::orientation() const{
     return Quaternion(
         _quaternion[1],
@@ -241,6 +245,9 @@ static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested,
     return numNeighbors + 1;
 }
 
+// Drives the actual template-matching call for a single particle,
+// feeding in neighbor geometry, optionally atom types, and flags for
+// which lattices to check, then interprets the result
 PTM::StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::vector<uint64_t>& cachedNeighbors, Quaternion*){
     assert(cachedNeighbors.size() == _algorithm.particleCount());
     assert(particleIndex < _algorithm.particleCount());
@@ -250,20 +257,17 @@ PTM::StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const st
     nbrdata.particleTypes = _algorithm._identifyOrdering ? _algorithm._particleTypes : nullptr;
     nbrdata.cachedNeighbors = &cachedNeighbors;
     nbrdata.lastIdentifiedType   = _structureType;
-    int32_t flags = 0;
-    if (_algorithm._typesToIdentify[static_cast<size_t>(StructureType::SC)]) flags |= PTM_CHECK_SC;
-    if (_algorithm._typesToIdentify[static_cast<size_t>(StructureType::FCC)]) flags |= PTM_CHECK_FCC;
-    if (_algorithm._typesToIdentify[static_cast<size_t>(StructureType::HCP)]) flags |= PTM_CHECK_HCP;
-    if (_algorithm._typesToIdentify[static_cast<size_t>(StructureType::ICO)]) flags |= PTM_CHECK_ICO;
-    if (_algorithm._typesToIdentify[static_cast<size_t>(StructureType::BCC)]) flags |= PTM_CHECK_BCC;
-    if (_algorithm._typesToIdentify[static_cast<size_t>(StructureType::CUBIC_DIAMOND)]) flags |= PTM_CHECK_DCUB;
-    if (_algorithm._typesToIdentify[static_cast<size_t>(StructureType::HEX_DIAMOND)]) flags |= PTM_CHECK_DHEX;
-    if (_algorithm._typesToIdentify[static_cast<size_t>(StructureType::GRAPHENE)]) flags |= PTM_CHECK_GRAPHENE;
+
+    // TODO: Should I implement graphene and other types like ICO, SC...?
+    // Build bitmask of structure type to test
+    int32_t flags = PTM_CHECK_FCC | PTM_CHECK_HCP | PTM_CHECK_BCC | PTM_CHECK_DCUB | PTM_CHECK_DHEX;
     ptm_result_t result;
     int errorCode = ptm_index(_handle, particleIndex, getNeighbors, (void*) &nbrdata, flags, _algorithm._calculateDefGradient, &result, &_env);
     assert(errorCode == PTM_NO_ERROR);
     _orderingType = result.ordering_type;
     _scale = result.scale;
+
+    // Unpack the key metrics: RMSD, orientation, deformation gradient, ...
     _rmsd = result.rmsd;
     _interatomicDistance = result.interatomic_distance;
     _bestTemplateIndex = result.template_index;
@@ -272,6 +276,8 @@ PTM::StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const st
     if(_algorithm._calculateDefGradient){
         memcpy(_F.elements(), result.F, 9 * sizeof(double));
     }
+
+    // If PTM failed or exceed cutoff, mark as "OTHER"
     if(result.structure_type == PTM_MATCH_NONE || (_algorithm._rmsdCutoff != 0 && _rmsd > _algorithm._rmsdCutoff)){
         _structureType = StructureType::OTHER;
         _orderingType = static_cast<int32_t>(OrderingType::ORDERING_NONE);
@@ -287,17 +293,20 @@ PTM::StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const st
     return _structureType;
 }
 
+// Returns how many "template" neighbors (ideal lattice points) PTM will give us
 int PTM::Kernel::numTemplateNeighbors() const{
     int ptmType = toPtmStructureType(_structureType);
     if(ptmType == PTM_MATCH_NONE) return 0;
     return ptm_num_nbrs[ptmType];
 }
 
+// Access the raw nearest-neighbor result in sorted distance order
 const NearestNeighborFinder::Neighbor& PTM::Kernel::getNearestNeighbor(int index) const{
     assert(index >= 0 && index < results().size());
     return results()[index];
 }
 
+// Access the i-th neighbor after PTM has reordered them to match the template.
 const NearestNeighborFinder::Neighbor& PTM::Kernel::getTemplateNeighbor(int index) const{
     assert(_structureType != StructureType::OTHER);
     assert(index >= 0 && index < numTemplateNeighbors());
@@ -305,6 +314,8 @@ const NearestNeighborFinder::Neighbor& PTM::Kernel::getTemplateNeighbor(int inde
     return getNearestNeighbor(mappedIndex);
 }
 
+// Retrieve the static "ideal" neighbor direction for the matched template.
+// This can be used, for instance, to compute deformation gradients.
 const Vector3& PTM::Kernel::getIdealNeighborVector(int index) const{
     assert(_structureType != StructureType::OTHER);
     assert(index >= 0 && index < numTemplateNeighbors());

@@ -71,12 +71,6 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
 
     OpenDXA::PTM ptm;
     ptm.setCalculateDefGradient(true);
-    ptm.setStructureTypeIdentification(PTM::StructureType::FCC, true);
-    ptm.setStructureTypeIdentification(PTM::StructureType::HCP, true);
-    ptm.setStructureTypeIdentification(PTM::StructureType::BCC, true);
-    ptm.setStructureTypeIdentification(PTM::StructureType::ICO, true);
-    ptm.setStructureTypeIdentification(PTM::StructureType::CUBIC_DIAMOND, true);
-    ptm.setStructureTypeIdentification(PTM::StructureType::HEX_DIAMOND, true);
     ptm.setRmsdCutoff(std::numeric_limits<double>::infinity());
 
     if (!ptm.prepare(positions()->constDataPoint3(), N, cell())) return false;

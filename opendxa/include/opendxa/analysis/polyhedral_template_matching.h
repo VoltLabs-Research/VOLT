@@ -65,10 +65,6 @@ public:
         return _rmsdCutoff;
     }
 
-    // TODO: This is also absurd. Everything should be enabled by default.
-    void setStructureTypeIdentification(StructureType structureType, bool enableIdentification);
-    bool isAnyStructureTypeEnabled() const;
-
     void setCalculateDefGradient(bool calculateDefGradient){
         _calculateDefGradient = calculateDefGradient;
     }
