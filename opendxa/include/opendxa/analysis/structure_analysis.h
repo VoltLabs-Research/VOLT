@@ -14,6 +14,11 @@ namespace OpenDXA{
 
 class StructureAnalysis{
 public:
+	enum Mode{
+		CNA,
+		PTM
+	};
+
 	StructureAnalysis(
 			ParticleProperty* positions,
 			const SimulationCell& simCell,
@@ -21,7 +26,7 @@ public:
 			ParticleProperty* particleSelection,
 			ParticleProperty* outputStructures,
 			std::vector<Matrix3>&& preferredCrystalOrientations = std::vector<Matrix3>(),
-			bool identifyPlanarDefects = true);
+			bool identifyPlanarDefects = true, Mode _identificationMode = Mode::CNA);
 
 	bool identifyStructures();
 	bool buildClusters();
@@ -95,6 +100,10 @@ public:
 		_atomSymmetryPermutations.reset();
 	}
 
+	void setIdentificationMode(Mode identificationMode){
+		_identificationMode = identificationMode;
+	}
+
 	const Vector3& neighborLatticeVector(int centralAtomIndex, int neighborIndex) const{
 		assert(_atomSymmetryPermutations);
 		int structureType = _structureTypes->getInt(centralAtomIndex);
@@ -125,6 +134,7 @@ private:
 
 	Cluster* startNewCluster(int atomIndex, int structureType);
 
+	Mode _identificationMode;
 	CoordinationStructures _coordStructures;
 	LatticeStructureType _inputCrystalType;
 	ParticleProperty* _positions; 

@@ -11,9 +11,10 @@ namespace OpenDXA{
 StructureAnalysis::StructureAnalysis(ParticleProperty* positions, const SimulationCell& simCell,
 		LatticeStructureType inputCrystalType, ParticleProperty* particleSelection,
 		ParticleProperty* outputStructures, std::vector<Matrix3>&& preferredCrystalOrientations,
-		bool identifyPlanarDefects) :
+		bool identifyPlanarDefects, Mode _identificationMode) :
 	_positions(positions), _simCell(simCell),
 	_inputCrystalType(inputCrystalType),
+	_identificationMode(_identificationMode),
 	_structureTypes(outputStructures),
 	_particleSelection(particleSelection),
 	_coordStructures(outputStructures, inputCrystalType, identifyPlanarDefects, simCell),

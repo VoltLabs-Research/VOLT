@@ -43,6 +43,10 @@ void DislocationAnalysis::setDefectMeshSmoothingLevel(int defectMeshSmoothingLev
     _defectMeshSmoothingLevel = defectMeshSmoothingLevel;
 }
 
+void DislocationAnalysis::setIdentificationMode(StructureAnalysis::Mode identificationMode){
+    _identificationMode = identificationMode;
+}
+
 json DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames, const std::string& output_file_template){
     auto totalStart = std::chrono::high_resolution_clock::now();
     json overall;
@@ -119,7 +123,8 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
             nullptr,
             structureTypes.get(),
             std::move(preferredOrientations),
-            !_onlyPerfectDislocations
+            !_onlyPerfectDislocations,
+            _identificationMode
         );
     }
     
