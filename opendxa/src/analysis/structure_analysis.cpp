@@ -71,6 +71,13 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
 
     OpenDXA::PTM ptm;
     ptm.setCalculateDefGradient(true);
+    // By running with an infinite RMSD cutoff, the PTM kernel never rejects any structure for 
+    // exceeding the threshold, so we collect the true RMSD of all atoms against the model without 
+    // any bias. With that full collection of RMSDs (stored in _ptmRmsd), we then compute an 
+    // adaptive cutoff (the 95th percentile) that reflects the typical fit quality in the particular 
+    // system. Only after this distribution is known, a final cutoff (the maximum between the 95th 
+    // percentile and an absolute minimum) is applied to robustly and flexibly filter out bad matches 
+    // instead of using a fixed or arbitrary value.
     ptm.setRmsdCutoff(std::numeric_limits<double>::infinity());
 
     if (!ptm.prepare(positions()->constDataPoint3(), N, cell())) return false;

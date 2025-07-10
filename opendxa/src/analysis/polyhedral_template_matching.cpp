@@ -195,6 +195,8 @@ Quaternion PTM::Kernel::orientation() const{
     );
 }
 
+// Internal data structure handed to the PTM C callback.
+// It bundles pointers to our neighbor list, optional atom types, and the last structure type seen.
 struct ptmnbrdata_t{
     const BoundedPriorityQueue<NearestNeighborFinder::Neighbor, std::less<NearestNeighborFinder::Neighbor>, PTM::MAX_INPUT_NEIGHBORS>* neighborResults;
     const int* particleTypes;
@@ -202,6 +204,9 @@ struct ptmnbrdata_t{
     PTM::StructureType lastIdentifiedType;
 };
 
+// Callback invoked by the PTM C code to retrieve one particle's neighbor shell.
+// It decodes our pre-computed bitmask into the requested order, fills in positions and types,
+// and returns the count so that the PTM library can perform its template match.
 static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested, ptm_atomicenv_t* env){
     auto* nbrdata = static_cast<ptmnbrdata_t*>(vdata);
     const auto &neighborResults = *nbrdata->neighborResults;
@@ -211,6 +216,8 @@ static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested,
     assert(numNeighbors <= PTM::MAX_INPUT_NEIGHBORS);
     auto* d = static_cast<ptmnbrdata_t*>(vdata);
     int ptmType = PTM::toPtmStructureType(d->lastIdentifiedType);
+
+    // Decode the PTM mask into an ordering of neighbor indices
     int bestTemplateIndex;
     ptm_decode_correspondences(
         ptmType,
@@ -218,10 +225,14 @@ static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested,
         env->correspondences,
         &bestTemplateIndex
     );
+
+    // Central atom first
     env->atom_indices[0] = atomIndex;
     env->points[0][0] = 0;
     env->points[0][1] = 0;
     env->points[0][2] = 0;
+
+    // Fill in neighbor positions according to the decoded map
     for(int i = 0; i < numNeighbors; i++){
         int p = env->correspondences[i + 1] - 1;
         assert(p >= 0 && p < neighborResults.size());
@@ -231,6 +242,8 @@ static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested,
         env->points[i + 1][2] = neighborResults[p].delta.z();
     }
 
+    // Optionally supply the atom types for multi-component matching
+    // TODO: ?
     if(particleTypes){
         env->numbers[0] = particleTypes[atomIndex];
         for(int i = 0; i < numNeighbors; i++){
@@ -241,6 +254,7 @@ static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested,
         std::fill(env->numbers, env->numbers + numNeighbors + 1, 0);
     }
 
+    // Tell PTM how many points we just provided (central + neighbors)
     env->num = numNeighbors + 1;
     return numNeighbors + 1;
 }
