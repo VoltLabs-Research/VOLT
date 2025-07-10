@@ -58,6 +58,22 @@ void PTM::setIdentifyOrdering(const int* particleTypes){
     _identifyOrdering = (_particleTypes != nullptr);
 }
 
+int PTM::Kernel::cacheNeighbors(size_t particleIndex, uint64_t* res){
+    assert(particleIndex < _algo.particleCount());
+    
+    findNeighbors(particleIndex, false);
+    int numNeighbors = this->results().size();
+
+    double points[PTM_MAX_INPUT_POINTS - 1][3];
+    for(int i = 0; i < numNeighbors; i++){
+        points[i][0] = this->results()[i].delta.x();
+        points[i][1] = this->results()[i].delta.y();
+        points[i][2] = this->results()[i].delta.z();
+    }
+
+    return ptm_preorder_neighbours(_handle, numNeighbors, points, res);
+}
+
 bool PTM::prepare(
     const Point3* positions,
     size_t particleCount,
@@ -150,6 +166,7 @@ bool PTM::prepare(
                 }
             }
         }
+        insertParticle(&a, rp, root, 0);
     }
 
     root->convertToAbsoluteCoordinates(simCell);
@@ -224,7 +241,7 @@ static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested,
     return numNeighbors + 1;
 }
 
-PTM::StructureType PTM::Kernel::identifyStructures(size_t particleIndex, const std::vector<uint64_t>& cachedNeighbors, Quaternion*){
+PTM::StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::vector<uint64_t>& cachedNeighbors, Quaternion*){
     assert(cachedNeighbors.size() == _algorithm.particleCount());
     assert(particleIndex < _algorithm.particleCount());
     findNeighbors(particleIndex, false);

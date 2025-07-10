@@ -93,7 +93,7 @@ public:
         Kernel(const PTM& algorithm);
         ~Kernel();
 
-        StructureType identifyStructures(size_t particleIndex, const std::vector<uint64_t>& cachedNeighbors, Quaternion* qtarget = nullptr);
+        StructureType identifyStructure(size_t particleIndex, const std::vector<uint64_t>& cachedNeighbors, Quaternion* qtarget = nullptr);
         int cacheNeighbors(size_t particleIndex, uint64_t* res);
 
         StructureType structureType() const{

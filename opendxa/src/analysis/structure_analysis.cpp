@@ -1,6 +1,7 @@
 #include <opendxa/core/opendxa.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/structure_analysis.h>
+#include <opendxa/analysis/polyhedral_template_matching.h>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_reduce.h> 
@@ -25,20 +26,158 @@ StructureAnalysis::StructureAnalysis(ParticleProperty* positions, const Simulati
 {
 	static bool initialized = false;
 	if(!initialized){
-		_coordStructures.initializeStructures();
+		CoordinationStructures::initializeStructures();
 		initialized = true;
 	}
 
 	// Allocate memory for neighbor lists.
-	_neighborLists = std::shared_ptr<ParticleProperty>(new ParticleProperty(positions->size(), DataType::Int,
+	if(_identificationMode == StructureAnalysis::Mode::CNA){
+		_neighborLists = std::shared_ptr<ParticleProperty>(new ParticleProperty(positions->size(), DataType::Int,
 			_coordStructures.latticeStructure(inputCrystalType).maxNeighbors, 0, "Neighbors", false));
+	}else{
+		static constexpr int maxPtmNeighbors = 14;
+		_neighborLists = std::make_shared<ParticleProperty>(
+			positions->size(), DataType::Int,
+			maxPtmNeighbors,
+			0, "Neighbors", false);
+	}
+	
 	std::fill(_neighborLists->dataInt(), _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
 
 	// Reset atomic structure types.
 	std::fill(_structureTypes->dataInt(), _structureTypes->dataInt() + _structureTypes->size(), LATTICE_OTHER);
 }
 
+LatticeStructureType ptmTypeToLatticeType(PTM::StructureType ptmType){
+    switch(ptmType){
+        case PTM::StructureType::FCC: return LATTICE_FCC;
+        case PTM::StructureType::HCP: return LATTICE_HCP;
+        case PTM::StructureType::BCC: return LATTICE_BCC;
+        case PTM::StructureType::CUBIC_DIAMOND: return LATTICE_CUBIC_DIAMOND;
+        case PTM::StructureType::HEX_DIAMOND: return LATTICE_HEX_DIAMOND;
+        default: return LATTICE_OTHER;
+    }
+}
+
+bool StructureAnalysis::determineLocalStructuresWithPTM(){
+	const size_t N = positions()->size();
+	if(N == 0) return true;
+
+	OpenDXA::PTM ptm;
+    ptm.setCalculateDefGradient(true);
+    ptm.setStructureTypeIdentification(PTM::StructureType::FCC, true);
+    ptm.setStructureTypeIdentification(PTM::StructureType::HCP, true);
+    ptm.setStructureTypeIdentification(PTM::StructureType::BCC, true);
+    ptm.setStructureTypeIdentification(PTM::StructureType::ICO, true);
+    ptm.setStructureTypeIdentification(PTM::StructureType::CUBIC_DIAMOND, true);
+    ptm.setStructureTypeIdentification(PTM::StructureType::HEX_DIAMOND, true);
+
+	ptm.setRmsdCutoff(std::numeric_limits<double>::infinity());
+
+	if(!ptm.prepare(positions()->constDataPoint3(), N, cell())) return false;
+
+	// Run kernel to collect all RMSDs
+	_ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Float, 1, 0.0f, "PTM_RMSD", true);
+    std::vector<uint64_t> cached(N, 0ull);
+	
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](auto const &r){
+		PTM::Kernel kernel(ptm);
+		for(size_t i = r.begin(); i < r.end(); ++i){
+			kernel.cacheNeighbors(i, &cached[i]);
+			kernel.identifyStructure(i, cached);
+			_ptmRmsd->setFloat(i, static_cast<float>(kernel.rmsd()));
+		}
+	});
+
+	// Calculate 95% percentile of RMSD
+	std::vector<float> v(_ptmRmsd->dataFloat(), _ptmRmsd->dataFloat() + N);
+	std::sort(v.begin(), v.end());
+	size_t idx95 = static_cast<size_t>(0.95 * (v.size() - 1));
+	float autoCutoff = v[idx95];
+
+	// Enforce a minimum cutoff for small sims
+	const float cutoffMin = 0.15f;
+	float finalCutoff = std::max(autoCutoff, cutoffMin);
+	std::cout << "PTM auto-cutoff (95th percentile): " << autoCutoff << ", using finalCutoff = " << finalCutoff << std::endl;
+
+    _ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Float, 4, 0.0f, "PTM_Orientation", true);
+	_ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Float, 9, 0.0f, "PTM_DeformationGradient", true);
+	
+	// Empty previous structures
+	std::fill(_neighborLists->dataInt(), _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
+	std::fill(_structureTypes->dataInt(), _structureTypes->dataInt() + _structureTypes->size(), LATTICE_OTHER);
+
+	// Classify atoms according to finalCutoff
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](auto const &r){
+		PTM::Kernel kernel(ptm);
+		for(size_t i = r.begin(); i < r.end(); ++i){
+			auto type = kernel.identifyStructure(i, cached);
+			float rmsd = _ptmRmsd->getFloat(i);
+			if(type != PTM::StructureType::OTHER && rmsd <= finalCutoff){
+				// neighbors
+				int nn = kernel.numTemplateNeighbors();
+				assert(nn <= _neighborLists->componentCount());
+				for(int j = 0; j < nn; ++j){
+					_neighborLists->setIntComponent(i, j, kernel.getTemplateNeighbor(j).index);					
+				}
+				// lattice type
+				_structureTypes->setInt(i, ptmTypeToLatticeType(type));
+				// orientation (quaternion)
+				auto quaternion = kernel.orientation();
+				double *orientation = _ptmOrientation->dataFloat() + 4 * i;
+				orientation[0] = float(quaternion.x());
+				orientation[1] = float(quaternion.y());
+				orientation[2] = float(quaternion.z());
+				orientation[3] = float(quaternion.w());
+				// deformation gradient
+				const auto &F = kernel.deformationGradient();
+				std::memcpy(_ptmDeformationGradient->dataFloat() + 9 * i, F.elements(), 9 * sizeof(double));
+			}
+		}
+	});
+
+	return true;
+}
+
+void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
+	const size_t N = positions()->size();
+	const int M = _neighborLists->componentCount();
+    const auto* pos = positions()->constDataPoint3();
+    const auto& invMat = cell().inverseMatrix(); 
+    const auto& dirMat = cell().matrix();
+
+	double maxDistance = 0.0;
+	for(size_t i = 0; i < N; ++i){
+		for(int j = 0; j < M; ++j){
+			int nb = _neighborLists->getIntComponent(i, j);
+			if(nb < 0) break;
+			Vector3 delta = pos[nb] - pos[i];
+			double f[3];
+			for(int d = 0; d < 3; ++d){
+				f[d] = invMat.prodrow(delta, d);
+				f[d] -= std::round(f[d]);
+			}
+
+			Vector3 mind;
+            mind = dirMat.column(0) * f[0];
+            mind += dirMat.column(1) * f[1];
+            mind += dirMat.column(2) * f[2];
+			double d = mind.length();
+			if(d > maxDistance) maxDistance = d;
+		}
+	}
+
+	std::cout << "Maximum neighbor distance (from PTM): " << maxDistance << std::endl;
+	_maximumNeighborDistance = maxDistance;
+}
+
 bool StructureAnalysis::identifyStructures(){
+	if(_identificationMode == StructureAnalysis::Mode::PTM){
+		determineLocalStructuresWithPTM();
+		computeMaximumNeighborDistanceFromPTM();
+		return true;
+	}
+
     int maxNeighborListSize = std::min((int)_neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
     NearestNeighborFinder neighFinder(maxNeighborListSize);
     if(!neighFinder.prepare(positions(), cell(), _particleSelection)) return false;
@@ -68,8 +207,107 @@ bool StructureAnalysis::identifyStructures(){
 
     return true;
 }
+
 bool StructureAnalysis::shouldSkipSeed(int index){
-	return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == COORD_OTHER;
+	auto other = (_identificationMode == StructureAnalysis::Mode::CNA) ? COORD_OTHER : LATTICE_OTHER;
+	return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == other;
+}
+
+bool StructureAnalysis::buildClustersPTM(){
+    const size_t N = positions()->size();
+
+    for(size_t seedAtomIndex = 0; seedAtomIndex < N; ++seedAtomIndex){
+        if(shouldSkipSeed(seedAtomIndex)) 
+            continue;
+
+        int structureType = _structureTypes->getInt(seedAtomIndex);
+        Cluster* cluster = startNewCluster(seedAtomIndex, structureType);
+
+        {
+            double* qdat = _ptmOrientation->dataFloat() + seedAtomIndex * 4;
+            Quaternion q(qdat[0], qdat[1], qdat[2], qdat[3]);
+            q.normalize();
+
+            Vector3 ex(1.0,0.0,0.0), ey(0.0,1.0,0.0), ez(0.0,0.0,1.0);
+            Matrix3 R;
+            R.column(0) = q * ex;
+            R.column(1) = q * ey;
+            R.column(2) = q * ez;
+            cluster->orientation = R;
+        }
+
+        std::deque<int> atomsToVisit{ int(seedAtomIndex) };
+        growClusterPTM(cluster, atomsToVisit, structureType);
+    }
+
+    reorientAtomsToAlignClusters();
+    return true;
+}
+
+void StructureAnalysis::growClusterPTM(
+    Cluster* cluster,
+    std::deque<int>& atomsToVisit,
+    int structureType
+){
+    const auto& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
+    const auto& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
+
+    while(!atomsToVisit.empty()){
+        int currentAtom = atomsToVisit.front();
+        atomsToVisit.pop_front();
+
+        int permIndex = _atomSymmetryPermutations->getInt(currentAtom);
+        const auto& permutation = latticeStructure.permutations[permIndex].permutation;
+
+        for(int ni = 0; ni < coordStructure.numNeighbors; ++ni){
+            int nbr = getNeighbor(currentAtom, ni);
+            if(nbr < 0 || nbr == currentAtom) continue;
+            if(_atomClusters->getInt(nbr) != 0) continue;
+            if(_structureTypes->getInt(nbr) != structureType) continue;
+
+            bool properOverlap = true;
+            Matrix3 tm1, tm2;
+            for(int j = 0; j < 3; ++j){
+                int ai;
+                if(j != 2){
+                    ai = getNeighbor(currentAtom, coordStructure.commonNeighbors[ni][j]);
+                    tm1.column(j) = latticeStructure.latticeVectors[permutation[coordStructure.commonNeighbors[ni][j]]
+						] - latticeStructure.latticeVectors[permutation[ni]];
+                }else{
+                    ai = currentAtom;
+                    tm1.column(j) =-latticeStructure.latticeVectors[permutation[ni]];
+                }
+
+                if(numberOfNeighbors(nbr) != coordStructure.numNeighbors){
+                    properOverlap = false;
+                    break;
+                }
+                int k = findNeighbor(nbr, ai);
+                if(k == -1){
+                    properOverlap = false;
+                    break;
+                }
+                tm2.column(j) =latticeStructure.latticeVectors[k];
+            }
+            if(!properOverlap) continue;
+
+            if(std::abs(tm1.determinant()) < EPSILON) continue;
+            Matrix3 tm2inv;
+            if(!tm2.inverse(tm2inv)) continue;
+
+            Matrix3 transition = tm1 * tm2inv;
+
+            for(size_t pi = 0; pi < latticeStructure.permutations.size(); ++pi){
+                if(transition.equals(latticeStructure.permutations[pi].transformation,CA_TRANSITION_MATRIX_EPSILON)){
+                    _atomClusters->setInt(nbr, cluster->id);
+                    cluster->atomCount++;
+                    _atomSymmetryPermutations->setInt(nbr, int(pi));
+                    atomsToVisit.push_back(nbr);
+                    break;
+                }
+            }
+        }
+    }
 }
 
 Cluster* StructureAnalysis::startNewCluster(int atomIndex, int structureType){
@@ -211,6 +449,9 @@ void StructureAnalysis::reorientAtomsToAlignClusters(){
 }
 
 bool StructureAnalysis::buildClusters(){
+	if(_identificationMode == StructureAnalysis::Mode::PTM){
+		return buildClustersPTM();
+	}
 	for(size_t seedAtomIndex = 0; seedAtomIndex < positions()->size(); seedAtomIndex++){
 		if(shouldSkipSeed(seedAtomIndex)) continue;
 
@@ -382,7 +623,7 @@ void StructureAnalysis::processDefectCluster(Cluster* defectCluster){
 			if(t2->cluster2->structure != _inputCrystalType || t2->distance != 1) continue;
 			if(t2->cluster2 == t->cluster2) continue;
 
-			const LatticeStructure& lattice = _coordStructures.latticeStructure(t2->cluster2->structure);
+			const LatticeStructure& lattice = CoordinationStructures::latticeStructure(t2->cluster2->structure);
 			Matrix3 misorientation = t2->tm * t->reverse->tm;
 
 			for(const auto& sym : lattice.permutations){

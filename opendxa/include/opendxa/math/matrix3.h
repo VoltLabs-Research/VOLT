@@ -108,6 +108,10 @@ public:
 		return column(0).data();
 	}
 
+	const element_type* elements() const {
+		return column(0).data();
+	}
+
 	void setZero() {
 		(*this)[0].setZero();
 		(*this)[1].setZero();

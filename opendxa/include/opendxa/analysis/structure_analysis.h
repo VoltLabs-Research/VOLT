@@ -9,6 +9,7 @@
 #include <opendxa/structures/coordination_structure.h>
 #include <opendxa/structures/lattice_structure.h>
 #include <opendxa/core/coordination_structures.h>
+#include <opendxa/analysis/polyhedral_template_matching.h>
 
 namespace OpenDXA{
 
@@ -32,6 +33,15 @@ public:
 	bool buildClusters();
 	bool connectClusters();
 	bool formSuperClusters();
+	bool determineLocalStructuresWithPTM();
+	void computeMaximumNeighborDistanceFromPTM();
+	void growClusterPTM(
+		Cluster* cluster,
+		std::deque<int>& atomsToVisit,
+		int structureType
+	);
+
+	bool buildClustersPTM();
 
 	int atomCount() const{
 		return positions()->size();
@@ -139,6 +149,9 @@ private:
 	LatticeStructureType _inputCrystalType;
 	ParticleProperty* _positions; 
 	ParticleProperty* _structureTypes; 
+	std::shared_ptr<ParticleProperty> _ptmRmsd; 
+	std::shared_ptr<ParticleProperty> _ptmOrientation; 
+	std::shared_ptr<ParticleProperty> _ptmDeformationGradient; 
 	std::shared_ptr<ParticleProperty> _neighborLists; 
 	std::shared_ptr<ParticleProperty> _atomClusters;
 	std::shared_ptr<ParticleProperty> _atomSymmetryPermutations; 

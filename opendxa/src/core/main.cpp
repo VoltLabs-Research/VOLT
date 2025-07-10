@@ -38,7 +38,7 @@ int main(int argc, char* argv[]){
     analyzer.setMaxTrialCircuitSize(circuitSize);
     analyzer.setCircuitStretchability(elongation);
     analyzer.setOnlyPerfectDislocations(perfectOnly);
-    analyzer.setIdentificationMode(OpenDXA::StructureAnalysis::Mode::CNA);
+    analyzer.setIdentificationMode(OpenDXA::StructureAnalysis::Mode::PTM);
 
     std::string outputFile;
     if(!jsonOutput.empty()){
