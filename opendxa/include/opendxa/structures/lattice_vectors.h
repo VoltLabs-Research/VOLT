@@ -4,83 +4,52 @@
 
 namespace OpenDXA{
 
-// TODO: inline constexpr
+// In a perfect crystal, each atom has a fixed set of nearest-neighbor
+// directions. These static arrays list those unit vectors (up to a scale factor) for
+// common lattices so we can compare against simulation data.
+// All coordinates are given in fractional units of the lattice constants.
+
+// Twelve face-centered cubic neighbor directions, pointing from
+// one atom toward the centers of its 12 nearest-neighbor atoms.
 inline const Vector3 FCC_VECTORS[] = {
-    Vector3( 0.5,  0.5,  0.0),
-    Vector3( 0.0,  0.5,  0.5),
-    Vector3( 0.5,  0.0,  0.5),
-    Vector3(-0.5, -0.5,  0.0),
-    Vector3( 0.0, -0.5, -0.5),
-    Vector3(-0.5,  0.0, -0.5),
-    Vector3(-0.5,  0.5,  0.0),
-    Vector3( 0.0, -0.5,  0.5),
-    Vector3(-0.5,  0.0,  0.5),
-    Vector3( 0.5, -0.5,  0.0),
-    Vector3( 0.0,  0.5, -0.5),
-    Vector3( 0.5,  0.0, -0.5)
+    { 0.5,  0.5,  0.0}, { 0.0,  0.5,  0.5}, { 0.5,  0.0,  0.5},
+    {-0.5, -0.5,  0.0}, { 0.0, -0.5, -0.5}, {-0.5,  0.0, -0.5},
+    {-0.5,  0.5,  0.0}, { 0.0, -0.5,  0.5}, {-0.5,  0.0,  0.5},
+    { 0.5, -0.5,  0.0}, { 0.0,  0.5, -0.5}, { 0.5,  0.0, -0.5}
 };
 
+// Eighteen hexagonal, close-packed neighbor vectors carefully choosen so that each
+// atom's 12 nearest neighbors plust next nearest neighbors lie along these fixed directions
+// in the ideal HCP lattice.
 inline const Vector3 HCP_VECTORS[] = {
-    Vector3(sqrt(2.0)/4.0, -sqrt(6.0)/4.0, 0.0),
-    Vector3(-sqrt(2.0)/2.0, 0.0, 0.0),
-    Vector3(-sqrt(2.0)/4.0, sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-    Vector3(sqrt(2.0)/4.0, sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-    Vector3(0.0, -sqrt(6.0)/6.0, -sqrt(3.0)/3.0),
-    Vector3(-sqrt(2.0)/4.0, sqrt(6.0)/4.0, 0.0),
-    Vector3(sqrt(2.0)/4.0, sqrt(6.0)/4.0, 0.0),
-    Vector3(sqrt(2.0)/2.0, 0.0, 0.0),
-    Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/4.0, 0.0),
-    Vector3(0.0, -sqrt(6.0)/6.0, sqrt(3.0)/3.0),
-    Vector3(sqrt(2.0)/4.0, sqrt(6.0)/12.0, sqrt(3.0)/3.0),
-    Vector3(-sqrt(2.0)/4.0, sqrt(6.0)/12.0, sqrt(3.0)/3.0),
-    Vector3(0.0, sqrt(6.0)/6.0, sqrt(3.0)/3.0),
-    Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-    Vector3(sqrt(2.0)/4.0, -sqrt(6.0)/12.0, sqrt(3.0)/3.0),
-    Vector3(0.0, sqrt(6.0)/6.0, -sqrt(3.0)/3.0),
-    Vector3(sqrt(2.0)/4.0, -sqrt(6.0)/12.0, -sqrt(3.0)/3.0),
-    Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/12.0, sqrt(3.0)/3.0)
+    { sqrt(2.0)/4.0, -sqrt(6.0)/4.0,  0.0 }, { -sqrt(2.0)/2.0,  0.0,             0.0 },
+    { -sqrt(2.0)/4.0,  sqrt(6.0)/12.0, -sqrt(3.0)/3.0 }, { sqrt(2.0)/4.0,  sqrt(6.0)/12.0, -sqrt(3.0)/3.0 },
+    { 0.0,            -sqrt(6.0)/6.0,  -sqrt(3.0)/3.0 }, { -sqrt(2.0)/4.0,  sqrt(6.0)/4.0,   0.0 },
+    { sqrt(2.0)/4.0,   sqrt(6.0)/4.0,   0.0 },           { sqrt(2.0)/2.0,   0.0,             0.0 },
+    { -sqrt(2.0)/4.0, -sqrt(6.0)/4.0,   0.0 },           { 0.0,            -sqrt(6.0)/6.0,   sqrt(3.0)/3.0 },
+    { sqrt(2.0)/4.0,   sqrt(6.0)/12.0,  sqrt(3.0)/3.0 },  { -sqrt(2.0)/4.0,  sqrt(6.0)/12.0,  sqrt(3.0)/3.0 },
+    { 0.0,             sqrt(6.0)/6.0,   sqrt(3.0)/3.0 },  { -sqrt(2.0)/4.0, -sqrt(6.0)/12.0, -sqrt(3.0)/3.0 },
+    { sqrt(2.0)/4.0,  -sqrt(6.0)/12.0,  sqrt(3.0)/3.0 },  { 0.0,             sqrt(6.0)/6.0,  -sqrt(3.0)/3.0 },
+    { sqrt(2.0)/4.0,  -sqrt(6.0)/12.0, -sqrt(3.0)/3.0 },  { -sqrt(2.0)/4.0, -sqrt(6.0)/12.0,  sqrt(3.0)/3.0 }
 };
 
+// Fourteen body-centered cubic directions, combining the 8 corner-to-body
+// vectors and the 6 face-to-center vectors that defines the BCC packing
 inline const Vector3 BCC_VECTORS[] = {
-    Vector3( 0.5,  0.5,  0.5),
-    Vector3(-0.5,  0.5,  0.5),
-    Vector3( 0.5,  0.5, -0.5),
-    Vector3(-0.5, -0.5,  0.5),
-    Vector3( 0.5, -0.5,  0.5),
-    Vector3(-0.5,  0.5, -0.5),
-    Vector3(-0.5, -0.5, -0.5),
-    Vector3( 0.5, -0.5, -0.5),
-    Vector3( 1.0,  0.0,  0.0),
-    Vector3(-1.0,  0.0,  0.0),
-    Vector3( 0.0,  1.0,  0.0),
-    Vector3( 0.0, -1.0,  0.0),
-    Vector3( 0.0,  0.0,  1.0),
-    Vector3( 0.0,  0.0, -1.0)
+    { 0.5,  0.5,  0.5}, {-0.5,  0.5,  0.5}, { 0.5,  0.5, -0.5}, {-0.5, -0.5,  0.5},
+    { 0.5, -0.5,  0.5}, {-0.5,  0.5, -0.5}, {-0.5, -0.5, -0.5}, { 0.5, -0.5, -0.5},
+    { 1.0,  0.0,  0.0}, {-1.0,  0.0,  0.0}, { 0.0,  1.0,  0.0}, { 0.0, -1.0,  0.0},
+    { 0.0,  0.0,  1.0}, { 0.0,  0.0, -1.0}
 };
 
+// Twenty common neighbor directions in the cubic diamond (zinc‐blende)
+// structure, combining both tetrahedral bonds and the underlying fcc frame.
 inline const Vector3 DIAMOND_CUBIC_VECTORS[] = {
-    Vector3(0.25, 0.25, 0.25),
-    Vector3(0.25, -0.25, -0.25),
-    Vector3(-0.25, -0.25, 0.25),
-    Vector3(-0.25, 0.25, -0.25),
-
-    Vector3(0, -0.5, 0.5),
-    Vector3(0.5, 0.5, 0),
-    Vector3(-0.5, 0, 0.5),
-    Vector3(-0.5, 0.5, 0),
-    Vector3(0, 0.5, 0.5),
-    Vector3(0.5, -0.5, 0),
-    Vector3(0.5, 0, 0.5),
-    Vector3(0.5, 0, -0.5),
-    Vector3(-0.5, -0.5, 0),
-    Vector3(0, -0.5, -0.5),
-    Vector3(0, 0.5, -0.5),
-    Vector3(-0.5, 0, -0.5),
-
-    Vector3(0.25, -0.25, 0.25),
-    Vector3(0.25, 0.25, -0.25),
-    Vector3(-0.25, 0.25, 0.25),
-    Vector3(-0.25, -0.25, -0.25)
+    { 0.25,  0.25,  0.25}, { 0.25, -0.25, -0.25}, {-0.25, -0.25,  0.25}, {-0.25,  0.25, -0.25},
+    { 0.0,  -0.5,   0.5},  { 0.5,   0.5,   0.0},  {-0.5,   0.0,   0.5}, {-0.5,   0.5,   0.0},
+    { 0.0,   0.5,   0.5},  { 0.5,  -0.5,   0.0},  { 0.5,   0.0,   0.5}, { 0.5,   0.0,  -0.5},
+    {-0.5,  -0.5,   0.0},  { 0.0,  -0.5,  -0.5}, { 0.0,   0.5,  -0.5}, {-0.5,   0.0,  -0.5},
+    { 0.25, -0.25,  0.25}, { 0.25,  0.25, -0.25}, {-0.25,  0.25,  0.25}, {-0.25, -0.25, -0.25}
 };
 
 inline const Vector3 DIAMOND_HEX_VECTORS[] = {
@@ -123,13 +92,9 @@ inline const Vector3 DIAMOND_HEX_VECTORS[] = {
     Vector3(-sqrt(2.0)/4.0, -sqrt(6.0)/12.0, sqrt(3.0)/3.0)
 };
 
-// In a crystal lattice, any position vector "r" in the lattice 
-// can be described as an integer linear combination of three 
-// linearly independent vectors a1, a2, a3:
-// Then, r = n1 * a1 + n2 * a2 + n3 * a3.
-// These "a1, a2, ... ai" are the generating vectors of the 
-// primitive cell and define the shape and minimum volume that 
-// is repeated periodically to form the entire network.
+// Any lattice can also be defined by its primitive cell basis vectors,
+// which generate the full lattice by integer combinations. Below are
+// the three vectors for each lattice, given in the same fractional units.
 inline const Vector3 FCC_PRIMITIVE_CELL[3] = {
     {0.5, 0.5, 0.0},
     {0.0, 0.5, 0.5},
