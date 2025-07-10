@@ -19,6 +19,7 @@
 
 namespace OpenDXA {
 
+// TODO: Check duplicated code
 LatticeStructureType ptmTypeToLatticeType(PTM::StructureType ptmType) {
     switch (ptmType) {
         case PTM::StructureType::FCC: return LATTICE_FCC;
@@ -65,6 +66,12 @@ StructureAnalysis::StructureAnalysis(ParticleProperty* positions, const Simulati
     std::fill(_structureTypes->dataInt(), _structureTypes->dataInt() + _structureTypes->size(), LATTICE_OTHER);
 }
 
+// Runs the Polyhedral Template Matching (PTM) algorithm on every atom,
+// collects raw RMSD values (with no initial cutoff), then computes
+// an adaptive threshold (95th percentile of the distribution, clamped to a minimum)
+// and finally reruns structure identification keeping only those whose 
+// RMSD <= threshold. We store per-atom orientation quaternions and
+// deformation gradients for all "good" matches.
 bool StructureAnalysis::determineLocalStructuresWithPTM() {
     const size_t N = positions()->size();
     if (N == 0) return true;
@@ -80,12 +87,17 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
     // instead of using a fixed or arbitrary value.
     ptm.setRmsdCutoff(std::numeric_limits<double>::infinity());
 
-    if (!ptm.prepare(positions()->constDataPoint3(), N, cell())) return false;
+    // Build the neighborhood search structures
+    if(!ptm.prepare(positions()->constDataPoint3(), N, cell())){
+        return false;
+    }
 
+    // Allocate space to record every atom's RMSD
     _ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Float, 1, 0.0f, "PTM_RMSD", true);
     std::vector<uint64_t> cached(N, 0ull);
     std::vector<PTM::StructureType> ptm_types(N);
 
+    // First pass, compute raw RMSD and provisional type for each atom
     tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto& r) {
         PTM::Kernel kernel(ptm);
         for (size_t i = r.begin(); i < r.end(); ++i) {
@@ -95,6 +107,7 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
         }
     });
 
+    // Gather RMSD values into a vector for percentile calculation
     std::vector<float> v(_ptmRmsd->dataFloat(), _ptmRmsd->dataFloat() + N);
     if(!v.empty()){
         // By calculating the 95th percentile of the RMSD distribution, we 
@@ -110,12 +123,15 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
 
         std::cout << "PTM auto-cutoff (95th percentile): " << autoCutoff << ", using finalCutoff = " << finalCutoff << std::endl;
 
+        // Allocate output arrays only once we know the cutoff
         _ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Float, 4, 0.0f, "PTM_Orientation", true);
         _ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Float, 9, 0.0f, "PTM_DeformationGradient", true);
 
+        // Clear neighbor lists and sctructures types for the second pass
         std::fill(_neighborLists->dataInt(), _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
         std::fill(_structureTypes->dataInt(), _structureTypes->dataInt() + _structureTypes->size(), LATTICE_OTHER);
 
+        // Second pass, only keep atoms whose RMSD <= finalCutoff
         tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto& r) {
             PTM::Kernel kernel(ptm);
             for (size_t i = r.begin(); i < r.end(); ++i) {
@@ -123,21 +139,27 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
                 float rmsd = _ptmRmsd->getFloat(i);
                 if (type != PTM::StructureType::OTHER && rmsd <= finalCutoff) {
                     kernel.identifyStructure(i, cached);
-
+                    
+                    // Store neighbor indices
                     int nn = kernel.numTemplateNeighbors();
                     assert(nn <= _neighborLists->componentCount());
                     for (int j = 0; j < nn; ++j) {
                         _neighborLists->setIntComponent(i, j, kernel.getTemplateNeighbor(j).index);
                     }
+
+                    // Map PTM structure enum to our lattice types
                     _structureTypes->setInt(i, ptmTypeToLatticeType(type));
 
+                    // Save orientation quaternion
                     auto quaternion = kernel.orientation();
                     double* orientation = _ptmOrientation->dataFloat() + 4 * i;
                     orientation[0] = static_cast<float>(quaternion.x());
                     orientation[1] = static_cast<float>(quaternion.y());
                     orientation[2] = static_cast<float>(quaternion.z());
                     orientation[3] = static_cast<float>(quaternion.w());
-
+                    
+                    // Save 3x3 deformation gradient
+                    // TODO: I think we can use this value in Elastic Mapping or in some other step after the structural analysis.
                     const auto& F = kernel.deformationGradient();
                     double* F_dest = _ptmDeformationGradient->dataFloat() + 9 * i;
                     const double* F_src = F.elements();
@@ -152,19 +174,18 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
     return true;
 }
 
-// Using the neighbor lists generated by the PTM, calculate the maximum 
-// distance between an atom and its neighbors. This value serves as 
-// a reliable search radius for subsequent phases of the algorithm, for example:
-// InterfaceMesh: Determines the distance to join nodes when creating the interface mesh.
-// Delaunay Tessellation: Defines the size of the "ghost layer" (ghostLayerSize),
-// i.e., how far beyond the boundaries of the simulation cell atoms should be replicated 
-// to ensure the Delaunay tessellation correctly incorporates neighbors at the boundaries.
+/// Once we have neighbor lists from PTM, find the single largest atom‐to‐neighbor
+/// distance (respecting periodic wrapping).  This maximum sets a safe "search radius"
+/// for all later routines (e.g. ghost‐layer size in Delaunay, node‐connect threshold in
+/// mesh building) so we reliably include every bond in subsequent stages.
 void StructureAnalysis::computeMaximumNeighborDistanceFromPTM() {
     const size_t N = positions()->size();
     if (N == 0) {
         _maximumNeighborDistance = 0.0;
         return;
     }
+
+    // Shortcut to data pointers and cell matrices
     const int M = _neighborLists->componentCount();
     const auto* pos = positions()->constDataPoint3();
     const auto& invMat = cell().inverseMatrix();
@@ -175,6 +196,8 @@ void StructureAnalysis::computeMaximumNeighborDistanceFromPTM() {
         for (int j = 0; j < M; ++j) {
             int nb = _neighborLists->getIntComponent(i, j);
             if (nb < 0) break;
+
+            // Compute wrapped displacement
             Vector3 delta = pos[nb] - pos[i];
             double f[3];
             for (int d = 0; d < 3; ++d) {
@@ -182,6 +205,7 @@ void StructureAnalysis::computeMaximumNeighborDistanceFromPTM() {
                 f[d] -= std::round(f[d]);
             }
 
+            // Back to cartesian
             Vector3 mind;
             mind = dirMat.column(0) * f[0];
             mind += dirMat.column(1) * f[1];

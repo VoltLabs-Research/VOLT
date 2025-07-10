@@ -107,7 +107,6 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     
     // JSON object for the output. We'll fill in errors or results as we go.
     json result;
-    result["is_failed"] = false;
 
     // If there are no atoms or no positions, we cannot proceed.
     // We short-circuit here to avoid wasting CPU.
@@ -327,6 +326,10 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         result["is_failed"] = true;
         result["error"] = e.what();
         return result;
+    }
+
+    if(!result.contains("is_failed")){
+        result["is_failed"] = false;
     }
 
     if(!jsonOutputFile.empty()){
