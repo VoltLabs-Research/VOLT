@@ -4,6 +4,9 @@
 
 namespace OpenDXA{
 
+// Parse a LAMMPS dump file into a Frame structure.
+// Opens the given filename for input and hands the resulting stream to parseStream().
+// If the file cannot be opened, reports an error and returns false.
 bool LammpsParser::parseFile(const std::string &filename, Frame &frame){
     std::ifstream file(filename);
     if(!file.is_open()){
@@ -14,6 +17,9 @@ bool LammpsParser::parseFile(const std::string &filename, Frame &frame){
     return parseStream(file, frame);
 }
 
+// Parse a LAMMPS dump from any input stream.
+// Return header lines, box bounds, and atom data in sequence.
+// If any stage fails, the function aborts and returns false.
 bool LammpsParser::parseStream(std::istream &in, Frame &frame){
     if(!readHeader(in, frame)) return false;
     if(!readBoxBounds(in, frame)) return false;
@@ -22,19 +28,26 @@ bool LammpsParser::parseStream(std::istream &in, Frame &frame){
     return true;
 }
 
+// Read and validate the LAMMPS dump header.
+// Expects an "ITEM: TIMESTEP" line followed by the timestep number,
+// then "ITEM: NUMBER OF ATOMS" and the atom count. Reserves spaces in 
+// the frame's vectors for positions, types and IDs.
 bool LammpsParser::readHeader(std::istream &in, Frame &f) {
     std::string line;
+    // Expect "ITEM: TIMESTEP"
     if(!std::getline(in, line) || line.find("ITEM: TIMESTEP") == std::string::npos){
         return false;
     }
 
+    // Next line is the timestep integer
     std::getline(in, line);
     f.timestep = std::stoi(line);
     
-    // ITEM: NUMBER OF ATOMS
+    // Skip "ITEM: NUMBER OF ATOMS" and read the atom count
     std::getline(in, line);
     std::getline(in, line);
     
+    // Reserve vectors to avoid reallocations
     f.natoms = std::stoi(line);
     f.positions.reserve(f.natoms);
     f.types.reserve(f.natoms);
@@ -43,12 +56,18 @@ bool LammpsParser::readHeader(std::istream &in, Frame &f) {
     return true;
 }
 
+// Read the simulation cell bounds including periodicity flags.
+// Parses "ITEM: BOX BOUNDS" header token to detect pp/ps flags,
+// then reads three lines of lower and upper bounds, optionally with
+// tilt for triciclic cells Constructs an AffineTransformation
+// for the box matrix and sets PBC flags on the frame.
 bool LammpsParser::readBoxBounds(std::istream &in, Frame &f){
     std::string line;
     if(!std::getline(in, line) || line.find("ITEM: BOX BOUNDS") == std::string::npos){
         return false;
     }
 
+    // Tokenize header to extract "pp" flags for each axis
     std::istringstream hdr(line);
     std::vector<std::string> hdrTokens;
     std::string tok;
@@ -58,6 +77,7 @@ bool LammpsParser::readBoxBounds(std::istream &in, Frame &f){
 
     bool pbcX = false, pbcY = false, pbcZ = false;
     if(hdrTokens.size() >= 6){
+        // Las three tokens indicate periodicity on x, y, z axes
         pbcX = (hdrTokens[hdrTokens.size()-3] == "pp");
         pbcY = (hdrTokens[hdrTokens.size()-2] == "pp");
         pbcZ = (hdrTokens[hdrTokens.size()-1] == "pp");
@@ -79,6 +99,7 @@ bool LammpsParser::readBoxBounds(std::istream &in, Frame &f){
         // If no tilt factor, it remains 0.0 (orthogonal box)
     }
 
+    // Adjust min/max for triclinic tilf offsets
     Point3 minc(lo[0], lo[1], lo[2]);
     Point3 maxc(hi[0], hi[1], hi[2]);
 
@@ -92,6 +113,7 @@ bool LammpsParser::readBoxBounds(std::istream &in, Frame &f){
     minc.y() -= std::min(t2, 0.0);
     maxc.y() -= std::max(t2, 0.0);
 
+    // Build the cell matrix columns a, b, c and origin shift
     Vector3 a(maxc.x() - minc.x(), 0.0, 0.0);
     Vector3 b(tilt[0], maxc.y() - minc.y(), 0.0);
     Vector3 c(tilt[1], tilt[2], maxc.z() - minc.z());
@@ -104,6 +126,11 @@ bool LammpsParser::readBoxBounds(std::istream &in, Frame &f){
     return true;
 }
 
+// Read per-atom data lines into the Frame.
+// Expects "ITEM: ATOMS" followed by columns headers (e.g. id, type, x, y, z or xs, ys, zs).
+// Determines which columns, refer to ID, type, and positions. Reads each line,
+// converts fractional to Cartesian if needed, an stores id/type/position. Finally,
+// sorts atoms by (x, y, z) to ensure deterministic ordering.
 bool LammpsParser::readAtomData(std::istream &in, Frame &f){
     std::string line;
     if(!std::getline(in, line) || line.find("ITEM: ATOMS") == std::string::npos){
@@ -189,6 +216,9 @@ bool LammpsParser::readAtomData(std::istream &in, Frame &f){
     return true;
 }
 
+// Split the "IMTE: ATOMS ..." header into column names.
+// Takes the full header line, tokenizes it, and returns only the
+// column identifiers that follow "ITEM:" and "ATOMS".
 std::vector<std::string> LammpsParser::parseColumns(const std::string &line){
     std::istringstream ss(line);
     std::vector<std::string> cols;
@@ -200,7 +230,9 @@ std::vector<std::string> LammpsParser::parseColumns(const std::string &line){
     return {};
 }
 
-
+// Find the index of a given column name in the column list.
+// Scans the vector of column names and returns the zero-based index
+// if found; returns -1 if the name is not present.
 int LammpsParser::findColumn(const std::vector<std::string> &cols, const std::string &name){
     for(size_t i = 0; i < cols.size(); ++i){
         if(cols[i] == name) return (int) i;
