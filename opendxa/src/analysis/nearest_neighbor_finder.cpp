@@ -21,7 +21,6 @@ double NearestNeighborFinder::minimumDistance(TreeNode* node, const Point3& quer
     return minDistance * minDistance;
 }
 
-
 template<int MAX_NEIGHBORS_LIMIT>
 void NearestNeighborFinder::Query<MAX_NEIGHBORS_LIMIT>::findNeighbors(const Point3& query_point, bool includeSelf){
     queue.clear();

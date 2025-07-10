@@ -28,6 +28,12 @@ BurgersCircuit* DislocationTracer::allocateCircuit(){
     return circuit;
 }
 
+// It traverses the atomic bond mesh, searching for closed paths (Burgers loops) that represent 
+// dislocations. It first explores neighbors until basic loops (called primaries) are found 
+// using a plug-in-type scan (BFS). It then refines each loop by attempting to trim or lengthen 
+// its edges to fit the mesh contour. It finally joins dangling fragments and forms junctions 
+// where several loops intersect. Upon completion, each dislocation segment is defined as a 
+// line of points that faithfully follows the topology of the crystal structure.
 bool DislocationTracer::traceDislocationSegments(){
     mesh().clearFaceFlag(0);
     std::vector<DislocationNode*> dangling;
@@ -211,6 +217,15 @@ bool DislocationTracer::findPrimarySegments(int maxBurgersCircuitSize){
     return true;
 }
 
+// Starts at the point where two partial paths of the mesh have collided—two paths that lead to 
+// the same atom—and joins them together to form a true “Burgers loop.” To do this, it follows 
+// each of those two paths back until they meet, connects their edges in the correct order, and 
+// closes the loop. It then verifies that the sum of all the physical and crystallographic displacements 
+// along that circuit equals zero (that is, that it truly closes without producing jumps), and also checks 
+// that it doesn’t overlap with other existing loops or cross periodic boundaries incorrectly. If it 
+// passes all these tests, it converts the loop into a new dislocation segment—a small dotted line 
+// that is then refined and extended—and if not, it undoes the layout and discards that circuit. 
+// This accurately captures every real Burgers loop in the crystal and prepares it for dislocation analysis.
 bool DislocationTracer::createBurgersCircuit(InterfaceMesh::Edge* edge, int maxBurgersCircuitSize){
 	assert(edge->circuit == nullptr);
 
