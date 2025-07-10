@@ -97,6 +97,7 @@ set(LIBRARY_SOURCES
     src/analysis/nearest_neighbor_finder.cpp
     src/analysis/crystal_path_finder.cpp
     src/analysis/dislocation_tracer.cpp
+    src/analysis/polyhedral_template_matching.cpp
     src/analysis/elastic_mapping.cpp
     src/analysis/structure_analysis.cpp
     src/analysis/common_neighbor_analysis.cpp
@@ -125,7 +126,7 @@ target_include_directories(opendxa_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/dependencies/geogram
     ${EIGEN3_INCLUDE_DIR}
-    ${CMAKE_SOURCE_DIR}/dependencies/ptm/include
+    ${CMAKE_SOURCE_DIR}/dependencies/ptm
     ${CMAKE_SOURCE_DIR}/dependencies/pybind11_json/include
 )
 
@@ -175,7 +176,7 @@ target_include_directories(opendxa._core PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/dependencies/geogram
     ${EIGEN3_INCLUDE_DIR}
-    ${CMAKE_SOURCE_DIR}/dependencies/ptm/include
+    ${CMAKE_SOURCE_DIR}/dependencies/ptm
     ${CMAKE_SOURCE_DIR}/dependencies/pybind11_json/include
     ${BINDINGS_ROOT}/include
 )

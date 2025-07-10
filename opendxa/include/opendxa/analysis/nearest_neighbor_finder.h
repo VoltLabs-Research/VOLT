@@ -8,7 +8,7 @@
 
 namespace OpenDXA{
 class NearestNeighborFinder{
-private:
+protected:
 	struct NeighborListAtom{
 		NeighborListAtom* nextInBin;
 		Point3 pos;
@@ -60,7 +60,8 @@ public:
 	class Query{
 	public:
 		Query(const NearestNeighborFinder& finder) : t(finder), queue(finder.numNeighbors) {}
-
+		void findNeighbors(size_t particleIndex, bool includeSelf);
+		void findNeighbors(const Point3& query_point, bool includeSelf);
 		void findNeighbors(size_t particleIndex);
 		void findNeighbors(const Point3& query_point);
 
@@ -68,6 +69,7 @@ public:
 
 	private:
 		void visitNode(TreeNode* node);
+		void visitNode(TreeNode* node, bool includeSelf);
 
 	private:
 		const NearestNeighborFinder& t;
@@ -75,7 +77,7 @@ public:
 		BoundedPriorityQueue<Neighbor, std::less<Neighbor>, MAX_NEIGHBORS_LIMIT> queue;
 	};
 
-private:
+protected:
 	void insertParticle(NeighborListAtom* atom, const Point3& p, TreeNode* node, int depth);
 	void splitLeafNode(TreeNode* node, int splitDim);
 

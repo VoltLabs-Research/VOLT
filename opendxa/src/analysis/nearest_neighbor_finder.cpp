@@ -21,6 +21,57 @@ double NearestNeighborFinder::minimumDistance(TreeNode* node, const Point3& quer
     return minDistance * minDistance;
 }
 
+
+template<int MAX_NEIGHBORS_LIMIT>
+void NearestNeighborFinder::Query<MAX_NEIGHBORS_LIMIT>::findNeighbors(const Point3& query_point, bool includeSelf){
+    queue.clear();
+    for(const Vector3& pbcShift : t.pbcImages){
+        q = query_point - pbcShift;
+        if(!queue.full() || queue.top().distanceSq > t.minimumDistance(t.root, q)){
+            qr = t.simCell.absoluteToReduced(q);
+            visitNode(t.root, includeSelf); // Pasar el flag
+        }
+    }
+    queue.sort();
+}
+
+template<int MAX_NEIGHBORS_LIMIT>
+void NearestNeighborFinder::Query<MAX_NEIGHBORS_LIMIT>::findNeighbors(size_t particleIndex, bool includeSelf){
+    findNeighbors(t.particlePos(particleIndex), includeSelf);
+}
+
+template<int MAX_NEIGHBORS_LIMIT>
+void NearestNeighborFinder::Query<MAX_NEIGHBORS_LIMIT>::visitNode(TreeNode* node, bool includeSelf){
+    if(node->isLeaf()){
+        for(NeighborListAtom* atom = node->atoms; atom != nullptr; atom = atom->nextInBin){
+            Neighbor n;
+            n.delta = atom->pos - q;
+            n.distanceSq = n.delta.squaredLength();
+            // Lógica para incluir o no el átomo central
+            if(includeSelf || n.distanceSq != 0){
+                n.atom = atom;
+                n.index = atom - &t.atoms.front();
+                queue.insert(n);
+            }
+        }
+    }else{
+        TreeNode* cnear;
+        TreeNode* cfar;
+        if(qr[node->splitDim] < node->splitPos){
+            cnear = node->children[0];
+            cfar  = node->children[1];
+        }else{
+            cnear = node->children[1];
+            cfar  = node->children[0];
+        }
+        visitNode(cnear, includeSelf); 
+
+        if(!queue.full() || queue.top().distanceSq > t.minimumDistance(cfar, q)){
+            visitNode(cfar, includeSelf); 
+        }
+    }
+}
+
 void NearestNeighborFinder::TreeNode::convertToAbsoluteCoordinates(const SimulationCell& cell){
     bounds.minc = cell.reducedToAbsolute(bounds.minc);
     bounds.maxc = cell.reducedToAbsolute(bounds.maxc);
@@ -268,6 +319,7 @@ bool NearestNeighborFinder::prepare(
 }
 
 template class NearestNeighborFinder::Query<16>;
+template class NearestNeighborFinder::Query<18>;
 template class NearestNeighborFinder::Query<32>;
 template class NearestNeighborFinder::Query<64>;
 template class NearestNeighborFinder::Query<128>;
