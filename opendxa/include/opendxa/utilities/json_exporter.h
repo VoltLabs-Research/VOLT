@@ -31,6 +31,7 @@ public:
         bool includeTopologyInfo = true
     );
 
+    json exportClusterGraphToJson(const ClusterGraph* graph);
     json exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo = false, const SimulationCell* simulationCell = nullptr);
     json getInterfaceMeshData(const InterfaceMesh* interfaceMesh, bool includeTopologyInfo = false);
     json getAtomsData(const LammpsParser::Frame& frame, const BurgersLoopBuilder* tracer, const std::vector<int>* structureTypes = nullptr);

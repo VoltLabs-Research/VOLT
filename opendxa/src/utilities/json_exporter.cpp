@@ -25,7 +25,7 @@ json DXAJsonExporter::exportAnalysisData(
     data["dislocations"] = exportDislocationsToJson(network, includeDetailedNetworkInfo, &frame.simulationCell);
     data["interface_mesh"] = getInterfaceMeshData(interfaceMesh, includeTopologyInfo);
     data["atoms"] = getAtomsData(frame, tracer, structureTypes);
-    
+    //data["cluster_graph"] = exportClusterGraphToJson(&network->clusterGraph());
     data["simulation_cell"] = getExtendedSimulationCellInfo(frame.simulationCell);
     
     if(includeDetailedNetworkInfo){
@@ -366,6 +366,52 @@ json DXAJsonExporter::getAtomsData(
     }
 
     return atomsData;
+}
+
+json DXAJsonExporter::exportClusterGraphToJson(const ClusterGraph* graph){
+    json clusterGraphJson;
+
+    clusterGraphJson["metadata"] = {
+        {"type", "cluster_graph"},
+        {"cluster_count", static_cast<int>(graph->clusters().size())},
+        {"transition_count", static_cast<int>(graph->clusterTransitions().size())}
+    };
+
+    json clustersJson = json::array();
+    for (const Cluster* cluster : graph->clusters()) {
+        if (!cluster) continue;
+
+        json clusterJson;
+        clusterJson["id"] = cluster->id;
+        clusterJson["structure"] = cluster->structure;
+        clusterJson["atom_count"] = cluster->atomCount;
+        clusterJson["orientation"] = matrixToJson(cluster->orientation);
+
+        if (cluster->parentTransition) {
+            clusterJson["parent_cluster"] = cluster->parentTransition->cluster2->id;
+        }
+
+        clustersJson.push_back(clusterJson);
+    }
+
+    json transitionsJson = json::array();
+    for (const ClusterTransition* t : graph->clusterTransitions()) {
+        if (!t) continue;
+
+        json transitionJson;
+        transitionJson["cluster1"] = t->cluster1->id;
+        transitionJson["cluster2"] = t->cluster2->id;
+        transitionJson["area"] = t->area;
+        transitionJson["distance"] = t->distance;
+        transitionJson["transformation"] = matrixToJson(t->tm);
+
+        transitionsJson.push_back(transitionJson);
+    }
+
+    clusterGraphJson["clusters"] = clustersJson;
+    clusterGraphJson["transitions"] = transitionsJson;
+
+    return clusterGraphJson;
 }
 
 json DXAJsonExporter::getProcessingTime(){
