@@ -14,7 +14,17 @@ int main(int argc, char* argv[]){
         std::cerr << "Usage: " << argv[0] << " <lammps_file> [output_json]" << std::endl;
         return 1;
     }
-    
+
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_sink_mt>();
+    console_sink->set_level(spdlog::level::debug);
+
+    auto logger = std::make_shared<spdlog::logger>("OpenDXA", console_sink);
+    logger->set_level(spdlog::level::debug);
+
+    spdlog::set_default_logger(logger);
+    spdlog::flush_on(spdlog::level::debug);
+    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] %v");
+
     std::string filename = argv[1];
     std::string jsonOutput = (argc >= 3) ? argv[2] : "";
     

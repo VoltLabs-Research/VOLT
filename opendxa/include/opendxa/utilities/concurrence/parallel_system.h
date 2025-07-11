@@ -26,7 +26,7 @@ public:
     ~PerfomanceProfiler(){
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-        fmt::print("[PROFILE] {} took {} ms \n", operationName, duration.count());
+        spdlog::debug("[PROFILE] {} took {} ms", operationName, duration.count());
     }
 };
 

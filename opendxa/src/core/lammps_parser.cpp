@@ -25,7 +25,7 @@ bool LammpsParser::parseStream(std::istream &in, Frame &frame){
     if(!readBoxBounds(in, frame)) return false;
     if(!readAtomData(in, frame)) return false;
 
-    fmt::print("Parsed {} atoms at timestep {} \n", frame.natoms, frame.timestep);
+    spdlog::debug("Parsed {} atoms at timestep {} ", frame.natoms, frame.timestep);
     
     return true;
 }

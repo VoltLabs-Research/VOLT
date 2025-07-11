@@ -20,7 +20,8 @@
 #include <atomic>
 #include <tuple>
 #include <numeric>
-#include <fmt/core.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_sinks.h>
 
 inline constexpr double EPSILON = 1e-12;
 inline constexpr double DOUBLE_MAX = std::numeric_limits<double>::max();

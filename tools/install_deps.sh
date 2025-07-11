@@ -12,7 +12,7 @@ sudo apt-get install -y \
     libeigen3-dev \
     libtbb-dev \
     libomp-dev \
-    libfmt-dev
+    libspdlog-dev
 
 DEPS_DIR="opendxa/dependencies"
 mkdir -p "$DEPS_DIR"

@@ -5,6 +5,7 @@
 
 namespace OpenDXA::Bindings::Python{
     void bindAllModules(pybind11::module& m);
+    void bindLogging(pybind11::module &m);
 }
 
 #endif

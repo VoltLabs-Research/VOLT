@@ -71,7 +71,7 @@ find_package(Eigen3 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(TBB REQUIRED)
-find_package(fmt REQUIRED)
+find_package(spdlog REQUIRED)
 
 message(STATUS "Eigen3 include: ${EIGEN3_INCLUDE_DIR}")
 message(STATUS "nlohmann_json: ${nlohmann_json_SOURCE_DIR}")
@@ -130,7 +130,7 @@ target_link_libraries(opendxa_lib PUBLIC
     Threads::Threads
     TBB::tbb
     OpenMP::OpenMP_CXX
-    fmt::fmt
+    spdlog::spdlog
 )
 
 # CLI executable
@@ -144,7 +144,7 @@ target_compile_definitions(opendxa PRIVATE
 )
 target_link_libraries(opendxa PRIVATE
     opendxa_lib
-    fmt::fmt
+    spdlog::spdlog
     OpenMP::OpenMP_CXX
 )
 
@@ -152,6 +152,7 @@ target_link_libraries(opendxa PRIVATE
 pybind11_add_module(opendxa._core
     ${BINDINGS_ROOT}/src/main.cpp
     ${BINDINGS_ROOT}/src/bindings/module.cpp
+    ${BINDINGS_ROOT}/src/bindings/python_sink.cpp
     ${BINDINGS_ROOT}/src/bindings/dislocation_analysis.cpp
     ${BINDINGS_ROOT}/src/wrappers/dislocation_analysis.cpp
 )
@@ -162,7 +163,7 @@ set_target_properties(opendxa._core PROPERTIES
     LINK_FLAGS_RELEASE "${LINKER_FAST}"
 )
 
-target_link_libraries(opendxa._core PRIVATE opendxa_lib fmt::fmt)
+target_link_libraries(opendxa._core PRIVATE opendxa_lib spdlog::spdlog)
 target_compile_options(opendxa._core PRIVATE
     $<$<CONFIG:Release>:${RELEASE_CXX_OPTS}>
 )

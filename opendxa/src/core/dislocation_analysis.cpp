@@ -109,7 +109,7 @@ json DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames
 
 json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
     auto start_time = std::chrono::high_resolution_clock::now();
-    fmt::print("Setting up DXA analysis \n");
+    spdlog::debug("Setting up DXA analysis");
 
     ParallelSystem::initialize();
     
@@ -305,7 +305,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     // Wrap the result in a DislocationNetwork for easier post-processing.
     auto networkUptr = std::make_unique<DislocationNetwork>(tracer.network());
-    fmt::print("Found {} dislocation segments \n", networkUptr->segments().size());
+    spdlog::debug("Found {} dislocation segments", networkUptr->segments().size());
 
     // To produce clean output, we smooth both the defect surface mesh and
     // each dislocation line. Without smoothing, visualizations can look jagged.
@@ -313,7 +313,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     defectMesh.smoothVertices(_defectMeshSmoothingLevel);
     networkUptr->smoothDislocationLines(_lineSmoothingLevel, _linePointInterval);
 
-    fmt::print("Defect mesh facets: {} \n", defectMesh.faces().size());
+    spdlog::debug("Defect mesh facets: {} ", defectMesh.faces().size());
     
     double totalLineLength = 0.0;
     const auto& segments = networkUptr->segments();
@@ -329,7 +329,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         }
     }
 
-    fmt::print("Total line length: {} \n", totalLineLength);
+    spdlog::debug("Total line length: {} ", totalLineLength);
 
     // Finally, we serialize all results-mesh, network data, metrics-into JSON. 
     // Any exception here is considered a fatal error in the exporter.
@@ -360,7 +360,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
     result["total_time"] = duration;
 
-    fmt::print("Total time {} ms \n", duration);
+    spdlog::debug("Total time {} ms ", duration);
 
     return result;
 }
@@ -386,7 +386,7 @@ std::shared_ptr<ParticleProperty> DislocationAnalysis::createPositionProperty(co
         data[i] = frame.positions[i];
     }
 
-    fmt::print("Position property created successfully with {} particles \n", property->size());
+    spdlog::debug("Position property created successfully with {} particles ", property->size());
 
     return property;
 }
@@ -413,7 +413,7 @@ bool DislocationAnalysis::validateSimulationCell(const SimulationCell &cell){
         return false;
     }
 
-    fmt::print("Cell volume: {} \n", volume);
+    spdlog::debug("Cell volume: {} ", volume);
     return true;
 }
 
