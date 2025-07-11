@@ -27,6 +27,26 @@ void AnalysisWrapper::setMaxTrialCircuitSize(int size) {
     analyzer->setMaxTrialCircuitSize(size);
 }
 
+void AnalysisWrapper::setMarkCoreAtoms(bool markCoreAtoms){
+    analyzer->setMarkCoreAtoms(markCoreAtoms);
+}
+
+void AnalysisWrapper::setLineSmoothingLevel(int lineSmoothingLevel){
+    analyzer->setLineSmoothingLevel(lineSmoothingLevel);
+}
+
+void AnalysisWrapper::setLinePointInterval(int linePointInterval){
+    analyzer->setLinePointInterval(linePointInterval);
+}
+
+void AnalysisWrapper::setDefectMeshSmoothingLevel(int defectMeshSmoothingLevel){
+    analyzer->setDefectMeshSmoothingLevel(defectMeshSmoothingLevel);
+}
+
+void AnalysisWrapper::setIdentificationMode(int identificationMode){
+    analyzer->setIdentificationMode(static_cast<StructureAnalysis::Mode>(identificationMode));
+}
+
 void AnalysisWrapper::setCircuitStretchability(int stretch) {
     validateStretchability(stretch);
     analyzer->setCircuitStretchability(stretch);

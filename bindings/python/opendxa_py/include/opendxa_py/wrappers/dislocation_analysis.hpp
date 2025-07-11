@@ -30,6 +30,11 @@ public:
     void setMaxTrialCircuitSize(int size);
     void setCircuitStretchability(int stretch);
     void setOnlyPerfectDislocations(bool flag);
+    void setMarkCoreAtoms(bool markCoreAtoms);
+    void setLineSmoothingLevel(int lineSmoothingLevel);
+    void setLinePointInterval(int linePointInterval);
+    void setDefectMeshSmoothingLevel(int defectMeshSmoothingLevel);
+    void setIdentificationMode(int identificationMode);
     json computeTrajectory(const std::vector<std::string>& input_files, const std::string& output_file_template);
 
     // Main computation method

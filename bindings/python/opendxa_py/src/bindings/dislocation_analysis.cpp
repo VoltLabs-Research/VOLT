@@ -39,6 +39,22 @@ void bindDislocationAnalysis(py::module &m){
              "Set the circuit stretchability parameter",
              py::arg("stretch"))
         
+                     
+        .def("set_mark_core_atoms", &Wrappers::AnalysisWrapper::setMarkCoreAtoms, "",
+             py::arg("mark"))
+                
+        .def("set_line_smoothing_level", &Wrappers::AnalysisWrapper::setLineSmoothingLevel, "",
+             py::arg("level"))
+                
+        .def("set_line_point_interval", &Wrappers::AnalysisWrapper::setLinePointInterval, "",
+             py::arg("interval"))
+                
+        .def("set_defect_mesh_smoothing_level", &Wrappers::AnalysisWrapper::setDefectMeshSmoothingLevel, "",
+             py::arg("level"))
+                
+        .def("set_identification_mode", &Wrappers::AnalysisWrapper::setIdentificationMode, "",
+             py::arg("mode"))
+        
         .def("set_only_perfect_dislocations", &Wrappers::AnalysisWrapper::setOnlyPerfectDislocations,
              "Set whether to analyze only perfect dislocations",
              py::arg("flag"))
