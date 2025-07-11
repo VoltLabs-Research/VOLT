@@ -10,7 +10,7 @@ namespace OpenDXA{
 
 // Converts a raw integer code from the PTM library into our high-level enum.
 // This bridges the C API (which returns PTM_MATCH_*) to our StructureType values.
-PTM::StructureType PTM::ptmToStructureType(int type){
+StructureType PTM::ptmToStructureType(int type){
     switch(type){
         case PTM_MATCH_NONE: return StructureType::OTHER;
         case PTM_MATCH_SC: return StructureType::SC;
@@ -201,7 +201,7 @@ struct ptmnbrdata_t{
     const BoundedPriorityQueue<NearestNeighborFinder::Neighbor, std::less<NearestNeighborFinder::Neighbor>, PTM::MAX_INPUT_NEIGHBORS>* neighborResults;
     const int* particleTypes;
     const std::vector<uint64_t>* cachedNeighbors;
-    PTM::StructureType lastIdentifiedType;
+    StructureType lastIdentifiedType;
 };
 
 // Callback invoked by the PTM C code to retrieve one particle's neighbor shell.
@@ -262,7 +262,7 @@ static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested,
 // Drives the actual template-matching call for a single particle,
 // feeding in neighbor geometry, optionally atom types, and flags for
 // which lattices to check, then interprets the result
-PTM::StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::vector<uint64_t>& cachedNeighbors, Quaternion*){
+StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::vector<uint64_t>& cachedNeighbors, Quaternion*){
     assert(cachedNeighbors.size() == _algorithm.particleCount());
     assert(particleIndex < _algorithm.particleCount());
     findNeighbors(particleIndex, false);

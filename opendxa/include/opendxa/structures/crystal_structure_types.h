@@ -5,12 +5,16 @@ namespace OpenDXA{
 // Broad categories for crystal structures detected on an atom.
 // Used to classify each atom's local arrangement into a known lattice
 // type (e.g. FCC, BCC) or mark it as "OTHER" if it doesn't fit.
-enum StructureType{
+enum class StructureType{
     OTHER = 0,
     FCC,
     HCP,
     BCC,
     ICO,
+    SC,
+    CUBIC_DIAMOND,
+    HEX_DIAMOND,
+    GRAPHENE,
     NUM_STRUCTURE_TYPES
 };
 

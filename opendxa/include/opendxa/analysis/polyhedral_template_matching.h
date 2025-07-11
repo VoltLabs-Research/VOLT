@@ -1,5 +1,6 @@
 #pragma once
 
+#include <opendxa/structures/crystal_structure_types.h>
 #include <opendxa/analysis/nearest_neighbor_finder.h> 
 #include <opendxa/core/simulation_cell.h>
 #include <opendxa/math/matrix3.h>
@@ -20,21 +21,6 @@ namespace OpenDXA{
 
 class PTM : private NearestNeighborFinder{
 public:
-    // TODO: This is redundant, I should directly 
-    // use the StructureType that already exists in OpenDXA
-    enum class StructureType{
-        OTHER = 0,
-        FCC,
-        HCP,
-        BCC,
-        ICO,
-        SC,
-        CUBIC_DIAMOND,
-        HEX_DIAMOND,
-        GRAPHENE,
-        NUM_STRUCTURE_TYPES 
-    };
-
     // This enumeration classifies the possible chemical 
     // arrangement schemes that a region or cluster can have in the crystal lattice.
     enum class OrderingType{
