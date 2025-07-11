@@ -9,6 +9,11 @@
 #include <opendxa/geometry/interface_mesh.h>
 #include <opendxa/math/lin_alg.h>
 #include <opendxa/utilities/json_exporter.h>
+#include <semaphore>
+#include <latch>
+#include <format> 
+#include <thread>
+#include <barrier> 
 
 namespace OpenDXA{
 

@@ -58,7 +58,7 @@ void AnalysisWrapper::setOnlyPerfectDislocations(bool flag) {
 
 json AnalysisWrapper::compute(const std::string& inputFile, const std::string& outputFile) {
     validateInputFile(inputFile);
-    
+
     // Parse LAMMPS file
     LammpsParser parser;
     LammpsParser::Frame frame;

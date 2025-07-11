@@ -50,7 +50,7 @@ endif()
 # Extra Release flags
 set(RELEASE_CXX_OPTS
   -O3 -march=native -funroll-loops
-  -fstrict-aliasing
+  -fstrict-aliasing -pipe -pthread
   -fno-unsafe-math-optimizations
 )
 

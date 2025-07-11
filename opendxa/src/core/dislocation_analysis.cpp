@@ -3,7 +3,6 @@
 #include <opendxa/core/property_base.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/burgers_loop_builder.h>
-#include <tbb/parallel_for_each.h>
 
 namespace OpenDXA{
 
@@ -87,24 +86,61 @@ void DislocationAnalysis::setIdentificationMode(StructureAnalysis::Mode identifi
 // This overload of compute() iterates over a list of frames, runs the per-frame
 // analysis on each one, and aggregates the individual JSON results into a single
 // JSON document. It also measures the total elapsed time across all frames.
-json DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames, const std::string& output_file_template){
-    auto totalStart = std::chrono::high_resolution_clock::now();
-    json overall;
-    overall["is_failed"] = false;
-    overall["frames"] = json::array();
-    for(size_t i = 0; i < frames.size(); ++i){
-        char frameName[256];
-        snprintf(frameName, sizeof(frameName), output_file_template.c_str(), frames[i].timestep);
-        json frameJson = compute(frames[i], std::string(frameName));
-        if(frameJson.value("is_failed", true)){
-            overall["is_failed"] = true;
-        }
-        overall["frames"].push_back(std::move(frameJson));
+json DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames, const std::string& outputFileTemplate){
+    const size_t maxThreadCount = std::thread::hardware_concurrency();
+    const auto startTime = std::chrono::high_resolution_clock::now();
+    
+    std::queue<size_t> frameIndexQueue;
+    for(size_t frameIndex = 0; frameIndex < frames.size(); ++frameIndex){
+        frameIndexQueue.push(frameIndex);
     }
-    auto totalEnd = std::chrono::high_resolution_clock::now();
-    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(totalEnd - totalStart).count();
-    overall["total_time"] = seconds;
-    return overall;
+    
+    std::mutex queueMutex;
+    std::condition_variable queueCV;
+    std::atomic<bool> noMoreWork{false};
+
+    std::vector<json> frameResults(frames.size());
+    auto workerTask = [&](std::stop_token stopToken){
+        while(!stopToken.stop_requested()){
+            size_t frameIndex;
+            {
+                std::unique_lock queueLock(queueMutex);
+                queueCV.wait(queueLock, [&]{
+                    return noMoreWork || !frameIndexQueue.empty();
+                });
+
+                if(noMoreWork && frameIndexQueue.empty()) return;
+                frameIndex = frameIndexQueue.front();
+                frameIndexQueue.pop();
+            }
+
+            auto outputFilename = std::vformat(outputFileTemplate, std::make_format_args(frames[frameIndex].timestep));
+            frameResults[frameIndex] = compute(frames[frameIndex], outputFilename);
+        }
+    };
+
+    std::vector<std::jthread> threadPool;
+    threadPool.reserve(maxThreadCount);
+    for(size_t i = 0; i < maxThreadCount; ++i){
+        threadPool.emplace_back(workerTask);
+    }
+
+    {
+        std::lock_guard lock(queueMutex);
+        if(frameIndexQueue.empty()) noMoreWork = true;
+    }
+
+    queueCV.notify_all();
+    json overallReport;
+    overallReport["is_failed"] = false;
+    overallReport["frames"] = json::array();
+    for(auto &frameJson : frameResults){
+        if(frameJson.value("is_failed", true)) overallReport["is_failed"] = true;
+        overallReport["frames"].push_back(std::move(frameJson));
+    }
+
+    overallReport["total_time"] = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - startTime).count();
+    return overallReport;
 }
 
 json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
