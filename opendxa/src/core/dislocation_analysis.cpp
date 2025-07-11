@@ -21,7 +21,7 @@ void DislocationAnalysis::setInputCrystalStructure(LatticeStructureType structur
 // Define the maximum number of edges that a Burgers circuit may have.
 // The tracer will not attempt to close loops longer than this size,
 // preventing runaway searches in very complex meshes.
-void DislocationAnalysis::setMaxTrialCircuitSize(int size){
+void DislocationAnalysis::setMaxTrialCircuitSize(double size){
     _maxTrialCircuitSize= size;
 }
 
@@ -29,7 +29,7 @@ void DislocationAnalysis::setMaxTrialCircuitSize(int size){
 // A higher stretchability allows the algorithm to consider more extreme
 // extensions when refining loops, at the cost of additional computation
 // and potential false positives.
-void DislocationAnalysis::setCircuitStretchability(int stretch){
+void DislocationAnalysis::setCircuitStretchability(double stretch){
     _circuitStretchability = stretch;
 }
 
@@ -58,7 +58,7 @@ void DislocationAnalysis::setOnlyPerfectDislocations(bool flag){
 // Set the smoothing intensity for each dislocation line.
 // Higher smoothing levels produce smoother, less jagged polylines
 // at the expense of some geometric detail.
-void DislocationAnalysis::setLineSmoothingLevel(int lineSmoothingLevel){
+void DislocationAnalysis::setLineSmoothingLevel(double lineSmoothingLevel){
     _lineSmoothingLevel = lineSmoothingLevel;
 }
 
@@ -66,14 +66,14 @@ void DislocationAnalysis::setLineSmoothingLevel(int lineSmoothingLevel){
 // Determines how many atoms (or mesh steps) to skip before adding
 // the next point to the polyline. Larger intervals
 // produce coarser but faster-to-compute lines.
-void DislocationAnalysis::setLinePointInterval(int linePointInterval){
+void DislocationAnalysis::setLinePointInterval(double linePointInterval){
     _linePointInterval = linePointInterval;
 }
 
 // Set how aggressively to smooth the defect surface mesh.
 // Smooths the grain-boundary mesh to reduce numerical noise.
 // Larger values yield smoother interfaces but may blur sharp features.
-void DislocationAnalysis::setDefectMeshSmoothingLevel(int defectMeshSmoothingLevel){
+void DislocationAnalysis::setDefectMeshSmoothingLevel(double defectMeshSmoothingLevel){
     _defectMeshSmoothingLevel = defectMeshSmoothingLevel;
 }
 
@@ -110,6 +110,16 @@ json DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames
 json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
     auto start_time = std::chrono::high_resolution_clock::now();
     std::cout << "Setting up DXA analysis" << std::endl;
+
+    std::cout << "Input Crystal Structure: " << _inputCrystalStructure << std::endl;
+    std::cout << "Max Trial Circuit Size: " << _maxTrialCircuitSize << std::endl;
+    std::cout << "Circuit Stretchability: " << _circuitStretchability << std::endl;
+    std::cout << "Mark Core Atoms: " << (_markCoreAtoms ? "true" : "false") << std::endl;
+    std::cout << "Only Perfect Dislocations: " << (_onlyPerfectDislocations ? "true" : "false") << std::endl;
+    std::cout << "Line Smoothing Level: " << _lineSmoothingLevel << std::endl;
+    std::cout << "Line Point Interval: " << _linePointInterval << std::endl;
+    std::cout << "Defect Mesh Smoothing Level: " << _defectMeshSmoothingLevel << std::endl;
+    std::cout << "Identification Mode: " << _identificationMode << std::endl;
 
     ParallelSystem::initialize();
     std::cout << "Using " << ParallelSystem::getNumThreads() << " threads for parallel processing" << std::endl;

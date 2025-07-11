@@ -27,13 +27,13 @@ public:
     // Configuration methods
     void resetConfig();
     void setInputCrystalStructure(int structure);
-    void setMaxTrialCircuitSize(int size);
-    void setCircuitStretchability(int stretch);
+    void setMaxTrialCircuitSize(double size);
+    void setCircuitStretchability(double stretch);
     void setOnlyPerfectDislocations(bool flag);
     void setMarkCoreAtoms(bool markCoreAtoms);
-    void setLineSmoothingLevel(int lineSmoothingLevel);
-    void setLinePointInterval(int linePointInterval);
-    void setDefectMeshSmoothingLevel(int defectMeshSmoothingLevel);
+    void setLineSmoothingLevel(double lineSmoothingLevel);
+    void setLinePointInterval(double linePointInterval);
+    void setDefectMeshSmoothingLevel(double defectMeshSmoothingLevel);
     void setIdentificationMode(int identificationMode);
     json computeTrajectory(const std::vector<std::string>& input_files, const std::string& output_file_template);
 

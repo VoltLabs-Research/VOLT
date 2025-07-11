@@ -22,7 +22,7 @@ void AnalysisWrapper::setInputCrystalStructure(int structure) {
     analyzer->setInputCrystalStructure(static_cast<LatticeStructureType>(structure));
 }
 
-void AnalysisWrapper::setMaxTrialCircuitSize(int size) {
+void AnalysisWrapper::setMaxTrialCircuitSize(double size) {
     validateCircuitSize(size);
     analyzer->setMaxTrialCircuitSize(size);
 }
@@ -31,15 +31,15 @@ void AnalysisWrapper::setMarkCoreAtoms(bool markCoreAtoms){
     analyzer->setMarkCoreAtoms(markCoreAtoms);
 }
 
-void AnalysisWrapper::setLineSmoothingLevel(int lineSmoothingLevel){
+void AnalysisWrapper::setLineSmoothingLevel(double lineSmoothingLevel){
     analyzer->setLineSmoothingLevel(lineSmoothingLevel);
 }
 
-void AnalysisWrapper::setLinePointInterval(int linePointInterval){
+void AnalysisWrapper::setLinePointInterval(double linePointInterval){
     analyzer->setLinePointInterval(linePointInterval);
 }
 
-void AnalysisWrapper::setDefectMeshSmoothingLevel(int defectMeshSmoothingLevel){
+void AnalysisWrapper::setDefectMeshSmoothingLevel(double defectMeshSmoothingLevel){
     analyzer->setDefectMeshSmoothingLevel(defectMeshSmoothingLevel);
 }
 
@@ -47,7 +47,7 @@ void AnalysisWrapper::setIdentificationMode(int identificationMode){
     analyzer->setIdentificationMode(static_cast<StructureAnalysis::Mode>(identificationMode));
 }
 
-void AnalysisWrapper::setCircuitStretchability(int stretch) {
+void AnalysisWrapper::setCircuitStretchability(double stretch) {
     validateStretchability(stretch);
     analyzer->setCircuitStretchability(stretch);
 }

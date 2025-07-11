@@ -10,7 +10,7 @@ namespace OpenDXA::Bindings::Python{
 
 void bindDislocationAnalysis(py::module &m){
     // Bind crystal structure enum
-    py::enum_<LatticeStructureType>(m, "LatticeStructureType", "Crystal lattice structure types")
+    py::enum_<LatticeStructureType>(m, "LatticeStructure", "Crystal lattice structure types")
         .value("FCC", LATTICE_FCC, "Face-centered cubic")
         .value("BCC", LATTICE_BCC, "Body-centered cubic")
         .value("HCP", LATTICE_HCP, "Hexagonal close-packed")
@@ -32,7 +32,7 @@ void bindDislocationAnalysis(py::module &m){
         .def("reset_config", &Wrappers::AnalysisWrapper::resetConfig,
              "Reset the analyzer to default configuration")
         
-        .def("set_input_crystal_structure", &Wrappers::AnalysisWrapper::setInputCrystalStructure,
+        .def("set_crystal_structure", &Wrappers::AnalysisWrapper::setInputCrystalStructure,
              "Set the input crystal structure type",
              py::arg("structure"))
         
@@ -44,7 +44,6 @@ void bindDislocationAnalysis(py::module &m){
              "Set the circuit stretchability parameter",
              py::arg("stretch"))
         
-                     
         .def("set_mark_core_atoms", &Wrappers::AnalysisWrapper::setMarkCoreAtoms, "",
              py::arg("mark"))
                 

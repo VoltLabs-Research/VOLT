@@ -49,8 +49,9 @@ endif()
 
 # Extra Release flags
 set(RELEASE_CXX_OPTS
-  -O3 -Ofast -march=native -funroll-loops
-  -fstrict-aliasing -ffp-contract=off -fno-unsafe-math-optimizations
+  -O3 -march=native -funroll-loops
+  -fstrict-aliasing
+  -fno-unsafe-math-optimizations
 )
 
 # Fast linker when using GNU/Clang

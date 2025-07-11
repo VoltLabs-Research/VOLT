@@ -20,16 +20,21 @@ public:
         : _inputCrystalStructure(LATTICE_FCC),
         _maxTrialCircuitSize(14),
         _circuitStretchability(9),
+        _lineSmoothingLevel(1),
+        _linePointInterval(2.5),
+        _defectMeshSmoothingLevel(8),
+        _identificationMode(StructureAnalysis::Mode::CNA),
+        _markCoreAtoms(false),
         _onlyPerfectDislocations(false){}
     
     void setInputCrystalStructure(LatticeStructureType structure);
-    void setMaxTrialCircuitSize(int size);
-    void setCircuitStretchability(int stretch);
+    void setMaxTrialCircuitSize(double size);
+    void setCircuitStretchability(double stretch);
     void setOnlyPerfectDislocations(bool flag);
-    void setLineSmoothingLevel(int lineSmoothingLevel);
-    void setLinePointInterval(int linePointInterval);
+    void setLineSmoothingLevel(double lineSmoothingLevel);
+    void setLinePointInterval(double linePointInterval);
     void setIdentificationMode(StructureAnalysis::Mode identificationMode);
-    void setDefectMeshSmoothingLevel(int defectMeshSmoothingLevel);
+    void setDefectMeshSmoothingLevel(double defectMeshSmoothingLevel);
     void setMarkCoreAtoms(bool markCoreAtoms);
     json compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile = "");
     json compute(const std::vector<LammpsParser::Frame>& frames, const std::string& output_file_template);
@@ -39,14 +44,14 @@ public:
 private:
     LatticeStructureType _inputCrystalStructure;
 
-    int _maxTrialCircuitSize;
-    int _circuitStretchability;
-    int _lineSmoothingLevel = 1;
-    double _linePointInterval = 2.5;
-    int _defectMeshSmoothingLevel = 8;
-    StructureAnalysis::Mode _identificationMode = StructureAnalysis::Mode::CNA;
+    double _maxTrialCircuitSize;
+    double _circuitStretchability;
+    double _lineSmoothingLevel;
+    double _linePointInterval;
+    double _defectMeshSmoothingLevel;
+    StructureAnalysis::Mode _identificationMode;
 
-    bool _markCoreAtoms = false;
+    bool _markCoreAtoms;
     bool _onlyPerfectDislocations;
     
     mutable json _lastJsonData;

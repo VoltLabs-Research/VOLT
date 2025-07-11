@@ -1,19 +1,19 @@
-from opendxa import DislocationAnalysis, LatticeStructureType
+from opendxa import DislocationAnalysis, StructureIdentification
 
 analyzer = DislocationAnalysis()
 
-analyzer.set_input_crystal_structure(LatticeStructureType.FCC)
+# Since we are using PTM, there is no need to specify the structure type of our simulation.
+# analyzer.set_crystal_structure(LatticeStructure.BCC)
+analyzer.set_identification_mode(StructureIdentification.PTM)
+
 analyzer.set_max_trial_circuit_size(14)
 analyzer.set_circuit_stretchability(9)
-analyzer.set_only_perfect_dislocations(False)
-    
-# results = analyzer.compute_trajectory([
-#    # TODO: static void OpenDXA::CoordinationStructures::calculateProductForPermutation(OpenDXA::LatticeStructure&, size_t, size_t): Assertion `latticeStruct.permutations[s1].product.size() == s2 + 1' failed.
-#    '/home/rodyherrera/Escritorio/OpenDXA/debug.analysis.dump',
-#    '/home/rodyherrera/Escritorio/OpenDXA/debug.analysis.dump',
-#    '/home/rodyherrera/Escritorio/OpenDXA/debug.analysis.dump',
-#    '/home/rodyherrera/Escritorio/OpenDXA/debug.analysis.dump',
-#    '/home/rodyherrera/Escritorio/OpenDXA/debug.analysis.dump'
-#], 'dislocation_results_%i.json')
 
-result = analyzer.compute('/home/rodyherrera/Escritorio/OpenDXA/dump.ensayo.1175000.config', 'results.json')
+analyzer.set_line_smoothing_level(1)
+analyzer.set_line_point_interval(2.5)
+analyzer.set_defect_mesh_smoothing_level(8)
+
+analyzer.set_mark_core_atoms(False)
+analyzer.set_only_perfect_dislocations(False)
+
+analyzer.compute('debug-data/sigma.dump', 'debug-data/sigma-analysis.json')
