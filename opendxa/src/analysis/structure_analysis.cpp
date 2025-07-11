@@ -1,14 +1,3 @@
-#include <iostream>
-#include <vector>
-#include <cmath>
-#include <numeric>
-#include <algorithm>
-#include <memory>
-#include <mutex>
-#include <deque>
-#include <cassert>
-#include <cstring>
-
 #include <opendxa/core/opendxa.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/structure_analysis.h>
@@ -19,10 +8,16 @@
 
 namespace OpenDXA {
 
-StructureAnalysis::StructureAnalysis(ParticleProperty* positions, const SimulationCell& simCell,
-                                     LatticeStructureType inputCrystalType, ParticleProperty* particleSelection,
-                                     ParticleProperty* outputStructures, std::vector<Matrix3>&& preferredCrystalOrientations,
-                                     bool identifyPlanarDefects, Mode _identificationMode) :
+StructureAnalysis::StructureAnalysis(
+    ParticleProperty* positions, 
+    const SimulationCell& simCell,
+    LatticeStructureType inputCrystalType, 
+    ParticleProperty* particleSelection,
+    ParticleProperty* outputStructures, 
+    std::vector<Matrix3>&& preferredCrystalOrientations,
+    bool identifyPlanarDefects, 
+    Mode _identificationMode
+) :
     _positions(positions), _simCell(simCell),
     _inputCrystalType(inputCrystalType),
     _identificationMode(_identificationMode),
@@ -39,15 +34,12 @@ StructureAnalysis::StructureAnalysis(ParticleProperty* positions, const Simulati
         CoordinationStructures::initializeStructures();
     });
 
-    if (_identificationMode == StructureAnalysis::Mode::CNA) {
+    if(usingPTM()){
+        static constexpr int maxPtmNeighbors = 14;
+        _neighborLists = std::make_shared<ParticleProperty>(positions->size(), DataType::Int, maxPtmNeighbors, 0, "Neighbors", false);
+    }else{
         _neighborLists = std::make_shared<ParticleProperty>(positions->size(), DataType::Int,
             _coordStructures.latticeStructure(inputCrystalType).maxNeighbors, 0, "Neighbors", false);
-    } else {
-        static constexpr int maxPtmNeighbors = 14;
-        _neighborLists = std::make_shared<ParticleProperty>(
-            positions->size(), DataType::Int,
-            maxPtmNeighbors,
-            0, "Neighbors", false);
     }
 
     std::fill(_neighborLists->dataInt(), _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
@@ -208,7 +200,7 @@ void StructureAnalysis::computeMaximumNeighborDistanceFromPTM() {
 }
 
 bool StructureAnalysis::identifyStructures() {
-    if (_identificationMode == StructureAnalysis::Mode::PTM) {
+    if(usingPTM()){
         determineLocalStructuresWithPTM();
         computeMaximumNeighborDistanceFromPTM();
         return true;
@@ -239,10 +231,10 @@ bool StructureAnalysis::identifyStructures() {
 }
 
 bool StructureAnalysis::shouldSkipSeed(int index) {
-    if(_identificationMode == StructureAnalysis::Mode::CNA){
-        return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == CoordinationStructureType::COORD_OTHER;
+    if(usingPTM()){
+        return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == StructureType::OTHER;
     }
-    return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == StructureType::OTHER;
+    return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == CoordinationStructureType::COORD_OTHER;
 }
 
 Cluster* StructureAnalysis::startNewCluster(int atomIndex, int structureType) {
@@ -479,9 +471,10 @@ void StructureAnalysis::reorientAtomsToAlignClusters() {
 }
 
 bool StructureAnalysis::buildClusters() {
-    if (_identificationMode == StructureAnalysis::Mode::PTM) {
+    if(usingPTM()){
         return buildClustersPTM();
     }
+    
     for (size_t seedAtomIndex = 0; seedAtomIndex < positions()->size(); seedAtomIndex++) {
         if (shouldSkipSeed(seedAtomIndex)) continue;
 

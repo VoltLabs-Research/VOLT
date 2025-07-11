@@ -67,6 +67,10 @@ public:
 		return _maximumNeighborDistance;
 	}
 
+	bool usingPTM() const{
+		return _identificationMode == StructureAnalysis::Mode::PTM;
+	}
+
 	const ClusterGraph& clusterGraph() const{
 		return *_clusterGraph;
 	}
