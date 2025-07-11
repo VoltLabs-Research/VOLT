@@ -66,7 +66,7 @@ private:
 	bool trySweepTwoFacets(InterfaceMesh::Edge*& edge0, InterfaceMesh::Edge*& edge1, InterfaceMesh::Edge*& edge2, bool isPrimarySegment);
 	bool tryInsertOneCircuitEdge(InterfaceMesh::Edge*& edge0, InterfaceMesh::Edge*& edge1, bool isPrimarySegment);
 
-	size_t joinSegments(int maxCircuitLength);
+	void joinSegments(int maxCircuitLength);
 
 	Vector3 calculateShiftVector(const Point3& a, const Point3& b) const{
 		Vector3 d = cell().absoluteToReduced(b - a);
@@ -80,7 +80,7 @@ private:
 	std::shared_ptr<DislocationNetwork> _network;
 	ClusterGraph* _clusterGraph; 
 	tbb::spin_mutex _circuit_pool_mutex;
-	
+
 	int _maxBurgersCircuitSize;
 	int _maxExtendedBurgersCircuitSize;
 

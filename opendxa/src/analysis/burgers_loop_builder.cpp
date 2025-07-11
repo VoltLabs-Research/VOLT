@@ -10,6 +10,7 @@
 #include <ranges>
 #include <atomic>
 #include <algorithm> 
+#include <execution>
 
 namespace OpenDXA{
 
@@ -53,16 +54,17 @@ bool BurgersLoopBuilder::traceDislocationSegments(){
                 return false;
             }
         }
-        (void) joinSegments(L);
+
+        joinSegments(L);
 
         if(L >= _maxBurgersCircuitSize && !dangling.empty()){
-            tbb::parallel_for_each(dangling.begin(), dangling.end(), [&](DislocationNode* node){
-                auto* C = node->circuit;
-                if(C->isDangling && C->segmentMeshCap.empty()){
-                    C->storeCircuit();
-                    C->numPreliminaryPoints = 0;
-                }
-            });
+			std::for_each(std::execution::par, dangling.begin(), dangling.end(), [](DislocationNode* node){
+				auto* circuit = node->circuit;
+				if(circuit->isDangling && circuit->segmentMeshCap.empty()){
+					circuit->storeCircuit();
+					circuit->numPreliminaryPoints = 0;
+				}
+			});
         }
     }
 
@@ -81,16 +83,24 @@ void BurgersLoopBuilder::discardCircuit(BurgersCircuit* circuit){
 // vectors in the target crystal structure and orient each line so
 // it points consistently.
 void BurgersLoopBuilder::finishDislocationSegments(int crystalStructure){
-    auto& segs = network().segments();
-	size_t N = segs.size();
+    auto& segments = network().segments();
 
-	tbb::parallel_for(size_t(0), N, [&](size_t i){
-		auto* segment = segs[i];
+	auto indexedSegments = std::views::iota(size_t{0}, segments.size()) | std::views::transform([&](size_t i){
+        return std::pair{i, segments[i]};
+    });
+
+    std::for_each(
+		std::execution::par, 
+		indexedSegments.begin(), 
+		indexedSegments.end(), 
+		[this, crystalStructure](auto const &par)
+	{
+		auto [segmentId, segment] = par;
 
 		// Cut preliminary points
 		int pointsToTrimFront = segment->backwardNode().circuit->numPreliminaryPoints;
 		int pointsToTrimBack = segment->forwardNode().circuit->numPreliminaryPoints;
-		segment->id = static_cast<int>(i);
+		segment->id = segmentId;
 
 		auto& line = segment->line;
 		auto& coreVec = segment->coreSize;
@@ -942,7 +952,7 @@ void BurgersLoopBuilder::circuitCircuitIntersection(
 // After trimming and extending, attempt to join any remaining dangling circuits
 // by (1) creating secondary loops in adjacent holes, (2) marking fully blocked circuits
 // as junctions candidates, and (3) either fusing two arms or forming multi-arm junctions
-size_t BurgersLoopBuilder::joinSegments(int maxCircuitLength){
+void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 	// First iteration over all dangling circuits.
 	// Try to create secondary dislocation segments in the adjacent regions of the
 	// interface mesh.
@@ -1164,11 +1174,9 @@ size_t BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 	}
 
 	// Clean up list of dangling nodes. Remove joined nodes.
-	_danglingNodes.erase(std::remove_if(_danglingNodes.begin(), _danglingNodes.end(),[](DislocationNode* node){
+	std::erase_if(_danglingNodes, [](DislocationNode* node){
 		return !node->isDangling();
-	}), _danglingNodes.end());
-
-	return numJunctions;
+	});
 }
 
 // When a dangling circuit borders an unvisited hole, trace that hole boundary as a

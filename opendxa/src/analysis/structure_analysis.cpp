@@ -5,6 +5,9 @@
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_reduce.h>
+#include <execution>
+#include <ranges>
+#include <numeric>
 
 namespace OpenDXA {
 
@@ -160,40 +163,47 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
 /// mesh building) so we reliably include every bond in subsequent stages.
 void StructureAnalysis::computeMaximumNeighborDistanceFromPTM() {
     const size_t N = positions()->size();
-    if (N == 0) {
+    if(N == 0){
         _maximumNeighborDistance = 0.0;
         return;
     }
 
-    // Shortcut to data pointers and cell matrices
     const int M = _neighborLists->componentCount();
     const auto* pos = positions()->constDataPoint3();
     const auto& invMat = cell().inverseMatrix();
     const auto& dirMat = cell().matrix();
 
-    double maxDistance = 0.0;
-    for (size_t i = 0; i < N; ++i) {
-        for (int j = 0; j < M; ++j) {
-            int nb = _neighborLists->getIntComponent(i, j);
-            if (nb < 0) break;
+    auto indices = std::views::iota(size_t{0}, N);
 
-            // Compute wrapped displacement
-            Vector3 delta = pos[nb] - pos[i];
-            double f[3];
-            for (int d = 0; d < 3; ++d) {
-                f[d] = invMat.prodrow(delta, d);
-                f[d] -= std::round(f[d]);
+    double maxDistance = std::transform_reduce(
+        std::execution::par,
+        indices.begin(),
+        indices.end(),
+        0.0,
+        [](double a, double b) { return std::max(a, b); },
+        [&](size_t i){
+            double localMaxDist = 0.0;
+            for(int j = 0; j < M; ++j){
+                int nb = _neighborLists->getIntComponent(i, j);
+                if(nb < 0) break;
+
+                Vector3 delta = pos[nb] - pos[i];
+                double f[3];
+                for(int d = 0; d < 3; ++d){
+                    f[d] = invMat.prodrow(delta, d);
+                    f[d] -= std::round(f[d]);
+                }
+
+                Vector3 mind;
+                mind = dirMat.column(0) * f[0];
+                mind += dirMat.column(1) * f[1];
+                mind += dirMat.column(2) * f[2];
+                double d = mind.length();
+                if(d > localMaxDist) localMaxDist = d;
             }
-
-            // Back to cartesian
-            Vector3 mind;
-            mind = dirMat.column(0) * f[0];
-            mind += dirMat.column(1) * f[1];
-            mind += dirMat.column(2) * f[2];
-            double d = mind.length();
-            if (d > maxDistance) maxDistance = d;
+            return localMaxDist;
         }
-    }
+    );
 
     std::cout << "Maximum neighbor distance (from PTM): " << maxDistance << std::endl;
     _maximumNeighborDistance = maxDistance;
@@ -497,15 +507,15 @@ bool StructureAnalysis::buildClusters() {
     return true;
 }
 
-bool StructureAnalysis::connectClusters() {
-    for (size_t atomIndex = 0; atomIndex < positions()->size(); atomIndex++) {
+bool StructureAnalysis::connectClusters(){
+    auto indices = std::views::iota(size_t{0}, positions()->size());
+    std::for_each(std::execution::par, indices.begin(), indices.end(), [this](size_t atomIndex){
         int clusterId = _atomClusters->getInt(atomIndex);
-        if (clusterId == 0) continue;
-
+        if(clusterId == 0) return;
         Cluster* cluster1 = clusterGraph().findCluster(clusterId);
         assert(cluster1);
         connectClusterNeighbors(atomIndex, cluster1);
-    }
+    });
     return true;
 }
 
@@ -533,18 +543,21 @@ void StructureAnalysis::connectClusterNeighbors(int atomIndex, Cluster* cluster1
         Cluster* cluster2 = clusterGraph().findCluster(neighborClusterId);
         assert(cluster2);
 
-        if (ClusterTransition* t = cluster1->findTransition(cluster2)) {
+        if(ClusterTransition* t = cluster1->findTransition(cluster2)){
             t->area++;
             t->reverse->area++;
             continue;
         }
 
         Matrix3 transition;
-        if (calculateMisorientation(atomIndex, neighbor, ni, transition)) {
+        if(calculateMisorientation(atomIndex, neighbor, ni, transition)){
             if (transition.isOrthogonalMatrix()) {
-                ClusterTransition* t = clusterGraph().createClusterTransition(cluster1, cluster2, transition);
-                t->area++;
-                t->reverse->area++;
+                std::scoped_lock lock(cluster_graph_mutex);
+                if(!cluster1->findTransition(cluster2)){
+                    ClusterTransition* t = clusterGraph().createClusterTransition(cluster1, cluster2, transition);
+                    t->area++;
+                    t->reverse->area++;
+                }
             }
         }
     }
@@ -558,20 +571,20 @@ bool StructureAnalysis::calculateMisorientation(int atomIndex, int neighbor, int
     const auto& permutation = latticeStructure.permutations[symIndex].permutation;
 
     Matrix3 tm1, tm2;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++){
         int ai;
-        if (i != 2) {
+        if(i != 2){
             ai = getNeighbor(atomIndex, coordStructure.commonNeighbors[neighborIndex][i]);
             tm1.column(i) = latticeStructure.latticeVectors[permutation[coordStructure.commonNeighbors[neighborIndex][i]]] -
                             latticeStructure.latticeVectors[permutation[neighborIndex]];
-        } else {
+        }else{
             ai = atomIndex;
             tm1.column(i) = -latticeStructure.latticeVectors[permutation[neighborIndex]];
         }
 
-        if (numberOfNeighbors(neighbor) != coordStructure.numNeighbors) return false;
+        if(numberOfNeighbors(neighbor) != coordStructure.numNeighbors) return false;
         int j = findNeighbor(neighbor, ai);
-        if (j == -1) return false;
+        if(j == -1) return false;
 
         int neighborStructureType = _structureTypes->getInt(neighbor);
         const LatticeStructure& neighborLattice = CoordinationStructures::_latticeStructures[neighborStructureType];
@@ -591,20 +604,20 @@ bool StructureAnalysis::calculateMisorientation(int atomIndex, int neighbor, int
 
 bool StructureAnalysis::formSuperClusters() {
     size_t oldTransitionCount = clusterGraph().clusterTransitions().size();
-
-    for (Cluster* cluster : clusterGraph().clusters()) {
-        if (!cluster || cluster->id == 0) continue;
+    auto clusters = clusterGraph().clusters();
+    for(Cluster* cluster : clusterGraph().clusters()){
+        if(!cluster || cluster->id == 0) continue;
         cluster->rank = 0;
         assert(cluster->parentTransition == nullptr);
 
-        if (cluster->structure != _inputCrystalType) {
+        if(cluster->structure != _inputCrystalType){
             processDefectCluster(cluster);
         }
     }
 
     size_t newTransitionCount = clusterGraph().clusterTransitions().size();
 
-    for (size_t i = oldTransitionCount; i < newTransitionCount; i++) {
+    for(size_t i = oldTransitionCount; i < newTransitionCount; i++){
         ClusterTransition* t = clusterGraph().clusterTransitions()[i];
         assert(t->distance == 2);
         assert(t->cluster1->structure == _inputCrystalType);
@@ -615,23 +628,23 @@ bool StructureAnalysis::formSuperClusters() {
         if (parent1 == parent2) continue;
 
         ClusterTransition* pt = t;
-        if (parent2 != t->cluster2) {
+        if(parent2 != t->cluster2){
             pt = clusterGraph().concatenateClusterTransitions(pt, t->cluster2->parentTransition);
         }
 
-        if (parent1 != t->cluster1) {
+        if(parent1 != t->cluster1){
             pt = clusterGraph().concatenateClusterTransitions(t->cluster1->parentTransition->reverse, pt);
         }
 
-        if (parent1->rank > parent2->rank) {
+        if(parent1->rank > parent2->rank){
             parent2->parentTransition = pt->reverse;
-        } else {
+        }else{
             parent1->parentTransition = pt;
             if (parent1->rank == parent2->rank) parent2->rank++;
         }
     }
 
-    for (Cluster* c : clusterGraph().clusters()) {
+    for(Cluster* c : clusterGraph().clusters()){
         getParentGrain(c);
     }
 
@@ -639,17 +652,17 @@ bool StructureAnalysis::formSuperClusters() {
 }
 
 void StructureAnalysis::processDefectCluster(Cluster* defectCluster) {
-    for (ClusterTransition* t = defectCluster->transitions; t; t = t->next) {
-        if (t->cluster2->structure != _inputCrystalType || t->distance != 1) continue;
-        for (ClusterTransition* t2 = t->next; t2; t2 = t2->next) {
-            if (t2->cluster2->structure != _inputCrystalType || t2->distance != 1) continue;
-            if (t2->cluster2 == t->cluster2) continue;
+    for(ClusterTransition* t = defectCluster->transitions; t; t = t->next) {
+        if(t->cluster2->structure != _inputCrystalType || t->distance != 1) continue;
+        for(ClusterTransition* t2 = t->next; t2; t2 = t2->next) {
+            if(t2->cluster2->structure != _inputCrystalType || t2->distance != 1) continue;
+            if(t2->cluster2 == t->cluster2) continue;
 
             const LatticeStructure& lattice = CoordinationStructures::latticeStructure(t2->cluster2->structure);
             Matrix3 misorientation = t2->tm * t->reverse->tm;
 
-            for (const auto& sym : lattice.permutations) {
-                if (sym.transformation.equals(misorientation, CA_TRANSITION_MATRIX_EPSILON)) {
+            for(const auto& sym : lattice.permutations){
+                if(sym.transformation.equals(misorientation, CA_TRANSITION_MATRIX_EPSILON)){
                     clusterGraph().createClusterTransition(t->cluster2, t2->cluster2, misorientation, 2);
                     break;
                 }
@@ -659,12 +672,12 @@ void StructureAnalysis::processDefectCluster(Cluster* defectCluster) {
 }
 
 Cluster* StructureAnalysis::getParentGrain(Cluster* c) {
-    if (!c->parentTransition) return c;
+    if(!c->parentTransition) return c;
 
     ClusterTransition* parentT = c->parentTransition;
     Cluster* parent = parentT->cluster2;
 
-    while (parent->parentTransition) {
+    while(parent->parentTransition) {
         parentT = clusterGraph().concatenateClusterTransitions(parentT, parent->parentTransition);
         parent = parent->parentTransition->cluster2;
     }

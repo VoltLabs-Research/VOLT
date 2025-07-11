@@ -10,6 +10,7 @@
 #include <opendxa/structures/lattice_structure.h>
 #include <opendxa/core/coordination_structures.h>
 #include <opendxa/analysis/polyhedral_template_matching.h>
+#include <mutex>
 
 namespace OpenDXA{
 
@@ -152,6 +153,7 @@ private:
 	CoordinationStructures _coordStructures;
 	LatticeStructureType _inputCrystalType;
 	ParticleProperty* _positions; 
+	std::mutex cluster_graph_mutex;
 	ParticleProperty* _structureTypes; 
 	std::shared_ptr<ParticleProperty> _ptmRmsd; 
 	std::shared_ptr<ParticleProperty> _ptmOrientation; 

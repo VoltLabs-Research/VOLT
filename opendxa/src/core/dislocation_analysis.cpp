@@ -341,6 +341,8 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
     result["total_time"] = duration;
 
+    std::cout << "Total time " << duration << " ms." << std::endl;
+
     return result;
 }
 
