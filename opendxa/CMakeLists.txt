@@ -93,7 +93,6 @@ set(LIBRARY_SOURCES
     src/analysis/common_neighbor_analysis.cpp
     src/geometry/interface_mesh.cpp
     src/geometry/delaunay_tessellation.cpp
-    src/geometry/tri_mesh.cpp
     src/math/affine_decomposition.cpp
     src/utilities/json_exporter.cpp
 )
