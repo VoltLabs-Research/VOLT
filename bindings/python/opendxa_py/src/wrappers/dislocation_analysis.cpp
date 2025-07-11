@@ -91,8 +91,8 @@ json AnalysisWrapper::computeTrajectory(const std::vector<std::string>& input_fi
     if(output_file_template.find("%d") == std::string::npos && output_file_template.find("%i") == std::string::npos){
          throw std::invalid_argument("Output file template must contain a placeholder like %d or %i.");
     }
-
-    std::cout << "Loading " << input_files.size() << " frames from disk..." << std::endl;
+    
+    fmt::print("Loading {} frames from disk... \n", input_files.size());
     std::vector<LammpsParser::Frame> frames;
     frames.reserve(input_files.size());
     LammpsParser parser;
@@ -106,7 +106,7 @@ json AnalysisWrapper::computeTrajectory(const std::vector<std::string>& input_fi
         frames.push_back(frame);
     }
 
-    std::cout << "All frames loaded. Starting parallel analysis..." << std::endl;
+    fmt::print("All frames loaded. Starting parallel analysis... \n");
 
     return analyzer->compute(frames, output_file_template);
 }

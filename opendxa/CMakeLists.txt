@@ -71,6 +71,7 @@ find_package(Eigen3 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(TBB REQUIRED)
+find_package(fmt REQUIRED)
 
 message(STATUS "Eigen3 include: ${EIGEN3_INCLUDE_DIR}")
 message(STATUS "nlohmann_json: ${nlohmann_json_SOURCE_DIR}")
@@ -129,6 +130,7 @@ target_link_libraries(opendxa_lib PUBLIC
     Threads::Threads
     TBB::tbb
     OpenMP::OpenMP_CXX
+    fmt::fmt
 )
 
 # CLI executable
@@ -142,6 +144,7 @@ target_compile_definitions(opendxa PRIVATE
 )
 target_link_libraries(opendxa PRIVATE
     opendxa_lib
+    fmt::fmt
     OpenMP::OpenMP_CXX
 )
 
@@ -159,7 +162,7 @@ set_target_properties(opendxa._core PROPERTIES
     LINK_FLAGS_RELEASE "${LINKER_FAST}"
 )
 
-target_link_libraries(opendxa._core PRIVATE opendxa_lib)
+target_link_libraries(opendxa._core PRIVATE opendxa_lib fmt::fmt)
 target_compile_options(opendxa._core PRIVATE
     $<$<CONFIG:Release>:${RELEASE_CXX_OPTS}>
 )

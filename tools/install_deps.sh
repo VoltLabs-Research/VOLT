@@ -11,7 +11,8 @@ sudo apt-get install -y \
     pybind11-dev \
     libeigen3-dev \
     libtbb-dev \
-    libomp-dev
+    libomp-dev \
+    libfmt-dev
 
 DEPS_DIR="opendxa/dependencies"
 mkdir -p "$DEPS_DIR"

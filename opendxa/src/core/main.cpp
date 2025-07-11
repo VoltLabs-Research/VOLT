@@ -31,8 +31,6 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    std::cout << "Parsed " << frame.natoms << " atoms at timestep " << frame.timestep << std::endl;
-
     OpenDXA::DislocationAnalysis analyzer;
     analyzer.setInputCrystalStructure(structure);
     analyzer.setMaxTrialCircuitSize(circuitSize);

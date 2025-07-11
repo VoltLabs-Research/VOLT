@@ -109,20 +109,9 @@ json DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames
 
 json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
     auto start_time = std::chrono::high_resolution_clock::now();
-    std::cout << "Setting up DXA analysis" << std::endl;
-
-    std::cout << "Input Crystal Structure: " << _inputCrystalStructure << std::endl;
-    std::cout << "Max Trial Circuit Size: " << _maxTrialCircuitSize << std::endl;
-    std::cout << "Circuit Stretchability: " << _circuitStretchability << std::endl;
-    std::cout << "Mark Core Atoms: " << (_markCoreAtoms ? "true" : "false") << std::endl;
-    std::cout << "Only Perfect Dislocations: " << (_onlyPerfectDislocations ? "true" : "false") << std::endl;
-    std::cout << "Line Smoothing Level: " << _lineSmoothingLevel << std::endl;
-    std::cout << "Line Point Interval: " << _linePointInterval << std::endl;
-    std::cout << "Defect Mesh Smoothing Level: " << _defectMeshSmoothingLevel << std::endl;
-    std::cout << "Identification Mode: " << _identificationMode << std::endl;
+    fmt::print("Setting up DXA analysis \n");
 
     ParallelSystem::initialize();
-    std::cout << "Using " << ParallelSystem::getNumThreads() << " threads for parallel processing" << std::endl;
     
     // JSON object for the output. We'll fill in errors or results as we go.
     json result;
@@ -316,7 +305,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     // Wrap the result in a DislocationNetwork for easier post-processing.
     auto networkUptr = std::make_unique<DislocationNetwork>(tracer.network());
-    std::cout << "Found " << networkUptr->segments().size() << " dislocation segments" << std::endl;
+    fmt::print("Found {} dislocation segments \n", networkUptr->segments().size());
 
     // To produce clean output, we smooth both the defect surface mesh and
     // each dislocation line. Without smoothing, visualizations can look jagged.
@@ -324,8 +313,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     defectMesh.smoothVertices(_defectMeshSmoothingLevel);
     networkUptr->smoothDislocationLines(_lineSmoothingLevel, _linePointInterval);
 
-    std::cout << "Defect mesh facets: " << defectMesh.faces().size() << std::endl;
-    std::cout << "Analysis completed successfully" << std::endl;
+    fmt::print("Defect mesh facets: {} \n", defectMesh.faces().size());
     
     double totalLineLength = 0.0;
     const auto& segments = networkUptr->segments();
@@ -341,7 +329,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         }
     }
 
-    std::cout << "Total line length: " << totalLineLength << std::endl;
+    fmt::print("Total line length: {} \n", totalLineLength);
 
     // Finally, we serialize all results-mesh, network data, metrics-into JSON. 
     // Any exception here is considered a fatal error in the exporter.
@@ -372,7 +360,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
     result["total_time"] = duration;
 
-    std::cout << "Total time " << duration << " ms." << std::endl;
+    fmt::print("Total time {} ms \n", duration);
 
     return result;
 }
@@ -398,9 +386,7 @@ std::shared_ptr<ParticleProperty> DislocationAnalysis::createPositionProperty(co
         data[i] = frame.positions[i];
     }
 
-    std::cout << "Position property created successfully with " << property->size() << " particles" << std::endl;
-    std::cout << "Property data type: " << property->type() << std::endl;
-    std::cout << "Property component count: " << property->componentCount() << std::endl;
+    fmt::print("Position property created successfully with {} particles \n", property->size());
 
     return property;
 }
@@ -426,7 +412,8 @@ bool DislocationAnalysis::validateSimulationCell(const SimulationCell &cell){
         std::cerr << "Invalid cell volume: " << volume << std::endl;
         return false;
     }
-    std::cout << "Cell volume: " << volume << std::endl;
+
+    fmt::print("Cell volume: {} \n", volume);
     return true;
 }
 

@@ -104,7 +104,7 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
         const float cutoffMin = 0.15f;
         float finalCutoff = std::max(cutoffMin, autoCutoff);
 
-        std::cout << "PTM auto-cutoff (95th percentile): " << autoCutoff << ", using finalCutoff = " << finalCutoff << std::endl;
+        fmt::print("PTM auto-cutoff (95th percentile): {}, using final cutoff: {} \n", autoCutoff, finalCutoff);
 
         // Allocate output arrays only once we know the cutoff
         _ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Float, 4, 0.0f, "PTM_Orientation", true);
@@ -205,7 +205,7 @@ void StructureAnalysis::computeMaximumNeighborDistanceFromPTM() {
         }
     );
 
-    std::cout << "Maximum neighbor distance (from PTM): " << maxDistance << std::endl;
+    fmt::print("Maximum neighbor distance (from PTM): {} \n", maxDistance);
     _maximumNeighborDistance = maxDistance;
 }
 
