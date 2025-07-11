@@ -3,9 +3,14 @@
 
 namespace OpenDXA{
 
+// Reconstruct an independent copy of an existing DislocationNetwork by duplicating
+// each segment's Burger vector, line geometry, and connection information.
+// Any segment that were linked together via junctions are re-wired in the new network
+// to preserve topological continuity.
 DislocationNetwork::DislocationNetwork(const DislocationNetwork& other): _clusterGraph(other._clusterGraph){
 	_segments.reserve(other._segments.size());
 
+	// Copy each segment's core data and assign the same numeric ID
 	for(const auto *oldSegment : other.segments()){
 		assert(oldSegment->replacedWith == nullptr);
 		assert(oldSegment->id == static_cast<int>(_segments.size()));
@@ -17,6 +22,8 @@ DislocationNetwork::DislocationNetwork(const DislocationNetwork& other): _cluste
 		assert(newSegment->id == oldSegment->id);
 	}
 
+	// Re-stablish junction links between dangling ndoes so that segments
+	// that met in the original network still meet here.
 	for(size_t segmentIndex = 0; segmentIndex < other.segments().size(); ++segmentIndex){
 		const auto *oldSegment = other.segments()[segmentIndex];
 		auto *newSegment = _segments[segmentIndex];
@@ -33,6 +40,8 @@ DislocationNetwork::DislocationNetwork(const DislocationNetwork& other): _cluste
 	}
 }
 
+// Allocates a new dislocation segment with the given Burgers vector, creates
+// its two end nodes and assigns a unique incremental segment ID.
 DislocationSegment* DislocationNetwork::createSegment(const ClusterVector& burgersVector){
 	DislocationNode *forwardNode = _nodePool.construct();
 	DislocationNode *backwardNode = _nodePool.construct();
@@ -44,6 +53,8 @@ DislocationSegment* DislocationNetwork::createSegment(const ClusterVector& burge
 	return segment;
 }
 
+// Removes a segment from the network's list. The segment pointer
+// must exist, otherwise an assertion is triggered.
 void DislocationNetwork::discardSegment(DislocationSegment* segment){
 	assert(segment != nullptr);
 	const auto it = std::ranges::find(_segments, segment);
@@ -51,6 +62,10 @@ void DislocationNetwork::discardSegment(DislocationSegment* segment){
 	_segments.erase(it);
 }
 
+// Applies a two-step process to each segment curve. Coarsening to reduce
+// the number of points based on core size and a user-specified interval, then smoothing
+// the result with repeated Laplacian passes to remove sharp kinks. 
+// Closed loops are handled differently from open lines so as not to break continuity.
 void DislocationNetwork::smoothDislocationLines(int lineSmoothingLevel, double linePointInterval){
 	for(DislocationSegment* segment : segments()){
 		if(segment->coreSize.empty()) continue;
@@ -59,10 +74,17 @@ void DislocationNetwork::smoothDislocationLines(int lineSmoothingLevel, double l
         coarsenDislocationLine(linePointInterval, segment->line, segment->coreSize, line, coreSize, segment->isClosedLoop(), segment->isInfiniteLine());
 		smoothDislocationLine(lineSmoothingLevel, line, segment->isClosedLoop());
 		segment->line = std::move(line);
+
+		// coreSize is no longer needed at  render time
 		segment->coreSize.clear();
 	}
 }
 
+// Reduces the number of points along a segment by averaging over intervals
+// determined by the local core size and the desired spacing. Infinite lines
+// and very short segments recive special handling to preserve key features
+// or collapse into a straight line when the ratio of size versus length 
+// exceeds a threshold.
 void DislocationNetwork::coarsenDislocationLine(
 	double linePointInterval,
 	const std::deque<Point3>& input,
@@ -83,6 +105,7 @@ void DislocationNetwork::coarsenDislocationLine(
 
 	// Special handling for infinite lines
 	if(isInfiniteLine && input.size() >= 3){
+		// Collapse into two representative points if the core is "thick"
 		int coreSizeSum = std::accumulate(coreSize.cbegin(), coreSize.cend() - 1, 0);
 		int count = input.size() - 1;
 		if(coreSizeSum * linePointInterval > count * count){
@@ -184,6 +207,10 @@ void DislocationNetwork::coarsenDislocationLine(
 	assert(!isClosedLoop || isInfiniteLine || output.size() >= 3);
 }
 
+// Applies Laplacian smoothing to a polyline by repeteadly replacing each interior point
+// with a weighted average of its neighbors. Open lines keep their ends fixed, while loops
+// wap the neighborhood around. The two-pass filter uses parameters that give a gentle "umbrella"
+// smoothing effect without significant shrinkage.
 void DislocationNetwork::smoothDislocationLine(int smoothingLevel, std::deque<Point3>& line, bool isLoop){
 	// Nothing to do
 	if(smoothingLevel <= 0 || line.size() <= 2){
@@ -231,8 +258,10 @@ void DislocationNetwork::smoothDislocationLine(int smoothingLevel, std::deque<Po
 	}
 }
 
-[[nodiscard]]
-Point3 DislocationSegment::getPointOnLine(double t) const{
+// Given a polyline, returns the point at fractional arc-length t (0 ... 1) by walking
+// along the segments and interpolating linearly when the accumulated length exceeds the 
+// target. If the line is degenerate or empty, returns the origin.
+[[nodiscard]] Point3 DislocationSegment::getPointOnLine(double t) const{
 	if(line.empty() || isDegenerate()){
 		return Point3::Origin();
 	}
