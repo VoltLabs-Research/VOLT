@@ -1,5 +1,5 @@
 #include <opendxa/core/opendxa.h>
-#include <opendxa/analysis/dislocation_tracer.h>
+#include <opendxa/analysis/burgers_loop_builder.h>
 #include <opendxa/analysis/crystal_path_finder.h>
 #include <opendxa/analysis/elastic_mapping.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>

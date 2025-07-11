@@ -5,7 +5,7 @@
 #include <opendxa/structures/dislocation_network.h>
 #include <opendxa/geometry/delaunay_tessellation.h>
 #include <opendxa/analysis/elastic_mapping.h>
-#include <opendxa/analysis/dislocation_tracer.h>
+#include <opendxa/analysis/burgers_loop_builder.h>
 #include <opendxa/geometry/interface_mesh.h>
 #include <opendxa/math/lin_alg.h>
 #include <opendxa/utilities/json_exporter.h>

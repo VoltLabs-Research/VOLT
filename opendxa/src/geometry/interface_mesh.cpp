@@ -1,7 +1,6 @@
 #include <opendxa/geometry/interface_mesh.h>
-#include <opendxa/analysis/dislocation_tracer.h>
-#include <opendxa/geometry/manifold_construction_helper.h>
 #include <opendxa/analysis/burgers_loop_builder.h>
+#include <opendxa/geometry/manifold_construction_helper.h>
 #include <algorithm>
 #include <array>
 #include <numeric>

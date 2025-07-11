@@ -51,7 +51,7 @@ PTM::PTM() : NearestNeighborFinder(MAX_INPUT_NEIGHBORS){
 // Collects and encodes the local neighbor shell around a particle into a bitmask.
 // This lets the PTM algorithm quickly refer back to which neighbor belong where.
 int PTM::Kernel::cacheNeighbors(size_t particleIndex, uint64_t* res){
-    assert(particleIndex < _algo.particleCount());
+    assert(particleIndex < _algorithm.particleCount());
     
     findNeighbors(particleIndex, false);
     int numNeighbors = this->results().size();

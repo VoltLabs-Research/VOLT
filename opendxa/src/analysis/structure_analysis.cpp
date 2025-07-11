@@ -438,19 +438,19 @@ void StructureAnalysis::applyPreferredOrientation(Cluster* cluster) {
     double smallestDeviation = std::numeric_limits<double>::max();
     Matrix3 oldOrientation = cluster->orientation;
 
-    for (int symIndex = 0; symIndex < latticeStructure.permutations.size(); ++symIndex) {
+    for(int symIndex = 0; symIndex < latticeStructure.permutations.size(); ++symIndex){
         const Matrix3& symMatrix = latticeStructure.permutations[symIndex].transformation;
         Matrix3 newOrientation = oldOrientation * symMatrix.inverse();
         double scaling = std::pow(std::abs(newOrientation.determinant()), 1.0 / 3.0);
 
-        for (const auto& preferredOrientation : _preferredCrystalOrientations) {
+        for(const auto& preferredOrientation : _preferredCrystalOrientations){
             double deviation = 0;
-            for (size_t i = 0; i < 3; i++) {
-                for (size_t j = 0; j < 3; j++) {
+            for(size_t i = 0; i < 3; i++){
+                for(size_t j = 0; j < 3; j++){
                     deviation += std::abs(newOrientation(i, j) / scaling - preferredOrientation(i, j));
                 }
             }
-            if (deviation < smallestDeviation) {
+            if(deviation < smallestDeviation){
                 smallestDeviation = deviation;
                 cluster->symmetryTransformation = symIndex;
                 cluster->orientation = newOrientation;

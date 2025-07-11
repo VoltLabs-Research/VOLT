@@ -1,5 +1,19 @@
-DEPS_DIR="opendxa/dependencies"
+set -euo pipefail
 
+sudo apt-get update
+sudo apt-get install -y \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    python3-dev \
+    python3-pip \
+    pybind11-dev \
+    libeigen3-dev \
+    libtbb-dev \
+    libomp-dev
+
+DEPS_DIR="opendxa/dependencies"
 mkdir -p "$DEPS_DIR"
 cd "$DEPS_DIR"
 
@@ -13,18 +27,18 @@ else
     echo "nlohmann-json already exists."
 fi
 
-if [ ! -d "geogram" ]; then
-    echo "Downloading Geogram and its submodules (full clone)..."
-    git clone --recurse-submodules https://github.com/BrunoLevy/geogram.git geogram
-else
-    echo "Geogram already exists."
-fi
-
 if [ ! -d "pybind11_json" ]; then
     echo "Downloading pybind11_json..."
     git clone --depth 1 https://github.com/pybind/pybind11_json pybind11_json
 else
     echo "pybind11_json already exists."
+fi
+
+if [ ! -d "boost" ]; then
+    echo "Downloading Boost 1.88.0 (header-only)…"
+    git clone --depth 1 --branch boost-1.88.0 https://github.com/boostorg/boost.git boost
+else
+    echo "Boost already exists."
 fi
 
 cd ..

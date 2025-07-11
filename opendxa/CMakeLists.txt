@@ -1,13 +1,5 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
-# Suppress obsolete‐FindPython/FindBoost policy warnings
-if(POLICY CMP0148)
-  cmake_policy(SET CMP0148 NEW)
-endif()
-if(POLICY CMP0167)
-  cmake_policy(SET CMP0167 NEW)
-endif()
-
 project(OpenDXA VERSION 1.0.0 LANGUAGES CXX)
 
 # Force PIC globally so that static libs can be linked into .so
@@ -74,14 +66,12 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # External packages
 find_package(pybind11 REQUIRED)
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-find_package(Boost 1.88 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(TBB REQUIRED)
 
 message(STATUS "Eigen3 include: ${EIGEN3_INCLUDE_DIR}")
-message(STATUS "Boost version: ${Boost_VERSION}")
 message(STATUS "nlohmann_json: ${nlohmann_json_SOURCE_DIR}")
 
 set(BINDINGS_ROOT ${CMAKE_SOURCE_DIR}/../bindings/python/opendxa_py)
@@ -128,6 +118,7 @@ target_include_directories(opendxa_lib PUBLIC
     ${EIGEN3_INCLUDE_DIR}
     ${CMAKE_SOURCE_DIR}/dependencies/ptm
     ${CMAKE_SOURCE_DIR}/dependencies/pybind11_json/include
+    ${CMAKE_SOURCE_DIR}/dependencies/boost
 )
 
 target_link_libraries(opendxa_lib PUBLIC
@@ -135,9 +126,8 @@ target_link_libraries(opendxa_lib PUBLIC
     PolyhedralTemplateMatching
     nlohmann_json::nlohmann_json
     Threads::Threads
-    Boost::boost
-    OpenMP::OpenMP_CXX
     TBB::tbb
+    OpenMP::OpenMP_CXX
 )
 
 # CLI executable
@@ -149,7 +139,10 @@ target_compile_options(opendxa PRIVATE
 target_compile_definitions(opendxa PRIVATE
     $<$<CONFIG:Release>:NDEBUG>
 )
-target_link_libraries(opendxa PRIVATE opendxa_lib)
+target_link_libraries(opendxa PRIVATE
+    opendxa_lib
+    OpenMP::OpenMP_CXX
+)
 
 # Python extension (pybind11)
 pybind11_add_module(opendxa._core
