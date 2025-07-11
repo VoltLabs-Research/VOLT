@@ -40,24 +40,30 @@ bool BurgersLoopBuilder::traceDislocationSegments(){
     mesh().clearFaceFlag(0);
     std::vector<DislocationNode*> dangling;
 
-    for(int L : std::views::iota(3, _maxExtendedBurgersCircuitSize + 1)){
+	// Incrementally extend search radius for new Burgers circuit and extend existing segments by enlarging
+	// the maximim circuit size until segments meet at a junction.
+    for(int circuitLength : std::views::iota(3, _maxExtendedBurgersCircuitSize + 1)){
         dangling = _danglingNodes;
 
-        if(!dangling.empty()){
-            for(auto* node : dangling){
-                traceSegment(*node->segment, *node, L, L <= _maxBurgersCircuitSize);
-            }
+		for(auto* node : dangling){
+			assert(node->circuit->isDangling);
+			assert(node->circuit->countEdges() == node->circuit->edgeCount);
+			// Trace segment a bit further
+			traceSegment(*node->segment, *node, circuitLength, circuitLength <= _maxBurgersCircuitSize);
+		}
+
+		// Find dislocations segments by generating trial Burgers circuits on the
+		// interface mesh and then moving them in both directions along
+		// the dislocation segment.
+        if((circuitLength & 1) && circuitLength <= _maxBurgersCircuitSize){
+            findPrimarySegments(circuitLength);
         }
 
-        if((L & 1) && L <= _maxBurgersCircuitSize){
-            if(!findPrimarySegments(L)){
-                return false;
-            }
-        }
+		// Join segments forming dislocation junctions
+        joinSegments(circuitLength);
 
-        joinSegments(L);
-
-        if(L >= _maxBurgersCircuitSize && !dangling.empty()){
+		// Store circuits of dangling ends
+        if(circuitLength >= _maxBurgersCircuitSize){
 			std::for_each(std::execution::par, dangling.begin(), dangling.end(), [](DislocationNode* node){
 				auto* circuit = node->circuit;
 				if(circuit->isDangling && circuit->segmentMeshCap.empty()){
@@ -97,7 +103,8 @@ void BurgersLoopBuilder::finishDislocationSegments(int crystalStructure){
 	{
 		auto [segmentId, segment] = par;
 
-		// Cut preliminary points
+		// Remove extra line points from segments that do not end in a 
+		// junction. Also assign consecutive IDs to final segments.
 		int pointsToTrimFront = segment->backwardNode().circuit->numPreliminaryPoints;
 		int pointsToTrimBack = segment->forwardNode().circuit->numPreliminaryPoints;
 		segment->id = segmentId;
@@ -111,7 +118,8 @@ void BurgersLoopBuilder::finishDislocationSegments(int crystalStructure){
 		coreVec.erase(coreVec.begin(), coreVec.begin() + pointsToTrimFront);
 		coreVec.erase(coreVec.end() - pointsToTrimBack, coreVec.end());
 
-		// Re-express Burgers vector if necessary
+		// Re-express Burgers vectors of dislocations in a proper llattice
+		// frame whenever possible.
 		auto* originalCluster = segment->burgersVector.cluster();
 		if(originalCluster->structure != crystalStructure){
 			for(auto* transition = originalCluster->transitions; transition && transition->distance <= 1; transition = transition->next){
@@ -147,12 +155,23 @@ void BurgersLoopBuilder::finishDislocationSegments(int crystalStructure){
 	});
 }
 
+// This data structure is used for the recursive generation
+// of trial Burgers circuit on the interface mesh.
 struct BurgersCircuitSearchStruct{
+	// The current mesh node
     InterfaceMesh::Vertex* node;
+	// The coordinates of this node in the unstrained
+	// reference crystal it was mapped to
     Point3 latticeCoord;
+	// The matrix that transforms local lattice vectors
+	// to the reference frame of the start node
     Matrix3 tm;
+	// Number of steps between this node and the start
+	// node of the recursive walk
     int recursiveDepth;
+	// The previous edge in the path to this node
     InterfaceMesh::Edge* predecessorEdge;
+	// Linked list pointer
     BurgersCircuitSearchStruct* nextToProcess;
 };
 
@@ -160,7 +179,7 @@ struct BurgersCircuitSearchStruct{
 // to detect the first set of closed loops ("primary" Burgers circuit). 
 // When two search frontiers collide with matching transformation matrices, 
 // form a new loop.
-bool BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
+void BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
     const int searchDepth = (maxBurgersCircuitSize - 1) / 2;
     assert(searchDepth >= 1);
 
@@ -228,8 +247,6 @@ bool BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
 
         pool.clear(true);
     }
-
-    return true;
 }
 
 // Starts at the point where two partial paths of the mesh have collided—two paths that lead to 
