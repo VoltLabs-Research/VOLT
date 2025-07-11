@@ -7,6 +7,13 @@
 
 namespace OpenDXA{
 
+// Generates a 3D Delaunay mesh of your points under periodic boundaries. 
+// Each input is wrapped into the main cell, nudged by a tiny fixed random jitter 
+// to avoid degenerate arrangements, and if requested - "ghost" copies are placed 
+// out to ghostLayerSize so that edge atoms see the correct neighbors across faces. 
+// Optionally eight far-out helper points form a convex hull to force a fully finite 
+// tetrahedral cover. Finally, Geogram builds the triangulation and tags each tetrahedron 
+// as primary or ghost based on its lowest‐indexed corner.
 bool DelaunayTessellation::generateTessellation(
 	const SimulationCell& simCell,
 	const Point3* positions,
@@ -15,7 +22,7 @@ bool DelaunayTessellation::generateTessellation(
 	bool coverDomainWithFiniteTets,
 	const int* selectedPoints
 ){
-	// Initialize Geogram library (in a thread-safe way)
+	// Thread-safe one-time initialization of the Geogram library.
 	static std::mutex geogramMutex;
 	{
 		std::lock_guard<std::mutex> lock(geogramMutex);
@@ -23,19 +30,18 @@ bool DelaunayTessellation::generateTessellation(
 		GEO::set_assert_mode(GEO::ASSERT_ABORT);
 	}
 
-	// Make the magnitude of the randomly perturbed particle 
-	// positions dependent on the size of the system
+	// Compute a lengthScale from the sum of the three cell vectors, then 
+	// set epsilon = 1e-10 * lengthScale to define a tiny jitter
 	double lengthScale = (simCell.matrix().column(0) + simCell.matrix().column(1) + simCell.matrix().column(2)).length();
-
 	double epsilon = 1e-10 * lengthScale;
 
-	// Set up random number generator to generate random perturbations.
-	// Use a fixed seed value for reproducibility reasons.
+	// Use a fixed RNG seed so that jitter is reproducible across runs.
 	std::mt19937 rng(4);
 	boost::random::uniform_real_distribution<double> displacement(-epsilon, epsilon);
 	_simCell = simCell;
 
-	// Build the list of input points
+	// Wrap each input point into the primary cell, apply jitter,
+	// and store it in _pointData / _particleIndices
 	_particleIndices.clear();
 	_pointData.clear();
 
@@ -150,8 +156,17 @@ bool DelaunayTessellation::generateTessellation(
 	return true;
 }
 
+// Determines whether a given tetrahedron cell should be treated as
+// a "ghost" element (i.e. not part of the original point set).
+// We look at the four corner vertices, pick the one with the
+// smallest original index (so that each tetrahedron is tested exactly one)
+// and ask: was the vertex a ghost copy? If so, we label
+// the entire tetrahedron ghost.
 bool DelaunayTessellation::classifyGhostCell(CellHandle cell) const{
+	// Degenerate or infinite cell = ghost
 	if(!isValidCell(cell)) return true;
+
+	// Identify the corner with minimum "vertexIndex"
 	VertexHandle headVertex = cellVertex(cell, 0);
 	int headVertexIndex = vertexIndex(headVertex);
 	assert(headVertexIndex >= 0);
@@ -165,6 +180,8 @@ bool DelaunayTessellation::classifyGhostCell(CellHandle cell) const{
 		}
 	}
 
+	// If that "head" vertex was created as a ghost (out-of-primary),
+	// classify the whole tetrahedron ghost.
 	return isGhostVertex(headVertex);
 }
 
@@ -178,12 +195,20 @@ static inline double determinant(double a00, double a01, double a02,
     return m012;
 }
 
+// Perfoms the "alpha shape" test on one tetrahedron to detect poorly shaped "sliver" elements.
+// Roughly speaking, we compute the ratio of the squared circumradius to the squared edge lengths,
+// and compare it to the parameter alpha. If both numerator and denominator are near zero, the shape
+// is degenerate and we return std::nullopt. Otherwise, we return true if (numerator/denominator) < alpha,
+// meaning the tetrahedron is acceptable under the chosen threshold.
 std::optional<bool> DelaunayTessellation::alphaTest(CellHandle cell, double alpha) const{
+	// Extract the four vertex coordinates.
     auto v0 = _dt->vertex_ptr(cellVertex(cell, 0));
     auto v1 = _dt->vertex_ptr(cellVertex(cell, 1));
     auto v2 = _dt->vertex_ptr(cellVertex(cell, 2));
     auto v3 = _dt->vertex_ptr(cellVertex(cell, 3));
 
+	// Compute q = v1 - v0, r = v2 - v0, s = v3 - v0 and their
+	// squared lengths.
     auto qpx = v1[0]-v0[0];
     auto qpy = v1[1]-v0[1];
     auto qpz = v1[2]-v0[2];
