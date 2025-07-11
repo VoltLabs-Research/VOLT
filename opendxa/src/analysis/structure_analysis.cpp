@@ -19,18 +19,6 @@
 
 namespace OpenDXA {
 
-// TODO: Check duplicated code
-LatticeStructureType ptmTypeToLatticeType(StructureType ptmType) {
-    switch (ptmType) {
-        case StructureType::FCC: return LATTICE_FCC;
-        case StructureType::HCP: return LATTICE_HCP;
-        case StructureType::BCC: return LATTICE_BCC;
-        case StructureType::CUBIC_DIAMOND: return LATTICE_CUBIC_DIAMOND;
-        case StructureType::HEX_DIAMOND: return LATTICE_HEX_DIAMOND;
-        default: return LATTICE_OTHER;
-    }
-}
-
 StructureAnalysis::StructureAnalysis(ParticleProperty* positions, const SimulationCell& simCell,
                                      LatticeStructureType inputCrystalType, ParticleProperty* particleSelection,
                                      ParticleProperty* outputStructures, std::vector<Matrix3>&& preferredCrystalOrientations,
@@ -95,14 +83,14 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
     // Allocate space to record every atom's RMSD
     _ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Float, 1, 0.0f, "PTM_RMSD", true);
     std::vector<uint64_t> cached(N, 0ull);
-    std::vector<StructureType> ptm_types(N);
+    std::vector<StructureType> ptmTypes(N);
 
     // First pass, compute raw RMSD and provisional type for each atom
     tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto& r) {
         PTM::Kernel kernel(ptm);
         for (size_t i = r.begin(); i < r.end(); ++i) {
             kernel.cacheNeighbors(i, &cached[i]);
-            ptm_types[i] = kernel.identifyStructure(i, cached);
+            ptmTypes[i] = kernel.identifyStructure(i, cached);
             _ptmRmsd->setFloat(i, static_cast<float>(kernel.rmsd()));
         }
     });
@@ -135,7 +123,7 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
         tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto& r) {
             PTM::Kernel kernel(ptm);
             for (size_t i = r.begin(); i < r.end(); ++i) {
-                auto type = ptm_types[i];
+                auto type = ptmTypes[i];
                 float rmsd = _ptmRmsd->getFloat(i);
                 if (type != StructureType::OTHER && rmsd <= finalCutoff) {
                     kernel.identifyStructure(i, cached);
@@ -148,7 +136,7 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
                     }
 
                     // Map PTM structure enum to our lattice types
-                    _structureTypes->setInt(i, ptmTypeToLatticeType(type));
+                    _structureTypes->setInt(i, type);
 
                     // Save orientation quaternion
                     auto quaternion = kernel.orientation();
@@ -251,8 +239,10 @@ bool StructureAnalysis::identifyStructures() {
 }
 
 bool StructureAnalysis::shouldSkipSeed(int index) {
-    auto other = (_identificationMode == StructureAnalysis::Mode::CNA) ? COORD_OTHER : LATTICE_OTHER;
-    return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == other;
+    if(_identificationMode == StructureAnalysis::Mode::CNA){
+        return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == CoordinationStructureType::COORD_OTHER;
+    }
+    return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == StructureType::OTHER;
 }
 
 Cluster* StructureAnalysis::startNewCluster(int atomIndex, int structureType) {

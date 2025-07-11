@@ -59,8 +59,6 @@ public:
         return _calculateDefGradient;
     }
 
-    void setIdentifyOrdering(const int* particleTypes);
-
     bool prepare(const Point3* positions, size_t particle_count, const SimulationCell& cell);
 
     size_t particleCount() const{
@@ -104,13 +102,10 @@ public:
         }
 
         int numTemplateNeighbors() const;
-        int numNearestNeighbors() const{
-            return results().size();
-        }
 
         const NearestNeighborFinder::Neighbor& getNearestNeighbor(int index) const;
         const NearestNeighborFinder::Neighbor& getTemplateNeighbor(int index) const;
-        const Vector3& getIdealNeighborVector(int index) const;
+
     private:
         const PTM& _algorithm;
         ptm_local_handle_t _handle;

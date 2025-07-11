@@ -48,13 +48,6 @@ PTM::PTM() : NearestNeighborFinder(MAX_INPUT_NEIGHBORS){
     ptm_initialize_global();
 }
 
-// If provided, we will pass the per-atom type array into PTM so it can consider multi-component ordering.
-// Setting thins pointer enables the library to include atom type in its matching logic.
-void PTM::setIdentifyOrdering(const int* particleTypes){
-    _particleTypes = particleTypes;
-    _identifyOrdering = (_particleTypes != nullptr);
-}
-
 // Collects and encodes the local neighbor shell around a particle into a bitmask.
 // This lets the PTM algorithm quickly refer back to which neighbor belong where.
 int PTM::Kernel::cacheNeighbors(size_t particleIndex, uint64_t* res){
@@ -326,15 +319,6 @@ const NearestNeighborFinder::Neighbor& PTM::Kernel::getTemplateNeighbor(int inde
     assert(index >= 0 && index < numTemplateNeighbors());
     int mappedIndex = _env.correspondences[index + 1] - 1;
     return getNearestNeighbor(mappedIndex);
-}
-
-// Retrieve the static "ideal" neighbor direction for the matched template.
-// This can be used, for instance, to compute deformation gradients.
-const Vector3& PTM::Kernel::getIdealNeighborVector(int index) const{
-    assert(_structureType != StructureType::OTHER);
-    assert(index >= 0 && index < numTemplateNeighbors());
-    assert(_bestTemplate != nullptr);
-    return *reinterpret_cast<const Vector3*>(_bestTemplate[index + 1]);
 }
 
 }
