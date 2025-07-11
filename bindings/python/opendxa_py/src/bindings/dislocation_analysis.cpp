@@ -18,6 +18,11 @@ void bindDislocationAnalysis(py::module &m){
         .value("HEX_DIAMOND", LATTICE_HEX_DIAMOND, "Hexagonal diamond")
         .export_values();
 
+     py::enum_<StructureAnalysis::Mode>(m, "StructureIdentification", "Chose the per-atom classification mode: PTM or CNA")
+          .value("PTM", StructureAnalysis::Mode::PTM, "Polyhedral Template Matching")
+          .value("CNA", StructureAnalysis::Mode::CNA, "Common Neighbor Analysis")
+          .export_values();
+
     // Bind the main analysis wrapper class
     py::class_<Wrappers::AnalysisWrapper>(m, "DislocationAnalysis", 
         "High-level interface for dislocation analysis using the DXA algorithm")

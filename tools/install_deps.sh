@@ -36,6 +36,7 @@ fi
 
 if [ ! -d "boost" ]; then
     echo "Downloading Boost 1.88.0 (header-only)…"
+    # TODO:
     git clone --depth 1 --branch boost-1.88.0 https://github.com/boostorg/boost.git boost
 else
     echo "Boost already exists."
