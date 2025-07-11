@@ -96,7 +96,7 @@ set(LIBRARY_SOURCES
     src/structures/dislocation_network.cpp
     src/analysis/nearest_neighbor_finder.cpp
     src/analysis/crystal_path_finder.cpp
-    src/analysis/dislocation_tracer.cpp
+    src/analysis/burgers_loop_builder.cpp
     src/analysis/polyhedral_template_matching.cpp
     src/analysis/elastic_mapping.cpp
     src/analysis/structure_analysis.cpp

@@ -2,14 +2,8 @@
 #include <opendxa/analysis/structure_analysis.h>
 #include <opendxa/core/property_base.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>
+#include <opendxa/analysis/burgers_loop_builder.h>
 #include <tbb/parallel_for_each.h>
-#include <vector>
-#include <filesystem>
-#include <string>
-#include <cstdio>
-#include <omp.h>
-#include <cmath>
-#include <iostream>
 
 namespace OpenDXA{
 
@@ -277,10 +271,10 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         return result;
     }
 
-    // Now we hand the interface mesh to the DislocationTracer. This component
+    // Now we hand the interface mesh to the BurgersLoopBuilder. This component
     // finds Burgers circuits on that surface, refines them, join fragments,
     // and identifies junctions. If it fails, the analysis cannot continue.
-    DislocationTracer tracer(interfaceMesh, &structureAnalysis->clusterGraph(), _maxTrialCircuitSize, _circuitStretchability);
+    BurgersLoopBuilder tracer(interfaceMesh, &structureAnalysis->clusterGraph(), _maxTrialCircuitSize, _circuitStretchability);
     if(!tracer.traceDislocationSegments()){
         result["is_failed"] = true;
         result["error"] = "traceDislocationSegments() failed";

@@ -1,6 +1,7 @@
 #include <opendxa/geometry/interface_mesh.h>
 #include <opendxa/analysis/dislocation_tracer.h>
 #include <opendxa/geometry/manifold_construction_helper.h>
+#include <opendxa/analysis/burgers_loop_builder.h>
 #include <algorithm>
 #include <array>
 #include <numeric>
@@ -107,7 +108,7 @@ bool InterfaceMesh::createMesh(double maxNeighborDist){
 // on dangling circuits. We produce a separate half-edge mesh for defect surfaces,
 // stitching in new triangles around each dangling Burgers circuit cap. 
 bool InterfaceMesh::generateDefectMesh(
-    DislocationTracer const& tracer,
+    BurgersLoopBuilder const& tracer,
     HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& outMesh
 ){
     // Copy all interface vertices into the output mesh at the same indices

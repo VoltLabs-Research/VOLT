@@ -10,9 +10,9 @@
 
 namespace OpenDXA{
 
-class DislocationTracer{
+class BurgersLoopBuilder{
 public:
-	DislocationTracer(InterfaceMesh& mesh, ClusterGraph* clusterGraph, int maxTrialCircuitSize, int maxCircuitElongation) :
+	BurgersLoopBuilder(InterfaceMesh& mesh, ClusterGraph* clusterGraph, int maxTrialCircuitSize, int maxCircuitElongation) :
 		_mesh(mesh),
 		_clusterGraph(clusterGraph),
 		_network(new DislocationNetwork(clusterGraph)),

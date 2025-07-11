@@ -1,5 +1,5 @@
 #include <opendxa/core/opendxa.h>
-#include <opendxa/analysis/dislocation_tracer.h>
+#include <opendxa/analysis/burgers_loop_builder.h>
 #include <opendxa/geometry/interface_mesh.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <tbb/parallel_for.h>
@@ -13,7 +13,7 @@
 
 namespace OpenDXA{
 
-BurgersCircuit* DislocationTracer::allocateCircuit(){
+BurgersCircuit* BurgersLoopBuilder::allocateCircuit(){
     BurgersCircuit* circuit = nullptr;
     tbb::spin_mutex::scoped_lock lock(_circuit_pool_mutex);
     
@@ -34,7 +34,7 @@ BurgersCircuit* DislocationTracer::allocateCircuit(){
 // its edges to fit the mesh contour. It finally joins dangling fragments and forms junctions 
 // where several loops intersect. Upon completion, each dislocation segment is defined as a 
 // line of points that faithfully follows the topology of the crystal structure.
-bool DislocationTracer::traceDislocationSegments(){
+bool BurgersLoopBuilder::traceDislocationSegments(){
     mesh().clearFaceFlag(0);
     std::vector<DislocationNode*> dangling;
 
@@ -68,13 +68,13 @@ bool DislocationTracer::traceDislocationSegments(){
     return true;
 }
 
-void DislocationTracer::discardCircuit(BurgersCircuit* circuit){
+void BurgersLoopBuilder::discardCircuit(BurgersCircuit* circuit){
     tbb::spin_mutex::scoped_lock lock(_circuit_pool_mutex);
     assert(_unusedCircuit == nullptr);
     _unusedCircuit = circuit;
 }
 
-void DislocationTracer::finishDislocationSegments(int crystalStructure){
+void BurgersLoopBuilder::finishDislocationSegments(int crystalStructure){
     auto& segs = network().segments();
 
     tbb::parallel_for(tbb::blocked_range<size_t>(0, segs.size()), 
@@ -145,7 +145,7 @@ struct BurgersCircuitSearchStruct{
     BurgersCircuitSearchStruct* nextToProcess;
 };
 
-bool DislocationTracer::findPrimarySegments(int maxBurgersCircuitSize){
+bool BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
     const int searchDepth = (maxBurgersCircuitSize - 1) / 2;
     assert(searchDepth >= 1);
 
@@ -226,7 +226,7 @@ bool DislocationTracer::findPrimarySegments(int maxBurgersCircuitSize){
 // passes all these tests, it converts the loop into a new dislocation segment—a small dotted line 
 // that is then refined and extended—and if not, it undoes the layout and discards that circuit. 
 // This accurately captures every real Burgers loop in the crystal and prepares it for dislocation analysis.
-bool DislocationTracer::createBurgersCircuit(InterfaceMesh::Edge* edge, int maxBurgersCircuitSize){
+bool BurgersLoopBuilder::createBurgersCircuit(InterfaceMesh::Edge* edge, int maxBurgersCircuitSize){
 	assert(edge->circuit == nullptr);
 
 	InterfaceMesh::Vertex* currentNode = edge->vertex1();
@@ -332,7 +332,7 @@ bool DislocationTracer::createBurgersCircuit(InterfaceMesh::Edge* edge, int maxB
 	return true;
 }
 
-void DislocationTracer::createAndTraceSegment(const ClusterVector& burgersVector, BurgersCircuit* forwardCircuit, int maxCircuitLength){
+void BurgersLoopBuilder::createAndTraceSegment(const ClusterVector& burgersVector, BurgersCircuit* forwardCircuit, int maxCircuitLength){
 	// Generate the reverse circuit.
 	BurgersCircuit* backwardCircuit = buildReverseCircuit(forwardCircuit);
 
@@ -359,7 +359,7 @@ void DislocationTracer::createAndTraceSegment(const ClusterVector& burgersVector
 	traceSegment(*segment, segment->backwardNode(), maxCircuitLength, true);
 }
 
-bool DislocationTracer::intersectsOtherCircuits(BurgersCircuit* circuit){
+bool BurgersLoopBuilder::intersectsOtherCircuits(BurgersCircuit* circuit){
     // Traverse each edge edge1 of our circuit
     InterfaceMesh::Edge* startEdge1 = circuit->firstEdge;
     for(InterfaceMesh::Edge* edge1 = startEdge1; ; edge1 = edge1->nextCircuitEdge){
@@ -413,7 +413,7 @@ bool DislocationTracer::intersectsOtherCircuits(BurgersCircuit* circuit){
     return false;
 }
 
-BurgersCircuit* DislocationTracer::buildReverseCircuit(BurgersCircuit* forwardCircuit){
+BurgersCircuit* BurgersLoopBuilder::buildReverseCircuit(BurgersCircuit* forwardCircuit){
 	BurgersCircuit* backwardCircuit = allocateCircuit();
 
 	// Build the backward circuit along inner outline.
@@ -493,7 +493,7 @@ BurgersCircuit* DislocationTracer::buildReverseCircuit(BurgersCircuit* forwardCi
 
 	return backwardCircuit;
 }
-void DislocationTracer::traceSegment(DislocationSegment& segment, DislocationNode& node, int maxCircuitLength, bool isPrimarySegment){
+void BurgersLoopBuilder::traceSegment(DislocationSegment& segment, DislocationNode& node, int maxCircuitLength, bool isPrimarySegment){
     BurgersCircuit& circuit = *node.circuit;
     assert(circuit.countEdges() == circuit.edgeCount);
     assert(circuit.isDangling);
@@ -586,7 +586,7 @@ void DislocationTracer::traceSegment(DislocationSegment& segment, DislocationNod
     }
 }
 
-bool DislocationTracer::tryRemoveTwoCircuitEdges(InterfaceMesh::Edge*& edge0, InterfaceMesh::Edge*& edge1, InterfaceMesh::Edge*& edge2){
+bool BurgersLoopBuilder::tryRemoveTwoCircuitEdges(InterfaceMesh::Edge*& edge0, InterfaceMesh::Edge*& edge1, InterfaceMesh::Edge*& edge2){
 	if(edge1 != edge2->oppositeEdge()) return false;
 
 	BurgersCircuit* circuit = edge0->circuit;
@@ -610,7 +610,7 @@ bool DislocationTracer::tryRemoveTwoCircuitEdges(InterfaceMesh::Edge*& edge0, In
 	return true;
 }
 
-bool DislocationTracer::tryRemoveThreeCircuitEdges(
+bool BurgersLoopBuilder::tryRemoveThreeCircuitEdges(
 	InterfaceMesh::Edge*& edge0, 
 	InterfaceMesh::Edge*& edge1, 
 	InterfaceMesh::Edge*& edge2,
@@ -650,7 +650,7 @@ bool DislocationTracer::tryRemoveThreeCircuitEdges(
 	return true;
 }
 
-bool DislocationTracer::tryRemoveOneCircuitEdge(
+bool BurgersLoopBuilder::tryRemoveOneCircuitEdge(
 	InterfaceMesh::Edge*& edge0, 
 	InterfaceMesh::Edge*& edge1, 
 	InterfaceMesh::Edge*& edge2, 
@@ -701,7 +701,7 @@ bool DislocationTracer::tryRemoveOneCircuitEdge(
 	return true;
 }
 
-bool DislocationTracer::trySweepTwoFacets(
+bool BurgersLoopBuilder::trySweepTwoFacets(
 	InterfaceMesh::Edge*& edge0, 
 	InterfaceMesh::Edge*& edge1, 
 	InterfaceMesh::Edge*& edge2, 
@@ -755,7 +755,7 @@ bool DislocationTracer::trySweepTwoFacets(
 	return true;
 }
 
-bool DislocationTracer::tryInsertOneCircuitEdge(
+bool BurgersLoopBuilder::tryInsertOneCircuitEdge(
 	InterfaceMesh::Edge*& edge0, 
 	InterfaceMesh::Edge*& edge1, 
 	bool isPrimarySegment
@@ -798,7 +798,7 @@ bool DislocationTracer::tryInsertOneCircuitEdge(
 	return true;
 }
 
-void DislocationTracer::appendLinePoint(DislocationNode& node){
+void BurgersLoopBuilder::appendLinePoint(DislocationNode& node){
 	DislocationSegment& segment = *node.segment;
 	assert(!segment.line.empty());
 
@@ -822,7 +822,7 @@ void DislocationTracer::appendLinePoint(DislocationNode& node){
 	node.circuit->numPreliminaryPoints++;
 }
 
-void DislocationTracer::circuitCircuitIntersection(
+void BurgersLoopBuilder::circuitCircuitIntersection(
 	InterfaceMesh::Edge* circuitAEdge1, 
 	InterfaceMesh::Edge* circuitAEdge2, 
 	InterfaceMesh::Edge* circuitBEdge1, 
@@ -915,7 +915,7 @@ void DislocationTracer::circuitCircuitIntersection(
 	}
 }
 
-size_t DislocationTracer::joinSegments(int maxCircuitLength){
+size_t BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 	// First iteration over all dangling circuits.
 	// Try to create secondary dislocation segments in the adjacent regions of the
 	// interface mesh.
@@ -1144,7 +1144,7 @@ size_t DislocationTracer::joinSegments(int maxCircuitLength){
 	return numJunctions;
 }
 
-void DislocationTracer::createSecondarySegment(InterfaceMesh::Edge* firstEdge, BurgersCircuit* outerCircuit, int maxCircuitLength){
+void BurgersLoopBuilder::createSecondarySegment(InterfaceMesh::Edge* firstEdge, BurgersCircuit* outerCircuit, int maxCircuitLength){
 	assert(firstEdge->circuit == outerCircuit);
 
 	// Create circuit along the border of the hole.

@@ -8,7 +8,7 @@ namespace OpenDXA{
 
 struct BurgersCircuit;
 struct BurgersCircuitSearchStruct;
-class DislocationTracer;
+class BurgersLoopBuilder;
 
 struct InterfaceMeshVertex{
     BurgersCircuitSearchStruct* burgersSearchStruct = nullptr;
@@ -58,7 +58,7 @@ public:
 		return _isCompletelyBad;
 	}
 
-    bool generateDefectMesh(DislocationTracer const& tracer, HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& defectMesh);
+    bool generateDefectMesh(BurgersLoopBuilder const& tracer, HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& defectMesh);
 
 private:
     ElasticMapping& _elasticMapping;
