@@ -39,7 +39,6 @@ int main(int argc, char* argv[]){
     analyzer.setCircuitStretchability(elongation);
     analyzer.setOnlyPerfectDislocations(perfectOnly);
     analyzer.setIdentificationMode(OpenDXA::StructureAnalysis::Mode::PTM);
-    analyzer.setLinePointInterval(8);
 
     std::string outputFile;
     if(!jsonOutput.empty()){

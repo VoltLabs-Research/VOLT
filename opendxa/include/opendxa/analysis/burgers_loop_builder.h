@@ -12,11 +12,12 @@ namespace OpenDXA{
 
 class BurgersLoopBuilder{
 public:
-	BurgersLoopBuilder(InterfaceMesh& mesh, ClusterGraph* clusterGraph, int maxTrialCircuitSize, int maxCircuitElongation) :
+	BurgersLoopBuilder(InterfaceMesh& mesh, ClusterGraph* clusterGraph, int maxTrialCircuitSize, int maxCircuitElongation, bool markCoreAtoms) :
 		_mesh(mesh),
 		_clusterGraph(clusterGraph),
 		_network(new DislocationNetwork(clusterGraph)),
 		_unusedCircuit(nullptr),
+		_markCoreAtoms(markCoreAtoms),
 		_edgeStartIndex(0),
 		_maxBurgersCircuitSize(maxTrialCircuitSize),
 		_maxExtendedBurgersCircuitSize(maxTrialCircuitSize + maxCircuitElongation){}
@@ -61,6 +62,7 @@ private:
 	void circuitCircuitIntersection(InterfaceMesh::Edge* circuitAEdge1, InterfaceMesh::Edge* circuitAEdge2, InterfaceMesh::Edge* circuitBEdge1, InterfaceMesh::Edge* circuitBEdge2, int& goingOutside, int& goingInside);
 	void createSecondarySegment(InterfaceMesh::Edge* firstEdge, BurgersCircuit* outerCircuit, int maxCircuitLength);
 	void findPrimarySegments(int maxBurgersCircuitSize);
+	void identifyNodeCoreAtoms(DislocationNode& node, const Point3& newPoint);
 
 	bool createBurgersCircuit(InterfaceMesh::Edge* edge, int maxBurgersCircuitSize);
 	bool intersectsOtherCircuits(BurgersCircuit* circuit);
@@ -84,6 +86,8 @@ private:
 	std::shared_ptr<DislocationNetwork> _network;
 	ClusterGraph* _clusterGraph; 
 	tbb::spin_mutex _circuit_pool_mutex;
+
+	bool _markCoreAtoms;
 
 	int _maxBurgersCircuitSize;
 	int _maxExtendedBurgersCircuitSize;

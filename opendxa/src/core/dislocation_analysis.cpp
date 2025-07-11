@@ -33,6 +33,21 @@ void DislocationAnalysis::setCircuitStretchability(int stretch){
     _circuitStretchability = stretch;
 }
 
+// The "core atoms" are the atoms located in the region closest to the dislocation line,
+// where the crystal lattice is most deformed. They do not form a line by themselves, but are
+// the atoms immediately affected by the dislocation. We identify them as
+// the atoms that are on or within the Burgers loop around the dislocation.
+// 
+// Core atoms are useful for precisely delineating which atoms form the core 
+// of the dislocation. That region (composed of the atoms with "is_core = true") 
+// is precisely the area where the material is most deformed at the atomic level.
+// We don't rebuild the entire tessellation from scratch. We use the existing one 
+// (stored in ElasticMapping), but we initialize a new spatial 
+// query structure to identify the cells within the core.
+void DislocationAnalysis::setMarkCoreAtoms(bool markCoreAtoms){
+    _markCoreAtoms = markCoreAtoms;
+}
+
 // Enable or disable detection of only perfect dislocations.
 // When true, planar faults (e.g. stacking faults whithout a full dislocation)
 // are ignored. Only complete dislocation lines are reported.
@@ -274,7 +289,13 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     // Now we hand the interface mesh to the BurgersLoopBuilder. This component
     // finds Burgers circuits on that surface, refines them, join fragments,
     // and identifies junctions. If it fails, the analysis cannot continue.
-    BurgersLoopBuilder tracer(interfaceMesh, &structureAnalysis->clusterGraph(), _maxTrialCircuitSize, _circuitStretchability);
+    BurgersLoopBuilder tracer(
+        interfaceMesh, 
+        &structureAnalysis->clusterGraph(),
+        _maxTrialCircuitSize, 
+        _circuitStretchability,
+        _markCoreAtoms
+    );
     if(!tracer.traceDislocationSegments()){
         result["is_failed"] = true;
         result["error"] = "traceDislocationSegments() failed";

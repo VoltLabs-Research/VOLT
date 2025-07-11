@@ -30,6 +30,7 @@ public:
     void setLinePointInterval(int linePointInterval);
     void setIdentificationMode(StructureAnalysis::Mode identificationMode);
     void setDefectMeshSmoothingLevel(int defectMeshSmoothingLevel);
+    void setMarkCoreAtoms(bool markCoreAtoms);
     json compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile = "");
     json compute(const std::vector<LammpsParser::Frame>& frames, const std::string& output_file_template);
 
@@ -45,6 +46,7 @@ private:
     int _defectMeshSmoothingLevel = 8;
     StructureAnalysis::Mode _identificationMode = StructureAnalysis::Mode::CNA;
 
+    bool _markCoreAtoms = false;
     bool _onlyPerfectDislocations;
     
     mutable json _lastJsonData;
