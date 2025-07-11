@@ -82,63 +82,58 @@ void BurgersLoopBuilder::discardCircuit(BurgersCircuit* circuit){
 // it points consistently.
 void BurgersLoopBuilder::finishDislocationSegments(int crystalStructure){
     auto& segs = network().segments();
+	size_t N = segs.size();
 
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, segs.size()), 
-        [&](const tbb::blocked_range<size_t>& r){
-            for(size_t i = r.begin(); i != r.end(); ++i){
-                auto* s = segs[i];
-                auto pre  = s->backwardNode().circuit->numPreliminaryPoints;
-                auto post = s->forwardNode().circuit->numPreliminaryPoints;
-                s->id = static_cast<int>(i);
+	tbb::parallel_for(size_t(0), N, [&](size_t i){
+		auto* segment = segs[i];
 
-                auto& line = s->line;
-                auto& core = s->coreSize;
+		// Cut preliminary points
+		int pointsToTrimFront = segment->backwardNode().circuit->numPreliminaryPoints;
+		int pointsToTrimBack = segment->forwardNode().circuit->numPreliminaryPoints;
+		segment->id = static_cast<int>(i);
 
-                line.erase(line.begin(), line.begin() + pre);
-                line.erase(line.end() - post, line.end());
-                core.erase(core.begin(), core.begin() + pre);
-                core.erase(core.end() - post, core.end());
-            }
-	});
+		auto& line = segment->line;
+		auto& coreVec = segment->coreSize;
 
-    // Re-express Burgers vectors in the desired structure
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, segs.size()), 
-        [&](const tbb::blocked_range<size_t>& r){
-            for(size_t i = r.begin(); i != r.end(); ++i){
-                auto* s = segs[i];
-                auto* orig = s->burgersVector.cluster();
-                if(orig->structure != crystalStructure){
-                    for(auto* t = orig->transitions; t && t->distance <= 1; t = t->next){
-                        if(t->cluster2->structure == crystalStructure){
-                            s->burgersVector = ClusterVector(
-                                t->transform(s->burgersVector.localVec()),
-                                t->cluster2
-                            );
-                            break;
-                        }
-                    }
-                }
-            }
-	});
+		line.erase(line.begin(), line.begin() + pointsToTrimFront);
+		line.erase(line.end() - pointsToTrimBack, line.end());
 
-    // Align the orientation of each segment
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, segs.size()), 
-        [&](const tbb::blocked_range<size_t>& r){
-            for(size_t i = r.begin(); i != r.end(); ++i){
-                auto* s = segs[i];
-                auto& line = s->line;
-                if (line.empty()) continue;
-                Vector3 dir = line.back() - line.front();
-                if(dir.isZero(CA_ATOM_VECTOR_EPSILON)) continue;
+		coreVec.erase(coreVec.begin(), coreVec.begin() + pointsToTrimFront);
+		coreVec.erase(coreVec.end() - pointsToTrimBack, coreVec.end());
 
-                auto absx = std::abs(dir.x()), absy = std::abs(dir.y()), absz = std::abs(dir.z());
-                if((absx >= absy && absx >= absz && dir.x() < 0) ||
-                   (absy >= absx && absy >= absz && dir.y() < 0) ||
-                   (absz >= absx && absz >= absy && dir.z() < 0))
-                {
-                    s->flipOrientation();
-                }
-            }
+		// Re-express Burgers vector if necessary
+		auto* originalCluster = segment->burgersVector.cluster();
+		if(originalCluster->structure != crystalStructure){
+			for(auto* transition = originalCluster->transitions; transition && transition->distance <= 1; transition = transition->next){
+				if(transition->cluster2->structure == crystalStructure){
+					segment->burgersVector = ClusterVector(
+						transition->transform(segment->burgersVector.localVec()),
+						transition->cluster2
+					);
+					break;
+				}
+			}
+		}
+
+		if(line.empty()) return;
+		// Align the final orientation so that the “main axis” faces positive
+
+		Vector3 direction = line.back() - line.front();
+		if(!direction.isZero(CA_ATOM_VECTOR_EPSILON)){
+			auto absX = std::abs(direction.x());
+			auto absY = std::abs(direction.y());
+			auto absZ = std::abs(direction.z());
+
+			bool shouldFlip = (
+				(absX >= absY && absX >= absZ && direction.x() < 0.0) ||
+				(absY >= absX && absY >= absZ && direction.y() < 0.0) ||
+				(absZ >= absX && absZ >= absY && direction.z() < 0.0)
+			);
+
+			if(shouldFlip){
+				segment->flipOrientation();
+			}
+		}
 	});
 }
 
