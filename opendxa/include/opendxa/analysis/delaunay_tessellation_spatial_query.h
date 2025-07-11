@@ -1,15 +1,15 @@
 #pragma once
 
-#include <vector>
-#include <optional>
-#include <utility>
-
+#include <opendxa/analysis/triangle_tetrahedron_intersection_test.h>
+#include <opendxa/geometry/delaunay_tessellation.h>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
-
-#include <opendxa/geometry/delaunay_tessellation.h>
+#include <boost/geometry/geometries/register/point.hpp>
+#include <vector>
+#include <optional>
+#include <utility>
 
 namespace OpenDXA {
 
@@ -20,26 +20,13 @@ struct bPointCell {
 
 }
 
-namespace boost { namespace geometry { namespace traits {
-template<> struct tag<       ::OpenDXA::bPointCell> { using type = point_tag; };
-template<> struct coordinate_type< ::OpenDXA::bPointCell> { using type = double; };
-template<> struct coordinate_system< ::OpenDXA::bPointCell> { using type = cs::cartesian; };
-template<> struct dimension<     ::OpenDXA::bPointCell> : boost::mpl::int_<3> {};
-
-template<> struct access< ::OpenDXA::bPointCell, 0> {
-    static double get( ::OpenDXA::bPointCell const& p ) { return p.point.x(); }
-    static void   set( ::OpenDXA::bPointCell&       p, double v ) { p.point.x() = v; }
-};
-template<> struct access< ::OpenDXA::bPointCell, 1> {
-    static double get( ::OpenDXA::bPointCell const& p ) { return p.point.y(); }
-    static void   set( ::OpenDXA::bPointCell&       p, double v ) { p.point.y() = v; }
-};
-template<> struct access< ::OpenDXA::bPointCell, 2> {
-    static double get( ::OpenDXA::bPointCell const& p ) { return p.point.z(); }
-    static void   set( ::OpenDXA::bPointCell&       p, double v ) { p.point.z() = v; }
-};
-
-}}}
+BOOST_GEOMETRY_REGISTER_POINT_3D(
+    OpenDXA::bPointCell, 
+    double, boost::geometry::cs::cartesian, 
+    point[0],
+    point[1], 
+    point[2]
+);
 
 namespace OpenDXA{
 
@@ -50,7 +37,7 @@ using BoxValue = std::pair<bBox, DelaunayTessellation::CellHandle>;
 class DelaunayTessellationSpatialQuery{
 public:
     DelaunayTessellationSpatialQuery(
-        DelaunayTessellation& tess,
+        const DelaunayTessellation& tess,
         std::optional<double> alpha = std::nullopt
     );
 

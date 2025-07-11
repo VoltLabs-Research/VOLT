@@ -1,10 +1,12 @@
 #include <opendxa/utilities/json_exporter.h>
 #include <opendxa/analysis/burgers_circuit.h>
+#include <opendxa/analysis/burgers_loop_builder.h>
 #include <fstream>
 #include <iomanip>
 #include <filesystem>
 #include <set>
 #include <climits>
+#include <unordered_set>
 #include <algorithm>
 
 namespace OpenDXA {
@@ -13,6 +15,7 @@ json DXAJsonExporter::exportAnalysisData(
     const DislocationNetwork* network,
     const InterfaceMesh* interfaceMesh, 
     const LammpsParser::Frame& frame,
+    const BurgersLoopBuilder* tracer,
     const std::vector<int>* structureTypes,
     bool includeDetailedNetworkInfo,
     bool includeTopologyInfo
@@ -21,7 +24,7 @@ json DXAJsonExporter::exportAnalysisData(
 
     data["dislocations"] = exportDislocationsToJson(network, includeDetailedNetworkInfo, &frame.simulationCell);
     data["interface_mesh"] = getInterfaceMeshData(interfaceMesh, includeTopologyInfo);
-    data["atoms"] = getAtomsData(frame, structureTypes);
+    data["atoms"] = getAtomsData(frame, tracer, structureTypes);
     
     data["simulation_cell"] = getExtendedSimulationCellInfo(frame.simulationCell);
     
@@ -296,7 +299,11 @@ json DXAJsonExporter::getInterfaceMeshData(const InterfaceMesh* interfaceMesh, b
     return meshData;
 }
 
-json DXAJsonExporter::getAtomsData(const LammpsParser::Frame& frame, const std::vector<int>* structureTypes) {
+json DXAJsonExporter::getAtomsData(
+    const LammpsParser::Frame& frame, 
+    const BurgersLoopBuilder* tracer,
+    const std::vector<int>* structureTypes
+){
     json atomsData;
 
     atomsData["metadata"] = {
@@ -351,7 +358,13 @@ json DXAJsonExporter::getAtomsData(const LammpsParser::Frame& frame, const std::
         {"most_common_cna_type", mostCommonCnaType},
         {"unique_cna_types", static_cast<int>(cnaTypeDistribution.size())}
     };
-    
+        
+    std::unordered_set<int> coreAtomIds;
+    for(auto &atomJson : atomsData["data"]){
+        int idx = atomJson["node_id"];
+        atomJson["is_core"] = tracer->_coreAtomIndices.count(idx) ? true : false;
+    }
+
     return atomsData;
 }
 
@@ -819,9 +832,9 @@ json dislocationNetworkToJson(const DislocationNetwork* network){
     return exporter.exportDislocationsToJson(network);
 }
 
-json frameToJson(const LammpsParser::Frame& frame){
+json frameToJson(const LammpsParser::Frame& frame, const BurgersLoopBuilder* tracer){
     DXAJsonExporter exporter;
-    return exporter.getAtomsData(frame);
+    return exporter.getAtomsData(frame, tracer);
 }
 
 }

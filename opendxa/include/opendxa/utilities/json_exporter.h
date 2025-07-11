@@ -25,6 +25,7 @@ public:
         const DislocationNetwork* network,
         const InterfaceMesh* interfaceMesh,
         const LammpsParser::Frame& frame,
+        const BurgersLoopBuilder* tracer,
         const std::vector<int>* structureTypes = nullptr,
         bool includeDetailedNetworkInfo = true,
         bool includeTopologyInfo = true
@@ -32,7 +33,7 @@ public:
 
     json exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo = false, const SimulationCell* simulationCell = nullptr);
     json getInterfaceMeshData(const InterfaceMesh* interfaceMesh, bool includeTopologyInfo = false);
-    json getAtomsData(const LammpsParser::Frame& frame, const std::vector<int>* structureTypes = nullptr);
+    json getAtomsData(const LammpsParser::Frame& frame, const BurgersLoopBuilder* tracer, const std::vector<int>* structureTypes = nullptr);
     json getProcessingTime();
     json getMetadata();
     
@@ -71,6 +72,7 @@ private:
     double calculateAngle(const Vector3& a, const Vector3& b);
 };
 
+// TODO: ?
 json dislocationNetworkToJson(const DislocationNetwork* network);
 json frameToJson(const LammpsParser::Frame& frame);
 

@@ -15,7 +15,9 @@ class VisualizationSettings:
     show_axes: bool = True
     show_background_mesh: bool = False
     show_plot: bool = True
-
+    core_atom_color: str = "red"
+    bulk_atom_color: str = "lightgray"
+    
     dislocation_opacity: float = 1.0
     atom_opacity: float = 0.6
     stacking_fault_opacity: float = 0.8

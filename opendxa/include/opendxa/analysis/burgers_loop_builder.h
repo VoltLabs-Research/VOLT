@@ -1,9 +1,11 @@
 #pragma once
 
+#include <opendxa/analysis/delaunay_tessellation_spatial_query.h>
 #include <opendxa/core/opendxa.h>
 #include <opendxa/utilities/memory_pool.h>
 #include <opendxa/structures/dislocation_network.h>
 #include <opendxa/geometry/interface_mesh.h>
+#include <unordered_set>
 #include <random>
 
 namespace OpenDXA{
@@ -45,7 +47,9 @@ public:
 	const std::vector<DislocationNode*>& danglingNodes() const{
 		return _danglingNodes;
 	}
-
+	
+	std::unordered_set<int> _coreAtomIndices;
+    std::vector<std::pair<DislocationNode*, bool>> _cellDataForCoreAtomIdentification;
 private:
 	BurgersCircuit* allocateCircuit();
 	BurgersCircuit* buildReverseCircuit(BurgersCircuit* forwardCircuit);
@@ -80,10 +84,12 @@ private:
 	std::shared_ptr<DislocationNetwork> _network;
 	ClusterGraph* _clusterGraph; 
 	tbb::spin_mutex _circuit_pool_mutex;
-	bool _markCoreAtoms;
 
 	int _maxBurgersCircuitSize;
 	int _maxExtendedBurgersCircuitSize;
+    std::optional<DelaunayTessellationSpatialQuery> _spatialQuery;
+    std::vector<std::array<Point3, 3>> _triangles;
+    std::vector<BoxValue> _ranges;
 
 	MemoryPool<BurgersCircuit> _circuitPool;
 	std::mt19937 rng;

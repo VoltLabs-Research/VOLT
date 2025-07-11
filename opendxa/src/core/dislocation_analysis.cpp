@@ -315,7 +315,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     // Finally, we serialize all results-mesh, network data, metrics-into JSON. 
     // Any exception here is considered a fatal error in the exporter.
     try{
-        result = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame);
+        result = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame, &tracer);
     }catch(const std::exception& e){
         result["is_failed"] = true;
         result["error"] = e.what();

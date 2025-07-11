@@ -4,7 +4,7 @@
 namespace OpenDXA {
 
 DelaunayTessellationSpatialQuery::DelaunayTessellationSpatialQuery(
-    DelaunayTessellation& tess,
+    const DelaunayTessellation& tess,
     std::optional<double> alpha){
     size_t count = 0;
     for(auto cell : tess.cells()){

@@ -869,6 +869,89 @@ void BurgersLoopBuilder::appendLinePoint(DislocationNode& node){
 	}
 
 	node.circuit->numPreliminaryPoints++;
+
+	// The "core atoms" are the atoms located in the region closest to the dislocation line,
+	// where the crystal lattice is most deformed. They do not form a line by themselves, but are
+	// the atoms immediately affected by the dislocation. We identify them as
+	// the atoms that are on or within the Burgers loop around the dislocation.
+	// 
+	// Core atoms are useful for precisely delineating which atoms form the core 
+	// of the dislocation. That region (composed of the atoms with "is_core = true") 
+	// is precisely the area where the material is most deformed at the atomic level.
+	// We don't rebuild the entire tessellation from scratch. We use the existing one 
+	// (stored in ElasticMapping), but we initialize a new spatial 
+	// query structure to identify the cells within the core.
+	const DelaunayTessellation& tessellation = mesh().elasticMapping().tessellation();
+	double alpha = 3.5 * mesh().elasticMapping().structureAnalysis().maximumNeighborDistance();
+	if(!_spatialQuery){
+		_spatialQuery.emplace(tessellation, alpha);
+		_cellDataForCoreAtomIdentification.resize(_spatialQuery->numCells(), std::make_pair(nullptr, false));
+	}
+
+	// Gather the cap triangles and calculate their combined bounding box.
+	InterfaceMesh::Edge* edge = node.circuit->firstEdge;
+	_triangles.clear();
+	Box3 bbox;
+	do{
+		const auto& cell = mesh().structureAnalysis().cell();
+		_triangles.push_back({
+			newPoint + cell.wrapVector(edge->vertex1()->pos() - newPoint),
+			newPoint + cell.wrapVector(edge->vertex2()->pos() - newPoint), newPoint
+		});
+
+		for(size_t i = 0; i < 3; ++i){
+			bbox.addPoint(_triangles.back()[i]);
+		}
+
+		edge = edge->nextCircuitEdge;
+	}while(edge != node.circuit->firstEdge);
+
+	// Obtain the list of all Delaunay cells intersecting with the bounding box
+	_spatialQuery->getOverlappingCells(bbox, _ranges);
+	
+	// Work chunk size of 256 is used as threshold for parallelization and has been determined from initial testing.
+	// Parallel loop over tetrahedrons to be tested for intersection with the cap polygon.
+	// Inner loop over each triangle until an intersection is detected.
+	#pragma omp parallel for schedule(static,256) default(none) shared(_ranges, tessellation, _triangles, _cellDataForCoreAtomIdentification, node)
+	for(size_t idx = 0; idx < _ranges.size(); ++idx){
+		// Grab bbox and cell
+		const BoxValue& boxval = _ranges[idx];
+		const bBox& bbox = boxval.first;   
+		size_t cell = boxval.second; 
+		assert(bbox.max_corner().cell == bbox.min_corner().cell);
+		int cellIdx = tessellation.getUserField(cell);
+		assert(cellIdx == -1 || cellIdx < _cellDataForCoreAtomIdentification.size());
+
+		// Skip over tetrahedrons that have already been assigned to some dislocation.
+		if(cellIdx == -1 || _cellDataForCoreAtomIdentification[cellIdx].first){
+			continue;
+		}
+
+		// Get tetrahedron coordinates
+		std::array<Point3, 4> tet;
+		for(size_t t = 0; t < tet.size(); ++t) {
+			tet[t] = tessellation.vertexPosition(
+				tessellation.cellVertex(cell, t)
+			);
+		}
+
+		// Intersection test
+		for(const auto& triangle : _triangles){
+			if(TetrahedronTriangleIntersection::test(tet, triangle)){
+				// Tag tetrahedron as belonging to the current dislocation line end.
+				_cellDataForCoreAtomIdentification[cellIdx] = {
+					&node,
+					!node.circuit->segmentMeshCap.empty()
+				};
+
+				for (size_t v = 0; v < 4; ++v) {
+					int atomIdx = tessellation.cellVertex(cell, v);
+					_coreAtomIndices.insert(atomIdx);
+				}
+				break;
+			}
+		}
+	}
 }
 
 // When two circuits share a face corner, classify wheter one is going "inside" or
