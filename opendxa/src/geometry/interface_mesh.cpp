@@ -8,20 +8,38 @@
 
 namespace OpenDXA{
 
+// Build a watertight surface mesh over the interface where material properties may change
+// (e.g, grain or cluster boundaries). We use a Delaunay Tessellation to generate tetrahedra,
+// then carve out only those facets whose endpoints belongs to "compatible" clusters (as determined
+// by the elastic mapping). Faces that bridge incompatible clusters get omitted, leaving
+// a manifold of boundary faces.
 bool InterfaceMesh::createMesh(double maxNeighborDist){
     _isCompletelyGood = true;
     _isCompletelyBad  = true;
 
+    // Classify each tetrahedron. Return 1 to keep its faces if its interior is
+    // "elastic-compatible" (no large strain or cell-size mismatch), otherwise 0.
     auto tetraRegion = [&](auto cell) -> unsigned {
         if(!elasticMapping().isElasticMappingCompatible(cell)){
+            // Found at least one bad tetrahedra
 			_isCompletelyGood = false;
+
+            // Omit all faces of this cell
 			return 0;
 		}
 
+        // At least one good tetrahedra exists.
 		_isCompletelyBad = false;
+
+        // Keep its faces
 		return 1;
     };
 
+    // Initialize each triangular face by copying its three vertex positions,
+    // computing the physical (Cartesian) edge vectors, and looking up the
+    // "ideal" cluster-to-cluster displacement and rotation that went into 
+    // generating those vertices. Also detect if any PBC wrapping would
+    // imply the simulation cell is too small for the neighbor distance.
     auto prepareFace = [&](
 		Face* face,
 		std::array<int, 3> const& vIdx,
@@ -37,7 +55,11 @@ bool InterfaceMesh::createMesh(double maxNeighborDist){
         auto* e = face->edges();
         for(int i = 0; i < 3; ++i){
             int ni = (i + 1) % 3;
+            // Compute the actual displacement vector between the two vertices
             e->physicalVector = pos[ni] - pos[i];
+
+            // Verify that no coordinate exceeds half the cell length in that axis,
+            // which would imply we need a larger box or ghost cells
             for(int d = 0; d < 3; ++d){
                 if(structureAnalysis().cell().pbcFlags()[d]){
                     if(std::abs(
@@ -48,11 +70,18 @@ bool InterfaceMesh::createMesh(double maxNeighborDist){
                     }
                 }
             }
+
+            // Query the elastic mapping to find the cluster-to-cluster shift and rotation
+            // that ideally produced this edge. We store both the local Burgers-vector-like "clusterVector"
+            // and the small rotation "clusterTransition" that maps between the two grain orientations.
             std::tie(e->clusterVector, e->clusterTransition) = elasticMapping().getEdgeClusterVector(vIdx[i], vIdx[ni]);
             e = e->nextFaceEdge();
         }
     };
 
+    // We pad the ghost layer size by several neighbor distances to ensure
+    // all relevant tetrahedra are built across the periodic box. The manifold
+    // helper will call back into our lambdas to decide which test and faces to keep.
     double alpha = 5.0 * maxNeighborDist;
     ManifoldConstructionHelper<InterfaceMesh> helper{
         tessellation(),
@@ -61,37 +90,50 @@ bool InterfaceMesh::createMesh(double maxNeighborDist){
         structureAnalysis().positions()
     };
 
+    // Build the faces and topology. If any step fails, bail out.
     if(!helper.construct(tetraRegion, prepareFace)){
         return false;
 	}
 
+    // Duplicate vertices along periodic boundaries so the resulting
+    // mesh is fully closed and manifold across the box edges.
     duplicateSharedVertices();
 
     return true;
 }
 
+// After tracing dislocation circuits on the interface mesh, extract only
+// those triangular facets that lie inside dislocation "holes" or caps
+// on dangling circuits. We produce a separate half-edge mesh for defect surfaces,
+// stitching in new triangles around each dangling Burgers circuit cap. 
 bool InterfaceMesh::generateDefectMesh(
     DislocationTracer const& tracer,
     HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& outMesh
 ){
+    // Copy all interface vertices into the output mesh at the same indices
     outMesh.reserveVertices(vertexCount());
     for(auto* v : vertices()){
         auto* nv = outMesh.createVertex(v->pos());
         assert(nv->index() == v->index());
     }
 
+    // Build every face that is not "blocked" by a valid Burger circuit,
+    // skipping those with a dangling circuit (holes).
 	std::vector<Face*> faceMap;
     faceMap.reserve(faces().size());
 
     for(auto* f : faces()){
+        // Skip faces that lie on any kept Burgers-circuit boundary
         if(f->circuit && (f->testFlag(1) || !f->circuit->isDangling)){
             faceMap.push_back(nullptr);
             continue;
         }
 
+        // Otherwise create a new triangular face in the output mesh
         auto* nf = outMesh.createFace();
         faceMap.push_back(nf);
 
+        // Walk its three edges in order and add half-edges
         if(auto* e = f->edges()){
             auto* start = e;
             do{
@@ -103,6 +145,7 @@ bool InterfaceMesh::generateDefectMesh(
         }
     }
 
+    // Link opposite half-edges across triangle boundaries
     for(size_t i = 0; i < faces().size(); ++i){
         auto* of = faces()[i];
         auto* nf = faceMap[i];
@@ -133,11 +176,19 @@ bool InterfaceMesh::generateDefectMesh(
         }while(eo != startO);
     }
 
+    // For each dangling BurgersCircuit, cap its hole by creating
+    // a new vertex at the circuit's center and stitching triangles 
+    // between each edge of that circuit loop and the new cap vertex.
     for(auto* dn : tracer.danglingNodes()){
         auto* c = dn->circuit;
         assert(c && c->segmentMeshCap.size() >= 2);
+
+        // Add a cap vertex at the circuit center
         auto* capV = outMesh.createVertex(dn->position());
+        
         for(auto* me : c->segmentMeshCap){
+            // The corresponding face has no mapping (we skip it), so we 
+            // explicitly build a new triangle: edge end1 -> end2 -> capV
             assert(!faceMap[me->oppositeEdge()->face()->index()]);
             auto* v1 = outMesh.vertex(me->vertex2()->index());
             auto* v2 = outMesh.vertex(me->vertex1()->index());
@@ -148,6 +199,8 @@ bool InterfaceMesh::generateDefectMesh(
         }
     }
 
+    // Finally, ensure all half-edges know their opposite partners.
+    // TODO: always returns true.....
     assert(outMesh.connectOppositeHalfedges());
     return true;
 }
