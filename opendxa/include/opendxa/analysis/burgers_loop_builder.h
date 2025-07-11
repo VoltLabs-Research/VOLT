@@ -80,6 +80,7 @@ private:
 	std::shared_ptr<DislocationNetwork> _network;
 	ClusterGraph* _clusterGraph; 
 	tbb::spin_mutex _circuit_pool_mutex;
+	bool _markCoreAtoms;
 
 	int _maxBurgersCircuitSize;
 	int _maxExtendedBurgersCircuitSize;

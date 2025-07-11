@@ -84,6 +84,7 @@ set(LIBRARY_SOURCES
     src/core/coordination_structures.cpp
     src/structures/cluster_graph.cpp
     src/structures/dislocation_network.cpp
+    src/analysis/delaunay_tessellation_spatial_query.cpp
     src/analysis/nearest_neighbor_finder.cpp
     src/analysis/crystal_path_finder.cpp
     src/analysis/burgers_loop_builder.cpp
