@@ -86,26 +86,60 @@ void DislocationAnalysis::setIdentificationMode(StructureAnalysis::Mode identifi
 // This overload of compute() iterates over a list of frames, runs the per-frame
 // analysis on each one, and aggregates the individual JSON results into a single
 // JSON document. It also measures the total elapsed time across all frames.
-json DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames, const std::string& outputFileTemplate){
+json DislocationAnalysis::compute(
+    const std::vector<LammpsParser::Frame>& frames, 
+    const std::string& outputFileTemplate
+){
     const auto startTime = std::chrono::high_resolution_clock::now();
-    std::vector<json> frameResults(frames.size());
+    const std::size_t hwThreads = std::thread::hardware_concurrency();
+    const std::size_t maxThreads = std::clamp<std::size_t>(hwThreads, 1, frames.size());
 
-    for(size_t frameIndex = 0; frameIndex < frames.size(); frameIndex++){
-        auto outputFilename = std::vformat(outputFileTemplate, std::make_format_args(frames[frameIndex].timestep));
-        frameResults[frameIndex] = compute(frames[frameIndex], outputFilename);
+    spdlog::debug("Using {} thread(s)", maxThreads);
+    std::vector<json> frameResults(frames.size());
+    std::atomic<std::size_t> nextIndex{0};
+
+    auto worker = [&](std::stop_token st){
+        while(!st.stop_requested()){
+            const std::size_t idx = nextIndex.fetch_add(1, std::memory_order_relaxed);
+            if(idx >= frames.size()) break;
+            try{
+                const auto &frame = frames[idx];
+                const auto outName = std::vformat(outputFileTemplate, std::make_format_args(frame.timestep));
+                frameResults[idx] = compute(frame, outName);
+            }catch(...){
+                frameResults[idx] = json{
+                    {"is_failed", true},
+                    {"error", "exception in compute"}
+                };
+            }
+        }
+    };
+
+    std::vector<std::jthread> pool;
+    pool.reserve(maxThreads);
+    for(std::size_t i = 0; i < maxThreads; ++i){
+        pool.emplace_back(worker);        
     }
-    
+
+    worker(std::stop_token{});   
+
     json overallReport;
     overallReport["is_failed"] = false;
-    overallReport["frames"] = json::array();
-    for(auto &frameJson : frameResults){
-        if(frameJson.value("is_failed", true)) overallReport["is_failed"] = true;
-        overallReport["frames"].push_back(std::move(frameJson));
+    overallReport["frames"]    = json::array();
+
+    for(auto &fj : frameResults){
+        if(fj.value("is_failed", false)){
+            overallReport["is_failed"] = true;
+        }
+
+        overallReport["frames"].push_back(std::move(fj));
     }
 
     overallReport["total_time"] = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - startTime).count();
+
     return overallReport;
 }
+
 
 json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
     auto start_time = std::chrono::high_resolution_clock::now();
