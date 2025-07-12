@@ -46,8 +46,8 @@ private:
     
     // Validation methods
     void validateInputFile(const std::string& filePath) const;
-    void validateCircuitSize(int size) const;
-    void validateStretchability(int stretch) const;
+    void validateCircuitSize(double size) const;
+    void validateStretchability(double stretch) const;
 };
 
 }

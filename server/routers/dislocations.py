@@ -1,91 +1,79 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from config import TRAJECTORY_DIR, ANALYSIS_DIR
 from opendxa import DislocationAnalysis
 from pathlib import Path
-import os
 import multiprocessing
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='[%(asctime)s] [%(levelname)s] %(message)s',
+)
 
 router = APIRouter()
 
 def run_analysis_task(input_files: list[str], output_template: str):
-    """
-    This function runs in a separate process and executes the CPU-bound analysis.
-    """
     try:
-        print(f"Starting analysis for {len(input_files)} files in a new process...")
+        print(f"Iniciando análisis para {len(input_files)} archivos en un nuevo proceso...")
         pipeline = DislocationAnalysis()
-        pipeline.compute_trajectory(input_files, output_template)
-        print("Analysis task completed successfully.")
+        for file in input_files:
+            pipeline.compute(file)
+        print("Tarea de análisis completada exitosamente.")
     except Exception as e:
-        print(f"An error occurred during analysis: {e}")
+        print(f"Ocurrió un error durante el análisis: {e}")
 
-def start_analysis_process(input_files: list[str], output_template: str):
-    """
-    This function is called by BackgroundTasks. It creates and starts a new
-    process for the analysis, ensuring the main thread is not blocked.
-    """
-    process = multiprocessing.Process(
-        target=run_analysis_task,
-        args=(input_files, output_template)
-    )
-    process.start()
-    # We don't .join() the process here, as that would block.
-
-@router.get('/status/{folder_id}', summary='Check the status of a dislocation analysis')
+@router.get('/status/{folder_id}', summary='Verificar el estado de un análisis de dislocaciones')
 async def get_analysis_status(folder_id: str):
     trajectory_path = Path(TRAJECTORY_DIR) / folder_id
     analysis_path = Path(ANALYSIS_DIR) / folder_id
 
     if not trajectory_path.is_dir():
-        raise HTTPException(status_code=404, detail=f"Folder '{folder_id}' not found")
+        raise HTTPException(status_code=404, detail=f"La carpeta de trayectoria '{folder_id}' no fue encontrada.")
 
+    # Contar archivos de forma más idiomática con pathlib
+    num_trajectory_files = len([p for p in trajectory_path.glob('*') if p.is_file()])
+    
     if not analysis_path.is_dir():
+        # Si la carpeta de análisis no existe, el progreso es 0
         return JSONResponse(status_code=200, content={'status': 'pending', 'progress': 0})
-
-    try:
-        num_trajectory_files = len([name for name in os.listdir(trajectory_path) if os.path.isfile(trajectory_path / name)])
-        num_analysis_files = len([name for name in os.listdir(analysis_path) if os.path.isfile(analysis_path / name)])
-    except FileNotFoundError:
-        return JSONResponse(status_code=200, content={'status': 'pending', 'progress': 0})
+        
+    num_analysis_files = len([p for p in analysis_path.glob('*.json') if p.is_file()])
 
     if num_trajectory_files == 0:
-        return JSONResponse(status_code=200, content={'status': 'no_files', 'progress': 0})
+        return JSONResponse(status_code=200, content={'status': 'no_files', 'progress': 0, 'message': 'No hay archivos en la carpeta de trayectoria.'})
 
     progress = (num_analysis_files / num_trajectory_files) * 100
 
     if progress < 100:
-        return JSONResponse(status_code=200, content={'status': 'running', 'progress': progress})
+        return JSONResponse(status_code=200, content={'status': 'running', 'progress': round(progress, 2)})
     else:
         return JSONResponse(status_code=200, content={'status': 'complete', 'progress': 100})
 
-@router.get('/analyze/{folder_id}', summary='Analyze all dumps in the specified directory')
-async def analyze_folder(folder_id: str, background_tasks: BackgroundTasks):
-    """
-    Analyzes a folder of simulation dumps as a trajectory in a true background process.
-    
-    This endpoint returns a 202 response immediately and schedules the analysis 
-    to run in a separate process, preventing the main server from blocking.
-    """
+@router.get('/analyze/{folder_id}', summary='Analizar todos los dumps en el directorio especificado')
+async def analyze_folder(folder_id: str):
     folder_path = Path(TRAJECTORY_DIR) / folder_id
     output_path = Path(ANALYSIS_DIR) / folder_id
     
     if not folder_path.is_dir():
-        raise HTTPException(status_code=404, detail=f"Folder '{folder_id}' not found")
+        raise HTTPException(status_code=404, detail=f"La carpeta '{folder_id}' no fue encontrada.")
 
     output_path.mkdir(parents=True, exist_ok=True)
     
-    input_files = [str(folder_path / f) for f in sorted(os.listdir(folder_path)) if os.path.isfile(folder_path / f)]
+    input_files = sorted([str(p) for p in folder_path.glob('*') if p.is_file()])
     
     if not input_files:
-        return JSONResponse(status_code=200, content={'status': 'success', 'message': 'No files found to analyze.'})
+        return JSONResponse(status_code=200, content={'status': 'no_files_found', 'message': 'No se encontraron archivos para analizar.'})
 
-    output_template = str(output_path / "timestep_%d.json")
+    output_template = str(output_path / "timestep_{}.json")
 
-    # The background task now only starts a new process
-    background_tasks.add_task(start_analysis_process, input_files, output_template)
+    process = multiprocessing.Process(
+        target=run_analysis_task,
+        args=(input_files, output_template)
+    )
+    process.start()
 
     return JSONResponse(status_code=202, content={
         'status': 'analysis_started',
-        'message': f'Analysis of {len(input_files)} frames has been started in a separate process.'
+        'message': f'El análisis de {len(input_files)} frames ha comenzado en un proceso separado.'
     })

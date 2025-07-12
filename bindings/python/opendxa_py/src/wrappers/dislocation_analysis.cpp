@@ -88,9 +88,11 @@ json AnalysisWrapper::computeTrajectory(const std::vector<std::string>& input_fi
         throw std::invalid_argument("Input file list cannot be empty.");
     }
 
-    if(output_file_template.find("%d") == std::string::npos && output_file_template.find("%i") == std::string::npos){
-         throw std::invalid_argument("Output file template must contain a placeholder like %d or %i.");
-    }
+    /*
+        if(output_file_template.find("{}") == std::string::npos && output_file_template.find("%i") == std::string::npos){
+            throw std::invalid_argument("Output file template must contain a placeholder like {}.");
+        }
+    */
     
     spdlog::debug("Loading {} frames from disk...", input_files.size());
     std::vector<LammpsParser::Frame> frames;
@@ -121,13 +123,13 @@ void AnalysisWrapper::validateInputFile(const std::string& filePath) const {
     }
 }
 
-void AnalysisWrapper::validateCircuitSize(int size) const {
+void AnalysisWrapper::validateCircuitSize(double size) const {
     if (size < 3 || size > 100) {
         throw std::invalid_argument("Circuit size must be between 3 and 100");
     }
 }
 
-void AnalysisWrapper::validateStretchability(int stretch) const {
+void AnalysisWrapper::validateStretchability(double stretch) const {
     if (stretch < 0 || stretch > 50) {
         throw std::invalid_argument("Circuit stretchability must be between 0 and 50");
     }

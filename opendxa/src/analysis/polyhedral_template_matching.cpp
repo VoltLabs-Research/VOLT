@@ -38,7 +38,9 @@ int PTM::toPtmStructureType(StructureType type){
         case StructureType::CUBIC_DIAMOND: return PTM_MATCH_DCUB;
         case StructureType::HEX_DIAMOND: return PTM_MATCH_DHEX;
         case StructureType::GRAPHENE: return PTM_MATCH_GRAPHENE;
-        default: assert(false); return PTM_MATCH_NONE;
+        default: 
+            spdlog::warn("PTM::toPtmStructureType: is not mapped = {}, PTM_MATCH_NONE as fallback", static_cast<int>(type));
+            return PTM_MATCH_NONE;
     }
 }
 
@@ -168,7 +170,10 @@ bool PTM::prepare(
 }
 
 // Allocates and initializes the per-thread PTM state needed by the C library
-PTM::Kernel::Kernel(const PTM& algorithm) : NeighborQuery(algorithm), _algorithm(algorithm){
+PTM::Kernel::Kernel(const PTM& algorithm) 
+    : NeighborQuery(algorithm)
+    , _algorithm(algorithm)
+    , _structureType(StructureType::OTHER){
     _handle = ptm_initialize_local();
     _F.setZero();
 }
