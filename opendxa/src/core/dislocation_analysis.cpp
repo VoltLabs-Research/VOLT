@@ -87,50 +87,14 @@ void DislocationAnalysis::setIdentificationMode(StructureAnalysis::Mode identifi
 // analysis on each one, and aggregates the individual JSON results into a single
 // JSON document. It also measures the total elapsed time across all frames.
 json DislocationAnalysis::compute(const std::vector<LammpsParser::Frame>& frames, const std::string& outputFileTemplate){
-    const size_t maxThreadCount = std::thread::hardware_concurrency();
     const auto startTime = std::chrono::high_resolution_clock::now();
-    
-    std::queue<size_t> frameIndexQueue;
-    for(size_t frameIndex = 0; frameIndex < frames.size(); ++frameIndex){
-        frameIndexQueue.push(frameIndex);
-    }
-    
-    std::mutex queueMutex;
-    std::condition_variable queueCV;
-    std::atomic<bool> noMoreWork{false};
-
     std::vector<json> frameResults(frames.size());
-    auto workerTask = [&](std::stop_token stopToken){
-        while(!stopToken.stop_requested()){
-            size_t frameIndex;
-            {
-                std::unique_lock queueLock(queueMutex);
-                queueCV.wait(queueLock, [&]{
-                    return noMoreWork || !frameIndexQueue.empty();
-                });
 
-                if(noMoreWork && frameIndexQueue.empty()) return;
-                frameIndex = frameIndexQueue.front();
-                frameIndexQueue.pop();
-            }
-
-            auto outputFilename = std::vformat(outputFileTemplate, std::make_format_args(frames[frameIndex].timestep));
-            frameResults[frameIndex] = compute(frames[frameIndex], outputFilename);
-        }
-    };
-
-    std::vector<std::jthread> threadPool;
-    threadPool.reserve(maxThreadCount);
-    for(size_t i = 0; i < maxThreadCount; ++i){
-        threadPool.emplace_back(workerTask);
+    for(size_t frameIndex = 0; frameIndex < frames.size(); frameIndex++){
+        auto outputFilename = std::vformat(outputFileTemplate, std::make_format_args(frames[frameIndex].timestep));
+        frameResults[frameIndex] = compute(frames[frameIndex], outputFilename);
     }
-
-    {
-        std::lock_guard lock(queueMutex);
-        if(frameIndexQueue.empty()) noMoreWork = true;
-    }
-
-    queueCV.notify_all();
+    
     json overallReport;
     overallReport["is_failed"] = false;
     overallReport["frames"] = json::array();
@@ -380,6 +344,8 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     if(!result.contains("is_failed")){
         result["is_failed"] = false;
     }
+
+    spdlog::debug("Json output file: {}", jsonOutputFile);
 
     if(!jsonOutputFile.empty()){
         std::ofstream of(jsonOutputFile);

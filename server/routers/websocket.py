@@ -52,12 +52,9 @@ def process_single_timestep(folder_id: str, timestep: int) -> dict | None:
         dislocation_results = {}
 
         analysis_file_path = Path(ANALYSIS_DIR) / folder_id / f'timestep_{timestep}.json'
-        print(analysis_file_path, analysis_file_path.exists())
         if analysis_file_path.exists():
             with open(analysis_file_path, 'r') as file:
                 analysis_content = json.load(file).get('dislocations', {})
-            print('x')
-            print(analysis_content)
             raw_data = analysis_content.get('data', [])
             if raw_data:
                 summary = analysis_content.get('summary', {})

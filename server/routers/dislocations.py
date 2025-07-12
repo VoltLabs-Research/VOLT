@@ -15,13 +15,10 @@ router = APIRouter()
 
 def run_analysis_task(input_files: list[str], output_template: str):
     try:
-        print(f"Iniciando análisis para {len(input_files)} archivos en un nuevo proceso...")
         pipeline = DislocationAnalysis()
-        for file in input_files:
-            pipeline.compute(file)
-        print("Tarea de análisis completada exitosamente.")
+        pipeline.compute_trajectory(input_files, output_template)
     except Exception as e:
-        print(f"Ocurrió un error durante el análisis: {e}")
+        print(f"Unhandled exception: {e}")
 
 @router.get('/status/{folder_id}', summary='Verificar el estado de un análisis de dislocaciones')
 async def get_analysis_status(folder_id: str):

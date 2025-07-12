@@ -9,7 +9,6 @@ logging.basicConfig(
 analyzer = DislocationAnalysis()
 
 # Since we are using PTM, there is no need to specify the structure type of our simulation.
-analyzer.set_crystal_structure(LatticeStructure.FCC)
 analyzer.set_identification_mode(StructureIdentification.PTM)
 
 analyzer.compute('/home/rodyherrera/Descargas/Sigma9yz/dump.ensayo.75000.config')
