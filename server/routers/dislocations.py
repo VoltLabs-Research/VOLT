@@ -4,13 +4,12 @@ from fastapi.responses import JSONResponse
 from opendxa import DislocationAnalysis
 from utils.json_compression import compress_single_json_file
 from pathlib import Path
-from typing import Dict, Tuple, List
+from typing import Dict, List
 
 import multiprocessing
 import logging
 import asyncio
 import time
-import json 
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +80,6 @@ def run_analysis_task_with_compression(
             
             original_json_path_str = frame_result.get('output_file')
             if original_json_path_str and not frame_result.get('is_failed'):
-                # En lugar de usar una cola, iniciamos un nuevo proceso para cada tarea.
                 p = multiprocessing.Process(
                     target=compress_and_delete_task,
                     args=(original_json_path_str, str(compressed_dir), status_dict, folder_id)
@@ -129,33 +127,6 @@ def run_analysis_task_with_compression(
             status_dict[folder_id] = current_state
         else:
             status_dict[folder_id] = error_state
-
-@router.websocket("/ws/analysis/{folder_id}")
-async def websocket_analysis_status(websocket: WebSocket, folder_id: str):
-    await websocket.accept()
-    try:
-        while True:
-            if folder_id in active_analyses:
-                status = active_analyses[folder_id].copy()
-                if status['status'] == 'running':
-                    if status.get('total_files', 0) > 0:
-                        progress = (status['current_file'] / status['total_files']) * 100
-                        status['progress'] = round(progress, 1)
-                    else:
-                        status['progress'] = 0
-                    elapsed = time.time() - status.get('start_time', time.time())
-                    if status['current_file'] > 0:
-                        eta = (elapsed / status['current_file']) * (status['total_files'] - status['current_file'])
-                        status['eta_seconds'] = round(eta)
-                await websocket.send_json(status)
-                if status['status'] in ['complete', 'complete_with_errors', 'error']:
-                    break
-            else:
-                await websocket.send_json({'status': 'not_found'})
-                break
-            await asyncio.sleep(1)
-    except WebSocketDisconnect:
-        logging.info(f"WebSocket disconnected for analysis {folder_id}")
 
 @router.get('/status/{folder_id}')
 async def get_analysis_status(folder_id: str):
@@ -208,8 +179,7 @@ async def analyze_folder(folder_id: str):
     }
     return JSONResponse(status_code=202, content={
         'status': 'analysis_started',
-        'message': f'Analysis of {len(input_files)} files started with on-the-fly compression',
-        'websocket_url': f'/ws/analysis/{folder_id}'
+        'message': f'Analysis of {len(input_files)} files started with on-the-fly compression'
     })
 
 @router.get('/compression-stats/{folder_id}')
