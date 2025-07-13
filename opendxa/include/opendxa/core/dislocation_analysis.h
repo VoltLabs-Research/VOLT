@@ -14,6 +14,14 @@
 #include <format> 
 #include <thread>
 #include <barrier> 
+#include <sys/wait.h>
+#include <unistd.h>
+#include <fstream>
+#include <map>
+#include <algorithm>
+#include <signal.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 namespace OpenDXA{
 
@@ -41,10 +49,12 @@ public:
     void setIdentificationMode(StructureAnalysis::Mode identificationMode);
     void setDefectMeshSmoothingLevel(double defectMeshSmoothingLevel);
     void setMarkCoreAtoms(bool markCoreAtoms);
+    void serializeFrame(const LammpsParser::Frame& frame, const std::string& filename, const std::string& outputFile);
     json compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile = "");
+    json exportResultsToJson(const std::string& filename = "") const;
     json compute(const std::vector<LammpsParser::Frame>& frames, const std::string& output_file_template);
 
-    json exportResultsToJson(const std::string& filename = "") const;
+    std::pair<LammpsParser::Frame, std::string> deserializeFrame(const std::string& filename);
 
 private:
     LatticeStructureType _inputCrystalStructure;

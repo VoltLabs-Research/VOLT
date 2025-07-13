@@ -83,69 +83,324 @@ void DislocationAnalysis::setIdentificationMode(StructureAnalysis::Mode identifi
     _identificationMode = identificationMode;
 }
 
-// This overload of compute() iterates over a list of frames, runs the per-frame
-// analysis on each one, and aggregates the individual JSON results into a single
-// JSON document. It also measures the total elapsed time across all frames.
+// Serializes a molecular dynamics frame to binary format for inter-process communication.
+// This function creates a binary file containing all frame data needed for dislocation analysis,
+// including atomic positions, types, IDs, simulation cell parameters, and the output filename.
+void DislocationAnalysis::serializeFrame(
+    const LammpsParser::Frame& frame, 
+    const std::string& filename,
+    const std::string& outputFile
+){
+    std::ofstream out(filename, std::ios::binary);
+    if(!out){
+        throw std::runtime_error("Cannot create frame file: " + filename);
+    }
+
+    // Write frame metadata, timestep and atom count
+    out.write(reinterpret_cast<const char*>(&frame.timestep), sizeof(frame.timestep));
+    out.write(reinterpret_cast<const char*>(&frame.natoms), sizeof(frame.natoms));
+    
+    // Extract and serialize simulation cell parameters
+    auto matrix = frame.simulationCell.matrix();
+    auto pbcFlags = frame.simulationCell.pbcFlags();
+    bool is2D = frame.simulationCell.is2D();
+    
+    out.write(reinterpret_cast<const char*>(&matrix), sizeof(matrix));
+    out.write(reinterpret_cast<const char*>(&pbcFlags), sizeof(pbcFlags));
+    out.write(reinterpret_cast<const char*>(&is2D), sizeof(is2D));
+    
+    // Serialize atomic positions array with size prefix for safe deserialization
+    size_t posSize = frame.positions.size();
+    out.write(reinterpret_cast<const char*>(&posSize), sizeof(posSize));
+    out.write(reinterpret_cast<const char*>(frame.positions.data()), posSize * sizeof(Point3));
+    
+    // Serialize atom types array with size prefix
+    size_t typesSize = frame.types.size();
+    out.write(reinterpret_cast<const char*>(&typesSize), sizeof(typesSize));
+    out.write(reinterpret_cast<const char*>(frame.types.data()), typesSize * sizeof(int));
+    
+    // Serialiez atom IDs array with size prefix
+    size_t idsSize = frame.ids.size();
+    out.write(reinterpret_cast<const char*>(&idsSize), sizeof(idsSize));
+    out.write(reinterpret_cast<const char*>(frame.ids.data()), idsSize * sizeof(int));
+    
+    // Serialize output filename as length-prefixed string
+    size_t outputLen = outputFile.length();
+    out.write(reinterpret_cast<const char*>(&outputLen), sizeof(outputLen));
+    out.write(outputFile.c_str(), outputLen);
+    
+    out.close();
+}
+
+// Deserializes a molecular dynamics frame from binary format.
+// This function reads back all frame data that was previously serialized,
+// reconstructing the complete Frame object and associated output filename.
+std::pair<LammpsParser::Frame, std::string> DislocationAnalysis::deserializeFrame(const std::string& filename){
+    std::ifstream in(filename, std::ios::binary);
+    if(!in){
+        throw std::runtime_error("Cannot open frame file: " + filename);
+    }
+    
+    LammpsParser::Frame frame;
+
+    // Read frame data, timestep and atom count
+    in.read(reinterpret_cast<char*>(&frame.timestep), sizeof(frame.timestep));
+    in.read(reinterpret_cast<char*>(&frame.natoms), sizeof(frame.natoms));
+    
+    // Read simulation cell parameters into temporary variables
+    AffineTransformation matrix;
+    std::array<bool, 3> pbcFlags;
+    bool is2D;
+    
+    in.read(reinterpret_cast<char*>(&matrix), sizeof(matrix));
+    in.read(reinterpret_cast<char*>(&pbcFlags), sizeof(pbcFlags));
+    in.read(reinterpret_cast<char*>(&is2D), sizeof(is2D));
+    
+    // Reconstruct simulation cell from deserialized parameters
+    frame.simulationCell.setMatrix(matrix);
+    frame.simulationCell.setPbcFlags(pbcFlags);
+    frame.simulationCell.set2D(is2D);
+    
+    // Get size first, then allocate and read data
+    size_t posSize;
+    in.read(reinterpret_cast<char*>(&posSize), sizeof(posSize));
+    frame.positions.resize(posSize);
+    in.read(reinterpret_cast<char*>(frame.positions.data()), posSize * sizeof(Point3));
+
+    size_t typesSize;
+    in.read(reinterpret_cast<char*>(&typesSize), sizeof(typesSize));
+    frame.types.resize(typesSize);
+    in.read(reinterpret_cast<char*>(frame.types.data()), typesSize * sizeof(int));
+    
+    size_t idsSize;
+    in.read(reinterpret_cast<char*>(&idsSize), sizeof(idsSize));
+    frame.ids.resize(idsSize);
+    in.read(reinterpret_cast<char*>(frame.ids.data()), idsSize * sizeof(int));
+    
+    size_t outputLen;
+    in.read(reinterpret_cast<char*>(&outputLen), sizeof(outputLen));
+
+    // Pre-allocate string with null chars
+    std::string outputFile(outputLen, '\0');
+    // Read directly into string buffer
+    in.read(&outputFile[0], outputLen);
+    
+    in.close();
+    
+    return {frame, outputFile};
+}
+
+// Multi-process parallel analysis of multiple frames.
+// This function implements a fork-based parallel processing system to 
+// analyze multiple frames simultaneously. Each frame is processed in a 
+// separate child process to maximize CPU utilization and isolate potential crashes.
+// 
+// TODO: Performance is good. However, I personally think this isn't the best solution. 
+// TODO: Perhaps I could parallelize by using the CPU directly and not creating processes.
+// TODO: Because it introduces overhead. So why do I do it this way? Not all code is thread-safe.
 json DislocationAnalysis::compute(
-    const std::vector<LammpsParser::Frame>& frames, 
+    const std::vector<LammpsParser::Frame>& frames,
     const std::string& outputFileTemplate
 ){
     const auto startTime = std::chrono::high_resolution_clock::now();
-    const std::size_t hwThreads = std::thread::hardware_concurrency();
-    const std::size_t maxThreads = std::clamp<std::size_t>(hwThreads, 1, frames.size());
+    const size_t numFrames = frames.size();
+    const size_t threads = std::thread::hardware_concurrency();
+    const size_t maxProcesses = std::min(threads > 0 ? threads : 1, numFrames);
 
-    spdlog::debug("Using {} thread(s)", maxThreads);
-    std::vector<json> frameResults(frames.size());
-    std::atomic<std::size_t> nextIndex{0};
+    json report;
+    report["is_failed"] = false;
+    report["frames"] = json::array();
+    report["total_time"] = 0;
 
-    auto worker = [&](std::stop_token st){
-        while(!st.stop_requested()){
-            const std::size_t idx = nextIndex.fetch_add(1, std::memory_order_relaxed);
-            if(idx >= frames.size()) break;
+    if(frames.empty()) return report;
+
+    spdlog::info("Processing {} frames using {} processes", numFrames, maxProcesses);
+
+    // Create unique temporary directory for this analysis
+    // Using PID and timestamp ensures uniqueness across concurrent runs
+    std::string tempDir = "/tmp/dislocation_analysis_" + std::to_string(getpid()) + "_" + std::to_string(time(nullptr));
+    if(mkdir(tempDir.c_str(), 0755) != 0){
+        spdlog::error("Failed to create temp directory: {}", tempDir);
+        throw std::runtime_error("Failed to create temporary directory");
+    }
+
+    // Pre-allocate filename vectors for all frames
+    // Serialized frame data files
+    std::vector<std::string> frameFiles(numFrames);
+    // JSON result files from child processes
+    std::vector<std::string> resultFiles(numFrames);
+    // Final output filenames
+    std::vector<std::string> outputFiles(numFrames);
+
+    // Generate all filenames and serialize frame to temporary files
+    for(size_t i = 0; i < numFrames; ++i){
+        frameFiles[i] = tempDir + "/frame_" + std::to_string(i);
+        resultFiles[i] = tempDir + "/result_" + std::to_string(i) + ".json";
+
+        // Generate output filename using template and frame timestep
+        outputFiles[i] = std::vformat(outputFileTemplate, std::make_format_args(frames[i].timestep));
+        // Serialize frame data for child process consumption
+        serializeFrame(frames[i], frameFiles[i], outputFiles[i]);
+    }
+
+    // Initialize process management data structures
+    // Results from each frame
+    std::vector<json> frameResults(numFrames);
+    // Max process IDs to frame indices
+    std::map<pid_t, size_t> pidToIndex;
+    // Next frame to process
+    size_t currentFrame = 0;
+    // Number of completed frames
+    size_t completedFrames = 0;
+
+    // Lambda function to launch a child process for frame analysis.
+    // The child process creates its own DislocationAnalysis instances with copied parameters,
+    // then deserializes the frame data from the binary file for runs the single frame
+    // compute() analysis. Then serializes results to JSON file and exists with appropiate status code.
+    auto launchProcess = [&](size_t frameIndex) -> pid_t {
+        pid_t pid = fork();
+        if(pid == 0){
             try{
-                const auto &frame = frames[idx];
-                const auto outName = std::vformat(outputFileTemplate, std::make_format_args(frame.timestep));
-                frameResults[idx] = compute(frame, outName);
+                DislocationAnalysis childAnalysis;
+                childAnalysis._inputCrystalStructure = this->_inputCrystalStructure;
+                childAnalysis._maxTrialCircuitSize = this->_maxTrialCircuitSize;
+                childAnalysis._circuitStretchability = this->_circuitStretchability;
+                childAnalysis._lineSmoothingLevel = this->_lineSmoothingLevel;
+                childAnalysis._linePointInterval = this->_linePointInterval;
+                childAnalysis._defectMeshSmoothingLevel = this->_defectMeshSmoothingLevel;
+                childAnalysis._identificationMode = this->_identificationMode;
+                childAnalysis._markCoreAtoms = this->_markCoreAtoms;
+                childAnalysis._onlyPerfectDislocations = this->_onlyPerfectDislocations;
+
+                // Load and process frame from file
+                auto [frame, outputFile] = deserializeFrame(frameFiles[frameIndex]);
+                auto result = childAnalysis.compute(frame, outputFile);
+
+                // Save analysis result to JSON file to parent process retrieval
+                std::ofstream resultOutput(resultFiles[frameIndex]);
+                resultOutput << result.dump(2);
+                resultOutput.close();
+                exit(0);
+            }catch(const std::exception &e){
+                // Handle known exceptions by writing error JSON
+                std::ofstream errorOutput(resultFiles[frameIndex]);
+                json errorResult;
+                errorResult["is_failed"] = true;
+                errorResult["error"] = std::string("Child process exception: ") + e.what();
+                errorOutput << errorResult.dump(2);
+                errorOutput.close();
+                exit(1);
             }catch(...){
-                frameResults[idx] = json{
-                    {"is_failed", true},
-                    {"error", "exception in compute"}
-                };
+                // Handle unkown exceptions
+                std::ofstream errorOutput(resultFiles[frameIndex]);
+                json errorResult;
+                errorResult["is_failed"] = true;
+                errorResult["error"] = "Unknown exception in child process";
+                errorOutput << errorResult.dump(2);
+                errorOutput.close();
+                exit(2);
             }
         }
+        
+        // Child PID to parent process
+        return pid;
     };
 
-    std::vector<std::jthread> pool;
-    pool.reserve(maxThreads);
-    for(std::size_t i = 0; i < maxThreads; ++i){
-        pool.emplace_back(worker);        
-    }
-
-    worker(std::stop_token{});   
-
-    json overallReport;
-    overallReport["is_failed"] = false;
-    overallReport["frames"]    = json::array();
-
-    for(auto &fj : frameResults){
-        if(fj.value("is_failed", false)){
-            overallReport["is_failed"] = true;
+    // Main process management loop.
+    // This implements a dynamic fork queue where processes are launched
+    // as needed and completed processes are immediately replaced with new ones
+    // until all frames are processed.
+    while(completedFrames < numFrames){
+        // Launch new processes up to the concurrency limit
+        while(pidToIndex.size() < maxProcesses && currentFrame < numFrames){
+            pid_t pid = launchProcess(currentFrame);
+            if(pid > 0){
+                // Successfully forked - track the process
+                pidToIndex[pid] = currentFrame;
+                spdlog::debug("Launched process {} for frame {}", pid, currentFrame);
+                currentFrame++;
+            }else{
+                // Fork failed - record error and continue
+                spdlog::error("Failed to fork process for frame {}", currentFrame);
+                frameResults[currentFrame] = json{
+                    {"is_failed", true},
+                    {"error", "Failed to fork process"}
+                };
+                completedFrames++;
+                currentFrame++;
+            }
         }
 
-        overallReport["frames"].push_back(std::move(fj));
+        // Wait for any child process to completed
+        if(!pidToIndex.empty()){
+            int status;
+            // Block until any child exists
+            pid_t finishedPid = waitpid(-1, &status, 0);
+            if(finishedPid > 0){
+                // Find and remove the completed process from tracking
+                auto it = pidToIndex.find(finishedPid);
+                if(it != pidToIndex.end()){
+                    size_t frameIndex = it->second;
+                    pidToIndex.erase(it);
+                    spdlog::debug("Process {} finished for frame {}", finishedPid, frameIndex);
+                    // Load the analysis result from the child process output file
+                    try{
+                        std::ifstream resultIn(resultFiles[frameIndex]);
+                        if(resultIn.good()){
+                            std::string resultStr((std::istreambuf_iterator<char>(resultIn)), std::istreambuf_iterator<char>());
+                            frameResults[frameIndex] = json::parse(resultStr);
+                        }else{
+                            frameResults[frameIndex] = json{
+                                {"is_failed", true},
+                                {"error", "Could not read result file"}
+                            };
+                        }
+                    }catch(const std::exception &e){
+                        // JSON parsing or file I/O error
+                        frameResults[frameIndex] = json{
+                            {"is_failed", true},
+                            {"error", std::string("Error parsing result: ") + e.what()}
+                        };
+                    }
+    
+                    completedFrames++;
+                    spdlog::info("Completed frame {}/{}", completedFrames, numFrames);
+                }
+            }else if(finishedPid == -1 && errno == ECHILD){
+                // No more child processes exit, break out of wait loop
+                break;
+            }
+        }
     }
 
-    overallReport["total_time"] = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - startTime).count();
+    // Clean up any remaining zombie processes
+    // This prevents zombie processes from accumulating in the system
+    while(waitpid(-1, nullptr, WNOHANG) > 0);
 
-    return overallReport;
+    // Remove all temporary files and directories
+    std::string command = "rm -rf " + tempDir;
+    system(command.c_str());
+
+    // Aggregate individual frame results into final report
+    for(auto &result : frameResults){
+        // If any frame failed, mark the entire analysis as failed
+        if(result.value("is_failed", false)){
+            report["is_failed"] = true;
+        }
+        report["frames"].push_back(std::move(result));
+    }
+
+    // Calculate and record total processing time
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::high_resolution_clock::now() - startTime);
+    report["total_time"] = duration.count();
+    spdlog::info("Processing completed in {}s", duration.count());
+    return report;
 }
-
 
 json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
     auto start_time = std::chrono::high_resolution_clock::now();
-    spdlog::debug("Setting up DXA analysis");
-
-    ParallelSystem::initialize();
+    spdlog::debug("Processing frame {} with {} atoms", frame.timestep, frame.natoms);
     
     // JSON object for the output. We'll fill in errors or results as we go.
     json result;
@@ -204,6 +459,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
             positions.get(),
             frame.simulationCell,
             _inputCrystalStructure,
+            // TODO:
             nullptr,
             structureTypes.get(),
             std::move(preferredOrientations),
