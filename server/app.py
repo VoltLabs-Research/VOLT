@@ -1,6 +1,8 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from utils.bootstrap import lifespan
+from config import COMPRESSED_DIR
 from routers import (
     file_router,
     server_router,
@@ -29,6 +31,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
+)
+
+app.mount(
+    '/compressed',
+    StaticFiles(directory=COMPRESSED_DIR, html=False),
+    name='compressed'
 )
 
 app.include_router(file_router, prefix='/files')

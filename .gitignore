@@ -12,6 +12,8 @@ __pycache__
 !/opendxa/dependencies/geogram/**
 debug-data/
 
+client/wasm/zstd/dependencies
+
 # Logs
 logs
 *.log

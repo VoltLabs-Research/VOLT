@@ -334,6 +334,9 @@ json DXAJsonExporter::getAtomsData(
             structureType = (*structureTypes)[i];
         }
         
+        int lammpsType = (i < static_cast<int>(frame.types.size())) ? frame.types[i] : 0;
+
+        atomJson["lammps_type"] = lammpsType;
         atomJson["atom_type"] = structureType;
         
         cnaTypeDistribution[structureType]++;

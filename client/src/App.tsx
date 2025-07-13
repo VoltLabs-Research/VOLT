@@ -27,10 +27,11 @@ const EditorPage: React.FC = () => {
     const folderId = useMemo(() => folder?.folder_id || null, [folder]);
     const timesteps = useMemo(() => folder?.timesteps || [], [folder]);
     
+    // Esta llamada ya es correcta y funcionará con el nuevo hook.
     const { data, isLoading } = useTimestepDataManager({ 
         folderId, 
         currentTimestep,
-        timesteps
+        timesteps // <-- Crucial para la precarga
     });
 
     const handleCameraControlsEnable = useCallback((enabled: boolean) => {
@@ -97,7 +98,11 @@ const EditorPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        console.log(data)
+        console.log('EditorPage data:', data);
+        if (data?.atoms_data) {
+            console.log('atoms_data:', data.atoms_data);
+            console.log('Number of atoms:', data.atoms_data.atoms?.length || 0);
+        }
     }, [data]);
 
     const streamProgress = useMemo(() => ({

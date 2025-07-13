@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 manager = ConnectionManager()
 
+# TODO: DO IT FROM C++!
 def get_dislocation_type(segment: dict) -> str:
     try:
         points = np.array(segment.get('points', []))
