@@ -8,8 +8,53 @@
 #include <climits>
 #include <unordered_set>
 #include <algorithm>
+#include <cmath>
 
 namespace OpenDXA {
+
+// To determine the type of dislocation (screw, edge, or mixed) we must classify the 
+// cosine of the angle theta between the Burgers vector and the tangent vector using the dot product formula.
+std::string getDislocationType(const DislocationSegment* segment){
+    try{
+        if(!segment || segment->isDegenerate() || segment->line.size() < 2){
+            return "unknown";
+        }
+
+        // Get Burgers vector
+        Vector3 burgersVector = segment->burgersVector.localVec();
+
+        // Calculate the tangent vector (from the first to the last point)
+        Vector3 tangentVector = segment->line.back() - segment->line.front();
+
+        // Calculate the norms (magnitudes) of vectors
+        double normBurgers = burgersVector.length();
+        double normTangent = tangentVector.length();
+
+        // If any of the vectors have length zero, the type is indeterminate.
+        // We use a small epsilon to avoid problems with floating-point precision.
+        if(normBurgers < EPSILON || normTangent < EPSILON){
+            return "unknown";
+        }
+
+        // // Normalize both vectors (convert them to unit vectors)
+        Vector3 burgersNorm = burgersVector.normalized();
+        Vector3 tangentNorm = tangentVector.normalized();
+
+        // Calculate the cosine of the angle using the dot product.
+        // We take the absolute value to handle opposite directions
+        double cosTheta = std::abs(tangentNorm.dot(burgersNorm));
+
+        constexpr double COS_SCREW_THRESHOLD = 0.9;
+        constexpr double COS_EDGE_THRESHOLD  = 0.1;
+
+        if (cosTheta > COS_SCREW_THRESHOLD) return "screw";
+        if (cosTheta < COS_EDGE_THRESHOLD)  return "edge";
+        
+        return "mixed";
+    }catch(const std::exception&){
+        return "unknown";
+    }
+}
 
 json DXAJsonExporter::exportAnalysisData(
     const DislocationNetwork* network,
@@ -72,6 +117,7 @@ json DXAJsonExporter::exportDislocationsToJson(const DislocationNetwork* network
             
             double length = segment->calculateLength();
             segmentJson["index"] = static_cast<int>(i);
+            segmentJson["type"] = getDislocationType(segment);
             segmentJson["point_index_offset"] = pointOffset;
             segmentJson["num_points"] = static_cast<int>(segment->line.size());
             segmentJson["length"] = length;
