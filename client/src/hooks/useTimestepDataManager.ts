@@ -43,7 +43,7 @@ const useTimestepDataManager = ({
     folderId,
     currentTimestep,
     timesteps,
-    baseUrl = 'ws://127.0.0.1:8000/ws'
+    baseUrl = 'ws://192.168.1.85:8000/ws'
 }: UseTimestepDataManagerOptions) => {
     const [cache, setCache] = useState<Map<number, CombinedTimestepData>>(new Map());
     const [data, setData] = useState<CombinedTimestepData | null>(null);
