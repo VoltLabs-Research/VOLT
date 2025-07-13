@@ -1,41 +1,52 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { IoIosArrowDown } from 'react-icons/io';
 import FormField from '../../molecules/FormField';
 import EditorWidget from '../EditorWidget';
 import './AnalysisConfiguration.css';
 
-const AnalysisConfiguration: React.FC = () => {
-    const [config, setConfig] = useState({
-        cna_cutoff: 3.5,
-        pbc: '1,1,1',
-        offset: '0,0,0',
-        scale: '1,1,1',
-        maxcircuitsize: 12,
-        extcircuitsize: 14,
-        smoothsurface: 8,
-        smoothlines: 1,
-        coarsenlines: 1,
-        flattensf: 0.0
-    });
+// Interfaz para las props del componente
+interface AnalysisConfigurationProps {
+    config: any; // El estado de configuración
+    onConfigChange: (key: string, value: any) => void; // Función para actualizar el estado
+}
 
+const AnalysisConfiguration: React.FC<AnalysisConfigurationProps> = ({ config, onConfigChange }) => {
     const configFields = [
-        { key: 'cna_cutoff', label: 'CNA Cutoff Radius', inputProps: { type: 'number', step: '0.1' }},
-        { key: 'pbc', label: 'Periodic Boundaries (X,Y,Z)', inputProps: { type: 'text', placeholder: '1,1,0' }},
-        { key: 'offset', label: 'Atom Position Offset (X,Y,Z)', inputProps: { type: 'text', placeholder: '0,0,0' }},
-        { key: 'scale', label: 'Cell Scaling Factors (X,Y,Z)', inputProps: { type: 'text', placeholder: '1,1,1' }},
-        { key: 'maxcircuitsize', label: 'Max Circuit Size', inputProps: { type: 'number', step: '1' }},
-        { key: 'extcircuitsize', label: 'Extended Circuit Size', inputProps: { type: 'number', step: '1' }},
-        { key: 'smoothsurface', label: 'Surface Smoothing', inputProps: { type: 'number', step: '1' }},
-        { key: 'smoothlines', label: 'Line Smoothing', inputProps: { type: 'number', step: '1' }},
-        { key: 'coarsenlines', label: 'Line Coarsening', inputProps: { type: 'number', step: '1' }},
-        { key: 'flattensf', label: 'Stacking Fault Flattening', inputProps: { type: 'number', step: '0.01' }},
+        { 
+            key: 'crystal_structure', 
+            label: 'Crystal Structure', 
+            type: 'select', 
+            options: [
+                { value: 'FCC', title: 'FCC (Face-Centered Cubic)' }, 
+                { value: 'BCC', title: 'BCC (Body-Centered Cubic)' }, 
+                { value: 'HCP', title: 'HCP (Hexagonal Close-Packed)' }
+            ] 
+        },
+        { 
+            key: 'identification_mode', 
+            label: 'Identification Mode', 
+            type: 'select', 
+            options: [
+                { value: 'PTM', title: 'PTM (Polyhedral Template Matching)' },
+                { value: 'CNA', title: 'CNA (Common Neighbor Analysis)' }
+            ] 
+        },
+        { key: 'max_trial_circuit_size', label: 'Max Trial Circuit Size', type: 'input', inputProps: { type: 'number', step: '0.1' }},
+        { key: 'circuit_stretchability', label: 'Circuit Stretchability', type: 'input', inputProps: { type: 'number', step: '0.1' }},
+        { key: 'defect_mesh_smoothing_level', label: 'Defect Mesh Smoothing', type: 'input', inputProps: { type: 'number', step: '1' }},
+        { key: 'line_smoothing_level', label: 'Line Smoothing', type: 'input', inputProps: { type: 'number', step: '0.1' }},
+        { key: 'line_point_interval', label: 'Line Point Interval', type: 'input', inputProps: { type: 'number', step: '0.1' }},
+        { key: 'only_perfect_dislocations', label: 'Only Perfect Dislocations', type: 'checkbox' },
+        { key: 'mark_core_atoms', label: 'Mark Core Atoms', type: 'checkbox' },
     ];
 
-    const handleChange = (key: string, value: string | number) => {
-        setConfig(prev => ({
-            ...prev,
-            [key]: value
-        }));
+    const handleChange = (key: string, value: string | number | boolean) => {
+        const numericKeys = [
+            'max_trial_circuit_size', 'circuit_stretchability', 'defect_mesh_smoothing_level', 
+            'line_smoothing_level', 'line_point_interval'
+        ];
+        const finalValue = numericKeys.includes(key) ? Number(value) : value;
+        onConfigChange(key, finalValue);
     };
 
     return (
@@ -51,8 +62,10 @@ const AnalysisConfiguration: React.FC = () => {
                         key={field.key}
                         label={field.label}
                         fieldKey={field.key}
-                        inputProps={field.inputProps}
-                        field={config} // ✅ Cambié 'config' por 'field'
+                        fieldType={field.type}
+                        options={field.options} 
+                        inputProps={field.type === 'input' ? field.inputProps : undefined}
+                        fieldValue={config[field.key]}
                         onFieldChange={handleChange}
                     />
                 ))}

@@ -38,8 +38,13 @@ export const uploadFolder = async (files: FileList): Promise<any> => {
     return response.data;
 };
 
-export const analyzeFolder = async (folderId: string): Promise<any[]> => {
-    const response = await api.get(`/dislocations/analyze/${folderId}`);
+export const reanalyzeTimestep = async (folderId: string, timestep: number, config: any): Promise<any> => {
+    const response = await api.post(`/dislocations/analyze_single_timestep/${folderId}/${timestep}`, config);
+    return response.data;
+};
+
+export const analyzeFolder = async (folderId: string, config: any): Promise<any> => {
+    const response = await api.post(`/dislocations/analyze/${folderId}`, config);
     return response.data;
 };
 

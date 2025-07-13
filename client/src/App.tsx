@@ -11,7 +11,20 @@ import DislocationResults from './components/DislocationResults';
 import useTimestepDataManager from './hooks/useTimestepDataManager';
 import MonacoEditor from './components/organisms/MonacoEditor';
 import type { DislocationSegment } from './hooks/useTimestepDataManager';
+import { reanalyzeTimestep } from './services/api';
 import './App.css';
+
+const initialAnalysisConfig = {
+    crystal_structure: 'FCC',
+    identification_mode: 'PTM',
+    max_trial_circuit_size: 14.0,
+    circuit_stretchability: 9.0,
+    defect_mesh_smoothing_level: 8,
+    line_smoothing_level: 1.0,
+    line_point_interval: 2.5,
+    only_perfect_dislocations: false,
+    mark_core_atoms: false
+};
 
 const EditorPage: React.FC = () => {
     const [folder, setFolder] = useState<any | null>(null);
@@ -20,19 +33,64 @@ const EditorPage: React.FC = () => {
     const [currentTimestep, setCurrentTimestep] = useState(0);
     const [cameraControlsEnabled, setCameraControlsEnabled] = useState(true);
     const [selectedDislocation, setSelectedDislocation] = useState<DislocationSegment | null>(null);
+    const [analysisConfig, setAnalysisConfig] = useState(initialAnalysisConfig);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [isReanalyzing, setIsReanalyzing] = useState(false);
 
     const orbitControlsRef = useRef<any>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const debouncedReanalyzeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isInitialMount = useRef(true);
 
     const folderId = useMemo(() => folder?.folder_id || null, [folder]);
     const timesteps = useMemo(() => folder?.timesteps || [], [folder]);
     
-    // Esta llamada ya es correcta y funcionará con el nuevo hook.
     const { data, isLoading } = useTimestepDataManager({ 
         folderId, 
         currentTimestep,
-        timesteps // <-- Crucial para la precarga
+        timesteps,
+        refreshKey
     });
+
+    const handleConfigChange = useCallback((key: string, value: any) => {
+        setAnalysisConfig(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    }, []);
+
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+
+        if (debouncedReanalyzeTimeoutRef.current) {
+            clearTimeout(debouncedReanalyzeTimeoutRef.current);
+        }
+
+        if (folderId && currentTimestep !== undefined && !isLoading && !isPlaying) {
+            debouncedReanalyzeTimeoutRef.current = setTimeout(async () => {
+                console.log(`OpenDXA: Re-analyzing timestep ${currentTimestep} with new config...`);
+                setIsReanalyzing(true);
+                try {
+                    await reanalyzeTimestep(folderId, currentTimestep, analysisConfig);
+                    console.log(`OpenDXA: Timestep ${currentTimestep} re-analyzed successfully. Triggering data refresh.`);
+                    setRefreshKey(prev => prev + 1);
+                } catch (error) {
+                    console.error('OpenDXA: Failed to re-analyze timestep:', error);
+                } finally {
+                    setIsReanalyzing(false);
+                }
+            }, 700);
+        }
+
+        return () => {
+            if (debouncedReanalyzeTimeoutRef.current) {
+                clearTimeout(debouncedReanalyzeTimeoutRef.current);
+            }
+        };
+    }, [analysisConfig]);
 
     const handleCameraControlsEnable = useCallback((enabled: boolean) => {
         setCameraControlsEnabled(enabled);
@@ -83,6 +141,8 @@ const EditorPage: React.FC = () => {
         setCurrentTimestep(folder_data.min_timestep || 0);
         setIsPlaying(false);
         setSelectedDislocation(null);
+        isInitialMount.current = true;
+        setRefreshKey(prev => prev + 1);
     }, []);
 
     const handlePlayPause = useCallback(() => {
@@ -151,14 +211,29 @@ const EditorPage: React.FC = () => {
             </section>
 
             <div className='editor-timestep-viewer-container'>
-                <FileUpload onUploadError={handleUploadError} onUploadSuccess={handleFolderSelection}>
+                <FileUpload 
+                    onUploadError={handleUploadError} 
+                    onUploadSuccess={handleFolderSelection}
+                    analysisConfig={analysisConfig}
+                >
+                    {(isLoading || isReanalyzing) && (
+                        <div style={{
+                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                            backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100,
+                            display: 'flex', justifyContent: 'center', alignItems: 'center',
+                            color: 'white', fontSize: '1.2em'
+                        }}>
+                            {isReanalyzing ? 'Re-analizando timestep...' : 'Cargando datos...'}
+                        </div>
+                    )}
+
                     <Scene3D
                         cameraControlsEnabled={cameraControlsEnabled}
                         onCameraControlsRef={(ref) => { orbitControlsRef.current = ref; }}
                     >
                         {data?.atoms_data && (
                             <TimestepViewer
-                                key={folderId}
+                                key={`${folderId}-${currentTimestep}-${refreshKey}`} 
                                 data={data.atoms_data}
                                 onCameraControlsEnable={handleCameraControlsEnable}
                             />
@@ -183,7 +258,10 @@ const EditorPage: React.FC = () => {
                 </span>
             </section>
 
-            <AnalysisConfiguration />
+            <AnalysisConfiguration 
+                config={analysisConfig} 
+                onConfigChange={handleConfigChange} 
+            />
         </main>
     );
 };
