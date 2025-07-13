@@ -6,6 +6,7 @@ import AnalysisConfiguration from './components/organisms/AnalysisConfiguration/
 import Scene3D from './components/organisms/Scene3D/';
 import TimestepViewer from './components/TimestepViewer';
 import DislocationViewer from './components/DislocationViewer';
+import Loader from './components/atoms/Loader';
 import FileUpload from './components/FileUpload';
 import DislocationResults from './components/DislocationResults';
 import useTimestepDataManager from './hooks/useTimestepDataManager';
@@ -217,13 +218,8 @@ const EditorPage: React.FC = () => {
                     analysisConfig={analysisConfig}
                 >
                     {(isLoading || isReanalyzing) && (
-                        <div style={{
-                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                            backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100,
-                            display: 'flex', justifyContent: 'center', alignItems: 'center',
-                            color: 'white', fontSize: '1.2em'
-                        }}>
-                            {isReanalyzing ? 'Re-analizando timestep...' : 'Cargando datos...'}
+                        <div className='editor-analyzing-container'>
+                            <Loader scale={0.8} />
                         </div>
                     )}
 
