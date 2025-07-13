@@ -36,6 +36,9 @@ public:
     void setDefectMeshSmoothingLevel(double defectMeshSmoothingLevel);
     void setIdentificationMode(int identificationMode);
     json computeTrajectory(const std::vector<std::string>& input_files, const std::string& output_file_template);
+    void setProgressCallback(const ProgressCallback& callback){
+        progressCallback = callback;
+    }
 
     // Main computation method
     json compute(const std::string& inputFile, const std::string& outputFile = "");
@@ -43,7 +46,8 @@ public:
 
 private:
     std::unique_ptr<OpenDXA::DislocationAnalysis> analyzer;
-    
+    ProgressCallback progressCallback; 
+
     // Validation methods
     void validateInputFile(const std::string& filePath) const;
     void validateCircuitSize(double size) const;

@@ -22,7 +22,10 @@ void bindDislocationAnalysis(py::module &m){
           .value("PTM", StructureAnalysis::Mode::PTM, "Polyhedral Template Matching")
           .value("CNA", StructureAnalysis::Mode::CNA, "Common Neighbor Analysis")
           .export_values();
-
+     py::class_<ProgressInfo>(m, "ProgressInfo", "Information about the analysis progress")
+        .def_readonly("completed_frames", &ProgressInfo::completedFrames, "Number of frames processed so far")
+        .def_readonly("total_frames", &ProgressInfo::totalFrames, "Total number of frames to process")
+        .def_readonly("frame_result", &ProgressInfo::frameResult, "The JSON result of the frame that just completed");
     // Bind the main analysis wrapper class
     py::class_<Wrappers::AnalysisWrapper>(m, "DislocationAnalysis", 
         "High-level interface for dislocation analysis using the DXA algorithm")
@@ -62,7 +65,18 @@ void bindDislocationAnalysis(py::module &m){
         .def("set_only_perfect_dislocations", &Wrappers::AnalysisWrapper::setOnlyPerfectDislocations,
              "Set whether to analyze only perfect dislocations",
              py::arg("flag"))
-        
+     .def("set_progress_callback", 
+            [](Wrappers::AnalysisWrapper &self, py::function callback) {
+                auto cpp_callback = [callback](const ProgressInfo& info) {
+                    py::gil_scoped_acquire gil;
+                    callback(info);
+                };
+                self.setProgressCallback(cpp_callback);
+            },
+            "Set a callback function to be called on each processed frame.\n"
+            "The function should accept one argument: a ProgressInfo object.",
+            py::arg("callback"))
+
         // Main computation method
         .def("compute", &Wrappers::AnalysisWrapper::compute,
              "Run dislocation analysis on the input file",

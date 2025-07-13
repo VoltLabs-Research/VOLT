@@ -276,6 +276,7 @@ json DislocationAnalysis::compute(
                 // Load and process frame from file
                 auto [frame, outputFile] = deserializeFrame(frameFiles[frameIndex]);
                 auto result = childAnalysis.compute(frame, outputFile);
+                result["output_file"] = outputFile;
 
                 // Save analysis result to JSON file to parent process retrieval
                 std::ofstream resultOutput(resultFiles[frameIndex]);
@@ -371,7 +372,7 @@ json DislocationAnalysis::compute(
                         ProgressInfo info{
                             .completedFrames = completedFrames,
                             .totalFrames = numFrames,
-                            .frameResult = frameResults[frameIndex]
+                            .frameResult = &frameResults[frameIndex]
                         };
                         progressCallback(info);
                     }

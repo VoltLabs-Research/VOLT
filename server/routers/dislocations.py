@@ -1,149 +1,159 @@
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from config import TRAJECTORY_DIR, ANALYSIS_DIR, COMPRESSED_ANALYSIS_DIR
-from utils.json_compression import compress_analysis_files_parallel
 from fastapi.responses import JSONResponse
 from opendxa import DislocationAnalysis
+from utils.json_compression import compress_single_json_file
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Tuple, List
 
-import zstandard as zstd
 import multiprocessing
 import logging
 import asyncio
 import time
+import json 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
+manager = multiprocessing.Manager()
+active_analyses: Dict[str, dict] = manager.dict()
 
-# Global to track active analysis processes
-active_analyses: Dict[str, dict] = {}
-
-def compress_binary_to_zstd(binary_data: bytes, output_file: str) -> int:
+def compress_and_delete_task(original_json_path_str: str, compressed_dir_str: str, status_dict: Dict[str, dict], folder_id: str):
+    original_json_path = Path(original_json_path_str)
     try:
-        cctx = zstd.ZstdCompressor(level=19, write_checksum=True, threads=0)
-        compressed = cctx.compress(binary_data)
-        
-        with open(output_file, 'wb') as f:
-            f.write(compressed)
-        
-        compression_ratio = len(binary_data) / len(compressed)
-        logging.info(f"Binary compressed: {len(binary_data)} -> {len(compressed)} bytes (ratio: {compression_ratio:.2f}:1)")
-        
-        return len(compressed)
+        success, message, _ = compress_single_json_file(original_json_path_str, compressed_dir_str)
+        if success:
+            try:
+                original_json_path.unlink()
+            except OSError as e:
+                logging.warning(f"Could not delete temp JSON {original_json_path}: {e}")
+        else:
+            logging.error(f"Compression failed for {original_json_path.name}: {message}")
+            current_status = status_dict[folder_id]
+            current_status['failed_compressions'] = current_status.get('failed_compressions', 0) + 1
+            status_dict[folder_id] = current_status
     except Exception as e:
-        logging.error(f"Error compressing binary: {e}")
-        raise
+        logging.error(f"Critical failure in compress_and_delete_task for {original_json_path.name}: {e}")
+        current_status = status_dict[folder_id]
+        current_status['failed_compressions'] = current_status.get('failed_compressions', 0) + 1
+        status_dict[folder_id] = current_status
 
-def run_analysis_task_with_compression(input_files: list[str], output_template: str, folder_id: str):
+def run_analysis_task_with_compression(
+    input_files: list[str],
+    output_template: str,
+    folder_id: str,
+    status_dict: Dict[str, dict]
+):
     try:
         compressed_dir = Path(COMPRESSED_ANALYSIS_DIR) / folder_id
         compressed_dir.mkdir(parents=True, exist_ok=True)
         
-        active_analyses[folder_id].update({
+        analysis_dir = Path(output_template).parent
+        analysis_dir.mkdir(parents=True, exist_ok=True)
+
+        status_dict[folder_id] = {
             'status': 'running',
             'current_file': 0,
             'total_files': len(input_files),
             'start_time': time.time(),
-            'processing_file': 'Starting analysis...'
-        })
+            'processing_file': 'Initializing...',
+            'failed_analyses': 0,
+            'failed_compressions': 0
+        }
         
-        logging.info(f"Starting compute_trajectory for {len(input_files)} files")
+        compression_processes: List[multiprocessing.Process] = []
+        processed_frames_count = 0
+
+        def analysis_callback(progress_info):
+            nonlocal processed_frames_count, compression_processes
+            processed_frames_count += 1
+            
+            frame_result = progress_info.frame_result
+            
+            current_status = status_dict[folder_id]
+            current_status['current_file'] = processed_frames_count
+            current_status['processing_file'] = f"Analyzed frame {processed_frames_count}/{len(input_files)}"
+            
+            if frame_result.get('is_failed', False):
+                current_status['failed_analyses'] = current_status.get('failed_analyses', 0) + 1
+            
+            status_dict[folder_id] = current_status
+            
+            original_json_path_str = frame_result.get('output_file')
+            if original_json_path_str and not frame_result.get('is_failed'):
+                # En lugar de usar una cola, iniciamos un nuevo proceso para cada tarea.
+                p = multiprocessing.Process(
+                    target=compress_and_delete_task,
+                    args=(original_json_path_str, str(compressed_dir), status_dict, folder_id)
+                )
+                p.start()
+                compression_processes.append(p)
+
+        logging.info("Starting C++ parallel analysis...")
         pipeline = DislocationAnalysis()
+        pipeline.set_progress_callback(analysis_callback)
         pipeline.compute_trajectory(input_files, output_template)
         
-        analysis_dir = Path(output_template).parent
-        json_files = list(analysis_dir.glob('timestep_*.json'))
+        logging.info(f"Analysis finished. Waiting for {len(compression_processes)} compression tasks to complete...")
+        for p in compression_processes:
+            p.join()
+        logging.info("All compression tasks completed.")
         
-        if not json_files:
-            logging.error("No JSON files found after analysis!")
-            active_analyses[folder_id].update({
-                'status': 'error',
-                'error': 'No JSON files generated by analysis',
-                'end_time': time.time()
-            })
-            return
+        final_state = status_dict[folder_id]
+        failed_analyses = final_state.get('failed_analyses', 0)
+        failed_compressions = final_state.get('failed_compressions', 0)
         
-        logging.info(f"Analysis complete. Found {len(json_files)} JSON files to compress")
-        active_analyses[folder_id].update({
-            'total_files': len(json_files),
-            'current_file': 0,
-            'processing_file': 'Starting parallel compression...'
-        })
-        
-        def update_progress(completed: int, total: int, current_file: str):
-            if folder_id in active_analyses:
-                active_analyses[folder_id].update({
-                    'current_file': completed,
-                    'total_files': total,
-                    'processing_file': f"Compressing {current_file} ({completed}/{total})"
-                })
-        
-        logging.info(f"Starting parallel compression of {len(json_files)} files...")
-        compressed_files = compress_analysis_files_parallel(
-            analysis_dir=str(analysis_dir),
-            compressed_dir=str(compressed_dir),
-            progress_callback=update_progress
-        )
-        
-        success_count = len(compressed_files)
-        total_count = len(json_files)
-        
-        if success_count == total_count:
-            logging.info(f"All {success_count} files compressed successfully")
+        if failed_analyses > 0 or failed_compressions > 0:
+            status = 'complete_with_errors'
+            error_msg = f"{failed_analyses} analyses failed, {failed_compressions} compressions failed."
+        else:
             status = 'complete'
             error_msg = None
-        else:
-            logging.warning(f"Only {success_count}/{total_count} files compressed successfully")
-            status = 'complete' 
-            error_msg = f"Only {success_count}/{total_count} files compressed"
-        
-        active_analyses[folder_id].update({
-            'status': status,
-            'end_time': time.time(),
-            'progress': 100,
-            'processing_file': f'Complete! Compressed {success_count}/{total_count} files',
-            'compressed_files': success_count,
-            'error': error_msg
+            
+        final_state.update({
+            'status': status, 'end_time': time.time(), 'progress': 100,
+            'processing_file': 'Complete!', 'error': error_msg
         })
-        
-        logging.info(f"Analysis and compression complete for folder {folder_id}")
-        
+        status_dict[folder_id] = final_state
+
     except Exception as e:
-        active_analyses[folder_id].update({
+        logging.exception(f"Critical failure during analysis for {folder_id}")
+        error_state = {
             'status': 'error',
-            'error': str(e),
+            'error': f"A critical error occurred: {str(e)}",
             'end_time': time.time()
-        })
-        logging.error(f"Analysis failed for {folder_id}: {e}")
-        raise
+        }
+        if folder_id in status_dict:
+            current_state = status_dict[folder_id]
+            current_state.update(error_state)
+            status_dict[folder_id] = current_state
+        else:
+            status_dict[folder_id] = error_state
 
 @router.websocket("/ws/analysis/{folder_id}")
 async def websocket_analysis_status(websocket: WebSocket, folder_id: str):
     await websocket.accept()
-    
     try:
         while True:
             if folder_id in active_analyses:
                 status = active_analyses[folder_id].copy()
-                
                 if status['status'] == 'running':
-                    progress = (status['current_file'] / status['total_files']) * 100
-                    status['progress'] = round(progress, 1)
-                    
-                    elapsed = time.time() - status['start_time']
+                    if status.get('total_files', 0) > 0:
+                        progress = (status['current_file'] / status['total_files']) * 100
+                        status['progress'] = round(progress, 1)
+                    else:
+                        status['progress'] = 0
+                    elapsed = time.time() - status.get('start_time', time.time())
                     if status['current_file'] > 0:
                         eta = (elapsed / status['current_file']) * (status['total_files'] - status['current_file'])
                         status['eta_seconds'] = round(eta)
-                
                 await websocket.send_json(status)
-                
-                if status['status'] in ['complete', 'error']:
+                if status['status'] in ['complete', 'complete_with_errors', 'error']:
                     break
             else:
                 await websocket.send_json({'status': 'not_found'})
                 break
-            
             await asyncio.sleep(1)
-            
     except WebSocketDisconnect:
         logging.info(f"WebSocket disconnected for analysis {folder_id}")
 
@@ -151,25 +161,22 @@ async def websocket_analysis_status(websocket: WebSocket, folder_id: str):
 async def get_analysis_status(folder_id: str):
     trajectory_path = Path(TRAJECTORY_DIR) / folder_id
     compressed_path = Path(COMPRESSED_ANALYSIS_DIR) / folder_id
-
     if not trajectory_path.is_dir():
         raise HTTPException(status_code=404, detail=f"Folder '{folder_id}' not found")
-
-    num_trajectory_files = len([p for p in trajectory_path.glob('*') if p.is_file()])
-    
     if folder_id in active_analyses:
         status = active_analyses[folder_id].copy()
-        if status['status'] == 'running':
+        if status['status'] == 'running' and status.get('total_files', 0) > 0:
             progress = (status['current_file'] / status['total_files']) * 100
             status['progress'] = round(progress, 1)
         return JSONResponse(content=status)
-    num_compressed = len([p for p in compressed_path.glob('*.json.zst') if p.is_file()]) if compressed_path.exists() else 0
-    
+    try:
+        num_trajectory_files = len([p for p in trajectory_path.glob('*') if p.is_file()])
+    except Exception:
+        num_trajectory_files = 0
     if num_trajectory_files == 0:
         return JSONResponse(content={'status': 'no_files', 'progress': 0})
-    
-    progress = (num_compressed / num_trajectory_files) * 100
-    
+    num_compressed = len([p for p in compressed_path.glob('*.json.zst') if p.is_file()]) if compressed_path.exists() else 0
+    progress = (num_compressed / num_trajectory_files) * 100 if num_trajectory_files > 0 else 0
     if progress < 100:
         return JSONResponse(content={'status': 'partial', 'progress': round(progress, 2)})
     else:
@@ -179,54 +186,35 @@ async def get_analysis_status(folder_id: str):
 async def analyze_folder(folder_id: str):
     folder_path = Path(TRAJECTORY_DIR) / folder_id
     output_path = Path(ANALYSIS_DIR) / folder_id
-
     if not folder_path.is_dir():
         raise HTTPException(status_code=404, detail=f"Folder '{folder_id}' not found")
-
-    if folder_id in active_analyses and active_analyses[folder_id]['status'] == 'running':
-        return JSONResponse(content={'status': 'already_running', 'message': 'Analysis already in progress'})
-
+    if folder_id in active_analyses and active_analyses[folder_id].get('status') == 'running':
+        return JSONResponse(status_code=409, content={'status': 'already_running', 'message': 'Analysis already in progress'})
     output_path.mkdir(parents=True, exist_ok=True)
     input_files = sorted([str(p) for p in folder_path.glob('*') if p.is_file()])
-
     if not input_files:
-        return JSONResponse(content={'status': 'no_files_found'})
-
+        return JSONResponse(status_code=400, content={'status': 'no_files_found'})
     output_template = str(output_path / "timestep_{}.json")
-
+    process = multiprocessing.Process(
+        target=run_analysis_task_with_compression,
+        args=(input_files, output_template, folder_id, active_analyses)
+    )
+    process.start()
     active_analyses[folder_id] = {
         'status': 'starting',
         'total_files': len(input_files),
         'current_file': 0,
         'start_time': time.time()
     }
-    process = multiprocessing.Process(
-        target=run_analysis_task_with_compression,
-        args=(input_files, output_template, folder_id)
-    )
-    process.start()
-
     return JSONResponse(status_code=202, content={
         'status': 'analysis_started',
-        'message': f'Analysis of {len(input_files)} files started with compression',
+        'message': f'Analysis of {len(input_files)} files started with on-the-fly compression',
         'websocket_url': f'/ws/analysis/{folder_id}'
     })
 
 @router.get('/compression-stats/{folder_id}')
 async def get_compression_statistics(folder_id: str):
     compressed_path = Path(COMPRESSED_ANALYSIS_DIR) / folder_id
-    
     if not compressed_path.exists():
-        return JSONResponse(content={
-            'folder_id': folder_id,
-            'stats': {
-                'total_files': 0,
-                'total_size': 0,
-                'total_size_mb': 0,
-                'files': []
-            }
-        })
-    
-    return JSONResponse(content={
-        'folder_id': folder_id,
-    })
+        return JSONResponse(content={'folder_id': folder_id, 'stats': {'total_files': 0, 'total_size': 0, 'total_size_mb': 0, 'files': []}})
+    return JSONResponse(content={'folder_id': folder_id})

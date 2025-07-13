@@ -104,7 +104,7 @@ json AnalysisWrapper::computeTrajectory(const std::vector<std::string>& input_fi
 
     spdlog::debug("All frames loaded. Starting parallel analysis...");
 
-    return analyzer->compute(frames, output_file_template);
+    return analyzer->compute(frames, output_file_template, progressCallback);
 }
 
 void AnalysisWrapper::validateInputFile(const std::string& filePath) const {

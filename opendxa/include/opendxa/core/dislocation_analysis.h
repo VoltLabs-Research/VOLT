@@ -30,7 +30,7 @@ using namespace OpenDXA::Particles;
 struct ProgressInfo{
     size_t completedFrames;
     size_t totalFrames;
-    const nlohmann::json& frameResult;
+    const nlohmann::json* frameResult;
 };
 
 using ProgressCallback = std::function<void(const ProgressInfo&)>;
