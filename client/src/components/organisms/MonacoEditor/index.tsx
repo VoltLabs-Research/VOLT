@@ -48,12 +48,10 @@ dislocation_data = dislocation_info['data']
 
 segment_count = metadata['count']
 total_length = summary['total_length']
-density = summary['density']['dislocation_density']
 
 print('Dislocation Analysis Summary')
 print(f'Total Dislocation Segments: {segment_count}')
 print(f'Total Dislocation Length: {total_length:.4f} (units)')
-print(f'Dislocation Density: {density:.4e} (1/units^2)')
 
 segment_lengths = np.array([segment['length'] for segment in dislocation_data])
 
@@ -65,8 +63,7 @@ print(f'Average Segment Length: {np.mean(segment_lengths):.4f}')
 result = {
     'analysis_summary': {
         'segment_count': segment_count,
-        'total_length': round(total_length, 4),
-        'density': f'{density:.4e}'
+        'total_length': round(total_length, 4)
     },
     'length_stats': {
         'max': round(float(np.max(segment_lengths)), 4),

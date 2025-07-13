@@ -8,7 +8,6 @@ from typing import Dict, List
 
 import multiprocessing
 import logging
-import asyncio
 import time
 
 logger = logging.getLogger(__name__)
@@ -17,22 +16,17 @@ router = APIRouter()
 manager = multiprocessing.Manager()
 active_analyses: Dict[str, dict] = manager.dict()
 
-def compress_and_delete_task(original_json_path_str: str, compressed_dir_str: str, status_dict: Dict[str, dict], folder_id: str):
+def compress_task(original_json_path_str: str, compressed_dir_str: str, status_dict: Dict[str, dict], folder_id: str):
     original_json_path = Path(original_json_path_str)
     try:
         success, message, _ = compress_single_json_file(original_json_path_str, compressed_dir_str)
-        if success:
-            try:
-                original_json_path.unlink()
-            except OSError as e:
-                logging.warning(f"Could not delete temp JSON {original_json_path}: {e}")
-        else:
+        if not success:
             logging.error(f"Compression failed for {original_json_path.name}: {message}")
             current_status = status_dict[folder_id]
             current_status['failed_compressions'] = current_status.get('failed_compressions', 0) + 1
             status_dict[folder_id] = current_status
     except Exception as e:
-        logging.error(f"Critical failure in compress_and_delete_task for {original_json_path.name}: {e}")
+        logging.error(f"Critical failure in compress_task for {original_json_path.name}: {e}")
         current_status = status_dict[folder_id]
         current_status['failed_compressions'] = current_status.get('failed_compressions', 0) + 1
         status_dict[folder_id] = current_status
@@ -81,7 +75,7 @@ def run_analysis_task_with_compression(
             original_json_path_str = frame_result.get('output_file')
             if original_json_path_str and not frame_result.get('is_failed'):
                 p = multiprocessing.Process(
-                    target=compress_and_delete_task,
+                    target=compress_task,
                     args=(original_json_path_str, str(compressed_dir), status_dict, folder_id)
                 )
                 p.start()
