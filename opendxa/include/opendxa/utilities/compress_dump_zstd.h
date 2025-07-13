@@ -41,7 +41,7 @@ void compressDumpToZstd(const std::string& dumpFile, const std::string &outFile)
 
         // Box bounds
         std::getline(in, line);
-        for(int i = 0 i < 3; ++i) std::getline(in, line);
+        for(int i = 0; i < 3; ++i) std::getline(in, line);
 
         // TODO: 
         // "ITEM: ATOMS id type x y z"
