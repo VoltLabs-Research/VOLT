@@ -88,12 +88,6 @@ json AnalysisWrapper::computeTrajectory(const std::vector<std::string>& input_fi
         throw std::invalid_argument("Input file list cannot be empty.");
     }
 
-    /*
-        if(output_file_template.find("{}") == std::string::npos && output_file_template.find("%i") == std::string::npos){
-            throw std::invalid_argument("Output file template must contain a placeholder like {}.");
-        }
-    */
-    
     spdlog::debug("Loading {} frames from disk...", input_files.size());
     std::vector<LammpsParser::Frame> frames;
     frames.reserve(input_files.size());

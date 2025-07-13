@@ -200,7 +200,8 @@ std::pair<LammpsParser::Frame, std::string> DislocationAnalysis::deserializeFram
 // TODO: Because it introduces overhead. So why do I do it this way? Not all code is thread-safe.
 json DislocationAnalysis::compute(
     const std::vector<LammpsParser::Frame>& frames,
-    const std::string& outputFileTemplate
+    const std::string& outputFileTemplate,
+    const ProgressCallback& progressCallback
 ){
     const auto startTime = std::chrono::high_resolution_clock::now();
     const size_t numFrames = frames.size();
@@ -365,6 +366,15 @@ json DislocationAnalysis::compute(
     
                     completedFrames++;
                     spdlog::info("Completed frame {}/{}", completedFrames, numFrames);
+
+                    if(progressCallback){
+                        ProgressInfo info{
+                            .completedFrames = completedFrames,
+                            .totalFrames = numFrames,
+                            .frameResult = frameResults[frameIndex]
+                        };
+                        progressCallback(info);
+                    }
                 }
             }else if(finishedPid == -1 && errno == ECHILD){
                 // No more child processes exit, break out of wait loop

@@ -27,6 +27,14 @@ namespace OpenDXA{
 
 using namespace OpenDXA::Particles;
 
+struct ProgressInfo{
+    size_t completedFrames;
+    size_t totalFrames;
+    const nlohmann::json& frameResult;
+};
+
+using ProgressCallback = std::function<void(const ProgressInfo&)>;
+
 class DislocationAnalysis{
 public:
     DislocationAnalysis()
@@ -52,7 +60,11 @@ public:
     void serializeFrame(const LammpsParser::Frame& frame, const std::string& filename, const std::string& outputFile);
     json compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile = "");
     json exportResultsToJson(const std::string& filename = "") const;
-    json compute(const std::vector<LammpsParser::Frame>& frames, const std::string& output_file_template);
+    json compute(
+        const std::vector<LammpsParser::Frame>& frames, 
+        const std::string& outputFileTemplate, 
+        const ProgressCallback& progressCalback
+    );
 
     std::pair<LammpsParser::Frame, std::string> deserializeFrame(const std::string& filename);
 
