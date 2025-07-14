@@ -302,6 +302,28 @@ Cluster* StructureAnalysis::startNewCluster(int atomIndex, int structureType){
     return cluster;
 }
 
+void StructureAnalysis::processAtomConnections(size_t atomIndex){
+    int clusterId = _atomClusters->getInt(atomIndex);
+    if(clusterId == 0) return;
+    Cluster* cluster1 = clusterGraph().findCluster(clusterId);
+    assert(cluster1);
+    connectClusterNeighbors(atomIndex, cluster1);
+}
+
+void StructureAnalysis::initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex){
+    double* qdat = _ptmOrientation->dataFloat() + seedAtomIndex * 4;
+    Quaternion q(qdat[0], qdat[1], qdat[2], qdat[3]);
+    q.normalize();
+    
+    // We save the orientations, that is, where the crystallographic X, Y, Z axis points.
+    Vector3 ex(1.0, 0.0, 0.0), ey(0.0, 1.0, 0.0), ez(0.0, 0.0, 1.0);
+    Matrix3 R;
+    R.column(0) = q * ex;
+    R.column(1) = q * ey;
+    R.column(2) = q * ez;
+    cluster->orientation = R;
+}
+
 bool StructureAnalysis::buildClustersPTM() {
     const size_t N = positions()->size();
 
@@ -311,19 +333,7 @@ bool StructureAnalysis::buildClustersPTM() {
         int structureType = _structureTypes->getInt(seedAtomIndex);
         Cluster* cluster = startNewCluster(seedAtomIndex, structureType);
 
-        {
-            double* qdat = _ptmOrientation->dataFloat() + seedAtomIndex * 4;
-            Quaternion q(qdat[0], qdat[1], qdat[2], qdat[3]);
-            q.normalize();
-
-            Vector3 ex(1.0, 0.0, 0.0), ey(0.0, 1.0, 0.0), ez(0.0, 0.0, 1.0);
-            // We save the orientations, that is, where the crystallographic X, Y, Z axis points.
-            Matrix3 R;
-            R.column(0) = q * ex;
-            R.column(1) = q * ey;
-            R.column(2) = q * ez;
-            cluster->orientation = R;
-        }
+        initializePTMClusterOrientation(cluster, seedAtomIndex);
 
         std::deque<int> atomsToVisit{ int(seedAtomIndex) };
         growClusterPTM(cluster, atomsToVisit, structureType);
@@ -530,60 +540,70 @@ bool StructureAnalysis::buildClusters() {
     return true;
 }
 
-bool StructureAnalysis::connectClusters(){
-    auto indices = std::views::iota(size_t{0}, positions()->size());
-    std::for_each(std::execution::par, indices.begin(), indices.end(), [this](size_t atomIndex){
-        int clusterId = _atomClusters->getInt(atomIndex);
-        if(clusterId == 0) return;
-        Cluster* cluster1 = clusterGraph().findCluster(clusterId);
-        assert(cluster1);
-        connectClusterNeighbors(atomIndex, cluster1);
-    });
-    return true;
-}
-
-void StructureAnalysis::connectClusterNeighbors(int atomIndex, Cluster* cluster1) {
+std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&>
+StructureAnalysis::getAtomStructureInfo(int atomIndex){
     int structureType = _structureTypes->getInt(atomIndex);
     const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
     const CoordinationStructure& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
     int symPermIndex = _atomSymmetryPermutations->getInt(atomIndex);
     const auto& permutation = latticeStructure.permutations[symPermIndex].permutation;
+    
+    return {structureType, latticeStructure, coordStructure, permutation};
+}
 
-    for (int ni = 0; ni < coordStructure.numNeighbors; ni++) {
+void StructureAnalysis::connectClusterNeighbors(int atomIndex, Cluster* cluster1){
+    const auto [structureType, latticeStructureType, coordStructure, permutation] = getAtomStructureInfo(atomIndex);
+    for(int ni = 0; ni < coordStructure.numNeighbors; ni++){
         int neighbor = getNeighbor(atomIndex, ni);
-        int neighborClusterId = _atomClusters->getInt(neighbor);
-
-        if (neighborClusterId == 0 || neighborClusterId == cluster1->id) {
-            if (neighborClusterId == 0) {
-                int otherListCount = numberOfNeighbors(neighbor);
-                if (otherListCount < _neighborLists->componentCount()) {
-                    _neighborLists->setIntComponent(neighbor, otherListCount, atomIndex);
-                }
-            }
-            continue;
-        }
-
-        Cluster* cluster2 = clusterGraph().findCluster(neighborClusterId);
-        assert(cluster2);
-
-        if(ClusterTransition* t = cluster1->findTransition(cluster2)){
-            t->area++;
-            t->reverse->area++;
-            continue;
-        }
-
-        Matrix3 transition;
-        if(calculateMisorientation(atomIndex, neighbor, ni, transition)){
-            if (transition.isOrthogonalMatrix()) {
-                std::scoped_lock lock(cluster_graph_mutex);
-                if(!cluster1->findTransition(cluster2)){
-                    ClusterTransition* t = clusterGraph().createClusterTransition(cluster1, cluster2, transition);
-                    t->area++;
-                    t->reverse->area++;
-                }
-            }
-        }
+        processNeighborConnection(atomIndex, neighbor, ni, cluster1, structureType);
     }
+}
+
+void StructureAnalysis::addReverseNeighbor(int neighbor, int atomIndex){
+    int otherListCount = numberOfNeighbors(neighbor);
+    if(otherListCount < _neighborLists->componentCount()){
+        _neighborLists->setIntComponent(neighbor, otherListCount, atomIndex);
+    }
+}
+
+void StructureAnalysis::processNeighborConnection(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, int structureType){
+    int neighborClusterId = _atomClusters->getInt(neighbor);
+    if(neighborClusterId == 0){
+        addReverseNeighbor(neighbor, atomIndex);
+        return;
+    }
+
+    if(neighborClusterId == cluster1->id) return;
+
+    Cluster* cluster2 = clusterGraph().findCluster(neighborClusterId);
+    assert(cluster2);
+
+    if(ClusterTransition* existing = cluster1->findTransition(cluster2)){
+        existing->area++;
+        existing->reverse->area++;
+        return;
+    }
+
+    createNewClusterTransition(atomIndex, neighbor, neighborIndex, cluster1, cluster2);
+}
+
+void StructureAnalysis::createNewClusterTransition(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, Cluster* cluster2){
+    Matrix3 transition;
+    if(!calculateMisorientation(atomIndex, neighbor, neighborIndex, transition)) return;
+    if(!transition.isOrthogonalMatrix()) return;
+    if(!cluster1->findTransition(cluster2)){
+        ClusterTransition* t = clusterGraph().createClusterTransition(cluster1, cluster2, transition);
+        t->area++;
+        t->reverse->area++;
+    }
+}
+
+bool StructureAnalysis::connectClusters(){
+    auto indices = std::views::iota(size_t{0}, positions()->size());
+    std::for_each(std::execution::par, indices.begin(), indices.end(), [this](size_t atomIndex){
+        processAtomConnections(atomIndex);
+    });
+    return true;
 }
 
 bool StructureAnalysis::calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition) {

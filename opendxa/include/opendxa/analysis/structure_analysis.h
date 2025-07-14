@@ -251,6 +251,13 @@ private:
 		float cutoff
 	);
 	void allocatePTMOutputArrays(size_t N);
+	void initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex);
+	void processAtomConnections(size_t atomIndex);
+	void connectClustersNeighbors(int atomIndex, Cluster* cluster1);
+	std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&> getAtomStructureInfo(int atomIndex);
+	void processNeighborConnection(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, int structureType);
+	void addReverseNeighbor(int neighbor, int atomIndex);
+	void createNewClusterTransition(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, Cluster* cluster2);
 
 	Cluster* getParentGrain(Cluster* c);
 	void processDefectCluster(Cluster* defectCluster);
