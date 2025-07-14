@@ -524,6 +524,14 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         }
     }
 
+    std::vector<int> extractedStructureTypes;
+    extractedStructureTypes.reserve(frame.natoms);
+    
+    for(int i = 0; i < frame.natoms; ++i){
+        int structureType = structureAnalysis->structureTypes()->getInt(i);
+        extractedStructureTypes.push_back(structureType);
+    }
+
     // Next, we perform a periodic Delaunay Tessellation of all atomic positions.
     // The ghostLayerSize is chosen based on the maximum neighbor distance so that
     // our mesh seamlessly wraps across periodic boundaries.
@@ -635,7 +643,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     // Finally, we serialize all results-mesh, network data, metrics-into JSON. 
     // Any exception here is considered a fatal error in the exporter.
     try{
-        result = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame, &tracer);
+        result = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame, &tracer, &extractedStructureTypes);
     }catch(const std::exception& e){
         result["is_failed"] = true;
         result["error"] = e.what();

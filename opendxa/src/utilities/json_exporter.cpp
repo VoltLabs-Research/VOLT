@@ -72,6 +72,7 @@ json DXAJsonExporter::exportAnalysisData(
     data["atoms"] = getAtomsData(frame, tracer, structureTypes);
     //data["cluster_graph"] = exportClusterGraphToJson(&network->clusterGraph());
     data["simulation_cell"] = getExtendedSimulationCellInfo(frame.simulationCell);
+    data["structures"] = interfaceMesh->structureAnalysis().getStructureStatisticsJson();
     
     if(includeDetailedNetworkInfo){
         data["network_statistics"] = getNetworkStatistics(network, frame.simulationCell.volume3D());
@@ -382,8 +383,10 @@ json DXAJsonExporter::getAtomsData(
         
         int lammpsType = (i < static_cast<int>(frame.types.size())) ? frame.types[i] : 0;
 
+        // TODO: ???????????
         atomJson["lammps_type"] = lammpsType;
         atomJson["atom_type"] = structureType;
+        atomJson["type_name"] = tracer->mesh().structureAnalysis().getStructureTypeName(structureType);
         
         cnaTypeDistribution[structureType]++;
         validAtoms++;

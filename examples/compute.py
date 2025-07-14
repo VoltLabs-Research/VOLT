@@ -20,4 +20,4 @@ OUTPUT_TEMPLATE = 'timestep_{}.json'
 # trajectory_files = [str(file.absolute()) for file in Path(TRAJECTORY_DIR).glob('*') if file.is_file()]
 # pipeline.compute_trajectory(trajectory_files, OUTPUT_TEMPLATE)
 
-pipeline.compute('/home/rodyherrera/Escritorio/OpenDXA/debug-data/Sigma9yz/dump.ensayo.50000.config', 'analysis.json')
+pipeline.compute('/home/rodyherrera/Escritorio/OpenDXA/examples/dump.1000K.11000.xyz')

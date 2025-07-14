@@ -8,9 +8,12 @@
 #include <opendxa/structures/neighbor_bond_array.h>
 #include <opendxa/structures/coordination_structure.h>
 #include <opendxa/structures/lattice_structure.h>
+#include <nlohmann/json.hpp>
 #include <opendxa/core/coordination_structures.h>
 #include <opendxa/analysis/polyhedral_template_matching.h>
 #include <mutex>
+
+using json = nlohmann::json;
 
 namespace OpenDXA{
 
@@ -47,13 +50,32 @@ public:
 	int atomCount() const{
 		return positions()->size();
 	}
-
+	int numberOfNeighbors(int atomIndex) const {
+		assert(_neighborLists);
+		const int* neighborList = _neighborLists->constDataInt() + (size_t)atomIndex * _neighborLists->componentCount();
+		size_t count = 0;
+		while(count < _neighborLists->componentCount() && neighborList[count] != -1){
+			count++;
+		}
+		return count;
+	}
+	int getNeighbor(int centralAtomIndex, int neighborListIndex) const{
+		assert(_neighborLists);
+		return _neighborLists->getIntComponent(centralAtomIndex, neighborListIndex);
+	}
+	int findNeighbor(int centralAtomIndex, int neighborAtomIndex) const{
+		assert(_neighborLists);
+		const int* neighborList = _neighborLists->constDataInt() + (size_t)centralAtomIndex * _neighborLists->componentCount();
+		for(size_t index = 0; index < _neighborLists->componentCount() && neighborList[index] != -1; index++){
+			if(neighborList[index] == neighborAtomIndex){
+				return index;
+			}
+		}
+		return -1;
+	}
+	
 	ParticleProperty* positions() const{
 		return _positions;
-	}
-
-	const SimulationCell& cell() const{
-		return _simCell;
 	}
 
 	ParticleProperty* structureTypes() const{
@@ -84,30 +106,8 @@ public:
 		return clusterGraph().findCluster(_atomClusters->getInt(atomIndex));
 	}
 
-	int numberOfNeighbors(int atomIndex) const {
-		assert(_neighborLists);
-		const int* neighborList = _neighborLists->constDataInt() + (size_t)atomIndex * _neighborLists->componentCount();
-		size_t count = 0;
-		while(count < _neighborLists->componentCount() && neighborList[count] != -1){
-			count++;
-		}
-		return count;
-	}
-
-	int getNeighbor(int centralAtomIndex, int neighborListIndex) const{
-		assert(_neighborLists);
-		return _neighborLists->getIntComponent(centralAtomIndex, neighborListIndex);
-	}
-
-	int findNeighbor(int centralAtomIndex, int neighborAtomIndex) const{
-		assert(_neighborLists);
-		const int* neighborList = _neighborLists->constDataInt() + (size_t)centralAtomIndex * _neighborLists->componentCount();
-		for(size_t index = 0; index < _neighborLists->componentCount() && neighborList[index] != -1; index++){
-			if(neighborList[index] == neighborAtomIndex){
-				return index;
-			}
-		}
-		return -1;
+	const SimulationCell& cell() const{
+		return _simCell;
 	}
 
 	void freeNeighborLists(){
@@ -130,10 +130,114 @@ public:
 		return latticeStructure.latticeVectors[permutation[neighborIndex]];
 	}
 
+	void calculateStructureStatistics() const {
+        _structureStatistics.clear();
+        
+        const size_t N = positions()->size();
+        for (size_t i = 0; i < N; ++i) {
+            int structureType = _structureTypes->getInt(i);
+            _structureStatistics[structureType]++;
+        }
+        
+        _statisticsValid = true;
+    }
+    
+    const std::map<int, int>& getStructureStatistics() const {
+        if (!_statisticsValid) {
+            calculateStructureStatistics();
+        }
+        return _structureStatistics;
+    }
+    
+    std::map<std::string, int> getNamedStructureStatistics() const {
+        if (!_statisticsValid) {
+            calculateStructureStatistics();
+        }
+        
+        std::map<std::string, int> namedStats;
+        
+        for (const auto& [structureType, count] : _structureStatistics) {
+            std::string name = getStructureTypeName(structureType);
+            namedStats[name] = count;
+        }
+        
+        return namedStats;
+    }
+    
+    void invalidateStatistics() {
+        _statisticsValid = false;
+    }
+    
+    std::string getStructureTypeName(int structureType) const {
+        if (usingPTM()) {
+            switch (static_cast<StructureType>(structureType)) {
+                case StructureType::OTHER: return "OTHER";
+                case StructureType::FCC: return "FCC";
+                case StructureType::HCP: return "HCP";
+                case StructureType::BCC: return "BCC";
+                case StructureType::ICO: return "ICO";
+                case StructureType::SC: return "SC";
+                case StructureType::CUBIC_DIAMOND: return "CUBIC_DIAMOND";
+                case StructureType::HEX_DIAMOND: return "HEX_DIAMOND";
+                case StructureType::GRAPHENE: return "GRAPHENE";
+                default: return "UNKNOWN";
+            }
+        } else {
+            switch (static_cast<CoordinationStructureType>(structureType)) {
+                case CoordinationStructureType::COORD_OTHER: return "OTHER";
+                case CoordinationStructureType::COORD_FCC: return "FCC";
+                case CoordinationStructureType::COORD_HCP: return "HCP";
+                case CoordinationStructureType::COORD_BCC: return "BCC";
+                case CoordinationStructureType::COORD_CUBIC_DIAMOND: return "CUBIC_DIAMOND";
+                case CoordinationStructureType::COORD_HEX_DIAMOND: return "HEX_DIAMOND";
+                default: return "UNKNOWN";
+            }
+        }
+    }
+    
+    json getStructureStatisticsJson() const{
+        if (!_statisticsValid) {
+            calculateStructureStatistics();
+        }
+        
+        json stats;
+        stats["total_atoms"] = positions()->size();
+        stats["analysis_method"] = usingPTM() ? "PTM" : "CNA";
+        
+        json typeStats;
+        int totalIdentified = 0;
+        
+        for(const auto& [structureType, count] : _structureStatistics){
+            std::string name = getStructureTypeName(structureType);
+            
+            json typeInfo;
+            typeInfo["count"] = count;
+            typeInfo["percentage"] = (count * 100.0) / positions()->size();
+            typeInfo["type_id"] = structureType;
+            
+            typeStats[name] = typeInfo;
+            
+            if (structureType != static_cast<int>(StructureType::OTHER) && 
+                structureType != static_cast<int>(CoordinationStructureType::COORD_OTHER)) {
+                totalIdentified += count;
+            }
+        }
+        
+        stats["structure_types"] = typeStats;
+        stats["summary"] = {
+            {"total_identified", totalIdentified},
+            {"total_unidentified", _structureStatistics.count(static_cast<int>(StructureType::OTHER)) ? _structureStatistics.at(static_cast<int>(StructureType::OTHER)) : 0},
+            {"identification_rate", (totalIdentified * 100.0) / positions()->size()},
+            {"unique_structure_types", static_cast<int>(_structureStatistics.size())}
+        };
+        
+        return stats;
+    }
 private:
-	bool shouldSkipSeed(int index);
+	bool alreadyProcessedAtom(int index);
 	bool calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition);
 	void connectClusterNeighbors(int atomIndex, Cluster* cluster1);
+	bool areOrientationsCompatible(int atom1, int atom2, Cluster* cluster);
 
 	Cluster* getParentGrain(Cluster* c);
 	void processDefectCluster(Cluster* defectCluster);
@@ -148,6 +252,9 @@ private:
 	);
 
 	Cluster* startNewCluster(int atomIndex, int structureType);
+
+	mutable std::map<int, int> _structureStatistics;
+    mutable bool _statisticsValid = false;
 
 	Mode _identificationMode;
 	CoordinationStructures _coordStructures;

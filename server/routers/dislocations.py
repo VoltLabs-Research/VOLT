@@ -52,21 +52,31 @@ def run_single_frame_analysis_and_compress(
             setter_method_name = f"set_{key}"
             
             if key == 'crystal_structure':
-                value = _convert_str_to_opendxa_enum(LatticeStructure, value)
+                # Convertir la cadena 'FCC' al objeto LatticeStructure.FCC
+                enum_obj = _convert_str_to_opendxa_enum(LatticeStructure, value)
+                # Y luego obtener su valor ENTERO
+                value_to_pass = int(enum_obj) 
                 setter_method_name = "set_crystal_structure" 
             elif key == 'identification_mode':
-                value = _convert_str_to_opendxa_enum(StructureIdentification, value)
+                # Convertir la cadena 'PTM' al objeto StructureIdentification.PTM
+                enum_obj = _convert_str_to_opendxa_enum(StructureIdentification, value)
+                # Y luego obtener su valor ENTERO
+                value_to_pass = int(enum_obj) 
                 setter_method_name = "set_identification_mode"
-            
+            else:
+                value_to_pass = value # Para otros campos, pasar el valor directamente
+
             if hasattr(pipeline, setter_method_name):
                 setter_method = getattr(pipeline, setter_method_name)
-                setter_method(value)
+                setter_method(value_to_pass) # Usar value_to_pass
             else:
                 logging.warning(f"Configuration key '{key}' has no corresponding setter method '{setter_method_name}' and will be ignored.")
         
         Path(output_json_path_str).parent.mkdir(parents=True, exist_ok=True)
         
         logging.info(f"Analyzing single frame: {input_file_path_str} with config: {config_dict}")
+        # Asumiendo que pipeline.compute espera la ruta del archivo de entrada y la de salida
+        # y que se encarga de la lectura del archivo de entrada.
         result = pipeline.compute(input_file_path_str, output_json_path_str)
         
         if result.get('is_failed', False):
@@ -89,11 +99,14 @@ def run_single_frame_analysis_and_compress(
 
 @router.post('/analyze_single_timestep/{folder_id}/{timestep_index}')
 async def analyze_single_timestep_endpoint(folder_id: str, timestep_index: int, config: AnalysisConfig):
-    trajectory_file_name = timestep_index 
-    input_file_path = Path(TRAJECTORY_DIR) / folder_id / str(trajectory_file_name)
+    trajectory_file_name = str(timestep_index) 
+    input_file_path = Path(TRAJECTORY_DIR) / folder_id / trajectory_file_name
     
+    # Añadir un log de depuración para verificar la ruta que se está buscando
+    logging.info(f"Attempting to analyze single timestep file: {input_file_path}")
+
     if not input_file_path.is_file():
-        raise HTTPException(status_code=404, detail=f"Timestep file '{trajectory_file_name}' not found in folder '{folder_id}'")
+        raise HTTPException(status_code=404, detail=f"Timestep file '{trajectory_file_name}' not found at '{input_file_path}' in folder '{folder_id}'")
 
     output_json_file_name = f"timestep_{timestep_index}.json"
     output_json_path = Path(ANALYSIS_DIR) / folder_id / output_json_file_name
@@ -127,17 +140,22 @@ def run_analysis_task_with_compression(
             setter_method_name = f"set_{key}"
             
             if key == 'crystal_structure':
-                value = _convert_str_to_opendxa_enum(LatticeStructure, value)
+                enum_obj = _convert_str_to_opendxa_enum(LatticeStructure, value)
+                value_to_pass = int(enum_obj)
                 setter_method_name = "set_crystal_structure"
             elif key == 'identification_mode':
-                value = _convert_str_to_opendxa_enum(StructureIdentification, value)
+                enum_obj = _convert_str_to_opendxa_enum(StructureIdentification, value)
+                value_to_pass = int(enum_obj)
                 setter_method_name = "set_identification_mode"
+            else:
+                value_to_pass = value
 
             if hasattr(pipeline, setter_method_name):
                 setter_method = getattr(pipeline, setter_method_name)
-                setter_method(value)
+                setter_method(value_to_pass) # Usar value_to_pass
             else:
                 logging.warning(f"Configuration key '{key}' has no corresponding setter method '{setter_method_name}' and will be ignored.")
+        
         compressed_dir = Path(COMPRESSED_ANALYSIS_DIR) / folder_id
         compressed_dir.mkdir(parents=True, exist_ok=True)
         
@@ -188,11 +206,23 @@ def run_analysis_task_with_compression(
         logging.info(f"Applying custom analysis configuration: {config_dict}")
         pipeline = DislocationAnalysis()
 
+        # Re-aplicar la lógica de conversión de enums aquí también para el análisis completo
         for key, value in config_dict.items():
             setter_method_name = f"set_{key}"
+            if key == 'crystal_structure':
+                enum_obj = _convert_str_to_opendxa_enum(LatticeStructure, value)
+                value_to_pass = int(enum_obj)
+                setter_method_name = "set_crystal_structure"
+            elif key == 'identification_mode':
+                enum_obj = _convert_str_to_opendxa_enum(StructureIdentification, value)
+                value_to_pass = int(enum_obj)
+                setter_method_name = "set_identification_mode"
+            else:
+                value_to_pass = value
+
             if hasattr(pipeline, setter_method_name):
                 setter_method = getattr(pipeline, setter_method_name)
-                setter_method(value)
+                setter_method(value_to_pass) # Usar value_to_pass
             else:
                 logging.warning(f"Configuration key '{key}' has no corresponding setter method '{setter_method_name}' and will be ignored.")
 
