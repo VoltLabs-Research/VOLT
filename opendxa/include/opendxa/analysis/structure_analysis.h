@@ -237,7 +237,7 @@ private:
 	bool alreadyProcessedAtom(int index);
 	bool calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition);
 	void connectClusterNeighbors(int atomIndex, Cluster* cluster1);
-	bool areOrientationsCompatible(int atom1, int atom2, Cluster* cluster);
+	bool areOrientationsCompatible(int atom1, int atom2);
 
 	Cluster* getParentGrain(Cluster* c);
 	void processDefectCluster(Cluster* defectCluster);

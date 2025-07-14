@@ -288,17 +288,25 @@ bool StructureAnalysis::buildClustersPTM() {
     return true;
 }
 
-bool StructureAnalysis::areOrientationsCompatible(int atom1, int atom2, Cluster* cluster){
+// If the misorientation is less than 5 degrees, then it is the 
+// same grain, otherwise they are different grains.
+bool StructureAnalysis::areOrientationsCompatible(int atom1, int atom2){
     // Obtain the orientations provided by PTM for both atoms
     const double* q1Data = _ptmOrientation->dataFloat() + atom1 * 4;
     const double* q2Data = _ptmOrientation->dataFloat() + atom2 * 4;
+    // Quaternions represent the crystallographic orientation of atoms
     Quaternion q1(q1Data[0], q1Data[1], q1Data[2], q1Data[3]);
     Quaternion q2(q2Data[0], q2Data[1], q2Data[2], q2Data[3]);
-    // Calculate the difference in orientation
+    // Calculate the difference in orientation. 
+    // q1.inverse() "undoes" the rotation of atom 1, and q1.inverse() * q2
+    // calculate the rotation required to go from orientation 1 to orientation 2
     Quaternion q_diff = q1.inverse() * q2;
     // Convert to angle of disorientation
     double angle = 2.0 * std::acos(std::abs(q_diff.w()));
     // Criterion: Are they sufficiently aligned? (5 degrees)
+    // A quaternion [x, y, z, w] represents angle of 
+    // rotation = 2 * arcs(|w|). If w = 1, angle = 0 (sem rotation); 
+    // if w = 0, angle = 180 (maximum rotation).
     const double MAX_MIS_ORIENTATION = 5.0 * M_PI / 180.0;
     return angle < MAX_MIS_ORIENTATION;
 }
@@ -314,8 +322,7 @@ void StructureAnalysis::growClusterPTM(Cluster* cluster, std::deque<int>& atomsT
             if(neighbor < 0 || neighbor == currentAtom) continue;
             if(_atomClusters->getInt(neighbor) != 0) continue;
             if(_structureTypes->getInt(neighbor) != structureType) continue;
-
-            if(areOrientationsCompatible(currentAtom, neighbor, cluster)){
+            if(areOrientationsCompatible(currentAtom, neighbor)){
                 _atomClusters->setInt(neighbor, cluster->id);
                 cluster->atomCount++;
                 atomsToVisit.push_back(neighbor);

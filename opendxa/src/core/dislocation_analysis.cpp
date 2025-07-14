@@ -490,9 +490,11 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         }
     }
 
-    // Once every atom has a type, we group them into clusters that represent grains
-    // or regions of the same lattice. This cluster graph underlies the 
-    // later interface extraction.
+    // Once every atom has a type, we group them into clusters that represent grains or regions of the same lattice.
+    // Dislocations do NOT appear everywhere. They appear specifically at grain boundaries.
+    // Without clusters, we would have to search for dislocations in every atom, which is inefficient; 
+    // with clusters, we only search at boundaries. And boundaries are found when 
+    // "an atom in cluster A has a neighbor in cluster B," that is, those two atoms are on the boundary.
     {
         PROFILE("Build Clusters");
         if(!structureAnalysis->buildClusters()){
