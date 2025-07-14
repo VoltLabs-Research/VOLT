@@ -464,7 +464,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     
     {
         PROFILE("Structure Analysis Setup");
-        structureTypes = std::make_unique<ParticleProperty>(frame.natoms, DataType::Int, 1, 0, "StructureTypes", true);
+        structureTypes = std::make_unique<ParticleProperty>(frame.natoms, DataType::Int, 1, 0, true);
 
         structureAnalysis = std::make_unique<StructureAnalysis>(
             positions.get(),

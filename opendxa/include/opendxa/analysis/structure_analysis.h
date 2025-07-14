@@ -44,6 +44,7 @@ public:
 		std::deque<int>& atomsToVisit,
 		int structureType
 	);
+	float computeAdaptiveRMSDCutoff();
 
 	bool buildClustersPTM();
 
@@ -238,6 +239,18 @@ private:
 	bool calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition);
 	void connectClusterNeighbors(int atomIndex, Cluster* cluster1);
 	bool areOrientationsCompatible(int atom1, int atom2);
+	void storeDeformationGradient(const PTM::Kernel& kernel, size_t atomIndex);
+	void storeOrientationData(const PTM::Kernel& kernel, size_t atomIndex);
+	void storeNeighborIndices(const PTM::Kernel& kernel, size_t atomIndex);
+
+	void processPTMAtom(
+		PTM::Kernel& kernel,
+		size_t atomIndex,
+		StructureType type,
+		const std::vector<uint64_t>& cached,
+		float cutoff
+	);
+	void allocatePTMOutputArrays(size_t N);
 
 	Cluster* getParentGrain(Cluster* c);
 	void processDefectCluster(Cluster* defectCluster);
@@ -250,6 +263,16 @@ private:
 		Matrix_3<double>& orientationW,
 		int structureType
 	);
+	bool setupPTM(OpenDXA::PTM& ptm, size_t N);
+	void filterAtomsByRMSD(
+		const OpenDXA::PTM& ptm, 
+		size_t N,
+		const std::vector<StructureType>& ptmTypes,
+		const std::vector<uint64_t>& cached,
+		float cutoff
+	);
+
+	std::pair<std::vector<StructureType>, std::vector<uint64_t>> computeRawRMSD(const OpenDXA::PTM& ptm, size_t N);
 
 	Cluster* startNewCluster(int atomIndex, int structureType);
 

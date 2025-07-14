@@ -27,8 +27,8 @@ StructureAnalysis::StructureAnalysis(
     _structureTypes(outputStructures),
     _particleSelection(particleSelection),
     _coordStructures(outputStructures, inputCrystalType, identifyPlanarDefects, simCell),
-    _atomClusters(std::make_unique<ParticleProperty>(positions->size(), DataType::Int, 1, 0, "ClusterProperty", true)),
-    _atomSymmetryPermutations(std::make_unique<ParticleProperty>(positions->size(), DataType::Int, 1, 0, "SymmetryPermutations", false)),
+    _atomClusters(std::make_unique<ParticleProperty>(positions->size(), DataType::Int, 1, 0, true)),
+    _atomSymmetryPermutations(std::make_unique<ParticleProperty>(positions->size(), DataType::Int, 1, 0, false)),
     _clusterGraph(std::make_unique<ClusterGraph>()),
     _preferredCrystalOrientations(std::move(preferredCrystalOrientations))
 {
@@ -39,14 +39,143 @@ StructureAnalysis::StructureAnalysis(
 
     if(usingPTM()){
         static constexpr int maxPtmNeighbors = 14;
-        _neighborLists = std::make_shared<ParticleProperty>(positions->size(), DataType::Int, maxPtmNeighbors, 0, "Neighbors", false);
+        _neighborLists = std::make_shared<ParticleProperty>(positions->size(), DataType::Int, maxPtmNeighbors, 0, false);
     }else{
         _neighborLists = std::make_shared<ParticleProperty>(positions->size(), DataType::Int,
-            _coordStructures.latticeStructure(inputCrystalType).maxNeighbors, 0, "Neighbors", false);
+            _coordStructures.latticeStructure(inputCrystalType).maxNeighbors, 0, false);
     }
 
     std::fill(_neighborLists->dataInt(), _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
     std::fill(_structureTypes->dataInt(), _structureTypes->dataInt() + _structureTypes->size(), LATTICE_OTHER);
+}
+
+std::pair<std::vector<StructureType>, std::vector<uint64_t>>
+StructureAnalysis::computeRawRMSD(const OpenDXA::PTM& ptm, size_t N){
+    // Allocate space to record every atom's RMSD
+    _ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Float, 1, 0.0f, true);
+    std::vector<uint64_t> cached(N, 0ull);
+    std::vector<StructureType> ptmTypes(N);
+    
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto& r) {
+        PTM::Kernel kernel(ptm);
+        for(size_t i = r.begin(); i < r.end(); ++i){
+            kernel.cacheNeighbors(i, &cached[i]);
+            ptmTypes[i] = kernel.identifyStructure(i, cached);
+            _ptmRmsd->setFloat(i, static_cast<float>(kernel.rmsd()));
+        }
+    });
+
+    return { std::move(ptmTypes), std::move(cached) };
+}
+
+// By calculating the 95th percentile of the RMSD distribution, we 
+// discard the worst 5% of matches (potential outliers or defects). 
+// This way, we ignore highly deformed or poorly fitted structures and 
+// ensure that the cut is not biased by extremely high values. 
+// Furthermore, we guarantee a robust, flexible, and adaptive PTM.  
+float StructureAnalysis::computeAdaptiveRMSDCutoff(){
+    const size_t N = positions()->size();
+    std::vector<float> rmsdValues(_ptmRmsd->dataFloat(), _ptmRmsd->dataFloat() + N);
+    
+    if(rmsdValues.empty()) return 0.0f;
+    
+    size_t idx95 = static_cast<size_t>(0.95 * (rmsdValues.size() - 1));
+    std::nth_element(rmsdValues.begin(), rmsdValues.begin() + idx95, rmsdValues.end());
+    
+    const float cutoffMin = 0.15f;
+    float autoCutoff = rmsdValues[idx95];
+    float finalCutoff = std::max(cutoffMin, autoCutoff);
+    
+    spdlog::debug("PTM auto-cutoff (95th percentile): {}, using final cutoff: {}", autoCutoff, finalCutoff);
+    return finalCutoff;
+}
+
+bool StructureAnalysis::setupPTM(OpenDXA::PTM& ptm, size_t N){
+    // By running with an infinite RMSD cutoff, the PTM kernel never rejects any structure for 
+    // exceeding the threshold, so we collect the true RMSD of all atoms against the model without 
+    // any bias. With that full collection of RMSDs (stored in _ptmRmsd), we then compute an 
+    // adaptive cutoff (the 95th percentile) that reflects the typical fit quality in the particular 
+    // system. Only after this distribution is known, a final cutoff (the maximum between the 95th 
+    // percentile and an absolute minimum) is applied to robustly and flexibly filter out bad matches 
+    // instead of using a fixed or arbitrary value.
+    ptm.setCalculateDefGradient(true);
+    ptm.setRmsdCutoff(std::numeric_limits<double>::infinity());
+    
+    return ptm.prepare(positions()->constDataPoint3(), N, cell());
+}
+
+void StructureAnalysis::allocatePTMOutputArrays(size_t N){
+    _ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Float, 4, 0.0f, true);
+    _ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Float, 9, 0.0f, true);
+    
+    // Clear arrays for second pass
+    std::fill(_neighborLists->dataInt(), 
+              _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
+    std::fill(_structureTypes->dataInt(), 
+              _structureTypes->dataInt() + _structureTypes->size(), LATTICE_OTHER);
+}
+
+void StructureAnalysis::filterAtomsByRMSD(
+    const OpenDXA::PTM& ptm, 
+    size_t N,
+    const std::vector<StructureType>& ptmTypes,
+    const std::vector<uint64_t>& cached,
+    float cutoff
+){
+    // Only keep atoms whose RMSD <= finalCutoff
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto &r){
+        PTM::Kernel kernel(ptm);
+        for(size_t i = r.begin(); i < r.end(); ++i){
+            processPTMAtom(kernel, i, ptmTypes[i], cached, cutoff);
+        }
+    });
+}
+
+void StructureAnalysis::storeNeighborIndices(const PTM::Kernel& kernel, size_t atomIndex){
+    int numNeighbors = kernel.numTemplateNeighbors();
+    assert(numNeighbors <= _neighborLists->componentCount());
+    
+    for(int j = 0; j < numNeighbors; ++j){
+        _neighborLists->setIntComponent(atomIndex, j, kernel.getTemplateNeighbor(j).index);
+    }
+}
+
+void StructureAnalysis::storeOrientationData(const PTM::Kernel& kernel, size_t atomIndex){
+    auto quaternion = kernel.orientation();
+    double* orientation = _ptmOrientation->dataFloat() + 4 * atomIndex;
+    
+    orientation[0] = static_cast<float>(quaternion.x());
+    orientation[1] = static_cast<float>(quaternion.y());
+    orientation[2] = static_cast<float>(quaternion.z());
+    orientation[3] = static_cast<float>(quaternion.w());
+}
+
+void StructureAnalysis::storeDeformationGradient(const PTM::Kernel& kernel, size_t atomIndex) {
+    const auto& F = kernel.deformationGradient();
+    double* F_dest = _ptmDeformationGradient->dataFloat() + 9 * atomIndex;
+    const double* F_src = F.elements();
+    
+    for(int k = 0; k < 9; ++k){
+        F_dest[k] = static_cast<float>(F_src[k]);
+    }
+}
+
+void StructureAnalysis::processPTMAtom(
+    PTM::Kernel& kernel,
+    size_t atomIndex,
+    StructureType type,
+    const std::vector<uint64_t>& cached,
+    float cutoff
+){
+    float rmsd = _ptmRmsd->getFloat(atomIndex);
+    if(type == StructureType::OTHER || rmsd > cutoff) return;
+    
+    kernel.identifyStructure(atomIndex, cached);
+    
+    storeNeighborIndices(kernel, atomIndex);
+    _structureTypes->setInt(atomIndex, type);
+    storeOrientationData(kernel, atomIndex);
+    storeDeformationGradient(kernel, atomIndex);
 }
 
 // Runs the Polyhedral Template Matching (PTM) algorithm on every atom,
@@ -60,98 +189,14 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
     if (N == 0) return true;
 
     OpenDXA::PTM ptm;
-    ptm.setCalculateDefGradient(true);
-    // By running with an infinite RMSD cutoff, the PTM kernel never rejects any structure for 
-    // exceeding the threshold, so we collect the true RMSD of all atoms against the model without 
-    // any bias. With that full collection of RMSDs (stored in _ptmRmsd), we then compute an 
-    // adaptive cutoff (the 95th percentile) that reflects the typical fit quality in the particular 
-    // system. Only after this distribution is known, a final cutoff (the maximum between the 95th 
-    // percentile and an absolute minimum) is applied to robustly and flexibly filter out bad matches 
-    // instead of using a fixed or arbitrary value.
-    ptm.setRmsdCutoff(std::numeric_limits<double>::infinity());
+    if(!setupPTM(ptm, N)) return false;
 
-    // Build the neighborhood search structures
-    if(!ptm.prepare(positions()->constDataPoint3(), N, cell())){
-        return false;
-    }
+    auto [ptmTypes, cached] = computeRawRMSD(ptm, N);
+    float finalCutoff = computeAdaptiveRMSDCutoff();
 
-    // Allocate space to record every atom's RMSD
-    _ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Float, 1, 0.0f, "PTM_RMSD", true);
-    std::vector<uint64_t> cached(N, 0ull);
-    std::vector<StructureType> ptmTypes(N);
-
-    // First pass, compute raw RMSD and provisional type for each atom
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto& r) {
-        PTM::Kernel kernel(ptm);
-        for (size_t i = r.begin(); i < r.end(); ++i) {
-            kernel.cacheNeighbors(i, &cached[i]);
-            ptmTypes[i] = kernel.identifyStructure(i, cached);
-            _ptmRmsd->setFloat(i, static_cast<float>(kernel.rmsd()));
-        }
-    });
-
-    // Gather RMSD values into a vector for percentile calculation
-    std::vector<float> v(_ptmRmsd->dataFloat(), _ptmRmsd->dataFloat() + N);
-    if(!v.empty()){
-        // By calculating the 95th percentile of the RMSD distribution, we 
-        // discard the worst 5% of matches (potential outliers or defects). 
-        // This way, we ignore highly deformed or poorly fitted structures and 
-        // ensure that the cut is not biased by extremely high values. 
-        // Furthermore, we guarantee a robust, flexible, and adaptive PTM.
-        size_t idx95 = static_cast<size_t>(0.95 * (v.size() - 1));
-        std::nth_element(v.begin(), v.begin() + idx95, v.end());
-        float autoCutoff = v[idx95];
-        const float cutoffMin = 0.15f;
-        float finalCutoff = std::max(cutoffMin, autoCutoff);
-
-        spdlog::debug("PTM auto-cutoff (95th percentile): {}, using final cutoff: {}", autoCutoff, finalCutoff);
-
-        // Allocate output arrays only once we know the cutoff
-        _ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Float, 4, 0.0f, "PTM_Orientation", true);
-        _ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Float, 9, 0.0f, "PTM_DeformationGradient", true);
-
-        // Clear neighbor lists and sctructures types for the second pass
-        std::fill(_neighborLists->dataInt(), _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
-        std::fill(_structureTypes->dataInt(), _structureTypes->dataInt() + _structureTypes->size(), LATTICE_OTHER);
-
-        // Second pass, only keep atoms whose RMSD <= finalCutoff
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto& r) {
-            PTM::Kernel kernel(ptm);
-            for (size_t i = r.begin(); i < r.end(); ++i) {
-                auto type = ptmTypes[i];
-                float rmsd = _ptmRmsd->getFloat(i);
-                if (type != StructureType::OTHER && rmsd <= finalCutoff) {
-                    kernel.identifyStructure(i, cached);
-                    
-                    // Store neighbor indices
-                    int nn = kernel.numTemplateNeighbors();
-                    assert(nn <= _neighborLists->componentCount());
-                    for (int j = 0; j < nn; ++j) {
-                        _neighborLists->setIntComponent(i, j, kernel.getTemplateNeighbor(j).index);
-                    }
-
-                    // Map PTM structure enum to our lattice types
-                    _structureTypes->setInt(i, type);
-
-                    // Save orientation quaternion
-                    auto quaternion = kernel.orientation();
-                    double* orientation = _ptmOrientation->dataFloat() + 4 * i;
-                    orientation[0] = static_cast<float>(quaternion.x());
-                    orientation[1] = static_cast<float>(quaternion.y());
-                    orientation[2] = static_cast<float>(quaternion.z());
-                    orientation[3] = static_cast<float>(quaternion.w());
-                    
-                    // Save 3x3 deformation gradient
-                    // TODO: I think we can use this value in Elastic Mapping or in some other step after the structural analysis.
-                    const auto& F = kernel.deformationGradient();
-                    double* F_dest = _ptmDeformationGradient->dataFloat() + 9 * i;
-                    const double* F_src = F.elements();
-                    for(int k=0; k<9; ++k) {
-                        F_dest[k] = static_cast<float>(F_src[k]);
-                    }
-                }
-            }
-        });
+    if(finalCutoff > 0){
+        allocatePTMOutputArrays(N);
+        filterAtomsByRMSD(ptm, N, ptmTypes, cached, finalCutoff);
     }
 
     return true;

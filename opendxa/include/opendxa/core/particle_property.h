@@ -65,7 +65,6 @@ public:
                      DataType                 dataType,
                      size_t              componentCount,
                      size_t              stride,
-                     const std::string & name,
                      bool                initializeMemory);
 
     ParticleProperty(const ParticleProperty& other);

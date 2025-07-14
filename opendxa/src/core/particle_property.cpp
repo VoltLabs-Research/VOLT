@@ -51,12 +51,10 @@ ParticleProperty::ParticleProperty(size_t              particleCount,
                                    DataType                 dataType,
                                    size_t              componentCount,
                                    size_t              stride,
-                                   const std::string & name,
                                    bool                initializeMemory)
     : PropertyBase(particleCount, dataType, componentCount, stride, initializeMemory)
     , _type(UserProperty)
 {
-    (void)name;
 }
 
 // Copy ctor
