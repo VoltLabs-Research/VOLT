@@ -2,7 +2,6 @@
 
 #include <opendxa/core/opendxa.h>
 #include <opendxa/utilities/memory_pool.h>
-#include <opendxa/geometry/tri_mesh.h>
 
 namespace OpenDXA{
 
@@ -412,34 +411,6 @@ public:
         _vertexPool.swap(o._vertexPool);
         _edgePool.swap(o._edgePool);
         _facePool.swap(o._facePool);
-    }
-
-    void convertToTriMesh(TriMesh& out) const{
-        out.clear();
-        out.setVertexCount(vertexCount());
-        for(auto it = out.vertices().begin(); Vertex* v : _vertices){
-            *it++ = v->pos();
-		}
-
-        std::size_t triCount = 0;
-        for(Face* f : _faces){
-            triCount += std::max<std::size_t>(f->edgeCount() - 2, 0);
-		}
-
-        out.setFaceCount(triCount);
-        auto ft = out.faces().begin();
-        for(Face* f : _faces){
-            int base = f->edges()->vertex2()->index();
-            Edge* e = f->edges()->nextFaceEdge()->nextFaceEdge();
-            while(e != f->edges()){
-                ft->setVertices(base, e->vertex1()->index(), e->vertex2()->index());
-                ++ft;
-                e = e->nextFaceEdge();
-            }
-        }
-
-        out.invalidateVertices();
-        out.invalidateFaces();
     }
 
     std::size_t duplicateSharedVertices(){
