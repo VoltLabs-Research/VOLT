@@ -91,7 +91,7 @@ public:
         }
 	};
 
-	[[nodiscard]] bool generateTessellation(const SimulationCell& simCell, const Point3* positions,
+    void generateTessellation(const SimulationCell& simCell, const Point3* positions,
 		size_t numPoints, double ghostLayerSize, bool coverDomainWithFiniteTets, const int* selectedPoints = nullptr);
 	
     [[nodiscard]] size_type numberOfTetrahedra() const{

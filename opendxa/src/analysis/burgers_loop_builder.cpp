@@ -36,7 +36,7 @@ BurgersCircuit* BurgersLoopBuilder::allocateCircuit(){
 // its edges to fit the mesh contour. It finally joins dangling fragments and forms junctions 
 // where several loops intersect. Upon completion, each dislocation segment is defined as a 
 // line of points that faithfully follows the topology of the crystal structure.
-bool BurgersLoopBuilder::traceDislocationSegments(){
+void BurgersLoopBuilder::traceDislocationSegments(){
     mesh().clearFaceFlag(0);
     std::vector<DislocationNode*> dangling;
 
@@ -73,8 +73,6 @@ bool BurgersLoopBuilder::traceDislocationSegments(){
 			});
         }
     }
-
-    return true;
 }
 
 // Return a previously used BurgersCircuit to the pool for resuse.

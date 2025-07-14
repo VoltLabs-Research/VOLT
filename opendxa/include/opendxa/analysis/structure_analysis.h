@@ -33,11 +33,11 @@ public:
 			std::vector<Matrix3>&& preferredCrystalOrientations = std::vector<Matrix3>(),
 			bool identifyPlanarDefects = true, Mode _identificationMode = Mode::CNA);
 
-	bool identifyStructures();
-	bool buildClusters();
-	bool connectClusters();
-	bool formSuperClusters();
-	bool determineLocalStructuresWithPTM();
+	void identifyStructures();
+	void buildClusters();
+	void connectClusters();
+	void formSuperClusters();
+	void determineLocalStructuresWithPTM();
 	void computeMaximumNeighborDistanceFromPTM();
 	void growClusterPTM(
 		Cluster* cluster,
@@ -46,7 +46,7 @@ public:
 	);
 	float computeAdaptiveRMSDCutoff();
 
-	bool buildClustersPTM();
+	void buildClustersPTM();
 
 	int atomCount() const{
 		return positions()->size();
@@ -244,8 +244,8 @@ private:
 	void storeNeighborIndices(const PTM::Kernel& kernel, size_t atomIndex);
 	void initializeClustersForSuperclusterFormation();
 	void processDefectClusters();
-	bool buildClustersCNA();
-	bool identifyStructuresCNA();
+	void buildClustersCNA();
+	void identifyStructuresCNA();
 	void mergeCompatibleGrains(size_t oldTransitionCount, size_t newTransitionCount);
 	std::pair<Cluster*, Cluster*> getParentGrains(ClusterTransition* transition);
 	ClusterTransition* buildParentTransition(ClusterTransition* transition, Cluster* parent1, Cluster* parent2);

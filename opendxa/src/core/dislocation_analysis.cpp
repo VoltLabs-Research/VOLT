@@ -483,11 +483,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     // (e.g. FCC vs HCP). Any failure here means we cannot continue.
     {
         PROFILE("Identify Structures");
-        if(!structureAnalysis->identifyStructures()){
-            result["is_failed"] = true;
-            result["error"] = "identifyStructures() failed";
-            return result;
-        }
+        structureAnalysis->identifyStructures();
     }
 
     // Once every atom has a type, we group them into clusters that represent grains or regions of the same lattice.
@@ -497,33 +493,21 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     // "an atom in cluster A has a neighbor in cluster B," that is, those two atoms are on the boundary.
     {
         PROFILE("Build Clusters");
-        if(!structureAnalysis->buildClusters()){
-            result["is_failed"] = true;
-            result["error"] = "buildClusters() failed";
-            return result;
-        }
+        structureAnalysis->buildClusters();
     }
 
     // After clustering, we connect neighboring clusters to map out the boundaries.
     // This connectivity informs how we will mesh the interface between grains.
     {
         PROFILE("Connect Clusters");
-        if(!structureAnalysis->connectClusters()){
-            result["is_failed"] = true;
-            result["error"] = "connectClusters() failed";
-            return result;
-        }
+        structureAnalysis->connectClusters();
     }
 
     // We then detect and merge any defect clusters into superclusters, ensuring that
     // planar defects are treated properly rather tan as random noise.
     {
         PROFILE("Form Super Clusters");
-        if(!structureAnalysis->formSuperClusters()){
-            result["is_failed"] = true;
-            result["error"] = "formSuperClusters() failed";
-            return result;
-        }
+        structureAnalysis->formSuperClusters();
     }
 
     std::vector<int> extractedStructureTypes;
@@ -537,48 +521,38 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     // Next, we perform a periodic Delaunay Tessellation of all atomic positions.
     // The ghostLayerSize is chosen based on the maximum neighbor distance so that
     // our mesh seamlessly wraps across periodic boundaries.
-    DelaunayTessellation tesselation;
+    DelaunayTessellation tessellation;
     double ghostLayerSize;
     {
         PROFILE("Delaunay Tessellation");
         ghostLayerSize = 3.5f * structureAnalysis->maximumNeighborDistance();
-        if(!tesselation.generateTessellation(structureAnalysis->cell(), structureAnalysis->positions()->constDataPoint3(), 
-                structureAnalysis->atomCount(), ghostLayerSize, false, nullptr)){
-            result["is_failed"] = true;
-            result["error"] = "Delaunay tessellation failed";
-            return result;
-        }
+        tessellation.generateTessellation(
+            structureAnalysis->cell(),
+            structureAnalysis->positions()->constDataPoint3(),
+            structureAnalysis->atomCount(),
+            ghostLayerSize,
+            false,
+            nullptr
+        );
     }
 
     // With the tessellation in hand, we map elastic properties onto it:
     // creating mesh edges, assigning each vertex to the correct cluster,
     // and tagging each edge with its ideal Burgers vector.
-    ElasticMapping elasticMap(*structureAnalysis, tesselation);
+    ElasticMapping elasticMap(*structureAnalysis, tessellation);
     {
         PROFILE("Elastic Mapping - Generate Edges");
-        if(!elasticMap.generateTessellationEdges()){
-            result["is_failed"] = true;
-            result["error"] = "generateTessellationEdges() failed";
-            return result;
-        }
+        elasticMap.generateTessellationEdges();
     }
 
     {
         PROFILE("Elastic Mapping - Assign Vertices");
-        if(!elasticMap.assignVerticesToClusters()){
-            result["is_failed"] = true;
-            result["error"] = "assignVerticesToClusters() failed";
-            return result;
-        }
+        elasticMap.assignVerticesToClusters();
     }
 
     {
         PROFILE("Elastic Mapping - Assign Ideal Vectors");
-        if(!elasticMap.assignIdealVectorsToEdges(false, 4)){
-            result["is_failed"] = true;
-            result["error"] = "assignIdealVectorsToEdges() failed";
-            return result;
-        }
+        elasticMap.assignIdealVectorsToEdges(false, 4);
     }
     
     // We no longer need the detailed neighbor lists, so we free them now to
@@ -592,11 +566,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     InterfaceMesh interfaceMesh(elasticMap);
     {
         PROFILE("Interface Mesh - Create Mesh");
-        if(!interfaceMesh.createMesh(structureAnalysis->maximumNeighborDistance())){
-            result["is_failed"] = true;
-            result["error"] = "InterfaceMesh::createMesh() failed";
-            return result;
-        }
+        interfaceMesh.createMesh(structureAnalysis->maximumNeighborDistance());
     }
 
     // Now we hand the interface mesh to the BurgersLoopBuilder. This component
@@ -611,11 +581,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     );
     {
         PROFILE("Burgers Loop Builder - Trace Dislocation Segments");
-        if(!tracer.traceDislocationSegments()){
-            result["is_failed"] = true;
-            result["error"] = "traceDislocationSegments() failed";
-            return result;
-        }
+        tracer.traceDislocationSegments();
     }
 
     {

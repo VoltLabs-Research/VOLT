@@ -13,7 +13,7 @@ namespace OpenDXA{
 // then carve out only those facets whose endpoints belongs to "compatible" clusters (as determined
 // by the elastic mapping). Faces that bridge incompatible clusters get omitted, leaving
 // a manifold of boundary faces.
-bool InterfaceMesh::createMesh(double maxNeighborDist){
+void InterfaceMesh::createMesh(double maxNeighborDist){
     _isCompletelyGood = true;
     _isCompletelyBad  = true;
 
@@ -92,14 +92,12 @@ bool InterfaceMesh::createMesh(double maxNeighborDist){
 
     // Build the faces and topology. If any step fails, bail out.
     if(!helper.construct(tetraRegion, prepareFace)){
-        return false;
+        throw std::runtime_error("Error building the faces and topology.");
 	}
 
     // Duplicate vertices along periodic boundaries so the resulting
     // mesh is fully closed and manifold across the box edges.
     duplicateSharedVertices();
-
-    return true;
 }
 
 // After tracing dislocation circuits on the interface mesh, extract only

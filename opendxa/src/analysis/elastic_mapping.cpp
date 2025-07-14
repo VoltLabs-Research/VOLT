@@ -21,7 +21,7 @@ static constexpr std::array<std::pair<int, int>, 6> tetraEdgeVertices{{
 // connection has not already been recorded. Each new edge is inserted into two linked
 // lists: one at its source vertex (edges leaving) and one at its destination vertex
 // (edges arriving), so that we can later traverse all edges adjacent to any given vertex.
-bool ElasticMapping::generateTessellationEdges(){
+void ElasticMapping::generateTessellationEdges(){
     for(DelaunayTessellation::CellHandle cell : tessellation().cells()){
         if(tessellation().isGhostCell(cell)){
             // Ignore filler cells around the periodic boundaries
@@ -60,8 +60,6 @@ bool ElasticMapping::generateTessellationEdges(){
             }
         }
     }
-
-    return true;
 }
 
 // Once we have a graph of edges connecting mesh vertices, we need to assign
@@ -74,7 +72,7 @@ bool ElasticMapping::generateTessellationEdges(){
 // we adopt that cluster ID. We repeat the scan until no changes occur,
 // so that every vertex on the interface inherits the grain identity
 // from at lesat one of its neighbors.
-bool ElasticMapping::assignVerticesToClusters(){
+void ElasticMapping::assignVerticesToClusters(){
     const size_t vertex_count = _vertexClusters.size();
     
     // Copy yhe atomic cluster IDs into each vertex for initial seeds
@@ -113,8 +111,6 @@ bool ElasticMapping::assignVerticesToClusters(){
             }
         }
     }while(changed);
-
-    return true;
 }
 
 // With every mesh edge now knowing the grain ID of its two endpoints, we want to compute
@@ -128,7 +124,7 @@ bool ElasticMapping::assignVerticesToClusters(){
 // then compose with the transition from the first cluster to the second. The final result
 // is stored on the edge so that later elastic compatibility checks can 
 // verify closed-loops balances.
-bool ElasticMapping::assignIdealVectorsToEdges(bool reconstructEdgeVectors, int crystalPathSteps){
+void ElasticMapping::assignIdealVectorsToEdges(bool reconstructEdgeVectors, int crystalPathSteps){
     CrystalPathFinder pathFinder{ structureAnalysis(), crystalPathSteps };
 
     // Walk every vertex's outgoing edges
@@ -168,8 +164,6 @@ bool ElasticMapping::assignIdealVectorsToEdges(bool reconstructEdgeVectors, int 
             }
         }
     }
-
-    return true;
 }
 
 // Before accepting the elastic mapping as valid for simulation or further analysis

@@ -48,7 +48,7 @@ public:
         return elasticMapping().structureAnalysis();
     }
 
-    bool createMesh(double maximumNeighborDistance);
+    void createMesh(double maximumNeighborDistance);
 
     [[nodiscard]] bool isCompletelyGood() const noexcept{
 		return _isCompletelyGood;

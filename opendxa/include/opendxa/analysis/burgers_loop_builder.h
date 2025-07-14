@@ -42,7 +42,7 @@ public:
 		return mesh().structureAnalysis().cell();
 	}
 
-	bool traceDislocationSegments();
+	void traceDislocationSegments();
 	void finishDislocationSegments(int crystalStructure);
 
 	const std::vector<DislocationNode*>& danglingNodes() const{

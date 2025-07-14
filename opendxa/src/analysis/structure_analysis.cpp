@@ -184,12 +184,16 @@ void StructureAnalysis::processPTMAtom(
 // and finally reruns structure identification keeping only those whose 
 // RMSD <= threshold. We store per-atom orientation quaternions and
 // deformation gradients for all "good" matches.
-bool StructureAnalysis::determineLocalStructuresWithPTM() {
+void StructureAnalysis::determineLocalStructuresWithPTM() {
     const size_t N = positions()->size();
-    if (N == 0) return true;
+    if(N == 0){
+        return;
+    }
 
     OpenDXA::PTM ptm;
-    if(!setupPTM(ptm, N)) return false;
+    if(!setupPTM(ptm, N)){
+        throw std::runtime_error("Error trying to initialize PTM.");
+    }
 
     auto [ptmTypes, cached] = computeRawRMSD(ptm, N);
     float finalCutoff = computeAdaptiveRMSDCutoff();
@@ -198,8 +202,6 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
         allocatePTMOutputArrays(N);
         filterAtomsByRMSD(ptm, N, ptmTypes, cached, finalCutoff);
     }
-
-    return true;
 }
 
 /// Once we have neighbor lists from PTM, find the single largest atom‐to‐neighbor
@@ -254,10 +256,12 @@ void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
     _maximumNeighborDistance = maxDistance;
 }
 
-bool StructureAnalysis::identifyStructuresCNA(){
+void StructureAnalysis::identifyStructuresCNA(){
     int maxNeighborListSize = std::min((int)_neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
     NearestNeighborFinder neighFinder(maxNeighborListSize);
-    if(!neighFinder.prepare(positions(), cell(), _particleSelection)) return false;
+    if(!neighFinder.prepare(positions(), cell(), _particleSelection)){
+        throw std::runtime_error("Error in neighFinder.preapre(...)");
+    }
 
     _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, positions()->size()),
         0.0, [this, &neighFinder](const tbb::blocked_range<size_t>& r, double max_dist_so_far) -> double {
@@ -273,21 +277,16 @@ bool StructureAnalysis::identifyStructuresCNA(){
             return std::max(a, b);
         }
     );
-
-    return true;
 }
 
-bool StructureAnalysis::identifyStructures(){
+void StructureAnalysis::identifyStructures(){
     if(usingPTM()){
         determineLocalStructuresWithPTM();
         computeMaximumNeighborDistanceFromPTM();
-
-        return true;
+        return;
     }
 
     identifyStructuresCNA();
-    // TODO: 
-    return true;
 }
 
 bool StructureAnalysis::alreadyProcessedAtom(int index) {
@@ -329,7 +328,7 @@ void StructureAnalysis::initializePTMClusterOrientation(Cluster* cluster, size_t
     cluster->orientation = R;
 }
 
-bool StructureAnalysis::buildClustersPTM() {
+void StructureAnalysis::buildClustersPTM() {
     const size_t N = positions()->size();
 
     for(size_t seedAtomIndex = 0; seedAtomIndex < N; ++seedAtomIndex){
@@ -345,7 +344,6 @@ bool StructureAnalysis::buildClustersPTM() {
     }
 
     reorientAtomsToAlignClusters();
-    return true;
 }
 
 // If the misorientation is less than 5 degrees, then it is the 
@@ -518,7 +516,7 @@ void StructureAnalysis::reorientAtomsToAlignClusters(){
     );
 }
 
-bool StructureAnalysis::buildClustersCNA(){
+void StructureAnalysis::buildClustersCNA(){
     for(size_t seedAtomIndex = 0; seedAtomIndex < positions()->size(); seedAtomIndex++){
         if(alreadyProcessedAtom(seedAtomIndex)) continue;
 
@@ -538,15 +536,15 @@ bool StructureAnalysis::buildClustersCNA(){
     }
 
     reorientAtomsToAlignClusters();
-    return true;
 }
 
-bool StructureAnalysis::buildClusters(){
+void StructureAnalysis::buildClusters(){
     if(usingPTM()){
-        return buildClustersPTM();
+        buildClustersPTM();
+        return;
     }
 
-    return buildClustersCNA();
+    buildClustersCNA();
 }
 
 std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&>
@@ -607,12 +605,11 @@ void StructureAnalysis::createNewClusterTransition(int atomIndex, int neighbor, 
     }
 }
 
-bool StructureAnalysis::connectClusters(){
+void StructureAnalysis::connectClusters(){
     auto indices = std::views::iota(size_t{0}, positions()->size());
     std::for_each(std::execution::par, indices.begin(), indices.end(), [this](size_t atomIndex){
         processAtomConnections(atomIndex);
     });
-    return true;
 }
 
 bool StructureAnalysis::calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition) {
@@ -755,7 +752,7 @@ void StructureAnalysis::processDefectCluster(Cluster* defectCluster){
     }
 }
 
-bool StructureAnalysis::formSuperClusters(){
+void StructureAnalysis::formSuperClusters(){
     size_t oldTransitionCount = clusterGraph().clusterTransitions().size();
     
     initializeClustersForSuperclusterFormation();
@@ -765,7 +762,6 @@ bool StructureAnalysis::formSuperClusters(){
     mergeCompatibleGrains(oldTransitionCount, newTransitionCount);
     
     finalizeParentGrains();
-    return true;
 }
 
 void StructureAnalysis::finalizeParentGrains(){

@@ -14,7 +14,7 @@ namespace OpenDXA{
 // Optionally eight far-out helper points form a convex hull to force a fully finite 
 // tetrahedral cover. Finally, Geogram builds the triangulation and tags each tetrahedron 
 // as primary or ghost based on its lowest‐indexed corner.
-bool DelaunayTessellation::generateTessellation(
+void DelaunayTessellation::generateTessellation(
 	const SimulationCell& simCell,
 	const Point3* positions,
 	size_t numPoints,
@@ -153,7 +153,6 @@ bool DelaunayTessellation::generateTessellation(
 			_cellInfo[cell].index = _numPrimaryTetrahedra++;
 		}
 	}
-	return true;
 }
 
 // Determines whether a given tetrahedron cell should be treated as

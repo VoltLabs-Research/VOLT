@@ -62,9 +62,9 @@ public:
 		return _clusterGraph;
 	}
 
-	auto generateTessellationEdges() -> bool;
-    auto assignVerticesToClusters() -> bool;
-    auto assignIdealVectorsToEdges(bool reconstructEdgeVectors, int crystalPathSteps) -> bool;
+	void generateTessellationEdges();
+    void assignVerticesToClusters();
+    void assignIdealVectorsToEdges(bool reconstructEdgeVectors, int crystalPathSteps);
     [[nodiscard]] auto isElasticMappingCompatible(DelaunayTessellation::CellHandle cell) const -> bool;
 
     [[nodiscard]] auto clusterOfVertex(int idx) const noexcept -> Cluster*{
