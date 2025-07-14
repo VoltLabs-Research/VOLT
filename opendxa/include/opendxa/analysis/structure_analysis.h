@@ -242,6 +242,16 @@ private:
 	void storeDeformationGradient(const PTM::Kernel& kernel, size_t atomIndex);
 	void storeOrientationData(const PTM::Kernel& kernel, size_t atomIndex);
 	void storeNeighborIndices(const PTM::Kernel& kernel, size_t atomIndex);
+	void initializeClustersForSuperclusterFormation();
+	void processDefectClusters();
+	bool buildClustersCNA();
+	bool identifyStructuresCNA();
+	void mergeCompatibleGrains(size_t oldTransitionCount, size_t newTransitionCount);
+	std::pair<Cluster*, Cluster*> getParentGrains(ClusterTransition* transition);
+	ClusterTransition* buildParentTransition(ClusterTransition* transition, Cluster* parent1, Cluster* parent2);
+	void assignParentTransition(Cluster* parent1, Cluster* parent2, ClusterTransition* parentTransition);
+	void finalizeParentGrains();
+	Cluster* getParentGrain(Cluster* c);
 
 	void processPTMAtom(
 		PTM::Kernel& kernel,
@@ -253,13 +263,11 @@ private:
 	void allocatePTMOutputArrays(size_t N);
 	void initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex);
 	void processAtomConnections(size_t atomIndex);
-	void connectClustersNeighbors(int atomIndex, Cluster* cluster1);
 	std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&> getAtomStructureInfo(int atomIndex);
 	void processNeighborConnection(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, int structureType);
 	void addReverseNeighbor(int neighbor, int atomIndex);
 	void createNewClusterTransition(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, Cluster* cluster2);
 
-	Cluster* getParentGrain(Cluster* c);
 	void processDefectCluster(Cluster* defectCluster);
 	void reorientAtomsToAlignClusters();
 	void applyPreferredOrientation(Cluster* cluster);

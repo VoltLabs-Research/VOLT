@@ -2,6 +2,7 @@
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/structure_analysis.h>
 #include <opendxa/analysis/polyhedral_template_matching.h>
+#include <ptm_constants.h>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_reduce.h>
@@ -38,8 +39,7 @@ StructureAnalysis::StructureAnalysis(
     });
 
     if(usingPTM()){
-        static constexpr int maxPtmNeighbors = 14;
-        _neighborLists = std::make_shared<ParticleProperty>(positions->size(), DataType::Int, maxPtmNeighbors, 0, false);
+        _neighborLists = std::make_shared<ParticleProperty>(positions->size(), DataType::Int, PTM_MAX_NBRS, 0, false);
     }else{
         _neighborLists = std::make_shared<ParticleProperty>(positions->size(), DataType::Int,
             _coordStructures.latticeStructure(inputCrystalType).maxNeighbors, 0, false);
@@ -206,7 +206,7 @@ bool StructureAnalysis::determineLocalStructuresWithPTM() {
 /// distance (respecting periodic wrapping).  This maximum sets a safe "search radius"
 /// for all later routines (e.g. ghost‐layer size in Delaunay, node‐connect threshold in
 /// mesh building) so we reliably include every bond in subsequent stages.
-void StructureAnalysis::computeMaximumNeighborDistanceFromPTM() {
+void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
     const size_t N = positions()->size();
     if(N == 0){
         _maximumNeighborDistance = 0.0;
@@ -254,21 +254,13 @@ void StructureAnalysis::computeMaximumNeighborDistanceFromPTM() {
     _maximumNeighborDistance = maxDistance;
 }
 
-bool StructureAnalysis::identifyStructures() {
-    if(usingPTM()){
-        determineLocalStructuresWithPTM();
-        computeMaximumNeighborDistanceFromPTM();
-        return true;
-    }
-
+bool StructureAnalysis::identifyStructuresCNA(){
     int maxNeighborListSize = std::min((int)_neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
     NearestNeighborFinder neighFinder(maxNeighborListSize);
-    if (!neighFinder.prepare(positions(), cell(), _particleSelection)) return false;
+    if(!neighFinder.prepare(positions(), cell(), _particleSelection)) return false;
 
-    _maximumNeighborDistance = tbb::parallel_reduce(
-        tbb::blocked_range<size_t>(0, positions()->size()),
-        0.0,
-        [this, &neighFinder](const tbb::blocked_range<size_t>& r, double max_dist_so_far) -> double {
+    _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, positions()->size()),
+        0.0, [this, &neighFinder](const tbb::blocked_range<size_t>& r, double max_dist_so_far) -> double {
             for (size_t index = r.begin(); index != r.end(); ++index) {
                 double localMaxDistance = _coordStructures.determineLocalStructure(neighFinder, index, _neighborLists);
                 if (localMaxDistance > max_dist_so_far) {
@@ -282,6 +274,19 @@ bool StructureAnalysis::identifyStructures() {
         }
     );
 
+    return true;
+}
+
+bool StructureAnalysis::identifyStructures(){
+    if(usingPTM()){
+        determineLocalStructuresWithPTM();
+        computeMaximumNeighborDistanceFromPTM();
+
+        return true;
+    }
+
+    identifyStructuresCNA();
+    // TODO: 
     return true;
 }
 
@@ -492,7 +497,7 @@ void StructureAnalysis::applyPreferredOrientation(Cluster* cluster) {
     }
 }
 
-void StructureAnalysis::reorientAtomsToAlignClusters() {
+void StructureAnalysis::reorientAtomsToAlignClusters(){
     tbb::parallel_for(
         tbb::blocked_range<size_t>(0, positions()->size()),
         [this](const tbb::blocked_range<size_t>& r) {
@@ -513,13 +518,9 @@ void StructureAnalysis::reorientAtomsToAlignClusters() {
     );
 }
 
-bool StructureAnalysis::buildClusters() {
-    if(usingPTM()){
-        return buildClustersPTM();
-    }
-    
-    for (size_t seedAtomIndex = 0; seedAtomIndex < positions()->size(); seedAtomIndex++) {
-        if (alreadyProcessedAtom(seedAtomIndex)) continue;
+bool StructureAnalysis::buildClustersCNA(){
+    for(size_t seedAtomIndex = 0; seedAtomIndex < positions()->size(); seedAtomIndex++){
+        if(alreadyProcessedAtom(seedAtomIndex)) continue;
 
         int structureType = _structureTypes->getInt(seedAtomIndex);
         Cluster* cluster = startNewCluster(seedAtomIndex, structureType);
@@ -531,13 +532,21 @@ bool StructureAnalysis::buildClusters() {
         growCluster(cluster, atomsToVisit, orientationV, orientationW, structureType);
         cluster->orientation = Matrix3(orientationW * orientationV.inverse());
 
-        if (structureType == _inputCrystalType && !_preferredCrystalOrientations.empty()) {
+        if(structureType == _inputCrystalType && !_preferredCrystalOrientations.empty()){
             applyPreferredOrientation(cluster);
         }
     }
 
     reorientAtomsToAlignClusters();
     return true;
+}
+
+bool StructureAnalysis::buildClusters(){
+    if(usingPTM()){
+        return buildClustersPTM();
+    }
+
+    return buildClustersCNA();
 }
 
 std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&>
@@ -645,57 +654,89 @@ bool StructureAnalysis::calculateMisorientation(int atomIndex, int neighbor, int
     return true;
 }
 
-bool StructureAnalysis::formSuperClusters() {
-    size_t oldTransitionCount = clusterGraph().clusterTransitions().size();
-    auto clusters = clusterGraph().clusters();
+void StructureAnalysis::initializeClustersForSuperclusterFormation(){
     for(Cluster* cluster : clusterGraph().clusters()){
         if(!cluster || cluster->id == 0) continue;
         cluster->rank = 0;
         assert(cluster->parentTransition == nullptr);
+    }
+}
 
+void StructureAnalysis::processDefectClusters(){
+    for(Cluster* cluster : clusterGraph().clusters()){
+        if(!cluster || cluster->id == 0) continue;
         if(cluster->structure != _inputCrystalType){
             processDefectCluster(cluster);
         }
     }
-
-    size_t newTransitionCount = clusterGraph().clusterTransitions().size();
-
-    for(size_t i = oldTransitionCount; i < newTransitionCount; i++){
-        ClusterTransition* t = clusterGraph().clusterTransitions()[i];
-        assert(t->distance == 2);
-        assert(t->cluster1->structure == _inputCrystalType);
-        assert(t->cluster2->structure == _inputCrystalType);
-
-        Cluster* parent1 = getParentGrain(t->cluster1);
-        Cluster* parent2 = getParentGrain(t->cluster2);
-        if (parent1 == parent2) continue;
-
-        ClusterTransition* pt = t;
-        if(parent2 != t->cluster2){
-            pt = clusterGraph().concatenateClusterTransitions(pt, t->cluster2->parentTransition);
-        }
-
-        if(parent1 != t->cluster1){
-            pt = clusterGraph().concatenateClusterTransitions(t->cluster1->parentTransition->reverse, pt);
-        }
-
-        if(parent1->rank > parent2->rank){
-            parent2->parentTransition = pt->reverse;
-        }else{
-            parent1->parentTransition = pt;
-            if (parent1->rank == parent2->rank) parent2->rank++;
-        }
-    }
-
-    for(Cluster* c : clusterGraph().clusters()){
-        getParentGrain(c);
-    }
-
-    return true;
 }
 
-void StructureAnalysis::processDefectCluster(Cluster* defectCluster) {
-    for(ClusterTransition* t = defectCluster->transitions; t; t = t->next) {
+void StructureAnalysis::mergeCompatibleGrains(size_t oldTransitionCount, size_t newTransitionCount){
+    for(size_t i = oldTransitionCount; i < newTransitionCount; i++){
+        ClusterTransition* transition = clusterGraph().clusterTransitions()[i];
+        // Validate transitions properties
+        assert(transition->distance == 2);
+        assert(transition->cluster1->structure == _inputCrystalType);
+        assert(transition->cluster2->structure == _inputCrystalType);
+                
+        auto [parent1, parent2] = getParentGrains(transition);
+        if(parent1 == parent2) continue;
+        
+        ClusterTransition* parentTransition = buildParentTransition(transition, parent1, parent2);
+        assignParentTransition(parent1, parent2, parentTransition);
+    }
+}
+
+Cluster* StructureAnalysis::getParentGrain(Cluster* c){
+    if(!c->parentTransition) return c;
+
+    ClusterTransition* parentT = c->parentTransition;
+    Cluster* parent = parentT->cluster2;
+
+    while(parent->parentTransition){
+        parentT = clusterGraph().concatenateClusterTransitions(parentT, parent->parentTransition);
+        parent = parent->parentTransition->cluster2;
+    }
+
+    c->parentTransition = parentT;
+    return parent;
+}
+
+std::pair<Cluster*, Cluster*> StructureAnalysis::getParentGrains(ClusterTransition* transition){
+    Cluster* parent1 = getParentGrain(transition->cluster1);
+    Cluster* parent2 = getParentGrain(transition->cluster2);
+    return {parent1, parent2};
+}
+
+ClusterTransition* StructureAnalysis::buildParentTransition(ClusterTransition* transition, Cluster* parent1, Cluster* parent2){
+    ClusterTransition* parentTransition = transition;
+    
+    if(parent2 != transition->cluster2){
+        parentTransition = clusterGraph().concatenateClusterTransitions(parentTransition, transition->cluster2->parentTransition);
+    }
+    
+    if(parent1 != transition->cluster1){
+        parentTransition = clusterGraph().concatenateClusterTransitions(transition->cluster1->parentTransition->reverse, parentTransition);
+    }
+    
+    return parentTransition;
+}
+
+void StructureAnalysis::assignParentTransition(Cluster* parent1, Cluster* parent2, ClusterTransition* parentTransition){
+    if(parent1->rank > parent2->rank){
+        parent2->parentTransition = parentTransition->reverse;
+        return;
+    }
+
+    parent1->parentTransition = parentTransition;
+    
+    if(parent1->rank == parent2->rank){
+        parent2->rank++;
+    }
+}
+
+void StructureAnalysis::processDefectCluster(Cluster* defectCluster){
+    for(ClusterTransition* t = defectCluster->transitions; t; t = t->next){
         if(t->cluster2->structure != _inputCrystalType || t->distance != 1) continue;
         for(ClusterTransition* t2 = t->next; t2; t2 = t2->next) {
             if(t2->cluster2->structure != _inputCrystalType || t2->distance != 1) continue;
@@ -714,19 +755,23 @@ void StructureAnalysis::processDefectCluster(Cluster* defectCluster) {
     }
 }
 
-Cluster* StructureAnalysis::getParentGrain(Cluster* c) {
-    if(!c->parentTransition) return c;
+bool StructureAnalysis::formSuperClusters(){
+    size_t oldTransitionCount = clusterGraph().clusterTransitions().size();
+    
+    initializeClustersForSuperclusterFormation();
+    processDefectClusters();
+    
+    size_t newTransitionCount = clusterGraph().clusterTransitions().size();
+    mergeCompatibleGrains(oldTransitionCount, newTransitionCount);
+    
+    finalizeParentGrains();
+    return true;
+}
 
-    ClusterTransition* parentT = c->parentTransition;
-    Cluster* parent = parentT->cluster2;
-
-    while(parent->parentTransition) {
-        parentT = clusterGraph().concatenateClusterTransitions(parentT, parent->parentTransition);
-        parent = parent->parentTransition->cluster2;
+void StructureAnalysis::finalizeParentGrains(){
+    for(Cluster* cluster : clusterGraph().clusters()){
+        getParentGrain(cluster);
     }
-
-    c->parentTransition = parentT;
-    return parent;
 }
 
 }
