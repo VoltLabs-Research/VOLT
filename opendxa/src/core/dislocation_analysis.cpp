@@ -590,10 +590,13 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     // a surface mesh along cluster boundaries, which is the playground for
     // tracing dislocation loops.
     InterfaceMesh interfaceMesh(elasticMap);
-    if(!interfaceMesh.createMesh(structureAnalysis->maximumNeighborDistance())){
-        result["is_failed"] = true;
-        result["error"] = "InterfaceMesh::createMesh() failed";
-        return result;
+    {
+        PROFILE("Interface Mesh - Create Mesh");
+        if(!interfaceMesh.createMesh(structureAnalysis->maximumNeighborDistance())){
+            result["is_failed"] = true;
+            result["error"] = "InterfaceMesh::createMesh() failed";
+            return result;
+        }
     }
 
     // Now we hand the interface mesh to the BurgersLoopBuilder. This component
@@ -606,13 +609,19 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         _circuitStretchability,
         _markCoreAtoms
     );
-    if(!tracer.traceDislocationSegments()){
-        result["is_failed"] = true;
-        result["error"] = "traceDislocationSegments() failed";
-        return result;
+    {
+        PROFILE("Burgers Loop Builder - Trace Dislocation Segments");
+        if(!tracer.traceDislocationSegments()){
+            result["is_failed"] = true;
+            result["error"] = "traceDislocationSegments() failed";
+            return result;
+        }
     }
 
-    tracer.finishDislocationSegments(_inputCrystalStructure);
+    {
+        PROFILE("Burgers Loop Builder - Finish Dislocation Segments");
+        tracer.finishDislocationSegments(_inputCrystalStructure);
+    }
 
     // Wrap the result in a DislocationNetwork for easier post-processing.
     auto networkUptr = std::make_unique<DislocationNetwork>(tracer.network());
@@ -620,12 +629,14 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     // To produce clean output, we smooth both the defect surface mesh and
     // each dislocation line. Without smoothing, visualizations can look jagged.
-    HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex> defectMesh;
-    defectMesh.smoothVertices(_defectMeshSmoothingLevel);
-    networkUptr->smoothDislocationLines(_lineSmoothingLevel, _linePointInterval);
+    {
+        PROFILE("Post Processing - Smooth Vertices & Smooth Dislocation Lines");
+        HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex> defectMesh;
+        defectMesh.smoothVertices(_defectMeshSmoothingLevel);
+        networkUptr->smoothDislocationLines(_lineSmoothingLevel, _linePointInterval);
+        spdlog::debug("Defect mesh facets: {} ", defectMesh.faces().size());
+    }
 
-    spdlog::debug("Defect mesh facets: {} ", defectMesh.faces().size());
-    
     double totalLineLength = 0.0;
     const auto& segments = networkUptr->segments();
     
@@ -644,12 +655,15 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     // Finally, we serialize all results-mesh, network data, metrics-into JSON. 
     // Any exception here is considered a fatal error in the exporter.
-    try{
-        result = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame, &tracer, &extractedStructureTypes);
-    }catch(const std::exception& e){
-        result["is_failed"] = true;
-        result["error"] = e.what();
-        return result;
+    {
+        try{
+            PROFILE("JSON Exporter - Export Analysis Data");
+            result = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame, &tracer, &extractedStructureTypes);
+        }catch(const std::exception& e){
+            result["is_failed"] = true;
+            result["error"] = e.what();
+            return result;
+        }
     }
 
     if(!result.contains("is_failed")){
@@ -730,6 +744,7 @@ bool DislocationAnalysis::validateSimulationCell(const SimulationCell &cell){
     return true;
 }
 
+// TODO:
 // If no compute() call has been made, or if it produced no JSON data,
 // emis an error to stderr and returns an empty JSON object.
 json DislocationAnalysis::exportResultsToJson(const std::string& filename) const {
