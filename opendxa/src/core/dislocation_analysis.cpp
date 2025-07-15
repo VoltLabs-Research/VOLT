@@ -625,6 +625,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         try{
             PROFILE("JSON Exporter - Export Analysis Data");
             result = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame, &tracer, &extractedStructureTypes);
+            _jsonExporter.exportInterfaceMeshToVTK(interfaceMesh, *structureAnalysis, "interface_mesh.vtk");
         }catch(const std::exception& e){
             result["is_failed"] = true;
             result["error"] = e.what();

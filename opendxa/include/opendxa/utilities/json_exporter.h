@@ -43,6 +43,10 @@ public:
     json getCircuitInformation(const DislocationNetwork* network);
     json getTopologyInformation(const InterfaceMesh* interfaceMesh);
     json getExtendedSimulationCellInfo(const SimulationCell& cell);
+    void exportInterfaceMeshToVTK(
+        const InterfaceMesh& interfaceMesh, 
+        const StructureAnalysis& structureAnalysis,
+        const std::string& filename = "interface_mesh.vtk"); 
 
     void setFilename(const std::string& filename){
         _filename = filename;

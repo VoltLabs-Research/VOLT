@@ -95,6 +95,132 @@ json DXAJsonExporter::exportAnalysisData(
     return data;
 }
 
+void DXAJsonExporter::exportInterfaceMeshToVTK(
+    const InterfaceMesh& interfaceMesh, 
+    const StructureAnalysis& structureAnalysis, 
+    const std::string &filename
+){
+    // Lambda to detect facets that cross periodic boundaries
+    auto isWrappedFacet = [&structureAnalysis](const InterfaceMesh::Face* face) -> bool{
+        auto* edge = face->edges();
+        auto* start = edge;
+        do{
+            Vector3 vec = edge->vertex1()->pos() - edge->vertex2()->pos();
+            if(structureAnalysis.cell().isWrappedVector(vec)){
+                return true;
+            }
+            edge = edge->nextFaceEdge();
+        }while(edge != start);
+
+        return false;
+    };
+
+    // Count facets that DO NOT cross periodic boundaries
+    size_t numFacets = 0;
+    for(const auto* face : interfaceMesh.faces()){
+        if(!isWrappedFacet(face)) numFacets++;
+    }
+
+    std::ofstream stream(filename);
+    if(!stream){
+        throw std::runtime_error("Cannot create VTK file: " + filename);
+    }
+
+    // VTK Header
+    stream << "# vtk DataFile Version 3.0\n";
+    stream << "# Interface mesh from OpenDXA dislocation analysis\n";
+    stream << "ASCII\n";
+    stream << "DATASET UNSTRUCTURED_GRID\n";
+
+    // Write vertices
+    stream << "POINTS " << interfaceMesh.vertexCount() << " float\n";
+    for(const auto* vertex : interfaceMesh.vertices()){
+        const Point3& pos = vertex->pos();
+        stream << pos.x() << " " << pos.y() << " " << pos.z() << "\n";
+    }
+
+    // Write cells (triangles)
+    stream << "\nCELLS " << numFacets << " " << (numFacets * 4) << "\n";
+    for(const auto* face : interfaceMesh.faces()){
+        if(!isWrappedFacet(face)){
+            stream << "3"; 
+            auto* e = face->edges();
+            auto* start = e;
+            do{
+                stream << " " << e->vertex1()->index();
+                e = e->nextFaceEdge();
+            }while(e != start);
+            stream << "\n";
+        }
+    }
+
+    // Cell types (all are triangles = type 5)
+    stream << "\nCELL_TYPES " << numFacets << "\n";
+    for(size_t i = 0; i < numFacets; i++){
+        stream << "5\n"; 
+    }
+
+    stream << "\nCELL_DATA " << numFacets << "\n";
+    // Scalar 1: Dislocation segment ID
+    stream << "SCALARS dislocation_segment int 1\n";
+    stream << "LOOKUP_TABLE default\n";
+    for(const auto* face : interfaceMesh.faces()){
+        if(!isWrappedFacet(face)){
+            if(face->circuit != nullptr && (!face->circuit->isDangling || face->testFlag(1))){
+                DislocationSegment* segment = face->circuit->dislocationNode->segment;
+                //Follow the chain of replacements
+                while(segment->replacedWith != nullptr){
+                    segment = segment->replacedWith;
+                }
+                stream << segment->id << "\n";
+            }else{
+                // No dislocation segment
+                stream << "-1\n";  
+            }
+        }
+    }
+
+    // Scalar 2: Primary segment flag
+    stream << "\nSCALARS is_primary_segment int 1\n";
+    stream << "LOOKUP_TABLE default\n";
+    for(const auto* face : interfaceMesh.faces()){
+        if(!isWrappedFacet(face)){
+            stream << (face->testFlag(1) ? 1 : 0) << "\n";
+        }
+    }
+
+    // Scalar 3: Burgers vector (magnitude)
+    stream << "\nSCALARS burgers_magnitude float 1\n";
+    stream << "LOOKUP_TABLE default\n";
+    for(const auto* face : interfaceMesh.faces()){
+        if(!isWrappedFacet(face)){
+            if(face->circuit != nullptr) {
+                ClusterVector bv = face->circuit->calculateBurgersVector();
+                stream << bv.localVec().length() << "\n";
+            } else {
+                stream << "0.0\n";
+            }
+        }
+    }
+
+    // Vector 1: Complete Burgers Vector
+    stream << "\nVECTORS burgers_vector float\n";
+    for(const auto* face : interfaceMesh.faces()){
+        if(!isWrappedFacet(face)){
+            if(face->circuit != nullptr){
+                ClusterVector bv = face->circuit->calculateBurgersVector();
+                const Vector3& v = bv.localVec();
+                stream << v.x() << " " << v.y() << " " << v.z() << "\n";
+            }else{
+                stream << "0.0 0.0 0.0\n";
+            }
+        }
+    }
+
+    stream.close();
+    spdlog::info("Interface mesh exported to VTK: {}", filename);
+}
+
 json DXAJsonExporter::exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo, const SimulationCell* simulationCell){
     json dislocations;
     const auto& segments = network->segments();

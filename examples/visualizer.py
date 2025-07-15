@@ -37,6 +37,7 @@ def main():
     # Create visualizer and show
     print("Creating visualization...")
     x = VisualizationSettings()
+    x.show_interface=True
     visualizer = DislocationVisualizer(data, x)
     plotter, stats = visualizer.visualize()
     
