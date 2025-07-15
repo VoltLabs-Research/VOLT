@@ -172,8 +172,8 @@ public:
 		return _segments;
 	}
 
-	void smoothDislocationLine(int smoothingLevel, std::deque<Point3>& line, bool isLoop);
-	void smoothDislocationLines(int lineSmoothingLevel, double linePointInterval);
+	void smoothDislocationLine(double smoothingLevel, std::deque<Point3>& line, bool isLoop);
+	void smoothDislocationLines(double lineSmoothingLevel, double linePointInterval);
 	void coarsenDislocationLine(
 		double linePointInterval,
 		const std::deque<Point3>& input,

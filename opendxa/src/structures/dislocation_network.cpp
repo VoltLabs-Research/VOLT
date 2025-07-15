@@ -66,7 +66,7 @@ void DislocationNetwork::discardSegment(DislocationSegment* segment){
 // the number of points based on core size and a user-specified interval, then smoothing
 // the result with repeated Laplacian passes to remove sharp kinks. 
 // Closed loops are handled differently from open lines so as not to break continuity.
-void DislocationNetwork::smoothDislocationLines(int lineSmoothingLevel, double linePointInterval){
+void DislocationNetwork::smoothDislocationLines(double lineSmoothingLevel, double linePointInterval){
 	for(DislocationSegment* segment : segments()){
 		if(segment->coreSize.empty()) continue;
 		std::deque<Point3> line;
@@ -211,7 +211,7 @@ void DislocationNetwork::coarsenDislocationLine(
 // with a weighted average of its neighbors. Open lines keep their ends fixed, while loops
 // wap the neighborhood around. The two-pass filter uses parameters that give a gentle "umbrella"
 // smoothing effect without significant shrinkage.
-void DislocationNetwork::smoothDislocationLine(int smoothingLevel, std::deque<Point3>& line, bool isLoop){
+void DislocationNetwork::smoothDislocationLine(double smoothingLevel, std::deque<Point3>& line, bool isLoop){
 	// Nothing to do
 	if(smoothingLevel <= 0 || line.size() <= 2){
 		return;

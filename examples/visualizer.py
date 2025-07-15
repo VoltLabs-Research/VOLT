@@ -23,7 +23,7 @@ def main():
     # Import OpenDXA
     try:
         import opendxa
-        from opendxa.visualizers import DislocationVisualizer
+        from opendxa.visualizers import DislocationVisualizer, VisualizationSettings
     except ImportError as e:
         print(f"Error importing OpenDXA: {e}")
         print("Make sure OpenDXA Python bindings are installed.")
@@ -36,7 +36,8 @@ def main():
     
     # Create visualizer and show
     print("Creating visualization...")
-    visualizer = DislocationVisualizer(data)
+    x = VisualizationSettings()
+    visualizer = DislocationVisualizer(data, x)
     plotter, stats = visualizer.visualize()
     
     # Print basic stats
