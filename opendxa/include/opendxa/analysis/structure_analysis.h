@@ -238,7 +238,8 @@ private:
 	bool alreadyProcessedAtom(int index);
 	bool calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition);
 	void connectClusterNeighbors(int atomIndex, Cluster* cluster1);
-	bool areOrientationsCompatible(int atom1, int atom2);
+	bool areOrientationsCompatible(int atom1, int atom2, int structureType);
+	bool verifyLocalSymmetryCompatibility(int atom1, int atom2, int structureType);
 	void storeDeformationGradient(const PTM::Kernel& kernel, size_t atomIndex);
 	void storeOrientationData(const PTM::Kernel& kernel, size_t atomIndex);
 	void storeNeighborIndices(const PTM::Kernel& kernel, size_t atomIndex);
@@ -252,6 +253,7 @@ private:
 	void assignParentTransition(Cluster* parent1, Cluster* parent2, ClusterTransition* parentTransition);
 	void finalizeParentGrains();
 	Cluster* getParentGrain(Cluster* c);
+	Matrix3 calculateLocalTransformationMatrix(int atom1, int atom2, int structureType);
 
 	void processPTMAtom(
 		PTM::Kernel& kernel,
@@ -271,6 +273,8 @@ private:
 	void processDefectCluster(Cluster* defectCluster);
 	void reorientAtomsToAlignClusters();
 	void applyPreferredOrientation(Cluster* cluster);
+	Quaternion getPTMAtomOrientation(int atom);
+
 	void growCluster(
 		Cluster* cluster,
 		std::deque<int>& atomsToVisit,
