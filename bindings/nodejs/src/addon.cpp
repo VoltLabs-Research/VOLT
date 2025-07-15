@@ -4,12 +4,268 @@
 #include <nlohmann/json.hpp>
 #include <filesystem>
 #include <stdexcept>
+#include <vector>
+#include <string>
+#include <memory>
 
 using json = nlohmann::json;
 using namespace OpenDXA;
 
 // Global analyzer instance
 static DislocationAnalysis globalAnalyzer;
+
+// Thread-safe function reference for progress callback
+static std::shared_ptr<Napi::ThreadSafeFunction> globalProgressCallback;
+
+// Progress callback wrapper that calls JavaScript function
+void progressCallbackWrapper(const ProgressInfo& info) {
+    if (globalProgressCallback) {
+        auto callback = [info](Napi::Env env, Napi::Function jsCallback){
+            // Create progress info object for JavaScript
+            Napi::Object progressObj = Napi::Object::New(env);
+            progressObj.Set("completedFrames", Napi::Number::New(env, info.completedFrames));
+            progressObj.Set("totalFrames", Napi::Number::New(env, info.totalFrames));
+            
+            // Add frame result if available
+            if (info.frameResult) {
+                Napi::Object frameResult = Napi::Object::New(env);
+                for (auto& [key, value] : info.frameResult->items()) {
+                    if (value.is_string()) {
+                        frameResult.Set(key, Napi::String::New(env, value.get<std::string>()));
+                    } else if (value.is_number_integer()) {
+                        frameResult.Set(key, Napi::Number::New(env, value.get<int>()));
+                    } else if (value.is_number_float()) {
+                        frameResult.Set(key, Napi::Number::New(env, value.get<double>()));
+                    } else if (value.is_boolean()) {
+                        frameResult.Set(key, Napi::Boolean::New(env, value.get<bool>()));
+                    }
+                }
+                progressObj.Set("frameResult", frameResult);
+            }
+            
+            // Call JavaScript callback
+            jsCallback.Call({progressObj});
+        };
+        
+        globalProgressCallback->BlockingCall(callback);
+    }
+}
+
+// Async Worker for trajectory computation
+class ComputeTrajectoryWorker : public Napi::AsyncWorker {
+public:
+    ComputeTrajectoryWorker(Napi::Function& callback, 
+                           const std::vector<std::string>& inputFiles,
+                           const std::string& outputTemplate)
+        : Napi::AsyncWorker(callback), inputFiles(inputFiles), outputTemplate(outputTemplate) {}
+        
+    ~ComputeTrajectoryWorker() {}
+    
+    void Execute() override {
+        try {
+            if (inputFiles.empty()) {
+                SetError("Input file list cannot be empty");
+                return;
+            }
+            
+            // Parse all LAMMPS files into frames
+            std::vector<LammpsParser::Frame> frames;
+            frames.reserve(inputFiles.size());
+            LammpsParser parser;
+            
+            for (const auto& filePath : inputFiles) {
+                if (!std::filesystem::exists(filePath)) {
+                    SetError("Input file does not exist: " + filePath);
+                    return;
+                }
+                
+                LammpsParser::Frame frame;
+                if (!parser.parseFile(filePath, frame)) {
+                    SetError("Failed to parse input file: " + filePath);
+                    return;
+                }
+                frames.push_back(std::move(frame));
+            }
+            
+            // Run trajectory analysis with progress callback
+            result = globalAnalyzer.compute(frames, outputTemplate, progressCallbackWrapper);
+            
+        } catch (const std::exception& e) {
+            SetError(e.what());
+        }
+    }
+    
+    void OnOK() override {
+        Napi::HandleScope scope(Env());
+        
+        // Convert JSON result to Napi::Object
+        Napi::Object napiResult = Napi::Object::New(Env());
+        
+        for (auto& [key, value] : result.items()) {
+            if (value.is_string()) {
+                napiResult.Set(key, Napi::String::New(Env(), value.get<std::string>()));
+            } else if (value.is_number_integer()) {
+                napiResult.Set(key, Napi::Number::New(Env(), value.get<int>()));
+            } else if (value.is_number_float()) {
+                napiResult.Set(key, Napi::Number::New(Env(), value.get<double>()));
+            } else if (value.is_boolean()) {
+                napiResult.Set(key, Napi::Boolean::New(Env(), value.get<bool>()));
+            } else if (value.is_array()) {
+                Napi::Array arr = Napi::Array::New(Env());
+                for (size_t i = 0; i < value.size(); i++) {
+                    if (value[i].is_object()) {
+                        Napi::Object frameObj = Napi::Object::New(Env());
+                        for (auto& [frameKey, frameValue] : value[i].items()) {
+                            if (frameValue.is_string()) {
+                                frameObj.Set(frameKey, Napi::String::New(Env(), frameValue.get<std::string>()));
+                            } else if (frameValue.is_number_integer()) {
+                                frameObj.Set(frameKey, Napi::Number::New(Env(), frameValue.get<int>()));
+                            } else if (frameValue.is_number_float()) {
+                                frameObj.Set(frameKey, Napi::Number::New(Env(), frameValue.get<double>()));
+                            } else if (frameValue.is_boolean()) {
+                                frameObj.Set(frameKey, Napi::Boolean::New(Env(), frameValue.get<bool>()));
+                            }
+                        }
+                        arr[i] = frameObj;
+                    }
+                }
+                napiResult.Set(key, arr);
+            }
+        }
+        
+        Callback().Call({Env().Null(), napiResult});
+    }
+    
+private:
+    std::vector<std::string> inputFiles;
+    std::string outputTemplate;
+    json result;
+};
+
+// Set progress callback function
+Napi::Value SetProgressCallback(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    
+    if (info.Length() < 1 || !info[0].IsFunction()) {
+        Napi::TypeError::New(env, "Expected function argument").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+    
+    Napi::Function callback = info[0].As<Napi::Function>();
+    
+    // Create thread-safe function for progress callback
+    globalProgressCallback = std::make_shared<Napi::ThreadSafeFunction>(
+        Napi::ThreadSafeFunction::New(
+            env,
+            callback,
+            "ProgressCallback",
+            0, // Unlimited queue
+            1  // Only one thread will use this
+        )
+    );
+    
+    return env.Undefined();
+}
+
+// Compute trajectory (async version)
+Napi::Value ComputeTrajectory(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    
+    if (info.Length() < 2 || !info[0].IsArray() || !info[1].IsString()) {
+        Napi::TypeError::New(env, "Expected array of file paths and output template string").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+    
+    // Parse input file paths
+    Napi::Array inputArray = info[0].As<Napi::Array>();
+    std::vector<std::string> inputFiles;
+    
+    for (uint32_t i = 0; i < inputArray.Length(); i++) {
+        Napi::Value val = inputArray[i];
+        if (val.IsString()) {
+            inputFiles.push_back(val.As<Napi::String>().Utf8Value());
+        }
+    }
+    
+    std::string outputTemplate = info[1].As<Napi::String>().Utf8Value();
+    
+    // Check if callback is provided for async operation
+    if (info.Length() > 2 && info[2].IsFunction()) {
+        Napi::Function callback = info[2].As<Napi::Function>();
+        ComputeTrajectoryWorker* worker = new ComputeTrajectoryWorker(callback, inputFiles, outputTemplate);
+        worker->Queue();
+        return env.Undefined();
+    }
+    
+    // Synchronous operation
+    try {
+        if (inputFiles.empty()) {
+            throw std::invalid_argument("Input file list cannot be empty");
+        }
+        
+        // Parse all files
+        std::vector<LammpsParser::Frame> frames;
+        frames.reserve(inputFiles.size());
+        LammpsParser parser;
+        
+        for (const auto& filePath : inputFiles) {
+            if (!std::filesystem::exists(filePath)) {
+                throw std::runtime_error("Input file does not exist: " + filePath);
+            }
+            
+            LammpsParser::Frame frame;
+            if (!parser.parseFile(filePath, frame)) {
+                throw std::runtime_error("Failed to parse input file: " + filePath);
+            }
+            frames.push_back(std::move(frame));
+        }
+        
+        // Run analysis
+        json result = globalAnalyzer.compute(frames, outputTemplate, progressCallbackWrapper);
+        
+        // Convert to Napi::Object
+        Napi::Object napiResult = Napi::Object::New(env);
+        
+        for (auto& [key, value] : result.items()) {
+            if (value.is_string()) {
+                napiResult.Set(key, Napi::String::New(env, value.get<std::string>()));
+            } else if (value.is_number_integer()) {
+                napiResult.Set(key, Napi::Number::New(env, value.get<int>()));
+            } else if (value.is_number_float()) {
+                napiResult.Set(key, Napi::Number::New(env, value.get<double>()));
+            } else if (value.is_boolean()) {
+                napiResult.Set(key, Napi::Boolean::New(env, value.get<bool>()));
+            } else if (value.is_array()) {
+                // Handle frames array
+                Napi::Array arr = Napi::Array::New(env);
+                for (size_t i = 0; i < value.size(); i++) {
+                    if (value[i].is_object()) {
+                        Napi::Object frameObj = Napi::Object::New(env);
+                        for (auto& [frameKey, frameValue] : value[i].items()) {
+                            if (frameValue.is_string()) {
+                                frameObj.Set(frameKey, Napi::String::New(env, frameValue.get<std::string>()));
+                            } else if (frameValue.is_number_integer()) {
+                                frameObj.Set(frameKey, Napi::Number::New(env, frameValue.get<int>()));
+                            } else if (frameValue.is_number_float()) {
+                                frameObj.Set(frameKey, Napi::Number::New(env, frameValue.get<double>()));
+                            } else if (frameValue.is_boolean()) {
+                                frameObj.Set(frameKey, Napi::Boolean::New(env, frameValue.get<bool>()));
+                            }
+                        }
+                        arr[i] = frameObj;
+                    }
+                }
+                napiResult.Set(key, arr);
+            }
+        }
+        
+        return napiResult;
+        
+    } catch (const std::exception& e) {
+        Napi::Error::New(env, e.what()).ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+}
 
 // Static wrapper functions
 Napi::Value SetMaxTrialCircuitSize(const Napi::CallbackInfo& info){
@@ -203,6 +459,9 @@ Napi::Object Init(Napi::Env env, Napi::Object exports){
     exports.Set("setDefectMeshSmoothingLevel", Napi::Function::New(env, SetDefectMeshSmoothingLevel));
     exports.Set("setCrystalStructure", Napi::Function::New(env, SetCrystalStructure));
     exports.Set("setIdentificationMode", Napi::Function::New(env, SetIdentificationMode));
+    
+    exports.Set("computeTrajectory", Napi::Function::New(env, ComputeTrajectory));
+    exports.Set("setProgressCallback", Napi::Function::New(env, SetProgressCallback));
     
     // Export constants
     Napi::Object latticeStructure = Napi::Object::New(env);
