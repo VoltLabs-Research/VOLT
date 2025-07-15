@@ -38,6 +38,13 @@ public:
     json getProcessingTime();
     json getMetadata();
     
+    void exportAtomsToVTK(
+        const LammpsParser::Frame& frame,
+        const BurgersLoopBuilder* tracer,
+        const std::vector<int>* structureTypes,
+        const std::string& filename
+    );
+
     json getNetworkStatistics(const DislocationNetwork* network, double cellVolume);
     json getJunctionInformation(const DislocationNetwork* network);
     json getCircuitInformation(const DislocationNetwork* network);
@@ -47,6 +54,12 @@ public:
         const InterfaceMesh& interfaceMesh, 
         const StructureAnalysis& structureAnalysis,
         const std::string& filename = "interface_mesh.vtk"); 
+
+    
+    void exportDislocationsToVTK(
+        const DislocationNetwork* network,
+        const SimulationCell& cell,
+        const std::string& filename);
 
     void setFilename(const std::string& filename){
         _filename = filename;
