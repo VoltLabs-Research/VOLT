@@ -1,14 +1,23 @@
 {
   "name": "opendxa-node",
   "version": "1.0.0",
-  "description": "Node.js bindings for OpenDXA - Open Source Dislocation Extraction Algorithm",
+  "description": "Node.js bindings for OpenDXA - Dislocation eXtraction Algorithm",
   "main": "index.js",
+  "types": "types/index.d.ts",
+  "type": "module",
   "scripts": {
-    "build": "node-gyp rebuild",
-    "clean": "node-gyp clean",
+    "prebuild": "npm run clean",
+    "build": "node-gyp rebuild && npm run build:ts",
+    "build:native": "node-gyp rebuild",
+    "build:ts": "tsc",
+    "clean": "node-gyp clean && rm -rf dist build",
     "configure": "node-gyp configure",
-    "test": "node test/test.js",
-    "install": "node-gyp rebuild"
+    "install": "npm run build",
+    "dev": "tsc --watch",
+    "lint": "eslint src/**/*.ts",
+    "type-check": "tsc --noEmit",
+    "test": "npm run build && node examples/nodejs/compute.js",
+    "example": "npm run build && npx ts-node examples/nodejs/compute.ts"
   },
   "keywords": [
     "opendxa",
@@ -16,22 +25,42 @@
     "analysis",
     "materials",
     "simulation",
-    "native"
+    "native",
+    "typescript"
   ],
-  "author": "Your Name",
+  "author": "Rody Herrera",
   "license": "MIT",
   "dependencies": {
     "node-addon-api": "^7.0.0"
   },
   "devDependencies": {
-    "node-gyp": "^10.0.0"
+    "node-gyp": "^10.0.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "ts-node": "^10.9.0"
   },
   "engines": {
     "node": ">=14.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rodyherrera/opendxa"
+    "url": "https://github.com/rodyherrera/opendxa.git"
+  },
+  "files": [
+    "build/Release/*.node",
+    "index.ts",
+    "types/**/*",
+    "dist/**/*"
+  ],
+  "exports": {
+    ".": {
+      "import": "./index.ts",
+      "require": "./index.ts",
+      "types": "./types/index.d.ts"
+    }
   },
   "gypfile": true
 }
