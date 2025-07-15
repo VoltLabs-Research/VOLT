@@ -25,7 +25,9 @@ lerna-debug.log*
 
 data/
 
-node_modules
+node_modules/
+package-lock.json
+
 dist
 dist-ssr
 *.local
