@@ -15,6 +15,7 @@ const upload = multer({
     }
 });
 
+router.get('/compressed/:folderId/:timestep', controller.getCompressedAnalysis);
 router.delete('/:folderId', controller.deleteFolder);
 router.post('/', upload.array('files'), controller.uploadTrajectoryFiles);
 router.get('/', controller.listTrajectories);

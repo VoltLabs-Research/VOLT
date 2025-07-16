@@ -25,7 +25,7 @@
 import createZstdModule from '../../public/zstd_stream';
 
 const fetchFrame = async (folderId, timestep) => {
-    const url = `http://192.168.1.85:8000/compressed/${folderId}/${timestep}.json.zst`;
+    const url = `http://192.168.1.85:8000/api/dislocations/compressed/${folderId}/${timestep}.json.zst`;
     let decompressor;
     try{
         const module = await createZstdModule();

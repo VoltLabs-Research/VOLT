@@ -9,8 +9,8 @@ interface TimestepControlsProps {
     folderInfo: {
         folderId: string;
         timesteps: number;
-        min_timestep: number;
-        max_timestep: number;
+        minTimestep: number;
+        maxTimestep: number;
     };
     currentTimestep: number;
     onTimestepChange: (newTimestep: number) => void;
@@ -33,7 +33,7 @@ const TimestepControls: React.FC<TimestepControlsProps> = ({
     onSpeedChange,
     isConnected
 }) => {
-    const { min_timestep, max_timestep } = folderInfo;
+    const { minTimestep, maxTimestep } = folderInfo;
 
     return (
         <EditorWidget className='editor-timestep-controls'>
@@ -45,8 +45,8 @@ const TimestepControls: React.FC<TimestepControlsProps> = ({
             
             <TimestepSlider
                 currentTimestep={currentTimestep}
-                minTimestep={min_timestep}
-                maxTimestep={max_timestep}
+                minTimestep={minTimestep}
+                maxTimestep={maxTimestep}
                 onTimestepChange={onTimestepChange}
                 disabled={!isConnected}
             />

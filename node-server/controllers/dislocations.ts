@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { extractTimesteps, getFileStats, isValidLammpsFile } from '@utilities/lammps';
 import { readdir, stat, rmdir, mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { existsSync } from 'fs';
+import { createReadStream, existsSync, statSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
 import OpenDXAService from '@services/opendxa';
@@ -245,6 +245,52 @@ export const listTrajectories = async (req: Request, res: Response) => {
 };
 
 /**
+ * @route GET /api/compressed/{folder_id}/{timestep}.json.zst
+ * @desc Download compressed analysis file
+*/
+export const getCompressedAnalysis = async (req: Request, res: Response) => {
+    try{
+        const { folderId, timestep } = req.params;
+        const compressedDir = join(process.env.ANALYSIS_DIR as string, folderId);
+        const filePath = join(compressedDir, timestep);
+        if(!existsSync(filePath)){
+            console.log(`File not found: ${filePath}`);
+            return res.status(404).json({
+                status: 'error',
+                data: { error: 'File not found' }
+            });
+        }
+
+        const stats = statSync(filePath);
+        // Streaming headers
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Length', stats.size);
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+        const fileStream = createReadStream(filePath);
+        fileStream.on('error', (error) => {
+            console.error(`Error reading file ${filePath}:`, error);
+            if(!res.headersSent){
+                res.status(500).json({ error: 'Failed to read file' });
+            }
+        });
+
+        fileStream.pipe(res);
+
+        console.log(`Serving compressed file: ${timestep} (${stats.size} bytes)`);
+    }catch(error){
+        console.error('Error serving compressed file:', error);
+        res.status(500).json({
+            status: 'error',
+            data: { error: 'Internal server error' }
+        });
+    }
+};
+
+/**
  * @route GET /api/trajectories/{folder_id}
  * @desc Get simulation info for a specific trajectory folder
 */
@@ -315,7 +361,8 @@ export const analyzeTrajectory = async (req: Request, res: Response) => {
         // this is async
         const analysisPromise = opendxa.analyzeTrajectory(
             trajectoryFiles,
-            join(analysisPath, 'frame_{}.json')
+            join(analysisPath, 'frame_{}.json'),
+            folderId
         );
 
         res.status(202).json({

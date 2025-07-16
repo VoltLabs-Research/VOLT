@@ -17,16 +17,26 @@ const files: string[] = fs.readdirSync(dir)
   .map((filename: string) => path.join(dir, filename));
 
 const progressCallback: ProgressCallback = (progress: ProgressInfo) => {
-  console.log(`Progress: ${progress.completedFrames}/${progress.totalFrames}`);
+  console.log('PROGRESS CALLBACK');
+  console.log(`Progress: ${progress.completedFrames}/${progress.totalFrames} (${progress.progressPercent?.toFixed(1) || 0}%)`);
 };
 
+// ✅ FIX: Añadir el callback de trayectoria
 const trajectoryCallback: TrajectoryCallback = (error: Error | null, result?: TrajectoryResult) => {
   if (error) {
     console.error('Error:', error.message);
-    return;
+    process.exit(1);
+  } else {
+    console.log('TRAJECTORY COMPLETED!');
+    console.log('Total frames processed:', result?.frames?.length || 0);
+    console.log('Analysis failed:', result?.is_failed || false);
+    console.log('Total time:', result?.total_time || 0, 'seconds');
   }
-  console.log(result);
 };
 
 opendxa.setProgressCallback(progressCallback);
+
+// ✅ FIX: Usar modo asíncrono con callback
 opendxa.computeTrajectory(files, 'output_{}.json', trajectoryCallback);
+
+console.log('Analysis started...');

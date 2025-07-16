@@ -44,7 +44,13 @@ const EditorPage: React.FC = () => {
     const isInitialMount = useRef(true);
 
     const folderId = useMemo(() => folder?.folderId || null, [folder]);
-    const timesteps = useMemo(() => folder?.timesteps || [], [folder]);
+
+    const timesteps = useMemo(() => {
+        if (!folder?.timestepFiles) return [];
+        return folder.timestepFiles
+            .map((file: any) => file.timestep)
+            .sort((a: number, b: number) => a - b);
+    }, [folder]);
     
     const { data, isLoading } = useTimestepDataManager({ 
         folderId, 
@@ -101,7 +107,7 @@ const EditorPage: React.FC = () => {
     }, []);
     
     const { maxTimestep } = useMemo(() => ({
-        maxTimestep: folder?.max_timestep || 1
+        maxTimestep: folder?.maxTimestep || 1
     }), [folder]);
 
     const clearPlayTimeout = useCallback(() => {
@@ -137,9 +143,10 @@ const EditorPage: React.FC = () => {
         console.error('OpenDXA: Upload error:', error);
     }, []);
 
-    const handleFolderSelection = useCallback((folder_data: any) => {
-        setFolder(folder_data);
-        setCurrentTimestep(folder_data.min_timestep || 0);
+    const handleFolderSelection = useCallback((folderData: any) => {
+        console.log(folderData)
+        setFolder(folderData);
+        setCurrentTimestep(folderData.minTimestep || 0);
         setIsPlaying(false);
         setSelectedDislocation(null);
         isInitialMount.current = true;

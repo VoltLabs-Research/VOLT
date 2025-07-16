@@ -93,7 +93,6 @@ const useTimestepDataManager = ({ folderId, currentTimestep, timesteps, refreshK
 
         const handleWorkerMessage = (event: MessageEvent) => {
             const { status, data: workerData, error: workerError, timestep: messageTimestep } = event.data;
-
             if (status === 'success') {
                 const receivedTimestep = workerData.atoms_data.timestep;
                 
