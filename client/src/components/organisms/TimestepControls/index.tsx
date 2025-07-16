@@ -40,7 +40,6 @@ const TimestepControls: React.FC<TimestepControlsProps> = ({
             <PlayControls
                 isPlaying={isPlaying}
                 onPlayPause={onPlayPause}
-                disabled={!isConnected}
             />
             
             <TimestepSlider
@@ -54,7 +53,6 @@ const TimestepControls: React.FC<TimestepControlsProps> = ({
             <SpeedControl
                 playSpeed={playSpeed}
                 onSpeedChange={onSpeedChange}
-                disabled={!isConnected}
             />
         </EditorWidget>
     );

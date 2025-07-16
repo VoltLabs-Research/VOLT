@@ -33,7 +33,7 @@ def main():
     print(f"Loading {json_file}...")
     with open(json_file, 'r') as f:
         data = json.load(f)
-    
+
     # Create visualizer and show
     print("Creating visualization...")
     x = VisualizationSettings()

@@ -20,6 +20,6 @@ router.delete('/:folderId', controller.deleteFolder);
 router.post('/', upload.array('files'), controller.uploadTrajectoryFiles);
 router.get('/', controller.listTrajectories);
 router.get('/:folderId', controller.getTrajectorySimulationInfo);
-router.post('/:folderId/analyze', controller.analyzeTrajectory);
+router.post('/trajectories/:folderId/analyze', controller.analyzeTrajectory);
 
 export default router;

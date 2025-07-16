@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { extractTimesteps, getFileStats, isValidLammpsFile } from '@utilities/lammps';
-import { readdir, stat, rmdir, mkdir, writeFile } from 'fs/promises';
+import { readdir, stat, rmdir, mkdir, writeFile, readFile } from 'fs/promises';
 import { join } from 'path';
 import { createReadStream, existsSync, statSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
@@ -62,10 +62,6 @@ const getSimulationInfo = async (folderPath: string) => {
     }
 };
 
-/**
- * @route DELETE /api/trajectories/{folder_id}
- * @desc Delete a trajectory folder and its contents
-*/
 export const deleteFolder = async (req: Request, res: Response) => {
     try{
         const { folderId } = req.params;
@@ -97,10 +93,6 @@ export const deleteFolder = async (req: Request, res: Response) => {
     }
 };
 
-/**
- * @route POST /api/trajectories
- * @desc Upload multiple trajectory files
-*/
 export const uploadTrajectoryFiles = async (req: Request, res: Response) => {
     try{
         await ensureDirectoriesExist();
@@ -116,6 +108,13 @@ export const uploadTrajectoryFiles = async (req: Request, res: Response) => {
         const folderId = uuidv4();
         const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
         await mkdir(folderPath, { recursive: true });
+        const originalFolderName = req.body.originalFolderName || 'Untitled Simulation';
+        const metadata = {
+            id: folderId,
+            originalFolderName,
+            uploadDate: new Date().toISOString()
+        };
+        await writeFile(join(folderPath, 'metadata.json'), JSON.stringify(metadata, null, 4));
 
         const uploadResults = [];
         let validFiles = 0;
@@ -206,10 +205,6 @@ export const uploadTrajectoryFiles = async (req: Request, res: Response) => {
     }
 };
 
-/**
- * @route GET /api/trajectories
- * @desc List all uploaded trajectory folders with metadata
-*/
 export const listTrajectories = async (req: Request, res: Response) => {
     try{
         await ensureDirectoriesExist();
@@ -244,10 +239,6 @@ export const listTrajectories = async (req: Request, res: Response) => {
     }
 };
 
-/**
- * @route GET /api/compressed/{folder_id}/{timestep}.json.zst
- * @desc Download compressed analysis file
-*/
 export const getCompressedAnalysis = async (req: Request, res: Response) => {
     try{
         const { folderId, timestep } = req.params;
@@ -290,10 +281,6 @@ export const getCompressedAnalysis = async (req: Request, res: Response) => {
     }
 };
 
-/**
- * @route GET /api/trajectories/{folder_id}
- * @desc Get simulation info for a specific trajectory folder
-*/
 export const getTrajectorySimulationInfo = async (req: Request, res: Response) => {
     try{
         const { folderId } = req.params;
@@ -320,10 +307,6 @@ export const getTrajectorySimulationInfo = async (req: Request, res: Response) =
     }
 };
 
-/**
- * @route POST /api/trajectories/{folder_id}/analyze
- * @desc Analyze trajectory using OpenDXA
-*/
 export const analyzeTrajectory = async (req: Request, res: Response) => {
     try{
         const { folderId } = req.params;
@@ -340,7 +323,44 @@ export const analyzeTrajectory = async (req: Request, res: Response) => {
         if(!existsSync(analysisPath)){
             await mkdir(analysisPath, { recursive: true });
         }
+        const metadataPath = join(folderPath, 'metadata.json');
+        try {
+            let metadata: any = {};
+            // 1. Leer el archivo de metadatos existente si está presente
+            if (existsSync(metadataPath)) {
+                const fileContent = await readFile(metadataPath, 'utf-8');
+                // Usamos un try-catch anidado por si el JSON está corrupto
+                try {
+                    metadata = JSON.parse(fileContent);
+                } catch (parseError) {
+                    console.error(`Error parsing existing metadata.json for ${folderId}, will overwrite.`, parseError);
+                }
+            }
 
+            // 2. Crear el objeto de configuración para este análisis específico
+            const currentAnalysisConfig = {
+                ...req.body, // La configuración de la UI
+                analysisDate: new Date().toISOString()
+            };
+
+            // 3. Añadir la configuración a un historial para no perder datos
+            if (!metadata.analysisHistory) {
+                metadata.analysisHistory = [];
+            }
+            metadata.analysisHistory.push(currentAnalysisConfig);
+            
+            // También guardamos la última configuración para un acceso rápido
+            metadata.lastAnalysisConfig = currentAnalysisConfig;
+
+            // 4. Escribir el objeto de metadatos actualizado de vuelta al archivo
+            await writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
+            console.log(`Successfully updated ${metadataPath} with new analysis configuration.`);
+
+        } catch (fileError) {
+            // Si la actualización de metadatos falla, no detenemos el análisis,
+            // pero sí lo registramos como un problema.
+            console.error(`Could not update metadata.json for folder ${folderId}:`, fileError);
+        }
         // Get trajectory files
         const files = await readdir(folderPath);
         const trajectoryFiles = files
@@ -361,8 +381,7 @@ export const analyzeTrajectory = async (req: Request, res: Response) => {
         // this is async
         const analysisPromise = opendxa.analyzeTrajectory(
             trajectoryFiles,
-            join(analysisPath, 'frame_{}.json'),
-            folderId
+            join(analysisPath, 'frame_{}')
         );
 
         res.status(202).json({

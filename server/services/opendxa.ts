@@ -21,18 +21,13 @@
 **/
 
 import opendxa from '../../bindings/nodejs/index.mjs';
-import CompressionService from '@services/compression';
-import { join } from 'path';
 import type { 
     ConfigParameters,
     ProgressInfo,
     TrajectoryCallback
-} from '../../bindings/nodejs/types/index.d.ts';
-import { existsSync } from 'fs';
+} from '../../bindings/nodejs/types/index.js';
 
 class OpenDXAService{
-    private compressionService = new CompressionService();
-
     constructor(){
         // The user could have configuration profiles in the database.
         // Here, they could be retrieved and loaded. However, OpenDXA from C++ already sets the default configuration.
@@ -72,28 +67,9 @@ class OpenDXAService{
         }
     }
 
-    async analyzeTrajectory(inputFiles: string[], outputTemplate: string, folderId: string){
+    async analyzeTrajectory(inputFiles: string[], outputTemplate: string){
         return new Promise((resolve, reject) => {
-            const compressionWorkers: Promise<any>[] = [];
-
-            opendxa.setProgressCallback((progress: ProgressInfo) => {
-                // TODO: fix types
-                const outputFile = progress.frameResult.output_file;
-                if(!progress.frameResult.is_failed && existsSync(outputFile)){
-                    const compressedDir = join(process.env.ANALYSIS_DIR as string, folderId);
-                    const compressionPromise = this.compressionService.compress(outputFile, compressedDir);
-                    compressionWorkers.push(compressionPromise);
-                }
-            });
-
-            opendxa.computeTrajectory(inputFiles, outputTemplate, async () => {
-                console.log(`Waiting for ${compressionWorkers.length} compression tasks...`);
-                const compressionResults = await Promise.all(compressionWorkers);
-                const failedCompressions = compressionResults.filter((result) => !result.success).length;
-                const successfulCompressions = compressionResults.filter((result) => result.success).length;
-                console.log(`Compression completed. Success: ${successfulCompressions}, Failed: ${failedCompressions}`);
-                resolve(compressionResults);
-            });
+            opendxa.computeTrajectory(inputFiles, outputTemplate, resolve);
         });
     }
 };

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { DislocationResultsData, DislocationSegment } from '../hooks/useTimestepDataManager';
-import EditorWidget from './organisms/EditorWidget';
+import EditorWidget from '../organisms/EditorWidget';
 
 interface DislocationResultsProps {
     results: DislocationResultsData;

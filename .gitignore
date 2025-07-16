@@ -14,7 +14,7 @@ debug-data/
 
 client/wasm/zstd/dependencies
 
-node-server/storage/
+server/storage/
 
 # Logs
 logs

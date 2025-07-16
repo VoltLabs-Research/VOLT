@@ -409,7 +409,7 @@ json DislocationAnalysis::compute(
     return report;
 }
 
-json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile){
+json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& outputFile){
     auto start_time = std::chrono::high_resolution_clock::now();
     spdlog::debug("Processing frame {} with {} atoms", frame.timestep, frame.natoms);
     
@@ -625,11 +625,11 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         try{
             PROFILE("JSON Exporter - Export Analysis Data");
             result = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame, &tracer, &extractedStructureTypes);
-            _jsonExporter.exportInterfaceMeshToVTK(interfaceMesh, *structureAnalysis, "interface_mesh.vtk");
+            /*_jsonExporter.exportInterfaceMeshToVTK(interfaceMesh, *structureAnalysis, "interface_mesh.vtk");
             const int* intData = structureTypes->constDataInt();
             size_t dataSize = structureTypes->size();
             std::vector<int> tempVector(intData, intData + dataSize);
-            _jsonExporter.exportAtomsToVTK(frame, &tracer, &tempVector, "atoms.vtk");
+            _jsonExporter.exportAtomsToVTK(frame, &tracer, &tempVector, "atoms.vtk");*/
         }catch(const std::exception& e){
             result["is_failed"] = true;
             result["error"] = e.what();
@@ -641,10 +641,17 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         result["is_failed"] = false;
     }
 
-    spdlog::debug("Json output file: {}", jsonOutputFile);
+    spdlog::debug("Json output file: {}", outputFile);
 
-    if(!jsonOutputFile.empty()){
-        std::ofstream of(jsonOutputFile);
+    if(!outputFile.empty()){
+        std::ofstream of(outputFile + ".json");
+        _jsonExporter.exportAtomsToGLTF(
+            frame,   
+            &tracer,      
+            &extractedStructureTypes,  
+            outputFile + "_atoms.gltf",
+            0.5f
+        );
         of << result.dump(2);
     }
 

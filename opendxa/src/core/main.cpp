@@ -26,9 +26,9 @@ int main(int argc, char* argv[]){
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] %v");
 
     std::string filename = argv[1];
-    std::string jsonOutput = (argc >= 3) ? argv[2] : "";
+    std::string output = (argc >= 3) ? argv[2] : "";
     
-    OpenDXA::LatticeStructureType structure = OpenDXA::LATTICE_FCC;
+    OpenDXA::LatticeStructureType structure = OpenDXA::LATTICE_BCC;
     int circuitSize = 14;
     int elongation = 9;
     bool perfectOnly = false;
@@ -46,14 +46,14 @@ int main(int argc, char* argv[]){
     analyzer.setMaxTrialCircuitSize(circuitSize);
     analyzer.setCircuitStretchability(elongation);
     analyzer.setOnlyPerfectDislocations(perfectOnly);
-    analyzer.setIdentificationMode(OpenDXA::StructureAnalysis::Mode::PTM);
+    analyzer.setIdentificationMode(OpenDXA::StructureAnalysis::Mode::CNA);
 
     std::string outputFile;
-    if(!jsonOutput.empty()){
-        outputFile = jsonOutput;
+    if(!output.empty()){
+        outputFile = output;
     }else{
         std::filesystem::path inputPath(filename);
-        outputFile = inputPath.stem().string() + "_dxa_results.json";
+        outputFile = inputPath.stem().string() + "_dxa_results";
     }
     
     json result = analyzer.compute(frame, outputFile);

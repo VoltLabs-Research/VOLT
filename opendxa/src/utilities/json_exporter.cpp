@@ -10,6 +10,72 @@
 #include <algorithm>
 #include <cmath>
 
+class Base64Utils{
+private:
+    static const std::string chars;
+    
+public:
+    static std::string encode(const uint8_t* data, size_t len);
+    static std::vector<uint8_t> decode(const std::string& encoded);
+};
+
+const std::string Base64Utils::chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+std::string Base64Utils::encode(const uint8_t* data, size_t len) {
+    std::string result;
+    result.reserve(((len + 2) / 3) * 4);
+    
+    for (size_t i = 0; i < len; i += 3) {
+        uint32_t tmp = data[i] << 16;
+        if (i + 1 < len) tmp |= data[i + 1] << 8;
+        if (i + 2 < len) tmp |= data[i + 2];
+        
+        result += chars[(tmp >> 18) & 0x3F];
+        result += chars[(tmp >> 12) & 0x3F];
+        result += (i + 1 < len) ? chars[(tmp >> 6) & 0x3F] : '=';
+        result += (i + 2 < len) ? chars[tmp & 0x3F] : '=';
+    }
+    
+    return result;
+}
+
+std::vector<uint8_t> Base64Utils::decode(const std::string& encoded) {
+    std::vector<uint8_t> result;
+    if (encoded.length() % 4 != 0) return result;
+    
+    auto getValue = [](char c) -> int {
+        if (c >= 'A' && c <= 'Z') return c - 'A';
+        if (c >= 'a' && c <= 'z') return c - 'a' + 26;
+        if (c >= '0' && c <= '9') return c - '0' + 52;
+        if (c == '+') return 62;
+        if (c == '/') return 63;
+        return -1;
+    };
+    
+    for (size_t i = 0; i < encoded.length(); i += 4) {
+        uint32_t tmp = 0;
+        int padding = 0;
+        
+        for (int j = 0; j < 4; j++) {
+            if (encoded[i + j] == '=') {
+                padding++;
+            } else {
+                tmp = (tmp << 6) | getValue(encoded[i + j]);
+            }
+        }
+        
+        if (padding < 4) result.push_back((tmp >> 16) & 0xFF);
+        if (padding < 3) result.push_back((tmp >> 8) & 0xFF);
+        if (padding < 2) result.push_back(tmp & 0xFF);
+    }
+    
+    return result;
+}
+
+inline std::string base64_encode(const uint8_t* data, size_t len) {
+    return Base64Utils::encode(data, len);
+}
+
 namespace OpenDXA {
 
 // To determine the type of dislocation (screw, edge, or mixed) we must classify the 
@@ -54,6 +120,312 @@ std::string getDislocationType(const DislocationSegment* segment){
     }catch(const std::exception&){
         return "unknown";
     }
+}
+
+void DXAJsonExporter::exportAtomsToGLTF(
+    const LammpsParser::Frame& frame,
+    const BurgersLoopBuilder* tracer,
+    const std::vector<int>* structureTypes,
+    const std::string& filename,
+    float atomRadius,
+    const GLTFExportOptions& options
+) {
+    json gltf;
+
+    // --- GLTF Header ---
+    gltf["asset"] = {
+        {"version", "2.0"},
+        {"generator", "OpenDXA GLTF Exporter - Optimized"},
+        {"copyright", "Generated from DXA analysis"}
+    };
+    gltf["extensionsUsed"] = json::array({"EXT_mesh_gpu_instancing"});
+    gltf["extensionsRequired"] = json::array({"EXT_mesh_gpu_instancing"});
+    gltf["scene"] = 0;
+    gltf["scenes"] = json::array({ {{"nodes", json::array()}} });
+
+    std::vector<json> nodes;
+    std::vector<json> meshes;
+    std::vector<json> materials;
+    std::vector<json> accessors;
+    std::vector<json> bufferViews;
+    std::vector<uint8_t> bufferData;
+
+    std::map<int, std::vector<float>> lammpsTypeColors = {
+        // Gray
+        {0, {0.5f, 0.5f, 0.5f, 1.0f}},
+        // Red
+        {1, {1.0f, 0.267f, 0.267f, 1.0f}},
+        // Green
+        {2, {0.267f, 1.0f, 0.267f, 1.0f}},
+        // Blue
+        {3, {0.267f, 0.267f, 1.0f, 1.0f}},
+        // Yellow 
+        {4, {1.0f, 1.0f, 0.267f, 1.0f}},   
+        // Magenta
+        {5, {1.0f, 0.267f, 1.0f, 1.0f}},   
+        // Cyan
+        {6, {0.267f, 1.0f, 1.0f, 1.0f}}  
+    };
+
+    std::vector<int> selectedAtoms;
+    selectedAtoms.reserve(frame.natoms);
+    
+    for (int i = 0; i < frame.natoms; ++i) {
+        bool includeAtom = true;
+        
+        if (options.spatialCulling) {
+            const auto& pos = frame.positions[i];
+            double dx = pos.x() - options.cullCenter.x();
+            double dy = pos.y() - options.cullCenter.y();
+            double dz = pos.z() - options.cullCenter.z();
+            float distanceSquared = dx*dx + dy*dy + dz*dz;
+            if (distanceSquared > options.cullRadius * options.cullRadius) {
+                includeAtom = false;
+            }
+        }
+        
+        if (includeAtom) {
+            selectedAtoms.push_back(i);
+        }
+    }
+    
+    if (options.subsampleRatio < 1.0f && !selectedAtoms.empty()) {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::shuffle(selectedAtoms.begin(), selectedAtoms.end(), gen);
+        
+        int targetCount = static_cast<int>(selectedAtoms.size() * options.subsampleRatio);
+        selectedAtoms.resize(targetCount);
+    }
+    
+    if (options.maxAtoms > 0 && selectedAtoms.size() > static_cast<size_t>(options.maxAtoms)) {
+        selectedAtoms.resize(options.maxAtoms);
+    }
+    
+    std::cout << "Exportando " << selectedAtoms.size() << " de " << frame.natoms 
+              << " átomos (" << (100.0f * selectedAtoms.size() / frame.natoms) << "%)" << std::endl;
+
+    int segments, rings;
+    if (selectedAtoms.size() > 100000) {
+        segments = 6; rings = 4;  
+    } else if (selectedAtoms.size() > 10000) {
+        segments = 8; rings = 6;  
+    } else {
+        segments = 12; rings = 8; 
+    }
+    
+    std::vector<float> sphereVertices;
+    std::vector<uint16_t> sphereIndices;
+
+    float minX = atomRadius, maxX = -atomRadius;
+    float minY = atomRadius, maxY = -atomRadius;
+    float minZ = atomRadius, maxZ = -atomRadius;
+
+    for (int ring = 0; ring <= rings; ++ring) {
+        float phi = M_PI * ring / rings;
+        float y = cos(phi) * atomRadius;
+        float ringRadius = sin(phi) * atomRadius;
+        for (int segment = 0; segment <= segments; ++segment) {
+            float theta = 2.0f * M_PI * segment / segments;
+            float x = cos(theta) * ringRadius;
+            float z = sin(theta) * ringRadius;
+            
+            minX = std::min(minX, x); maxX = std::max(maxX, x);
+            minY = std::min(minY, y); maxY = std::max(maxY, y);
+            minZ = std::min(minZ, z); maxZ = std::max(maxZ, z);
+            
+            sphereVertices.push_back(x); sphereVertices.push_back(y); sphereVertices.push_back(z);
+            float norm_len = std::sqrt(x*x + y*y + z*z);
+            if (norm_len > 0.0f) {
+                sphereVertices.push_back(x / norm_len); sphereVertices.push_back(y / norm_len); sphereVertices.push_back(z / norm_len);
+            } else {
+                sphereVertices.push_back(0); sphereVertices.push_back(1); sphereVertices.push_back(0);
+            }
+        }
+    }
+
+    for (int ring = 0; ring < rings; ++ring) {
+        for (int segment = 0; segment < segments; ++segment) {
+            uint16_t current = ring * (segments + 1) + segment;
+            uint16_t next = current + segments + 1;
+            sphereIndices.push_back(current); sphereIndices.push_back(next); sphereIndices.push_back(current + 1);
+            sphereIndices.push_back(current + 1); sphereIndices.push_back(next); sphereIndices.push_back(next + 1);
+        }
+    }
+
+    size_t vertexBufferOffset = bufferData.size();
+    bufferData.insert(bufferData.end(), reinterpret_cast<uint8_t*>(sphereVertices.data()), 
+                     reinterpret_cast<uint8_t*>(sphereVertices.data()) + sphereVertices.size() * sizeof(float));
+    size_t indexBufferOffset = bufferData.size();
+    bufferData.insert(bufferData.end(), reinterpret_cast<uint8_t*>(sphereIndices.data()), 
+                     reinterpret_cast<uint8_t*>(sphereIndices.data()) + sphereIndices.size() * sizeof(uint16_t));
+
+    bufferViews.push_back({ {"buffer", 0}, {"byteOffset", vertexBufferOffset}, {"byteLength", sphereVertices.size() * sizeof(float)}, {"byteStride", sizeof(float) * 6}, {"target", 34962} });
+    bufferViews.push_back({ {"buffer", 0}, {"byteOffset", indexBufferOffset}, {"byteLength", sphereIndices.size() * sizeof(uint16_t)}, {"target", 34963} });
+    
+    accessors.push_back({ 
+        {"bufferView", 0}, {"byteOffset", 0}, {"componentType", 5126}, 
+        {"count", sphereVertices.size() / 6}, {"type", "VEC3"},
+        {"min", json::array({minX, minY, minZ})}, {"max", json::array({maxX, maxY, maxZ})}
+    });
+    accessors.push_back({ 
+        {"bufferView", 0}, {"byteOffset", sizeof(float) * 3}, {"componentType", 5126}, 
+        {"count", sphereVertices.size() / 6}, {"type", "VEC3"},
+        {"min", json::array({-1.0f, -1.0f, -1.0f})}, {"max", json::array({1.0f, 1.0f, 1.0f})}
+    });
+    accessors.push_back({ 
+        {"bufferView", 1}, {"byteOffset", 0}, {"componentType", 5123}, 
+        {"count", sphereIndices.size()}, {"type", "SCALAR"} 
+    });
+
+    std::map<int, std::vector<int>> atomsByLammpsType;
+    for (int atomIdx : selectedAtoms) {
+        int lammpsType = (atomIdx < static_cast<int>(frame.types.size())) ? frame.types[atomIdx] : 0;
+        atomsByLammpsType[lammpsType].push_back(atomIdx);
+    }
+    
+    int currentMeshIndex = 0;
+    
+    for (const auto& [lammpsType, atomIndices] : atomsByLammpsType) {
+        if (atomIndices.empty()) continue;
+
+        int totalAtoms = atomIndices.size();
+        int chunks = std::max(1, (totalAtoms + options.maxInstancesPerMesh - 1) / options.maxInstancesPerMesh);
+        int atomsPerChunk = (totalAtoms + chunks - 1) / chunks;
+        
+        for (int chunk = 0; chunk < chunks; ++chunk) {
+            int startIdx = chunk * atomsPerChunk;
+            int endIdx = std::min(startIdx + atomsPerChunk, totalAtoms);
+            if (startIdx >= endIdx) break;
+            
+            if (chunk == 0) {
+                auto colorIt = lammpsTypeColors.find(lammpsType);
+                std::vector<float> color = (colorIt != lammpsTypeColors.end()) ? colorIt->second : lammpsTypeColors[0];
+                
+                materials.push_back({
+                    {"name", "Material_LammpsType_" + std::to_string(lammpsType)},
+                    {"pbrMetallicRoughness", {
+                        {"baseColorFactor", color},
+                        {"metallicFactor", 0.1},
+                        {"roughnessFactor", 0.8}
+                    }}
+                });
+            }
+            
+            json primitive = {
+                {"attributes", { {"POSITION", 0}, {"NORMAL", 1} }},
+                {"indices", 2},
+                {"material", currentMeshIndex},
+                {"mode", 4}
+            };
+            
+            std::string meshName = "AtomSphere_Type_" + std::to_string(lammpsType);
+            if (chunks > 1) {
+                meshName += "_Chunk_" + std::to_string(chunk);
+            }
+            
+            meshes.push_back({
+                {"name", meshName},
+                {"primitives", json::array({primitive})}
+            });
+
+            std::vector<float> translations;
+            translations.reserve((endIdx - startIdx) * 3);
+            
+            float transMinX = std::numeric_limits<float>::max();
+            float transMaxX = std::numeric_limits<float>::lowest();
+            float transMinY = std::numeric_limits<float>::max();
+            float transMaxY = std::numeric_limits<float>::lowest();
+            float transMinZ = std::numeric_limits<float>::max();
+            float transMaxZ = std::numeric_limits<float>::lowest();
+            
+            for (int i = startIdx; i < endIdx; ++i) {
+                int atomIdx = atomIndices[i];
+                const auto& pos = frame.positions[atomIdx];
+                float x = pos.x(), y = pos.y(), z = pos.z();
+                
+                translations.push_back(x);
+                translations.push_back(y);
+                translations.push_back(z);
+                
+                transMinX = std::min(transMinX, x); transMaxX = std::max(transMaxX, x);
+                transMinY = std::min(transMinY, y); transMaxY = std::max(transMaxY, y);
+                transMinZ = std::min(transMinZ, z); transMaxZ = std::max(transMaxZ, z);
+            }
+
+            size_t translationBufferOffset = bufferData.size();
+            bufferData.insert(bufferData.end(), reinterpret_cast<uint8_t*>(translations.data()), 
+                             reinterpret_cast<uint8_t*>(translations.data()) + translations.size() * sizeof(float));
+
+            bufferViews.push_back({ {"buffer", 0}, {"byteOffset", translationBufferOffset}, {"byteLength", translations.size() * sizeof(float)}, {"target", 34962} });
+            
+            int translationAccessorIndex = accessors.size();
+            accessors.push_back({
+                {"bufferView", bufferViews.size() - 1},
+                {"byteOffset", 0},
+                {"componentType", 5126},
+                {"count", endIdx - startIdx},
+                {"type", "VEC3"},
+                {"min", json::array({transMinX, transMinY, transMinZ})},
+                {"max", json::array({transMaxX, transMaxY, transMaxZ})}
+            });
+
+            std::string nodeName = "Atoms_Instanced_Type_" + std::to_string(lammpsType);
+            if (chunks > 1) {
+                nodeName += "_Chunk_" + std::to_string(chunk);
+            }
+            
+            nodes.push_back({
+                {"name", nodeName},
+                {"mesh", meshes.size() - 1},
+                {"extensions", {
+                    {"EXT_mesh_gpu_instancing", {
+                        {"attributes", {
+                            {"TRANSLATION", translationAccessorIndex}
+                        }}
+                    }}
+                }}
+            });
+            
+            gltf["scenes"][0]["nodes"].push_back(nodes.size() - 1);
+        }
+        
+        currentMeshIndex++; 
+    }
+    std::string encodedBuffer = base64_encode(bufferData.data(), bufferData.size());
+
+    gltf["nodes"] = nodes;
+    gltf["meshes"] = meshes;
+    gltf["materials"] = materials;
+    gltf["accessors"] = accessors;
+    gltf["bufferViews"] = bufferViews;
+    gltf["buffers"] = json::array({
+        {
+            {"byteLength", bufferData.size()},
+            {"uri", "data:application/octet-stream;base64," + encodedBuffer}
+        }
+    });
+    
+    gltf["extras"] = {
+        {"originalAtomCount", frame.natoms},
+        {"exportedAtomCount", selectedAtoms.size()},
+        {"sphereResolution", json::array({segments, rings})},
+        {"optimizationSettings", {
+            {"maxAtoms", options.maxAtoms},
+            {"subsampleRatio", options.subsampleRatio},
+            {"spatialCulling", options.spatialCulling},
+            {"maxInstancesPerMesh", options.maxInstancesPerMesh}
+        }}
+    };
+    
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Cannot create GLTF file: " + filename);
+    }
+    file << std::setw(2) << gltf << std::endl;
+    
+    std::cout << "GLTF exportado: " << filename << std::endl;
+    std::cout << "Tamaño del buffer: " << bufferData.size() / (1024.0 * 1024.0) << " MB" << std::endl;
 }
 
 json DXAJsonExporter::exportAnalysisData(

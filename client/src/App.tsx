@@ -4,15 +4,13 @@ import FileManager from './components/organisms/FileManager/';
 import TimestepControls from './components/organisms/TimestepControls/';
 import AnalysisConfiguration from './components/organisms/AnalysisConfiguration/';
 import Scene3D from './components/organisms/Scene3D/';
-import TimestepViewer from './components/TimestepViewer';
-import DislocationViewer from './components/DislocationViewer';
-import Loader from './components/atoms/Loader';
-import FileUpload from './components/FileUpload';
-import DislocationResults from './components/DislocationResults';
-import useTimestepDataManager from './hooks/useTimestepDataManager';
-import MonacoEditor from './components/organisms/MonacoEditor';
-import type { DislocationSegment } from './hooks/useTimestepDataManager';
-import { reanalyzeTimestep } from './services/api';
+import TimestepViewer from './components/organisms/TimestepViewer';
+import FileUpload from './components/molecules/FileUpload'; 
+
+// import DislocationResults from './components/DislocationResults';
+// import MonacoEditor from './components/organisms/MonacoEditor'; 
+// import DislocationViewer from './components/DislocationViewer'; 
+
 import './App.css';
 
 const initialAnalysisConfig = {
@@ -27,21 +25,18 @@ const initialAnalysisConfig = {
     mark_core_atoms: false
 };
 
+const API_BASE_URL = 'http://192.168.1.85:8000/api/dislocations';
+
 const EditorPage: React.FC = () => {
     const [folder, setFolder] = useState<any | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playSpeed, setPlaySpeed] = useState(1);
-    const [currentTimestep, setCurrentTimestep] = useState(0);
+    const [currentTimestep, setCurrentTimestep] = useState<number | undefined>(undefined);
     const [cameraControlsEnabled, setCameraControlsEnabled] = useState(true);
-    const [selectedDislocation, setSelectedDislocation] = useState<DislocationSegment | null>(null);
     const [analysisConfig, setAnalysisConfig] = useState(initialAnalysisConfig);
-    const [refreshKey, setRefreshKey] = useState(0);
-    const [isReanalyzing, setIsReanalyzing] = useState(false);
-
+    
     const orbitControlsRef = useRef<any>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const debouncedReanalyzeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const isInitialMount = useRef(true);
 
     const folderId = useMemo(() => folder?.folderId || null, [folder]);
 
@@ -51,53 +46,31 @@ const EditorPage: React.FC = () => {
             .map((file: any) => file.timestep)
             .sort((a: number, b: number) => a - b);
     }, [folder]);
-    
-    const { data, isLoading } = useTimestepDataManager({ 
-        folderId, 
-        currentTimestep,
-        timesteps,
-        refreshKey
-    });
+
+    const { currentGltfUrl, nextGltfUrl } = useMemo(() => {
+        if (!folderId || currentTimestep === undefined || timesteps.length === 0) {
+            return { currentGltfUrl: null, nextGltfUrl: null };
+        }
+
+        const buildUrl = (ts: number) => `${API_BASE_URL}/compressed/${folderId}/frame_${ts}_atoms.gltf`;
+
+        const currentUrl = buildUrl(currentTimestep);
+
+        const currentIndex = timesteps.indexOf(currentTimestep);
+        let nextUrl = null;
+        if (currentIndex !== -1 && timesteps.length > 1) {
+            const nextIndex = (currentIndex + 1) % timesteps.length;
+            const nextTimestep = timesteps[nextIndex];
+            nextUrl = buildUrl(nextTimestep);
+        }
+
+        return { currentGltfUrl: currentUrl, nextGltfUrl: nextUrl };
+
+    }, [folderId, currentTimestep, timesteps]);
 
     const handleConfigChange = useCallback((key: string, value: any) => {
-        setAnalysisConfig(prev => ({
-            ...prev,
-            [key]: value
-        }));
+        setAnalysisConfig(prev => ({ ...prev, [key]: value }));
     }, []);
-
-    useEffect(() => {
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-            return;
-        }
-
-        if (debouncedReanalyzeTimeoutRef.current) {
-            clearTimeout(debouncedReanalyzeTimeoutRef.current);
-        }
-
-        if (folderId && currentTimestep !== undefined && !isLoading && !isPlaying) {
-            debouncedReanalyzeTimeoutRef.current = setTimeout(async () => {
-                console.log(`OpenDXA: Re-analyzing timestep ${currentTimestep} with new config...`);
-                setIsReanalyzing(true);
-                try {
-                    await reanalyzeTimestep(folderId, currentTimestep, analysisConfig);
-                    console.log(`OpenDXA: Timestep ${currentTimestep} re-analyzed successfully. Triggering data refresh.`);
-                    setRefreshKey(prev => prev + 1);
-                } catch (error) {
-                    console.error('OpenDXA: Failed to re-analyze timestep:', error);
-                } finally {
-                    setIsReanalyzing(false);
-                }
-            }, 700);
-        }
-
-        return () => {
-            if (debouncedReanalyzeTimeoutRef.current) {
-                clearTimeout(debouncedReanalyzeTimeoutRef.current);
-            }
-        };
-    }, [analysisConfig]);
 
     const handleCameraControlsEnable = useCallback((enabled: boolean) => {
         setCameraControlsEnabled(enabled);
@@ -105,10 +78,6 @@ const EditorPage: React.FC = () => {
             orbitControlsRef.current.enabled = enabled;
         }
     }, []);
-    
-    const { maxTimestep } = useMemo(() => ({
-        maxTimestep: folder?.maxTimestep || 1
-    }), [folder]);
 
     const clearPlayTimeout = useCallback(() => {
         if (timeoutRef.current) {
@@ -117,84 +86,57 @@ const EditorPage: React.FC = () => {
         }
     }, []);
 
+
     useEffect(() => {
-        clearPlayTimeout();
-        
-        if (!folder || !isPlaying || timesteps.length === 0 || playSpeed <= 0) {
+        if(!isPlaying) {
+            clearPlayTimeout();
+            return;
+        }
+
+        if(!folder || timesteps.length === 0 || playSpeed <= 0){
             return;
         }
 
         const advance = () => {
             setCurrentTimestep(prevTimestep => {
+                if (prevTimestep === undefined) return timesteps[0]; 
+                
                 const currentIndex = timesteps.indexOf(prevTimestep);
+                if (currentIndex === -1) return timesteps[0]; 
+
                 const nextIndex = (currentIndex + 1) % timesteps.length;
                 return timesteps[nextIndex];
             });
         };
 
-        if (!isLoading) {
-            timeoutRef.current = setTimeout(advance, 1000 / playSpeed);
-        }
+        timeoutRef.current = setTimeout(advance, 1000 / playSpeed);
 
         return clearPlayTimeout;
-    }, [isPlaying, playSpeed, folder, timesteps, clearPlayTimeout, currentTimestep, isLoading]);
 
-    const handleUploadError = useCallback((error: string) => {
-        console.error('OpenDXA: Upload error:', error);
+    }, [isPlaying, playSpeed, folder, timesteps, currentTimestep, clearPlayTimeout]); 
+    
+    const handleUploadError = useCallback((error: any) => {
+        console.error('Error en la subida:', error);
+        alert(`Error en la subida: ${error.message || 'Error desconocido'}`);
     }, []);
 
     const handleFolderSelection = useCallback((folderData: any) => {
-        console.log(folderData)
         setFolder(folderData);
-        setCurrentTimestep(folderData.minTimestep || 0);
+        setCurrentTimestep(folderData.minTimestep);
         setIsPlaying(false);
-        setSelectedDislocation(null);
-        isInitialMount.current = true;
-        setRefreshKey(prev => prev + 1);
     }, []);
-
-    const handlePlayPause = useCallback(() => {
-        setIsPlaying(prev => !prev);
-    }, []);
-
-    const handleTimestepChange = useCallback((timestep: number) => {
-        setCurrentTimestep(timestep);
-    }, []);
-
-    const handleDislocationSelect = useCallback((segment: DislocationSegment) => {
-        setSelectedDislocation(segment);
-    }, []);
-
-    useEffect(() => {
-        console.log('EditorPage data:', data);
-        if (data?.atoms_data) {
-            console.log('atoms_data:', data.atoms_data);
-            console.log('Number of atoms:', data.atoms_data.atoms?.length || 0);
-        }
-    }, [data]);
-
-    const streamProgress = useMemo(() => ({
-        current: currentTimestep,
-        total: maxTimestep
-    }), [currentTimestep, maxTimestep]);
+    
+    const handlePlayPause = useCallback(() => setIsPlaying(prev => !prev), []);
+    const handleTimestepChange = useCallback((timestep: number) => setCurrentTimestep(timestep), []);
 
     return (
         <main className='editor-container'>
-            <FileManager onFileSelect={handleFolderSelection} selectedFile={folder?.folderId || null} />
-            
-            {data?.dislocation_results && Object.keys(data.dislocation_results).length > 0 && (
-                <DislocationResults 
-                    results={data.dislocation_results}
-                    segments={data.dislocation_data}
-                    timestep={data.atoms_data.timestep}
-                    onDislocationSelect={handleDislocationSelect}
-                />
-            )}
+            <FileManager onFileSelect={handleFolderSelection} selectedFile={folderId} />
 
-            <MonacoEditor 
-                folderId={folderId}
-                currentTimestamp={currentTimestep}
-            />
+            {/*
+            <DislocationResults ... />
+            <MonacoEditor ... />
+            */}
 
             {folder && (
                 <TimestepControls
@@ -205,16 +147,13 @@ const EditorPage: React.FC = () => {
                     onPlayPause={handlePlayPause}
                     playSpeed={playSpeed}
                     onSpeedChange={setPlaySpeed}
-                    isConnected={!isLoading && !!data}
-                    isStreaming={isPlaying}
-                    streamProgress={streamProgress}
                 />
             )}
 
             <section className='editor-camera-info-container'>
                 <h3 className='editor-camera-info-title'>Perspective Camera</h3>
                 <p className='editor-camera-info-description'>
-                    Timestep Visualization 
+                    Visualización del Timestep {currentTimestep ?? ''}
                 </p>
             </section>
 
@@ -224,32 +163,17 @@ const EditorPage: React.FC = () => {
                     onUploadSuccess={handleFolderSelection}
                     analysisConfig={analysisConfig}
                 >
-                    {(isLoading || isReanalyzing) && (
-                        <div className='editor-analyzing-container'>
-                            <Loader scale={0.8} />
-                        </div>
-                    )}
-
                     <Scene3D
                         cameraControlsEnabled={cameraControlsEnabled}
                         onCameraControlsRef={(ref) => { orbitControlsRef.current = ref; }}
                     >
-                        {data?.atoms_data && (
-                            <TimestepViewer
-                                key={`${folderId}-${currentTimestep}-${refreshKey}`} 
-                                data={data.atoms_data}
-                                onCameraControlsEnable={handleCameraControlsEnable}
-                            />
-                        )}
+                        <TimestepViewer
+                            currentGltfUrl={currentGltfUrl}
+                            nextGltfUrl={nextGltfUrl}
+                            scale={0.1}
+                        />
 
-                        {data?.dislocation_data && data.dislocation_data.length > 0 && (
-                            <DislocationViewer
-                                segments={data.dislocation_data}
-                                scale={0.2}
-                                centerOffset={[-5, 0, 10]}
-                                selectedDislocationId={selectedDislocation?.id}
-                            />
-                        )}
+                        {/* <DislocationViewer ... /> */}
                     </Scene3D>
                 </FileUpload>
             </div>

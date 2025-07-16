@@ -16,6 +16,17 @@ namespace OpenDXA{
 
 using json = nlohmann::json;
 
+struct GLTFExportOptions{
+    int maxAtoms = -1;
+    float subsampleRatio = 1.0f; 
+    bool enableLOD = false;  
+    float lodThreshold = 1000.0f;  
+    bool spatialCulling = false;  
+    float cullRadius = 50.0f;   
+    Vector3 cullCenter = {0,0,0};  
+    int maxInstancesPerMesh = 65536; 
+};
+
 class DXAJsonExporter{
 public:
     explicit DXAJsonExporter(const std::string& filename = "")
@@ -29,6 +40,15 @@ public:
         const std::vector<int>* structureTypes = nullptr,
         bool includeDetailedNetworkInfo = true,
         bool includeTopologyInfo = true
+    );
+
+    void exportAtomsToGLTF(
+        const LammpsParser::Frame& frame,
+        const BurgersLoopBuilder* tracer,
+        const std::vector<int>* structureTypes,
+        const std::string& filename,
+        float atomRadius,
+        const GLTFExportOptions& options = GLTFExportOptions{}
     );
 
     json exportClusterGraphToJson(const ClusterGraph* graph);
