@@ -7,7 +7,7 @@ import './TimestepControls.css';
 
 interface TimestepControlsProps {
     folderInfo: {
-        folder_id: string;
+        folderId: string;
         timesteps: number;
         min_timestep: number;
         max_timestep: number;
@@ -31,9 +31,7 @@ const TimestepControls: React.FC<TimestepControlsProps> = ({
     onPlayPause,
     playSpeed,
     onSpeedChange,
-    isConnected,
-    isStreaming,
-    streamProgress
+    isConnected
 }) => {
     const { min_timestep, max_timestep } = folderInfo;
 

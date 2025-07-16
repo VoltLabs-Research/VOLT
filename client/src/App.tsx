@@ -43,7 +43,7 @@ const EditorPage: React.FC = () => {
     const debouncedReanalyzeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isInitialMount = useRef(true);
 
-    const folderId = useMemo(() => folder?.folder_id || null, [folder]);
+    const folderId = useMemo(() => folder?.folderId || null, [folder]);
     const timesteps = useMemo(() => folder?.timesteps || [], [folder]);
     
     const { data, isLoading } = useTimestepDataManager({ 
@@ -173,7 +173,7 @@ const EditorPage: React.FC = () => {
 
     return (
         <main className='editor-container'>
-            <FileManager onFileSelect={handleFolderSelection} selectedFile={folder?.folder_id || null} />
+            <FileManager onFileSelect={handleFolderSelection} selectedFile={folder?.folderId || null} />
             
             {data?.dislocation_results && Object.keys(data.dislocation_results).length > 0 && (
                 <DislocationResults 

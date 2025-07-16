@@ -19,6 +19,19 @@ export interface ProgressInfo {
 
 export type ProgressCallback = (progress: ProgressInfo) => void;
 
+export interface ConfigParameters {
+    crystalStructure?: LatticeStructure,
+    maxTrialCircuitSize?: number;
+    maxTrialCircuitSize?: number;
+    circuitStretchability?: number;
+    onlyPerfectDislocations?: boolean;
+    markCoreAtoms?: boolean;
+    lineSmoothingLevel?: number;
+    linePointInterval?: number;
+    defectMeshSmoothingLevel?: number;
+    identificationMode?: IdentificationMode
+}
+
 export interface AnalysisResult {
     is_failed?: boolean;
     error?: string;

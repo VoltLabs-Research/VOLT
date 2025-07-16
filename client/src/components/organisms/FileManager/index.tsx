@@ -54,13 +54,13 @@ const FileManager: React.FC<FileManagerProps> = ({
                         <Loader scale={0.5} />
                     </div>
                 ) : (
-                    data?.map(({ folder_id, ...folder_data }) => (
+                    data?.map(({ folderId, ...folder_data }) => (
                         <FileItem
-                            key={folder_id}
-                            folderId={folder_id}
-                            isSelected={selectedFile === folder_id}
-                            onSelect={() => onFileSelect({ folder_id, ...folder_data })}
-                            onDelete={(e) => handleDelete(folder_id, e)}
+                            key={folderId}
+                            folderId={folderId}
+                            isSelected={selectedFile === folderId}
+                            onSelect={() => onFileSelect({ folderId, ...folder_data })}
+                            onDelete={(e) => handleDelete(folderId, e)}
                         />
                     ))
                 )}

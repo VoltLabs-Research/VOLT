@@ -131,7 +131,7 @@ print(result)`
 
         try {
             const contextData = {
-                folder_id: params.folderId,
+                folderId: params.folderId,
                 timestep: params.currentTimestamp,
             };
             
