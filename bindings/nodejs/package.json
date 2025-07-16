@@ -9,7 +9,7 @@
     "prebuild": "npm run clean",
     "build": "node-gyp rebuild && npm run build:ts",
     "build:native": "node-gyp rebuild",
-    "build:ts": "tsc",
+    "build:ts": "",
     "clean": "node-gyp clean && rm -rf dist build",
     "configure": "node-gyp configure",
     "install": "npm run build",

@@ -655,7 +655,7 @@ void CleanupModule(void* arg) {
 // Initialize the module
 Napi::Object Init(Napi::Env env, Napi::Object exports){
     napi_add_env_cleanup_hook(env, CleanupModule, nullptr);
-    
+
     // Export functions
     exports.Set("compute", Napi::Function::New(env, Compute));
     exports.Set("setMaxTrialCircuitSize", Napi::Function::New(env, SetMaxTrialCircuitSize));
