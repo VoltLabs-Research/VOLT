@@ -1,0 +1,49 @@
+.editor-floating-container {
+    position: absolute;
+    background-color: rgb(30 30 30 / 42%);
+    border: 1px solid #212121;
+    backdrop-filter: blur(5px);
+    z-index: 200;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    color: #cacaca;
+    line-height: 1.6rem;
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    cursor: grab;
+}
+
+.editor-floating-container:active {
+    cursor: grabbing;
+}
+
+.editor-floating-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.editor-floating-header-title {
+    font-weight: 500;
+}
+
+.editor-floating-header-icon {
+    color: #cacaca;
+}
+
+.editor-floating-body-container {
+    min-height: 250px;
+    overflow: scroll;
+    max-height: 500px;
+    height: 100%;
+}
+
+@media screen and (max-width: 768px) {
+    .editor-floating-container {
+        left: 0;
+        width: calc(100vw - 2rem);
+        margin: 0 1rem;
+    }
+}

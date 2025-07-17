@@ -1,0 +1,26 @@
+.editor-timesteps-controls-speed {
+    display: flex;
+    align-items: center;
+    color: #dadada;
+    gap: 8px;
+}
+
+.editor-timesteps-controls-speed input[type='range'] {
+    width: 80px;
+    height: 4px;
+}
+
+@media screen and (max-width: 768px) {
+    .editor-timesteps-controls-speed {
+        width: auto;
+        min-width: 120px;
+        flex: 1;
+    }
+    
+    .editor-timesteps-controls-speed label {
+        font-size: 0.75rem;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+    }
+}

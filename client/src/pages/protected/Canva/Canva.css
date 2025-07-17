@@ -1,0 +1,177 @@
+.editor-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: space-between;
+}
+
+.editor-camera-info-container {
+    position: absolute;
+    z-index: 100;
+    top: 2rem;
+    left: 2rem;
+    color: #FFF;
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+}
+
+.editor-camera-info-title {
+    font-weight: 500;
+}
+
+.editor-analyzing-container{
+    position: absolute;
+    backdrop-filter: blur(1px);
+    background-color: rgba(0, 0, 0, .3);
+    width: 100%;
+    height: 100vh;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.editor-camera-info-description {
+    font-weight: 400;
+    color: #d8d8d8;
+}
+
+.editor-dislocations-button-container {
+    background-color: #fd5b01;
+    padding: 1rem 4.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: .5rem;
+    color: #FFF;
+    border-radius: 5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: absolute;
+    bottom: 2rem;
+    right: 2rem;
+}
+
+.editor-dislocations-button-container:hover {
+    opacity: 0.9;
+}
+
+.dislocation-result-type{
+    width: .4rem;
+    height: .4rem;
+    border-radius: 50%;
+}
+
+.dislocation-result-item-title{
+    font-size: .96rem;
+}
+
+.dislocation-result-item-header-container{
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.dislocation-results-container{
+    top: 7rem;
+    left: 2rem;
+    width: 400px;
+    height: 550px;
+    overflow: hidden;
+}
+
+.dislocation-results-summary-container{
+    position: absolute;
+    bottom: 0;
+    display: flex;
+    backdrop-filter: blur(5px);
+    background-color: rgb(30 30 30 / 91%);
+    border: 1px solid #212121;
+    left: 0;
+    bottom: -11px;
+    border-radius: 2rem;
+    padding: .5rem 1rem;
+    margin: 0 auto;
+    width: 97%;
+    justify-content: space-between;
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.dislocation-result-data-container{
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+}
+
+.dislocation-result-data{
+    display: flex;
+    width: 100%;
+    gap: .5rem;
+    align-items: center;
+}
+
+.dislocation-result-item{
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+}
+
+.dislocation-result-data .data-value{
+    color: #b3b3b3;
+}
+
+.dislocation-summary-item{
+    display: flex;
+    gap: .5rem;
+}
+
+.dislocation-summary-value{
+    font-size: .8rem;
+}
+
+.dislocation-summary-label{
+    font-size: .8rem;
+}
+
+.dislocation-results-body-container{
+    max-height: 500px;
+    padding-bottom: 2rem;
+    overflow-y: scroll;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.editor-dislocations-button-container:active {
+    transform: scale(.99);
+}
+
+.editor-dislocations-button-icon {
+    font-size: 1.5rem;
+}
+
+.editor-dislocations-button-text {
+    font-weight: 500;
+}
+
+.file-upload-loader-container{
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, .2);
+    backdrop-filter: blur(1px);
+    display: flex;
+    top: 0;
+    position: absolute;
+    justify-content: center;
+    align-items: center;
+    z-index: 500;
+}
+
+.file-upload-loader-container p{
+    margin-top: 7rem;
+    color: #dadada;
+}

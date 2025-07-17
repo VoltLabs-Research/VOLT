@@ -1,0 +1,26 @@
+.editor-timestep-controls {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    width: auto;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+    align-items: center;
+}
+
+@media screen and (max-width: 768px) {
+    .editor-timestep-controls {
+        flex-direction: row;
+        bottom: 1rem;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .editor-timestep-controls-play-pause-button {
+        order: 0;
+        margin-bottom: 0;
+        font-size: 1rem;
+    }
+}

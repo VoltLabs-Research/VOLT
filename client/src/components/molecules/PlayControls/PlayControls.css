@@ -1,0 +1,20 @@
+.editor-timestep-controls-play-pause-button{
+    background-color: transparent;
+    color: #DADADA;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.editor-timestep-controls-play-pause-button:hover{
+    opacity: .9;
+}
+
+.editor-timestep-controls-play-pause-button:active{
+    transform: scale(.95);
+}
+
+.editor-timestep-controls-play-pause-button:disabled{
+    opacity: 0.5;
+    cursor: not-allowed;
+}
