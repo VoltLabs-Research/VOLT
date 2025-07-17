@@ -1,0 +1,92 @@
+.sidebar-container{
+    width: 350px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.sidebar-nav-option-container:hover,
+.sidebar-nav-option-container.selected{
+    background-color: #f5f5f5;
+    border-radius: .5rem;
+}
+
+.sidebar-nav-option-icon-container{
+    font-size: 1.1rem;
+}
+
+.sidebar-nav-container{
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.sidebar-nav-option-container{
+    display: flex;
+    cursor: pointer;
+    padding: .8rem;
+    align-items: center;
+    gap: .8rem;
+}
+
+.sidebar-user-container{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sidebar-nav-option-name{
+    font-size: 1rem;
+    font-weight: 450;
+}
+
+.sidebar-user-avatar-container{
+    background-image: linear-gradient(to right, #7028e4 0%, #4a57ca 100%);
+    width: 40px;
+    border-radius: .5rem;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #FFF;
+    font-weight: 500;
+    font-size: 1.2rem;
+}
+
+.sidebar-user-fullname{
+    font-size: 1.1rem;
+}
+
+.sidebar-top-container,
+.sidebar-bottom-container{
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 2rem 2.5rem;
+}
+
+.sidebar-teams-container{
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sidebar-new-team-container{
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    outline: 1px dashed #dadada;
+    border-radius: .25rem;
+    padding: .8rem;
+    cursor: pointer;
+}
+
+.sidebar-new-team-container:hover{
+    background-color: #ececec;
+    outline: none;
+}
+
+.sidebar-new-team-title{
+    font-size: .9rem;
+}
