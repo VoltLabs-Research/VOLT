@@ -6,6 +6,8 @@ import { GrHomeOption } from 'react-icons/gr';
 import { HiPlus } from 'react-icons/hi';
 import { IoIosHelpCircleOutline } from 'react-icons/io';
 import { GoTrash } from 'react-icons/go';
+import { PiDotsThreeVerticalBold } from "react-icons/pi";
+import SimpExampleCover from '../../../assets/images/simulation-example-cover.png'
 import './Dashboard.css';
 
 const DashboardPage = () => {
@@ -70,6 +72,21 @@ const DashboardPage = () => {
                         </div>
                     ))}
                 </article>
+            </section>
+
+            <section className='dashboard-container'>
+                <figure className='simulation-container'>
+                    <img className='simulation-image' src={SimpExampleCover} />
+                    <figcaption className='simulation-caption-container'>
+                        <div className='simulation-caption-left-container'>
+                            <h3 className='simulation-caption-title'>FCC Test Simulation</h3>
+                            <p className='simulation-last-edited'>Edited 6 hours ago</p>
+                        </div>
+                        <i className='simulation-options-icon-container'>
+                            <PiDotsThreeVerticalBold />
+                        </i>
+                    </figcaption>
+                </figure>
             </section>
         </main>
     );
