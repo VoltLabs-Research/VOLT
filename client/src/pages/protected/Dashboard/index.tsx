@@ -7,6 +7,8 @@ import { HiPlus } from 'react-icons/hi';
 import { IoIosHelpCircleOutline } from 'react-icons/io';
 import { GoTrash } from 'react-icons/go';
 import { PiDotsThreeVerticalBold } from "react-icons/pi";
+import { MdKeyboardArrowDown } from "react-icons/md";
+import { IoSearchOutline } from "react-icons/io5";
 import SimpExampleCover from '../../../assets/images/simulation-example-cover.png'
 import './Dashboard.css';
 
@@ -75,6 +77,37 @@ const DashboardPage = () => {
             </section>
 
             <section className='dashboard-container'>
+                <article className='dashboard-header-container'>
+                    <div className='dashboard-header-left-container'>
+                        <h3 className='dashboard-header-title'>Dashboard</h3>
+                        <div className='clickable-container'>
+                            <i className='clickable-icon-container'>
+                                <HiPlus />
+                            </i>
+                            <span className='clickable-title'>New Folder</span>
+                        </div>
+                    </div>
+
+                    <div className='dashboard-header-right-container'>
+                        <div className='search-container'>
+                            <i className='search-icon-container'>
+                                <IoSearchOutline />
+                            </i>
+                            <input placeholder='Search' className='search-input '/>
+                        </div>
+
+                        <div className='create-new-button-container'>
+                            <i className='create-new-button-icon-container'>
+                                <HiPlus />
+                            </i>
+                            <span className='create-new-button-title'>Create</span>
+                            <i className='create-new-button-dropdown-icon-container'>
+                                <MdKeyboardArrowDown />
+                            </i>
+                        </div>
+                    </div>
+                </article>
+
                 <figure className='simulation-container'>
                     <img className='simulation-image' src={SimpExampleCover} />
                     <figcaption className='simulation-caption-container'>
