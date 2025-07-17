@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import bodyParser from 'body-parser';
 import compression from 'compression';
 import cors from 'cors';
+import '@config/redis';
 
 import { configureApp } from '@utilities/bootstrap';
 

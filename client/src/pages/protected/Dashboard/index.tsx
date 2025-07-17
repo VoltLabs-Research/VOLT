@@ -9,6 +9,7 @@ import { GoTrash } from 'react-icons/go';
 import { PiDotsThreeVerticalBold } from "react-icons/pi";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { IoSearchOutline } from "react-icons/io5";
+import { HiArrowUp } from "react-icons/hi";
 import SimpExampleCover from '../../../assets/images/simulation-example-cover.png'
 import './Dashboard.css';
 
@@ -121,6 +122,21 @@ const DashboardPage = () => {
                     </figcaption>
                 </figure>
             </section>
+
+            <div className='ai-prompt-container-wrapper'>
+                <div className='ai-prompt-add-file-container'>
+                    <i className='ai-prompt-add-file-icon-container'>
+                        <HiPlus />
+                    </i>
+                    <span className='ai-prompt-add-file-title'>Add files</span>
+                </div>
+                <div className='ai-prompt-container'>
+                    <input className='ai-prompt-input' placeholder="I'm here to help you, ask me for anything." />
+                    <i className='ai-prompt-icon-container'>
+                        <HiArrowUp />
+                    </i>
+                </div>
+            </div>
         </main>
     );
 };
