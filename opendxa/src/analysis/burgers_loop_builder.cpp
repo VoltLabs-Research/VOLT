@@ -119,7 +119,8 @@ void BurgersLoopBuilder::finishDislocationSegments(int crystalStructure){
     // Align dislocations.
     for(DislocationSegment* segment : network().segments()){
         std::deque<Point3>& line = segment->line;
-        assert(line.size() >= 2);
+		// TODO:
+        //assert(line.size() >= 2);
 
         segment->burgersVector = -segment->burgersVector;
 

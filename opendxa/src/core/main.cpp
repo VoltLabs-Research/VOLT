@@ -28,7 +28,7 @@ int main(int argc, char* argv[]){
     std::string filename = argv[1];
     std::string output = (argc >= 3) ? argv[2] : "";
     
-    OpenDXA::LatticeStructureType structure = OpenDXA::LATTICE_BCC;
+    OpenDXA::LatticeStructureType structure = OpenDXA::LATTICE_FCC;
     int circuitSize = 14;
     int elongation = 9;
     bool perfectOnly = false;
