@@ -440,7 +440,7 @@ json DXAJsonExporter::exportAnalysisData(
     json data;
 
     data["dislocations"] = exportDislocationsToJson(network, includeDetailedNetworkInfo, &frame.simulationCell);
-    data["interface_mesh"] = getInterfaceMeshData(interfaceMesh, includeTopologyInfo);
+    data["interface_mesh"] = getInterfaceMeshData(interfaceMesh, interfaceMesh->structureAnalysis(), includeTopologyInfo);
     data["atoms"] = getAtomsData(frame, tracer, structureTypes);
     //data["cluster_graph"] = exportClusterGraphToJson(&network->clusterGraph());
     data["simulation_cell"] = getExtendedSimulationCellInfo(frame.simulationCell);
@@ -839,8 +839,12 @@ void DXAJsonExporter::exportDislocationsToVTK(
     spdlog::info("Dislocations exported to VTK: {}", filename);
 }
 
-json DXAJsonExporter::exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo, const SimulationCell* simulationCell){
-    json dislocations;
+json DXAJsonExporter::exportDislocationsToJson(
+    const DislocationNetwork* network, 
+    bool includeDetailedInfo, 
+    const SimulationCell* simulationCell
+){
+      json dislocations;
     const auto& segments = network->segments();
     
     dislocations["metadata"] = {
@@ -985,103 +989,108 @@ json DXAJsonExporter::exportDislocationsToJson(const DislocationNetwork* network
     return dislocations;
 }
 
-json DXAJsonExporter::getInterfaceMeshData(const InterfaceMesh* interfaceMesh, bool includeTopologyInfo) {
+json DXAJsonExporter::getInterfaceMeshData(
+    const InterfaceMesh* interfaceMesh,
+    const StructureAnalysis& structureAnalysis,
+    bool includeTopologyInfo
+){
     json meshData;
-    const auto& meshVertices = interfaceMesh->vertices();
-    const auto& meshFaces = interfaceMesh->faces();
-    
-    std::set<std::pair<int, int>> edgeSet;
-    for(const auto* face : meshFaces){
-        if(face && face->edges()){
-            auto* edge = face->edges();
-            do{
-                if(edge->vertex1() && edge->vertex2()){
-                    int v1 = edge->vertex1()->index();
-                    int v2 = edge->vertex2()->index();
-                    if (v1 > v2) std::swap(v1, v2);  
-                    edgeSet.insert({v1, v2});
-                }
-                edge = edge->nextFaceEdge();
-            }while(edge && edge != face->edges());
+    const auto& originalVertices = interfaceMesh->vertices();
+    const auto& originalFaces = interfaceMesh->faces();
+    const auto& cell = structureAnalysis.cell();
+
+    std::vector<Point3> exportPoints;
+    exportPoints.reserve(originalVertices.size());
+
+    std::vector<int> originalToExportVertexMap(originalVertices.size());
+
+    for(size_t i = 0; i < originalVertices.size(); ++i){
+        exportPoints.push_back(originalVertices[i]->pos());
+        originalToExportVertexMap[i] = i;
+    }
+
+    std::vector<std::vector<int>> exportFaces;
+    exportFaces.reserve(originalFaces.size());
+
+    for(const auto* face : originalFaces){
+        if (!face || !face->edges()) continue;
+
+        std::vector<int> faceVertexIndices;
+        std::vector<Point3> faceVertexPositions;
+
+        auto* startEdge = face->edges();
+        auto* currentEdge = startEdge;
+        do{
+            faceVertexIndices.push_back(currentEdge->vertex1()->index());
+            faceVertexPositions.push_back(currentEdge->vertex1()->pos());
+            currentEdge = currentEdge->nextFaceEdge();
+        }while(currentEdge != startEdge);
+
+        cell.unwrapPositions(faceVertexPositions.data(), faceVertexPositions.size());
+
+        std::vector<int> newFaceIndices;
+        for(size_t i = 0; i < faceVertexIndices.size(); ++i){
+            int originalIndex = faceVertexIndices[i];
+            const Point3& originalPos = originalVertices[originalIndex]->pos();
+            const Point3& unwrappedPos = faceVertexPositions[i];
+
+            if(!originalPos.equals(unwrappedPos, 1e-6)){
+                newFaceIndices.push_back(exportPoints.size());
+                exportPoints.push_back(unwrappedPos);
+            }else{
+                newFaceIndices.push_back(originalToExportVertexMap[originalIndex]);
+            }
         }
+        exportFaces.push_back(newFaceIndices);
     }
     
     meshData["metadata"] = {
         {"type", "interface_mesh"},
-        {"count", static_cast<int>(meshFaces.size())},
+        {"count", static_cast<int>(originalFaces.size())},
         {"components", {
-            {"num_nodes", static_cast<int>(meshVertices.size())},
-            {"num_facets", static_cast<int>(meshFaces.size())},
-            {"num_edges", static_cast<int>(edgeSet.size())}
+            {"num_nodes", static_cast<int>(exportPoints.size())},
+            {"num_facets", static_cast<int>(exportFaces.size())}
         }}
     };
-    
-    json points = json::array();
-    for(size_t i = 0; i < meshVertices.size(); ++i){
-        const auto* vertex = meshVertices[i];
-        if(vertex){
-            json pointJson;
-            pointJson["index"] = static_cast<int>(i);
-            pointJson["position"] = json::array({vertex->pos().x(), vertex->pos().y(), vertex->pos().z()});
-            points.push_back(pointJson);
-        }
-    }
-    
-    json edges = json::array();
-    for(const auto& edgePair : edgeSet){
-        json edgeJson;
-        edgeJson["vertices"] = json::array({edgePair.first, edgePair.second});
-        edgeJson["edge_count"] = 1;
-        edges.push_back(edgeJson);
-    }
-    
-    json facets = json::array();
-    for(size_t i = 0; i < meshFaces.size(); ++i){
-        const auto* face = meshFaces[i];
-        if(face){
-            json facetJson;
-            json vertices = json::array();
-            if(face->edges()){
-                auto* edge = face->edges();
-                do{
-                    if(edge->vertex1()){
-                        vertices.push_back(edge->vertex1()->index());
-                    }
-                    edge = edge->nextFaceEdge();
-                }while(edge && edge != face->edges() && vertices.size() < 10); 
-            }
-            
-            while(vertices.size() < 3){
-                vertices.push_back(0);
-            }
 
-            if(vertices.size() > 3){
-                vertices = json::array({vertices[0], vertices[1], vertices[2]});
-            }
-            
-            facetJson["vertices"] = vertices;
-            facets.push_back(facetJson);
-        }
+    json points = json::array();
+    for(size_t i = 0; i < exportPoints.size(); ++i){
+        const auto& pos = exportPoints[i];
+        points.push_back({
+            {"index", static_cast<int>(i)},
+            {"position", {pos.x(), pos.y(), pos.z()}}
+        });
     }
-    
+
+    json facets = json::array();
+    for(const auto& faceIndices : exportFaces){
+        assert(faceIndices.size() == 3 && "The interface mesh does not contain any triangular faces.");
+        facets.push_back({
+            {"vertices", faceIndices}
+        });
+    }
+
     meshData["data"] = {
         {"points", points},
-        {"edges", edges},
         {"facets", facets}
     };
     
-    meshData["summary"] = {
-        {"segment_facets", static_cast<int>(meshFaces.size())},
-        {"connectivity_stats", {
-            {"total_connections", static_cast<int>(edgeSet.size())},
-            {"unique_segments", static_cast<int>(meshFaces.size())}
-        }}
-    };
-    
     if(includeTopologyInfo){
+        std::set<std::pair<int, int>> originalEdgeSet;
+        for(const auto* face : originalFaces){
+            if(!face || !face->edges()) continue;
+            auto* edge = face->edges();
+            do{
+                int v1 = edge->vertex1()->index();
+                int v2 = edge->vertex2()->index();
+                if (v1 > v2) std::swap(v1, v2);  
+                originalEdgeSet.insert({v1, v2});
+                edge = edge->nextFaceEdge();
+            }while(edge != face->edges());
+        }
+
         meshData["topology"] = {
-            {"euler_characteristic", static_cast<int>(meshVertices.size()) - static_cast<int>(edgeSet.size()) + static_cast<int>(meshFaces.size())},
-            {"average_vertex_degree", calculateAverageVertexDegree(interfaceMesh)},
+            {"euler_characteristic", static_cast<int>(originalVertices.size()) - static_cast<int>(originalEdgeSet.size()) + static_cast<int>(originalFaces.size())},
             {"is_completely_good", interfaceMesh->isCompletelyGood()},
             {"is_completely_bad", interfaceMesh->isCompletelyBad()}
         };

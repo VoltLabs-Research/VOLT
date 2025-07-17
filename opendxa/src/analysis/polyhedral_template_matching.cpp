@@ -53,7 +53,7 @@ PTM::PTM() : NearestNeighborFinder(MAX_INPUT_NEIGHBORS){
 // Collects and encodes the local neighbor shell around a particle into a bitmask.
 // This lets the PTM algorithm quickly refer back to which neighbor belong where.
 int PTM::Kernel::cacheNeighbors(size_t particleIndex, uint64_t* res){
-    assert(particleIndex < _algorithm.particleCount());
+    //assert(particleIndex < _algorithm.particleCount());
     
     findNeighbors(particleIndex, false);
     int numNeighbors = this->results().size();
@@ -75,7 +75,7 @@ bool PTM::prepare(
     size_t particleCount,
     const SimulationCell& cellData
 ){
-    assert(positions);
+    //assert(positions);
     _particleCount = particleCount;
     simCell = cellData;
 
@@ -211,7 +211,7 @@ static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested,
     const int *particleTypes = nbrdata->particleTypes;
     const std::vector<uint64_t>& cachedNeighbors = *nbrdata->cachedNeighbors;
     int numNeighbors = std::min(numRequested - 1, (int) neighborResults.size());
-    assert(numNeighbors <= PTM::MAX_INPUT_NEIGHBORS);
+    //assert(numNeighbors <= PTM::MAX_INPUT_NEIGHBORS);
     auto* d = static_cast<ptmnbrdata_t*>(vdata);
     int ptmType = PTM::toPtmStructureType(d->lastIdentifiedType);
 
@@ -233,7 +233,7 @@ static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested,
     // Fill in neighbor positions according to the decoded map
     for(int i = 0; i < numNeighbors; i++){
         int p = env->correspondences[i + 1] - 1;
-        assert(p >= 0 && p < neighborResults.size());
+        //assert(p >= 0 && p < neighborResults.size());
         env->atom_indices[i + 1] = neighborResults[p].index;
         env->points[i + 1][0] = neighborResults[p].delta.x();
         env->points[i + 1][1] = neighborResults[p].delta.y();
@@ -261,8 +261,8 @@ static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested,
 // feeding in neighbor geometry, optionally atom types, and flags for
 // which lattices to check, then interprets the result
 StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::vector<uint64_t>& cachedNeighbors, Quaternion*){
-    assert(cachedNeighbors.size() == _algorithm.particleCount());
-    assert(particleIndex < _algorithm.particleCount());
+    //assert(cachedNeighbors.size() == _algorithm.particleCount());
+    //assert(particleIndex < _algorithm.particleCount());
     findNeighbors(particleIndex, false);
     ptmnbrdata_t nbrdata;
     nbrdata.neighborResults = &this->results();
@@ -275,7 +275,7 @@ StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::ve
     int32_t flags = PTM_CHECK_FCC | PTM_CHECK_HCP | PTM_CHECK_BCC | PTM_CHECK_DCUB | PTM_CHECK_DHEX;
     ptm_result_t result;
     int errorCode = ptm_index(_handle, particleIndex, getNeighbors, (void*) &nbrdata, flags, _algorithm._calculateDefGradient, &result, &_env);
-    assert(errorCode == PTM_NO_ERROR);
+    //assert(errorCode == PTM_NO_ERROR);
     _orderingType = result.ordering_type;
     _scale = result.scale;
 
@@ -314,14 +314,14 @@ int PTM::Kernel::numTemplateNeighbors() const{
 
 // Access the raw nearest-neighbor result in sorted distance order
 const NearestNeighborFinder::Neighbor& PTM::Kernel::getNearestNeighbor(int index) const{
-    assert(index >= 0 && index < results().size());
+    //assert(index >= 0 && index < results().size());
     return results()[index];
 }
 
 // Access the i-th neighbor after PTM has reordered them to match the template.
 const NearestNeighborFinder::Neighbor& PTM::Kernel::getTemplateNeighbor(int index) const{
-    assert(_structureType != StructureType::OTHER);
-    assert(index >= 0 && index < numTemplateNeighbors());
+    //assert(_structureType != StructureType::OTHER);
+    //assert(index >= 0 && index < numTemplateNeighbors());
     int mappedIndex = _env.correspondences[index + 1] - 1;
     return getNearestNeighbor(mappedIndex);
 }

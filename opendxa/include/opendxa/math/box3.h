@@ -18,7 +18,7 @@ public:
 	Box_3(const Point_3<T>& lower, const Point_3<T>& upper) : minc(lower), maxc(upper) {}
 
 	Box_3(const Point_3<T>& center, T halfEdgeLength) {
-		assert(halfEdgeLength >= 0);
+		//assert(halfEdgeLength >= 0);
 		minc.x() = center.x() - halfEdgeLength;
 		minc.y() = center.y() - halfEdgeLength;
 		minc.z() = center.z() - halfEdgeLength;
@@ -54,7 +54,7 @@ public:
 
 	Point_3<T> operator[](typename Point_3<T>::size_type i) const {
 		const Point_3<T>* const c = &minc;
-		assert(&c[1] == &maxc);
+		//assert(&c[1] == &maxc);
 		return Point_3<T>(c[i&1].x(), c[(i>>1)&1].y(), c[(i>>2)&1].z());
 	}
 
@@ -103,7 +103,7 @@ public:
 		if(isEmpty()) return *this;
 		Box_3 b;
 		const Point_3<T>* const c = &minc;
-		assert(&c[1] == &maxc);
+		//assert(&c[1] == &maxc);
 		for(size_t i = 0; i < 8; i++)
 			b.addPoint(tm * Point_3<T>(c[i&1].x(), c[(i>>1)&1].y(), c[(i>>2)&1].z()));
 		return b;

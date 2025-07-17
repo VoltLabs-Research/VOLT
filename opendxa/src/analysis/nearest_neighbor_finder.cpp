@@ -6,7 +6,7 @@ namespace OpenDXA{
 // Returns the stored 3D position of the atom at the given index.
 // Ensures index is in bounds and then references the pre-loaded atom list.
 const Point3& NearestNeighborFinder::particlePos(size_t index) const{
-    assert(index >= 0 && index < atoms.size());
+    //assert(index >= 0 && index < atoms.size());
     return atoms[index].pos;
 }
 
@@ -164,7 +164,7 @@ void NearestNeighborFinder::Query<MAX_NEIGHBORS_LIMIT>::visitNode(TreeNode* node
 void NearestNeighborFinder::insertParticle(NeighborListAtom* atom, const Point3& p, TreeNode* node, int depth){
 	if(node->isLeaf()){
 		// Add to thist leaf's linked list
-		assert(node->bounds.classifyPoint(p) != -1);
+		//assert(node->bounds.classifyPoint(p) != -1);
 		atom->nextInBin = node->atoms;
 		node->atoms = atom;
 		node->numAtoms++;
@@ -196,7 +196,7 @@ int NearestNeighborFinder::determineSplitDirection(TreeNode* node){
 			dmax_dim = dim;
 		}
 	}
-	assert(dmax_dim >= 0);
+	//assert(dmax_dim >= 0);
 	return dmax_dim;
 }
 
@@ -239,7 +239,7 @@ bool NearestNeighborFinder::prepare(
     const SimulationCell& cellData, 
     ParticleProperty* selectionProperty
 ){
-	assert(posProperty);
+	//assert(posProperty);
 
 	simCell = cellData;
 

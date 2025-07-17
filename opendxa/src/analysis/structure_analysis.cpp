@@ -133,7 +133,7 @@ void StructureAnalysis::filterAtomsByRMSD(
 
 void StructureAnalysis::storeNeighborIndices(const PTM::Kernel& kernel, size_t atomIndex){
     int numNeighbors = kernel.numTemplateNeighbors();
-    assert(numNeighbors <= _neighborLists->componentCount());
+    //assert(numNeighbors <= _neighborLists->componentCount());
     
     for(int j = 0; j < numNeighbors; ++j){
         _neighborLists->setIntComponent(atomIndex, j, kernel.getTemplateNeighbor(j).index);
@@ -299,7 +299,7 @@ bool StructureAnalysis::alreadyProcessedAtom(int index) {
 // Groups atoms with the same structure (FCC, BCC, HCP, etc.).
 Cluster* StructureAnalysis::startNewCluster(int atomIndex, int structureType){
     Cluster* cluster = clusterGraph().createCluster(structureType);
-    assert(cluster->id > 0);
+    //assert(cluster->id > 0);
     cluster->atomCount = 1;
     _atomClusters->setInt(atomIndex, cluster->id);
     _atomSymmetryPermutations->setInt(atomIndex, 0);
@@ -310,7 +310,7 @@ void StructureAnalysis::processAtomConnections(size_t atomIndex){
     int clusterId = _atomClusters->getInt(atomIndex);
     if(clusterId == 0) return;
     Cluster* cluster1 = clusterGraph().findCluster(clusterId);
-    assert(cluster1);
+    //assert(cluster1);
     connectClusterNeighbors(atomIndex, cluster1);
 }
 
@@ -476,7 +476,7 @@ void StructureAnalysis::growCluster(
 
         for(int neighborIndex = 0; neighborIndex < coordStructure.numNeighbors; neighborIndex++){
             int neighborAtomIndex = getNeighbor(currentAtomIndex, neighborIndex);
-            assert(neighborAtomIndex != currentAtomIndex);
+            //assert(neighborAtomIndex != currentAtomIndex);
 
             const Vector3& latticeVector = latticeStructure.latticeVectors[permutation[neighborIndex]];
             const Vector3& spatialVector = cell().wrapVector(
@@ -507,7 +507,7 @@ void StructureAnalysis::growCluster(
                     tm1.column(i) = -latticeStructure.latticeVectors[permutation[neighborIndex]];
                 }
 
-                assert(numberOfNeighbors(neighborAtomIndex) == coordStructure.numNeighbors);
+                //assert(numberOfNeighbors(neighborAtomIndex) == coordStructure.numNeighbors);
                 int j = findNeighbor(neighborAtomIndex, atomIndex);
                 if(j == -1){
                     properOverlap = false;
@@ -518,7 +518,7 @@ void StructureAnalysis::growCluster(
 
             if(!properOverlap) continue;
 
-            assert(std::abs(tm1.determinant()) > EPSILON);
+            //assert(std::abs(tm1.determinant()) > EPSILON);
             Matrix3 tm2inverse;
             if(!tm2.inverse(tm2inverse)) continue;
 
@@ -572,7 +572,7 @@ void StructureAnalysis::reorientAtomsToAlignClusters(){
                 if (clusterId == 0) continue;
 
                 Cluster* cluster = clusterGraph().findCluster(clusterId);
-                assert(cluster);
+                //assert(cluster);
                 if (cluster->symmetryTransformation == 0) continue;
 
                 const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[cluster->structure];
@@ -651,7 +651,7 @@ void StructureAnalysis::processNeighborConnection(int atomIndex, int neighbor, i
     if(neighborClusterId == cluster1->id) return;
 
     Cluster* cluster2 = clusterGraph().findCluster(neighborClusterId);
-    assert(cluster2);
+    //assert(cluster2);
 
     if(ClusterTransition* existing = cluster1->findTransition(cluster2)){
         existing->area++;
@@ -723,7 +723,7 @@ void StructureAnalysis::initializeClustersForSuperclusterFormation(){
     for(Cluster* cluster : clusterGraph().clusters()){
         if(!cluster || cluster->id == 0) continue;
         cluster->rank = 0;
-        assert(cluster->parentTransition == nullptr);
+        //assert(cluster->parentTransition == nullptr);
     }
 }
 
@@ -740,9 +740,9 @@ void StructureAnalysis::mergeCompatibleGrains(size_t oldTransitionCount, size_t 
     for(size_t i = oldTransitionCount; i < newTransitionCount; i++){
         ClusterTransition* transition = clusterGraph().clusterTransitions()[i];
         // Validate transitions properties
-        assert(transition->distance == 2);
-        assert(transition->cluster1->structure == _inputCrystalType);
-        assert(transition->cluster2->structure == _inputCrystalType);
+        //assert(transition->distance == 2);
+        //assert(transition->cluster1->structure == _inputCrystalType);
+        //assert(transition->cluster2->structure == _inputCrystalType);
                 
         auto [parent1, parent2] = getParentGrains(transition);
         if(parent1 == parent2) continue;

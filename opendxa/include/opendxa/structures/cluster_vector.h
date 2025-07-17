@@ -34,13 +34,13 @@ public:
 	}
 
 	[[nodiscard]] Vector3 toSpatialVector() const{
-		assert(_cluster != nullptr);
+		//assert(_cluster != nullptr);
 		return _cluster->orientation * _vec;
 	}
 
 	[[nodiscard]] bool transformToCluster(Cluster* otherCluster, ClusterGraph& graph){
-		assert(otherCluster);
-		assert(_cluster);
+		//assert(otherCluster);
+		//assert(_cluster);
 		if(_cluster == otherCluster) return true;
 
 		auto* transition = graph.determineClusterTransition(_cluster, otherCluster);

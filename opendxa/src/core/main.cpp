@@ -40,7 +40,7 @@ int main(int argc, char* argv[]){
         std::cerr << "Error: Failed to parse LAMMPS file" << std::endl;
         return 1;
     }
-
+        
     OpenDXA::DislocationAnalysis analyzer;
     analyzer.setInputCrystalStructure(structure);
     analyzer.setMaxTrialCircuitSize(circuitSize);

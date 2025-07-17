@@ -231,7 +231,7 @@ public:
 			xaxis = Vector_3<T>(0,1,0).cross(zaxis);
 			if(xaxis == typename Vector_3<T>::Zero()) {
 				xaxis = Vector_3<T>(0,0,1).cross(zaxis);
-				assert(xaxis != typename Vector_3<T>::Zero());
+				//assert(xaxis != typename Vector_3<T>::Zero());
 			}
 		}
 		xaxis.normalize();

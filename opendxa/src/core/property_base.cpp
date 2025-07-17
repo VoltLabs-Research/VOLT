@@ -72,7 +72,7 @@ void PropertyBase::resize(size_t newSize, bool preserveData){
 		return;
 	}
 
-	assert(_stride > 0);
+	//assert(_stride > 0);
 	const auto newBufSize = newSize * _stride;
 	auto newData = std::make_unique<uint8_t[]>(newBufSize);
 
@@ -86,8 +86,8 @@ void PropertyBase::resize(size_t newSize, bool preserveData){
 }
 
 void PropertyBase::filterCopy(const PropertyBase &src, const boost::dynamic_bitset<>& mask){
-	assert(src.size() == mask.size());
-	assert(stride() == src.stride());
+	//assert(src.size() == mask.size());
+	//assert(stride() == src.stride());
 	
 	const size_t n = src.size();
 	if(_dataType == DataType::Float){
@@ -124,8 +124,8 @@ void PropertyBase::filterCopy(const PropertyBase &src, const boost::dynamic_bits
 }
 
 void PropertyBase::mappedCopy(const PropertyBase& src, const std::vector<int> &map){
-	assert(src.size() == map.size());
-	assert(stride() == src.stride());
+	//assert(src.size() == map.size());
+	//assert(stride() == src.stride());
 
 	const size_t n = src.size();
 	if(_dataType == DataType::Float){

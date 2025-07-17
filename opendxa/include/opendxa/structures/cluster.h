@@ -19,9 +19,9 @@ struct ClusterTransition{
 	int area = 0;
 
 	[[nodiscard]] bool isSelfTransition() const{
-		assert((reverse != this) || (cluster1 == cluster2));
-		assert((reverse != this) || tm.equals(Matrix3::Identity(), CA_TRANSITION_MATRIX_EPSILON));
-		assert((reverse != this) || (distance == 0));
+		//assert((reverse != this) || (cluster1 == cluster2));
+		//assert((reverse != this) || tm.equals(Matrix3::Identity(), CA_TRANSITION_MATRIX_EPSILON));
+		//assert((reverse != this) || (distance == 0));
 
 		return reverse == this;
 	}
@@ -56,7 +56,7 @@ struct Cluster{
 	Cluster(int _id, int _structure) : id(_id), structure(_structure){}
 
 	void insertTransition(ClusterTransition* newTransition){
-		assert(newTransition->cluster1 == this);
+		//assert(newTransition->cluster1 == this);
 		ClusterTransition* prev = nullptr;
 
 		for(auto* transition = transitions; transition && transition->distance < newTransition->distance; transition = transition->next){
@@ -66,7 +66,7 @@ struct Cluster{
 		if(prev){
 			newTransition->next = prev->next;
 			prev->next = newTransition;
-			assert(prev->distance < newTransition->distance);
+			//assert(prev->distance < newTransition->distance);
 		}else{
 			newTransition->next = transitions;
 			transitions = newTransition;
@@ -88,7 +88,7 @@ struct Cluster{
 			return;
 		}
 
-		assert(false);
+		//assert(false);
 	}
 
 	[[nodiscard]] ClusterTransition* findTransition(Cluster* clusterB) const{

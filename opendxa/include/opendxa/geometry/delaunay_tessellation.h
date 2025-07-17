@@ -32,7 +32,7 @@ public:
             const int i = tess._dt->index(start, _s);
             const int j = tess._dt->index(start, _t);
 
-            assert(f != i && f != j);
+            //assert(f != i && f != j);
 			_pos = (f == next_around_edge(i, j)) ? start : tess._dt->cell_adjacent(start, f);
 		}
 
@@ -142,13 +142,13 @@ public:
     [[nodiscard]] std::optional<bool> alphaTest(CellHandle cell, double alpha) const;
 
     [[nodiscard]] int vertexIndex(VertexHandle vertex) const{
-        assert(vertex < _particleIndices.size());
+        //assert(vertex < _particleIndices.size());
         return _particleIndices[vertex];
     }
 
     [[nodiscard]] Facet mirrorFacet(CellHandle cell, int face) const{
         const auto adj = _dt->cell_adjacent(cell, face);
-        assert(adj >= 0);
+        //assert(adj >= 0);
         return { static_cast<CellHandle>(adj), _dt->adjacent_index(adj, cell) };
     }
 

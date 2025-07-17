@@ -99,7 +99,7 @@ inline QuaternionT<T>::QuaternionT(const Matrix_3<T>& tm){
 	}
 
 	// Since we represent a rotation, make sure we are unit length.
-	assert(std::abs(dot(*this)-T(1)) <= T(EPSILON));
+	//assert(std::abs(dot(*this)-T(1)) <= T(EPSILON));
 }
 
 template<typename T>

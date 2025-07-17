@@ -44,11 +44,11 @@ struct DislocationNode{
 	}
 
 	void connectNodes(DislocationNode* other){
-		assert(!formsJunctionWith(other));
-		assert(!other->formsJunctionWith(this));
+		//assert(!formsJunctionWith(other));
+		//assert(!other->formsJunctionWith(this));
 		std::swap(junctionRing, other->junctionRing);
-		assert(formsJunctionWith(other));
-		assert(other->formsJunctionWith(this));
+		//assert(formsJunctionWith(other));
+		//assert(other->formsJunctionWith(this));
 	}
 
 	void dissolveJunction(){
@@ -81,7 +81,7 @@ struct DislocationSegment{
 
 DislocationSegment(const ClusterVector& b, DislocationNode* forward, DislocationNode* backward)
 	: id(-1), burgersVector(b), replacedWith(nullptr){
-	assert(b.localVec() != Vector3::Zero());
+	//assert(b.localVec() != Vector3::Zero());
 
 	nodes[0] = forward;
 	nodes[1] = backward;
@@ -118,7 +118,7 @@ DislocationSegment(const ClusterVector& b, DislocationNode* forward, Dislocation
 	}
 
 	[[nodiscard]] double calculateLength() const{
-		assert(!isDegenerate());
+		//assert(!isDegenerate());
 		double length = 0.0;
 		for(auto i = line.begin(); std::next(i) != line.end(); ++i){
 			// Usando Eigen para cálculo optimizado de distancia

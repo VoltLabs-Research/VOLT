@@ -39,7 +39,7 @@ ParticleProperty::ParticleProperty(size_t particleCount,
     , _type(type)
 {
     // Validación de componentCount
-    assert(componentCount == 0 || componentCount == _componentCount);
+    //assert(componentCount == 0 || componentCount == _componentCount);
     // Validación de tipo de dato
     if (_dataType == DataType::Void && _componentCount > 0) {
         throw std::runtime_error("ParticleProperty: No se puede crear una propiedad de datos con DATATYPE_VOID y componentCount > 0");

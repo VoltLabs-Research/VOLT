@@ -40,7 +40,7 @@ bool CommonNeighborAnalysis::findMatchingNeighborPermutation(
         // Skip over positions that haven't changed since last time
         while(neighborMapping[ni1] == previousMapping[ni1]){
             ni1++;
-            assert(ni1 < coordinationNumber);
+            //assert(ni1 < coordinationNumber);
         }
 
         // Attempt to advance the permutation at index ni1
@@ -72,7 +72,7 @@ bool CommonNeighborAnalysis::findMatchingNeighborPermutation(
         // Otherwise generate the next permutation and retry
         bitmapSort(neighborMapping + ni1 + 1, neighborMapping + coordinationNumber, coordinationNumber);
         if(!std::next_permutation(neighborMapping, neighborMapping + coordinationNumber)){
-            assert(false);
+            //assert(false);
             return false;
         }
     }

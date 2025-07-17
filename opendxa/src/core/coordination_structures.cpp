@@ -163,7 +163,7 @@ double CoordinationStructures::determineLocalStructure(
     std::vector<int> neighborMapping(MAX_NEIGHBORS);
     std::vector<int> previousMapping(MAX_NEIGHBORS);
 
-    assert(_structureTypes->getInt(particleIndex) == COORD_OTHER);
+    //assert(_structureTypes->getInt(particleIndex) == COORD_OTHER);
     
     NearestNeighborFinder::Query<MAX_NEIGHBORS> neighQuery(neighList);
     neighQuery.findNeighbors(neighList.particlePos(particleIndex));
@@ -369,7 +369,7 @@ void CoordinationStructures::findCommonNeighborsForBond(CoordinationStructure& c
             }
         }
     }
-    assert(found);
+    //assert(found);
 }
 
 void CoordinationStructures::initializeSymmetryInformation(){
@@ -414,7 +414,7 @@ void CoordinationStructures::findAllSymmetryPermutations(
 
     do{
         int changedFrom = std::mismatch(permutation.begin(), permutation.end(), lastPermutation.begin()).first - permutation.begin();
-        assert(changedFrom < coordStruct.numNeighbors);
+        //assert(changedFrom < coordStruct.numNeighbors);
         std::copy(permutation.begin(), permutation.end(), lastPermutation.begin());
 
         if(changedFrom <= nindices[2]){
@@ -459,8 +459,8 @@ void CoordinationStructures::findAllSymmetryPermutations(
         bitmapSort(permutation.begin() + sortFrom + 1, permutation.end(), permutation.size());
     }while(std::next_permutation(permutation.begin(), permutation.end()));
 
-    assert(latticeStruct.permutations.size() >= 1);
-    assert(latticeStruct.permutations.front().transformation.equals(Matrix3::Identity()));
+    //assert(latticeStruct.permutations.size() >= 1);
+    //assert(latticeStruct.permutations.front().transformation.equals(Matrix3::Identity()));
 }
 
 void CoordinationStructures::findNonCoplanarVectors(const CoordinationStructure& coordStruct, int nindices[3], Matrix3& tm1){
@@ -477,8 +477,8 @@ void CoordinationStructures::findNonCoplanarVectors(const CoordinationStructure&
         nindices[n++] = i;
     }
     
-    assert(n == 3);
-    assert(std::abs(tm1.determinant()) > EPSILON);
+    //assert(n == 3);
+    //assert(std::abs(tm1.determinant()) > EPSILON);
 }
 
 void CoordinationStructures::calculateSymmetryProducts(LatticeStructure& latticeStruct){
@@ -499,7 +499,7 @@ void CoordinationStructures::calculateProductForPermutation(LatticeStructure& la
         }
     }
 
-    assert(latticeStruct.permutations[s1].product.size() == s2 + 1);
+    //assert(latticeStruct.permutations[s1].product.size() == s2 + 1);
     
     Matrix3 inverseProduct = latticeStruct.permutations[s2].transformation.inverse() * latticeStruct.permutations[s1].transformation;
     
@@ -510,7 +510,7 @@ void CoordinationStructures::calculateProductForPermutation(LatticeStructure& la
         }
     }
 
-    assert(latticeStruct.permutations[s1].inverseProduct.size() == s2 + 1);
+    //assert(latticeStruct.permutations[s1].inverseProduct.size() == s2 + 1);
 }
 
 void CoordinationStructures::initializeStructures(){

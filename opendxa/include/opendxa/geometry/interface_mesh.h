@@ -44,6 +44,8 @@ public:
 		return elasticMapping().tessellation();
 	}
 
+    void makeManifold();
+
     [[nodiscard]] StructureAnalysis const& structureAnalysis() const noexcept{
         return elasticMapping().structureAnalysis();
     }

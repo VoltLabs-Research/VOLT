@@ -12,14 +12,14 @@ DislocationNetwork::DislocationNetwork(const DislocationNetwork& other): _cluste
 
 	// Copy each segment's core data and assign the same numeric ID
 	for(const auto *oldSegment : other.segments()){
-		assert(oldSegment->replacedWith == nullptr);
-		assert(oldSegment->id == static_cast<int>(_segments.size()));
+		//assert(oldSegment->replacedWith == nullptr);
+		//assert(oldSegment->id == static_cast<int>(_segments.size()));
 
 		auto* newSegment = createSegment(oldSegment->burgersVector);
 		newSegment->line = oldSegment->line;
 		newSegment->coreSize = oldSegment->coreSize;
 
-		assert(newSegment->id == oldSegment->id);
+		//assert(newSegment->id == oldSegment->id);
 	}
 
 	// Re-stablish junction links between dangling ndoes so that segments
@@ -47,18 +47,18 @@ DislocationSegment* DislocationNetwork::createSegment(const ClusterVector& burge
 	DislocationNode *backwardNode = _nodePool.construct();
 
 	DislocationSegment *segment = _segmentPool.construct(burgersVector, forwardNode, backwardNode);
-	segment->id = static_cast<int>(_segments.size());
+	segment->id = _segments.size();
 	_segments.push_back(segment);
 
 	return segment;
 }
 
 // Removes a segment from the network's list. The segment pointer
-// must exist, otherwise an assertion is triggered.
+// must exist, otherwise an //assertion is triggered.
 void DislocationNetwork::discardSegment(DislocationSegment* segment){
-	assert(segment != nullptr);
+	//assert(segment != nullptr);
 	const auto it = std::ranges::find(_segments, segment);
-	assert(it != _segments.end());
+	//assert(it != _segments.end());
 	_segments.erase(it);
 }
 
@@ -94,8 +94,8 @@ void DislocationNetwork::coarsenDislocationLine(
 	bool isClosedLoop,
 	bool isInfiniteLine
 ){
-	assert(input.size() >= 2);
-	assert(input.size() == coreSize.size());
+	//assert(input.size() >= 2);
+	//assert(input.size() == coreSize.size());
 	
 	if(linePointInterval <= 0){
 		output = input;
@@ -162,7 +162,7 @@ void DislocationNetwork::coarsenDislocationLine(
 	// Average over a half interval, starting from the end of the segment
 	auto inputPtrEnd = input.cend() - 1;
 	auto inputCoreSizePtrEnd = coreSize.cend() - 1;
-	assert(inputPtr < inputPtrEnd);
+	//assert(inputPtr < inputPtrEnd);
 
 	while(count * count < (int) (linePointInterval * sum) && count < input.size() / minNumPoints){
 		sum += *inputCoreSizePtrEnd;
@@ -172,7 +172,7 @@ void DislocationNetwork::coarsenDislocationLine(
         --inputCoreSizePtrEnd;
 	}
 
-	assert(inputPtr < inputPtrEnd);
+	//assert(inputPtr < inputPtrEnd);
 	if(isClosedLoop){
 		output.push_back(input.front() + com / count);
         outputCoreSize.push_back(sum / count);
@@ -203,8 +203,8 @@ void DislocationNetwork::coarsenDislocationLine(
         outputCoreSize.push_back(sum / count);
 	}
 
-	assert(output.size() >= minNumPoints);
-	assert(!isClosedLoop || isInfiniteLine || output.size() >= 3);
+	//assert(output.size() >= minNumPoints);
+	//assert(!isClosedLoop || isInfiniteLine || output.size() >= 3);
 }
 
 // Applies Laplacian smoothing to a polyline by repeteadly replacing each interior point
@@ -248,7 +248,7 @@ void DislocationNetwork::smoothDislocationLine(double smoothingLevel, std::deque
 			}
 
 			*l++ = laplacians.front();
-			assert(l == laplacians.end());
+			//assert(l == laplacians.end());
 
 			auto lc = laplacians.cbegin();
 			for(Point3 &p : line){

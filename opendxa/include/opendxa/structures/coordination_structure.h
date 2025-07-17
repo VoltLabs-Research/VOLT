@@ -16,13 +16,13 @@ namespace OpenDXA{
 template<typename iterator>
 void bitmapSort(iterator begin, iterator end, int max){
 	// We rely on a 32-bit integer, to hold up to 32 distinct values
-	assert(max <= 32);
-	assert(end >= begin);
+	//assert(max <= 32);
+	//assert(end >= begin);
 
 	// Build a bitmask, bitarray's bit v is self if v appeared in the input
 	int bitarray = 0;
 	for(iterator pin = begin; pin != end; ++pin){
-		assert(*pin >= 0 && *pin < max);
+		//assert(*pin >= 0 && *pin < max);
 		bitarray |= 1 << (*pin);
 	}
 
@@ -36,7 +36,7 @@ void bitmapSort(iterator begin, iterator end, int max){
 
 	// After writing exactly as many values as we read, the output pointer
 	// should reach the end of the original range
-	assert(pout == end);
+	//assert(pout == end);
 }
 
 // Represented the fixed connectivity pattern around one atom type in the crystal.

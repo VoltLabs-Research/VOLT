@@ -75,12 +75,16 @@ private:
 	void joinSegments(int maxCircuitLength);
 
 	Vector3 calculateShiftVector(const Point3& a, const Point3& b) const{
-		Vector3 d = cell().absoluteToReduced(b - a);
-		d.x() = cell().pbcFlags()[0] ? floor(d.x() + double(0.5)) : double(0);
-		d.y() = cell().pbcFlags()[1] ? floor(d.y() + double(0.5)) : double(0);
-		d.z() = cell().pbcFlags()[2] ? floor(d.z() + double(0.5)) : double(0);
-		return cell().reducedToAbsolute(d);
-	}
+        if(cell().hasPbc(0) || cell().hasPbc(1) || cell().hasPbc(2)) {
+            Vector3 d = cell().absoluteToReduced(b - a);
+            d.x() = cell().hasPbc(0) ? std::floor(d.x() + double(0.5)) : double(0);
+            d.y() = cell().hasPbc(1) ? std::floor(d.y() + double(0.5)) : double(0);
+            d.z() = cell().hasPbc(2) ? std::floor(d.z() + double(0.5)) : double(0);
+            return cell().reducedToAbsolute(d);
+        }else{
+            return b - a;
+        }
+    }
 
 	InterfaceMesh& _mesh;
 	std::shared_ptr<DislocationNetwork> _network;

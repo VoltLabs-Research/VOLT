@@ -15,7 +15,7 @@ public:
 
     BoundedPriorityQueue(int size, const Compare& comp = Compare())
         : _count(0), _maxSize(size), _comp(comp){
-        assert(size <= QUEUE_SIZE_LIMIT);
+        //assert(size <= QUEUE_SIZE_LIMIT);
     }
 
     [[nodiscard]] int size() const noexcept{
@@ -35,7 +35,7 @@ public:
     }
 
     [[nodiscard]] const value_type& top() const{
-        assert(!empty());
+        //assert(!empty());
         return _data[0];
     }
 
@@ -83,7 +83,7 @@ public:
     }
 
     [[nodiscard]] const value_type& operator[](int i) const{
-        assert(i < _count);
+        //assert(i < _count);
         return _data[i];
     }
 

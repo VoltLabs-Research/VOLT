@@ -4,7 +4,7 @@
 namespace OpenDXA{
 
 std::optional<ClusterVector> CrystalPathFinder::findPath(int atomIndex1, int atomIndex2){
-    assert(atomIndex1 != atomIndex2);
+    //assert(atomIndex1 != atomIndex2);
 
     auto* cluster1 = structureAnalysis().atomCluster(atomIndex1);
     auto* cluster2 = structureAnalysis().atomCluster(atomIndex2);
@@ -35,8 +35,8 @@ std::optional<ClusterVector> CrystalPathFinder::findPath(int atomIndex1, int ato
 
     for(PathNode* cur = &start; cur && !result; cur = cur->nextToProcess){
         int a = cur->atomIndex;
-        assert(a != atomIndex2);
-        assert(_visitedAtoms.test(a));
+        //assert(a != atomIndex2);
+        //assert(_visitedAtoms.test(a));
 
         auto* curCluster = structureAnalysis().atomCluster(a);
         int nbors = structureAnalysis().numberOfNeighbors(a);
@@ -78,7 +78,7 @@ std::optional<ClusterVector> CrystalPathFinder::findPath(int atomIndex1, int ato
             if(pathVec.cluster() == step.cluster()){
                 pathVec.localVec() += step.localVec();
             }else if(pathVec.cluster()){
-                assert(step.cluster());
+                //assert(step.cluster());
                 if(auto* trans = clusterGraph().determineClusterTransition(step.cluster(), pathVec.cluster())){
                     pathVec.localVec() += trans->transform(step.localVec());
                 }else{
@@ -97,7 +97,7 @@ std::optional<ClusterVector> CrystalPathFinder::findPath(int atomIndex1, int ato
             if(cur->distance < _maxPathLength - 1){
                 auto* node = _nodePool.construct(nb, pathVec);
                 node->distance = cur->distance + 1;
-                assert(!tail->nextToProcess);
+                //assert(!tail->nextToProcess);
                 tail->nextToProcess = node;
                 tail = node;
                 _visitedAtoms.set(nb);

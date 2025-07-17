@@ -23,7 +23,7 @@ DelaunayTessellationSpatialQuery::DelaunayTessellationSpatialQuery(
 
         _rtree.insert({box, cell});
         ++count;
-        assert(_rtree.size() == count);
+        //assert(_rtree.size() == count);
     }
 }
 

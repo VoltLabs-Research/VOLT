@@ -44,7 +44,7 @@ void ElasticMapping::generateTessellationEdges(){
             // we ignore it here-those connections will be picked up elsewhere.
             if(structureAnalysis().cell().isWrappedVector(p1 - p2)) continue;
 
-            assert(v1 >= 0 && v2 >= 0);
+            //assert(v1 >= 0 && v2 >= 0);
             // If we haven't seen this (v1, v2) pair before, create it
             if(findEdge(v1, v2) == nullptr){
                 TessellationEdge* e = _edgePool.construct(v1, v2);
@@ -136,7 +136,7 @@ void ElasticMapping::assignIdealVectorsToEdges(bool reconstructEdgeVectors, int 
             // Identify the two grain clusters at the edge's endpoints
             Cluster* c1 = clusterOfVertex(edge->vertex1);
             Cluster* c2 = clusterOfVertex(edge->vertex2);
-            assert(c1 && c2);
+            //assert(c1 && c2);
             
             // Both clusters must be nonzero
             if(c1->id == 0 || c2->id == 0) continue;

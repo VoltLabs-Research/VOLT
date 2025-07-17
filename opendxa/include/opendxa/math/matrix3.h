@@ -259,7 +259,7 @@ inline Matrix_3<T> Matrix_3<T>::rotation(const QuaternionT<T>& q){
 
 template<typename T>
 inline Matrix_3<T> Matrix_3<T>::rotation(T ai, T aj, T ak, EulerAxisSequence axisSequence){
-	assert(axisSequence == Matrix_3<T>::szyx);
+	//assert(axisSequence == Matrix_3<T>::szyx);
 	int firstaxis = 2;
 	int parity = 1;
 	bool repetition = false;

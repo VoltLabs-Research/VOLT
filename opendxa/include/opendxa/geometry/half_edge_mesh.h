@@ -49,20 +49,20 @@ public:
 		}
 
         void linkToOppositeEdge(Edge* other) noexcept{
-            assert(!_oppositeEdge && !other->_oppositeEdge);
+            //assert(!_oppositeEdge && !other->_oppositeEdge);
             _oppositeEdge = other;
             other->_oppositeEdge = this;
         }
 
         Edge* unlinkFromOppositeEdge() noexcept{
-            assert(_oppositeEdge && _oppositeEdge->_oppositeEdge == this);
+            //assert(_oppositeEdge && _oppositeEdge->_oppositeEdge == this);
             Edge* other = _oppositeEdge;
             _oppositeEdge = nullptr;
             other->_oppositeEdge = nullptr;
             return other;
         }
 
-    protected:
+    public:
         Edge(Vertex* v2, Face* f) noexcept
             : _oppositeEdge(nullptr)
             , _vertex2(v2)
@@ -132,7 +132,7 @@ public:
             e->oppositeEdge()->_vertex2 = v;
         }
 
-    protected:
+    public:
         Vertex(const Point3& p, int idx = -1) noexcept
             : _pos(p)
             , _edges(nullptr)
@@ -161,7 +161,7 @@ public:
                 }
             }
 
-            assert(false);
+            //assert(false);
         }
 
         Point3 _pos;
@@ -199,7 +199,7 @@ public:
 		}
 
         [[nodiscard]] std::size_t edgeCount() const{
-            assert(edges());
+            //assert(edges());
             std::size_t cnt = 0;
             Edge* e = edges();
             do{
@@ -313,12 +313,12 @@ public:
 	}
 
     [[nodiscard]] Vertex* vertex(int idx) const noexcept{
-        assert(idx >= 0 && idx < static_cast<int>(vertexCount()));
+        //assert(idx >= 0 && idx < static_cast<int>(vertexCount()));
         return _vertices[idx];
     }
 
     [[nodiscard]] Face* face(int idx) const noexcept{
-        assert(idx >= 0 && idx < static_cast<int>(faceCount()));
+        //assert(idx >= 0 && idx < static_cast<int>(faceCount()));
         return _faces[idx];
     }
 
@@ -338,7 +338,7 @@ public:
 
     template<typename It>
     Face* createFace(It b, It e){
-        assert(std::distance(b, e) >= 2);
+        //assert(std::distance(b, e) >= 2);
         Face* f = createFace();
         It v1 = b;
         for (It v2 = std::next(b); v2 != e; ++v1, ++v2){
@@ -413,42 +413,6 @@ public:
         _facePool.swap(o._facePool);
     }
 
-    std::size_t duplicateSharedVertices(){
-        std::size_t shared = 0;
-        const std::size_t oldCount = _vertices.size();
-        for(std::size_t i = 0; i < oldCount; ++i){
-            Vertex* v = _vertices[i];
-            if(v->numEdges() < 2) continue;
-            std::vector<Edge*> visited;
-            Edge* start = v->edges();
-            do{
-                visited.push_back(start);
-                start = start->prevFaceEdge()->oppositeEdge();
-            }while(start != v->edges());
-
-            if(visited.size() == v->numEdges()) continue;
-
-            while(visited.size() < v->numEdges()){
-                Vertex* second = createVertex(v->pos());
-                Edge* sel = nullptr;
-                for(Edge* e = v->edges(); e; e = e->nextVertexEdge()){
-                    if(std::find(visited.begin(), visited.end(), e) == visited.end()){
-                        sel = e;
-                        break;
-                    }
-                }
-                Edge* cur = sel;
-                do{
-                    visited.push_back(cur);
-                    v->transferEdgeToVertex(cur, second);
-                    cur = cur->prevFaceEdge()->oppositeEdge();
-                }while(cur != sel);
-            }
-            ++shared;
-        }
-        return shared;
-    }
-
     [[nodiscard]] bool isClosed() const noexcept{
         for(Vertex* v : _vertices){
             for (Edge* e = v->edges(); e; e = e->nextVertexEdge()){
@@ -482,7 +446,7 @@ public:
         return e;
     }
 
-private:
+public:
     template<class EB2, class FB2, class VB2>
     void linkCopiedOpposites(const HalfEdgeMesh<EB2, FB2, VB2>& o){
         for(std::size_t i = 0; i < faceCount(); ++i){

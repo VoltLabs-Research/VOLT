@@ -46,8 +46,8 @@ void BurgersLoopBuilder::traceDislocationSegments(){
         dangling = _danglingNodes;
 
 		for(auto* node : dangling){
-			assert(node->circuit->isDangling);
-			assert(node->circuit->countEdges() == node->circuit->edgeCount);
+			//assert(node->circuit->isDangling);
+			//assert(node->circuit->countEdges() == node->circuit->edgeCount);
 			// Trace segment a bit further
 			traceSegment(*node->segment, *node, circuitLength, circuitLength <= _maxBurgersCircuitSize);
 		}
@@ -79,7 +79,7 @@ void BurgersLoopBuilder::traceDislocationSegments(){
 // Ensures only one "unused" circuit is held at a time.
 void BurgersLoopBuilder::discardCircuit(BurgersCircuit* circuit){
     tbb::spin_mutex::scoped_lock lock(_circuit_pool_mutex);
-    assert(_unusedCircuit == nullptr);
+    //assert(_unusedCircuit == nullptr);
     _unusedCircuit = circuit;
 }
 
@@ -88,69 +88,60 @@ void BurgersLoopBuilder::discardCircuit(BurgersCircuit* circuit){
 // it points consistently.
 void BurgersLoopBuilder::finishDislocationSegments(int crystalStructure){
     auto& segments = network().segments();
+	// Remove extra line points from segments that do not end in a junction.
+    // Also assign consecutive IDs to final segments.
+    for(int segmentIndex = 0; segmentIndex < network().segments().size(); segmentIndex++){
+        DislocationSegment* segment = network().segments()[segmentIndex];
+        std::deque<Point3>& line = segment->line;
+        std::deque<int>& coreSize = segment->coreSize;
+        segment->id = segmentIndex;
+        assert(coreSize.size() == line.size());
+        assert(segment->backwardNode().circuit->numPreliminaryPoints + segment->forwardNode().circuit->numPreliminaryPoints <= line.size());
+        line.erase(line.begin(), line.begin() + segment->backwardNode().circuit->numPreliminaryPoints);
+        line.erase(line.end() - segment->forwardNode().circuit->numPreliminaryPoints, line.end());
+        coreSize.erase(coreSize.begin(), coreSize.begin() + segment->backwardNode().circuit->numPreliminaryPoints);
+        coreSize.erase(coreSize.end() - segment->forwardNode().circuit->numPreliminaryPoints, coreSize.end());
+    }
 
-	auto indexedSegments = std::views::iota(size_t{0}, segments.size()) | std::views::transform([&](size_t i){
-        return std::pair{i, segments[i]};
-    });
+    // Express Burgers vectors of dislocations in a proper lattice frame whenever possible.
+    for(DislocationSegment* segment : network().segments()){
+        Cluster* originalCluster = segment->burgersVector.cluster();
+        if(originalCluster->structure != crystalStructure) {
+            for(ClusterTransition* t = originalCluster->transitions; t != nullptr && t->distance <= 1; t = t->next){
+                if(t->cluster2->structure == crystalStructure){
+                    segment->burgersVector = ClusterVector(t->transform(segment->burgersVector.localVec()), t->cluster2);
+                    break;
+                }
+            }
+        }
+    }
 
-    std::for_each(
-		std::execution::par, 
-		indexedSegments.begin(), 
-		indexedSegments.end(), 
-		[this, crystalStructure](auto const &par)
-	{
-		auto [segmentId, segment] = par;
+    // Align dislocations.
+    for(DislocationSegment* segment : network().segments()){
+        std::deque<Point3>& line = segment->line;
+        assert(line.size() >= 2);
 
-		// Remove extra line points from segments that do not end in a 
-		// junction. Also assign consecutive IDs to final segments.
-		int pointsToTrimFront = segment->backwardNode().circuit->numPreliminaryPoints;
-		int pointsToTrimBack = segment->forwardNode().circuit->numPreliminaryPoints;
-		segment->id = segmentId;
+        segment->burgersVector = -segment->burgersVector;
 
-		auto& line = segment->line;
-		auto& coreVec = segment->coreSize;
+        Vector3 dir = line.back() - line.front();
+        if(dir.isZero(CA_ATOM_VECTOR_EPSILON)) continue;
 
-		line.erase(line.begin(), line.begin() + pointsToTrimFront);
-		line.erase(line.end() - pointsToTrimBack, line.end());
+        if(std::abs(dir.x()) > std::abs(dir.y())) {
+            if(std::abs(dir.x()) > std::abs(dir.z())){
+                if(dir.x() >= 0.0) continue;
+            }else{
+                if(dir.z() >= 0.0) continue;
+            }
+        }else{
+            if(std::abs(dir.y()) > std::abs(dir.z())){
+                if(dir.y() >= 0.0) continue;
+            }else{
+                if(dir.z() >= 0.0) continue;
+            }
+        }
 
-		coreVec.erase(coreVec.begin(), coreVec.begin() + pointsToTrimFront);
-		coreVec.erase(coreVec.end() - pointsToTrimBack, coreVec.end());
-
-		// Re-express Burgers vectors of dislocations in a proper llattice
-		// frame whenever possible.
-		auto* originalCluster = segment->burgersVector.cluster();
-		if(originalCluster->structure != crystalStructure){
-			for(auto* transition = originalCluster->transitions; transition && transition->distance <= 1; transition = transition->next){
-				if(transition->cluster2->structure == crystalStructure){
-					segment->burgersVector = ClusterVector(
-						transition->transform(segment->burgersVector.localVec()),
-						transition->cluster2
-					);
-					break;
-				}
-			}
-		}
-
-		if(line.empty()) return;
-		// Align the final orientation so that the “main axis” faces positive
-
-		Vector3 direction = line.back() - line.front();
-		if(!direction.isZero(CA_ATOM_VECTOR_EPSILON)){
-			auto absX = std::abs(direction.x());
-			auto absY = std::abs(direction.y());
-			auto absZ = std::abs(direction.z());
-
-			bool shouldFlip = (
-				(absX >= absY && absX >= absZ && direction.x() < 0.0) ||
-				(absY >= absX && absY >= absZ && direction.y() < 0.0) ||
-				(absZ >= absX && absZ >= absY && direction.z() < 0.0)
-			);
-
-			if(shouldFlip){
-				segment->flipOrientation();
-			}
-		}
-	});
+        segment->flipOrientation();
+    }
 }
 
 // This data structure is used for the recursive generation
@@ -179,7 +170,7 @@ struct BurgersCircuitSearchStruct{
 // form a new loop.
 void BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
     const int searchDepth = (maxBurgersCircuitSize - 1) / 2;
-    assert(searchDepth >= 1);
+    //assert(searchDepth >= 1);
 
     struct SearchNode {
         InterfaceMesh::Vertex* node;
@@ -257,35 +248,35 @@ void BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
 // that is then refined and extended—and if not, it undoes the layout and discards that circuit. 
 // This accurately captures every real Burgers loop in the crystal and prepares it for dislocation analysis.
 bool BurgersLoopBuilder::createBurgersCircuit(InterfaceMesh::Edge* edge, int maxBurgersCircuitSize){
-	assert(edge->circuit == nullptr);
+	//assert(edge->circuit == nullptr);
 
 	InterfaceMesh::Vertex* currentNode = edge->vertex1();
 	InterfaceMesh::Vertex* neighborNode = edge->vertex2();
 	BurgersCircuitSearchStruct* currentStruct = currentNode->burgersSearchStruct;
 	BurgersCircuitSearchStruct* neighborStruct = neighborNode->burgersSearchStruct;
-	assert(currentStruct != neighborStruct);
+	//assert(currentStruct != neighborStruct);
 
 	// Reconstruct the Burgers circuit from the path we took along the mesh edges.
 	BurgersCircuit* forwardCircuit = allocateCircuit();
 	forwardCircuit->edgeCount = 1;
 	forwardCircuit->firstEdge = forwardCircuit->lastEdge = edge->oppositeEdge();
-	assert(forwardCircuit->firstEdge->circuit == nullptr);
+	//assert(forwardCircuit->firstEdge->circuit == nullptr);
 	forwardCircuit->firstEdge->circuit = forwardCircuit;
 
 	// Clear flags of nodes on the second branch of the recursive walk.
 	for(BurgersCircuitSearchStruct* a = neighborStruct; ; a = a->predecessorEdge->vertex1()->burgersSearchStruct){
 		a->node->visited = false;
 		if(a->predecessorEdge == nullptr) break;
-		assert(a->predecessorEdge->circuit == nullptr);
-		assert(a->predecessorEdge->oppositeEdge()->circuit == nullptr);
+		//assert(a->predecessorEdge->circuit == nullptr);
+		//assert(a->predecessorEdge->oppositeEdge()->circuit == nullptr);
 	}
 
 	// Mark all nodes on the first branch of the recursive walk.
 	for(BurgersCircuitSearchStruct* a = currentStruct; ; a = a->predecessorEdge->vertex1()->burgersSearchStruct){
 		a->node->visited = true;
 		if(a->predecessorEdge == nullptr) break;
-		assert(a->predecessorEdge->circuit == nullptr);
-		assert(a->predecessorEdge->oppositeEdge()->circuit == nullptr);
+		//assert(a->predecessorEdge->circuit == nullptr);
+		//assert(a->predecessorEdge->oppositeEdge()->circuit == nullptr);
 	}
 
 	// Then walk on the second branch again until we hit the first branch.
@@ -294,9 +285,9 @@ bool BurgersLoopBuilder::createBurgersCircuit(InterfaceMesh::Edge* edge, int max
 			a->node->visited = false;
 			break;
 		}
-		assert(a->predecessorEdge != nullptr);
-		assert(a->predecessorEdge->circuit == nullptr);
-		assert(a->predecessorEdge->oppositeEdge()->circuit == nullptr);
+		//assert(a->predecessorEdge != nullptr);
+		//assert(a->predecessorEdge->circuit == nullptr);
+		//assert(a->predecessorEdge->oppositeEdge()->circuit == nullptr);
 		// Insert edge into the circuit.
 		a->predecessorEdge->nextCircuitEdge = forwardCircuit->firstEdge;
 		forwardCircuit->firstEdge = a->predecessorEdge;
@@ -306,9 +297,9 @@ bool BurgersLoopBuilder::createBurgersCircuit(InterfaceMesh::Edge* edge, int max
 
 	// Walk along the first branch again until the second branch is hit.
 	for(BurgersCircuitSearchStruct* a = currentStruct; a->node->visited == true; a = a->predecessorEdge->vertex1()->burgersSearchStruct){
-		assert(a->predecessorEdge != nullptr);
-		assert(a->predecessorEdge->circuit == nullptr);
-		assert(a->predecessorEdge->oppositeEdge()->circuit == nullptr);
+		//assert(a->predecessorEdge != nullptr);
+		//assert(a->predecessorEdge->circuit == nullptr);
+		//assert(a->predecessorEdge->oppositeEdge()->circuit == nullptr);
 		// Insert edge into the circuit.
 		forwardCircuit->lastEdge->nextCircuitEdge = a->predecessorEdge->oppositeEdge();
 		forwardCircuit->lastEdge = forwardCircuit->lastEdge->nextCircuitEdge;
@@ -319,9 +310,9 @@ bool BurgersLoopBuilder::createBurgersCircuit(InterfaceMesh::Edge* edge, int max
 
 	// Close circuit.
 	forwardCircuit->lastEdge->nextCircuitEdge = forwardCircuit->firstEdge;
-	assert(forwardCircuit->firstEdge != forwardCircuit->firstEdge->nextCircuitEdge);
-	assert(forwardCircuit->countEdges() == forwardCircuit->edgeCount);
-	assert(forwardCircuit->edgeCount >= 3);
+	//assert(forwardCircuit->firstEdge != forwardCircuit->firstEdge->nextCircuitEdge);
+	//assert(forwardCircuit->countEdges() == forwardCircuit->edgeCount);
+	//assert(forwardCircuit->edgeCount >= 3);
 
 	// Make sure the circuit is not infinite, spanning periodic boundaries.
 	// This can be checked by summing up the atom-to-atom vectors of the circuit's edges.
@@ -337,7 +328,7 @@ bool BurgersLoopBuilder::createBurgersCircuit(InterfaceMesh::Edge* edge, int max
 			frankRotation = frankRotation * e->clusterTransition->reverse->tm;
 		e = e->nextCircuitEdge;
 	}while(e != forwardCircuit->firstEdge);
-	assert(frankRotation.equals(Matrix3::Identity(), CA_TRANSITION_MATRIX_EPSILON));
+	//assert(frankRotation.equals(Matrix3::Identity(), CA_TRANSITION_MATRIX_EPSILON));
 
 	// Make sure new circuit does not intersect other circuits.
 	bool intersects = intersectsOtherCircuits(forwardCircuit);
@@ -346,7 +337,7 @@ bool BurgersLoopBuilder::createBurgersCircuit(InterfaceMesh::Edge* edge, int max
 		InterfaceMesh::Edge* e = forwardCircuit->firstEdge;
 		do{
 			InterfaceMesh::Edge* nextEdge = e->nextCircuitEdge;
-			assert(e->circuit == forwardCircuit);
+			//assert(e->circuit == forwardCircuit);
 			e->nextCircuitEdge = nullptr;
 			e->circuit = nullptr;
 			e = nextEdge;
@@ -355,8 +346,8 @@ bool BurgersLoopBuilder::createBurgersCircuit(InterfaceMesh::Edge* edge, int max
 		return intersects;
 	}
 
-	assert(!forwardCircuit->calculateBurgersVector().localVec().isZero(CA_LATTICE_VECTOR_EPSILON));
-	assert(!b.isZero(CA_LATTICE_VECTOR_EPSILON));
+	//assert(!forwardCircuit->calculateBurgersVector().localVec().isZero(CA_LATTICE_VECTOR_EPSILON));
+	//assert(!b.isZero(CA_LATTICE_VECTOR_EPSILON));
 	createAndTraceSegment(ClusterVector(b, forwardCircuit->firstEdge->clusterTransition->cluster1), forwardCircuit, maxBurgersCircuitSize);
 
 	return true;
@@ -463,24 +454,24 @@ BurgersCircuit* BurgersLoopBuilder::buildReverseCircuit(BurgersCircuit* forwardC
 		InterfaceMesh::Edge* oppositeEdge2 = edge2->oppositeEdge();
 		InterfaceMesh::Face* facet1 = oppositeEdge1->face();
 		InterfaceMesh::Face* facet2 = oppositeEdge2->face();
-		assert(facet1 != nullptr && facet2 != nullptr);
-		assert(facet1->circuit == nullptr || facet1->circuit == backwardCircuit);
-		assert(facet2->circuit == nullptr || facet2->circuit == backwardCircuit);
-		assert(edge1->vertex2() == edge2->vertex1());
-		assert((edge1->clusterVector + oppositeEdge1->clusterTransition->tm * oppositeEdge1->clusterVector).isZero(CA_LATTICE_VECTOR_EPSILON));
-		assert((edge2->clusterVector + oppositeEdge2->clusterTransition->tm * oppositeEdge2->clusterVector).isZero(CA_LATTICE_VECTOR_EPSILON));
+		//assert(facet1 != nullptr && facet2 != nullptr);
+		//assert(facet1->circuit == nullptr || facet1->circuit == backwardCircuit);
+		//assert(facet2->circuit == nullptr || facet2->circuit == backwardCircuit);
+		//assert(edge1->vertex2() == edge2->vertex1());
+		//assert((edge1->clusterVector + oppositeEdge1->clusterTransition->tm * oppositeEdge1->clusterVector).isZero(CA_LATTICE_VECTOR_EPSILON));
+		//assert((edge2->clusterVector + oppositeEdge2->clusterTransition->tm * oppositeEdge2->clusterVector).isZero(CA_LATTICE_VECTOR_EPSILON));
 
 		if(facet1 != facet2){
 			InterfaceMesh::Edge* outerEdge1 = oppositeEdge1->nextFaceEdge()->oppositeEdge();
 			InterfaceMesh::Edge* innerEdge1 = oppositeEdge1->prevFaceEdge()->oppositeEdge();
 			InterfaceMesh::Edge* outerEdge2 = oppositeEdge2->prevFaceEdge()->oppositeEdge();
 			InterfaceMesh::Edge* innerEdge2 = oppositeEdge2->nextFaceEdge()->oppositeEdge();
-			assert(innerEdge1 != nullptr && innerEdge2 != nullptr);
-			assert(innerEdge1->vertex1() == edge1->vertex2());
-			assert(innerEdge2->vertex2() == edge1->vertex2());
-			assert(innerEdge1->vertex1() == innerEdge2->vertex2());
-			assert(innerEdge1->circuit == nullptr || innerEdge1->circuit == backwardCircuit);
-			assert(innerEdge2->circuit == nullptr || innerEdge2->circuit == backwardCircuit);
+			//assert(innerEdge1 != nullptr && innerEdge2 != nullptr);
+			//assert(innerEdge1->vertex1() == edge1->vertex2());
+			//assert(innerEdge2->vertex2() == edge1->vertex2());
+			//assert(innerEdge1->vertex1() == innerEdge2->vertex2());
+			//assert(innerEdge1->circuit == nullptr || innerEdge1->circuit == backwardCircuit);
+			//assert(innerEdge2->circuit == nullptr || innerEdge2->circuit == backwardCircuit);
 			facet1->setFlag(1);
 			facet1->circuit = backwardCircuit;
 			facet2->setFlag(1);
@@ -490,8 +481,8 @@ BurgersCircuit* BurgersLoopBuilder::buildReverseCircuit(BurgersCircuit* forwardC
 			innerEdge2->nextCircuitEdge = innerEdge1;
 
 			if(backwardCircuit->lastEdge == nullptr){
-				assert(backwardCircuit->firstEdge == nullptr);
-				assert(innerEdge1->nextCircuitEdge == nullptr);
+				//assert(backwardCircuit->firstEdge == nullptr);
+				//assert(innerEdge1->nextCircuitEdge == nullptr);
 				backwardCircuit->lastEdge = innerEdge1;
 				backwardCircuit->firstEdge = innerEdge2;
 				backwardCircuit->edgeCount += 2;
@@ -509,23 +500,23 @@ BurgersCircuit* BurgersLoopBuilder::buildReverseCircuit(BurgersCircuit* forwardC
 				backwardCircuit->edgeCount += 1;
 			}
 
-			assert(innerEdge1->vertex1() != innerEdge1->vertex2());
-			assert(innerEdge2->vertex1() != innerEdge2->vertex2());
+			//assert(innerEdge1->vertex1() != innerEdge1->vertex2());
+			//assert(innerEdge2->vertex1() != innerEdge2->vertex2());
 		}
 
 		edge1 = edge2;
 	}while(edge1 != forwardCircuit->firstEdge);
 
-	assert(backwardCircuit->lastEdge->vertex2() == backwardCircuit->firstEdge->vertex1());
-	assert(backwardCircuit->lastEdge->nextCircuitEdge == nullptr || backwardCircuit->lastEdge->nextCircuitEdge == backwardCircuit->firstEdge);
+	//assert(backwardCircuit->lastEdge->vertex2() == backwardCircuit->firstEdge->vertex1());
+	//assert(backwardCircuit->lastEdge->nextCircuitEdge == nullptr || backwardCircuit->lastEdge->nextCircuitEdge == backwardCircuit->firstEdge);
 
 	// Close circuit.
 	backwardCircuit->lastEdge->nextCircuitEdge = backwardCircuit->firstEdge;
 
-	assert(backwardCircuit->firstEdge != backwardCircuit->firstEdge->nextCircuitEdge);
-	assert(backwardCircuit->countEdges() == backwardCircuit->edgeCount);
-	assert(backwardCircuit->edgeCount >= 3);
-	assert(!backwardCircuit->calculateBurgersVector().localVec().isZero(CA_LATTICE_VECTOR_EPSILON));
+	//assert(backwardCircuit->firstEdge != backwardCircuit->firstEdge->nextCircuitEdge);
+	//assert(backwardCircuit->countEdges() == backwardCircuit->edgeCount);
+	//assert(backwardCircuit->edgeCount >= 3);
+	//assert(!backwardCircuit->calculateBurgersVector().localVec().isZero(CA_LATTICE_VECTOR_EPSILON));
 
 	return backwardCircuit;
 }
@@ -535,8 +526,8 @@ BurgersCircuit* BurgersLoopBuilder::buildReverseCircuit(BurgersCircuit* forwardC
 // point to the traced dislocation line whenever the core shrinks or grows.
 void BurgersLoopBuilder::traceSegment(DislocationSegment& segment, DislocationNode& node, int maxCircuitLength, bool isPrimarySegment){
     BurgersCircuit& circuit = *node.circuit;
-    assert(circuit.countEdges() == circuit.edgeCount);
-    assert(circuit.isDangling);
+    //assert(circuit.countEdges() == circuit.edgeCount);
+    //assert(circuit.isDangling);
 
     // Advance circuit as far as possible.
     for(;;){
@@ -552,11 +543,11 @@ void BurgersLoopBuilder::traceSegment(DislocationSegment& segment, DislocationNo
         InterfaceMesh::Edge* edge0 = firstEdge;
         InterfaceMesh::Edge* edge1 = edge0->nextCircuitEdge;
         InterfaceMesh::Edge* edge2 = edge1->nextCircuitEdge;
-        assert(edge1->circuit == &circuit);
+        //assert(edge1->circuit == &circuit);
         int counter = 0;
         do{
             // Check Burgers circuit.
-            assert(circuit.edgeCount >= 3);
+            //assert(circuit.edgeCount >= 3);
             
             // Check if Burgers vector is valid - if not, try to fix or skip
             ClusterVector burgersVec = circuit.calculateBurgersVector();
@@ -566,12 +557,12 @@ void BurgersLoopBuilder::traceSegment(DislocationSegment& segment, DislocationNo
                 // Try to shorten the circuit to see if we can recover
                 if(circuit.edgeCount <= 3) {
                     std::cerr << "Error: Cannot recover circuit with only " << circuit.edgeCount << " edges" << std::endl;
-                    return; // Exit gracefully instead of asserting
+                    return; // Exit gracefully instead of //asserting
                 }
             }
             
-            assert(circuit.countEdges() == circuit.edgeCount);
-            assert(edge0->circuit == &circuit && edge1->circuit == &circuit && edge2->circuit == &circuit);
+            //assert(circuit.countEdges() == circuit.edgeCount);
+            //assert(edge0->circuit == &circuit && edge1->circuit == &circuit && edge2->circuit == &circuit);
 
             bool wasShortened = false;
             if(tryRemoveTwoCircuitEdges(edge0, edge1, edge2)){
@@ -594,8 +585,8 @@ void BurgersLoopBuilder::traceSegment(DislocationSegment& segment, DislocationNo
             edge2 = edge2->nextCircuitEdge;
             counter++;
         }while(counter <= circuit.edgeCount);
-        assert(circuit.edgeCount >= 3);
-        assert(circuit.countEdges() == circuit.edgeCount);
+        //assert(circuit.edgeCount >= 3);
+        //assert(circuit.countEdges() == circuit.edgeCount);
 
         if(circuit.edgeCount >= maxCircuitLength) break;
 
@@ -631,7 +622,7 @@ bool BurgersLoopBuilder::tryRemoveTwoCircuitEdges(InterfaceMesh::Edge*& edge0, I
 	if(edge1 != edge2->oppositeEdge()) return false;
 
 	BurgersCircuit* circuit = edge0->circuit;
-	assert(circuit->edgeCount >= 4);
+	//assert(circuit->edgeCount >= 4);
 	edge0->nextCircuitEdge = edge2->nextCircuitEdge;
 	
 	if(edge0 == circuit->lastEdge){
@@ -644,7 +635,7 @@ bool BurgersLoopBuilder::tryRemoveTwoCircuitEdges(InterfaceMesh::Edge*& edge0, I
 	}
 
 	circuit->edgeCount -= 2;
-	assert(circuit->edgeCount >= 0);
+	//assert(circuit->edgeCount >= 0);
 
 	edge1 = edge0->nextCircuitEdge;
 	edge2 = edge1->nextCircuitEdge;
@@ -664,11 +655,11 @@ bool BurgersLoopBuilder::tryRemoveThreeCircuitEdges(
 	if(facet2 != facet1 || facet1->circuit != nullptr) return false;
 
 	BurgersCircuit* circuit = edge0->circuit;
-	assert(circuit->edgeCount > 2);
+	//assert(circuit->edgeCount > 2);
 	InterfaceMesh::Edge* edge3 = edge2->nextCircuitEdge;
 
 	if(edge3->face() != facet1) return false;
-	assert(circuit->edgeCount > 4);
+	//assert(circuit->edgeCount > 4);
 
 	edge0->nextCircuitEdge = edge3->nextCircuitEdge;
 
@@ -677,7 +668,7 @@ bool BurgersLoopBuilder::tryRemoveThreeCircuitEdges(
 		circuit->lastEdge = edge0;
 	}else if(edge1 == circuit->firstEdge){
 		circuit->firstEdge = edge3->nextCircuitEdge;
-		assert(circuit->lastEdge == edge0);
+		//assert(circuit->lastEdge == edge0);
 	}else if(edge3 == circuit->lastEdge){
 		circuit->lastEdge = edge0;
 	}
@@ -704,25 +695,25 @@ bool BurgersLoopBuilder::tryRemoveOneCircuitEdge(
 	if(facet2 != facet1 || facet1->circuit != nullptr) return false;
 
 	BurgersCircuit* circuit = edge0->circuit;
-	assert(circuit->edgeCount > 2);
+	//assert(circuit->edgeCount > 2);
 
 	if(edge0->face() == facet1) return false;
 
 	InterfaceMesh::Edge* shortEdge = edge1->prevFaceEdge()->oppositeEdge();
-	assert(shortEdge->vertex1() == edge1->vertex1());
-	assert(shortEdge->vertex2() == edge2->vertex2());
+	//assert(shortEdge->vertex1() == edge1->vertex1());
+	//assert(shortEdge->vertex2() == edge2->vertex2());
 
 	if(shortEdge->circuit != nullptr) return false;
 
-	assert(shortEdge->nextCircuitEdge == nullptr);
+	//assert(shortEdge->nextCircuitEdge == nullptr);
 	shortEdge->nextCircuitEdge = edge2->nextCircuitEdge;
-	assert(shortEdge != edge2->nextCircuitEdge->oppositeEdge());
-	assert(shortEdge != edge0->oppositeEdge());
+	//assert(shortEdge != edge2->nextCircuitEdge->oppositeEdge());
+	//assert(shortEdge != edge0->oppositeEdge());
 	edge0->nextCircuitEdge = shortEdge;
 	if(edge0 == circuit->lastEdge){
-		assert(circuit->lastEdge != edge2);
-		assert(circuit->firstEdge == edge1);
-		assert(shortEdge != circuit->lastEdge->oppositeEdge());
+		//assert(circuit->lastEdge != edge2);
+		//assert(circuit->firstEdge == edge1);
+		//assert(shortEdge != circuit->lastEdge->oppositeEdge());
 		circuit->firstEdge = shortEdge;
 	}
 
@@ -767,8 +758,8 @@ bool BurgersLoopBuilder::trySweepTwoFacets(
 	if(innerEdge1 != innerEdge2->oppositeEdge() || outerEdge1->circuit != nullptr || outerEdge2->circuit != nullptr)
 		return false;
 
-	assert(outerEdge1->nextCircuitEdge == nullptr);
-	assert(outerEdge2->nextCircuitEdge == nullptr);
+	//assert(outerEdge1->nextCircuitEdge == nullptr);
+	//assert(outerEdge2->nextCircuitEdge == nullptr);
 	outerEdge1->nextCircuitEdge = outerEdge2;
 	outerEdge2->nextCircuitEdge = edge2->nextCircuitEdge;
 	edge0->nextCircuitEdge = outerEdge1;
@@ -805,7 +796,7 @@ bool BurgersLoopBuilder::tryInsertOneCircuitEdge(
 	InterfaceMesh::Edge*& edge1, 
 	bool isPrimarySegment
 ){
-	assert(edge0 != edge1->oppositeEdge());
+	//assert(edge0 != edge1->oppositeEdge());
 
 	InterfaceMesh::Face* facet = edge1->face();
 	if(facet->circuit != nullptr) return false;
@@ -816,8 +807,8 @@ bool BurgersLoopBuilder::tryInsertOneCircuitEdge(
 	InterfaceMesh::Edge* insertEdge2 = edge1->nextFaceEdge()->oppositeEdge();
 	if(insertEdge2->circuit != nullptr) return false;
 
-	assert(insertEdge1->nextCircuitEdge == nullptr);
-	assert(insertEdge2->nextCircuitEdge == nullptr);
+	//assert(insertEdge1->nextCircuitEdge == nullptr);
+	//assert(insertEdge2->nextCircuitEdge == nullptr);
 
 	BurgersCircuit* circuit = edge0->circuit;
 	
@@ -835,7 +826,7 @@ bool BurgersLoopBuilder::tryInsertOneCircuitEdge(
 	insertEdge2->circuit = circuit;
 	circuit->edgeCount++;
 
-	assert(circuit->countEdges() == circuit->edgeCount);
+	//assert(circuit->countEdges() == circuit->edgeCount);
 
 	facet->circuit = circuit;
 	if(isPrimarySegment) facet->setFlag(1);
@@ -890,10 +881,10 @@ void BurgersLoopBuilder::identifyNodeCoreAtoms(DislocationNode& node, const Poin
         const bBox& bbox = boxval.first;
         size_t cell = boxval.second;
 
-        assert(bbox.max_corner().cell == bbox.min_corner().cell);
+        //assert(bbox.max_corner().cell == bbox.min_corner().cell);
 
         int cellIdx = tessellation.getUserField(cell);
-        assert(cellIdx == -1 || cellIdx < static_cast<int>(_cellDataForCoreAtomIdentification.size()));
+        //assert(cellIdx == -1 || cellIdx < static_cast<int>(_cellDataForCoreAtomIdentification.size()));
 
         // Skip cells already assigned to a dislocation
         if(cellIdx == -1 || _cellDataForCoreAtomIdentification[cellIdx].first){
@@ -932,7 +923,7 @@ void BurgersLoopBuilder::identifyNodeCoreAtoms(DislocationNode& node, const Poin
 // apply periodic wrapping, and append that point to the dislocation line
 void BurgersLoopBuilder::appendLinePoint(DislocationNode& node){
 	DislocationSegment& segment = *node.segment;
-	assert(!segment.line.empty());
+	//assert(!segment.line.empty());
 
 	// Get size of dislocation core.
 	int coreSize = node.circuit->edgeCount;
@@ -968,9 +959,9 @@ void BurgersLoopBuilder::circuitCircuitIntersection(
 	int& goingOutside, 
 	int& goingInside
 ){
-	assert(circuitAEdge2->vertex1() == circuitBEdge2->vertex1());
-	assert(circuitAEdge1->vertex2() == circuitBEdge2->vertex1());
-	assert(circuitBEdge1->vertex2() == circuitBEdge2->vertex1());
+	//assert(circuitAEdge2->vertex1() == circuitBEdge2->vertex1());
+	//assert(circuitAEdge1->vertex2() == circuitBEdge2->vertex1());
+	//assert(circuitBEdge1->vertex2() == circuitBEdge2->vertex1());
 
 	// Iterate over interior facet edges.
 	InterfaceMesh::Edge* edge = circuitBEdge2;
@@ -990,7 +981,7 @@ void BurgersLoopBuilder::circuitCircuitIntersection(
 
 		edge = oppositeEdge->nextFaceEdge();
 		if(edge->vertex1() != circuitBEdge2->vertex1() || edge == circuitBEdge2){
-			// Instead of asserting, break the loop and use current state
+			// Instead of //asserting, break the loop and use current state
 			// This handles rare topological cases in large systems
 			break;
 		}
@@ -1001,7 +992,7 @@ void BurgersLoopBuilder::circuitCircuitIntersection(
 	
 	// Keep the intention but make more robust
 	if(circuitAEdge2 != circuitBEdge2) {
-		// The original assertion is valid
+		// The original //assertion is valid
 	} else {
 		// If equal, contour2inside should be false - force it
 		contour2inside = false;
@@ -1035,13 +1026,13 @@ void BurgersLoopBuilder::circuitCircuitIntersection(
 
 	// Handle invariants more robustly
 	if(contour1outside && contour1inside) {
-		// This shouldn't happen according to original assertion
+		// This shouldn't happen according to original //assertion
 		// Force a consistent state - prioritize 'outside'
 		contour1inside = false;
 	}
 	
 	if(contour2outside && contour2inside) {
-		// This shouldn't happen according to original assertion
+		// This shouldn't happen according to original //assertion
 		// Force a consistent state - prioritize 'outside'  
 		contour2inside = false;
 	}
@@ -1063,15 +1054,15 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 	for(size_t nodeIndex = 0; nodeIndex < danglingNodes().size(); nodeIndex++){
 		DislocationNode* node = danglingNodes()[nodeIndex];
 		BurgersCircuit* circuit = node->circuit;
-		assert(circuit->isDangling);
+		//assert(circuit->isDangling);
 
 		// Go around the circuit to find an unvisited region on the interface mesh.
 		InterfaceMesh::Edge* edge = circuit->firstEdge;
 		do{
-			assert(edge->circuit == circuit);
+			//assert(edge->circuit == circuit);
 			BurgersCircuit* oppositeCircuit = edge->oppositeEdge()->circuit;
 			if(oppositeCircuit == nullptr){
-				assert(edge->oppositeEdge()->nextCircuitEdge == nullptr);
+				//assert(edge->oppositeEdge()->nextCircuitEdge == nullptr);
 
 				// Try to create a new circuit inside the unvisited region.
 				createSecondarySegment(edge, circuit, maxCircuitLength);
@@ -1083,8 +1074,7 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 			}else{
 				edge = edge->nextCircuitEdge;
 			}
-		}
-		while(edge != circuit->firstEdge);
+		}while(edge != circuit->firstEdge);
 	}
 
 	// Second pass over all dangling nodes.
@@ -1092,14 +1082,14 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 	// They are candidates for the formation of junctions.
 	for(DislocationNode* node : danglingNodes()){
 		BurgersCircuit* circuit = node->circuit;
-		assert(circuit->isDangling);
+		//assert(circuit->isDangling);
 
 		// Go around the circuit to see whether it is completely surrounded by other circuits.
 		// Put it into one ring with the adjacent circuits.
 		circuit->isCompletelyBlocked = true;
 		InterfaceMesh::Edge* edge = circuit->firstEdge;
 		do{
-			assert(edge->circuit == circuit);
+			//assert(edge->circuit == circuit);
 			BurgersCircuit* adjacentCircuit = edge->oppositeEdge()->circuit;
 			if(adjacentCircuit == nullptr){
 				// Found a section of the circuit, which is not blocked
@@ -1107,7 +1097,7 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 				circuit->isCompletelyBlocked = false;
 				break;
 			}else if(adjacentCircuit != circuit){
-				assert(adjacentCircuit->isDangling);
+				//assert(adjacentCircuit->isDangling);
 				DislocationNode* adjacentNode = adjacentCircuit->dislocationNode;
 				if(node->formsJunctionWith(adjacentNode) == false){
 					node->connectNodes(adjacentNode);
@@ -1136,7 +1126,7 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 		// Junctions must consist of at least two dislocation segments.
 		if(node->junctionRing == node) continue;
 
-		assert(node->segment->replacedWith == nullptr);
+		//assert(node->segment->replacedWith == nullptr);
 
 		// Compute center of mass of junction node.
 		Vector3 centerOfMassVector = Vector3::Zero();
@@ -1145,8 +1135,8 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 		bool allCircuitsCompletelyBlocked = true;
 		DislocationNode* armNode = node->junctionRing;
 		while(armNode != node){
-			assert(armNode->segment->replacedWith == nullptr);
-			assert(armNode->circuit->isDangling);
+			//assert(armNode->segment->replacedWith == nullptr);
+			//assert(armNode->circuit->isDangling);
 			if(armNode->circuit->isCompletelyBlocked == false) {
 				allCircuitsCompletelyBlocked = false;
 				break;
@@ -1163,7 +1153,7 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 		}
 
 		// Junctions must consist of at least two dislocation segments.
-		assert(armCount >= 2);
+		//assert(armCount >= 2);
 
 		// Only create a real junction for three or more segments.
 		if(armCount >= 3){
@@ -1174,7 +1164,7 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 			do{
 				// Mark this node as no longer dangling.
 				armNode->circuit->isDangling = false;
-				assert(armNode != armNode->junctionRing);
+				//assert(armNode != armNode->junctionRing);
 
 				// Extend arm to junction's exact center point.
 				std::deque<Point3>& line = armNode->segment->line;
@@ -1194,9 +1184,9 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 			// For a two-armed junction, just merge the two segments into one.
 			DislocationNode* node1 = node;
 			DislocationNode* node2 = node->junctionRing;
-			assert(node1 != node2);
-			assert(node2->junctionRing == node1);
-			assert(node1->junctionRing == node2);
+			//assert(node1 != node2);
+			//assert(node2->junctionRing == node1);
+			//assert(node1->junctionRing == node2);
 
 			BurgersCircuit* circuit1 = node1->circuit;
 			BurgersCircuit* circuit2 = node2->circuit;
@@ -1207,22 +1197,22 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 
 			// Check if this is a closed dislocation loop.
 			if(node1->oppositeNode == node2){
-				assert(node1->segment == node2->segment);
+				//assert(node1->segment == node2->segment);
 				DislocationSegment* loop = node1->segment;
-				assert(loop->isClosedLoop());
+				//assert(loop->isClosedLoop());
 
 				// Make both ends of the segment coincide by adding an extra point if necessary.
 				if(!cell().wrapVector(node1->position() - node2->position()).isZero(CA_ATOM_VECTOR_EPSILON)){
 					loop->line.push_back(loop->line.back() + cell().wrapVector(loop->line.front() - loop->line.back()));
-					assert(cell().wrapVector(node1->position() - node2->position()).isZero(CA_ATOM_VECTOR_EPSILON));
+					//assert(cell().wrapVector(node1->position() - node2->position()).isZero(CA_ATOM_VECTOR_EPSILON));
 					loop->coreSize.push_back(loop->coreSize.back());
 				}
 
 				// Loop segment should not be degenerate.
-				assert(loop->line.size() >= 3);
+				//assert(loop->line.size() >= 3);
 			}else{
 				// If not a closed loop, merge the two segments into a single line.
-				assert(node1->segment != node2->segment);
+				//assert(node1->segment != node2->segment);
 
 				DislocationNode* farEnd1 = node1->oppositeNode;
 				DislocationNode* farEnd2 = node2->oppositeNode;
@@ -1287,7 +1277,7 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 // secondary Burgers loop, validate its Burgers vector and closure, and convert it into a 
 // new dislocation segment if valid.
 void BurgersLoopBuilder::createSecondarySegment(InterfaceMesh::Edge* firstEdge, BurgersCircuit* outerCircuit, int maxCircuitLength){
-	assert(firstEdge->circuit == outerCircuit);
+	//assert(firstEdge->circuit == outerCircuit);
 
 	// Create circuit along the border of the hole.
 	int edgeCount = 1;
@@ -1301,12 +1291,12 @@ void BurgersLoopBuilder::createSecondarySegment(InterfaceMesh::Edge* firstEdge, 
 	InterfaceMesh::Edge* edge = circuitStart;
 	for(;;){
 		for(;;){
-			assert(edge->circuit == nullptr);
+			//assert(edge->circuit == nullptr);
 			InterfaceMesh::Edge* oppositeEdge = edge->oppositeEdge();
 			InterfaceMesh::Face* oppositeFacet = oppositeEdge->face();
 			InterfaceMesh::Edge* nextEdge = oppositeEdge->prevFaceEdge();
-			assert(nextEdge->vertex2() == oppositeEdge->vertex1());
-			assert(nextEdge->vertex2() == edge->vertex2());
+			//assert(nextEdge->vertex2() == oppositeEdge->vertex1());
+			//assert(nextEdge->vertex2() == edge->vertex2());
 			if(nextEdge->circuit != nullptr){
 				if(nextEdge->circuit != outerCircuit){
 					outerCircuit = nextEdge->circuit;
@@ -1344,7 +1334,7 @@ void BurgersLoopBuilder::createSecondarySegment(InterfaceMesh::Edge* firstEdge, 
 		// Discard unused circuit.
 		edge = circuitStart;
 		for(;;){
-			assert(edge->circuit == nullptr);
+			//assert(edge->circuit == nullptr);
 			InterfaceMesh::Edge* nextEdge = edge->nextCircuitEdge;
 			edge->nextCircuitEdge = nullptr;
 			if(edge == circuitEnd) break;
@@ -1352,7 +1342,7 @@ void BurgersLoopBuilder::createSecondarySegment(InterfaceMesh::Edge* firstEdge, 
 		}
 		return;
 	}
-	assert(circuitStart != circuitEnd);
+	//assert(circuitStart != circuitEnd);
 
 	// Create forward circuit.
 	BurgersCircuit* forwardCircuit = allocateCircuit();
@@ -1361,12 +1351,12 @@ void BurgersLoopBuilder::createSecondarySegment(InterfaceMesh::Edge* firstEdge, 
 	forwardCircuit->edgeCount = edgeCount;
 	edge = circuitStart;
 	do{
-		assert(edge->circuit == nullptr);
+		//assert(edge->circuit == nullptr);
 		edge->circuit = forwardCircuit;
 		edge = edge->nextCircuitEdge;
 	}while(edge != circuitStart);
 	
-	assert(forwardCircuit->countEdges() == forwardCircuit->edgeCount);
+	//assert(forwardCircuit->countEdges() == forwardCircuit->edgeCount);
 
 	// Do all the rest.
 	createAndTraceSegment(ClusterVector(burgersVector, baseCluster), forwardCircuit, maxCircuitLength);

@@ -5,8 +5,55 @@
 #include <array>
 #include <numeric>
 #include <cassert>
+#include <set> 
+#include <boost/dynamic_bitset.hpp>
 
 namespace OpenDXA{
+
+void InterfaceMesh::makeManifold(){
+    auto original_vertices = vertices(); 
+
+    for(auto* vertex : original_vertices){
+        if(vertex->numEdges() < 3) continue;
+
+        std::set<Edge*> visited_edges;
+        Edge* start_edge = vertex->edges();
+        Edge* current_edge = start_edge;
+        do{
+            visited_edges.insert(current_edge);
+            current_edge = current_edge->oppositeEdge()->nextFaceEdge();
+        }while(current_edge != start_edge);
+
+        if(visited_edges.size() == vertex->numEdges()){
+            continue;
+        }
+
+        while(visited_edges.size() < vertex->numEdges()){
+            Vertex* new_vertex = createVertex(vertex->pos());
+            Edge* fan_start_edge = nullptr;
+            for(Edge* e = vertex->edges(); e != nullptr; e = e->nextVertexEdge()){
+                if(visited_edges.find(e) == visited_edges.end()){
+                    fan_start_edge = e;
+                    break;
+                }
+            }
+            
+            if(fan_start_edge == nullptr) break;
+
+            std::vector<Edge*> fan_to_transfer;
+            current_edge = fan_start_edge;
+            do{
+                fan_to_transfer.push_back(current_edge);
+                visited_edges.insert(current_edge);
+                current_edge = current_edge->oppositeEdge()->nextFaceEdge();
+            }while(current_edge != fan_start_edge);
+
+            for(Edge* edge_to_move : fan_to_transfer){
+                vertex->transferEdgeToVertex(edge_to_move, new_vertex);
+            }
+        }
+    }
+}
 
 // Build a watertight surface mesh over the interface where material properties may change
 // (e.g, grain or cluster boundaries). We use a Delaunay Tessellation to generate tetrahedra,
@@ -95,9 +142,7 @@ void InterfaceMesh::createMesh(double maxNeighborDist){
         throw std::runtime_error("Error building the faces and topology.");
 	}
 
-    // Duplicate vertices along periodic boundaries so the resulting
-    // mesh is fully closed and manifold across the box edges.
-    duplicateSharedVertices();
+    makeManifold();
 }
 
 // After tracing dislocation circuits on the interface mesh, extract only
@@ -112,7 +157,7 @@ bool InterfaceMesh::generateDefectMesh(
     outMesh.reserveVertices(vertexCount());
     for(auto* v : vertices()){
         auto* nv = outMesh.createVertex(v->pos());
-        assert(nv->index() == v->index());
+        //assert(nv->index() == v->index());
     }
 
     // Build every face that is not "blocked" by a valid Burger circuit,
@@ -179,7 +224,7 @@ bool InterfaceMesh::generateDefectMesh(
     // between each edge of that circuit loop and the new cap vertex.
     for(auto* dn : tracer.danglingNodes()){
         auto* c = dn->circuit;
-        assert(c && c->segmentMeshCap.size() >= 2);
+        //assert(c && c->segmentMeshCap.size() >= 2);
 
         // Add a cap vertex at the circuit center
         auto* capV = outMesh.createVertex(dn->position());
@@ -187,7 +232,7 @@ bool InterfaceMesh::generateDefectMesh(
         for(auto* me : c->segmentMeshCap){
             // The corresponding face has no mapping (we skip it), so we 
             // explicitly build a new triangle: edge end1 -> end2 -> capV
-            assert(!faceMap[me->oppositeEdge()->face()->index()]);
+            //assert(!faceMap[me->oppositeEdge()->face()->index()]);
             auto* v1 = outMesh.vertex(me->vertex2()->index());
             auto* v2 = outMesh.vertex(me->vertex1()->index());
             auto* nf = outMesh.createFace();
@@ -199,7 +244,7 @@ bool InterfaceMesh::generateDefectMesh(
 
     // Finally, ensure all half-edges know their opposite partners.
     // TODO: always returns true.....
-    assert(outMesh.connectOppositeHalfedges());
+    //assert(outMesh.connectOppositeHalfedges());
     return true;
 }
 

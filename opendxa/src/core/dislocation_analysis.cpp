@@ -625,8 +625,8 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         try{
             PROFILE("JSON Exporter - Export Analysis Data");
             result = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame, &tracer, &extractedStructureTypes);
-            /*_jsonExporter.exportInterfaceMeshToVTK(interfaceMesh, *structureAnalysis, "interface_mesh.vtk");
-            const int* intData = structureTypes->constDataInt();
+            _jsonExporter.exportInterfaceMeshToVTK(interfaceMesh, *structureAnalysis, "interface_mesh.vtk");
+            /*const int* intData = structureTypes->constDataInt();
             size_t dataSize = structureTypes->size();
             std::vector<int> tempVector(intData, intData + dataSize);
             _jsonExporter.exportAtomsToVTK(frame, &tracer, &tempVector, "atoms.vtk");*/

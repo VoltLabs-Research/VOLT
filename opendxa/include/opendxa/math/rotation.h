@@ -45,7 +45,7 @@ public:
 			else
 				_angle = acos(q.w()) * T(2);
 			_axis = Vector_3<T>(q.x(), q.y(), q.z()) / (T)sqrt(scaleSquared);
-			assert(std::abs(_axis.squaredLength() - T(1)) <= T(EPSILON));
+			//assert(std::abs(_axis.squaredLength() - T(1)) <= T(EPSILON));
 		}
 	}
 

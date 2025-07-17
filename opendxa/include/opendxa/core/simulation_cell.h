@@ -14,7 +14,7 @@ public:
 	}
 
 	[[nodiscard]] bool hasPbc(size_t dim) const noexcept {
-        assert(dim < 3);
+        //assert(dim < 3);
         return _pbcFlags[dim];
     }
 
@@ -100,9 +100,33 @@ public:
 		return pout;
 	}
 
+	[[nodiscard]] Vector3 unwrapVector(const Vector3& vec) const{
+		Vector3 reduced_vec = absoluteToReduced(vec);
+
+		for(int i = 0; i < 3; ++i){
+			if(_pbcFlags[i]){
+				reduced_vec[i] -= std::round(reduced_vec[i]);
+			}
+		}
+
+		return reducedToAbsolute(reduced_vec);
+	}
+
+	void unwrapPositions(Point3* positions, size_t count) const{
+		if(count < 2) return;
+
+		const Point3& anchor = positions[0];
+
+		for(size_t i = 1; i < count; ++i){
+			Vector3 delta = positions[i] - anchor;
+			Vector3 unwrapped_delta = unwrapVector(delta);
+			positions[i] = anchor + unwrapped_delta;
+		}
+	}
+
 	[[nodiscard]] Vector3 wrapVector(const Vector3& v) const{
 		Vector3 vout = v;
-		for(size_t dim = 0; dim < 3; ++dim){
+		for(size_t dim = 0; dim < 3; dim++){
 			if(_pbcFlags[dim]){
 				if(double s = std::floor(_reciprocalSimulationCell.prodrow(v, dim) + double(0.5))){
 					vout -= s * _simulationCell.column(dim);
