@@ -1,5 +1,6 @@
-import { create } from 'zustand';
+import { create, type StateCreator } from 'zustand';
 import { api, API_BASE_URL } from '../services/api';
+import { createAsyncAction } from '../utilities/asyncAction';
 
 interface TrajectoryState{
     trajectories: any[];
@@ -11,53 +12,36 @@ interface TrajectoryState{
     createTrajectory: (newTrajectoryData: any) => Promise<void>;
 }
 
-const useTrajectoryStore = create<TrajectoryState>((set, get) => ({
-    trajectories: [],
-    isLoading: true,
-    isUploading: false,
-    error: null,
+const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
+    const asyncAction = createAsyncAction(set, get);
 
-    getTrajectories: async () => {
-        set({ isLoading: true, error: null });
-        try{
-            const response = await api.get(`${API_BASE_URL}/trajectories`);
-            set({ trajectories: response.data.data, isLoading: false });
-        }catch(err: any){
-            const errorData = err.response?.data?.message || err.message;
-            set({ error: errorData, isLoading: false });
-        }
-    },
+    return {
+        trajectories: [],
+        isLoading: true,
+        isUploading: false,
+        error: null,
 
-    deleteTrajectory: async (id: string) => {
-        set({ isLoading: true, error: null });
-        try{
-            await api.delete(`${API_BASE_URL}/trajectories/${id}`);
-            set((state) => ({
-                trajectories: state.trajectories.filter(t => t.id !== id),
-                isLoading: false
-            }));
-        }catch(err: any){
-            const errorData = err.response?.data?.message || err.message;
-            set({ error: errorData, isLoading: false });
-            throw errorData;
-        }
-    },
+        getTrajectories: () => asyncAction(() => api.get(`${API_BASE_URL}/trajectories`), {
+            loadingKey: 'isLoading',
+            onSuccess: (res) => ({ trajectories: res.data.data })
+        }),
 
-    createTrajectory: async (formData: FormData) => {
-        set({ isUploading: true, error: null });
-        try{
-            const response = await api.post(`${API_BASE_URL}/trajectories`, formData);
-            // the response is an object that contains the created trajectory data
-            set((state) => ({
-                trajectories: [...state.trajectories, response.data.data],
-                isUploading: false
-            }));
-        }catch(err: any){
-            const errorData = err.response?.data?.message || err.message;
-            set({ error: errorData, isUploading: false });
-            throw errorData;
-        }
+        deleteTrajectory: (id: string) => asyncAction(() => api.delete(`${API_BASE_URL}/trajectories/${id}`), {
+            loadingKey: 'isLoading',
+            onSuccess: (_, state) => ({
+                trajectories: state.trajectories.filter((trajectory) => trajectory.id !== id)
+            })
+        }),
+
+        createTrajectory: (formData: FormData) => asyncAction(() => api.post(`${API_BASE_URL}/trajectories`, formData), {
+            loadingKey: 'isUploading',
+            onSuccess: (res, state) => ({
+                trajectories: [...state.trajectories, res.data.data]
+            })
+        })
     }
-}));
+};
+
+const useTrajectoryStore = create<TrajectoryState>(trajectoryStoreCreator);
 
 export default useTrajectoryStore;
