@@ -1,8 +1,8 @@
 import OpenDXAService from '@services/opendxa';
-import{ mkdir } from 'fs/promises';
-import{ redis, createRedisClient } from '@config/redis'; 
-import{ existsSync } from 'fs';
-import{ join } from 'path';
+import { mkdir } from 'fs/promises';
+import { redis, createRedisClient } from '@config/redis'; 
+import { existsSync } from 'fs';
+import { join } from 'path';
 import IORedis from 'ioredis';
 
 interface AnalysisJob{
@@ -17,6 +17,7 @@ export class AnalysisProcessingQueue{
     private readonly queueKey: string;
     private readonly processingKey: string;
     private readonly statusKeyPrefix: string;
+    private readonly statusChannel: string;
     private readonly maxConcurrentJobs: number;
 
     private activeWorkers = 0;
@@ -27,6 +28,7 @@ export class AnalysisProcessingQueue{
         this.queueKey = process.env.ANALYSIS_QUEUE_NAME as string || 'analysis_queue';
         this.processingKey = `${this.queueKey}:processing`;
         this.statusKeyPrefix = `${this.queueKey}:status:`;
+        this.statusChannel = 'analysis-status-updates';
         this.maxConcurrentJobs = parseInt(process.env.MAX_CONCURRENT_ANALYSES || '2', 10);
         
         console.log(`[Queue] Starting ${this.maxConcurrentJobs} parallel analysis workers.`);
@@ -111,8 +113,11 @@ export class AnalysisProcessingQueue{
     }
 
     private async setJobStatus(trajectoryId: string, status: string, data: any ={}): Promise<void>{
-        const statusData ={ status, timestamp: new Date().toISOString(), ...data };
-        await redis.set(`${this.statusKeyPrefix}${trajectoryId}`, JSON.stringify(statusData), 'EX', 86400);
+        const statusData ={ trajectoryId, status, timestamp: new Date().toISOString(), ...data };
+        const statusString = JSON.stringify(statusData);
+        
+        await redis.set(`${this.statusKeyPrefix}${trajectoryId}`, statusString, 'EX', 86400);
+        await redis.publish(this.statusChannel, statusString);
     }
 }
 
