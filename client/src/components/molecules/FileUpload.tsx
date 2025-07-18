@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { uploadTrajectoryFiles, analyzeTrajectory } from '../../services/api';
+import React, { useRef, useEffect } from 'react';
 import Loader from '../atoms/Loader';
+import useTrajectoryUpload from '../../hooks/useTrajectoryUpload';
+import type { FileWithPath } from '../../hooks/useTrajectoryUpload';
 
-interface FileUploadProps {
+interface FileUploadProps{
     onUploadSuccess?: (res: any) => void;
     onUploadError?: (err: any) => void;
     analysisConfig: any;
@@ -17,82 +18,79 @@ const FileUpload: React.FC<FileUploadProps> = ({
     className = '',
     children,
 }) => {
-    const [uploading, setUploading] = useState(false);
-    const [analyzing, setAnalyzing] = useState(false);
+    const { uploadAndProcessTrajectory, isLoading, error, data } = useTrajectoryUpload();
     const dropRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if(data){
+            onUploadSuccess?.(data);
+        }
+    }, [data, onUploadSuccess]);
+
+    useEffect(() => {
+        if(error){
+            onUploadError?.(error);
+        }
+    }, [error, onUploadError]);
 
     const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
-        if (uploading || analyzing) return;
+        if(isLoading) return;
 
         const items = event.dataTransfer.items;
-        if (!items) return;
+        if(!items) return;
 
-        try {
-            setUploading(true);
-            const formData = new FormData();
+        try{
+            const filesWithPaths: FileWithPath[] = []; 
             let originalFolderName: string | null = null;
+
             const processEntry = async (entry: any): Promise<void> => {
-                if (entry.isFile) {
-                    const file = await new Promise<File>(resolve => entry.file(resolve));
-                    formData.append('files', file, entry.name);
-                    if (!originalFolderName && entry.fullPath) {
-                        const pathParts = entry.fullPath.split('/').filter(p => p);
-                        if (pathParts.length > 1) {
+                if(entry.isFile){
+                    const file = await new Promise<File>((resolve) => entry.file(resolve));
+                    const relativePath = entry.fullPath.startsWith('/') ? entry.fullPath.slice(1) : entry.fullPath;
+                    filesWithPaths.push({ file, path: relativePath });
+
+                    if(!originalFolderName && entry.fullPath){
+                        const pathParts = entry.fullPath.split('/').filter((part) => part);
+                        if(pathParts.length > 1){
                             originalFolderName = pathParts[0];
                         }
                     }
-                } else if (entry.isDirectory) {
-                    if (!originalFolderName && entry.fullPath) {
-                        const pathParts = entry.fullPath.split('/').filter(p => p);
-                        if (pathParts.length > 0) {
+                }else if(entry.isDirectory){
+                    if(!originalFolderName && entry.fullPath){
+                        const pathParts = entry.fullPath.split('/').filter((part) => part);
+                        if(pathParts.length > 0){
                             originalFolderName = pathParts[0];
                         }
                     }
+
                     const dirReader = entry.createReader();
-                    const entries = await new Promise<any[]>(resolve => dirReader.readEntries(resolve));
-                    for (const subEntry of entries) {
+                    const entries = await new Promise<any[]>((resolve) => dirReader.readEntries(resolve));
+                    for(const subEntry of entries){
                         await processEntry(subEntry);
                     }
                 }
             };
-            
-            for (let i = 0; i < items.length; i++) {
+
+            for(let i = 0; i < items.length; i++){
                 const item = items[i].webkitGetAsEntry();
-                if (item) {
+                if(item){
                     await processEntry(item);
                 }
             }
 
-            if (originalFolderName) {
-                formData.append('originalFolderName', originalFolderName);
+            if(filesWithPaths.length > 0 && originalFolderName){
+                await uploadAndProcessTrajectory(filesWithPaths, originalFolderName, analysisConfig);
+            }else{
+                console.warn('No files were found or the parent folder could not be determined.');
             }
-            
-            console.log(`Subiendo la carpeta: ${originalFolderName || 'desconocida'}...`);
-            const uploadResponse = await uploadTrajectoryFiles(formData);
-
-            console.log('Subida completada:', uploadResponse);
-            setUploading(false);
-            
-            setAnalyzing(true);
-            const folderId = uploadResponse.data.folderId;
-            console.log(`Iniciando análisis para la carpeta ${folderId}...`);
-            await analyzeTrajectory(folderId, analysisConfig);
-            console.log('Solicitud de análisis enviada.');
-
-            onUploadSuccess?.(uploadResponse.data.simulationInfo);
-
-        } catch (err) {
-            console.error('Fallo en el proceso de subida o análisis:', err);
-            onUploadError?.(err);
-        } finally {
-            setUploading(false);
-            setAnalyzing(false);
+        }catch(err){
+            console.error(err);
         }
     };
 
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
+    const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
     };
 
     return (
@@ -103,12 +101,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
             className={'file-upload-container '.concat(className)}
         >
             {children}
-            {(uploading || analyzing) && (
+            {isLoading && (
                 <div className='file-upload-loader-container'>
                     <Loader scale={0.78} />
-                    <p className='file-upload-loader-progress'>
-                        {uploading ? 'Subiendo archivos...' : 'Iniciando análisis...'}
-                    </p>
+                    <p className='file-upload-loader-progress'>Processing...</p>
                 </div>
             )}
         </div>

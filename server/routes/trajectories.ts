@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import * as controller from '@controllers/trajectories';
 import * as middleware from '@middlewares/trajectory';
+import * as authMiddleware from '@middlewares/authentication';
 
 const router = Router();
 
@@ -16,8 +17,7 @@ const upload = multer({
     }
 });
 
-// TODO:
-// router.use(protect);
+router.use(authMiddleware.protect);
 
 router.route('/')
     .get(controller.getUserTrajectories)

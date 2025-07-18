@@ -34,8 +34,8 @@ export const analyzeTrajectory = async (folderId: string, config: any): Promise<
     return response.data;
 };
 
-export const uploadTrajectoryFiles = async (formData: FormData): Promise<any> => {
-    const response = await axios.post(`${API_BASE_URL}/dislocations`, formData, {
+export const createTrajectory = async (formData: FormData): Promise<any> => {
+    const response = await axios.post(`${API_BASE_URL}/trajectories`, formData, {
         timeout: 300000
     });
 
