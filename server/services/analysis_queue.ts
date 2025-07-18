@@ -1,8 +1,9 @@
 import OpenDXAService from '@services/opendxa';
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { redis } from '@config/redis';
-import { existsSync } from 'fs';
-import { join } from 'path';
+import{ mkdir } from 'fs/promises';
+import{ redis, createRedisClient } from '@config/redis'; 
+import{ existsSync } from 'fs';
+import{ join } from 'path';
+import IORedis from 'ioredis';
 
 interface AnalysisJob{
     folderId: string;
@@ -13,108 +14,113 @@ interface AnalysisJob{
 }
 
 export class AnalysisProcessingQueue{
-    private isProcessing = false;
-    private readonly queueKey = 'analysis_queue';
-    private readonly processingKey = 'analysis_processing';
-    private readonly statusKeyPrefix = 'analysis_status';
+    private readonly queueKey: string;
+    private readonly processingKey: string;
+    private readonly statusKeyPrefix: string;
+    private readonly maxConcurrentJobs: number;
+
+    private activeWorkers = 0;
+    private isShutdown = false;
+    private workerClients: IORedis[] = [];
 
     constructor(){
-        this.startProcessingLoop();
-    }
-
-    public async addJob(job: AnalysisJob): Promise<void>{
-        await redis!.lpush(this.queueKey, JSON.stringify(job));
-        await this.setJobStatus(job.folderId, 'queued');
-    }
-
-    public async getStatus(){
-        const [pending, processing, queuedData, processingData] = await redis!.multi()
-            .llen(this.queueKey)
-            .llen(this.processingKey)
-            .lrange(this.queueKey, 0, -1)
-            .lrange(this.processingKey, 0, -1)
-            .exec();
+        this.queueKey = process.env.ANALYSIS_QUEUE_NAME as string || 'analysis_queue';
+        this.processingKey = `${this.queueKey}:processing`;
+        this.statusKeyPrefix = `${this.queueKey}:status:`;
+        this.maxConcurrentJobs = parseInt(process.env.MAX_CONCURRENT_ANALYSES || '2', 10);
         
-        return {
-            isProcessing: this.isProcessing,
-            pendingJobs: pending[1] as number,
-            processingJobs: processing[1] as number,
-            queuedJobs: (queuedData[1] as string[]).map(this.parseJobId),
-            processingJobsList: (processingData[1] as string[]).map(this.parseJobId)
-        };
+        console.log(`[Queue] Starting ${this.maxConcurrentJobs} parallel analysis workers.`);
+        this.startWorkers();
     }
 
-    public async getJobStatus(folderId: string): Promise<any>{
-        const statusData = await redis!.get(`${this.statusKeyPrefix}${folderId}`);
-        return JSON.parse(statusData || '{}');
-    }
-
-    private async startProcessingLoop(): Promise<void>{
-        if(this.isProcessing) return;
-        this.isProcessing = true;
-        const job = await this.getNextJob();
-        if(job){
-            await this.executeJob(job);
+    private startWorkers(): void{
+        for(let i = 0; i < this.maxConcurrentJobs; i++){
+            this.runWorker(i + 1);
         }
-        this.isProcessing = false;
-        // call the next cycle safely
-        setImmediate(() => this.startProcessingLoop());
     }
 
-    private async executeJob({ job, rawData }: { job: AnalysisJob, rawData?: string }): Promise<void>{
-        await this.setJobStatus(job.folderId, 'running');
+    private async runWorker(workerId: number): Promise<void>{
+        const workerRedis = createRedisClient();
+        this.workerClients.push(workerRedis);
+        console.log(`[Worker #${workerId}] Online and waiting for jobs.`);
+
+        while(!this.isShutdown){
+            try{
+                const rawData = await workerRedis.brpoplpush(this.queueKey, this.processingKey, 0);
+
+                if(rawData){
+                    this.activeWorkers++;
+                    console.log(`[Worker #${workerId}] Picked up job. Active jobs: ${this.activeWorkers}`);
+                    const job = JSON.parse(rawData)as AnalysisJob;
+                    await this.executeJob(job, rawData, workerId);
+                    this.activeWorkers--;
+                    console.log(`[Worker #${workerId}] Finished job. Active jobs: ${this.activeWorkers}`);
+                }
+            }catch(error){
+                if(error.message.includes('Connection is closed')){
+                    console.log(`[Worker #${workerId}] Connection closed, shutting down worker.`);
+                    break; 
+                }
+                console.error(`[Worker #${workerId}] Critical error in worker loop.`, error);
+                if(!this.isShutdown){
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                }
+            }
+        }
+        await workerRedis.quit();
+        console.log(`[Worker #${workerId}] Offline.`);
+    }
+    
+    private async executeJob(job: AnalysisJob, rawData: string, workerId: number): Promise<void>{
+        await this.setJobStatus(job.folderId, 'running',{ workerId });
         try{
             if(!existsSync(job.analysisPath)){
-                await mkdir(job.analysisPath, { recursive: true });
+                await mkdir(job.analysisPath,{ recursive: true });
             }
 
             const opendxa = new OpenDXAService();
             opendxa.configure(job.config);
             const result = await opendxa.analyzeTrajectory(job.trajectoryFiles, join(job.analysisPath, 'frame_{}'));
-            await this.setJobStatus(job.folderId, 'completed', { result });
-        }catch(error){
+            await this.setJobStatus(job.folderId, 'completed',{ result });
+        } catch(error){
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            console.error(`Job failed for ${job.folderId}:`, errorMessage);
-        }finally{
-            if(rawData){
-                await redis!.lrem(this.processingKey, 1, rawData);
-            }
+            console.error(`[Worker #${workerId}] Job for ${job.folderId} failed:`, errorMessage);
+            await this.setJobStatus(job.folderId, 'failed',{ error: errorMessage, workerId });
+        } finally{
+            await redis.lrem(this.processingKey, 1, rawData);
         }
     }
 
-    private parseJobId(jobData: string): string{
-        try{
-            return JSON.parse(jobData).folderId;
-        }catch{
-            return 'invalid_job_data';
-        }
+    public async addJob(job: AnalysisJob): Promise<void>{
+        await redis.lpush(this.queueKey, JSON.stringify(job));
+        await this.setJobStatus(job.folderId, 'queued');
     }
 
-    private async setJobStatus(folderId: string, status: string, data: any = {}): Promise<void>{
-        const statusData = { status, timestamp: new Date().toISOString(), ...data };
-        await redis!.set(`${this.statusKeyPrefix}${folderId}`, JSON.stringify(statusData), 'EX', 86400);
+    public async getStatus(){
+        const [pending, processing] = await redis.multi()
+            .llen(this.queueKey)
+            .llen(this.processingKey)
+            .exec();
+
+        return{ maxConcurrent: this.maxConcurrentJobs, activeWorkers: this.activeWorkers, pendingJobs: pending[1] as number, processingJobs: processing[1] as number };
     }
 
-    private async getNextJob(): Promise<{ job: AnalysisJob, rawData?: string } | null>{
-        try{
-            const rawData = await redis!.brpoplpush(this.queueKey, this.processingKey, 1);
-            if(rawData){
-                return { job: JSON.parse(rawData), rawData }
-            }
-        }catch(error){
-            console.error('Error getting job from Redis. Checking memory queue.', error);
-        }
+    public async getJobStatus(folderId: string): Promise<any>{
+        const statusData = await redis.get(`${this.statusKeyPrefix}${folderId}`);
+        return statusData ? JSON.parse(statusData):{ status: 'not_found' };
+    }
 
-        return null;
+    private async setJobStatus(folderId: string, status: string, data: any ={}): Promise<void>{
+        const statusData ={ status, timestamp: new Date().toISOString(), ...data };
+        await redis.set(`${this.statusKeyPrefix}${folderId}`, JSON.stringify(statusData), 'EX', 86400);
     }
 }
 
-// Singleton!
 let analysisProcessingQueue: AnalysisProcessingQueue | null = null;
 
-export const getAnalysisProcessingQueue = (): AnalysisProcessingQueue => {
+export const getAnalysisProcessingQueue =(): AnalysisProcessingQueue =>{
     if(!analysisProcessingQueue){
         analysisProcessingQueue = new AnalysisProcessingQueue();
     }
     return analysisProcessingQueue;
-}
+};

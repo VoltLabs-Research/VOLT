@@ -36,3 +36,7 @@ export const initializeRedis = () => {
         console.log('Redis is ready to accept commands');
     });
 }
+
+export const createRedisClient = () => {
+  return new Redis(getRedisConfig());
+};
