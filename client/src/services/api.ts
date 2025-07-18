@@ -11,18 +11,20 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-        const token = localStorage.getItem('authToken');
-        
-        if(token){
-            config.headers['Authorization'] = `Bearer ${token}`;
-        }
-        
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
+    const token = localStorage.getItem('authToken');
+    
+    if(token){
+        config.headers['Authorization'] = `Bearer ${token}`;
     }
-);
+    
+    if (config.data instanceof FormData) {
+        delete config.headers['Content-Type'];
+    }
+    
+    return config;
+},(error) => {
+    return Promise.reject(error);
+});
 
 export const listFolders = async (): Promise<string[]> => {
     const response = await api.get('/dislocations');
@@ -35,9 +37,7 @@ export const analyzeTrajectory = async (folderId: string, config: any): Promise<
 };
 
 export const createTrajectory = async (formData: FormData): Promise<any> => {
-    const response = await axios.post(`${API_BASE_URL}/trajectories`, formData, {
-        timeout: 300000
-    });
+    const response = await api.post(`${API_BASE_URL}/trajectories`, formData);
 
     return response.data;
 };

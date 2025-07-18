@@ -10,8 +10,10 @@ const App = () => {
 
     return (
         <Routes>
-            <Route path='/canva' element={<Canva />} />
-            <Route path='/dashboard' element={<Dashboard />} />
+            <Route element={<ProtectedRoute mode='protect' />}>
+                <Route path='/canva' element={<Canva />} />
+                <Route path='/dashboard' element={<Dashboard />} />
+            </Route>
 
             <Route element={<ProtectedRoute mode='guest' />}>
                 <Route path='/auth/sign-up' element={<SignUp />} />
