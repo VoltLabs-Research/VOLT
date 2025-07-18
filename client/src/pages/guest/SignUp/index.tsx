@@ -52,7 +52,7 @@ const SignUpPage = () => {
         }
     ];
 
-    const handleSignUp = async (formData) => {
+    const handleSubmit = async (formData) => {
         if(formData.password !== formData.passwordConfirm){
             return;
         }
@@ -67,7 +67,7 @@ const SignUpPage = () => {
                 isLoading={isLoading}
                 inputs={formInputs}
                 initialState={formInitialState}
-                onSubmit={handleSignUp}
+                onSubmit={handleSubmit}
             />
         </article>
     );
