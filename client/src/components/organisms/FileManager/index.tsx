@@ -1,10 +1,9 @@
 import React, { useEffect } from 'react';
 import { IoIosArrowDown } from 'react-icons/io';
-import useAPI from '../../../hooks/useAPI';
-import { deleteFolder, listFolders } from '../../../services/api';
 import FileItem from '../../molecules/FileItem';
 import Loader from '../../atoms/Loader';
 import EditorWidget from '../EditorWidget';
+import useTrajectoryStore from '../../../stores/trajectories';
 import './FileManager.css';
 
 interface FileManagerProps {
@@ -13,28 +12,22 @@ interface FileManagerProps {
     refreshTrigger?: number;
 }
 
+// TODO: Change component name to "Trajectories" or related. FileManager is not appropiated.
 const FileManager: React.FC<FileManagerProps> = ({
     onFileSelect,
     selectedFile,
-    refreshTrigger = 0
 }) => {
-    const {
-        data,
-        loading,
-        error,
-        execute: loadFolders
-    } = useAPI<any[]>(listFolders);
+    const { getTrajectories, deleteTrajectory, isLoading, trajectories, error } = useTrajectoryStore();
 
     useEffect(() => {
-        loadFolders();
-    }, [refreshTrigger]);
+        getTrajectories();
+    }, []);
 
     const handleDelete = async (folderId: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        try {
-            await deleteFolder(folderId);
-            loadFolders();
-        } catch (err) {
+        try{
+            await deleteTrajectory(folderId);
+        }catch(err){
             console.error('Error deleting folder:', err);
         }
     };
@@ -43,23 +36,23 @@ const FileManager: React.FC<FileManagerProps> = ({
         <EditorWidget className='editor-file-list-container'>
             <div className='editor-floating-header-container'>
                 <h3 className='editor-floating-header-title'>
-                    Uploaded Folders ({data?.length || 0})
+                    Uploaded Folders ({trajectories?.length || 0})
                 </h3>
                 <IoIosArrowDown className='editor-floating-header-icon' />
             </div>
 
             <div className='file-list-body-container'>
-                {loading ? (
+                {isLoading ? (
                     <div className='file-list-loading-container'>
                         <Loader scale={0.5} />
                     </div>
                 ) : (
-                    data?.map(({ folderId, ...folder_data }) => (
+                    trajectories?.map(({ folderId, ...data }) => (
                         <FileItem
                             key={folderId}
                             folderId={folderId}
                             isSelected={selectedFile === folderId}
-                            onSelect={() => onFileSelect({ folderId, ...folder_data })}
+                            onSelect={() => onFileSelect({ folderId, ...data })}
                             onDelete={(e) => handleDelete(folderId, e)}
                         />
                     ))

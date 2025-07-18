@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://0.0.0.0:8000/api';
+export const API_BASE_URL = 'http://0.0.0.0:8000/api';
 
 export const api = axios.create({
     baseURL: API_BASE_URL,
@@ -25,11 +25,6 @@ api.interceptors.request.use((config) => {
 },(error) => {
     return Promise.reject(error);
 });
-
-export const listFolders = async (): Promise<string[]> => {
-    const response = await api.get('/dislocations');
-    return response.data.simulations;
-};
 
 export const analyzeTrajectory = async (folderId: string, config: any): Promise<any> => {
     const response = await api.post(`/dislocations/trajectories/${folderId}/analyze`, config);
