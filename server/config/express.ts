@@ -45,7 +45,8 @@ configureApp({
     suffix: '/api/',
     routes: [
         'dislocations',
-        'trajectories'
+        'trajectories',
+        'auth'
     ],
     middlewares: [
         cors(corsOptions),

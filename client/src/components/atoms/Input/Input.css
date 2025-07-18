@@ -1,4 +1,4 @@
-.labeled-input {
+.labeled-input{
     width: 160px;
     height: 2rem;
     padding: 0 1rem;
@@ -7,12 +7,12 @@
     border-radius: .5rem;
 }
 
-.labeled-input:focus {
+.labeled-input:focus{
     outline: 2px solid #fd5b01;
     outline-offset: 2px;
 }
 
-.labeled-input:disabled {
+.labeled-input:disabled{
     opacity: 0.5;
     cursor: not-allowed;
 }
