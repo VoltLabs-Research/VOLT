@@ -17,6 +17,7 @@
           "@cli/*": ["./cli/*"],
           "@data/*": ["./data/*"],
           "@services/*": ["./services/*"],
+          "@middlewares/*": ["./middlewares/*"],
           "@types/*": ["./types/*"]
       }
   },
