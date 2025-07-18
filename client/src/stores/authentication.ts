@@ -1,5 +1,6 @@
-import { create } from 'zustand';
+import { create, type StateCreator } from 'zustand';
 import { api } from '../services/api';
+import { createAsyncAction } from '../utilities/asyncAction';
 
 interface AuthState {
     user: any | null;
@@ -10,46 +11,48 @@ interface AuthState {
     signOut: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-    user: null,
-    isLoading: true,
+const authStoreCreator: StateCreator<AuthState> = (set, get) => {
+    const asyncAction = createAsyncAction(set, get);
 
-    initializeAuth: async () => {
-        const token = localStorage.getItem('authToken');
-        if(token){
-            try{
-                const response = await api.get('/auth/me');
-                set({ user: response.data.data });
-            }catch{
-                localStorage.removeItem('authToken');
-                set({ user: null });
+    return {
+        user: null,
+        isLoading: true,
+
+        initializeAuth: () => asyncAction(() => api.get('/auth/me'), {
+            loadingKey: 'isLoading',
+            onSuccess: (res) => ({ user: res.data.data })
+        }),
+
+        signIn: (credentials) => asyncAction(() => api.post('/auth/sign-in', credentials), {
+            loadingKey: 'isLoading',
+            onSuccess: (res) => {
+                const { token, user } = res.data.data;
+                localStorage.setItem('authToken', token);
+                return { user };
             }
+        }),
+
+        signUp: (details) => asyncAction(() => api.post('/auth/sign-up', details), {
+            loadingKey: 'isLoading',
+            onSuccess: (res) => {
+                // Duplicated code with sign in logic
+                const { token, user } = res.data.data;
+                localStorage.setItem('authToken', token);
+                return { user };
+            }
+        }),
+
+        signOut: () => {
+            set({ isLoading: true });
+            localStorage.removeItem('authToken');
+            set({ user: null, isLoading: false });
         }
-        set({ isLoading: false });
-    },
+    }
+};
 
-    signIn: async (credentials) => {
-        set({ isLoading: true });
-        const response = await api.post('/auth/sign-in', credentials);
-        const { token, user } = response.data.data;
-        localStorage.setItem('authToken', token);
-        set({ user: user, isLoading: false });
-    },
-
-    signUp: async (details) => {
-        set({ isLoading: true });
-        const response = await api.post('/auth/sign-up', details);
-        const { token, user } = response.data.data;
-        localStorage.setItem('authToken', token);
-        set({ user: user, isLoading: false });
-    },
-
-    signOut: () => {
-        set({ isLoading: true });
-        localStorage.removeItem('authToken');
-        set({ user: null, isLoading: false });
-    },
-}));
+const useAuthStore = create<AuthState>(authStoreCreator);
 
 // Initial call to load user state from token
 useAuthStore.getState().initializeAuth();
+
+export default useAuthStore;

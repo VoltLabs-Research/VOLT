@@ -21,19 +21,19 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
         isUploading: false,
         error: null,
 
-        getTrajectories: () => asyncAction(() => api.get(`${API_BASE_URL}/trajectories`), {
+        getTrajectories: () => asyncAction(() => api.get('/trajectories'), {
             loadingKey: 'isLoading',
             onSuccess: (res) => ({ trajectories: res.data.data })
         }),
 
-        deleteTrajectory: (id: string) => asyncAction(() => api.delete(`${API_BASE_URL}/trajectories/${id}`), {
+        deleteTrajectory: (id: string) => asyncAction(() => api.delete('/trajectories/${id}'), {
             loadingKey: 'isLoading',
             onSuccess: (_, state) => ({
                 trajectories: state.trajectories.filter((trajectory) => trajectory.id !== id)
             })
         }),
 
-        createTrajectory: (formData: FormData) => asyncAction(() => api.post(`${API_BASE_URL}/trajectories`, formData), {
+        createTrajectory: (formData: FormData) => asyncAction(() => api.post('/trajectories', formData), {
             loadingKey: 'isUploading',
             onSuccess: (res, state) => ({
                 trajectories: [...state.trajectories, res.data.data]

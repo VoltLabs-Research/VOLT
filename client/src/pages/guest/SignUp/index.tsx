@@ -1,6 +1,5 @@
-import React from 'react';
 import BasicForm from '../../../components/organisms/BasicForm';
-import { useAuthStore } from '../../../stores/authentication';
+import useAuthStore from '../../../stores/authentication';
 
 const SignUpPage = () => {
     const { signUp, isLoading } = useAuthStore();

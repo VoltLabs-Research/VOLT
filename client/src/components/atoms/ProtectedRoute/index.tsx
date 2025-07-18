@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../../../stores/authentication';
+import useAuthStore from '../../../stores/authentication';
 import Loader from '../Loader';
 import './ProtectedRoute.css';
 
