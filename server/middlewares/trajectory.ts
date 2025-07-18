@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { extractTimesteps, isValidLammpsFile } from '@utilities/lammps';
 import { mkdir, writeFile, rmdir } from 'fs/promises';
-import Trajectory from '@models/trajectory';
 import { v4 as uuidv4 } from 'uuid';
 import { join } from 'path';
+import Trajectory from '@models/trajectory';
 
 export const processAndValidateUpload = async (req: Request, res: Response, next: NextFunction) => {
     const files = req.files as Express.Multer.File[];
@@ -61,7 +61,7 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
 export const checkTrajectoryOwnership = async (req: Request, res: Response, next: NextFunction) => {
     const { trajectoryId } = req.params;
     const userId = (req as any).user.id;
-    const trajectory = await Trajectory.findById(trajectoryId);
+    const trajectory = await Trajectory.findOne(trajectoryId);
 
     if(!trajectory){
         return res.status(404).json({

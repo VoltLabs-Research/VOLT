@@ -49,11 +49,12 @@ const FileManager: React.FC<FileManagerProps> = ({
                 ) : (
                     trajectories?.map(({ folderId, ...data }) => (
                         <FileItem
+                            /* TODO: (folderId === trajectoryId) != data._id */
                             key={folderId}
                             folderId={folderId}
                             isSelected={selectedFile === folderId}
                             onSelect={() => onFileSelect({ folderId, ...data })}
-                            onDelete={(e) => handleDelete(folderId, e)}
+                            onDelete={(e) => handleDelete(data._id, e)}
                         />
                     ))
                 )}
