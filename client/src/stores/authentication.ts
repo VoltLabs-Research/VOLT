@@ -11,6 +11,13 @@ interface AuthState {
     signOut: () => void;
 }
 
+// Used for handle sign-in and sign-up
+const handleUserData = (res) => {
+    const { token, user } = res.data.data;
+    localStorage.setItem('authToken', token);
+    return { user };
+};
+
 const authStoreCreator: StateCreator<AuthState> = (set, get) => {
     const asyncAction = createAsyncAction(set, get);
 
@@ -25,21 +32,12 @@ const authStoreCreator: StateCreator<AuthState> = (set, get) => {
 
         signIn: (credentials) => asyncAction(() => api.post('/auth/sign-in', credentials), {
             loadingKey: 'isLoading',
-            onSuccess: (res) => {
-                const { token, user } = res.data.data;
-                localStorage.setItem('authToken', token);
-                return { user };
-            }
+            onSuccess: handleUserData
         }),
 
         signUp: (details) => asyncAction(() => api.post('/auth/sign-up', details), {
             loadingKey: 'isLoading',
-            onSuccess: (res) => {
-                // Duplicated code with sign in logic
-                const { token, user } = res.data.data;
-                localStorage.setItem('authToken', token);
-                return { user };
-            }
+            onSuccess: handleUserData
         }),
 
         signOut: () => {
