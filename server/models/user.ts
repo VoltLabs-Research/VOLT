@@ -1,11 +1,10 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, HookNextFunction } from 'mongoose';
 import validator from 'validator';
 import bcrypt from 'bcryptjs';
 import Trajectory from '@models/trajectory';
 import { IUser } from '@types/models/user';
-import { NextFunction } from 'express';
 
-const UserSchema: Schema<any> = new Schema({
+const UserSchema: Schema<IUser> = new Schema({
     email: {
         type: String,
         required: [true, 'User::Email::Required'],
@@ -28,8 +27,6 @@ const UserSchema: Schema<any> = new Schema({
         default: 'user'
     },
     passwordChangedAt: Date,
-    passwordResetToken: String,
-    passwordResetExpires: Date,
     firstName: {
         type: String,
         minlength: [4, 'User::FirstName::MinLength'],
@@ -56,13 +53,7 @@ const UserSchema: Schema<any> = new Schema({
 
 UserSchema.index({ email: 'text' });
 
-const hashPassword = async (password: string): Promise<string> => {
-    const saltRounds = 12;
-    return await bcrypt.hash(password, saltRounds);
-};
-
-
-UserSchema.pre<any>('findOneAndDelete', async function(next: NextFunction){
+UserSchema.pre<any>('findOneAndDelete', async function(next: HookNextFunction) {
     const userToDelete = await this.model.findOne(this.getFilter());
     if(!userToDelete) return next();
 
@@ -76,30 +67,30 @@ UserSchema.pre<any>('findOneAndDelete', async function(next: NextFunction){
     next();
 });
 
-UserSchema.pre('save', async function(next){
-    if (!this.isModified('password')) return next();
+UserSchema.pre('save', async function(this: IUser & { isNew: boolean }, next: HookNextFunction) {
+    if(!this.isModified('password')) return next();
 
-    this.password = await hashPassword(this.password);
+    this.password = await bcrypt.hash(this.password, 12);
 
-    if(this.isModified('password') && !this.isNew){
-        this.passwordChangedAt = new Date();
+    if(!this.isNew){
+        this.passwordChangedAt = new Date(Date.now() - 1000);
     }
 
     next();
 });
 
-UserSchema.methods.isCorrectPassword = async function(candidatePassword: string, userPassword: string): Promise<boolean> {
-    return await bcrypt.compare(candidatePassword, userPassword);
+UserSchema.methods.isCorrectPassword = function(candidatePassword: string): Promise<boolean> {
+    return bcrypt.compare(candidatePassword, this.password);
 };
 
-UserSchema.methods.isPasswordChangedAfterJWFWasIssued = function(JWTTimeStamp: number): boolean {
+UserSchema.methods.isPasswordChangedAfterJWFWasIssued = function(jwtTimestamp: number): boolean {
     if(this.passwordChangedAt){
-        const changedTimeStamp = Math.floor(this.passwordChangedAt.getTime() / 1000);
-        return JWTTimeStamp < changedTimeStamp;
+        const changedTimestamp = Math.floor(this.passwordChangedAt.getTime() / 1000);
+        return jwtTimestamp < changedTimestamp;
     }
     return false;
 };
 
-const User: Model<IUser> = mongoose.model('User', UserSchema);
+const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
 
 export default User;

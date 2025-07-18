@@ -5,7 +5,7 @@ import Dashboard from './pages/protected/Dashboard';
 import SignUp from './pages/guest/SignUp';
 
 const App = () => {
-    
+
     return (
         <Routes>
             <Route path='/canva' element={<Canva />} />

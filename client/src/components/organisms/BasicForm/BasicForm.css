@@ -1,8 +1,8 @@
-.sign-in-main{
+.basic-form-container{
     padding: 2rem;
 }
 
-.sign-in-body-container{
+.basic-form{
     display: flex;
     justify-content: center;
     flex-direction: column;
@@ -21,7 +21,7 @@
     gap: 1rem;
 }
 
-.sign-in-body-header-container{
+.basic-form-header-container{
     text-align: center;
     display: flex;
     justify-content: center;
@@ -30,7 +30,7 @@
     gap: 1rem;
 }
 
-.sign-in-body-header-title{
+.basic-form-header-title{
     font-size: 2rem;
     line-height: 3rem;
 }
@@ -114,13 +114,13 @@
     color: hsl(0,0%,56%);
 }
 
-.sign-in-form-container{
+.basic-form-body-container{
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
-.sign-in-form-footer-container{
+.basic-form-footer-container{
     text-align: center;
     display: flex;
     flex-direction: column;
@@ -133,4 +133,3 @@
     align-items: center;
     margin: 1rem 0 2rem;
 }
-
