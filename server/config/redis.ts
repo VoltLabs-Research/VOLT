@@ -14,28 +14,25 @@ const getRedisConfig = () => {
     return redisConfig;
 };
 
-// For Bull Redis instance
 export const createRedisConnection = () => {
-    return new Redis(redisConfig);
+    return new Redis(getRedisConfig());
 };
 
-let redisInstance: Redis | null = null;
+export let redis: Redis | null = null;
 
-export const getRedis = () => {
-    if(!redisInstance){
-        redisInstance = new Redis(getRedisConfig());
-        redisInstance.on('connect', () => {
-            console.log('Redis connected successfully');
-        });
+export const initializeRedis = () => {
+    if(redis) return;
+    redis = new Redis(getRedisConfig());
 
-        redisInstance.on('error', (err) => {
-            console.error('Redis connection error:', err);
-        });
+    redis.on('connect', () => {
+        console.log('Redis connected successfully');
+    });
 
-        redisInstance.on('ready', () => {
-            console.log('Redis is ready to accept commands');
-        });
-    }
+    redis.on('error', (err) => {
+        console.error('Redis connection error:', err);
+    });
 
-    return redisInstance;
-};
+    redis.on('ready', () => {
+        console.log('Redis is ready to accept commands');
+    });
+}

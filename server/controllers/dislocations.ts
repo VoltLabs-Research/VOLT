@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import { extractTimesteps, getFileStats, isValidLammpsFile } from '@utilities/lammps';
 import { readdir, stat, rmdir, mkdir, writeFile, readFile } from 'fs/promises';
+import { getAnalysisProcessingQueue } from '@services/analysis_queue';
 import { join } from 'path';
 import { createReadStream, existsSync, statSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-
-import OpenDXAService from '@services/opendxa';
 
 // TODO: I think these types of validations/processes 
 // should be in the bootstrap module, and only happen 
@@ -308,60 +307,15 @@ export const getTrajectorySimulationInfo = async (req: Request, res: Response) =
 };
 
 export const analyzeTrajectory = async (req: Request, res: Response) => {
-    try{
+    try {
         const { folderId } = req.params;
         const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
         const analysisPath = join(process.env.ANALYSIS_DIR as string, folderId);
 
         if(!existsSync(folderPath)){
-            return res.status(404).json({
-                status: 'error',
-                data: { error: 'Trajectory folder not found' }
-            });
-        }      
-        
-        if(!existsSync(analysisPath)){
-            await mkdir(analysisPath, { recursive: true });
+            return res.status(404).json({ error: 'Trajectory folder not found' });
         }
-        const metadataPath = join(folderPath, 'metadata.json');
-        try {
-            let metadata: any = {};
-            // 1. Leer el archivo de metadatos existente si está presente
-            if (existsSync(metadataPath)) {
-                const fileContent = await readFile(metadataPath, 'utf-8');
-                // Usamos un try-catch anidado por si el JSON está corrupto
-                try {
-                    metadata = JSON.parse(fileContent);
-                } catch (parseError) {
-                    console.error(`Error parsing existing metadata.json for ${folderId}, will overwrite.`, parseError);
-                }
-            }
 
-            // 2. Crear el objeto de configuración para este análisis específico
-            const currentAnalysisConfig = {
-                ...req.body, // La configuración de la UI
-                analysisDate: new Date().toISOString()
-            };
-
-            // 3. Añadir la configuración a un historial para no perder datos
-            if (!metadata.analysisHistory) {
-                metadata.analysisHistory = [];
-            }
-            metadata.analysisHistory.push(currentAnalysisConfig);
-            
-            // También guardamos la última configuración para un acceso rápido
-            metadata.lastAnalysisConfig = currentAnalysisConfig;
-
-            // 4. Escribir el objeto de metadatos actualizado de vuelta al archivo
-            await writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
-            console.log(`Successfully updated ${metadataPath} with new analysis configuration.`);
-
-        } catch (fileError) {
-            // Si la actualización de metadatos falla, no detenemos el análisis,
-            // pero sí lo registramos como un problema.
-            console.error(`Could not update metadata.json for folder ${folderId}:`, fileError);
-        }
-        // Get trajectory files
         const files = await readdir(folderPath);
         const trajectoryFiles = files
             .filter((file) => /^\d+$/.test(file))
@@ -369,29 +323,38 @@ export const analyzeTrajectory = async (req: Request, res: Response) => {
             .map((file) => join(folderPath, file));
 
         if(trajectoryFiles.length === 0){
-            return res.status(400).json({
-                status: 'error',
-                data: { error: 'No trajectory files found' }
-            });
+            return res.status(400).json({ error: 'No trajectory files found' });
         }
+        
+        const metadataPath = join(folderPath, 'metadata.json');
+        let metadata = JSON.parse(await readFile(metadataPath, 'utf-8'));
+        metadata.lastAnalysis = {
+            jobId: `simple-queue-${Date.now()}`,
+            config: req.body,
+            status: 'queued',
+            updatedAt: new Date().toISOString()
+        };
+        await writeFile(metadataPath, JSON.stringify(metadata, null, 4), 'utf-8');
+        
+        const queueService = getAnalysisProcessingQueue();
+        queueService.addJob({
+            folderId,
+            folderPath,
+            analysisPath,
+            config: req.body,
+            trajectoryFiles
+        });
 
-        const opendxa = new OpenDXAService();
-        opendxa.configure(req.body);
-
-        // this is async
-        const analysisPromise = opendxa.analyzeTrajectory(
-            trajectoryFiles,
-            join(analysisPath, 'frame_{}')
-        );
-
-        res.status(202).json({
+        const queueStatus = await queueService.getStatus(); 
+        return res.status(202).json({
             status: 'success',
             data: {
-                folderId
+                folderId,
+                mode: 'queued',
+                queueStatus
             }
         });
     }catch(error){
-        console.error(`Error starting analysis for ${req.params.folder_id}:`, error);
         res.status(500).json({
             status: 'error',
             data: { error: error instanceof Error ? error.message : 'Unknown error' }

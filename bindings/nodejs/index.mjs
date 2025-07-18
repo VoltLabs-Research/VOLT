@@ -1,7 +1,7 @@
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const addon = require('./build/Release/opendxa_node.node');
+const addon = require('../../opendxa/build/opendxa_node.node');
 
 export const {
     LatticeStructure,

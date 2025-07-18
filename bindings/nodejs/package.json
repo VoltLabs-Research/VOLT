@@ -31,16 +31,16 @@
   "author": "Rody Herrera",
   "license": "MIT",
   "dependencies": {
-    "node-addon-api": "^7.0.0"
+    "node-addon-api": "^7.1.1"
   },
   "devDependencies": {
-    "node-gyp": "^10.0.0",
-    "typescript": "^5.0.0",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
-    "ts-node": "^10.9.0"
+    "node-gyp": "^10.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
   },
   "engines": {
     "node": ">=14.0.0"

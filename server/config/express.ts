@@ -3,7 +3,8 @@ import helmet from 'helmet';
 import bodyParser from 'body-parser';
 import compression from 'compression';
 import cors from 'cors';
-import '@config/redis';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: './.env' });
 
 import { configureApp } from '@utilities/bootstrap';
 
@@ -12,7 +13,8 @@ const app = express();
 const corsOptions = {
     origin: function (origin: string | undefined, callback: Function){
         if(!origin) return callback(null, true);
-        
+
+        // TODO: client_host may be undefined because using dotenv in this file.
         const allowedOrigins = process.env.NODE_ENV === 'production' 
             ? [process.env.CLIENT_HOST as string]
             : [
