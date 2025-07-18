@@ -6,7 +6,7 @@ import{ join } from 'path';
 import IORedis from 'ioredis';
 
 interface AnalysisJob{
-    folderId: string;
+    trajectoryId: string;
     folderPath: string;
     analysisPath: string;
     config: any;
@@ -72,7 +72,7 @@ export class AnalysisProcessingQueue{
     }
     
     private async executeJob(job: AnalysisJob, rawData: string, workerId: number): Promise<void>{
-        await this.setJobStatus(job.folderId, 'running',{ workerId });
+        await this.setJobStatus(job.trajectoryId, 'running',{ workerId });
         try{
             if(!existsSync(job.analysisPath)){
                 await mkdir(job.analysisPath,{ recursive: true });
@@ -81,11 +81,11 @@ export class AnalysisProcessingQueue{
             const opendxa = new OpenDXAService();
             opendxa.configure(job.config);
             const result = await opendxa.analyzeTrajectory(job.trajectoryFiles, join(job.analysisPath, 'frame_{}'));
-            await this.setJobStatus(job.folderId, 'completed',{ result });
+            await this.setJobStatus(job.trajectoryId, 'completed',{ result });
         } catch(error){
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            console.error(`[Worker #${workerId}] Job for ${job.folderId} failed:`, errorMessage);
-            await this.setJobStatus(job.folderId, 'failed',{ error: errorMessage, workerId });
+            console.error(`[Worker #${workerId}] Job for ${job.trajectoryId} failed:`, errorMessage);
+            await this.setJobStatus(job.trajectoryId, 'failed',{ error: errorMessage, workerId });
         } finally{
             await redis.lrem(this.processingKey, 1, rawData);
         }
@@ -93,7 +93,7 @@ export class AnalysisProcessingQueue{
 
     public async addJob(job: AnalysisJob): Promise<void>{
         await redis.lpush(this.queueKey, JSON.stringify(job));
-        await this.setJobStatus(job.folderId, 'queued');
+        await this.setJobStatus(job.trajectoryId, 'queued');
     }
 
     public async getStatus(){
@@ -105,14 +105,14 @@ export class AnalysisProcessingQueue{
         return{ maxConcurrent: this.maxConcurrentJobs, activeWorkers: this.activeWorkers, pendingJobs: pending[1] as number, processingJobs: processing[1] as number };
     }
 
-    public async getJobStatus(folderId: string): Promise<any>{
-        const statusData = await redis.get(`${this.statusKeyPrefix}${folderId}`);
+    public async getJobStatus(trajectoryId: string): Promise<any>{
+        const statusData = await redis.get(`${this.statusKeyPrefix}${trajectoryId}`);
         return statusData ? JSON.parse(statusData):{ status: 'not_found' };
     }
 
-    private async setJobStatus(folderId: string, status: string, data: any ={}): Promise<void>{
+    private async setJobStatus(trajectoryId: string, status: string, data: any ={}): Promise<void>{
         const statusData ={ status, timestamp: new Date().toISOString(), ...data };
-        await redis.set(`${this.statusKeyPrefix}${folderId}`, JSON.stringify(statusData), 'EX', 86400);
+        await redis.set(`${this.statusKeyPrefix}${trajectoryId}`, JSON.stringify(statusData), 'EX', 86400);
     }
 }
 
