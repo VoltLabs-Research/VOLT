@@ -4,6 +4,7 @@ import { api, API_BASE_URL } from '../services/api';
 interface TrajectoryState{
     trajectories: any[];
     isLoading: boolean;
+    isUploading: boolean;
     error: string | null;
     getTrajectories: () => Promise<void>;
     deleteTrajectory: (id: string) => Promise<void>;
@@ -13,6 +14,7 @@ interface TrajectoryState{
 const useTrajectoryStore = create<TrajectoryState>((set, get) => ({
     trajectories: [],
     isLoading: true,
+    isUploading: false,
     error: null,
 
     getTrajectories: async () => {
@@ -42,17 +44,17 @@ const useTrajectoryStore = create<TrajectoryState>((set, get) => ({
     },
 
     createTrajectory: async (formData: FormData) => {
-        set({ isLoading: true, error: null });
+        set({ isUploading: true, error: null });
         try{
             const response = await api.post(`${API_BASE_URL}/trajectories`, formData);
             // the response is an object that contains the created trajectory data
             set((state) => ({
                 trajectories: [...state.trajectories, response.data.data],
-                isLoading: false
+                isUploading: false
             }));
         }catch(err: any){
             const errorData = err.response?.data?.message || err.message;
-            set({ error: errorData, isLoading: false });
+            set({ error: errorData, isUploading: false });
             throw errorData;
         }
     }

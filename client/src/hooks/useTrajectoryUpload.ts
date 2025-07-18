@@ -6,7 +6,7 @@ export interface FileWithPath{
 }
 
 const useTrajectoryUpload = () => {
-    const { createTrajectory, isLoading } = useTrajectoryStore();
+    const { createTrajectory, isUploading } = useTrajectoryStore();
 
     const uploadAndProcessTrajectory = async (
         filesWithPaths: FileWithPath[], 
@@ -26,7 +26,7 @@ const useTrajectoryUpload = () => {
 
     return {
         uploadAndProcessTrajectory,
-        isLoading
+        isUploading
     }
 };
 

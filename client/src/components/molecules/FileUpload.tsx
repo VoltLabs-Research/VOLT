@@ -18,7 +18,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     className = '',
     children,
 }) => {
-    const { uploadAndProcessTrajectory, isLoading, error, data } = useTrajectoryUpload();
+    const { uploadAndProcessTrajectory, isUploading, error, data } = useTrajectoryUpload();
     const dropRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -35,7 +35,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
     const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
-        if(isLoading) return;
+        if(isUploading) return;
 
         const items = event.dataTransfer.items;
         if(!items) return;
@@ -101,7 +101,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             className={'file-upload-container '.concat(className)}
         >
             {children}
-            {isLoading && (
+            {isUploading && (
                 <div className='file-upload-loader-container'>
                     <Loader scale={0.78} />
                     <p className='file-upload-loader-progress'>Processing...</p>
