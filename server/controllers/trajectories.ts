@@ -1,6 +1,46 @@
 import { Request, Response } from 'express';
+import { join } from 'path';
+import { access, stat } from 'fs/promises';
+import { constants } from 'fs';
 import Trajectory from '@models/trajectory';
 import User from '@models/user';
+
+export const getTrajectoryGLTF = async (req: Request, res: Response) => {
+    const { timestep }= req.params;
+    const trajectory = res.locals.trajectory;
+
+    const frame = trajectory.frames.find((frame: any) => frame.timestep.toString() === timestep);
+    if(!frame){
+        return res.status(404).json({
+            status: 'error',
+            data: { error: `Timestep ${timestep} not found in trajectory` }
+        });
+    }
+
+    const gltfFilePath = join(
+        process.env.TRAJECTORY_DIR as string,
+        trajectory.folderId,
+        'gltf',
+        `${timestep}.gltf`
+    );
+
+    try{
+        await access(gltfFilePath, constants.F_OK);
+    }catch(error){
+        return res.status(404).json({
+            status: 'error',
+            data: { error: `GLTF file for timestep ${timestep} not found` }
+        });
+    }
+
+    const fileStats = await stat(gltfFilePath);
+    res.setHeader('Content-Type', 'model/gltf+json');
+    res.setHeader('Content-Length', fileStats.size);
+    res.setHeader('Content-Disposition', `inline; filename="${trajectory.name}_${timestep}.gltf"`);
+    // res.setHeader('Cache-Control', 'public, max-age=86400'); 
+
+    res.sendFile(gltfFilePath);
+};
 
 export const createTrajectory = async (req: Request, res: Response) => {
     const { trajectoryData } = res.locals;

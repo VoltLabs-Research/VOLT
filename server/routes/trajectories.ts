@@ -27,6 +27,12 @@ router.route('/')
         controller.createTrajectory
     );
 
+router.get(
+    '/:trajectoryId/gltf/:timestep', 
+    middleware.checkTrajectoryOwnership, 
+    controller.getTrajectoryGLTF
+);
+
 router.route('/:trajectoryId')
     .get(
         middleware.checkTrajectoryOwnership, 

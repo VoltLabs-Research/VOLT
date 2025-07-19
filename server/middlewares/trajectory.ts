@@ -29,7 +29,6 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
     const frames: ITimestepInfo[] = [];
     const gltfExporter = new LAMMPSToGLTFExporter();
 
-    // GLTF export options - puedes personalizar según necesites
     const gltfOptions: GLTFExportOptions = {
         atomRadius: 0.5,
         spatialCulling: false,
@@ -41,13 +40,13 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
     console.log(`Processing ${files.length} files for trajectory ${trajectoryId}...`);
 
     for(const file of files){
-        try {
+        try{
             const content = file.buffer.toString('utf-8');
             const lines = content.split('\n');
 
             const frameInfo = extractTimestepInfo(lines);
 
-            if(!frameInfo || !isValidLammpsFile(lines)) {
+            if(!frameInfo || !isValidLammpsFile(lines)){
                 console.warn(`Skipping invalid file: ${file.originalname}`);
                 continue;
             }
@@ -56,11 +55,9 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
             const lammpsFilePath = join(folderPath, filename);
             const gltfFilePath = join(gltfFolderPath, `${filename}.gltf`);
 
-            // Escribir el archivo LAMMPS original
             await writeFile(lammpsFilePath, file.buffer);
 
-            // Generar archivo GLTF
-            try {
+            try{
                 console.log(`Generating GLTF for timestep ${frameInfo.timestep}...`);
                 gltfExporter.exportAtomsToGLTF(
                     lammpsFilePath, 
@@ -68,21 +65,20 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
                     extractTimestepInfo, 
                     gltfOptions
                 );
-                console.log(`✓ GLTF generated for timestep ${frameInfo.timestep}`);
-            } catch (gltfError) {
+                console.log(`GLTF generated for timestep ${frameInfo.timestep}`);
+            }catch(gltfError){
                 console.error(`Error generating GLTF for timestep ${frameInfo.timestep}:`, gltfError);
-                // Continuar con el siguiente archivo aunque falle el GLTF
             }
 
             frames.push({
                 ...frameInfo,
-                gltfPath: `gltf/${filename}.gltf` // Ruta relativa para el GLTF
+                gltfPath: `gltf/${filename}.gltf`
             });
 
             validFileCounts++;
             totalSize += file.size;
 
-        } catch (error) {
+        }catch(error){
             console.error(`Error processing file ${file.originalname}:`, error);
             continue;
         }
@@ -101,14 +97,13 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
     res.locals.trajectoryData = {
         folderId: trajectoryId,
         name: req.body.name || 'Untitled Trajectory',
-        frames: frames.sort((a, b) => a.timestep - b.timestep), // Ordenar por timestep
+        frames: frames.sort((a, b) => a.timestep - b.timestep),
         stats: {
             totalFiles: validFileCounts,
-            totalSize: totalSize,
-            gltfGenerated: validFileCounts // Todos los archivos válidos tienen GLTF
+            totalSize: totalSize
         },
         owner: (req as any).user.id,
-        gltfOptions // Guardar las opciones usadas para generar los GLTF
+        gltfOptions
     };
 
     next();
