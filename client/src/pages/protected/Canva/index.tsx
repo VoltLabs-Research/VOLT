@@ -229,7 +229,9 @@ const EditorPage: React.FC = () => {
                             <TimestepViewer
                                 currentGltfUrl={currentGltfUrl}
                                 nextGltfUrl={nextGltfUrl}
-                                scale={0.1}
+                                scale={1}
+                                rotation={{ x: Math.PI / 2 }}
+                                position={{ x: 0, y: 0, z: 0 }}
                             />
                         )}
                     </Scene3D>
