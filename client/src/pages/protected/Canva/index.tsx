@@ -9,11 +9,6 @@ import TimestepViewer from '../../../components/organisms/TimestepViewer';
 import FileUpload from '../../../components/molecules/FileUpload'; 
 import useTrajectoryStore from '../../../stores/trajectories';
 import Loader from '../../../components/atoms/Loader';
-
-// import DislocationResults from './components/DislocationResults';
-// import MonacoEditor from './components/organisms/MonacoEditor'; 
-// import DislocationViewer from './components/DislocationViewer'; 
-
 import './Canva.css';
 
 const initialAnalysisConfig = {
@@ -28,40 +23,34 @@ const initialAnalysisConfig = {
     mark_core_atoms: false
 };
 
-const API_BASE_URL = 'http://192.168.1.85:8000/api/dislocations';
-
 const EditorPage: React.FC = () => {
-    const [folder, setFolder] = useState<any | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playSpeed, setPlaySpeed] = useState(1);
     const [currentTimestep, setCurrentTimestep] = useState<number | undefined>(undefined);
     const [cameraControlsEnabled, setCameraControlsEnabled] = useState(true);
     const [analysisConfig, setAnalysisConfig] = useState(initialAnalysisConfig);
+    
     const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
     const isLoadingTrajectory = useTrajectoryStore((state) => state.isLoading);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const { trajectoryId } = useParams();
     
+    const { trajectoryId } = useParams();
     const orbitControlsRef = useRef<any>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const folderId = useMemo(() => folder?.folderId || null, [folder]);
-
     const timesteps = useMemo(() => {
-        if(!trajectory?.frames) return;
+        if (!trajectory?.frames) return [];
         return trajectory.frames
-            .map((file: any) => file.timestep)
+            .map((frame: any) => frame.timestep)
             .sort((a: number, b: number) => a - b);
-    }, [folder]);
+    }, [trajectory?.frames]);
 
     const { currentGltfUrl, nextGltfUrl } = useMemo(() => {
-        console.log(folderId, currentTimestep)
-        if (!folderId || currentTimestep === undefined || timesteps.length === 0) {
+        if (!trajectory?._id || currentTimestep === undefined || timesteps.length === 0) {
             return { currentGltfUrl: null, nextGltfUrl: null };
         }
 
-        const buildUrl = (ts: number) => `${API_BASE_URL}/compressed/${folderId}/frame_${ts}_atoms.gltf`;
-
+        const buildUrl = (ts: number) => `/trajectories/${trajectory._id}/gltf/${ts}`;
         const currentUrl = buildUrl(currentTimestep);
 
         const currentIndex = timesteps.indexOf(currentTimestep);
@@ -72,9 +61,9 @@ const EditorPage: React.FC = () => {
             nextUrl = buildUrl(nextTimestep);
         }
 
+        console.log('URLs:', { currentUrl, nextUrl });
         return { currentGltfUrl: currentUrl, nextGltfUrl: nextUrl };
-
-    }, [folderId, currentTimestep, timesteps]);
+    }, [trajectory?._id, currentTimestep, timesteps]);
 
     const handleConfigChange = useCallback((key: string, value: any) => {
         setAnalysisConfig(prev => ({ ...prev, [key]: value }));
@@ -94,14 +83,13 @@ const EditorPage: React.FC = () => {
         }
     }, []);
 
-
     useEffect(() => {
-        if(!isPlaying) {
+        if (!isPlaying) {
             clearPlayTimeout();
             return;
         }
 
-        if(!folder || timesteps.length === 0 || playSpeed <= 0){
+        if (!trajectory || timesteps.length === 0 || playSpeed <= 0) {
             return;
         }
 
@@ -118,55 +106,56 @@ const EditorPage: React.FC = () => {
         };
 
         timeoutRef.current = setTimeout(advance, 1000 / playSpeed);
-
         return clearPlayTimeout;
-
-    }, [isPlaying, playSpeed, folder, timesteps, currentTimestep, clearPlayTimeout]); 
+    }, [isPlaying, playSpeed, trajectory, timesteps, currentTimestep, clearPlayTimeout]); 
     
     const handleUploadError = useCallback((error: any) => {
         console.error('Error en la subida:', error);
         alert(`Error en la subida: ${error.message || 'Error desconocido'}`);
     }, []);
 
-    const handleFolderSelection = useCallback((folderData: any) => {
-        setFolder(folderData);
-        setCurrentTimestep(folderData.minTimestep);
-        setIsPlaying(false);
+    const handleTrajectorySelection = useCallback((trajectoryData: any) => {
+        if (trajectoryData?.frames?.length > 0) {
+            setCurrentTimestep(trajectoryData.frames[0].timestep);
+            setIsPlaying(false);
+        }
     }, []);
 
     useEffect(() => {
-        if(!trajectory?._id) return;
-        console.log(trajectory)
-        setFolder(trajectory);
-        setCurrentTimestep(trajectory.frames[0].timestep);
-        setIsPlaying(false);
-    }, [trajectory]);
+        if (trajectoryId && !trajectory?._id) {
+            getTrajectoryById(trajectoryId);
+        }
+    }, [trajectoryId, trajectory?._id, getTrajectoryById]);
 
     useEffect(() => {
-        if(trajectory?._id) return;
-        getTrajectoryById(trajectoryId);
-    }, []);
+        if (trajectory?.frames?.length > 0 && currentTimestep === undefined) {
+            setCurrentTimestep(trajectory.frames[0].timestep);
+            setIsPlaying(false);
+        }
+    }, [trajectory?.frames, currentTimestep]);
 
     const handlePlayPause = useCallback(() => setIsPlaying(prev => !prev), []);
-    const handleTimestepChange = useCallback((timestep: number) => setCurrentTimestep(timestep), []);
+    const handleTimestepChange = useCallback((timestep: number) => {
+        setCurrentTimestep(timestep);
+        setIsPlaying(false);
+    }, []);
 
     return (
         <main className='editor-container'>
-            <TrajectoryList onFileSelect={handleFolderSelection} selectedFile={folderId} />
+            <TrajectoryList 
+                onFileSelect={handleTrajectorySelection} 
+                selectedFile={trajectory?._id} 
+            />
+            
             {isLoadingTrajectory && (
                 <div className='loader-layer-container'>
                     <Loader scale={0.7} />
                 </div>
             )}
 
-            {/*
-            <DislocationResults ... />
-            <MonacoEditor ... />
-            */}
-
-            {folder && (
+            {trajectory && (
                 <TimestepControls
-                    folderInfo={folder}
+                    folderInfo={trajectory}
                     currentTimestep={currentTimestep}
                     onTimestepChange={handleTimestepChange}
                     isPlaying={isPlaying}
@@ -180,26 +169,27 @@ const EditorPage: React.FC = () => {
                 <h3 className='editor-camera-info-title'>Perspective Camera</h3>
                 <p className='editor-camera-info-description'>
                     Visualización del Timestep {currentTimestep ?? ''}
+                    {trajectory && ` - ${trajectory.name}`}
                 </p>
             </section>
 
             <div className='editor-timestep-viewer-container'>
                 <FileUpload 
                     onUploadError={handleUploadError} 
-                    onUploadSuccess={handleFolderSelection}
+                    onUploadSuccess={handleTrajectorySelection}
                     analysisConfig={analysisConfig}
                 >
                     <Scene3D
                         cameraControlsEnabled={cameraControlsEnabled}
                         onCameraControlsRef={(ref) => { orbitControlsRef.current = ref; }}
                     >
-                        <TimestepViewer
-                            currentGltfUrl={currentGltfUrl}
-                            nextGltfUrl={nextGltfUrl}
-                            scale={0.1}
-                        />
-
-                        {/* <DislocationViewer ... /> */}
+                        {currentGltfUrl && (
+                            <TimestepViewer
+                                currentGltfUrl={currentGltfUrl}
+                                nextGltfUrl={nextGltfUrl}
+                                scale={0.1}
+                            />
+                        )}
                     </Scene3D>
                 </FileUpload>
             </div>

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { join } from 'path';
+import { join, resolve, path } from 'path';
 import { access, stat } from 'fs/promises';
 import { constants } from 'fs';
 import Trajectory from '@models/trajectory';
@@ -17,8 +17,10 @@ export const getTrajectoryGLTF = async (req: Request, res: Response) => {
         });
     }
 
+    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+
     const gltfFilePath = join(
-        process.env.TRAJECTORY_DIR as string,
+        basePath,
         trajectory.folderId,
         'gltf',
         `${timestep}.gltf`
