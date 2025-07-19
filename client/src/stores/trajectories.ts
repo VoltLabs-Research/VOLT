@@ -4,9 +4,11 @@ import { createAsyncAction } from '../utilities/asyncAction';
 
 interface TrajectoryState{
     trajectories: any[];
+    trajectory: object;
     isLoading: boolean;
     isUploading: boolean;
     error: string | null;
+    getTrajectoryById: () => Promise<void>;
     getTrajectories: () => Promise<void>;
     deleteTrajectory: (id: string) => Promise<void>;
     createTrajectory: (newTrajectoryData: any) => Promise<void>;
@@ -19,6 +21,7 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
         trajectories: [],
         isLoading: true,
         isUploading: false,
+        trajectory: {},
         error: null,
 
         getTrajectories: () => asyncAction(() => api.get('/trajectories'), {
@@ -26,7 +29,14 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
             onSuccess: (res) => ({ trajectories: res.data.data })
         }),
 
-        deleteTrajectory: (id: string) => asyncAction(() => api.delete('/trajectories/${id}'), {
+        getTrajectoryById: (id: string) => asyncAction(() => api.get(`/trajectories/${id}`), {
+            loadingKey: 'isLoading',
+            onSuccess: (res) => ({
+                trajectory: res.data.data
+            })
+        }),
+
+        deleteTrajectory: (id: string) => asyncAction(() => api.delete(`/trajectories/${id}`), {
             loadingKey: 'isLoading',
             onSuccess: (_, state) => ({
                 trajectories: state.trajectories.filter((trajectory) => trajectory.id !== id)

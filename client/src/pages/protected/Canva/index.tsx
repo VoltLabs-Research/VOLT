@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { IoAddOutline } from 'react-icons/io5';
+import { useParams } from 'react-router-dom';
 import TrajectoryList from '../../../components/organisms/TrajectoryList';
 import TimestepControls from '../../../components/organisms/TimestepControls';
 import AnalysisConfiguration from '../../../components/organisms/AnalysisConfiguration';
 import Scene3D from '../../../components/organisms/Scene3D';
 import TimestepViewer from '../../../components/organisms/TimestepViewer';
 import FileUpload from '../../../components/molecules/FileUpload'; 
+import useTrajectoryStore from '../../../stores/trajectories';
+import Loader from '../../../components/atoms/Loader';
 
 // import DislocationResults from './components/DislocationResults';
 // import MonacoEditor from './components/organisms/MonacoEditor'; 
@@ -34,6 +37,9 @@ const EditorPage: React.FC = () => {
     const [currentTimestep, setCurrentTimestep] = useState<number | undefined>(undefined);
     const [cameraControlsEnabled, setCameraControlsEnabled] = useState(true);
     const [analysisConfig, setAnalysisConfig] = useState(initialAnalysisConfig);
+    const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
+    const isLoadingTrajectory = useTrajectoryStore((state) => state.isLoading);
+    const { trajectoryId } = useParams();
     
     const orbitControlsRef = useRef<any>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -125,6 +131,10 @@ const EditorPage: React.FC = () => {
         setCurrentTimestep(folderData.minTimestep);
         setIsPlaying(false);
     }, []);
+
+    useEffect(() => {
+        getTrajectoryById(trajectoryId);
+    }, []);
     
     const handlePlayPause = useCallback(() => setIsPlaying(prev => !prev), []);
     const handleTimestepChange = useCallback((timestep: number) => setCurrentTimestep(timestep), []);
@@ -132,6 +142,11 @@ const EditorPage: React.FC = () => {
     return (
         <main className='editor-container'>
             <TrajectoryList onFileSelect={handleFolderSelection} selectedFile={folderId} />
+            {isLoadingTrajectory && (
+                <div className='loader-layer-container'>
+                    <Loader scale={0.7} />
+                </div>
+            )}
 
             {/*
             <DislocationResults ... />

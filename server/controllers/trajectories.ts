@@ -32,7 +32,7 @@ export const getUserTrajectories = async (req: Request, res: Response) => {
 export const getTrajectoryById = async (req: Request, res: Response) => {
     const { trajectoryId } = req.params;
     const trajectory = await Trajectory.findById(trajectoryId).populate('owner sharedWith', 'firstName lastName email');
-    if(trajectory){
+    if(!trajectory){
         return res.status(404).json({ status: 'error', message: 'Trajectory not found' });
     }
 
