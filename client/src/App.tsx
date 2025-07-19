@@ -6,6 +6,9 @@ import SignUp from './pages/guest/SignUp';
 import SignIn from './pages/guest/SignIn';
 import ProtectedRoute from './components/atoms/ProtectedRoute';
 import DashboardLayout from './components/atoms/DashboardLayout';
+import SharedWithMe from './pages/protected/SharedWithMe';
+import Tutorials from './pages/protected/Tutorials';
+import Simulations from './pages/protected/Simulations';
 
 const App = () => {
 
@@ -15,6 +18,10 @@ const App = () => {
                 <Route path='/canva' element={<Canva />} />
                 <Route element={<DashboardLayout />}>
                     <Route path='/dashboard' element={<Dashboard />} />
+                    <Route path='/dashboard/shared-with-me/' element={<SharedWithMe />} />
+                    <Route path='/dashboard/simulations/' element={<Simulations />} />
+                    <Route path='/dashboard/tutorials/' element={<Tutorials />} />
+
                 </Route>
             </Route>
 

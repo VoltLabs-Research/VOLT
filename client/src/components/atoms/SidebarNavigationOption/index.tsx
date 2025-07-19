@@ -1,9 +1,14 @@
+import { useNavigate } from 'react-router-dom';
 import './SidebarNavigationOption.css';
 
-const SidebarNavigationOption = ({ name, Icon, isSelected = false }) => {
+const SidebarNavigationOption = ({ name, Icon, to = null, isSelected = false }) => {
+    const navigate = useNavigate();
 
     return (
-        <div className={'sidebar-nav-option-container '.concat(isSelected ? 'selected' : '')}>
+        <div
+            onClick={() => to && navigate(to)}
+            className={'sidebar-nav-option-container '.concat(isSelected ? 'selected' : '')}
+        >
             <i className='sidebar-nav-option-icon-container'>
                 <Icon />
             </i>

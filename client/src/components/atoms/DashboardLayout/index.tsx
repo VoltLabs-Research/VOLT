@@ -19,12 +19,17 @@ const DashboardLayout = () => {
 
                     <div className='sidebar-nav-container'>
                         {[
-                            ['Dashboard', GrHomeOption],
-                            ['Simulations', BsFiles],
-                            ['Shared with me', GoPeople],
-                            ['Tutorials', TbBook]
-                        ].map(([ name, Icon ], index) => (
-                            <SidebarNavigationOption key={`${name}-${index}`} name={name} Icon={Icon} isSelected={index === 0} />
+                            ['Dashboard', GrHomeOption, '/dashboard'],
+                            ['Simulations', BsFiles, '/dashboard/simulations'],
+                            ['Shared with me', GoPeople, '/dashboard/shared-with-me'],
+                            ['Tutorials', TbBook, '/dashboard/tutorials']
+                        ].map(([ name, Icon, to ], index) => (
+                            <SidebarNavigationOption 
+                                key={`${name}-${index}`} 
+                                name={name} 
+                                to={to}
+                                Icon={Icon} 
+                                isSelected={index === 0} />
                         ))}
                     </div>
                     
