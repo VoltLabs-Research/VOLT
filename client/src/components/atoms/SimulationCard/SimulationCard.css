@@ -1,0 +1,65 @@
+.simulation-container{
+    width: 340px;
+    height: 190px;
+    cursor: pointer;
+}
+
+.simulation-container:hover .simulation-cover-container{
+    border: 3px solid rgb(37, 137, 255);
+}
+
+.simulation-container:hover .simulation-options-icon-container{
+    opacity: 1;
+}
+
+.simulation-cover-container{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    border-radius: .8rem;
+    transition: .1s;
+    justify-content: center;
+    align-items: center;
+    background-color: #dadada;
+    box-shadow: 0 0 0px 1px rgb(205 205 205 / 80%);
+    overflow: hidden;
+}
+
+.simulation-caption-left-container{
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    width: 100%;
+}
+
+.simulation-caption-container{
+    padding-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.simulation-caption-title{
+    font-weight: 450;
+    font-size: 1rem;
+}
+
+.simulation-image{
+    width: 100%;
+    height: 100%;
+}
+
+.simulation-cover-icon-container{
+    font-size: 1.8rem;
+}
+
+.simulation-options-icon-container{
+    font-size: 1.3rem;
+    transition: .3s;
+    opacity: 0;
+}
+
+.simulation-last-edited{
+    font-size: .9rem;
+    color: #555555;
+}

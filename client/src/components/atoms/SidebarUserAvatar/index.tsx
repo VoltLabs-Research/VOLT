@@ -4,13 +4,13 @@ import { CiLogout, CiSettings } from 'react-icons/ci';
 import './SidebarUserAvatar.css';
 
 const SidebarUserAvatar = () => {
-    const { user } = useAuthStore();
+    const { user, signOut } = useAuthStore();
 
     return (
         <ActionBasedFloatingContainer
             options={[
                 ['Account Settings', CiSettings, () => {}],
-                ['Sign Out', CiLogout, () => {}]
+                ['Sign Out', CiLogout, signOut]
             ]}
         >
             <div className='sidebar-user-container'>
