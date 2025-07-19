@@ -9,6 +9,24 @@ export const createTrajectory = async (req: Request, res: Response) => {
     res.status(201).json({ status: 'success', data: newTrajectory });
 };
 
+// TODO: implement the HandlerFactory class
+export const updateTrajectoryById = async (req: Request, res: Response) => {
+    const { trajectoryId } = req.params;
+    const { name } = req.body;
+    const updateData: { name?: string; } = {};
+    if(name){
+        updateData.name = name;
+    }
+
+    const updatedTrajectory = await Trajectory.findByIdAndUpdate(
+        trajectoryId,
+        { $set: updateData },
+        { new: true, runValidators: true }
+    ).populate('owner sharedWith', 'firstName lastName email');
+
+    res.status(200).json({ status: 'success', data: updatedTrajectory });
+};
+
 export const getUserTrajectories = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
 

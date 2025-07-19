@@ -28,7 +28,14 @@ router.route('/')
     );
 
 router.route('/:trajectoryId')
-    .get(controller.getTrajectoryById)
+    .get(
+        middleware.checkTrajectoryOwnership, 
+        controller.getTrajectoryById
+    )
+    .patch(
+        middleware.checkTrajectoryOwnership,
+        controller.updateTrajectoryById
+    )
     .delete(
         middleware.checkTrajectoryOwnership,
         controller.deleteTrajectoryById
