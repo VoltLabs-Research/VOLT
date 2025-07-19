@@ -9,28 +9,17 @@ export interface TimestepInfo{
         zlo: number;
         zhi: number;
     }
-};
+}
 
-export const extractTimesteps = (lines: string[]): number[] => {
-    const timesteps: number[] = [];
-    for(let i = 0; i < lines.length; i++){
-        const line = lines[i].trim();
-        
-        if(line === 'ITEM: TIMESTEP'){
-            const nextLine = lines[i + 1];
-            if(nextLine){
-                const timestep = parseInt(nextLine.trim());
-                if(!isNaN(timestep)){
-                    timesteps.push(timestep);
-                }
-            }
-        }
-    }
+export interface Atom{
+    id: number;
+    type: number;
+    x: number;
+    y: number;
+    z: number;
+}
 
-    return timesteps;
-};
-
-const extractTimestepInfo = (lines: string[]): TimestepInfo | null => {
+export const extractTimestepInfo = (lines: string[]): TimestepInfo | null => {
     let timestep: number | null = null;
     let natoms: number | null = null;
     const boxBounds = { xlo: 0, xhi: 0, ylo: 0, yhi: 0, zlo: 0, zhi: 0 };

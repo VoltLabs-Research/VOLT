@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import { extractTimesteps, isValidLammpsFile } from '@utilities/lammps';
+import { extractTimestepInfo, isValidLammpsFile } from '@utilities/lammps';
 import { mkdir, writeFile, rmdir } from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import { join } from 'path';
+import { ITimestepInfo } from '@types/models/trajectory';
+import LAMMPSToGLTFExporter, { GLTFExportOptions } from '@utilities/lammpsGltfExporter';
 import Trajectory from '@models/trajectory';
 
 export const processAndValidateUpload = async (req: Request, res: Response, next: NextFunction) => {
@@ -16,25 +18,74 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
 
     const trajectoryId = uuidv4();
     const folderPath = join(process.env.TRAJECTORY_DIR as string, trajectoryId);
+    const gltfFolderPath = join(folderPath, 'gltf');
+    
     await mkdir(folderPath, { recursive: true });
+    await mkdir(gltfFolderPath, { recursive: true });
 
     let validFileCounts = 0;
     let totalSize = 0;
 
-    for(const file of files){
-        const content = file.buffer.toString('utf-8');
-        const lines = content.split('\n');
+    const frames: ITimestepInfo[] = [];
+    const gltfExporter = new LAMMPSToGLTFExporter();
 
-        if(extractTimesteps(lines).length === 0 || !isValidLammpsFile(lines)){
+    // GLTF export options - puedes personalizar según necesites
+    const gltfOptions: GLTFExportOptions = {
+        atomRadius: 0.5,
+        spatialCulling: false,
+        subsampleRatio: 1.0,
+        maxAtoms: req.body.maxAtoms ? parseInt(req.body.maxAtoms) : 0,
+        maxInstancesPerMesh: 10000
+    };
+
+    console.log(`Processing ${files.length} files for trajectory ${trajectoryId}...`);
+
+    for(const file of files){
+        try {
+            const content = file.buffer.toString('utf-8');
+            const lines = content.split('\n');
+
+            const frameInfo = extractTimestepInfo(lines);
+
+            if(!frameInfo || !isValidLammpsFile(lines)) {
+                console.warn(`Skipping invalid file: ${file.originalname}`);
+                continue;
+            }
+
+            const filename = frameInfo.timestep.toString();
+            const lammpsFilePath = join(folderPath, filename);
+            const gltfFilePath = join(gltfFolderPath, `${filename}.gltf`);
+
+            // Escribir el archivo LAMMPS original
+            await writeFile(lammpsFilePath, file.buffer);
+
+            // Generar archivo GLTF
+            try {
+                console.log(`Generating GLTF for timestep ${frameInfo.timestep}...`);
+                gltfExporter.exportAtomsToGLTF(
+                    lammpsFilePath, 
+                    gltfFilePath, 
+                    extractTimestepInfo, 
+                    gltfOptions
+                );
+                console.log(`✓ GLTF generated for timestep ${frameInfo.timestep}`);
+            } catch (gltfError) {
+                console.error(`Error generating GLTF for timestep ${frameInfo.timestep}:`, gltfError);
+                // Continuar con el siguiente archivo aunque falle el GLTF
+            }
+
+            frames.push({
+                ...frameInfo,
+                gltfPath: `gltf/${filename}.gltf` // Ruta relativa para el GLTF
+            });
+
+            validFileCounts++;
+            totalSize += file.size;
+
+        } catch (error) {
+            console.error(`Error processing file ${file.originalname}:`, error);
             continue;
         }
-
-        const timestep = extractTimesteps(lines)[0];
-        const filename = timestep.toString();
-        await writeFile(join(folderPath, filename), file.buffer);
-
-        validFileCounts++;
-        totalSize += file.size;
     }
 
     if(validFileCounts === 0){
@@ -45,14 +96,19 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
         });
     }
 
+    console.log(`✓ Successfully processed ${validFileCounts} files with GLTF exports`);
+
     res.locals.trajectoryData = {
         folderId: trajectoryId,
         name: req.body.name || 'Untitled Trajectory',
+        frames: frames.sort((a, b) => a.timestep - b.timestep), // Ordenar por timestep
         stats: {
             totalFiles: validFileCounts,
-            totalSize: totalSize
+            totalSize: totalSize,
+            gltfGenerated: validFileCounts // Todos los archivos válidos tienen GLTF
         },
-        owner: (req as any).user.id
+        owner: (req as any).user.id,
+        gltfOptions // Guardar las opciones usadas para generar los GLTF
     };
 
     next();

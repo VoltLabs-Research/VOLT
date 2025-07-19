@@ -1,10 +1,24 @@
-import mongoose, { Schema, Model, Document } from 'mongoose';
+import mongoose, { Schema, Model } from 'mongoose';
 import { rmdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { NextFunction } from 'express';
-import { ITrajectory } from '@types/models/trajectory';
+import { ITrajectory, ITimestepInfo } from '@types/models/trajectory';
 import User from '@models/user';
+
+const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
+    timestep: { type: Number, required: true },
+    natoms: { type: Number, required: true },
+    gltfPath: { type: String, required: true },
+    boxBounds: {
+        xlo: { type: Number, required: true },
+        xhi: { type: Number, required: true },
+        ylo: { type: Number, required: true },
+        yhi: { type: Number, required: true },
+        zlo: { type: Number, required: true },
+        zhi: { type: Number, required: true },
+    }
+}, { _id: false });
 
 const TrajectorySchema: Schema<ITrajectory> = new Schema({
     name: {
@@ -28,6 +42,7 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User'
     }],
+    frames: [TimestepInfoSchema],
     stats: {
         totalFiles: { type: Number, default: 0 },
         totalSize: { type: Number, default: 0 }

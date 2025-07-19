@@ -48,13 +48,14 @@ const EditorPage: React.FC = () => {
     const folderId = useMemo(() => folder?.folderId || null, [folder]);
 
     const timesteps = useMemo(() => {
-        if(!trajectory?.stats?.timestepFiles) return [];
-        return folder.timestepFiles
+        if(!trajectory?.frames) return;
+        return trajectory.frames
             .map((file: any) => file.timestep)
             .sort((a: number, b: number) => a - b);
     }, [folder]);
 
     const { currentGltfUrl, nextGltfUrl } = useMemo(() => {
+        console.log(folderId, currentTimestep)
         if (!folderId || currentTimestep === undefined || timesteps.length === 0) {
             return { currentGltfUrl: null, nextGltfUrl: null };
         }
@@ -134,9 +135,18 @@ const EditorPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        if(!trajectory?._id) return;
+        console.log(trajectory)
+        setFolder(trajectory);
+        setCurrentTimestep(trajectory.frames[0].timestep);
+        setIsPlaying(false);
+    }, [trajectory]);
+
+    useEffect(() => {
+        if(trajectory?._id) return;
         getTrajectoryById(trajectoryId);
     }, []);
-    
+
     const handlePlayPause = useCallback(() => setIsPlaying(prev => !prev), []);
     const handleTimestepChange = useCallback((timestep: number) => setCurrentTimestep(timestep), []);
 
