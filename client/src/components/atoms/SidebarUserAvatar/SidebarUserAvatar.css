@@ -1,0 +1,27 @@
+.sidebar-user-container{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sidebar-user-avatar{
+    text-transform: uppercase;
+}
+
+.sidebar-user-avatar-container{
+    background-image: linear-gradient(to right, #2b2b2b 0%, #5f5f5f 100%);
+    width: 40px;
+    border-radius: .5rem;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #FFF;
+    font-weight: 500;
+    font-size: 1.2rem;
+}
+
+.sidebar-user-fullname{
+    font-size: 1.1rem;
+    text-transform: capitalize;
+}

@@ -5,6 +5,7 @@ import Dashboard from './pages/protected/Dashboard';
 import SignUp from './pages/guest/SignUp';
 import SignIn from './pages/guest/SignIn';
 import ProtectedRoute from './components/atoms/ProtectedRoute';
+import DashboardLayout from './components/atoms/DashboardLayout';
 
 const App = () => {
 
@@ -12,7 +13,9 @@ const App = () => {
         <Routes>
             <Route element={<ProtectedRoute mode='protect' />}>
                 <Route path='/canva' element={<Canva />} />
-                <Route path='/dashboard' element={<Dashboard />} />
+                <Route element={<DashboardLayout />}>
+                    <Route path='/dashboard' element={<Dashboard />} />
+                </Route>
             </Route>
 
             <Route element={<ProtectedRoute mode='guest' />}>

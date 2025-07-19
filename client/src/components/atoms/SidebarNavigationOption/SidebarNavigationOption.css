@@ -1,0 +1,16 @@
+.sidebar-nav-option-container{
+    display: flex;
+    cursor: pointer;
+    padding: .8rem;
+    align-items: center;
+    gap: .8rem;
+}
+
+.sidebar-nav-option-icon-container{
+    font-size: 1.1rem;
+}
+
+.sidebar-nav-option-name{
+    font-size: 1rem;
+    font-weight: 450;
+}

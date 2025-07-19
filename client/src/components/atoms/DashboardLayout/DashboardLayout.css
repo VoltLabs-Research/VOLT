@@ -1,0 +1,31 @@
+.dashboard-main{
+    display: flex;
+}
+
+.sidebar-container{
+    width: 350px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.sidebar-top-container,
+.sidebar-bottom-container{
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 2rem 2.5rem;
+}
+
+.sidebar-nav-container{
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.sidebar-nav-option-container:hover,
+.sidebar-nav-option-container.selected{
+    background-color: #f5f5f5;
+    border-radius: .5rem;
+}

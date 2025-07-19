@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { IoAddOutline } from 'react-icons/io5';
-import FileManager from '../../../components/organisms/FileManager';
+import TrajectoryList from '../../../components/organisms/TrajectoryList';
 import TimestepControls from '../../../components/organisms/TimestepControls';
 import AnalysisConfiguration from '../../../components/organisms/AnalysisConfiguration';
 import Scene3D from '../../../components/organisms/Scene3D';
@@ -131,7 +131,7 @@ const EditorPage: React.FC = () => {
 
     return (
         <main className='editor-container'>
-            <FileManager onFileSelect={handleFolderSelection} selectedFile={folderId} />
+            <TrajectoryList onFileSelect={handleFolderSelection} selectedFile={folderId} />
 
             {/*
             <DislocationResults ... />

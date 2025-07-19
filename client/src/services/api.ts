@@ -25,18 +25,3 @@ api.interceptors.request.use((config) => {
 },(error) => {
     return Promise.reject(error);
 });
-
-export const analyzeTrajectory = async (folderId: string, config: any): Promise<any> => {
-    const response = await api.post(`/dislocations/trajectories/${folderId}/analyze`, config);
-    return response.data;
-};
-
-export const createTrajectory = async (formData: FormData): Promise<any> => {
-    const response = await api.post(`${API_BASE_URL}/trajectories`, formData);
-
-    return response.data;
-};
-
-export const deleteFolder = async (folderId: string): Promise<void> => {
-    await api.delete(`/dislocations/${folderId}`);
-};
