@@ -7,6 +7,102 @@ import { ITimestepInfo } from '@types/models/trajectory';
 import LAMMPSToGLTFExporter, { GLTFExportOptions } from '@utilities/lammpsGltfExporter';
 import Trajectory from '@models/trajectory';
 
+interface ProcessingResult {
+    success: boolean;
+    frameInfo?: ITimestepInfo;
+    fileSize: number;
+    error?: string;
+}
+
+async function processFileParallel(
+    file: Express.Multer.File, 
+    folderPath: string, 
+    gltfFolderPath: string, 
+    gltfOptions: Partial<GLTFExportOptions>
+): Promise<ProcessingResult> {
+    try {
+        const [content, frameInfo, isValid] = await Promise.all([
+            Promise.resolve(file.buffer.toString('utf-8')),
+            Promise.resolve(extractTimestepInfo(file.buffer.toString('utf-8').split('\n'))),
+            Promise.resolve(isValidLammpsFile(file.buffer.toString('utf-8').split('\n')))
+        ]);
+
+        if(!frameInfo || !isValid){
+            return {
+                success: false,
+                fileSize: file.size,
+                error: `Invalid LAMMPS file: ${file.originalname}`
+            };
+        }
+
+        const filename = frameInfo.timestep.toString();
+        const lammpsFilePath = join(folderPath, filename);
+        const gltfFilePath = join(gltfFolderPath, `${filename}.gltf`);
+
+        await Promise.all([
+            writeFile(lammpsFilePath, file.buffer),
+            Promise.resolve()
+        ]);
+
+        const gltfExporter = new LAMMPSToGLTFExporter();
+        await Promise.resolve(gltfExporter.exportAtomsToGLTF(
+            lammpsFilePath, 
+            gltfFilePath, 
+            extractTimestepInfo, 
+            gltfOptions
+        ));
+
+        return {
+            success: true,
+            frameInfo: {
+                ...frameInfo,
+                gltfPath: `gltf/${filename}.gltf`
+            },
+            fileSize: file.size
+        };
+
+    } catch (error) {
+        return {
+            success: false,
+            fileSize: file.size,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}
+
+async function processFilesInBatches(
+    files: Express.Multer.File[], 
+    batchSize: number, 
+    folderPath: string, 
+    gltfFolderPath: string, 
+    gltfOptions: Partial<GLTFExportOptions>
+): Promise<ProcessingResult[]> {
+    const results: ProcessingResult[] = [];
+    
+    for(let i = 0; i < files.length; i += batchSize){
+        const batch = files.slice(i, i + batchSize);
+        console.log(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(files.length/batchSize)} (${batch.length} files)`);
+        
+        const batchPromises = batch.map(file => processFileParallel(file, folderPath, gltfFolderPath, gltfOptions));
+        const batchResults = await Promise.allSettled(batchPromises);
+        
+        batchResults.forEach((result, index) => {
+            if(result.status === 'fulfilled'){
+                results.push(result.value);
+            }else{
+                console.error(`Error processing file ${batch[index].originalname}:`, result.reason);
+                results.push({
+                    success: false,
+                    fileSize: batch[index].size,
+                    error: result.reason?.message || 'Unknown error'
+                });
+            }
+        });
+    }
+    
+    return results;
+}
+
 export const processAndValidateUpload = async (req: Request, res: Response, next: NextFunction) => {
     const files = req.files as Express.Multer.File[];
     if(!files || files.length === 0) {
@@ -30,60 +126,14 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
     await mkdir(folderPath, { recursive: true });
     await mkdir(gltfFolderPath, { recursive: true });
 
-    let validFileCounts = 0;
-    let totalSize = 0;
-
-    const frames: ITimestepInfo[] = [];
-    const gltfExporter = new LAMMPSToGLTFExporter();
-
     console.log(`Processing ${files.length} files for trajectory ${trajectoryId}...`);
 
-    for(const file of files){
-        try{
-            const content = file.buffer.toString('utf-8');
-            const lines = content.split('\n');
-            const frameInfo = extractTimestepInfo(lines);
+    const BATCH_SIZE = Math.min(8, Math.max(2, Math.floor(files.length / 4)));
+    const results = await processFilesInBatches(files, BATCH_SIZE, folderPath, gltfFolderPath, gltfOptions);
 
-            if(!frameInfo || !isValidLammpsFile(lines)){
-                console.warn(`Skipping invalid file: ${file.originalname}`);
-                continue;
-            }
-
-            const filename = frameInfo.timestep.toString();
-            const lammpsFilePath = join(folderPath, filename);
-            const gltfFilePath = join(gltfFolderPath, `${filename}.gltf`);
-
-            await writeFile(lammpsFilePath, file.buffer);
-
-            try{
-                console.log(`Generating GLTF for timestep ${frameInfo.timestep}...`);
-
-                gltfExporter.exportAtomsToGLTF(
-                    lammpsFilePath, 
-                    gltfFilePath, 
-                    extractTimestepInfo, 
-                    gltfOptions
-                );
-                console.log(`GLTF generated for timestep ${frameInfo.timestep}`);
-            }catch(gltfError){
-                console.error(`Error generating GLTF for timestep ${frameInfo.timestep}:`, gltfError);
-            }
-
-            frames.push({
-                ...frameInfo,
-                gltfPath: `gltf/${filename}.gltf`
-            });
-
-            validFileCounts++;
-            totalSize += file.size;
-
-        }catch(error){
-            console.error(`Error processing file ${file.originalname}:`, error);
-            continue;
-        }
-    }
-
-    if(validFileCounts === 0){
+    const validFrames = results.filter(result => result.success);
+    
+    if(validFrames.length === 0){
         await rmdir(folderPath, { recursive: true });
         return res.status(400).json({
             status: 'error',
@@ -91,14 +141,17 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
         });
     }
 
-    console.log(`Successfully processed ${validFileCounts} files with GLTF exports`);
+    const totalSize = validFrames.reduce((sum, frame) => sum + frame.fileSize, 0);
+    console.log(`Successfully processed ${validFrames.length} files with GLTF exports`);
 
     res.locals.trajectoryData = {
         folderId: trajectoryId,
         name: req.body.name || 'Untitled Trajectory',
-        frames: frames.sort((a, b) => a.timestep - b.timestep),
+        frames: validFrames
+            .map(frame => frame.frameInfo)
+            .sort((a, b) => a.timestep - b.timestep),
         stats: {
-            totalFiles: validFileCounts,
+            totalFiles: validFrames.length,
             totalSize: totalSize
         },
         owner: (req as any).user.id
