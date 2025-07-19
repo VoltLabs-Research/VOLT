@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { TimestepInfo, Atom } from './lammps';
 
 export interface GLTFExportOptions{
-    atomRadius: number;
+    atomRadius?: number;
     spatialCulling?: boolean;
     cullCenter?: { x: number; y: number; z: number };
     cullRadius?: number;
@@ -222,8 +222,10 @@ class LAMMPSToGLTFExporter{
         return { timestepInfo, atoms };
     }
 
-    private selectAtoms(atoms: Atom[], options: GLTFExportOptions, profile: PerformanceProfile): Atom[]{
+    private selectAtoms(atoms: Atom[], options: GLTFExportOptions, profile: PerformanceProfile): { atoms: Atom[], finalRadius: number } {
         let selectedAtoms = [...atoms];
+        let finalRadius = options.atomRadius;
+        
         if(selectedAtoms.length > profile.recommendedMaxAtoms){
             let method: 'uniform' | 'boundary' | 'stratified' = 'boundary';
 
@@ -236,16 +238,21 @@ class LAMMPSToGLTFExporter{
             }
 
             selectedAtoms = LAMMPSToGLTFExporter.subsampling(selectedAtoms, profile.recommendedMaxAtoms, method);
+            
+            finalRadius = LAMMPSToGLTFExporter.calculateOptimalRadius(selectedAtoms);
+            console.log(`Recalculated radius after optimization: ${finalRadius.toFixed(3)}`);
         }
 
         if(options.maxAtoms && selectedAtoms.length > options.maxAtoms){
             selectedAtoms = LAMMPSToGLTFExporter.boundaryPreservingSubsampling(selectedAtoms, options.maxAtoms);
+            finalRadius = LAMMPSToGLTFExporter.calculateOptimalRadius(selectedAtoms);
+            console.log(`Recalculated radius after second optimization: ${finalRadius.toFixed(3)}`);
         }
 
         const reductionPercent = ((atoms.length - selectedAtoms.length) / atoms.length * 100).toFixed(1);
         console.log(`Optimization complete: ${reductionPercent}% reduction (${selectedAtoms.length.toLocaleString()} final atoms)`);
 
-        return selectedAtoms;
+        return { atoms: selectedAtoms, finalRadius };
     }
 
     // Generate sphere geometry
@@ -442,8 +449,11 @@ class LAMMPSToGLTFExporter{
         extractTimestepInfo: Function,
         options: GLTFExportOptions = { atomRadius: 0.8 }
     ): void{
+        const frame = this.parseFrame(filePath, extractTimestepInfo);
+        const autoRadius = LAMMPSToGLTFExporter.calculateGlobalOptimalRadius(frame);
+        
         const opts: Required<GLTFExportOptions> = {
-            atomRadius: options.atomRadius,
+            atomRadius: options.atomRadius ?? autoRadius, 
             spatialCulling: options.spatialCulling ?? false,
             cullCenter: options.cullCenter ?? { x: 0, y: 0, z: 0 },
             cullRadius: options.cullRadius ?? 10.0,
@@ -452,14 +462,14 @@ class LAMMPSToGLTFExporter{
             maxInstancesPerMesh: options.maxInstancesPerMesh ?? 10000
         };
 
-        // Parse frame
-        const frame = this.parseFrame(filePath, extractTimestepInfo);
+        console.log(`Using atom radius: ${opts.atomRadius.toFixed(3)} (${options.atomRadius ? 'specified' : 'auto-detected'})`);
         const profile = LAMMPSToGLTFExporter.detectPerfomanceProfile(frame.atoms.length);
-        const selectedAtoms = this.selectAtoms(frame.atoms, options, profile);
+        const { atoms: selectedAtoms, finalRadius } = this.selectAtoms(frame.atoms, opts, profile);
         const { segments, rings } = profile.sphereResolution;
-        const sphere = this.generateSphere(options.atomRadius, segments, rings);
+        const sphere = this.generateSphere(finalRadius, segments, rings);
 
         console.log(`Exporting ${selectedAtoms.length} of ${frame.atoms.length} atoms (${(100.0 * selectedAtoms.length / frame.atoms.length).toFixed(1)}%)`);
+        console.log(`Final atom radius: ${finalRadius.toFixed(3)}`);
 
         // Initialize GLTF structure
         const gltf: any = {
@@ -690,6 +700,7 @@ class LAMMPSToGLTFExporter{
             exportedAtomCount: selectedAtoms.length,
             sphereResolution: [segments, rings],
             timestep: frame.timestepInfo.timestep,
+            finalAtomRadius: finalRadius,
             performanceProfile: {
                 detected: profile.compressionLevel,
                 reductionRatio: (1 - selectedAtoms.length / frame.atoms.length),

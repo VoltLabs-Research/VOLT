@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { extractTimestepInfo, isValidLammpsFile } from '@utilities/lammps';
-import { mkdir, writeFile, rmdir, unlink } from 'fs/promises';
+import { mkdir, writeFile, rmdir } from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import { join } from 'path';
 import { ITimestepInfo } from '@types/models/trajectory';
@@ -16,10 +16,17 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
         });
     }
 
+    const gltfOptions: Partial<GLTFExportOptions> = {
+        spatialCulling: false,
+        subsampleRatio: 1.0,
+        maxAtoms: req.body.maxAtoms ? parseInt(req.body.maxAtoms) : 0,
+        maxInstancesPerMesh: 10000
+    };
+
     const trajectoryId = uuidv4();
     const folderPath = join(process.env.TRAJECTORY_DIR as string, trajectoryId);
     const gltfFolderPath = join(folderPath, 'gltf');
-    
+        
     await mkdir(folderPath, { recursive: true });
     await mkdir(gltfFolderPath, { recursive: true });
 
@@ -30,7 +37,6 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
     const gltfExporter = new LAMMPSToGLTFExporter();
 
     console.log(`Processing ${files.length} files for trajectory ${trajectoryId}...`);
-    let globalAtomRadius: number = 0;
 
     for(const file of files){
         try{
@@ -43,16 +49,6 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
                 continue;
             }
 
-            if(globalAtomRadius === 0){
-                const tempFilePath = join(folderPath, 'temp_for_radius_calc.dump');
-                await writeFile(tempFilePath, file.buffer);
-
-                const firstFrame = gltfExporter.parseFrame(tempFilePath, extractTimestepInfo);
-                globalAtomRadius = LAMMPSToGLTFExporter.calculateGlobalOptimalRadius(firstFrame);
-
-                await unlink(tempFilePath);
-            }
-
             const filename = frameInfo.timestep.toString();
             const lammpsFilePath = join(folderPath, filename);
             const gltfFilePath = join(gltfFolderPath, `${filename}.gltf`);
@@ -61,13 +57,6 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
 
             try{
                 console.log(`Generating GLTF for timestep ${frameInfo.timestep}...`);
-                const gltfOptions: GLTFExportOptions = {
-                    atomRadius: globalAtomRadius,
-                    spatialCulling: false,
-                    subsampleRatio: 1.0,
-                    maxAtoms: req.body.maxAtoms ? parseInt(req.body.maxAtoms) : 0,
-                    maxInstancesPerMesh: 10000
-                };
 
                 gltfExporter.exportAtomsToGLTF(
                     lammpsFilePath, 
