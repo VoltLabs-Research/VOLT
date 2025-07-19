@@ -92,7 +92,7 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
         });
     }
 
-    console.log(`✓ Successfully processed ${validFileCounts} files with GLTF exports`);
+    console.log(`Successfully processed ${validFileCounts} files with GLTF exports`);
 
     res.locals.trajectoryData = {
         folderId: trajectoryId,

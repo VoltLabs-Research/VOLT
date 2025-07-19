@@ -1,3 +1,4 @@
+
 import React from 'react';
 import PlayControls from '../../molecules/PlayControls';
 import TimestepSlider from '../../molecules/TimestepSlider';
@@ -11,6 +12,7 @@ interface TimestepControlsProps {
         timesteps: number;
         minTimestep: number;
         maxTimestep: number;
+        availableTimesteps: number[];
     };
     currentTimestep: number;
     onTimestepChange: (newTimestep: number) => void;
@@ -33,8 +35,6 @@ const TimestepControls: React.FC<TimestepControlsProps> = ({
     onSpeedChange,
     isConnected
 }) => {
-    const { minTimestep, maxTimestep } = folderInfo;
-
     return (
         <EditorWidget className='editor-timestep-controls'>
             <PlayControls
@@ -44,8 +44,7 @@ const TimestepControls: React.FC<TimestepControlsProps> = ({
             
             <TimestepSlider
                 currentTimestep={currentTimestep}
-                minTimestep={minTimestep}
-                maxTimestep={maxTimestep}
+                availableTimesteps={folderInfo.availableTimesteps}
                 onTimestepChange={onTimestepChange}
                 disabled={!isConnected}
             />

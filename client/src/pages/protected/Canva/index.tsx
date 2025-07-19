@@ -27,7 +27,6 @@ const EditorPage: React.FC = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [playSpeed, setPlaySpeed] = useState(1);
     const [currentTimestep, setCurrentTimestep] = useState<number | undefined>(undefined);
-    const [cameraControlsEnabled, setCameraControlsEnabled] = useState(true);
     const [analysisConfig, setAnalysisConfig] = useState(initialAnalysisConfig);
     
     const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
@@ -38,42 +37,70 @@ const EditorPage: React.FC = () => {
     const orbitControlsRef = useRef<any>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const timesteps = useMemo(() => {
-        if (!trajectory?.frames) return [];
-        return trajectory.frames
+    const timestepData = useMemo(() => {
+        if (!trajectory?.frames || trajectory.frames.length === 0) {
+            return {
+                timesteps: [],
+                minTimestep: 0,
+                maxTimestep: 0,
+                timestepCount: 0
+            };
+        }
+
+        const timesteps = trajectory.frames
             .map((frame: any) => frame.timestep)
             .sort((a: number, b: number) => a - b);
+
+        return {
+            timesteps,
+            minTimestep: timesteps[0] || 0,
+            maxTimestep: timesteps[timesteps.length - 1] || 0,
+            timestepCount: timesteps.length
+        };
     }, [trajectory?.frames]);
 
+    const folderInfo = useMemo(() => {
+        if (!trajectory) {
+            return {
+                folderId: '',
+                timesteps: 0,
+                minTimestep: 0,
+                maxTimestep: 0,
+                availableTimesteps: []
+            };
+        }
+
+        return {
+            folderId: trajectory.folderId || trajectory._id,
+            timesteps: timestepData.timestepCount,
+            minTimestep: timestepData.minTimestep,
+            maxTimestep: timestepData.maxTimestep,
+            availableTimesteps: timestepData.timesteps
+        };
+    }, [trajectory, timestepData]);
+
     const { currentGltfUrl, nextGltfUrl } = useMemo(() => {
-        if (!trajectory?._id || currentTimestep === undefined || timesteps.length === 0) {
+        if (!trajectory?._id || currentTimestep === undefined || timestepData.timesteps.length === 0) {
             return { currentGltfUrl: null, nextGltfUrl: null };
         }
 
         const buildUrl = (ts: number) => `/trajectories/${trajectory._id}/gltf/${ts}`;
         const currentUrl = buildUrl(currentTimestep);
 
-        const currentIndex = timesteps.indexOf(currentTimestep);
+        const currentIndex = timestepData.timesteps.indexOf(currentTimestep);
         let nextUrl = null;
-        if (currentIndex !== -1 && timesteps.length > 1) {
-            const nextIndex = (currentIndex + 1) % timesteps.length;
-            const nextTimestep = timesteps[nextIndex];
+        if (currentIndex !== -1 && timestepData.timesteps.length > 1) {
+            const nextIndex = (currentIndex + 1) % timestepData.timesteps.length;
+            const nextTimestep = timestepData.timesteps[nextIndex];
             nextUrl = buildUrl(nextTimestep);
         }
 
         console.log('URLs:', { currentUrl, nextUrl });
         return { currentGltfUrl: currentUrl, nextGltfUrl: nextUrl };
-    }, [trajectory?._id, currentTimestep, timesteps]);
+    }, [trajectory?._id, currentTimestep, timestepData.timesteps]);
 
     const handleConfigChange = useCallback((key: string, value: any) => {
         setAnalysisConfig(prev => ({ ...prev, [key]: value }));
-    }, []);
-
-    const handleCameraControlsEnable = useCallback((enabled: boolean) => {
-        setCameraControlsEnabled(enabled);
-        if (orbitControlsRef.current) {
-            orbitControlsRef.current.enabled = enabled;
-        }
     }, []);
 
     const clearPlayTimeout = useCallback(() => {
@@ -89,25 +116,25 @@ const EditorPage: React.FC = () => {
             return;
         }
 
-        if (!trajectory || timesteps.length === 0 || playSpeed <= 0) {
+        if (!trajectory || timestepData.timesteps.length === 0 || playSpeed <= 0) {
             return;
         }
 
         const advance = () => {
             setCurrentTimestep(prevTimestep => {
-                if (prevTimestep === undefined) return timesteps[0]; 
+                if (prevTimestep === undefined) return timestepData.timesteps[0]; 
                 
-                const currentIndex = timesteps.indexOf(prevTimestep);
-                if (currentIndex === -1) return timesteps[0]; 
+                const currentIndex = timestepData.timesteps.indexOf(prevTimestep);
+                if (currentIndex === -1) return timestepData.timesteps[0]; 
 
-                const nextIndex = (currentIndex + 1) % timesteps.length;
-                return timesteps[nextIndex];
+                const nextIndex = (currentIndex + 1) % timestepData.timesteps.length;
+                return timestepData.timesteps[nextIndex];
             });
         };
 
         timeoutRef.current = setTimeout(advance, 1000 / playSpeed);
         return clearPlayTimeout;
-    }, [isPlaying, playSpeed, trajectory, timesteps, currentTimestep, clearPlayTimeout]); 
+    }, [isPlaying, playSpeed, trajectory, timestepData.timesteps, currentTimestep, clearPlayTimeout]); 
     
     const handleUploadError = useCallback((error: any) => {
         console.error('Error en la subida:', error);
@@ -129,16 +156,29 @@ const EditorPage: React.FC = () => {
 
     useEffect(() => {
         if (trajectory?.frames?.length > 0 && currentTimestep === undefined) {
-            setCurrentTimestep(trajectory.frames[0].timestep);
-            setIsPlaying(false);
+            const firstTimestep = timestepData.timesteps[0];
+            if (firstTimestep !== undefined && !isNaN(firstTimestep)) {
+                setCurrentTimestep(firstTimestep);
+                setIsPlaying(false);
+            }
         }
-    }, [trajectory?.frames, currentTimestep]);
+    }, [trajectory?.frames, currentTimestep, timestepData.timesteps]);
 
     const handlePlayPause = useCallback(() => setIsPlaying(prev => !prev), []);
+    
     const handleTimestepChange = useCallback((timestep: number) => {
-        setCurrentTimestep(timestep);
-        setIsPlaying(false);
-    }, []);
+        if (!isNaN(timestep) && timestepData.timesteps.includes(timestep)) {
+            setCurrentTimestep(timestep);
+            setIsPlaying(false);
+        }
+    }, [timestepData.timesteps]);
+
+    const shouldRenderControls = trajectory && 
+                                 timestepData.timesteps.length > 0 && 
+                                 !isNaN(folderInfo.minTimestep) && 
+                                 !isNaN(folderInfo.maxTimestep) &&
+                                 currentTimestep !== undefined &&
+                                 !isNaN(currentTimestep);
 
     return (
         <main className='editor-container'>
@@ -153,15 +193,18 @@ const EditorPage: React.FC = () => {
                 </div>
             )}
 
-            {trajectory && (
+            {shouldRenderControls && (
                 <TimestepControls
-                    folderInfo={trajectory}
-                    currentTimestep={currentTimestep}
+                    folderInfo={folderInfo}
+                    currentTimestep={currentTimestep!}
                     onTimestepChange={handleTimestepChange}
                     isPlaying={isPlaying}
                     onPlayPause={handlePlayPause}
                     playSpeed={playSpeed}
                     onSpeedChange={setPlaySpeed}
+                    isConnected={true}
+                    isStreaming={false}
+                    streamProgress={{ current: 0, total: 0 }}
                 />
             )}
 
@@ -180,7 +223,6 @@ const EditorPage: React.FC = () => {
                     analysisConfig={analysisConfig}
                 >
                     <Scene3D
-                        cameraControlsEnabled={cameraControlsEnabled}
                         onCameraControlsRef={(ref) => { orbitControlsRef.current = ref; }}
                     >
                         {currentGltfUrl && (

@@ -4,40 +4,50 @@ import './TimestepSlider.css';
 
 interface TimestepSliderProps {
     currentTimestep: number;
-    minTimestep: number;
-    maxTimestep: number;
+    availableTimesteps: number[];
     onTimestepChange: (timestep: number) => void;
     disabled?: boolean;
 }
 
 const TimestepSlider: React.FC<TimestepSliderProps> = ({
     currentTimestep,
-    minTimestep,
-    maxTimestep,
+    availableTimesteps,
     onTimestepChange,
     disabled = false
 }) => {
-    const currentIndex = currentTimestep - minTimestep;
-    const maxIndex = maxTimestep - minTimestep;
+    const currentIndex = availableTimesteps.indexOf(currentTimestep);
+    const safeCurrentIndex = currentIndex !== -1 ? currentIndex : 0;
+    
+    const minIndex = 0;
+    const maxIndex = availableTimesteps.length - 1;
 
-    const handleSliderChange = (value: number) => {
-        onTimestepChange(minTimestep + value);
+    const handleSliderChange = (index: number) => {
+        const roundedIndex = Math.round(index);
+        if (roundedIndex >= 0 && roundedIndex < availableTimesteps.length) {
+            const selectedTimestep = availableTimesteps[roundedIndex];
+            onTimestepChange(selectedTimestep);
+        }
     };
+
+    const progress = maxIndex > 0 ? (safeCurrentIndex / maxIndex) * 100 : 0;
 
     return (
         <div className='editor-timesteps-controls-slider'>
             <Slider
-                min={0}
+                min={minIndex}
                 max={maxIndex}
-                value={currentIndex}
+                value={safeCurrentIndex}
                 onChange={handleSliderChange}
+                step={1}
                 disabled={disabled}
                 className='editor-timestep-controls-slider'
                 style={{
-                    '--progress': `${(currentIndex / maxIndex) * 100}%`
+                    '--progress': `${progress}%`
                 } as React.CSSProperties}
             />
-            {currentTimestep} / {maxTimestep}
+            <span className="timestep-display">
+                {currentTimestep}
+            </span>
         </div>
     );
 };
