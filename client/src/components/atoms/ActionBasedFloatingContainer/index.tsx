@@ -3,15 +3,20 @@ import './ActionBasedFloatingContainer.css';
 
 const ActionBasedFloatingContainer = ({ options, children }: any) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const [offset, setOffset] = useState(0);
+    const [offset, setOffset] = useState({ top: '0px', right: '0px', left: '0px' });
     const [isVisible, setIsVisible] = useState(false);
 
     const handleOnClick = () => {
         if(!containerRef.current) return;
-        const { top, height } = containerRef.current.getBoundingClientRect();
+        const { top, right, left, height } = containerRef.current.getBoundingClientRect();
         const marginTop = 20;
-        const finalOffset = top + height + marginTop;
-        setOffset(finalOffset);
+        const topOffset = top + height + marginTop;
+
+        setOffset({
+            top: `${topOffset}px`,
+            right: `${right}px`,
+            left: `${left}px`,
+        })
         setIsVisible(!isVisible);
     };
 
@@ -41,7 +46,7 @@ const ActionBasedFloatingContainer = ({ options, children }: any) => {
 
             {isVisible && (
                 <div 
-                    style={{ top: `${offset}px` }}
+                    style={offset}
                     className='action-based-floating-container'
                 >
                     {options.map(([ name, Icon, onClick ], index) => (

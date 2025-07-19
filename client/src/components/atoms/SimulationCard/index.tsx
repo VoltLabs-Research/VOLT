@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { PiDotsThreeVerticalBold } from "react-icons/pi";
 import { PiAtomThin } from 'react-icons/pi';
+import { CiTrash } from 'react-icons/ci';
 import SimpExampleCover from '../../../assets/images/simulation-example-cover.png';
 import formatTimeAgo from '../../../utilities/formatTimeAgo';
 import EditableTag from '../EditableTag';
 import useTrajectoryStore from '../../../stores/trajectories';
+import ActionBasedFloatingContainer from '../ActionBasedFloatingContainer';
 import './SimulationCard.css';
 
 const SimulationCard = ({ trajectory }) => {
@@ -42,9 +44,15 @@ const SimulationCard = ({ trajectory }) => {
                     </EditableTag>
                     <p className='simulation-last-edited'>Edited {formatTimeAgo(trajectory.updatedAt)}</p>
                 </div>
-                <i className='simulation-options-icon-container'>
-                    <PiDotsThreeVerticalBold />
-                </i>
+                <ActionBasedFloatingContainer
+                    options={[
+                        ['Delete', CiTrash, () => {}]
+                    ]}
+                >
+                    <i className='simulation-options-icon-container'>
+                        <PiDotsThreeVerticalBold />
+                    </i>
+                </ActionBasedFloatingContainer>
             </figcaption>
         </figure>
     );
