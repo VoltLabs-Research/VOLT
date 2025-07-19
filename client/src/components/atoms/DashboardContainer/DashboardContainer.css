@@ -3,6 +3,28 @@
     background-color: transparent;
 }
 
+.dashboard-header-right-container,
+.dashboard-clickables-container{
+    height: 100%;
+}
+
+.dashboard-clickable-container{
+    font-size: 1rem;
+    width: 2.5rem;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #dadada;
+    border-radius: .5rem;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.dashboard-clickable-container:hover{
+    background-color: #f3f3f3;
+}
+
 .dashboard-container{
     padding: 2rem;
     width: 100%;

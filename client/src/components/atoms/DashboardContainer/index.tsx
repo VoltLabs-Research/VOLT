@@ -1,6 +1,7 @@
 import { HiPlus } from 'react-icons/hi';
 import { IoSearchOutline } from 'react-icons/io5';
 import { MdKeyboardArrowDown } from 'react-icons/md';
+import { IoNotificationsOutline } from "react-icons/io5";
 import './DashboardContainer.css';
 
 const DashboardContainer = ({ children, pageName }) => {
@@ -19,6 +20,14 @@ const DashboardContainer = ({ children, pageName }) => {
                 </div>
 
                 <div className='dashboard-header-right-container'>
+                    <div className='dashboard-clickables-container'>
+                        {[IoNotificationsOutline].map((Icon, index) => (
+                            <div className='dashboard-clickable-container' key={index}>
+                                <Icon />
+                            </div>
+                        ))}
+                    </div>
+
                     <div className='search-container'>
                         <i className='search-icon-container'>
                             <IoSearchOutline />
