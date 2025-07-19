@@ -15,7 +15,7 @@ const App = () => {
     return (
         <Routes>
             <Route element={<ProtectedRoute mode='protect' />}>
-                <Route path='/canva' element={<Canva />} />
+                <Route path='/canvas/:trajectoryId/' element={<Canva />} />
                 <Route element={<DashboardLayout />}>
                     <Route path='/dashboard' element={<Dashboard />} />
                     <Route path='/dashboard/shared-with-me/' element={<SharedWithMe />} />

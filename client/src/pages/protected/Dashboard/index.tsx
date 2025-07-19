@@ -1,16 +1,18 @@
 import { useEffect } from 'react';
 import { PiDotsThreeVerticalBold } from "react-icons/pi";
+import { useNavigate } from 'react-router-dom';
+import { Skeleton } from '@mui/material'; 
+import { PiAtomThin } from 'react-icons/pi';
 import DashboardContainer from '../../../components/atoms/DashboardContainer';
 import SimpExampleCover from '../../../assets/images/simulation-example-cover.png';
 import useTrajectoryStore from "../../../stores/trajectories";
-import { PiAtomThin } from 'react-icons/pi';
-import { Skeleton } from '@mui/material'; 
 import './Dashboard.css';
 
 const DashboardPage = () => {
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoading = useTrajectoryStore((state) => state.isLoading);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
+    const navigate = useNavigate();
 
     useEffect(() => {
         getTrajectories();
@@ -32,8 +34,13 @@ const DashboardPage = () => {
                         </div>
                     ))
                 )}
+
                 {trajectories.map((trajectory) => (
-                    <figure className='simulation-container' key={trajectory._id}>
+                    <figure 
+                        className='simulation-container' 
+                        key={trajectory._id} 
+                        onClick={() => navigate(`/canvas/${trajectory._id}/`)}
+                    >
                         <div className='simulation-cover-container'>
                             {true ? (
                                 <i className='simulation-cover-icon-container'>
