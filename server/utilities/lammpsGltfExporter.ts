@@ -11,6 +11,17 @@ export interface GLTFExportOptions{
     maxInstancesPerMesh?: number;
 }
 
+interface PerformanceProfile{
+    atomCount: number;
+    recommendedMaxAtoms: number;
+    sphereResolution: { segments: number; rings: number };
+    subsampleRatio: number;
+    enableSpatialCulling: boolean;
+    enableLOD: boolean;
+    chunkSize: number;
+    compressionLevel: 'high' | 'medium' | 'low';
+}
+
 export interface ParsedFrame{
     timestepInfo: TimestepInfo;
     atoms: Atom[];
@@ -67,6 +78,135 @@ class LAMMPSToGLTFExporter{
         return atoms;
     }
 
+    private static uniformSubsampling(atoms: Atom[], targetCount: number): Atom[]{
+        const step = Math.floor(atoms.length / targetCount);
+        const selected: Atom[] = [];
+        for(let i = 0; i < atoms.length && selected.length < targetCount; i += step){
+            selected.push(atoms[i]);
+        }
+        return selected;
+    }
+
+    private static calculateAtomBounds(atoms: Atom[]): { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } }{
+        let minX = Number.MAX_VALUE, maxX = Number.MIN_VALUE;
+        let minY = Number.MAX_VALUE, maxY = Number.MIN_VALUE;
+        let minZ = Number.MAX_VALUE, maxZ = Number.MIN_VALUE;
+
+        for(const atom of atoms){
+            minX = Math.min(minX, atom.x); maxX = Math.max(maxX, atom.x);
+            minY = Math.min(minY, atom.y); maxY = Math.max(maxY, atom.y);
+            minZ = Math.min(minZ, atom.z); maxZ = Math.max(maxZ, atom.z);
+        }
+
+        return { min: { x: minX, y: minY, z: minZ }, max: { x: maxX, y: maxY, z: maxZ } };
+    }
+
+    private static boundaryPreservingSubsampling(atoms: Atom[], targetCount: number): Atom[]{
+        if(atoms.length <= targetCount) return atoms;
+        const bounds = this.calculateAtomBounds(atoms);
+        // Identify edge atoms (10% of total volume)
+        // 5% margin on each side
+        const margin = 0.05;
+        const xMargin = (bounds.max.x - bounds.min.x) * margin;
+        const yMargin = (bounds.max.y - bounds.min.y) * margin;
+        const zMargin = (bounds.max.z - bounds.min.z) * margin;
+
+        const boundaryAtoms: Atom[] = [];
+        const interiorAtoms: Atom[] = [];
+
+        for(const atom of atoms){
+            const isOnBoundary = (
+                atom.x <= bounds.min.x + xMargin || atom.x >= bounds.max.x - xMargin ||
+                atom.y <= bounds.min.y + yMargin || atom.y >= bounds.max.y - yMargin ||
+                atom.z <= bounds.min.z + zMargin || atom.z >= bounds.max.z - zMargin
+            );
+
+            if(isOnBoundary){
+                boundaryAtoms.push(atom);
+            }else{
+                interiorAtoms.push(atom);
+            }
+        }
+
+        // Reserve space for edge atoms (minimum 15% of the target)
+        const minBoundaryCount = Math.min(boundaryAtoms.length, Math.floor(targetCount * 0.15));
+        const remainingTarget = targetCount - minBoundaryCount;
+
+        // Select edge atoms uniformly
+        const selectedBoundary = this.uniformSubsampling(boundaryAtoms, minBoundaryCount);
+
+        // Select interior atoms
+        const selectedInterior = interiorAtoms.length <= remainingTarget ? interiorAtoms : this.uniformSubsampling(interiorAtoms, remainingTarget);
+
+        const result = [...selectedBoundary, ...selectedInterior];
+        return result;
+    }
+
+    private static stratifiedSubsampling(atoms: Atom[], targetCount: number): Atom[]{
+        if(atoms.length <= targetCount) return atoms;
+        const bounds = this.calculateAtomBounds(atoms);
+        // Divide into 8 octants (guaranteed corners)
+        const regions = this.divideIntoOctants(atoms, bounds);
+        const selected: Atom[] = [];
+        const atomsPerRegion = Math.floor(targetCount / regions.length);
+        let remainingTarget = targetCount;
+        // Select from each region proportionally
+        for(let i = 0; i < regions.length; i++){
+            const region = regions[i];
+            if(region.length === 0) continue;
+            const isLastRegion = i === regions.length - 1;
+            const regionTarget = isLastRegion ? remainingTarget : Math.min(atomsPerRegion, region.length);
+            if(region.length <= regionTarget){
+                selected.push(...region);
+            }else{
+                // Subsample evenly within the region
+                const regionSelected = this.uniformSubsampling(region, regionTarget);
+                selected.push(...regionSelected);   
+            }
+
+            remainingTarget -= regionTarget;
+            if(remainingTarget <= 0) break;
+        }
+
+        return selected;
+    }
+
+    private static divideIntoOctants(atoms: Atom[], bounds: any): Atom[][]{
+        const centerX = (bounds.min.x + bounds.max.x) / 2;
+        const centerY = (bounds.min.y + bounds.max.y) / 2;
+        const centerZ = (bounds.min.z + bounds.max.z) / 2;
+
+        // 8 octants to ensure coverage of all corners
+        const octants: Atom[][] = [
+            [], [], [], [], [], [], [], []
+        ];
+
+        for(const atom of atoms){
+            const octantIndex = 
+                (atom.x >= centerX ? 1 : 0) +
+                (atom.y >= centerY ? 2 : 0) +
+                (atom.z >= centerZ ? 4 : 0);
+            
+            octants[octantIndex].push(atom);
+        }
+        
+        return octants.filter((octant) => octant.length > 0);
+    }
+
+    private static subsampling(atoms: Atom[], targetCount: number, method: 'uniform' | 'boundary' | 'stratified'): Atom[]{
+        if(atoms.length <= targetCount) return atoms;
+        switch(method){
+            case 'uniform':
+                return this.uniformSubsampling(atoms, targetCount);
+            case 'boundary':
+                return this.boundaryPreservingSubsampling(atoms, targetCount);
+            case 'stratified':
+                return this.stratifiedSubsampling(atoms, targetCount);
+            default:
+                return this.boundaryPreservingSubsampling(atoms, targetCount);
+        }
+    }
+
     // Parse complete frame from LAMMPS file
     parseFrame(filePath: string, extractTimestepInfo: Function): ParsedFrame{
         const content = fs.readFileSync(filePath, 'utf-8');
@@ -82,33 +222,28 @@ class LAMMPSToGLTFExporter{
         return { timestepInfo, atoms };
     }
 
-    // Apply spatial culling and subsampling to atoms
-    private selectAtoms(atoms: Atom[], options: GLTFExportOptions): Atom[]{
+    private selectAtoms(atoms: Atom[], options: GLTFExportOptions, profile: PerformanceProfile): Atom[]{
         let selectedAtoms = [...atoms];
+        if(selectedAtoms.length > profile.recommendedMaxAtoms){
+            let method: 'uniform' | 'boundary' | 'stratified' = 'boundary';
 
-        // Spatial culling
-        if(options.spatialCulling && options.cullCenter && options.cullRadius){
-            selectedAtoms = selectedAtoms.filter((atom) => {
-                const dx = atom.x - options.cullCenter!.x;
-                const dy = atom.y - options.cullCenter!.y;
-                const dz = atom.z - options.cullCenter!.z;
+            if(selectedAtoms.length > 2000000){
+                method = 'stratified';
+            }else if(selectedAtoms.length > 500000){
+                method = 'boundary';
+            }else{
+                method = 'uniform';
+            }
 
-                const distanceSquared = dx * dx + dy * dy + dz * dz;
-                return distanceSquared;
-            });
+            selectedAtoms = LAMMPSToGLTFExporter.subsampling(selectedAtoms, profile.recommendedMaxAtoms, method);
         }
 
-        // Subsampling
-        if(options.subsampleRatio && options.subsampleRatio < 1.0 && selectedAtoms.length > 0){
-            const shuffled = [...selectedAtoms].sort(() => Math.random() - 0.5);
-            const targetCount = Math.floor(selectedAtoms.length * options.subsampleRatio);
-            selectedAtoms = shuffled.slice(0, targetCount);
-        }
-
-        // Max atoms limit
         if(options.maxAtoms && selectedAtoms.length > options.maxAtoms){
-            selectedAtoms = selectedAtoms.slice(0, options.maxAtoms);
+            selectedAtoms = LAMMPSToGLTFExporter.boundaryPreservingSubsampling(selectedAtoms, options.maxAtoms);
         }
+
+        const reductionPercent = ((atoms.length - selectedAtoms.length) / atoms.length * 100).toFixed(1);
+        console.log(`Optimization complete: ${reductionPercent}% reduction (${selectedAtoms.length.toLocaleString()} final atoms)`);
 
         return selectedAtoms;
     }
@@ -222,6 +357,65 @@ class LAMMPSToGLTFExporter{
         return Math.max(0.1, Math.min(3.0, optimalRadius));
     }
 
+    static detectPerfomanceProfile(atomCount: number): PerformanceProfile{
+        if(atomCount <= 10000){
+            return {
+                atomCount,
+                recommendedMaxAtoms: atomCount,
+                sphereResolution: { segments: 16, rings: 12 },
+                subsampleRatio: 1.0,
+                enableSpatialCulling: false,
+                enableLOD: false,
+                chunkSize: 5000,
+                compressionLevel: 'low'
+            };
+        }else if(atomCount <= 100000){
+            return {
+                atomCount,
+                recommendedMaxAtoms: atomCount,
+                sphereResolution: { segments: 12, rings: 8 },
+                subsampleRatio: 1.0,
+                enableSpatialCulling: false,
+                enableLOD: true,
+                chunkSize: 8000,
+                compressionLevel: 'medium'
+            };
+        }else if(atomCount <= 500000){
+            return {
+                atomCount,
+                recommendedMaxAtoms: 200000,
+                sphereResolution: { segments: 8, rings: 6 },
+                subsampleRatio: 0.4,
+                enableSpatialCulling: false,
+                enableLOD: true,
+                chunkSize: 10000,
+                compressionLevel: 'high'
+            };
+        }else if(atomCount <= 2000000){
+            return {
+                atomCount,
+                recommendedMaxAtoms: 150000,
+                sphereResolution: { segments: 6, rings: 4 },
+                subsampleRatio: 0.075,
+                enableSpatialCulling: true,
+                enableLOD: true,
+                chunkSize: 15000,
+                compressionLevel: 'high'
+            };
+        }else{
+            return {
+                atomCount,
+                recommendedMaxAtoms: 100000,
+                sphereResolution: { segments: 4, rings: 3 },
+                subsampleRatio: 0.05,
+                enableSpatialCulling: true,
+                enableLOD: true,
+                chunkSize: 20000,
+                compressionLevel: 'high'
+            };
+        }
+    }
+
     static calculateRadiusFromDensity(timestepInfo: TimestepInfo, atomCount: number): number{
         const { boxBounds } = timestepInfo;
         const volume = (boxBounds.xhi - boxBounds.xlo) * 
@@ -260,25 +454,12 @@ class LAMMPSToGLTFExporter{
 
         // Parse frame
         const frame = this.parseFrame(filePath, extractTimestepInfo);
-        const selectedAtoms = this.selectAtoms(frame.atoms, opts);
+        const profile = LAMMPSToGLTFExporter.detectPerfomanceProfile(frame.atoms.length);
+        const selectedAtoms = this.selectAtoms(frame.atoms, options, profile);
+        const { segments, rings } = profile.sphereResolution;
+        const sphere = this.generateSphere(options.atomRadius, segments, rings);
 
         console.log(`Exporting ${selectedAtoms.length} of ${frame.atoms.length} atoms (${(100.0 * selectedAtoms.length / frame.atoms.length).toFixed(1)}%)`);
-
-        // Determine sphere solution based on atom acount
-        let segments: number, rings: number;
-        if(selectedAtoms.length > 100000){
-            segments = 6;
-            rings = 4;
-        }else if(selectedAtoms.length > 10000){
-            segments = 8;
-            rings = 6;
-        }else{
-            segments = 12;
-            rings = 8;
-        }
-
-        // Generate sphere geometry
-        const sphere = this.generateSphere(opts.atomRadius, segments, rings);
 
         // Initialize GLTF structure
         const gltf: any = {
@@ -509,6 +690,15 @@ class LAMMPSToGLTFExporter{
             exportedAtomCount: selectedAtoms.length,
             sphereResolution: [segments, rings],
             timestep: frame.timestepInfo.timestep,
+            performanceProfile: {
+                detected: profile.compressionLevel,
+                reductionRatio: (1 - selectedAtoms.length / frame.atoms.length),
+                optimizationsApplied: [
+                    profile.enableSpatialCulling && 'spatial_culling',
+                    profile.subsampleRatio < 1.0 && 'intelligent_subsampling',
+                    'optimized_sphere_resolution'
+                ].filter(Boolean)
+            },
             optimizationSettings: {
                 maxAtoms: opts.maxAtoms,
                 subsampleRatio: opts.subsampleRatio,
