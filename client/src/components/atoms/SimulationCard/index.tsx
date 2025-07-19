@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { PiDotsThreeVerticalBold } from "react-icons/pi";
 import { PiAtomThin } from 'react-icons/pi';
-import { CiTrash } from 'react-icons/ci';
+import { RxTrash } from "react-icons/rx";
+import { CiShare1 } from "react-icons/ci";
+import { HiOutlineViewfinderCircle } from "react-icons/hi2";
 import SimpExampleCover from '../../../assets/images/simulation-example-cover.png';
 import formatTimeAgo from '../../../utilities/formatTimeAgo';
 import EditableTag from '../EditableTag';
@@ -46,7 +48,9 @@ const SimulationCard = ({ trajectory }) => {
                 </div>
                 <ActionBasedFloatingContainer
                     options={[
-                        ['Delete', CiTrash, () => {}]
+                        ['View Scene', HiOutlineViewfinderCircle, () => {}],
+                        ['Share with Team', CiShare1, () => {}],
+                        ['Delete', RxTrash, () => {}]
                     ]}
                 >
                     <i className='simulation-options-icon-container'>
