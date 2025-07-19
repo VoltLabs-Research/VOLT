@@ -11,7 +11,7 @@ interface TrajectoryState{
     error: string | null;
     getTrajectoryById: () => Promise<void>;
     getTrajectories: () => Promise<void>;
-    deleteTrajectory: (id: string) => Promise<void>;
+    deleteTrajectoryById: (id: string) => Promise<void>;
     createTrajectory: (newTrajectoryData: any) => Promise<void>;
     updateTrajectoryById: (id: string, data: object) => Promise<void>;
 }
@@ -38,7 +38,7 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
             })
         }),
 
-        deleteTrajectory: (id: string) => asyncAction(() => api.delete(`/trajectories/${id}`), {
+        deleteTrajectoryById: (id: string) => asyncAction(() => api.delete(`/trajectories/${id}`), {
             loadingKey: 'isLoading',
             onSuccess: (_, state) => ({
                 trajectories: state.trajectories.filter((trajectory) => trajectory.id !== id)

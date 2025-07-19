@@ -14,6 +14,7 @@ import './SimulationCard.css';
 const SimulationCard = ({ trajectory }) => {
     const navigate = useNavigate();
     const updateTrajectoryById = useTrajectoryStore((state) => state.updateTrajectoryById);
+    const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     
     const loadTrajectoryOnCanvas = () => {
         navigate(`/canvas/${trajectory._id}/`);
@@ -21,6 +22,11 @@ const SimulationCard = ({ trajectory }) => {
 
     const handleNameUpdate = async (newName: string) => {
         await updateTrajectoryById(trajectory._id, { name: newName });
+    };
+
+    const handleDelete = async () => {
+        await deleteTrajectoryById(trajectory._id);
+        navigate('/dashboard');
     };
 
     return (
@@ -48,9 +54,9 @@ const SimulationCard = ({ trajectory }) => {
                 </div>
                 <ActionBasedFloatingContainer
                     options={[
-                        ['View Scene', HiOutlineViewfinderCircle, () => {}],
+                        ['View Scene', HiOutlineViewfinderCircle, loadTrajectoryOnCanvas],
                         ['Share with Team', CiShare1, () => {}],
-                        ['Delete', RxTrash, () => {}]
+                        ['Delete', RxTrash, handleDelete]
                     ]}
                 >
                     <i className='simulation-options-icon-container'>
