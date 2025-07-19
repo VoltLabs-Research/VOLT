@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { TimestepInfo, Atom } from './lammps';
 
 export interface GLTFExportOptions{
-    atomRadius?: number;
+    atomRadius: number;
     spatialCulling?: boolean;
     cullCenter?: { x: number; y: number; z: number };
     cullRadius?: number;
@@ -180,16 +180,76 @@ class LAMMPSToGLTFExporter{
         return Buffer.from(array).toString('base64');
     }
 
+    static calculateOptimalRadius(atoms: Atom[]): number{
+        let minDistance = Number.MAX_VALUE;
+        const sampleSize = Math.min(1000, atoms.length);
+
+        // Take a random sample to calculate distances
+        const sampledAtoms = atoms
+            .sort(() => Math.random() - 0.5)
+            .slice(0, sampleSize);
+       
+        let comparisons = 0;
+        const maxComparisons = 10000;
+
+        for(let i = 0; i < sampledAtoms.length - 1 && comparisons < maxComparisons; i++){
+            for(let j = i + 1; j < Math.min(i + 20, sampledAtoms.length) && comparisons < maxComparisons; j++){
+                const atom1 = sampledAtoms[i];
+                const atom2 = sampledAtoms[j];
+
+                const dx = atom1.x - atom2.x;
+                const dy = atom1.y - atom2.y;
+                const dz = atom1.z - atom2.z;
+
+                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                if(distance > 0.1 && distance < minDistance){
+                    minDistance = distance;
+                }
+
+                comparisons++;
+            }
+        }
+
+        if(minDistance === Number.MAX_VALUE){
+            console.warn('Could not calculate minimum distance, using default radius');
+            return 0.8;
+        }
+
+        // The optimal radius is approximately 35-40% of the minimum distance
+        let optimalRadius = 0.45 * minDistance;
+        
+        // Limit between 0.1 and 2.0
+        return Math.max(0.1, Math.min(3.0, optimalRadius));
+    }
+
+    static calculateRadiusFromDensity(timestepInfo: TimestepInfo, atomCount: number): number{
+        const { boxBounds } = timestepInfo;
+        const volume = (boxBounds.xhi - boxBounds.xlo) * 
+                       (boxBounds.yhi - boxBounds.ylo) * 
+                       (boxBounds.zhi - boxBounds.zlo);
+        const density = atomCount / volume;
+        const averageDistance= Math.pow(1 / density, 1/3);
+        const optimalRadius = averageDistance * 0.35;
+        console.log('Optimal radius:', optimalRadius);
+        return Math.max(0.1, Math.min(2.0, optimalRadius));
+    }
+
+    static calculateGlobalOptimalRadius(firstFrame: { timestepInfo: TimestepInfo, atoms: Atom[] }): number{
+        const radiusFromAtoms = this.calculateOptimalRadius(firstFrame.atoms);
+        const radiusFromDensity = this.calculateRadiusFromDensity(firstFrame.timestepInfo, firstFrame.atoms.length);
+        const finalRadius = (radiusFromAtoms + radiusFromDensity) / 2;
+        return finalRadius;
+    }
+
     // Export atoms to GLTF format
     exportAtomsToGLTF(
         filePath: string,
         outputFilePath: string,
         extractTimestepInfo: Function,
-        options: GLTFExportOptions = {}
+        options: GLTFExportOptions = { atomRadius: 0.8 }
     ): void{
-        // Default options
         const opts: Required<GLTFExportOptions> = {
-            atomRadius: options.atomRadius ?? 0.5,
+            atomRadius: options.atomRadius,
             spatialCulling: options.spatialCulling ?? false,
             cullCenter: options.cullCenter ?? { x: 0, y: 0, z: 0 },
             cullRadius: options.cullRadius ?? 10.0,

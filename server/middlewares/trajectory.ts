@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { extractTimestepInfo, isValidLammpsFile } from '@utilities/lammps';
-import { mkdir, writeFile, rmdir } from 'fs/promises';
+import { mkdir, writeFile, rmdir, unlink } from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import { join } from 'path';
 import { ITimestepInfo } from '@types/models/trajectory';
@@ -29,26 +29,28 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
     const frames: ITimestepInfo[] = [];
     const gltfExporter = new LAMMPSToGLTFExporter();
 
-    const gltfOptions: GLTFExportOptions = {
-        atomRadius: 0.5,
-        spatialCulling: false,
-        subsampleRatio: 1.0,
-        maxAtoms: req.body.maxAtoms ? parseInt(req.body.maxAtoms) : 0,
-        maxInstancesPerMesh: 10000
-    };
-
     console.log(`Processing ${files.length} files for trajectory ${trajectoryId}...`);
+    let globalAtomRadius: number = 0;
 
     for(const file of files){
         try{
             const content = file.buffer.toString('utf-8');
             const lines = content.split('\n');
-
             const frameInfo = extractTimestepInfo(lines);
 
             if(!frameInfo || !isValidLammpsFile(lines)){
                 console.warn(`Skipping invalid file: ${file.originalname}`);
                 continue;
+            }
+
+            if(globalAtomRadius === 0){
+                const tempFilePath = join(folderPath, 'temp_for_radius_calc.dump');
+                await writeFile(tempFilePath, file.buffer);
+
+                const firstFrame = gltfExporter.parseFrame(tempFilePath, extractTimestepInfo);
+                globalAtomRadius = LAMMPSToGLTFExporter.calculateGlobalOptimalRadius(firstFrame);
+
+                await unlink(tempFilePath);
             }
 
             const filename = frameInfo.timestep.toString();
@@ -59,6 +61,14 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
 
             try{
                 console.log(`Generating GLTF for timestep ${frameInfo.timestep}...`);
+                const gltfOptions: GLTFExportOptions = {
+                    atomRadius: globalAtomRadius,
+                    spatialCulling: false,
+                    subsampleRatio: 1.0,
+                    maxAtoms: req.body.maxAtoms ? parseInt(req.body.maxAtoms) : 0,
+                    maxInstancesPerMesh: 10000
+                };
+
                 gltfExporter.exportAtomsToGLTF(
                     lammpsFilePath, 
                     gltfFilePath, 
@@ -102,8 +112,7 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
             totalFiles: validFileCounts,
             totalSize: totalSize
         },
-        owner: (req as any).user.id,
-        gltfOptions
+        owner: (req as any).user.id
     };
 
     next();
