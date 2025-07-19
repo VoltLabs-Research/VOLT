@@ -6,27 +6,17 @@ export const createTrajectory = async (req: Request, res: Response) => {
     const { trajectoryData } = res.locals;
     const newTrajectory = await Trajectory.create(trajectoryData)
 
-    await User.findByIdAndUpdate(trajectoryData.owner, 
-        { $push: { trajectories: newTrajectory._id } });
-    
     res.status(201).json({ status: 'success', data: newTrajectory });
 };
 
 export const getUserTrajectories = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
-    const user = await User.findById(userId).populate({
-        path: 'trajectories',
-        populate: {
-            path: 'owner sharedWith',
-            select: 'firstName lastName email'
-        }
-    });
 
-    if(!user){
-        return res.status(404).json({ status: 'error', data: { error: 'User not found' } });
-    }
+    const trajectories = await Trajectory.find({ owner: userId })
+        .populate('owner sharedWith', 'firstName lastName email')
+        .sort({ createdAt: -1 });
 
-    res.status(200).json({ status: 'success', data: user.trajectories });
+    res.status(200).json({ status: 'success', data: trajectories });
 };
 
 export const getTrajectoryById = async (req: Request, res: Response) => {

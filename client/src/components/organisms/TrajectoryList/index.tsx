@@ -16,16 +16,18 @@ const TrajectoryList: React.FC<FileManagerProps> = ({
     onFileSelect,
     selectedFile,
 }) => {
-    const { getTrajectories, deleteTrajectory, isLoading, trajectories, error } = useTrajectoryStore();
+    const { getTrajectories, deleteTrajectory, isLoading, trajectories } = useTrajectoryStore();
 
     useEffect(() => {
-        getTrajectories();
+        if(!trajectories.length){
+            getTrajectories();
+        }
     }, []);
 
-    const handleDelete = async (folderId: string, e: React.MouseEvent) => {
+    const handleDelete = async (trajectoryId: string, e: React.MouseEvent) => {
         e.stopPropagation();
         try{
-            await deleteTrajectory(folderId);
+            await deleteTrajectory(trajectoryId);
         }catch(err){
             console.error('Error deleting folder:', err);
         }
@@ -46,13 +48,13 @@ const TrajectoryList: React.FC<FileManagerProps> = ({
                         <Loader scale={0.5} />
                     </div>
                 ) : (
-                    trajectories?.map(({ folderId, ...data }) => (
+                    trajectories?.map((data) => (
                         <FileItem
                             /* TODO: (folderId === trajectoryId) != data._id */
-                            key={folderId}
-                            folderId={folderId}
-                            isSelected={selectedFile === folderId}
-                            onSelect={() => onFileSelect({ folderId, ...data })}
+                            key={data.folderId}
+                            data={data}
+                            isSelected={selectedFile === data.folderId}
+                            onSelect={() => onFileSelect(data)}
                             onDelete={(e) => handleDelete(data._id, e)}
                         />
                     ))

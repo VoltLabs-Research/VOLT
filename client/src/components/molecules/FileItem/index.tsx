@@ -3,14 +3,14 @@ import { BsThreeDots } from 'react-icons/bs';
 import './FileItem.css';
 
 interface FileItemProps {
-    folderId: string;
+    data: object;
     isSelected: boolean;
     onSelect: () => void;
     onDelete: (e: React.MouseEvent) => void;
 }
 
 const FileItem: React.FC<FileItemProps> = ({
-    folderId,
+    data,
     isSelected,
     onSelect,
     onDelete
@@ -21,7 +21,7 @@ const FileItem: React.FC<FileItemProps> = ({
             onClick={onSelect}
         >
             <div className='file-header-container'>
-                <h4>{folderId}</h4>
+                <h4>{data.name}</h4>
                 <i className='file-delete-icon-container'>
                     <BsThreeDots
                         onClick={onDelete}

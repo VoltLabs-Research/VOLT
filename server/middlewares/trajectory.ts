@@ -61,7 +61,7 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
 export const checkTrajectoryOwnership = async (req: Request, res: Response, next: NextFunction) => {
     const { trajectoryId } = req.params;
     const userId = (req as any).user.id;
-    const trajectory = await Trajectory.findOne(trajectoryId);
+    const trajectory = await Trajectory.findById(trajectoryId);
 
     if(!trajectory){
         return res.status(404).json({

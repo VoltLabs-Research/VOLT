@@ -48,7 +48,7 @@ const EditorPage: React.FC = () => {
     const folderId = useMemo(() => folder?.folderId || null, [folder]);
 
     const timesteps = useMemo(() => {
-        if(!trajectory?.stats.timestepFiles) return [];
+        if(!trajectory?.stats?.timestepFiles) return [];
         return folder.timestepFiles
             .map((file: any) => file.timestep)
             .sort((a: number, b: number) => a - b);

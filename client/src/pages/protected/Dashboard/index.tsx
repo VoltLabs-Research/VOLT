@@ -15,7 +15,9 @@ const DashboardPage = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        getTrajectories();
+        if(!trajectories.length){
+            getTrajectories();
+        }
     }, []);
 
     return (
@@ -52,7 +54,7 @@ const DashboardPage = () => {
                         </div>
                         <figcaption className='simulation-caption-container'>
                             <div className='simulation-caption-left-container'>
-                                <h3 className='simulation-caption-title'>FCC Test Simulation</h3>
+                                <h3 className='simulation-caption-title'>{trajectory.name}</h3>
                                 <p className='simulation-last-edited'>Edited 6 hours ago</p>
                             </div>
                             <i className='simulation-options-icon-container'>
