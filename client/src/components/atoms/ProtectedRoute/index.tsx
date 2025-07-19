@@ -34,7 +34,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ mode, restrictTo }) => 
 
     if(mode === 'protect'){
         if(!isAuthenticated){
-            return <Navigate to="/sign-in" state={{ from: location }} replace />;
+            return <Navigate to="/auth/sign-in" state={{ from: location }} replace />;
         }
         return <Outlet />;
     }

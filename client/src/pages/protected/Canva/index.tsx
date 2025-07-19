@@ -39,6 +39,7 @@ const EditorPage: React.FC = () => {
     const [analysisConfig, setAnalysisConfig] = useState(initialAnalysisConfig);
     const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
     const isLoadingTrajectory = useTrajectoryStore((state) => state.isLoading);
+    const trajectory = useTrajectoryStore((state) => state.trajectory);
     const { trajectoryId } = useParams();
     
     const orbitControlsRef = useRef<any>(null);
@@ -47,7 +48,7 @@ const EditorPage: React.FC = () => {
     const folderId = useMemo(() => folder?.folderId || null, [folder]);
 
     const timesteps = useMemo(() => {
-        if (!folder?.timestepFiles) return [];
+        if(!trajectory?.stats.timestepFiles) return [];
         return folder.timestepFiles
             .map((file: any) => file.timestep)
             .sort((a: number, b: number) => a - b);

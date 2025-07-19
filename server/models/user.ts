@@ -1,5 +1,6 @@
 import mongoose, { Schema, Model, HookNextFunction } from 'mongoose';
 import validator from 'validator';
+import Notification from '@models/notification';
 import bcrypt from 'bcryptjs';
 import Trajectory from '@models/trajectory';
 import { IUser } from '@types/models/user';
@@ -42,11 +43,7 @@ const UserSchema: Schema<IUser> = new Schema({
         required: [true, 'User::LastName::Required'],
         lowercase: true,
         trim: true
-    },
-    trajectories: [{
-        type: Schema.Types.ObjectId,
-        ref: 'Trajectory'
-    }]
+    }
 }, {
     timestamps: true
 });
@@ -58,11 +55,12 @@ UserSchema.pre<any>('findOneAndDelete', async function(next: HookNextFunction) {
     if(!userToDelete) return next();
 
     await Trajectory.deleteMany({ owner: userToDelete._id });
-    
     await Trajectory.updateMany(
         { sharedWith: userToDelete._id },
         { $pull: { sharedWith: userToDelete._id } }
     );
+
+    await Notification.deleteMany({ recipient: userToDelete._id });
     
     next();
 });

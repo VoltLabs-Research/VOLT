@@ -24,8 +24,6 @@ const DislocationVisualizer: React.FC<DislocationVisualizerProps> = ({
         }
     };
 
-    useEf
-
     const dislocationComponents = useMemo(() => {
         if(!visible || dislocations.length === 0) return [];
         return dislocations.map((dislocation, index) => {
