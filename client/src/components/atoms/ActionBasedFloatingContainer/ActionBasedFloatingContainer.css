@@ -1,0 +1,27 @@
+.action-based-floating-container{
+    width: 250px;
+    height: auto;
+    background-color: rgba(255, 255, 255, .5);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e7e7e7;
+    border-radius: .5rem;
+    position: absolute;
+}
+
+.action-based-floating-option-container{
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 2rem;
+    padding: 1rem;
+    cursor: pointer;
+    transition: .1s;
+}
+
+.action-based-floating-option-container:hover{
+    background-color: #f0efef;
+}
+
+.action-based-floating-option-name-container{
+    font-size: .95rem;
+}
