@@ -31,7 +31,6 @@ interface TrajectoryState{
     trajectory: Trajectory | null;
     isLoading: boolean;
     isUploading: boolean;
-    isUpdating: boolean;
     error: string | null;
 
     getTrajectoryById: (id: string) => Promise<void>;
@@ -49,7 +48,6 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
         isLoading: true,
         isUploading: false,
         trajectory: null,
-        isUpdating: false,
         error: null,
 
         getTrajectories: (teamId?: string) => {
@@ -71,21 +69,39 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
             })
         }),
 
-        deleteTrajectoryById: (id: string) => asyncAction(() => api.delete<ApiResponse<Trajectory>>(`/trajectories/${id}`), {
-            loadingKey: 'isLoading',
-            onSuccess: (_, state) => ({
-                trajectories: state.trajectories.filter((trajectory) => trajectory._id !== id)
-            })
-        }),
+        deleteTrajectoryById: async (id: string) => {
+            const originalTrajectories = get().trajectories;
+            set({
+                trajectories: originalTrajectories.filter((trajectory) => trajectory._id !== id)
+            });
 
-        updateTrajectoryById: (id, data) => asyncAction(() => api.patch<ApiResponse<Trajectory>>(`/trajectories/${id}`, data), {
-            loadingKey: 'isUpdating',
-            onSuccess: (res, state) => {
-                const updatedTrajectory = res.data.data;
-                const newTrajectories = state.trajectories.map((trajectory) => trajectory._id === id ? updatedTrajectory : trajectory);
-                return { trajectories: newTrajectories };
+            try{
+                await api.delete<ApiResponse<Trajectory>>(`/trajectories/${id}`);
+            }catch(error){
+                set({
+                    trajectories: originalTrajectories,
+                    error: 'Error trying to delete simulation'
+                });
+                console.error(error);
             }
-        }),
+        },
+
+        updateTrajectoryById: async (id, data) => {
+            const originalTrajectories = get().trajectories;
+            const updatedTrajectories = originalTrajectories.map((trajectory) => 
+                trajectory._id === id ? { ...trajectory, ...data } : trajectory
+            );
+            set({ trajectories: updatedTrajectories });
+            try{
+                await api.patch<ApiResponse<Trajectory>>(`/trajectories/${id}`, data);
+            }catch(error){
+                set({ 
+                    trajectories: originalTrajectories, 
+                    error: `Error trying to update trajectory.` 
+                });
+                console.error(error);
+            }
+        },
 
         createTrajectory: (formData: FormData) => asyncAction(() => api.post<ApiResponse<Trajectory>>('/trajectories', formData), {
             loadingKey: 'isUploading',
