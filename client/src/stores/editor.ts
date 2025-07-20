@@ -1,3 +1,25 @@
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
 import { create, type StateCreator } from 'zustand';
 import useTrajectoryStore from './trajectories';
 
@@ -5,6 +27,7 @@ interface EditorState{
     isPlaying: boolean;
     playSpeed: number;
     currentTimestep?: number;
+    intervalId: NodeJS.Timeout | null;
     analysisConfig: {
         crystal_structure: 'FCC' | 'BCC' | 'HCP';
         identification_mode: 'PTM' | 'CNA';
@@ -32,7 +55,8 @@ interface EditorActions{
     setCurrentTimestep: (timestep: number) => void;
     setAnalysisConfig: (key: string, value: any) => void;
     selectTrajectory: (trajectory: any) => void;
-    playNextFrame: () => void; 
+    playNextFrame: () => void;
+    stopPlayback: () => void;
 }
 
 const initialAnalysisConfig = {
@@ -50,6 +74,7 @@ const initialAnalysisConfig = {
 const initialState: EditorState = {
     isPlaying: false,
     playSpeed: 1,
+    intervalId: null,
     currentTimestep: undefined,
     analysisConfig: initialAnalysisConfig,
     timestepData: { timesteps: [], minTimestep: 0, maxTimestep: 0, timestepCount: 0 },
@@ -99,11 +124,38 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
     return {
         ...initialState,
 
-        togglePlay: () => set(state => ({ isPlaying: !state.isPlaying })),
-        setPlaySpeed: (speed) => set({ playSpeed: speed }),
-        
+        stopPlayback: () => {
+            const intervalId = get().intervalId;
+            if(intervalId){
+                clearInterval(intervalId);
+            }
+            set({ isPlaying: false, intervalId: null });
+        },
+
+        togglePlay: () => {
+            const { isPlaying } = get();
+            if(isPlaying){
+                get().stopPlayback();
+            }else{
+                set({ isPlaying: true });
+                const newIntervalId = setInterval(() => {
+                    get().playNextFrame();
+                }, 1000 / get().playSpeed);
+                set({ intervalId: newIntervalId });
+            }
+        },
+
+        setPlaySpeed: (speed) => {
+            set({ playSpeed: speed });
+            if(get().isPlaying){
+                get().stopPlayback();
+                get().togglePlay();
+            }
+        },
+
         setCurrentTimestep: (timestep) => {
-            set({ isPlaying: false, currentTimestep: timestep });
+            get().stopPlayback();
+            set({ currentTimestep: timestep });
             set(computeDerivedState());
         },
 
@@ -112,6 +164,7 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
         })),
 
         selectTrajectory: (trajectoryData) => {
+            get().stopPlayback();
             useTrajectoryStore.setState({ trajectory: trajectoryData });
 
             let firstTimestep: number | undefined = undefined;
@@ -125,16 +178,29 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
 
         playNextFrame: () => {
             const { timestepData, currentTimestep } = get();
-            if(!timestepData.timesteps || timestepData.timesteps.length === 0) return;
+            if(!timestepData.timesteps || timestepData.timesteps.length === 0){
+                get().stopPlayback();
+                return;
+            }
+
             const currentIndex = currentTimestep === undefined ? -1 : timestepData.timesteps.indexOf(currentTimestep);
             const nextIndex = (currentIndex + 1) % timestepData.timesteps.length;
+            
+            if(nextIndex >= timestepData.timesteps.length){
+                get().stopPlayback();
+                return;
+            }
+
             const nextTimestep = timestepData.timesteps[nextIndex];
 
             set({ currentTimestep: nextTimestep });
             set(computeDerivedState());
         },
 
-        reset: () => set(initialState)
+        reset: () => {
+            get().stopPlayback();
+            set(initialState);
+        }
     };
 };
 

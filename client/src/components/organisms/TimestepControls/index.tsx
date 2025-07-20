@@ -7,13 +7,13 @@ import useEditorStore from '../../../stores/editor';
 import './TimestepControls.css';
 
 const TimestepControls: React.FC = () => {
-    const currentTimestep = useEditorStore(state => state.currentTimestep);
-    const timestepData = useEditorStore(state => state.timestepData);
+    const currentTimestep = useEditorStore((state) => state.currentTimestep);
+    const timestepData = useEditorStore((state) => state.timestepData);
     const setCurrentTimestep = useEditorStore(state => state.setCurrentTimestep);
-    const isPlaying = useEditorStore(state => state.isPlaying);
-    const togglePlay = useEditorStore(state => state.togglePlay);
-    const playSpeed = useEditorStore(state => state.playSpeed);
-    const setPlaySpeed = useEditorStore(state => state.setPlaySpeed);
+    const isPlaying = useEditorStore((state) => state.isPlaying);
+    const togglePlay = useEditorStore((state) => state.togglePlay);
+    const playSpeed = useEditorStore((state) => state.playSpeed);
+    const setPlaySpeed = useEditorStore((state) => state.setPlaySpeed);
 
     if(currentTimestep === undefined) return null;
 
