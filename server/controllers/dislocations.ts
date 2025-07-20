@@ -3,6 +3,7 @@ import { readdir, writeFile, readFile } from 'fs/promises';
 import { getAnalysisProcessingQueue } from '@services/analysis_queue';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import HandlerFactory from '@models/handlerFactory';
 
 export const getTrajectoryDislocations = async (req: Request, res: Response) => {
     try {

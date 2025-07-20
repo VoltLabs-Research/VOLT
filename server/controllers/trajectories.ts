@@ -1,9 +1,20 @@
 import { Request, Response } from 'express';
-import { join, resolve, path } from 'path';
+import { join, resolve } from 'path';
 import { access, stat } from 'fs/promises';
 import { constants } from 'fs';
 import Trajectory from '@models/trajectory';
 import User from '@models/user';
+import HandlerFactory from '@controllers/handlerFactory';
+
+const factory = new HandlerFactory({
+    model: Trajectory,
+    fields: ['name', 'sharedWith']
+});
+
+export const getAllTrajectories = factory.getAll();
+export const getTrajectoryById = factory.getOne();
+export const updateTrajectoryById = factory.updateOne();
+export const deleteTrajectoryById = factory.deleteOne();
 
 export const getTrajectoryGLTF = async (req: Request, res: Response) => {
     const { timestep }= req.params;
@@ -51,24 +62,6 @@ export const createTrajectory = async (req: Request, res: Response) => {
     res.status(201).json({ status: 'success', data: newTrajectory });
 };
 
-// TODO: implement the HandlerFactory class
-export const updateTrajectoryById = async (req: Request, res: Response) => {
-    const { trajectoryId } = req.params;
-    const { name } = req.body;
-    const updateData: { name?: string; } = {};
-    if(name){
-        updateData.name = name;
-    }
-
-    const updatedTrajectory = await Trajectory.findByIdAndUpdate(
-        trajectoryId,
-        { $set: updateData },
-        { new: true, runValidators: true }
-    ).populate('owner sharedWith', 'firstName lastName email');
-
-    res.status(200).json({ status: 'success', data: updatedTrajectory });
-};
-
 export const getUserTrajectories = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
 
@@ -78,22 +71,6 @@ export const getUserTrajectories = async (req: Request, res: Response) => {
 
     res.status(200).json({ status: 'success', data: trajectories });
 };
-
-export const getTrajectoryById = async (req: Request, res: Response) => {
-    const { trajectoryId } = req.params;
-    const trajectory = await Trajectory.findById(trajectoryId).populate('owner sharedWith', 'firstName lastName email');
-    if(!trajectory){
-        return res.status(404).json({ status: 'error', message: 'Trajectory not found' });
-    }
-
-    res.status(200).json({ status: 'success', data: trajectory });
-};
-
-export const deleteTrajectoryById = async (req: Request, res: Response) => {
-    const { trajectoryId } = req.params;
-    await Trajectory.findOneAndDelete({ _id: trajectoryId });
-    res.status(204).json({ status: 'success', data: null });
-}
 
 export const shareTrajectoryWithUser = async (req: Request, res: Response) => {
     const { trajectory } = res.locals;

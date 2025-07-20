@@ -28,12 +28,12 @@ router.route('/')
     );
 
 router.get(
-    '/:trajectoryId/gltf/:timestep', 
+    '/:id/gltf/:timestep', 
     middleware.checkTrajectoryOwnership, 
     controller.getTrajectoryGLTF
 );
 
-router.route('/:trajectoryId')
+router.route('/:id')
     .get(
         middleware.checkTrajectoryOwnership, 
         controller.getTrajectoryById
@@ -48,7 +48,7 @@ router.route('/:trajectoryId')
     );
 
 router.post(
-    '/:trajectoryId/share',
+    '/:id/share',
     middleware.checkTrajectoryOwnership,
     controller.shareTrajectoryWithUser
 );
