@@ -28,6 +28,7 @@ import { join } from 'path';
 import { ITimestepInfo } from '@types/models/trajectory';
 import LAMMPSToGLTFExporter, { GLTFExportOptions } from '@utilities/lammpsGltfExporter';
 import Trajectory from '@models/trajectory';
+import Team from '@models/team';
 
 interface ProcessingResult {
     success: boolean;
@@ -134,6 +135,14 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
         });
     }
 
+    const { teamId, name } = req.body;
+    if(!teamId){
+        return res.status(400).json({
+            status: 'error',
+            data: { error: 'A teamId is required to create a trajectory' }
+        });
+    }
+
     const gltfOptions: Partial<GLTFExportOptions> = {
         spatialCulling: false,
         subsampleRatio: 1.0,
@@ -168,21 +177,21 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
 
     res.locals.trajectoryData = {
         folderId: trajectoryId,
-        name: req.body.name || 'Untitled Trajectory',
+        name: name || 'Untitled Trajectory',
+        team: teamId,
         frames: validFrames
             .map(frame => frame.frameInfo)
             .sort((a, b) => a.timestep - b.timestep),
         stats: {
             totalFiles: validFrames.length,
             totalSize: totalSize
-        },
-        owner: (req as any).user.id
+        }
     };
 
     next();
 };
 
-export const checkTrajectoryOwnership = async (req: Request, res: Response, next: NextFunction) => {
+export const checkTeamMembershipForTrajectory = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const userId = (req as any).user.id;
     const trajectory = await Trajectory.findById(id);
@@ -194,14 +203,16 @@ export const checkTrajectoryOwnership = async (req: Request, res: Response, next
         });
     }
 
-    if(trajectory.owner.toString() !== userId){
+    const team = await Team.findOne({ _id: trajectory.team, members: userId });
+    if(!team){
         return res.status(403).json({
             status: 'error',
-            data: { error: 'Forbidden: You are not the owner of this trajectory' }
+            data: { error: 'Forbidden. Your do not have access to this trajectory.' }
         });
     }
 
     res.locals.trajectory = trajectory;
+    res.locals.team = team;
 
     next();
 };

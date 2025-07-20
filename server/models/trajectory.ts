@@ -25,8 +25,8 @@ import { rmdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { NextFunction } from 'express';
-import { ITrajectory, ITimestepInfo } from '@types/models/trajectory';
-import User from '@models/user';
+import type { ITrajectory, ITimestepInfo } from '@types/models/trajectory';
+import Team from '@models/team';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
@@ -55,15 +55,11 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         required: true,
         unique: true
     },
-    owner: {
+    team: {
         type: Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Team',
         required: true
     },
-    sharedWith: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User'
-    }],
     frames: [TimestepInfoSchema],
     stats: {
         totalFiles: { type: Number, default: 0 },
@@ -71,12 +67,6 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     }
 }, {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
-});
-
-TrajectorySchema.virtual('users').get(function(){
-    return [this.owner, ...this.sharedWith];
 });
 
 TrajectorySchema.pre('findOneAndDelete', async function(next: NextFunction){
@@ -85,7 +75,7 @@ TrajectorySchema.pre('findOneAndDelete', async function(next: NextFunction){
         return next();
     }
 
-    const { _id, folderId, users } = trajectoryToDelete;
+    const { _id, folderId, team } = trajectoryToDelete;
     const trajectoryPath = join(process.env.TRAJECTORY_DIR as string, folderId);
     const analysisPath = join(process.env.ANALYSIS_DIR as string, folderId);
 
@@ -98,8 +88,8 @@ TrajectorySchema.pre('findOneAndDelete', async function(next: NextFunction){
             await rmdir(analysisPath, { recursive: true });
         }
 
-        await User.updateMany(
-            { _id: { $in: users } },
+        await Team.updateOne(
+            { _id: team },
             { $pull: { trajectories: _id } }
         );
 
@@ -108,6 +98,15 @@ TrajectorySchema.pre('findOneAndDelete', async function(next: NextFunction){
         console.error('Error during trajectory cascade delete:', error);
         next(error as Error);
     }
+});
+
+TrajectorySchema.post('save', async function(doc, next){
+    if(this.isNew){
+        await Team.findByIdAndUpdate(doc.team, {
+            $push: { trajectories: doc._id }
+        });
+    }
+    next();
 });
 
 const Trajectory: Model<ITrajectory> = mongoose.model('Trajectory', TrajectorySchema);

@@ -33,7 +33,8 @@ const useTrajectoryUpload = () => {
     const uploadAndProcessTrajectory = async (
         filesWithPaths: FileWithPath[], 
         originalFolderName: string,
-        analysisConfig: any
+        analysisConfig: any,
+        teamId: string
     ) => {
         const formData = new FormData();
         filesWithPaths.forEach(({ file, path }) => {
@@ -42,7 +43,8 @@ const useTrajectoryUpload = () => {
 
         formData.append('originalFolderName', originalFolderName);
         formData.append('analysisConfig', JSON.stringify(analysisConfig));
-
+        formData.append('teamId', teamId);
+        
         await createTrajectory(formData);
     };
 

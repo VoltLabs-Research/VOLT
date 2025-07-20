@@ -51,28 +51,22 @@ router.route('/')
 
 router.get(
     '/:id/gltf/:timestep', 
-    middleware.checkTrajectoryOwnership, 
+    middleware.checkTeamMembershipForTrajectory, 
     controller.getTrajectoryGLTF
 );
 
 router.route('/:id')
     .get(
-        middleware.checkTrajectoryOwnership, 
+        middleware.checkTeamMembershipForTrajectory, 
         controller.getTrajectoryById
     )
     .patch(
-        middleware.checkTrajectoryOwnership,
+        middleware.checkTeamMembershipForTrajectory,
         controller.updateTrajectoryById
     )
     .delete(
-        middleware.checkTrajectoryOwnership,
+        middleware.checkTeamMembershipForTrajectory,
         controller.deleteTrajectoryById
     );
-
-router.post(
-    '/:id/share',
-    middleware.checkTrajectoryOwnership,
-    controller.shareTrajectoryWithUser
-);
 
 export default router;

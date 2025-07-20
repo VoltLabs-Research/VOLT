@@ -20,11 +20,23 @@
 * SOFTWARE.
 **/
 
+export interface Team{
+    _id: string;
+    name: string;
+    description?: string;
+    owner: User | string;
+    members: (User | string)[];
+    trajectories: (Trajectory | string)[];
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface User{
     _id: string;
     email: string;
     firstName: string;
     lastName: string;
+    team: (Team | string)[];
     role: 'user' | 'admin';
     createdAt: string;
     updatedAt: string;
@@ -55,8 +67,7 @@ export interface Trajectory{
     _id: string;
     name: string;
     folderId: string;
-    owner: User | string;
-    sharedWith: (User | string)[];
+    team: Team | string;
     frames: TimestepInfo[];
     stats: TrajectoryStats;
     createdAt: string;

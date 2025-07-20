@@ -21,11 +21,13 @@
 **/
 
 import { Document } from 'mongoose';
+import { ITeam } from '@models/team';
 
 export interface IUser extends Document {
     email: string;
     password: string;
     role: 'user' | 'admin';
+    teams: ITeam[];
     passwordChangedAt?: Date;
     passwordResetToken?: string;
     passwordResetExpires?: Date;

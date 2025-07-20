@@ -26,11 +26,12 @@ import { access, stat } from 'fs/promises';
 import { constants } from 'fs';
 import Trajectory from '@models/trajectory';
 import User from '@models/user';
+import Team from '@models/team';
 import HandlerFactory from '@controllers/handlerFactory';
 
 const factory = new HandlerFactory({
     model: Trajectory,
-    fields: ['name', 'sharedWith']
+    fields: ['name']
 });
 
 export const getAllTrajectories = factory.getAll();
@@ -87,28 +88,19 @@ export const createTrajectory = async (req: Request, res: Response) => {
 export const getUserTrajectories = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
 
-    const trajectories = await Trajectory.find({ owner: userId })
-        .populate('owner sharedWith', 'firstName lastName email')
+    const userTeams = await Team.find({ members: userId }).select('_id');
+    const teamIds = userTeams.map((team) => team._id);
+
+    const trajectories = await Trajectory.find({ team: { $in: teamIds } })
+        .populate({
+            path: 'team',
+            select: 'name owner members',
+            populate: {
+                path: 'owner members',
+                select: 'firstName lastName email'
+            }
+        })
         .sort({ createdAt: -1 });
 
     res.status(200).json({ status: 'success', data: trajectories });
-};
-
-export const shareTrajectoryWithUser = async (req: Request, res: Response) => {
-    const { trajectory } = res.locals;
-    const { emailToShareWith } = req.body;
-
-    const userToShareWith = await User.findOne({ email: emailToShareWith });
-    if(!userToShareWith){
-        return res.status(404).json({ status: 'error', data: { error: `User with email ${emailToShareWith} not found` } });
-    }
-
-    if(trajectory.users.includes(userToShareWith._id)){
-        return res.status(400).json({ status: 'error', data: { error: 'Trajectory already shared with this user' } });
-    }
-
-    await Trajectory.findByIdAndUpdate(trajectory._id, { $push: { sharedWith: userToShareWith._id } });
-    await User.findByIdAndUpdate(userToShareWith._id, { $push: { trajectories: trajectory._id } });
-
-    res.status(200).json({ status: 'success', data: null });
 };

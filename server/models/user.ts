@@ -24,7 +24,7 @@ import mongoose, { Schema, Model, HookNextFunction } from 'mongoose';
 import validator from 'validator';
 import Notification from '@models/notification';
 import bcrypt from 'bcryptjs';
-import Trajectory from '@models/trajectory';
+import Team from '@models/team';
 import { IUser } from '@types/models/user';
 
 const UserSchema: Schema<IUser> = new Schema({
@@ -65,7 +65,11 @@ const UserSchema: Schema<IUser> = new Schema({
         required: [true, 'User::LastName::Required'],
         lowercase: true,
         trim: true
-    }
+    },
+    teams: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Team'
+    }]
 }, {
     timestamps: true
 });
@@ -76,12 +80,12 @@ UserSchema.pre<any>('findOneAndDelete', async function(next: HookNextFunction) {
     const userToDelete = await this.model.findOne(this.getFilter());
     if(!userToDelete) return next();
 
-    await Trajectory.deleteMany({ owner: userToDelete._id });
-    await Trajectory.updateMany(
-        { sharedWith: userToDelete._id },
-        { $pull: { sharedWith: userToDelete._id } }
+    await Team.deleteMany({ owner: userToDelete._id });
+    await Team.updateMany(
+        { members: userToDelete._id }, 
+        { $pull: { members: userToDelete._id } }
     );
-
+    
     await Notification.deleteMany({ recipient: userToDelete._id });
     
     next();
@@ -96,6 +100,39 @@ UserSchema.pre('save', async function(this: IUser & { isNew: boolean }, next: Ho
         this.passwordChangedAt = new Date(Date.now() - 1000);
     }
 
+    next();
+});
+
+UserSchema.post('save', async function(doc, next){
+    // Can we use this.isNew?
+    const isNewUser = this.createdAt.getTime() === this.updatedAt.getTime();
+    if(isNewUser){
+        const capitalizedFirstName = this.firstName.charAt(0).toUpperCase() + this.firstName.slice(1);
+        const newTeam = await Team.create({
+            name: `${capitalizedFirstName}'s Team`,
+            owner: this._id,
+            members: [this._id]
+        });
+
+        await mongoose.model('User').findByIdAndUpdate(this._id, {
+            $push: { teams: newTeam._id } 
+        });
+
+        await Notification.create([
+            {
+                recipient: doc._id,
+                title: 'Welcome to the platform!',
+                content: `We're excited to have you, ${capitalizedFirstName}. You can start by exploring your dashboard and uploading your first trajectory.`,
+                link: '/dashboard'
+            },
+            {
+                recipient: doc._id,
+                title: 'Your personal team is ready',
+                content: `We've automatically created a team for you called "${newTeam.name}". All your new trajectories can be added here.`,
+                link: `/teams/${newTeam._id}`
+            }
+        ]);
+    }
     next();
 });
 

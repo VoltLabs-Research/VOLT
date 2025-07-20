@@ -19,6 +19,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 **/
+import { ITeam } from '@types/models/team';
 
 // Defines the limits of the simulation box on the three axes.
 export interface IBoxBounds{
@@ -40,8 +41,7 @@ export interface ITimestepInfo{
 export interface ITrajectory extends Document {
     name: string;
     folderId: string;
-    owner: mongoose.Types.ObjectId;
-    sharedWith: mongoose.Types.ObjectId[];
+    team: ITeam;
     frames: ITimestepInfo[],
     stats: {
         totalFiles: number;
