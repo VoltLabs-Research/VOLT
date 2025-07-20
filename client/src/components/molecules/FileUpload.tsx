@@ -5,14 +5,12 @@ import type { FileWithPath } from '../../hooks/useTrajectoryUpload';
 
 interface FileUploadProps{
     onUploadSuccess?: (res: any) => void;
-    analysisConfig: any;
     className?: string;
     children?: React.ReactNode;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
     onUploadSuccess,
-    analysisConfig,
     className = '',
     children,
 }) => {

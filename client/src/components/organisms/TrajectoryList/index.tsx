@@ -6,11 +6,11 @@ import EditorWidget from '../EditorWidget';
 import useTrajectoryStore from '../../../stores/trajectories';
 import './TrajectoryList.css';
 
-interface FileManagerProps {
+interface TrajectoryListProps {
     onFileSelect: (folderId: string) => void;
 }
 
-const TrajectoryList: React.FC<FileManagerProps> = ({ onFileSelect }) => {
+const TrajectoryList: React.FC<TrajectoryListProps> = ({ onFileSelect }) => {
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const isLoading = useTrajectoryStore((state) => state.isLoading);

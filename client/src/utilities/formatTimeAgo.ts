@@ -32,6 +32,9 @@ const formatTimeAgo = (timestampStr: string): string => {
             return `${count} ${interval.label}${plural} ago`;
         }
     }
+
+    // fallback
+    return 'just now';
 };
 
 export default formatTimeAgo;

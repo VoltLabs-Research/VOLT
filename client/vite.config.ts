@@ -8,4 +8,9 @@ export default defineConfig({
   optimizeDeps: { exclude: ['zstd-codec'] },
   assetsInclude: ["**/*.wasm"], 
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': '/src/'
+    }
+  }
 })

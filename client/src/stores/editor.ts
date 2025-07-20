@@ -22,29 +22,22 @@
 
 import { create, type StateCreator } from 'zustand';
 import useTrajectoryStore from './trajectories';
+import type { Trajectory, AnalysisConfig } from '../types/models';
+
+interface TimestepData{
+    timesteps: number[];
+    minTimestep: number;
+    maxTimestep: number;
+    timestepCount: number;
+}
 
 interface EditorState{
     isPlaying: boolean;
     playSpeed: number;
     currentTimestep?: number;
-    intervalId: NodeJS.Timeout | null;
-    analysisConfig: {
-        crystal_structure: 'FCC' | 'BCC' | 'HCP';
-        identification_mode: 'PTM' | 'CNA';
-        max_trial_circuit_size: number;
-        circuit_stretchability: number;
-        defect_mesh_smoothing_level: number;
-        line_smoothing_level: number;
-        line_point_interval: number;
-        only_perfect_dislocations: boolean;
-        mark_core_atoms: boolean;   
-    };
-    timestepData: {
-        timesteps: number[],
-        minTimestep: number;
-        maxTimestep: number;
-        timestepCount: number;
-    };
+    intervalId: ReturnType<typeof setInterval> | null;
+    analysisConfig: AnalysisConfig;
+    timestepData: TimestepData,
     currentGltfUrl: string | null;
     nextGltfUrl: string | null;
 }
@@ -53,13 +46,14 @@ interface EditorActions{
     togglePlay: () => void;
     setPlaySpeed: (speed: number) => void;
     setCurrentTimestep: (timestep: number) => void;
-    setAnalysisConfig: (key: string, value: any) => void;
-    selectTrajectory: (trajectory: any) => void;
+    setAnalysisConfig: <K extends keyof AnalysisConfig>(key: K, value: AnalysisConfig[K]) => void;
+    selectTrajectory: (trajectory: Trajectory) => void;
     playNextFrame: () => void;
     stopPlayback: () => void;
+    reset: () => void;
 }
 
-const initialAnalysisConfig = {
+const initialAnalysisConfig: AnalysisConfig = {
     crystal_structure: 'BCC',
     identification_mode: 'PTM',
     max_trial_circuit_size: 14.0,
@@ -178,22 +172,20 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
 
         playNextFrame: () => {
             const { timestepData, currentTimestep } = get();
-            if(!timestepData.timesteps || timestepData.timesteps.length === 0){
+            if(!timestepData.timesteps || !currentTimestep || timestepData.timesteps.length === 0){
                 get().stopPlayback();
                 return;
             }
 
-            const currentIndex = currentTimestep === undefined ? -1 : timestepData.timesteps.indexOf(currentTimestep);
-            const nextIndex = (currentIndex + 1) % timestepData.timesteps.length;
-            
+            const currentIndex = timestepData.timesteps.indexOf(currentTimestep);
+            const nextIndex = currentIndex + 1;
+            // Loop back!
             if(nextIndex >= timestepData.timesteps.length){
-                get().stopPlayback();
-                return;
+                set({ currentTimestep: timestepData.timesteps[0] });
+            }else{
+                set({ currentTimestep: timestepData.timesteps[nextIndex] });
             }
-
-            const nextTimestep = timestepData.timesteps[nextIndex];
-
-            set({ currentTimestep: nextTimestep });
+            
             set(computeDerivedState());
         },
 
