@@ -1,16 +1,13 @@
-import React from 'react';
 import { IoIosArrowDown } from 'react-icons/io';
 import FormField from '../../molecules/FormField';
 import EditorWidget from '../EditorWidget';
+import useEditorStore from '../../../stores/editor';
 import './AnalysisConfiguration.css';
 
-// Interfaz para las props del componente
-interface AnalysisConfigurationProps {
-    config: any; // El estado de configuración
-    onConfigChange: (key: string, value: any) => void; // Función para actualizar el estado
-}
+const AnalysisConfiguration = () => {
+    const config = useEditorStore(state => state.analysisConfig);
+    const onConfigChange = useEditorStore(state => state.setAnalysisConfig);
 
-const AnalysisConfiguration: React.FC<AnalysisConfigurationProps> = ({ config, onConfigChange }) => {
     const configFields = [
         { 
             key: 'crystal_structure', 
@@ -40,15 +37,6 @@ const AnalysisConfiguration: React.FC<AnalysisConfigurationProps> = ({ config, o
         { key: 'mark_core_atoms', label: 'Mark Core Atoms', type: 'checkbox' },
     ];
 
-    const handleChange = (key: string, value: string | number | boolean) => {
-        const numericKeys = [
-            'max_trial_circuit_size', 'circuit_stretchability', 'defect_mesh_smoothing_level', 
-            'line_smoothing_level', 'line_point_interval'
-        ];
-        const finalValue = numericKeys.includes(key) ? Number(value) : value;
-        onConfigChange(key, finalValue);
-    };
-
     return (
         <EditorWidget className='editor-analysis-config'>
             <div className='editor-analysis-config-header-container'>
@@ -66,7 +54,7 @@ const AnalysisConfiguration: React.FC<AnalysisConfigurationProps> = ({ config, o
                         options={field.options} 
                         inputProps={field.type === 'input' ? field.inputProps : undefined}
                         fieldValue={config[field.key]}
-                        onFieldChange={handleChange}
+                        onFieldChange={onConfigChange}
                     />
                 ))}
             </div>

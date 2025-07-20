@@ -5,7 +5,6 @@ import type { FileWithPath } from '../../hooks/useTrajectoryUpload';
 
 interface FileUploadProps{
     onUploadSuccess?: (res: any) => void;
-    onUploadError?: (err: any) => void;
     analysisConfig: any;
     className?: string;
     children?: React.ReactNode;
@@ -13,7 +12,6 @@ interface FileUploadProps{
 
 const FileUpload: React.FC<FileUploadProps> = ({
     onUploadSuccess,
-    onUploadError,
     analysisConfig,
     className = '',
     children,
@@ -29,9 +27,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
     useEffect(() => {
         if(error){
-            onUploadError?.(error);
+            console.error(error);
         }
-    }, [error, onUploadError]);
+    }, [error]);
 
     const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();

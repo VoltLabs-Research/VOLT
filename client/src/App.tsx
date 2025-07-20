@@ -1,6 +1,5 @@
-import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Canva from './pages/protected/Canva';
+import Canvas from './pages/protected/Canvas';
 import Dashboard from './pages/protected/Dashboard';
 import SignUp from './pages/guest/SignUp';
 import SignIn from './pages/guest/SignIn';
@@ -15,7 +14,7 @@ const App = () => {
     return (
         <Routes>
             <Route element={<ProtectedRoute mode='protect' />}>
-                <Route path='/canvas/:trajectoryId/' element={<Canva />} />
+                <Route path='/canvas/:trajectoryId/' element={<Canvas />} />
                 <Route element={<DashboardLayout />}>
                     <Route path='/dashboard' element={<Dashboard />} />
                     <Route path='/dashboard/shared-with-me/' element={<SharedWithMe />} />

@@ -49,27 +49,6 @@
     color: #d8d8d8;
 }
 
-.editor-dislocations-button-container {
-    background-color: #fd5b01;
-    padding: 1rem 4.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: .5rem;
-    color: #FFF;
-    border-radius: 5rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: absolute;
-    bottom: 2rem;
-    right: 2rem;
-}
-
-.editor-dislocations-button-container:hover {
-    opacity: 0.9;
-}
-
 .dislocation-result-type{
     width: .4rem;
     height: .4rem;
@@ -156,10 +135,6 @@
     display: flex;
     flex-direction: column;
     gap: 1.2rem;
-}
-
-.editor-dislocations-button-container:active {
-    transform: scale(.99);
 }
 
 .editor-dislocations-button-icon {

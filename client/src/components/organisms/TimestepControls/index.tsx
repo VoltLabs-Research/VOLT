@@ -1,57 +1,39 @@
-
 import React from 'react';
 import PlayControls from '../../molecules/PlayControls';
 import TimestepSlider from '../../molecules/TimestepSlider';
 import SpeedControl from '../../molecules/SpeedControl';
 import EditorWidget from '../EditorWidget';
+import useEditorStore from '../../../stores/editor';
 import './TimestepControls.css';
 
-interface TimestepControlsProps {
-    folderInfo: {
-        folderId: string;
-        timesteps: number;
-        minTimestep: number;
-        maxTimestep: number;
-        availableTimesteps: number[];
-    };
-    currentTimestep: number;
-    onTimestepChange: (newTimestep: number) => void;
-    isPlaying: boolean;
-    onPlayPause: () => void;
-    playSpeed: number;
-    onSpeedChange: (newSpeed: number) => void;
-    isConnected: boolean;
-    isStreaming: boolean;
-    streamProgress: { current: number; total: number };
-}
+const TimestepControls: React.FC = () => {
+    const currentTimestep = useEditorStore(state => state.currentTimestep);
+    const timestepData = useEditorStore(state => state.timestepData);
+    const setCurrentTimestep = useEditorStore(state => state.setCurrentTimestep);
+    const isPlaying = useEditorStore(state => state.isPlaying);
+    const togglePlay = useEditorStore(state => state.togglePlay);
+    const playSpeed = useEditorStore(state => state.playSpeed);
+    const setPlaySpeed = useEditorStore(state => state.setPlaySpeed);
 
-const TimestepControls: React.FC<TimestepControlsProps> = ({
-    folderInfo,
-    currentTimestep,
-    onTimestepChange,
-    isPlaying,
-    onPlayPause,
-    playSpeed,
-    onSpeedChange,
-    isConnected
-}) => {
+    if(currentTimestep === undefined) return null;
+
     return (
         <EditorWidget className='editor-timestep-controls'>
             <PlayControls
                 isPlaying={isPlaying}
-                onPlayPause={onPlayPause}
+                onPlayPause={togglePlay}
             />
             
             <TimestepSlider
                 currentTimestep={currentTimestep}
-                availableTimesteps={folderInfo.availableTimesteps}
-                onTimestepChange={onTimestepChange}
-                disabled={!isConnected}
+                availableTimesteps={timestepData.timesteps}
+                onTimestepChange={setCurrentTimestep}
+                disabled={false}
             />
             
             <SpeedControl
                 playSpeed={playSpeed}
-                onSpeedChange={onSpeedChange}
+                onSpeedChange={setPlaySpeed}
             />
         </EditorWidget>
     );

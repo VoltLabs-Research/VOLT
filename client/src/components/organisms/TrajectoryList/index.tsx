@@ -8,15 +8,14 @@ import './TrajectoryList.css';
 
 interface FileManagerProps {
     onFileSelect: (folderId: string) => void;
-    selectedFile: string | null;
-    refreshTrigger?: number;
 }
 
-const TrajectoryList: React.FC<FileManagerProps> = ({
-    onFileSelect,
-    selectedFile,
-}) => {
-    const { getTrajectories, deleteTrajectory, isLoading, trajectories } = useTrajectoryStore();
+const TrajectoryList: React.FC<FileManagerProps> = ({ onFileSelect }) => {
+    const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
+    const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
+    const isLoading = useTrajectoryStore((state) => state.isLoading);
+    const trajectories = useTrajectoryStore((state) => state.trajectories);
+    const selectedTrajectoryId = useTrajectoryStore(state => state.trajectory?._id); 
 
     useEffect(() => {
         if(!trajectories.length){
@@ -24,10 +23,11 @@ const TrajectoryList: React.FC<FileManagerProps> = ({
         }
     }, []);
 
+
     const handleDelete = async (trajectoryId: string, e: React.MouseEvent) => {
         e.stopPropagation();
         try{
-            await deleteTrajectory(trajectoryId);
+            await deleteTrajectoryById(trajectoryId);
         }catch(err){
             console.error('Error deleting folder:', err);
         }
@@ -53,7 +53,7 @@ const TrajectoryList: React.FC<FileManagerProps> = ({
                             /* TODO: (folderId === trajectoryId) != data._id */
                             key={data.folderId}
                             data={data}
-                            isSelected={selectedFile === data.folderId}
+                            isSelected={selectedTrajectoryId === data.folderId}
                             onSelect={() => onFileSelect(data)}
                             onDelete={(e) => handleDelete(data._id, e)}
                         />

@@ -9,7 +9,7 @@ interface TrajectoryState{
     isUploading: boolean;
     isUpdating: boolean;
     error: string | null;
-    getTrajectoryById: () => Promise<void>;
+    getTrajectoryById: (id: string) => Promise<void>;
     getTrajectories: () => Promise<void>;
     deleteTrajectoryById: (id: string) => Promise<void>;
     createTrajectory: (newTrajectoryData: any) => Promise<void>;
