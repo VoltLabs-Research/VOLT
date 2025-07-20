@@ -20,7 +20,6 @@
 * SOFTWARE.
 **/
 
-import { useEffect } from 'react';
 import SimulationCard from '@/components/atoms/SimulationCard';
 import SimulationSkeletonCard from '@/components/atoms/SimulationSkeletonCard';
 import useTrajectoryStore from '@/stores/trajectories';
@@ -30,15 +29,8 @@ import './SimulationGrid.css';
 const SimulationGrid = () => {
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoading = useTrajectoryStore((state) => state.isLoading);
-    const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const isLoadingTeams = useTeamStore((state) => state.isLoading);
-
-    useEffect(() => {
-        if(!trajectories.length && selectedTeam?._id){
-            getTrajectories(selectedTeam._id);
-        }
-    }, [isLoadingTeams]);
+    const isUploading = useTrajectoryStore((state) => state.isUploading);
 
     return (
         <div className='trajectories-container'>
@@ -49,6 +41,10 @@ const SimulationGrid = () => {
             {trajectories.map((trajectory) => (
                 <SimulationCard key={trajectory._id} trajectory={trajectory} />
             ))}
+
+            {(isUploading) && (
+                <SimulationSkeletonCard n={1} />
+            )}
         </div>
     );
 };

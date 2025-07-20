@@ -20,12 +20,13 @@
 * SOFTWARE.
 **/
 
-import React, { useRef, useEffect } from 'react';
-import Loader from '@/components/atoms/Loader';
+import React, { useRef, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import useTrajectoryUpload from '@/hooks/useTrajectoryUpload';
 import useTeamStore from '@/stores/team';
 import type { FileWithPath } from '@/hooks/useTrajectoryUpload';
 import useEditorStore from '@/stores/editor';
+import './FileUpload.css';
 
 interface FileUploadProps{
     onUploadSuccess?: (res: any) => void;
@@ -40,14 +41,23 @@ const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
     const { uploadAndProcessTrajectory, isUploading, error, data } = useTrajectoryUpload();
     const { analysisConfig } = useEditorStore((state) => state.analysisConfig);
-    const getUserTeams = useTeamStore((state) => state.getUserTeams);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
-    const teams = useTeamStore((state) => state.teams);
     const dropRef = useRef<HTMLDivElement>(null);
+    const [isDraggingOver, setIsDraggingOver] = useState(false);
 
     useEffect(() => {
-        if(teams.length) return;
-        getUserTeams();
+        const handleWindowDragEnter = (event: DragEvent) => {
+            event.preventDefault();
+            if(event.dataTransfer?.types.includes('Files')){
+                setIsDraggingOver(true);
+            }
+        };
+
+        window.addEventListener('dragenter', handleWindowDragEnter);
+
+        return () => {
+            window.removeEventListener('dragenter', handleWindowDragEnter);
+        };
     }, []);
 
     useEffect(() => {
@@ -64,6 +74,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
     const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
+        setIsDraggingOver(false);
+
         if(isUploading) return;
 
         const items = event.dataTransfer.items;
@@ -119,25 +131,29 @@ const FileUpload: React.FC<FileUploadProps> = ({
         }
     };
 
+    const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        setIsDraggingOver(false);
+    }
+
     const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
     };
 
     return (
-        <div
-            ref={dropRef}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            className={'file-upload-container '.concat(className)}
-        >
+        <>
             {children}
-            {isUploading && (
-                <div className='file-upload-loader-container'>
-                    <Loader scale={0.78} />
-                    <p className='file-upload-loader-progress'>Processing...</p>
-                </div>
-            )}
-        </div>
+            {createPortal(
+                <div
+                    ref={dropRef}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    className={`file-upload-container ${className} ${isDraggingOver ? 'is-dragging-over' : ''}`.trim()}
+                />
+            , document.body)}
+        </>
+
     );
 };
 

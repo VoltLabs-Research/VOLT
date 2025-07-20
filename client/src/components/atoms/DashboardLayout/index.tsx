@@ -32,6 +32,7 @@ import SidebarNavigationOption from '@/components/atoms/SidebarNavigationOption'
 import AIPromptBox from '@/components/atoms/AIPromptBox';
 import Select from '@/components/atoms/Select';
 import useTeamStore from '@/stores/team';
+import useTrajectoryStore from '@/stores/trajectories';
 import './DashboardLayout.css';
 
 const DashboardLayout = () => {
@@ -39,7 +40,15 @@ const DashboardLayout = () => {
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const getUserTeams = useTeamStore((state) => state.getUserTeams);
     const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
-    const isLoading = useTeamStore((state) => state.isLoading);
+    const areTeamsLoading = useTeamStore((state) => state.isLoading);
+
+    const trajectories = useTrajectoryStore((state) => state.trajectories);
+    const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
+
+    useEffect(() => {
+        if(selectedTeam === null || trajectories.length) return;
+        getTrajectories(selectedTeam._id);
+    }, [selectedTeam]);   
 
     useEffect(() => {
         if(teams.length) return;
@@ -63,7 +72,7 @@ const DashboardLayout = () => {
                             className='team-select-container'
                             onChange={(teamId) => setSelectedTeam(teamId)}
                             options={teamOptions}
-                            disabled={isLoading || teams.length === 0}
+                            disabled={areTeamsLoading || teams.length === 0}
                         />
                     </div>
 
