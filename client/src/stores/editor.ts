@@ -21,8 +21,8 @@
 **/
 
 import { create, type StateCreator } from 'zustand';
-import useTrajectoryStore from './trajectories';
-import type { Trajectory, AnalysisConfig } from '../types/models';
+import useTrajectoryStore from '@/stores/trajectories';
+import type { Trajectory, AnalysisConfig } from '@/types/models';
 
 interface TimestepData{
     timesteps: number[];
