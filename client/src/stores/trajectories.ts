@@ -35,7 +35,7 @@ interface TrajectoryState{
     error: string | null;
 
     getTrajectoryById: (id: string) => Promise<void>;
-    getTrajectories: () => Promise<void>;
+    getTrajectories: (teamId?: string) => Promise<void>;
     deleteTrajectoryById: (id: string) => Promise<void>;
     createTrajectory: (formData: FormData) => Promise<void>;
     updateTrajectoryById: (id: string, data: Partial<Pick<Trajectory, 'name'>>) => Promise<void>;
@@ -52,10 +52,17 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
         isUpdating: false,
         error: null,
 
-        getTrajectories: () => asyncAction(() => api.get<ApiResponse<Trajectory[]>>('/trajectories'), {
-            loadingKey: 'isLoading',
-            onSuccess: (res) => ({ trajectories: res.data.data })
-        }),
+        getTrajectories: (teamId?: string) => {
+            let url = '/trajectories';
+            if(teamId){
+                url += `?teamId=${teamId}`;
+            }
+
+            return asyncAction(() => api.get<ApiResponse<Trajectory[]>>(url), {
+                loadingKey: 'isLoading',
+                onSuccess: (res) => ({ trajectories: res.data.data })
+            });
+        },
 
         getTrajectoryById: (id: string) => asyncAction(() => api.get<ApiResponse<Trajectory>>(`/trajectories/${id}`), {
             loadingKey: 'isLoading',

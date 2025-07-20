@@ -24,8 +24,8 @@ import { Request, Response } from 'express';
 import { join, resolve } from 'path';
 import { access, stat } from 'fs/promises';
 import { constants } from 'fs';
+import { isValidObjectId } from 'mongoose';
 import Trajectory from '@models/trajectory';
-import User from '@models/user';
 import Team from '@models/team';
 import HandlerFactory from '@controllers/handlerFactory';
 
@@ -81,14 +81,29 @@ export const getTrajectoryGLTF = async (req: Request, res: Response) => {
 export const createTrajectory = async (req: Request, res: Response) => {
     const { trajectoryData } = res.locals;
     const newTrajectory = await Trajectory.create(trajectoryData)
-
     res.status(201).json({ status: 'success', data: newTrajectory });
 };
 
 export const getUserTrajectories = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
+    const { teamId } = req.query;
+    
+    let teamQuery: any = { members: userId };
+    if(teamId && typeof teamId === 'string'){
+        if(!isValidObjectId(teamId)){
+            return res.status(400).json({
+                status: 'error',
+                data: { error: `The provided teamId '${teamId}' is not a valid ID.` }
+            });
+        }
+        teamQuery._id = teamId;
+    }
 
-    const userTeams = await Team.find({ members: userId }).select('_id');
+    const userTeams = await Team.find(teamQuery).select('_id');
+    if(teamId && userTeams.length === 0){
+        return res.status(200).json({ status: 'success', data: [] });
+    }
+    
     const teamIds = userTeams.map((team) => team._id);
 
     const trajectories = await Trajectory.find({ team: { $in: teamIds } })

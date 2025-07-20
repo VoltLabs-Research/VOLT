@@ -71,6 +71,22 @@ TeamSchema.pre('findOneAndDelete', async function (next: HookNextFunction){
     next();
 });
 
+TeamSchema.post('save', async function(doc, next){
+    const isNewTeam = doc.createdAt.getTime() === doc.updatedAt.getTime();
+
+    if(isNewTeam){
+        try{
+            await User.updateMany(
+                { _id: { $in: doc.members } },
+                { $push: { teams: doc._id } }
+            );
+        }catch(error){
+            console.error('Failed to link new team to user documents:', error);
+        }
+    }
+    next();
+});
+
 const Team: Model<ITeam> = mongoose.model<ITeam>('Team', TeamSchema);
 
 export default Team;

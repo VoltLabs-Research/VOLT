@@ -65,6 +65,7 @@ configureApp({
     suffix: '/api/',
     routes: [
         'dislocations',
+        'teams',
         'trajectories',
         'auth'
     ],

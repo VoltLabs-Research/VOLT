@@ -20,23 +20,36 @@
 * SOFTWARE.
 **/
 
-import { HiPlus } from 'react-icons/hi';
-import './SidebarTeams.css';
+import { Request, Response, NextFunction } from 'express';
+import Team from '@models/team';
+import RuntimeError from '@utilities/runtimeError';
 
-const SidebarTeams = () => {
+export const checkTeamMembership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const teamId = req.params.id;
+    const userId = (req as any).user.id;
 
-    return (
-        <div className='sidebar-teams-container'>
-            <h3 className='sidebar-teams-title'>Teams</h3>
-            <div className='sidebar-new-team-container'>
-                <i className='sidebar-new-team-icon-container'>
-                    <HiPlus />
-                </i>
+    const team = await Team.findOne({ _id: teamId, members: userId });
 
-                <span className='sidebar-new-team-title'>Create new team</span>
-            </div>
-        </div>
-    );
+    if(!team){
+        return next(new RuntimeError('Team::Membership::Forbidden', 403));
+    }
+
+    res.locals.team = team;
+
+    next();
 };
 
-export default SidebarTeams;
+export const checkTeamOwnership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const teamId = req.params.id;
+    const userId = (req as any).user.id;
+    
+    const team = await Team.findOne({ _id: teamId, owner: userId });
+
+    if(!team){
+        return next(new RuntimeError('Team::Ownership::Forbidden', 403));
+    }
+    
+    res.locals.team = team;
+
+    next();
+};

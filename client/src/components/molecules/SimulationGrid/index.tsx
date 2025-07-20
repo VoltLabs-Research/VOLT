@@ -24,27 +24,30 @@ import { useEffect } from 'react';
 import SimulationCard from '@/components/atoms/SimulationCard';
 import SimulationSkeletonCard from '@/components/atoms/SimulationSkeletonCard';
 import useTrajectoryStore from '@/stores/trajectories';
+import useTeamStore from '@/stores/team';
 import './SimulationGrid.css';
 
 const SimulationGrid = () => {
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoading = useTrajectoryStore((state) => state.isLoading);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
+    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const isLoadingTeams = useTeamStore((state) => state.isLoading);
 
     useEffect(() => {
-        if(!trajectories.length){
-            getTrajectories();
+        if(!trajectories.length && selectedTeam?._id){
+            getTrajectories(selectedTeam._id);
         }
-    }, []);
+    }, [isLoadingTeams]);
 
     return (
         <div className='trajectories-container'>
-            {(isLoading) && (
+            {(isLoading || isLoadingTeams) && (
                 <SimulationSkeletonCard n={8} />
             )}
 
             {trajectories.map((trajectory) => (
-                <SimulationCard trajectory={trajectory} />
+                <SimulationCard key={trajectory._id} trajectory={trajectory} />
             ))}
         </div>
     );

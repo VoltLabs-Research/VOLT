@@ -23,7 +23,9 @@
 import React, { useRef, useEffect } from 'react';
 import Loader from '@/components/atoms/Loader';
 import useTrajectoryUpload from '@/hooks/useTrajectoryUpload';
+import useTeamStore from '@/stores/team';
 import type { FileWithPath } from '@/hooks/useTrajectoryUpload';
+import useEditorStore from '@/stores/editor';
 
 interface FileUploadProps{
     onUploadSuccess?: (res: any) => void;
@@ -37,7 +39,16 @@ const FileUpload: React.FC<FileUploadProps> = ({
     children,
 }) => {
     const { uploadAndProcessTrajectory, isUploading, error, data } = useTrajectoryUpload();
+    const { analysisConfig } = useEditorStore((state) => state.analysisConfig);
+    const getUserTeams = useTeamStore((state) => state.getUserTeams);
+    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const teams = useTeamStore((state) => state.teams);
     const dropRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if(teams.length) return;
+        getUserTeams();
+    }, []);
 
     useEffect(() => {
         if(data){
@@ -98,7 +109,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
             }
 
             if(filesWithPaths.length > 0 && originalFolderName){
-                await uploadAndProcessTrajectory(filesWithPaths, originalFolderName, analysisConfig);
+                console.log(selectedTeam?._id)
+                await uploadAndProcessTrajectory(filesWithPaths, originalFolderName, analysisConfig, selectedTeam?._id);
             }else{
                 console.warn('No files were found or the parent folder could not be determined.');
             }

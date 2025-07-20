@@ -101,11 +101,9 @@ TrajectorySchema.pre('findOneAndDelete', async function(next: NextFunction){
 });
 
 TrajectorySchema.post('save', async function(doc, next){
-    if(this.isNew){
-        await Team.findByIdAndUpdate(doc.team, {
-            $push: { trajectories: doc._id }
-        });
-    }
+    await Team.findByIdAndUpdate(doc.team, {
+        $addToSet: { trajectories: doc._id }
+    });
     next();
 });
 

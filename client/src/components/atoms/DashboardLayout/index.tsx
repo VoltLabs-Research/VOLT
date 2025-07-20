@@ -20,6 +20,7 @@
 * SOFTWARE.
 **/
 
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { GrHomeOption } from 'react-icons/gr';
 import { BsFiles } from 'react-icons/bs';
@@ -28,16 +29,43 @@ import { TbBook } from 'react-icons/tb';
 import { IoIosHelpCircleOutline } from 'react-icons/io';
 import SidebarUserAvatar from '@/components/atoms/SidebarUserAvatar';
 import SidebarNavigationOption from '@/components/atoms/SidebarNavigationOption';
-import SidebarTeams from '@/components/atoms/SidebarTeams';
 import AIPromptBox from '@/components/atoms/AIPromptBox';
+import Select from '@/components/atoms/Select';
+import useTeamStore from '@/stores/team';
 import './DashboardLayout.css';
 
 const DashboardLayout = () => {
+    const teams = useTeamStore((state) => state.teams);
+    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const getUserTeams = useTeamStore((state) => state.getUserTeams);
+    const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
+    const isLoading = useTeamStore((state) => state.isLoading);
+
+    useEffect(() => {
+        if(teams.length) return;
+        getUserTeams();
+    }, []);
+
+    const teamOptions = teams.map((team) => ({
+        value: team._id,
+        title: team.name
+    }));
+
     return (
         <main className='dashboard-main'>
             <section className='sidebar-container'>
                 <article className='sidebar-top-container'>
                     <SidebarUserAvatar />
+
+                    <div className='sidebar-team-selection-container'>
+                        <Select
+                            value={selectedTeam?._id || ''}
+                            className='team-select-container'
+                            onChange={(teamId) => setSelectedTeam(teamId)}
+                            options={teamOptions}
+                            disabled={isLoading || teams.length === 0}
+                        />
+                    </div>
 
                     <div className='sidebar-nav-container'>
                         {[
@@ -54,9 +82,6 @@ const DashboardLayout = () => {
                                 isSelected={index === 0} />
                         ))}
                     </div>
-                    
-
-                    <SidebarTeams />
                 </article>
 
                 <article className='sidebar-bottom-container'>
