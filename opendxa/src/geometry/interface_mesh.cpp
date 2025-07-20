@@ -149,7 +149,7 @@ void InterfaceMesh::createMesh(double maxNeighborDist){
 // those triangular facets that lie inside dislocation "holes" or caps
 // on dangling circuits. We produce a separate half-edge mesh for defect surfaces,
 // stitching in new triangles around each dangling Burgers circuit cap. 
-bool InterfaceMesh::generateDefectMesh(
+void InterfaceMesh::generateDefectMesh(
     BurgersLoopBuilder const& tracer,
     HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& outMesh
 ){
@@ -243,9 +243,8 @@ bool InterfaceMesh::generateDefectMesh(
     }
 
     // Finally, ensure all half-edges know their opposite partners.
-    // TODO: always returns true.....
-    //assert(outMesh.connectOppositeHalfedges());
-    return true;
+    // TODO:
+    // assert(outMesh.connectOppositeHalfedges());
 }
 
 }

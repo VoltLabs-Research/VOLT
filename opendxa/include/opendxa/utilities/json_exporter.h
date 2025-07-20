@@ -16,17 +16,6 @@ namespace OpenDXA{
 
 using json = nlohmann::json;
 
-struct GLTFExportOptions{
-    int maxAtoms = -1;
-    float subsampleRatio = 1.0f; 
-    bool enableLOD = false;  
-    float lodThreshold = 1000.0f;  
-    bool spatialCulling = false;  
-    float cullRadius = 50.0f;   
-    Vector3 cullCenter = {0,0,0};  
-    int maxInstancesPerMesh = 65536; 
-};
-
 class DXAJsonExporter{
 public:
     explicit DXAJsonExporter(const std::string& filename = "")
@@ -34,21 +23,13 @@ public:
 
     json exportAnalysisData(
         const DislocationNetwork* network,
+        const HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& defectMesh,
         const InterfaceMesh* interfaceMesh,
         const LammpsParser::Frame& frame,
         const BurgersLoopBuilder* tracer,
         const std::vector<int>* structureTypes = nullptr,
         bool includeDetailedNetworkInfo = true,
         bool includeTopologyInfo = true
-    );
-
-    void exportAtomsToGLTF(
-        const LammpsParser::Frame& frame,
-        const BurgersLoopBuilder* tracer,
-        const std::vector<int>* structureTypes,
-        const std::string& filename,
-        float atomRadius,
-        const GLTFExportOptions& options = GLTFExportOptions{}
     );
 
     json exportClusterGraphToJson(const ClusterGraph* graph);
@@ -95,6 +76,14 @@ public:
 private:
     std::string _filename;
     std::chrono::high_resolution_clock::time_point _startTime;
+
+    template <typename MeshType>
+    json getMeshData(
+        const MeshType& mesh,
+        const StructureAnalysis& structureAnalysis,
+        bool includeTopologyInfo,
+        const InterfaceMesh* interfaceMeshForTopology
+    );
     
     json pointToJson(const Point3& point);
     json vectorToJson(const Vector3& vector);

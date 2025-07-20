@@ -593,12 +593,16 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     auto networkUptr = std::make_unique<DislocationNetwork>(tracer.network());
     spdlog::debug("Found {} dislocation segments", networkUptr->segments().size());
 
+    // Generate defect mesh
+    HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex> defectMesh;
+    interfaceMesh.generateDefectMesh(tracer, defectMesh);
+
     // To produce clean output, we smooth both the defect surface mesh and
     // each dislocation line. Without smoothing, visualizations can look jagged.
     {
         PROFILE("Post Processing - Smooth Vertices & Smooth Dislocation Lines");
-        HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex> defectMesh;
-        defectMesh.smoothVertices(_defectMeshSmoothingLevel);
+        // TODO: I probably implemented this method wrong, it distorts everything
+        // defectMesh.smoothVertices(_defectMeshSmoothingLevel);
         networkUptr->smoothDislocationLines(_lineSmoothingLevel, _linePointInterval);
         spdlog::debug("Defect mesh facets: {} ", defectMesh.faces().size());
     }
@@ -624,8 +628,15 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     {
         try{
             PROFILE("JSON Exporter - Export Analysis Data");
-            result = _jsonExporter.exportAnalysisData(networkUptr.get(), &interfaceMesh, frame, &tracer, &extractedStructureTypes);
-            _jsonExporter.exportInterfaceMeshToVTK(interfaceMesh, *structureAnalysis, "interface_mesh.vtk");
+            result = _jsonExporter.exportAnalysisData(
+                networkUptr.get(), 
+                defectMesh,
+                &interfaceMesh, 
+                frame, 
+                &tracer, 
+                &extractedStructureTypes
+            );
+            // _jsonExporter.exportInterfaceMeshToVTK(interfaceMesh, *structureAnalysis, "interface_mesh.vtk");
             /*const int* intData = structureTypes->constDataInt();
             size_t dataSize = structureTypes->size();
             std::vector<int> tempVector(intData, intData + dataSize);
@@ -642,18 +653,6 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     }
 
     spdlog::debug("Json output file: {}", outputFile);
-
-    if(!outputFile.empty()){
-        std::ofstream of(outputFile + ".json");
-        _jsonExporter.exportAtomsToGLTF(
-            frame,   
-            &tracer,      
-            &extractedStructureTypes,  
-            outputFile + "_atoms.gltf",
-            0.5f
-        );
-        of << result.dump(2);
-    }
 
     // Clean up all intermediate data to free memory before returning.
     networkUptr.reset();

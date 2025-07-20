@@ -60,7 +60,7 @@ public:
 		return _isCompletelyBad;
 	}
 
-    bool generateDefectMesh(BurgersLoopBuilder const& tracer, HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& defectMesh);
+    void generateDefectMesh(BurgersLoopBuilder const& tracer, HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& defectMesh);
 
 private:
     ElasticMapping& _elasticMapping;
