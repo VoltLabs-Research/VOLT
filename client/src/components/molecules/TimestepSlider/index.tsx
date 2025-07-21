@@ -29,12 +29,14 @@ interface TimestepSliderProps {
     availableTimesteps: number[];
     onTimestepChange: (timestep: number) => void;
     disabled?: boolean;
+    maxTimestep: number;
 }
 
 const TimestepSlider: React.FC<TimestepSliderProps> = ({
     currentTimestep,
     availableTimesteps,
     onTimestepChange,
+    maxTimestep,
     disabled = false
 }) => {
     const currentIndex = availableTimesteps.indexOf(currentTimestep);
@@ -68,7 +70,7 @@ const TimestepSlider: React.FC<TimestepSliderProps> = ({
                 } as React.CSSProperties}
             />
             <span className="timestep-display">
-                {currentTimestep}
+                {currentTimestep} / {maxTimestep}
             </span>
         </div>
     );

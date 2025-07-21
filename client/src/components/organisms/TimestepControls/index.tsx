@@ -48,6 +48,7 @@ const TimestepControls: React.FC = () => {
             
             <TimestepSlider
                 currentTimestep={currentTimestep}
+                maxTimestep={timestepData.maxTimestep}
                 availableTimesteps={timestepData.timesteps}
                 onTimestepChange={setCurrentTimestep}
                 disabled={false}

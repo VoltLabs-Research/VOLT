@@ -23,13 +23,29 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import TimestepControls from '@/components/organisms/TimestepControls';
-import AnalysisConfiguration from '@/components/organisms/AnalysisConfiguration';
 import Scene3D from '@/components/organisms/Scene3D';
 import TimestepViewer from '@/components/organisms/TimestepViewer';
 import FileUpload from '@/components/molecules/FileUpload';
 import useTrajectoryStore from '@/stores/trajectories';
 import useEditorStore from '@/stores/editor';
 import Loader from '@/components/atoms/Loader';
+import useTeamStore from '@/stores/team';
+import TrajectoryList from '@/components/organisms/TrajectoryList';
+import EditorWidget from '@/components/organisms/EditorWidget';
+import SidebarUserAvatar from '@/components/atoms/SidebarUserAvatar';
+import { MdKeyboardArrowDown } from 'react-icons/md';
+import { LuPanelRight } from "react-icons/lu";
+import { CiLock } from "react-icons/ci";
+import { TbObjectScan } from "react-icons/tb";
+import { PiLineSegmentThin, PiAtomThin, PiTriangleDashedThin } from "react-icons/pi";
+import { SiTraefikmesh } from "react-icons/si";
+import { LuLayoutDashboard } from "react-icons/lu";
+import { IoIosColorFilter } from "react-icons/io";
+import { GrHomeRounded } from "react-icons/gr";
+import { MdOutlineLightMode } from "react-icons/md";
+import { TbAugmentedReality2 } from "react-icons/tb";
+import { GoDownload } from "react-icons/go";
+import { CiShare1 } from "react-icons/ci";
 import './Canvas.css';
 
 const EditorPage: React.FC = () => {
@@ -41,6 +57,8 @@ const EditorPage: React.FC = () => {
     const nextGltfUrl = useEditorStore((state) => state.nextGltfUrl);
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
     const selectTrajectory = useEditorStore((state) => state.selectTrajectory);
+
+    const selectedTeam = useTeamStore((state) => state.selectedTeam);
 
     const isInitialLoadDone = useRef(false);
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
@@ -75,6 +93,100 @@ const EditorPage: React.FC = () => {
 
     return (
         <main className='editor-container'>
+            <EditorWidget className='editor-sidebar-container'>
+                <div className='editor-sidebar-top-container'>
+                    <div className='editor-sidebar-header-container'>
+                        <div className='editor-sidebar-trajectory-info-container'>
+                            <div className='editor-sidebar-trajectory-info-header-container'>
+                                <div className='editor-sidebar-trajectory-drop-container'>
+                                    <h3 className='editor-sidebar-trajectory-name'>{trajectory?.name}</h3>
+                                    <i className='editor-sidebar-trajectory-drop-icon-container'>
+                                        <MdKeyboardArrowDown />
+                                    </i>
+                                </div>
+
+                                <i className='editor-sidebar-panel-icon-container'>
+                                    <LuPanelRight />
+                                </i>
+                            </div>
+                            <p className='editor-sidebar-header-team-name'>{trajectory?.team?.name}</p>
+                        </div>
+                    </div>
+
+                    <div className='editor-sidebar-options-wrapper-container'>
+                        <div className='editor-sidebar-options-container'>
+                            {['Scene', 'Modifiers'].map((option, index) => (
+                                <div className={'editor-sidebar-option-container '.concat((index === 0) ? 'selected': '')} key={index}>
+                                    <h3 className='editor-sidebar-option-title'>{option}</h3>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className='editor-sidebar-scene-container'>
+                        <div className='editor-sidebar-scene-options-container'>
+                            {[
+                                [TbObjectScan, 'Camera 1'],
+                                [PiLineSegmentThin, 'Dislocations'],
+                                [SiTraefikmesh, 'Defect Mesh'],
+                                [PiAtomThin, 'Dislocation Core Atoms'],
+                                [PiTriangleDashedThin, 'Interface Mesh'],
+                                [IoIosColorFilter, 'Structure Identification']
+                            ].map(([ Icon, title ], index) => (
+                                <div className='editor-sidebar-scene-option-container' key={index}>
+                                    <i className='editor-sidebar-scene-option-icon-container'>
+                                        <Icon />
+                                    </i>
+                                    <h3 className='editor-sidebar-scene-option-title'>{title}</h3>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className='editor-sidebar-bottom-container'>
+                    <div className='editor-sidebar-user-avatar-wrapper'>
+                        <SidebarUserAvatar />
+                    </div>
+                </div>
+            </EditorWidget>
+
+            <EditorWidget className='trajectory-share-status-container'>
+                <i className='trajectory-share-status-icon-container'>
+                    <CiLock />
+                </i>
+            </EditorWidget>
+
+            <EditorWidget className='editor-top-centered-options-container'>
+                {[
+                    [GrHomeRounded, () => {}],
+                    [MdOutlineLightMode, () => {}],
+                    [LuLayoutDashboard, () => {}]
+                ].map(([ Icon, callback ], index) => (
+                    <i className={'editor-sidebar-scene-option-icon-container '.concat((index === 0) ? 'selected' : '')} key={index}>
+                        <Icon />
+                    </i>
+                ))}
+
+                <div className='editor-scene-zoom-container'>
+                    <span className='editor-scene-zoom'>100%</span>
+                    <i className='editor-scene-zoom-icon-container'>
+                        <MdKeyboardArrowDown />
+                    </i>
+                </div>
+
+                {[
+                    [TbAugmentedReality2, () => {}],
+                    [GoDownload, () => {}],
+                    [CiShare1, () => {}]
+                ].map(([ Icon, callback ], index) => (
+                    <i className={'editor-sidebar-scene-option-icon-container '.concat((index === 0) ? 'selected' : '')} key={index}>
+                        <Icon />
+                    </i>
+                ))}
+            </EditorWidget>
+
+            <TrajectoryList />
 
             {isLoadingTrajectory && (
                 <div className='loader-layer-container'>
@@ -85,14 +197,6 @@ const EditorPage: React.FC = () => {
             {(trajectory && currentTimestep !== undefined) && (
                 <TimestepControls />
             )}
-
-            <section className='editor-camera-info-container'>
-                <h3 className='editor-camera-info-title'>Perspective Camera</h3>
-                <p className='editor-camera-info-description'>
-                    Timestep Visualization {currentTimestep ?? ''}
-                    {trajectory && ` - ${trajectory.name}`}
-                </p>
-            </section>
 
             <div className='editor-timestep-viewer-container'>
                 <FileUpload onUploadSuccess={handleTrajectorySelection}>
@@ -109,8 +213,6 @@ const EditorPage: React.FC = () => {
                     </Scene3D>
                 </FileUpload>
             </div>
-
-            <AnalysisConfiguration />
         </main>
     );
 };

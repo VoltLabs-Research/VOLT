@@ -62,7 +62,7 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
             });
         },
 
-        getTrajectoryById: (id: string) => asyncAction(() => api.get<ApiResponse<Trajectory>>(`/trajectories/${id}`), {
+        getTrajectoryById: (id: string) => asyncAction(() => api.get<ApiResponse<Trajectory>>(`/trajectories/${id}?populate=team`), {
             loadingKey: 'isLoading',
             onSuccess: (res) => ({
                 trajectory: res.data.data
