@@ -102,8 +102,7 @@ export class AnalysisProcessingQueue{
                 await mkdir(job.analysisPath,{ recursive: true });
             }
 
-            const outputTemplate =  join(job.analysisPath, 'frame_{}');
-            const opendxa = new OpenDXAService(outputTemplate);
+            const opendxa = new OpenDXAService(job.folderPath, job.analysisPath);
             opendxa.configure(job.config);
             const result = await opendxa.analyzeTrajectory(job.trajectoryFiles);
             await this.setJobStatus(job.trajectoryId, 'completed',{ result });

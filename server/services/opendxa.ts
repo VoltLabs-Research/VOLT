@@ -20,90 +20,92 @@
 * SOFTWARE.
 **/
 
-import MeshExporter from '@utilities/defectMeshGltfExporter';
+import MeshExporter, { Mesh } from '@utilities/defectMeshGltfExporter';
 import opendxa from '../../bindings/nodejs';
-import type { ConfigParameters, ProgressInfo, } from '../../bindings/nodejs/types/index.js';
+import { ConfigParameters, ProgressInfo } from '../../bindings/nodejs/types';
 import path from 'path';
 
-class OpenDXAService{
-    private outputTemplate: string;
+export enum LatticeStructure {
+    FCC = 1,
+    HCP = 2,
+    BCC = 3,
+    CUBIC_DIAMOND = 4,
+    HEX_DIAMOND = 5
+}
 
-    constructor(outputTemplate: string){
+export enum IdentificationMode {
+    CNA = 0,
+    PTM = 1
+}
+
+type OpenDXASetterMap = {
+    [K in keyof ConfigParameters]?: (value: NonNullable<ConfigParameters[K]>) => void;
+}
+
+const configSetterMap: OpenDXASetterMap = {
+    crystalStructure: opendxa.setCrystalStructure,
+    maxTrialCircuitSize: opendxa.setMaxTrialCircuitSize,
+    circuitStretchability: opendxa.setCircuitStretchability,
+    onlyPerfectDislocations: opendxa.setOnlyPerfectDislocations,
+    markCoreAtoms: opendxa.setMarkCoreAtoms,
+    lineSmoothingLevel: opendxa.setLineSmoothingLevel,
+    linePointInterval: opendxa.setLinePointInterval,
+    identificationMode: opendxa.setIdentificationMode,
+};
+
+class OpenDXAService{
+    private exportDirectory: string;
+    private analysisOutputTemplate: string;
+
+    constructor(trajectoryFolderPath: string, trajectoryAnalysisPath: string){
         // The user could have configuration profiles in the database.
         // Here, they could be retrieved and loaded. However, OpenDXA from C++ already sets the default configuration.
-        this.outputTemplate = outputTemplate;
+        this.analysisOutputTemplate = path.join(trajectoryAnalysisPath, 'frame_{}');
+        this.exportDirectory = path.join(trajectoryFolderPath, 'gltf');
     }
 
     configure(config: ConfigParameters){
-        if(config.crystalStructure){
-            opendxa.setCrystalStructure(config.crystalStructure);
+        for(const key in configSetterMap){
+            const configKey = key as keyof ConfigParameters;
+            const value = config[configKey];
+            if(value !== undefined && value !== null){
+                const setter = configSetterMap[configKey] as (v: any) => void;
+                if(setter) setter(value);
+            }
         }
+        opendxa.setCrystalStructure(LatticeStructure.BCC);
+        opendxa.setIdentificationMode(IdentificationMode.PTM);
+    }
 
-        if(config.maxTrialCircuitSize){
-            opendxa.setMaxTrialCircuitSize(config.maxTrialCircuitSize);
-        }
-
-        if(config.circuitStretchability){
-            opendxa.setCircuitStretchability(config.circuitStretchability);
-        }
-
-        if(config.onlyPerfectDislocations){
-            opendxa.setOnlyPerfectDislocations(config.onlyPerfectDislocations);
-        }
-
-        if(config.markCoreAtoms){
-            opendxa.setMarkCoreAtoms(config.markCoreAtoms);
-        }
-
-        if(config.lineSmoothingLevel){
-            opendxa.setLineSmoothingLevel(config.lineSmoothingLevel);
-        }
-
-        if(config.linePointInterval){
-            opendxa.setLinePointInterval(config.linePointInterval);
-        }
-
-        opendxa.setCrystalStructure(1);
-        opendxa.setIdentificationMode(1);
+    private exportMesh(mesh: Mesh, frame: number, meshType: 'defect' | 'interface' = 'defect'){
+        const meshExporter = new MeshExporter();
+        const outputPath = path.join(this.exportDirectory, `frame_${frame}_${meshType}_mesh.gltf`);
+        meshExporter.toGLTF(mesh, outputPath, {
+            material: {
+                baseColor: [1.0, 1.0, 1.0, 1.0],
+                metallic: 0.0,
+                roughness: 0.0,
+                emissive: [0.0, 0.0, 0.0]
+            },
+            metadata: { includeOriginalStats: true }
+        });
     }
 
     private progressCallback(progress: ProgressInfo){
         const frameResult = progress.frameResult!;
-        const defectMesh = frameResult.defect_mesh;
+        const { interface_mesh, defect_mesh } = frameResult;
+        const { timestep } = frameResult.metadata;
 
-        if(!defectMesh.data || defectMesh.data.facets.length === 0){
-            console.log(`[Frame ${frameResult.metadata.timestep}] No defect mesh with facets to export. Skipping.`);
-            return;
-        }
-
-        const outputDir = path.dirname(this.outputTemplate);
-        const baseName = path.basename(this.outputTemplate, path.extname(this.outputTemplate));
-        const timestep = frameResult.metadata.timestep;
-        const defectMeshOutputPath = path.join(outputDir, `${baseName.replace('{}', timestep)}_defect_mesh.gltf`);
-
-        try{
-            const defectMeshExporter = new MeshExporter();
-            defectMeshExporter.exportToGLTF(defectMesh, defectMeshOutputPath, {
-                material: {
-                    baseColor: [1.0, 0.5, 0.2, 1.0],
-                    metallic: 0.2,
-                    roughness: 0.6
-                },
-                metadata: { includeOriginalStats: true }
-            });
-        }catch(error){
-            console.error(`[Frame ${timestep}] Error exporting defect mesh to GLTF:`, error);
-        }
+        this.exportMesh(defect_mesh, timestep, 'defect');
+        this.exportMesh(interface_mesh, timestep, 'interface');
     }
 
     async analyzeTrajectory(inputFiles: string[]){
         opendxa.setProgressCallback(this.progressCallback.bind(this));
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             console.log(`Starting OpenDXA analysis for ${inputFiles.length} files...`);
-            opendxa.computeTrajectory(inputFiles, this.outputTemplate, (result: any) => {
-                resolve(result);
-            });
+            opendxa.computeTrajectory(inputFiles, this.analysisOutputTemplate, resolve);
         });
     }
 };

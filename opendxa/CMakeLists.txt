@@ -337,9 +337,14 @@ set_target_properties(opendxa_node PROPERTIES
     LINK_FLAGS_RELEASE "${LINKER_FAST}"
 )
 
+set(DEBUG_CXX_OPTS
+    -O0 -g -fno-inline -fno-strict-aliasing
+)
+
 # Apply same compilation flags as main library
 target_compile_options(opendxa_node PRIVATE
     $<$<CONFIG:Release>:${RELEASE_CXX_OPTS}>
+    $<$<CONFIG:Debug>:${DEBUG_CXX_OPTS}>
     -fexceptions
     -frtti
 )

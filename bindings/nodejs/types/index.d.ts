@@ -1,14 +1,14 @@
 export enum LatticeStructure {
-    FCC = 0,
-    BCC = 1,
+    FCC = 1,
     HCP = 2,
-    CUBIC_DIAMOND = 3,
-    HEX_DIAMOND = 4
+    BCC = 3,
+    CUBIC_DIAMOND = 4,
+    HEX_DIAMOND = 5
 }
 
 export enum IdentificationMode {
-    PTM = 0,
-    CNA = 1
+    CNA = 0,
+    PTM = 1
 }
 
 export interface ProgressInfo {

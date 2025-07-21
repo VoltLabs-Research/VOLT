@@ -607,6 +607,8 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         spdlog::debug("Defect mesh facets: {} ", defectMesh.faces().size());
     }
 
+    std::cout << defectMesh.faces().size() << std::endl;
+
     double totalLineLength = 0.0;
     const auto& segments = networkUptr->segments();
     
@@ -655,8 +657,21 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     spdlog::debug("Json output file: {}", outputFile);
 
     if(!outputFile.empty()){
-        std::ofstream of(outputFile + ".json");
-        of << result.dump(2);
+        //std::ofstream of(outputFile + ".json");
+        std::ofstream defectMeshOf(outputFile + "_defect_mesh.json");
+        std::ofstream atomsOf(outputFile + "_atoms.json");
+        std::ofstream dislocationsOf(outputFile + "_dislocations.json");
+        std::ofstream interfaceMeshOf(outputFile + "_interface_mesh.json");
+        std::ofstream structuresOf(outputFile + "_structures_stats.json");
+        std::ofstream simulationCellOf(outputFile + "_simulation_cell.json");
+            
+        // of << result.dump(2);
+        defectMeshOf << result["defect_mesh"].dump(2);
+        atomsOf << result["atoms"].dump(2);
+        dislocationsOf << result["dislocations"].dump(2);
+        interfaceMeshOf << result["interface_mesh"].dump(2);
+        structuresOf << result["structures"].dump(2);
+        simulationCellOf << result["simulation_cell"].dump(2);
     }
 
     // Clean up all intermediate data to free memory before returning.

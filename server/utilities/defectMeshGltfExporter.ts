@@ -123,7 +123,7 @@ class MeshExporter{
         ], [-Infinity, -Infinity, -Infinity]);
     }
 
-    public exportToGLTF(
+    public toGLTF(
         mesh: Mesh,
         outputFilePath: string,
         options: DefectMeshExportOptions = {}
