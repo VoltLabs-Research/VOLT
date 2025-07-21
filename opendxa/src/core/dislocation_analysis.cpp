@@ -654,6 +654,11 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     spdlog::debug("Json output file: {}", outputFile);
 
+    if(!outputFile.empty()){
+        std::ofstream of(outputFile + ".json");
+        of << result.dump(2);
+    }
+
     // Clean up all intermediate data to free memory before returning.
     networkUptr.reset();
     structureAnalysis.reset();

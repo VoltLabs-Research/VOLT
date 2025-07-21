@@ -20,17 +20,18 @@
 * SOFTWARE.
 **/
 
-import opendxa from '../../bindings/nodejs/index.mjs';
-import type { 
-    ConfigParameters,
-    ProgressInfo,
-    TrajectoryCallback
-} from '../../bindings/nodejs/types/index.js';
+import MeshExporter from '@utilities/defectMeshGltfExporter';
+import opendxa from '../../bindings/nodejs';
+import type { ConfigParameters, ProgressInfo, } from '../../bindings/nodejs/types/index.js';
+import path from 'path';
 
 class OpenDXAService{
-    constructor(){
+    private outputTemplate: string;
+
+    constructor(outputTemplate: string){
         // The user could have configuration profiles in the database.
         // Here, they could be retrieved and loaded. However, OpenDXA from C++ already sets the default configuration.
+        this.outputTemplate = outputTemplate;
     }
 
     configure(config: ConfigParameters){
@@ -62,14 +63,47 @@ class OpenDXAService{
             opendxa.setLinePointInterval(config.linePointInterval);
         }
 
-        if(config.identificationMode){
-            opendxa.setIdentificationMode(config.identificationMode);
+        opendxa.setCrystalStructure(1);
+        opendxa.setIdentificationMode(1);
+    }
+
+    private progressCallback(progress: ProgressInfo){
+        const frameResult = progress.frameResult!;
+        const defectMesh = frameResult.defect_mesh;
+
+        if(!defectMesh.data || defectMesh.data.facets.length === 0){
+            console.log(`[Frame ${frameResult.metadata.timestep}] No defect mesh with facets to export. Skipping.`);
+            return;
+        }
+
+        const outputDir = path.dirname(this.outputTemplate);
+        const baseName = path.basename(this.outputTemplate, path.extname(this.outputTemplate));
+        const timestep = frameResult.metadata.timestep;
+        const defectMeshOutputPath = path.join(outputDir, `${baseName.replace('{}', timestep)}_defect_mesh.gltf`);
+
+        try{
+            const defectMeshExporter = new MeshExporter();
+            defectMeshExporter.exportToGLTF(defectMesh, defectMeshOutputPath, {
+                material: {
+                    baseColor: [1.0, 0.5, 0.2, 1.0],
+                    metallic: 0.2,
+                    roughness: 0.6
+                },
+                metadata: { includeOriginalStats: true }
+            });
+        }catch(error){
+            console.error(`[Frame ${timestep}] Error exporting defect mesh to GLTF:`, error);
         }
     }
 
-    async analyzeTrajectory(inputFiles: string[], outputTemplate: string){
+    async analyzeTrajectory(inputFiles: string[]){
+        opendxa.setProgressCallback(this.progressCallback.bind(this));
+
         return new Promise((resolve, reject) => {
-            opendxa.computeTrajectory(inputFiles, outputTemplate, resolve);
+            console.log(`Starting OpenDXA analysis for ${inputFiles.length} files...`);
+            opendxa.computeTrajectory(inputFiles, this.outputTemplate, (result: any) => {
+                resolve(result);
+            });
         });
     }
 };

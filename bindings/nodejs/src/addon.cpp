@@ -50,17 +50,9 @@ Napi::Value JsonToNapi(Napi::Env env, const json& value) {
             return Napi::Number::New(env, val);
         } else if (value.is_string()) {
             std::string str = value.get<std::string>();
-            if (str.size() > 1000000) { // 1MB limit
-                str = str.substr(0, 1000000) + "...[truncated]";
-            }
             return Napi::String::New(env, str);
         } else if (value.is_array()) {
             size_t arraySize = value.size();
-            if (arraySize > 100000) { // Limit to 100k elements
-                std::cerr << "Warning: Array too large (" << arraySize << "), truncating to 100k" << std::endl;
-                arraySize = 100000;
-            }
-            
             Napi::Array arr = Napi::Array::New(env);
             for (size_t i = 0; i < arraySize; i++) {
                 try {
@@ -78,28 +70,12 @@ Napi::Value JsonToNapi(Napi::Env env, const json& value) {
             Napi::Object obj = Napi::Object::New(env);
             
             try {
-                size_t objectSize = value.size();
-                // Limit to 50k properties
-                if (objectSize > 50000) { 
-                    std::cerr << "Warning: Object too large (" << objectSize << "), converting to string" << std::endl;
-                    return Napi::String::New(env, "[Large Object: " + std::to_string(objectSize) + " properties]");
-                }
-                
-                size_t processedProperties = 0;
                 for (const auto& item : value.items()) {
-                    if (processedProperties >= 50000) break; 
-                    
                     try {
                         const std::string& key = item.key();
                         const json& val = item.value();
-                        if (key.empty() || key.size() > 1000) {
-                            std::cerr << "Skipping invalid key of size: " << key.size() << std::endl;
-                            continue;
-                        }
                         
                         obj.Set(key, JsonToNapi(env, val));
-                        processedProperties++;
-                        
                     } catch (const json::exception& je) {
                         std::cerr << "JSON exception on property: " << je.what() << std::endl;
                         continue;
@@ -123,9 +99,6 @@ Napi::Value JsonToNapi(Napi::Env env, const json& value) {
             // Unknown type, convert to string safely
             try {
                 std::string dump = value.dump();
-                if (dump.size() > 10000) {
-                    dump = dump.substr(0, 10000) + "...[truncated]";
-                }
                 return Napi::String::New(env, dump);
             } catch (...) {
                 return Napi::String::New(env, "[Unparseable JSON]");

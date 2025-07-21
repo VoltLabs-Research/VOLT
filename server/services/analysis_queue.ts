@@ -102,9 +102,10 @@ export class AnalysisProcessingQueue{
                 await mkdir(job.analysisPath,{ recursive: true });
             }
 
-            const opendxa = new OpenDXAService();
+            const outputTemplate =  join(job.analysisPath, 'frame_{}');
+            const opendxa = new OpenDXAService(outputTemplate);
             opendxa.configure(job.config);
-            const result = await opendxa.analyzeTrajectory(job.trajectoryFiles, join(job.analysisPath, 'frame_{}'));
+            const result = await opendxa.analyzeTrajectory(job.trajectoryFiles);
             await this.setJobStatus(job.trajectoryId, 'completed',{ result });
         } catch(error){
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
