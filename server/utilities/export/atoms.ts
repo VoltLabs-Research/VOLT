@@ -21,7 +21,7 @@
 **/
 
 import * as fs from 'fs';
-import { TimestepInfo, Atom } from './lammps';
+import { TimestepInfo, Atom } from '../lammps';
 
 export interface GLTFExportOptions{
     atomRadius?: number;

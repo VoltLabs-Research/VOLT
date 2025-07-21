@@ -26,7 +26,7 @@ import { mkdir, writeFile, rmdir } from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import { join } from 'path';
 import { ITimestepInfo } from '@types/models/trajectory';
-import LAMMPSToGLTFExporter, { GLTFExportOptions } from '@utilities/lammpsGltfExporter';
+import LAMMPSToGLTFExporter, { GLTFExportOptions } from '@utilities/export/atoms';
 import Trajectory from '@models/trajectory';
 import Team from '@models/team';
 
