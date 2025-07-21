@@ -22,7 +22,6 @@
 
 import React, { useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import TrajectoryList from '@/components/organisms/TrajectoryList';
 import TimestepControls from '@/components/organisms/TimestepControls';
 import AnalysisConfiguration from '@/components/organisms/AnalysisConfiguration';
 import Scene3D from '@/components/organisms/Scene3D';
@@ -76,7 +75,6 @@ const EditorPage: React.FC = () => {
 
     return (
         <main className='editor-container'>
-            <TrajectoryList onFileSelect={handleTrajectorySelection} />
 
             {isLoadingTrajectory && (
                 <div className='loader-layer-container'>

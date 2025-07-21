@@ -24,20 +24,24 @@ import SimulationCard from '@/components/atoms/SimulationCard';
 import SimulationSkeletonCard from '@/components/atoms/SimulationSkeletonCard';
 import useTrajectoryStore from '@/stores/trajectories';
 import useTeamStore from '@/stores/team';
+import useAnimationPresence from '@/hooks/useAnimationPresence';
 import './SimulationGrid.css';
 
 const SimulationGrid = () => {
+    const [parent] = useAnimationPresence();
+
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoading = useTrajectoryStore((state) => state.isLoading);
     const isLoadingTeams = useTeamStore((state) => state.isLoading);
     const isUploading = useTrajectoryStore((state) => state.isUploading);
 
     return (
-        <div className='trajectories-container'>
+        <div className='trajectories-container' ref={parent}>
             {(isLoading || isLoadingTeams) && (
                 <SimulationSkeletonCard n={8} />
             )}
 
+            
             {trajectories.map((trajectory) => (
                 <SimulationCard key={trajectory._id} trajectory={trajectory} />
             ))}

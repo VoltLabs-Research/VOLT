@@ -20,6 +20,7 @@
 * SOFTWARE.
 **/
 
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PiDotsThreeVerticalBold } from "react-icons/pi";
 import { PiAtomThin } from 'react-icons/pi';
@@ -38,6 +39,8 @@ const SimulationCard = ({ trajectory }) => {
     const updateTrajectoryById = useTrajectoryStore((state) => state.updateTrajectoryById);
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const loadTrajectoryOnCanvas = () => {
         navigate(`/canvas/${trajectory._id}/`);
     };
@@ -46,13 +49,15 @@ const SimulationCard = ({ trajectory }) => {
         await updateTrajectoryById(trajectory._id, { name: newName });
     };
 
-    const handleDelete = async () => {
-        await deleteTrajectoryById(trajectory._id);
-        navigate('/dashboard');
+    const handleDelete = () => {
+        setIsDeleting(true);
+        setTimeout(() => {
+            deleteTrajectoryById(trajectory._id);
+        }, 500);
     };
 
     return (
-        <figure className='simulation-container'>
+        <figure className={`simulation-container ${isDeleting ? 'is-deleting' : ''}`}>
             <div className='simulation-cover-container' onClick={loadTrajectoryOnCanvas}>
                 {true ? (
                     <i className='simulation-cover-icon-container'>
@@ -78,7 +83,7 @@ const SimulationCard = ({ trajectory }) => {
                     options={[
                         ['View Scene', HiOutlineViewfinderCircle, loadTrajectoryOnCanvas],
                         ['Share with Team', CiShare1, () => {}],
-                        ['Delete', RxTrash, handleDelete]
+                        ['Delete', RxTrash, handleDelete] 
                     ]}
                 >
                     <i className='simulation-options-icon-container'>

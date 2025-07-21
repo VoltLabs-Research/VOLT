@@ -5,3 +5,18 @@
     gap: 1.5rem;
     row-gap: 6rem;
 }
+
+.trajectories-container > *{
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-reduced-motion: reduce){
+    .trajectories-container *{
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}

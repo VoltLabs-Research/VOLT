@@ -20,69 +20,85 @@
 * SOFTWARE.
 **/
 
-import { useEffect, useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import './ActionBasedFloatingContainer.css';
 
-const ActionBasedFloatingContainer = ({ options, children }: any) => {
-    const containerRef = useRef<HTMLDivElement | null>(null);
-    const [offset, setOffset] = useState({ top: '0px', right: '0px', left: '0px' });
+const ActionBasedFloatingContainer = ({ options, children }) => {
+    const triggerRef = useRef(null);
+    const menuRef = useRef(null);
     const [isVisible, setIsVisible] = useState(false);
+    const [styles, setStyles] = useState({});
 
-    const handleOnClick = () => {
-        if(!containerRef.current) return;
-        const { top, right, left, height } = containerRef.current.getBoundingClientRect();
-        const marginTop = 20;
-        const topOffset = top + height + marginTop;
-
-        setOffset({
-            top: `${topOffset}px`,
-            right: `${right}px`,
-            left: `${left}px`,
-        })
-        setIsVisible(!isVisible);
+    const handleToggle = (e) => {
+        e.stopPropagation();
+        if (triggerRef.current) {
+            const { top, left, height } = triggerRef.current.getBoundingClientRect();
+            setStyles({
+                position: 'fixed',
+                top: `${top + height + 20}px`,
+                left: `${left}px`,
+            });
+        }
+        setIsVisible(prev => !prev);
     };
 
     useEffect(() => {
-        const handleDocumentOnClick = (event: MouseEvent) => {
-            if(containerRef.current && !containerRef.current.contains(event.target as Node)){
+        const handleClickOutside = (event) => {
+            if (
+                menuRef.current &&
+                !menuRef.current.contains(event.target) &&
+                !triggerRef.current.contains(event.target)
+            ) {
                 setIsVisible(false);
             }
         };
 
-        document.addEventListener('click', handleDocumentOnClick);
-
+        document.addEventListener('mousedown', handleClickOutside);
         return () => {
-            document.removeEventListener('click', handleDocumentOnClick);
+            document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    const handleOptionClick = (originalOnClick) => {
+        if (typeof originalOnClick === 'function') {
+            originalOnClick();
+        }
+        setIsVisible(false);
+    };
 
     return (
         <>
             <div
-                onClick={handleOnClick}
-                ref={containerRef}
+                onClick={handleToggle}
+                ref={triggerRef}
                 className='action-based-floating-container-element-wrapper'
             >
                 {children}
             </div>
 
-            {isVisible && (
-                <div 
-                    style={offset}
+            {isVisible && createPortal(
+                <div
+                    ref={menuRef}
+                    style={styles}
                     className='action-based-floating-container'
                 >
-                    {options.map(([ name, Icon, onClick ], index) => (
-                        <div className='action-based-floating-option-container' key={index} onClick={onClick}>
+                    {options.map(([name, Icon, onClick], index) => (
+                        <div
+                            className='action-based-floating-option-container'
+                            key={index}
+                            onClick={() => handleOptionClick(onClick)}
+                        >
                             <i className='action-based-floating-option-icon-container'>
                                 <Icon />
                             </i>
-
                             <span className='action-based-floating-option-name-container'>
                                 {name}
                             </span>
                         </div>
                     ))}
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );
