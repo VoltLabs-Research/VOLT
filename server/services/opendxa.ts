@@ -23,6 +23,7 @@
 import MeshExporter, { Mesh } from '@utilities/defectMeshGltfExporter';
 import DislocationExporter, { Dislocation } from '@utilities/dislocationGltfExporter';
 import opendxa from '../../bindings/nodejs';
+import LAMMPSToGLTFExporter, { AtomsData } from '@utilities/lammpsGltfExporter';
 import { ConfigParameters, ProgressInfo } from '../../bindings/nodejs/types';
 import path from 'path';
 
@@ -78,12 +79,21 @@ class OpenDXAService{
         opendxa.setIdentificationMode(IdentificationMode.PTM);
     }
 
+    private getOutputPath(frame: number, exportName: string){
+        return path.join(this.exportDirectory, `frame_${frame}_${exportName}.gltf`)
+    }
+
+    private exportAtomsColoredByType(atoms: AtomsData, frame: number){
+        const exporter = new LAMMPSToGLTFExporter();
+        const outputPath = this.getOutputPath(frame, 'atoms_colored_by_type');
+        exporter.exportAtomsTypeToGLTF(atoms, outputPath);
+    }
+
     private exportDislocations(dislocation: Dislocation, frame: number){
         const exporter = new DislocationExporter();
-        const outputPath = path.join(this.exportDirectory, `frame_${frame}_dislocations.gltf`);
+        const outputPath = this.getOutputPath(frame, 'dislocations');
         exporter.toGLTF(dislocation, outputPath, {
             lineWidth: 0.3,
-            generateTubularGeometry: true,
             colorByType: true,
             material: {
                 baseColor: [1.0, 0.5, 0.0, 1.0],
@@ -95,7 +105,7 @@ class OpenDXAService{
 
     private exportMesh(mesh: Mesh, frame: number, meshType: 'defect' | 'interface' = 'defect'){
         const exporter = new MeshExporter();
-        const outputPath = path.join(this.exportDirectory, `frame_${frame}_${meshType}_mesh.gltf`);
+        const outputPath = this.getOutputPath(frame, `${meshType}_mesh`);
         exporter.toGLTF(mesh, outputPath, {
             material: {
                 baseColor: [1.0, 1.0, 1.0, 1.0],
@@ -109,13 +119,15 @@ class OpenDXAService{
 
     private progressCallback(progress: ProgressInfo){
         const frameResult = progress.frameResult!;
-        const { interface_mesh, defect_mesh, dislocations } = frameResult;
+        const { interface_mesh, defect_mesh, dislocations, atoms } = frameResult;
         const { timestep } = frameResult.metadata;
 
         this.exportMesh(defect_mesh, timestep, 'defect');
         this.exportMesh(interface_mesh, timestep, 'interface');
         
         this.exportDislocations(dislocations, timestep);
+        
+        this.exportAtomsColoredByType(atoms, timestep);
     }
 
     async analyzeTrajectory(inputFiles: string[]){

@@ -49,6 +49,19 @@ export interface ParsedFrame{
     atoms: Atom[];
 }
 
+export interface Atom{
+    node_id: number;
+    position: [number, number, number];
+    type_name: string;
+}
+
+export interface AtomsData{
+    data: Atom[],
+    metadata: {
+        count: number;
+    };
+}
+
 class LAMMPSToGLTFExporter{
     private lammpsTypeColors: Map<number, number[]> = new Map([
         // Gray
@@ -66,6 +79,16 @@ class LAMMPSToGLTFExporter{
         // Cyan
         [6, [0.267, 1.0, 1.0, 1.0]]
     ]);
+
+    private readonly STRUCTURE_COLORS: { [key: string]: number[] } = {
+        'Other': [1.0, 1.0, 1.0],
+        'FCC': [0.0, 1.0, 0.0],
+        'HCP': [1.0, 0.0, 0.0],
+        'BCC': [0.0, 0.0, 1.0],
+        'Cubic diamond': [0.0, 1.0, 1.0],
+        'Hexagonal diamond': [1.0, 0.5, 0.0],
+        'Default': [0.5, 0.5, 0.5]
+    };
 
     // Parse atoms from LAMMPS file lines
     private parseAtoms(lines: string[]): Atom[]{
@@ -744,6 +767,222 @@ class LAMMPSToGLTFExporter{
         fs.writeFileSync(outputFilePath, JSON.stringify(gltf, null, 2));
         console.log(`Exported GLTF: ${outputFilePath}`);
         console.log(`Buffer size: ${(arrayBuffer.byteLength / (1024 * 1024)).toFixed(2)} MB`)
+    }
+
+    public exportAtomsTypeToGLTF(
+        atomsData: AtomsData,
+        outputFilePath: string,
+        options: GLTFExportOptions = {}
+    ): void{
+        const processedAtoms = atomsData.data.map((atom) => ({
+            id: atom.node_id,
+            // The LAMMPS type is not used for coloring in this method.
+            type: 0,
+            x: atom.position[0],
+            y: atom.position[1],
+            z: atom.position[2],
+            typeName: atom.type_name
+        }));
+
+        const autoRadius = LAMMPSToGLTFExporter.calculateOptimalRadius(processedAtoms);
+        const opts: Required<GLTFExportOptions> = {
+            atomRadius: options.atomRadius ?? autoRadius,
+            spatialCulling: options.spatialCulling ?? false,
+            cullCenter: options.cullCenter ?? { x: 0, y: 0, z: 0 },
+            cullRadius: options.cullRadius ?? 10.0,
+            subsampleRatio: options.subsampleRatio ?? 1.0,
+            maxAtoms: options.maxAtoms ?? 0,
+            maxInstancesPerMesh: options.maxInstancesPerMesh ?? 10000
+        };
+
+        console.log(`Using atom radius: ${opts.atomRadius.toFixed(3)} (${options.atomRadius ? 'specified' : 'auto-detected'})`);
+        const profile = LAMMPSToGLTFExporter.detectPerfomanceProfile(processedAtoms.length);
+        
+        const { atoms: selectedAtoms, finalRadius } = this.selectAtoms(processedAtoms, opts, profile);
+        const { segments, rings } = profile.sphereResolution;
+        
+        const sphere = this.generateSphere(finalRadius, segments, rings);
+        console.log(`Exporting ${selectedAtoms.length.toLocaleString()} of ${processedAtoms.length.toLocaleString()} atoms.`);
+        console.log(`Atom final radius: ${finalRadius.toFixed(3)}`);
+
+        const gltf: any = {
+            asset: {
+                version: '2.0',
+                generator: 'OpenDXA Lammps GLTF Exporter',
+                copyright: 'https://github.com/rodyherrera/OpenDXA'
+            },
+            extensionsUsed: ['EXT_mesh_gpu_instancing'],
+            extensionsRequired: ['EXT_mesh_gpu_instancing'],
+            scene: 0,
+            scenes: [{ nodes: [] }],
+            nodes: [], 
+            meshes: [],
+            materials: [], 
+            accessors: [], 
+            bufferViews: [], 
+            buffers: []
+        };
+     
+        // Float32
+        const vertexBufferSize = sphere.vertices.length * 4;
+        
+        // Uint16
+        const indexBufferSize = sphere.indices.length * 2;
+
+        const alignedIndexBufferOffset = Math.ceil(vertexBufferSize / 4) * 4;
+        let bufferSize = alignedIndexBufferOffset + indexBufferSize;
+        let arrayBuffer = new ArrayBuffer(bufferSize);
+
+        new Float32Array(
+            arrayBuffer,
+            0,
+            sphere.vertices.length
+        ).set(sphere.vertices);
+
+        new Uint16Array(
+            arrayBuffer,
+            alignedIndexBufferOffset,
+            sphere.indices.length
+        ).set(sphere.indices);
+
+        gltf.bufferViews.push({
+            buffer: 0,
+            byteOffset: 0,
+            byteLength: vertexBufferSize,
+            byteStride: 24,
+            target: 34962
+        });
+
+        gltf.bufferViews.push({
+            buffer: 0, 
+            byteOffset: alignedIndexBufferOffset, 
+            byteLength: indexBufferSize, 
+            target: 34963 
+        });
+
+        gltf.accessors.push({ 
+            bufferView: 0, 
+            byteOffset: 0,  
+            componentType: 5126, 
+            count: sphere.vertices.length / 6, 
+            type: 'VEC3', 
+            min: sphere.bounds.min, 
+            max: sphere.bounds.max 
+        });
+
+        gltf.accessors.push({ 
+            bufferView: 0, 
+            byteOffset: 12, 
+            componentType: 5126, 
+            count: sphere.vertices.length / 6, 
+            type: 'VEC3' 
+        });
+
+        gltf.accessors.push({
+            bufferView: 1, 
+            byteOffset: 0, 
+            componentType: 5123, 
+            count: sphere.indices.length, 
+            type: 'SCALAR'
+        });
+
+        // Group atoms by structure type and create instances.
+        const atomsByStructureType = new Map<string, any[]>();
+        for(const atom of selectedAtoms){
+            const typeName = (atom as any).typeName;
+            if(!atomsByStructureType.has(typeName)){
+                atomsByStructureType.set(typeName, []);
+            }
+            atomsByStructureType.get(typeName)!.push(atom);
+        }
+
+        let materialIndex = 0;
+        for(const [typeName, typeAtoms] of atomsByStructureType){
+            if(typeAtoms.length === 0) continue;
+
+            // Create material with the corresponding color.
+            const colorRGB = this.STRUCTURE_COLORS[typeName] || this.STRUCTURE_COLORS['Default'];
+            gltf.materials.push({
+                name: `Material_Type_${typeName}`,
+                pbrMetallicRoughness: {
+                    baseColorFactor: [...colorRGB, 1.0],
+                    metallicFactor: 0.1,
+                    roughnessFactor: 0.8
+                }
+            });
+
+            const chunks = Math.ceil(typeAtoms.length / opts.maxInstancesPerMesh);
+            for(let i = 0; i < chunks; i++){
+                const chunkAtoms = typeAtoms.slice(i * opts.maxInstancesPerMesh, (i + 1) * opts.maxInstancesPerMesh);
+                const translations = chunkAtoms.flatMap(a => [a.x, a.y, a.z]);
+
+                const translationBufferOffset = bufferSize;
+                const translationBufferSize = translations.length * 4;
+                const newArrayBuffer = new ArrayBuffer(bufferSize + translationBufferSize);
+                new Uint8Array(newArrayBuffer).set(new Uint8Array(arrayBuffer));
+                new Float32Array(newArrayBuffer, translationBufferOffset, translations.length).set(translations);
+                arrayBuffer = newArrayBuffer;
+                bufferSize += translationBufferSize;
+             
+                gltf.bufferViews.push({
+                    buffer: 0,
+                    byteOffset: translationBufferOffset,
+                    byteLength: translationBufferSize,
+                    target: 34962
+                });
+
+                const translationAccessorIndex = gltf.accessors.length;
+
+                gltf.accessors.push({
+                    bufferView: gltf.bufferViews.length - 1,
+                    byteOffset: 0,
+                    componentType: 5126,
+                    count: chunkAtoms.length,
+                    type: 'VEC3'
+                });
+
+                // Create mesh and instantiated node.
+                const meshIndex = gltf.meshes.length;
+                gltf.meshes.push({
+                    primitives: [{
+                        attributes: {
+                            POSITION: 0,
+                            NORMAL: 1
+                        }, 
+                        indices: 2, 
+                        material: materialIndex, 
+                        mode: 4 
+                    }]
+                });
+
+                const nodeIndex = gltf.nodes.length;
+                gltf.nodes.push({
+                    mesh: meshIndex,
+                    extensions: { 
+                        EXT_mesh_gpu_instancing: { 
+                            attributes: { 
+                                TRANSLATION: translationAccessorIndex 
+                            } 
+                        } 
+                    }
+                });
+                
+                gltf.scenes[0].nodes.push(nodeIndex);
+            }
+
+            materialIndex++;
+        }
+
+        const encodedBuffer = this.arrayToBase64(arrayBuffer);
+        gltf.buffers.push({
+            byteLength: arrayBuffer.byteLength,
+            uri: `data:application/octet-stream;base64,${encodedBuffer}`
+        });
+
+        fs.writeFileSync(outputFilePath, JSON.stringify(gltf));
+
+        console.log(`GLTF successfully exported to: ${outputFilePath}`);
+        console.log(`Buffer size: ${(arrayBuffer.byteLength / (1024 * 1024)).toFixed(2)} MB`);
     }
 };
 
