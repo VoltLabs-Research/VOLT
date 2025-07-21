@@ -27,6 +27,7 @@ import { join } from 'path';
 import type { ITrajectory, ITimestepInfo } from '@types/models/trajectory';
 import Team from '@models/team';
 import StructureAnalysis from '@models/structureAnalysis';
+import SimulationCell from '@models/simulationCell';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
@@ -88,6 +89,7 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
         }
 
         await StructureAnalysis.deleteMany({ trajectory: _id });
+        await SimulationCell.deleteMany({ trajectory: _id });
 
         await Team.updateOne(
             { _id: team },

@@ -26,6 +26,7 @@ import opendxa from '../../bindings/nodejs';
 import LAMMPSToGLTFExporter, { AtomsData } from '@utilities/export/atoms';
 import { ConfigParameters, ProgressInfo } from '../../bindings/nodejs/types';
 import StructureAnalysis from '@models/structureAnalysis';
+import SimulationCell from '@models/simulationCell';
 import path from 'path';
 
 export enum LatticeStructure {
@@ -215,6 +216,29 @@ class OpenDXAService{
         }
     }
 
+    private async handleSimulationCellData(data: any, frame: number){
+        const filter = {
+            trajectory: this.trajectoryId,
+            timestep: frame
+        };
+
+        const updateData = {
+            ...data,
+            trajectory: this.trajectoryId,
+            timestep: frame
+        };
+
+        const simCell = await SimulationCell.findOneAndUpdate(filter, updateData, {
+            upsert: true,
+            new: true,
+            runValidators: true
+        });
+
+        if(simCell){
+            console.log(`Simulation cell data for frame ${frame} successfully registered or updated.`);
+        }
+    }
+
     /**
      * Callback function that is executed by the native addon for each completed frame in the trajectory analysis.
      * It destructures the analysis result and orchestrates the exportation of all relevant data.
@@ -223,17 +247,16 @@ class OpenDXAService{
     */
     private progressCallback(progress: ProgressInfo){
         const frameResult = progress.frameResult!;
-        const { interface_mesh, defect_mesh, dislocations, atoms, structures } = frameResult;
+        const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
         const { timestep } = frameResult.metadata;
 
         this.exportMesh(defect_mesh, timestep, 'defect');
         this.exportMesh(interface_mesh, timestep, 'interface');
-        
         this.exportDislocations(dislocations, timestep);
-
         this.exportAtomsColoredByType(atoms, timestep);
         
         this.handleStructuralData(structures, timestep);
+        this.handleSimulationCellData(simulation_cell, timestep);
     }
 
     /**
