@@ -25,6 +25,7 @@ import DislocationExporter, { Dislocation } from '@utilities/export/dislocations
 import opendxa from '../../bindings/nodejs';
 import LAMMPSToGLTFExporter, { AtomsData } from '@utilities/export/atoms';
 import { ConfigParameters, ProgressInfo } from '../../bindings/nodejs/types';
+import StructureAnalysis from '@models/structureAnalysis';
 import path from 'path';
 
 export enum LatticeStructure {
@@ -38,6 +39,26 @@ export enum LatticeStructure {
 export enum IdentificationMode {
     CNA = 0,
     PTM = 1
+}
+
+interface StructureTypeStat{
+    [key: string]: {
+        count: number;
+        percentage: number;
+        type_id: number;
+    }
+}
+
+interface StructureAnalysisData{
+    total_atoms: number;
+    analysis_method: 'PTM' | 'CNA';
+    structure_types: StructureTypeStat;
+    summary: {
+        total_identified: number;
+        total_unidentified: number;
+        identification_rate: number;
+        unique_structure_types: number;
+    }
 }
 
 type OpenDXASetterMap = {
@@ -61,12 +82,14 @@ const configSetterMap: OpenDXASetterMap = {
  * and handles the exportation of results into GLTF format. 
 */
 class OpenDXAService{
+    private trajectoryId: string;
     private exportDirectory: string;
 
-    constructor(trajectoryFolderPath: string){
+    constructor(trajectoryId: string, trajectoryFolderPath: string){
         // The user could have configuration profiles in the database.
         // Here, they could be retrieved and loaded. However, OpenDXA from C++ already sets the default configuration.
         this.exportDirectory = path.join(trajectoryFolderPath, 'gltf');
+        this.trajectoryId = trajectoryId;
     }
 
     /**
@@ -151,6 +174,47 @@ class OpenDXAService{
         });
     }
 
+    private async handleStructuralData(data: StructureAnalysisData, frame: number){
+        const structureNames: string[] = Object.keys(data.structure_types);
+        const stats = [];
+
+        for(const name of structureNames){
+            const { count, percentage, type_id } = data.structure_types[name];
+            stats.push({
+                count,
+                percentage,
+                typeId: type_id,
+                name
+            });
+        }
+
+        const filter = {
+            trajectory: this.trajectoryId,
+            timestep: frame
+        }
+
+        const updateData = {
+            totalAtoms: data.total_atoms,
+            timestep: frame,
+            analysisMethod: data.analysis_method.toUpperCase(),
+            types: stats,
+            identifiedStructures: data.summary.total_identified,
+            unidentifiedStructures: data.summary.total_unidentified,
+            identificationRate: data.summary.identification_rate,
+            trajectory: this.trajectoryId
+        };
+        
+        const updatedOrCreatedAnalysis = await StructureAnalysis.findOneAndUpdate(filter, updateData, {
+            upsert: true,
+            new: true,
+            runValidators: true
+        });
+
+        if(updatedOrCreatedAnalysis){
+            console.log(`Structural analysis of the frame ${frame} (${data.analysis_method}) successfully registered or updated.`)
+        }
+    }
+
     /**
      * Callback function that is executed by the native addon for each completed frame in the trajectory analysis.
      * It destructures the analysis result and orchestrates the exportation of all relevant data.
@@ -159,7 +223,7 @@ class OpenDXAService{
     */
     private progressCallback(progress: ProgressInfo){
         const frameResult = progress.frameResult!;
-        const { interface_mesh, defect_mesh, dislocations, atoms } = frameResult;
+        const { interface_mesh, defect_mesh, dislocations, atoms, structures } = frameResult;
         const { timestep } = frameResult.metadata;
 
         this.exportMesh(defect_mesh, timestep, 'defect');
@@ -168,6 +232,8 @@ class OpenDXAService{
         this.exportDislocations(dislocations, timestep);
 
         this.exportAtomsColoredByType(atoms, timestep);
+        
+        this.handleStructuralData(structures, timestep);
     }
 
     /**
@@ -181,7 +247,7 @@ class OpenDXAService{
 
         return new Promise((resolve) => {
             console.log(`Starting OpenDXA analysis for ${inputFiles.length} files...`);
-            opendxa.computeTrajectory(inputFiles, undefined, resolve);
+            opendxa.computeTrajectory(inputFiles, null, resolve);
         });
     }
 };

@@ -24,9 +24,9 @@ import mongoose, { Schema, Model } from 'mongoose';
 import { rmdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { NextFunction } from 'express';
 import type { ITrajectory, ITimestepInfo } from '@types/models/trajectory';
 import Team from '@models/team';
+import StructureAnalysis from '@models/structureAnalysis';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
@@ -60,6 +60,10 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         ref: 'Team',
         required: true
     },
+    structureAnalysis: [{
+        type: Schema.Types.ObjectId,
+        ref: 'StructureAnalysis'
+    }],
     frames: [TimestepInfoSchema],
     stats: {
         totalFiles: { type: Number, default: 0 },
@@ -69,7 +73,7 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     timestamps: true,
 });
 
-TrajectorySchema.pre('findOneAndDelete', async function(next: NextFunction){
+TrajectorySchema.pre('findOneAndDelete', async function(next){
     const trajectoryToDelete = await this.model.findOne(this.getFilter());
     if(!trajectoryToDelete){
         return next();
@@ -82,6 +86,8 @@ TrajectorySchema.pre('findOneAndDelete', async function(next: NextFunction){
         if(existsSync(trajectoryPath)){
             await rmdir(trajectoryPath, { recursive: true });
         }
+
+        await StructureAnalysis.deleteMany({ trajectory: _id });
 
         await Team.updateOne(
             { _id: team },

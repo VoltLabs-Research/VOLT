@@ -94,7 +94,7 @@ export class AnalysisProcessingQueue{
     private async executeJob(job: AnalysisJob, rawData: string, workerId: number): Promise<void>{
         await this.setJobStatus(job.trajectoryId, 'running',{ workerId });
         try{
-            const opendxa = new OpenDXAService(job.folderPath);
+            const opendxa = new OpenDXAService(job.trajectoryId, job.folderPath);
             opendxa.configure(job.config);
             const result = await opendxa.analyzeTrajectory(job.trajectoryFiles);
             await this.setJobStatus(job.trajectoryId, 'completed',{ result });

@@ -72,12 +72,12 @@ export declare function compute(inputFile: string, outputFile?: string): Analysi
 
 export declare function computeTrajectory(
     inputFiles: string[], 
-    outputTemplate: string
+    outputTemplate: string | null
 ): TrajectoryResult;
 
 export declare function computeTrajectory(
     inputFiles: string[], 
-    outputTemplate: string, 
+    outputTemplate: string | null, 
     callback: TrajectoryCallback
 ): void;
 

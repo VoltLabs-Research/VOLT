@@ -164,7 +164,7 @@ class MeshExporter{
         console.log(`Final statistics: ${processedMesh.triangleCount} triangles, ${processedMesh.vertexCount} vertices.`);
 
         const bufferSizeMB = (gltf.buffers[0].byteLength / (1024 * 1024)).toFixed(2);
-        console.log(`Tamaño del buffer: ${bufferSizeMB} MB`);
+        console.log(`Buffer size: ${bufferSizeMB} MB`);
     }
 
     private processMeshGeometry(mesh: Mesh, options: Required<DefectMeshExportOptions>): ProcessedMesh{

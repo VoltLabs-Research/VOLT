@@ -19,7 +19,9 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 **/
+
 import { ITeam } from '@types/models/team';
+import { IStructureAnalysis } from '@types/model/structureAnalysis';
 
 // Defines the limits of the simulation box on the three axes.
 export interface IBoxBounds{
@@ -42,7 +44,8 @@ export interface ITrajectory extends Document {
     name: string;
     folderId: string;
     team: ITeam;
-    frames: ITimestepInfo[],
+    frames: ITimestepInfo[];
+    structureAnalysis: IStructureAnalysis[];
     stats: {
         totalFiles: number;
         totalSize: number;
