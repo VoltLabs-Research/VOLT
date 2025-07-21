@@ -77,15 +77,10 @@ TrajectorySchema.pre('findOneAndDelete', async function(next: NextFunction){
 
     const { _id, folderId, team } = trajectoryToDelete;
     const trajectoryPath = join(process.env.TRAJECTORY_DIR as string, folderId);
-    const analysisPath = join(process.env.ANALYSIS_DIR as string, folderId);
 
     try{
         if(existsSync(trajectoryPath)){
             await rmdir(trajectoryPath, { recursive: true });
-        }
-
-        if(existsSync(analysisPath)){
-            await rmdir(analysisPath, { recursive: true });
         }
 
         await Team.updateOne(

@@ -62,12 +62,10 @@ const configSetterMap: OpenDXASetterMap = {
 */
 class OpenDXAService{
     private exportDirectory: string;
-    private analysisOutputTemplate: string;
 
-    constructor(trajectoryFolderPath: string, trajectoryAnalysisPath: string){
+    constructor(trajectoryFolderPath: string){
         // The user could have configuration profiles in the database.
         // Here, they could be retrieved and loaded. However, OpenDXA from C++ already sets the default configuration.
-        this.analysisOutputTemplate = path.join(trajectoryAnalysisPath, 'frame_{}');
         this.exportDirectory = path.join(trajectoryFolderPath, 'gltf');
     }
 
@@ -183,7 +181,7 @@ class OpenDXAService{
 
         return new Promise((resolve) => {
             console.log(`Starting OpenDXA analysis for ${inputFiles.length} files...`);
-            opendxa.computeTrajectory(inputFiles, this.analysisOutputTemplate, resolve);
+            opendxa.computeTrajectory(inputFiles, undefined, resolve);
         });
     }
 };

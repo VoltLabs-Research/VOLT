@@ -21,16 +21,12 @@
 **/
 
 import OpenDXAService from '@services/opendxa';
-import { mkdir } from 'fs/promises';
 import { redis, createRedisClient } from '@config/redis'; 
-import { existsSync } from 'fs';
-import { join } from 'path';
 import IORedis from 'ioredis';
 
 interface AnalysisJob{
     trajectoryId: string;
     folderPath: string;
-    analysisPath: string;
     config: any;
     trajectoryFiles: string[];
 }
@@ -75,7 +71,7 @@ export class AnalysisProcessingQueue{
                 if(rawData){
                     this.activeWorkers++;
                     console.log(`[Worker #${workerId}] Picked up job. Active jobs: ${this.activeWorkers}`);
-                    const job = JSON.parse(rawData)as AnalysisJob;
+                    const job = JSON.parse(rawData) as AnalysisJob;
                     await this.executeJob(job, rawData, workerId);
                     this.activeWorkers--;
                     console.log(`[Worker #${workerId}] Finished job. Active jobs: ${this.activeWorkers}`);
@@ -98,11 +94,7 @@ export class AnalysisProcessingQueue{
     private async executeJob(job: AnalysisJob, rawData: string, workerId: number): Promise<void>{
         await this.setJobStatus(job.trajectoryId, 'running',{ workerId });
         try{
-            if(!existsSync(job.analysisPath)){
-                await mkdir(job.analysisPath,{ recursive: true });
-            }
-
-            const opendxa = new OpenDXAService(job.folderPath, job.analysisPath);
+            const opendxa = new OpenDXAService(job.folderPath);
             opendxa.configure(job.config);
             const result = await opendxa.analyzeTrajectory(job.trajectoryFiles);
             await this.setJobStatus(job.trajectoryId, 'completed',{ result });

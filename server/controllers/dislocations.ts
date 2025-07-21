@@ -30,7 +30,6 @@ export const getTrajectoryDislocations = async (req: Request, res: Response) => 
     try {
         const { folderId, _id: trajectoryId } = res.locals.trajectory;
         const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
-        const analysisPath = join(process.env.ANALYSIS_DIR as string, folderId);
 
         if(!existsSync(folderPath)){
             return res.status(404).json({ error: 'Trajectory folder not found' });
@@ -71,7 +70,6 @@ export const getTrajectoryDislocations = async (req: Request, res: Response) => 
         queueService.addJob({
             trajectoryId,
             folderPath,
-            analysisPath,
             config: req.body,
             trajectoryFiles
         });
