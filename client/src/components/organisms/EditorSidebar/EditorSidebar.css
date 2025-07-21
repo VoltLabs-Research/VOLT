@@ -123,28 +123,6 @@
     padding: 1.5rem;
 }
 
-.editor-top-centered-options-container{
-    position: absolute;
-    top: 2rem;
-    left: 50%;
-    transform: translate(-50%, 0);
-    display: flex;
-    gap: 1rem;
-    flex-direction: row;
-    height: 55px;
-    width: auto;
-    padding: .5rem;
-}
-
-.editor-top-centered-options-container .editor-sidebar-scene-option-icon-container{
-    background-color: transparent;
-    transition: .1s;
-}
-
-.editor-top-centered-options-container .editor-sidebar-scene-option-icon-container:hover{
-    background-color: #212121;
-}
-
 .editor-sidebar-top-container > div:not(:last-child){
     border-bottom: 1px solid #212121;
 }

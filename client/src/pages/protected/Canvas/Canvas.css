@@ -143,17 +143,6 @@
     color: #dadada;
 }
 
-.trajectory-share-status-container{
-    position: absolute;
-    right: 2rem;
-    width: auto;
-    padding: 1rem;
-    border-radius: 5rem;
-    overflow: hidden;
-    top: 2rem;
-    z-index: 200;
-}
-
 .editor-scene-zoom-container{
     display: flex;
     justify-content: center;
@@ -162,8 +151,4 @@
     padding: 0 1.5rem;
     border-radius: 5rem;
     background-color: rgba(49, 49, 49, 0.8);
-}
-
-.trajectory-share-status-icon-container{
-    font-size: 1.6rem;
 }

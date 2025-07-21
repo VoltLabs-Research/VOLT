@@ -40,7 +40,6 @@ const SimulationGrid = () => {
             {(isLoading || isLoadingTeams) && (
                 <SimulationSkeletonCard n={8} />
             )}
-
             
             {trajectories.map((trajectory) => (
                 <SimulationCard key={trajectory._id} trajectory={trajectory} />

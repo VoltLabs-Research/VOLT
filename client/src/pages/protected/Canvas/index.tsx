@@ -31,16 +31,9 @@ import useEditorStore from '@/stores/editor';
 import Loader from '@/components/atoms/Loader';
 import useTeamStore from '@/stores/team';
 import TrajectoryList from '@/components/organisms/TrajectoryList';
-import EditorWidget from '@/components/organisms/EditorWidget';
 import EditorSidebar from '@/components/organisms/EditorSidebar';
-import { MdKeyboardArrowDown } from 'react-icons/md';
-import { CiLock } from "react-icons/ci";
-import { LuLayoutDashboard } from "react-icons/lu";
-import { GrHomeRounded } from "react-icons/gr";
-import { MdOutlineLightMode } from "react-icons/md";
-import { TbAugmentedReality2 } from "react-icons/tb";
-import { GoDownload } from "react-icons/go";
-import { CiShare1 } from "react-icons/ci";
+import TrajectoryVisibilityStatusFloatIcon from '@/components/atoms/TrajectoryVisibilityStatusFloatIcon';
+import SceneTopCenteredOptions from '@/components/atoms/SceneTopCenteredOptions';
 import './Canvas.css';
 
 const EditorPage: React.FC = () => {
@@ -90,46 +83,8 @@ const EditorPage: React.FC = () => {
     return (
         <main className='editor-container'>
             <EditorSidebar />
-
-            <EditorWidget className='trajectory-share-status-container'>
-                <i className='trajectory-share-status-icon-container'>
-                    <CiLock />
-                </i>
-            </EditorWidget>
-
-            <EditorWidget className='editor-top-centered-options-container'>
-                {[
-                    [GrHomeRounded, () => navigate('/dashboard')],
-                    [MdOutlineLightMode, () => {}],
-                    [LuLayoutDashboard, () => {}]
-                ].map(([ Icon, callback ], index) => (
-                    <i 
-                        onClick={callback}
-                        className={'editor-sidebar-scene-option-icon-container '.concat((index === 0) ? 'selected' : '')} 
-                        key={index}
-                    >
-                        <Icon />
-                    </i>
-                ))}
-
-                <div className='editor-scene-zoom-container'>
-                    <span className='editor-scene-zoom'>100%</span>
-                    <i className='editor-scene-zoom-icon-container'>
-                        <MdKeyboardArrowDown />
-                    </i>
-                </div>
-
-                {[
-                    [TbAugmentedReality2, () => {}],
-                    [GoDownload, () => {}],
-                    [CiShare1, () => {}]
-                ].map(([ Icon, callback ], index) => (
-                    <i className={'editor-sidebar-scene-option-icon-container '.concat((index === 0) ? 'selected' : '')} key={index}>
-                        <Icon />
-                    </i>
-                ))}
-            </EditorWidget>
-
+            <TrajectoryVisibilityStatusFloatIcon />
+            <SceneTopCenteredOptions />
             <TrajectoryList />
 
             {isLoadingTrajectory && (
