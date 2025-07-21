@@ -22,9 +22,17 @@
 
 import { Router } from 'express';
 import * as controller from '@controllers/dislocations';
+import * as trajectoryMiddleware from '@middlewares/trajectory';
+import * as authMiddleware from '@middlewares/authentication';
 
 const router = Router();
 
-router.get('/trajectory/:trajectoryId', controller.getTrajectoryDislocations);
+router.use(authMiddleware.protect);
+
+router.post(
+    '/trajectory/:id', 
+    trajectoryMiddleware.checkTeamMembershipForTrajectory, 
+    controller.getTrajectoryDislocations
+);
 
 export default router;

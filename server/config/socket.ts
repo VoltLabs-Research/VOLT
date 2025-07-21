@@ -55,10 +55,11 @@ export const initializeSocketIO = (httpServer: HttpServer) => {
                 const update = JSON.parse(message);
                 const trajectory = await Trajectory.findById(update.trajectoryId).select('owner sharedWith');
                 if(trajectory){
-                    const userIds = [trajectory.owner.toString(), ...trajectory.sharedWith.map((id) => id.toString)];
+                    // TODO: USE TEAM!
+                    /*const userIds = [trajectory.owner.toString(), ...trajectory.sharedWith.map((id) => id.toString)];
                     userIds.forEach((userId) => {
                         io.to(userId).emit('analysisUpdate', update);
-                    });
+                    });*/
                 }
             }catch(error){
                 console.error('Error processing message from Redis pub/sub:', error);

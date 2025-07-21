@@ -25,6 +25,7 @@ import { api } from '@/services/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import type { Trajectory } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
+import useEditorStore from './editor';
 
 interface TrajectoryState{
     trajectories: Trajectory[];
@@ -105,9 +106,15 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
 
         createTrajectory: (formData: FormData) => asyncAction(() => api.post<ApiResponse<Trajectory>>('/trajectories', formData), {
             loadingKey: 'isUploading',
-            onSuccess: (res, state) => ({
-                trajectories: [...state.trajectories, res.data.data]
-            })
+            onSuccess: (res, state) => {
+                // After the trajectory is uploaded to the server, we perform dislocation analysis.
+                api.post<ApiResponse<any>>(`/dislocations/trajectory/${res.data.data._id}`, useEditorStore.getState().analysisConfig)
+                    .then(() => console.log('Extracting dislocations...'))
+                    .catch(console.error);
+                return {
+                    trajectories: [...state.trajectories, res.data.data]
+                };
+            }
         })
     }
 };

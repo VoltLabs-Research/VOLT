@@ -25,13 +25,12 @@ import { readdir, writeFile, readFile } from 'fs/promises';
 import { getAnalysisProcessingQueue } from '@services/analysis_queue';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import HandlerFactory from '@models/handlerFactory';
 
 export const getTrajectoryDislocations = async (req: Request, res: Response) => {
     try {
-        const { trajectoryId } = req.params;
-        const folderPath = join(process.env.TRAJECTORY_DIR as string, trajectoryId);
-        const analysisPath = join(process.env.ANALYSIS_DIR as string, trajectoryId);
+        const { folderId, _id: trajectoryId } = res.locals.trajectory;
+        const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
+        const analysisPath = join(process.env.ANALYSIS_DIR as string, folderId);
 
         if(!existsSync(folderPath)){
             return res.status(404).json({ error: 'Trajectory folder not found' });
@@ -48,7 +47,18 @@ export const getTrajectoryDislocations = async (req: Request, res: Response) => 
         }
         
         const metadataPath = join(folderPath, 'metadata.json');
-        let metadata = JSON.parse(await readFile(metadataPath, 'utf-8'));
+
+        let metadata: any = {};
+        if(existsSync(metadataPath)){
+            try{
+                metadata = JSON.parse(await readFile(metadataPath, 'utf-8'));
+            }catch(err){
+                return res.status(400).json({ error: 'Failed to read or parse metadata.json' });
+            }
+        }else{
+            metadata = {};
+        }
+
         metadata.lastAnalysis = {
             jobId: `simple-queue-${Date.now()}`,
             config: req.body,
