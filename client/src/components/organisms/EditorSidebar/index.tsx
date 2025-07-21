@@ -1,0 +1,78 @@
+import React from 'react';
+import SidebarUserAvatar from '@/components/atoms/SidebarUserAvatar';
+import { LuPanelRight } from "react-icons/lu";
+import { TbObjectScan } from "react-icons/tb";
+import { PiLineSegmentThin, PiAtomThin, PiTriangleDashedThin } from "react-icons/pi";
+import { SiTraefikmesh } from "react-icons/si";
+import { IoIosColorFilter } from "react-icons/io";
+import { MdKeyboardArrowDown } from 'react-icons/md';
+import EditorWidget from '@/components/organisms/EditorWidget';
+import useTrajectoryStore from '@/stores/trajectories';
+import './EditorSidebar.css';
+
+const EditorSidebar = () => {
+    const trajectory = useTrajectoryStore((state) => state.trajectory);
+
+    return (
+        <EditorWidget className='editor-sidebar-container'>
+            <div className='editor-sidebar-top-container'>
+                <div className='editor-sidebar-header-container'>
+                    <div className='editor-sidebar-trajectory-info-container'>
+                        <div className='editor-sidebar-trajectory-info-header-container'>
+                            <div className='editor-sidebar-trajectory-drop-container'>
+                                <h3 className='editor-sidebar-trajectory-name'>{trajectory?.name}</h3>
+                                <i className='editor-sidebar-trajectory-drop-icon-container'>
+                                    <MdKeyboardArrowDown />
+                                </i>
+                            </div>
+
+                            <i className='editor-sidebar-panel-icon-container'>
+                                <LuPanelRight />
+                            </i>
+                        </div>
+                        <p className='editor-sidebar-header-team-name'>{trajectory?.team?.name}</p>
+                    </div>
+                </div>
+
+                <div className='editor-sidebar-options-wrapper-container'>
+                    <div className='editor-sidebar-options-container'>
+                        {['Scene', 'Modifiers'].map((option, index) => (
+                            <div className={'editor-sidebar-option-container '.concat((index === 0) ? 'selected': '')} key={index}>
+                                <h3 className='editor-sidebar-option-title'>{option}</h3>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className='editor-sidebar-scene-container'>
+                    <div className='editor-sidebar-scene-options-container'>
+                        {[
+                            [TbObjectScan, 'Camera 1'],
+                            [PiLineSegmentThin, 'Dislocations'],
+                            [SiTraefikmesh, 'Defect Mesh'],
+                            [PiAtomThin, 'Dislocation Core Atoms'],
+                            [PiTriangleDashedThin, 'Interface Mesh'],
+                            [IoIosColorFilter, 'Structure Identification']
+                        ].map(([ Icon, title ], index) => (
+                            <div className='editor-sidebar-scene-option-container' key={index}>
+                                <i className='editor-sidebar-scene-option-icon-container'>
+                                    <Icon />
+                                </i>
+                                <h3 className='editor-sidebar-scene-option-title'>{title}</h3>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <div className='editor-sidebar-bottom-container'>
+                <div className='editor-sidebar-user-avatar-wrapper'>
+                    <SidebarUserAvatar />
+                </div>
+            </div>
+        </EditorWidget>
+
+    );
+};
+
+export default EditorSidebar;
