@@ -141,7 +141,7 @@ const CameraManager: React.FC<CameraManagerProps> = ({ modelBounds, orbitControl
 };
 
 interface TimestepViewerProps{
-    currentGltfUrl: string | null;
+    currentGltfUrl: object | null;
     nextGltfUrl: string | null;
     rotation?: { x?: number; y?: number; z?: number };
     position?: { x?: number; y?: number; z?: number };
@@ -222,7 +222,7 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
         }
 
         try{
-            const gltf = await loadGltfWithCache(currentGltfUrl!);
+            const gltf = await loadGltfWithCache(currentGltfUrl.trajectory!);
             const newModel = gltf.scene.clone();
             
             newModel.traverse((child) => {

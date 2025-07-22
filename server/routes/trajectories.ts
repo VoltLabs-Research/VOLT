@@ -55,6 +55,12 @@ router.get(
     controller.getTrajectoryGLTF
 );
 
+router.get(
+    '/:id/gltf/',
+    middleware.checkTeamMembershipForTrajectory,
+    controller.listTrajectoryGLTFFiles
+);
+
 router.route('/:id')
     .get(
         middleware.checkTeamMembershipForTrajectory, 

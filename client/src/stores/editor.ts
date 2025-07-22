@@ -38,8 +38,8 @@ interface EditorState{
     intervalId: ReturnType<typeof setInterval> | null;
     analysisConfig: AnalysisConfig;
     timestepData: TimestepData,
-    currentGltfUrl: string | null;
-    nextGltfUrl: string | null;
+    currentGltfUrl: object | null;
+    nextGltfUrl: object | null;
 }
 
 interface EditorActions{
@@ -101,14 +101,24 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
         let nextGltfUrl = null;
 
         if(trajectory?._id && currentTimestep !== undefined && timesteps.length > 0){
-            const buildUrl = (ts: number) => `/trajectories/${trajectory._id}/gltf/${ts}`;
-            currentGltfUrl = buildUrl(currentTimestep);
+            const buildUrl = (ts: number, type = '') => `/trajectories/${trajectory._id}/gltf/${ts}?type=${type}`;
+            currentGltfUrl = {
+                trajectory: buildUrl(currentTimestep),
+                defect_mesh: buildUrl(currentTimestep, 'defect_mesh'),
+                interface_mesh: buildUrl(currentTimestep, 'interface_mesh'),
+                dislocations: buildUrl(currentTimestep, 'atoms_colored_by_type')
+            };
             
             const currentIndex = timesteps.indexOf(currentTimestep);
             if(currentIndex !== -1 && timesteps.length > 1){
                 const nextIndex = (currentIndex + 1) % timesteps.length;
                 const nextTimestep = timesteps[nextIndex];
-                nextGltfUrl = buildUrl(nextTimestep);
+                nextGltfUrl = {
+                    trajectory: buildUrl(nextTimestep),
+                    defect_mesh: buildUrl(nextTimestep, 'defect_mesh'),
+                    interface_mesh: buildUrl(nextTimestep, 'interface_mesh'),
+                    dislocations: buildUrl(nextTimestep, 'atoms_colored_by_type')  
+                };
             }
         }
 

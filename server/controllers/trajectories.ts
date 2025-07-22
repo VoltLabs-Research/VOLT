@@ -22,7 +22,7 @@
 
 import { Request, Response } from 'express';
 import { join, resolve } from 'path';
-import { access, stat } from 'fs/promises';
+import { access, stat, readdir } from 'fs/promises';
 import { constants } from 'fs';
 import { isValidObjectId } from 'mongoose';
 import Trajectory from '@models/trajectory';
@@ -39,8 +39,55 @@ export const getTrajectoryById = factory.getOne();
 export const updateTrajectoryById = factory.updateOne();
 export const deleteTrajectoryById = factory.deleteOne();
 
+export const listTrajectoryGLTFFiles = async (req: Request, res: Response) => {
+    const trajectory = res.locals.trajectory;
+
+    if(!trajectory){
+        return res.status(400).json({
+            status: 'error',
+            data: { error: 'Trajectory not found in context' },
+        });  
+    }
+
+    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+    const gltfDir = join(basePath, trajectory.folderId, 'gltf');
+
+    let files: string[];
+    try{
+        files = await readdir(gltfDir);
+    }catch(err){
+        return res.status(500).json({
+            status: 'error',
+            data: { error: 'Failed to read GLTF directory' },
+        });
+    }
+
+    const typeMap: Record<string, string | null> = {
+        atoms_colored_by_type: null,
+        dislocations: null,
+        defect_mesh: null,
+        interface_mesh: null
+    };
+
+    for(const file of files){
+        const match = file.match(/^frame_\d+_([a-zA-Z0-9_]+)\.gltf$/);
+        if(match){
+            const type= match[1];
+            if(type in typeMap){
+                typeMap[type] = join('gltf', file);
+            }
+        }
+    }
+
+    return res.status(200).json({
+        status: 'success',
+        data: typeMap
+    })
+};
+
 export const getTrajectoryGLTF = async (req: Request, res: Response) => {
-    const { timestep }= req.params;
+    const { timestep } = req.params;
+    const { type } = req.query;
     const trajectory = res.locals.trajectory;
 
     const frame = trajectory.frames.find((frame: any) => frame.timestep.toString() === timestep);
@@ -52,13 +99,11 @@ export const getTrajectoryGLTF = async (req: Request, res: Response) => {
     }
 
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+    const fileName = type
+        ? `frame_${timestep}_${type}.gltf`
+        : `${timestep}.gltf`;
 
-    const gltfFilePath = join(
-        basePath,
-        trajectory.folderId,
-        'gltf',
-        `${timestep}.gltf`
-    );
+    const gltfFilePath = join(basePath, trajectory.folderId, 'gltf', fileName);
 
     try{
         await access(gltfFilePath, constants.F_OK);
