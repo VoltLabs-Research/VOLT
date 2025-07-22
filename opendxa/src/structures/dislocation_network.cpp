@@ -12,14 +12,14 @@ DislocationNetwork::DislocationNetwork(const DislocationNetwork& other): _cluste
 
 	// Copy each segment's core data and assign the same numeric ID
 	for(const auto *oldSegment : other.segments()){
-		//assert(oldSegment->replacedWith == nullptr);
-		//assert(oldSegment->id == static_cast<int>(_segments.size()));
+		assert(oldSegment->replacedWith == nullptr);
+		assert(oldSegment->id == static_cast<int>(_segments.size()));
 
 		auto* newSegment = createSegment(oldSegment->burgersVector);
 		newSegment->line = oldSegment->line;
 		newSegment->coreSize = oldSegment->coreSize;
 
-		//assert(newSegment->id == oldSegment->id);
+		assert(newSegment->id == oldSegment->id);
 	}
 
 	// Re-stablish junction links between dangling ndoes so that segments
@@ -54,11 +54,11 @@ DislocationSegment* DislocationNetwork::createSegment(const ClusterVector& burge
 }
 
 // Removes a segment from the network's list. The segment pointer
-// must exist, otherwise an //assertion is triggered.
+// must exist, otherwise an assertion is triggered.
 void DislocationNetwork::discardSegment(DislocationSegment* segment){
-	//assert(segment != nullptr);
+	assert(segment != nullptr);
 	const auto it = std::ranges::find(_segments, segment);
-	//assert(it != _segments.end());
+	assert(it != _segments.end());
 	_segments.erase(it);
 }
 
@@ -86,178 +86,139 @@ void DislocationNetwork::smoothDislocationLines(double lineSmoothingLevel, doubl
 // or collapse into a straight line when the ratio of size versus length 
 // exceeds a threshold.
 void DislocationNetwork::coarsenDislocationLine(
-	double linePointInterval,
-	const std::deque<Point3>& input,
-	const std::deque<int>& coreSize,
-	std::deque<Point3>& output,
-	std::deque<int>& outputCoreSize,
-	bool isClosedLoop,
-	bool isInfiniteLine
+    double linePointInterval,
+    const std::deque<Point3>& input,
+    const std::deque<int>& coreSize,
+    std::deque<Point3>& output,
+    std::deque<int>& outputCoreSize,
+    bool isClosedLoop,
+    bool isInfiniteLine
 ){
-	//assert(input.size() >= 2);
-	//assert(input.size() == coreSize.size());
-	
-	if(linePointInterval <= 0){
-		output = input;
-		outputCoreSize = coreSize;
-		return;
-	}
+    assert(input.size() >= 2);
+    assert(input.size() == coreSize.size());
 
-	// Special handling for infinite lines
-	if(isInfiniteLine && input.size() >= 3){
-		// Collapse into two representative points if the core is "thick"
-		int coreSizeSum = std::accumulate(coreSize.cbegin(), coreSize.cend() - 1, 0);
-		int count = input.size() - 1;
-		if(coreSizeSum * linePointInterval > count * count){
-			// Make it a straight line
-			Vector3 com = Vector3::Zero();
-			for(auto p = input.cbegin(); p != input.cend() - 1; ++p){
-				com += *p - input.front();
-			}
-			output.push_back(input.front() + com / count);
-            outputCoreSize.push_back(coreSizeSum / count);
-            output.push_back(input.back() + com / count);
-            outputCoreSize.push_back(coreSizeSum / count);
-			return;
-		}
-	}
+    if(linePointInterval <= 0 || input.size() < 4){
+        output = input;
+        outputCoreSize = coreSize;
+        return;
+    }
 
-	// Special handling for very short segments
-	if(input.size() < 4){
-		output = input;
-		outputCoreSize = coreSize;
-		return;
-	}
+    if(isInfiniteLine && input.size() >= 3){
+        int coreSizeSum = std::accumulate(coreSize.cbegin(), coreSize.cend() - 1, 0);
+        int count = input.empty() ? 0 : static_cast<int>(input.size()) - 1;
+        if(count > 0 && coreSizeSum * linePointInterval > count * count){
+            Vector3 com = Vector3::Zero();
+            for(auto p = input.cbegin(); p != input.cend() - 1; ++p){
+                com += (*p - input.front());
+            }
+            if(count != 0){
+                output.push_back(input.front() + com / count);
+                outputCoreSize.push_back(coreSizeSum / count);
+                output.push_back(input.back() + com / count);
+                outputCoreSize.push_back(coreSizeSum / count);
+            }
+            return;
+        }
+    }
 
-    // Always keep the end points of linear segments fixed to not break junctions
-	if(!isClosedLoop){
-		output.push_back(input.front());
+    output.clear();
+    outputCoreSize.clear();
+
+    if(!isClosedLoop){
+        output.push_back(input.front());
         outputCoreSize.push_back(coreSize.front());
-	}
+    }
 
-    // Resulting line must contain at least two points (the end points).
-    int minNumPoints = 2;
+    size_t minNumPoints = isClosedLoop ? 4 : 2;
 
-    // If the dislocation forms a loop, keep at least four points, because two points do not make a proper loop.
-    if(input.front().equals(input.back(), CA_ATOM_VECTOR_EPSILON)){
-        minNumPoints = 4;
-	}
+    auto point_it = isClosedLoop ? input.cbegin() : std::next(input.cbegin());
+    auto core_it = isClosedLoop ? coreSize.cbegin() : std::next(coreSize.cbegin());
+    auto end_it = isClosedLoop ? input.cend() : std::prev(input.cend());
 
-	auto inputPtr = input.cbegin();
-	auto inputCoreSizePtr = coreSize.cbegin();
+    while(point_it != end_it){
+        Vector3 com = Vector3::Zero();
+        int sum = 0;
+        int count = 0;
 
-	int sum = 0;
-	int count = 0;
-
-	// Average over a half interval, starting from the beginning of the segment
-	Vector3 com = Vector3::Zero();
-	do{
-        sum += *inputCoreSizePtr;
-        com += *inputPtr - input.front();
-        count++;
-        ++inputPtr;
-        ++inputCoreSizePtr;
-	}while(2 * count * count < (int) (linePointInterval * sum) && count + 1 < input.size() / minNumPoints / 2);
-
-	// Average over a half interval, starting from the end of the segment
-	auto inputPtrEnd = input.cend() - 1;
-	auto inputCoreSizePtrEnd = coreSize.cend() - 1;
-	//assert(inputPtr < inputPtrEnd);
-
-	while(count * count < (int) (linePointInterval * sum) && count < input.size() / minNumPoints){
-		sum += *inputCoreSizePtrEnd;
-        com += *inputPtrEnd - input.back();
-        count++;
-        --inputPtrEnd;
-        --inputCoreSizePtrEnd;
-	}
-
-	//assert(inputPtr < inputPtrEnd);
-	if(isClosedLoop){
-		output.push_back(input.front() + com / count);
-        outputCoreSize.push_back(sum / count);
-	}
-
-	while(inputPtr < inputPtrEnd){
-		int sum = 0;
-		int count = 0;
-		Vector3 com = Vector3::Zero();
-		do{
-			sum += *inputCoreSizePtr++;
-            com.x() += inputPtr->x();
-            com.y() += inputPtr->y();
-            com.z() += inputPtr->z();
+        do{
+            com += (*point_it - Point3::Origin()); 
+            sum += *core_it;
             count++;
-            ++inputPtr; 
-		}while(count * count < (int) (linePointInterval * sum) && count + 1 < input.size() / minNumPoints && inputPtr != inputPtrEnd);
-		output.push_back(Point3::Origin() + com / count);
-        outputCoreSize.push_back(sum / count);
-	}
+            ++point_it;
+            ++core_it;
+        }while(
+            point_it != end_it &&
+            (static_cast<double>(count) * count) < (linePointInterval * sum)
+        );
 
-	if(!isClosedLoop){
-        // Always keep the end points of linear segments to not break junctions
-		output.push_back(input.back());
+        if(count > 0){
+            output.push_back(Point3::Origin() + com / count);
+            outputCoreSize.push_back(sum / count);
+        }
+    }
+
+    if(!isClosedLoop){
+        output.push_back(input.back());
         outputCoreSize.push_back(coreSize.back());
-	}else{
-		output.push_back(input.back() + com / count);
-        outputCoreSize.push_back(sum / count);
-	}
+    }else if(!output.empty()){
+        output.push_back(output.front());
+        outputCoreSize.push_back(outputCoreSize.front());
+    }
 
-	//assert(output.size() >= minNumPoints);
-	//assert(!isClosedLoop || isInfiniteLine || output.size() >= 3);
+    if(output.size() < minNumPoints){
+        output = input;
+        outputCoreSize = coreSize;
+    }
 }
-
-// Applies Laplacian smoothing to a polyline by repeteadly replacing each interior point
-// with a weighted average of its neighbors. Open lines keep their ends fixed, while loops
-// wap the neighborhood around. The two-pass filter uses parameters that give a gentle "umbrella"
-// smoothing effect without significant shrinkage.
 void DislocationNetwork::smoothDislocationLine(double smoothingLevel, std::deque<Point3>& line, bool isLoop){
-	// Nothing to do
+    // If anti-aliasing is off or the line is too short to anti-alias, do nothing.
 	if(smoothingLevel <= 0 || line.size() <= 2){
 		return;
 	}
 
-	// Do not smooth loops consisting of very few segments
-	if(line.size() <= 4 && line.front().equals(line.back(), CA_ATOM_VECTOR_EPSILON)){
+	// Do not smooth closed loops that are very small (e.g. a triangle or a square)
+	if(isLoop && line.size() <= 4){
 		return;
 	}
 
-	double k_PB = 0.1f;
-    double lambda = 0.5f;
-    double mu = 1.0f / (k_PB - 1.0f/lambda);
+	// Smoothing parameters (two-pass lambda/mu scheme to avoid shrinkage)
+	// These are standard parameters in Laplacian smoothing.
+    const double lambda = 0.5;
+    const double mu = -0.52; 
     const double prefactors[2] = { lambda, mu };
+    
     std::vector<Vector3> laplacians(line.size());
-	for(int iteration = 0; iteration < smoothingLevel; iteration++){
-		for(int pass = 0; pass <= 1; pass++){
-			// Compute discrete laplacian for each point
-			auto l = laplacians.begin();
-			if(isLoop == false){
-				(*l++).setZero();
-			}else{
-                (*l++) = ((*(line.end() - 2) - *(line.end() - 3)) + (*(line.begin() + 1) - line.front())) * double(0.5);
+
+    // The 'smoothingLevel' controls the number of iterations. More iterations = smoother.
+	for(int iteration = 0; static_cast<double>(iteration) < smoothingLevel; ++iteration){
+		// Two passes are applied per iteration: one that contracts (lambda) and one that expands (mu).
+        for(int pass = 0; pass < 2; ++pass){
+			
+            // Calculate the Laplacian vectors for each point.
+			// The Laplacian of a point is the difference between the average of its neighbors and the point itself.
+			for(size_t i = 0; i < line.size(); ++i){
+				// For open lines, the endpoints do not move to maintain connections.
+                if(!isLoop && (i == 0 || i == line.size() - 1)){
+					laplacians[i].setZero();
+					continue;
+				}
+
+                // For closed loops, the neighbor before the first is the second to last.
+				const Point3& p_prev = (i == 0) ? line[line.size() - 2] : line[i - 1];
+				const Point3& p_curr = line[i];
+                // The next neighbor to the last is the second (the first is repeated at the end).
+				const Point3& p_next = (i == line.size() - 1) ? line[1] : line[i + 1];
+
+				laplacians[i] = (p_prev - p_curr) + (p_next - p_curr);
 			}
 
-			auto p1 = line.cbegin();
-			auto p2 = line.cbegin() + 1;
-			for(;;){
-				auto p0 = p1;
-				++p1;
-				++p2;
-				if(p2 == line.cend()) break;
-                *l++ = ((*p0 - *p1) + (*p2 - *p1)) * double(0.5);
-			}
-
-			*l++ = laplacians.front();
-			//assert(l == laplacians.end());
-
-			auto lc = laplacians.cbegin();
-			for(Point3 &p : line){
-				p += prefactors[pass] * (*lc++);
+			// Move each point a fraction of its Laplacian.
+			for(size_t i = 0; i < line.size(); ++i){
+				line[i] += prefactors[pass] * 0.5 * laplacians[i];
 			}
 		}
 	}
 }
-
 // Given a polyline, returns the point at fractional arc-length t (0 ... 1) by walking
 // along the segments and interpolating linearly when the accumulated length exceeds the 
 // target. If the line is degenerate or empty, returns the origin.

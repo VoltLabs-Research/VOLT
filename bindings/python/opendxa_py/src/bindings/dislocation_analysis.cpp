@@ -83,11 +83,6 @@ void bindDislocationAnalysis(py::module &m){
              py::arg("input_file"), 
              py::arg("output_file") = "")
         
-          .def("compute_trajectory", &Wrappers::AnalysisWrapper::computeTrajectory,
-             "Run dislocation analysis on a list of input files in parallel",
-             py::arg("input_files"),
-             py::arg("output_file_template"))
-             
         .def("get_config", &Wrappers::AnalysisWrapper::getConfig,
              "Get current analyzer configuration as a dictionary");
 }

@@ -137,8 +137,12 @@ public:
 	}
 
 	[[nodiscard]] Vector3 cellNormalVector(size_t dim) const{
-		Vector3 normal = _simulationCell.column((dim + 1) % 3).cross(_simulationCell.column((dim + 2) % 3));
-		return (normal.dot(_simulationCell.column(dim)) < 0.0f) ? (normal / -normal.length()) : normal.normalized();
+		Vector3 normal = _simulationCell.column((dim+1)%3).cross(_simulationCell.column((dim+2)%3));
+		// Flip normal if necessary.
+		if(normal.dot(_simulationCell.column(dim)) < 0.0f)
+			return normal / (-normal.length());
+		else
+			return normal.normalized();
 	}
 
 	[[nodiscard]] bool isWrappedVector(const Vector3& v) const{

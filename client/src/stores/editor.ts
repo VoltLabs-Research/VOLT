@@ -54,15 +54,15 @@ interface EditorActions{
 }
 
 const initialAnalysisConfig: AnalysisConfig = {
-    crystal_structure: 'BCC',
-    identification_mode: 'PTM',
-    max_trial_circuit_size: 14.0,
-    circuit_stretchability: 9.0,
-    defect_mesh_smoothing_level: 8,
-    line_smoothing_level: 1.0,
-    line_point_interval: 2.5,
-    only_perfect_dislocations: false,
-    mark_core_atoms: false
+    crystalStructure: 'BCC',
+    identificationMode: 'PTM',
+    maxTrialCircuitSize: 14.0,
+    circuitStretchability: 9.0,
+    defectMeshSmoothingLevel: 8,
+    lineSmoothingLevel: 1.0,
+    linePointInterval: 2.5,
+    onlyPerfectDislocations: false,
+    markCoreAtoms: false
 }
 
 const initialState: EditorState = {

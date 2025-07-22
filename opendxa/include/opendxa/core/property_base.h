@@ -83,11 +83,11 @@ public:
     }
 
     [[nodiscard]] boost::iterator_range<const int*> constIntRange() const{
-        //assert(_componentCount == 1); return { constDataInt(), constDataInt() + _numElements };
+        return { constDataInt(), constDataInt() + _numElements };
     }
 
     [[nodiscard]] boost::iterator_range<const double*> constFloatRange() const{
-        //assert(_componentCount == 1); return { constDataFloat(), constDataFloat() + _numElements };
+        return { constDataFloat(), constDataFloat() + _numElements };
     }
 
     [[nodiscard]] boost::iterator_range<const Point3*> constPoint3Range() const{
@@ -139,12 +139,12 @@ public:
     }
 
     boost::iterator_range<int*> intRange(){
-        //assert(_componentCount == 1);
+        assert(_componentCount == 1);
         return { dataInt(), dataInt() + _numElements };
     }
 
     boost::iterator_range<double*> floatRange(){
-        //assert(_componentCount == 1);
+        assert(_componentCount == 1);
         return { dataFloat(), dataFloat() + _numElements };
     }
 
@@ -165,57 +165,54 @@ public:
     }
 
     [[nodiscard]] int getInt(std::size_t idx) const{
-        //assert(idx < _numElements);
+        assert(idx < _numElements);
         return constDataInt()[idx];
     }
 
     [[nodiscard]] double getFloat(std::size_t idx) const{
-        //assert(idx < _numElements);
+        assert(idx < _numElements);
         return constDataFloat()[idx];
     }
 
     [[nodiscard]] const Point3& getPoint3(std::size_t idx) const{
-        //assert(idx < _numElements);
+        assert(idx < _numElements);
         return constDataPoint3()[idx];
     }
 
     void setInt(std::size_t idx, int v){
-        //assert(idx < _numElements);
+        assert(idx < _numElements);
         dataInt()[idx] = v;
     }
 
     void setFloat(std::size_t idx, double v){
-        //assert(idx < _numElements);
+        assert(idx < _numElements);
         dataFloat()[idx] = v;
     }
 
     void setPoint3(std::size_t idx, const Point3& p){
-        //assert(idx < _numElements);
+        assert(idx < _numElements);
         dataPoint3()[idx] = p;
     }
 
     int getIntComponent(std::size_t index, std::size_t componentIndex) const{
-        //assert(index < _numElements && componentIndex < _componentCount);
+        assert(index < _numElements && componentIndex < _componentCount);
         return constDataInt()[index * _componentCount + componentIndex];
     }
     
     double getFloatComponent(std::size_t index, std::size_t componentIndex) const{
-        //assert(index < _numElements && componentIndex < _componentCount);
+        assert(index < _numElements && componentIndex < _componentCount);
         return constDataFloat()[index * _componentCount + componentIndex];
     }
 
     void setIntComponent(std::size_t index, std::size_t componentIndex, int newValue){
-        //assert(index < _numElements && componentIndex < _componentCount);
+        assert(index < _numElements && componentIndex < _componentCount);
         dataInt()[index * _componentCount + componentIndex] = newValue;
     }
 
     void setFloatComponent(std::size_t index, std::size_t componentIndex, double newValue){
-        //assert(index < _numElements && componentIndex < _componentCount);
+        assert(index < _numElements && componentIndex < _componentCount);
         dataFloat()[index * _componentCount + componentIndex] = newValue;
     }
-
-    void filterCopy(const PropertyBase& source, const boost::dynamic_bitset<>& mask);
-    void mappedCopy(const PropertyBase& source, const std::vector<int>& mapping);
 
     void resize(std::size_t newSize, bool preserveData);
 

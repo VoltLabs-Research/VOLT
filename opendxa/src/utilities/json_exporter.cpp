@@ -97,376 +97,7 @@ json DXAJsonExporter::exportAnalysisData(
     return data;
 }
 
-void DXAJsonExporter::exportInterfaceMeshToVTK(
-    const InterfaceMesh& interfaceMesh, 
-    const StructureAnalysis& structureAnalysis, 
-    const std::string &filename
-){
-    // Lambda to detect facets that cross periodic boundaries
-    auto isWrappedFacet = [&structureAnalysis](const InterfaceMesh::Face* face) -> bool{
-        auto* edge = face->edges();
-        auto* start = edge;
-        do{
-            Vector3 vec = edge->vertex1()->pos() - edge->vertex2()->pos();
-            if(structureAnalysis.cell().isWrappedVector(vec)){
-                return true;
-            }
-            edge = edge->nextFaceEdge();
-        }while(edge != start);
-
-        return false;
-    };
-
-    // Count facets that DO NOT cross periodic boundaries
-    size_t numFacets = 0;
-    for(const auto* face : interfaceMesh.faces()){
-        if(!isWrappedFacet(face)) numFacets++;
-    }
-
-    std::ofstream stream(filename);
-    if(!stream){
-        throw std::runtime_error("Cannot create VTK file: " + filename);
-    }
-
-    // VTK Header
-    stream << "# vtk DataFile Version 3.0\n";
-    stream << "# Interface mesh from OpenDXA dislocation analysis\n";
-    stream << "ASCII\n";
-    stream << "DATASET UNSTRUCTURED_GRID\n";
-
-    // Write vertices
-    stream << "POINTS " << interfaceMesh.vertexCount() << " float\n";
-    for(const auto* vertex : interfaceMesh.vertices()){
-        const Point3& pos = vertex->pos();
-        stream << pos.x() << " " << pos.y() << " " << pos.z() << "\n";
-    }
-
-    // Write cells (triangles)
-    stream << "\nCELLS " << numFacets << " " << (numFacets * 4) << "\n";
-    for(const auto* face : interfaceMesh.faces()){
-        if(!isWrappedFacet(face)){
-            stream << "3"; 
-            auto* e = face->edges();
-            auto* start = e;
-            do{
-                stream << " " << e->vertex1()->index();
-                e = e->nextFaceEdge();
-            }while(e != start);
-            stream << "\n";
-        }
-    }
-
-    // Cell types (all are triangles = type 5)
-    stream << "\nCELL_TYPES " << numFacets << "\n";
-    for(size_t i = 0; i < numFacets; i++){
-        stream << "5\n"; 
-    }
-
-    stream << "\nCELL_DATA " << numFacets << "\n";
-    // Scalar 1: Dislocation segment ID
-    stream << "SCALARS dislocation_segment int 1\n";
-    stream << "LOOKUP_TABLE default\n";
-    for(const auto* face : interfaceMesh.faces()){
-        if(!isWrappedFacet(face)){
-            if(face->circuit != nullptr && (!face->circuit->isDangling || face->testFlag(1))){
-                DislocationSegment* segment = face->circuit->dislocationNode->segment;
-                //Follow the chain of replacements
-                while(segment->replacedWith != nullptr){
-                    segment = segment->replacedWith;
-                }
-                stream << segment->id << "\n";
-            }else{
-                // No dislocation segment
-                stream << "-1\n";  
-            }
-        }
-    }
-
-    // Scalar 2: Primary segment flag
-    stream << "\nSCALARS is_primary_segment int 1\n";
-    stream << "LOOKUP_TABLE default\n";
-    for(const auto* face : interfaceMesh.faces()){
-        if(!isWrappedFacet(face)){
-            stream << (face->testFlag(1) ? 1 : 0) << "\n";
-        }
-    }
-
-    // Scalar 3: Burgers vector (magnitude)
-    stream << "\nSCALARS burgers_magnitude float 1\n";
-    stream << "LOOKUP_TABLE default\n";
-    for(const auto* face : interfaceMesh.faces()){
-        if(!isWrappedFacet(face)){
-            if(face->circuit != nullptr) {
-                ClusterVector bv = face->circuit->calculateBurgersVector();
-                stream << bv.localVec().length() << "\n";
-            } else {
-                stream << "0.0\n";
-            }
-        }
-    }
-
-    // Vector 1: Complete Burgers Vector
-    stream << "\nVECTORS burgers_vector float\n";
-    for(const auto* face : interfaceMesh.faces()){
-        if(!isWrappedFacet(face)){
-            if(face->circuit != nullptr){
-                ClusterVector bv = face->circuit->calculateBurgersVector();
-                const Vector3& v = bv.localVec();
-                stream << v.x() << " " << v.y() << " " << v.z() << "\n";
-            }else{
-                stream << "0.0 0.0 0.0\n";
-            }
-        }
-    }
-
-    stream.close();
-    spdlog::info("Interface mesh exported to VTK: {}", filename);
-}
-
-void DXAJsonExporter::exportAtomsToVTK(
-    const LammpsParser::Frame& frame,
-    const BurgersLoopBuilder* tracer,
-    const std::vector<int>* structureTypes,
-    const std::string& filename
-) {
-    std::ofstream stream(filename);
-    if(!stream) {
-        throw std::runtime_error("Cannot create VTK file: " + filename);
-    }
-
-    // VTK Header
-    stream << "# vtk DataFile Version 3.0\n";
-    stream << "# Atomic structure from OpenDXA analysis\n";
-    stream << "ASCII\n";
-    stream << "DATASET UNSTRUCTURED_GRID\n";
-
-    // Count valid atoms
-    int validAtoms = 0;
-    for(int i = 0; i < frame.natoms; ++i) {
-        if(i < static_cast<int>(frame.positions.size())) {
-            validAtoms++;
-        }
-    }
-
-    // Write points (atom positions)
-    stream << "POINTS " << validAtoms << " float\n";
-    for(int i = 0; i < frame.natoms; ++i) {
-        if(i < static_cast<int>(frame.positions.size())) {
-            const auto& pos = frame.positions[i];
-            stream << pos.x() << " " << pos.y() << " " << pos.z() << "\n";
-        }
-    }
-
-    // Write cells (each atom is a vertex cell)
-    stream << "\nCELLS " << validAtoms << " " << (validAtoms * 2) << "\n";
-    for(int i = 0; i < validAtoms; ++i) {
-        stream << "1 " << i << "\n";  // Each atom is a vertex
-    }
-
-    // Cell types (all are vertices = type 1)
-    stream << "\nCELL_TYPES " << validAtoms << "\n";
-    for(int i = 0; i < validAtoms; ++i) {
-        stream << "1\n";  // VTK_VERTEX
-    }
-
-    // Point data
-    stream << "\nPOINT_DATA " << validAtoms << "\n";
-
-    // Scalar 1: Structure type (for coloring)
-    stream << "SCALARS structure_type int 1\n";
-    stream << "LOOKUP_TABLE structure_type_table\n";
-    for(int i = 0; i < frame.natoms; ++i) {
-        if(i < static_cast<int>(frame.positions.size())) {
-            int structureType = 0;  // Default to OTHER
-            if(structureTypes && i < static_cast<int>(structureTypes->size())) {
-                structureType = (*structureTypes)[i];
-            }
-            stream << structureType << "\n";
-        }
-    }
-
-    // Scalar 2: LAMMPS atom type
-    stream << "\nSCALARS lammps_type int 1\n";
-    stream << "LOOKUP_TABLE default\n";
-    for(int i = 0; i < frame.natoms; ++i) {
-        if(i < static_cast<int>(frame.positions.size())) {
-            int lammpsType = (i < static_cast<int>(frame.types.size())) ? frame.types[i] : 0;
-            stream << lammpsType << "\n";
-        }
-    }
-
-    // Scalar 3: Core atoms (if available)
-    if(tracer && !tracer->_coreAtomIndices.empty()) {
-        stream << "\nSCALARS is_core_atom int 1\n";
-        stream << "LOOKUP_TABLE default\n";
-        for(int i = 0; i < frame.natoms; ++i) {
-            if(i < static_cast<int>(frame.positions.size())) {
-                bool isCoreAtom = tracer->_coreAtomIndices.count(i) > 0;
-                stream << (isCoreAtom ? 1 : 0) << "\n";
-            }
-        }
-    }
-
-    // Scalar 4: Atom IDs (for debugging)
-    stream << "\nSCALARS atom_id int 1\n";
-    stream << "LOOKUP_TABLE default\n";
-    for(int i = 0; i < frame.natoms; ++i) {
-        if(i < static_cast<int>(frame.positions.size())) {
-            int atomId = (i < static_cast<int>(frame.ids.size())) ? frame.ids[i] : i;
-            stream << atomId << "\n";
-        }
-    }
-
-    // Define color lookup table for structure types
-    stream << "\nLOOKUP_TABLE structure_type_table 32\n";
-    
-    // Colors for different structure types (RGB + Alpha)
-    // 0: OTHER - Gray
-    stream << "0.5 0.5 0.5 1.0\n";
-    // 1: FCC - Blue
-    stream << "0.0 0.0 1.0 1.0\n";
-    // 2: BCC - Red  
-    stream << "1.0 0.0 0.0 1.0\n";
-    // 3: HCP - Green
-    stream << "0.0 1.0 0.0 1.0\n";
-    // 4: ICO - Yellow
-    stream << "1.0 1.0 0.0 1.0\n";
-    // 5: SC - Magenta
-    stream << "1.0 0.0 1.0 1.0\n";
-    // 6: CUBIC_DIAMOND - Cyan
-    stream << "0.0 1.0 1.0 1.0\n";
-    // 7: HEX_DIAMOND - Orange
-    stream << "1.0 0.5 0.0 1.0\n";
-    // 8: GRAPHENE - Pink
-    stream << "1.0 0.0 0.5 1.0\n";
-    
-    // Fill remaining entries with default colors
-    for(int i = 9; i < 32; ++i) {
-        float r = static_cast<float>(i % 3) / 2.0f;
-        float g = static_cast<float>((i / 3) % 3) / 2.0f;
-        float b = static_cast<float>((i / 9) % 3) / 2.0f;
-        stream << r << " " << g << " " << b << " 1.0\n";
-    }
-
-    stream.close();
-    spdlog::info("Atoms exported to VTK: {}", filename);
-}
-
-void DXAJsonExporter::exportDislocationsToVTK(
-    const DislocationNetwork* network,
-    const SimulationCell& cell,
-    const std::string& filename
-) {
-    const auto& segments = network->segments();
-    
-    std::ofstream stream(filename);
-    if(!stream) {
-        throw std::runtime_error("Cannot create VTK file: " + filename);
-    }
-
-    // Count valid points and lines
-    int totalPoints = 0;
-    int validSegments = 0;
-    
-    for(const auto* segment : segments) {
-        if(segment && !segment->isDegenerate() && segment->line.size() >= 2) {
-            totalPoints += segment->line.size();
-            validSegments++;
-        }
-    }
-
-    if(totalPoints == 0 || validSegments == 0) {
-        spdlog::warn("No valid dislocation segments to export");
-        return;
-    }
-
-    // VTK Header
-    stream << "# vtk DataFile Version 3.0\n";
-    stream << "# Dislocation network from OpenDXA\n";
-    stream << "ASCII\n";
-    stream << "DATASET UNSTRUCTURED_GRID\n";
-
-    // Write points
-    stream << "POINTS " << totalPoints << " float\n";
-    for(const auto* segment : segments) {
-        if(segment && !segment->isDegenerate() && segment->line.size() >= 2) {
-            for(const auto& point : segment->line) {
-                stream << point.x() << " " << point.y() << " " << point.z() << "\n";
-            }
-        }
-    }
-
-    // Write lines
-    int totalLineData = 0;
-    for(const auto* segment : segments) {
-        if(segment && !segment->isDegenerate() && segment->line.size() >= 2) {
-            totalLineData += segment->line.size() + 1; // +1 for count
-        }
-    }
-
-    stream << "\nCELLS " << validSegments << " " << totalLineData << "\n";
-    
-    int pointOffset = 0;
-    for(const auto* segment : segments) {
-        if(segment && !segment->isDegenerate() && segment->line.size() >= 2) {
-            stream << segment->line.size();
-            for(size_t i = 0; i < segment->line.size(); ++i) {
-                stream << " " << (pointOffset + i);
-            }
-            stream << "\n";
-            pointOffset += segment->line.size();
-        }
-    }
-
-    // Cell types (all are poly-lines = type 4)
-    stream << "\nCELL_TYPES " << validSegments << "\n";
-    for(int i = 0; i < validSegments; ++i) {
-        stream << "4\n";  // VTK_POLY_LINE
-    }
-
-    // Cell data
-    stream << "\nCELL_DATA " << validSegments << "\n";
-
-    // Burgers vector magnitude
-    stream << "SCALARS burgers_magnitude float 1\n";
-    stream << "LOOKUP_TABLE default\n";
-    for(const auto* segment : segments) {
-        if(segment && !segment->isDegenerate() && segment->line.size() >= 2) {
-            Vector3 burgers = segment->burgersVector.localVec();
-            stream << burgers.length() << "\n";
-        }
-    }
-
-    // Segment length
-    stream << "\nSCALARS segment_length float 1\n";
-    stream << "LOOKUP_TABLE default\n";
-    for(const auto* segment : segments) {
-        if(segment && !segment->isDegenerate() && segment->line.size() >= 2) {
-            stream << segment->calculateLength() << "\n";
-        }
-    }
-
-    // Segment ID
-    stream << "\nSCALARS segment_id int 1\n";
-    stream << "LOOKUP_TABLE default\n";
-    for(const auto* segment : segments) {
-        if(segment && !segment->isDegenerate() && segment->line.size() >= 2) {
-            stream << segment->id << "\n";
-        }
-    }
-
-    // Burgers vector (3D)
-    stream << "\nVECTORS burgers_vector float\n";
-    for(const auto* segment : segments) {
-        if(segment && !segment->isDegenerate() && segment->line.size() >= 2) {
-            Vector3 burgers = segment->burgersVector.localVec();
-            stream << burgers.x() << " " << burgers.y() << " " << burgers.z() << "\n";
-        }
-    }
-
-    stream.close();
-    spdlog::info("Dislocations exported to VTK: {}", filename);
-}
+// TODO: EXPORT DISLOCATIONS TO VTK!? 
 
 json DXAJsonExporter::exportDislocationsToJson(
     const DislocationNetwork* network, 
@@ -510,7 +141,7 @@ json DXAJsonExporter::exportDislocationsToJson(
                 points.push_back({prevWrappedPoint.x(), prevWrappedPoint.y(), prevWrappedPoint.z()});
                 
                 // For subsequent points, ensure continuity by choosing the periodic image closest to the previous point
-                for(size_t ptIdx = 1; ptIdx < segment->line.size(); ++ptIdx){
+                for(int ptIdx = 1; ptIdx < segment->line.size(); ++ptIdx){
                     const Point3& currentPoint = segment->line[ptIdx];
                     Point3 bestPoint = currentPoint;
                     double minDistance = (currentPoint - prevWrappedPoint).length();
@@ -566,7 +197,7 @@ json DXAJsonExporter::exportDislocationsToJson(
                 
                 if(!segment->coreSize.empty()){
                     json coreSizes = json::array();
-                    for(int coreSize : segment->coreSize){
+                    for(size_t coreSize : segment->coreSize){
                         coreSizes.push_back(coreSize);
                     }
                     segmentJson["core_sizes"] = coreSizes;
@@ -741,7 +372,7 @@ json DXAJsonExporter::getAtomsData(
     int totalCoordination = 0;
     int validAtoms = 0;
     
-    for(int i = 0; i < frame.natoms; ++i){
+    for(size_t i = 0; i < frame.natoms; ++i){
         json atomJson;
         
         atomJson["node_id"] = i;
@@ -913,9 +544,9 @@ json DXAJsonExporter::matrixToJson(const Matrix3& matrix){
 
 json DXAJsonExporter::affineTransformationToJson(const AffineTransformation& transform){
     json transformJson = json::array();
-    for(int i = 0; i < 3; ++i){
+    for(size_t i = 0; i < 3; ++i){
         json row = json::array();
-        for(int j = 0; j < 3; ++j){
+        for(size_t j = 0; j < 3; ++j){
             row.push_back(transform(i, j));
         }
         transformJson.push_back(row);
@@ -1018,7 +649,7 @@ json DXAJsonExporter::segmentToJson(const DislocationSegment* segment, bool incl
     if(includeDetailedInfo){
         if(!segment->coreSize.empty()){
             json coreSizes = json::array();
-            for(int coreSize : segment->coreSize){
+            for(size_t coreSize : segment->coreSize){
                 coreSizes.push_back(coreSize);
             }
             segmentJson["core_sizes"] = coreSizes;

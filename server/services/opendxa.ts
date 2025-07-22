@@ -1,49 +1,41 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
-import MeshExporter, { Mesh } from '@utilities/export/mesh';
-import DislocationExporter, { Dislocation } from '@utilities/export/dislocations';
-import opendxa from '../../bindings/nodejs';
-import LAMMPSToGLTFExporter, { AtomsData } from '@utilities/export/atoms';
-import { ConfigParameters, ProgressInfo } from '../../bindings/nodejs/types';
+import{ spawn }from 'child_process';
+import{ promises as fs, createReadStream }from 'fs';
+import { streamObject } from 'stream-json/streamers/StreamObject';
+import { parser } from 'stream-json';
+import path from 'path';
+import os from 'os';
+import MeshExporter,{ Mesh }from '@utilities/export/mesh';
+import DislocationExporter,{ Dislocation }from '@utilities/export/dislocations';
+import LAMMPSToGLTFExporter,{ AtomsData }from '@utilities/export/atoms';
 import StructureAnalysis from '@models/structureAnalysis';
 import SimulationCell from '@models/simulationCell';
-import path from 'path';
 
-export enum LatticeStructure {
-    FCC = 1,
-    HCP = 2,
-    BCC = 3,
-    CUBIC_DIAMOND = 4,
-    HEX_DIAMOND = 5
+export enum LatticeStructure{
+    FCC = 'FCC',
+    HCP = 'HCP',
+    BCC = 'BCC',
+    CubicDiamond = 'CUBIC_DIAMOND',
+    HexDiamond = 'HEX_DIAMOND',
 }
 
-export enum IdentificationMode {
-    CNA = 0,
-    PTM = 1
+export enum IdentificationMode{
+    CNA = 'CNA',
+    PTM = 'PTM',
+}
+
+export interface ConfigParameters{
+    crystalStructure?: LatticeStructure;
+    maxTrialCircuitSize?: number;
+    circuitStretchability?: number;
+    onlyPerfectDislocations?: boolean;
+    identificationMode?: IdentificationMode;
+    lineSmoothingLevel?: number;
+    linePointInterval?: number;
+    markCoreAtoms?: boolean;
 }
 
 interface StructureTypeStat{
-    [key: string]: {
+    [key: string]:{
         count: number;
         percentage: number;
         type_id: number;
@@ -54,7 +46,7 @@ interface StructureAnalysisData{
     total_atoms: number;
     analysis_method: 'PTM' | 'CNA';
     structure_types: StructureTypeStat;
-    summary: {
+    summary:{
         total_identified: number;
         total_unidentified: number;
         identification_rate: number;
@@ -62,91 +54,248 @@ interface StructureAnalysisData{
     }
 }
 
-type OpenDXASetterMap = {
-    [K in keyof ConfigParameters]?: (value: NonNullable<ConfigParameters[K]>) => void;
-}
+const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build/opendxa');
 
-const configSetterMap: OpenDXASetterMap = {
-    crystalStructure: opendxa.setCrystalStructure,
-    maxTrialCircuitSize: opendxa.setMaxTrialCircuitSize,
-    circuitStretchability: opendxa.setCircuitStretchability,
-    onlyPerfectDislocations: opendxa.setOnlyPerfectDislocations,
-    markCoreAtoms: opendxa.setMarkCoreAtoms,
-    lineSmoothingLevel: opendxa.setLineSmoothingLevel,
-    linePointInterval: opendxa.setLinePointInterval,
-    identificationMode: opendxa.setIdentificationMode,
+const JSON_OUTPUT_MAP ={
+    defect_mesh: '_defect_mesh.json',
+    atoms: '_atoms.json',
+    dislocations: '_dislocations.json',
+    interface_mesh: '_interface_mesh.json',
+    structures: '_structures_stats.json',
+    simulation_cell: '_simulation_cell.json',
 };
 
-/**
- * Provides a high-level service to interact with the OpenDXA C++ binding.
- * It manages configuration, orchestrates the analysis of simulation trajectories,
- * and handles the exportation of results into GLTF format. 
-*/
+function parseTimestepFromFilename(filename: string): number{
+    const match = filename.match(/\d+/g);
+    if(match){
+        const timestepStr = match[match.length - 1];
+        return parseInt(timestepStr, 10);
+    }
+    throw new Error(`Could not extract timestep from filename: ${filename}`);
+}
+
+function buildCliArgs(options: ConfigParameters): string[]{
+    const args: string[] = [];
+    const optionMap:{ [key in keyof ConfigParameters]: string }={
+        crystalStructure: '--crystalStructure',
+        maxTrialCircuitSize: '--maxTrialCircuitSize',
+        circuitStretchability: '--circuitStretchability',
+        onlyPerfectDislocations: '--onlyPerfectDislocations',
+        identificationMode: '--identificationMode',
+        lineSmoothingLevel: '--lineSmoothingLevel',
+        linePointInterval: '--linePointInterval',
+        markCoreAtoms: '--markCoreAtoms',
+    };
+
+    for(const key in options){
+        if(Object.prototype.hasOwnProperty.call(options, key)){
+            const cliFlag = optionMap[key];
+            const value = options[key as keyof ConfigParameters];
+            if(cliFlag && value !== undefined && value !== null){
+                args.push(cliFlag, String(value));
+            }
+        }
+    }
+
+    return args;
+}
+
+async function readLargeJsonFile(filePath: string): Promise<any>{
+    const stats = await fs.stat(filePath);
+    
+    console.log(`[OpenDXAService] Reading file ${path.basename(filePath)}(${(stats.size / 1024 / 1024).toFixed(2)}MB)`);
+    return await readJsonStream(filePath);
+}
+
+export async function readJsonStream(filePath: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+        const pipeline = createReadStream(filePath, { encoding: 'utf8' })
+            .pipe(parser())
+            .pipe(streamObject());
+
+        const result: Record<string, any> = {};
+
+        pipeline.on('data', ({ key, value }) => {
+            result[key] = value;
+        });
+
+        pipeline.on('end', () => {
+            resolve(result);
+        });
+
+        pipeline.on('error', (error) => {
+            if(error.message.includes('Invalid string length')){
+                reject(new Error(`Failed to parse JSON due to extreme size, even with streaming. Original error: ${error.message}`));
+            }else{
+                reject(new Error(`Failed to read or parse JSON stream: ${error.message}`));
+            }
+        });
+    });
+}
+
 class OpenDXAService{
     private trajectoryId: string;
     private exportDirectory: string;
 
     constructor(trajectoryId: string, trajectoryFolderPath: string){
-        // The user could have configuration profiles in the database.
-        // Here, they could be retrieved and loaded. However, OpenDXA from C++ already sets the default configuration.
         this.exportDirectory = path.join(trajectoryFolderPath, 'gltf');
         this.trajectoryId = trajectoryId;
     }
 
-    /**
-     * Configures the global OpenDXA analyzer with the provided parameters.
-     * It iterates through a map of known settings and applies them if they are present in the config object.
-     * @param {ConfigParameters} config - An object containing the configuration parameters to apply.
-    */
-    configure(config: ConfigParameters){
-        for(const key in configSetterMap){
-            const configKey = key as keyof ConfigParameters;
-            const value = config[configKey];
-            if(value !== undefined && value !== null){
-                const setter = configSetterMap[configKey] as (v: any) => void;
-                if(setter) setter(value);
-            }
-        }
-        opendxa.setCrystalStructure(LatticeStructure.BCC);
-        opendxa.setIdentificationMode(IdentificationMode.PTM);
+    public async analyzeTrajectory(inputFiles: string[], options: ConfigParameters ={}): Promise<any[]>{
+        console.log(`[OpenDXAService] Starting analysis for ${inputFiles.length}frames.`);
+        
+        const cliOptions = buildCliArgs(options);
+        
+        console.log('[OpenDXAService] Processing files in parallel...');
+        return await this.processFilesParallel(inputFiles, cliOptions);
     }
 
-    /**
-     * Constructs a standardized output file path for a given frame and export type.
-     * @private
-     * @param frame - The timestep or frame number of the simulation. 
-     * @param exportName - A descriptive name for the exported artifact (e.g, 'defect_mesh').
-     * @returns {string} The full, absolute path for the output GLTF file.
-    */
-    private getOutputPath(frame: number, exportName: string){
+    private async processFilesParallel(inputFiles: string[], cliOptions: string[]): Promise<any[]>{
+        const processingPromises = inputFiles.map(inputFile => 
+            this.processSingleFile(inputFile, cliOptions)
+        );
+
+        try{
+            const allResults = await Promise.all(processingPromises);
+            console.log('[OpenDXAService] Parallel processing completed successfully.');
+            return allResults.filter(result => result !== null);
+        }catch(error){
+            console.error('[OpenDXAService] Error during parallel processing:', error);
+            throw error;
+        }
+    }
+
+    private async processSingleFile(inputFile: string, cliOptions: string[]): Promise<any>{
+        const baseFilename = path.basename(inputFile);
+        console.log(`[OpenDXAService] Starting processing for: ${baseFilename}`);
+        
+        const outputBase = path.join(os.tmpdir(), `opendxa-out-${this.trajectoryId}-${Date.now()}-${baseFilename}`);
+
+        try{
+            await this.runCliProcess(inputFile, outputBase, cliOptions);
+            const{ frameResult, generatedFiles }= await this.readOutputFiles(outputBase);
+
+            const timestep = parseTimestepFromFilename(inputFile);
+            frameResult.metadata = { timestep };
+
+            console.log(`[OpenDXAService] Processing data for timestep ${timestep}`);
+            await this.processFrameData(frameResult, timestep);
+
+            console.log(`[OpenDXAService] Cleaning up temporary files for ${baseFilename}`);
+            await Promise.all(generatedFiles.map(file => 
+                fs.unlink(file).catch(err => 
+                    console.error(`Failed to delete file ${file}:`, err)
+                )
+            ));
+            
+            console.log(`[OpenDXAService] Finished processing: ${baseFilename}`);
+            return frameResult;
+        }catch(error){
+            console.error(`[OpenDXAService] Failed to process ${inputFile}:`, error);
+            
+            // Enhanced error logging
+            if(error.message.includes('Invalid string length')){
+                console.error('[OpenDXAService] This appears to be a large file issue. Consider:');
+                console.error('1. Reducing the number of atoms in the simulation');
+                console.error('2. Using a different output format');
+                console.error('3. Processing files sequentially instead of in parallel');
+            }
+            
+            throw error;
+        }
+    }
+
+    private runCliProcess(inputFile: string, outputBase: string, optionsArgs: string[]): Promise<void>{
+        return new Promise((resolve, reject) =>{
+            const args = [inputFile, outputBase, ...optionsArgs];
+            console.log(`[OpenDXAService] Running CLI with arguments: ${args.join(' ')}`);
+
+            const cliProcess = spawn(CLI_EXECUTABLE_PATH, args);
+
+            let stderrOutput = '';
+            cliProcess.stdout.on('data',(data) =>{
+                console.log(`[OpenDXA CLI]: ${data.toString().trim()}`);
+            });
+
+            cliProcess.stderr.on('data',(data) =>{
+                const message = data.toString().trim();
+                console.error(`[OpenDXA CLI ERROR]: ${message}`);
+                stderrOutput += message + '\n';
+            });
+
+            cliProcess.on('close',(code) =>{
+                if(code === 0){
+                    resolve();
+                }else{
+                    const errorMessage = `OpenDXA CLI process exited with code ${code}.\nError log:\n${stderrOutput}`;
+                    reject(new Error(errorMessage));
+                }
+            });
+
+            cliProcess.on('error',(err) =>{
+                reject(new Error(`Failed to start OpenDXA CLI process: ${err.message}`));
+            });
+        });
+    }
+
+    private async readOutputFiles(outputBase: string): Promise<{ frameResult: any, generatedFiles: string[] }>{
+        const frameResult: any ={};
+        const generatedFiles: string[] = [];
+
+        for(const [key, suffix] of Object.entries(JSON_OUTPUT_MAP)){
+            const jsonPath = outputBase + suffix;
+            
+            try{
+                frameResult[key] = await readLargeJsonFile(jsonPath);
+                generatedFiles.push(jsonPath);
+                
+                console.log(`[OpenDXAService] Successfully read ${key}from ${path.basename(jsonPath)}`);
+            }catch(readError: any){
+                console.error(`Failed to read or parse ${jsonPath}:`, readError.message);
+                try{
+                    const stats = await fs.stat(jsonPath);
+                    console.error(`File size: ${(stats.size / 1024 / 1024).toFixed(2)}MB`);
+                }catch(statError){
+                    console.error(`Could not get file stats: ${statError.message}`);
+                }
+                
+                throw new Error(`Could not process output file ${jsonPath}: ${readError.message}`);
+            }
+        }
+        return{ frameResult, generatedFiles };
+    }
+
+    private async processFrameData(frameResult: any, timestep: number): Promise<void>{
+        const{ interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell }= frameResult;
+
+        await Promise.all([
+            this.exportMesh(defect_mesh, timestep, 'defect'),
+            this.exportMesh(interface_mesh, timestep, 'interface'),
+            this.exportDislocations(dislocations, timestep),
+            this.exportAtomsColoredByType(atoms, timestep),
+            this.handleStructuralData(structures, timestep),
+            this.handleSimulationCellData(simulation_cell, timestep)
+        ]);
+    }
+
+    private getOutputPath(frame: number, exportName: string): string{
         return path.join(this.exportDirectory, `frame_${frame}_${exportName}.gltf`)
     }
 
-    /**
-     * Exports the atomic data of a frame to a GLTF file, with atoms colored by their type.
-     * @private
-     * @param {AtomsData} atoms - The atomic data structure from the analysis result. 
-     * @param {number} frame - The current simulation frame number (timestep).
-    */
-    private exportAtomsColoredByType(atoms: AtomsData, frame: number){
+    private exportAtomsColoredByType(atoms: AtomsData, frame: number): void{
         const exporter = new LAMMPSToGLTFExporter();
         const outputPath = this.getOutputPath(frame, 'atoms_colored_by_type');
         exporter.exportAtomsTypeToGLTF(atoms, outputPath);
     }
 
-    /**
-     * Exports dislocation line data to GLTF file using predefined visualization settings.
-     * @private
-     * @param {Dislocation} dislocation - The dislocation data from the analysis result.
-     * @param {number} frame - The current simulation frame number (timestep).
-    */
-    private exportDislocations(dislocation: Dislocation, frame: number){
+    private exportDislocations(dislocation: Dislocation, frame: number): void{
         const exporter = new DislocationExporter();
         const outputPath = this.getOutputPath(frame, 'dislocations');
-        exporter.toGLTF(dislocation, outputPath, {
+        exporter.toGLTF(dislocation, outputPath,{
             lineWidth: 0.3,
             colorByType: true,
-            material: {
+            material:{
                 baseColor: [1.0, 0.5, 0.0, 1.0],
                 metallic: 0.0,
                 roughness: 0.8
@@ -154,33 +303,26 @@ class OpenDXAService{
         });
     }
 
-    /**
-     * Exports a mesh structure (either a defect or interface mesh) to a GLTF file.
-     * @private
-     * @param {Mesh} mesh - The mesh data structure from the analysis result. 
-     * @param {number} frame - The current simulation frame number (timestep).
-     * @param {'defect' | 'interface'} [meshType='defect'] - The type of mesh being exported, used for naming the ouput file.
-    */
-    private exportMesh(mesh: Mesh, frame: number, meshType: 'defect' | 'interface' = 'defect'){
+    private exportMesh(mesh: Mesh, frame: number, meshType: 'defect' | 'interface' = 'defect'): void{
         const exporter = new MeshExporter();
         const outputPath = this.getOutputPath(frame, `${meshType}_mesh`);
-        exporter.toGLTF(mesh, outputPath, {
-            material: {
+        exporter.toGLTF(mesh, outputPath,{
+            material:{
                 baseColor: [1.0, 1.0, 1.0, 1.0],
                 metallic: 0.0,
                 roughness: 0.0,
                 emissive: [0.0, 0.0, 0.0]
             },
-            metadata: { includeOriginalStats: true }
+            metadata:{ includeOriginalStats: true }
         });
     }
 
-    private async handleStructuralData(data: StructureAnalysisData, frame: number){
+    private async handleStructuralData(data: StructureAnalysisData, frame: number): Promise<void>{
         const structureNames: string[] = Object.keys(data.structure_types);
         const stats = [];
 
         for(const name of structureNames){
-            const { count, percentage, type_id } = data.structure_types[name];
+            const{ count, percentage, type_id }= data.structure_types[name];
             stats.push({
                 count,
                 percentage,
@@ -189,12 +331,12 @@ class OpenDXAService{
             });
         }
 
-        const filter = {
+        const filter ={
             trajectory: this.trajectoryId,
             timestep: frame
         }
 
-        const updateData = {
+        const updateData ={
             totalAtoms: data.total_atoms,
             timestep: frame,
             analysisMethod: data.analysis_method.toUpperCase(),
@@ -205,74 +347,31 @@ class OpenDXAService{
             trajectory: this.trajectoryId
         };
         
-        const updatedOrCreatedAnalysis = await StructureAnalysis.findOneAndUpdate(filter, updateData, {
+        await StructureAnalysis.findOneAndUpdate(filter, updateData,{
             upsert: true,
             new: true,
             runValidators: true
         });
-
-        if(updatedOrCreatedAnalysis){
-            console.log(`Structural analysis of the frame ${frame} (${data.analysis_method}) successfully registered or updated.`)
-        }
     }
 
-    private async handleSimulationCellData(data: any, frame: number){
-        const filter = {
+    private async handleSimulationCellData(data: any, frame: number): Promise<void>{
+        const filter ={
             trajectory: this.trajectoryId,
             timestep: frame
         };
 
-        const updateData = {
+        const updateData ={
             ...data,
             trajectory: this.trajectoryId,
             timestep: frame
         };
 
-        const simCell = await SimulationCell.findOneAndUpdate(filter, updateData, {
+        await SimulationCell.findOneAndUpdate(filter, updateData,{
             upsert: true,
             new: true,
             runValidators: true
         });
-
-        if(simCell){
-            console.log(`Simulation cell data for frame ${frame} successfully registered or updated.`);
-        }
     }
-
-    /**
-     * Callback function that is executed by the native addon for each completed frame in the trajectory analysis.
-     * It destructures the analysis result and orchestrates the exportation of all relevant data.
-     * @private
-     * @param {ProgressInfo} progress  The progress object from the C++ binding, containing the analysis results for the current frame.
-    */
-    private progressCallback(progress: ProgressInfo){
-        const frameResult = progress.frameResult!;
-        const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
-        const { timestep } = frameResult.metadata;
-
-        this.exportMesh(defect_mesh, timestep, 'defect');
-        this.exportMesh(interface_mesh, timestep, 'interface');
-        this.exportDislocations(dislocations, timestep);
-        this.exportAtomsColoredByType(atoms, timestep);
-        
-        this.handleStructuralData(structures, timestep);
-        this.handleSimulationCellData(simulation_cell, timestep);
-    }
-
-    /**
-     * Starts the asynchronous analysis of a sequence of simulation files.
-     * It sets up the progress callback and initiates the computation in the C++ addon.
-     * @param {string[]} inputFiles - An array of file paths for the simulation frames to be analyzed.
-     * @returns {Promise<any>} A promise that resolves with the final summary result from the C++ binding when the entire trajectory has been processed.
-    */
-    public async analyzeTrajectory(inputFiles: string[]){
-        opendxa.setProgressCallback(this.progressCallback.bind(this));
-
-        return new Promise((resolve) => {
-            console.log(`Starting OpenDXA analysis for ${inputFiles.length} files...`);
-            opendxa.computeTrajectory(inputFiles, null, resolve);
-        });
-    }
-};
+}
 
 export default OpenDXAService;

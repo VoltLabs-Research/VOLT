@@ -59,7 +59,7 @@ export const getTrajectoryDislocations = async (req: Request, res: Response) => 
         }
 
         metadata.lastAnalysis = {
-            jobId: `simple-queue-${Date.now()}`,
+            jobId: `queue-${Date.now()}`,
             config: req.body,
             status: 'queued',
             updatedAt: new Date().toISOString()

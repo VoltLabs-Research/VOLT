@@ -74,7 +74,7 @@ const Scene3D: React.FC<Scene3DProps> = ({
     }), []);
 
     return (
-        <Canvas shadows camera={cameraConfig}>
+        <Canvas gl={{ localClippingEnabled: true }} shadows camera={cameraConfig}>
             <ambientLight intensity={lightConfig.ambient.intensity} />
             <directionalLight
                 castShadow

@@ -16,7 +16,7 @@ public:
 
 double determineLocalStructure(
 	const NearestNeighborFinder& neighList, 
-	size_t particleIndex,
+	int particleIndex,
 	std::shared_ptr<ParticleProperty> neighborLists
 ) const;
     static void initializeStructures();
@@ -79,7 +79,7 @@ private:
         const NearestNeighborFinder::Query<MAX_NEIGHBORS>& neighQuery,
         int numNeighbors,
         int coordinationNumber,
-        size_t particleIndex,
+        int particleIndex,
         int* neighborIndices,
         Vector3* neighborVectors,
         NeighborBondArray& neighborArray
@@ -94,8 +94,8 @@ private:
 
     static void calculateProductForPermutation(
         LatticeStructure& latticeStruct, 
-        size_t s1, 
-        size_t s2);
+        int s1, 
+        int s2);
 
     static void findAllSymmetryPermutations(
         LatticeStructure& latticeStruct,

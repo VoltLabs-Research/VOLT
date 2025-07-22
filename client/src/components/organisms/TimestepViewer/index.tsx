@@ -20,13 +20,13 @@
 * SOFTWARE.
 **/
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { api } from '@/services/api';
 import { useThree } from '@react-three/fiber';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'; 
-import { Group, Box3, Vector3, Sphere } from 'three';
+import { Group, Box3, Vector3, Sphere, Plane, Mesh } from 'three';
 
 const gltfCache = new Map<string, Promise<GLTF>>();
 const loader = new GLTFLoader();
@@ -148,6 +148,12 @@ interface TimestepViewerProps{
     scale?: number;
     autoFit?: boolean;
     orbitControlsRef?: React.MutableRefObject<any>;
+    enableClipping?: boolean;
+    clippingBounds?: {
+        x: [number, number];
+        y: [number, number];
+        z: [number, number];
+    };
 }
 
 const TimestepViewer: React.FC<TimestepViewerProps> = ({
@@ -157,11 +163,55 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     position = { x: 0, y: 0, z: 0 },
     scale = 1,
     autoFit = true,
-    orbitControlsRef
+    orbitControlsRef,
+    enableClipping = false,
+    clippingBounds = { x: [-1, 1], y: [-1, 1], z: [-1, 1] },
 }) => {
     const { scene } = useThree();
     const modelRef = useRef<Group | null>(null);
     const [modelBounds, setModelBounds] = useState<ReturnType<typeof calculateModelBounds> | null>(null);
+
+    const clippingPlanes = useMemo(() => {
+        if(!enableClipping || !modelBounds) return [];
+
+        const { center, size } = modelBounds;
+        const planes: Plane[] = [];
+
+        // X
+        if(clippingBounds.x[0] > -1){
+            const worldMinX = center.x + (size.x / 2) * clippingBounds.x[0];
+            planes.push(new Plane(new Vector3(1, 0, 0), -worldMinX));
+        }
+
+        if(clippingBounds.x[1] < 1){
+            const worldMaxX = center.x + (size.x / 2) * clippingBounds.x[1];
+            planes.push(new Plane(new Vector3(-1, 0, 0), worldMaxX));
+        }
+
+        // Y
+        if(clippingBounds.y[0] > -1){
+            const worldMinY = center.y + (size.y / 2) * clippingBounds.y[0];
+            planes.push(new Plane(new Vector3(0, 1, 0), -worldMinY));
+        }
+
+        if(clippingBounds.y[1] < 1){
+            const worldMaxY = center.y + (size.y / 2) * clippingBounds.y[1];
+            planes.push(new Plane(new Vector3(0, -1, 0), worldMaxY));
+        }
+
+        // Z
+        if(clippingBounds.z[0] > -1){
+            const worldMinZ = center.z + (size.z / 2) * clippingBounds.z[0];
+            planes.push(new Plane(new Vector3(0, 0, 1), -worldMinZ));
+        }
+
+        if(clippingBounds.z[1] < 1){
+            const worldMaxZ = center.z + (size.z / 2) * clippingBounds.z[1];
+            planes.push(new Plane(new Vector3(0, 0, -1), worldMaxZ)); 
+        }
+
+        return planes;
+    }, [enableClipping, clippingBounds, modelBounds]);
 
     const updateScene = useCallback(async () => {
         if(!currentGltfUrl && modelRef.current){
@@ -175,9 +225,20 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
             const gltf = await loadGltfWithCache(currentGltfUrl!);
             const newModel = gltf.scene.clone();
             
+            newModel.traverse((child) => {
+                if(child instanceof Mesh){
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+                    materials.forEach((material) => {
+                        material.clippingPlanes = clippingPlanes;
+                        material.clipShadows = true;
+                    });
+                }
+            });
+
             if (autoFit) {
                 const bounds = calculateModelBounds(gltf);
                 const transforms = calculateOptimalTransforms(bounds);
+                setModelBounds(bounds);
                 
                 newModel.position.set(
                     (position.x || 0) + transforms.position.x,
@@ -195,11 +256,9 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
                 
                 const finalBox = new Box3().setFromObject(newModel);
                 const minY = finalBox.min.y;
-                if (minY < 0) {
+                if(minY < 0){
                     newModel.position.y += Math.abs(minY) + 0.1;
                 }
-                
-                setModelBounds(bounds);
             } else {
                 newModel.scale.setScalar(scale);
                 newModel.rotation.set(rotation.x || 0, rotation.y || 0, rotation.z || 0);
@@ -220,7 +279,7 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
             }
             setModelBounds(null);
         }
-    }, [currentGltfUrl, scene, scale, position, rotation, autoFit]);
+    }, [currentGltfUrl, scene, scale, position, rotation, autoFit, clippingPlanes]);
 
     useEffect(() => {
         if(!nextGltfUrl) return;

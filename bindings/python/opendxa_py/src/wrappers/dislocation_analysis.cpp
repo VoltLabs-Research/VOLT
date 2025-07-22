@@ -83,30 +83,6 @@ py::dict AnalysisWrapper::getConfig() const {
     return config;
 }
 
-json AnalysisWrapper::computeTrajectory(const std::vector<std::string>& input_files, const std::string& output_file_template) {
-    if(input_files.empty()){
-        throw std::invalid_argument("Input file list cannot be empty.");
-    }
-
-    spdlog::debug("Loading {} frames from disk...", input_files.size());
-    std::vector<LammpsParser::Frame> frames;
-    frames.reserve(input_files.size());
-    LammpsParser parser;
-    
-    for(const auto& file_path : input_files){
-        validateInputFile(file_path);
-        LammpsParser::Frame frame;
-        if(!parser.parseFile(file_path, frame)){
-            throw std::runtime_error("Failed to parse input file: " + file_path);
-        }
-        frames.push_back(frame);
-    }
-
-    spdlog::debug("All frames loaded. Starting parallel analysis...");
-
-    return analyzer->compute(frames, output_file_template, progressCallback);
-}
-
 void AnalysisWrapper::validateInputFile(const std::string& filePath) const {
     if (filePath.empty()) {
         throw std::invalid_argument("Input file path cannot be empty");

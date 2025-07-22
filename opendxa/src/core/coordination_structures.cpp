@@ -43,7 +43,7 @@ double CoordinationStructures::computeLocalCutoff(
 	const NearestNeighborFinder::Query<MAX_NEIGHBORS>& neighQuery,
 	int numNeighbors,
 	int coordinationNumber,
-	size_t particleIndex,
+	int particleIndex,
 	int* neighborIndices,
 	Vector3* neighborVectors,
 	NeighborBondArray& neighborArray
@@ -71,7 +71,7 @@ double CoordinationStructures::computeLocalCutoff(
 		case LATTICE_HEX_DIAMOND: {
 			// Generate list of second nearest neighbors
 			int outputIndex = 4;
-			for(size_t i = 0; i < 4; i++){
+			for(int i = 0; i < 4; i++){
 				const Vector3& v0 = neighQuery.results()[i].delta;
 				neighborVectors[i] = v0;
 				neighborIndices[i] = neighQuery.results()[i].index;
@@ -80,7 +80,7 @@ double CoordinationStructures::computeLocalCutoff(
 				neighQuery2.findNeighbors(neighList.particlePos(neighborIndices[i]));
 				if(neighQuery2.results().size() < 4) return 0.0;
 
-				for(size_t j = 0; j < 4; j++){
+				for(int j = 0; j < 4; j++){
 					Vector3 v = v0 + neighQuery2.results()[j].delta;
 					if(neighQuery2.results()[j].index == particleIndex && v.isZero()) continue;
 					if(outputIndex == 16) return 0;
@@ -153,7 +153,7 @@ double CoordinationStructures::computeLocalCutoff(
 
 double CoordinationStructures::determineLocalStructure(
 	const NearestNeighborFinder& neighList, 
-	size_t particleIndex,
+	int particleIndex,
 	std::shared_ptr<ParticleProperty> neighborLists
 ) const { 
     std::vector<int> neighborIndices(MAX_NEIGHBORS);
@@ -204,7 +204,7 @@ double CoordinationStructures::determineLocalStructure(
 
 	for(int i = 0; i < coordinationNumber; i++){
 		const Vector3& neighborVector = neighborVectors[neighborMapping[i]];
-		for(size_t dim = 0; dim < 3; dim++){
+		for(int dim = 0; dim < 3; dim++){
 			if(cell().pbcFlags()[dim]){
 				if(std::abs(cell().inverseMatrix().prodrow(neighborVector, dim)) >= 0.5 + EPSILON){
 					generateCellTooSmallError(dim);
@@ -323,7 +323,7 @@ void CoordinationStructures::initializeDiamondStructure(
             _coordinationStructures[coordType].neighborArray.setNeighborBond(ni1, ni2, false);
         }
 
-        for(int ni2 = std::max(ni1 + 1, 4); ni2 < numNeighbors; ni2++){
+        for(int ni2 = std::max(ni1 + 1, static_cast<int>(4)); ni2 < numNeighbors; ni2++){
             bool bonded = (vectors[ni1] - vectors[ni2]).length() < cutoff;
             _coordinationStructures[coordType].neighborArray.setNeighborBond(ni1, ni2, bonded);
         }
@@ -489,10 +489,10 @@ void CoordinationStructures::calculateSymmetryProducts(LatticeStructure& lattice
     }
 }
 
-void CoordinationStructures::calculateProductForPermutation(LatticeStructure& latticeStruct, size_t s1, size_t s2){
+void CoordinationStructures::calculateProductForPermutation(LatticeStructure& latticeStruct, int s1, int s2){
     Matrix3 product = latticeStruct.permutations[s2].transformation * latticeStruct.permutations[s1].transformation;
     
-    for(size_t i = 0; i < latticeStruct.permutations.size(); i++){
+    for(int i = 0; i < latticeStruct.permutations.size(); i++){
         if(latticeStruct.permutations[i].transformation.equals(product)){
             latticeStruct.permutations[s1].product.push_back(i);
             break;
@@ -503,7 +503,7 @@ void CoordinationStructures::calculateProductForPermutation(LatticeStructure& la
     
     Matrix3 inverseProduct = latticeStruct.permutations[s2].transformation.inverse() * latticeStruct.permutations[s1].transformation;
     
-    for(size_t i = 0; i < latticeStruct.permutations.size(); i++){
+    for(int i = 0; i < latticeStruct.permutations.size(); i++){
         if(latticeStruct.permutations[i].transformation.equals(product)){ 
             latticeStruct.permutations[s1].inverseProduct.push_back(i);
             break;

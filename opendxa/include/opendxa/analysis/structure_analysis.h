@@ -52,7 +52,7 @@ public:
 		return positions()->size();
 	}
 	int numberOfNeighbors(int atomIndex) const {
-		//assert(_neighborLists);
+		assert(_neighborLists);
 		const int* neighborList = _neighborLists->constDataInt() + (size_t)atomIndex * _neighborLists->componentCount();
 		size_t count = 0;
 		while(count < _neighborLists->componentCount() && neighborList[count] != -1){
@@ -61,11 +61,11 @@ public:
 		return count;
 	}
 	int getNeighbor(int centralAtomIndex, int neighborListIndex) const{
-		//assert(_neighborLists);
+		assert(_neighborLists);
 		return _neighborLists->getIntComponent(centralAtomIndex, neighborListIndex);
 	}
 	int findNeighbor(int centralAtomIndex, int neighborAtomIndex) const{
-		//assert(_neighborLists);
+		assert(_neighborLists);
 		const int* neighborList = _neighborLists->constDataInt() + (size_t)centralAtomIndex * _neighborLists->componentCount();
 		for(size_t index = 0; index < _neighborLists->componentCount() && neighborList[index] != -1; index++){
 			if(neighborList[index] == neighborAtomIndex){
@@ -121,12 +121,12 @@ public:
 	}
 
 	const Vector3& neighborLatticeVector(int centralAtomIndex, int neighborIndex) const{
-		//assert(_atomSymmetryPermutations);
+		assert(_atomSymmetryPermutations);
 		int structureType = _structureTypes->getInt(centralAtomIndex);
 		const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
-		//assert(neighborIndex >= 0 && neighborIndex < CoordinationStructures::_coordinationStructures[structureType].numNeighbors);
+		assert(neighborIndex >= 0 && neighborIndex < CoordinationStructures::_coordinationStructures[structureType].numNeighbors);
 		int symmetryPermutationIndex = _atomSymmetryPermutations->getInt(centralAtomIndex);
-		//assert(symmetryPermutationIndex >= 0 && symmetryPermutationIndex < latticeStructure.permutations.size());
+		assert(symmetryPermutationIndex >= 0 && symmetryPermutationIndex < latticeStructure.permutations.size());
 		const auto& permutation = latticeStructure.permutations[symmetryPermutationIndex].permutation;
 		return latticeStructure.latticeVectors[permutation[neighborIndex]];
 	}

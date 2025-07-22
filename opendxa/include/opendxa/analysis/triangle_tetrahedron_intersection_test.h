@@ -303,9 +303,17 @@ constexpr inline bool triTriIntersectionTest(
     double p3dist = (p3 - q3).dot(normal);
 
     // Set p_dist to 0.0 if the value is close enough (for robustness)
-    p1dist = (std::abs(p1dist) < EPSILON) ? p1dist = 0.0 : p1dist;
-    p2dist = (std::abs(p2dist) < EPSILON) ? p2dist = 0.0 : p2dist;
-    p3dist = (std::abs(p3dist) < EPSILON) ? p3dist = 0.0 : p3dist;
+    if(std::abs(p1dist) < EPSILON){
+        p1dist = 0.0;
+    }
+
+    if(std::abs(p2dist) < EPSILON){
+        p2dist = 0.0;
+    }
+
+    if(std::abs(p3dist) < EPSILON){
+        p3dist = 0.0;
+    }
 
     // Check whether all points of triangle 1 are on the same side of triangle 2
     // No intersection
@@ -322,10 +330,10 @@ constexpr inline bool triTriIntersectionTest(
     double q3dist = (q3 - p3).dot(normal);
 
     // Set q_dist to 0.0 if the value is close enough (for robustness)
-    q1dist = (std::abs(q1dist) < EPSILON) ? q1dist = 0.0 : q1dist;
-    q2dist = (std::abs(q2dist) < EPSILON) ? q2dist = 0.0 : q2dist;
-    q3dist = (std::abs(q3dist) < EPSILON) ? q3dist = 0.0 : q3dist;
-
+    if (std::abs(q1dist) < EPSILON) q1dist = 0.0;
+    if (std::abs(q2dist) < EPSILON) q2dist = 0.0;
+    if (std::abs(q3dist) < EPSILON) q3dist = 0.0;
+    
     // Check whether all points of triangle 2 are on teh same side of triangle 1
     // No intersection
     if(((q1dist * q2dist) > 0.0) && ((q1dist * q3dist) > 0.0)){

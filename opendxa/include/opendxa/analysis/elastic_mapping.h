@@ -68,9 +68,9 @@ public:
     [[nodiscard]] auto isElasticMappingCompatible(DelaunayTessellation::CellHandle cell) const -> bool;
 
     [[nodiscard]] auto clusterOfVertex(int idx) const noexcept -> Cluster*{
-        assert(idx >= 0 && idx < static_cast<int>(_vertexClusters.size()));
-        return _vertexClusters[std::size_t(idx)];
-    }
+		assert(idx < (int)_vertexClusters.size());
+		return _vertexClusters[idx];
+	}
 
     [[nodiscard]] auto getEdgeClusterVector(int v1, int v2) const -> std::pair<Vector3, ClusterTransition*>{
         auto* e = findEdge(v1, v2);

@@ -40,7 +40,7 @@ bool CommonNeighborAnalysis::findMatchingNeighborPermutation(
         // Skip over positions that haven't changed since last time
         while(neighborMapping[ni1] == previousMapping[ni1]){
             ni1++;
-            //assert(ni1 < coordinationNumber);
+            assert(ni1 < coordinationNumber);
         }
 
         // Attempt to advance the permutation at index ni1
@@ -72,7 +72,7 @@ bool CommonNeighborAnalysis::findMatchingNeighborPermutation(
         // Otherwise generate the next permutation and retry
         bitmapSort(neighborMapping + ni1 + 1, neighborMapping + coordinationNumber, coordinationNumber);
         if(!std::next_permutation(neighborMapping, neighborMapping + coordinationNumber)){
-            //assert(false);
+            assert(false);
             return false;
         }
     }
@@ -95,18 +95,18 @@ CoordinationStructureType CommonNeighborAnalysis::computeCoordinationType(
         case LATTICE_FCC:
         case LATTICE_HCP: {
             // Count 4-2-1 vs 4-2-2 signatures among the 12 neighbors to distinguish FCC vs HCP
-            size_t n421 = 0;
-            size_t n422 = 0;
-            for(size_t neighborIndex = 0; neighborIndex < coordinationNumber; neighborIndex++){
+            int n421 = 0;
+            int n422 = 0;
+            for(int neighborIndex = 0; neighborIndex < coordinationNumber; neighborIndex++){
                 unsigned int commonNeighbors;
-                size_t numCommonNeighbors = findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, coordinationNumber);
+                int numCommonNeighbors = findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, coordinationNumber);
                 if(numCommonNeighbors != 4) break;
 
                 CNAPairBond neighborBonds[MAX_NEIGHBORS * MAX_NEIGHBORS];
-                size_t numNeighborBonds = findNeighborBonds(neighborArray, commonNeighbors, coordinationNumber, neighborBonds);
+                int numNeighborBonds = findNeighborBonds(neighborArray, commonNeighbors, coordinationNumber, neighborBonds);
                 if(numNeighborBonds != 2) break;
 
-                size_t maxChainLength = calcMaxChainLength(neighborBonds, numNeighborBonds);
+                int maxChainLength = calcMaxChainLength(neighborBonds, numNeighborBonds);
 
                 if(maxChainLength == 1){
                     n421++;
@@ -129,18 +129,18 @@ CoordinationStructureType CommonNeighborAnalysis::computeCoordinationType(
 
         case LATTICE_BCC: {
             // Count 4-4-4 vs 6-6-6 signatures among up to 14 neighbors for BCC
-            size_t n444 = 0;
-            size_t n666 = 0;
-            for(size_t neighborIndex = 0; neighborIndex < coordinationNumber; neighborIndex++){
+            int n444 = 0;
+            int n666 = 0;
+            for(int neighborIndex = 0; neighborIndex < coordinationNumber; neighborIndex++){
                 unsigned int commonNeighbors;
-                size_t numCommonNeighbors = findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, 14);
+                int numCommonNeighbors = findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, 14);
                 if(numCommonNeighbors != 4 && numCommonNeighbors != 6) break;
 
                 CNAPairBond neighborBonds[MAX_NEIGHBORS * MAX_NEIGHBORS];
-                size_t numNeighborBonds = findNeighborBonds(neighborArray, commonNeighbors, 14, neighborBonds);
+                int numNeighborBonds = findNeighborBonds(neighborArray, commonNeighbors, 14, neighborBonds);
                 if(numNeighborBonds != 4 && numNeighborBonds != 6) break;
 
-                size_t maxChainLength = calcMaxChainLength(neighborBonds, numNeighborBonds);
+                int maxChainLength = calcMaxChainLength(neighborBonds, numNeighborBonds);
 
                 if(numCommonNeighbors == 4 && numNeighborBonds == 4 && maxChainLength == 4){
                     n444++;
@@ -165,7 +165,7 @@ CoordinationStructureType CommonNeighborAnalysis::computeCoordinationType(
             for(int neighborIndex = 0; neighborIndex < 4; neighborIndex++){
                 cnaSignatures[neighborIndex] = 0;
                 unsigned int commonNeighbors;
-                size_t numCommonNeighbors = findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, coordinationNumber);
+                int numCommonNeighbors = findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, coordinationNumber);
                 if(numCommonNeighbors != 3) return COORD_OTHER;
             }
 
@@ -173,14 +173,14 @@ CoordinationStructureType CommonNeighborAnalysis::computeCoordinationType(
             int n544 = 0;
             for(int neighborIndex = 4; neighborIndex < coordinationNumber; neighborIndex++){
                 unsigned int commonNeighbors;
-                size_t numCommonNeighbors = findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, coordinationNumber);
+                int numCommonNeighbors = findCommonNeighbors(neighborArray, neighborIndex, commonNeighbors, coordinationNumber);
                 if(numCommonNeighbors != 5) break;
 
                 CNAPairBond neighborBonds[MAX_NEIGHBORS * MAX_NEIGHBORS];
-                size_t numNeighborBonds = findNeighborBonds(neighborArray, commonNeighbors, coordinationNumber, neighborBonds);
+                int numNeighborBonds = findNeighborBonds(neighborArray, commonNeighbors, coordinationNumber, neighborBonds);
                 if(numNeighborBonds != 4) break;
 
-                size_t maxChainLength = calcMaxChainLength(neighborBonds, numNeighborBonds);
+                int maxChainLength = calcMaxChainLength(neighborBonds, numNeighborBonds);
 
                 if(maxChainLength == 3){
                     n543++;

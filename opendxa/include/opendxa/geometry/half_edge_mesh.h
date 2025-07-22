@@ -49,13 +49,13 @@ public:
 		}
 
         void linkToOppositeEdge(Edge* other) noexcept{
-            //assert(!_oppositeEdge && !other->_oppositeEdge);
+            assert(!_oppositeEdge && !other->_oppositeEdge);
             _oppositeEdge = other;
             other->_oppositeEdge = this;
         }
 
         Edge* unlinkFromOppositeEdge() noexcept{
-            //assert(_oppositeEdge && _oppositeEdge->_oppositeEdge == this);
+            assert(_oppositeEdge && _oppositeEdge->_oppositeEdge == this);
             Edge* other = _oppositeEdge;
             _oppositeEdge = nullptr;
             other->_oppositeEdge = nullptr;
@@ -161,7 +161,7 @@ public:
                 }
             }
 
-            //assert(false);
+            assert(false);
         }
 
         Point3 _pos;
@@ -199,7 +199,7 @@ public:
 		}
 
         [[nodiscard]] std::size_t edgeCount() const{
-            //assert(edges());
+            assert(edges());
             std::size_t cnt = 0;
             Edge* e = edges();
             do{
@@ -313,12 +313,12 @@ public:
 	}
 
     [[nodiscard]] Vertex* vertex(int idx) const noexcept{
-        //assert(idx >= 0 && idx < static_cast<int>(vertexCount()));
+        assert(idx >= 0 && idx < static_cast<int>(vertexCount()));
         return _vertices[idx];
     }
 
     [[nodiscard]] Face* face(int idx) const noexcept{
-        //assert(idx >= 0 && idx < static_cast<int>(faceCount()));
+        assert(idx >= 0 && idx < static_cast<int>(faceCount()));
         return _faces[idx];
     }
 
@@ -338,7 +338,7 @@ public:
 
     template<typename It>
     Face* createFace(It b, It e){
-        //assert(std::distance(b, e) >= 2);
+        assert(std::distance(b, e) >= 2);
         Face* f = createFace();
         It v1 = b;
         for (It v2 = std::next(b); v2 != e; ++v1, ++v2){

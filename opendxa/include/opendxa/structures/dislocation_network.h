@@ -118,13 +118,15 @@ DislocationSegment(const ClusterVector& b, DislocationNode* forward, Dislocation
 	}
 
 	[[nodiscard]] double calculateLength() const{
-		//assert(!isDegenerate());
-		double length = 0.0;
-		for(auto i = line.begin(); std::next(i) != line.end(); ++i){
-			// Usando Eigen para cálculo optimizado de distancia
-			auto p1 = Eigen::Vector3d(i->x(), i->y(), i->z());
-			auto p2 = Eigen::Vector3d(std::next(i)->x(), std::next(i)->y(), std::next(i)->z());
-			length += (p2 - p1).norm();
+		assert(!isDegenerate());
+
+		double length = 0;
+		auto i1 = line.begin();
+		for(;;) {
+			auto i2 = i1 + 1;
+			if(i2 == line.end()) break;
+			length += (*i1 - *i2).length();
+			i1 = i2;
 		}
 		return length;
 	}

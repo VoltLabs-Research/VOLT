@@ -19,7 +19,7 @@ ClusterGraph::~ClusterGraph(){
 
 ClusterGraph::ClusterGraph(const ClusterGraph& other){
 	// TODO
-	//assert(false);
+	assert(false);
 	_maximumClusterDistance = other._maximumClusterDistance;
 }
 
@@ -28,21 +28,21 @@ ClusterGraph::ClusterGraph(const ClusterGraph& other){
 Cluster* ClusterGraph::createCluster(int structureType, int id){
 	if(id < 0){
 		id = clusters().size();
-		//assert(id > 0);
+		assert(id > 0);
 	}
 
 	Cluster* cluster = _clusterPool.construct(id, structureType);
 	_clusters.push_back(cluster);
 
 	bool inserted = _clusterMap.insert({ id, cluster }).second;
-	//assert(inserted);
+	assert(inserted);
 
 	return cluster;
 }
 
 // Look up a cluster by its numric ID, or nullptr if not found.
 Cluster* ClusterGraph::findCluster(int id) const{
-	//assert(id >= 0);
+	assert(id >= 0);
 	if(id < static_cast<int>(clusters().size()) && clusters()[id]->id == id){
 		return clusters()[id];
 	}
@@ -60,7 +60,7 @@ ClusterTransition* ClusterGraph::createClusterTransition(Cluster* clusterA, Clus
 		return createSelfTransition(clusterA);
 	}
 
-	//assert(distance >= 1);
+	assert(distance >= 1);
 
 	// Reuse any existing identical transition
 	for(auto *transition = clusterA->transitions; transition; transition = transition->next){
@@ -107,7 +107,7 @@ ClusterTransition* ClusterGraph::createClusterTransition(Cluster* clusterA, Clus
 // Create a trivial "self transition" on a cluster, marking it as identity
 // (distance 0) so algorithms can always assume at least one transition exists.
 ClusterTransition* ClusterGraph::createSelfTransition(Cluster* cluster){
-	//assert(cluster && cluster->id != 0);
+	assert(cluster && cluster->id != 0);
 
 	// If there's already a self-transition at the head, return it
 	if(cluster->transitions && cluster->transitions->isSelfTransition()){
@@ -124,8 +124,8 @@ ClusterTransition* ClusterGraph::createSelfTransition(Cluster* cluster){
 	transition->area = 0;
 	cluster->transitions = transition;
 
-	//assert(transition->isSelfTransition());
-	//assert(!transition->next || transition->next->distance >= 1);
+	assert(transition->isSelfTransition());
+	assert(!transition->next || transition->next->distance >= 1);
 
 	return transition;
 }
@@ -133,7 +133,7 @@ ClusterTransition* ClusterGraph::createSelfTransition(Cluster* cluster){
 // Find or build the shortest known transition from A to B by exploring A -> X -> B paths
 // up to a small distance. If no path exists, record that A and B are disconnected.
 ClusterTransition* ClusterGraph::determineClusterTransition(Cluster* clusterA, Cluster* clusterB){
-	//assert(clusterA && clusterB);
+	assert(clusterA && clusterB);
 
 	// Self-lookup is trivial
 	if(clusterA == clusterB){
@@ -142,7 +142,7 @@ ClusterTransition* ClusterGraph::determineClusterTransition(Cluster* clusterA, C
 
 	// First scan direct transitions
 	for(auto *transition = clusterA->transitions; transition; transition = transition->next){
-		//assert(!transition->next || transition->next->distance >= transition->distance);
+		assert(!transition->next || transition->next->distance >= transition->distance);
 		if(transition->cluster2 == clusterB){
 			return transition;
 		}
@@ -170,7 +170,7 @@ ClusterTransition* ClusterGraph::determineClusterTransition(Cluster* clusterA, C
 	}
 
 	// Try all 2-step path A -> X -> B and pick the shortest distance
-	//assert(_maximumClusterDistance == 2);
+	assert(_maximumClusterDistance == 2);
 	int shortestDistance = _maximumClusterDistance + 1;
 	ClusterTransition* shortestPath1 = nullptr;
 	ClusterTransition* shortestPath2 = nullptr;
@@ -205,7 +205,7 @@ ClusterTransition* ClusterGraph::determineClusterTransition(Cluster* clusterA, C
 
 // Given two existing transitions A -> B and B -> C, splice them into A -> C in one step
 ClusterTransition* ClusterGraph::concatenateClusterTransitions(ClusterTransition* tAB, ClusterTransition* tBC){
-	//assert(tAB && tBC && tAB->cluster2 == tBC->cluster1);
+	assert(tAB && tBC && tAB->cluster2 == tBC->cluster1);
 
 	if(tBC->isSelfTransition()) return tAB;
 	if(tAB->isSelfTransition()) return tBC;
@@ -215,7 +215,7 @@ ClusterTransition* ClusterGraph::concatenateClusterTransitions(ClusterTransition
 		return createSelfTransition(tAB->cluster1);
 	}
 
-	//assert(tAB->distance >= 1 && tBC->distance >= 1);
+	assert(tAB->distance >= 1 && tBC->distance >= 1);
 	return createClusterTransition(
 		tAB->cluster1, 
 		tBC->cluster2, 

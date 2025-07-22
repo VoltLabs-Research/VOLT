@@ -198,7 +198,7 @@ void BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
         queue.push_back(root);
 
         bool found = false;
-        for(size_t qi = 0; qi < queue.size() && !found; ++qi){
+        for(int qi = 0; qi < queue.size() && !found; ++qi){
             auto* cur = queue[qi];
 
             for(auto* edge = cur->node->edges(); edge != nullptr && !found; edge = edge->nextVertexEdge()){

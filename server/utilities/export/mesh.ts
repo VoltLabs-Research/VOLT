@@ -38,6 +38,7 @@ export interface Mesh{
 export interface DefectMeshExportOptions{
     generateNormals?: boolean;
     enableDoubleSided?: boolean;
+    smoothIterations?: number;
     material?: {
         baseColor?: [number, number, number, number];
         metallic?: number;
@@ -131,6 +132,7 @@ class MeshExporter{
         const opts: Required<DefectMeshExportOptions> = {
             generateNormals: options.generateNormals ?? true,
             enableDoubleSided: options.enableDoubleSided ?? true,
+            smoothIterations: options.smoothIterations ?? 0, 
             material: {
                 baseColor: options.material?.baseColor ?? [0.0, 0.8, 1.0, 1.0],
                 metallic: options.material?.metallic ?? 0.1,
@@ -179,6 +181,10 @@ class MeshExporter{
 
         const indicesData = facets.flatMap((f) => f.vertices);
         const indices = new Uint32Array(indicesData);
+
+        if(options.smoothIterations){
+            this.smoothMesh(positions, indices, options.smoothIterations);
+        }
 
         const normals = new Float32Array(vertexCount * 3);
 
@@ -330,6 +336,62 @@ class MeshExporter{
 
     private arrayToBase64(array: ArrayBuffer): string {
         return Buffer.from(array).toString('base64');
+    }
+
+    private smoothMesh(
+        positions: Float32Array,
+        indices: Uint32Array,
+        iterations: number
+    ): void {
+        if(iterations <= 0) return;
+        console.log(`Applying Laplacian smoothing with ${iterations} iterations...`);
+        
+        const vertexCount = positions.length / 3;
+        // Build the adjacency list (which vertices are connected to which)
+        const adjacency: Set<number>[] = Array.from({ length: vertexCount }, () => new Set());
+        for(let i = 0; i < indices.length; i += 3){
+            const v0 = indices[i];
+            const v1 = indices[i + 1];
+            const v2 = indices[i + 2];
+            adjacency[v0].add(v1).add(v2);
+            adjacency[v1].add(v0).add(v2);
+            adjacency[v2].add(v0).add(v1);
+        }
+
+        // Perform smoothing iterations
+        for(let iter = 0; iter < iterations; iter++){
+            const newPositions = new Float32Array(positions.length);
+            for(let i = 0; i < vertexCount; i++){
+                const neighbors = Array.from(adjacency[i]);
+                const i3 = i * 3;
+
+                if(neighbors.length === 0){
+                    // Isolated vertex, maintain its position
+                    newPositions[i3] = positions[i3];
+                    newPositions[i3 + 1] = positions[i3 + 1];
+                    newPositions[i3 + 2] = positions[i3 + 2];
+                    continue;
+                }
+
+                // Calculate the average position of the neighbors
+                let avgX = 0;
+                let avgY = 0;
+                let avgZ = 0;
+                for(const neighborIdx of neighbors){
+                    const n3 = neighborIdx * 3;
+                    avgX += positions[n3];
+                    avgY += positions[n3 + 1];
+                    avgZ += positions[n3 + 2];
+                }
+
+                newPositions[i3] = avgX / neighbors.length;
+                newPositions[i3 + 1] = avgY / neighbors.length;
+                newPositions[i3 + 2] = avgZ / neighbors.length;
+            }
+
+            // Update all positions at the end of the iteration
+            positions.set(newPositions);            
+        }        
     }
 };
 

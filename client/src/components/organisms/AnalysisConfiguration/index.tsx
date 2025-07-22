@@ -32,7 +32,7 @@ const AnalysisConfiguration = () => {
 
     const configFields = [
         { 
-            key: 'crystal_structure', 
+            key: 'crystalStructure', 
             label: 'Crystal Structure', 
             type: 'select', 
             options: [
@@ -42,7 +42,7 @@ const AnalysisConfiguration = () => {
             ] 
         },
         { 
-            key: 'identification_mode', 
+            key: 'identificationMode', 
             label: 'Identification Mode', 
             type: 'select', 
             options: [
@@ -50,13 +50,13 @@ const AnalysisConfiguration = () => {
                 { value: 'CNA', title: 'CNA (Common Neighbor Analysis)' }
             ] 
         },
-        { key: 'max_trial_circuit_size', label: 'Max Trial Circuit Size', type: 'input', inputProps: { type: 'number', step: '0.1' }},
-        { key: 'circuit_stretchability', label: 'Circuit Stretchability', type: 'input', inputProps: { type: 'number', step: '0.1' }},
-        { key: 'defect_mesh_smoothing_level', label: 'Defect Mesh Smoothing', type: 'input', inputProps: { type: 'number', step: '1' }},
-        { key: 'line_smoothing_level', label: 'Line Smoothing', type: 'input', inputProps: { type: 'number', step: '0.1' }},
-        { key: 'line_point_interval', label: 'Line Point Interval', type: 'input', inputProps: { type: 'number', step: '0.1' }},
-        { key: 'only_perfect_dislocations', label: 'Only Perfect Dislocations', type: 'checkbox' },
-        { key: 'mark_core_atoms', label: 'Mark Core Atoms', type: 'checkbox' },
+        { key: 'maxTrialCircuitSize', label: 'Max Trial Circuit Size', type: 'input', inputProps: { type: 'number', step: '0.1' }},
+        { key: 'circuitStretchability', label: 'Circuit Stretchability', type: 'input', inputProps: { type: 'number', step: '0.1' }},
+        { key: 'defectMeshSmoothingLevel', label: 'Defect Mesh Smoothing', type: 'input', inputProps: { type: 'number', step: '1' }},
+        { key: 'lineSmoothingLevel', label: 'Line Smoothing', type: 'input', inputProps: { type: 'number', step: '0.1' }},
+        { key: 'linePointInterval', label: 'Line Point Interval', type: 'input', inputProps: { type: 'number', step: '0.1' }},
+        { key: 'onlyPerfectDislocations', label: 'Only Perfect Dislocations', type: 'checkbox' },
+        { key: 'markCoreAtoms', label: 'Mark Core Atoms', type: 'checkbox' },
     ];
 
     return (

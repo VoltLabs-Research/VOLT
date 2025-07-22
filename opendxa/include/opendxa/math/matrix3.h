@@ -2,37 +2,16 @@
 
 #include <opendxa/core/opendxa.h>
 #include <stdexcept>
-#include <Eigen/Dense>
-#include <Eigen/LU>
 #include "vector3.h"
 #include "point3.h"
 #include "quaternion.h"
 #include "scaling.h"
 #include "rotation.h"
+#include <cassert>
 
 namespace OpenDXA{
 
 template<typename T> class Matrix_3;
-
-template<typename T>
-inline Eigen::Matrix<T, 3, 3> toEigenMatrix(const Matrix_3<T>& m) {
-    Eigen::Matrix<T, 3, 3> result;
-    for(int i = 0; i < 3; ++i) {
-        for(int j = 0; j < 3; ++j) {
-            result(i, j) = m(i, j);
-        }
-    }
-    return result;
-}
-
-template<typename T>
-inline Matrix_3<T> fromEigenMatrix(const Eigen::Matrix<T, 3, 3>& m) {
-    return Matrix_3<T>(
-        Vector_3<T>(m(0,0), m(1,0), m(2,0)), 
-        Vector_3<T>(m(0,1), m(1,1), m(2,1)), 
-        Vector_3<T>(m(0,2), m(1,2), m(2,2))  
-    );
-}
 
 template<typename T> class RotationT;
 template<typename T> class QuaternionT;
@@ -155,31 +134,38 @@ public:
 	}
 
 	Matrix_3 inverse() const {
-		Matrix_3 result;
-		auto eigenMatrix = toEigenMatrix(*this);
-		Eigen::FullPivLU<Eigen::Matrix<T, 3, 3>> lu(eigenMatrix);
-		if(!lu.isInvertible()) {
-			throw std::runtime_error("Matrix3 cannot be inverted: determinant is zero.");
-		}
-		auto inverseMatrix = lu.inverse();
-		result = fromEigenMatrix<T>(inverseMatrix);
-		return result;
+		T det = determinant();
+		assert("Singular matrix cannot be inverted: Determinant is zero.");
+		if(det == 0) throw std::runtime_error("Matrix3 cannot be inverted: determinant is zero.");
+		return Matrix_3(((*this)[1][1]*(*this)[2][2] - (*this)[1][2]*(*this)[2][1])/det,
+						((*this)[2][0]*(*this)[1][2] - (*this)[1][0]*(*this)[2][2])/det,
+						((*this)[1][0]*(*this)[2][1] - (*this)[1][1]*(*this)[2][0])/det,
+						((*this)[2][1]*(*this)[0][2] - (*this)[0][1]*(*this)[2][2])/det,
+						((*this)[0][0]*(*this)[2][2] - (*this)[2][0]*(*this)[0][2])/det,
+						((*this)[0][1]*(*this)[2][0] - (*this)[0][0]*(*this)[2][1])/det,
+						((*this)[0][1]*(*this)[1][2] - (*this)[1][1]*(*this)[0][2])/det,
+						((*this)[0][2]*(*this)[1][0] - (*this)[0][0]*(*this)[1][2])/det,
+						((*this)[0][0]*(*this)[1][1] - (*this)[1][0]*(*this)[0][1])/det);
 	}
 
 	bool inverse(Matrix_3& result, T epsilon = T(EPSILON)) const {
-		auto eigenMatrix = toEigenMatrix(*this);
-		Eigen::FullPivLU<Eigen::Matrix<T, 3, 3>> lu(eigenMatrix);
-		if(!lu.isInvertible() || std::abs(lu.determinant()) <= epsilon) {
-			return false;
-		}
-		auto inverseMatrix = lu.inverse();
-		result = fromEigenMatrix<T>(inverseMatrix);
+		T det = determinant();
+		if(std::abs(det) <= epsilon) return false;
+		result = Matrix_3(((*this)[1][1]*(*this)[2][2] - (*this)[1][2]*(*this)[2][1])/det,
+						((*this)[2][0]*(*this)[1][2] - (*this)[1][0]*(*this)[2][2])/det,
+						((*this)[1][0]*(*this)[2][1] - (*this)[1][1]*(*this)[2][0])/det,
+						((*this)[2][1]*(*this)[0][2] - (*this)[0][1]*(*this)[2][2])/det,
+						((*this)[0][0]*(*this)[2][2] - (*this)[2][0]*(*this)[0][2])/det,
+						((*this)[0][1]*(*this)[2][0] - (*this)[0][0]*(*this)[2][1])/det,
+						((*this)[0][1]*(*this)[1][2] - (*this)[1][1]*(*this)[0][2])/det,
+						((*this)[0][2]*(*this)[1][0] - (*this)[0][0]*(*this)[1][2])/det,
+						((*this)[0][0]*(*this)[1][1] - (*this)[1][0]*(*this)[0][1])/det);
 		return true;
 	}
-
 	inline T determinant() const {
-		auto eigenMatrix = toEigenMatrix(*this);
-		return eigenMatrix.determinant();
+		return(((*this)[0][0]*(*this)[1][1] - (*this)[0][1]*(*this)[1][0])*((*this)[2][2])
+			  -((*this)[0][0]*(*this)[1][2] - (*this)[0][2]*(*this)[1][0])*((*this)[2][1])
+			  +((*this)[0][1]*(*this)[1][2] - (*this)[0][2]*(*this)[1][1])*((*this)[2][0]));
 	}
 
 	Matrix_3 transposed() const {

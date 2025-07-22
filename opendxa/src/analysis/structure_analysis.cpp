@@ -20,11 +20,12 @@ StructureAnalysis::StructureAnalysis(
     ParticleProperty* outputStructures, 
     std::vector<Matrix3>&& preferredCrystalOrientations,
     bool identifyPlanarDefects, 
-    Mode _identificationMode
+    Mode identificationMode
 ) :
-    _positions(positions), _simCell(simCell),
+    _positions(positions),
+    _simCell(simCell),
     _inputCrystalType(inputCrystalType),
-    _identificationMode(_identificationMode),
+    _identificationMode(identificationMode),
     _structureTypes(outputStructures),
     _particleSelection(particleSelection),
     _coordStructures(outputStructures, inputCrystalType, identifyPlanarDefects, simCell),
@@ -79,7 +80,7 @@ float StructureAnalysis::computeAdaptiveRMSDCutoff(){
     
     if(rmsdValues.empty()) return 0.0f;
     
-    size_t idx95 = static_cast<size_t>(0.95 * (rmsdValues.size() - 1));
+    size_t idx95 = (rmsdValues.size() > 1) ? static_cast<size_t>(0.95 * (rmsdValues.size() - 1)) : 0;
     std::nth_element(rmsdValues.begin(), rmsdValues.begin() + idx95, rmsdValues.end());
     
     const float cutoffMin = 0.15f;
@@ -471,7 +472,7 @@ void StructureAnalysis::growCluster(
         int currentAtomIndex = atomsToVisit.front();
         atomsToVisit.pop_front();
 
-        int symmetryPermutationIndex = _atomSymmetryPermutations->getInt(currentAtomIndex);
+        int symmetryPermutationIndex = _atomSymmetryPermutations->getInt(static_cast<size_t>(currentAtomIndex));
         const auto& permutation = latticeStructure.permutations[symmetryPermutationIndex].permutation;
 
         for(int neighborIndex = 0; neighborIndex < coordStructure.numNeighbors; neighborIndex++){
@@ -480,7 +481,7 @@ void StructureAnalysis::growCluster(
 
             const Vector3& latticeVector = latticeStructure.latticeVectors[permutation[neighborIndex]];
             const Vector3& spatialVector = cell().wrapVector(
-                positions()->getPoint3(neighborAtomIndex) - positions()->getPoint3(currentAtomIndex)
+                positions()->getPoint3(static_cast<size_t>(neighborAtomIndex)) - positions()->getPoint3(static_cast<size_t>(currentAtomIndex))
             );
 
             for(size_t i = 0; i < 3; i++){
