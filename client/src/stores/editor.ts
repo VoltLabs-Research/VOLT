@@ -31,11 +31,23 @@ interface TimestepData{
     timestepCount: number;
 }
 
+export interface SlicePlaneConfig{
+    normal: {
+        x: number;
+        y: number;
+        z: number;
+    };
+    distance: number;
+    slabWidth: number;
+    reverseOrientation: boolean;
+}
+
 interface EditorState{
     isPlaying: boolean;
     playSpeed: number;
     currentTimestep?: number;
     intervalId: ReturnType<typeof setInterval> | null;
+    slicePlaneConfig: SlicePlaneConfig;
     analysisConfig: AnalysisConfig;
     timestepData: TimestepData,
     currentGltfUrl: TrajectoryGLTFs | null;
@@ -75,13 +87,21 @@ const initialAnalysisConfig: AnalysisConfig = {
     linePointInterval: 2.5,
     onlyPerfectDislocations: false,
     markCoreAtoms: false
-}
+};
+
+const initialSlicePlaneConfig: SlicePlaneConfig = {
+    normal: { x: 0, y: 0, z: 0 },
+    distance: 0,
+    slabWidth: 0.05,
+    reverseOrientation: true
+};
 
 const initialState: EditorState = {
     isPlaying: false,
     playSpeed: 1,
     intervalId: null,
     currentTimestep: undefined,
+    slicePlaneConfig: initialSlicePlaneConfig,
     analysisConfig: initialAnalysisConfig,
     timestepData: { timesteps: [], minTimestep: 0, maxTimestep: 0, timestepCount: 0 },
     currentGltfUrl: null,

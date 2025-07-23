@@ -56,12 +56,6 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     autoFit = true,
     orbitControlsRef,
     enableSlice = true,
-    slicePlane = {
-        normal: { x: -0, y: 0, z: 0 },
-        distance: 0,
-        slabWidth: 0.05,
-        reverseOrientation: true,
-    },
     enableInstancing = false,
     instanceCount = 1000,
     updateThrottle = 16,
@@ -69,7 +63,8 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     const [geometryData, setGeometryData] = useState<{ geometry: BufferGeometry | null; material: Material | null }>({ geometry: null, material: null });
     const { instancedMeshRef, updateInstances } = useInstancedRenderer(instanceCount);
     const instancePositions = useRef<Vector3[]>([]);
-    const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlane);
+    const slicePlaneConfig = useEditorStore((state) => state.slicePlaneConfig);
+    const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig);
     const currentGltfUrl = useEditorStore((state) => state.currentGltfUrl);
     const nextGltfUrl = useEditorStore((state) => state.nextGltfUrl);
 

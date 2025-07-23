@@ -1,12 +1,6 @@
 import { useMemo } from 'react';
 import { Plane, Vector3 } from 'three';
-
-interface SlicePlaneConfig {
-    normal: { x: number; y: number; z: number };
-    distance: number;
-    slabWidth?: number;
-    reverseOrientation?: boolean;
-}
+import type { SlicePlaneConfig } from '@/stores/editor';
 
 const useSlicingPlanes = (
     enableSlice: boolean,
