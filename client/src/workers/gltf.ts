@@ -26,7 +26,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 const loader = new GLTFLoader();
 const draco = new DRACOLoader();
 
-draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/draco_decoder.js'); 
+draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/'); 
 draco.setDecoderConfig({ type: 'wasm' });
 draco.preload();
 

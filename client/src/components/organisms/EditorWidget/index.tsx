@@ -27,6 +27,7 @@ interface EditorWidgetProps {
     children: React.ReactNode;
     className?: string;
     style?: React.CSSProperties;
+    draggable?: boolean
 }
 
 export interface EditorWidgetRef {
@@ -39,7 +40,8 @@ export interface EditorWidgetRef {
 const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>(({ 
     children, 
     className = '',
-    style = {}
+    style = {},
+    draggable = true
 }, ref) => {
     const widgetRef = useRef<HTMLDivElement>(null);
     const isDraggingRef = useRef(false);
@@ -93,6 +95,7 @@ const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>(({
 
     const handleDoubleClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
+        if(!draggable) return;
         isDraggingRef.current = true;
         startPosRef.current = { x: e.clientX, y: e.clientY };
         

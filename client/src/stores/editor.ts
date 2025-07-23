@@ -61,6 +61,7 @@ interface EditorActions{
     setPlaySpeed: (speed: number) => void;
     setCurrentTimestep: (timestep: number) => void;
     setActiveSceneObject: (sceneObject: string) => void;
+    setSlicePlaneConfig: (config: SlicePlaneConfig) => void;
     setAnalysisConfig: <K extends keyof AnalysisConfig>(key: K, value: AnalysisConfig[K]) => void;
     selectTrajectory: (trajectory: Trajectory) => void;
     playNextFrame: () => void;
@@ -238,6 +239,10 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
             }
             
             set(computeDerivedState());
+        },
+
+        setSlicePlaneConfig: (config: SlicePlaneConfig) => {
+            set({ slicePlaneConfig: config });
         },
 
         reset: () => {

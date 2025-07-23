@@ -152,7 +152,7 @@ export const useGltfScene = ({
         }catch(error){
             console.error('Error loading GLTF:', error);
         }
-    }, [currentGltfUrl, activeSceneObject]);
+    }, [currentGltfUrl, activeSceneObject, sliceClippingPlanes]);
 
     const throttledUpdateScene = useThrottledCallback(updateSceneInternal, updateThrottle);
 

@@ -2,4 +2,57 @@
     bottom: 2rem;
     overflow: hidden;
     right: 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.slice-plane-normals-container{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .5rem;
+}
+
+.slice-plane-normal-input-container{
+    background-color: rgba(49, 49, 49, 0.8);
+    border-radius: 5rem;
+    padding: 0 .8rem;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.slice-plane-normals-inputs-container{
+    display: flex;
+    gap: .5rem;
+}
+
+.slice-plane-normal-input{
+    background-color: transparent;
+    width: 25px;
+    color: #ebebeb;
+}
+
+.slice-plane-param-input-label{
+    color: #818181;
+    text-transform: uppercase;
+    font-size: .9rem;
+}
+
+.slice-plane-normals-inputs{
+    display: flex;
+    gap: .5rem;
+    justify-content: space-between;
+}
+
+.slice-plane-normals-inputs.extended .slice-plane-normal-input{
+    width: 150px;
+}
+
+.slice-plane-body-container,
+.slice-plane-params-container{
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }

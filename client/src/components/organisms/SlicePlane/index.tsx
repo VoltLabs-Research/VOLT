@@ -21,13 +21,66 @@
 **/
 
 import EditorWidget from '@/components/organisms/EditorWidget';
+import useEditorStore from '@/stores/editor';
 import './SlicePlane.css';
 
 const SlicePlane = () => {
+    const slicePlaneConfig = useEditorStore((state) => state.slicePlaneConfig);
+    const setSlicePlaneConfig = useEditorStore((state) => state.setSlicePlaneConfig);
+    
+    const handleNormalChange = (axis: 'x' | 'y' | 'z', value: string) => {
+        setSlicePlaneConfig({
+            ...slicePlaneConfig,
+            normal: { ...slicePlaneConfig.normal, [axis]: parseFloat(value) }
+        });
+    };
 
     return (
-        <EditorWidget className='slice-plane-container'>
-            <h3>...</h3>
+        <EditorWidget className='slice-plane-container' draggable={false}>
+            <div className='editor-floting-header-container'>
+                <h3 className='editor-floating-header-title'>Slice Modifier</h3>
+            </div>
+
+            <div className='slice-plane-body-container'>
+                <div className='slice-plane-normals-container'>
+                    <span className='slice-plane-normals-title'>Normals</span>
+                    <div className='slice-plane-normals-inputs-container'>
+                        {['x', 'y', 'z'].map((axis, index) => (
+                            <div className='slice-plane-normals-inputs' key={index}>
+                                <div className='slice-plane-normal-input-container'>
+                                    <span className='slice-plane-normal-input-label'>{axis}</span>
+                                    <input 
+                                        value={parseFloat(slicePlaneConfig.normal[axis])}
+                                        onChange={(e) => handleNormalChange(axis, e.target.value)}
+                                        className='slice-plane-normal-input' 
+                                        step={0.01}
+                                        type='number' />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className='slice-plane-params-container'>
+                    {[
+                        ['Slab Width', parseFloat(slicePlaneConfig.slabWidth), 'slabWidth', 0.01],
+                        ['Distance', parseFloat(slicePlaneConfig.distance), 'distance', 0.1]
+                    ].map(([ inputTitle, value, keyName, step ], index) => (
+                        <div className='slice-plane-normals-inputs extended' key={index}>
+                            <span className='slice-plane-param-input-title'>{inputTitle}</span>
+                            <div className='slice-plane-normal-input-container'>
+                                <input
+                                    value={value}
+                                    onChange={(e) => setSlicePlaneConfig({ ...slicePlaneConfig, [keyName]: e.target.value })}
+                                    className='slice-plane-normal-input' 
+                                    step={step}
+                                    type='number'
+                                />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </EditorWidget>
     );
 };
