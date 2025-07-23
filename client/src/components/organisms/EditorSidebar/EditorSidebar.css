@@ -14,9 +14,15 @@
     background-color: rgba(49, 49, 49, 0.8);
 }
 
+.editor-sidebar-option-container:not(.selected):hover{
+    background-color: rgba(49, 49, 49, 0.3);
+}
+
 .editor-sidebar-option-container{
     border-radius: 5rem;
     width: 48%;
+    transition: .1s;
+    cursor: pointer;
     height: 45px;
     display: flex;
     justify-content: center;
@@ -107,12 +113,17 @@
     align-items: center;
     gap: 1.2rem;
     padding: .5rem;
-    transition: .025s;
+    cursor: pointer;
+    border-radius: .5rem;
+    will-change: transform;
+}
+
+.editor-sidebar-scene-option-container:active{
+    transform: scale(.99);
 }
 
 .editor-sidebar-scene-option-container:hover{
     background-color: rgb(85 85 85 / 18%);
-    border-radius: .5rem;
 }
 
 .editor-sidebar-scene-option-title{

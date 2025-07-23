@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import SidebarUserAvatar from '@/components/atoms/SidebarUserAvatar';
 import { LuPanelRight } from "react-icons/lu";
 import { TbObjectScan } from "react-icons/tb";
@@ -14,6 +15,7 @@ import './EditorSidebar.css';
 const EditorSidebar = () => {
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const setActiveSceneObject = useEditorStore((state) => state.setActiveSceneObject);
+    const [activeSidebarTab, setActiveSidebarTag] = useState('Scene');
 
     return (
         <EditorWidget className='editor-sidebar-container' draggable={false}>
@@ -41,36 +43,47 @@ const EditorSidebar = () => {
                 <div className='editor-sidebar-options-wrapper-container'>
                     <div className='editor-sidebar-options-container'>
                         {['Scene', 'Modifiers'].map((option, index) => (
-                            <div className={'editor-sidebar-option-container '.concat((index === 0) ? 'selected': '')} key={index}>
+                            <div 
+                                className={'editor-sidebar-option-container '.concat((option === activeSidebarTab) ? 'selected': '')} 
+                                onClick={() => setActiveSidebarTag(option)}
+                                key={index}
+                            >
                                 <h3 className='editor-sidebar-option-title'>{option}</h3>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className='editor-sidebar-scene-container'>
-                    <div className='editor-sidebar-scene-options-container'>
-                        {[
-                            [TbObjectScan, 'Camera 1', 'trajectory'],
-                            [PiLineSegmentThin, 'Dislocations', 'dislocations'],
-                            [SiTraefikmesh, 'Defect Mesh', 'defect_mesh'],
-                            [PiAtomThin, 'Dislocation Core Atoms', 'core_atoms'],
-                            [PiTriangleDashedThin, 'Interface Mesh', 'interface_mesh'],
-                            [IoIosColorFilter, 'Structure Identification', 'atoms_colored_by_type']
-                        ].map(([ Icon, title, sceneType ], index) => (
-                            <div 
-                                className='editor-sidebar-scene-option-container' 
-                                onClick={() => setActiveSceneObject(sceneType)}
-                                key={index}
-                            >
-                                <i className='editor-sidebar-scene-option-icon-container'>
-                                    <Icon />
-                                </i>
-                                <h3 className='editor-sidebar-scene-option-title'>{title}</h3>
-                            </div>
-                        ))}
+                {activeSidebarTab === 'Scene' ? (
+                    <div className='editor-sidebar-scene-container'>
+                        <div className='editor-sidebar-scene-options-container'>
+                            {[
+                                [TbObjectScan, 'Camera 1', 'trajectory'],
+                                [PiLineSegmentThin, 'Dislocations', 'dislocations'],
+                                [SiTraefikmesh, 'Defect Mesh', 'defect_mesh'],
+                                [PiAtomThin, 'Dislocation Core Atoms', 'core_atoms'],
+                                [PiTriangleDashedThin, 'Interface Mesh', 'interface_mesh'],
+                                [IoIosColorFilter, 'Structure Identification', 'atoms_colored_by_type']
+                            ].map(([ Icon, title, sceneType ], index) => (
+                                <div 
+                                    className='editor-sidebar-scene-option-container' 
+                                    onClick={() => setActiveSceneObject(sceneType)}
+                                    key={index}
+                                >
+                                    <i className='editor-sidebar-scene-option-icon-container'>
+                                        <Icon />
+                                    </i>
+                                    <h3 className='editor-sidebar-scene-option-title'>{title}</h3>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className='editor-sidebar-modifiers-container'>
+
+                    </div>
+                )}
+
             </div>
 
             <div className='editor-sidebar-bottom-container'>
