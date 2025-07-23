@@ -57,7 +57,7 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     orbitControlsRef,
     enableSlice = true,
     slicePlane = {
-        normal: { x: 0, y: 0, z: 0 },
+        normal: { x: -0, y: 0, z: 0 },
         distance: 0,
         slabWidth: 0.05,
         reverseOrientation: true,

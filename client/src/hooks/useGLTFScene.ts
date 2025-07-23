@@ -87,14 +87,13 @@ export const useGltfScene = ({
         });
     }, [sliceClippingPlanes, enableInstancing, onGeometryReady]);
 
-
     const updateSceneInternal = useCallback(async () => {
         if(!currentGltfUrl || !activeSceneObject){
             return;
         }
 
         const targetUrl = currentGltfUrl[activeSceneObject];
-        if(!targetUrl || targetUrl === modelRef.current?.userData.gltfUrl) return;
+        //if(!targetUrl || targetUrl === modelRef.current?.userData.gltfUrl) return;
 
         try{
             const loadedModel = await loadGLTF(targetUrl);

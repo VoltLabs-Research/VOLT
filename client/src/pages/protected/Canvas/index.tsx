@@ -30,7 +30,7 @@ import useTrajectoryStore from '@/stores/trajectories';
 import useEditorStore from '@/stores/editor';
 import Loader from '@/components/atoms/Loader';
 import useTeamStore from '@/stores/team';
-import TrajectoryList from '@/components/organisms/TrajectoryList';
+import SlicePlane from '@/components/organisms/SlicePlane';
 import EditorSidebar from '@/components/organisms/EditorSidebar';
 import TrajectoryVisibilityStatusFloatIcon from '@/components/atoms/TrajectoryVisibilityStatusFloatIcon';
 import SceneTopCenteredOptions from '@/components/atoms/SceneTopCenteredOptions';
@@ -84,7 +84,7 @@ const EditorPage: React.FC = () => {
             <EditorSidebar />
             <TrajectoryVisibilityStatusFloatIcon />
             <SceneTopCenteredOptions />
-            <TrajectoryList />
+            <SlicePlane />
 
             {isLoadingTrajectory && (
                 <div className='loader-layer-container'>
