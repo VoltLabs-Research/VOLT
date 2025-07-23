@@ -1,18 +1,37 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
+import React, { useState, useMemo, useRef } from 'react';
 import CameraManager from '@/components/atoms/CameraManager';
 import useInstancedRenderer from '@/hooks/useInstancedRenderer';
 import useSlicingPlanes from '@/hooks/useSlicingPlanes';
-import loadGltfWithCache from '@/utilities/gltf/loader';
 import { useFrame } from '@react-three/fiber';
 import { useBVH } from '@react-three/drei';
 import { Vector3, BufferGeometry, Material } from 'three';
 import { useGltfScene } from '@/hooks/useGLTFScene';
 import { getOptimizedMaterial } from '@/utilities/gltf/modelUtils';
-import type { TrajectoryGLTFs } from '@/stores/editor';
+import useEditorStore from '@/stores/editor';
 
 interface TimestepViewerProps {
-    currentGltfUrl: TrajectoryGLTFs | null;
-    nextGltfUrl: string | null;
     rotation?: { x?: number; y?: number; z?: number };
     position?: { x?: number; y?: number; z?: number };
     scale?: number;
@@ -31,8 +50,6 @@ interface TimestepViewerProps {
 }
 
 const TimestepViewer: React.FC<TimestepViewerProps> = ({
-    currentGltfUrl,
-    nextGltfUrl,
     rotation = {},
     position = { x: 0, y: 0, z: 0 },
     scale = 1,
@@ -53,9 +70,12 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     const { instancedMeshRef, updateInstances } = useInstancedRenderer(instanceCount);
     const instancePositions = useRef<Vector3[]>([]);
     const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlane);
+    const currentGltfUrl = useEditorStore((state) => state.currentGltfUrl);
+    const nextGltfUrl = useEditorStore((state) => state.nextGltfUrl);
 
     const { meshRef, modelBounds } = useGltfScene({
         currentGltfUrl,
+        nextGltfUrl,
         sliceClippingPlanes,
         position,
         rotation,
@@ -80,12 +100,6 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
         }
     });
     
-    useEffect(() => {
-        if(nextGltfUrl){
-            loadGltfWithCache(nextGltfUrl).catch(() => {});
-        }
-    }, [nextGltfUrl]);
-
     const materialCache = useRef(new Map());
 
     const optimizedMaterial = useMemo(() => {

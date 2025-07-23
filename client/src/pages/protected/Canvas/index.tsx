@@ -42,7 +42,6 @@ const EditorPage: React.FC = () => {
     const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
 
     const currentGltfUrl = useEditorStore((state) => state.currentGltfUrl);
-    const nextGltfUrl = useEditorStore((state) => state.nextGltfUrl);
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
     const selectTrajectory = useEditorStore((state) => state.selectTrajectory);
 
@@ -102,8 +101,6 @@ const EditorPage: React.FC = () => {
                     <Scene3D>
                         {currentGltfUrl && (
                             <TimestepViewer
-                                currentGltfUrl={currentGltfUrl}
-                                nextGltfUrl={nextGltfUrl}
                                 scale={1}
                                 rotation={{ x: Math.PI / 2 }}
                                 position={{ x: 0, y: 0, z: 0 }}

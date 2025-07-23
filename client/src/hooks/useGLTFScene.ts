@@ -1,15 +1,38 @@
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Group, Mesh, Box3, Object3D, BufferGeometry, Material, Plane } from 'three';
-import loadGltfWithCache from '@/utilities/gltf/loader';
 import { calculateModelBounds, calculateOptimalTransforms } from '@/utilities/gltf/modelUtils';
 import { getOptimizedMaterial } from '@/utilities/gltf/modelUtils';
 import useThrottledCallback from '@/hooks/useThrottledCallback';
 import useEditorStore from '@/stores/editor';
+import loadGLTF, { preloadGLTFs } from '@/utilities/gltf/loader';
 import * as THREE from 'three';
 
 interface UseGltfSceneProps {
     currentGltfUrl: any;
+    nextGltfUrl: any;
     sliceClippingPlanes: Plane[];
     position: { x?: number; y?: number; z?: number };
     rotation: { x?: number; y?: number; z?: number };
@@ -21,6 +44,7 @@ interface UseGltfSceneProps {
 
 export const useGltfScene = ({
     currentGltfUrl,
+    nextGltfUrl,
     sliceClippingPlanes,
     position,
     rotation,
@@ -63,6 +87,7 @@ export const useGltfScene = ({
         });
     }, [sliceClippingPlanes, enableInstancing, onGeometryReady]);
 
+
     const updateSceneInternal = useCallback(async () => {
         if(!currentGltfUrl || !activeSceneObject){
             return;
@@ -72,13 +97,31 @@ export const useGltfScene = ({
         if(!targetUrl || targetUrl === modelRef.current?.userData.gltfUrl) return;
 
         try{
-            const gltf = await loadGltfWithCache(targetUrl);
-            const newModel = gltf.scene.clone();
+            const loadedModel = await loadGLTF(targetUrl);
+
+            preloadGLTFs([
+                currentGltfUrl.defect_mesh,
+                currentGltfUrl.interface_mesh,
+                currentGltfUrl.atoms_colored_by_type,
+                currentGltfUrl.dislocations,
+
+                nextGltfUrl.defect_mesh,
+                nextGltfUrl.interface_mesh,
+                nextGltfUrl.dislocations,
+                nextGltfUrl.atoms_colored_by_type,
+                nextGltfUrl.trajectory
+            ]);
+
+            if (!loadedModel) {
+                console.warn(`No se pudo cargar el modelo para la URL: ${targetUrl}`);
+                return;
+            }
+            
+            const newModel = loadedModel.clone();
             newModel.userData.gltfUrl = targetUrl;
             
             applyOptimizations(newModel);
-            
-            const bounds = calculateModelBounds(gltf);
+            const bounds = calculateModelBounds({ scene: newModel });
             const transforms = calculateOptimalTransforms(bounds);
             setModelBounds(bounds);
             newModel.position.set(
@@ -110,7 +153,7 @@ export const useGltfScene = ({
         }catch(error){
             console.error('Error loading GLTF:', error);
         }
-    }, [currentGltfUrl, activeSceneObject, scene, scale, position, rotation, applyOptimizations]);
+    }, [currentGltfUrl, activeSceneObject]);
 
     const throttledUpdateScene = useThrottledCallback(updateSceneInternal, updateThrottle);
 
