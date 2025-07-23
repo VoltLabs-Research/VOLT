@@ -22,7 +22,7 @@
 
 import axios from 'axios';
 
-export const API_BASE_URL = 'http://0.0.0.0:8000/api';
+export const API_BASE_URL = 'http://172.20.10.5:8000/api';
 
 export const api = axios.create({
     baseURL: API_BASE_URL,

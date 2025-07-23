@@ -1,6 +1,10 @@
 import React, { useMemo, useRef, useEffect } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
-import { Grid, OrbitControls, Environment } from '@react-three/drei';
+import CanvasGrid from '@/components/atoms/CanvasGrid';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import { EffectComposer, SSAO } from '@react-three/postprocessing';
+import { BlendFunction } from 'postprocessing';
+import useEditorStore from '@/stores/editor';
 import './Scene3D.css';
 
 interface Scene3DProps {
@@ -9,106 +13,107 @@ interface Scene3DProps {
     onCameraControlsRef?: (ref: any) => void;
 }
 
-const CanvasGrid = React.memo(() => {
-    const { gl } = useThree();
-
-    useEffect(() => {
-        gl.setClearColor('#1a1a1a');
-    }, [gl]);
-
-    return (
-        <Grid
-            infiniteGrid
-            cellSize={0.75}
-            sectionSize={3}
-            cellThickness={0.5}
-            sectionThickness={1}
-            fadeDistance={100}
-            fadeStrength={2}
-            color='#333333'
-            sectionColor='#555555'
-        />
-    );
-});
-
 const Scene3D: React.FC<Scene3DProps> = ({
     children,
     cameraControlsEnabled = true,
     onCameraControlsRef
 }) => {
     const orbitControlsRef = useRef<any>(null);
+    const activeSceneObject = useEditorStore((state) => state.activeSceneObject);
 
     useEffect(() => {
-        if (onCameraControlsRef) {
+        if(onCameraControlsRef){
             onCameraControlsRef(orbitControlsRef.current);
         }
     }, [onCameraControlsRef]);
 
     const cameraConfig = useMemo(() => ({
-        position: [12, 8, 12] as [number, number, number],
+        position: [8, 6, 8] as [number, number, number],
         fov: 50
     }), []);
 
-    const lightConfig = useMemo(() => ({
-        ambient: { intensity: 0.8 }, 
-        directional: {
-            position: [15, 15, 15] as [number, number, number],
-            intensity: 2.0, 
-            'shadow-mapSize': [2048, 2048] as [number, number],
-            'shadow-camera-far': 100,
-            'shadow-camera-left': -15,
-            'shadow-camera-right': 15,
-            'shadow-camera-top': 15,
-            'shadow-camera-bottom': -15
-        }
-    }), []);
-
-    const orbitControlsConfig = useMemo(() => ({
-        makeDefault: true,
-        enableDamping: true,
-        dampingFactor: 0.05,
-        rotateSpeed: 0.7,
-        maxDistance: 30,
-        minDistance: 2,
-        target: [0, 3, 0] as [number, number, number]
-    }), []);
-
     return (
-        <Canvas gl={{ localClippingEnabled: true }} shadows camera={cameraConfig}>
-            <ambientLight intensity={lightConfig.ambient.intensity} />
-            <directionalLight
-                castShadow
-                position={lightConfig.directional.position}
-                intensity={lightConfig.directional.intensity}
-                shadow-mapSize={lightConfig.directional['shadow-mapSize']}
-                shadow-camera-far={lightConfig.directional['shadow-camera-far']}
-                shadow-camera-left={lightConfig.directional['shadow-camera-left']}
-                shadow-camera-right={lightConfig.directional['shadow-camera-right']}
-                shadow-camera-top={lightConfig.directional['shadow-camera-top']}
-                shadow-camera-bottom={lightConfig.directional['shadow-camera-bottom']}
-            />
+        <Canvas
+            gl={{ localClippingEnabled: true, antialias: true }}
+            shadows
+            camera={cameraConfig}
+            style={{ backgroundColor: '#1E1E1E' }}
+            dpr={[1, 2]}
+        >
+            {['defect_mesh', 'interface_mesh'].includes(activeSceneObject) && (
+                <>
+                    <ambientLight intensity={0.15} />
+                    <directionalLight
+                        castShadow
+                        position={[10, 15, -5]}
+                        intensity={2.0}
+                        shadow-mapSize={[4096, 4096]}
+                        shadow-bias={-0.0001} 
+                    />
 
-            <directionalLight
-                position={[-10, 10, -10]}
-                intensity={0.8}
-                color="#ffffff"
-            />
-            
-            <hemisphereLight
-                skyColor="#87CEEB"
-                groundColor="#362d1d"
-                intensity={0.5}
+                    <directionalLight
+                        position={[-10, 5, 10]}
+                        intensity={0.2}
+                    />
+                    
+                    <EffectComposer>
+                        <SSAO
+                            blendFunction={BlendFunction.MULTIPLY} 
+                            intensity={10}
+                            radius={0.2} 
+                            luminanceInfluence={0.5}
+                            worldDistanceThreshold={1.0}
+                            worldDistanceFalloff={0.5}
+                            worldProximityThreshold={1.0}
+                            worldProximityFalloff={0.5}
+                        />
+                    </EffectComposer>
+                </>
+            )}
+           
+            {['trajectory', 'atoms_colored_by_type'].includes(activeSceneObject) && (
+                <>
+                    <ambientLight intensity={0.8} />
+
+                    <directionalLight
+                        castShadow
+                        position={[15, 15, 15]}
+                        intensity={2.0}
+                        shadow-mapSize={[4096, 4096]}
+                        shadow-camera-far={100}
+                        shadow-camera-left={-15}
+                        shadow-camera-right={15}
+                        shadow-camera-top={15}
+                        shadow-camera-bottom={-15}
+                    />
+
+                    <directionalLight
+                        position={[-10, 10, -10]}
+                        intensity={0.8}
+                        color="#ffffff"
+                    />
+                    
+                    <hemisphereLight
+                        groundColor="#362d1d"
+                        intensity={0.5}
+                    />
+                </>
+            )}
+
+
+            <OrbitControls
+                ref={orbitControlsRef}
+                makeDefault
+                enableDamping
+                dampingFactor={0.05}
+                rotateSpeed={0.8}
+                maxDistance={50}
+                minDistance={2}
+                target={[0, 2, 0]} 
+                enabled={cameraControlsEnabled}
             />
             
             <CanvasGrid />
-            
-            <OrbitControls 
-                ref={orbitControlsRef}
-                {...orbitControlsConfig}
-                enabled={cameraControlsEnabled}
-            />
-                                    
-            <Environment preset='city' />
 
             {children}
         </Canvas>

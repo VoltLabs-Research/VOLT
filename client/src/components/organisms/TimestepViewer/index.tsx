@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
-import { type TrajectoryGLTFs } from '@/stores/editor';
 import { Group, Box3, Vector3, Plane, Mesh } from 'three';
 import { calculateModelBounds, calculateOptimalTransforms } from '@/utilities/gltf/modelUtils';
 import loadGltfWithCache from '@/utilities/gltf/loader';
 import CameraManager from '@/components/atoms/CameraManager';
+import useEditorStore, { type TrajectoryGLTFs } from '@/stores/editor';
 
 interface TimestepViewerProps{
     currentGltfUrl: TrajectoryGLTFs | null;
@@ -44,6 +44,7 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     const { scene } = useThree();
     const modelRef = useRef<Group | null>(null);
     const [modelBounds, setModelBounds] = useState<ReturnType<typeof calculateModelBounds> | null>(null);
+    const activeSceneObject = useEditorStore((state) => state.activeSceneObject);
 
     const sliceClippingPlanes = useMemo(() => {
         if (!enableSlice || !modelBounds) return [];
@@ -89,7 +90,7 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
             return;
         }
 
-        const gltf = await loadGltfWithCache(currentGltfUrl.defect_mesh!);
+        const gltf = await loadGltfWithCache(currentGltfUrl[activeSceneObject]!);
         const newModel = gltf.scene.clone();
 
         newModel.traverse((child) => {

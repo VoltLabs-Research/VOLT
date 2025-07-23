@@ -558,6 +558,7 @@ class MeshExporter{
 };
 
 export default MeshExporter;
+
 /*
 async function processGltfFile(inputPath: string, outputPath: string, smoothIterations: number) {
     const exporter = new MeshExporter();
@@ -574,7 +575,9 @@ async function processGltfFile(inputPath: string, outputPath: string, smoothIter
     });
 }
 
-const inputGltfPath = '/home/rodyherrera/Escritorio/Development/OpenDXA/server/storage/trajectories/61b3c0e9-2939-4b31-a872-226948cabe06/gltf/frame_0_defect_mesh.gltf'; // Archivo GLTF de entrada
+const inputGltfPath = '/home/rodyherrera/Escritorio/Development/OpenDXA/server/storage/trajectories/61b3c0e9-2939-4b31-a872-226948cabe06/gltf/frame_0_interface_mesh.gltf';
 const outputGltfPath = './output_taubin_smoothed_mesh.gltf'; 
 const iterations = 8; 
-processGltfFile(inputGltfPath, inputGltfPath, iterations);*/
+processGltfFile(inputGltfPath, inputGltfPath, iterations);
+
+*/

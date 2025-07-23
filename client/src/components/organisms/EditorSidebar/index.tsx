@@ -8,10 +8,12 @@ import { IoIosColorFilter } from "react-icons/io";
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
+import useEditorStore from '@/stores/editor';
 import './EditorSidebar.css';
 
 const EditorSidebar = () => {
     const trajectory = useTrajectoryStore((state) => state.trajectory);
+    const setActiveSceneObject = useEditorStore((state) => state.setActiveSceneObject);
 
     return (
         <EditorWidget className='editor-sidebar-container'>
@@ -47,14 +49,18 @@ const EditorSidebar = () => {
                 <div className='editor-sidebar-scene-container'>
                     <div className='editor-sidebar-scene-options-container'>
                         {[
-                            [TbObjectScan, 'Camera 1'],
-                            [PiLineSegmentThin, 'Dislocations'],
-                            [SiTraefikmesh, 'Defect Mesh'],
-                            [PiAtomThin, 'Dislocation Core Atoms'],
-                            [PiTriangleDashedThin, 'Interface Mesh'],
-                            [IoIosColorFilter, 'Structure Identification']
-                        ].map(([ Icon, title ], index) => (
-                            <div className='editor-sidebar-scene-option-container' key={index}>
+                            [TbObjectScan, 'Camera 1', 'trajectory'],
+                            [PiLineSegmentThin, 'Dislocations', 'dislocations'],
+                            [SiTraefikmesh, 'Defect Mesh', 'defect_mesh'],
+                            [PiAtomThin, 'Dislocation Core Atoms', 'core_atoms'],
+                            [PiTriangleDashedThin, 'Interface Mesh', 'interface_mesh'],
+                            [IoIosColorFilter, 'Structure Identification', 'atoms_colored_by_type']
+                        ].map(([ Icon, title, sceneType ], index) => (
+                            <div 
+                                className='editor-sidebar-scene-option-container' 
+                                onClick={() => setActiveSceneObject(sceneType)}
+                                key={index}
+                            >
                                 <i className='editor-sidebar-scene-option-icon-container'>
                                     <Icon />
                                 </i>

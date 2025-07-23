@@ -1,41 +1,40 @@
-import { api } from '@/services/api';
-import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { api } from '@/services/api';
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+const loader = new GLTFLoader();
+const draco = new DRACOLoader();
+draco.setDecoderPath('/libs/draco/');
+draco.setDecoderConfig({ type: 'wasm' });
+loader.setDRACOLoader(draco);
 
 const cache = new Map<string, Promise<GLTF>>();
-const loader = new GLTFLoader();
-const dracoLoader = new DRACOLoader();
 
-dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/draco_decoder.js');
-loader.setDRACOLoader(dracoLoader);
-
-const loadGltfWithCache = (url: string): Promise<GLTF> => {
+export const loadGLB = (url: string): Promise<GLTF> => {
     if(!cache.has(url)){
         const loadPromise = new Promise<GLTF>(async (resolve, reject) => {
             try{
-                const response = await api.get(url, { responseType: 'json' });
-                const gltfString = JSON.stringify(response.data);
-
-                const blob = new Blob([ gltfString ], { type: 'model/gltf+json' });
+                const { data } = await api.get<ArrayBuffer>(url, { responseType: 'arraybuffer' });
+                const blob = new Blob([data], { type: 'model/gltf-binary' });
                 const blobUrl = URL.createObjectURL(blob);
 
                 loader.load(blobUrl, (gltf) => {
                     URL.revokeObjectURL(blobUrl);
                     resolve(gltf);
-                }, undefined, (error) => {
+                }, undefined, (err) => {
                     URL.revokeObjectURL(blobUrl);
-                    reject(error);
+                    reject(err);
                 });
-            }catch(error){
-                reject(error);
+            }catch(e){
+                reject(e);
             }
         });
 
         cache.set(url, loadPromise);
-    }
+      }
 
     return cache.get(url)!;
 };
 
-
-export default loadGltfWithCache;
+export default loadGLB;

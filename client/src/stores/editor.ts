@@ -40,12 +40,15 @@ interface EditorState{
     timestepData: TimestepData,
     currentGltfUrl: TrajectoryGLTFs | null;
     nextGltfUrl: TrajectoryGLTFs | null;
+    activeSceneObject: 'trajectory' | 'dislocations' | 'defect_mesh' |
+                       'core_atoms' | 'interface_mesh' | 'atoms_colored_by_type';
 }
 
 interface EditorActions{
     togglePlay: () => void;
     setPlaySpeed: (speed: number) => void;
     setCurrentTimestep: (timestep: number) => void;
+    setActiveSceneObject: (sceneObject: string) => void;
     setAnalysisConfig: <K extends keyof AnalysisConfig>(key: K, value: AnalysisConfig[K]) => void;
     selectTrajectory: (trajectory: Trajectory) => void;
     playNextFrame: () => void;
@@ -58,6 +61,7 @@ export interface TrajectoryGLTFs {
     defect_mesh: string;
     interface_mesh: string;
     dislocations: string;
+    core_atoms: string;
     atoms_colored_by_type: string;
 }
 
@@ -81,7 +85,8 @@ const initialState: EditorState = {
     analysisConfig: initialAnalysisConfig,
     timestepData: { timesteps: [], minTimestep: 0, maxTimestep: 0, timestepCount: 0 },
     currentGltfUrl: null,
-    nextGltfUrl: null
+    nextGltfUrl: null,
+    activeSceneObject: 'trajectory',
 };
 
 const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get) => {
@@ -115,7 +120,8 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
                 defect_mesh: buildUrl(currentTimestep, 'defect_mesh'),
                 interface_mesh: buildUrl(currentTimestep, 'interface_mesh'),
                 atoms_colored_by_type: buildUrl(currentTimestep, 'atoms_colored_by_type'),
-                dislocations: buildUrl(currentTimestep, 'dislocations')  
+                dislocations: buildUrl(currentTimestep, 'dislocations'),
+                core_atoms: ''
             };
             
             const currentIndex = timesteps.indexOf(currentTimestep);
@@ -127,7 +133,8 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
                     defect_mesh: buildUrl(nextTimestep, 'defect_mesh'),
                     interface_mesh: buildUrl(nextTimestep, 'interface_mesh'),
                     atoms_colored_by_type: buildUrl(nextTimestep, 'atoms_colored_by_type'),
-                    dislocations: buildUrl(nextTimestep, 'dislocations')  
+                    dislocations: buildUrl(nextTimestep, 'dislocations'),
+                    core_atoms: ''
                 };
             }
         }
@@ -188,6 +195,10 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
 
             set({ currentTimestep: firstTimestep, isPlaying: false });
             set(computeDerivedState());
+        },
+
+        setActiveSceneObject: (sceneObject: string) => {
+            set({ activeSceneObject: sceneObject });  
         },
 
         playNextFrame: () => {
