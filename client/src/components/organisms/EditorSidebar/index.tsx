@@ -16,7 +16,7 @@ const EditorSidebar = () => {
     const setActiveSceneObject = useEditorStore((state) => state.setActiveSceneObject);
 
     return (
-        <EditorWidget className='editor-sidebar-container'>
+        <EditorWidget className='editor-sidebar-container' draggable={false}>
             <div className='editor-sidebar-top-container'>
                 <div className='editor-sidebar-header-container'>
                     <div className='editor-sidebar-trajectory-info-container'>

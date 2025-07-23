@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useCallback } from 'react';
 import CanvasGrid from '@/components/atoms/CanvasGrid';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import useEditorStore from '@/stores/editor';
@@ -74,7 +74,7 @@ const DefectLighting = React.memo(() => (
             position={[-10, 5, 10]}
             intensity={0.2}
         />
-        <EffectComposer enableNormalPass multisampling={0}>
+        <EffectComposer enableNormalPass multisampling={0} renderPriority={1}>
             <SSAO {...SSAO_CONFIG} />
         </EffectComposer>
     </>
@@ -158,6 +158,21 @@ const Scene3D: React.FC<Scene3DProps> = ({
                 debounce: 200
             }}
         >
+            <GizmoHelper
+                alignment='top-left'
+                renderPriority={2}
+                margin={[450, 70]} 
+            >
+                <directionalLight position={[5, 5, 5]} intensity={1} />
+                <ambientLight intensity={1.5} />
+
+                <GizmoViewport 
+                    scale={30}
+                    hideNegativeAxes={true}
+                    axisColors={['#404040', '#404040', '#404040']} 
+                    labelColor="#a2a2a2" />
+            </GizmoHelper>
+
             {isDefectScene && <DefectLighting />}
             {isTrajectoryScene && <TrajectoryLighting />}
 
@@ -168,6 +183,10 @@ const Scene3D: React.FC<Scene3DProps> = ({
             
             <CanvasGrid />
             {children}
+
+            <EffectComposer enableNormalPass={isDefectScene} multisampling={0} renderPriority={1}>
+                {isDefectScene && <SSAO {...SSAO_CONFIG} />}
+            </EffectComposer>
         </Canvas>
     );
 };
