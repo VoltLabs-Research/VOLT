@@ -25,10 +25,6 @@ import { TimestepInfo, Atom } from '../lammps';
 
 export interface GLTFExportOptions{
     atomRadius?: number;
-    spatialCulling?: boolean;
-    cullCenter?: { x: number; y: number; z: number };
-    cullRadius?: number;
-    subsampleRatio?: number;
     maxAtoms?: number;
     maxInstancesPerMesh?: number;
 }
@@ -37,11 +33,6 @@ interface PerformanceProfile{
     atomCount: number;
     recommendedMaxAtoms: number;
     sphereResolution: { segments: number; rings: number };
-    subsampleRatio: number;
-    enableSpatialCulling: boolean;
-    enableLOD: boolean;
-    chunkSize: number;
-    compressionLevel: 'high' | 'medium' | 'low';
 }
 
 export interface ParsedFrame{
@@ -415,55 +406,30 @@ class LAMMPSToGLTFExporter{
                 atomCount,
                 recommendedMaxAtoms: atomCount,
                 sphereResolution: { segments: 16, rings: 12 },
-                subsampleRatio: 1.0,
-                enableSpatialCulling: false,
-                enableLOD: false,
-                chunkSize: 5000,
-                compressionLevel: 'low'
             };
         }else if(atomCount <= 100000){
             return {
                 atomCount,
                 recommendedMaxAtoms: atomCount,
                 sphereResolution: { segments: 12, rings: 8 },
-                subsampleRatio: 1.0,
-                enableSpatialCulling: false,
-                enableLOD: true,
-                chunkSize: 8000,
-                compressionLevel: 'medium'
             };
         }else if(atomCount <= 500000){
             return {
                 atomCount,
-                recommendedMaxAtoms: 200000,
+                recommendedMaxAtoms: 300000,
                 sphereResolution: { segments: 8, rings: 6 },
-                subsampleRatio: 0.4,
-                enableSpatialCulling: false,
-                enableLOD: true,
-                chunkSize: 10000,
-                compressionLevel: 'high'
             };
         }else if(atomCount <= 2000000){
             return {
                 atomCount,
-                recommendedMaxAtoms: 150000,
-                sphereResolution: { segments: 6, rings: 4 },
-                subsampleRatio: 0.075,
-                enableSpatialCulling: true,
-                enableLOD: true,
-                chunkSize: 15000,
-                compressionLevel: 'high'
+                recommendedMaxAtoms: 250000,
+                sphereResolution: { segments: 8, rings: 6 },
             };
         }else{
             return {
                 atomCount,
-                recommendedMaxAtoms: 100000,
-                sphereResolution: { segments: 4, rings: 3 },
-                subsampleRatio: 0.05,
-                enableSpatialCulling: true,
-                enableLOD: true,
-                chunkSize: 20000,
-                compressionLevel: 'high'
+                recommendedMaxAtoms: 150000,
+                sphereResolution: { segments: 4, rings: 2 },
             };
         }
     }
@@ -499,10 +465,6 @@ class LAMMPSToGLTFExporter{
         
         const opts: Required<GLTFExportOptions> = {
             atomRadius: options.atomRadius ?? autoRadius, 
-            spatialCulling: options.spatialCulling ?? false,
-            cullCenter: options.cullCenter ?? { x: 0, y: 0, z: 0 },
-            cullRadius: options.cullRadius ?? 10.0,
-            subsampleRatio: options.subsampleRatio ?? 1.0,
             maxAtoms: options.maxAtoms ?? 0,
             maxInstancesPerMesh: options.maxInstancesPerMesh ?? 10000
         };
@@ -747,18 +709,13 @@ class LAMMPSToGLTFExporter{
             timestep: frame.timestepInfo.timestep,
             finalAtomRadius: finalRadius,
             performanceProfile: {
-                detected: profile.compressionLevel,
                 reductionRatio: (1 - selectedAtoms.length / frame.atoms.length),
                 optimizationsApplied: [
-                    profile.enableSpatialCulling && 'spatial_culling',
-                    profile.subsampleRatio < 1.0 && 'intelligent_subsampling',
                     'optimized_sphere_resolution'
                 ].filter(Boolean)
             },
             optimizationSettings: {
                 maxAtoms: opts.maxAtoms,
-                subsampleRatio: opts.subsampleRatio,
-                spatialCulling: opts.spatialCulling,
                 maxInstancesPerMesh: opts.maxInstancesPerMesh
             }
         };
@@ -787,10 +744,6 @@ class LAMMPSToGLTFExporter{
         const autoRadius = LAMMPSToGLTFExporter.calculateOptimalRadius(processedAtoms);
         const opts: Required<GLTFExportOptions> = {
             atomRadius: options.atomRadius ?? autoRadius,
-            spatialCulling: options.spatialCulling ?? false,
-            cullCenter: options.cullCenter ?? { x: 0, y: 0, z: 0 },
-            cullRadius: options.cullRadius ?? 10.0,
-            subsampleRatio: options.subsampleRatio ?? 1.0,
             maxAtoms: options.maxAtoms ?? 0,
             maxInstancesPerMesh: options.maxInstancesPerMesh ?? 10000
         };
@@ -987,3 +940,15 @@ class LAMMPSToGLTFExporter{
 };
 
 export default LAMMPSToGLTFExporter;
+
+/*
+
+import { extractTimestepInfo } from '../lammps';
+const l = new LAMMPSToGLTFExporter();
+l.exportAtomsToGLTF(
+    '/home/rodyherrera/Escritorio/Development/OpenDXA/server/storage/trajectories/61b3c0e9-2939-4b31-a872-226948cabe06/0', 
+    'trajectory.gltf', 
+    extractTimestepInfo,
+    {}
+);
+*/
