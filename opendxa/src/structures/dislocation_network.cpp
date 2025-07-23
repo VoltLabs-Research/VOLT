@@ -94,8 +94,10 @@ void DislocationNetwork::coarsenDislocationLine(
     bool isClosedLoop,
     bool isInfiniteLine
 ){
-    assert(input.size() >= 2);
-    assert(input.size() == coreSize.size());
+	if(input.size() < 2){
+		return;
+	}
+    // assert(input.size() == coreSize.size());
 
     if(linePointInterval <= 0 || input.size() < 4){
         output = input;

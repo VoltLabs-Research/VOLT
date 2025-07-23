@@ -344,10 +344,13 @@ class MeshExporter{
         iterations: number
     ): void {
         if(iterations <= 0) return;
-        console.log(`Applying Laplacian smoothing with ${iterations} iterations...`);
         
+        const lambda = 0.5;
+        const mu = -0.52;
+
+        console.log(`Applying Taubin smoothing with ${iterations} iterations (lambda=${lambda}, mu=${mu})...`);
+
         const vertexCount = positions.length / 3;
-        // Build the adjacency list (which vertices are connected to which)
         const adjacency: Set<number>[] = Array.from({ length: vertexCount }, () => new Set());
         for(let i = 0; i < indices.length; i += 3){
             const v0 = indices[i];
@@ -358,41 +361,220 @@ class MeshExporter{
             adjacency[v2].add(v0).add(v1);
         }
 
-        // Perform smoothing iterations
+        let currentPositions = positions;
+        const tempPositions = new Float32Array(positions.length);
+
         for(let iter = 0; iter < iterations; iter++){
-            const newPositions = new Float32Array(positions.length);
+            // Calculate P' = P + lambda * L(P), where L(P) is the Laplacian vector.
+            for (let i = 0; i < vertexCount; i++) {
+                const neighbors = Array.from(adjacency[i]);
+                const i3 = i * 3;
+
+                if(neighbors.length === 0){
+                    tempPositions[i3] = currentPositions[i3];
+                    tempPositions[i3 + 1] = currentPositions[i3 + 1];
+                    tempPositions[i3 + 2] = currentPositions[i3 + 2];
+                    continue;
+                }
+
+                let avgX = 0, avgY = 0, avgZ = 0;
+                for(const neighborIdx of neighbors){
+                    const n3 = neighborIdx * 3;
+                    avgX += currentPositions[n3];
+                    avgY += currentPositions[n3 + 1];
+                    avgZ += currentPositions[n3 + 2];
+                }
+
+                avgX /= neighbors.length;
+                avgY /= neighbors.length;
+                avgZ /= neighbors.length;
+
+                const laplacianX = avgX - currentPositions[i3];
+                const laplacianY = avgY - currentPositions[i3 + 1];
+                const laplacianZ = avgZ - currentPositions[i3 + 2];
+
+                tempPositions[i3] = currentPositions[i3] + lambda * laplacianX;
+                tempPositions[i3 + 1] = currentPositions[i3 + 1] + lambda * laplacianY;
+                tempPositions[i3 + 2] = currentPositions[i3 + 2] + lambda * laplacianZ;
+            }
+
+            // Computes P'' = P' + mu * L(P'), using the intermediate positions from tempPositions.
+            // The final result of the iteration is written directly to the original 'positions' array.
             for(let i = 0; i < vertexCount; i++){
                 const neighbors = Array.from(adjacency[i]);
                 const i3 = i * 3;
 
                 if(neighbors.length === 0){
-                    // Isolated vertex, maintain its position
-                    newPositions[i3] = positions[i3];
-                    newPositions[i3 + 1] = positions[i3 + 1];
-                    newPositions[i3 + 2] = positions[i3 + 2];
+                    positions[i3] = tempPositions[i3];
+                    positions[i3 + 1] = tempPositions[i3 + 1];
+                    positions[i3 + 2] = tempPositions[i3 + 2];
                     continue;
                 }
 
-                // Calculate the average position of the neighbors
-                let avgX = 0;
-                let avgY = 0;
-                let avgZ = 0;
+                let avgX = 0, avgY = 0, avgZ = 0;
                 for(const neighborIdx of neighbors){
                     const n3 = neighborIdx * 3;
-                    avgX += positions[n3];
-                    avgY += positions[n3 + 1];
-                    avgZ += positions[n3 + 2];
+                    avgX += tempPositions[n3];
+                    avgY += tempPositions[n3 + 1];
+                    avgZ += tempPositions[n3 + 2];
                 }
 
-                newPositions[i3] = avgX / neighbors.length;
-                newPositions[i3 + 1] = avgY / neighbors.length;
-                newPositions[i3 + 2] = avgZ / neighbors.length;
+                avgX /= neighbors.length;
+                avgY /= neighbors.length;
+                avgZ /= neighbors.length;
+
+                const laplacianX = avgX - tempPositions[i3];
+                const laplacianY = avgY - tempPositions[i3 + 1];
+                const laplacianZ = avgZ - tempPositions[i3 + 2];
+
+                positions[i3] = tempPositions[i3] + mu * laplacianX;
+                positions[i3 + 1] = tempPositions[i3 + 1] + mu * laplacianY;
+                positions[i3 + 2] = tempPositions[i3 + 2] + mu * laplacianZ;
+            }
+        }
+    }
+
+    public async fromGLTF(inputFilePath: string): Promise<Mesh> {
+        console.log(`Loading GLTF file from: ${inputFilePath}`);
+        const gltfContent = fs.readFileSync(inputFilePath, 'utf8');
+        const gltf = JSON.parse(gltfContent);
+
+        if(!gltf.asset || gltf.asset.version !== '2.0'){
+            throw new Error('Invalid GLTF file: Asset version must be 2.0.');
+        }
+
+        if(!gltf.meshes || gltf.meshes.length === 0){
+            throw new Error('GLTF file contains no meshes.');
+        }
+
+        if(!gltf.buffers || gltf.buffers.length === 0){
+            throw new Error('GLTF file contains no buffers.');
+        }
+
+        if(!gltf.bufferViews || gltf.bufferViews.length === 0){
+            throw new Error('GLTF file contains no buffer views.');
+        }
+
+        if(!gltf.accessors || gltf.accessors.length === 0){
+            throw new Error('GLTF file contains no accessors.');
+        }
+
+        const meshGLTF = gltf.meshes[0];
+        if(!meshGLTF.primitives || meshGLTF.primitives.length === 0){
+            throw new Error('Mesh in GLTF file contains no primitives.');
+        }
+
+        const primitive = meshGLTF.primitives[0];
+
+        const buffer = gltf.buffers[0];
+        if(!buffer.uri || !buffer.uri.startsWith('data:application/octet-stream;base64,')){
+            throw new Error('Unsupported GLTF buffer format. Only base64-encoded buffers are supported for now.');
+        }
+
+        const base64Data = buffer.uri.split(',')[1];
+        const binaryData = Buffer.from(base64Data, 'base64');
+
+        let positions: [number, number, number][] = [];
+        let facets: { vertices: [number, number, number] }[] = [];
+
+        if(primitive.attributes && primitive.attributes.POSITION !== undefined){
+            const positionAccessor = gltf.accessors[primitive.attributes.POSITION];
+            const positionBufferView = gltf.bufferViews[positionAccessor.bufferView];
+
+            const positionArrayBuffer = new Float32Array(
+                binaryData.buffer,
+                binaryData.byteOffset + positionBufferView.byteOffset,
+                positionBufferView.byteLength / Float32Array.BYTES_PER_ELEMENT
+            );
+
+            for(let i = 0; i < positionArrayBuffer.length; i += 3){
+                positions.push([
+                    positionArrayBuffer[i],
+                    positionArrayBuffer[i + 1],
+                    positionArrayBuffer[i + 2]
+                ]);
+            }
+        }else{
+            throw new Error('GLTF primitive does not contain POSITION attribute.');
+        }
+
+        // facets
+        if(primitive.indices !== undefined){
+            const indexAccessor = gltf.accessors[primitive.indices];
+            const indexBufferView = gltf.bufferViews[indexAccessor.bufferView];
+
+            // Determine array type based on componentType (5121=UNSIGNED_BYTE, 5123=UNSIGNED_SHORT, 5125=UNSIGNED_INT)
+            let indexArray: Uint8Array | Uint16Array | Uint32Array;
+            switch(indexAccessor.componentType){
+                // UNSIGNED_BYTE
+                case 5121:
+                    indexArray = new Uint8Array(
+                        binaryData.buffer,
+                        binaryData.byteOffset + indexBufferView.byteOffset,
+                        indexBufferView.byteLength / Uint8Array.BYTES_PER_ELEMENT
+                    );
+                    break;
+                // UNSIGNED_SHORT
+                case 5123:
+                    indexArray = new Uint16Array(
+                        binaryData.buffer,
+                        binaryData.byteOffset + indexBufferView.byteOffset,
+                        indexBufferView.byteLength / Uint16Array.BYTES_PER_ELEMENT
+                    );
+                    break;
+                // UNSIGNED_INT
+                case 5125: 
+                    indexArray = new Uint32Array(
+                        binaryData.buffer,
+                        binaryData.byteOffset + indexBufferView.byteOffset,
+                        indexBufferView.byteLength / Uint32Array.BYTES_PER_ELEMENT
+                    );
+                    break;
+                default:
+                    throw new Error(`Unsupported index componentType: ${indexAccessor.componentType}`);
             }
 
-            // Update all positions at the end of the iteration
-            positions.set(newPositions);            
-        }        
+            for(let i = 0; i < indexArray.length; i += 3){
+                facets.push({
+                    vertices: [indexArray[i], indexArray[i + 1], indexArray[i + 2]]
+                });
+            }
+        }else{
+            console.warn('GLTF primitive does not contain indices. Mesh might be a point cloud or line set.');
+        }
+
+        const points = positions.map((pos, index) => ({ index, position: pos }));
+
+        console.log(`GLTF loaded: ${points.length} points, ${facets.length} facets.`);
+
+        return {
+            data: {
+                points,
+                facets,
+                metadata: gltf.extras || {} 
+            }
+        };
     }
 };
 
 export default MeshExporter;
+/*
+async function processGltfFile(inputPath: string, outputPath: string, smoothIterations: number) {
+    const exporter = new MeshExporter();
+    const loadedMesh = await exporter.fromGLTF(inputPath);
+    exporter.toGLTF(loadedMesh, outputPath, {
+        smoothIterations: smoothIterations,
+        generateNormals: true,
+        enableDoubleSided: true,
+        material: {
+            baseColor: [1.0, 1.0, 1.0, 1.0],
+            metallic: 0,
+            roughness: 0
+        },
+    });
+}
+
+const inputGltfPath = '/home/rodyherrera/Escritorio/Development/OpenDXA/server/storage/trajectories/61b3c0e9-2939-4b31-a872-226948cabe06/gltf/frame_0_defect_mesh.gltf'; // Archivo GLTF de entrada
+const outputGltfPath = './output_taubin_smoothed_mesh.gltf'; 
+const iterations = 8; 
+processGltfFile(inputGltfPath, inputGltfPath, iterations);*/

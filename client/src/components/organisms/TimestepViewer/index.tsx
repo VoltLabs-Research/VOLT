@@ -1,158 +1,26 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { api } from '@/services/api';
 import { useThree } from '@react-three/fiber';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'; 
-import { Group, Box3, Vector3, Sphere, Plane, Mesh } from 'three';
-
-const gltfCache = new Map<string, Promise<GLTF>>();
-const loader = new GLTFLoader();
-const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/draco_decoder.js'); 
-loader.setDRACOLoader(dracoLoader);
-
-const loadGltfWithCache = (url: string): Promise<GLTF> => {
-    if(!gltfCache.has(url)){
-        const loadPromise = new Promise<GLTF>(async (resolve, reject) => {
-            try{
-                const response = await api.get(url, { responseType: 'json' });
-                const gltfData = response.data;
-
-                const gltfString = JSON.stringify(gltfData);
-                const blob = new Blob([gltfString], { type: 'model/gltf+json' });
-                const blobUrl = URL.createObjectURL(blob);
-
-                loader.load(blobUrl, (gltf) => {
-                    URL.revokeObjectURL(blobUrl);
-                    resolve(gltf);
-                }, undefined, (error) => {
-                    URL.revokeObjectURL(blobUrl);
-                    reject(error);
-                });
-            }catch(error){
-                reject(error);
-            }
-        });
-
-        gltfCache.set(url, loadPromise);
-    }
-
-    return gltfCache.get(url)!;
-};
-
-const calculateModelBounds = (gltf: GLTF) => {
-    const box = new Box3().setFromObject(gltf.scene);
-    const size = new Vector3();
-    const center = new Vector3();
-    box.getSize(size);
-    box.getCenter(center);
-    
-    const boundingSphere = new Sphere();
-    box.getBoundingSphere(boundingSphere);
-    
-    return {
-        box,
-        size,
-        center,
-        boundingSphere,
-        maxDimension: Math.max(size.x, size.y, size.z)
-    };
-};
-
-const calculateOptimalTransforms = (bounds: ReturnType<typeof calculateModelBounds>) => {
-    const { size, center, maxDimension } = bounds;
-    
-    const targetSize = 8;
-    const scale = maxDimension > 0 ? targetSize / maxDimension : 1;
-    
-    const shouldRotate = size.y > size.z * 1.2 || size.z < Math.min(size.x, size.y) * 0.8;
-    const rotation = shouldRotate ? { x: Math.PI / 2, y: 0, z: 0 } : { x: 0, y: 0, z: 0 };
-    
-    const position = {
-        x: -center.x * scale,
-        y: -center.y * scale,
-        z: -center.z * scale
-    };
-    
-    return { position, rotation, scale };
-};
-
-interface CameraManagerProps {
-    modelBounds?: ReturnType<typeof calculateModelBounds>;
-    orbitControlsRef?: React.MutableRefObject<any>;
-}
-
-const CameraManager: React.FC<CameraManagerProps> = ({ modelBounds, orbitControlsRef }) => {
-    const { camera } = useThree();
-    
-    useEffect(() => {
-        if (!modelBounds || !orbitControlsRef?.current) return;
-        
-        const { boundingSphere, maxDimension } = modelBounds;
-        const controls = orbitControlsRef.current;
-        
-        const distance = Math.max(maxDimension * 2, 10);
-        const targetHeight = maxDimension * 0.3;
-        
-        const sphericalCoords = {
-            theta: Math.PI / 6,
-            phi: Math.PI / 4,
-            radius: distance
-        };
-        
-        const x = sphericalCoords.radius * Math.sin(sphericalCoords.phi) * Math.cos(sphericalCoords.theta);
-        const y = sphericalCoords.radius * Math.cos(sphericalCoords.phi) + targetHeight;
-        const z = sphericalCoords.radius * Math.sin(sphericalCoords.phi) * Math.sin(sphericalCoords.theta);
-        
-        camera.position.set(x, y, z);
-        controls.target.set(0, targetHeight, 0);
-        
-        controls.minDistance = distance * 0.3;
-        controls.maxDistance = distance * 3;
-        
-        controls.update();
-        
-    }, [modelBounds, camera, orbitControlsRef]);
-    
-    return null;
-};
+import { type TrajectoryGLTFs } from '@/stores/editor';
+import { Group, Box3, Vector3, Plane, Mesh } from 'three';
+import { calculateModelBounds, calculateOptimalTransforms } from '@/utilities/gltf/modelUtils';
+import loadGltfWithCache from '@/utilities/gltf/loader';
+import CameraManager from '@/components/atoms/CameraManager';
 
 interface TimestepViewerProps{
-    currentGltfUrl: object | null;
+    currentGltfUrl: TrajectoryGLTFs | null;
     nextGltfUrl: string | null;
     rotation?: { x?: number; y?: number; z?: number };
     position?: { x?: number; y?: number; z?: number };
     scale?: number;
     autoFit?: boolean;
-    orbitControlsRef?: React.MutableRefObject<any>;
-    enableClipping?: boolean;
-    clippingBounds?: {
-        x: [number, number];
-        y: [number, number];
-        z: [number, number];
+    orbitControlsRef?: any;
+
+    enableSlice?: boolean;
+    slicePlane?: {
+        normal: { x: number; y: number; z: number };
+        distance: number;
+        slabWidth?: number;
+        reverseOrientation?: boolean;
     };
 }
 
@@ -164,122 +32,109 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     scale = 1,
     autoFit = true,
     orbitControlsRef,
-    enableClipping = false,
-    clippingBounds = { x: [-1, 1], y: [-1, 1], z: [-1, 1] },
+
+    enableSlice = true,
+    slicePlane = {
+        normal: { x: 0, y: 0, z: 0 }, 
+        distance: 0, 
+        slabWidth: 0.05,
+        reverseOrientation: true,
+    },
 }) => {
     const { scene } = useThree();
     const modelRef = useRef<Group | null>(null);
     const [modelBounds, setModelBounds] = useState<ReturnType<typeof calculateModelBounds> | null>(null);
 
-    const clippingPlanes = useMemo(() => {
-        if(!enableClipping || !modelBounds) return [];
+    const sliceClippingPlanes = useMemo(() => {
+        if (!enableSlice || !modelBounds) return [];
 
-        const { center, size } = modelBounds;
         const planes: Plane[] = [];
+        const normal = new Vector3(slicePlane.normal.x, slicePlane.normal.y, slicePlane.normal.z).normalize();
+        let distance = slicePlane.distance;
 
-        // X
-        if(clippingBounds.x[0] > -1){
-            const worldMinX = center.x + (size.x / 2) * clippingBounds.x[0];
-            planes.push(new Plane(new Vector3(1, 0, 0), -worldMinX));
-        }
+        const plane1 = new Plane(normal.clone(), -distance);
 
-        if(clippingBounds.x[1] < 1){
-            const worldMaxX = center.x + (size.x / 2) * clippingBounds.x[1];
-            planes.push(new Plane(new Vector3(-1, 0, 0), worldMaxX));
-        }
-
-        // Y
-        if(clippingBounds.y[0] > -1){
-            const worldMinY = center.y + (size.y / 2) * clippingBounds.y[0];
-            planes.push(new Plane(new Vector3(0, 1, 0), -worldMinY));
-        }
-
-        if(clippingBounds.y[1] < 1){
-            const worldMaxY = center.y + (size.y / 2) * clippingBounds.y[1];
-            planes.push(new Plane(new Vector3(0, -1, 0), worldMaxY));
-        }
-
-        // Z
-        if(clippingBounds.z[0] > -1){
-            const worldMinZ = center.z + (size.z / 2) * clippingBounds.z[0];
-            planes.push(new Plane(new Vector3(0, 0, 1), -worldMinZ));
-        }
-
-        if(clippingBounds.z[1] < 1){
-            const worldMaxZ = center.z + (size.z / 2) * clippingBounds.z[1];
-            planes.push(new Plane(new Vector3(0, 0, -1), worldMaxZ)); 
+        if(slicePlane.slabWidth && slicePlane.slabWidth > 0){
+            planes.push(plane1);
+            const plane2Distance = distance + slicePlane.slabWidth;
+            const plane2 = new Plane(normal.clone().negate(), plane2Distance);
+            planes.push(plane2);
+        }else{
+            if(slicePlane.reverseOrientation){
+                planes.push(new Plane(normal.clone().negate(), distance));
+            }else{
+                planes.push(plane1);
+            }
         }
 
         return planes;
-    }, [enableClipping, clippingBounds, modelBounds]);
+    }, [enableSlice, slicePlane, modelBounds]);
+
+    const combinedClippingPlanes = useMemo(() => {
+        const allPlanes: Plane[] = [];
+        if(enableSlice){
+            allPlanes.push(...sliceClippingPlanes);
+        }
+        return allPlanes;
+    }, [enableSlice, sliceClippingPlanes]);
+
 
     const updateScene = useCallback(async () => {
-        if(!currentGltfUrl && modelRef.current){
-            scene.remove(modelRef.current);
-            modelRef.current = null;
-            setModelBounds(null);
-            return;
-        }
-
-        try{
-            const gltf = await loadGltfWithCache(currentGltfUrl.trajectory!);
-            const newModel = gltf.scene.clone();
-            
-            newModel.traverse((child) => {
-                if(child instanceof Mesh){
-                    const materials = Array.isArray(child.material) ? child.material : [child.material];
-                    materials.forEach((material) => {
-                        material.clippingPlanes = clippingPlanes;
-                        material.clipShadows = true;
-                    });
-                }
-            });
-
-            if (autoFit) {
-                const bounds = calculateModelBounds(gltf);
-                const transforms = calculateOptimalTransforms(bounds);
-                setModelBounds(bounds);
-                
-                newModel.position.set(
-                    (position.x || 0) + transforms.position.x,
-                    (position.y || 0) + transforms.position.y,
-                    (position.z || 0) + transforms.position.z
-                );
-                
-                newModel.rotation.set(
-                    (rotation.x || 0) + transforms.rotation.x,
-                    (rotation.y || 0) + transforms.rotation.y,
-                    (rotation.z || 0) + transforms.rotation.z
-                );
-                
-                newModel.scale.setScalar(scale * transforms.scale);
-                
-                const finalBox = new Box3().setFromObject(newModel);
-                const minY = finalBox.min.y;
-                if(minY < 0){
-                    newModel.position.y += Math.abs(minY) + 0.1;
-                }
-            } else {
-                newModel.scale.setScalar(scale);
-                newModel.rotation.set(rotation.x || 0, rotation.y || 0, rotation.z || 0);
-                newModel.position.set(position.x || 0, position.y || 0, position.z || 0);
-            }
-            
-            if(modelRef.current){
-                scene.remove(modelRef.current);
-            }
-
-            scene.add(newModel);
-            modelRef.current = newModel;
-            
-        }catch(error){
+        if(!currentGltfUrl){
             if(modelRef.current){
                 scene.remove(modelRef.current);
                 modelRef.current = null;
+                setModelBounds(null);
             }
-            setModelBounds(null);
+            return;
         }
-    }, [currentGltfUrl, scene, scale, position, rotation, autoFit, clippingPlanes]);
+
+        const gltf = await loadGltfWithCache(currentGltfUrl.defect_mesh!);
+        const newModel = gltf.scene.clone();
+
+        newModel.traverse((child) => {
+            if(child instanceof Mesh){
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                materials.forEach((material) => {
+                    material.clippingPlanes = combinedClippingPlanes;
+                    material.clipShadows = true;
+                });
+            }
+        });
+
+        // auto fit
+        const bounds = calculateModelBounds(gltf);
+        const transforms = calculateOptimalTransforms(bounds);
+        setModelBounds(bounds);
+
+        newModel.position.set(
+            (position.x || 0) + transforms.position.x,
+            (position.y || 0) + transforms.position.y,
+            (position.z || 0) + transforms.position.z
+        );
+
+        newModel.rotation.set(
+            (rotation.x || 0) + transforms.rotation.x,
+            (rotation.y || 0) + transforms.rotation.y,
+            (rotation.z || 0) + transforms.rotation.z
+        );
+
+        newModel.scale.setScalar(scale * transforms.scale);
+
+        const finalBox = new Box3().setFromObject(newModel);
+        const minY = finalBox.min.y;
+
+        if(minY < 0){
+            newModel.position.y += Math.abs(minY) + 0.1;
+        }
+
+        if(modelRef.current){
+            scene.remove(modelRef.current);
+        }
+
+        scene.add(newModel);
+        modelRef.current = newModel;
+    }, [currentGltfUrl, scene, scale, position, rotation, autoFit, combinedClippingPlanes]); // Dependencia clave
 
     useEffect(() => {
         if(!nextGltfUrl) return;
@@ -298,16 +153,12 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
         };
     }, [scene]);
 
-    return (
-        <>
-            {autoFit && modelBounds && (
-                <CameraManager 
-                    modelBounds={modelBounds} 
-                    orbitControlsRef={orbitControlsRef}
-                />
-            )}
-        </>
+    return (autoFit && modelBounds) && (
+        <CameraManager
+            modelBounds={modelBounds}
+            orbitControlsRef={orbitControlsRef}
+        />
     );
 };
 
-export default TimestepViewer
+export default TimestepViewer;

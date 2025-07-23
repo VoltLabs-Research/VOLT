@@ -313,6 +313,9 @@ class OpenDXAService{
                 roughness: 0.0,
                 emissive: [0.0, 0.0, 0.0]
             },
+            smoothIterations: 8,
+            generateNormals: true,
+            enableDoubleSided: true,
             metadata:{ includeOriginalStats: true }
         });
     }
