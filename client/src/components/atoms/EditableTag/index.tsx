@@ -20,40 +20,45 @@
 * SOFTWARE.
 **/
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './EditableTag.css';
 
-const EditableTag = ({ as: Tag, onSave, children, className, ...rest }) => {
+const EditableTag = React.memo(({ as: Tag, onSave, children, className, ...rest }) => {
     const [isEditing, setIsEditing] = useState(false);
     const elementRef = useRef(null);
 
+    useEffect(() => {
+        if (isEditing && elementRef.current) {
+            elementRef.current.focus();
+            // select text without execCommand
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(elementRef.current);
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+        }
+    }, [isEditing]);
+
     const enableEditing = () => {
         setIsEditing(true);
-        setTimeout(() => {
-            elementRef.current?.focus();
-            document.execCommand('selectAll', false, null);
-            document.getSelection()?.collapseToEnd();
-        }, 0);
     };
 
     const handleSave = () => {
         setIsEditing(false);
         const newText = elementRef.current?.innerText.trim();
-        if(newText && newText !== children){
+        if (newText && newText !== children) {
             onSave(newText);
-        }else if(elementRef.current){
-            // If the text hasn't changed or is invalid, we revert it to the original
+        } else if (elementRef.current) {
             elementRef.current.innerText = children;
         }
     };
 
     const handleKeyDown = (event) => {
-        if(event.key === 'Enter'){
-            // Prevents a line break from being inserted
+        if (event.key === 'Enter') {
             event.preventDefault();
             handleSave();
-        }else if(event.key === 'Escape'){
-            if(elementRef.current){
+        } else if (event.key === 'Escape') {
+            if (elementRef.current) {
                 elementRef.current.innerText = children;
             }
             setIsEditing(false);
@@ -63,7 +68,7 @@ const EditableTag = ({ as: Tag, onSave, children, className, ...rest }) => {
     return (
         <Tag
             ref={elementRef}
-            className={`${className} ${isEditing ? 'is-editing' : ''}`}
+            className={`${className || ''} ${isEditing ? 'is-editing' : ''}`}
             contentEditable={isEditing}
             onDoubleClick={enableEditing}
             onBlur={handleSave}
@@ -73,7 +78,7 @@ const EditableTag = ({ as: Tag, onSave, children, className, ...rest }) => {
         >
             {children}
         </Tag>
-    )
-};
+    );
+});
 
 export default EditableTag;

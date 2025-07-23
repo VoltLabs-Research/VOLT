@@ -1,4 +1,3 @@
-import React from 'react';
 import SidebarUserAvatar from '@/components/atoms/SidebarUserAvatar';
 import { LuPanelRight } from "react-icons/lu";
 import { TbObjectScan } from "react-icons/tb";
@@ -8,6 +7,7 @@ import { IoIosColorFilter } from "react-icons/io";
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
+import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
 import useEditorStore from '@/stores/editor';
 import './EditorSidebar.css';
 
@@ -22,7 +22,9 @@ const EditorSidebar = () => {
                     <div className='editor-sidebar-trajectory-info-container'>
                         <div className='editor-sidebar-trajectory-info-header-container'>
                             <div className='editor-sidebar-trajectory-drop-container'>
-                                <h3 className='editor-sidebar-trajectory-name'>{trajectory?.name}</h3>
+                                <EditableTrajectoryName
+                                    trajectory={trajectory}
+                                    className='editor-sidebar-trajectory-name' />
                                 <i className='editor-sidebar-trajectory-drop-icon-container'>
                                     <MdKeyboardArrowDown />
                                 </i>

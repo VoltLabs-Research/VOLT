@@ -29,24 +29,19 @@ import { CiShare1 } from "react-icons/ci";
 import { HiOutlineViewfinderCircle } from "react-icons/hi2";
 import SimpExampleCover from '@/assets/images/simulation-example-cover.png';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
-import EditableTag from '@/components/atoms/EditableTag';
+import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
 import useTrajectoryStore from '@/stores/trajectories';
 import ActionBasedFloatingContainer from '@/components/atoms/ActionBasedFloatingContainer';
 import './SimulationCard.css';
 
 const SimulationCard = ({ trajectory }) => {
     const navigate = useNavigate();
-    const updateTrajectoryById = useTrajectoryStore((state) => state.updateTrajectoryById);
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     
     const [isDeleting, setIsDeleting] = useState(false);
 
     const loadTrajectoryOnCanvas = () => {
         navigate(`/canvas/${trajectory._id}/`);
-    };
-
-    const handleNameUpdate = async (newName: string) => {
-        await updateTrajectoryById(trajectory._id, { name: newName });
     };
 
     const handleDelete = () => {
@@ -69,14 +64,9 @@ const SimulationCard = ({ trajectory }) => {
             </div>
             <figcaption className='simulation-caption-container'>
                 <div className='simulation-caption-left-container'>
-                    <EditableTag
-                        as='h3'
-                        className='simulation-caption-title'
-                        onSave={handleNameUpdate}
-                        title='Double-click to edit name'
-                    >
-                        {trajectory.name}
-                    </EditableTag>
+                    <EditableTrajectoryName
+                        trajectory={trajectory} 
+                        className='simulation-caption-title' />
                     <p className='simulation-last-edited'>Edited {formatTimeAgo(trajectory.updatedAt)}</p>
                 </div>
                 <ActionBasedFloatingContainer
