@@ -48,6 +48,7 @@ interface EditorState{
     currentTimestep?: number;
     intervalId: ReturnType<typeof setInterval> | null;
     slicePlaneConfig: SlicePlaneConfig;
+    isModelLoading: boolean;
     analysisConfig: AnalysisConfig;
     timestepData: TimestepData,
     currentGltfUrl: TrajectoryGLTFs | null;
@@ -58,6 +59,7 @@ interface EditorState{
 
 interface EditorActions{
     togglePlay: () => void;
+    setIsModelLoading: (loading: boolean) => void;
     setPlaySpeed: (speed: number) => void;
     setCurrentTimestep: (timestep: number) => void;
     setActiveSceneObject: (sceneObject: string) => void;
@@ -79,12 +81,12 @@ export interface TrajectoryGLTFs {
 }
 
 const initialAnalysisConfig: AnalysisConfig = {
-    crystalStructure: 'BCC',
-    identificationMode: 'PTM',
+    crystalStructure: 'FCC',
+    identificationMode: 'CNA',
     maxTrialCircuitSize: 14.0,
     circuitStretchability: 9.0,
     defectMeshSmoothingLevel: 8,
-    lineSmoothingLevel: 1.0,
+    lineSmoothingLevel: 5,
     linePointInterval: 2.5,
     onlyPerfectDislocations: false,
     markCoreAtoms: false
@@ -102,6 +104,7 @@ const initialState: EditorState = {
     playSpeed: 1,
     intervalId: null,
     currentTimestep: undefined,
+    isModelLoading: true,
     slicePlaneConfig: initialSlicePlaneConfig,
     analysisConfig: initialAnalysisConfig,
     timestepData: { timesteps: [], minTimestep: 0, maxTimestep: 0, timestepCount: 0 },
@@ -165,6 +168,10 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
 
     return {
         ...initialState,
+
+        setIsModelLoading: (loading: boolean) => {
+            set({ isModelLoading: loading })
+        },
 
         stopPlayback: () => {
             const intervalId = get().intervalId;

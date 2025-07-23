@@ -21,7 +21,7 @@
 **/
 
 import React, { useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import TimestepControls from '@/components/organisms/TimestepControls';
 import Scene3D from '@/components/organisms/Scene3D';
 import TimestepViewer from '@/components/organisms/TimestepViewer';
@@ -29,11 +29,12 @@ import FileUpload from '@/components/molecules/FileUpload';
 import useTrajectoryStore from '@/stores/trajectories';
 import useEditorStore from '@/stores/editor';
 import Loader from '@/components/atoms/Loader';
-import useTeamStore from '@/stores/team';
 import SlicePlane from '@/components/organisms/SlicePlane';
 import EditorSidebar from '@/components/organisms/EditorSidebar';
 import TrajectoryVisibilityStatusFloatIcon from '@/components/atoms/TrajectoryVisibilityStatusFloatIcon';
 import SceneTopCenteredOptions from '@/components/atoms/SceneTopCenteredOptions';
+import AnalysisConfiguration from '@/components/organisms/AnalysisConfiguration';
+import useUIStore from '@/stores/ui';
 import './Canvas.css';
 
 const EditorPage: React.FC = () => {
@@ -44,13 +45,16 @@ const EditorPage: React.FC = () => {
     const currentGltfUrl = useEditorStore((state) => state.currentGltfUrl);
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
     const selectTrajectory = useEditorStore((state) => state.selectTrajectory);
-
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
-    const navigate = useNavigate();
+    const showEditorWidgets = useUIStore((state) => state.showEditorWidgets);
+    const isModelLoading = useEditorStore((state) => state.isModelLoading);
 
     const isInitialLoadDone = useRef(false);
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
-    
+   
+    useEffect(() => {
+        selectTrajectory(null);
+    }, []);
+
     useEffect(() => {
         if(trajectoryId && !trajectory?._id){
             getTrajectoryById(trajectoryId).then(() => {
@@ -81,19 +85,24 @@ const EditorPage: React.FC = () => {
 
     return (
         <main className='editor-container'>
-            <EditorSidebar />
-            <TrajectoryVisibilityStatusFloatIcon />
-            <SceneTopCenteredOptions />
-            <SlicePlane />
+            {showEditorWidgets && (
+                <>
+                    <EditorSidebar />
+                    <TrajectoryVisibilityStatusFloatIcon />
+                    <SceneTopCenteredOptions />
+                    <SlicePlane />
+                    <AnalysisConfiguration />
 
-            {isLoadingTrajectory && (
+                    {(trajectory && currentTimestep !== undefined) && (
+                        <TimestepControls />
+                    )}
+                </>
+            )}
+
+            {(isLoadingTrajectory) && (
                 <div className='loader-layer-container'>
                     <Loader scale={0.7} />
                 </div>
-            )}
-
-            {(trajectory && currentTimestep !== undefined) && (
-                <TimestepControls />
             )}
 
             <div className='editor-timestep-viewer-container'>

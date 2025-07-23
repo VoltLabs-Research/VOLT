@@ -32,12 +32,13 @@ import formatTimeAgo from '@/utilities/formatTimeAgo';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
 import useTrajectoryStore from '@/stores/trajectories';
 import ActionBasedFloatingContainer from '@/components/atoms/ActionBasedFloatingContainer';
+import useEditorStore from '@/stores/editor';
 import './SimulationCard.css';
 
 const SimulationCard = ({ trajectory }) => {
     const navigate = useNavigate();
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
-    
+
     const [isDeleting, setIsDeleting] = useState(false);
 
     const loadTrajectoryOnCanvas = () => {

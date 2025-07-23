@@ -293,7 +293,7 @@ class OpenDXAService{
         const exporter = new DislocationExporter();
         const outputPath = this.getOutputPath(frame, 'dislocations');
         exporter.toGLTF(dislocation, outputPath,{
-            lineWidth: 0.3,
+            lineWidth: 0.8,
             colorByType: true,
             material:{
                 baseColor: [1.0, 0.5, 0.0, 1.0],

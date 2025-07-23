@@ -34,6 +34,7 @@ interface TrajectoryState{
     isUploading: boolean;
     error: string | null;
 
+    setTrajectory: (trajectory: Trajectory | null) => void;
     getTrajectoryById: (id: string) => Promise<void>;
     getTrajectories: (teamId?: string) => Promise<void>;
     deleteTrajectoryById: (id: string) => Promise<void>;
@@ -61,6 +62,10 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
                 loadingKey: 'isLoading',
                 onSuccess: (res) => ({ trajectories: res.data.data })
             });
+        },
+
+        setTrajectory: (trajectory: Trajectory | null) => {
+            set({ trajectory });
         },
 
         getTrajectoryById: (id: string) => asyncAction(() => api.get<ApiResponse<Trajectory>>(`/trajectories/${id}?populate=team`), {

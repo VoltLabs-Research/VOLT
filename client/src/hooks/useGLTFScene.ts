@@ -59,6 +59,7 @@ export const useGltfScene = ({
     const meshRef = useRef<Mesh | undefined>(undefined);
     const [modelBounds, setModelBounds] = useState<ReturnType<typeof calculateModelBounds> | null>(null);
     const materialCache = useRef(new Map<string, THREE.MeshStandardMaterial>());
+    const setIsModelLoading = useEditorStore((state) => state.setIsModelLoading);
 
     const applyOptimizations = useCallback((object: Object3D) => {
         object.traverse((child) => {
@@ -88,6 +89,7 @@ export const useGltfScene = ({
     }, [sliceClippingPlanes, enableInstancing, onGeometryReady]);
 
     const updateSceneInternal = useCallback(async () => {
+        setIsModelLoading(true);
         if(!currentGltfUrl || !activeSceneObject){
             return;
         }
@@ -97,7 +99,7 @@ export const useGltfScene = ({
 
         try{
             const loadedModel = await loadGLTF(targetUrl);
-
+            
             preloadGLTFs([
                 currentGltfUrl.defect_mesh,
                 currentGltfUrl.interface_mesh,
@@ -151,6 +153,8 @@ export const useGltfScene = ({
             modelRef.current = newModel;
         }catch(error){
             console.error('Error loading GLTF:', error);
+        }finally{
+            setIsModelLoading(false);
         }
     }, [currentGltfUrl, activeSceneObject, sliceClippingPlanes]);
 

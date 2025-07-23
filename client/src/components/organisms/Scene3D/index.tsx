@@ -1,10 +1,11 @@
-import React, { useMemo, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useCallback } from 'react';
 import CanvasGrid from '@/components/atoms/CanvasGrid';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import useEditorStore from '@/stores/editor';
+import useUIStore from '@/stores/ui';
 import './Scene3D.css';
 
 interface Scene3DProps {
@@ -114,6 +115,10 @@ const Scene3D: React.FC<Scene3DProps> = ({
 }) => {
     const orbitControlsRef = useRef<any>(null);
     const activeSceneObject = useEditorStore(state => state.activeSceneObject);
+    const showCanvasGrid = useUIStore((state) => state.showCanvasGrid);
+    const toggleCanvasGrid = useUIStore((state) => state.toggleCanvasGrid);
+    const toggleEditorWidgets = useUIStore((state) => state.toggleEditorWidgets);
+    const showEditorWidgets = useUIStore((state) => state.showEditorWidgets);
 
     const handleControlsRef = useCallback((ref: any) => {
         orbitControlsRef.current = ref;
@@ -131,9 +136,9 @@ const Scene3D: React.FC<Scene3DProps> = ({
     );
 
     const canvasStyle = useMemo(() => ({
-        backgroundColor: '#1E1E1E',
+        backgroundColor: !showEditorWidgets ? '#e6e6e6' : '#1E1E1E',
         touchAction: 'none'
-    }), []);
+    }), [showEditorWidgets]);
 
     const dpr = useMemo(() => {
         const pixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
@@ -144,6 +149,23 @@ const Scene3D: React.FC<Scene3DProps> = ({
         ...ORBIT_CONTROLS_CONFIG,
         enabled: cameraControlsEnabled
     }), [cameraControlsEnabled]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b') {
+                e.preventDefault();
+                toggleCanvasGrid(prev => !prev);
+            }
+
+            if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'n') {
+                e.preventDefault();
+                toggleEditorWidgets(prev => !prev);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     return (
         <Canvas
@@ -181,7 +203,8 @@ const Scene3D: React.FC<Scene3DProps> = ({
                 {...orbitControlsProps}
             />
             
-            <CanvasGrid />
+            {showCanvasGrid && <CanvasGrid />}
+            
             {children}
 
             <EffectComposer enableNormalPass={isDefectScene} multisampling={0} renderPriority={1}>
