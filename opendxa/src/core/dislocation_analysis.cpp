@@ -328,22 +328,37 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     spdlog::debug("Json output file: {}", outputFile);
 
+
     if(!outputFile.empty()){
-        //std::ofstream of(outputFile + ".json");
-        std::ofstream defectMeshOf(outputFile + "_defect_mesh.json");
-        std::ofstream atomsOf(outputFile + "_atoms.json");
-        std::ofstream dislocationsOf(outputFile + "_dislocations.json");
-        std::ofstream interfaceMeshOf(outputFile + "_interface_mesh.json");
-        std::ofstream structuresOf(outputFile + "_structures_stats.json");
-        std::ofstream simulationCellOf(outputFile + "_simulation_cell.json");
-            
-        // of << result.dump(2);
-        defectMeshOf << result["defect_mesh"].dump(2);
-        atomsOf << result["atoms"].dump(2);
-        dislocationsOf << result["dislocations"].dump(2);
-        interfaceMeshOf << result["interface_mesh"].dump(2);
-        structuresOf << result["structures"].dump(2);
-        simulationCellOf << result["simulation_cell"].dump(2);
+        std::ofstream defectMeshOf(outputFile + "_defect_mesh.msgpack", std::ios::binary);
+        std::vector<std::uint8_t> defectMeshMsgPack = nlohmann::json::to_msgpack(result["defect_mesh"]);
+        defectMeshOf.write(reinterpret_cast<const char*>(defectMeshMsgPack.data()), defectMeshMsgPack.size());
+        defectMeshOf.close();
+
+        std::ofstream atomsOf(outputFile + "_atoms.msgpack", std::ios::binary);
+        std::vector<std::uint8_t> atomsMsgPack = nlohmann::json::to_msgpack(result["atoms"]);
+        atomsOf.write(reinterpret_cast<const char*>(atomsMsgPack.data()), atomsMsgPack.size());
+        atomsOf.close();
+
+        std::ofstream dislocationsOf(outputFile + "_dislocations.msgpack", std::ios::binary);
+        std::vector<std::uint8_t> dislocationsMsgPack = nlohmann::json::to_msgpack(result["dislocations"]);
+        dislocationsOf.write(reinterpret_cast<const char*>(dislocationsMsgPack.data()), dislocationsMsgPack.size());
+        dislocationsOf.close();
+
+        std::ofstream interfaceMeshOf(outputFile + "_interface_mesh.msgpack", std::ios::binary);
+        std::vector<std::uint8_t> interfaceMeshMsgPack = nlohmann::json::to_msgpack(result["interface_mesh"]);
+        interfaceMeshOf.write(reinterpret_cast<const char*>(interfaceMeshMsgPack.data()), interfaceMeshMsgPack.size());
+        interfaceMeshOf.close();
+
+        std::ofstream structuresOf(outputFile + "_structures_stats.msgpack", std::ios::binary);
+        std::vector<std::uint8_t> structuresMsgPack = nlohmann::json::to_msgpack(result["structures"]);
+        structuresOf.write(reinterpret_cast<const char*>(structuresMsgPack.data()), structuresMsgPack.size());
+        structuresOf.close();
+
+        std::ofstream simulationCellOf(outputFile + "_simulation_cell.msgpack", std::ios::binary);
+        std::vector<std::uint8_t> simulationCellMsgPack = nlohmann::json::to_msgpack(result["simulation_cell"]);
+        simulationCellOf.write(reinterpret_cast<const char*>(simulationCellMsgPack.data()), simulationCellMsgPack.size());
+        simulationCellOf.close();
     }
 
     // Clean up all intermediate data to free memory before returning.

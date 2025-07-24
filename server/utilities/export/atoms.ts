@@ -40,17 +40,11 @@ export interface ParsedFrame{
     atoms: LammpsAtom[];
 }
 
-export interface DxAtom{
-    node_id: number;
-    position: [number, number, number];
-    type_name: string;
-}
-
-export interface AtomsData{
-    data: DxAtom[],
-    metadata: {
-        count: number;
-    };
+export interface AtomsGroupedByType {
+    [typeName: string]: {
+        id: number;
+        pos: [number, number, number];
+    }[];
 }
 
 class LAMMPSToGLTFExporter{
@@ -659,20 +653,18 @@ class LAMMPSToGLTFExporter{
     }
 
     public exportAtomsTypeToGLTF(
-        atomsData: AtomsData,
+        atomsByType: AtomsGroupedByType,
         outputFilePath: string,
         options: GLTFExportOptions = {}
     ): void{
-        const processedAtoms: LammpsAtom[] = atomsData.data.map((atom) =>({
-            id: atom.node_id,
-            type: 0,
-            x: atom.position[0],
-            y: atom.position[1],
-            z: atom.position[2],
-            typeName: atom.type_name
-        }));
+        const totalAtomCount = Object.values(atomsByType).reduce((sum, atoms) => sum + atoms.length, 0);
 
-        const autoRadius = LAMMPSToGLTFExporter.calculateOptimalRadius(processedAtoms);
+        const allAtomsForRadiusCalc = Object.values(atomsByType).flat().map(a => ({
+            x: a.pos[0], y: a.pos[1], z: a.pos[2],
+            id: a.id, type: 0, typeName: '' 
+        }));
+        const autoRadius = LAMMPSToGLTFExporter.calculateOptimalRadius(allAtomsForRadiusCalc);
+
         const opts: Required<GLTFExportOptions> = {
             atomRadius: options.atomRadius ?? autoRadius,
             maxAtoms: options.maxAtoms ?? 0,
@@ -680,13 +672,13 @@ class LAMMPSToGLTFExporter{
         };
 
         console.log(`Using atom radius: ${opts.atomRadius.toFixed(3)}(${options.atomRadius ? 'specified' : 'auto-detected'})`);
-        const profile = LAMMPSToGLTFExporter.detectPerfomanceProfile(processedAtoms.length);
+        const profile = LAMMPSToGLTFExporter.detectPerfomanceProfile(totalAtomCount);
 
-        const{ atoms: selectedAtoms, finalRadius } = this.selectAtoms(processedAtoms, opts, profile);
-        const{ segments, rings } = profile.sphereResolution;
-
+        const finalRadius = opts.atomRadius;
+        const { segments, rings } = profile.sphereResolution;
+    
         const sphere = this.generateSphere(finalRadius, segments, rings);
-        console.log(`Exporting ${selectedAtoms.length.toLocaleString()} of ${processedAtoms.length.toLocaleString()} atoms.`);
+        console.log(`Exporting ${totalAtomCount.toLocaleString()} atoms.`);
         console.log(`Atom final radius: ${finalRadius.toFixed(3)}`);
 
         const gltf: any = {
@@ -766,20 +758,10 @@ class LAMMPSToGLTFExporter{
             type: 'SCALAR'
         });
 
-        const atomsByStructureType = new Map<string, LammpsAtom[]>();
-        for(const atom of selectedAtoms){
-            const typeName = atom.typeName;
-            if(typeName){
-                if(!atomsByStructureType.has(typeName)){
-                    atomsByStructureType.set(typeName, []);
-                }
-                atomsByStructureType.get(typeName)!.push(atom);
-            }
-        }
-
         let materialIndex = 0;
-        for(const [typeName, typeAtoms] of atomsByStructureType){
+        for(const [typeName, typeAtoms] of Object.entries(atomsByType)){
             if(typeAtoms.length === 0) continue;
+            console.log(`Processing ${typeAtoms.length.toLocaleString()} atoms of type "${typeName}".`);
 
             const colorRGB = this.STRUCTURE_COLORS[typeName] || this.STRUCTURE_COLORS['Default'];
             gltf.materials.push({
@@ -794,7 +776,7 @@ class LAMMPSToGLTFExporter{
             const chunks = Math.ceil(typeAtoms.length / opts.maxInstancesPerMesh);
             for(let i = 0; i < chunks; i++){
                 const chunkAtoms = typeAtoms.slice(i * opts.maxInstancesPerMesh,(i + 1) * opts.maxInstancesPerMesh);
-                const translations = chunkAtoms.flatMap(a => [a.x, a.y, a.z]);
+                const translations = chunkAtoms.flatMap(a => a.pos); 
 
                 const translationBufferOffset = bufferSize;
                 const translationBufferSize = translations.length * 4;

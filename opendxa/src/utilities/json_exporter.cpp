@@ -359,73 +359,34 @@ json DXAJsonExporter::getAtomsData(
     const BurgersLoopBuilder* tracer,
     const std::vector<int>* structureTypes
 ){
-    json atomsData;
+    std::map<std::string, json> groupedAtoms;
 
-    atomsData["metadata"] = {
-        {"type", "atomic_structure"},
-        {"count", frame.natoms}
-    };
-    
-    json dataArray = json::array();
-    std::map<int, int> cnaTypeDistribution;
-    
-    int totalCoordination = 0;
-    int validAtoms = 0;
-    
     for(size_t i = 0; i < frame.natoms; ++i){
-        json atomJson;
-        
-        atomJson["node_id"] = i;
-        
-        if(i < static_cast<int>(frame.positions.size())){
-            const auto& pos = frame.positions[i];
-            atomJson["position"] = {pos.x(), pos.y(), pos.z()};
-        }else{
-            atomJson["position"] = {0.0, 0.0, 0.0};
-        }
-        
         int structureType = 0;
         if(structureTypes && i < static_cast<int>(structureTypes->size())){
             structureType = (*structureTypes)[i];
         }
-        
-        int lammpsType = (i < static_cast<int>(frame.types.size())) ? frame.types[i] : 0;
 
-        // TODO: ???????????
-        atomJson["lammps_type"] = lammpsType;
-        atomJson["atom_type"] = structureType;
-        atomJson["type_name"] = tracer->mesh().structureAnalysis().getStructureTypeName(structureType);
+        std::string typeName = tracer->mesh().structureAnalysis().getStructureTypeName(structureType);
         
-        cnaTypeDistribution[structureType]++;
-        validAtoms++;
+        json atomJson;
+        atomJson["id"] = i;
         
-        dataArray.push_back(atomJson);
-    }
-    
-    atomsData["data"] = dataArray;
-    
-    int mostCommonCnaType = 0;
-    int maxCount = 0;
-    for(const auto& [type, count] : cnaTypeDistribution){
-        if(count > maxCount){
-            maxCount = count;
-            mostCommonCnaType = type;
+        if(i < static_cast<int>(frame.positions.size())){
+            const auto& pos = frame.positions[i];
+            atomJson["pos"] = {pos.x(), pos.y(), pos.z()};
+        }else{
+            atomJson["pos"] = {0.0, 0.0, 0.0};
         }
+        
+        if(!groupedAtoms[typeName].is_array()){
+            groupedAtoms[typeName] = json::array();
+        }
+
+        groupedAtoms[typeName].push_back(atomJson);
     }
     
-    atomsData["summary"] = {
-        {"cna_type_distribution", cnaTypeDistribution},
-        {"most_common_cna_type", mostCommonCnaType},
-        {"unique_cna_types", static_cast<int>(cnaTypeDistribution.size())}
-    };
-        
-    std::unordered_set<int> coreAtomIds;
-    for(auto &atomJson : atomsData["data"]){
-        int idx = atomJson["node_id"];
-        atomJson["is_core"] = tracer->_coreAtomIndices.count(idx) ? true : false;
-    }
-
-    return atomsData;
+    return json(groupedAtoms);
 }
 
 json DXAJsonExporter::exportClusterGraphToJson(const ClusterGraph* graph){

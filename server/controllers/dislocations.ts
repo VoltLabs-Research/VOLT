@@ -25,6 +25,7 @@ import { readdir, writeFile, readFile } from 'fs/promises';
 import { getAnalysisProcessingQueue } from '@services/analysis_queue';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { v4 } from 'uuid';
 
 export const getTrajectoryDislocations = async (req: Request, res: Response) => {
     try {
@@ -67,19 +68,27 @@ export const getTrajectoryDislocations = async (req: Request, res: Response) => 
         await writeFile(metadataPath, JSON.stringify(metadata, null, 4), 'utf-8');
         
         const queueService = getAnalysisProcessingQueue();
-        queueService.addJob({
-            trajectoryId,
-            folderPath,
-            config: req.body,
-            trajectoryFiles
+        const jobsToEnqueue = trajectoryFiles.map((inputFile) => {
+            const jobId = v4();
+            return {
+                jobId,
+                trajectoryId,
+                folderPath,
+                inputFile,
+                config: req.body
+            };
         });
+
+        if(jobsToEnqueue.length > 0){
+            await queueService.addJobs(jobsToEnqueue);
+        }
 
         const queueStatus = await queueService.getStatus(); 
         return res.status(202).json({
             status: 'success',
             data: {
                 trajectoryId,
-                mode: 'queued',
+                jobIds: jobsToEnqueue.map(j => j.jobId), 
                 queueStatus
             }
         });

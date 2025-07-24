@@ -20,18 +20,19 @@
 * SOFTWARE.
 **/
 
-import { parentPort, workerData } from 'worker_threads';
+import { parentPort } from 'worker_threads';
 import OpenDXAService from '@services/opendxa';
 import mongoConnector from '@utilities/mongoConnector';
 import '@config/env';
 
 // TODO: Duplicated code
 interface AnalysisJob{
+    jobId: string;
     trajectoryId: string;
     folderPath: string;
     // TODO: any?
     config: any;
-    trajectoryFiles: string[];
+    inputFile: string;
 }
 
 const processJob = async (job: AnalysisJob): Promise<void> => {
@@ -40,13 +41,13 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
     }
 
     try{
-        console.log(`[Worker #${process.pid}] Received job ${job.trajectoryId}. Starting processing...`);
+        console.log(`[Worker #${process.pid}] Received job ${job.jobId}. Starting processing...`);
         const analysis = new OpenDXAService(job.trajectoryId, job.folderPath);
-        const results = await analysis.analyzeTrajectory(job.trajectoryFiles, job.config);
+        const results = await analysis.processSingleFile(job.inputFile, job.config);
 
         parentPort?.postMessage({
             status: 'completed',
-            trajectoryId: job.trajectoryId,
+            jobId: job.jobId,
             result: results
         });
 
@@ -56,7 +57,7 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
         
         parentPort?.postMessage({
             status: 'failed',
-            trajectoryId: job.trajectoryId,
+            jobId: job.jobId,
             error: err.message
         });
     }

@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@mongodb-js/zstd": "^2.0.1",
+    "@msgpack/msgpack": "^3.1.2",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "bull": "^4.16.5",
