@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import CanvasGrid from '@/components/atoms/CanvasGrid';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
+import PerformanceController from '@/components/atoms/PerformanceController';
 import useEditorStore from '@/stores/editor';
 import useUIStore from '@/stores/ui';
 import './Scene3D.css';
@@ -120,6 +121,9 @@ const Scene3D: React.FC<Scene3DProps> = ({
     const toggleEditorWidgets = useUIStore((state) => state.toggleEditorWidgets);
     const showEditorWidgets = useUIStore((state) => state.showEditorWidgets);
 
+    const maxDpr = useMemo(() => (window.devicePixelRatio > 1 ? 2 : 1), []);
+    const [dpr, setDpr] = useState(maxDpr);
+
     const handleControlsRef = useCallback((ref: any) => {
         orbitControlsRef.current = ref;
         onCameraControlsRef?.(ref);
@@ -139,11 +143,6 @@ const Scene3D: React.FC<Scene3DProps> = ({
         backgroundColor: !showEditorWidgets ? '#e6e6e6' : '#1E1E1E',
         touchAction: 'none'
     }), [showEditorWidgets]);
-
-    const dpr = useMemo(() => {
-        const pixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
-        return [2.5, Math.min(pixelRatio, 2.5)] as [number, number];
-    }, []);
 
     const orbitControlsProps = useMemo(() => ({
         ...ORBIT_CONTROLS_CONFIG,
@@ -174,12 +173,15 @@ const Scene3D: React.FC<Scene3DProps> = ({
             camera={CAMERA_CONFIG}
             style={canvasStyle}
             dpr={dpr}
-            performance={{
-                min: 0.2,
-                max: 1,
-                debounce: 200
-            }}
         >
+            <PerformanceController
+                targetFPS={55}
+                recoveryFPS={60}
+                minDpr={0.3}
+                maxDpr={maxDpr}
+                setDpr={setDpr}
+            />
+            
             <GizmoHelper
                 alignment='top-left'
                 renderPriority={2}
