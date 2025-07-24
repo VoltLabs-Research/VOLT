@@ -32,7 +32,10 @@ const PerformanceController = ({
             return;
         }
 
-        console.log(smoothedFPS.current)
+        if(instantFPS < targetFPS * 0.7){
+            // It adjusts suddenly if it is a sudden fall
+            smoothedFPS.current = instantFPS; 
+        }
 
         if(smoothedFPS.current < targetFPS){
             setDpr((currentDpr: number) => {

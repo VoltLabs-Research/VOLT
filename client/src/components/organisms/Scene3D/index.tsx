@@ -179,6 +179,8 @@ const Scene3D: React.FC<Scene3DProps> = ({
                 recoveryFPS={60}
                 minDpr={0.3}
                 maxDpr={maxDpr}
+                cooldown={0.05}
+                step={0.2}
                 setDpr={setDpr}
             />
             
