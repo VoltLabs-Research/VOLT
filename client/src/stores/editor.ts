@@ -81,7 +81,7 @@ export interface TrajectoryGLTFs {
 }
 
 const initialAnalysisConfig: AnalysisConfig = {
-    crystalStructure: 'FCC',
+    crystalStructure: 'BCC',
     identificationMode: 'CNA',
     maxTrialCircuitSize: 14.0,
     circuitStretchability: 9.0,

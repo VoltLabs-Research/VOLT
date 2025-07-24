@@ -131,7 +131,7 @@ const Scene3D: React.FC<Scene3DProps> = ({
     );
 
     const isTrajectoryScene = useMemo(() => 
-        ['trajectory', 'atoms_colored_by_type'].includes(activeSceneObject), 
+        ['trajectory', 'atoms_colored_by_type', 'dislocations'].includes(activeSceneObject), 
         [activeSceneObject]
     );
 
@@ -142,7 +142,7 @@ const Scene3D: React.FC<Scene3DProps> = ({
 
     const dpr = useMemo(() => {
         const pixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
-        return [1, Math.min(pixelRatio, 2)] as [number, number];
+        return [2.5, Math.min(pixelRatio, 2.5)] as [number, number];
     }, []);
 
     const orbitControlsProps = useMemo(() => ({

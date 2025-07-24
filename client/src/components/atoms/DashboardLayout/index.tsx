@@ -23,10 +23,13 @@
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { GrHomeOption } from 'react-icons/gr';
-import { BsFiles } from 'react-icons/bs';
+import { BsFiles, BsCommand } from 'react-icons/bs';
 import { GoPeople, GoTrash } from 'react-icons/go';
+import { TbCube3dSphere } from "react-icons/tb";
+import { IoSettingsOutline } from "react-icons/io5";
 import { TbBook } from 'react-icons/tb';
 import { IoIosHelpCircleOutline } from 'react-icons/io';
+import { CiChat1 } from 'react-icons/ci';
 import SidebarUserAvatar from '@/components/atoms/SidebarUserAvatar';
 import SidebarNavigationOption from '@/components/atoms/SidebarNavigationOption';
 import AIPromptBox from '@/components/atoms/AIPromptBox';
@@ -79,9 +82,9 @@ const DashboardLayout = () => {
                     <div className='sidebar-nav-container'>
                         {[
                             ['Dashboard', GrHomeOption, '/dashboard'],
-                            ['Simulations', BsFiles, '/dashboard/simulations'],
-                            ['Shared with me', GoPeople, '/dashboard/shared-with-me'],
-                            ['Tutorials', TbBook, '/dashboard/tutorials']
+                            ['Team Messages', CiChat1, '/dashboard/simulations'],
+                            ['Studio', TbCube3dSphere, ''],
+                            ['Tutorials', TbBook, '/dashboard/tutorials'],
                         ].map(([ name, Icon, to ], index) => (
                             <SidebarNavigationOption 
                                 key={`${name}-${index}`} 
@@ -96,6 +99,8 @@ const DashboardLayout = () => {
                 <article className='sidebar-bottom-container'>
                     {[
                         ['Archive', GoTrash],
+                        ['Shortcuts', BsCommand],
+                        ['Settings', IoSettingsOutline],
                         ['Help & Feedback', IoIosHelpCircleOutline]
                     ].map(([ name, Icon ], index) => (
                         <SidebarNavigationOption key={`${name}-${index}`} name={name} Icon={Icon} />

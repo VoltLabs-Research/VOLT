@@ -34,6 +34,7 @@ interface TrajectoryState{
     isUploading: boolean;
     error: string | null;
 
+    dislocationAnalysis: (id: string) => Promise<void>;
     setTrajectory: (trajectory: Trajectory | null) => void;
     getTrajectoryById: (id: string) => Promise<void>;
     getTrajectories: (teamId?: string) => Promise<void>;
@@ -109,13 +110,11 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
             }
         },
 
+        dislocationAnalysis: async (id: string) => api.post<ApiResponse<any>>(`/dislocations/trajectory/${id}`, useEditorStore.getState().analysisConfig),
+
         createTrajectory: (formData: FormData) => asyncAction(() => api.post<ApiResponse<Trajectory>>('/trajectories', formData), {
             loadingKey: 'isUploading',
             onSuccess: (res, state) => {
-                // After the trajectory is uploaded to the server, we perform dislocation analysis.
-                api.post<ApiResponse<any>>(`/dislocations/trajectory/${res.data.data._id}`, useEditorStore.getState().analysisConfig)
-                    .then(() => console.log('Extracting dislocations...'))
-                    .catch(console.error);
                 return {
                     trajectories: [...state.trajectories, res.data.data]
                 };

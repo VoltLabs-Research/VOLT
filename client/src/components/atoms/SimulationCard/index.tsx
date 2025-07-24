@@ -22,8 +22,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PiDotsThreeVerticalBold } from "react-icons/pi";
-import { PiAtomThin } from 'react-icons/pi';
+import { PiAtomThin, PiLineSegmentsLight, PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { RxTrash } from "react-icons/rx";
 import { CiShare1 } from "react-icons/ci";
 import { HiOutlineViewfinderCircle } from "react-icons/hi2";
@@ -32,12 +31,12 @@ import formatTimeAgo from '@/utilities/formatTimeAgo';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
 import useTrajectoryStore from '@/stores/trajectories';
 import ActionBasedFloatingContainer from '@/components/atoms/ActionBasedFloatingContainer';
-import useEditorStore from '@/stores/editor';
 import './SimulationCard.css';
 
 const SimulationCard = ({ trajectory }) => {
     const navigate = useNavigate();
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
+    const dislocationAnalysis = useTrajectoryStore((state) => state.dislocationAnalysis);
 
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -74,7 +73,8 @@ const SimulationCard = ({ trajectory }) => {
                     options={[
                         ['View Scene', HiOutlineViewfinderCircle, loadTrajectoryOnCanvas],
                         ['Share with Team', CiShare1, () => {}],
-                        ['Delete', RxTrash, handleDelete] 
+                        ['Dislocation Analysis', PiLineSegmentsLight, () => dislocationAnalysis(trajectory._id)],
+                        ['Delete', RxTrash, handleDelete],
                     ]}
                 >
                     <i className='simulation-options-icon-container'>
