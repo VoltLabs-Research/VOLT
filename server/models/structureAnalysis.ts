@@ -1,4 +1,5 @@
 import mongoose, { Schema, Model } from 'mongoose';
+// @ts-ignore
 import { IStructureAnalysis, IStructureTypeStat } from '@types/models/structureAnalysis';
 import Trajectory from '@models/trajectory';
 

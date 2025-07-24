@@ -5,8 +5,8 @@ import { parser } from 'stream-json';
 import path from 'path';
 import os from 'os';
 import MeshExporter,{ Mesh }from '@utilities/export/mesh';
-import DislocationExporter,{ Dislocation }from '@utilities/export/dislocations';
-import LAMMPSToGLTFExporter,{ AtomsData }from '@utilities/export/atoms';
+import DislocationExporter, { Dislocation } from '@utilities/export/dislocations';
+import LAMMPSToGLTFExporter, { AtomsData } from '@utilities/export/atoms';
 import StructureAnalysis from '@models/structureAnalysis';
 import SimulationCell from '@models/simulationCell';
 
@@ -35,7 +35,7 @@ export interface ConfigParameters{
 }
 
 interface StructureTypeStat{
-    [key: string]:{
+    [key: string]: {
         count: number;
         percentage: number;
         type_id: number;
@@ -46,7 +46,7 @@ interface StructureAnalysisData{
     total_atoms: number;
     analysis_method: 'PTM' | 'CNA';
     structure_types: StructureTypeStat;
-    summary:{
+    summary: {
         total_identified: number;
         total_unidentified: number;
         identification_rate: number;
@@ -56,7 +56,7 @@ interface StructureAnalysisData{
 
 const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build/opendxa');
 
-const JSON_OUTPUT_MAP ={
+const JSON_OUTPUT_MAP = {
     defect_mesh: '_defect_mesh.json',
     atoms: '_atoms.json',
     dislocations: '_dislocations.json',
@@ -76,7 +76,7 @@ function parseTimestepFromFilename(filename: string): number{
 
 function buildCliArgs(options: ConfigParameters): string[]{
     const args: string[] = [];
-    const optionMap:{ [key in keyof ConfigParameters]: string }={
+    const optionMap: { [key in keyof ConfigParameters]: string } = {
         crystalStructure: '--crystalStructure',
         maxTrialCircuitSize: '--maxTrialCircuitSize',
         circuitStretchability: '--circuitStretchability',
@@ -89,6 +89,7 @@ function buildCliArgs(options: ConfigParameters): string[]{
 
     for(const key in options){
         if(Object.prototype.hasOwnProperty.call(options, key)){
+            // @ts-ignore
             const cliFlag = optionMap[key];
             const value = options[key as keyof ConfigParameters];
             if(cliFlag && value !== undefined && value !== null){
@@ -142,7 +143,7 @@ class OpenDXAService{
         this.trajectoryId = trajectoryId;
     }
 
-    public async analyzeTrajectory(inputFiles: string[], options: ConfigParameters ={}): Promise<any[]>{
+    public async analyzeTrajectory(inputFiles: string[], options: ConfigParameters = {}): Promise<any[]>{
         console.log(`[OpenDXAService] Starting analysis for ${inputFiles.length}frames.`);
         
         const cliOptions = buildCliArgs(options);
@@ -174,7 +175,7 @@ class OpenDXAService{
 
         try{
             await this.runCliProcess(inputFile, outputBase, cliOptions);
-            const{ frameResult, generatedFiles }= await this.readOutputFiles(outputBase);
+            const{ frameResult, generatedFiles } = await this.readOutputFiles(outputBase);
 
             const timestep = parseTimestepFromFilename(inputFile);
             frameResult.metadata = { timestep };
@@ -194,7 +195,7 @@ class OpenDXAService{
         }catch(error){
             console.error(`[OpenDXAService] Failed to process ${inputFile}:`, error);
             
-            // Enhanced error logging
+            // @ts-ignore
             if(error.message.includes('Invalid string length')){
                 console.error('[OpenDXAService] This appears to be a large file issue. Consider:');
                 console.error('1. Reducing the number of atoms in the simulation');
@@ -240,7 +241,7 @@ class OpenDXAService{
     }
 
     private async readOutputFiles(outputBase: string): Promise<{ frameResult: any, generatedFiles: string[] }>{
-        const frameResult: any ={};
+        const frameResult: any = {};
         const generatedFiles: string[] = [];
 
         for(const [key, suffix] of Object.entries(JSON_OUTPUT_MAP)){
@@ -257,6 +258,7 @@ class OpenDXAService{
                     const stats = await fs.stat(jsonPath);
                     console.error(`File size: ${(stats.size / 1024 / 1024).toFixed(2)}MB`);
                 }catch(statError){
+                    // @ts-ignore
                     console.error(`Could not get file stats: ${statError.message}`);
                 }
                 
@@ -267,7 +269,7 @@ class OpenDXAService{
     }
 
     private async processFrameData(frameResult: any, timestep: number): Promise<void>{
-        const{ interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell }= frameResult;
+        const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
 
         await Promise.all([
             this.exportMesh(defect_mesh, timestep, 'defect'),
@@ -295,7 +297,7 @@ class OpenDXAService{
         exporter.toGLTF(dislocation, outputPath,{
             lineWidth: 0.8,
             colorByType: true,
-            material:{
+            material: {
                 baseColor: [1.0, 0.5, 0.0, 1.0],
                 metallic: 0.0,
                 roughness: 0.8
@@ -307,7 +309,7 @@ class OpenDXAService{
         const exporter = new MeshExporter();
         const outputPath = this.getOutputPath(frame, `${meshType}_mesh`);
         exporter.toGLTF(mesh, outputPath,{
-            material:{
+            material: {
                 baseColor: [1.0, 1.0, 1.0, 1.0],
                 metallic: 0.0,
                 roughness: 0.0,
@@ -316,7 +318,7 @@ class OpenDXAService{
             smoothIterations: 8,
             generateNormals: true,
             enableDoubleSided: true,
-            metadata:{ includeOriginalStats: true }
+            metadata: { includeOriginalStats: true }
         });
     }
 
@@ -325,7 +327,7 @@ class OpenDXAService{
         const stats = [];
 
         for(const name of structureNames){
-            const{ count, percentage, type_id }= data.structure_types[name];
+            const{ count, percentage, type_id } = data.structure_types[name];
             stats.push({
                 count,
                 percentage,
@@ -334,12 +336,12 @@ class OpenDXAService{
             });
         }
 
-        const filter ={
+        const filter = {
             trajectory: this.trajectoryId,
             timestep: frame
         }
 
-        const updateData ={
+        const updateData = {
             totalAtoms: data.total_atoms,
             timestep: frame,
             analysisMethod: data.analysis_method.toUpperCase(),
@@ -358,12 +360,12 @@ class OpenDXAService{
     }
 
     private async handleSimulationCellData(data: any, frame: number): Promise<void>{
-        const filter ={
+        const filter = {
             trajectory: this.trajectoryId,
             timestep: frame
         };
 
-        const updateData ={
+        const updateData = {
             ...data,
             trajectory: this.trajectoryId,
             timestep: frame

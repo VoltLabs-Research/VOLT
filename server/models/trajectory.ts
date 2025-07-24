@@ -24,6 +24,7 @@ import mongoose, { Schema, Model } from 'mongoose';
 import { rmdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
+// @ts-ignore
 import type { ITrajectory, ITimestepInfo } from '@types/models/trajectory';
 import Team from '@models/team';
 import StructureAnalysis from '@models/structureAnalysis';

@@ -1,26 +1,29 @@
 {
   "compilerOptions": {
-      "target": "ES6",
-      "module": "commonjs",
-      "strict": true,
-      "esModuleInterop": true,
-      "skipLibCheck": true,
-      "forceConsistentCasingInFileNames": true,
-      "resolveJsonModule": true,
-      "outDir": "./dist",
-      "paths": {
-          "@models/*": ["./models/*"],
-          "@utilities/*": ["./utilities/*"],
-          "@routes/*": ["./routes/*"],
-          "@config/*": ["./config/*"],
-          "@controllers/*": ["./controllers/*"],
-          "@cli/*": ["./cli/*"],
-          "@data/*": ["./data/*"],
-          "@services/*": ["./services/*"],
-          "@middlewares/*": ["./middlewares/*"],
-          "@types/*": ["./types/*"]
-      }
+    "target": "ES6",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "@models/*": ["models/*"],
+      "@utilities/*": ["utilities/*"],
+      "@routes/*": ["routes/*"],
+      "@config/*": ["config/*"],
+      "@controllers/*": ["controllers/*"],
+      "@cli/*": ["cli/*"],
+      "@data/*": ["data/*"],
+      "@services/*": ["services/*"],
+      "@middlewares/*": ["middlewares/*"],
+      "@types/*": ["types/*"]
+    }
   },
-  "include": ["."],
-  "exclude": ["node_modules"]
+  "include": [
+    "**/*.ts",  // Incluye todos los archivos TypeScript
+    "**/*.d.ts" // Incluye explícitamente todos los archivos de declaración
+  ],  "exclude": ["node_modules"]
 }

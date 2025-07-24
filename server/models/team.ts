@@ -20,7 +20,8 @@
 * SOFTWARE.
 **/
 
-import mongoose, { Schema, Model, HookNextFunction } from 'mongoose';
+import mongoose, { Schema, Model } from 'mongoose';
+// @ts-ignore
 import { ITeam } from '@types/models/team';
 import User from '@models/user';
 import Trajectory from '@models/trajectory';
@@ -55,7 +56,7 @@ const TeamSchema: Schema<ITeam> = new Schema({
     timestamps: true
 });
 
-TeamSchema.pre('findOneAndDelete', async function (next: HookNextFunction){
+TeamSchema.pre('findOneAndDelete', async function (next){
     const teamToDelete = await this.model.findOne(this.getFilter());
     if(!teamToDelete){
         return next();
@@ -72,6 +73,7 @@ TeamSchema.pre('findOneAndDelete', async function (next: HookNextFunction){
 });
 
 TeamSchema.post('save', async function(doc, next){
+    // @ts-ignore
     const isNewTeam = doc.createdAt.getTime() === doc.updatedAt.getTime();
 
     if(isNewTeam){

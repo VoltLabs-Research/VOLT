@@ -20,11 +20,12 @@
 * SOFTWARE.
 **/
 
-import mongoose, { Schema, Model, HookNextFunction } from 'mongoose';
+import mongoose, { Schema, Model } from 'mongoose';
 import validator from 'validator';
 import Notification from '@models/notification';
 import bcrypt from 'bcryptjs';
 import Team from '@models/team';
+// @ts-ignore
 import { IUser } from '@types/models/user';
 
 const UserSchema: Schema<IUser> = new Schema({
@@ -76,7 +77,7 @@ const UserSchema: Schema<IUser> = new Schema({
 
 UserSchema.index({ email: 'text' });
 
-UserSchema.pre<any>('findOneAndDelete', async function(next: HookNextFunction) {
+UserSchema.pre<any>('findOneAndDelete', async function(next) {
     const userToDelete = await this.model.findOne(this.getFilter());
     if(!userToDelete) return next();
 
@@ -91,7 +92,7 @@ UserSchema.pre<any>('findOneAndDelete', async function(next: HookNextFunction) {
     next();
 });
 
-UserSchema.pre('save', async function(this: IUser & { isNew: boolean }, next: HookNextFunction) {
+UserSchema.pre('save', async function(this: IUser & { isNew: boolean }, next) {
     if(!this.isModified('password')) return next();
 
     this.password = await bcrypt.hash(this.password, 12);

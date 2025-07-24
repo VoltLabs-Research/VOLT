@@ -1,4 +1,5 @@
 import mongoose, { Schema, Model } from 'mongoose';
+// @ts-ignore
 import { ICellAnalysis } from '@types/models/simulationCell';
 
 const PeriodicBoundarySchema = new Schema({

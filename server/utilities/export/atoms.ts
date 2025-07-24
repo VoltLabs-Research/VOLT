@@ -1,27 +1,27 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
 import * as fs from 'fs';
-import { TimestepInfo, Atom } from '../lammps';
+
+export interface TimestepInfo{
+    timestep: number;
+    natoms: number;
+    boxBounds: {
+        xlo: number;
+        xhi: number;
+        ylo: number;
+        yhi: number;
+        zlo: number;
+        zhi: number;
+    }
+}
+
+// TODO: Duplicated code
+export interface LammpsAtom{
+    id: number;
+    type: number;
+    x: number;
+    y: number;
+    z: number;
+    typeName?: string;
+}
 
 export interface GLTFExportOptions{
     atomRadius?: number;
@@ -37,17 +37,17 @@ interface PerformanceProfile{
 
 export interface ParsedFrame{
     timestepInfo: TimestepInfo;
-    atoms: Atom[];
+    atoms: LammpsAtom[];
 }
 
-export interface Atom{
+export interface DxAtom{
     node_id: number;
     position: [number, number, number];
     type_name: string;
 }
 
 export interface AtomsData{
-    data: Atom[],
+    data: DxAtom[],
     metadata: {
         count: number;
     };
@@ -55,19 +55,12 @@ export interface AtomsData{
 
 class LAMMPSToGLTFExporter{
     private lammpsTypeColors: Map<number, number[]> = new Map([
-        // Gray
         [0, [0.5, 0.5, 0.5, 1.0]],
-        // Red
         [1, [1.0, 0.267, 0.267, 1.0]],
-        // Green
         [2, [0.267, 1.0, 0.267, 1.0]],
-        // Blue
         [3, [0.267, 0.267, 1.0, 1.0]],
-        // Yellow
-        [4, [1.0, 1.0, 0.267, 1.0]], 
-        // Magenta
+        [4, [1.0, 1.0, 0.267, 1.0]],
         [5, [1.0, 0.267, 1.0, 1.0]],
-        // Cyan
         [6, [0.267, 1.0, 1.0, 1.0]]
     ]);
 
@@ -81,9 +74,8 @@ class LAMMPSToGLTFExporter{
         'Default': [0.5, 0.5, 0.5]
     };
 
-    // Parse atoms from LAMMPS file lines
-    private parseAtoms(lines: string[]): Atom[]{
-        const atoms: Atom[] = [];
+    private parseAtoms(lines: string[]): LammpsAtom[]{
+        const atoms: LammpsAtom[] = [];
         let inAtomsSection = false;
 
         for(const line of lines){
@@ -114,16 +106,16 @@ class LAMMPSToGLTFExporter{
         return atoms;
     }
 
-    private static uniformSubsampling(atoms: Atom[], targetCount: number): Atom[]{
+    private static uniformSubsampling(atoms: LammpsAtom[], targetCount: number): LammpsAtom[]{
         const step = Math.floor(atoms.length / targetCount);
-        const selected: Atom[] = [];
+        const selected: LammpsAtom[] = [];
         for(let i = 0; i < atoms.length && selected.length < targetCount; i += step){
             selected.push(atoms[i]);
         }
         return selected;
     }
 
-    private static calculateAtomBounds(atoms: Atom[]): { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } }{
+    private static calculateAtomBounds(atoms: LammpsAtom[]): { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } }{
         let minX = Number.MAX_VALUE, maxX = Number.MIN_VALUE;
         let minY = Number.MAX_VALUE, maxY = Number.MIN_VALUE;
         let minZ = Number.MAX_VALUE, maxZ = Number.MIN_VALUE;
@@ -137,18 +129,16 @@ class LAMMPSToGLTFExporter{
         return { min: { x: minX, y: minY, z: minZ }, max: { x: maxX, y: maxY, z: maxZ } };
     }
 
-    private static boundaryPreservingSubsampling(atoms: Atom[], targetCount: number): Atom[]{
+    private static boundaryPreservingSubsampling(atoms: LammpsAtom[], targetCount: number): LammpsAtom[]{
         if(atoms.length <= targetCount) return atoms;
         const bounds = this.calculateAtomBounds(atoms);
-        // Identify edge atoms (10% of total volume)
-        // 5% margin on each side
         const margin = 0.05;
         const xMargin = (bounds.max.x - bounds.min.x) * margin;
         const yMargin = (bounds.max.y - bounds.min.y) * margin;
         const zMargin = (bounds.max.z - bounds.min.z) * margin;
 
-        const boundaryAtoms: Atom[] = [];
-        const interiorAtoms: Atom[] = [];
+        const boundaryAtoms: LammpsAtom[] = [];
+        const interiorAtoms: LammpsAtom[] = [];
 
         for(const atom of atoms){
             const isOnBoundary = (
@@ -164,29 +154,24 @@ class LAMMPSToGLTFExporter{
             }
         }
 
-        // Reserve space for edge atoms (minimum 15% of the target)
         const minBoundaryCount = Math.min(boundaryAtoms.length, Math.floor(targetCount * 0.15));
         const remainingTarget = targetCount - minBoundaryCount;
 
-        // Select edge atoms uniformly
         const selectedBoundary = this.uniformSubsampling(boundaryAtoms, minBoundaryCount);
-
-        // Select interior atoms
         const selectedInterior = interiorAtoms.length <= remainingTarget ? interiorAtoms : this.uniformSubsampling(interiorAtoms, remainingTarget);
 
         const result = [...selectedBoundary, ...selectedInterior];
         return result;
     }
 
-    private static stratifiedSubsampling(atoms: Atom[], targetCount: number): Atom[]{
+    private static stratifiedSubsampling(atoms: LammpsAtom[], targetCount: number): LammpsAtom[]{
         if(atoms.length <= targetCount) return atoms;
         const bounds = this.calculateAtomBounds(atoms);
-        // Divide into 8 octants (guaranteed corners)
         const regions = this.divideIntoOctants(atoms, bounds);
-        const selected: Atom[] = [];
+        const selected: LammpsAtom[] = [];
         const atomsPerRegion = Math.floor(targetCount / regions.length);
         let remainingTarget = targetCount;
-        // Select from each region proportionally
+
         for(let i = 0; i < regions.length; i++){
             const region = regions[i];
             if(region.length === 0) continue;
@@ -195,9 +180,8 @@ class LAMMPSToGLTFExporter{
             if(region.length <= regionTarget){
                 selected.push(...region);
             }else{
-                // Subsample evenly within the region
                 const regionSelected = this.uniformSubsampling(region, regionTarget);
-                selected.push(...regionSelected);   
+                selected.push(...regionSelected);
             }
 
             remainingTarget -= regionTarget;
@@ -207,29 +191,26 @@ class LAMMPSToGLTFExporter{
         return selected;
     }
 
-    private static divideIntoOctants(atoms: Atom[], bounds: any): Atom[][]{
+    private static divideIntoOctants(atoms: LammpsAtom[], bounds: any): LammpsAtom[][]{
         const centerX = (bounds.min.x + bounds.max.x) / 2;
         const centerY = (bounds.min.y + bounds.max.y) / 2;
         const centerZ = (bounds.min.z + bounds.max.z) / 2;
 
-        // 8 octants to ensure coverage of all corners
-        const octants: Atom[][] = [
-            [], [], [], [], [], [], [], []
-        ];
+        const octants: LammpsAtom[][] = [[], [], [], [], [], [], [], []];
 
         for(const atom of atoms){
-            const octantIndex = 
-                (atom.x >= centerX ? 1 : 0) +
-                (atom.y >= centerY ? 2 : 0) +
-                (atom.z >= centerZ ? 4 : 0);
-            
+            const octantIndex =
+               (atom.x >= centerX ? 1 : 0) +
+               (atom.y >= centerY ? 2 : 0) +
+               (atom.z >= centerZ ? 4 : 0);
+
             octants[octantIndex].push(atom);
         }
-        
+
         return octants.filter((octant) => octant.length > 0);
     }
 
-    private static subsampling(atoms: Atom[], targetCount: number, method: 'uniform' | 'boundary' | 'stratified'): Atom[]{
+    private static subsampling(atoms: LammpsAtom[], targetCount: number, method: 'uniform' | 'boundary' | 'stratified'): LammpsAtom[]{
         if(atoms.length <= targetCount) return atoms;
         switch(method){
             case 'uniform':
@@ -243,7 +224,6 @@ class LAMMPSToGLTFExporter{
         }
     }
 
-    // Parse complete frame from LAMMPS file
     parseFrame(filePath: string, extractTimestepInfo: Function): ParsedFrame{
         const content = fs.readFileSync(filePath, 'utf-8');
         const lines = content.split('\n');
@@ -258,10 +238,10 @@ class LAMMPSToGLTFExporter{
         return { timestepInfo, atoms };
     }
 
-    private selectAtoms(atoms: Atom[], options: GLTFExportOptions, profile: PerformanceProfile): { atoms: Atom[], finalRadius: number } {
+    private selectAtoms(atoms: LammpsAtom[], options: GLTFExportOptions, profile: PerformanceProfile): { atoms: LammpsAtom[], finalRadius: number }{
         let selectedAtoms = [...atoms];
-        let finalRadius = options.atomRadius;
-        
+        let finalRadius = options.atomRadius as number;
+
         if(selectedAtoms.length > profile.recommendedMaxAtoms){
             let method: 'uniform' | 'boundary' | 'stratified' = 'boundary';
 
@@ -274,7 +254,6 @@ class LAMMPSToGLTFExporter{
             }
 
             selectedAtoms = LAMMPSToGLTFExporter.subsampling(selectedAtoms, profile.recommendedMaxAtoms, method);
-            
             finalRadius = LAMMPSToGLTFExporter.calculateOptimalRadius(selectedAtoms);
             console.log(`Recalculated radius after optimization: ${finalRadius.toFixed(3)}`);
         }
@@ -286,12 +265,11 @@ class LAMMPSToGLTFExporter{
         }
 
         const reductionPercent = ((atoms.length - selectedAtoms.length) / atoms.length * 100).toFixed(1);
-        console.log(`Optimization complete: ${reductionPercent}% reduction (${selectedAtoms.length.toLocaleString()} final atoms)`);
+        console.log(`Optimization complete: ${reductionPercent}% reduction(${selectedAtoms.length.toLocaleString()} final atoms)`);
 
         return { atoms: selectedAtoms, finalRadius };
     }
 
-    // Generate sphere geometry
     private generateSphere(radius: number, segments: number, rings: number): {
         vertices: number[];
         indices: number[];
@@ -299,12 +277,11 @@ class LAMMPSToGLTFExporter{
     }{
         const vertices: number[] = [];
         const indices: number[] = [];
-        
+
         let minX = radius, maxX = -radius;
         let minY = radius, maxY = -radius;
         let minZ = radius, maxZ = -radius;
 
-        // Generate vertices
         for(let ring = 0; ring <= rings; ring++){
             const phi = Math.PI * ring / rings;
             const y = Math.cos(phi) * radius;
@@ -315,17 +292,15 @@ class LAMMPSToGLTFExporter{
                 const x = Math.cos(theta) * ringRadius;
                 const z = Math.sin(theta) * ringRadius;
 
-                minX = Math.min(minX, x); 
+                minX = Math.min(minX, x);
                 maxX = Math.max(maxX, x);
-                minY = Math.min(minY, y); 
+                minY = Math.min(minY, y);
                 maxY = Math.max(maxY, y);
-                minZ = Math.min(minZ, z); 
+                minZ = Math.min(minZ, z);
                 maxZ = Math.max(maxZ, z);
 
-                // Position
                 vertices.push(x, y, z);
 
-                // Normal
                 const normLen = Math.sqrt(x * x + y * y + z * z);
                 if(normLen > 0.0){
                     vertices.push(x / normLen, y / normLen, z / normLen);
@@ -335,10 +310,9 @@ class LAMMPSToGLTFExporter{
             }
         }
 
-        // Generate indices
         for(let ring = 0; ring < rings; ring++){
             for(let segment = 0; segment < segments; segment++){
-                const current = ring * (segments + 1) + segment;
+                const current = ring *(segments + 1) + segment;
                 const next = current + segments + 1;
 
                 indices.push(current, next, current + 1);
@@ -353,20 +327,18 @@ class LAMMPSToGLTFExporter{
         };
     }
 
-    // Convert array to base64
     private arrayToBase64(array: ArrayBuffer): string{
         return Buffer.from(array).toString('base64');
     }
 
-    static calculateOptimalRadius(atoms: Atom[]): number{
+    static calculateOptimalRadius(atoms: LammpsAtom[]): number{
         let minDistance = Number.MAX_VALUE;
         const sampleSize = Math.min(1000, atoms.length);
 
-        // Take a random sample to calculate distances
         const sampledAtoms = atoms
             .sort(() => Math.random() - 0.5)
             .slice(0, sampleSize);
-       
+
         let comparisons = 0;
         const maxComparisons = 10000;
 
@@ -393,10 +365,7 @@ class LAMMPSToGLTFExporter{
             return 0.8;
         }
 
-        // The optimal radius is approximately 35-40% of the minimum distance
         let optimalRadius = 0.45 * minDistance;
-        
-        // Limit between 0.1 and 2.0
         return Math.max(0.1, Math.min(3.0, optimalRadius));
     }
 
@@ -435,25 +404,24 @@ class LAMMPSToGLTFExporter{
     }
 
     static calculateRadiusFromDensity(timestepInfo: TimestepInfo, atomCount: number): number{
-        const { boxBounds } = timestepInfo;
-        const volume = (boxBounds.xhi - boxBounds.xlo) * 
-                       (boxBounds.yhi - boxBounds.ylo) * 
-                       (boxBounds.zhi - boxBounds.zlo);
+        const{ boxBounds } = timestepInfo;
+        const volume = (boxBounds.xhi - boxBounds.xlo) *
+           (boxBounds.yhi - boxBounds.ylo) *
+           (boxBounds.zhi - boxBounds.zlo);
         const density = atomCount / volume;
-        const averageDistance= Math.pow(1 / density, 1/3);
+        const averageDistance = Math.pow(1 / density, 1 / 3);
         const optimalRadius = averageDistance * 0.35;
         console.log('Optimal radius:', optimalRadius);
         return Math.max(0.1, Math.min(2.0, optimalRadius));
     }
 
-    static calculateGlobalOptimalRadius(firstFrame: { timestepInfo: TimestepInfo, atoms: Atom[] }): number{
+    static calculateGlobalOptimalRadius(firstFrame: { timestepInfo: TimestepInfo, atoms: LammpsAtom[] }): number{
         const radiusFromAtoms = this.calculateOptimalRadius(firstFrame.atoms);
         const radiusFromDensity = this.calculateRadiusFromDensity(firstFrame.timestepInfo, firstFrame.atoms.length);
         const finalRadius = (radiusFromAtoms + radiusFromDensity) / 2;
         return finalRadius;
     }
 
-    // Export atoms to GLTF format
     exportAtomsToGLTF(
         filePath: string,
         outputFilePath: string,
@@ -462,23 +430,22 @@ class LAMMPSToGLTFExporter{
     ): void{
         const frame = this.parseFrame(filePath, extractTimestepInfo);
         const autoRadius = LAMMPSToGLTFExporter.calculateGlobalOptimalRadius(frame);
-        
+
         const opts: Required<GLTFExportOptions> = {
-            atomRadius: options.atomRadius ?? autoRadius, 
+            atomRadius: options.atomRadius ?? autoRadius,
             maxAtoms: options.maxAtoms ?? 0,
             maxInstancesPerMesh: options.maxInstancesPerMesh ?? 10000
         };
 
-        console.log(`Using atom radius: ${opts.atomRadius.toFixed(3)} (${options.atomRadius ? 'specified' : 'auto-detected'})`);
+        console.log(`Using atom radius: ${opts.atomRadius.toFixed(3)}(${options.atomRadius ? 'specified' : 'auto-detected'})`);
         const profile = LAMMPSToGLTFExporter.detectPerfomanceProfile(frame.atoms.length);
-        const { atoms: selectedAtoms, finalRadius } = this.selectAtoms(frame.atoms, opts, profile);
-        const { segments, rings } = profile.sphereResolution;
+        const{ atoms: selectedAtoms, finalRadius } = this.selectAtoms(frame.atoms, opts, profile);
+        const{ segments, rings } = profile.sphereResolution;
         const sphere = this.generateSphere(finalRadius, segments, rings);
 
-        console.log(`Exporting ${selectedAtoms.length} of ${frame.atoms.length} atoms (${(100.0 * selectedAtoms.length / frame.atoms.length).toFixed(1)}%)`);
+        console.log(`Exporting ${selectedAtoms.length} of ${frame.atoms.length} atoms(${(100.0 * selectedAtoms.length / frame.atoms.length).toFixed(1)}%)`);
         console.log(`Final atom radius: ${finalRadius.toFixed(3)}`);
 
-        // Initialize GLTF structure
         const gltf: any = {
             asset: {
                 version: '2.0',
@@ -497,77 +464,59 @@ class LAMMPSToGLTFExporter{
             buffers: []
         };
 
-        // Calculate required buffer size
-        // Float32 = 4 bytes
         const vertexBufferSize = sphere.vertices.length * 4;
-        // Uint16 = 2 bytes
         const indexBufferSize = sphere.indices.length * 2;
 
-        // Align index buffer to 4-byte boundary
         const vertexBufferOffset = 0
         const indexBufferOffset = vertexBufferSize;
         const alignedIndexBufferOffset = Math.ceil(indexBufferOffset / 4) * 4;
 
-        // Create proper binary buffer
         let bufferSize = alignedIndexBufferOffset + indexBufferSize;
-
-        // Create ArrayBuffer and views
         let arrayBuffer = new ArrayBuffer(bufferSize);
         const vertexView = new Float32Array(arrayBuffer, vertexBufferOffset, sphere.vertices.length);
         const indexView = new Uint16Array(arrayBuffer, alignedIndexBufferOffset, sphere.indices.length);
 
-        // Copy data
         vertexView.set(sphere.vertices);
         indexView.set(sphere.indices);
 
-        // Buffer views for sphere geometry
         gltf.bufferViews.push({
             buffer: 0,
             byteOffset: vertexBufferOffset,
             byteLength: vertexBufferSize,
-            // 6 floats * 4 bytes (position + normal)
             byteStride: 24,
-            // ARRAY_BUFFER
             target: 34962
-        }, {
+        },{
             buffer: 0,
             byteOffset: alignedIndexBufferOffset,
             byteLength: indexBufferSize,
-            // ELEMENT_ARRAY_BUFFER
             target: 34963
         });
 
-        // Accessors for sphere geometry
         gltf.accessors.push({
             bufferView: 0,
             byteOffset: 0,
-            // FLOAT
             componentType: 5126,
             count: sphere.vertices.length / 6,
             type: 'VEC3',
             min: sphere.bounds.min,
             max: sphere.bounds.max
-        }, {
+        },{
             bufferView: 0,
-            // 3 floats * 4 bytes
             byteOffset: 12,
-            // FLOAT
             componentType: 5126,
             count: sphere.vertices.length / 6,
             type: 'VEC3',
             min: [-1.0, -1.0, -1.0],
             max: [1.0, 1.0, 1.0]
-        }, {
+        },{
             bufferView: 1,
             byteOffset: 0,
-            // UNSIGNED_SHORT
             componentType: 5123,
             count: sphere.indices.length,
             type: 'SCALAR'
         });
 
-        // Group atoms by type
-        const atomsByType = new Map<number, Atom[]>();
+        const atomsByType = new Map<number, LammpsAtom[]>();
         for(const atom of selectedAtoms){
             if(!atomsByType.has(atom.type)){
                 atomsByType.set(atom.type, []);
@@ -577,10 +526,8 @@ class LAMMPSToGLTFExporter{
 
         let currentMeshIndex = 0;
 
-        // Process each atom type
         for(const [atomType, typeAtoms] of atomsByType){
             if(typeAtoms.length === 0) continue;
-            // Create material for this type
             const color = this.lammpsTypeColors.get(atomType) || this.lammpsTypeColors.get(0)!;
             gltf.materials.push({
                 name: `Material_LammpsType_${atomType}`,
@@ -591,7 +538,6 @@ class LAMMPSToGLTFExporter{
                 }
             });
 
-            // Split into chunks if needed
             const totalAtoms = typeAtoms.length;
             const chunks = Math.max(1, Math.ceil(totalAtoms / opts.maxInstancesPerMesh));
             const atomsPerChunk = Math.ceil(totalAtoms / chunks);
@@ -601,9 +547,8 @@ class LAMMPSToGLTFExporter{
                 if(startIdx >= endIdx) break;
 
                 const chunkAtoms = typeAtoms.slice(startIdx, endIdx);
-                // Create mesh
-                const meshName = chunks > 1 ? 
-                    `AtomSphere_Type_${atomType}_Chunk_${chunk}` : 
+                const meshName = chunks > 1 ?
+                    `AtomSphere_Type_${atomType}_Chunk_${chunk}` :
                     `AtomSphere_Type_${atomType}`;
 
                 gltf.meshes.push({
@@ -612,12 +557,10 @@ class LAMMPSToGLTFExporter{
                         attributes: { POSITION: 0, NORMAL: 1 },
                         indices: 2,
                         material: currentMeshIndex,
-                        // TRIANGLES
                         mode: 4
                     }]
                 });
 
-                // Create translation data
                 const translations: number[] = [];
                 let transMinX = Number.MAX_VALUE, transMaxX = Number.MIN_VALUE;
                 let transMinY = Number.MAX_VALUE, transMaxY = Number.MIN_VALUE;
@@ -633,23 +576,18 @@ class LAMMPSToGLTFExporter{
                     transMaxZ = Math.max(transMaxZ, atom.z);
                 }
 
-                // Calculate translation buffer properties
                 const translationBufferSize = translations.length * 4;
                 const currentBufferSize = bufferSize;
                 const translationBufferOffset = currentBufferSize;
 
-                // Extend the buffer to include translation data
                 const newBufferSize = currentBufferSize + translationBufferSize;
                 const newArrayBuffer = new ArrayBuffer(newBufferSize);
 
-                // Copy existing data
                 new Uint8Array(newArrayBuffer).set(new Uint8Array(arrayBuffer));
 
-                // Add translation data
                 const translationView = new Float32Array(newArrayBuffer, translationBufferOffset, translations.length);
                 translationView.set(translations);
 
-                // Update buffer reference
                 arrayBuffer = newArrayBuffer;
                 bufferSize = newBufferSize;
 
@@ -657,7 +595,6 @@ class LAMMPSToGLTFExporter{
                     buffer: 0,
                     byteOffset: translationBufferOffset,
                     byteLength: translationBufferSize,
-                    // ARRAY_BUFFER
                     target: 34962
                 });
 
@@ -665,7 +602,6 @@ class LAMMPSToGLTFExporter{
                 gltf.accessors.push({
                     bufferView: gltf.bufferViews.length - 1,
                     byteOffset: 0,
-                    // FLOAT
                     componentType: 5126,
                     count: chunkAtoms.length,
                     type: "VEC3",
@@ -673,9 +609,8 @@ class LAMMPSToGLTFExporter{
                     max: [transMaxX, transMaxY, transMaxZ]
                 });
 
-                // Create node
-                const nodeName = chunks > 1 ? 
-                    `Atoms_Instanced_Type_${atomType}_Chunk_${chunk}` : 
+                const nodeName = chunks > 1 ?
+                    `Atoms_Instanced_Type_${atomType}_Chunk_${chunk}` :
                     `Atoms_Instanced_Type_${atomType}`;
 
                 gltf.nodes.push({
@@ -694,14 +629,12 @@ class LAMMPSToGLTFExporter{
             currentMeshIndex++;
         }
 
-        // Create buffer with base64 encoding
         const encodedBuffer = this.arrayToBase64(arrayBuffer);
         gltf.buffers.push({
             byteLength: arrayBuffer.byteLength,
             uri: `data:application/octet-stream;base64,${encodedBuffer}`
         });
 
-        // Add metadata
         gltf.extras = {
             originalAtomCount: frame.atoms.length,
             exportedAtomCount: selectedAtoms.length,
@@ -709,7 +642,7 @@ class LAMMPSToGLTFExporter{
             timestep: frame.timestepInfo.timestep,
             finalAtomRadius: finalRadius,
             performanceProfile: {
-                reductionRatio: (1 - selectedAtoms.length / frame.atoms.length),
+                reductionRatio:(1 - selectedAtoms.length / frame.atoms.length),
                 optimizationsApplied: [
                     'optimized_sphere_resolution'
                 ].filter(Boolean)
@@ -720,10 +653,9 @@ class LAMMPSToGLTFExporter{
             }
         };
 
-        // Write file
         fs.writeFileSync(outputFilePath, JSON.stringify(gltf, null, 2));
         console.log(`Exported GLTF: ${outputFilePath}`);
-        console.log(`Buffer size: ${(arrayBuffer.byteLength / (1024 * 1024)).toFixed(2)} MB`)
+        console.log(`Buffer size: ${(arrayBuffer.byteLength /(1024 * 1024)).toFixed(2)} MB`)
     }
 
     public exportAtomsTypeToGLTF(
@@ -731,9 +663,8 @@ class LAMMPSToGLTFExporter{
         outputFilePath: string,
         options: GLTFExportOptions = {}
     ): void{
-        const processedAtoms = atomsData.data.map((atom) => ({
+        const processedAtoms: LammpsAtom[] = atomsData.data.map((atom) =>({
             id: atom.node_id,
-            // The LAMMPS type is not used for coloring in this method.
             type: 0,
             x: atom.position[0],
             y: atom.position[1],
@@ -748,12 +679,12 @@ class LAMMPSToGLTFExporter{
             maxInstancesPerMesh: options.maxInstancesPerMesh ?? 10000
         };
 
-        console.log(`Using atom radius: ${opts.atomRadius.toFixed(3)} (${options.atomRadius ? 'specified' : 'auto-detected'})`);
+        console.log(`Using atom radius: ${opts.atomRadius.toFixed(3)}(${options.atomRadius ? 'specified' : 'auto-detected'})`);
         const profile = LAMMPSToGLTFExporter.detectPerfomanceProfile(processedAtoms.length);
-        
-        const { atoms: selectedAtoms, finalRadius } = this.selectAtoms(processedAtoms, opts, profile);
-        const { segments, rings } = profile.sphereResolution;
-        
+
+        const{ atoms: selectedAtoms, finalRadius } = this.selectAtoms(processedAtoms, opts, profile);
+        const{ segments, rings } = profile.sphereResolution;
+
         const sphere = this.generateSphere(finalRadius, segments, rings);
         console.log(`Exporting ${selectedAtoms.length.toLocaleString()} of ${processedAtoms.length.toLocaleString()} atoms.`);
         console.log(`Atom final radius: ${finalRadius.toFixed(3)}`);
@@ -768,20 +699,16 @@ class LAMMPSToGLTFExporter{
             extensionsRequired: ['EXT_mesh_gpu_instancing'],
             scene: 0,
             scenes: [{ nodes: [] }],
-            nodes: [], 
+            nodes: [],
             meshes: [],
-            materials: [], 
-            accessors: [], 
-            bufferViews: [], 
+            materials: [],
+            accessors: [],
+            bufferViews: [],
             buffers: []
         };
-     
-        // Float32
-        const vertexBufferSize = sphere.vertices.length * 4;
-        
-        // Uint16
-        const indexBufferSize = sphere.indices.length * 2;
 
+        const vertexBufferSize = sphere.vertices.length * 4;
+        const indexBufferSize = sphere.indices.length * 2;
         const alignedIndexBufferOffset = Math.ceil(vertexBufferSize / 4) * 4;
         let bufferSize = alignedIndexBufferOffset + indexBufferSize;
         let arrayBuffer = new ArrayBuffer(bufferSize);
@@ -807,53 +734,53 @@ class LAMMPSToGLTFExporter{
         });
 
         gltf.bufferViews.push({
-            buffer: 0, 
-            byteOffset: alignedIndexBufferOffset, 
-            byteLength: indexBufferSize, 
-            target: 34963 
-        });
-
-        gltf.accessors.push({ 
-            bufferView: 0, 
-            byteOffset: 0,  
-            componentType: 5126, 
-            count: sphere.vertices.length / 6, 
-            type: 'VEC3', 
-            min: sphere.bounds.min, 
-            max: sphere.bounds.max 
-        });
-
-        gltf.accessors.push({ 
-            bufferView: 0, 
-            byteOffset: 12, 
-            componentType: 5126, 
-            count: sphere.vertices.length / 6, 
-            type: 'VEC3' 
+            buffer: 0,
+            byteOffset: alignedIndexBufferOffset,
+            byteLength: indexBufferSize,
+            target: 34963
         });
 
         gltf.accessors.push({
-            bufferView: 1, 
-            byteOffset: 0, 
-            componentType: 5123, 
-            count: sphere.indices.length, 
+            bufferView: 0,
+            byteOffset: 0,
+            componentType: 5126,
+            count: sphere.vertices.length / 6,
+            type: 'VEC3',
+            min: sphere.bounds.min,
+            max: sphere.bounds.max
+        });
+
+        gltf.accessors.push({
+            bufferView: 0,
+            byteOffset: 12,
+            componentType: 5126,
+            count: sphere.vertices.length / 6,
+            type: 'VEC3'
+        });
+
+        gltf.accessors.push({
+            bufferView: 1,
+            byteOffset: 0,
+            componentType: 5123,
+            count: sphere.indices.length,
             type: 'SCALAR'
         });
 
-        // Group atoms by structure type and create instances.
-        const atomsByStructureType = new Map<string, any[]>();
+        const atomsByStructureType = new Map<string, LammpsAtom[]>();
         for(const atom of selectedAtoms){
-            const typeName = (atom as any).typeName;
-            if(!atomsByStructureType.has(typeName)){
-                atomsByStructureType.set(typeName, []);
+            const typeName = atom.typeName;
+            if(typeName){
+                if(!atomsByStructureType.has(typeName)){
+                    atomsByStructureType.set(typeName, []);
+                }
+                atomsByStructureType.get(typeName)!.push(atom);
             }
-            atomsByStructureType.get(typeName)!.push(atom);
         }
 
         let materialIndex = 0;
         for(const [typeName, typeAtoms] of atomsByStructureType){
             if(typeAtoms.length === 0) continue;
 
-            // Create material with the corresponding color.
             const colorRGB = this.STRUCTURE_COLORS[typeName] || this.STRUCTURE_COLORS['Default'];
             gltf.materials.push({
                 name: `Material_Type_${typeName}`,
@@ -866,7 +793,7 @@ class LAMMPSToGLTFExporter{
 
             const chunks = Math.ceil(typeAtoms.length / opts.maxInstancesPerMesh);
             for(let i = 0; i < chunks; i++){
-                const chunkAtoms = typeAtoms.slice(i * opts.maxInstancesPerMesh, (i + 1) * opts.maxInstancesPerMesh);
+                const chunkAtoms = typeAtoms.slice(i * opts.maxInstancesPerMesh,(i + 1) * opts.maxInstancesPerMesh);
                 const translations = chunkAtoms.flatMap(a => [a.x, a.y, a.z]);
 
                 const translationBufferOffset = bufferSize;
@@ -876,7 +803,7 @@ class LAMMPSToGLTFExporter{
                 new Float32Array(newArrayBuffer, translationBufferOffset, translations.length).set(translations);
                 arrayBuffer = newArrayBuffer;
                 bufferSize += translationBufferSize;
-             
+
                 gltf.bufferViews.push({
                     buffer: 0,
                     byteOffset: translationBufferOffset,
@@ -894,32 +821,31 @@ class LAMMPSToGLTFExporter{
                     type: 'VEC3'
                 });
 
-                // Create mesh and instantiated node.
                 const meshIndex = gltf.meshes.length;
                 gltf.meshes.push({
                     primitives: [{
                         attributes: {
                             POSITION: 0,
                             NORMAL: 1
-                        }, 
-                        indices: 2, 
-                        material: materialIndex, 
-                        mode: 4 
+                        },
+                        indices: 2,
+                        material: materialIndex,
+                        mode: 4
                     }]
                 });
 
                 const nodeIndex = gltf.nodes.length;
                 gltf.nodes.push({
                     mesh: meshIndex,
-                    extensions: { 
-                        EXT_mesh_gpu_instancing: { 
-                            attributes: { 
-                                TRANSLATION: translationAccessorIndex 
-                            } 
-                        } 
+                    extensions: {
+                        EXT_mesh_gpu_instancing: {
+                            attributes: {
+                                TRANSLATION: translationAccessorIndex
+                            }
+                        }
                     }
                 });
-                
+
                 gltf.scenes[0].nodes.push(nodeIndex);
             }
 
@@ -935,20 +861,8 @@ class LAMMPSToGLTFExporter{
         fs.writeFileSync(outputFilePath, JSON.stringify(gltf));
 
         console.log(`GLTF successfully exported to: ${outputFilePath}`);
-        console.log(`Buffer size: ${(arrayBuffer.byteLength / (1024 * 1024)).toFixed(2)} MB`);
+        console.log(`Buffer size: ${(arrayBuffer.byteLength /(1024 * 1024)).toFixed(2)} MB`);
     }
 };
 
 export default LAMMPSToGLTFExporter;
-
-/*
-
-import { extractTimestepInfo } from '../lammps';
-const l = new LAMMPSToGLTFExporter();
-l.exportAtomsToGLTF(
-    '/home/rodyherrera/Escritorio/Development/OpenDXA/server/storage/trajectories/61b3c0e9-2939-4b31-a872-226948cabe06/0', 
-    'trajectory.gltf', 
-    extractTimestepInfo,
-    {}
-);
-*/
