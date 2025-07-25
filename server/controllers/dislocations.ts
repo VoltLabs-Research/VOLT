@@ -22,7 +22,7 @@
 
 import { Request, Response } from 'express';
 import { readdir, writeFile, readFile } from 'fs/promises';
-import { getAnalysisProcessingQueue } from '@services/analysis_queue';
+import { getAnalysisQueue } from '@/queues';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { v4 } from 'uuid';
@@ -67,7 +67,7 @@ export const getTrajectoryDislocations = async (req: Request, res: Response) => 
         };
         await writeFile(metadataPath, JSON.stringify(metadata, null, 4), 'utf-8');
         
-        const queueService = getAnalysisProcessingQueue();
+        const queueService = getAnalysisQueue();
         const jobsToEnqueue = trajectoryFiles.map((inputFile) => {
             const jobId = v4();
             return {

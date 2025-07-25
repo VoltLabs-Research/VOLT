@@ -144,7 +144,6 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
     }
 
     const gltfOptions: Partial<GLTFExportOptions> = {
-        spatialCulling: false,
         subsampleRatio: 1.0,
         maxAtoms: req.body.maxAtoms ? parseInt(req.body.maxAtoms) : 0,
         maxInstancesPerMesh: 10000

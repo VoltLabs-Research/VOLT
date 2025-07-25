@@ -28,7 +28,6 @@ import os from 'os';
 import MeshExporter, { Mesh } from '@utilities/export/mesh';
 import DislocationExporter, { Dislocation } from '@utilities/export/dislocations';
 import LAMMPSToGLTFExporter, { AtomsGroupedByType } from '@utilities/export/atoms';
-import { getAnalysisProcessingQueue } from '@services/analysis_queue';
 import StructureAnalysis from '@models/structureAnalysis';
 import SimulationCell from '@models/simulationCell';
 

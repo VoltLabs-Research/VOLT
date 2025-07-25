@@ -10,6 +10,7 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
+      "@/*": ["./*"],
       "@models/*": ["models/*"],
       "@utilities/*": ["utilities/*"],
       "@routes/*": ["routes/*"],

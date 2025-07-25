@@ -102,18 +102,3 @@ export const isValidLammpsFile = (lines: string[]): boolean => {
     const content = lines.join('\n');
     return requiredItems.every((item) => content.includes(item));
 };
-
-export const getFileStats = (lines: string[]): {
-    totalLines: number;
-    timesteps: number[];
-    isValid: boolean;
-    timestepCount: number;
-} => {
-    const timesteps = extractTimesteps(lines);
-    return {
-        totalLines: lines.length,
-        timesteps,
-        isValid: isValidLammpsFile(lines),
-        timestepCount: timesteps.length
-    };
-};
