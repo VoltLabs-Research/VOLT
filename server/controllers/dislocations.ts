@@ -29,7 +29,7 @@ import { v4 } from 'uuid';
 
 export const getTrajectoryDislocations = async (req: Request, res: Response) => {
     try {
-        const { folderId, _id: trajectoryId } = res.locals.trajectory;
+        const { folderId, _id: trajectoryId, teamId } = res.locals.trajectory;
         const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
 
         if(!existsSync(folderPath)){
@@ -75,6 +75,7 @@ export const getTrajectoryDislocations = async (req: Request, res: Response) => 
                 trajectoryId,
                 folderPath,
                 inputFile,
+                teamId,
                 config: req.body
             };
         });

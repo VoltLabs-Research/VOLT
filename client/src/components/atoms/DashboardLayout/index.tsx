@@ -23,8 +23,8 @@
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { GrHomeOption } from 'react-icons/gr';
-import { BsFiles, BsCommand } from 'react-icons/bs';
-import { GoPeople, GoTrash } from 'react-icons/go';
+import { BsCommand } from 'react-icons/bs';
+import { GoTrash } from 'react-icons/go';
 import { TbCube3dSphere } from "react-icons/tb";
 import { IoSettingsOutline } from "react-icons/io5";
 import { TbBook } from 'react-icons/tb';

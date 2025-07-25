@@ -26,7 +26,7 @@ import { MdKeyboardArrowDown } from 'react-icons/md';
 import { IoNotificationsOutline } from "react-icons/io5";
 import './DashboardContainer.css';
 
-const DashboardContainer = ({ children, pageName }) => {
+const DashboardContainer = ({ children, pageName, className = '' }) => {
 
     return (
         <div className='dashboard-container'>
@@ -69,7 +69,9 @@ const DashboardContainer = ({ children, pageName }) => {
                 </div>
             </article>
 
-            {children}
+            <div className={className}>
+                {children}
+            </div>
         </div>
     );
 };

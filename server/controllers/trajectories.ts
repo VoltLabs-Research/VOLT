@@ -217,6 +217,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
                 frameData,
                 frameFilePath
             })),
+            teamId,
             folderPath,
             gltfFolderPath
         };
