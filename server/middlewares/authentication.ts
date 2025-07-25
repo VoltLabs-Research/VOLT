@@ -26,11 +26,6 @@ import RuntimeError from '@/utilities/runtime-error';
 import { promisify } from 'util';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 
-interface DecodedToken extends JwtPayload{
-    id: string;
-    iat: number;
-}
-
 /**
  * Extracts and verifies a JWT token from the Authorization header, then retrieves
  * the corresponding user.

@@ -20,38 +20,50 @@
 * SOFTWARE.
 **/
 
-import { Document, Types } from 'mongoose';
-
-interface IPeriodicBoundaryConditions {
-    x: boolean;
-    y: boolean;
-    z: boolean;
+export interface Mesh{
+    data: {
+        points: {
+            index: number;
+            position: [number, number, number];
+        }[];
+        facets: {
+            vertices: [number, number, number];
+        }[];
+        metadata: any;
+    }
 }
 
-interface ILatticeAngles {
-    alpha: number;
-    beta: number;
-    gamma: number;
+export interface DefectMeshExportOptions{
+    generateNormals?: boolean;
+    enableDoubleSided?: boolean;
+    smoothIterations?: number;
+    material?: {
+        baseColor?: [number, number, number, number];
+        metallic?: number;
+        roughness?: number;
+        emissive?: [number, number, number];
+    };
+    metadata?: {
+        includeOriginalStats?: boolean;
+        customProperties?: Record<string, any>;
+    };
 }
 
-interface IReciprocalLattice {
-    matrix: number[][];
-    volume: number;
+export interface MeshValidationResult{
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+    stats: object;
 }
 
-interface IDimensionality {
-    is_2d: boolean;
-    effective_dimensions: number;
-}
-
-export interface ICellAnalysis extends Document {
-    matrix: number[][];
-    inverseMatrix: number[][];
-    volume: number;
-    periodicBoundaryConditions: IPeriodicBoundaryConditions;
-    angles: ILatticeAngles;
-    reciprocalLattice: IReciprocalLattice;
-    dimensionality: IDimensionality;
-    timestep: number;
-    trajectory: Types.ObjectId;
+export interface ProcessedMesh{
+    positions: Float32Array;
+    normals: Float32Array;
+    indices: Uint32Array;
+    vertexCount: number;
+    triangleCount: number;
+    bounds: {
+        min: [number, number, number];
+        max: [number, number, number];
+    };
 }

@@ -20,15 +20,8 @@
 * SOFTWARE.
 **/
 
-import mongoose, { Schema, Model, Document } from 'mongoose';
-
-export interface INotification extends Document{
-    recipient: Schema.Types.ObjectId,
-    title: string;
-    content: string;
-    read: boolean;
-    link?: string;
-}
+import mongoose, { Schema, Model } from 'mongoose';
+import { INotification } from '@/types/models/notification';
 
 const NotificationSchema: Schema<INotification> = new Schema({
     recipient: {

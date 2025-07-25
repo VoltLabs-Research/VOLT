@@ -20,26 +20,7 @@
 * SOFTWARE.
 **/
 
-export interface TimestepInfo{
-    timestep: number;
-    natoms: number;
-    boxBounds: {
-        xlo: number;
-        xhi: number;
-        ylo: number;
-        yhi: number;
-        zlo: number;
-        zhi: number;
-    }
-}
-
-export interface Atom{
-    id: number;
-    type: number;
-    x: number;
-    y: number;
-    z: number;
-}
+import { TimestepInfo } from '@/types/utilities/lammps';
 
 export const extractTimestepInfo = (lines: string[]): TimestepInfo | null => {
     let timestep: number | null = null;

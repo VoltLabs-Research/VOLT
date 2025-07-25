@@ -20,60 +20,20 @@
 * SOFTWARE.
 **/
 
+import { StructureAnalysisData, ConfigParameters } from '@/types/services/opendxa';
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import { decode } from '@msgpack/msgpack';
+import { Mesh } from '@/types/utilities/export/mesh';
+import { Dislocation } from '@/types/utilities/export/dislocations';
+import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import path from 'path';
 import os from 'os';
-import MeshExporter, { Mesh } from '@utilities/export/mesh';
-import DislocationExporter, { Dislocation } from '@utilities/export/dislocations';
-import LAMMPSToGLTFExporter, { AtomsGroupedByType } from '@utilities/export/atoms';
+import MeshExporter from '@utilities/export/mesh';
+import DislocationExporter from '@utilities/export/dislocations';
+import LAMMPSToGLTFExporter from '@utilities/export/atoms';
 import StructureAnalysis from '@/models/structure-analysis';
 import SimulationCell from '@/models/simulation-cell';
-
-export enum LatticeStructure {
-    FCC = 'FCC',
-    HCP = 'HCP',
-    BCC = 'BCC',
-    CubicDiamond = 'CUBIC_DIAMOND',
-    HexDiamond = 'HEX_DIAMOND',
-}
-
-export enum IdentificationMode {
-    CNA = 'CNA',
-    PTM = 'PTM',
-}
-
-export interface ConfigParameters {
-    crystalStructure?: LatticeStructure;
-    maxTrialCircuitSize?: number;
-    circuitStretchability?: number;
-    onlyPerfectDislocations?: boolean;
-    identificationMode?: IdentificationMode;
-    lineSmoothingLevel?: number;
-    linePointInterval?: number;
-    markCoreAtoms?: boolean;
-}
-
-interface StructureTypeStat {
-    [key: string]: {
-        count: number;
-        percentage: number;
-        type_id: number;
-    }
-}
-
-interface StructureAnalysisData {
-    total_atoms: number;
-    analysis_method: 'PTM' | 'CNA';
-    structure_types: StructureTypeStat;
-    summary: {
-        total_identified: number;
-        total_unidentified: number;
-        identification_rate: number;
-        unique_structure_types: number;
-    }
-}
 
 const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build/opendxa');
 

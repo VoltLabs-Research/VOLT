@@ -20,38 +20,45 @@
 * SOFTWARE.
 **/
 
-import { Document, Types } from 'mongoose';
-
-interface IPeriodicBoundaryConditions {
-    x: boolean;
-    y: boolean;
-    z: boolean;
+export enum LatticeStructure {
+    FCC = 'FCC',
+    HCO = 'HCP',
+    CubicDiamond = 'CUBIC_DIAMOND',
+    HexDiamond = 'HEX_DIAMOND'
 }
 
-interface ILatticeAngles {
-    alpha: number;
-    beta: number;
-    gamma: number;
+export enum IdentificationMode {
+    CNA = 'CNA',
+    PTM = 'PTM'
 }
 
-interface IReciprocalLattice {
-    matrix: number[][];
-    volume: number;
+export interface ConfigParameters {
+    crystalStructure?: LatticeStructure;
+    maxTrialCircuitSize?: number;
+    circuitStretchability?: number;
+    onlyPerfectDislocations?: boolean;
+    identificationMode?: IdentificationMode;
+    lineSmoothingLevel?: number;
+    linePointInterval?: number;
+    markCoreAtoms?: boolean;
 }
 
-interface IDimensionality {
-    is_2d: boolean;
-    effective_dimensions: number;
+export interface StructureTypeStat {
+    [key: string]: {
+        count: number;
+        percentage: number;
+        type_id: number;
+    }
 }
 
-export interface ICellAnalysis extends Document {
-    matrix: number[][];
-    inverseMatrix: number[][];
-    volume: number;
-    periodicBoundaryConditions: IPeriodicBoundaryConditions;
-    angles: ILatticeAngles;
-    reciprocalLattice: IReciprocalLattice;
-    dimensionality: IDimensionality;
-    timestep: number;
-    trajectory: Types.ObjectId;
+export interface StructureAnalysisData {
+    total_atoms: number;
+    analysis_method: 'PTM' | 'CNA';
+    structure_types: StructureTypeStat;
+    summary: {
+        total_identified: number;
+        total_unidentified: number;
+        identification_rate: number;
+        unique_structure_types: number;
+    }
 }

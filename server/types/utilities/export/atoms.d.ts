@@ -20,38 +20,28 @@
 * SOFTWARE.
 **/
 
-import { Document, Types } from 'mongoose';
+import { LammpsAtom, TimestepInfo } from '@/types/utilities/lammps';
 
-interface IPeriodicBoundaryConditions {
-    x: boolean;
-    y: boolean;
-    z: boolean;
+export interface GLTFExportOptions{
+    atomRadius?: number;
+    maxAtoms?: number;
+    maxInstancesPerMesh?: number;
 }
 
-interface ILatticeAngles {
-    alpha: number;
-    beta: number;
-    gamma: number;
+export interface PerformanceProfile{
+    atomCount: number;
+    recommendedMaxAtoms: number;
+    sphereResolution: { segments: number; rings: number };
 }
 
-interface IReciprocalLattice {
-    matrix: number[][];
-    volume: number;
+export interface ParsedFrame{
+    timestepInfo: TimestepInfo;
+    atoms: LammpsAtom[];
 }
 
-interface IDimensionality {
-    is_2d: boolean;
-    effective_dimensions: number;
-}
-
-export interface ICellAnalysis extends Document {
-    matrix: number[][];
-    inverseMatrix: number[][];
-    volume: number;
-    periodicBoundaryConditions: IPeriodicBoundaryConditions;
-    angles: ILatticeAngles;
-    reciprocalLattice: IReciprocalLattice;
-    dimensionality: IDimensionality;
-    timestep: number;
-    trajectory: Types.ObjectId;
+export interface AtomsGroupedByType {
+    [typeName: string]: {
+        id: number;
+        pos: [number, number, number];
+    }[];
 }

@@ -1,51 +1,28 @@
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
+import { ParsedFrame, AtomsGroupedByType, PerformanceProfile, GLTFExportOptions } from '@/types/utilities/export/atoms';
+import { TimestepInfo, LammpsAtom } from '@/types/utilities/lammps';
 import * as fs from 'fs';
-
-export interface TimestepInfo{
-    timestep: number;
-    natoms: number;
-    boxBounds: {
-        xlo: number;
-        xhi: number;
-        ylo: number;
-        yhi: number;
-        zlo: number;
-        zhi: number;
-    }
-}
-
-// TODO: Duplicated code
-export interface LammpsAtom{
-    id: number;
-    type: number;
-    x: number;
-    y: number;
-    z: number;
-    typeName?: string;
-}
-
-export interface GLTFExportOptions{
-    atomRadius?: number;
-    maxAtoms?: number;
-    maxInstancesPerMesh?: number;
-}
-
-interface PerformanceProfile{
-    atomCount: number;
-    recommendedMaxAtoms: number;
-    sphereResolution: { segments: number; rings: number };
-}
-
-export interface ParsedFrame{
-    timestepInfo: TimestepInfo;
-    atoms: LammpsAtom[];
-}
-
-export interface AtomsGroupedByType {
-    [typeName: string]: {
-        id: number;
-        pos: [number, number, number];
-    }[];
-}
 
 class LAMMPSToGLTFExporter{
     private lammpsTypeColors: Map<number, number[]> = new Map([

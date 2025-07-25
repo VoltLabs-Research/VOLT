@@ -20,55 +20,8 @@
 * SOFTWARE.
 **/
 
+import { Mesh, DefectMeshExportOptions, MeshValidationResult, ProcessedMesh } from '@/types/utilities/export/mesh';
 import * as fs from 'fs';
-
-export interface Mesh{
-    data: {
-        points: {
-            index: number;
-            position: [number, number, number];
-        }[];
-        facets: {
-            vertices: [number, number, number];
-        }[];
-        metadata: any;
-    }
-}
-
-export interface DefectMeshExportOptions{
-    generateNormals?: boolean;
-    enableDoubleSided?: boolean;
-    smoothIterations?: number;
-    material?: {
-        baseColor?: [number, number, number, number];
-        metallic?: number;
-        roughness?: number;
-        emissive?: [number, number, number];
-    };
-    metadata?: {
-        includeOriginalStats?: boolean;
-        customProperties?: Record<string, any>;
-    };
-}
-
-interface MeshValidationResult{
-    isValid: boolean;
-    errors: string[];
-    warnings: string[];
-    stats: object;
-}
-
-interface ProcessedMesh{
-    positions: Float32Array;
-    normals: Float32Array;
-    indices: Uint32Array;
-    vertexCount: number;
-    triangleCount: number;
-    bounds: {
-        min: [number, number, number];
-        max: [number, number, number];
-    };
-}
 
 class MeshExporter{
     private validate(mesh: Mesh): MeshValidationResult{

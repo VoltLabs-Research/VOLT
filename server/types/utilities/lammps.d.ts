@@ -20,38 +20,24 @@
 * SOFTWARE.
 **/
 
-import { Document, Types } from 'mongoose';
-
-interface IPeriodicBoundaryConditions {
-    x: boolean;
-    y: boolean;
-    z: boolean;
-}
-
-interface ILatticeAngles {
-    alpha: number;
-    beta: number;
-    gamma: number;
-}
-
-interface IReciprocalLattice {
-    matrix: number[][];
-    volume: number;
-}
-
-interface IDimensionality {
-    is_2d: boolean;
-    effective_dimensions: number;
-}
-
-export interface ICellAnalysis extends Document {
-    matrix: number[][];
-    inverseMatrix: number[][];
-    volume: number;
-    periodicBoundaryConditions: IPeriodicBoundaryConditions;
-    angles: ILatticeAngles;
-    reciprocalLattice: IReciprocalLattice;
-    dimensionality: IDimensionality;
+export interface TimestepInfo{
     timestep: number;
-    trajectory: Types.ObjectId;
+    natoms: number;
+    boxBounds: {
+        xlo: number;
+        xhi: number;
+        ylo: number;
+        yhi: number;
+        zlo: number;
+        zhi: number;
+    }
+}
+
+export interface LammpsAtom{
+    id: number;
+    type: number;
+    x: number;
+    y: number;
+    z: number;
+    typeName?: string;
 }
