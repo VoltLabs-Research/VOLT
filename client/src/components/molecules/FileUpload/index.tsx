@@ -39,12 +39,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
     className = '',
     children,
 }) => {
-    const { uploadAndProcessTrajectory, isUploading, error, data } = useTrajectoryUpload();
+    const { uploadAndProcessTrajectory, error, data } = useTrajectoryUpload();
     const { analysisConfig } = useEditorStore((state) => state.analysisConfig);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const dropRef = useRef<HTMLDivElement>(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
-
+    
     useEffect(() => {
         const handleWindowDragEnter = (event: DragEvent) => {
             event.preventDefault();
@@ -75,8 +75,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
     const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
         setIsDraggingOver(false);
-
-        if(isUploading) return;
 
         const items = event.dataTransfer.items;
         if(!items) return;

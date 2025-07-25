@@ -2,7 +2,6 @@ import { Worker } from 'worker_threads';
 import os from 'os';
 import IORedis from 'ioredis';
 import { createRedisClient, redis } from '@config/redis';
-import mongoose from 'mongoose';
 
 export interface BaseJob{
     jobId: string;
@@ -32,7 +31,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob>{
     protected readonly ramLoadThreshold: number;
     protected readonly checkInterval: number;
     protected readonly numCpus: number;
-    protected readonly mongoDbConnection?: mongoose.Connection;
     
     protected workerPool: WorkerPoolItem[] = [];
     protected jobMap = new Map<number, { job: T; rawData: string }>();
@@ -50,7 +48,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob>{
         this.ramLoadThreshold = options.ramLoadThreshold || 85;
         this.checkInterval = 1000;
         this.numCpus = os.cpus().length;
-        this.mongoDbConnection = mongoose.connection;
         this.redisListenerClient = createRedisClient();
 
         this.initializeWorkerPool();

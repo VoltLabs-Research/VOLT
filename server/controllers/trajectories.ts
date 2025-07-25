@@ -22,7 +22,7 @@
 
 import { NextFunction, Request, Response } from 'express';
 import { join, resolve } from 'path';
-import { access, stat, readdir, mkdir, rmdir } from 'fs/promises';
+import { access, stat, readdir, mkdir, rmdir, writeFile } from 'fs/promises';
 import { constants } from 'fs';
 import { isValidObjectId } from 'mongoose';
 import { v4 } from 'uuid';
@@ -133,37 +133,62 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const folderId = v4();
     const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
     const gltfFolderPath = join(folderPath, 'gltf');
+    const tempFolderPath = join(folderPath, 'temp');
 
     await mkdir(folderPath, { recursive: true });
     await mkdir(gltfFolderPath, { recursive: true });
+    await mkdir(tempFolderPath, { recursive: true });
 
     const validFiles = [];
     const frames = [];
 
-    for(const file of files){
-        const content = file.buffer.toString('utf-8');
-        const lines = content.split('\n');
-        const frameInfo = extractTimestepInfo(lines);
-        const isValid = isValidLammpsFile(lines);
+    for(let i = 0; i < files.length; i++){
+        const file = files[i];
+        
+        try{
+            const content = file.buffer.toString('utf-8');
+            const lines = content.split('\n');
+            const frameInfo = extractTimestepInfo(lines);
+            const isValid = isValidLammpsFile(lines);
 
-        if(!frameInfo || !isValid){
+            if(!frameInfo || !isValid){
+                continue;
+            }
+
+            // Save file to disk immediately and free memory
+            const tempFileName = `${frameInfo.timestep}.lammps`;
+            const tempFilePath = join(tempFolderPath, tempFileName);
+            await writeFile(tempFilePath, content);
+
+            const frameData = {
+                ...frameInfo,
+                gltfPath: `gltf/${frameInfo.timestep}.gltf`
+            };
+
+            frames.push(frameData);
+            validFiles.push({
+                frameData,
+                tempFilePath,
+                originalSize: file.size
+            });
+
+            // Clear references to help GC
+            file.buffer = null as any;
+            files[i] = null as any;
+
+            // Force GC every 10 files
+            if(i % 10 === 0 && global.gc){
+                global.gc();
+            }
+
+        }catch(error){
+            console.error(`Error processing file ${i}:`, error);
             continue;
         }
-
-        const frameData = {
-            ...frameInfo,
-            gltfPath: `gltf/${frameInfo.timestep}.gltf`
-        };
-
-        frames.push(frameData);
-        validFiles.push({
-            frameData,
-            file
-        });
     }
 
     if(validFiles.length === 0){
-        await rmdir(folderPath);
+        await rmdir(folderPath, { recursive: true });
         return next(new RuntimeError('No valid files for trajectory', 400));
     }
 
@@ -175,23 +200,52 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         status: 'processing',
         stats: {
             totalFiles: validFiles.length,
-            totalSize: files.reduce((acc: number, file: Express.Multer.File) => acc + file.size, 0)
+            totalSize: validFiles.reduce((acc, file) => acc + file.originalSize, 0)
         }
     });
 
     const trajectoryProcessingQueue = getTrajectoryProcessingQueue();
-    trajectoryProcessingQueue.addJobs([{
-        jobId: v4(),
-        trajectoryId: newTrajectory._id,
-        files: validFiles.map(({ file, frameData }) => ({
-            file: file.buffer.toJSON(),
-            frameData
-        })),
-        folderPath,
-        gltfFolderPath
-    }]);
+    
+    const CHUNK_SIZE = 20; 
+    const jobs = [];
+    
+    for(let i = 0; i < validFiles.length; i += CHUNK_SIZE){
+        const chunk = validFiles.slice(i, i + CHUNK_SIZE);
+        
+        const job = {
+            jobId: v4(),
+            trajectoryId: newTrajectory._id.toString(),
+            chunkIndex: Math.floor(i / CHUNK_SIZE),
+            totalChunks: Math.ceil(validFiles.length / CHUNK_SIZE),
+            files: chunk.map(({ frameData, tempFilePath }) => ({
+                frameData,
+                tempFilePath
+            })),
+            folderPath,
+            gltfFolderPath,
+            tempFolderPath
+        };
+        
+        jobs.push(job);
+    }
 
-    res.status(201).json({ status: 'success', data: newTrajectory });
+    for(const job of jobs){
+        await trajectoryProcessingQueue.addJobs([job]);
+        
+        // Small delay to prevent overwhelming
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    validFiles.length = 0;
+
+    if(global.gc){
+        global.gc();
+    }
+
+    res.status(201).json({ 
+        status: 'success', 
+        data: newTrajectory
+    });
 };
 
 export const getUserTrajectories = async (req: Request, res: Response) => {

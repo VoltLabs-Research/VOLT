@@ -1,65 +1,172 @@
-import { extractTimestepInfo, isValidLammpsFile } from '@/utilities/lammps';
+import { extractTimestepInfo } from '@/utilities/lammps';
 import { parentPort } from 'worker_threads';
 import { join } from 'path';
-import { writeFile } from 'fs/promises';
+import { readFile, unlink } from 'fs/promises';
 import LAMMPSToGLTFExporter from '@/utilities/export/atoms';
-import mongoConnector from '@/utilities/mongo-connector';
-import Trajectory from '@/models/trajectory';
 import '@config/env';
 
-// TODO: Duplicated code
-interface TrajectoryProcessingJob{
+interface TrajectoryProcessingJob {
     jobId: string;
     trajectoryId: string;
+    chunkIndex: number;
+    totalChunks: number;
     files: {
-        type: 'Buffer', 
-        data: number[], 
-        frameData: any 
-    }[],
+        frameData: any;
+        tempFilePath: string;
+    }[];
     folderPath: string;
     gltfFolderPath: string;
+    tempFolderPath: string;
 }
 
+const logMemoryUsage = (context: string) => {
+    const usage = process.memoryUsage();
+    console.log(`[Worker #${process.pid}] ${context} - Memory:`, {
+        rss: `${Math.round(usage.rss / 1024 / 1024)} MB`,
+        heapUsed: `${Math.round(usage.heapUsed / 1024 / 1024)} MB`,
+        heapTotal: `${Math.round(usage.heapTotal / 1024 / 1024)} MB`
+    });
+};
+
+const checkMemoryPressure = (): boolean => {
+    const usage = process.memoryUsage();
+    const heapUsedMB = usage.heapUsed / 1024 / 1024;
+    const heapTotalMB = usage.heapTotal / 1024 / 1024;
+    
+    if(heapUsedMB > 1500 || (heapUsedMB / heapTotalMB) > 0.85){
+        console.warn(`[Worker #${process.pid}] High memory usage: ${heapUsedMB}MB`);
+        
+        if(global.gc){
+            console.log(`[Worker #${process.pid}] Forcing garbage collection...`);
+            global.gc();
+        }
+        
+        return true;
+    }
+    
+    return false;
+};
+
 const processJob = async (job: TrajectoryProcessingJob) => {
-    console.log(`[Worker #${process.pid}] Received job ${job.jobId}. Starting processing...`);
+    console.log(`[Worker #${process.pid}] Starting job ${job.jobId} (chunk ${job.chunkIndex + 1}/${job.totalChunks})`);
+    logMemoryUsage('Job start');
 
     if(!job || !job.jobId){
         throw new Error('No job data received in message.');
     }
 
-    // @ts-ignore
-    job.files.forEach(async ({ file, frameData }) => {
-        console.log(`[Worker #${process.pid}] Processing timestep ${frameData.timestep} for ${job.trajectoryId}.`)
-        const filename = frameData.timestep.toString();
-        const lammpsFilePath = join(job.folderPath, filename);
-        const gltfFilePath = join(job.gltfFolderPath, `${filename}.gltf`);
-        const content = Buffer.from(file.data).toString('utf-8');
-        await writeFile(lammpsFilePath, content);
+    try{
+        // Process files sequentially
+        for(let i = 0; i < job.files.length; i++){
+            const { frameData, tempFilePath } = job.files[i];
+            
+            console.log(`[Worker #${process.pid}] Processing file ${i + 1}/${job.files.length}: timestep ${frameData.timestep}`);
+            
+            // Check memory before processing
+            if(checkMemoryPressure()){
+                // Wait a bit for GC to complete
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
 
-        const gltfExporter = new LAMMPSToGLTFExporter();
-        gltfExporter.exportAtomsToGLTF(
-            lammpsFilePath,
-            gltfFilePath,
-            extractTimestepInfo,
-            { maxInstancesPerMesh: 10000 }
-        );
-    });
+            try{
+                // Read file content
+                const content = await readFile(tempFilePath, 'utf-8');
+                
+                // Create GLTF file path
+                const gltfFilePath = join(job.gltfFolderPath, `${frameData.timestep}.gltf`);
+                
+                // Process GLTF export
+                const gltfExporter = new LAMMPSToGLTFExporter();
+                gltfExporter.exportAtomsToGLTF(
+                    tempFilePath,
+                    gltfFilePath,
+                    extractTimestepInfo,
+                    { maxInstancesPerMesh: 5000 }
+                );
 
-    await Trajectory.findByIdAndUpdate(job.trajectoryId, {
-        status: 'ready'
-    }).lean();
+                // Clean up temp file immediately after processing
+                try{
+                    await unlink(tempFilePath);
+                }catch(unlinkError){
+                    console.warn(`[Worker #${process.pid}] Could not delete temp file ${tempFilePath}:`, unlinkError);
+                }
 
-    parentPort?.postMessage({
-        status: 'completed',
-        jobId: job.jobId,
-    });
-    console.log(`[Worker #${process.pid}] Finished job ${job.trajectoryId} successfully.`);
+                // Force GC every 5 files
+                if(i % 5 === 0 && global.gc){
+                    global.gc();
+                }
+
+                console.log(`[Worker #${process.pid}] Completed timestep ${frameData.timestep}`);
+                
+            }catch(fileError){
+                console.error(`[Worker #${process.pid}] Error processing file ${tempFilePath}:`, fileError);
+                
+                // Try to clean up temp file even on error
+                try{
+                    await unlink(tempFilePath);
+                }catch(unlinkError){
+                    // Ignore cleanup errors
+                }
+                
+                // Continue with next file instead of failing entire job
+                continue;
+            }
+        }
+
+        logMemoryUsage('Job completed');
+
+        parentPort?.postMessage({
+            status: 'completed',
+            jobId: job.jobId,
+            chunkIndex: job.chunkIndex,
+            totalChunks: job.totalChunks
+        });
+        
+        console.log(`[Worker #${process.pid}] Finished job ${job.jobId} successfully`);
+        
+    }catch(error){
+        logMemoryUsage('Job error');
+        console.error(`[Worker #${process.pid}] Error processing job ${job.jobId}:`, error);
+        
+        // Clean up any remaining temp files
+        for(const { tempFilePath } of job.files){
+            try{
+                await unlink(tempFilePath);
+            }catch(unlinkError) {
+                // Ignore cleanup errors
+            }
+        }
+        
+        parentPort?.postMessage({
+            status: 'failed',
+            jobId: job.jobId,
+            chunkIndex: job.chunkIndex,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
 };
 
 const main = async () => {
-    await mongoConnector();
-    parentPort?.on('message', (message: { job: TrajectoryProcessingJob }) => {
-        processJob(message.job);
+    console.log(`[Worker #${process.pid}] Worker started`);
+    logMemoryUsage('Worker initialization');
+    
+    // Monitor memory every 30 seconds
+    setInterval(() => {
+        logMemoryUsage('Periodic check');
+        checkMemoryPressure();
+    }, 30000);
+    
+    parentPort?.on('message', async (message: { job: TrajectoryProcessingJob }) => {
+        try {
+            await processJob(message.job);
+        } catch (error) {
+            console.error(`[Worker #${process.pid}] Unhandled error:`, error);
+            parentPort?.postMessage({
+                status: 'failed',
+                jobId: message.job?.jobId || 'unknown',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            });
+        }
     });
 };
 

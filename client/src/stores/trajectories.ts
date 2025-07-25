@@ -1,23 +1,5 @@
 /**
 * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
 **/
 
 import { create, type StateCreator } from 'zustand';
@@ -31,7 +13,7 @@ interface TrajectoryState{
     trajectories: Trajectory[];
     trajectory: Trajectory | null;
     isLoading: boolean;
-    isUploading: boolean;
+    uploadingFileCount: number;
     error: string | null;
 
     dislocationAnalysis: (id: string) => Promise<void>;
@@ -49,9 +31,9 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
     return {
         trajectories: [],
         isLoading: true,
-        isUploading: false,
         trajectory: null,
         error: null,
+        uploadingFileCount: 0,
 
         getTrajectories: (teamId?: string) => {
             let url = '/trajectories';
@@ -112,14 +94,34 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
 
         dislocationAnalysis: async (id: string) => api.post<ApiResponse<any>>(`/dislocations/trajectory/${id}`, useEditorStore.getState().analysisConfig),
 
-        createTrajectory: (formData: FormData) => asyncAction(() => api.post<ApiResponse<Trajectory>>('/trajectories', formData), {
-            loadingKey: 'isUploading',
-            onSuccess: (res, state) => {
-                return {
-                    trajectories: [...state.trajectories, res.data.data]
-                };
+        createTrajectory: async (formData: FormData) => {
+            const currentFileCount = get().uploadingFileCount;
+            set({ uploadingFileCount: currentFileCount + 1, error: null });
+            
+            try{
+                const response = await api.post<ApiResponse<any>>('/trajectories', formData);
+                
+                const currentTrajectories = get().trajectories;
+                const newCount = get().uploadingFileCount - 1;
+                
+                set({ 
+                    trajectories: [response.data.data, ...currentTrajectories],
+                    uploadingFileCount: Math.max(0, newCount)
+                });
+                
+                return response.data;
+                
+            }catch(error){
+                const newCount = get().uploadingFileCount - 1;
+                set({ 
+                    uploadingFileCount: Math.max(0, newCount),
+                    // @ts-ignore
+                    error: error.response?.data?.data?.error || 'Error uploading.' 
+                });
+                
+                throw error;
             }
-        })
+        }
     }
 };
 
