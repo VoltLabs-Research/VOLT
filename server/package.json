@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "export NODE_OPTIONS='--max-old-space-size=8192' --expose-gc npx tsx server.ts"
+    "start": "export NODE_OPTIONS='--max-old-space-size=8192' && npx tsx --expose-gc server.ts"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.6",

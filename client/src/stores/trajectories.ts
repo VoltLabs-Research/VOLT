@@ -100,7 +100,6 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
             
             try{
                 const response = await api.post<ApiResponse<any>>('/trajectories', formData);
-                
                 const currentTrajectories = get().trajectories;
                 const newCount = get().uploadingFileCount - 1;
                 
@@ -110,7 +109,6 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
                 });
                 
                 return response.data;
-                
             }catch(error){
                 const newCount = get().uploadingFileCount - 1;
                 set({ 

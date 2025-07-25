@@ -40,7 +40,7 @@ export interface TrajectoryProcessingJob extends BaseJob {
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
     constructor() {
         const options: QueueOptions = {
-            queueName: 'trajectory-processing',
+            queueName: 'trajectory-processing-queue',
             workerPath: path.resolve(__dirname, '../workers/trajectory-processing.ts'),
             maxConcurrentJobs: 2,
             cpuLoadThreshold: 60,

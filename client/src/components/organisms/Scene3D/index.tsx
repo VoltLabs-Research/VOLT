@@ -124,6 +124,10 @@ const Scene3D: React.FC<Scene3DProps> = ({
     const maxDpr = useMemo(() => (window.devicePixelRatio > 1 ? 2 : 1), []);
     const [dpr, setDpr] = useState(maxDpr);
 
+    useEffect(() => {
+        setDpr(maxDpr);
+    }, [activeSceneObject, maxDpr]);
+
     const handleControlsRef = useCallback((ref: any) => {
         orbitControlsRef.current = ref;
         onCameraControlsRef?.(ref);
@@ -179,8 +183,8 @@ const Scene3D: React.FC<Scene3DProps> = ({
                 recoveryFPS={60}
                 minDpr={0.3}
                 maxDpr={maxDpr}
-                cooldown={0.05}
-                step={0.2}
+                cooldown={0.4}
+                step={0.15}
                 setDpr={setDpr}
             />
             

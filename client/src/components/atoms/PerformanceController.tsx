@@ -1,7 +1,16 @@
-import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useRef, useEffect } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import * as THREE from 'three';
 
-const SMOOTHING_FACTOR = 0.1;
+interface PerformanceControllerProps {
+    targetFPS?: number;
+    recoveryFPS?: number;
+    minDpr?: number;
+    maxDpr?: number;
+    step?: number;
+    cooldown?: number;
+    setDpr?: (dpr: number) => void;
+}
 
 const PerformanceController = ({
     targetFPS = 25,
@@ -11,52 +20,69 @@ const PerformanceController = ({
     step = 0.1,
     cooldown = 0.2,
     setDpr
-}) => {
-    const smoothedFPS = useRef(60);
-    const lastUpdateTime = useRef(0);
+}: PerformanceControllerProps) => {
+    const { gl } = useThree();
+    const targetDpr = useRef(gl.getPixelRatio());
+    const lastDecision = useRef(0);
+    const stableFrames = useRef(0);
+    const needsRecovery = useRef(false);
 
-    useFrame((state, delta) => {
-        const instantFPS = 1 / delta;
+    useEffect(() => {
+        targetDpr.current = maxDpr;
+        setDpr(maxDpr);
+    }, [gl, maxDpr, setDpr]);
 
-        if(delta === 0 || !isFinite(instantFPS)){
-            return;
-        }
+    useFrame(({ clock }, delta) => {
+        const fps = 1 / delta;
+        const now = clock.elapsedTime;
 
-        smoothedFPS.current = (
-            (1 - SMOOTHING_FACTOR) * smoothedFPS.current + 
-            SMOOTHING_FACTOR * instantFPS
-        );
+        // Only make decision at the specified cooldown interval
+        if(now - lastDecision.current > cooldown){
+            if(fps < targetFPS){
+                // If FPS is below target, reduce DPR
+                targetDpr.current = Math.max(minDpr, targetDpr.current - step);
+                needsRecovery.current = true;
+                stableFrames.current = 0;
+            }else if(fps > recoveryFPS){
+                // If FPS is good, count stable frames
+                stableFrames.current++;
+                // If we have enough stable frames and we're not at max DPR, try to increase it
+                if(stableFrames.current > 3){
+                    // If we're already at max DPR, no need to recover
+                    if(Math.abs(targetDpr.current - maxDpr) < 0.01){
+                        needsRecovery.current = false;
+                    }else if(needsRecovery.current){
+                        // Increase DPR more aggresively when recovering
+                        const newDpr = Math.min(
+                            maxDpr,
+                            targetDpr.current + (step * 1.5)
+                        );
+                        targetDpr.current = newDpr;
+                        // If we've reached max DPR, mark recovery as complete
+                        if(Math.abs(newDpr - maxDpr) < 0.01){
+                            needsRecovery.current = false;
+                        }
+                    }
 
-        const now = state.clock.elapsedTime;
-        if(now - lastUpdateTime.current < cooldown){
-            return;
-        }
-
-        if(instantFPS < targetFPS * 0.7){
-            // It adjusts suddenly if it is a sudden fall
-            smoothedFPS.current = instantFPS; 
-        }
-
-        if(smoothedFPS.current < targetFPS){
-            setDpr((currentDpr: number) => {
-                const newDpr = Math.max(minDpr, currentDpr - step);
-                if(newDpr !== currentDpr){
-                    console.log(`Low FPS (${smoothedFPS.current.toFixed(1)}), reducing DPR to ${newDpr.toFixed(2)}`);
-                    lastUpdateTime.current = now;
+                    stableFrames.current = 0;
                 }
+            }else{
+                // Reset stable frames counter if FPS is in the middle range
+                stableFrames.current = 0;
+            }
 
-                return newDpr;
-            });
-        }else if(smoothedFPS.current > recoveryFPS){
-            setDpr((currentDpr: number) => {
-                const newDpr = Math.min(maxDpr, currentDpr + step);
-                if(newDpr !== currentDpr){
-                    console.log(`High FPS (${smoothedFPS.current.toFixed(1)}), increasing DPR to ${newDpr.toFixed(2)}`);
-                    lastUpdateTime.current = now;
-                }
+            lastDecision.current = now;
+        }
 
-                return newDpr;
-            });
+        // Smoothly transition to target DPR
+        const current = gl.getPixelRatio();
+        // higher = smoother but slower
+        const dampingFactor = 5;
+        const smooth = THREE.MathUtils.damp(current, targetDpr.current, dampingFactor, delta);
+
+        // Only update if the change is signifcant
+        if(Math.abs(smooth - current) > 0.01){
+            setDpr(smooth);
         }
     });
     

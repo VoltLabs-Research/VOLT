@@ -22,10 +22,7 @@
 
 import { Request, Response } from 'express';
 import Team from '@models/team';
-import User from '@models/user';
 import HandlerFactory from '@/controllers/handler-factory';
-import { ITeam } from '@types/models/team';
-import { IUser } from '@types/models/user';
 import { catchAsync } from '@utilities/runtime';
 
 const factory = new HandlerFactory({

@@ -11,11 +11,11 @@ export interface AnalysisJob extends BaseJob{
 export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob>{
     constructor(){
         const options: QueueOptions = {
-            queueName: process.env.ANALYSIS_QUEUE_NAME || 'analysis',
+            queueName: 'analysis-processing-queue',
             workerPath: path.resolve(__dirname, '../workers/analysis.ts'),
-            maxConcurrentJobs: parseInt(process.env.MAX_CONCURRENT_ANALYSES || '2', 10),
-            cpuLoadThreshold: parseInt(process.env.CPU_LOAD_THRESHOLD || '80', 10),
-            ramLoadThreshold: parseInt(process.env.RAM_LOAD_THRESHOLD || '85', 10)
+            maxConcurrentJobs: 5,
+            cpuLoadThreshold: 80,
+            ramLoadThreshold: 85,
         };
 
         super(options);

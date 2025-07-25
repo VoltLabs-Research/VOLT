@@ -385,8 +385,8 @@ class LAMMPSToGLTFExporter{
         }else if(atomCount <= 2000000){
             return {
                 atomCount,
-                recommendedMaxAtoms: 250000,
-                sphereResolution: { segments: 8, rings: 6 },
+                recommendedMaxAtoms: 200000,
+                sphereResolution: { segments: 4, rings: 2 },
             };
         }else{
             return {
