@@ -29,6 +29,7 @@ import type { ITrajectory, ITimestepInfo } from '@types/models/trajectory';
 import Team from '@models/team';
 import StructureAnalysis from '@/models/structure-analysis';
 import SimulationCell from '@/models/simulation-cell';
+import Dislocations from '@/models/dislocations';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
@@ -66,6 +67,14 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'StructureAnalysis'
     }],
+    simulationCell: {
+        type: Schema.Types.ObjectId,
+        ref: 'SimulationCell'
+    },
+    dislocations: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Dislocation'
+    }],
     status: {
         type: String,
         lowercase: true,
@@ -97,6 +106,7 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
 
         await StructureAnalysis.deleteMany({ trajectory: _id });
         await SimulationCell.deleteMany({ trajectory: _id });
+        await Dislocations.deleteMany({ trajectory: _id });
 
         await Team.updateOne(
             { _id: team },

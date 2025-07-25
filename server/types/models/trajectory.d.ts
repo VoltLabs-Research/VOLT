@@ -22,6 +22,7 @@
 
 import { ITeam } from '@types/models/team';
 import { IStructureAnalysis } from '@types/model/structureAnalysis';
+import { ICellAnalysis } from '@/types/model/simulation-cell';
 
 // Defines the limits of the simulation box on the three axes.
 export interface IBoxBounds{
@@ -45,8 +46,10 @@ export interface ITrajectory extends Document {
     status: string;
     folderId: string;
     team: ITeam;
+    simulationCell: ICellAnalysis,
     frames: ITimestepInfo[];
     structureAnalysis: IStructureAnalysis[];
+    dislocations: any[];
     stats: {
         totalFiles: number;
         totalSize: number;

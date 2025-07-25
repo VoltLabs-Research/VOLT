@@ -34,6 +34,8 @@ import DislocationExporter from '@utilities/export/dislocations';
 import LAMMPSToGLTFExporter from '@utilities/export/atoms';
 import StructureAnalysis from '@/models/structure-analysis';
 import SimulationCell from '@/models/simulation-cell';
+import Dislocations from '@models/dislocations';
+import Trajectory from '@/models/trajectory';
 
 const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build/opendxa');
 
@@ -201,8 +203,55 @@ class OpenDXAService{
             this.exportDislocations(dislocations, timestep),
             this.exportAtomsColoredByType(atoms, timestep),
             this.handleStructuralData(structures, timestep),
-            this.handleSimulationCellData(simulation_cell, timestep)
+            this.handleSimulationCellData(simulation_cell, timestep),
+            this.handleDislocationData(dislocations, timestep)
         ]);
+    }
+
+    private async handleDislocationData(data: Dislocation, timestep: number): Promise<void>{
+        const filter = {
+            trajectory: this.trajectoryId,
+            timestep
+        };
+
+        const updateData = {
+            totalSegments: data.metadata.count,
+            dislocations: data.data.map((dislocation) => ({
+                segmentId: dislocation.segment_id,
+                type: dislocation.type,
+                pointIndexOffset: dislocation.point_index_offset,
+                numPoints: dislocation.num_points,
+                length: dislocation.length,
+                points: dislocation.points,
+                burgers: dislocation.burgers,
+                nodes: dislocation.nodes,
+                lineDirection: {
+                    string: dislocation.line_direction?.string,
+                    vector: dislocation.line_direction?.vector.map(v => isNaN(v) ? null : v)
+                }
+            })),
+            totalPoints: data.summary.total_points,
+            averageSegmentLength: data.summary.average_segment_length,
+            maxSegmentLength: data.summary.max_segment_length,
+            minSegmentLength: data.summary.min_segment_length,
+            totalLength: data.summary.total_length,
+            trajectory: this.trajectoryId,
+            timestep
+        };
+
+        try{
+            const dislocationDoc = await Dislocations.findOneAndUpdate(filter, updateData, {
+                upsert: true,
+                new: true,
+                runValidators: true
+            });
+ 
+            await Trajectory.findByIdAndUpdate(this.trajectoryId, {
+                $addToSet: { dislocations: dislocationDoc._id }
+            });
+        }catch(err){
+            console.error(`[OpenDXAService] Failed to save dislocation data for timestep ${timestep}:`, err);
+        }
     }
 
     private getOutputPath(frame: number, exportName: string): string {
