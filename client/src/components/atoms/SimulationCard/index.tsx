@@ -33,7 +33,7 @@ import useTrajectoryStore from '@/stores/trajectories';
 import ActionBasedFloatingContainer from '@/components/atoms/ActionBasedFloatingContainer';
 import './SimulationCard.css';
 
-const SimulationCard = ({ trajectory }) => {
+const SimulationCard = ({ trajectory, isSelected, onSelect }) => {
     const navigate = useNavigate();
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const dislocationAnalysis = useTrajectoryStore((state) => state.dislocationAnalysis);
@@ -43,6 +43,21 @@ const SimulationCard = ({ trajectory }) => {
     const loadTrajectoryOnCanvas = () => {
         navigate(`/canvas/${trajectory._id}/`);
     };
+    
+    const handleClick = (event) => {
+        if(event.target.closest('.simulation-options-icon-container') || event.target.closest('.simulation-caption-title')){
+            return;
+        }
+
+        if(event.ctrlKey || event.metaKey){
+            event.preventDefault();
+            onSelect(trajectory._id);
+        }else{
+            loadTrajectoryOnCanvas();
+        }
+    };
+
+    const containerClasses = `simulation-container ${isDeleting ? 'is-deleting' : ''} ${isSelected ? 'is-selected' : ''}`;
 
     const handleDelete = () => {
         setIsDeleting(true);
@@ -52,14 +67,14 @@ const SimulationCard = ({ trajectory }) => {
     };
 
     return (
-        <figure className={`simulation-container ${isDeleting ? 'is-deleting' : ''}`}>
-            <div className='simulation-cover-container' onClick={loadTrajectoryOnCanvas}>
+        <figure className={containerClasses} onClick={handleClick}>
+            <div className='simulation-cover-container'>
                 {true ? (
                     <i className='simulation-cover-icon-container'>
                         <PiAtomThin />
                     </i>
                 ) : (
-                    <img className='simulation-image' src={SimpExampleCover} />
+                    <img className='simulation-image' src={SimpExampleCover} alt="Simulation cover" />
                 )}
             </div>
             <figcaption className='simulation-caption-container'>

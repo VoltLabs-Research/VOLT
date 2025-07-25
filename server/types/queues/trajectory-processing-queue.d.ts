@@ -7,7 +7,7 @@ export interface TrajectoryProcessingJob extends BaseJob {
     files: {
         // TO DO:
         frameData: any;
-        tempFilePath: string;
+        frameFilePath: string;
     }[];
     folderPath: string;
     gltfFolderPath: string;

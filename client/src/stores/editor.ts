@@ -82,7 +82,7 @@ export interface TrajectoryGLTFs {
 
 const initialAnalysisConfig: AnalysisConfig = {
     crystalStructure: 'BCC',
-    identificationMode: 'CNA',
+    identificationMode: 'PTM',
     maxTrialCircuitSize: 14.0,
     circuitStretchability: 9.0,
     defectMeshSmoothingLevel: 8,

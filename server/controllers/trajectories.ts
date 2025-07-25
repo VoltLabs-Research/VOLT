@@ -133,11 +133,9 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const folderId = v4();
     const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
     const gltfFolderPath = join(folderPath, 'gltf');
-    const tempFolderPath = join(folderPath, 'temp');
 
     await mkdir(folderPath, { recursive: true });
     await mkdir(gltfFolderPath, { recursive: true });
-    await mkdir(tempFolderPath, { recursive: true });
 
     const validFiles = [];
     const frames = [];
@@ -155,10 +153,8 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
                 continue;
             }
 
-            // Save file to disk immediately and free memory
-            const tempFileName = `${frameInfo.timestep}.lammps`;
-            const tempFilePath = join(tempFolderPath, tempFileName);
-            await writeFile(tempFilePath, content);
+            const frameFilePath = join(folderPath, `${frameInfo.timestep}`);
+            await writeFile(frameFilePath, content);
 
             const frameData = {
                 ...frameInfo,
@@ -168,7 +164,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             frames.push(frameData);
             validFiles.push({
                 frameData,
-                tempFilePath,
+                frameFilePath,
                 originalSize: file.size
             });
 
@@ -194,7 +190,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
 
     const newTrajectory = await Trajectory.create({
         folderId,
-        name: 'Untitled Trajectory',
+        name: req.body.originalFolderName || 'Untitled Trajectory',
         team: teamId,
         frames,
         status: 'processing',
@@ -217,13 +213,12 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             trajectoryId: newTrajectory._id.toString(),
             chunkIndex: Math.floor(i / CHUNK_SIZE),
             totalChunks: Math.ceil(validFiles.length / CHUNK_SIZE),
-            files: chunk.map(({ frameData, tempFilePath }) => ({
+            files: chunk.map(({ frameData, frameFilePath }) => ({
                 frameData,
-                tempFilePath
+                frameFilePath
             })),
             folderPath,
-            gltfFolderPath,
-            tempFolderPath
+            gltfFolderPath
         };
         
         jobs.push(job);

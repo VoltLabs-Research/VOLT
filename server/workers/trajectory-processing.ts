@@ -23,7 +23,7 @@
 import { extractTimestepInfo } from '@/utilities/lammps';
 import { parentPort } from 'worker_threads';
 import { join } from 'path';
-import { readFile, unlink } from 'fs/promises';
+import { unlink } from 'fs/promises';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import LAMMPSToGLTFExporter from '@/utilities/export/atoms';
 import '@config/env';
@@ -67,7 +67,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
     try{
         // Process files sequentially
         for(let i = 0; i < job.files.length; i++){
-            const { frameData, tempFilePath } = job.files[i];
+            const { frameData, frameFilePath } = job.files[i];
             
             console.log(`[Worker #${process.pid}] Processing file ${i + 1}/${job.files.length}: timestep ${frameData.timestep}`);
             
@@ -78,27 +78,17 @@ const processJob = async (job: TrajectoryProcessingJob) => {
             }
 
             try{
-                // Read file content
-                const content = await readFile(tempFilePath, 'utf-8');
-                
                 // Create GLTF file path
                 const gltfFilePath = join(job.gltfFolderPath, `${frameData.timestep}.gltf`);
                 
                 // Process GLTF export
                 const gltfExporter = new LAMMPSToGLTFExporter();
                 gltfExporter.exportAtomsToGLTF(
-                    tempFilePath,
+                    frameFilePath,
                     gltfFilePath,
                     extractTimestepInfo,
                     { maxInstancesPerMesh: 5000 }
                 );
-
-                // Clean up temp file immediately after processing
-                try{
-                    await unlink(tempFilePath);
-                }catch(unlinkError){
-                    console.warn(`[Worker #${process.pid}] Could not delete temp file ${tempFilePath}:`, unlinkError);
-                }
 
                 // Force GC every 5 files
                 if(i % 5 === 0 && global.gc){
@@ -108,14 +98,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
                 console.log(`[Worker #${process.pid}] Completed timestep ${frameData.timestep}`);
                 
             }catch(fileError){
-                console.error(`[Worker #${process.pid}] Error processing file ${tempFilePath}:`, fileError);
-                
-                // Try to clean up temp file even on error
-                try{
-                    await unlink(tempFilePath);
-                }catch(unlinkError){
-                    // Ignore cleanup errors
-                }
+                console.error(`[Worker #${process.pid}] Error processing file ${frameFilePath}:`, fileError);
                 
                 // Continue with next file instead of failing entire job
                 continue;
@@ -138,9 +121,9 @@ const processJob = async (job: TrajectoryProcessingJob) => {
         console.error(`[Worker #${process.pid}] Error processing job ${job.jobId}:`, error);
         
         // Clean up any remaining temp files
-        for(const { tempFilePath } of job.files){
+        for(const { frameFilePath } of job.files){
             try{
-                await unlink(tempFilePath);
+                await unlink(frameFilePath);
             }catch(unlinkError) {
                 // Ignore cleanup errors
             }

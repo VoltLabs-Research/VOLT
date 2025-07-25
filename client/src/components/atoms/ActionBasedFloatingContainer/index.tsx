@@ -60,7 +60,9 @@ const ActionBasedFloatingContainer = ({ options, children }) => {
         };
     }, []);
 
-    const handleOptionClick = (originalOnClick) => {
+    const handleOptionClick = (originalOnClick, event) => {
+        event.stopPropagation();
+
         if (typeof originalOnClick === 'function') {
             originalOnClick();
         }
@@ -87,7 +89,7 @@ const ActionBasedFloatingContainer = ({ options, children }) => {
                         <div
                             className='action-based-floating-option-container'
                             key={index}
-                            onClick={() => handleOptionClick(onClick)}
+                            onClick={(e) => handleOptionClick(onClick, e)}
                         >
                             <i className='action-based-floating-option-icon-container'>
                                 <Icon />

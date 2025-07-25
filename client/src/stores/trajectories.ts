@@ -15,6 +15,11 @@ interface TrajectoryState{
     isLoading: boolean;
     uploadingFileCount: number;
     error: string | null;
+    
+    selectedTrajectories: string[];
+    toggleTrajectorySelection: (id: string) => void;
+    deleteSelectedTrajectories: () => Promise<void>;
+    clearSelection: () => void;
 
     dislocationAnalysis: (id: string) => Promise<void>;
     setTrajectory: (trajectory: Trajectory | null) => void;
@@ -34,6 +39,7 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
         trajectory: null,
         error: null,
         uploadingFileCount: 0,
+        selectedTrajectories: [],
 
         getTrajectories: (teamId?: string) => {
             let url = '/trajectories';
@@ -72,6 +78,34 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
                     error: 'Error trying to delete simulation'
                 });
                 console.error(error);
+            }
+        },
+
+        toggleTrajectorySelection: (id: string) => {
+            set((state) => {
+                const isSelected = state.selectedTrajectories.includes(id);
+                if(isSelected){
+                    return { selectedTrajectories: state.selectedTrajectories.filter((selectedId) => selectedId !== id) };
+                }else{
+                    return { selectedTrajectories: [...state.selectedTrajectories, id] };
+                }
+            });
+        },
+
+        clearSelection: () => {
+            set({ selectedTrajectories: [] });
+        },
+
+        deleteSelectedTrajectories: async () => {
+            const { selectedTrajectories, deleteTrajectoryById } = get();
+            if(selectedTrajectories.length === 0) return;
+
+            const idsToDelete = [...selectedTrajectories];
+
+            set({ selectedTrajectories: [] });
+
+            for(const id of idsToDelete){
+                deleteTrajectoryById(id);
             }
         },
 
