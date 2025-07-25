@@ -66,6 +66,12 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'StructureAnalysis'
     }],
+    status: {
+        type: String,
+        lowercase: true,
+        enum: ['processing', 'ready'],
+        default: 'processing'
+    },
     frames: [TimestepInfoSchema],
     stats: {
         totalFiles: { type: Number, default: 0 },

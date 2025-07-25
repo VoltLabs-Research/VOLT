@@ -42,6 +42,7 @@ export interface ITimestepInfo{
 
 export interface ITrajectory extends Document {
     name: string;
+    status: string;
     folderId: string;
     team: ITeam;
     frames: ITimestepInfo[];

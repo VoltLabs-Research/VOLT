@@ -20,14 +20,18 @@
 * SOFTWARE.
 **/
 
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { join, resolve } from 'path';
-import { access, stat, readdir } from 'fs/promises';
+import { access, stat, readdir, mkdir, rmdir } from 'fs/promises';
 import { constants } from 'fs';
 import { isValidObjectId } from 'mongoose';
+import { v4 } from 'uuid';
+import { getTrajectoryProcessingQueue } from '@/queues';
 import Trajectory from '@models/trajectory';
 import Team from '@models/team';
 import HandlerFactory from '@/controllers/handler-factory';
+import { extractTimestepInfo, isValidLammpsFile } from '@/utilities/lammps';
+import RuntimeError from '@/utilities/runtime-error';
 
 const factory = new HandlerFactory({
     model: Trajectory,
@@ -123,9 +127,70 @@ export const getTrajectoryGLTF = async (req: Request, res: Response) => {
     res.sendFile(gltfFilePath);
 };
 
-export const createTrajectory = async (req: Request, res: Response) => {
-    const { trajectoryData } = res.locals;
-    const newTrajectory = await Trajectory.create(trajectoryData)
+export const createTrajectory = async (req: Request, res: Response, next: NextFunction) => {
+    const { files, teamId } = res.locals.data;
+
+    const folderId = v4();
+    const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
+    const gltfFolderPath = join(folderPath, 'gltf');
+
+    await mkdir(folderPath, { recursive: true });
+    await mkdir(gltfFolderPath, { recursive: true });
+
+    const validFiles = [];
+    const frames = [];
+
+    for(const file of files){
+        const content = file.buffer.toString('utf-8');
+        const lines = content.split('\n');
+        const frameInfo = extractTimestepInfo(lines);
+        const isValid = isValidLammpsFile(lines);
+
+        if(!frameInfo || !isValid){
+            continue;
+        }
+
+        const frameData = {
+            ...frameInfo,
+            gltfPath: `gltf/${frameInfo.timestep}.gltf`
+        };
+
+        frames.push(frameData);
+        validFiles.push({
+            frameData,
+            file
+        });
+    }
+
+    if(validFiles.length === 0){
+        await rmdir(folderPath);
+        return next(new RuntimeError('No valid files for trajectory', 400));
+    }
+
+    const newTrajectory = await Trajectory.create({
+        folderId,
+        name: 'Untitled Trajectory',
+        team: teamId,
+        frames,
+        status: 'processing',
+        stats: {
+            totalFiles: validFiles.length,
+            totalSize: files.reduce((acc: number, file: Express.Multer.File) => acc + file.size, 0)
+        }
+    });
+
+    const trajectoryProcessingQueue = getTrajectoryProcessingQueue();
+    trajectoryProcessingQueue.addJobs([{
+        jobId: v4(),
+        trajectoryId: newTrajectory._id,
+        files: validFiles.map(({ file, frameData }) => ({
+            file: file.buffer.toJSON(),
+            frameData
+        })),
+        folderPath,
+        gltfFolderPath
+    }]);
+
     res.status(201).json({ status: 'success', data: newTrajectory });
 };
 

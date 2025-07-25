@@ -37,7 +37,7 @@ interface AnalysisJob{
 
 const processJob = async (job: AnalysisJob): Promise<void> => {
     if(!job){
-        throw new Error('[Worker / Analysis]: No job data received in message.');
+        throw new Error('No job data received in message.');
     }
 
     try{

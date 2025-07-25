@@ -101,16 +101,16 @@ export const useGltfScene = ({
             const loadedModel = await loadGLTF(targetUrl);
             
             preloadGLTFs([
-                currentGltfUrl.defect_mesh,
-                currentGltfUrl.interface_mesh,
-                currentGltfUrl.atoms_colored_by_type,
-                currentGltfUrl.dislocations,
+                currentGltfUrl?.defect_mesh,
+                currentGltfUrl?.interface_mesh,
+                currentGltfUrl?.atoms_colored_by_type,
+                currentGltfUrl?.dislocations,
 
-                nextGltfUrl.defect_mesh,
-                nextGltfUrl.interface_mesh,
-                nextGltfUrl.dislocations,
-                nextGltfUrl.atoms_colored_by_type,
-                nextGltfUrl.trajectory
+                nextGltfUrl?.defect_mesh,
+                nextGltfUrl?.interface_mesh,
+                nextGltfUrl?.dislocations,
+                nextGltfUrl?.atoms_colored_by_type,
+                nextGltfUrl?.trajectory
             ]);
 
             if (!loadedModel) {
