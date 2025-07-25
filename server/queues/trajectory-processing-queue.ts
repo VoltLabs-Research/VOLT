@@ -20,22 +20,11 @@
 * SOFTWARE.
 **/
 
-import { BaseProcessingQueue, BaseJob, QueueOptions } from '@/queues/base-processing-queue';
-import path from 'path';
+import { BaseProcessingQueue } from '@/queues/base-processing-queue';
+import { QueueOptions } from '@/types/queues/base-processing-queue';
+import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import { redis } from '@/config/redis';
-
-export interface TrajectoryProcessingJob extends BaseJob {
-    trajectoryId: string;
-    chunkIndex: number;
-    totalChunks: number;
-    files: {
-        frameData: any;
-        tempFilePath: string;
-    }[];
-    folderPath: string;
-    gltfFolderPath: string;
-    tempFolderPath: string;
-}
+import path from 'path';
 
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
     constructor() {

@@ -1,12 +1,7 @@
-import { BaseProcessingQueue, BaseJob, QueueOptions } from '@/queues/base-processing-queue';
+import { BaseProcessingQueue } from '@/queues/base-processing-queue';
+import { QueueOptions } from '@/types/queues/base-processing-queue';
+import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import path from 'path';
-
-export interface AnalysisJob extends BaseJob{
-    trajectoryId: string;
-    folderPath: string;
-    config: any;
-    inputFile: string;
-}
 
 export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob>{
     constructor(){

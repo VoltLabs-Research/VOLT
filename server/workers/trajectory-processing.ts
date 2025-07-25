@@ -2,22 +2,9 @@ import { extractTimestepInfo } from '@/utilities/lammps';
 import { parentPort } from 'worker_threads';
 import { join } from 'path';
 import { readFile, unlink } from 'fs/promises';
+import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import LAMMPSToGLTFExporter from '@/utilities/export/atoms';
 import '@config/env';
-
-interface TrajectoryProcessingJob {
-    jobId: string;
-    trajectoryId: string;
-    chunkIndex: number;
-    totalChunks: number;
-    files: {
-        frameData: any;
-        tempFilePath: string;
-    }[];
-    folderPath: string;
-    gltfFolderPath: string;
-    tempFolderPath: string;
-}
 
 const logMemoryUsage = (context: string) => {
     const usage = process.memoryUsage();

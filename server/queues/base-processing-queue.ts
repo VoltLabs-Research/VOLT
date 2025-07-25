@@ -1,58 +1,9 @@
+import { BaseJob, WorkerPoolItem, QueueMetrics, QueueOptions, CircuitBreaker } from '@/types/queues/base-processing-queue';
+import { createRedisClient, redis } from '@config/redis';
 import { Worker } from 'worker_threads';
+import { EventEmitter } from 'events';
 import os from 'os';
 import IORedis from 'ioredis';
-import { createRedisClient, redis } from '@config/redis';
-import { EventEmitter } from 'events';
-
-export interface BaseJob {
-    jobId: string;
-    priority?: number;
-    retries?: number;
-    maxRetries?: number;
-    estimatedDurationMs?: number;
-}
-
-interface WorkerPoolItem {
-    worker: Worker;
-    isIdle: boolean;
-    currentJobId?: string;
-    startTime?: number;
-    jobCount: number;
-    lastUsed: number;
-    timeouts: Set<NodeJS.Timeout>;
-}
-
-export interface QueueOptions {
-    queueName: string;
-    workerPath: string;
-    maxConcurrentJobs?: number;
-    cpuLoadThreshold?: number;
-    ramLoadThreshold?: number;
-    workerIdleTimeout?: number;
-    jobTimeout?: number;
-    enableMetrics?: boolean;
-    healthCheckInterval?: number;
-    gracefulShutdownTimeout?: number;
-}
-
-interface QueueMetrics {
-    totalJobsProcessed: number;
-    totalJobsFailed: number;
-    averageProcessingTimeMs: number;
-    peakMemoryUsageMB: number;
-    workerRestarts: number;
-    lastHealthCheck: string;
-}
-
-interface CircuitBreaker {
-    failures: number;
-    lastFailure: number;
-    threshold: number;
-    timeout: number;
-    isOpen(): boolean;
-    recordFailure(): void;
-    reset(): void;
-}
 
 export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitter {
     protected readonly queueName: string;

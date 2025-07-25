@@ -21,19 +21,10 @@
 **/
 
 import { parentPort } from 'worker_threads';
+import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import OpenDXAService from '@services/opendxa';
 import mongoConnector from '@/utilities/mongo-connector';
 import '@config/env';
-
-// TODO: Duplicated code
-interface AnalysisJob{
-    jobId: string;
-    trajectoryId: string;
-    folderPath: string;
-    // TODO: any?
-    config: any;
-    inputFile: string;
-}
 
 const processJob = async (job: AnalysisJob): Promise<void> => {
     if(!job){
