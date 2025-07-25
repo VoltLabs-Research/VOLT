@@ -1,6 +1,6 @@
 import mongoose, { Schema, Model } from 'mongoose';
 // @ts-ignore
-import { IStructureAnalysis, IStructureTypeStat } from '@types/models/structureAnalysis';
+import { IStructureAnalysis, IStructureTypeStat } from '@/types/models/structure-analysis';
 import Trajectory from '@models/trajectory';
 
 const StructureTypeStatSchema = new Schema<IStructureTypeStat>({

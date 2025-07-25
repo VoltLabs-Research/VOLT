@@ -22,7 +22,7 @@
 
 import jwt from 'jsonwebtoken';
 import User from '@models/user';
-import RuntimeError from '@utilities/runtimeError';
+import RuntimeError from '@/utilities/runtime-error';
 import { promisify } from 'util';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 

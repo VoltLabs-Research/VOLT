@@ -27,8 +27,8 @@ import { join } from 'path';
 // @ts-ignore
 import type { ITrajectory, ITimestepInfo } from '@types/models/trajectory';
 import Team from '@models/team';
-import StructureAnalysis from '@models/structureAnalysis';
-import SimulationCell from '@models/simulationCell';
+import StructureAnalysis from '@/models/structure-analysis';
+import SimulationCell from '@/models/simulation-cell';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },

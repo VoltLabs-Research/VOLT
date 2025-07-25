@@ -27,7 +27,7 @@ import { constants } from 'fs';
 import { isValidObjectId } from 'mongoose';
 import Trajectory from '@models/trajectory';
 import Team from '@models/team';
-import HandlerFactory from '@controllers/handlerFactory';
+import HandlerFactory from '@/controllers/handler-factory';
 
 const factory = new HandlerFactory({
     model: Trajectory,

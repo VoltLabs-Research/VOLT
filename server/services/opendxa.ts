@@ -28,8 +28,8 @@ import os from 'os';
 import MeshExporter, { Mesh } from '@utilities/export/mesh';
 import DislocationExporter, { Dislocation } from '@utilities/export/dislocations';
 import LAMMPSToGLTFExporter, { AtomsGroupedByType } from '@utilities/export/atoms';
-import StructureAnalysis from '@models/structureAnalysis';
-import SimulationCell from '@models/simulationCell';
+import StructureAnalysis from '@/models/structure-analysis';
+import SimulationCell from '@/models/simulation-cell';
 
 export enum LatticeStructure {
     FCC = 'FCC',

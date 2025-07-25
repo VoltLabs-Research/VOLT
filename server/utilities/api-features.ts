@@ -22,7 +22,7 @@
 
 import { Document, Model, PopulateOptions, FilterQuery, Query } from 'mongoose';
 import { filterObject } from '@utilities/runtime';
-import RuntimeError from '@utilities/runtimeError';
+import RuntimeError from '@/utilities/runtime-error';
 
 /**
  * Interface for the request query string 

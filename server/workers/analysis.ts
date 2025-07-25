@@ -22,7 +22,7 @@
 
 import { parentPort } from 'worker_threads';
 import OpenDXAService from '@services/opendxa';
-import mongoConnector from '@utilities/mongoConnector';
+import mongoConnector from '@/utilities/mongo-connector';
 import '@config/env';
 
 // TODO: Duplicated code

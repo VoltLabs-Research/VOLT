@@ -22,7 +22,7 @@
 
 import http from 'http';
 import app from '@config/express';
-import mongoConnector from '@utilities/mongoConnector';
+import mongoConnector from '@/utilities/mongo-connector';
 import { initializeRedis } from '@config/redis';
 import { initializeSocketIO } from '@config/socket';
 

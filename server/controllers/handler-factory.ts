@@ -23,8 +23,8 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { Document, Model } from 'mongoose';
 import { catchAsync, filterObject, checkIfSlugOrId } from '@utilities/runtime';
-import APIFeatures from '@utilities/apiFeatures';
-import RuntimeError from '@utilities/runtimeError';
+import APIFeatures from '@/utilities/api-features';
+import RuntimeError from '@/utilities/runtime-error';
 
 /**
  * Interface for the options passed to the HandlerFactory class.
