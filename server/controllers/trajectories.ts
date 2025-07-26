@@ -104,8 +104,8 @@ export const getTrajectoryGLTF = async (req: Request, res: Response) => {
 
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
     const fileName = type
-        ? `frame_${timestep}_${type}.gltf`
-        : `${timestep}.gltf`;
+        ? `frame_${timestep}_${type}.glb`
+        : `${timestep}.glb`;
 
     const gltfFilePath = join(basePath, trajectory.folderId, 'gltf', fileName);
 

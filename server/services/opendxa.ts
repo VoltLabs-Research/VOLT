@@ -255,7 +255,7 @@ class OpenDXAService{
     }
 
     private getOutputPath(frame: number, exportName: string): string {
-        return path.join(this.exportDirectory, `frame_${frame}_${exportName}.gltf`)
+        return path.join(this.exportDirectory, `frame_${frame}_${exportName}.glb`)
     }
 
     private exportAtomsColoredByType(atoms: AtomsGroupedByType, frame: number): void {
@@ -267,7 +267,7 @@ class OpenDXAService{
     private exportDislocations(dislocation: Dislocation, frame: number): void {
         const exporter = new DislocationExporter();
         const outputPath = this.getOutputPath(frame, 'dislocations');
-        exporter.toGLTF(dislocation, outputPath, {
+        exporter.toGLB(dislocation, outputPath, {
             lineWidth: 0.8,
             colorByType: true,
             material: {

@@ -22,7 +22,7 @@
 
 import { ParsedFrame, AtomsGroupedByType, PerformanceProfile, GLTFExportOptions } from '@/types/utilities/export/atoms';
 import { TimestepInfo, LammpsAtom } from '@/types/utilities/lammps';
-import { TextEncoder } from 'util';
+import { assembleAndWriteGLB } from '@/utilities/export/utils';
 import * as fs from 'fs';
 
 class LAMMPSToGLTFExporter{
@@ -297,10 +297,6 @@ class LAMMPSToGLTFExporter{
             indices,
             bounds: { min: [minX, minY, minZ], max: [maxX, maxY, maxZ] }
         };
-    }
-
-    private arrayToBase64(array: ArrayBuffer): string{
-        return Buffer.from(array).toString('base64');
     }
 
     static calculateOptimalRadius(atoms: LammpsAtom[]): number{
@@ -624,79 +620,7 @@ class LAMMPSToGLTFExporter{
             }
         };
 
-        const jsonString = JSON.stringify(gltf);
-        
-        // Prepare the GLB "chunks".
-        // The JSON chunk must be 4-byte aligned, padded with spaces (0x20).
-        const jsonChunkLength = Buffer.byteLength(jsonString, 'utf8');
-        const jsonPadding = (4 - (jsonChunkLength % 4)) % 4;
-        const jsonTotalLength = jsonChunkLength + jsonPadding;
-        
-        // The binary chunk must be aligned to 4 bytes, padded with zeros (0x00).
-        const binaryChunkLength = arrayBuffer.byteLength;
-        const binaryPadding = (4 - (binaryChunkLength % 4)) % 4;
-        const binaryTotalLength = binaryChunkLength + binaryPadding;
-
-        // Calculate the total length of the GLB file.
-        const headerLength = 12;
-        const chunkHeaderLength = 8;
-        const totalLength = headerLength + (chunkHeaderLength + jsonTotalLength) + (chunkHeaderLength + binaryTotalLength);
-
-        // Create the final buffer for the GLB file and a DataView to write to it.
-        const glbBuffer = new ArrayBuffer(totalLength);
-        const dataView = new DataView(glbBuffer);
-        let byteOffset = 0;
-
-        // Escribir la cabecera GLB (12 bytes)
-        // 0x46546C67 (magic number) = gltf
-        dataView.setUint32(byteOffset, 0x46546C67, true); 
-        byteOffset += 4;
-
-        // version: 2 (GLTF)
-        dataView.setUint32(byteOffset, 2, true); 
-        byteOffset += 4;
-
-        // length
-        dataView.setUint32(byteOffset, totalLength, true); 
-        byteOffset += 4;
-
-        // Write the JSON chunk header (8 bytes)
-        // chunkLength
-        dataView.setUint32(byteOffset, jsonTotalLength, true); 
-        byteOffset += 4;
-
-        // chunkType: "JSON"
-        dataView.setUint32(byteOffset, 0x4E4F534A, true); 
-        byteOffset += 4;
-
-        // Write the contents of the JSON chunk
-        const jsonUint8Array = new TextEncoder().encode(jsonString);
-        new Uint8Array(glbBuffer, byteOffset).set(jsonUint8Array);
-        byteOffset += jsonChunkLength;
-
-        // Write the JSON chunk padding with spaces
-        for(let i = 0; i < jsonPadding; i++){
-            dataView.setUint8(byteOffset++, 0x20);
-        }
-
-        // Write the binary chunk header (8 bytes)
-        // chunkLength
-        dataView.setUint32(byteOffset, binaryTotalLength, true);
-        byteOffset += 4;
-
-        // chunkType: "BIN"
-        dataView.setUint32(byteOffset, 0x004E4942, true);
-        byteOffset += 4;
-
-        // Write the contents of the binary chunk
-        new Uint8Array(glbBuffer, byteOffset).set(new Uint8Array(arrayBuffer));
-        byteOffset += binaryChunkLength;
-
-        const finalOutputFilePath = outputFilePath.replace(/\.gltf$/, '.glb');
-        fs.writeFileSync(finalOutputFilePath, Buffer.from(glbBuffer));
-
-        console.log(`Exported GLB: ${finalOutputFilePath}`);
-        console.log(`File size: ${(totalLength / (1024 * 1024)).toFixed(2)} MB`);
+        assembleAndWriteGLB(gltf, arrayBuffer, outputFilePath);
     }
 
     public exportAtomsTypeToGLTF(
@@ -881,16 +805,11 @@ class LAMMPSToGLTFExporter{
             materialIndex++;
         }
 
-        const encodedBuffer = this.arrayToBase64(arrayBuffer);
         gltf.buffers.push({
             byteLength: arrayBuffer.byteLength,
-            uri: `data:application/octet-stream;base64,${encodedBuffer}`
         });
 
-        fs.writeFileSync(outputFilePath, JSON.stringify(gltf));
-
-        console.log(`GLTF successfully exported to: ${outputFilePath}`);
-        console.log(`Buffer size: ${(arrayBuffer.byteLength /(1024 * 1024)).toFixed(2)} MB`);
+        assembleAndWriteGLB(gltf, arrayBuffer, outputFilePath);
     }
 };
 

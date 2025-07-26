@@ -26,6 +26,7 @@ import {
     DislocationValidationResult, 
     ProcessedDislocationGeometry 
 } from '@/types/utilities/export/dislocations';
+import { assembleAndWriteGLB } from '@/utilities/export/utils';
 
 import * as fs from 'fs';
 
@@ -291,7 +292,8 @@ class DislocationExporter{
 
     private createGLTF(
         geometry: ProcessedDislocationGeometry,
-        options: Required<DislocationExportOptions>
+        options: Required<DislocationExportOptions>,
+        outputFilePath: string
     ): any{
         const positionBufferSize = geometry.positions.byteLength;
         const normalBufferSize = geometry.normals.byteLength;
@@ -384,10 +386,9 @@ class DislocationExporter{
                 target: 34962
             }],
             buffers: [{
-                byteLength: totalBufferSize,
-                uri: `data:application/octet-stream;base64,${this.arrayToBase64(arrayBuffer)}`
+                byteLength: totalBufferSize
             }],
-           extras: options.metadata.includeOriginalStats ? {
+            extras: options.metadata.includeOriginalStats ? {
                 stats: {
                     vertexCount: geometry.vertexCount,
                     triangleCount: geometry.triangleCount,
@@ -451,14 +452,10 @@ class DislocationExporter{
             });
         }
 
-        return gltf;
+        assembleAndWriteGLB(gltf, arrayBuffer, outputFilePath);
     }
 
-    private arrayToBase64(array: ArrayBuffer): string {
-        return Buffer.from(array).toString('base64');
-    }
-
-    public toGLTF(
+    public toGLB(
         dislocationData: Dislocation,
         outputFilePath: string,
         options: DislocationExportOptions = {}
@@ -494,16 +491,11 @@ class DislocationExporter{
         }
 
         const processedGeometry = this.processGeometry(dislocationData, opts);
-        const gltf = this.createGLTF(processedGeometry, opts);
+        this.createGLTF(processedGeometry, opts, outputFilePath);
         
-        fs.writeFileSync(outputFilePath, JSON.stringify(gltf, null, 2));
-
         console.log(`Dislocations successfully exported to: ${outputFilePath}`);
         console.log(`Final statistics: ${processedGeometry.triangleCount} triangles, ${processedGeometry.vertexCount} vertices.`);
         console.log(`Segments processed: ${dislocationData.data.length}`);
-
-        const bufferSizeMB = (gltf.buffers[0].byteLength / (1024 * 1024)).toFixed(2);
-        console.log(`Buffer size: ${bufferSizeMB} MB`);
     }
 };
 

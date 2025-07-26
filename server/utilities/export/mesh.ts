@@ -21,6 +21,7 @@
 **/
 
 import { Mesh, DefectMeshExportOptions, MeshValidationResult, ProcessedMesh } from '@/types/utilities/export/mesh';
+import { assembleAndWriteGLB } from '@/utilities/export/utils';
 import * as fs from 'fs';
 
 class MeshExporter{
@@ -111,15 +112,10 @@ class MeshExporter{
         }
 
         const processedMesh = this.processMeshGeometry(mesh, opts);
-        const gltf = this.createMeshGLTF(processedMesh, opts);
-
-        fs.writeFileSync(outputFilePath, JSON.stringify(gltf, null, 2));
+        this.createMeshGLTF(processedMesh, opts, outputFilePath);
 
         console.log(`Mesh successfully exported to: ${outputFilePath}`);
         console.log(`Final statistics: ${processedMesh.triangleCount} triangles, ${processedMesh.vertexCount} vertices.`);
-
-        const bufferSizeMB = (gltf.buffers[0].byteLength / (1024 * 1024)).toFixed(2);
-        console.log(`Buffer size: ${bufferSizeMB} MB`);
     }
 
     private processMeshGeometry(mesh: Mesh, options: Required<DefectMeshExportOptions>): ProcessedMesh{
@@ -202,7 +198,11 @@ class MeshExporter{
         return { positions, normals, indices, vertexCount, triangleCount, bounds };
     }
 
-    private createMeshGLTF(mesh: ProcessedMesh, options: Required<DefectMeshExportOptions>): any{
+    private createMeshGLTF(
+        mesh: ProcessedMesh, 
+        options: Required<DefectMeshExportOptions>, 
+        outputFilePath: string
+    ): any{
         const positionBufferSize = mesh.positions.byteLength;
         const normalBufferSize = mesh.normals.byteLength;
         const indexBufferSize = mesh.indices.byteLength;
@@ -254,8 +254,7 @@ class MeshExporter{
                 { buffer: 0, byteOffset: normalOffset, byteLength: normalBufferSize, target: 34962 },
             ],
             buffers: [{
-                byteLength: totalBufferSize,
-                uri: `data:application/octet-stream;base64,${this.arrayToBase64(arrayBuffer)}`
+                byteLength: totalBufferSize
             }],
             extras: options.metadata.includeOriginalStats ? {
                 stats: {
@@ -284,11 +283,7 @@ class MeshExporter{
             gltf.bufferViews.push({ buffer: 0, byteOffset: indexOffset, byteLength: indexBufferSize, target: 34963 });
         }
 
-        return gltf;
-    }
-
-    private arrayToBase64(array: ArrayBuffer): string {
-        return Buffer.from(array).toString('base64');
+        assembleAndWriteGLB(gltf, arrayBuffer, outputFilePath);
     }
 
     private smoothMesh(
@@ -387,6 +382,7 @@ class MeshExporter{
         }
     }
 
+    // TODO: From base 64 using GLB? 
     public async fromGLTF(inputFilePath: string): Promise<Mesh> {
         console.log(`Loading GLTF file from: ${inputFilePath}`);
         const gltfContent = fs.readFileSync(inputFilePath, 'utf8');
