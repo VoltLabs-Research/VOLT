@@ -78,7 +78,7 @@ class MeshExporter{
         ], [-Infinity, -Infinity, -Infinity]);
     }
 
-    public toGLTF(
+    public toGLB(
         mesh: Mesh,
         outputFilePath: string,
         options: DefectMeshExportOptions = {}
@@ -112,7 +112,7 @@ class MeshExporter{
         }
 
         const processedMesh = this.processMeshGeometry(mesh, opts);
-        this.createMeshGLTF(processedMesh, opts, outputFilePath);
+        this.createMeshGLB(processedMesh, opts, outputFilePath);
 
         console.log(`Mesh successfully exported to: ${outputFilePath}`);
         console.log(`Final statistics: ${processedMesh.triangleCount} triangles, ${processedMesh.vertexCount} vertices.`);
@@ -198,7 +198,7 @@ class MeshExporter{
         return { positions, normals, indices, vertexCount, triangleCount, bounds };
     }
 
-    private createMeshGLTF(
+    private createMeshGLB(
         mesh: ProcessedMesh, 
         options: Required<DefectMeshExportOptions>, 
         outputFilePath: string
@@ -221,7 +221,7 @@ class MeshExporter{
             new Uint32Array(arrayBuffer, indexOffset, mesh.indices.length).set(mesh.indices);
         }
 
-        const gltf: any = {
+        const glb: any = {
             asset: {
                 version: '2.0',
                 generator: 'OpenDXA Mesh Exporter',
@@ -267,7 +267,7 @@ class MeshExporter{
 
         // Only add the mesh primitive if there are triangles to render
         if(mesh.indices.length > 0){
-            gltf.meshes.push({
+            glb.meshes.push({
                 name: 'MeshGeometry',
                 primitives: [{
                     attributes: { POSITION: 0, NORMAL: 1 },
@@ -279,11 +279,11 @@ class MeshExporter{
                 }]
             });
 
-            gltf.accessors.push({ bufferView: 2, componentType: 5125, count: mesh.indices.length, type: 'SCALAR' });
-            gltf.bufferViews.push({ buffer: 0, byteOffset: indexOffset, byteLength: indexBufferSize, target: 34963 });
+            glb.accessors.push({ bufferView: 2, componentType: 5125, count: mesh.indices.length, type: 'SCALAR' });
+            glb.bufferViews.push({ buffer: 0, byteOffset: indexOffset, byteLength: indexBufferSize, target: 34963 });
         }
 
-        assembleAndWriteGLB(gltf, arrayBuffer, outputFilePath);
+        assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
     }
 
     private smoothMesh(
@@ -383,41 +383,41 @@ class MeshExporter{
     }
 
     // TODO: From base 64 using GLB? 
-    public async fromGLTF(inputFilePath: string): Promise<Mesh> {
-        console.log(`Loading GLTF file from: ${inputFilePath}`);
-        const gltfContent = fs.readFileSync(inputFilePath, 'utf8');
-        const gltf = JSON.parse(gltfContent);
+    public async fromGLB(inputFilePath: string): Promise<Mesh> {
+        console.log(`Loading GLB file from: ${inputFilePath}`);
+        const glbContent = fs.readFileSync(inputFilePath, 'utf8');
+        const glb = JSON.parse(glbContent);
 
-        if(!gltf.asset || gltf.asset.version !== '2.0'){
-            throw new Error('Invalid GLTF file: Asset version must be 2.0.');
+        if(!glb.asset || glb.asset.version !== '2.0'){
+            throw new Error('Invalid GLB file: Asset version must be 2.0.');
         }
 
-        if(!gltf.meshes || gltf.meshes.length === 0){
-            throw new Error('GLTF file contains no meshes.');
+        if(!glb.meshes || glb.meshes.length === 0){
+            throw new Error('GLB file contains no meshes.');
         }
 
-        if(!gltf.buffers || gltf.buffers.length === 0){
-            throw new Error('GLTF file contains no buffers.');
+        if(!glb.buffers || glb.buffers.length === 0){
+            throw new Error('GLB file contains no buffers.');
         }
 
-        if(!gltf.bufferViews || gltf.bufferViews.length === 0){
-            throw new Error('GLTF file contains no buffer views.');
+        if(!glb.bufferViews || glb.bufferViews.length === 0){
+            throw new Error('GLB file contains no buffer views.');
         }
 
-        if(!gltf.accessors || gltf.accessors.length === 0){
-            throw new Error('GLTF file contains no accessors.');
+        if(!glb.accessors || glb.accessors.length === 0){
+            throw new Error('GLB file contains no accessors.');
         }
 
-        const meshGLTF = gltf.meshes[0];
-        if(!meshGLTF.primitives || meshGLTF.primitives.length === 0){
-            throw new Error('Mesh in GLTF file contains no primitives.');
+        const meshGLB = glb.meshes[0];
+        if(!meshGLB.primitives || meshGLB.primitives.length === 0){
+            throw new Error('Mesh in GLB file contains no primitives.');
         }
 
-        const primitive = meshGLTF.primitives[0];
+        const primitive = meshGLB.primitives[0];
 
-        const buffer = gltf.buffers[0];
+        const buffer = glb.buffers[0];
         if(!buffer.uri || !buffer.uri.startsWith('data:application/octet-stream;base64,')){
-            throw new Error('Unsupported GLTF buffer format. Only base64-encoded buffers are supported for now.');
+            throw new Error('Unsupported GLB buffer format. Only base64-encoded buffers are supported for now.');
         }
 
         const base64Data = buffer.uri.split(',')[1];
@@ -427,8 +427,8 @@ class MeshExporter{
         let facets: { vertices: [number, number, number] }[] = [];
 
         if(primitive.attributes && primitive.attributes.POSITION !== undefined){
-            const positionAccessor = gltf.accessors[primitive.attributes.POSITION];
-            const positionBufferView = gltf.bufferViews[positionAccessor.bufferView];
+            const positionAccessor = glb.accessors[primitive.attributes.POSITION];
+            const positionBufferView = glb.bufferViews[positionAccessor.bufferView];
 
             const positionArrayBuffer = new Float32Array(
                 binaryData.buffer,
@@ -444,13 +444,13 @@ class MeshExporter{
                 ]);
             }
         }else{
-            throw new Error('GLTF primitive does not contain POSITION attribute.');
+            throw new Error('GLB primitive does not contain POSITION attribute.');
         }
 
         // facets
         if(primitive.indices !== undefined){
-            const indexAccessor = gltf.accessors[primitive.indices];
-            const indexBufferView = gltf.bufferViews[indexAccessor.bufferView];
+            const indexAccessor = glb.accessors[primitive.indices];
+            const indexBufferView = glb.bufferViews[indexAccessor.bufferView];
 
             // Determine array type based on componentType (5121=UNSIGNED_BYTE, 5123=UNSIGNED_SHORT, 5125=UNSIGNED_INT)
             let indexArray: Uint8Array | Uint16Array | Uint32Array;
@@ -489,18 +489,18 @@ class MeshExporter{
                 });
             }
         }else{
-            console.warn('GLTF primitive does not contain indices. Mesh might be a point cloud or line set.');
+            console.warn('GLB primitive does not contain indices. Mesh might be a point cloud or line set.');
         }
 
         const points = positions.map((pos, index) => ({ index, position: pos }));
 
-        console.log(`GLTF loaded: ${points.length} points, ${facets.length} facets.`);
+        console.log(`GLB loaded: ${points.length} points, ${facets.length} facets.`);
 
         return {
             data: {
                 points,
                 facets,
-                metadata: gltf.extras || {} 
+                metadata: glb.extras || {} 
             }
         };
     }
@@ -509,10 +509,10 @@ class MeshExporter{
 export default MeshExporter;
 
 /*
-async function processGltfFile(inputPath: string, outputPath: string, smoothIterations: number) {
+async function processGlbFile(inputPath: string, outputPath: string, smoothIterations: number) {
     const exporter = new MeshExporter();
-    const loadedMesh = await exporter.fromGLTF(inputPath);
-    exporter.toGLTF(loadedMesh, outputPath, {
+    const loadedMesh = await exporter.fromGLB(inputPath);
+    exporter.toGLB(loadedMesh, outputPath, {
         smoothIterations: smoothIterations,
         generateNormals: true,
         enableDoubleSided: true,
@@ -524,9 +524,9 @@ async function processGltfFile(inputPath: string, outputPath: string, smoothIter
     });
 }
 
-const inputGltfPath = '/home/rodyherrera/Escritorio/Development/OpenDXA/server/storage/trajectories/61b3c0e9-2939-4b31-a872-226948cabe06/gltf/frame_0_interface_mesh.gltf';
-const outputGltfPath = './output_taubin_smoothed_mesh.gltf'; 
+const inputGlbPath = '/home/rodyherrera/Escritorio/Development/OpenDXA/server/storage/trajectories/61b3c0e9-2939-4b31-a872-226948cabe06/glb/frame_0_interface_mesh.glb';
+const outputGlbPath = './output_taubin_smoothed_mesh.glb'; 
 const iterations = 8; 
-processGltfFile(inputGltfPath, inputGltfPath, iterations);
+processGlbFile(inputGlbPath, inputGlbPath, iterations);
 
 */

@@ -27,8 +27,8 @@ import useSlicingPlanes from '@/hooks/useSlicingPlanes';
 import { useFrame } from '@react-three/fiber';
 import { useBVH } from '@react-three/drei';
 import { Vector3, BufferGeometry, Material } from 'three';
-import { useGltfScene } from '@/hooks/useGLTFScene';
-import { getOptimizedMaterial } from '@/utilities/gltf/modelUtils';
+import { useGlbScene } from '@/hooks/useGLBScene';
+import { getOptimizedMaterial } from '@/utilities/glb/modelUtils';
 import useEditorStore from '@/stores/editor';
 
 interface TimestepViewerProps {
@@ -65,12 +65,12 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     const instancePositions = useRef<Vector3[]>([]);
     const slicePlaneConfig = useEditorStore((state) => state.slicePlaneConfig);
     const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig);
-    const currentGltfUrl = useEditorStore((state) => state.currentGltfUrl);
-    const nextGltfUrl = useEditorStore((state) => state.nextGltfUrl);
+    const currentGlbUrl = useEditorStore((state) => state.currentGlbUrl);
+    const nextGlbUrl = useEditorStore((state) => state.nextGlbUrl);
 
-    const { meshRef, modelBounds } = useGltfScene({
-        currentGltfUrl,
-        nextGltfUrl,
+    const { meshRef, modelBounds } = useGlbScene({
+        currentGlbUrl,
+        nextGlbUrl,
         sliceClippingPlanes,
         position,
         rotation,

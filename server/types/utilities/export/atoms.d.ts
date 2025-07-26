@@ -22,7 +22,7 @@
 
 import { LammpsAtom, TimestepInfo } from '@/types/utilities/lammps';
 
-export interface GLTFExportOptions{
+export interface GLBExportOptions{
     atomRadius?: number;
     maxAtoms?: number;
     maxInstancesPerMesh?: number;

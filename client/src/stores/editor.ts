@@ -51,8 +51,8 @@ interface EditorState{
     isModelLoading: boolean;
     analysisConfig: AnalysisConfig;
     timestepData: TimestepData,
-    currentGltfUrl: TrajectoryGLTFs | null;
-    nextGltfUrl: TrajectoryGLTFs | null;
+    currentGlbUrl: TrajectoryGLBs | null;
+    nextGlbUrl: TrajectoryGLBs | null;
     activeSceneObject: 'trajectory' | 'dislocations' | 'defect_mesh' |
                        'core_atoms' | 'interface_mesh' | 'atoms_colored_by_type';
 }
@@ -71,7 +71,7 @@ interface EditorActions{
     reset: () => void;
 }
 
-export interface TrajectoryGLTFs {
+export interface TrajectoryGLBs {
     trajectory: string;
     defect_mesh: string;
     interface_mesh: string;
@@ -82,7 +82,7 @@ export interface TrajectoryGLTFs {
 
 const initialAnalysisConfig: AnalysisConfig = {
     crystalStructure: 'BCC',
-    identificationMode: 'PTM',
+    identificationMode: 'CNA',
     maxTrialCircuitSize: 14.0,
     circuitStretchability: 9.0,
     defectMeshSmoothingLevel: 8,
@@ -108,8 +108,8 @@ const initialState: EditorState = {
     slicePlaneConfig: initialSlicePlaneConfig,
     analysisConfig: initialAnalysisConfig,
     timestepData: { timesteps: [], minTimestep: 0, maxTimestep: 0, timestepCount: 0 },
-    currentGltfUrl: null,
-    nextGltfUrl: null,
+    currentGlbUrl: null,
+    nextGlbUrl: null,
     activeSceneObject: 'trajectory',
 };
 
@@ -121,8 +121,8 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
         if(!trajectory?.frames || trajectory.frames.length === 0){
             return {
                 timestepData: initialState.timestepData,
-                currentGltfUrl: null,
-                nextGltfUrl: null
+                currentGlbUrl: null,
+                nextGlbUrl: null
             };
         }
 
@@ -134,12 +134,12 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
             timestepCount: timesteps.length
         };
 
-        let currentGltfUrl = null;
-        let nextGltfUrl = null;
+        let currentGlbUrl = null;
+        let nextGlbUrl = null;
 
         if(trajectory?._id && currentTimestep !== undefined && timesteps.length > 0){
-            const buildUrl = (ts: number, type = '') => `/trajectories/${trajectory._id}/gltf/${ts}?type=${type}`;
-            currentGltfUrl = {
+            const buildUrl = (ts: number, type = '') => `/trajectories/${trajectory._id}/glb/${ts}?type=${type}`;
+            currentGlbUrl = {
                 trajectory: buildUrl(currentTimestep),
                 defect_mesh: buildUrl(currentTimestep, 'defect_mesh'),
                 interface_mesh: buildUrl(currentTimestep, 'interface_mesh'),
@@ -152,7 +152,7 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
             if(currentIndex !== -1 && timesteps.length > 1){
                 const nextIndex = (currentIndex + 1) % timesteps.length;
                 const nextTimestep = timesteps[nextIndex];
-                nextGltfUrl = {
+                nextGlbUrl = {
                     trajectory: buildUrl(nextTimestep),
                     defect_mesh: buildUrl(nextTimestep, 'defect_mesh'),
                     interface_mesh: buildUrl(nextTimestep, 'interface_mesh'),
@@ -163,7 +163,7 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
             }
         }
 
-        return { timestepData, currentGltfUrl, nextGltfUrl };
+        return { timestepData, currentGlbUrl, nextGlbUrl };
     };
 
     return {

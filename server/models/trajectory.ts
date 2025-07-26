@@ -21,7 +21,7 @@
 **/
 
 import mongoose, { Schema, Model } from 'mongoose';
-import { rmdir } from 'fs/promises';
+import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 // @ts-ignore
@@ -34,7 +34,7 @@ import Dislocations from '@/models/dislocations';
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
     natoms: { type: Number, required: true },
-    gltfPath: { type: String, required: true },
+    glbPath: { type: String, required: true },
     boxBounds: {
         xlo: { type: Number, required: true },
         xhi: { type: Number, required: true },
@@ -101,7 +101,7 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
 
     try{
         if(existsSync(trajectoryPath)){
-            await rmdir(trajectoryPath, { recursive: true });
+            await rm(trajectoryPath, { recursive: true });
         }
 
         await StructureAnalysis.deleteMany({ trajectory: _id });

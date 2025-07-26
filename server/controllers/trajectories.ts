@@ -22,7 +22,7 @@
 
 import { NextFunction, Request, Response } from 'express';
 import { join, resolve } from 'path';
-import { access, stat, readdir, mkdir, rmdir, writeFile } from 'fs/promises';
+import { access, stat, readdir, mkdir, rm, writeFile } from 'fs/promises';
 import { constants } from 'fs';
 import { isValidObjectId } from 'mongoose';
 import { v4 } from 'uuid';
@@ -43,7 +43,7 @@ export const getTrajectoryById = factory.getOne();
 export const updateTrajectoryById = factory.updateOne();
 export const deleteTrajectoryById = factory.deleteOne();
 
-export const listTrajectoryGLTFFiles = async (req: Request, res: Response) => {
+export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
 
     if(!trajectory){
@@ -54,15 +54,15 @@ export const listTrajectoryGLTFFiles = async (req: Request, res: Response) => {
     }
 
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-    const gltfDir = join(basePath, trajectory.folderId, 'gltf');
+    const glbDir = join(basePath, trajectory.folderId, 'glb');
 
     let files: string[];
     try{
-        files = await readdir(gltfDir);
+        files = await readdir(glbDir);
     }catch(err){
         return res.status(500).json({
             status: 'error',
-            data: { error: 'Failed to read GLTF directory' },
+            data: { error: 'Failed to read GLB directory' },
         });
     }
 
@@ -74,11 +74,11 @@ export const listTrajectoryGLTFFiles = async (req: Request, res: Response) => {
     };
 
     for(const file of files){
-        const match = file.match(/^frame_\d+_([a-zA-Z0-9_]+)\.gltf$/);
+        const match = file.match(/^frame_\d+_([a-zA-Z0-9_]+)\.glb$/);
         if(match){
             const type= match[1];
             if(type in typeMap){
-                typeMap[type] = join('gltf', file);
+                typeMap[type] = join('glb', file);
             }
         }
     }
@@ -89,7 +89,7 @@ export const listTrajectoryGLTFFiles = async (req: Request, res: Response) => {
     })
 };
 
-export const getTrajectoryGLTF = async (req: Request, res: Response) => {
+export const getTrajectoryGLB = async (req: Request, res: Response) => {
     const { timestep } = req.params;
     const { type } = req.query;
     const trajectory = res.locals.trajectory;
@@ -107,24 +107,25 @@ export const getTrajectoryGLTF = async (req: Request, res: Response) => {
         ? `frame_${timestep}_${type}.glb`
         : `${timestep}.glb`;
 
-    const gltfFilePath = join(basePath, trajectory.folderId, 'gltf', fileName);
+    const glbFilePath = join(basePath, trajectory.folderId, 'glb', fileName);
+    console.log(glbFilePath);
 
     try{
-        await access(gltfFilePath, constants.F_OK);
+        await access(glbFilePath, constants.F_OK);
     }catch(error){
         return res.status(404).json({
             status: 'error',
-            data: { error: `GLTF file for timestep ${timestep} not found` }
+            data: { error: `GLB file for timestep ${timestep} not found` }
         });
     }
 
-    const fileStats = await stat(gltfFilePath);
+    const fileStats = await stat(glbFilePath);
     res.setHeader('Content-Type', 'model/gltf+json');
     res.setHeader('Content-Length', fileStats.size);
-    res.setHeader('Content-Disposition', `inline; filename="${trajectory.name}_${timestep}.gltf"`);
+    res.setHeader('Content-Disposition', `inline; filename="${trajectory.name}_${timestep}.glb"`);
     // res.setHeader('Cache-Control', 'public, max-age=86400'); 
 
-    res.sendFile(gltfFilePath);
+    res.sendFile(glbFilePath);
 };
 
 export const createTrajectory = async (req: Request, res: Response, next: NextFunction) => {
@@ -132,10 +133,10 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
 
     const folderId = v4();
     const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
-    const gltfFolderPath = join(folderPath, 'gltf');
+    const glbFolderPath = join(folderPath, 'glb');
 
     await mkdir(folderPath, { recursive: true });
-    await mkdir(gltfFolderPath, { recursive: true });
+    await mkdir(glbFolderPath, { recursive: true });
 
     const validFiles = [];
     const frames = [];
@@ -158,7 +159,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
 
             const frameData = {
                 ...frameInfo,
-                gltfPath: `gltf/${frameInfo.timestep}.gltf`
+                glbPath: `glb/${frameInfo.timestep}.glb`
             };
 
             frames.push(frameData);
@@ -184,7 +185,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     }
 
     if(validFiles.length === 0){
-        await rmdir(folderPath, { recursive: true });
+        await rm(folderPath, { recursive: true });
         return next(new RuntimeError('No valid files for trajectory', 400));
     }
 
@@ -219,7 +220,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             })),
             teamId,
             folderPath,
-            gltfFolderPath
+            glbFolderPath
         };
         
         jobs.push(job);

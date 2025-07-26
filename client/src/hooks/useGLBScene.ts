@@ -23,16 +23,16 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Group, Mesh, Box3, Object3D, BufferGeometry, Material, Plane } from 'three';
-import { calculateModelBounds, calculateOptimalTransforms } from '@/utilities/gltf/modelUtils';
-import { getOptimizedMaterial } from '@/utilities/gltf/modelUtils';
+import { calculateModelBounds, calculateOptimalTransforms } from '@/utilities/glb/modelUtils';
+import { getOptimizedMaterial } from '@/utilities/glb/modelUtils';
 import useThrottledCallback from '@/hooks/useThrottledCallback';
 import useEditorStore from '@/stores/editor';
-import loadGLTF, { preloadGLTFs, modelCache } from '@/utilities/gltf/loader';
+import loadGLB, { preloadGLBs, modelCache } from '@/utilities/glb/loader';
 import * as THREE from 'three';
 
-interface UseGltfSceneProps {
-    currentGltfUrl: any;
-    nextGltfUrl: any;
+interface UseGlbSceneProps {
+    currentGlbUrl: any;
+    nextGlbUrl: any;
     sliceClippingPlanes: Plane[];
     position: { x?: number; y?: number; z?: number };
     rotation: { x?: number; y?: number; z?: number };
@@ -42,9 +42,9 @@ interface UseGltfSceneProps {
     updateThrottle: number;
 }
 
-export const useGltfScene = ({
-    currentGltfUrl,
-    nextGltfUrl,
+export const useGlbScene = ({
+    currentGlbUrl,
+    nextGlbUrl,
     sliceClippingPlanes,
     position,
     rotation,
@@ -52,7 +52,7 @@ export const useGltfScene = ({
     enableInstancing,
     onGeometryReady,
     updateThrottle,
-}: UseGltfSceneProps) => {
+}: UseGlbSceneProps) => {
     const { scene } = useThree();
     const activeSceneObject = useEditorStore((state) => state.activeSceneObject);
     const modelRef = useRef<Group | null>(null);
@@ -90,26 +90,30 @@ export const useGltfScene = ({
 
     const updateSceneInternal = useCallback(async () => {
         setIsModelLoading(true);
-        if(!currentGltfUrl || !activeSceneObject){
+
+        if(!currentGlbUrl || !activeSceneObject){
             return;
         }
 
-        const targetUrl = currentGltfUrl[activeSceneObject];
+        const targetUrl = currentGlbUrl[activeSceneObject];
+        console.log(targetUrl)
         //if(!targetUrl || targetUrl === modelRef.current?.userData.gltfUrl) return;
 
         try{
-            const loadedModel = await loadGLTF(targetUrl);
+            const loadedModel = await loadGLB(targetUrl);
+            console.log('loaded model')
             
-            // We render the GLTF of the next frame given what the user is viewing 
+            // We render the GLB of the next frame given what the user is viewing 
             // in the current frame. Why would we load things the user isn't going 
             // to touch? Perhaps it will be useful in the future for the user 
             // to be able to decide what to preload.
             // We preload dislocations because the sizes are negligible (~1mb - ~2mb).
-            preloadGLTFs([
-                currentGltfUrl?.dislocations,
-                nextGltfUrl?.dislocations,
-                nextGltfUrl?.[activeSceneObject]
+            preloadGLBs([
+                currentGlbUrl?.dislocations,
+                nextGlbUrl?.dislocations,
+                nextGlbUrl?.[activeSceneObject]
             ]);
+
 
             if (!loadedModel) {
                 console.warn(`No se pudo cargar el modelo para la URL: ${targetUrl}`);
@@ -117,7 +121,7 @@ export const useGltfScene = ({
             }
             
             const newModel = loadedModel.clone();
-            newModel.userData.gltfUrl = targetUrl;
+            newModel.userData.glbUrl = targetUrl;
             
             applyOptimizations(newModel);
             const bounds = calculateModelBounds({ scene: newModel });
@@ -150,11 +154,11 @@ export const useGltfScene = ({
             scene.add(newModel);
             modelRef.current = newModel;
         }catch(error){
-            console.error('Error loading GLTF:', error);
+            console.error('Error loading GLB:', error);
         }finally{
             setIsModelLoading(false);
         }
-    }, [currentGltfUrl, activeSceneObject, sliceClippingPlanes]);
+    }, [currentGlbUrl, activeSceneObject, sliceClippingPlanes]);
 
     const throttledUpdateScene = useThrottledCallback(updateSceneInternal, updateThrottle);
 

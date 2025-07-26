@@ -25,7 +25,7 @@ import { parentPort } from 'worker_threads';
 import { join } from 'path';
 import { unlink } from 'fs/promises';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
-import LAMMPSToGLTFExporter from '@/utilities/export/atoms';
+import LAMMPSToGLBExporter from '@/utilities/export/atoms';
 import '@config/env';
 
 const logMemoryUsage = (context: string) => {
@@ -78,14 +78,14 @@ const processJob = async (job: TrajectoryProcessingJob) => {
             }
 
             try{
-                // Create GLTF file path
-                const gltfFilePath = join(job.gltfFolderPath, `${frameData.timestep}.gltf`);
+                // Create glb file path
+                const glbFilePath = join(job.glbFolderPath, `${frameData.timestep}.glb`);
                 
-                // Process GLTF export
-                const gltfExporter = new LAMMPSToGLTFExporter();
-                gltfExporter.exportAtomsToGLTF(
+                // Process glb export
+                const glbExporter = new LAMMPSToGLBExporter();
+                glbExporter.exportAtomsToGLB(
                     frameFilePath,
-                    gltfFilePath,
+                    glbFilePath,
                     extractTimestepInfo,
                     { maxInstancesPerMesh: 5000 }
                 );

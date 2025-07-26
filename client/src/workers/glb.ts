@@ -22,6 +22,7 @@
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
 const loader = new GLTFLoader();
 const draco = new DRACOLoader();
@@ -30,6 +31,7 @@ draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 draco.setDecoderConfig({ type: 'wasm' });
 draco.preload();
 
+loader.setMeshoptDecoder(MeshoptDecoder);
 loader.setDRACOLoader(draco);
 
 self.onmessage = async (event: MessageEvent<{ url: string; token: string | null; id: string }>) => {
@@ -47,12 +49,12 @@ self.onmessage = async (event: MessageEvent<{ url: string; token: string | null;
             throw new Error(`Error in request: ${url}`);
         }
 
-        const gltfBuffer = await response.arrayBuffer();
-        const gltf = await loader.parseAsync(gltfBuffer, '');
-        const sceneJSON = gltf.scene.toJSON();
+        const glbBuffer = await response.arrayBuffer();
+        const glb = await loader.parseAsync(glbBuffer, '');
+        const sceneJSON = glb.scene.toJSON();
 
         const buffers: ArrayBuffer[] = [];
-        gltf.parser.getDependencies('buffer').then((bufferViews) => {
+        glb.parser.getDependencies('buffer').then((bufferViews) => {
              bufferViews.forEach(bufferView => {
                 if(!buffers.includes(bufferView.buffer)){
                     buffers.push(bufferView.buffer);

@@ -290,7 +290,7 @@ class DislocationExporter{
         };
     }
 
-    private createGLTF(
+    private createGLB(
         geometry: ProcessedDislocationGeometry,
         options: Required<DislocationExportOptions>,
         outputFilePath: string
@@ -337,7 +337,7 @@ class DislocationExporter{
             ).set(geometry.indices)
         }
 
-        const gltf: any = {
+        const glb: any = {
             asset: {
                 version: '2.0',
                 generator: 'OpenDXA Dislocation Exporter',
@@ -400,14 +400,14 @@ class DislocationExporter{
 
         // Add color accessor and buffer view if colors are present
         if(geometry.colors){
-            gltf.accessors.push({
+            glb.accessors.push({
                 bufferView: 2,
                 componentType: 5126,
                 count: geometry.vertexCount,
                 type: 'VEC4'
             });
 
-            gltf.bufferViews.push({
+            glb.bufferViews.push({
                 buffer: 0,
                 byteOffset: colorOffset,
                 byteLength: colorBufferSize,
@@ -424,7 +424,7 @@ class DislocationExporter{
                 attributes.COLOR_0 = accessorIndex++;
             }
 
-            gltf.meshes.push({
+            glb.meshes.push({
                 name: 'DislocationGeometry',
                 primitives: [{
                     attributes,
@@ -436,7 +436,7 @@ class DislocationExporter{
             });
 
             // Add index accessor
-            gltf.accessors.push({
+            glb.accessors.push({
                 bufferView: geometry.colors ? 3 : 2,
                 componentType: 5125,
                 count: geometry.indices.length,
@@ -444,7 +444,7 @@ class DislocationExporter{
             });
 
             // Add index buffer view
-            gltf.bufferViews.push({
+            glb.bufferViews.push({
                 buffer: 0,
                 byteOffset: indexOffset,
                 byteLength: indexBufferSize,
@@ -452,7 +452,7 @@ class DislocationExporter{
             });
         }
 
-        assembleAndWriteGLB(gltf, arrayBuffer, outputFilePath);
+        assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
     }
 
     public toGLB(
@@ -491,7 +491,7 @@ class DislocationExporter{
         }
 
         const processedGeometry = this.processGeometry(dislocationData, opts);
-        this.createGLTF(processedGeometry, opts, outputFilePath);
+        this.createGLB(processedGeometry, opts, outputFilePath);
         
         console.log(`Dislocations successfully exported to: ${outputFilePath}`);
         console.log(`Final statistics: ${processedGeometry.triangleCount} triangles, ${processedGeometry.vertexCount} vertices.`);
@@ -503,4 +503,4 @@ export default DislocationExporter;
 /*
 const d = fs.readFileSync('/home/rodyherrera/Escritorio/Development/OpenDXA/opendxa/x/75000_dxa_results_dislocations.json').toString();
 const a = new DislocationExporter();
-a.toGLTF(JSON.parse(d), 'd.gltf');*/
+a.toGLB(JSON.parse(d), 'd.glb');*/

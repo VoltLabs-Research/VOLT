@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
-import { calculateModelBounds } from '@/utilities/gltf/modelUtils';
+import { calculateModelBounds } from '@/utilities/glb/modelUtils';
 
 interface CameraManagerProps {
     modelBounds?: ReturnType<typeof calculateModelBounds>;

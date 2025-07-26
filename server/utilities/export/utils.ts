@@ -22,8 +22,8 @@
 
 import * as fs from 'fs';
 
-export const assembleAndWriteGLB = (gltfJson: any, binaryBuffer: ArrayBuffer, outputFilePath: string): void => {
-    const jsonString = JSON.stringify(gltfJson);
+export const assembleAndWriteGLB = (glbJson: any, binaryBuffer: ArrayBuffer, outputFilePath: string): void => {
+    const jsonString = JSON.stringify(glbJson);
 
     // Prepare the GLB "chunks".
     // The JSON chunk must be 4-byte aligned, padded with spaces (0x20).
@@ -51,7 +51,7 @@ export const assembleAndWriteGLB = (gltfJson: any, binaryBuffer: ArrayBuffer, ou
     dataView.setUint32(byteOffset, 0x46546C67, true); 
     byteOffset += 4;
 
-    // version: 2 (GLTF)
+    // version: 2 (GLB)
     dataView.setUint32(byteOffset, 2, true); 
     byteOffset += 4;
 
@@ -91,9 +91,8 @@ export const assembleAndWriteGLB = (gltfJson: any, binaryBuffer: ArrayBuffer, ou
     new Uint8Array(glbBuffer, byteOffset).set(new Uint8Array(binaryBuffer));
     byteOffset += binaryChunkLength;
 
-    const finalOutputFilePath = outputFilePath.replace(/\.gltf$/, '.glb');
-    fs.writeFileSync(finalOutputFilePath, Buffer.from(glbBuffer));
+    fs.writeFileSync(outputFilePath, Buffer.from(glbBuffer));
 
-    console.log(`Exported GLB: ${finalOutputFilePath}`);
+    console.log(`Exported GLB: ${outputFilePath}`);
     console.log(`File size: ${(totalLength / (1024 * 1024)).toFixed(2)} MB`);
 };

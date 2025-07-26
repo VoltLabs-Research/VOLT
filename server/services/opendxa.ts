@@ -31,7 +31,7 @@ import path from 'path';
 import os from 'os';
 import MeshExporter from '@utilities/export/mesh';
 import DislocationExporter from '@utilities/export/dislocations';
-import LAMMPSToGLTFExporter from '@utilities/export/atoms';
+import LAMMPSToGLBExporter from '@utilities/export/atoms';
 import StructureAnalysis from '@/models/structure-analysis';
 import SimulationCell from '@/models/simulation-cell';
 import Dislocations from '@models/dislocations';
@@ -96,7 +96,7 @@ class OpenDXAService{
     private trajectoryFolderPath: string;
 
     constructor(trajectoryId: string, trajectoryFolderPath: string){
-        this.exportDirectory = path.join(trajectoryFolderPath, 'gltf');
+        this.exportDirectory = path.join(trajectoryFolderPath, 'glb');
         this.trajectoryId = trajectoryId;
         this.trajectoryFolderPath = trajectoryFolderPath;
     }
@@ -259,9 +259,9 @@ class OpenDXAService{
     }
 
     private exportAtomsColoredByType(atoms: AtomsGroupedByType, frame: number): void {
-        const exporter = new LAMMPSToGLTFExporter();
+        const exporter = new LAMMPSToGLBExporter();
         const outputPath = this.getOutputPath(frame, 'atoms_colored_by_type');
-        exporter.exportAtomsTypeToGLTF(atoms, outputPath);
+        exporter.exportAtomsTypeToGLB(atoms, outputPath);
     }
 
     private exportDislocations(dislocation: Dislocation, frame: number): void {
@@ -281,7 +281,7 @@ class OpenDXAService{
     private exportMesh(mesh: Mesh, frame: number, meshType: 'defect' | 'interface' = 'defect'): void {
         const exporter = new MeshExporter();
         const outputPath = this.getOutputPath(frame, `${meshType}_mesh`);
-        exporter.toGLTF(mesh, outputPath, {
+        exporter.toGLB(mesh, outputPath, {
             material: {
                 baseColor: [1.0, 1.0, 1.0, 1.0],
                 metallic: 0.0,

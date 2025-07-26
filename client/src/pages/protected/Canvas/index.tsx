@@ -42,7 +42,7 @@ const EditorPage: React.FC = () => {
     const isLoadingTrajectory = useTrajectoryStore((state) => state.isLoading);
     const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
 
-    const currentGltfUrl = useEditorStore((state) => state.currentGltfUrl);
+    const currentGlbUrl = useEditorStore((state) => state.currentGlbUrl);
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
     const selectTrajectory = useEditorStore((state) => state.selectTrajectory);
     const showEditorWidgets = useUIStore((state) => state.showEditorWidgets);
@@ -108,7 +108,7 @@ const EditorPage: React.FC = () => {
             <div className='editor-timestep-viewer-container'>
                 <FileUpload onUploadSuccess={handleTrajectorySelection}>
                     <Scene3D>
-                        {currentGltfUrl && (
+                        {currentGlbUrl && (
                             <TimestepViewer
                                 scale={1}
                                 rotation={{ x: Math.PI / 2 }}

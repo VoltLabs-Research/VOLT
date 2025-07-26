@@ -50,15 +50,15 @@ router.route('/')
     );
 
 router.get(
-    '/:id/gltf/:timestep', 
+    '/:id/glb/:timestep', 
     middleware.checkTeamMembershipForTrajectory, 
-    controller.getTrajectoryGLTF
+    controller.getTrajectoryGLB
 );
 
 router.get(
-    '/:id/gltf/',
+    '/:id/glb/',
     middleware.checkTeamMembershipForTrajectory,
-    controller.listTrajectoryGLTFFiles
+    controller.listTrajectoryGLBFiles
 );
 
 router.route('/:id')

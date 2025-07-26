@@ -30,7 +30,7 @@ const pendingRequests = new Map<string, { resolve: (value: THREE.Group) => void;
 
 const getWorker = () => {
     if(!worker){
-        const newWorker = new Worker(new URL('../../workers/gltf.ts', import.meta.url), { type: 'module' });
+        const newWorker = new Worker(new URL('../../workers/glb.ts', import.meta.url), { type: 'module' });
         newWorker.onmessage = (event: MessageEvent) => {
             const { status, sceneJSON, error, id } = event.data;
             const request = pendingRequests.get(id);
@@ -54,13 +54,13 @@ const getWorker = () => {
     return worker;
 };
 
-export const preloadGLTFs = (urls: string[]): void => {
+export const preloadGLBs = (urls: string[]): void => {
     for(const url of urls){
-        loadGLTF(url);
+        loadGLB(url);
     }
 }
 
-const loadGLTF = (url: string): Promise<THREE.Group> => {
+const loadGLB = (url: string): Promise<THREE.Group> => {
     if(modelCache.has(url)){
         return modelCache.get(url)! as Promise<THREE.Group>;
     }
@@ -80,4 +80,4 @@ const loadGLTF = (url: string): Promise<THREE.Group> => {
     return loadPromise;
 };
 
-export default loadGLTF;
+export default loadGLB;
