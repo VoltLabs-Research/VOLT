@@ -26,6 +26,7 @@ export interface QueueOptions {
     jobTimeout?: number;
     enableMetrics?: boolean;
     healthCheckInterval?: number;
+    useStreamingAdd?: boolean;
     gracefulShutdownTimeout?: number;
 }
 

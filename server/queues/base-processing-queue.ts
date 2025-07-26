@@ -22,6 +22,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     protected readonly healthCheckInterval: number;
     protected readonly gracefulShutdownTimeout: number;
     protected readonly numCpus: number;
+    protected readonly useStreamingAdd: boolean;
     
     protected workerPool: WorkerPoolItem[] = [];
     protected jobMap = new Map<number, { job: T; rawData: string; startTime: number }>();
@@ -69,6 +70,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         this.priorityQueueKey = `${this.queueKey}:priority`;
         this.maxConcurrentJobs = options.maxConcurrentJobs || Math.max(2, Math.floor(os.cpus().length * 0.75));
         this.cpuLoadThreshold = options.cpuLoadThreshold || 85;
+        this.useStreamingAdd = options.useStreamingAdd || false;
         this.ramLoadThreshold = options.ramLoadThreshold || 90;
         this.workerIdleTimeout = options.workerIdleTimeout || 300000;
         this.jobTimeout = options.jobTimeout || 900000;
@@ -450,43 +452,66 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     public async addJobs(jobs: T[], teamId: string): Promise<void> {
         if(jobs.length === 0) return;
 
-        const pipeline = redis!.pipeline();
-        const statusPipeline = redis!.pipeline();
-        const priorityJobs: string[] = [];
-        const regularJobs: string[] = [];
-        
-        for(const job of jobs){
-            const serialized = JSON.stringify(job);
+        if(this.useStreamingAdd){
+            // Streaming behavior (one by one)
+            console.log(`[${this.queueName}] Adding ${jobs.length} jobs to queue using streaming mode...`);
+            for(const job of jobs){
+                const stringifiedJob = JSON.stringify(job);
+                await redis!.lpush(this.queueKey, stringifiedJob);
+
+                await this.setJobStatus(job.jobId, 'queued', {
+                    ...(job as any).chunkIndex !== undefined && { chunkIndex: (job as any).chunkIndex },
+                    ...(job as any).totalChunks !== undefined && { totalChunks: (job as any).totalChunks },
+                    teamId: job.teamId
+                });
+
+                // Small pause to avoid overloading the event loop
+                await new Promise((resolve) => setTimeout(resolve, 50));
+            }
+            console.log(`[${this.queueName}] Successfully added all jobs via streaming.`);
+        }else{
+            // Batch mode
+            console.log(`[${this.queueName}] Adding ${jobs.length} jobs to queue using batch mode...`);
+
+            const pipeline = redis!.pipeline();
+            const statusPipeline = redis!.pipeline();
+            const priorityJobs: string[] = [];
+            const regularJobs: string[] = [];
             
-            if(job.priority && job.priority > 5){
-                priorityJobs.push(serialized);
-            } else {
-                regularJobs.push(serialized);
+            for(const job of jobs){
+                const serialized = JSON.stringify(job);
+                
+                // TODO: priority?
+                if(job.priority && job.priority > 5){
+                    priorityJobs.push(serialized);
+                } else {
+                    regularJobs.push(serialized);
+                }
+                
+                statusPipeline.setex(
+                    `${this.statusKeyPrefix}${job.jobId}`,
+                    86400,
+                    JSON.stringify({
+                        jobId: job.jobId,
+                        status: 'queued',
+                        timestamp: new Date().toISOString(),
+                        teamId
+                    })
+                );
             }
             
-            statusPipeline.setex(
-                `${this.statusKeyPrefix}${job.jobId}`,
-                86400,
-                JSON.stringify({
-                    jobId: job.jobId,
-                    status: 'queued',
-                    timestamp: new Date().toISOString(),
-                    teamId
-                })
-            );
+            if(priorityJobs.length > 0){
+                pipeline.lpush(this.priorityQueueKey, ...priorityJobs);
+            }
+            if(regularJobs.length > 0){
+                pipeline.lpush(this.queueKey, ...regularJobs);
+            }
+            
+            await Promise.all([pipeline.exec(), statusPipeline.exec()]);
+            
+            this.emit('jobsAdded', { count: jobs.length, priority: priorityJobs.length, regular: regularJobs.length });
+            console.log(`[${this.queueName}] Added ${jobs.length} jobs (${priorityJobs.length} priority, ${regularJobs.length} regular)`);
         }
-        
-        if(priorityJobs.length > 0){
-            pipeline.lpush(this.priorityQueueKey, ...priorityJobs);
-        }
-        if(regularJobs.length > 0){
-            pipeline.lpush(this.queueKey, ...regularJobs);
-        }
-        
-        await Promise.all([pipeline.exec(), statusPipeline.exec()]);
-        
-        this.emit('jobsAdded', { count: jobs.length, priority: priorityJobs.length, regular: regularJobs.length });
-        console.log(`[${this.queueName}] Added ${jobs.length} jobs (${priorityJobs.length} priority, ${regularJobs.length} regular)`);
     }
 
     protected async setJobStatus(jobId: string, status: string, data: any = {}): Promise<void> {
