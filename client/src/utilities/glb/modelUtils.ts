@@ -26,10 +26,11 @@ import * as THREE from 'three';
 
 type MaterialCache = Map<string, THREE.MeshStandardMaterial>;
 
+const cache: MaterialCache = new Map();
+
 export const getOptimizedMaterial = (
     baseMaterial: THREE.Material,
-    clippingPlanes: THREE.Plane[],
-    cache: MaterialCache
+    clippingPlanes: THREE.Plane[]
 ): THREE.MeshStandardMaterial => {
     const key = `${baseMaterial.uuid}-${clippingPlanes.length}`;
 

@@ -96,12 +96,9 @@ export const useGlbScene = ({
         }
 
         const targetUrl = currentGlbUrl[activeSceneObject];
-        console.log(targetUrl)
-        //if(!targetUrl || targetUrl === modelRef.current?.userData.gltfUrl) return;
 
         try{
             const loadedModel = await loadGLB(targetUrl);
-            console.log('loaded model')
             
             // We render the GLB of the next frame given what the user is viewing 
             // in the current frame. Why would we load things the user isn't going 

@@ -338,6 +338,12 @@ class LAMMPSToGLBExporter{
     }
 
     static detectPerfomanceProfile(atomCount: number): PerformanceProfile{
+        return {
+            atomCount,
+            recommendedMaxAtoms: atomCount,
+            sphereResolution: { segments: 4, rings: 2 },
+        };
+        /*
         if(atomCount <= 10000){
             return {
                 atomCount,
@@ -368,7 +374,7 @@ class LAMMPSToGLBExporter{
                 recommendedMaxAtoms: 150000,
                 sphereResolution: { segments: 4, rings: 2 },
             };
-        }
+        }*/
     }
 
     static calculateRadiusFromDensity(timestepInfo: TimestepInfo, atomCount: number): number{

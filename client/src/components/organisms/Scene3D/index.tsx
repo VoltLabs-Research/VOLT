@@ -4,8 +4,8 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
-import PerformanceController from '@/components/atoms/PerformanceController';
 import useEditorStore from '@/stores/editor';
+import { AdaptiveDpr, Bvh, Preload } from '@react-three/drei';
 import useUIStore from '@/stores/ui';
 import './Scene3D.css';
 
@@ -24,12 +24,21 @@ const CAMERA_CONFIG = {
 
 const GL_CONFIG = {
     localClippingEnabled: true,
-    antialias: true,
+    alpha: true,
+    antialias: false,
     powerPreference: 'high-performance' as const,
     stencil: false,
     depth: true,
     logarithmicDepthBuffer: false,
-    preserveDrawingBuffer: false
+    preserveDrawingBuffer: false,
+    failIfMajorPerformanceCaveat: true,
+    desynchronized: true,
+    precision: 'lowp',
+    xrCompatible: false,
+    autoClear: true,
+    autoClearColor: true,
+    autoClearDepth: true,
+    autoClearStencil: false,  
 };
 
 const SSAO_CONFIG = {
@@ -46,8 +55,8 @@ const SSAO_CONFIG = {
 const ORBIT_CONTROLS_CONFIG = {
     makeDefault: true,
     enableDamping: true,
-    dampingFactor: 0.05,
-    rotateSpeed: 0.8,
+    dampingFactor: 0.08,
+    rotateSpeed: 1.0,
     maxDistance: 50,
     minDistance: 2,
     target: [0, 2, 0] as [number, number, number],
@@ -63,14 +72,14 @@ const DefectLighting = React.memo(() => (
             castShadow
             position={[10, 15, -5]}
             intensity={2.0}
-            shadow-mapSize={[4096, 4096]}
+            shadow-mapSize={[256, 256]}
             shadow-bias={-0.0001}
             shadow-camera-near={1}
-            shadow-camera-far={50}
-            shadow-camera-left={-20}
-            shadow-camera-right={20}
-            shadow-camera-top={20}
-            shadow-camera-bottom={-20}
+            shadow-camera-far={30}
+            shadow-camera-left={-15}
+            shadow-camera-right={15}
+            shadow-camera-top={15}
+            shadow-camera-bottom={-15}
         />
         <directionalLight
             position={[-10, 5, 10]}
@@ -122,11 +131,6 @@ const Scene3D: React.FC<Scene3DProps> = ({
     const showEditorWidgets = useUIStore((state) => state.showEditorWidgets);
 
     const maxDpr = useMemo(() => (window.devicePixelRatio > 1 ? 2 : 1), []);
-    const [dpr, setDpr] = useState(maxDpr);
-
-    useEffect(() => {
-        setDpr(maxDpr);
-    }, [activeSceneObject, maxDpr]);
 
     const handleControlsRef = useCallback((ref: any) => {
         orbitControlsRef.current = ref;
@@ -145,7 +149,9 @@ const Scene3D: React.FC<Scene3DProps> = ({
 
     const canvasStyle = useMemo(() => ({
         backgroundColor: !showEditorWidgets ? '#e6e6e6' : '#1E1E1E',
-        touchAction: 'none'
+        touchAction: 'none',
+        willChange: 'transform',
+        transform: 'translateZ(0)'
     }), [showEditorWidgets]);
 
     const orbitControlsProps = useMemo(() => ({
@@ -173,20 +179,21 @@ const Scene3D: React.FC<Scene3DProps> = ({
     return (
         <Canvas
             gl={GL_CONFIG}
-            shadows='soft'
+            shadows='basic'
             camera={CAMERA_CONFIG}
             style={canvasStyle}
-            dpr={dpr}
+            dpr={[0.8, maxDpr]}
+            frameloop='always'
+            flat={true}
+            performance={{
+                current: 1,
+                min: 0.1,
+                max: 1,
+                debounce: 50,
+            }}
         >
-            <PerformanceController
-                targetFPS={55}
-                recoveryFPS={60}
-                minDpr={0.3}
-                maxDpr={maxDpr}
-                cooldown={0.4}
-                step={0.15}
-                setDpr={setDpr}
-            />
+            <Preload all />
+            <AdaptiveDpr pixelated />
             
             <GizmoHelper
                 alignment='top-left'
@@ -213,7 +220,9 @@ const Scene3D: React.FC<Scene3DProps> = ({
             
             {showCanvasGrid && <CanvasGrid />}
             
-            {children}
+            <Bvh firstHitOnly>
+                {children}
+            </Bvh>
 
             <EffectComposer enableNormalPass={isDefectScene} multisampling={0} renderPriority={1}>
                 {isDefectScene && <SSAO {...SSAO_CONFIG} />}

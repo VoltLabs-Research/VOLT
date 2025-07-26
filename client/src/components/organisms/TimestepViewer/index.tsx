@@ -25,7 +25,7 @@ import CameraManager from '@/components/atoms/CameraManager';
 import useInstancedRenderer from '@/hooks/useInstancedRenderer';
 import useSlicingPlanes from '@/hooks/useSlicingPlanes';
 import { useFrame } from '@react-three/fiber';
-import { useBVH } from '@react-three/drei';
+import { useBVH, Instances } from '@react-three/drei';
 import { Vector3, BufferGeometry, Material } from 'three';
 import { useGlbScene } from '@/hooks/useGLBScene';
 import { getOptimizedMaterial } from '@/utilities/glb/modelUtils';
@@ -95,21 +95,21 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
         }
     });
     
-    const materialCache = useRef(new Map());
-
     const optimizedMaterial = useMemo(() => {
         if(!geometryData.material || !enableInstancing) return null;
-        return getOptimizedMaterial(geometryData.material, sliceClippingPlanes, materialCache.current);
+        return getOptimizedMaterial(geometryData.material, sliceClippingPlanes);
     }, [geometryData.material, sliceClippingPlanes, enableInstancing]);
 
     return (
         <>
             {enableInstancing && geometryData.geometry && optimizedMaterial && (
-                <instancedMesh
-                    ref={instancedMeshRef}
-                    args={[geometryData.geometry, optimizedMaterial, instanceCount]}
-                    frustumCulled={true}
-                />
+                <Instances limit={1000} range={1000}>
+                    <instancedMesh
+                        ref={instancedMeshRef}
+                        args={[geometryData.geometry, optimizedMaterial, instanceCount]}
+                        frustumCulled={true}
+                    />
+                </Instances>
             )}
 
             {autoFit && modelBounds && (
