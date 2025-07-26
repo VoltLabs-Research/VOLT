@@ -100,17 +100,15 @@ export const useGltfScene = ({
         try{
             const loadedModel = await loadGLTF(targetUrl);
             
+            // We render the GLTF of the next frame given what the user is viewing 
+            // in the current frame. Why would we load things the user isn't going 
+            // to touch? Perhaps it will be useful in the future for the user 
+            // to be able to decide what to preload.
+            // We preload dislocations because the sizes are negligible (~1mb - ~2mb).
             preloadGLTFs([
-                currentGltfUrl?.defect_mesh,
-                currentGltfUrl?.interface_mesh,
-                currentGltfUrl?.atoms_colored_by_type,
                 currentGltfUrl?.dislocations,
-
-                nextGltfUrl?.defect_mesh,
-                nextGltfUrl?.interface_mesh,
                 nextGltfUrl?.dislocations,
-                nextGltfUrl?.atoms_colored_by_type,
-                nextGltfUrl?.trajectory
+                nextGltfUrl?.[activeSceneObject]
             ]);
 
             if (!loadedModel) {
