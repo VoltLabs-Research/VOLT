@@ -93,12 +93,10 @@ async function readMsgPackFile(filePath: string): Promise<any> {
 class OpenDXAService{
     private trajectoryId: string;
     private exportDirectory: string;
-    private trajectoryFolderPath: string;
 
     constructor(trajectoryId: string, trajectoryFolderPath: string){
         this.exportDirectory = path.join(trajectoryFolderPath, 'glb');
         this.trajectoryId = trajectoryId;
-        this.trajectoryFolderPath = trajectoryFolderPath;
     }
 
     public async processSingleFile(inputFile: string, options: ConfigParameters): Promise<any> {

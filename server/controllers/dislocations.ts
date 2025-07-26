@@ -81,7 +81,7 @@ export const getTrajectoryDislocations = async (req: Request, res: Response) => 
         });
 
         if(jobsToEnqueue.length > 0){
-            await queueService.addJobs(jobsToEnqueue);
+            await queueService.addJobs(jobsToEnqueue, teamId);
         }
 
         const queueStatus = await queueService.getStatus(); 

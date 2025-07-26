@@ -1,90 +1,139 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
+import { Server } from 'socket.io';
+import { redis } from '@config/redis';
+import { getTrajectoryProcessingQueue } from '@/queues';
+import http from 'http';
 
-import { Server as HttpServer } from 'http';
-import { Server as SocketIOServer } from 'socket.io';
-import { createRedisClient } from '@config/redis';
-import Trajectory from '@models/trajectory';
+let io: Server;
 
-let io: SocketIOServer;
+const getJobsForTeam = async (teamId: string): Promise<any[]> => {
+    if(!teamId) return [];
 
-export const initializeSocketIO = (httpServer: HttpServer) => {
-    io = new SocketIOServer(httpServer, {
-        cors: {
-            origin: [
-                process.env.CLIENT_HOST as string, 
-                process.env.CLIENT_DEV_HOST as string
-            ],
-            methods: ['GET', 'POST']
-        } 
-    });
+    try{
+        console.log(`[Socket] Getting jobs for team ${teamId}...`);
+        const queue = getTrajectoryProcessingQueue();
+        const statusKeyPrefix = `${queue.queueKey}:status:`;
+        const stream = redis?.scanStream({ match: `${statusKeyPrefix}*`, count: 250 });
+        const statusKeys: string[] = [];
 
-    const subscriber = createRedisClient();
-    const channel = 'analysis-status-updates';
-
-    subscriber.subscribe(channel, (err) => {
-        if(err){
-            console.error('Failed to subscribe to Redis channel:', err);
-            return; 
+        for await (const keys of stream){
+            statusKeys.push(...keys);
         }
-        console.log(`Subscribed to Redis channel: ${channel}`);
-    });
 
-    subscriber.on('message', async (ch, message) => {
-        if(ch === channel){
-            try{
-                const update = JSON.parse(message);
-                const trajectory = await Trajectory.findById(update.trajectoryId).select('owner sharedWith');
-                if(trajectory){
-                    // TODO: USE TEAM!
-                    /*const userIds = [trajectory.owner.toString(), ...trajectory.sharedWith.map((id) => id.toString)];
-                    userIds.forEach((userId) => {
-                        io.to(userId).emit('analysisUpdate', update);
-                    });*/
-                }
-            }catch(error){
-                console.error('Error processing message from Redis pub/sub:', error);
+        console.log(`[Socket] Found ${statusKeys.length} total job status keys`);
+        
+        if(statusKeys.length === 0){
+            return [];
+        }
+
+        const jobsWithData = [];
+        for(const key of statusKeys){
+            const statusString = await redis?.get(key);
+            if(!statusString) continue;
+
+            const jobStatus = JSON.parse(statusString);
+            console.log(`[Socket] Job ${jobStatus.jobId}: teamId=${jobStatus.teamId}, looking for=${teamId}`);
+
+            if(jobStatus.teamId === teamId){
+                jobsWithData.push({
+                    jobId: jobStatus.jobId,
+                    status: jobStatus.status,
+                    progress: jobStatus.progress || 0,
+                    chunkIndex: jobStatus.chunkIndex,
+                    totalChunks: jobStatus.totalChunks,
+                });
+                console.log(`[Socket] Added job ${jobStatus.jobId} to team ${teamId} results`);
             }
         }
-    });
 
-    io.on('connectiion', (socket) => {
-        console.log('A user connected with socket ID:', socket.id);
-        const userId = socket.handshake.query.userId as string;
-        if(userId){
-            socket.join(userId);
-            console.log(`User ${userId} joined their personal room.`);
-        }
-
-        socket.on('disconnect', () => {
-            console.log('User disconnected:', socket.id);
-        });
-    });
+        console.log(`[Socket] Found and sending ${jobsWithData.length} initial jobs for team ${teamId}`);
+        return jobsWithData;
+    }catch(err){
+        console.error(`[Socket] Critical error fetching jobs for team ${teamId}:`, err);
+        return [];
+    }
 };
 
-export const getIO = (): SocketIOServer => {
+export const initializeSocketIO = (server: http.Server): Server => {
+    io = new Server(server, {
+        cors: {
+            origin: [
+                // TODO:
+                process.env.CLIENT_DEV_HOST,
+                process.env.CLIENT_HOST
+            ],
+            methods: ['GET', 'POST']
+        }
+    });
+
+    io.on('connection', (socket) => {
+        console.log(`[Socket] User connected: ${socket.id}`);
+
+        socket.on('subscribe_to_team', async ({ teamId, previousTeamId }) => {
+            if(previousTeamId){
+                socket.leave(`team-${previousTeamId}`);
+                console.log(`[Socket] Socket ${socket.id} left room: team-${previousTeamId}`);         
+            }
+
+            if(!teamId) return;
+            
+            socket.join(`team-${teamId}`);
+            console.log(`[Socket] Socket ${socket.id} joined room: team-${teamId}`);
+           
+            const socketsInRoom = await io.in(`team-${teamId}`).fetchSockets();
+            console.log(`[Socket] Room team-${teamId} now has ${socketsInRoom.length} connected socket(s)`);
+
+            const initialJobs = await getJobsForTeam(teamId);
+            socket.emit('team_jobs', initialJobs);
+            console.log(`[Socket] Emitted ${initialJobs.length} initial jobs to socket ${socket.id}`);
+        });
+
+        socket.on('disconnect', () => {
+            console.log(`[Socket] User disconnected: ${socket.id}`);
+        });
+    });
+
+    return io;
+};
+
+export const getIO = (): Server => {
     if(!io){
-        throw new Error('Socket.io not initialized');
+        throw new Error('Socket.io not initialized!');
     }
 
     return io;
-}
+};
+
+export const emitJobUpdate = async (teamId: string, jobData: any): Promise<void> => {
+    if(!teamId || !jobData){
+        console.warn('[Socket] emitJobUpdate called with missing teamId or jobData');
+        return;
+    }
+
+    if(!io){
+        console.warn('[Socket] Socket.IO not initialized yet');
+        return;
+    }
+
+    const socketsInRoom = await io.in(`team-${teamId}`).fetchSockets();
+    console.log(`[Socket] Emitting to ${socketsInRoom.length} socket(s) in room team-${teamId}`);
+
+    if(socketsInRoom.length === 0){
+        console.log(`[Socket] No sockets connected to team-${teamId}, skipping emission`);
+        return;
+    }
+
+        const jobUpdate = {
+        jobId: jobData.jobId,
+        status: jobData.status,
+        progress: jobData.progress || 0,
+        chunkIndex: jobData.chunkIndex,
+        totalChunks: jobData.totalChunks,
+        timestamp: jobData.timestamp || new Date().toISOString(),
+        ...(jobData.error && { error: jobData.error }),
+        ...(jobData.result && { result: jobData.result }),
+        ...(jobData.processingTimeMs && { processingTimeMs: jobData.processingTimeMs })
+    };
+    
+    io.to(`team-${teamId}`).emit('job_update', jobUpdate);
+    console.log(`[Socket]: Emitted job_update for team ${teamId} for job ${jobUpdate.jobId} with status: ${jobUpdate.status}`);
+};

@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import TimestepControls from '@/components/organisms/TimestepControls';
 import Scene3D from '@/components/organisms/Scene3D';
@@ -37,84 +37,124 @@ import AnalysisConfiguration from '@/components/organisms/AnalysisConfiguration'
 import useUIStore from '@/stores/ui';
 import './Canvas.css';
 
-const EditorPage: React.FC = () => {
-    const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const isLoadingTrajectory = useTrajectoryStore((state) => state.isLoading);
-    const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
+const trajectorySelector = (state: any) => state.trajectory;
+const isLoadingSelector = (state: any) => state.isLoading;
+const getTrajectoryByIdSelector = (state: any) => state.getTrajectoryById;
 
-    const currentGlbUrl = useEditorStore((state) => state.currentGlbUrl);
-    const currentTimestep = useEditorStore((state) => state.currentTimestep);
-    const selectTrajectory = useEditorStore((state) => state.selectTrajectory);
-    const showEditorWidgets = useUIStore((state) => state.showEditorWidgets);
-    const isModelLoading = useEditorStore((state) => state.isModelLoading);
+const currentGlbUrlSelector = (state: any) => state.currentGlbUrl;
+const currentTimestepSelector = (state: any) => state.currentTimestep;
+const selectTrajectorySelector = (state: any) => state.selectTrajectory;
+const isModelLoadingSelector = (state: any) => state.isModelLoading;
+
+const showEditorWidgetsSelector = (state: any) => state.showEditorWidgets;
+
+const EditorWidgets = React.memo(({ 
+    trajectory, 
+    currentTimestep 
+}: { 
+    trajectory: any; 
+    currentTimestep: number | undefined; 
+}) => (
+    <>
+        <EditorSidebar />
+        <TrajectoryVisibilityStatusFloatIcon />
+        <SceneTopCenteredOptions />
+        <SlicePlane />
+        <AnalysisConfiguration />
+        
+        {(trajectory && currentTimestep !== undefined) && (
+            <TimestepControls />
+        )}
+    </>
+));
+
+const LoaderOverlay = React.memo(() => (
+    <div className='loader-layer-container'>
+        <Loader scale={0.7} />
+    </div>
+));
+
+const MemoizedTimestepViewer = React.memo(() => (
+    <TimestepViewer
+        scale={1}
+        rotation={{ x: Math.PI / 2 }}
+        position={{ x: 0, y: 0, z: 0 }}
+    />
+));
+
+const EditorPage: React.FC = () => {
+    const trajectory = useTrajectoryStore(trajectorySelector);
+    const isLoadingTrajectory = useTrajectoryStore(isLoadingSelector);
+    const getTrajectoryById = useTrajectoryStore(getTrajectoryByIdSelector);
+    
+    const currentGlbUrl = useEditorStore(currentGlbUrlSelector);
+    const currentTimestep = useEditorStore(currentTimestepSelector);
+    const selectTrajectory = useEditorStore(selectTrajectorySelector);
+    const isModelLoading = useEditorStore(isModelLoadingSelector);
+    
+    const showEditorWidgets = useUIStore(showEditorWidgetsSelector);
 
     const isInitialLoadDone = useRef(false);
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
-   
-    useEffect(() => {
-        selectTrajectory(null);
-    }, []);
 
-    useEffect(() => {
-        if(trajectoryId && !trajectory?._id){
-            getTrajectoryById(trajectoryId).then(() => {
-                const loadedTrajectory = useTrajectoryStore.getState().trajectory;
-                if(loadedTrajectory){
-                    selectTrajectory(loadedTrajectory);
-                }
-            });
-        }
-    }, [trajectoryId, trajectory?._id, getTrajectoryById, selectTrajectory]);
-
-    useEffect(() => {
-        if(trajectoryId && !trajectory?._id && !isInitialLoadDone.current){
-            isInitialLoadDone.current = true;
-            getTrajectoryById(trajectoryId).then(() => {
-                const loadedTrajectory = useTrajectoryStore.getState().trajectory;
-                if(loadedTrajectory){
-                    selectTrajectory(loadedTrajectory);
-                }
-            });
-        }
-    }, [trajectoryId, trajectory?._id, getTrajectoryById, selectTrajectory]);
+    const trajectoryIdRef = useRef(trajectoryId);
+    const currentTrajectoryId = trajectory?._id;
 
     const handleTrajectorySelection = useCallback((trajectoryData: any) => {
         isInitialLoadDone.current = true;
         selectTrajectory(trajectoryData);
     }, [selectTrajectory]);
 
+    const loadTrajectory = useCallback(async (id: string) => {
+        if (isInitialLoadDone.current) return;
+        
+        isInitialLoadDone.current = true;
+        const loadedTrajectory = await getTrajectoryById(id);
+        
+        // Obtener el estado actualizado directamente del store
+        const freshTrajectory = useTrajectoryStore.getState().trajectory;
+        if (freshTrajectory) {
+            selectTrajectory(freshTrajectory);
+        }
+    }, [getTrajectoryById, selectTrajectory]);
+
+    useEffect(() => {
+        selectTrajectory(null);
+        isInitialLoadDone.current = false;
+    }, [selectTrajectory]);
+
+    useEffect(() => {
+        if (!trajectoryId) return;
+        
+        if (currentTrajectoryId === trajectoryId && trajectory) return;
+        
+        if (isInitialLoadDone.current && trajectoryIdRef.current === trajectoryId) return;
+
+        trajectoryIdRef.current = trajectoryId;
+        
+        loadTrajectory(trajectoryId);
+    }, [trajectoryId, currentTrajectoryId, trajectory, loadTrajectory]);
+
+    const shouldShowTimestepViewer = useMemo(() => 
+        Boolean(currentGlbUrl), 
+        [currentGlbUrl]
+    );
+
     return (
         <main className='editor-container'>
             {showEditorWidgets && (
-                <>
-                    <EditorSidebar />
-                    <TrajectoryVisibilityStatusFloatIcon />
-                    <SceneTopCenteredOptions />
-                    <SlicePlane />
-                    <AnalysisConfiguration />
-
-                    {(trajectory && currentTimestep !== undefined) && (
-                        <TimestepControls />
-                    )}
-                </>
+                <EditorWidgets 
+                    trajectory={trajectory} 
+                    currentTimestep={currentTimestep} 
+                />
             )}
 
-            {(isLoadingTrajectory) && (
-                <div className='loader-layer-container'>
-                    <Loader scale={0.7} />
-                </div>
-            )}
+            {isLoadingTrajectory && <LoaderOverlay />}
 
             <div className='editor-timestep-viewer-container'>
                 <FileUpload onUploadSuccess={handleTrajectorySelection}>
                     <Scene3D>
-                        {currentGlbUrl && (
-                            <TimestepViewer
-                                scale={1}
-                                rotation={{ x: Math.PI / 2 }}
-                                position={{ x: 0, y: 0, z: 0 }}
-                            />
-                        )}
+                        {shouldShowTimestepViewer && <MemoizedTimestepViewer />}
                     </Scene3D>
                 </FileUpload>
             </div>

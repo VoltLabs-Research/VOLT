@@ -87,7 +87,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
                     frameFilePath,
                     glbFilePath,
                     extractTimestepInfo,
-                    { maxInstancesPerMesh: 5000 }
+                    { maxInstancesPerMesh: 10000 }
                 );
 
                 // Force GC every 5 files

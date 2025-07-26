@@ -2,8 +2,11 @@ import DashboardContainer from '../../../components/atoms/DashboardContainer';
 import SimulationGrid from '../../../components/molecules/SimulationGrid';
 import FileUpload from '@/components/molecules/FileUpload';
 import './Dashboard.css';
+import useTeamJobs from '@/hooks/useTeamJobs';
 
 const DashboardPage = () => {
+    useTeamJobs();
+    
     return (
         <FileUpload>
             <DashboardContainer pageName='Dashboard'>

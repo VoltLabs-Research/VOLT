@@ -2,6 +2,7 @@ import { BaseJob, WorkerPoolItem, QueueMetrics, QueueOptions, CircuitBreaker } f
 import { createRedisClient, redis } from '@config/redis';
 import { Worker } from 'worker_threads';
 import { EventEmitter } from 'events';
+import { emitJobUpdate } from '@/config/socket';
 import os from 'os';
 import IORedis from 'ioredis';
 
@@ -38,6 +39,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         current: 50,
         multiplier: 1.5
     };
+
     private readonly circuitBreaker: CircuitBreaker = {
         failures: 0,
         lastFailure: 0,
@@ -264,7 +266,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         try{
             await this.setJobStatus(job.jobId, 'running', { 
                 workerId: availableWorkerItem.worker.threadId,
-                startTime: new Date(startTime).toISOString()
+                startTime: new Date(startTime).toISOString(),
+                teamId: job.teamId
             });
             
             availableWorkerItem.worker.postMessage({ job });
@@ -313,7 +316,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 case 'completed':
                     await this.setJobStatus(job.jobId, 'completed', { 
                         result: message.result,
-                        processingTimeMs: processingTime
+                        processingTimeMs: processingTime,
+                        teamId: job.teamId
                     });
                     this.updateMetrics(processingTime, false);
                     this.emit('jobCompleted', { job, result: message.result, processingTime });
@@ -326,7 +330,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 case 'progress':
                     await this.setJobStatus(job.jobId, 'running', { 
                         progress: message.progress,
-                        processingTimeMs: processingTime
+                        processingTimeMs: processingTime,
+                        teamId: job.teamId
                     });
                     this.emit('jobProgress', { job, progress: message.progress });
                     return;
@@ -360,14 +365,16 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 error,
                 retries: retries + 1,
                 maxRetries,
-                processingTimeMs: processingTime
+                processingTimeMs: processingTime,
+                teamId: job.teamId
             });
             this.emit('jobRetry', { job: retryJob, error, attempt: retries + 1 });
         } else {
             await this.setJobStatus(job.jobId, 'failed', { 
                 error,
                 finalAttempt: true,
-                processingTimeMs: processingTime
+                processingTimeMs: processingTime,
+                teamId: job.teamId
             });
             this.updateMetrics(processingTime, true);
             this.emit('jobFailed', { job, error, processingTime });
@@ -415,7 +422,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     .lrem(this.processingKey, 1, rawData)
                     .exec();
                 
-                await this.setJobStatus(job.jobId, 'queued_after_failure', { error: errorMessage });
+                await this.setJobStatus(job.jobId, 'queued_after_failure', { error: errorMessage, teamId: job.teamId });
                 console.log(`[${this.queueName}] Requeued job ${job.jobId} due to worker failure`);
             }catch(error){
                 console.error(`[${this.queueName}] Failed to requeue job:`, error);
@@ -440,7 +447,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }
     }
 
-    public async addJobs(jobs: T[]): Promise<void> {
+    public async addJobs(jobs: T[], teamId: string): Promise<void> {
         if(jobs.length === 0) return;
 
         const pipeline = redis!.pipeline();
@@ -463,7 +470,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 JSON.stringify({
                     jobId: job.jobId,
                     status: 'queued',
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    teamId
                 })
             );
         }
@@ -481,22 +489,29 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         console.log(`[${this.queueName}] Added ${jobs.length} jobs (${priorityJobs.length} priority, ${regularJobs.length} regular)`);
     }
 
-    private async setJobStatus(jobId: string, status: string, data: any = {}): Promise<void> {
+    protected async setJobStatus(jobId: string, status: string, data: any = {}): Promise<void> {
+        const jobInfoFromMap = Array.from(this.jobMap.values()).find((info) => info.job.jobId === jobId);
+
         const statusData = {
             jobId,
             status,
             timestamp: new Date().toISOString(),
+            teamId: data.teamId || jobInfoFromMap?.job.teamId, 
             ...data
         };
-        
+
         try{
             await redis!.setex(
                 `${this.statusKeyPrefix}${jobId}`,
-                86400,
+                86400, 
                 JSON.stringify(statusData)
             );
-        }catch(error){
-            console.error(`[${this.queueName}] Failed to set job status:`, error);
+
+            if(statusData.teamId){
+                emitJobUpdate(statusData.teamId, statusData);
+            }
+        }catch(err){
+            console.error(`[${this.queueName}] Failed to set job status for ${jobId}:`, err);
         }
     }
 

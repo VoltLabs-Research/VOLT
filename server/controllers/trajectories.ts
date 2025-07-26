@@ -227,7 +227,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     }
 
     for(const job of jobs){
-        await trajectoryProcessingQueue.addJobs([job]);
+        await trajectoryProcessingQueue.addJobs([job], teamId);
         
         // Small delay to prevent overwhelming
         await new Promise(resolve => setTimeout(resolve, 100));

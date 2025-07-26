@@ -104,7 +104,7 @@ const initialState: EditorState = {
     playSpeed: 1,
     intervalId: null,
     currentTimestep: undefined,
-    isModelLoading: true,
+    isModelLoading: false,
     slicePlaneConfig: initialSlicePlaneConfig,
     analysisConfig: initialAnalysisConfig,
     timestepData: { timesteps: [], minTimestep: 0, maxTimestep: 0, timestepCount: 0 },

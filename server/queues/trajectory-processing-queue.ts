@@ -1,33 +1,12 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
 import { BaseProcessingQueue } from '@/queues/base-processing-queue';
 import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import { redis } from '@/config/redis';
 import path from 'path';
+import { emitJobUpdate } from '@/config/socket';
 
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
-    constructor() {
+    constructor(){
         const options: QueueOptions = {
             queueName: 'trajectory-processing-queue',
             workerPath: path.resolve(__dirname, '../workers/trajectory-processing.ts'),
@@ -48,7 +27,7 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
         }
     }
 
-    // Override addJobs to handle memory pressure
+    // Override addJobs to handle memory pressure and emit socket updates
     public async addJobs(jobs: TrajectoryProcessingJob[]): Promise<void> {
         if(jobs.length === 0) return;
 
@@ -59,20 +38,13 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
             try{
                 const stringifiedJob = JSON.stringify(job);
                 await redis!.lpush(this.queueKey, stringifiedJob);
-                await redis!.set(
-                    `${this.statusKeyPrefix}${job.jobId}`, 
-                    JSON.stringify({ 
-                        jobId: job.jobId, 
-                        status: 'queued',
-                        chunkIndex: job.chunkIndex,
-                        totalChunks: job.totalChunks
-                    }), 
-                    'EX', 
-                    86400
-                );
-                
-                console.log(`[${this.queueName}] Added job ${job.jobId} (chunk ${job.chunkIndex + 1}/${job.totalChunks})`);
-                
+                await this.setJobStatus(job.jobId, 'queued', {
+                    progress: 0,
+                    chunkIndex: job.chunkIndex,
+                    totalChunks: job.totalChunks,
+                    teamId: job.teamId
+                });
+                console.log(`[${this.queueName}] Added and emitted update for job ${job.jobId} for team ${job.teamId}`);
                 await new Promise(resolve => setTimeout(resolve, 50));
             }catch(error){
                 console.error(`[${this.queueName}] Error adding job ${job.jobId}:`, error);
