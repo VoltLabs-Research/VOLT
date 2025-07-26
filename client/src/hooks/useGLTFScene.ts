@@ -27,7 +27,7 @@ import { calculateModelBounds, calculateOptimalTransforms } from '@/utilities/gl
 import { getOptimizedMaterial } from '@/utilities/gltf/modelUtils';
 import useThrottledCallback from '@/hooks/useThrottledCallback';
 import useEditorStore from '@/stores/editor';
-import loadGLTF, { preloadGLTFs } from '@/utilities/gltf/loader';
+import loadGLTF, { preloadGLTFs, modelCache } from '@/utilities/gltf/loader';
 import * as THREE from 'three';
 
 interface UseGltfSceneProps {
@@ -168,6 +168,7 @@ export const useGltfScene = ({
         return () => {
             if(modelRef.current) scene.remove(modelRef.current);
             materialCache.current.clear();
+            modelCache.clear();
         };
     }, [scene]);
 

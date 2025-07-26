@@ -69,7 +69,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         this.cpuLoadThreshold = options.cpuLoadThreshold || 85;
         this.ramLoadThreshold = options.ramLoadThreshold || 90;
         this.workerIdleTimeout = options.workerIdleTimeout || 300000;
-        this.jobTimeout = options.jobTimeout || 300000;
+        this.jobTimeout = options.jobTimeout || 900000;
         this.enableMetrics = options.enableMetrics !== false;
         this.healthCheckInterval = options.healthCheckInterval || 30000;
         this.gracefulShutdownTimeout = options.gracefulShutdownTimeout || 30000; 

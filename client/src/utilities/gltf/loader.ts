@@ -23,8 +23,7 @@
 import * as THREE from 'three';
 import { v4 } from 'uuid';
 
-// TODO: CLEAR
-const cache = new Map<string, Promise<any>>();
+export const modelCache = new Map<string, Promise<any>>();
 let worker: Worker | undefined;
 
 const pendingRequests = new Map<string, { resolve: (value: THREE.Group) => void; reject: (reason?: any) => void }>();
@@ -62,8 +61,8 @@ export const preloadGLTFs = (urls: string[]): void => {
 }
 
 const loadGLTF = (url: string): Promise<THREE.Group> => {
-    if(cache.has(url)){
-        return cache.get(url)! as Promise<THREE.Group>;
+    if(modelCache.has(url)){
+        return modelCache.get(url)! as Promise<THREE.Group>;
     }
 
     const loadPromise = new Promise<THREE.Group>((resolve, reject) => {
@@ -76,7 +75,7 @@ const loadGLTF = (url: string): Promise<THREE.Group> => {
         workerInstance.postMessage({ url, token, id });
     });
 
-    cache.set(url, loadPromise);
+    modelCache.set(url, loadPromise);
 
     return loadPromise;
 };
