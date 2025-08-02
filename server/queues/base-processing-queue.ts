@@ -32,7 +32,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     protected dispatcherPromise?: Promise<void>;
     protected healthCheckInterval_: NodeJS.Timeout | null = null;
     protected metrics: QueueMetrics;
-    private sessionCheckMap = new Map<string, Promise<void>>();
+
+    private sessionsBeingCleaned = new Set<string>();
     
     private readonly batchSize = 20;
     private readonly dispatchBackoff = {
@@ -326,43 +327,14 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 this.updateMetrics(processingTime, false);
                 this.emit('jobCompleted', { job, result: message.result, processingTime });
                 
-                console.log(`Job ${job.jobId} completed, checking session status...`);
-                const jobStatusString = await redis!.get(`${this.statusKeyPrefix}${job.jobId}`);
-                if(jobStatusString){
-                    const jobStatus = JSON.parse(jobStatusString);
-                    console.log(`Job status data:`, {
-                        jobId: job.jobId,
-                        sessionId: jobStatus.sessionId,
-                        trajectoryId: jobStatus.trajectoryId,
-                        status: jobStatus.status
-                    });
-                    
-                    if(jobStatus.sessionId && jobStatus.trajectoryId){
-                        this.scheduleSessionCheck(jobStatus.sessionId, jobStatus.trajectoryId);
-                    }else{
-                        console.log(`No sessionId or trajectoryId found for job ${job.jobId}`);
-                    }
-                }else{
-                    console.log(`No job status found in Redis for ${job.jobId}`);
-                }
+                await this.checkAndCleanupSession(job);
                 break;
 
             case 'failed':
-                await this.handleJobFailure(job, message.error, processingTime);
+                const shouldCleanupSession = await this.handleJobFailure(job, message.error, processingTime);
                 
-                const failedJobStatusString = await redis!.get(`${this.statusKeyPrefix}${job.jobId}`);
-                if(failedJobStatusString){
-                    const failedJobStatus = JSON.parse(failedJobStatusString);
-                    console.log(`Failed job status data:`, {
-                        jobId: job.jobId,
-                        sessionId: failedJobStatus.sessionId,
-                        trajectoryId: failedJobStatus.trajectoryId,
-                        status: failedJobStatus.status
-                    });
-
-                    if(failedJobStatus.sessionId && failedJobStatus.trajectoryId){
-                        this.scheduleSessionCheck(failedJobStatus.sessionId, failedJobStatus.trajectoryId);
-                    }
+                if(shouldCleanupSession) {
+                    await this.checkAndCleanupSession(job);
                 }
                 break;
             
@@ -383,149 +355,113 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }
     }
 
-    private scheduleSessionCheck(sessionId: string, trajectoryId: string): void {
-        const sessionKey = `${sessionId}:${trajectoryId}`;
+    private async checkAndCleanupSession(job: T): Promise<void> {
+        const sessionId = (job as any).sessionId;
+        const trajectoryId = (job as any).trajectoryId;
         
-        if (this.sessionCheckMap.has(sessionKey)) {
-            console.log(`Session check already in progress for ${sessionId}, skipping duplicate`);
-            return;
-        }
-        
-        console.log(`Scheduling session check for ${sessionId}`);
-        
-        const checkPromise = this.performSessionCheck(sessionId, trajectoryId)
-            .finally(() => {
-                this.sessionCheckMap.delete(sessionKey);
-                console.log(`Session check completed and cleaned up for ${sessionId}`);
-            });
-        
-        this.sessionCheckMap.set(sessionKey, checkPromise);
-    }
-
-    private async performSessionCheck(sessionId: string, trajectoryId: string): Promise<void> {
-        console.log(`Starting session check: sessionId=${sessionId}, trajectoryId=${trajectoryId}`);
-        
-        if(!sessionId){
-            console.log(`No sessionId provided`);
-            return;
-        }
-        
-        const sessionKey = `session:${sessionId}`;
-        const sessionDataString = await redis!.get(sessionKey);
-        
-        if(!sessionDataString){
-            console.log(`No session data found for key: ${sessionKey}`);
-            return;
-        }
-        
-        const sessionData = JSON.parse(sessionDataString);
-        console.log(`Session data:`, sessionData);
-        
-        if(sessionData.status !== 'active'){
-            console.log(`Session ${sessionId} is not active (status: ${sessionData.status})`);
+        if(!sessionId || !trajectoryId) {
+            console.log(`Job ${job.jobId} has no session info, skipping session cleanup`);
             return;
         }
 
-        console.log(`Waiting 2 seconds for all jobs to be persisted...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        let sessionJobStatuses = [];
-        let attempts = 0;
-        const maxAttempts = 3;
-        
-        while (attempts < maxAttempts) {
-            attempts++;
-            console.log(`Attempt ${attempts}/${maxAttempts} to get consistent job data...`);
-            
-            const teamJobsKey = `team:${sessionData.teamId}:jobs`;
-            const allJobIds = await redis!.smembers(teamJobsKey);
-            
-            console.log(`Found ${allJobIds.length} job IDs in team index (attempt ${attempts})`);
-            
-            const currentSessionJobs = [];
-            
-            for(const jobId of allJobIds){
-                const jobStatusString = await redis!.get(`${this.statusKeyPrefix}${jobId}`);
-                if(jobStatusString){
-                    const jobStatus = JSON.parse(jobStatusString);
-                    if(jobStatus.sessionId === sessionId && jobStatus.trajectoryId === trajectoryId){
-                        currentSessionJobs.push(jobStatus);
-                    }
-                }
-            }
-            
-            console.log(`Found ${currentSessionJobs.length} jobs matching session (attempt ${attempts})`);
-            
-            if (attempts === 1 || currentSessionJobs.length === sessionJobStatuses.length) {
-                sessionJobStatuses = currentSessionJobs;
-                if (attempts > 1) {
-                    console.log(`Data consistent across attempts, proceeding...`);
-                }
-                break;
-            } else {
-                console.log(`Data inconsistent: previous=${sessionJobStatuses.length}, current=${currentSessionJobs.length}, retrying...`);
-                sessionJobStatuses = currentSessionJobs;
+        if(this.sessionsBeingCleaned.has(sessionId)) {
+            console.log(`Session ${sessionId} is already being cleaned, skipping`);
+            return;
+        }
+
+        console.log(`🔍 Checking session completion for ${sessionId}`);
+
+        try {
+            const luaScript = `
+                local sessionId = ARGV[1]
+                local trajectoryId = ARGV[2]
+                local teamId = ARGV[3]
+                local statusKeyPrefix = ARGV[4]
                 
-                if (attempts < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
+                local sessionKey = "session:" .. sessionId
+                local counterKey = sessionKey .. ":remaining"
+                local teamJobsKey = "team:" .. teamId .. ":jobs"
+                
+                -- Decrementar contador atómicamente
+                local remaining = redis.call('DECR', counterKey)
+                
+                -- Si remaining <= 0, esta es la señal para limpiar
+                if remaining <= 0 then
+                    -- Obtener datos de sesión
+                    local sessionData = redis.call('GET', sessionKey)
+                    if not sessionData then
+                        return {0, 0, "no_session"}
+                    end
+                    
+                    -- Obtener todos los jobs del team
+                    local allJobIds = redis.call('SMEMBERS', teamJobsKey)
+                    local sessionJobIds = {}
+                    
+                    -- Filtrar jobs de esta sesión
+                    for i = 1, #allJobIds do
+                        local jobStatusKey = statusKeyPrefix .. allJobIds[i]
+                        local jobStatusData = redis.call('GET', jobStatusKey)
+                        
+                        if jobStatusData then
+                            local jobStatus = cjson.decode(jobStatusData)
+                            if jobStatus.sessionId == sessionId and jobStatus.trajectoryId == trajectoryId then
+                                table.insert(sessionJobIds, allJobIds[i])
+                            end
+                        end
+                    end
+                    
+                    -- Eliminar todos los datos de la sesión
+                    redis.call('DEL', sessionKey)
+                    redis.call('DEL', counterKey)
+                    
+                    -- Eliminar job statuses
+                    for i = 1, #sessionJobIds do
+                        redis.call('DEL', statusKeyPrefix .. sessionJobIds[i])
+                        redis.call('SREM', teamJobsKey, sessionJobIds[i])
+                    end
+                    
+                    return {1, #sessionJobIds, "cleaned"}
+                else
+                    return {0, remaining, "pending"}
+                end
+            `;
+
+            const result = await redis!.eval(
+                luaScript, 
+                0, 
+                sessionId, 
+                trajectoryId, 
+                job.teamId, 
+                this.statusKeyPrefix
+            ) as [number, number, string];
+
+            const [shouldClean, count, status] = result;
+
+            if(shouldClean === 1) {
+                this.sessionsBeingCleaned.add(sessionId);
+                
+                console.log(`Session ${sessionId} CLEANED! Deleted ${count} jobs`);
+                
+                console.log(`Emitting session_expired event for team ${job.teamId}`);
+                this.emitSessionExpired(job.teamId, sessionId, trajectoryId);
+                
+                setTimeout(() => {
+                    this.sessionsBeingCleaned.delete(sessionId);
+                }, 10000);
+                
+            } else if(status === "pending") {
+                console.log(`Job ${job.jobId} finished. ${count} jobs still pending in session ${sessionId}`);
+            } else {
+                console.log(`Session ${sessionId} status: ${status}`);
             }
-        }
-        
-        if(sessionJobStatuses.length === 0){
-            console.log(`No jobs found for this session after ${attempts} attempts`);
-            return;
-        }
-        
-        const statusCounts = sessionJobStatuses.reduce((acc, job) => {
-            acc[job.status] = (acc[job.status] || 0) + 1;
-            return acc;
-        }, {});
-        console.log(`Final job status breakdown:`, statusCounts);
-        
-        const allJobsFinished = sessionJobStatuses.every(job => 
-            ['completed', 'failed'].includes(job.status)
-        );
-        
-        console.log(`All jobs finished: ${allJobsFinished}`);
-        
-        const totalExpectedJobs = sessionData.totalJobs;
-        const actualJobsFound = sessionJobStatuses.length;
-        
-        console.log(`Expected jobs: ${totalExpectedJobs}, Found jobs: ${actualJobsFound}`);
-        
-        const sessionComplete = allJobsFinished && actualJobsFound === totalExpectedJobs && sessionJobStatuses.length > 0;
-        
-        if(sessionComplete){
-            console.log(`Session ${sessionId} is COMPLETE! All ${actualJobsFound} jobs finished. Marking as expired immediately...`);
-            
-            const updatedSessionData = {
-                ...sessionData,
-                status: 'expired',
-                expiredAt: new Date().toISOString(),
-                completedAt: new Date().toISOString(), 
-                completedJobs: statusCounts.completed || 0,
-                failedJobs: statusCounts.failed || 0
-            };
-            
-            await redis!.setex(sessionKey, 86400 * 7, JSON.stringify(updatedSessionData));
-            console.log(`Session marked as expired in Redis immediately`);
-            
-            if(sessionData.teamId){
-                console.log(`Emitting session_expired event for team ${sessionData.teamId}`);
-                this.emitSessionExpired(sessionData.teamId, sessionId, trajectoryId);
-            }
-        }else{
-            console.log(`Session not complete yet:`);
-            console.log(`   - All jobs finished: ${allJobsFinished}`);
-            console.log(`   - Expected jobs: ${totalExpectedJobs}, Found: ${actualJobsFound}`);
-            console.log(`   - Waiting for ${totalExpectedJobs - actualJobsFound} more jobs or completion...`);
+
+        } catch(error) {
+            console.error(`Error checking session ${sessionId}:`, error);
+            this.sessionsBeingCleaned.delete(sessionId);
         }
     }
 
     private emitSessionExpired(teamId: string, sessionId: string, trajectoryId: string): void {
-        console.log(`Emitting session_expired: teamId=${teamId}, sessionId=${sessionId}, trajectoryId=${trajectoryId}`);
-        
         const expiredEvent = {
             type: 'session_expired',
             sessionId,
@@ -533,7 +469,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             timestamp: new Date().toISOString()
         };
         
-        console.log(`Session expired event data:`, expiredEvent);
         emitJobUpdate(teamId, expiredEvent);
         console.log(`Session expired event emitted to team ${teamId}`);
     }
@@ -545,7 +480,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         workerItem.timeouts.clear();
     }
 
-    private async handleJobFailure(job: T, error: string, processingTime: number): Promise<void> {
+    private async handleJobFailure(job: T, error: string, processingTime: number): Promise<boolean> {
         const retries = job.retries || 0;
         const maxRetries = job.maxRetries || 3;
         
@@ -561,6 +496,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 teamId: job.teamId
             });
             this.emit('jobRetry', { job: retryJob, error, attempt: retries + 1 });
+            return false;
         } else {
             await this.setJobStatus(job.jobId, 'failed', { 
                 error,
@@ -571,6 +507,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             });
             this.updateMetrics(processingTime, true);
             this.emit('jobFailed', { job, error, processingTime });
+            return true;
         }
     }
 
@@ -647,9 +584,37 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         const sessionStartTime = new Date().toISOString();
         console.log(`Starting new job session: ${sessionId} with ${jobs.length} jobs`);
 
+        const jobsWithSession = jobs.map(job => ({
+            ...job,
+            sessionId,
+            sessionStartTime
+        }));
+
+        const sessionKey = `session:${sessionId}`;
+        const counterKey = `session:${sessionId}:remaining`;
+        
+        const pipeline = redis!.pipeline();
+        
+        pipeline.setex(sessionKey, 86400 * 7, JSON.stringify({
+            sessionId,
+            startTime: sessionStartTime,
+            totalJobs: jobs.length,
+            trajectoryId: (jobs[0] as any).trajectoryId,
+            teamId: jobs[0].teamId,
+            status: 'active'
+        }));
+        
+        pipeline.set(counterKey, jobs.length.toString());
+        pipeline.expire(counterKey, 86400 * 7);
+        
+        await pipeline.exec();
+        
+        console.log(`Session counter initialized: ${jobs.length} jobs remaining for session ${sessionId}`);
+
         if(this.useStreamingAdd){
             console.log(`[${this.queueName}] Adding ${jobs.length} jobs to queue using streaming mode...`);
-            for(const job of jobs){
+            for(let i = 0; i < jobsWithSession.length; i++){
+                const job = jobsWithSession[i];
                 const stringifiedJob = JSON.stringify(job);
                 await redis!.lpush(this.queueKey, stringifiedJob);
 
@@ -670,11 +635,11 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }else{
             console.log(`[${this.queueName}] Adding ${jobs.length} jobs to queue using batch mode...`);
 
-            const pipeline = redis!.pipeline();
+            const queuePipeline = redis!.pipeline();
             const priorityJobs: string[] = [];
             const regularJobs: string[] = [];
             
-            for(const job of jobs){
+            for(const job of jobsWithSession){
                 const serialized = JSON.stringify(job);
                 
                 if(job.priority && job.priority > 5){
@@ -685,15 +650,15 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             }
             
             if(priorityJobs.length > 0){
-                pipeline.lpush(this.priorityQueueKey, ...priorityJobs);
+                queuePipeline.lpush(this.priorityQueueKey, ...priorityJobs);
             }
             if(regularJobs.length > 0){
-                pipeline.lpush(this.queueKey, ...regularJobs);
+                queuePipeline.lpush(this.queueKey, ...regularJobs);
             }
             
-            await pipeline.exec();
+            await queuePipeline.exec();
 
-            const statusPromises = jobs.map(job => 
+            const statusPromises = jobsWithSession.map(job => 
                 this.setJobStatus(job.jobId, 'queued', {
                     teamId: job.teamId,
                     trajectoryId: (job as any).trajectoryId,
@@ -717,16 +682,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             console.log(`[${this.queueName}] Added ${jobs.length} jobs (${priorityJobs.length} priority, ${regularJobs.length} regular) with session ${sessionId}`);
         }
 
-        const sessionKey = `session:${sessionId}`;
-        await redis!.setex(sessionKey, 86400 * 7, JSON.stringify({
-            sessionId,
-            startTime: sessionStartTime,
-            totalJobs: jobs.length,
-            trajectoryId: (jobs[0] as any).trajectoryId,
-            teamId: jobs[0].teamId,
-            status: 'active'
-        }));
-        console.log(`Job session ${sessionId} created and stored in Redis`);
+        console.log(`Job session ${sessionId} created with atomic counter tracking`);
     }
 
     protected async setJobStatus(jobId: string, status: string, data: any = {}): Promise<void> {
@@ -744,8 +700,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         const statusData = {
             jobId,
             status,
-            sessionId: data.sessionId || existingJobData?.sessionId || undefined,
-            sessionStartTime: data.sessionStartTime || existingJobData?.sessionStartTime || undefined,
+            sessionId: data.sessionId || existingJobData?.sessionId || (jobInfoFromMap?.job as any)?.sessionId,
+            sessionStartTime: data.sessionStartTime || existingJobData?.sessionStartTime || (jobInfoFromMap?.job as any)?.sessionStartTime,
             trajectoryId: data.trajectoryId || (jobInfoFromMap?.job as any)?.trajectoryId,
             name: data.name || existingJobData?.name || jobInfoFromMap?.job.name,
             message: data.message || existingJobData?.message || jobInfoFromMap?.job.message,
@@ -755,15 +711,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             totalChunks: data.totalChunks !== undefined ? data.totalChunks : existingJobData?.totalChunks !== undefined ? existingJobData.totalChunks : (jobInfoFromMap?.job as any)?.totalChunks,
             ...data
         };
-
-        if(status === 'completed' || status === 'failed'){
-            console.log(`Setting job status for ${jobId}:`, {
-                status,
-                sessionId: statusData.sessionId,
-                trajectoryId: statusData.trajectoryId,
-                preservedFromExisting: !!existingJobData?.sessionId
-            });
-        }
 
         try{
             const pipeline = redis!.pipeline();
@@ -778,8 +725,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 const teamJobsKey = `team:${statusData.teamId}:jobs`;
                 pipeline.sadd(teamJobsKey, jobId);
                 pipeline.expire(teamJobsKey, 86400 * 30); 
-                
-                console.log(`[${this.queueName}] Job ${jobId} added to team ${statusData.teamId} index with status: ${status}`);
             }
 
             await pipeline.exec();
