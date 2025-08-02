@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import useTeamJobs from '@/hooks/useTeamJobs';
+import { FaCheck } from "react-icons/fa6";
+import formatTimeAgo from '@/utilities/formatTimeAgo';
 import './JobsHistory.css';
 
 const JobsHistory = () => {
@@ -55,8 +57,16 @@ const JobsHistory = () => {
             {jobs.map((job, index) => (
                 <div className='job-container' key={index}>
                     <div className='job-left-container'>
-                        <h3 className='job-name'>{job.name} {job.type}</h3>
+                        <i className='job-icon-container'>
+                            <FaCheck />
+                        </i>
+                        <div className='job-info-container'>
+                            <h3 className='job-name'>{job.name}</h3>
+                            <p className='job-message'>{job.message}</p>
+                        </div>
                     </div>
+
+                    <p className='job-timestamp'>{formatTimeAgo(job.timestamp)}</p>
                 </div>
             ))}
         </div> 
