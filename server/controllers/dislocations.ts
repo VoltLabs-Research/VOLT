@@ -24,12 +24,12 @@ import { Request, Response } from 'express';
 import { readdir, writeFile, readFile } from 'fs/promises';
 import { getAnalysisQueue } from '@/queues';
 import { existsSync } from 'fs';
-import { join } from 'path';
+import { join, basename } from 'path';
 import { v4 } from 'uuid';
 
 export const getTrajectoryDislocations = async (req: Request, res: Response) => {
     try {
-        const { folderId, _id: trajectoryId, teamId, name } = res.locals.trajectory;
+        const { folderId, _id: trajectoryId, team, name, frames } = res.locals.trajectory;
         const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
 
         if(!existsSync(folderPath)){
@@ -75,8 +75,8 @@ export const getTrajectoryDislocations = async (req: Request, res: Response) => 
                 trajectoryId,
                 folderPath,
                 inputFile,
-                teamId,
-                name: 'Dislocation Analysis',
+                teamId: team,
+                name: `Dislocation Analysis - Frame ${basename(inputFile)}/${frames[trajectoryFiles.length - 1].timestep}`,
                 message: name,
                 config: req.body
             };
