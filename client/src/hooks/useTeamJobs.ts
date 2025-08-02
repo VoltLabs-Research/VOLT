@@ -12,6 +12,7 @@ const useTeamJobs = () => {
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const [jobs, setJobs] = useState([]);
     const [isConnected, setIsConnected] = useState(socket.connected);
+    const [isLoading, setIsLoading] = useState(true);
     const previousTeamIdRef = useRef(null);
 
     const sortJobsByTimestamp = (jobsArray) => {
@@ -67,6 +68,7 @@ const useTeamJobs = () => {
             console.log(`[${teamId}] Received initial list of ${initialJobs.length} jobs:`, initialJobs);
             const sortedJobs = sortJobsByTimestamp(initialJobs);
             setJobs(sortedJobs);
+            setIsLoading(false);
         };
 
         const handleJobUpdate = (updatedJob) => {
@@ -110,7 +112,7 @@ const useTeamJobs = () => {
         };
     }, [selectedTeam]);
 
-    return { jobs, isConnected };
+    return { jobs, isConnected, isLoading };
 };
 
 export default useTeamJobs;

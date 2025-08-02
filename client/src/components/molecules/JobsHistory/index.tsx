@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import useTeamJobs from '@/hooks/useTeamJobs';
 import UseAnimations from 'react-useanimations';
 import activity from 'react-useanimations/lib/activity';
-import { Box, Skeleton, Stack } from '@mui/material';
+import JobSkeleton from '@/components/atoms/JobSkeleton';
 import { 
     FaCheck, 
     FaClock, 
@@ -13,52 +13,8 @@ import {
 import './JobsHistory.css';
 
 
-const JobSkeleton: React.FC = () => (
-    <Box
-        sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            py: 1.5,
-            px: 0,
-        }}
-    >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-            <Skeleton 
-                variant="circular" 
-                width={30} 
-                height={30}
-                sx={{ flexShrink: 0 }}
-            />
-            
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Skeleton 
-                    variant="text" 
-                    width="70%" 
-                    height={20}
-                    sx={{ mb: 0.5 }}
-                />
-                <Skeleton 
-                    variant="text" 
-                    width="100px" 
-                    height={16}
-                />
-            </Box>
-        </Box>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-            <Skeleton 
-                variant="rounded" 
-                width={60} 
-                height={18}
-                sx={{ borderRadius: '12px' }}
-            />
-        </Box>
-    </Box>
-);
-
 const JobsHistory = () => {
-    const { jobs, isConnected } = useTeamJobs();
+    const { jobs, isConnected, isLoading } = useTeamJobs();
 
     const statusConfig = {
         'completed': {
@@ -94,12 +50,8 @@ const JobsHistory = () => {
 
     return (
         <div className='jobs-history-container'>
-            {(!isConnected || jobs.length === 0) ? (
-                <Stack spacing={0}>
-                    {Array.from({ length: 6 }, (_, index) => (
-                        <JobSkeleton key={index} />
-                    ))}
-                </Stack>
+            {(!isConnected || isLoading) ? (
+                <JobSkeleton n={10} />
             ) : (
                 jobs.map((job, index) => {
                     const config = getStatusConfig(job.status);
