@@ -14,6 +14,19 @@ const useTeamJobs = () => {
     const [isConnected, setIsConnected] = useState(socket.connected);
     const previousTeamIdRef = useRef(null);
 
+    const sortJobsByTimestamp = (jobsArray) => {
+        return [...jobsArray].sort((a, b) => {
+            if (!a.timestamp && !b.timestamp) return 0;
+            if (!a.timestamp) return 1;
+            if (!b.timestamp) return -1;
+            
+            const timestampA = new Date(a.timestamp);
+            const timestampB = new Date(b.timestamp);
+            
+            return timestampB.getTime() - timestampA.getTime();
+        });
+    };
+
     useEffect(() => {
         const teamId = selectedTeam?._id;
 
@@ -52,20 +65,25 @@ const useTeamJobs = () => {
 
         const handleTeamJobs = (initialJobs) => {
             console.log(`[${teamId}] Received initial list of ${initialJobs.length} jobs:`, initialJobs);
-            setJobs(initialJobs);
+            const sortedJobs = sortJobsByTimestamp(initialJobs);
+            setJobs(sortedJobs);
         };
 
         const handleJobUpdate = (updatedJob) => {
             console.log(`[${teamId}] Received job update:`, updatedJob);
             setJobs((prevJobs) => {
                 const jobExists = prevJobs.some((job) => job.jobId === updatedJob.jobId);
+                let newJobs;
+                
                 if(jobExists){
-                    console.log(` Updating existing job ${updatedJob.jobId}`);
-                    return prevJobs.map((job) => job.jobId === updatedJob.jobId ? { ...job, ...updatedJob } : job);
+                    console.log(`Updating existing job ${updatedJob.jobId}`);
+                    newJobs = prevJobs.map((job) => job.jobId === updatedJob.jobId ? { ...job, ...updatedJob } : job);
                 }else{
                     console.log(`Adding new job ${updatedJob.jobId}`);
-                    return [...prevJobs, updatedJob];
+                    newJobs = [...prevJobs, updatedJob];
                 }
+                
+                return sortJobsByTimestamp(newJobs);
             });
         };
 

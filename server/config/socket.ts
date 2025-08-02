@@ -48,7 +48,18 @@ const getJobsForTeam = async (teamId: string): Promise<any[]> => {
             }
         }
 
-        console.log(`[Socket] Found and sending ${jobsWithData.length} initial jobs for team ${teamId}`);
+        jobsWithData.sort((a, b) => {
+            if(!a.timestamp && !b.timestamp) return 0;
+            if(!a.timestamp) return 1;
+            if(!b.timestamp) return -1;
+            
+            const timestampA = new Date(a.timestamp);
+            const timestampB = new Date(b.timestamp);
+            
+            return timestampB.getTime() - timestampA.getTime();
+        });
+
+        console.log(`[Socket] Found and sending ${jobsWithData.length} initial jobs for team ${teamId} (sorted by timestamp - most recent first)`);
         return jobsWithData;
     }catch(err){
         console.error(`[Socket] Critical error fetching jobs for team ${teamId}:`, err);
