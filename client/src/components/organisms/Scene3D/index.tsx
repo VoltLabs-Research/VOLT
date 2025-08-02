@@ -12,6 +12,7 @@ import './Scene3D.css';
 interface Scene3DProps {
     children?: React.ReactNode;
     cameraControlsEnabled?: boolean;
+    showGizmo?: boolean;
     onCameraControlsRef?: (ref: any) => void;
 }
 
@@ -120,6 +121,7 @@ const TrajectoryLighting = React.memo(() => (
 
 const Scene3D: React.FC<Scene3DProps> = ({
     children,
+    showGizmo = true,
     cameraControlsEnabled = true,
     onCameraControlsRef
 }) => {
@@ -195,20 +197,22 @@ const Scene3D: React.FC<Scene3DProps> = ({
             <Preload all />
             <AdaptiveDpr pixelated />
             
-            <GizmoHelper
-                alignment='top-left'
-                renderPriority={2}
-                margin={[450, 70]} 
-            >
-                <directionalLight position={[5, 5, 5]} intensity={1} />
-                <ambientLight intensity={1.5} />
+            {showGizmo && (
+                <GizmoHelper
+                    alignment='top-left'
+                    renderPriority={2}
+                    margin={[450, 70]} 
+                >
+                    <directionalLight position={[5, 5, 5]} intensity={1} />
+                    <ambientLight intensity={1.5} />
 
-                <GizmoViewport 
-                    scale={30}
-                    hideNegativeAxes={true}
-                    axisColors={['#404040', '#404040', '#404040']} 
-                    labelColor="#a2a2a2" />
-            </GizmoHelper>
+                    <GizmoViewport 
+                        scale={30}
+                        hideNegativeAxes={true}
+                        axisColors={['#404040', '#404040', '#404040']} 
+                        labelColor="#a2a2a2" />
+                </GizmoHelper>
+            )}
 
             {isDefectScene && <DefectLighting />}
             {isTrajectoryScene && <TrajectoryLighting />}

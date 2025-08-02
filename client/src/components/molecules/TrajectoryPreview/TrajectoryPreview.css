@@ -1,0 +1,19 @@
+.trajectory-preview-container{
+    border-radius: 2rem;
+    overflow: hidden;
+    height: 400px;
+    width: 50%;
+    position: relative;
+}
+
+.trajectory-preview-loading-container{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, .1);
+    z-index: 300;
+    backdrop-filter: blur(2px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

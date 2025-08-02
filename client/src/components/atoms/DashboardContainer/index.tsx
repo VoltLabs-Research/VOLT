@@ -30,6 +30,7 @@ const DashboardContainer = ({ children, pageName, className = '' }) => {
 
     return (
         <div className='dashboard-container'>
+            {/*}
             <article className='dashboard-header-container'>
                 <div className='dashboard-header-left-container'>
                     <h3 className='dashboard-header-title'>{pageName}</h3>
@@ -68,6 +69,7 @@ const DashboardContainer = ({ children, pageName, className = '' }) => {
                     </div>
                 </div>
             </article>
+            */}
 
             <div className={className}>
                 {children}

@@ -111,7 +111,6 @@ const EditorPage: React.FC = () => {
         isInitialLoadDone.current = true;
         const loadedTrajectory = await getTrajectoryById(id);
         
-        // Obtener el estado actualizado directamente del store
         const freshTrajectory = useTrajectoryStore.getState().trajectory;
         if (freshTrajectory) {
             selectTrajectory(freshTrajectory);
