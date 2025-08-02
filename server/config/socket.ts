@@ -98,6 +98,7 @@ const getJobsForTeam = async (teamId: string): Promise<any[]> => {
                         progress: jobStatus.progress || 0,
                         chunkIndex: jobStatus.chunkIndex,
                         totalChunks: jobStatus.totalChunks,
+                        trajectoryId: jobStatus.trajectoryId,
                         name: jobStatus.name,
                         message: jobStatus.message,
                         timestamp: jobStatus.timestamp,
@@ -108,10 +109,10 @@ const getJobsForTeam = async (teamId: string): Promise<any[]> => {
                     });
                 }
             }
-
-            console.log(`[Socket] Found ${jobs.length} jobs in ${queueName} queue for team ${teamId}`);
-            return jobs;
         }
+
+        console.log(`[Socket] Found ${jobs.length} jobs in ${queueName} queue for team ${teamId}`);
+        return jobs;
     });
 
     const queueResults = await Promise.all(queuePromises);
@@ -264,6 +265,7 @@ export const emitJobUpdate = async (teamId: string, jobData: any): Promise<void>
         totalChunks: jobData.totalChunks,
         name: jobData.name,
         message: jobData.message,
+        trajectoryId: jobData.trajectoryId,
         timestamp: jobData.timestamp || new Date().toISOString(),
         queueType: jobData.queueType || 'unknown',
         ...(jobData.error && { error: jobData.error }),

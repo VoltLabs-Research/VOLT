@@ -269,7 +269,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             await this.setJobStatus(job.jobId, 'running', { 
                 workerId: availableWorkerItem.worker.threadId,
                 startTime: new Date(startTime).toISOString(),
-                teamId: job.teamId
+                teamId: job.teamId,
+                trajectoryId: (job as any).trajectoryId
             });
             
             availableWorkerItem.worker.postMessage({ job });
@@ -319,7 +320,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     await this.setJobStatus(job.jobId, 'completed', { 
                         result: message.result,
                         processingTimeMs: processingTime,
-                        teamId: job.teamId
+                        teamId: job.teamId,
+                        trajectoryId: (job as any).trajectoryId
                     });
                     this.updateMetrics(processingTime, false);
                     this.emit('jobCompleted', { job, result: message.result, processingTime });
@@ -333,7 +335,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     await this.setJobStatus(job.jobId, 'running', { 
                         progress: message.progress,
                         processingTimeMs: processingTime,
-                        teamId: job.teamId
+                        teamId: job.teamId,
+                        trajectoryId: (job as any).trajectoryId
                     });
                     this.emit('jobProgress', { job, progress: message.progress });
                     return;
@@ -367,6 +370,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 error,
                 retries: retries + 1,
                 maxRetries,
+                trajectoryId: (job as any).trajectoryId,
                 processingTimeMs: processingTime,
                 teamId: job.teamId
             });
@@ -376,7 +380,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 error,
                 finalAttempt: true,
                 processingTimeMs: processingTime,
-                teamId: job.teamId
+                teamId: job.teamId,
+                trajectoryId: (job as any).trajectoryId,
             });
             this.updateMetrics(processingTime, true);
             this.emit('jobFailed', { job, error, processingTime });
@@ -424,7 +429,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     .lrem(this.processingKey, 1, rawData)
                     .exec();
                 
-                await this.setJobStatus(job.jobId, 'queued_after_failure', { error: errorMessage, teamId: job.teamId });
+                await this.setJobStatus(job.jobId, 'queued_after_failure', { error: errorMessage, teamId: job.teamId, trajectoryId: (job as any).trajectoryId });
                 console.log(`[${this.queueName}] Requeued job ${job.jobId} due to worker failure`);
             }catch(error){
                 console.error(`[${this.queueName}] Failed to requeue job:`, error);
@@ -462,6 +467,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 await this.setJobStatus(job.jobId, 'queued', {
                     name: job.name,
                     message: job.message,
+                    trajectoryId: (job as any).trajectoryId, 
                     ...(job as any).chunkIndex !== undefined && { chunkIndex: (job as any).chunkIndex },
                     ...(job as any).totalChunks !== undefined && { totalChunks: (job as any).totalChunks },
                     teamId: job.teamId
@@ -501,6 +507,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             const statusPromises = jobs.map(job => 
                 this.setJobStatus(job.jobId, 'queued', {
                     teamId: job.teamId,
+                    trajectoryId: (job as any).trajectoryId,
                     name: job.name,
                     message: job.message,
                     ...(job as any).chunkIndex !== undefined && { chunkIndex: (job as any).chunkIndex },
@@ -526,6 +533,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         const statusData = {
             jobId,
             status,
+            trajectoryId: data.trajectoryId || (jobInfoFromMap?.job as any)?.trajectoryId,
             name: data.name || jobInfoFromMap?.job.name,
             message: data.message || jobInfoFromMap?.job.message,
             timestamp: new Date().toISOString(),

@@ -28,6 +28,50 @@ const useTeamJobs = () => {
         });
     };
 
+    const hasJobForTrajectory = (trajectoryId) => {
+        return jobs.some((job) => job.trajectoryId === trajectoryId);
+    };
+
+    const getJobsForTrajectory = (trajectoryId) => {
+        const trajectoryJobs = jobs.filter((job) => job.trajectoryId === trajectoryId);
+        
+        if(trajectoryJobs.length === 0){
+            return {};
+        }
+        
+        const jobsByStatus = trajectoryJobs.reduce((acc, job) => {
+            const status = job.status || 'unknown';
+            
+            if(!acc[status]){
+                acc[status] = [];
+            }
+            
+            acc[status].push(job);
+            return acc;
+        }, {});
+        
+        const completedJobs = jobsByStatus.completed?.length || 0;
+        const totalJobs = trajectoryJobs.length;
+        const completionRate = totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0;
+        
+        jobsByStatus._stats = {
+            total: totalJobs,
+            completed: completedJobs,
+            byStatus: Object.keys(jobsByStatus).reduce((acc, status) => {
+                if (status !== '_stats') {
+                    acc[status] = jobsByStatus[status].length;
+                }
+                return acc;
+            }, {}),
+            hasActiveJobs: trajectoryJobs.some(job => ['running', 'queued', 'retrying'].includes(job.status)),
+            completionRate: completionRate
+        };
+        
+        console.log(`📊 Trajectory ${trajectoryId}: ${completedJobs}/${totalJobs} completed (${completionRate}%)`, jobsByStatus._stats);
+        
+        return jobsByStatus;
+    };  
+    
     useEffect(() => {
         const teamId = selectedTeam?._id;
 
@@ -112,7 +156,13 @@ const useTeamJobs = () => {
         };
     }, [selectedTeam]);
 
-    return { jobs, isConnected, isLoading };
+    return {
+        jobs,
+        isConnected,
+        isLoading,
+        hasJobForTrajectory,
+        getJobsForTrajectory
+    };
 };
 
 export default useTeamJobs;
