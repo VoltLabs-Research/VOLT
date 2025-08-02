@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge } from '@mui/material';
+import { Badge, CircularProgress } from '@mui/material';
 import { PiAtomThin, PiLineSegmentsLight, PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { RxTrash } from "react-icons/rx";
 import { CiShare1 } from "react-icons/ci";
@@ -46,19 +46,30 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
     const totalJobs = jobs._stats?.total || 0;
     const completionRate = jobs._stats?.completionRate || 0;
     const hasJobs = totalJobs > 0;
+    const hasActiveJobs = jobs._stats?.hasActiveJobs || false; 
 
-    // Color del borde basado en el progreso
     const getBorderColor = () => {
-        if (!hasJobs || shouldHideBorder) return 'transparent';
-        if (completionRate === 100) return '#22c55e';
-        if (completionRate >= 75) return '#3b82f6'; 
-        if (completionRate >= 50) return '#f59e0b';
-        if (completionRate >= 25) return '#f97316'; 
+        if(!hasJobs || shouldHideBorder) return 'transparent';
+        if(completionRate === 100) return '#22c55e';
+        if(completionRate >= 75) return '#3b82f6'; 
+        if(completionRate >= 50) return '#f59e0b';
+        if(completionRate >= 25) return '#f97316'; 
         return '#dc2626';
     };
 
+    const getWaitingBorder = () => {
+        return 'conic-gradient(from -90deg, #6b7280 0deg, #6b7280 90deg, transparent 90deg, transparent 360deg)';
+    };
+
     const getProgressBorder = () => {
-        if(!hasJobs || completionRate === 0 || shouldHideBorder) return 'none';
+        if(!hasJobs || shouldHideBorder) return 'none';
+        
+        if(completionRate === 0 && hasActiveJobs){
+            return getWaitingBorder();
+        }
+        
+        if(completionRate === 0) return 'none';
+        
         const borderColor = getBorderColor();
         const degrees = (completionRate / 100) * 360;
         return `conic-gradient(from -90deg, ${borderColor} 0deg, ${borderColor} ${degrees}deg, transparent ${degrees}deg, transparent 360deg)`;
@@ -124,6 +135,32 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
         }, 500);
     };
 
+    const getBadgeContent = () => {
+        if(isCompleted) return '✓';
+        if(completionRate === 0 && hasActiveJobs) {
+            return (
+                <CircularProgress 
+                    size={12} 
+                    thickness={6}
+                    sx={{ 
+                        color: 'white',
+                        '& .MuiCircularProgress-circle': {
+                            strokeLinecap: 'round'
+                        }
+                    }} 
+                />
+            );
+        }
+        return `${completionRate}%`;
+    };
+
+    const getBadgeColor = () => {
+        if(completionRate === 0 && hasActiveJobs){
+            return '#6b7280';
+        }
+        return getBorderColor();
+    };
+
     return (
         <figure className={containerClasses} onClick={handleClick}>
             <div 
@@ -153,20 +190,23 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
                     
                     {hasJobs && !shouldHideBorder && (
                         <Badge
-                            badgeContent={isCompleted ? '✓' : `${completionRate}%`}
+                            badgeContent={getBadgeContent()}
                             sx={{
                                 position: 'absolute',
                                 top: 8,
                                 right: 8,
                                 '& .MuiBadge-badge': {
-                                    backgroundColor: getBorderColor(),
+                                    backgroundColor: getBadgeColor(),
                                     color: 'white',
                                     fontSize: '0.75rem',
                                     minWidth: '28px',
                                     height: '20px',
                                     fontWeight: 600,
                                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                    transition: 'all 0.3s ease'
+                                    transition: 'all 0.3s ease',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
                                 }
                             }}
                         >
@@ -192,7 +232,11 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
                             <>
                                 <span>•</span>
                                 <p className='simulation-running-jobs'>
-                                    {totalJobs} jobs {isCompleted ? 'completed' : 'processing'}
+                                    {totalJobs} jobs {
+                                        isCompleted ? 'completed' : 
+                                        completionRate === 0 && hasActiveJobs ? 'starting...' : 
+                                        'processing'
+                                    }
                                 </p>
                             </>
                         )}
