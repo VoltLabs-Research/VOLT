@@ -1,0 +1,11 @@
+.jobs-history-container{
+    position: absolute;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 200;
+    background-color: rgba(255, 255, 255, .8);
+    padding: 1rem;
+    border-radius: 1rem;
+    border: 1px solid #eaeaea;
+    backdrop-filter: blur(5px);
+}

@@ -474,7 +474,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             console.log(`[${this.queueName}] Adding ${jobs.length} jobs to queue using batch mode...`);
 
             const pipeline = redis!.pipeline();
-            const statusPipeline = redis!.pipeline();
             const priorityJobs: string[] = [];
             const regularJobs: string[] = [];
             
@@ -488,16 +487,9 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     regularJobs.push(serialized);
                 }
                 
-                statusPipeline.setex(
-                    `${this.statusKeyPrefix}${job.jobId}`,
-                    86400,
-                    JSON.stringify({
-                        jobId: job.jobId,
-                        status: 'queued',
-                        timestamp: new Date().toISOString(),
-                        teamId
-                    })
-                );
+                // We don't use 'await' so notifications are sent in the background
+                // without blocking bulk job addition.
+                this.setJobStatus(job.jobId, 'queued', { teamId: job.teamId });
             }
             
             if(priorityJobs.length > 0){
@@ -507,9 +499,14 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 pipeline.lpush(this.queueKey, ...regularJobs);
             }
             
-            await Promise.all([pipeline.exec(), statusPipeline.exec()]);
+            await pipeline.exec();
+
+            this.emit('jobsAdded', { 
+                count: jobs.length, 
+                priority: priorityJobs.length, 
+                regular: regularJobs.length 
+            });
             
-            this.emit('jobsAdded', { count: jobs.length, priority: priorityJobs.length, regular: regularJobs.length });
             console.log(`[${this.queueName}] Added ${jobs.length} jobs (${priorityJobs.length} priority, ${regularJobs.length} regular)`);
         }
     }
