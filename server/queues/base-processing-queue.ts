@@ -472,7 +472,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             }
             console.log(`[${this.queueName}] Successfully added all jobs via streaming.`);
         }else{
-            // Batch mode
             console.log(`[${this.queueName}] Adding ${jobs.length} jobs to queue using batch mode...`);
 
             const pipeline = redis!.pipeline();
@@ -488,14 +487,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 } else {
                     regularJobs.push(serialized);
                 }
-                
-                // We don't use 'await' so notifications are sent in the background
-                // without blocking bulk job addition.
-                this.setJobStatus(job.jobId, 'queued', {
-                    teamId: job.teamId,
-                    name: job.name,
-                    message: job.message
-                });
             }
             
             if(priorityJobs.length > 0){
@@ -507,13 +498,25 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             
             await pipeline.exec();
 
+            const statusPromises = jobs.map(job => 
+                this.setJobStatus(job.jobId, 'queued', {
+                    teamId: job.teamId,
+                    name: job.name,
+                    message: job.message,
+                    ...(job as any).chunkIndex !== undefined && { chunkIndex: (job as any).chunkIndex },
+                    ...(job as any).totalChunks !== undefined && { totalChunks: (job as any).totalChunks }
+                })
+            );
+            
+            await Promise.all(statusPromises);
+
             this.emit('jobsAdded', { 
                 count: jobs.length, 
                 priority: priorityJobs.length, 
                 regular: regularJobs.length 
             });
             
-            console.log(`[${this.queueName}] Added ${jobs.length} jobs (${priorityJobs.length} priority, ${regularJobs.length} regular)`);
+            console.log(`[${this.queueName}] Added ${jobs.length} jobs (${priorityJobs.length} priority, ${regularJobs.length} regular) with team indices`);
         }
     }
 
@@ -533,15 +536,28 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         };
 
         try{
-            await redis!.setex(
+            const pipeline = redis!.pipeline();
+            
+            pipeline.setex(
                 `${this.statusKeyPrefix}${jobId}`,
-                86400, 
+                86400 * 30,
                 JSON.stringify(statusData)
             );
 
             if(statusData.teamId){
+                const teamJobsKey = `team:${statusData.teamId}:jobs`;
+                pipeline.sadd(teamJobsKey, jobId);
+                pipeline.expire(teamJobsKey, 86400 * 30); 
+                
+                console.log(`[${this.queueName}] Job ${jobId} added to team ${statusData.teamId} index with status: ${status}`);
+            }
+
+            await pipeline.exec();
+
+            if(statusData.teamId){
                 emitJobUpdate(statusData.teamId, statusData);
             }
+            
         }catch(err){
             console.error(`[${this.queueName}] Failed to set job status for ${jobId}:`, err);
         }
