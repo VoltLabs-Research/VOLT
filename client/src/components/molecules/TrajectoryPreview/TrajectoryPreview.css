@@ -17,3 +17,44 @@
     justify-content: center;
     align-items: center;
 }
+
+.trajectory-preview-scene-container{
+    width: 100%;
+    height: 100%;
+}
+
+.trajectory-preview-item-container{
+    position: absolute;
+    background-color: rgb(46 46 46 / 50%);
+    backdrop-filter: blur(5px);
+    z-index: 300;
+    padding: .5rem 1.2rem;
+    border-radius: 5rem;
+    color: #dadada;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.trajectory-name,
+.trajectory-navigate{
+    font-size: .95rem;
+    font-weight: 500;
+}
+
+.trajectory-name-icon-container{
+    width: .5rem;
+    height: .5rem;
+    background-color: #22c55e;
+    border-radius: 50%;
+}
+
+.trajectory-preview-name-container{
+    top: 1rem;
+    left: 1rem;
+}
+
+.trajectory-preview-navigate-container{
+    bottom: 1rem;
+    right: 1rem;
+}
