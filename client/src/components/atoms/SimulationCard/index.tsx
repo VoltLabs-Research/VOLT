@@ -1,6 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, CircularProgress } from '@mui/material';
 import { PiAtomThin, PiLineSegmentsLight, PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { RxTrash } from "react-icons/rx";
 import { CiShare1 } from "react-icons/ci";
@@ -8,213 +7,98 @@ import { HiOutlineViewfinderCircle } from "react-icons/hi2";
 import SimpExampleCover from '@/assets/images/simulation-example-cover.png';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
-import useTrajectoryStore from '@/stores/trajectories';
 import ActionBasedFloatingContainer from '@/components/atoms/ActionBasedFloatingContainer';
+import ProgressBadge from '@/components/atoms/ProgressBadge';
+import ProgressBorderContainer from '@/components/atoms/ProgressBorderContainer';
+import useTrajectoryStore from '@/stores/trajectories';
+import useJobProgress from '@/hooks/useJobProgress';
+import useCardInteractions from '@/hooks/useCardInteractions';
 import './SimulationCard.css';
 
-const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
+const SimulationCard: React.FC<any> = ({ 
+    trajectory, 
+    isSelected, 
+    onSelect, 
+    jobs = {} 
+}) => {
     const navigate = useNavigate();
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const dislocationAnalysis = useTrajectoryStore((state) => state.dislocationAnalysis);
 
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [isCompleted, setIsCompleted] = useState(false);
-    const [shouldHideBorder, setShouldHideBorder] = useState(false); 
-    
-    const completionTimeoutRef = useRef(null); 
-    const previousCompletionRate = useRef(0);
+    const jobProgress = useJobProgress(jobs, trajectory._id);
+    const {
+        totalJobs,
+        completionRate,
+        hasJobs,
+        hasActiveJobs,
+        isCompleted,
+        shouldHideBorder,
+        getBorderColor,
+        getProgressBorder,
+        cleanup
+    } = jobProgress;
 
-    const totalJobs = jobs._stats?.total || 0;
-    const completionRate = jobs._stats?.completionRate || 0;
-    const hasJobs = totalJobs > 0;
-    const hasActiveJobs = jobs._stats?.hasActiveJobs || false; 
-
-    const loadTrajectoryOnCanvas = () => {
-        navigate(`/canvas/${trajectory._id}/`);
-    };
-    
-    const handleClick = (event) => {
-        if(event.target.closest('.simulation-options-icon-container') || 
-           event.target.closest('.simulation-caption-title') ||
-           event.target.closest('.action-based-floating-container-element-wrapper') ||
-           hasJobs){
-            return;
-        }
-
-        if(event.ctrlKey || event.metaKey){
-            event.preventDefault();
-            onSelect(trajectory._id);
-        }else{
-            loadTrajectoryOnCanvas();
-        }
-    };
-
-    const getBorderColor = () => {
-        if(!hasJobs || shouldHideBorder) return 'transparent';
-        if(completionRate === 100) return '#22c55e';
-        if(completionRate >= 75) return '#3b82f6'; 
-        if(completionRate >= 50) return '#f59e0b';
-        if(completionRate >= 25) return '#f97316'; 
-        return '#dc2626';
-    };
-
-    const getWaitingBorder = () => {
-        return 'conic-gradient(from -90deg, #6b7280 0deg, #6b7280 90deg, transparent 90deg, transparent 360deg)';
-    };
-
-    const getProgressBorder = () => {
-        if(!hasJobs || shouldHideBorder) return 'none';
-        
-        if(completionRate === 0 && hasActiveJobs){
-            return getWaitingBorder();
-        }
-        
-        if(completionRate === 0) return 'none';
-        
-        const borderColor = getBorderColor();
-        const degrees = (completionRate / 100) * 360;
-        return `conic-gradient(from -90deg, ${borderColor} 0deg, ${borderColor} ${degrees}deg, transparent ${degrees}deg, transparent 360deg)`;
-    };
-
-    useEffect(() => {
-        if(completionRate === 100 && previousCompletionRate.current !== 100 && hasJobs){
-            console.log(`Trajectory ${trajectory._id} completed! Starting 5-second countdown...`);
-            setIsCompleted(true);
-            if(completionTimeoutRef.current){
-                clearTimeout(completionTimeoutRef.current);
-            }
-            
-            completionTimeoutRef.current = setTimeout(() => {
-                console.log(`Hiding progress border for trajectory ${trajectory._id}`);
-                setShouldHideBorder(true);
-                setIsCompleted(false);
-            }, 5000);
-        }else if(completionRate < 100 && previousCompletionRate.current === 100){
-            console.log(`Trajectory ${trajectory._id} has new jobs, showing border again`);
-            setShouldHideBorder(false);
-            setIsCompleted(false);
-            
-            if(completionTimeoutRef.current){
-                clearTimeout(completionTimeoutRef.current);
-                completionTimeoutRef.current = null;
-            }
-        }else if(!hasJobs){
-            setShouldHideBorder(false);
-            setIsCompleted(false);
-            
-            if(completionTimeoutRef.current){
-                clearTimeout(completionTimeoutRef.current);
-                completionTimeoutRef.current = null;
-            }
-        }
-        
-        previousCompletionRate.current = completionRate;
-        
-        return () => {
-            if(completionTimeoutRef.current){
-                clearTimeout(completionTimeoutRef.current);
-            }
-        };
-    }, [completionRate, hasJobs, trajectory._id]);
-
-    useEffect(() => {
-        if(hasJobs){
-            console.log(`Trajectory ${trajectory._id}: ${completionRate}% complete (${totalJobs} jobs) | Completed: ${isCompleted} | Hidden: ${shouldHideBorder}`);
-        }
-    }, [trajectory._id, completionRate, totalJobs, hasJobs, isCompleted, shouldHideBorder]);
+    const { isDeleting, handleClick, handleDelete } = useCardInteractions(
+        onSelect,
+        (id: string) => navigate(`/canvas/${id}/`),
+        hasJobs
+    );
 
     const containerClasses = `simulation-container ${hasActiveJobs ? 'has-jobs' : ''} ${isDeleting ? 'is-deleting' : ''} ${isSelected ? 'is-selected' : ''}`;
-    
-    const handleDelete = () => {
-        if(completionTimeoutRef.current){
-            clearTimeout(completionTimeoutRef.current);
-        }
-        
-        setIsDeleting(true);
-        setTimeout(() => {
-            deleteTrajectoryById(trajectory._id);
-        }, 500);
+
+    const onDelete = (): void => {
+        handleDelete(trajectory._id, deleteTrajectoryById, cleanup);
     };
 
-    const getBadgeContent = () => {
-        if(isCompleted) return '✓';
-        if(completionRate === 0 && hasActiveJobs) {
-            return (
-                <CircularProgress 
-                    size={12} 
-                    thickness={6}
-                    sx={{ 
-                        color: 'white',
-                        '& .MuiCircularProgress-circle': {
-                            strokeLinecap: 'round'
-                        }
-                    }} 
-                />
-            );
-        }
-        return `${completionRate}%`;
+    const handleViewScene = (): void => {
+        navigate(`/canvas/${trajectory._id}/`);
     };
 
-    const getBadgeColor = () => {
-        if(completionRate === 0 && hasActiveJobs){
-            return '#6b7280';
-        }
-        return getBorderColor();
+    const handleShare = (): void => {
+    };
+
+    const handleDislocationAnalysis = (): void => {
+        dislocationAnalysis(trajectory._id);
+    };
+
+    const getJobStatusText = (): string => {
+        if (isCompleted) return 'completed';
+        if (completionRate === 0 && hasActiveJobs) return 'starting...';
+        return 'processing';
     };
 
     return (
-        <figure className={containerClasses} onClick={handleClick}>
-            <div 
-                className="progress-border-wrapper"
-                style={{
-                    background: getProgressBorder(),
-                    padding: (hasJobs && !shouldHideBorder) ? '4px' : '0px',
-                    borderRadius: '16px',
-                    transition: 'all 0.5s ease'
-                }}
+        <figure 
+            className={containerClasses} 
+            onClick={(e) => handleClick(e, trajectory._id)}
+        >
+            <ProgressBorderContainer
+                progressBorder={getProgressBorder()}
+                hasJobs={hasJobs}
+                shouldHideBorder={shouldHideBorder}
             >
-                <div 
-                    className='simulation-cover-container'
-                    style={{
-                        borderRadius: '12px',
-                        overflow: 'hidden'
-                    }}
-                >
+                <div className='simulation-cover-container'>
                     {true ? (
                         <i className='simulation-cover-icon-container'>
                             <PiAtomThin />
                         </i>
                     ) : (
-                        <img className='simulation-image' src={SimpExampleCover} alt="Simulation cover" />
+                        <img 
+                            className='simulation-image' 
+                            src={SimpExampleCover} 
+                            alt="Simulation cover" 
+                        />
                     )}
                     
-                    {hasJobs && !shouldHideBorder && (
-                        <Badge
-                            badgeContent={getBadgeContent()}
-                            sx={{
-                                position: 'absolute',
-                                top: 8,
-                                right: 8,
-                                '& .MuiBadge-badge': {
-                                    backgroundColor: getBadgeColor(),
-                                    color: 'white',
-                                    fontSize: '0.75rem',
-                                    minWidth: '28px',
-                                    height: '20px',
-                                    fontWeight: 600,
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                    transition: 'all 0.3s ease',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }
-                            }}
-                        >
-                            <div />
-                        </Badge>
-                    )}
+                    <ProgressBadge
+                        completionRate={completionRate}
+                        hasActiveJobs={hasActiveJobs}
+                        isCompleted={isCompleted}
+                        getBorderColor={getBorderColor}
+                        shouldShow={hasJobs && !shouldHideBorder}
+                    />
                 </div>
-            </div>
+            </ProgressBorderContainer>
 
             <figcaption className='simulation-caption-container'>
                 <div className='simulation-caption-left-container'>
@@ -232,11 +116,7 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
                             <>
                                 <span>•</span>
                                 <p className='simulation-running-jobs'>
-                                    {totalJobs} jobs {
-                                        isCompleted ? 'completed' : 
-                                        completionRate === 0 && hasActiveJobs ? 'starting...' : 
-                                        'processing'
-                                    }
+                                    {totalJobs} jobs {getJobStatusText()}
                                 </p>
                             </>
                         )}
@@ -245,10 +125,10 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
 
                 <ActionBasedFloatingContainer
                     options={[
-                        ['View Scene', HiOutlineViewfinderCircle, loadTrajectoryOnCanvas],
-                        ['Share with Team', CiShare1, () => {}],
-                        ['Dislocation Analysis', PiLineSegmentsLight, () => dislocationAnalysis(trajectory._id)],
-                        ['Delete', RxTrash, handleDelete],
+                        ['View Scene', HiOutlineViewfinderCircle, handleViewScene],
+                        ['Share with Team', CiShare1, handleShare],
+                        ['Dislocation Analysis', PiLineSegmentsLight, handleDislocationAnalysis],
+                        ['Delete', RxTrash, onDelete],
                     ]}
                 >
                     <i className='simulation-options-icon-container'>
