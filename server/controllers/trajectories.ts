@@ -189,9 +189,10 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         return next(new RuntimeError('No valid files for trajectory', 400));
     }
 
+    const trajectoryName = req.body.originalFolderName || 'Untitled Trajectory';
     const newTrajectory = await Trajectory.create({
         folderId,
-        name: req.body.originalFolderName || 'Untitled Trajectory',
+        name: trajectoryName,
         team: teamId,
         frames,
         status: 'processing',
@@ -219,6 +220,8 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
                 frameFilePath
             })),
             teamId,
+            name: 'Upload Trajectory',
+            message: trajectoryName,
             folderPath,
             glbFolderPath
         };
@@ -227,7 +230,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     }
 
     for(const job of jobs){
-        await trajectoryProcessingQueue.addJobs([job], teamId);
+        await trajectoryProcessingQueue.addJobs([job]);
         
         // Small delay to prevent overwhelming
         await new Promise(resolve => setTimeout(resolve, 100));

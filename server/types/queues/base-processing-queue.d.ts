@@ -4,6 +4,8 @@ export interface BaseJob {
     retries?: number;
     maxRetries?: number;
     estimatedDurationMs?: number;
+    name?: string;
+    message?: string;
 }
 
 export interface WorkerPoolItem {

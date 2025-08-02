@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import useTeamJobs from '@/hooks/useTeamJobs';
 import './JobsHistory.css';
 
@@ -46,11 +46,17 @@ const JobsHistory = () => {
         return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
     });
 
+    useEffect(() => {
+        console.log(jobs);
+    }, [jobs]);
+
     return isConnected && (
         <div className='jobs-history-container'>
             {jobs.map((job, index) => (
                 <div className='job-container' key={index}>
-                    <h3>{job.jobId}</h3>
+                    <div className='job-left-container'>
+                        <h3 className='job-name'>{job.name} {job.type}</h3>
+                    </div>
                 </div>
             ))}
         </div> 

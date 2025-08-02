@@ -40,6 +40,9 @@ const getJobsForTeam = async (teamId: string): Promise<any[]> => {
                     progress: jobStatus.progress || 0,
                     chunkIndex: jobStatus.chunkIndex,
                     totalChunks: jobStatus.totalChunks,
+                    name: jobStatus.name,
+                    message: jobStatus.message,
+                    timestamp: jobStatus.timestamp
                 });
                 console.log(`[Socket] Added job ${jobStatus.jobId} to team ${teamId} results`);
             }

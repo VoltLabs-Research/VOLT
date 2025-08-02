@@ -449,7 +449,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }
     }
 
-    public async addJobs(jobs: T[], teamId: string): Promise<void> {
+    public async addJobs(jobs: T[]): Promise<void> {
         if(jobs.length === 0) return;
 
         if(this.useStreamingAdd){
@@ -460,6 +460,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 await redis!.lpush(this.queueKey, stringifiedJob);
 
                 await this.setJobStatus(job.jobId, 'queued', {
+                    name: job.name,
+                    message: job.message,
                     ...(job as any).chunkIndex !== undefined && { chunkIndex: (job as any).chunkIndex },
                     ...(job as any).totalChunks !== undefined && { totalChunks: (job as any).totalChunks },
                     teamId: job.teamId
@@ -489,7 +491,11 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 
                 // We don't use 'await' so notifications are sent in the background
                 // without blocking bulk job addition.
-                this.setJobStatus(job.jobId, 'queued', { teamId: job.teamId });
+                this.setJobStatus(job.jobId, 'queued', {
+                    teamId: job.teamId,
+                    name: job.name,
+                    message: job.message
+                });
             }
             
             if(priorityJobs.length > 0){
@@ -517,6 +523,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         const statusData = {
             jobId,
             status,
+            name: data.name || jobInfoFromMap?.job.name,
+            message: data.message || jobInfoFromMap?.job.message,
             timestamp: new Date().toISOString(),
             teamId: data.teamId || jobInfoFromMap?.job.teamId, 
             ...data
