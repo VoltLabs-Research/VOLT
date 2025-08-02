@@ -1,7 +1,28 @@
 import { useEffect, useState, useRef } from 'react';
 
-// TODO: fix "any"
-const useJobProgress = (jobs: any, itemId: string): any => {
+interface JobStats {
+    total: number;
+    completionRate: number;
+    hasActiveJobs: boolean;
+}
+
+interface Jobs {
+    _stats?: JobStats;
+}
+
+interface JobProgressResult {
+    totalJobs: number;
+    completionRate: number;
+    hasJobs: boolean;
+    hasActiveJobs: boolean;
+    isCompleted: boolean;
+    shouldHideBorder: boolean;
+    getBorderColor: () => string;
+    getProgressBorder: () => string;
+    cleanup: () => void;
+}
+
+const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
     const [isCompleted, setIsCompleted] = useState<boolean>(false);
     const [shouldHideBorder, setShouldHideBorder] = useState<boolean>(false);
 
@@ -31,11 +52,18 @@ const useJobProgress = (jobs: any, itemId: string): any => {
     };
 
     const getProgressBorder = (): string => {
-        if(!hasJobs || shouldHideBorder || completionRate === 0) return 'none';
+        // If there are no jobs or you need to hide the border, show nothing
+        if(!hasJobs || shouldHideBorder) return 'none';
+        
+        // If the completion rate is 0 but there are active jobs, display the waiting border
         if(completionRate === 0 && hasActiveJobs){
             return getWaitingBorder();
         }
+        
+        // If the completion rate is 0 and there are no active jobs, do not show the border.
+        if(completionRate === 0) return 'none';
 
+        // If there is progress, show the progress border
         const borderColor = getBorderColor();
         const degrees = (completionRate / 100) * 360;
         return `conic-gradient(from -90deg, ${borderColor} 0deg, ${borderColor} ${degrees}deg, transparent ${degrees}deg, transparent 360deg)`;
@@ -55,12 +83,12 @@ const useJobProgress = (jobs: any, itemId: string): any => {
                 clearTimeout(completionTimeoutRef.current);
             }
 
-            completionTimeoutRef.current = setTimeout(() => {
+            completionTimeoutRef.current = window.setTimeout(() => {
                 console.log(`Hiding progress border for item ${itemId}`);
                 setShouldHideBorder(true);
                 setIsCompleted(false);
             }, 5000);
-        }else if(completionRate < 100 && previousCompletionRate.current === 1000){
+        }else if(completionRate < 100 && previousCompletionRate.current === 100){
             console.log(`Item ${itemId} has new jobs, showing border again`);
             setShouldHideBorder(false);
             setIsCompleted(false);
@@ -87,6 +115,12 @@ const useJobProgress = (jobs: any, itemId: string): any => {
             }
         };
     }, [completionRate, hasJobs, itemId]);
+
+    useEffect(() => {
+        if(hasJobs){
+            console.log(`Item ${itemId}: ${completionRate}% complete (${totalJobs} jobs) | Completed: ${isCompleted} | Hidden: ${shouldHideBorder} | Active: ${hasActiveJobs}`);
+        }
+    }, [itemId, completionRate, totalJobs, hasJobs, isCompleted, shouldHideBorder, hasActiveJobs]);
 
     return {
         totalJobs,

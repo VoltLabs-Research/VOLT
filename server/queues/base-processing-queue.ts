@@ -369,7 +369,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             return;
         }
 
-        console.log(`🔍 Checking session completion for ${sessionId}`);
+        console.log(`Checking session completion for ${sessionId}`);
 
         try {
             const luaScript = `

@@ -58,7 +58,7 @@ const useTeamJobs = () => {
             return true;
         });
         
-        console.log(`🔍 Trajectory ${trajectoryId}: Total jobs: ${trajectoryJobs.length}, Active jobs: ${activeJobs.length}, Expired sessions: ${expiredSessions.size}`);
+        console.log(`Trajectory ${trajectoryId}: Total jobs: ${trajectoryJobs.length}, Active jobs: ${activeJobs.length}, Expired sessions: ${expiredSessions.size}`);
         
         if(activeJobs.length === 0){
             return {};

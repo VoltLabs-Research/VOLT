@@ -15,7 +15,31 @@ import useJobProgress from '@/hooks/useJobProgress';
 import useCardInteractions from '@/hooks/useCardInteractions';
 import './SimulationCard.css';
 
-const SimulationCard: React.FC<any> = ({ 
+interface JobStats {
+    total: number;
+    completionRate: number;
+    hasActiveJobs: boolean;
+}
+
+interface Jobs {
+    _stats?: JobStats;
+}
+
+interface Trajectory {
+    _id: string;
+    name?: string;
+    updatedAt: string;
+    createdAt: string;
+}
+
+interface SimulationCardProps {
+    trajectory: Trajectory;
+    isSelected: boolean;
+    onSelect: (id: string) => void;
+    jobs?: Jobs;
+}
+
+const SimulationCard: React.FC<SimulationCardProps> = ({ 
     trajectory, 
     isSelected, 
     onSelect, 
