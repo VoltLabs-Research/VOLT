@@ -99,6 +99,8 @@ const getJobsForTeam = async (teamId: string): Promise<any[]> => {
                         chunkIndex: jobStatus.chunkIndex,
                         totalChunks: jobStatus.totalChunks,
                         trajectoryId: jobStatus.trajectoryId,
+                        sessionId: jobStatus.sessionId,
+                        sessionStartTime: jobStatus.sessionStartTime,
                         name: jobStatus.name,
                         message: jobStatus.message,
                         timestamp: jobStatus.timestamp,
@@ -266,8 +268,11 @@ export const emitJobUpdate = async (teamId: string, jobData: any): Promise<void>
         name: jobData.name,
         message: jobData.message,
         trajectoryId: jobData.trajectoryId,
+        sessionId: jobData.sessionId,
+        sessionStartTime: jobData.sessionStartTime,
         timestamp: jobData.timestamp || new Date().toISOString(),
         queueType: jobData.queueType || 'unknown',
+        type: jobData.type,
         ...(jobData.error && { error: jobData.error }),
         ...(jobData.result && { result: jobData.result }),
         ...(jobData.processingTimeMs && { processingTimeMs: jobData.processingTimeMs })
@@ -293,9 +298,13 @@ export const emitJobUpdate = async (teamId: string, jobData: any): Promise<void>
         socket.emit('job_update', jobUpdate);
     });
 
-    console.log(`[Socket] Emitted job_update to ${readyClients.length} ready clients for team ${teamId} for job ${jobUpdate.jobId}`);
+    // 🔥 LOG DIFERENTE PARA SESSION_EXPIRED
+    if (jobData.type === 'session_expired') {
+        console.log(`[Socket] Emitted session_expired to ${readyClients.length} clients for team ${teamId} - session ${jobData.sessionId}`);
+    } else {
+        console.log(`[Socket] Emitted job_update to ${readyClients.length} ready clients for team ${teamId} for job ${jobUpdate.jobId}`);
+    }
 };
-
 export const getIO = (): Server => {
     if(!io){
         throw new Error('Socket.io not initialized!');

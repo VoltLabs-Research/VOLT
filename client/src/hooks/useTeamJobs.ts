@@ -13,13 +13,14 @@ const useTeamJobs = () => {
     const [jobs, setJobs] = useState([]);
     const [isConnected, setIsConnected] = useState(socket.connected);
     const [isLoading, setIsLoading] = useState(true);
+    const [expiredSessions, setExpiredSessions] = useState(new Set());
     const previousTeamIdRef = useRef(null);
 
     const sortJobsByTimestamp = (jobsArray) => {
         return [...jobsArray].sort((a, b) => {
-            if (!a.timestamp && !b.timestamp) return 0;
-            if (!a.timestamp) return 1;
-            if (!b.timestamp) return -1;
+            if(!a.timestamp && !b.timestamp) return 0;
+            if(!a.timestamp) return 1;
+            if(!b.timestamp) return -1;
             
             const timestampA = new Date(a.timestamp);
             const timestampB = new Date(b.timestamp);
@@ -39,7 +40,31 @@ const useTeamJobs = () => {
             return {};
         }
         
-        const jobsByStatus = trajectoryJobs.reduce((acc, job) => {
+        const activeJobs = trajectoryJobs.filter((job) => {
+            if(job.sessionId && expiredSessions.has(job.sessionId)){
+                return false;
+            }
+            
+            if(!job.sessionId){
+                const now = new Date().getTime();
+                const fiveMinutesAgo = now - (5 * 60 * 1000);
+                
+                if(!job.timestamp) return false;
+                
+                const jobTime = new Date(job.timestamp).getTime();
+                return jobTime >= fiveMinutesAgo;
+            }
+            
+            return true;
+        });
+        
+        console.log(`🔍 Trajectory ${trajectoryId}: Total jobs: ${trajectoryJobs.length}, Active jobs: ${activeJobs.length}, Expired sessions: ${expiredSessions.size}`);
+        
+        if(activeJobs.length === 0){
+            return {};
+        }
+        
+        const jobsByStatus = activeJobs.reduce((acc, job) => {
             const status = job.status || 'unknown';
             
             if(!acc[status]){
@@ -50,42 +75,53 @@ const useTeamJobs = () => {
             return acc;
         }, {});
         
+        Object.keys(jobsByStatus).forEach(status => {
+            jobsByStatus[status].sort((a, b) => {
+                if(!a.timestamp && !b.timestamp) return 0;
+                if(!a.timestamp) return 1;
+                if(!b.timestamp) return -1;
+                
+                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+            });
+        });
+        
         const completedJobs = jobsByStatus.completed?.length || 0;
-        const totalJobs = trajectoryJobs.length;
-        const completionRate = totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0;
+        const totalActiveJobs = activeJobs.length;
+        const completionRate = totalActiveJobs > 0 ? Math.round((completedJobs / totalActiveJobs) * 100) : 0;
         
         jobsByStatus._stats = {
-            total: totalJobs,
+            total: totalActiveJobs,
             completed: completedJobs,
+            totalAllTime: trajectoryJobs.length,
             byStatus: Object.keys(jobsByStatus).reduce((acc, status) => {
-                if (status !== '_stats') {
+                if(status !== '_stats'){
                     acc[status] = jobsByStatus[status].length;
                 }
                 return acc;
             }, {}),
-            hasActiveJobs: trajectoryJobs.some(job => ['running', 'queued', 'retrying'].includes(job.status)),
-            completionRate: completionRate
+            hasActiveJobs: activeJobs.some(job => ['running', 'queued', 'retrying'].includes(job.status)),
+            completionRate: completionRate,
+            isActiveSession: totalActiveJobs > 0
         };
         
-        console.log(`📊 Trajectory ${trajectoryId}: ${completedJobs}/${totalJobs} completed (${completionRate}%)`, jobsByStatus._stats);
+        console.log(`Active session for trajectory ${trajectoryId}: ${completedJobs}/${totalActiveJobs} completed (${completionRate}%)`);
         
         return jobsByStatus;
-    };  
-    
+    };
+
     useEffect(() => {
         const teamId = selectedTeam?._id;
 
         if(!teamId){
             setJobs([]);
+            setExpiredSessions(new Set());
 
             if(socket.connected && previousTeamIdRef.current){
                 socket.emit('subscribe_to_team', {
                     previousTeamId: previousTeamIdRef.current
                 });
-
                 previousTeamIdRef.current = null;
             }
-
             return;
         }
         
@@ -116,6 +152,12 @@ const useTeamJobs = () => {
         };
 
         const handleJobUpdate = (updatedJob) => {
+            if (updatedJob.type === 'session_expired') {
+                console.log(`🕐 Session ${updatedJob.sessionId} expired for trajectory ${updatedJob.trajectoryId}`);
+                setExpiredSessions(prev => new Set([...prev, updatedJob.sessionId]));
+                return;
+            }
+
             console.log(`[${teamId}] Received job update:`, updatedJob);
             setJobs((prevJobs) => {
                 const jobExists = prevJobs.some((job) => job.jobId === updatedJob.jobId);
@@ -161,7 +203,8 @@ const useTeamJobs = () => {
         isConnected,
         isLoading,
         hasJobForTrajectory,
-        getJobsForTrajectory
+        getJobsForTrajectory,
+        expiredSessions: expiredSessions.size 
     };
 };
 

@@ -302,7 +302,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }
     }
 
-    private async handleWorkerMessage(workerId: number, message: any): Promise<void> {
+    private async handleWorkerMessage(workerId: number, message: any): Promise<void>{
         const jobInfo = this.jobMap.get(workerId);
         if(!jobInfo) return;
 
@@ -314,41 +314,89 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             this.clearWorkerTimeouts(workerItem);
         }
         
-        try{
-            switch(message.status){
-                case 'completed':
-                    await this.setJobStatus(job.jobId, 'completed', { 
-                        result: message.result,
-                        processingTimeMs: processingTime,
-                        teamId: job.teamId,
-                        trajectoryId: (job as any).trajectoryId
+        switch(message.status){
+            case 'completed':
+                await this.setJobStatus(job.jobId, 'completed', { 
+                    result: message.result,
+                    processingTimeMs: processingTime,
+                    teamId: job.teamId,
+                    trajectoryId: (job as any).trajectoryId
+                });
+                this.updateMetrics(processingTime, false);
+                this.emit('jobCompleted', { job, result: message.result, processingTime });
+                console.log(`Job ${job.jobId} completed, checking session status...`);
+                const jobStatusString = await redis!.get(`${this.statusKeyPrefix}${job.jobId}`);
+                if(jobStatusString){
+                    const jobStatus = JSON.parse(jobStatusString);
+                    console.log(`Job status data:`, {
+                        jobId: job.jobId,
+                        sessionId: jobStatus.sessionId,
+                        trajectoryId: jobStatus.trajectoryId,
+                        status: jobStatus.status
                     });
-                    this.updateMetrics(processingTime, false);
-                    this.emit('jobCompleted', { job, result: message.result, processingTime });
-                    break;
+                    
+                    if(jobStatus.sessionId && jobStatus.trajectoryId){
+                        setImmediate(() => {
+                            this.checkAndUpdateSessionStatus(jobStatus.sessionId, jobStatus.trajectoryId);
+                        });
 
-                case 'failed':
-                    await this.handleJobFailure(job, message.error, processingTime);
-                    break;
+                        // Additional check after 1 second (in case there are jobs running in parallel)
+                        setTimeout(() => {
+                            console.log(`Running secondary session check for ${jobStatus.sessionId}`);
+                            this.checkAndUpdateSessionStatus(jobStatus.sessionId, jobStatus.trajectoryId);
+                        }, 1000);
 
-                case 'progress':
-                    await this.setJobStatus(job.jobId, 'running', { 
-                        progress: message.progress,
-                        processingTimeMs: processingTime,
-                        teamId: job.teamId,
-                        trajectoryId: (job as any).trajectoryId
+                        setTimeout(() => {
+                            console.log(`Running final session check for ${jobStatus.sessionId}`);
+                            this.checkAndUpdateSessionStatus(jobStatus.sessionId, jobStatus.trajectoryId);
+                        }, 3000);
+                    }else{
+                        console.log(`No sessionId or trajectoryId found for job ${job.jobId}`);
+                    }
+                }else{
+                    console.log(`No job status found in Redis for ${job.jobId}`);
+                }
+                break;
+
+            case 'failed':
+                await this.handleJobFailure(job, message.error, processingTime);
+                const failedJobStatusString = await redis!.get(`${this.statusKeyPrefix}${job.jobId}`);
+                if(failedJobStatusString){
+                    const failedJobStatus = JSON.parse(failedJobStatusString);
+                    console.log(`Failed job status data:`, {
+                        jobId: job.jobId,
+                        sessionId: failedJobStatus.sessionId,
+                        trajectoryId: failedJobStatus.trajectoryId,
+                        status: failedJobStatus.status
                     });
-                    this.emit('jobProgress', { job, progress: message.progress });
-                    return;
-            }
 
-            if(message.status === 'completed' || message.status === 'failed'){
-                await redis!.lrem(this.processingKey, 1, rawData);
-                this.releaseWorker(workerId);
-            }
-        }catch(error){
-            console.error(`[${this.queueName}] Error handling worker message:`, error);
-            this.releaseWorker(workerId);
+                    if(failedJobStatus.sessionId && failedJobStatus.trajectoryId){
+                        setImmediate(() => {
+                            this.checkAndUpdateSessionStatus(failedJobStatus.sessionId, failedJobStatus.trajectoryId);
+                        });
+
+                        setTimeout(() => {
+                            console.log(`Running delayed session check for failed job ${failedJobStatus.sessionId}`);
+                            this.checkAndUpdateSessionStatus(failedJobStatus.sessionId, failedJobStatus.trajectoryId);
+                        }, 10000);
+                    }
+                }
+                break;
+            
+            case 'progress':
+                await this.setJobStatus(job.jobId, 'running', { 
+                    progress: message.progress,
+                    processingTimeMs: processingTime,
+                    teamId: job.teamId,
+                    trajectoryId: (job as any).trajectoryId
+                });
+                this.emit('jobProgress', { job, progress: message.progress });
+                return;
+        }
+
+        if(message.status === 'completed' || message.status === 'failed'){
+            await redis!.lrem(this.processingKey, 1, rawData);
+            this.releaseWorker(workerId);   
         }
     }
 
@@ -457,6 +505,10 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     public async addJobs(jobs: T[]): Promise<void> {
         if(jobs.length === 0) return;
 
+        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const sessionStartTime = new Date().toISOString();
+        console.log(`🚀 Starting new job session: ${sessionId} with ${jobs.length} jobs`);
+
         if(this.useStreamingAdd){
             // Streaming behavior (one by one)
             console.log(`[${this.queueName}] Adding ${jobs.length} jobs to queue using streaming mode...`);
@@ -467,6 +519,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 await this.setJobStatus(job.jobId, 'queued', {
                     name: job.name,
                     message: job.message,
+                    sessionId: sessionId,
+                    sessionStartTime: sessionStartTime,
                     trajectoryId: (job as any).trajectoryId, 
                     ...(job as any).chunkIndex !== undefined && { chunkIndex: (job as any).chunkIndex },
                     ...(job as any).totalChunks !== undefined && { totalChunks: (job as any).totalChunks },
@@ -509,6 +563,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     teamId: job.teamId,
                     trajectoryId: (job as any).trajectoryId,
                     name: job.name,
+                    sessionId: sessionId, 
+                    sessionStartTime: sessionStartTime,
                     message: job.message,
                     ...(job as any).chunkIndex !== undefined && { chunkIndex: (job as any).chunkIndex },
                     ...(job as any).totalChunks !== undefined && { totalChunks: (job as any).totalChunks }
@@ -522,26 +578,166 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 priority: priorityJobs.length, 
                 regular: regularJobs.length 
             });
-            
-            console.log(`[${this.queueName}] Added ${jobs.length} jobs (${priorityJobs.length} priority, ${regularJobs.length} regular) with team indices`);
+
+            console.log(`[${this.queueName}] Added ${jobs.length} jobs (${priorityJobs.length} priority, ${regularJobs.length} regular) with session ${sessionId}`);
         }
+
+        const sessionKey = `session:${sessionId}`;
+        await redis!.setex(sessionKey, 86400 * 7, JSON.stringify({
+            sessionId,
+            startTime: sessionStartTime,
+            totalJobs: jobs.length,
+            trajectoryId: (jobs[0] as any).trajectoryId,
+            teamId: jobs[0].teamId,
+            status: 'active'
+        }));
+        console.log(`Job session ${sessionId} created and stored in Redis`);
+    }
+
+    private async checkAndUpdateSessionStatus(sessionId: string, trajectoryId: string): Promise<void> {
+        console.log(`Starting session check: sessionId=${sessionId}, trajectoryId=${trajectoryId}`);
+        
+        if(!sessionId){
+            console.log(`No sessionId provided`);
+            return;
+        }
+        
+        const sessionKey = `session:${sessionId}`;
+        const sessionDataString = await redis!.get(sessionKey);
+        
+        if(!sessionDataString){
+            console.log(`No session data found for key: ${sessionKey}`);
+            return;
+        }
+        
+        const sessionData = JSON.parse(sessionDataString);
+        console.log(`Session data:`, sessionData);
+        
+        if(sessionData.status !== 'active'){
+            console.log(`Session ${sessionId} is not active (status: ${sessionData.status})`);
+            return;
+        }
+        
+        const teamJobsKey = `team:${sessionData.teamId}:jobs`;
+        const allJobIds = await redis!.smembers(teamJobsKey);
+        
+        console.log(`Found ${allJobIds.length} job IDs in team index`);
+        
+        const sessionJobStatuses = [];
+        
+        for(const jobId of allJobIds){
+            const jobStatusString = await redis!.get(`${this.statusKeyPrefix}${jobId}`);
+            if(jobStatusString){
+                const jobStatus = JSON.parse(jobStatusString);
+                if(jobStatus.sessionId === sessionId && jobStatus.trajectoryId === trajectoryId){
+                    sessionJobStatuses.push(jobStatus);
+                }
+            }
+        }
+        
+        console.log(`Found ${sessionJobStatuses.length} jobs matching session ${sessionId} and trajectory ${trajectoryId}`);
+        
+        if(sessionJobStatuses.length === 0){
+            console.log(`No jobs found for this session`);
+            return;
+        }
+        
+        const statusCounts = sessionJobStatuses.reduce((acc, job) => {
+            acc[job.status] = (acc[job.status] || 0) + 1;
+            return acc;
+        }, {});
+        console.log(`Job status breakdown:`, statusCounts);
+        
+        const allJobsFinished = sessionJobStatuses.every(job => 
+            ['completed', 'failed'].includes(job.status)
+        );
+        
+        console.log(`All jobs finished: ${allJobsFinished}`);
+        
+        const totalExpectedJobs = sessionData.totalJobs;
+        const actualJobsFound = sessionJobStatuses.length;
+        
+        console.log(`Expected jobs: ${totalExpectedJobs}, Found jobs: ${actualJobsFound}`);
+        
+        const sessionComplete = allJobsFinished && actualJobsFound === totalExpectedJobs && sessionJobStatuses.length > 0;
+        
+        if(sessionComplete){
+            console.log(`Session ${sessionId} is COMPLETE! All ${actualJobsFound} jobs finished. Marking as expired immediately...`);
+            
+            const updatedSessionData = {
+                ...sessionData,
+                status: 'expired',
+                expiredAt: new Date().toISOString(),
+                completedAt: new Date().toISOString(), 
+                completedJobs: statusCounts.completed || 0,
+                failedJobs: statusCounts.failed || 0
+            };
+            
+            await redis!.setex(sessionKey, 86400 * 7, JSON.stringify(updatedSessionData));
+            console.log(`Session marked as expired in Redis immediately`);
+            
+            if(sessionData.teamId){
+                console.log(`Emitting session_expired event for team ${sessionData.teamId}`);
+                this.emitSessionExpired(sessionData.teamId, sessionId, trajectoryId);
+            }
+        }else{
+            console.log(`Session not complete yet:`);
+            console.log(`   - All jobs finished: ${allJobsFinished}`);
+            console.log(`   - Expected jobs: ${totalExpectedJobs}, Found: ${actualJobsFound}`);
+            console.log(`   - Waiting for ${totalExpectedJobs - actualJobsFound} more jobs or completion...`);
+        }
+    }
+
+    private emitSessionExpired(teamId: string, sessionId: string, trajectoryId: string): void {
+        console.log(`Emitting session_expired: teamId=${teamId}, sessionId=${sessionId}, trajectoryId=${trajectoryId}`);
+        
+        const expiredEvent = {
+            type: 'session_expired',
+            sessionId,
+            trajectoryId,
+            timestamp: new Date().toISOString()
+        };
+        
+        console.log(`Session expired event data:`, expiredEvent);
+        emitJobUpdate(teamId, expiredEvent);
+        console.log(`Session expired event emitted to team ${teamId}`);
     }
 
     protected async setJobStatus(jobId: string, status: string, data: any = {}): Promise<void> {
         const jobInfoFromMap = Array.from(this.jobMap.values()).find((info) => info.job.jobId === jobId);
+        let existingJobData = null;
+        try{
+            const existingJobStatusString = await redis!.get(`${this.statusKeyPrefix}${jobId}`);
+            if(existingJobStatusString){
+                existingJobData = JSON.parse(existingJobStatusString);
+            }
+        }catch(error){
+            console.log(`Could not retrieve existing job data for ${jobId}:`, error);
+        }
 
         const statusData = {
             jobId,
             status,
+            sessionId: data.sessionId || existingJobData?.sessionId || undefined,
+            sessionStartTime: data.sessionStartTime || existingJobData?.sessionStartTime || undefined,
             trajectoryId: data.trajectoryId || (jobInfoFromMap?.job as any)?.trajectoryId,
-            name: data.name || jobInfoFromMap?.job.name,
-            message: data.message || jobInfoFromMap?.job.message,
+            name: data.name || existingJobData?.name || jobInfoFromMap?.job.name,
+            message: data.message || existingJobData?.message || jobInfoFromMap?.job.message,
             timestamp: new Date().toISOString(),
-            teamId: data.teamId || jobInfoFromMap?.job.teamId, 
-            chunkIndex: data.chunkIndex !== undefined ? data.chunkIndex : (jobInfoFromMap?.job as any)?.chunkIndex,
-            totalChunks: data.totalChunks !== undefined ? data.totalChunks : (jobInfoFromMap?.job as any)?.totalChunks,
+            teamId: data.teamId || existingJobData?.teamId || jobInfoFromMap?.job.teamId, 
+            chunkIndex: data.chunkIndex !== undefined ? data.chunkIndex : existingJobData?.chunkIndex !== undefined ? existingJobData.chunkIndex : (jobInfoFromMap?.job as any)?.chunkIndex,
+            totalChunks: data.totalChunks !== undefined ? data.totalChunks : existingJobData?.totalChunks !== undefined ? existingJobData.totalChunks : (jobInfoFromMap?.job as any)?.totalChunks,
             ...data
         };
+
+        if(status === 'completed' || status === 'failed'){
+            console.log(`Setting job status for ${jobId}:`, {
+                status,
+                sessionId: statusData.sessionId,
+                trajectoryId: statusData.trajectoryId,
+                preservedFromExisting: !!existingJobData?.sessionId
+            });
+        }
 
         try{
             const pipeline = redis!.pipeline();
