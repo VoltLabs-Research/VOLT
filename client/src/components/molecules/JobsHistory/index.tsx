@@ -61,7 +61,12 @@ const JobsHistory = () => {
                             <FaCheck />
                         </i>
                         <div className='job-info-container'>
-                            <h3 className='job-name'>{job.name}</h3>
+                            <h3 className='job-name'>
+                                {job.name}
+                                {(job?.chunkIndex !== undefined && job?.totalChunks !== undefined) && (
+                                    <span> - Chunk {job.chunkIndex + 1}/{job.totalChunks}</span>
+                                )}
+                            </h3>
                             <p className='job-message'>{job.message}</p>
                         </div>
                     </div>

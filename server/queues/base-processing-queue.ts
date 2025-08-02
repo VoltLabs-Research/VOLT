@@ -527,6 +527,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             message: data.message || jobInfoFromMap?.job.message,
             timestamp: new Date().toISOString(),
             teamId: data.teamId || jobInfoFromMap?.job.teamId, 
+            chunkIndex: data.chunkIndex !== undefined ? data.chunkIndex : (jobInfoFromMap?.job as any)?.chunkIndex,
+            totalChunks: data.totalChunks !== undefined ? data.totalChunks : (jobInfoFromMap?.job as any)?.totalChunks,
             ...data
         };
 

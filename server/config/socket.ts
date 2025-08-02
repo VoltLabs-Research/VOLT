@@ -42,7 +42,7 @@ const getJobsForTeam = async (teamId: string): Promise<any[]> => {
                     totalChunks: jobStatus.totalChunks,
                     name: jobStatus.name,
                     message: jobStatus.message,
-                    timestamp: jobStatus.timestamp
+                    timestamp: jobStatus.timestamp,
                 });
                 console.log(`[Socket] Added job ${jobStatus.jobId} to team ${teamId} results`);
             }
@@ -60,7 +60,6 @@ export const initializeSocketIO = (server: http.Server): Server => {
     io = new Server(server, {
         cors: {
             origin: [
-                // TODO:
                 process.env.CLIENT_DEV_HOST,
                 process.env.CLIENT_HOST
             ],
@@ -125,12 +124,14 @@ export const emitJobUpdate = async (teamId: string, jobData: any): Promise<void>
         return;
     }
 
-        const jobUpdate = {
+    const jobUpdate = {
         jobId: jobData.jobId,
         status: jobData.status,
         progress: jobData.progress || 0,
         chunkIndex: jobData.chunkIndex,
         totalChunks: jobData.totalChunks,
+        name: jobData.name,
+        message: jobData.message,
         timestamp: jobData.timestamp || new Date().toISOString(),
         ...(jobData.error && { error: jobData.error }),
         ...(jobData.result && { result: jobData.result }),
