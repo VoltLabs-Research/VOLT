@@ -14,17 +14,13 @@
     pointer-events: none;
 }
 
-.simulation-container:hover .simulation-cover-container,
+.simulation-container:hover .simulation-cover-container:not(.simulation-container.simulation-container.has-jobs),
 .simulation-container.is-selected .simulation-cover-container{
     border: 1px solid rgb(37, 137, 255);
 }
 
 .simulation-container:hover .simulation-options-icon-container{
     opacity: 1;
-}
-
-.simulation-container:hover .progress-border-wrapper{
-    transform: scale(1.02);
 }
 
 .simulation-cover-container{
@@ -35,7 +31,7 @@
     transition: .1s;
     justify-content: center;
     align-items: center;
-    background-color: #bebebe;
+    background-color: #fbfbfb;
     box-shadow: 0 0 0px 1px rgb(205 205 205 / 80%);
     overflow: hidden;
 }

@@ -32,6 +32,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     protected dispatcherPromise?: Promise<void>;
     protected healthCheckInterval_: NodeJS.Timeout | null = null;
     protected metrics: QueueMetrics;
+    private sessionCheckMap = new Map<string, Promise<void>>();
     
     private readonly batchSize = 20;
     private readonly dispatchBackoff = {
@@ -324,6 +325,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 });
                 this.updateMetrics(processingTime, false);
                 this.emit('jobCompleted', { job, result: message.result, processingTime });
+                
                 console.log(`Job ${job.jobId} completed, checking session status...`);
                 const jobStatusString = await redis!.get(`${this.statusKeyPrefix}${job.jobId}`);
                 if(jobStatusString){
@@ -336,20 +338,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     });
                     
                     if(jobStatus.sessionId && jobStatus.trajectoryId){
-                        setImmediate(() => {
-                            this.checkAndUpdateSessionStatus(jobStatus.sessionId, jobStatus.trajectoryId);
-                        });
-
-                        // Additional check after 1 second (in case there are jobs running in parallel)
-                        setTimeout(() => {
-                            console.log(`Running secondary session check for ${jobStatus.sessionId}`);
-                            this.checkAndUpdateSessionStatus(jobStatus.sessionId, jobStatus.trajectoryId);
-                        }, 1000);
-
-                        setTimeout(() => {
-                            console.log(`Running final session check for ${jobStatus.sessionId}`);
-                            this.checkAndUpdateSessionStatus(jobStatus.sessionId, jobStatus.trajectoryId);
-                        }, 3000);
+                        this.scheduleSessionCheck(jobStatus.sessionId, jobStatus.trajectoryId);
                     }else{
                         console.log(`No sessionId or trajectoryId found for job ${job.jobId}`);
                     }
@@ -360,6 +349,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
             case 'failed':
                 await this.handleJobFailure(job, message.error, processingTime);
+                
                 const failedJobStatusString = await redis!.get(`${this.statusKeyPrefix}${job.jobId}`);
                 if(failedJobStatusString){
                     const failedJobStatus = JSON.parse(failedJobStatusString);
@@ -371,14 +361,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     });
 
                     if(failedJobStatus.sessionId && failedJobStatus.trajectoryId){
-                        setImmediate(() => {
-                            this.checkAndUpdateSessionStatus(failedJobStatus.sessionId, failedJobStatus.trajectoryId);
-                        });
-
-                        setTimeout(() => {
-                            console.log(`Running delayed session check for failed job ${failedJobStatus.sessionId}`);
-                            this.checkAndUpdateSessionStatus(failedJobStatus.sessionId, failedJobStatus.trajectoryId);
-                        }, 10000);
+                        this.scheduleSessionCheck(failedJobStatus.sessionId, failedJobStatus.trajectoryId);
                     }
                 }
                 break;
@@ -398,6 +381,161 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             await redis!.lrem(this.processingKey, 1, rawData);
             this.releaseWorker(workerId);   
         }
+    }
+
+    private scheduleSessionCheck(sessionId: string, trajectoryId: string): void {
+        const sessionKey = `${sessionId}:${trajectoryId}`;
+        
+        if (this.sessionCheckMap.has(sessionKey)) {
+            console.log(`Session check already in progress for ${sessionId}, skipping duplicate`);
+            return;
+        }
+        
+        console.log(`Scheduling session check for ${sessionId}`);
+        
+        const checkPromise = this.performSessionCheck(sessionId, trajectoryId)
+            .finally(() => {
+                this.sessionCheckMap.delete(sessionKey);
+                console.log(`Session check completed and cleaned up for ${sessionId}`);
+            });
+        
+        this.sessionCheckMap.set(sessionKey, checkPromise);
+    }
+
+    private async performSessionCheck(sessionId: string, trajectoryId: string): Promise<void> {
+        console.log(`Starting session check: sessionId=${sessionId}, trajectoryId=${trajectoryId}`);
+        
+        if(!sessionId){
+            console.log(`No sessionId provided`);
+            return;
+        }
+        
+        const sessionKey = `session:${sessionId}`;
+        const sessionDataString = await redis!.get(sessionKey);
+        
+        if(!sessionDataString){
+            console.log(`No session data found for key: ${sessionKey}`);
+            return;
+        }
+        
+        const sessionData = JSON.parse(sessionDataString);
+        console.log(`Session data:`, sessionData);
+        
+        if(sessionData.status !== 'active'){
+            console.log(`Session ${sessionId} is not active (status: ${sessionData.status})`);
+            return;
+        }
+
+        console.log(`Waiting 2 seconds for all jobs to be persisted...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        let sessionJobStatuses = [];
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts) {
+            attempts++;
+            console.log(`Attempt ${attempts}/${maxAttempts} to get consistent job data...`);
+            
+            const teamJobsKey = `team:${sessionData.teamId}:jobs`;
+            const allJobIds = await redis!.smembers(teamJobsKey);
+            
+            console.log(`Found ${allJobIds.length} job IDs in team index (attempt ${attempts})`);
+            
+            const currentSessionJobs = [];
+            
+            for(const jobId of allJobIds){
+                const jobStatusString = await redis!.get(`${this.statusKeyPrefix}${jobId}`);
+                if(jobStatusString){
+                    const jobStatus = JSON.parse(jobStatusString);
+                    if(jobStatus.sessionId === sessionId && jobStatus.trajectoryId === trajectoryId){
+                        currentSessionJobs.push(jobStatus);
+                    }
+                }
+            }
+            
+            console.log(`Found ${currentSessionJobs.length} jobs matching session (attempt ${attempts})`);
+            
+            if (attempts === 1 || currentSessionJobs.length === sessionJobStatuses.length) {
+                sessionJobStatuses = currentSessionJobs;
+                if (attempts > 1) {
+                    console.log(`Data consistent across attempts, proceeding...`);
+                }
+                break;
+            } else {
+                console.log(`Data inconsistent: previous=${sessionJobStatuses.length}, current=${currentSessionJobs.length}, retrying...`);
+                sessionJobStatuses = currentSessionJobs;
+                
+                if (attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        }
+        
+        if(sessionJobStatuses.length === 0){
+            console.log(`No jobs found for this session after ${attempts} attempts`);
+            return;
+        }
+        
+        const statusCounts = sessionJobStatuses.reduce((acc, job) => {
+            acc[job.status] = (acc[job.status] || 0) + 1;
+            return acc;
+        }, {});
+        console.log(`Final job status breakdown:`, statusCounts);
+        
+        const allJobsFinished = sessionJobStatuses.every(job => 
+            ['completed', 'failed'].includes(job.status)
+        );
+        
+        console.log(`All jobs finished: ${allJobsFinished}`);
+        
+        const totalExpectedJobs = sessionData.totalJobs;
+        const actualJobsFound = sessionJobStatuses.length;
+        
+        console.log(`Expected jobs: ${totalExpectedJobs}, Found jobs: ${actualJobsFound}`);
+        
+        const sessionComplete = allJobsFinished && actualJobsFound === totalExpectedJobs && sessionJobStatuses.length > 0;
+        
+        if(sessionComplete){
+            console.log(`Session ${sessionId} is COMPLETE! All ${actualJobsFound} jobs finished. Marking as expired immediately...`);
+            
+            const updatedSessionData = {
+                ...sessionData,
+                status: 'expired',
+                expiredAt: new Date().toISOString(),
+                completedAt: new Date().toISOString(), 
+                completedJobs: statusCounts.completed || 0,
+                failedJobs: statusCounts.failed || 0
+            };
+            
+            await redis!.setex(sessionKey, 86400 * 7, JSON.stringify(updatedSessionData));
+            console.log(`Session marked as expired in Redis immediately`);
+            
+            if(sessionData.teamId){
+                console.log(`Emitting session_expired event for team ${sessionData.teamId}`);
+                this.emitSessionExpired(sessionData.teamId, sessionId, trajectoryId);
+            }
+        }else{
+            console.log(`Session not complete yet:`);
+            console.log(`   - All jobs finished: ${allJobsFinished}`);
+            console.log(`   - Expected jobs: ${totalExpectedJobs}, Found: ${actualJobsFound}`);
+            console.log(`   - Waiting for ${totalExpectedJobs - actualJobsFound} more jobs or completion...`);
+        }
+    }
+
+    private emitSessionExpired(teamId: string, sessionId: string, trajectoryId: string): void {
+        console.log(`Emitting session_expired: teamId=${teamId}, sessionId=${sessionId}, trajectoryId=${trajectoryId}`);
+        
+        const expiredEvent = {
+            type: 'session_expired',
+            sessionId,
+            trajectoryId,
+            timestamp: new Date().toISOString()
+        };
+        
+        console.log(`Session expired event data:`, expiredEvent);
+        emitJobUpdate(teamId, expiredEvent);
+        console.log(`Session expired event emitted to team ${teamId}`);
     }
 
     private clearWorkerTimeouts(workerItem: WorkerPoolItem): void {
@@ -507,10 +645,9 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
         const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         const sessionStartTime = new Date().toISOString();
-        console.log(`🚀 Starting new job session: ${sessionId} with ${jobs.length} jobs`);
+        console.log(`Starting new job session: ${sessionId} with ${jobs.length} jobs`);
 
         if(this.useStreamingAdd){
-            // Streaming behavior (one by one)
             console.log(`[${this.queueName}] Adding ${jobs.length} jobs to queue using streaming mode...`);
             for(const job of jobs){
                 const stringifiedJob = JSON.stringify(job);
@@ -527,7 +664,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     teamId: job.teamId
                 });
 
-                // Small pause to avoid overloading the event loop
                 await new Promise((resolve) => setTimeout(resolve, 50));
             }
             console.log(`[${this.queueName}] Successfully added all jobs via streaming.`);
@@ -541,7 +677,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             for(const job of jobs){
                 const serialized = JSON.stringify(job);
                 
-                // TODO: priority?
                 if(job.priority && job.priority > 5){
                     priorityJobs.push(serialized);
                 } else {
@@ -592,115 +727,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             status: 'active'
         }));
         console.log(`Job session ${sessionId} created and stored in Redis`);
-    }
-
-    private async checkAndUpdateSessionStatus(sessionId: string, trajectoryId: string): Promise<void> {
-        console.log(`Starting session check: sessionId=${sessionId}, trajectoryId=${trajectoryId}`);
-        
-        if(!sessionId){
-            console.log(`No sessionId provided`);
-            return;
-        }
-        
-        const sessionKey = `session:${sessionId}`;
-        const sessionDataString = await redis!.get(sessionKey);
-        
-        if(!sessionDataString){
-            console.log(`No session data found for key: ${sessionKey}`);
-            return;
-        }
-        
-        const sessionData = JSON.parse(sessionDataString);
-        console.log(`Session data:`, sessionData);
-        
-        if(sessionData.status !== 'active'){
-            console.log(`Session ${sessionId} is not active (status: ${sessionData.status})`);
-            return;
-        }
-        
-        const teamJobsKey = `team:${sessionData.teamId}:jobs`;
-        const allJobIds = await redis!.smembers(teamJobsKey);
-        
-        console.log(`Found ${allJobIds.length} job IDs in team index`);
-        
-        const sessionJobStatuses = [];
-        
-        for(const jobId of allJobIds){
-            const jobStatusString = await redis!.get(`${this.statusKeyPrefix}${jobId}`);
-            if(jobStatusString){
-                const jobStatus = JSON.parse(jobStatusString);
-                if(jobStatus.sessionId === sessionId && jobStatus.trajectoryId === trajectoryId){
-                    sessionJobStatuses.push(jobStatus);
-                }
-            }
-        }
-        
-        console.log(`Found ${sessionJobStatuses.length} jobs matching session ${sessionId} and trajectory ${trajectoryId}`);
-        
-        if(sessionJobStatuses.length === 0){
-            console.log(`No jobs found for this session`);
-            return;
-        }
-        
-        const statusCounts = sessionJobStatuses.reduce((acc, job) => {
-            acc[job.status] = (acc[job.status] || 0) + 1;
-            return acc;
-        }, {});
-        console.log(`Job status breakdown:`, statusCounts);
-        
-        const allJobsFinished = sessionJobStatuses.every(job => 
-            ['completed', 'failed'].includes(job.status)
-        );
-        
-        console.log(`All jobs finished: ${allJobsFinished}`);
-        
-        const totalExpectedJobs = sessionData.totalJobs;
-        const actualJobsFound = sessionJobStatuses.length;
-        
-        console.log(`Expected jobs: ${totalExpectedJobs}, Found jobs: ${actualJobsFound}`);
-        
-        const sessionComplete = allJobsFinished && actualJobsFound === totalExpectedJobs && sessionJobStatuses.length > 0;
-        
-        if(sessionComplete){
-            console.log(`Session ${sessionId} is COMPLETE! All ${actualJobsFound} jobs finished. Marking as expired immediately...`);
-            
-            const updatedSessionData = {
-                ...sessionData,
-                status: 'expired',
-                expiredAt: new Date().toISOString(),
-                completedAt: new Date().toISOString(), 
-                completedJobs: statusCounts.completed || 0,
-                failedJobs: statusCounts.failed || 0
-            };
-            
-            await redis!.setex(sessionKey, 86400 * 7, JSON.stringify(updatedSessionData));
-            console.log(`Session marked as expired in Redis immediately`);
-            
-            if(sessionData.teamId){
-                console.log(`Emitting session_expired event for team ${sessionData.teamId}`);
-                this.emitSessionExpired(sessionData.teamId, sessionId, trajectoryId);
-            }
-        }else{
-            console.log(`Session not complete yet:`);
-            console.log(`   - All jobs finished: ${allJobsFinished}`);
-            console.log(`   - Expected jobs: ${totalExpectedJobs}, Found: ${actualJobsFound}`);
-            console.log(`   - Waiting for ${totalExpectedJobs - actualJobsFound} more jobs or completion...`);
-        }
-    }
-
-    private emitSessionExpired(teamId: string, sessionId: string, trajectoryId: string): void {
-        console.log(`Emitting session_expired: teamId=${teamId}, sessionId=${sessionId}, trajectoryId=${trajectoryId}`);
-        
-        const expiredEvent = {
-            type: 'session_expired',
-            sessionId,
-            trajectoryId,
-            timestamp: new Date().toISOString()
-        };
-        
-        console.log(`Session expired event data:`, expiredEvent);
-        emitJobUpdate(teamId, expiredEvent);
-        console.log(`Session expired event emitted to team ${teamId}`);
     }
 
     protected async setJobStatus(jobId: string, status: string, data: any = {}): Promise<void> {

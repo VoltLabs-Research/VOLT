@@ -29,7 +29,7 @@ import './DashboardContainer.css';
 const DashboardContainer = ({ children, pageName, className = '' }) => {
 
     return (
-        <div className='dashboard-container'>
+        <div className={'dashboard-container '.concat(className + ' wrapper')}>
             {/*}
             <article className='dashboard-header-container'>
                 <div className='dashboard-header-left-container'>

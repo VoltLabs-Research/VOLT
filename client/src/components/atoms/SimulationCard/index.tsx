@@ -122,7 +122,7 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
         }
     }, [trajectory._id, completionRate, totalJobs, hasJobs, isCompleted, shouldHideBorder]);
 
-    const containerClasses = `simulation-container ${isDeleting ? 'is-deleting' : ''} ${isSelected ? 'is-selected' : ''}`;
+    const containerClasses = `simulation-container ${hasActiveJobs ? 'has-jobs' : ''} ${isDeleting ? 'is-deleting' : ''} ${isSelected ? 'is-selected' : ''}`;
     
     const handleDelete = () => {
         if(completionTimeoutRef.current){
@@ -176,8 +176,7 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
                     className='simulation-cover-container'
                     style={{
                         borderRadius: '12px',
-                        overflow: 'hidden',
-                        background: 'white' 
+                        overflow: 'hidden'
                     }}
                 >
                     {true ? (

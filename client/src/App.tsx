@@ -29,7 +29,7 @@ import ProtectedRoute from './components/atoms/ProtectedRoute';
 import DashboardLayout from './components/atoms/DashboardLayout';
 import SharedWithMe from './pages/protected/SharedWithMe';
 import Tutorials from './pages/protected/Tutorials';
-import Simulations from './pages/protected/Simulations';
+import Messages from './pages/protected/Messages';
 
 const App = () => {
 
@@ -40,7 +40,7 @@ const App = () => {
                 <Route element={<DashboardLayout />}>
                     <Route path='/dashboard' element={<Dashboard />} />
                     <Route path='/dashboard/shared-with-me/' element={<SharedWithMe />} />
-                    <Route path='/dashboard/simulations/' element={<Simulations />} />
+                    <Route path='/dashboard/messages/' element={<Messages />} />
                     <Route path='/dashboard/tutorials/' element={<Tutorials />} />
 
                 </Route>

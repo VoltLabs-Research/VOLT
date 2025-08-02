@@ -82,7 +82,7 @@ const DashboardLayout = () => {
                     <div className='sidebar-nav-container'>
                         {[
                             ['Dashboard', GrHomeOption, '/dashboard'],
-                            ['Team Messages', CiChat1, '/dashboard/simulations'],
+                            ['Messages', CiChat1, '/dashboard/messages'],
                             ['Studio', TbCube3dSphere, ''],
                             ['Tutorials', TbBook, '/dashboard/tutorials'],
                         ].map(([ name, Icon, to ], index) => (
