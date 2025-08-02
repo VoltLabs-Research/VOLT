@@ -24,6 +24,11 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
     const completionTimeoutRef = useRef(null); 
     const previousCompletionRate = useRef(0);
 
+    const totalJobs = jobs._stats?.total || 0;
+    const completionRate = jobs._stats?.completionRate || 0;
+    const hasJobs = totalJobs > 0;
+    const hasActiveJobs = jobs._stats?.hasActiveJobs || false; 
+
     const loadTrajectoryOnCanvas = () => {
         navigate(`/canvas/${trajectory._id}/`);
     };
@@ -31,7 +36,8 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
     const handleClick = (event) => {
         if(event.target.closest('.simulation-options-icon-container') || 
            event.target.closest('.simulation-caption-title') ||
-           event.target.closest('.action-based-floating-container-element-wrapper')){
+           event.target.closest('.action-based-floating-container-element-wrapper') ||
+           hasJobs){
             return;
         }
 
@@ -42,11 +48,6 @@ const SimulationCard = ({ trajectory, isSelected, onSelect, jobs = {} }) => {
             loadTrajectoryOnCanvas();
         }
     };
-
-    const totalJobs = jobs._stats?.total || 0;
-    const completionRate = jobs._stats?.completionRate || 0;
-    const hasJobs = totalJobs > 0;
-    const hasActiveJobs = jobs._stats?.hasActiveJobs || false; 
 
     const getBorderColor = () => {
         if(!hasJobs || shouldHideBorder) return 'transparent';

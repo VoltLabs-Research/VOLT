@@ -2,7 +2,7 @@ import { useState, useEffect, useRef} from 'react';
 import useTeamStore from '@/stores/team';
 import io from 'socket.io-client';
 
-const SOCKET_URL = 'http://192.168.1.85:8000/';
+const SOCKET_URL = 'http://172.20.10.5:8000/';
 
 export const socket = io(SOCKET_URL, {
     autoConnect: false

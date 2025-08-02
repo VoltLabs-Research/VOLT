@@ -10,11 +10,10 @@
 }
 
 .simulation-container.has-jobs{
-    touch-action: none;
-    pointer-events: none;
+    cursor: wait !important;
 }
 
-.simulation-container:hover .simulation-cover-container:not(.simulation-container.simulation-container.has-jobs),
+.simulation-container:not(.has-jobs):hover .simulation-cover-container,
 .simulation-container.is-selected .simulation-cover-container{
     border: 1px solid rgb(37, 137, 255);
 }
