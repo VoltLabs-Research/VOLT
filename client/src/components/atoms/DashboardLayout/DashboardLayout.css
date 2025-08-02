@@ -1,4 +1,5 @@
 .dashboard-main{
+    height: 100%;
     display: flex;
 }
 

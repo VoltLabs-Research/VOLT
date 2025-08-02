@@ -11,7 +11,7 @@ const DashboardPage = () => {
     
     return (
         <FileUpload>            
-            <DashboardContainer pageName='Dashboard'>
+            <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
                 <div className='dashboard-main-container'>
                     <TrajectoryPreview />
 
@@ -26,10 +26,7 @@ const DashboardPage = () => {
                     </div>
                 </div>
 
-                {/*
-                    <SimulationGrid />
-                    <JobsHistory />
-                */}
+                <SimulationGrid />
             </DashboardContainer>
         </FileUpload>
     );

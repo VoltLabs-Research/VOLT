@@ -74,6 +74,8 @@ const DashboardContainer = ({ children, pageName, className = '' }) => {
             <div className={className}>
                 {children}
             </div>
+
+            <div className='whitespace-container'></div>
         </div>
     );
 };

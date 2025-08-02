@@ -25,3 +25,9 @@
     font-size: 1.5rem;
     font-weight: 500;
 }
+
+.dashboard-wrapper-container{
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}

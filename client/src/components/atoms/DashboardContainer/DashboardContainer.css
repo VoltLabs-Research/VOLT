@@ -31,6 +31,15 @@
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    height: 100%;
+    overflow: scroll;
+}
+
+.whitespace-container{
+    width: 100%;
+    height: 250px;
+    background-color: transparent;
+    flex-shrink: 0;
 }
 
 .dashboard-header-container{
