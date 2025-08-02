@@ -4,6 +4,7 @@ import FileUpload from '@/components/molecules/FileUpload';
 import useTeamJobs from '@/hooks/useTeamJobs';
 import JobsHistory from '@/components/molecules/JobsHistory';
 import TrajectoryPreview from '@/components/molecules/TrajectoryPreview';
+import AIPromptBox from '@/components/atoms/AIPromptBox';
 import './Dashboard.css';
 
 const DashboardPage = () => {
@@ -28,6 +29,8 @@ const DashboardPage = () => {
 
                 <SimulationGrid />
             </DashboardContainer>
+
+            <AIPromptBox />
         </FileUpload>
     );
 };

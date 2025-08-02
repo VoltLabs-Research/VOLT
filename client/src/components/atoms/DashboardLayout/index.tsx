@@ -32,10 +32,11 @@ import { IoIosHelpCircleOutline } from 'react-icons/io';
 import { CiChat1 } from 'react-icons/ci';
 import SidebarUserAvatar from '@/components/atoms/SidebarUserAvatar';
 import SidebarNavigationOption from '@/components/atoms/SidebarNavigationOption';
-import AIPromptBox from '@/components/atoms/AIPromptBox';
 import Select from '@/components/atoms/Select';
 import useTeamStore from '@/stores/team';
 import useTrajectoryStore from '@/stores/trajectories';
+import ShortcutsModal from '@/components/organisms/ShortcutsModal';
+import useUIStore from '@/stores/ui';
 import './DashboardLayout.css';
 
 const DashboardLayout = () => {
@@ -44,6 +45,7 @@ const DashboardLayout = () => {
     const getUserTeams = useTeamStore((state) => state.getUserTeams);
     const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
     const areTeamsLoading = useTeamStore((state) => state.isLoading);
+    const toggleShortcutsModal = useUIStore((state) => state.toggleShortcutsModal);
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
@@ -98,19 +100,19 @@ const DashboardLayout = () => {
 
                 <article className='sidebar-bottom-container'>
                     {[
-                        ['Archive', GoTrash],
-                        ['Shortcuts', BsCommand],
-                        ['Settings', IoSettingsOutline],
-                        ['Help & Feedback', IoIosHelpCircleOutline]
-                    ].map(([ name, Icon ], index) => (
-                        <SidebarNavigationOption key={`${name}-${index}`} name={name} Icon={Icon} />
+                        ['Archive', GoTrash, () => {}],
+                        ['Shortcuts', BsCommand, toggleShortcutsModal],
+                        ['Settings', IoSettingsOutline, () => {}],
+                        ['Help & Feedback', IoIosHelpCircleOutline, () => {}]
+                    ].map(([ name, Icon, onClick ], index) => (
+                        <SidebarNavigationOption onClick={onClick} key={`${name}-${index}`} name={name} Icon={Icon} />
                     ))}
                 </article>
             </section>
                 
             <Outlet />
 
-            <AIPromptBox />
+            <ShortcutsModal />
         </main>
     );
 };

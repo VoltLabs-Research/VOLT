@@ -36,7 +36,7 @@
 }
 
 .chat-box-messages-container{
-    height: calc(100% - 200px);
+    height: -webkit-fill-available;
     border: 1px solid rgb(224, 224, 224);
     border-bottom: unset;
     background-color: #fbfbfb;

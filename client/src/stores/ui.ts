@@ -5,7 +5,10 @@ const useUIStore = create((set) => ({
     toggleCanvasGrid: () => set((state) => ({ showCanvasGrid: !state.showCanvasGrid })),
 
     showEditorWidgets: true,
-    toggleEditorWidgets: () => set((state) => ({ showEditorWidgets: !state.showEditorWidgets }))
+    toggleEditorWidgets: () => set((state) => ({ showEditorWidgets: !state.showEditorWidgets })),
+
+    showShortcutsModal: false,
+    toggleShortcutsModal: () => set((state) => ({ showShortcutsModal: !state.showShortcutsModal }))
 }));
 
 export default useUIStore;
