@@ -1,52 +1,47 @@
-import React, { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import useTeamJobs from '@/hooks/useTeamJobs';
-import { FaCheck } from "react-icons/fa6";
-import formatTimeAgo from '@/utilities/formatTimeAgo';
+import UseAnimations from 'react-useanimations';
+import activity from 'react-useanimations/lib/activity';
+import { 
+    FaCheck, 
+    FaClock, 
+    FaPlay, 
+    FaExclamationTriangle, 
+    FaTimes,
+    FaRedo
+} from 'react-icons/fa';
 import './JobsHistory.css';
 
 const JobsHistory = () => {
     const { jobs, isConnected } = useTeamJobs();
 
-    const jobsByStatus = useMemo(() => {
-        const latestJobs = jobs.reduce((acc, job) => {
-            const existingJob = acc[job.jobId];
-            if(!existingJob || new Date(job.updatedAt || job.createdAt) > new Date(existingJob.updatedAt || existingJob.createdAt)){
-                acc[job.jobId] = job;
-            }
+    const statusConfig = {
+        'completed': {
+            icon: <FaCheck />,
+        },
+        'running': {
+            icon: <UseAnimations animation={activity} />,
+        },
+        'queued': {
+            icon: <FaClock />,
+        },
+        'retrying': {
+            icon: <FaRedo />,
+        },
+        'queued_after_failure': {
+            icon: <FaExclamationTriangle />,
+        },
+        'failed': {
+            icon: <FaTimes />,
+        },
+        'unknown': {
+            icon: <FaExclamationTriangle />,
+        }
+    };
 
-            return acc;
-        }, {});
-
-        const grouped = Object.values(latestJobs).reduce((acc, job) => {
-            const status = job.status || 'unknown';
-            if(!acc[status]){
-                acc[status] = [];
-            }
-
-            acc[status].push(job);
-            return acc;
-        }, {});
-
-        Object.keys(grouped).forEach((status) => {
-            grouped[status].sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
-        });
-
-        return grouped;
-    }, [jobs]);
-
-    const statusOrder = [
-        'running', 
-        'queued',
-        'retrying',
-        'queued_after_failure',
-        'completed',
-        'failed'
-    ];
-    const sortedStatuses = Object.keys(jobsByStatus).sort((a, b) => {
-        const aIndex = statusOrder.indexOf(a);
-        const bIndex = statusOrder.indexOf(b);
-        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
-    });
+    const getStatusConfig = (status) => {
+        return statusConfig[status] || statusConfig['unknown'];
+    };
 
     useEffect(() => {
         console.log(jobs);
@@ -54,26 +49,38 @@ const JobsHistory = () => {
 
     return isConnected && (
         <div className='jobs-history-container'>
-            {jobs.map((job, index) => (
-                <div className='job-container' key={index}>
-                    <div className='job-left-container'>
-                        <i className='job-icon-container'>
-                            <FaCheck />
-                        </i>
-                        <div className='job-info-container'>
-                            <h3 className='job-name'>
-                                {job.name}
-                                {(job?.chunkIndex !== undefined && job?.totalChunks !== undefined) && (
-                                    <span> - Chunk {job.chunkIndex + 1}/{job.totalChunks}</span>
-                                )}
-                            </h3>
-                            <p className='job-message'>{job.message}</p>
+            {jobs.map((job, index) => {
+                const config = getStatusConfig(job.status);
+                const IconComponent = config.icon;
+                
+                return (
+                    <div className={'job-container '.concat(job.status)} key={index}>
+                        <div className='job-left-container'>
+                            <i className='job-icon-container'>
+                                {IconComponent}
+                            </i>
+                            <div className='job-info-container'>
+                                <h3 className='job-name'>
+                                    {job.name}
+                                    {(job?.chunkIndex !== undefined && job?.totalChunks !== undefined) && (
+                                        <span> - Chunk {job.chunkIndex + 1}/{job.totalChunks}</span>
+                                    )}
+                                </h3>
+                                <p className='job-message'>
+                                    {job.message || job.status}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className='job-status-info'>
+                            <span className='job-status-badge'>
+                                {job.status}
+                            </span>
+                            {/*<p className='job-timestamp'>{formatTimeAgo(job.timestamp)}</p>*/}
                         </div>
                     </div>
-
-                    <p className='job-timestamp'>{formatTimeAgo(job.timestamp)}</p>
-                </div>
-            ))}
+                );
+            })}
         </div> 
     );
 };
