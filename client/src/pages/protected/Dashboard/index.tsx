@@ -12,7 +12,19 @@ const DashboardPage = () => {
     return (
         <FileUpload>            
             <DashboardContainer pageName='Dashboard'>
-                <TrajectoryPreview />
+                <div className='dashboard-main-container'>
+                    <TrajectoryPreview />
+
+                    <div className='jobs-history-viewer'>
+                        <div className='jobs-history-viewer-header'>
+                            <h3 className='jobs-history-title'>Team's Jobs History</h3>
+                        </div>
+
+                        <div className='jobs-history-viewer-body'>
+                            <JobsHistory />
+                        </div>
+                    </div>
+                </div>
 
                 {/*
                     <SimulationGrid />
