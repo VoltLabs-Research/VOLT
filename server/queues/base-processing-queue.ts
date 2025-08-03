@@ -382,10 +382,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 local counterKey = sessionKey .. ":remaining"
                 local teamJobsKey = "team:" .. teamId .. ":jobs"
                 
-                -- Decrementar contador atómicamente
                 local remaining = redis.call('DECR', counterKey)
                 
-                -- Si remaining <= 0, esta es la señal para limpiar
                 if remaining <= 0 then
                     -- Obtener datos de sesión
                     local sessionData = redis.call('GET', sessionKey)
@@ -393,11 +391,9 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                         return {0, 0, "no_session"}
                     end
                     
-                    -- Obtener todos los jobs del team
                     local allJobIds = redis.call('SMEMBERS', teamJobsKey)
                     local sessionJobIds = {}
                     
-                    -- Filtrar jobs de esta sesión
                     for i = 1, #allJobIds do
                         local jobStatusKey = statusKeyPrefix .. allJobIds[i]
                         local jobStatusData = redis.call('GET', jobStatusKey)
@@ -410,11 +406,9 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                         end
                     end
                     
-                    -- Eliminar todos los datos de la sesión
                     redis.call('DEL', sessionKey)
                     redis.call('DEL', counterKey)
                     
-                    -- Eliminar job statuses
                     for i = 1, #sessionJobIds do
                         redis.call('DEL', statusKeyPrefix .. sessionJobIds[i])
                         redis.call('SREM', teamJobsKey, sessionJobIds[i])
