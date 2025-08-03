@@ -35,13 +35,55 @@ import RuntimeError from '@/utilities/runtime-error';
 
 const factory = new HandlerFactory({
     model: Trajectory,
-    fields: ['name']
+    fields: ['name', 'preview']
 });
 
 export const getAllTrajectories = factory.getAll();
 export const getTrajectoryById = factory.getOne();
-export const updateTrajectoryById = factory.updateOne();
 export const deleteTrajectoryById = factory.deleteOne();
+
+export const updateTrajectoryById = async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try{
+        // TODO: use handler factory
+        const updatedTrajectory = await Trajectory.findByIdAndUpdate(
+            id,
+            req.body,
+            { 
+                new: true, 
+                runValidators: true 
+            }
+        ).populate({
+            path: 'team',
+            select: 'name owner members',
+            populate: {
+                path: 'owner members',
+                select: 'firstName lastName email'
+            }
+        });
+
+        if(!updatedTrajectory){
+            return res.status(404).json({
+                status: 'error',
+                data: { error: 'Trajectory not found after update' }
+            });
+        }
+
+        console.log('Trajectory updated successfully, preview:', updatedTrajectory.preview);
+
+        res.status(200).json({
+            status: 'success',
+            data: updatedTrajectory
+        });
+    }catch(error){
+        console.error('Error updating trajectory:', error);
+        res.status(500).json({
+            status: 'error',
+            data: { error: 'Failed to update trajectory' }
+        });
+    }
+};
 
 export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
@@ -87,6 +129,42 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
         status: 'success',
         data: typeMap
     })
+};
+
+// TODO: public folder maybe?
+export const getTrajectoryPreview = async (req: Request, res: Response) => {
+    const trajectory = res.locals.trajectory;
+
+    if(!trajectory || !trajectory.preview){
+        return res.status(404).json({
+            status: 'error',
+            data: { error: 'Preview not found' }
+        });
+    }
+
+    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+    const previewPath = join(basePath, trajectory.folderId, `${trajectory.preview}.png`);
+
+    try{
+        await access(previewPath, constants.F_OK);
+    }catch(error){
+        return res.status(404).json({
+            status: 'error',
+            data: { error: 'Preview file not found' }
+        });
+    }
+
+    const fileStats = await stat(previewPath);
+    
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', fileStats.size);
+    res.setHeader('Content-Disposition', `inline; filename="${trajectory.name}_preview.png"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('ETag', `"${trajectory.preview}-${fileStats.mtime.getTime()}"`);
+
+    res.sendFile(previewPath);
 };
 
 export const getTrajectoryGLB = async (req: Request, res: Response) => {

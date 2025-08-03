@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import CanvasGrid from '@/components/atoms/CanvasGrid';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
@@ -16,6 +16,18 @@ interface Scene3DProps {
     onCameraControlsRef?: (ref: any) => void;
 }
 
+export interface Scene3DRef {
+    captureScreenshot: (options?: {
+        width?: number;
+        height?: number;
+        format?: 'png' | 'jpeg' | 'webp';
+        quality?: number;
+        fileName?: string;
+        download?: boolean;
+        zoomFactor?: number;
+    } | null) => Promise<string>;
+}
+
 const CAMERA_CONFIG = {
     position: [8, 6, 8] as [number, number, number],
     fov: 50,
@@ -25,13 +37,13 @@ const CAMERA_CONFIG = {
 
 const GL_CONFIG = {
     localClippingEnabled: true,
-    alpha: true,
+    alpha: false,
     antialias: false,
     powerPreference: 'high-performance' as const,
     stencil: false,
     depth: true,
     logarithmicDepthBuffer: false,
-    preserveDrawingBuffer: false,
+    preserveDrawingBuffer: true,
     failIfMajorPerformanceCaveat: true,
     desynchronized: true,
     precision: 'lowp',
@@ -119,13 +131,119 @@ const TrajectoryLighting = React.memo(() => (
     </>
 ));
 
-const Scene3D: React.FC<Scene3DProps> = ({
+const ScreenshotHandler: React.FC<{ 
+    onScreenshotReady: (fn: any) => void;
+    backgroundColor: string;
+}> = ({ onScreenshotReady, backgroundColor }) => {
+    const { gl, scene, camera, size } = useThree();
+
+    const captureScreenshot = useCallback((options?: any) => {
+        const safeOptions = options || {};
+        const {
+            width,
+            height,
+            format = 'png',
+            quality = 1.0,
+            // TODO:
+            zoomFactor = 1.0
+        } = safeOptions;
+
+        return new Promise<string>((resolve, reject) => {
+            try{
+                const originalPosition = camera.position.clone();
+                const originalZoom = camera.zoom;
+                const originalFov = camera.fov;
+
+                // Force a render with the new camera settings
+                gl.render(scene, camera);
+                
+                // Wait for a frame to ensure everything is rendered
+                requestAnimationFrame(() => {
+                    try{
+                        const canvas = gl.domElement;
+                        let finalCanvas = canvas;
+                        
+                        if((width && height && (width !== canvas.width || height !== canvas.height)) || format === 'jpeg'){
+                            const tempCanvas = document.createElement('canvas');
+                            const targetWidth = width || canvas.width;
+                            const targetHeight = height || canvas.height;
+                            
+                            tempCanvas.width = targetWidth;
+                            tempCanvas.height = targetHeight;
+                            
+                            const tempCtx = tempCanvas.getContext('2d');
+                            if(!tempCtx){
+                                camera.position.copy(originalPosition);
+                                camera.zoom = originalZoom;
+                                camera.fov = originalFov;
+                                camera.updateProjectionMatrix();
+                                reject(new Error('No se pudo obtener el contexto 2D del canvas temporal'));
+                                return;
+                            }
+                            
+                            if(format === 'jpeg'){
+                                tempCtx.fillStyle = backgroundColor || '#1E1E1E';
+                                tempCtx.fillRect(0, 0, targetWidth, targetHeight);
+                            }
+                            
+                            // Draw the original canvas on the temporary one
+                            tempCtx.drawImage(canvas, 0, 0, targetWidth, targetHeight);
+                            finalCanvas = tempCanvas;
+                        }
+                        
+                        // TODO: duplicated code
+                        const mimeType = `image/${format}`;
+                        const dataURL = finalCanvas.toDataURL(mimeType, quality);
+                        
+                        // Restore the camera to its original state
+                        camera.position.copy(originalPosition);
+                        camera.zoom = originalZoom;
+                        camera.fov = originalFov;
+                        camera.updateProjectionMatrix();
+                        
+                        // Render once more to restore the original view
+                        gl.render(scene, camera);
+                        
+                        // Verificar que el dataURL tenga contenido válido
+                        if(dataURL === 'data:,' || dataURL.length < 100){
+                            reject(new Error('The canvas is empty or could not be captured'));
+                            return;
+                        }
+                        
+                        resolve(dataURL);
+                    }catch(innerError){
+                        // Restore the camera in case of error
+                        camera.position.copy(originalPosition);
+                        camera.zoom = originalZoom;
+                        camera.fov = originalFov;
+                        camera.updateProjectionMatrix();
+                        gl.render(scene, camera);
+                        reject(innerError);
+                    }
+                });
+            }catch(error){
+                reject(error);
+            }
+        });
+    }, [gl, scene, camera, backgroundColor]);
+
+    useEffect(() => {
+        if (typeof onScreenshotReady === 'function') {
+            onScreenshotReady(captureScreenshot);
+        }
+    }, [captureScreenshot, onScreenshotReady]);
+
+    return null;
+};
+
+const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     children,
     showGizmo = true,
     cameraControlsEnabled = true,
     onCameraControlsRef
-}) => {
+}, ref) => {
     const orbitControlsRef = useRef<any>(null);
+    const [screenshotCapture, setScreenshotCapture] = useState<((options?: any) => Promise<string>) | null>(null);
     const activeSceneObject = useEditorStore(state => state.activeSceneObject);
     const showCanvasGrid = useUIStore((state) => state.showCanvasGrid);
     const toggleCanvasGrid = useUIStore((state) => state.toggleCanvasGrid);
@@ -133,6 +251,24 @@ const Scene3D: React.FC<Scene3DProps> = ({
     const showEditorWidgets = useUIStore((state) => state.showEditorWidgets);
 
     const maxDpr = useMemo(() => (window.devicePixelRatio > 1 ? 2 : 1), []);
+
+    const backgroundColor = useMemo(() => 
+        !showEditorWidgets ? '#e6e6e6' : '#1E1E1E'
+    , [showEditorWidgets]);
+
+    const handleScreenshotReady = useCallback((captureFunction: (options?: any) => Promise<string>) => {
+        setScreenshotCapture(() => captureFunction);
+    }, []);
+
+    useImperativeHandle(ref, () => ({
+        captureScreenshot: (options) => {
+            if(screenshotCapture && typeof screenshotCapture === 'function'){
+                return screenshotCapture(options);
+            }
+            
+            return Promise.reject(new Error('Screenshot not available yet.'));
+        }
+    }), [screenshotCapture]);
 
     const handleControlsRef = useCallback((ref: any) => {
         orbitControlsRef.current = ref;
@@ -150,11 +286,11 @@ const Scene3D: React.FC<Scene3DProps> = ({
     );
 
     const canvasStyle = useMemo(() => ({
-        backgroundColor: !showEditorWidgets ? '#e6e6e6' : '#1E1E1E',
+        backgroundColor,
         touchAction: 'none',
         willChange: 'transform',
         transform: 'translateZ(0)'
-    }), [showEditorWidgets]);
+    }), [backgroundColor]);
 
     const orbitControlsProps = useMemo(() => ({
         ...ORBIT_CONTROLS_CONFIG,
@@ -163,20 +299,35 @@ const Scene3D: React.FC<Scene3DProps> = ({
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b') {
+            if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b'){
                 e.preventDefault();
-                toggleCanvasGrid(prev => !prev);
+                toggleCanvasGrid();
             }
 
-            if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'n') {
+            if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'n'){
                 e.preventDefault();
-                toggleEditorWidgets(prev => !prev);
+                toggleEditorWidgets();
+            }
+
+            // TODO: It occurs to me that there may be global settings in a scene, 
+            // so that when saving it they are updated in the cloud and everyone 
+            // can have the same settings.
+            if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 's'){
+                e.preventDefault();
+                if(screenshotCapture && typeof screenshotCapture === 'function'){
+                    screenshotCapture({
+                        format: 'png',
+                        quality: 1.0
+                    });
+                }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [screenshotCapture, toggleCanvasGrid, toggleEditorWidgets]);
 
     return (
         <Canvas
@@ -194,6 +345,13 @@ const Scene3D: React.FC<Scene3DProps> = ({
                 debounce: 50,
             }}
         >
+            <ScreenshotHandler 
+                onScreenshotReady={handleScreenshotReady} 
+                backgroundColor={backgroundColor}
+            />
+            
+            <color attach="background" args={[backgroundColor]} />
+            
             <Preload all />
             <AdaptiveDpr pixelated />
             
@@ -233,6 +391,8 @@ const Scene3D: React.FC<Scene3DProps> = ({
             </EffectComposer>
         </Canvas>
     );
-};
+});
+
+Scene3D.displayName = 'Scene3D';
 
 export default React.memo(Scene3D);

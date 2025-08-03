@@ -51,11 +51,23 @@ const corsOptions = {
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
-        'Content-Type', 
-        'Authorization', 
+        'Origin',
         'X-Requested-With',
+        'Content-Type',
         'Accept',
-        'Origin'
+        'Authorization',
+        'Cache-Control',
+        'Pragma',
+        'Expires',
+        'If-None-Match',
+        'If-Modified-Since'
+    ],
+    exposedHeaders: [
+        'Cache-Control',
+        'Pragma',
+        'Expires',
+        'ETag',
+        'Last-Modified'
     ],
     optionsSuccessStatus: 200
 };

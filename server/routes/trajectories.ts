@@ -31,11 +31,27 @@ const router = Router();
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
+        // TODO: from env?
         fileSize: process.env.MAX_FILE_SIZE,
         files: process.env.MAX_FILES
     },
     fileFilter: (req, file, cb) => {
         cb(null, true);
+    }
+});
+
+const previewUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 1
+    },
+    fileFilter: (req, file, cb) => {
+        if(file.mimetype.startsWith('image/')){
+            cb(null, true);
+        }else{
+            cb(new Error('Only image files are allowed'), false);
+        }
     }
 });
 
@@ -56,6 +72,12 @@ router.get(
 );
 
 router.get(
+    '/:id/preview',
+    middleware.checkTeamMembershipForTrajectory,
+    controller.getTrajectoryPreview
+);
+
+router.get(
     '/:id/glb/',
     middleware.checkTeamMembershipForTrajectory,
     controller.listTrajectoryGLBFiles
@@ -68,6 +90,8 @@ router.route('/:id')
     )
     .patch(
         middleware.checkTeamMembershipForTrajectory,
+        previewUpload.single('preview'),
+        middleware.processPreviewUpload,
         controller.updateTrajectoryById
     )
     .delete(

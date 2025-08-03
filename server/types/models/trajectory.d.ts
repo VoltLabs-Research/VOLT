@@ -50,6 +50,7 @@ export interface ITrajectory extends Document {
     frames: ITimestepInfo[];
     structureAnalysis: IStructureAnalysis[];
     dislocations: any[];
+    preview: string;
     stats: {
         totalFiles: number;
         totalSize: number;

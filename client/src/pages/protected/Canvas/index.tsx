@@ -34,6 +34,7 @@ import EditorSidebar from '@/components/organisms/EditorSidebar';
 import TrajectoryVisibilityStatusFloatIcon from '@/components/atoms/TrajectoryVisibilityStatusFloatIcon';
 import SceneTopCenteredOptions from '@/components/atoms/SceneTopCenteredOptions';
 import AnalysisConfiguration from '@/components/organisms/AnalysisConfiguration';
+import AutoPreviewSaver from '@/components/atoms/AutoPreviewSaver';
 import useUIStore from '@/stores/ui';
 import './Canvas.css';
 
@@ -91,6 +92,7 @@ const EditorPage: React.FC = () => {
     const currentTimestep = useEditorStore(currentTimestepSelector);
     const selectTrajectory = useEditorStore(selectTrajectorySelector);
     const isModelLoading = useEditorStore(isModelLoadingSelector);
+    const scene3DRef = useRef(null);
     
     const showEditorWidgets = useUIStore(showEditorWidgetsSelector);
 
@@ -124,7 +126,7 @@ const EditorPage: React.FC = () => {
 
     useEffect(() => {
         if (!trajectoryId) return;
-        
+
         if (currentTrajectoryId === trajectoryId && trajectory) return;
         
         if (isInitialLoadDone.current && trajectoryIdRef.current === trajectoryId) return;
@@ -152,7 +154,8 @@ const EditorPage: React.FC = () => {
 
             <div className='editor-timestep-viewer-container'>
                 <FileUpload onUploadSuccess={handleTrajectorySelection}>
-                    <Scene3D>
+                    <Scene3D ref={scene3DRef}>
+                        <AutoPreviewSaver scene3DRef={scene3DRef} delay={2000} trajectoryId={trajectoryId} />
                         {shouldShowTimestepViewer && <MemoizedTimestepViewer />}
                     </Scene3D>
                 </FileUpload>

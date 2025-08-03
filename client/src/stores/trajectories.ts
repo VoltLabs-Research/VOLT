@@ -31,8 +31,12 @@ interface TrajectoryState{
     trajectories: Trajectory[];
     trajectory: Trajectory | null;
     isLoading: boolean;
+    isSavingPreview: boolean;
     uploadingFileCount: number;
     error: string | null;
+    
+    previewBlobCache: Map<string, string>;
+    previewLoadingCache: Map<string, boolean>;
     
     selectedTrajectories: string[];
     toggleTrajectorySelection: (id: string) => void;
@@ -46,6 +50,11 @@ interface TrajectoryState{
     deleteTrajectoryById: (id: string) => Promise<void>;
     createTrajectory: (formData: FormData) => Promise<void>;
     updateTrajectoryById: (id: string, data: Partial<Pick<Trajectory, 'name'>>) => Promise<void>;
+    saveTrajectoryPreview: (id: string, dataURL: string) => Promise<{ success: boolean; error?: string }>;
+    getTrajectoryPreviewUrl: (id: string) => string | null;
+    loadAuthenticatedPreview: (id: string) => Promise<string | null>;
+    isPreviewLoading: (id: string) => boolean;
+    clearPreviewCache: (id?: string) => void;
 }
 
 const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
@@ -58,6 +67,161 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
         error: null,
         uploadingFileCount: 0,
         selectedTrajectories: [],
+        isSavingPreview: false,
+        previewBlobCache: new Map(),
+        previewLoadingCache: new Map(),
+
+        saveTrajectoryPreview: async (id: string, dataURL: string) => {
+            set({ isSavingPreview: true, error: null });
+            
+            try{
+                console.log('Saving trajectory preview for ID:', id);
+                
+                const response = await fetch(dataURL);
+                const blob = await response.blob();
+                const formData = new FormData();
+                formData.append('preview', blob, 'preview.png');
+                
+                const result = await api.patch<ApiResponse<Trajectory>>(`/trajectories/${id}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+
+                console.log('Preview saved successfully, server response:', result.data.data);
+
+                const currentTrajectory = get().trajectory;
+                const updatedTrajectories = get().trajectories.map((trajectory) => 
+                    trajectory._id === id ? { ...trajectory, preview: result.data.data.preview } : trajectory
+                );
+                
+                set({
+                    trajectories: updatedTrajectories,
+                    trajectory: currentTrajectory?._id === id ? { ...currentTrajectory, preview: result.data.data.preview } : currentTrajectory,
+                    isSavingPreview: false 
+                });
+
+                return { success: true };
+            }catch(error){
+                console.error('Error saving preview:', error);
+                set({ 
+                    isSavingPreview: false,
+                    // @ts-ignore
+                    error: error.response?.data?.data?.error || 'Error saving preview'
+                });
+                return { 
+                    success: false, 
+                    error: error instanceof Error ? error.message : 'Unknown error' 
+                };
+            }
+        },
+
+        getTrajectoryPreviewUrl: (id: string) => {
+            const trajectory = get().trajectories.find((trajectory) => trajectory._id === id) 
+                            || (get().trajectory?._id === id ? get().trajectory : null);
+            
+            if(!trajectory || !trajectory.preview){
+                return null;
+            }
+            
+            return `/trajectories/${id}/preview`;
+        },
+
+        // TODO: rename
+        loadAuthenticatedPreview: async (id: string): Promise<string | null> => {
+            const { previewBlobCache, previewLoadingCache } = get();
+            
+            if(previewBlobCache.has(id)){
+                return previewBlobCache.get(id) || null;
+            }
+            
+            if(previewLoadingCache.get(id)){
+                return new Promise((resolve) => {
+                    const checkCache = () => {
+                        if(previewBlobCache.has(id)){
+                            resolve(previewBlobCache.get(id) || null);
+                        }else if(!previewLoadingCache.get(id)){
+                            resolve(null);
+                        }else{
+                            setTimeout(checkCache, 100);
+                        }
+                    };
+                    checkCache();
+                });
+            }
+
+            try{
+                const newLoadingCache = new Map(previewLoadingCache);
+                newLoadingCache.set(id, true);
+                set({ previewLoadingCache: newLoadingCache });
+
+                console.log('Loading authenticated preview for ID:', id);
+                
+                const response = await api.get(`/trajectories/${id}/preview`, {
+                    responseType: 'blob'
+                });
+                
+                const imageUrl = URL.createObjectURL(response.data);
+                
+                const newBlobCache = new Map(previewBlobCache);
+                newBlobCache.set(id, imageUrl);
+                
+                const updatedLoadingCache = new Map(previewLoadingCache);
+                updatedLoadingCache.delete(id);
+                
+                set({ 
+                    previewBlobCache: newBlobCache,
+                    previewLoadingCache: updatedLoadingCache
+                });
+                
+                console.log('Preview loaded successfully for ID:', id);
+                return imageUrl;
+                
+            }catch(error){
+                console.error('Error loading authenticated preview:', error);
+
+                const updatedLoadingCache = new Map(previewLoadingCache);
+                updatedLoadingCache.delete(id);
+                set({ previewLoadingCache: updatedLoadingCache });
+                
+                return null;
+            }
+        },
+
+        isPreviewLoading: (id: string): boolean => {
+            return get().previewLoadingCache.get(id) || false;
+        },
+
+        clearPreviewCache: (id?: string) => {
+            const { previewBlobCache } = get();
+            
+            if(id){
+                const blobUrl = previewBlobCache.get(id);
+                if(blobUrl){
+                    URL.revokeObjectURL(blobUrl);
+                }
+                
+                const newBlobCache = new Map(previewBlobCache);
+                newBlobCache.delete(id);
+                
+                const newLoadingCache = new Map(get().previewLoadingCache);
+                newLoadingCache.delete(id);
+                
+                set({ 
+                    previewBlobCache: newBlobCache,
+                    previewLoadingCache: newLoadingCache
+                });
+            }else{
+                previewBlobCache.forEach((blobUrl) => {
+                    URL.revokeObjectURL(blobUrl);
+                });
+                
+                set({ 
+                    previewBlobCache: new Map(),
+                    previewLoadingCache: new Map()
+                });
+            }
+        },
 
         getTrajectories: (teamId?: string) => {
             let url = '/trajectories';
@@ -84,6 +248,9 @@ const trajectoryStoreCreator: StateCreator<TrajectoryState> = (set, get) => {
 
         deleteTrajectoryById: async (id: string) => {
             const originalTrajectories = get().trajectories;
+            
+            get().clearPreviewCache(id);
+            
             set({
                 trajectories: originalTrajectories.filter((trajectory) => trajectory._id !== id)
             });

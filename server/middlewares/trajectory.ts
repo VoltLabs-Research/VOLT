@@ -21,8 +21,64 @@
 **/
 
 import { Request, Response, NextFunction } from 'express';
+import { existsSync } from 'fs';
+import { rm, writeFile, mkdir, readdir } from 'fs/promises';
+import { join } from 'path';
 import Trajectory from '@models/trajectory';
 import Team from '@models/team';
+
+export const processPreviewUpload = async (req: Request, res: Response, next: NextFunction) => {
+    const file = req.file;
+    const trajectory = res.locals.trajectory;
+
+    if(!file){
+        console.log('No file provided, continuing with normal update...');
+        return next();
+    }
+
+    try{
+        console.log('Processing preview upload for trajectory:', trajectory._id);
+        
+        const trajectoryPath = join(process.env.TRAJECTORY_DIR as string, trajectory.folderId);
+        
+        if(!existsSync(trajectoryPath)){
+            await mkdir(trajectoryPath, { recursive: true });
+        }
+
+        console.log('Cleaning up old preview files...');
+        try{
+            const files = await readdir(trajectoryPath);
+            const pngFiles = files.filter(file => file.endsWith('.png'));
+            
+            for(const pngFile of pngFiles){
+                const oldFilePath = join(trajectoryPath, pngFile);
+                console.log('Removing old preview file:', oldFilePath);
+                await rm(oldFilePath);
+            }
+        }catch(cleanupError){
+            console.warn('Error cleaning up old previews:', cleanupError);
+        }
+
+        const previewId = `preview_${trajectory._id.toString()}`;
+        const fileName = `${previewId}.png`;
+        const filePath = join(trajectoryPath, fileName);
+        
+        console.log('Saving new preview file to:', filePath);
+        
+        await writeFile(filePath, file.buffer);
+        req.body.preview = previewId;
+        
+        console.log('Preview processed successfully, previewId:', previewId);
+        
+        next();
+    }catch(error){
+        console.error('Error processing preview upload:', error);
+        return res.status(500).json({
+            status: 'error',
+            data: { error: 'Failed to process preview upload' }
+        });
+    }
+};
 
 export const processAndValidateUpload = async (req: Request, res: Response, next: NextFunction) => {
     const files = req.files as Express.Multer.File[];

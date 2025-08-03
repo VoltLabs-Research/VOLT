@@ -82,6 +82,10 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         default: 'processing'
     },
     frames: [TimestepInfoSchema],
+    preview: {
+        type: String,
+        default: null
+    },
     stats: {
         totalFiles: { type: Number, default: 0 },
         totalSize: { type: Number, default: 0 }
@@ -96,13 +100,16 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
         return next();
     }
 
-    const { _id, folderId, team } = trajectoryToDelete;
+    const { _id, folderId, team, preview } = trajectoryToDelete;
     const trajectoryPath = join(process.env.TRAJECTORY_DIR as string, folderId);
 
     try{
         if(existsSync(trajectoryPath)){
+            console.log('🗑️ Removing trajectory directory:', trajectoryPath);
             await rm(trajectoryPath, { recursive: true });
         }
+
+        // No necesitamos limpiar preview específico ya que se elimina toda la carpeta
 
         await StructureAnalysis.deleteMany({ trajectory: _id });
         await SimulationCell.deleteMany({ trajectory: _id });
@@ -113,13 +120,13 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
             { $pull: { trajectories: _id } }
         );
 
+        console.log('✅ Trajectory and all related data cleaned up successfully');
         next();
     }catch(error){
-        console.error('Error during trajectory cascade delete:', error);
+        console.error('❌ Error during trajectory cascade delete:', error);
         next(error as Error);
     }
 });
-
 TrajectorySchema.post('save', async function(doc, next){
     await Team.findByIdAndUpdate(doc.team, {
         $addToSet: { trajectories: doc._id }
