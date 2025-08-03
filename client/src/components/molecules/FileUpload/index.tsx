@@ -22,9 +22,9 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import useTrajectoryUpload from '@/hooks/useTrajectoryUpload';
+import useTrajectoryUpload from '@/hooks/trajectory/useTrajectoryUpload';
 import useTeamStore from '@/stores/team';
-import type { FileWithPath } from '@/hooks/useTrajectoryUpload';
+import type { FileWithPath } from '@/hooks/trajectory/useTrajectoryUpload';
 import useEditorStore from '@/stores/editor';
 import './FileUpload.css';
 

@@ -22,12 +22,12 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import CameraManager from '@/components/atoms/CameraManager';
-import useInstancedRenderer from '@/hooks/useInstancedRenderer';
-import useSlicingPlanes from '@/hooks/useSlicingPlanes';
+import useInstancedRenderer from '@/hooks/canvas/useInstancedRenderer';
+import useSlicingPlanes from '@/hooks/canvas/useSlicingPlanes';
 import { useFrame } from '@react-three/fiber';
 import { useBVH, Instances } from '@react-three/drei';
 import { Vector3, BufferGeometry, Material } from 'three';
-import { useGlbScene } from '@/hooks/useGLBScene';
+import { useGlbScene } from '@/hooks/canvas/useGLBScene';
 import { getOptimizedMaterial } from '@/utilities/glb/modelUtils';
 import useEditorStore from '@/stores/editor';
 
