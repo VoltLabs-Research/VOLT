@@ -175,7 +175,7 @@ const useTeamJobs = () => {
 
         const handleJobUpdate = (updatedJob) => {
             if (updatedJob.type === 'session_expired') {
-                console.log(`🕐 Session ${updatedJob.sessionId} expired for trajectory ${updatedJob.trajectoryId}`);
+                console.log(`Session ${updatedJob.sessionId} expired for trajectory ${updatedJob.trajectoryId}`);
                 setExpiredSessions(prev => new Set([...prev, updatedJob.sessionId]));
                 return;
             }

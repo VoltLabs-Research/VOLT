@@ -21,24 +21,57 @@
 **/
 
 import React from 'react';
-import type { DislocationResultsData, DislocationSegment } from '../hooks/useTimestepDataManager';
 import EditorWidget from '../organisms/EditorWidget';
 
-interface DislocationResultsProps {
-    results: DislocationResultsData;
-    segments: DislocationSegment[];
+interface DislocationData {
+    segmentId: number;
+    type: string;
+    pointIndexOffset: number;
+    numPoints: number;
+    length: number;
+    points: number[][];
+    burgers: {
+        vector: number[];
+        magnitude: number;
+        fractional: string;
+    };
+    nodes?: {
+        forward?: any;
+        backward?: any;
+    };
+    lineDirection?: {
+        vector: number[];
+        string: string;
+    };
+}
+
+interface DislocationAPIResponse {
+    _id: string;
+    trajectory: string;
     timestep: number;
-    onDislocationSelect?: (segment: DislocationSegment) => void;
+    totalSegments: number;
+    dislocations: DislocationData[];
+    totalPoints: number;
+    averageSegmentLength: number;
+    maxSegmentLength: number;
+    minSegmentLength: number;
+    totalLength: number;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+}
+
+interface DislocationResultsProps {
+    dislocationData: DislocationAPIResponse;
+    onDislocationSelect?: (segment: DislocationData) => void;
 }
 
 const DislocationResults: React.FC<DislocationResultsProps> = ({ 
-    results, 
-    segments,
-    timestep,
+    dislocationData, 
     onDislocationSelect 
 }) => {
 
-  const formatNumber = (num: number, options?: Intl.NumberFormatOptions) => {
+    const formatNumber = (num: number, options?: Intl.NumberFormatOptions) => {
         if (typeof num !== 'number' || isNaN(num)) return 'N/A';
         return num.toLocaleString(undefined, options);
     };
@@ -73,11 +106,6 @@ const DislocationResults: React.FC<DislocationResultsProps> = ({
         return `<${fractions.join(' ')}>`;
     };
 
-    const formatVector = (vector: number[] | undefined): string => {
-        if (!vector || !Array.isArray(vector)) return '[N/A]';
-        return `[${vector.map(v => v.toFixed(3)).join(', ')}]`;
-    };
-
     const getDislocationTypeName = (type: string = 'unknown'): string => {
         return type.charAt(0).toUpperCase() + type.slice(1);
     };
@@ -91,41 +119,91 @@ const DislocationResults: React.FC<DislocationResultsProps> = ({
             default: return '#6b7280';
         }
     };
+
+    const getTypeStatistics = () => {
+        const typeCount = dislocationData.dislocations.reduce((acc, dislocation) => {
+            acc[dislocation.type] = (acc[dislocation.type] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        return typeCount;
+    };
+
+    const typeStats = getTypeStatistics();
     
     return (
         <EditorWidget className='dislocation-results-container'>
             <div className='dislocation-results-header-container'>
                 <h3 className='dislocation-results-header-title'>
-                    Analysis for Timestep {timestep}
+                    Analysis for Timestep {dislocationData.timestep}
                 </h3>
+                <div className='dislocation-type-legend'>
+                    {Object.entries(typeStats).map(([type, count]) => (
+                        <div key={type} className='type-legend-item'>
+                            <div 
+                                style={{ backgroundColor: getDislocationTypeColor(type) }} 
+                                className='type-legend-color'
+                            />
+                            <span className='type-legend-text'>
+                                {getDislocationTypeName(type)} ({count})
+                            </span>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             <div className='dislocation-results-body-container'>
-                {segments.map((segment, index) => (
+                {dislocationData.dislocations.map((segment, index) => (
                     <div
-                        key={`ts-${timestep}-disloc-${segment.id}-${index}`}
+                        key={`ts-${dislocationData.timestep}-seg-${segment.segmentId}-${index}`}
                         className='dislocation-result-item'
                         onClick={() => onDislocationSelect?.(segment)}
                     >   
                         <div className='dislocation-result-item-header-container'>
-                            <div style={{ backgroundColor: getDislocationTypeColor(segment.type) }} className='dislocation-result-type'></div>
+                            <div 
+                                style={{ backgroundColor: getDislocationTypeColor(segment.type) }} 
+                                className='dislocation-result-type'
+                            />
                             <h4 className='dislocation-result-item-title'>
-                                Dislocation #{index + 1} ({getDislocationTypeName(segment.type)})
+                                Segment #{segment.segmentId} ({getDislocationTypeName(segment.type)})
                             </h4>
                         </div>
+                        
                         <div className='dislocation-result-data-container'>
                             <div className='dislocation-result-data'>
                                 <span className='data-label'>Length:</span>
-                                <span className='data-value'>{formatNumber(segment.length, { maximumFractionDigits: 2 })} Å</span>
+                                <span className='data-value'>
+                                    {formatNumber(segment.length, { maximumFractionDigits: 2 })} Å
+                                </span>
                             </div>
+                            
                             <div className='dislocation-result-data'>
-                                <span className='data-label'>Magitude:</span>
-                                <span className='data-value'>{formatNumber(segment.burgers?.magnitude, { maximumFractionDigits: 3 })}</span>
+                                <span className='data-label'>Magnitude:</span>
+                                <span className='data-value'>
+                                    {formatNumber(segment.burgers?.magnitude, { maximumFractionDigits: 3 })}
+                                </span>
                             </div>
+                            
                             <div className='dislocation-result-data'>
                                 <span className='data-label'>Burgers Vector:</span>
-                                <span className='data-value vector-value'>{formatBurgersVectorAsFraction(segment.burgers?.vector)}</span>
+                                <span className='data-value vector-value'>
+                                    {segment.burgers?.fractional || formatBurgersVectorAsFraction(segment.burgers?.vector)}
+                                </span>
                             </div>
+
+                            <div className='dislocation-result-data'>
+                                <span className='data-label'>Points:</span>
+                                <span className='data-value'>{segment.numPoints}</span>
+                            </div>
+
+                            {segment.lineDirection?.string && (
+                                <div className='dislocation-result-data'>
+                                    <span className='data-label'>Line Direction:</span>
+                                    <span className='data-value vector-value'>
+                                        {segment.lineDirection.string}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -133,16 +211,24 @@ const DislocationResults: React.FC<DislocationResultsProps> = ({
 
             <div className='dislocation-results-summary-container'>
                 <div className='dislocation-summary-item'>
-                    <span className='dislocation-summary-value'>{results.total_dislocations}</span>
-                    <span className='dislocation-summary-label'>Dislocs.</span>
+                    <span className='dislocation-summary-value'>
+                        {dislocationData.totalSegments}
+                    </span>
+                    <span className='dislocation-summary-label'>Segments</span>
                 </div>
+                
                 <div className='dislocation-summary-item'>
-                    <span className='dislocation-summary-value'>{formatNumber(results.total_length, { maximumFractionDigits: 1 })}</span>
-                    <span className='dislocation-summary-label'>Total Length (Å)</span>
+                    <span className='dislocation-summary-value'>
+                        {formatNumber(dislocationData.totalLength, { maximumFractionDigits: 1 })}
+                    </span>
+                    <span className='dislocation-summary-label'>Length (Å)</span>
                 </div>
+                
                 <div className='dislocation-summary-item'>
-                    <span className='dislocation-summary-value'>{results.density.toExponential(2)}</span>
-                    <span className='dislocation-summary-label'>Density (1/Å²)</span>
+                    <span className='dislocation-summary-value'>
+                        {formatNumber(dislocationData.averageSegmentLength, { maximumFractionDigits: 2 })}
+                    </span>
+                    <span className='dislocation-summary-label'>Avg. Length (Å)</span>
                 </div>
             </div>
         </EditorWidget>

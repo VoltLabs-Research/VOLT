@@ -1,8 +1,8 @@
 .action-based-floating-container{
     width: 250px;
     height: auto;
-    background-color: rgba(255, 255, 255, .5);
-    backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(3px);
     border: 1px solid #e7e7e7;
     border-radius: .5rem;
     position: absolute;
@@ -19,7 +19,7 @@
 }
 
 .action-based-floating-option-container:hover{
-    background-color: #f0efef;
+    opacity: .7;
 }
 
 .action-based-floating-option-name-container{

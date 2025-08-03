@@ -109,8 +109,6 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
             await rm(trajectoryPath, { recursive: true });
         }
 
-        // No necesitamos limpiar preview específico ya que se elimina toda la carpeta
-
         await StructureAnalysis.deleteMany({ trajectory: _id });
         await SimulationCell.deleteMany({ trajectory: _id });
         await Dislocations.deleteMany({ trajectory: _id });
