@@ -20,25 +20,32 @@
 * SOFTWARE.
 **/
 
-import { BaseProcessingQueue } from './base-processing-queue';
-import { QueueOptions } from '@/types/queues/base-processing-queue';
-import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
-import path from 'path';
+import os from 'os';
 
-export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob>{
-    constructor(){
-        const options: QueueOptions = {
-            queueName: 'analysis-processing-queue',
-            workerPath: path.resolve(__dirname, '../workers/analysis.ts'),
-            maxConcurrentJobs: 5,
-            cpuLoadThreshold: 80,
-            ramLoadThreshold: 85,
+export interface LoadInfo {
+    overloaded: boolean;
+    cpu: number;
+    ram: number;
+}
+
+export class LoadMonitor{
+    constructor(
+        private cpuLoadThreshold: number,
+        private ramLoadThreshold: number
+    ){}
+
+    checkServerLoad(): LoadInfo {
+        const loadAvg = os.loadavg()[0];
+        const cpuUsage = (loadAvg / os.cpus().length) * 100;
+        
+        const totalMem = os.totalmem();
+        const freeMem = os.freemem();
+        const ramUsage = ((totalMem - freeMem) / totalMem) * 100;
+        
+        return { 
+            overloaded: cpuUsage > this.cpuLoadThreshold || ramUsage > this.ramLoadThreshold,
+            cpu: Math.round(cpuUsage * 100) / 100, 
+            ram: Math.round(ramUsage * 100) / 100
         };
-
-        super(options);
-    }
-
-    protected deserializeJob(rawData: string): AnalysisJob{
-        return JSON.parse(rawData) as AnalysisJob;
     }
 }
