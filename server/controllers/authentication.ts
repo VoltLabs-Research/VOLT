@@ -20,11 +20,52 @@
 * SOFTWARE.
 **/
 
-import { Request, Responset, NextFunction, request } from 'express';
-import { IUser } from '@types/models/user';
-import { filterObject } from '@utilities/runtime';
+import { Request, Response, NextFunction } from 'express';
+import { IUser } from '@/types/models/user';
+import HandlerFactory from '@/controllers/handler-factory';
 import User from '@models/user';
 import jwt from 'jsonwebtoken';
+
+const userFactory = new HandlerFactory({
+    model: User,
+    fields: ['firstName', 'lastName', 'email'],
+    errorMessages: {
+        default: {
+            notFound: 'Authentication::User::NotFound',
+            validation: 'Authentication::User::ValidationError',
+            unauthorized: 'Authentication::User::AccessDenied'
+        }
+    },
+    defaultErrorConfig: 'default'
+});
+
+const withAuthenticatedUser = (options: any = {}) => ({
+    ...options,
+    customFilter: async (req: Request) => {
+        const userId = (req as any).user.id;
+        req.params.id = userId;
+        return {};
+    }
+});
+
+export const getMyAccount = userFactory.getOne(withAuthenticatedUser());
+
+export const updateMyAccount = userFactory.updateOne(
+    withAuthenticatedUser({
+        beforeUpdate: async (data: any, req: Request, doc: IUser) => {
+            console.log(`📝 Updating user: ${doc.email}`);
+            return data;
+        }
+    })
+);
+
+export const deleteMyAccount = userFactory.deleteOne(
+    withAuthenticatedUser({
+        beforeDelete: async (doc: IUser, req: Request) => {
+            console.log(`🗑️ Deleting user account: ${doc.email}`);
+        }
+    })
+);
 
 const signToken = (id: string): string => {
     return jwt.sign({ id }, process.env.SECRET_KEY!, {
@@ -54,7 +95,7 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
     createAndSendToken(res, 200, requestedUser);
 };
 
-export const signUp = async (req: Request, res: Responset): Promise<void> => {
+export const signUp = async (req: Request, res: Response): Promise<void> => {
     const { email, firstName, lastName, password } = req.body;
     const newUser = await User.create({ email, firstName, lastName, password });
     createAndSendToken(res, 201, newUser);
@@ -75,35 +116,4 @@ export const updateMyPassword = async (req: Request, res: Response, next: NextFu
     requestedUser.password = req.body.password;
     await requestedUser.save();
     createAndSendToken(res, 200, requestedUser);
-};
-
-export const deleteMyAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const requestedUser = await User.findByIdAndDelete((req.user as IUser).id);
-    if(!requestedUser) return next(new Error('Authentication::Delete::UserNotFound'));
-    res.status(204).json({
-        status: 'success',
-        data: requestedUser
-    });
-};
-
-export const getMyAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const requestedUser = await User.findById((req.user as IUser)._id);
-    if(!requestedUser) return next(new Error('Authentication::Get::UserNotFound'));
-    res.status(200).json({
-        status: 'success',
-        data: requestedUser
-    });
-};
-
-export const updateMyAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const filteredBody = filterObject(req.body, 'lastName', 'firstName', 'email');
-    const requestedUser = await User.findByIdAndUpdate((req.user as IUser).id, filteredBody, {
-        new: true,
-        runValidators: true
-    });
-    if(!requestedUser) return next(new Error('Authentication::Update::UserNotFound'));
-    res.status(200).json({
-        status: 'success',
-        data: requestedUser
-    });
 };

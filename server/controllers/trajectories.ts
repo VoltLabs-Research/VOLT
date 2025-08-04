@@ -25,66 +25,73 @@ import { join, resolve } from 'path';
 import { access, stat, readdir, mkdir, rm, writeFile, constants } from 'fs/promises';
 import { copyFile } from '@/utilities/fs';
 import { isValidObjectId } from 'mongoose';
-import { v4 } from 'uuid';
 import { getTrajectoryProcessingQueue } from '@/queues';
+import { processTrajectoryFile } from '@/utilities/lammps';
+import { v4 } from 'uuid';
 import Trajectory from '@models/trajectory';
 import Team from '@models/team';
 import HandlerFactory from '@/controllers/handler-factory';
-import { extractTimestepInfo, isValidLammpsFile, processTrajectoryFile } from '@/utilities/lammps';
 import RuntimeError from '@/utilities/runtime-error';
 
 const factory = new HandlerFactory({
     model: Trajectory,
-    fields: ['name', 'preview']
+    fields: ['name', 'preview'],
+    errorMessages: {
+        default: {
+            notFound: 'Trajectory::NotFound',
+            unauthorized: 'Trajectory::AccessDenied',
+            validation: 'Trajectory::ValidationError'
+        }
+    },
+    defaultErrorConfig: 'default'
 });
 
-export const getAllTrajectories = factory.getAll();
 export const getTrajectoryById = factory.getOne();
-export const deleteTrajectoryById = factory.deleteOne();
+export const updateTrajectoryById = factory.updateOne();
 
-export const updateTrajectoryById = async (req: Request, res: Response) => {
-    const { id } = req.params;
+export const deleteTrajectoryById = factory.deleteOne({
+    beforeDelete: async (doc: any, req: Request) => {
+        console.log(`Preparing to delete trajectory: ${doc.name} (ID: ${doc._id})`);
+        
+        const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+        const trajectoryPath = join(basePath, doc.folderId);
+        
+        try{
+            // Clean up trajectory files
+            await rm(trajectoryPath, { recursive: true, force: true });
+            console.log(`Cleaned up trajectory files at: ${trajectoryPath}`);
+        }catch(error){
+            console.warn(`Warning: Could not clean up files for trajectory ${doc._id}:`, error);
+        }
+    }
+});
 
-    try{
-        // TODO: use handler factory
-        const updatedTrajectory = await Trajectory.findByIdAndUpdate(
-            id,
-            req.body,
-            { 
-                new: true, 
-                runValidators: true 
+export const getUserTrajectories = factory.getAll({
+    customFilter: async (req: Request) => {
+        const userId = (req as any).user.id;
+        const { teamId } = req.query;
+        
+        let teamQuery: any = { members: userId };
+        if(teamId && typeof teamId === 'string'){
+            if(!isValidObjectId(teamId)){
+                throw new Error(`Invalid teamId: ${teamId}`);
             }
-        ).populate({
-            path: 'team',
-            select: 'name owner members',
-            populate: {
-                path: 'owner members',
-                select: 'firstName lastName email'
-            }
-        });
-
-        if(!updatedTrajectory){
-            return res.status(404).json({
-                status: 'error',
-                data: { error: 'Trajectory not found after update' }
-            });
+            teamQuery._id = teamId;
         }
 
-        console.log('Trajectory updated successfully, preview:', updatedTrajectory.preview);
-
-        res.status(200).json({
-            status: 'success',
-            data: updatedTrajectory
-        });
-    }catch(error){
-        console.error('Error updating trajectory:', error);
-        res.status(500).json({
-            status: 'error',
-            data: { error: 'Failed to update trajectory' }
-        });
+        const userTeams = await Team.find(teamQuery).select('_id');
+        
+        if(teamId && userTeams.length === 0){
+            // Return empty filter that matches nothing
+            return { _id: { $in: [] } };
+        }
+        
+        const teamIds = userTeams.map(team => team._id);
+        return { team: { $in: teamIds } };
     }
-};
+});
 
+// TODO: change controller name
 export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
 
@@ -343,40 +350,4 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         status: 'success',
         data: newTrajectory
     })
-};
-
-export const getUserTrajectories = async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
-    const { teamId } = req.query;
-    
-    let teamQuery: any = { members: userId };
-    if(teamId && typeof teamId === 'string'){
-        if(!isValidObjectId(teamId)){
-            return res.status(400).json({
-                status: 'error',
-                data: { error: `The provided teamId '${teamId}' is not a valid ID.` }
-            });
-        }
-        teamQuery._id = teamId;
-    }
-
-    const userTeams = await Team.find(teamQuery).select('_id');
-    if(teamId && userTeams.length === 0){
-        return res.status(200).json({ status: 'success', data: [] });
-    }
-    
-    const teamIds = userTeams.map((team) => team._id);
-
-    const trajectories = await Trajectory.find({ team: { $in: teamIds } })
-        .populate({
-            path: 'team',
-            select: 'name owner members',
-            populate: {
-                path: 'owner members',
-                select: 'firstName lastName email'
-            }
-        })
-        .sort({ createdAt: -1 });
-
-    res.status(200).json({ status: 'success', data: trajectories });
 };

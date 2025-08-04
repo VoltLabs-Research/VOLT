@@ -64,6 +64,7 @@ interface APIFeaturesOptions<T extends Document = Document> {
     readonly model: Model<T>;
     readonly fields: readonly string[];
     readonly populate?: string | PopulateOptions | readonly (string | PopulateOptions)[] | null;
+    readonly baseFilter?: FilterQuery<T>;
 }
 
 /**
@@ -101,6 +102,7 @@ class APIFeatures<T extends Document = Document>{
     private readonly populate: string | PopulateOptions | readonly (string | PopulateOptions)[] | null;
     private readonly fields: readonly string[];
     private readonly buffer: QueryBuffer;
+    private readonly baseFilter: FilterQuery<T>;
 
     /**
      * Creates an instance of APIFeatures with improved initialization.
@@ -110,16 +112,18 @@ class APIFeatures<T extends Document = Document>{
         requestQueryString,
         model,
         fields = [],
+        baseFilter = {},
         populate = null
     }: APIFeaturesOptions<T>){
         this.model = model;
         this.requestQueryString = Object.freeze({ ...requestQueryString });
         this.fields = Object.freeze([ ...fields ]);
         this.populate = populate;
+        this.baseFilter = baseFilter;
 
         // Initialize buffer with default values
         this.buffer = {
-            find: {},
+            find: { ...baseFilter },
             sort: DEFAULT_CONFIG.DEFAULT_SORT,
             select: '',
             skip: 0,
