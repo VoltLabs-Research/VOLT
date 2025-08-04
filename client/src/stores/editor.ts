@@ -81,7 +81,7 @@ export interface TrajectoryGLBs {
 }
 
 const initialAnalysisConfig: AnalysisConfig = {
-    crystalStructure: 'BCC',
+    crystalStructure: 'CUBIC_DIAMOND',
     identificationMode: 'PTM',
     maxTrialCircuitSize: 14.0,
     circuitStretchability: 9.0,

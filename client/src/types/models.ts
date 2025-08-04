@@ -87,7 +87,7 @@ export interface Notification{
 }
 
 export interface AnalysisConfig {
-    crystalStructure: 'FCC' | 'BCC' | 'HCP';
+    crystalStructure: 'FCC' | 'BCC' | 'HCP' | 'CUBIC_DIAMOND' | 'HEX_DIAMOND';
     identificationMode: 'PTM' | 'CNA';
     maxTrialCircuitSize: number;
     circuitStretchability: number;
