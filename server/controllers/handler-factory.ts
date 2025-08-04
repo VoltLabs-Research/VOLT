@@ -21,19 +21,10 @@
 **/
 
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { Document, Model } from 'mongoose';
+import { Document, Model, FilterQuery, PopulateOptions } from 'mongoose';
 import { catchAsync, filterObject, checkIfSlugOrId } from '@utilities/runtime';
 import APIFeatures from '@/utilities/api-features';
 import RuntimeError from '@/utilities/runtime-error';
-
-/**
- * Interface for the options passed to the HandlerFactory class.
- * @template T - The document type extending Mongoose Document 
-*/
-interface HandlerFactoryOptions<T extends Document = Document>{
-    model: Model<T>;
-    fields?: readonly string[];
-}
 
 /**
  * Interface for API response structure 
@@ -58,6 +49,26 @@ interface PaginatedApiResponse<T = any> extends ApiResponse<T[]>{
     };
 }
 
+interface HandlerOptions<T extends Document = Document>{
+    model: any,
+    fields: string[],
+    beforeCreate?: (data: any, req: Request) => any | Promise<any>;
+    afterCreate?: (doc: T, req: Request) => void | Promise<void>;
+    beforeUpdate?: (data: any, req: Request, doc: T) => any | Promise<any>;
+    afterUpdate?: (doc: T, req: Request) => void | Promise<void>;
+    beforeDelete?: (doc: T, req: Request) => void | Promise<void>;
+    afterDelete?: (doc: T, req: Request) => void | Promise<void>;
+    customFilter?: (req: Request) => FilterQuery<T> | Promise<FilterQuery<T>>;
+    customPopulate?: (req: Request) => PopulateOptions | string | null;
+    allowedFields?: string[];
+    requiredFields?: string[];
+    errorMessages?: {
+        notFound?: string;
+        validation?: string;
+        unauthorized?: string;
+    };
+}
+
 /**
  * A class that provides reusable handlers for common CRUD operations.
  * @template T - The document type extending Mongoose Document 
@@ -65,15 +76,17 @@ interface PaginatedApiResponse<T = any> extends ApiResponse<T[]>{
 class HandlerFactory<T extends Document = Document>{
     private readonly model: Model<T>;
     private readonly fields: readonly string[];
+    private readonly options: HandlerOptions<T>;
 
     /**
      * Creates an instance of HandlerFactory.
      * @param options - The configuration options
     */
-    constructor({ model, fields = [] }: HandlerFactoryOptions<T>){
+    constructor({ model, fields = [], ...options }: HandlerOptions<T>){
         this.model = model;
         // Inmutable copy
         this.fields = Object.freeze([ ...fields ]);
+        this.options = options;
     }
 
     /**
@@ -83,10 +96,20 @@ class HandlerFactory<T extends Document = Document>{
     public deleteOne(): RequestHandler{
         return catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
             const filter = checkIfSlugOrId(req.params.id);
-            const databaseRecord = await this.model.findOneAndDelete(filter);
 
+            const databaseRecord = await this.model.findOneAndDelete(filter);
             if(!databaseRecord){
                 return next(new RuntimeError('Core::DeleteOne::RecordNotFound', 404));
+            }
+
+            if(this.options.beforeDelete){
+                await this.options.beforeDelete(databaseRecord, req);
+            }
+
+            await this.model.findOneAndDelete(filter);
+
+            if(this.options.afterDelete){
+                await this.options.afterDelete(databaseRecord, req);
             }
 
             const response: ApiResponse<T> = {
@@ -104,22 +127,32 @@ class HandlerFactory<T extends Document = Document>{
     */
     public updateOne(): RequestHandler{
         return catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-            const queryFilter = filterObject(req.body, ...this.fields);
             const filter = checkIfSlugOrId(req.params.id);
-            
+
+            const existingDoc = await this.model.findOne(filter);
+            if(!existingDoc){
+                const errorMessage = this.options.errorMessages?.notFound || 'Core::UpdateOne::RecordNotFound';
+                return next(new RuntimeError(errorMessage, 404));
+            }
+
+            let queryFilter = filterObject(req.body, ...this.fields);
+            if(this.options.beforeUpdate){
+                queryFilter = await this.options.beforeUpdate(queryFilter, req, existingDoc);
+            }
+
             const databaseRecord = await this.model.findOneAndUpdate(filter, queryFilter, {
                 new: true,
                 runValidators: true,
                 lean: false
             });
 
-            if(!databaseRecord){
-                return next(new RuntimeError('Core::UpdateOne::RecordNotFound', 404));
+            if(this.options.afterUpdate && databaseRecord){
+                await this.options.afterUpdate(databaseRecord, req);
             }
 
             const response: ApiResponse<T> = {
                 status: 'success',
-                data: databaseRecord
+                data: databaseRecord!
             };
 
             res.status(200).json(response);
@@ -131,9 +164,28 @@ class HandlerFactory<T extends Document = Document>{
      * @returns The Express request handler
     */
     public createOne(): RequestHandler{
-        return catchAsync(async (req: Request, res: Response): Promise<void> => {
-            const queryFilter = filterObject(req.body, ...this.fields);
+        return catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+            // Validate required fields
+            if(this.options.requiredFields){
+                const missing = this.options.requiredFields.filter(
+                    (field) => !req.body[field] && req.body[field] !== 0 && req.body[field] !== false);
+                if(missing.length > 0){
+                    const errorMessage = this.options.errorMessages?.validation || `Missing required fields: ${missing.join(', ')}`;
+                    return next(new RuntimeError(errorMessage, 400));
+                }
+            }
+
+            let queryFilter = filterObject(req.body, ...this.fields);
+
+            if(this.options.beforeCreate){
+                queryFilter = await this.options.beforeCreate(queryFilter, req);
+            }
+            
             const databaseRecord = await this.model.create(queryFilter);
+
+            if(this.options.afterCreate){
+                await this.options.afterCreate(databaseRecord, req);
+            }
 
             const response: ApiResponse<T> = {
                 status: 'success',
@@ -179,8 +231,23 @@ class HandlerFactory<T extends Document = Document>{
      * @returns The Express request handler 
     */
     public getAll(): RequestHandler{
-        return catchAsync(async (req: Request, res: Response): Promise<void> => {
-            const populate = this.getPopulateFromRequest(req.query);
+        return catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+            let baseFilter = {};
+
+            // Apply custom filter if provided
+            if(this.options.customFilter){
+                try{
+                    baseFilter = await this.options.customFilter(req);
+                }catch(err){
+                    const errorMessage = this.options.errorMessages?.unauthorized || 'Access denied';
+                    return next(new RuntimeError(errorMessage, 403));
+                }
+            }
+
+            const populate = this.options.customPopulate
+                ? await this.options.customPopulate(req)
+                : this.getPopulateFromRequest(req.query);
+                
             const operations = new APIFeatures({
                 requestQueryString: req.query,
                 model: this.model,
@@ -220,7 +287,10 @@ class HandlerFactory<T extends Document = Document>{
     */
     public getOne(): RequestHandler{
         return catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-            const populate = this.getPopulateFromRequest(req.query);
+            const populate = this.options.customPopulate
+                ? await this.options.customPopulate(req)
+                : this.getPopulateFromRequest(req.query);
+
             const filter = checkIfSlugOrId(req.params.id);
 
             let databaseRecord = await this.model.findOne(filter);
@@ -238,6 +308,91 @@ class HandlerFactory<T extends Document = Document>{
             };
 
             res.status(200).json(response);
+        });
+    }
+
+    /**
+     * Get user-specific records
+     * @param userField - The field that contains the user reference
+     * @returns The express request handler
+    */
+    public getUserRecords(userField: string = 'user'): RequestHandler{
+        return catchAsync(async (req: Request, res: Response): Promise<void> => {
+            const userId = (req as any).user.id;
+            let filter = { [userField]: userId };
+
+            if(this.options.customFilter){
+                const customFilter = await this.options.customFilter(req);
+                filter = { ...filter, ...customFilter };
+            }
+
+            const populate = this.options.customPopulate
+                ? await this.options.customPopulate(req)
+                : this.getPopulateFromRequest(req.query);
+
+            const records = await this.model.find(filter)
+                .sort(populate || '')
+                .sort({ createdAt: -1 });
+            
+            res.status(200).json({
+                status: 'success',
+                data: records
+            });
+        });
+    }
+
+    /**
+     * Bulk operation handler
+     * @param operation - The type of bulk operation
+     * @returns The express request handler
+    */
+    public bulkOperation(operation: 'create' | 'update' | 'delete'): RequestHandler{
+        return catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+            const { items } = req.body;
+            if(!Array.isArray(items) || items.length === 0){
+                return next(new RuntimeError('Items array is required', 400));
+            }
+
+            let result;
+            switch(operation){
+                case 'create':
+                    const createData = items.map((item) => {
+                        let filtered = filterObject(item, ...this.fields);
+                        return filtered;
+                    });
+                    result = await this.model.insertMany(createData);
+                    break;
+
+                case 'update':
+                    result = await Promise.all(items.map(async (item) => {
+                        if(!item.id){
+                            throw new Error('ID is required for bulk update');
+                        }
+                        const filtered = filterObject(item, ...this.fields);
+                        return await this.model.findByIdAndUpdate(
+                            item.id,
+                            filtered,
+                            { new: true, runValidators: true }
+                        )
+                    }));
+                    break;
+
+                case 'delete':
+                    const ids = items.map((item) => item.id || item._id).filter(Boolean);
+                    if(ids.length === 0){
+                        throw new Error('No valid IDs provided for bulk delete');
+                    }
+                    result = await this.model.deleteMany({ _id: { $in: ids } });
+                    break;
+                
+                default:
+                    return next(new RuntimeError('Invalid bulk operation', 400));
+            }
+
+            res.status(200).json({
+                status: 'success',
+                data: result
+            });
         });
     }
 }
