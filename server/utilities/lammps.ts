@@ -21,6 +21,40 @@
 **/
 
 import { TimestepInfo } from '@/types/utilities/lammps';
+import { readLargeFile, copyFile } from '@/utilities/fs';
+
+export const processTrajectoryFile = async (
+    trajectoryPath: string,
+    outputPath: string
+): Promise<any> => {
+    try{
+        let timestepFound = false;
+        let frameInfo: any = null;
+
+        const result = await readLargeFile(trajectoryPath, {
+            // Limit lines for validation to avoid memory issues
+            maxLines: 10000,
+            onLine: (line) => {
+                if(!timestepFound && line.includes('TIMESTEP')){
+                    timestepFound = true;
+                }
+            }
+        });
+
+        frameInfo = extractTimestepInfo(result.lines);
+        const isValid = isValidLammpsFile(result.lines);
+
+        await copyFile(trajectoryPath, outputPath);
+        return {
+            frameInfo,
+            totalLines: result.totalLines,
+            timestepFound,
+            isValid
+        };
+    }catch(err){
+        throw err;
+    }
+};
 
 export const extractTimestepInfo = (lines: string[]): TimestepInfo | null => {
     let timestep: number | null = null;

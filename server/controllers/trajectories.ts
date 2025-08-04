@@ -22,15 +22,15 @@
 
 import { NextFunction, Request, Response } from 'express';
 import { join, resolve } from 'path';
-import { access, stat, readdir, mkdir, rm, writeFile } from 'fs/promises';
-import { constants } from 'fs';
+import { access, stat, readdir, mkdir, rm, writeFile, constants } from 'fs/promises';
+import { copyFile } from '@/utilities/fs';
 import { isValidObjectId } from 'mongoose';
 import { v4 } from 'uuid';
 import { getTrajectoryProcessingQueue } from '@/queues';
 import Trajectory from '@models/trajectory';
 import Team from '@models/team';
 import HandlerFactory from '@/controllers/handler-factory';
-import { extractTimestepInfo, isValidLammpsFile } from '@/utilities/lammps';
+import { extractTimestepInfo, isValidLammpsFile, processTrajectoryFile } from '@/utilities/lammps';
 import RuntimeError from '@/utilities/runtime-error';
 
 const factory = new HandlerFactory({
@@ -223,41 +223,67 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         const file = files[i];
         
         try{
-            const content = file.buffer.toString('utf-8');
-            const lines = content.split('\n');
-            const frameInfo = extractTimestepInfo(lines);
-            const isValid = isValidLammpsFile(lines);
+            console.log(`Processing file ${i + 1}/${files.length}: ${file.originalname || 'unnamed'} (${file.size} bytes)`);
 
-            if(!frameInfo || !isValid){
+            // Write file to disk first regardless of size
+            const tempFilePath = join(folderPath, `temp_${i}_${Date.now()}`);
+            await writeFile(tempFilePath, file.buffer);
+
+            // Verify the temp file was written correctly
+            const tempStats = await stat(tempFilePath);
+            console.log(`Temp file written: ${tempStats.size} bytes`);
+
+            if(tempStats.size !== file.size){
+                console.error(`Temp file size mismatch: expected ${file.size}, got ${tempStats.size}`);
+                await rm(tempFilePath).catch(console.error);
                 continue;
             }
 
-            const frameFilePath = join(folderPath, `${frameInfo.timestep}`);
-            await writeFile(frameFilePath, content);
+            try{
+                const { frameInfo, isValid } = await processTrajectoryFile(tempFilePath, tempFilePath);
+                if(!frameInfo || !isValid){
+                    console.log(`File ${i} is not valid, skipping...`);
+                    await rm(tempFilePath).catch(console.error);
+                    continue;
+                }
 
-            const frameData = {
-                ...frameInfo,
-                glbPath: `glb/${frameInfo.timestep}.glb`
-            };
+                const frameFilePath = join(folderPath, `${frameInfo.timestep}`);
+                
+                // Remove existing file if it exists
+                await rm(frameFilePath).catch(() => {});
 
-            frames.push(frameData);
-            validFiles.push({
-                frameData,
-                frameFilePath,
-                originalSize: file.size
-            });
+                await copyFile(tempFilePath, frameFilePath);
 
-            // Clear references to help GC
-            file.buffer = null as any;
-            files[i] = null as any;
+                // Clean up temp file
+                await rm(tempFilePath).catch(console.error);
 
-            // Force GC every 10 files
-            if(i % 10 === 0 && global.gc){
-                global.gc();
+                const frameData = {
+                    ...frameInfo,
+                    glbPath: `glb/${frameInfo.timestep}.glb`
+                };
+
+                frames.push(frameData);
+                validFiles.push({
+                    frameData,
+                    frameFilePath,
+                    originalSize: file.size
+                });
+
+                console.log(`File ${i} processed successfully (timestep: ${frameInfo.timestep})`);
+            }catch(processError){
+                console.error(`Error processing file ${i}:`, processError);
+                await rm(tempFilePath).catch(console.error);
+                // Clean up references for GC
+                file.buffer = null;
+                files[i] = null;
+                // Force GC every 5 files if available
+                if(i % 5 === 0 && global.gc){
+                    console.log(`Forcing garbage collection...`);
+                    global.gc();
+                }
             }
-
-        }catch(error){
-            console.error(`Error processing file ${i}:`, error);
+        }catch(err){
+            console.error(`Error processing file ${i}:`, err);
             continue;
         }
     }
@@ -266,6 +292,8 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         await rm(folderPath, { recursive: true });
         return next(new RuntimeError('No valid files for trajectory', 400));
     }
+
+    const totalSize = validFiles.reduce((acc, file) => acc + file.originalSize, 0);
 
     const trajectoryName = req.body.originalFolderName || 'Untitled Trajectory';
     const newTrajectory = await Trajectory.create({
@@ -276,18 +304,17 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         status: 'processing',
         stats: {
             totalFiles: validFiles.length,
-            totalSize: validFiles.reduce((acc, file) => acc + file.originalSize, 0)
-        }
+            totalSize
+        } 
     });
 
     const trajectoryProcessingQueue = getTrajectoryProcessingQueue();
-    
-    const CHUNK_SIZE = 20; 
+
+    const CHUNK_SIZE = 20;
     const jobs = [];
-    
+
     for(let i = 0; i < validFiles.length; i += CHUNK_SIZE){
         const chunk = validFiles.slice(i, i + CHUNK_SIZE);
-        
         const job = {
             jobId: v4(),
             trajectoryId: newTrajectory._id.toString(),
@@ -303,27 +330,19 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             folderPath,
             glbFolderPath
         };
-        
         jobs.push(job);
     }
 
     for(const job of jobs){
         await trajectoryProcessingQueue.addJobs([job]);
-        
-        // Small delay to prevent overwhelming
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Short pause to avoid overloading
+        await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    validFiles.length = 0;
-
-    if(global.gc){
-        global.gc();
-    }
-
-    res.status(201).json({ 
-        status: 'success', 
+    res.status(201).json({
+        status: 'success',
         data: newTrajectory
-    });
+    })
 };
 
 export const getUserTrajectories = async (req: Request, res: Response) => {
