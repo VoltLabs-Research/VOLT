@@ -83,7 +83,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
                 
                 // Process glb export
                 const glbExporter = new LAMMPSToGLBExporter();
-                glbExporter.exportAtomsToGLB(
+                await glbExporter.exportAtomsToGLB(
                     frameFilePath,
                     glbFilePath,
                     extractTimestepInfo,

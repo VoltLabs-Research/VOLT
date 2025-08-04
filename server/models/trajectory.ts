@@ -105,7 +105,7 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
 
     try{
         if(existsSync(trajectoryPath)){
-            console.log('🗑️ Removing trajectory directory:', trajectoryPath);
+            console.log('Removing trajectory directory:', trajectoryPath);
             await rm(trajectoryPath, { recursive: true });
         }
 
@@ -118,7 +118,7 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
             { $pull: { trajectories: _id } }
         );
 
-        console.log('✅ Trajectory and all related data cleaned up successfully');
+        console.log('Trajectory and all related data cleaned up successfully');
         next();
     }catch(error){
         console.error('❌ Error during trajectory cascade delete:', error);

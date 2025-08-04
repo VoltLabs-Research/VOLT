@@ -23,7 +23,7 @@
 import { ParsedFrame, AtomsGroupedByType, PerformanceProfile, GLBExportOptions } from '@/types/utilities/export/atoms';
 import { TimestepInfo, LammpsAtom } from '@/types/utilities/lammps';
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
-import * as fs from 'fs';
+import { readLargeFile } from '@/utilities/fs';
 
 class LAMMPSToGLBExporter{
     private lammpsTypeColors: Map<number, number[]> = new Map([
@@ -196,16 +196,56 @@ class LAMMPSToGLBExporter{
         }
     }
 
-    parseFrame(filePath: string, extractTimestepInfo: Function): ParsedFrame{
-        const content = fs.readFileSync(filePath, 'utf-8');
-        const lines = content.split('\n');
+    // TODO: DUPLICATED CODE!?
+    async parseFrame(filePath: string, extractTimestepInfo: Function): Promise<ParsedFrame>{
+        let timestepFound = false;
+        let atoms: LammpsAtom[] = [];
+        let inAtomsSection = false;
+        let atomsHeader = '';
 
-        const timestepInfo = extractTimestepInfo(lines);
+        const result = await readLargeFile(filePath, {
+            maxLines: 1000,
+            onLine: (line) => {
+                const trimmed = line.trim();
+                if(!timestepFound && trimmed.includes('TIMESTEP')){
+                    timestepFound = true;
+                }
+
+                if(trimmed.startsWith('ITEM: ATOMS')){
+                    atomsHeader = trimmed;
+                    inAtomsSection = true;
+                    return;
+                }
+
+                if(trimmed.startsWith('ITEM:') && inAtomsSection){
+                    inAtomsSection = false;
+                    return;
+                }
+
+                if(inAtomsSection && trimmed){
+                    const parts = trimmed.split(/\s+/);
+                    if(parts.length >= 5){
+                        atoms.push({
+                            id: parseInt(parts[0]),
+                            type: parseInt(parts[1]),
+                            x: parseFloat(parts[2]),
+                            y: parseFloat(parts[3]),
+                            z: parseFloat(parts[4])
+                        });
+                    }
+                }
+            },
+            onProgress: (lineCount) => {
+                if(lineCount % 50000 === 0){
+                    console.log(`Reading line ${lineCount.toLocaleString()}... (${atoms.length.toLocaleString()} atoms found)`);
+                }
+            }
+        });
+
+        const timestepInfo = extractTimestepInfo(result.lines);
         if(!timestepInfo){
             throw new Error('Could not extract timestep information from file');
         }
-
-        const atoms = this.parseAtoms(lines);
 
         return { timestepInfo, atoms };
     }
@@ -396,13 +436,13 @@ class LAMMPSToGLBExporter{
         return finalRadius;
     }
 
-    exportAtomsToGLB(
+    async exportAtomsToGLB(
         filePath: string,
         outputFilePath: string,
         extractTimestepInfo: Function,
         options: GLBExportOptions = { atomRadius: 0.8 }
-    ): void{
-        const frame = this.parseFrame(filePath, extractTimestepInfo);
+    ): Promise<void> {
+        const frame = await this.parseFrame(filePath, extractTimestepInfo);
         const autoRadius = LAMMPSToGLBExporter.calculateGlobalOptimalRadius(frame);
 
         const opts: Required<GLBExportOptions> = {
