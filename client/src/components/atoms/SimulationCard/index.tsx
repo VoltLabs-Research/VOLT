@@ -35,6 +35,7 @@ import ProgressBorderContainer from '@/components/atoms/ProgressBorderContainer'
 import useTrajectoryStore from '@/stores/trajectories';
 import useJobProgress from '@/hooks/jobs/useJobProgress';
 import useCardInteractions from '@/hooks/ui/useCardInteractions';
+import useTrajectoryPreview from '@/hooks/trajectory/useTrajectoryPreview';
 import './SimulationCard.css';
 
 interface JobStats {
@@ -72,10 +73,18 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const dislocationAnalysis = useTrajectoryStore((state) => state.dislocationAnalysis);
     
-    const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
-    const [previewLoading, setPreviewLoading] = useState(false);
-    const [previewError, setPreviewError] = useState(false);
-    const [lastPreviewId, setLastPreviewId] = useState<string | null>(null);
+    const {
+        previewBlobUrl,
+        isLoading: previewLoading,
+        error: previewError,
+        cleanup: cleanupPreview,
+        retry: retryPreview
+    } = useTrajectoryPreview({
+        trajectoryId: trajectory._id,
+        previewId: trajectory.preview,
+        updatedAt: trajectory.updatedAt,
+        enabled: true
+    })
 
     const jobProgress = useJobProgress(jobs, trajectory._id);
     const {
@@ -87,7 +96,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
         shouldHideBorder,
         getBorderColor,
         getProgressBorder,
-        cleanup
+        cleanup: cleanupJobs
     } = jobProgress;
 
     const { isDeleting, handleClick, handleDelete } = useCardInteractions(
@@ -96,70 +105,13 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
         hasJobs
     );
 
-    useEffect(() => {
-        const loadPreview = async () => {
-            if(!trajectory.preview){
-                setPreviewBlobUrl(null);
-                setLastPreviewId(null);
-                return;
-            }
-
-            if(trajectory.preview === lastPreviewId){
-                console.log('Preview ID unchanged, skipping reload:', trajectory.preview);
-                return;
-            }
-
-            try{
-                setPreviewLoading(true);
-                setPreviewError(false);
-
-                console.log('Loading preview for trajectory:', trajectory._id, 'previewId:', trajectory.preview);
-
-                if(previewBlobUrl){
-                    URL.revokeObjectURL(previewBlobUrl);
-                    setPreviewBlobUrl(null);
-                }
-
-                // Cache busting with timestamp + previewId
-                const cacheBuster = `t=${Date.now()}&pid=${trajectory.preview}&updated=${new Date(trajectory.updatedAt).getTime()}`;
-                
-                const response = await api.get(`/trajectories/${trajectory._id}/preview?${cacheBuster}`, {
-                    responseType: 'blob',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
-                    }
-                });
-
-                const blobUrl = URL.createObjectURL(response.data);
-                setPreviewBlobUrl(blobUrl);
-                setLastPreviewId(trajectory.preview);
-                
-                console.log('Preview loaded successfully:', blobUrl);
-            }catch(error){
-                console.error('Error loading preview:', error);
-                setPreviewError(true);
-                setPreviewBlobUrl(null);
-                setLastPreviewId(null);
-            }finally{
-                setPreviewLoading(false);
-            }
-        };
-
-        loadPreview();
-
-        return () => {
-            if(previewBlobUrl){
-                URL.revokeObjectURL(previewBlobUrl);
-            }
-        };
-    }, [trajectory._id, trajectory.preview, trajectory.updatedAt]);
-
     const containerClasses = `simulation-container ${hasActiveJobs ? 'has-jobs' : ''} ${isDeleting ? 'is-deleting' : ''} ${isSelected ? 'is-selected' : ''}`;
 
     const onDelete = (): void => {
-        handleDelete(trajectory._id, deleteTrajectoryById, cleanup);
+        handleDelete(trajectory._id, deleteTrajectoryById, () => {
+            cleanupJobs();
+            cleanupPreview();
+        });
     };
 
     const handleViewScene = (): void => {
@@ -205,6 +157,9 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
                             src={previewBlobUrl}
                             alt={`Preview of ${trajectory.name || 'Trajectory'}`}
                             key={`${trajectory._id}-${trajectory.preview}-${trajectory.updatedAt}`}
+                            onError={() => {
+                                retryPreview();
+                            }}
                         />
                     )}
                     

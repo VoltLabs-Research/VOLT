@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '@/services/api';
 
 interface UseTrajectoryPreviewOptions{
@@ -27,15 +27,27 @@ const useTrajectoryPreview = ({
     const [error, setError] = useState(false);
     const [lastPreviewId, setLastPreviewId] = useState<string | null>(null);
 
+    const currentRequestRef = useRef<AbortController | null>(null);
+    const mountedRef = useRef(true);
+
     const cleanup = useCallback(() => {
-        if(previewBlobUrl){
-            console.log('Cleaning up preview blob URL:', previewBlobUrl);
-            URL.revokeObjectURL(previewBlobUrl);
-            setPreviewBlobUrl(null);
+        // Cancel ongoing request
+        if(currentRequestRef.current){
+            currentRequestRef.current.abort();
+            currentRequestRef.current = null;
         }
 
+        // Cleanup blob url
+        setPreviewBlobUrl((prev) => {
+            console.log('Cleaning up preview blob URL:', prev);
+            if(prev){
+                URL.revokeObjectURL(prev);
+            }
+            return null;
+        });
+
         setLastPreviewId(null);
-    }, [previewBlobUrl]);
+    }, []);
 
     const loadPreview = useCallback(async () => {
         // Do not load if disabled or there is no preview
@@ -51,6 +63,14 @@ const useTrajectoryPreview = ({
             return;
         }
 
+        // Cancel any ongoing request
+        if(currentRequestRef.current){
+            currentRequestRef.current.abort();
+        }
+
+        const abortController = new AbortController();
+        currentRequestRef.current = abortController;
+
         try{
             setIsLoading(true);
             setError(false);
@@ -58,10 +78,12 @@ const useTrajectoryPreview = ({
             console.log('Loading preview for trajectory:', trajectoryId, 'previewId:', previewId);
 
             // Cleanup previous blob URL
-            if(previewBlobUrl){
-                URL.revokeObjectURL(previewBlobUrl);
-                setPreviewBlobUrl(null);
-            }
+            setPreviewBlobUrl((prev) => {
+                if(prev){
+                    URL.revokeObjectURL(prev);
+                }
+                return null;
+            });
 
             // Cache busting, timestamp + previewId + updatedAt
             const cacheBuster = new URLSearchParams({
@@ -83,6 +105,11 @@ const useTrajectoryPreview = ({
                 }
             );
 
+            // Check if component is still mounted and request wasn't cancelled
+            if(!mountedRef.current || abortController.signal.aborted){
+                return;
+            }
+
             if(!response.data || response.data.size === 0){
                 throw new Error('Empty or invalid image response');
             }
@@ -92,15 +119,27 @@ const useTrajectoryPreview = ({
             setLastPreviewId(previewId);
 
             console.log('Preview loaded successfully:', blobUrl);
-        }catch(err){
-            console.error('Error loading preview:', error);
+        }catch(err: any){
+            // Don't set error state if request was cancelled
+            if(err.name === 'CanceledError' || err.name === 'AbortError'){
+                console.log('Preview request cancelled');
+                return;
+            }
+
+            console.error('Error loading preview:', err);
             setError(true);
             setPreviewBlobUrl(null);
             setLastPreviewId(null);
         }finally{
-            setIsLoading(false);
+            if(mountedRef.current){
+                setIsLoading(false);
+            }
+
+            if(currentRequestRef.current === abortController){
+                currentRequestRef.current = null;
+            }
         }
-    }, [enabled, previewId, trajectoryId, updatedAt, lastPreviewId, previewBlobUrl]);
+    }, [enabled, previewId, trajectoryId, updatedAt, lastPreviewId]);
 
     const retry = useCallback(() => {
         setError(false);
@@ -114,7 +153,12 @@ const useTrajectoryPreview = ({
     }, [loadPreview]);
 
     useEffect(() => {
-        return cleanup;
+        mountedRef.current = true;
+
+        return () => {
+            mountedRef.current = false;
+            cleanup();
+        };
     }, [cleanup]);
 
     return {
