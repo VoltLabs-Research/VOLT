@@ -60,7 +60,7 @@ export const getOptimizedMaterial = (
     return optimized;
 };
 
-export const calculateModelBounds = (glb: GLTF) => {
+export const calculateModelBounds = (glb: any) => {
     const box = new Box3().setFromObject(glb.scene);
     const size = new Vector3();
     const center = new Vector3();

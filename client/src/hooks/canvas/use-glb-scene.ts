@@ -30,16 +30,38 @@ import useEditorStore from '@/stores/editor';
 import loadGLB, { preloadGLBs, modelCache } from '@/utilities/glb/loader';
 import * as THREE from 'three';
 
+const DEFAULT_POSITION = { x: 0, y: 0, z: 0 };
+const DEFAULT_ROTATION = { x: 0, y: 0, z: 0 };
+
+interface Position {
+    x?: number;
+    y?: number;
+    z?: number;
+}
+
+interface Rotation {
+    x?: number;
+    y?: number;
+    z?: number;
+}
+
 interface UseGlbSceneProps {
     currentGlbUrl: any;
     nextGlbUrl: any;
     sliceClippingPlanes: Plane[];
-    position: { x?: number; y?: number; z?: number };
-    rotation: { x?: number; y?: number; z?: number };
+    position: Position;
+    rotation: Rotation;
     scale: number;
     enableInstancing: boolean;
     onGeometryReady: (data: { geometry: BufferGeometry; material: Material }) => void;
     updateThrottle: number;
+}
+
+interface ModelBounds {
+    center: THREE.Vector3;
+    size: THREE.Vector3;
+    min: THREE.Vector3;
+    max: THREE.Vector3;
 }
 
 export const useGlbScene = ({
@@ -54,125 +76,209 @@ export const useGlbScene = ({
     updateThrottle,
 }: UseGlbSceneProps) => {
     const { scene } = useThree();
+
     const activeSceneObject = useEditorStore((state) => state.activeSceneObject);
-    const modelRef = useRef<Group | null>(null);
-    const meshRef = useRef<Mesh | undefined>(undefined);
-    const [modelBounds, setModelBounds] = useState<ReturnType<typeof calculateModelBounds> | null>(null);
-    const materialCache = useRef(new Map<string, THREE.MeshStandardMaterial>());
     const setIsModelLoading = useEditorStore((state) => state.setIsModelLoading);
 
-    const applyOptimizations = useCallback((object: Object3D) => {
-        object.traverse((child) => {
-            if(child instanceof Mesh && child.geometry?.attributes?.position){
-                child.frustumCulled = true;
-                if(!meshRef.current){
-                    meshRef.current = child;
-                }
+    const modelRef = useRef<Group | null>(null);
+    const meshRef = useRef<Mesh | undefined>(undefined);
+    const materialCache = useRef(new Map<string, THREE.MeshStandardMaterial>());
 
-                if(enableInstancing){
-                    onGeometryReady({ geometry: child.geometry, material: child.material as Material });
-                }
+    const [modelBounds, setModelBounds] = useState<ReturnType<typeof calculateModelBounds> | null>(null);
 
-                const materials = Array.isArray(child.material) ? child.material : [child.material];
-                materials.forEach((material, index) => {
-                    if(material?.isMaterial && !enableInstancing){
-                        const optimized = getOptimizedMaterial(material, sliceClippingPlanes, materialCache.current);
-                        if(Array.isArray(child.material)){
-                            child.material[index] = optimized;
-                        }else{
-                            child.material = optimized;
-                        }
-                    }
-                });
+    const getTargetUrl = useCallback((): string | null => {
+        if(!currentGlbUrl || !activeSceneObject){
+            return null;
+        }
+
+        return currentGlbUrl[activeSceneObject];
+    }, [currentGlbUrl, activeSceneObject]);
+
+    const shouldUpdateModel = useCallback((targetUrl: string | null): boolean => {
+        if(!targetUrl) return false;
+        
+        return targetUrl !== modelRef.current?.userData.glbUrl;
+    }, []);
+
+    const handleModelPreloading = useCallback(() => {
+        const preloadUrls = [
+            currentGlbUrl?.dislocations,
+           nextGlbUrl?.dislocations,
+            nextGlbUrl?.[activeSceneObject]
+        ].filter(Boolean);
+
+        if(preloadUrls.length > 0){
+            preloadGLBs(preloadUrls);
+        }
+    }, [currentGlbUrl, nextGlbUrl, activeSceneObject]);
+
+    const applyMeshOptimizations = useCallback((mesh: Mesh) => {
+        mesh.frustumCulled = true;
+
+        if(!meshRef.current){
+            meshRef.current = mesh;
+        }
+
+        if(enableInstancing){
+            onGeometryReady({
+                geometry: mesh.geometry,
+                material: mesh.material as Material
+            });
+            return;
+        }
+
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+
+        materials.forEach((material, index) => {
+            if(material?.isMaterial){
+                const optimizedMaterial = getOptimizedMaterial(
+                    material,
+                    sliceClippingPlanes,
+                );
+
+                if(Array.isArray(mesh.material)){
+                    mesh.material[index] = optimizedMaterial;
+                }else{
+                    mesh.material = optimizedMaterial;
+                }
             }
         });
     }, [sliceClippingPlanes, enableInstancing, onGeometryReady]);
 
-    const updateSceneInternal = useCallback(async () => {
-        setIsModelLoading(true);
+    const applyObjectOptimizations = useCallback((object: Object3D) => {
+        object.traverse((child) => {
+            if(child instanceof Mesh && child.geometry?.attributes?.position){
+                applyMeshOptimizations(child);
+            }
+        });
+    }, [applyMeshOptimizations]);
 
-        if(!currentGlbUrl || !activeSceneObject){
-            return;
+    const calculateModelTransforms = useCallback((model: Group) => {
+        const bounds = calculateModelBounds({ scene: model });
+        const optimalTransforms = calculateOptimalTransforms(bounds);
+
+        setModelBounds(bounds);
+        return { bounds, transforms: optimalTransforms };
+    }, []);
+
+    const applyModelTransforms = useCallback((
+        model: Group, 
+        transforms: ReturnType<typeof calculateOptimalTransforms>
+    ) => {
+        model.position.set(
+            (position.x ?? DEFAULT_POSITION.x) + transforms.position.x,
+            (position.y ?? DEFAULT_POSITION.y) + transforms.position.y,
+            (position.z ?? DEFAULT_POSITION.z) + transforms.position.z
+        );
+
+        model.rotation.set(
+            (rotation.x ?? DEFAULT_ROTATION.x) + transforms.rotation.x,
+            (rotation.y ?? DEFAULT_ROTATION.y) + transforms.rotation.y,
+            (rotation.z ?? DEFAULT_ROTATION.z) + transforms.rotation.z
+        );
+
+        model.scale.setScalar(scale * transforms.scale);
+    }, [position, rotation, scale]);
+
+    const adjustModelToGround = useCallback((model: Group) => {
+        const finalBox = new Box3().setFromObject(model);
+        const minY = finalBox.min.y;
+        
+        if(minY < 0){
+            model.position.y += Math.abs(minY);
+        }
+    }, []);
+
+    const replaceSceneModel = useCallback((newModel: Group) => {
+        if(modelRef.current){
+            scene.remove(modelRef.current);
         }
 
-        const targetUrl = currentGlbUrl[activeSceneObject];
-        console.log(targetUrl)
-        //if(!targetUrl || targetUrl === modelRef.current?.userData.gltfUrl) return;
+        scene.add(newModel);
+        modelRef.current = newModel;
+    }, [scene]);
 
+    const loadAndSetupModel = useCallback(async (targetUrl: string): Promise<void> => {
         try{
             const loadedModel = await loadGLB(targetUrl);
-            console.log('loaded model')
-            
-            // We render the GLB of the next frame given what the user is viewing 
-            // in the current frame. Why would we load things the user isn't going 
-            // to touch? Perhaps it will be useful in the future for the user 
-            // to be able to decide what to preload.
-            // We preload dislocations because the sizes are negligible (~1mb - ~2mb).
-            preloadGLBs([
-                currentGlbUrl?.dislocations,
-                nextGlbUrl?.dislocations,
-                nextGlbUrl?.[activeSceneObject]
-            ]);
 
-
-            if (!loadedModel) {
-                console.warn(`No se pudo cargar el modelo para la URL: ${targetUrl}`);
-                return;
+            if(!loadedModel){
+                throw new Error(`Failed to load model from URL: ${targetUrl}`);
             }
-            
+
             const newModel = loadedModel.clone();
             newModel.userData.glbUrl = targetUrl;
-            
-            applyOptimizations(newModel);
-            const bounds = calculateModelBounds({ scene: newModel });
-            const transforms = calculateOptimalTransforms(bounds);
-            setModelBounds(bounds);
-            newModel.position.set(
-                (position.x || 0) + transforms.position.x,
-                (position.y || 0) + transforms.position.y,
-                (position.z || 0) + transforms.position.z
-            );
 
-            newModel.rotation.set(
-                (rotation.x || 0) + transforms.rotation.x,
-                (rotation.y || 0) + transforms.rotation.y,
-                (rotation.z || 0) + transforms.rotation.z
-            );
+            applyObjectOptimizations(newModel);
 
-            newModel.scale.setScalar(scale * transforms.scale);
-            const finalBox = new Box3().setFromObject(newModel);
-            const minY = finalBox.min.y;
+            const { transforms } = calculateModelTransforms(newModel);
+            applyModelTransforms(newModel, transforms);
 
-            if(minY < 0){
-                newModel.position.y += Math.abs(minY);
+            adjustModelToGround(newModel);
+
+            replaceSceneModel(newModel);
+        }catch(err){
+            console.error('Error loading GLB model:', {
+                url: targetUrl,
+                error: err instanceof Error ? err.message : String(err)
+            });
+
+            throw err;
+        }
+    }, [
+        applyObjectOptimizations,
+        calculateModelTransforms,
+        applyModelTransforms,
+        adjustModelToGround,
+        replaceSceneModel
+    ]);
+
+    const updateScene = useCallback(async (): Promise<void> => {
+        setIsModelLoading(true);
+
+        try{
+            const targetUrl = getTargetUrl();
+            if(!shouldUpdateModel(targetUrl)){
+                return;
             }
 
-            if(modelRef.current){
-                scene.remove(modelRef.current);
+            if(targetUrl){
+                await loadAndSetupModel(targetUrl);
+                handleModelPreloading();
             }
-
-            scene.add(newModel);
-            modelRef.current = newModel;
-        }catch(error){
-            console.error('Error loading GLB:', error);
+        }catch(err){
+            console.error('Failed to update scene:', err);
         }finally{
             setIsModelLoading(false);
         }
-    }, [currentGlbUrl, activeSceneObject, sliceClippingPlanes]);
+    }, [
+        getTargetUrl,
+        shouldUpdateModel,
+        loadAndSetupModel,
+        handleModelPreloading,
+        setIsModelLoading
+    ]);
 
-    const throttledUpdateScene = useThrottledCallback(updateSceneInternal, updateThrottle);
+    const throttledUpdateScene = useThrottledCallback(updateScene, updateThrottle);
 
     useEffect(() => {
         throttledUpdateScene();
     }, [throttledUpdateScene]);
-    
+
     useEffect(() => {
         return () => {
-            if(modelRef.current) scene.remove(modelRef.current);
+            if(modelRef.current){
+                scene.remove(modelRef.current);
+            }
+
             materialCache.current.clear();
             modelCache.clear();
         };
     }, [scene]);
 
-    return { meshRef, modelBounds };
+    return { 
+        meshRef, 
+        modelBounds,
+        isLoading: useEditorStore((state) => state.isModelLoading)
+    };
 };
