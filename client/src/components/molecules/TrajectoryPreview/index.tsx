@@ -7,7 +7,6 @@ import { GoArrowUpRight } from "react-icons/go";
 import './TrajectoryPreview.css';
 
 const TrajectoryPreview = () => {
-    const isModelLoading = useEditorStore((state) => state.isModelLoading);
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const [trajectory, setTrajectory] = useState<any>(null);
 
@@ -34,7 +33,7 @@ const TrajectoryPreview = () => {
 
     return (
         <div className='trajectory-preview-container'>
-            {(isModelLoading || trajectories.length === 0) ? (
+            {(previewLoading || trajectories.length === 0) ? (
                 <div className='trajectory-preview-loading-container'>
                     <Loader scale={0.6} />
                 </div>

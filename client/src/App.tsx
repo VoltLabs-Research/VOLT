@@ -20,7 +20,9 @@
 * SOFTWARE.
 **/
 
-import { Routes, Route } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import Canvas from './pages/protected/Canvas';
 import Dashboard from './pages/protected/Dashboard';
 import SignUp from './pages/guest/SignUp';
@@ -31,26 +33,107 @@ import SharedWithMe from './pages/protected/SharedWithMe';
 import Tutorials from './pages/protected/Tutorials';
 import Messages from './pages/protected/Messages';
 
+import PageWrapper from '@/components/atoms/PageWrapper';
+import GlobalTransitionOverlay from '@/components/atoms/GlobalTransitionOverlay';
+import LoadingShimmer from '@/components/atoms/LoadingShimmer';
+
 const App = () => {
+    const location = useLocation();
+
+    const containerStyle = useMemo(() => ({
+        position: 'relative' as const,
+        width: '100%',
+        height: '100vh',
+        overflow: 'hidden',
+        background: 'linear-gradient(135deg, #fafafa 0%, #ffffff 100%)',
+        scrollBehavior: 'smooth' as const,
+        isolation: 'isolate' as const,
+    }), []);
+
+    const handleExitComplete = () => {
+        if(typeof window !== 'undefined'){
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            document.body.style.transform = '';
+        }
+    };
 
     return (
-        <Routes>
-            <Route element={<ProtectedRoute mode='protect' />}>
-                <Route path='/canvas/:trajectoryId/' element={<Canvas />} />
-                <Route element={<DashboardLayout />}>
-                    <Route path='/dashboard' element={<Dashboard />} />
-                    <Route path='/dashboard/shared-with-me/' element={<SharedWithMe />} />
-                    <Route path='/dashboard/messages/' element={<Messages />} />
-                    <Route path='/dashboard/tutorials/' element={<Tutorials />} />
+        <div style={containerStyle}>
+            <AnimatePresence
+                mode='wait'
+                initial={false}
+                onExitComplete={handleExitComplete}
+            >
+                <GlobalTransitionOverlay key={`overlay-${location.pathname}`} />
+                <LoadingShimmer key={`shimmer-${location.pathname}`} />
 
-                </Route>
-            </Route>
+                <Routes location={location} key={location.pathname}>
+                    <Route element={<ProtectedRoute mode='protect' />}>
+                        <Route
+                            path='/canvas/:trajectoryId/'
+                            element={
+                                <PageWrapper>
+                                    <Canvas />
+                                </PageWrapper>
+                            }
+                        />
+                        <Route element={<DashboardLayout />}>
+                            <Route
+                                path='/dashboard'
+                                element={
+                                    <PageWrapper>
+                                        <Dashboard />
+                                    </PageWrapper>
+                                }
+                            />
+                            <Route
+                                path='/dashboard/shared-with-me/'
+                                element={
+                                    <PageWrapper>
+                                        <SharedWithMe />
+                                    </PageWrapper>
+                                }
+                            />
+                            <Route
+                                path='/dashboard/messages/'
+                                element={
+                                    <PageWrapper>
+                                        <Messages />
+                                    </PageWrapper>
+                                }
+                            />
+                            <Route
+                                path='/dashboard/tutorials/'
+                                element={
+                                    <PageWrapper>
+                                        <Tutorials />
+                                    </PageWrapper>
+                                }
+                            />
+                        </Route>
+                    </Route>
 
-            <Route element={<ProtectedRoute mode='guest' />}>
-                <Route path='/auth/sign-up' element={<SignUp />} />
-                <Route path='/auth/sign-in' element={<SignIn />} />
-            </Route>
-        </Routes>
+                    <Route element={<ProtectedRoute mode='guest' />}>
+                        <Route
+                            path='/auth/sign-up'
+                            element={
+                                <PageWrapper>
+                                    <SignUp />
+                                </PageWrapper>
+                            }
+                        />
+                        <Route
+                            path='/auth/sign-in'
+                            element={
+                                <PageWrapper>
+                                    <SignIn />
+                                </PageWrapper>
+                            }
+                        />
+                    </Route>
+                </Routes>
+            </AnimatePresence>
+        </div>
     );
 };
 

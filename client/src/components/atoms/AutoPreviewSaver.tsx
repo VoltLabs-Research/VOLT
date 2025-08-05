@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
 import useTrajectoryStore from '@/stores/trajectories';
 import useEditorStore from '@/stores/editor';
 import type { Scene3DRef } from '@/components/organisms/Scene3D';
