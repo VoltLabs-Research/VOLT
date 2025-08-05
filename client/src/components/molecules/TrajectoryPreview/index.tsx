@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import useEditorStore from '@/stores/editor';
 import useTrajectoryStore from '@/stores/trajectories';
 import Loader from '@/components/atoms/Loader';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';

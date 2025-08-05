@@ -1,14 +1,14 @@
 import { useEffect, useCallback } from 'react';
 import useTrajectoryUpload from '@/hooks/trajectory/use-trajectory-upload';
-import useEditorStore from '@/stores/editor';
 import useTeamStore from '@/stores/team';
+import useConfigurationStore from '@/stores/editor/configuration';
 import type { FileWithPath } from '@/hooks/trajectory/use-trajectory-upload';
 
 const useFileUpload = (
     onUploadSuccess?: () => void
 ) => {
     const { uploadAndProcessTrajectory } = useTrajectoryUpload();
-    const { analysisConfig } = useEditorStore((state) => state.analysisConfig);
+    const { analysisConfig } = useConfigurationStore((state) => state.analysisConfig);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
 
     useEffect(() => {

@@ -21,12 +21,12 @@
 **/
 
 import EditorWidget from '@/components/organisms/EditorWidget';
-import useEditorStore from '@/stores/editor';
+import useConfigurationStore from '@/stores/editor/configuration';
 import './SlicePlane.css';
 
 const SlicePlane = () => {
-    const slicePlaneConfig = useEditorStore((state) => state.slicePlaneConfig);
-    const setSlicePlaneConfig = useEditorStore((state) => state.setSlicePlaneConfig);
+    const slicePlaneConfig = useConfigurationStore((state) => state.slicePlaneConfig);
+    const setSlicePlaneConfig = useConfigurationStore((state) => state.setSlicePlaneConfig);
     
     const handleNormalChange = (axis: 'x' | 'y' | 'z', value: string) => {
         setSlicePlaneConfig({

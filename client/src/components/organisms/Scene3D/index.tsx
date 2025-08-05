@@ -4,7 +4,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
-import useEditorStore from '@/stores/editor';
+import useConfigurationStore from '@/stores/editor/configuration';
 import { AdaptiveDpr, Bvh, Preload } from '@react-three/drei';
 import useUIStore from '@/stores/ui';
 import './Scene3D.css';
@@ -244,7 +244,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 }, ref) => {
     const orbitControlsRef = useRef<any>(null);
     const [screenshotCapture, setScreenshotCapture] = useState<((options?: any) => Promise<string>) | null>(null);
-    const activeSceneObject = useEditorStore(state => state.activeSceneObject);
+    const activeSceneObject = useConfigurationStore(state => state.activeSceneObject);
     const showCanvasGrid = useUIStore((state) => state.showCanvasGrid);
     const toggleCanvasGrid = useUIStore((state) => state.toggleCanvasGrid);
     const toggleEditorWidgets = useUIStore((state) => state.toggleEditorWidgets);

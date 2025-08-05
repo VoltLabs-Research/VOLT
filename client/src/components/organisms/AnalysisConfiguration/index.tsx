@@ -23,12 +23,12 @@
 import { IoIosArrowDown } from 'react-icons/io';
 import FormField from '@/components/molecules/FormField';
 import EditorWidget from '@/components/organisms/EditorWidget';
-import useEditorStore from '@/stores/editor';
+import useConfigurationStore from '@/stores/editor/configuration';
 import './AnalysisConfiguration.css';
 
 const AnalysisConfiguration = () => {
-    const config = useEditorStore(state => state.analysisConfig);
-    const onConfigChange = useEditorStore(state => state.setAnalysisConfig);
+    const analysisConfig = useConfigurationStore((state) => state.analysisConfig);
+    const setAnalysisConfig = useConfigurationStore((state) => state.setAnalysisConfig);
 
     const configFields = [
         { 
@@ -59,7 +59,7 @@ const AnalysisConfiguration = () => {
         { key: 'markCoreAtoms', label: 'Mark Core Atoms', type: 'checkbox' },
     ];
 
-    return (
+       return (
         <EditorWidget className='editor-analysis-config'>
             <div className='editor-analysis-config-header-container'>
                 <h3 className='editor-analysis-config-header-title'>Analysis Configuration</h3>
@@ -75,8 +75,8 @@ const AnalysisConfiguration = () => {
                         fieldType={field.type}
                         options={field.options} 
                         inputProps={field.type === 'input' ? field.inputProps : undefined}
-                        fieldValue={config[field.key]}
-                        onFieldChange={onConfigChange}
+                        fieldValue={analysisConfig[field.key]}
+                        onFieldChange={setAnalysisConfig}
                     />
                 ))}
             </div>

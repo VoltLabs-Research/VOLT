@@ -22,22 +22,34 @@
 
 import { useRef, useCallback, useEffect } from 'react';
 import useTrajectoryManager from '@/hooks/trajectory/use-trajectory-manager';
-import useEditorStore from '@/stores/editor';
+import usePlaybackStore from '@/stores/editor/playback';
+import useTimestepStore from '@/stores/editor/timesteps';
+import useConfigurationStore from '@/stores/editor/configuration';
 
 const useCanvasState = (trajectoryId: string | undefined) => {
-    const currentGlbUrl = useEditorStore((state) => state.currentGlbUrl);
-    const currentTimestep = useEditorStore((state) => state.currentTimestep);
-    const selectTrajectory = useEditorStore((state) => state.selectTrajectory);
-    const isModelLoading = useEditorStore((state) => state.isModelLoading)
+    const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
+    const setCurrentTimestep = usePlaybackStore((state) => state.setCurrentTimestep);
+    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
+    const isModelLoading = useConfigurationStore((state) => state.isModelLoading);
     
     const { trajectory, loadTrajectory } = useTrajectoryManager();
+    const computeTimestepData = useTimestepStore((state) => state.computeTimestepData);
 
     const isInitialLoadDone = useRef(false);
     const trajectoryIdRef = useRef(trajectoryId);
 
-    const setTimestep = useCallback((timestep: number) => {
-        useEditorStore.getState().setCurrentTimestep(timestep);
-    }, []);
+    const selectTrajectory = useCallback((newTrajectory: any) => {
+        computeTimestepData(newTrajectory);
+        
+        if (newTrajectory?.frames?.length > 0) {
+            const firstTimestep = newTrajectory.frames
+                .map((frame: any) => frame.timestep)
+                .sort((a: number, b: number) => a - b)[0];
+            
+            setCurrentTimestep(firstTimestep);
+        }
+    }, [computeTimestepData, setCurrentTimestep]);
+
 
     useEffect(() => {
         selectTrajectory(null);
@@ -45,19 +57,19 @@ const useCanvasState = (trajectoryId: string | undefined) => {
     }, [selectTrajectory]);
 
     useEffect(() => {
-        if(!trajectoryId) return;
+        if (!trajectoryId) return;
         
         const currentTrajectoryId = trajectory?._id;
         const isSameTrajectory = currentTrajectoryId === trajectoryId && trajectory;
         const isAlreadyLoaded = isInitialLoadDone.current && trajectoryIdRef.current === trajectoryId;
 
-        if(isSameTrajectory || isAlreadyLoaded) return;
+        if (isSameTrajectory || isAlreadyLoaded) return;
 
         trajectoryIdRef.current = trajectoryId;
         isInitialLoadDone.current = true;
 
         loadTrajectory(trajectoryId).then((loadedTrajectory) => {
-            if(loadedTrajectory){
+            if (loadedTrajectory) {
                 selectTrajectory(loadedTrajectory);
             }
         });
@@ -71,7 +83,7 @@ const useCanvasState = (trajectoryId: string | undefined) => {
         selectTrajectory,
         isModelLoading,
         hasModel: Boolean(currentGlbUrl),
-        setTimestep
+        setTimestep: setCurrentTimestep
     };
 };
 

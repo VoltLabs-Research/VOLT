@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import useTrajectoryStore from '@/stores/trajectories';
-import useEditorStore from '@/stores/editor';
+import useConfigurationStore from '@/stores/editor/configuration';
+import useTimestepStore from '@/stores/editor/timesteps';
 import type { Scene3DRef } from '@/components/organisms/Scene3D';
 
 interface AutoPreviewSaverProps{
@@ -16,8 +17,8 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
 }) => {
     const saveTrajectoryPreview = useTrajectoryStore((state) => state.saveTrajectoryPreview);
     const isSavingPreview = useTrajectoryStore((state) => state.isSavingPreview);
-    const isModelLoading = useEditorStore((state) => state.isModelLoading);
-    const currentGlbUrl = useEditorStore((state) => state.currentGlbUrl);
+    const isModelLoading = useConfigurationStore((state) => state.isModelLoading);
+    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
     
     const hasAutoSavedRef = useRef(false);
     const timeoutIdRef = useRef<number | null>(null);

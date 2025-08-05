@@ -9,12 +9,12 @@ import { MdKeyboardArrowDown } from 'react-icons/md';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
-import useEditorStore from '@/stores/editor';
+import useConfigurationStore from '@/stores/editor/configuration';
 import './EditorSidebar.css';
 
 const EditorSidebar = () => {
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const setActiveSceneObject = useEditorStore((state) => state.setActiveSceneObject);
+    const setActiveSceneObject = useConfigurationStore((state) => state.setActiveSceneObject);
     const [activeSidebarTab, setActiveSidebarTag] = useState('Scene');
 
     return (

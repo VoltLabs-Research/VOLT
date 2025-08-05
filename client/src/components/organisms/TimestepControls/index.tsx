@@ -25,18 +25,21 @@ import PlayControls from '@/components/molecules/PlayControls';
 import TimestepSlider from '@/components/molecules/TimestepSlider';
 import SpeedControl from '@/components/molecules/SpeedControl';
 import EditorWidget from '@/components/organisms/EditorWidget';
-import useEditorStore from '@/stores/editor';
+import usePlaybackStore from '@/stores/editor/playback';
+import useTimestepStore from '@/stores/editor/timesteps';
 import './TimestepControls.css';
 
 const TimestepControls: React.FC = () => {
-    const currentTimestep = useEditorStore((state) => state.currentTimestep);
-    const timestepData = useEditorStore((state) => state.timestepData);
-    const setCurrentTimestep = useEditorStore(state => state.setCurrentTimestep);
-    const isPlaying = useEditorStore((state) => state.isPlaying);
-    const togglePlay = useEditorStore((state) => state.togglePlay);
-    const playSpeed = useEditorStore((state) => state.playSpeed);
-    const setPlaySpeed = useEditorStore((state) => state.setPlaySpeed);
-
+    const timestepData = useTimestepStore((state) => state.timestepData);
+    const {
+        currentTimestep,
+        isPlaying,
+        playSpeed,
+        togglePlay,
+        setPlaySpeed,
+        setCurrentTimestep
+    } = usePlaybackStore();
+    
     if(currentTimestep === undefined) return null;
 
     return (

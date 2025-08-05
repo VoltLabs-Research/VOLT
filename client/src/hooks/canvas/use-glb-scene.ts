@@ -26,7 +26,8 @@ import { Group, Mesh, Box3, Object3D, BufferGeometry, Material, Plane } from 'th
 import { calculateModelBounds, calculateOptimalTransforms } from '@/utilities/glb/modelUtils';
 import { getOptimizedMaterial } from '@/utilities/glb/modelUtils';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
-import useEditorStore from '@/stores/editor';
+import useConfigurationStore from '@/stores/editor/configuration';
+import useTimestepStore from '@/stores/editor/timesteps';
 import loadGLB, { preloadGLBs, modelCache } from '@/utilities/glb/loader';
 import * as THREE from 'three';
 
@@ -57,16 +58,7 @@ interface UseGlbSceneProps {
     updateThrottle: number;
 }
 
-interface ModelBounds {
-    center: THREE.Vector3;
-    size: THREE.Vector3;
-    min: THREE.Vector3;
-    max: THREE.Vector3;
-}
-
 export const useGlbScene = ({
-    currentGlbUrl,
-    nextGlbUrl,
     sliceClippingPlanes,
     position,
     rotation,
@@ -77,8 +69,12 @@ export const useGlbScene = ({
 }: UseGlbSceneProps) => {
     const { scene } = useThree();
 
-    const activeSceneObject = useEditorStore((state) => state.activeSceneObject);
-    const setIsModelLoading = useEditorStore((state) => state.setIsModelLoading);
+    const activeSceneObject = useConfigurationStore((state) => state.activeSceneObject);
+    const setIsModelLoading = useConfigurationStore((state) => state.setIsModelLoading);
+    const isLoading = useConfigurationStore((state) => state.isModelLoading);
+
+    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
+    const nextGlbUrl = useTimestepStore((state) => state.nextGlbUrl);
 
     const modelRef = useRef<Group | null>(null);
     const meshRef = useRef<Mesh | undefined>(undefined);
@@ -279,6 +275,6 @@ export const useGlbScene = ({
     return { 
         meshRef, 
         modelBounds,
-        isLoading: useEditorStore((state) => state.isModelLoading)
+        isLoading
     };
 };

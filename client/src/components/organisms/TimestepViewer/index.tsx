@@ -29,7 +29,8 @@ import { useBVH, Instances } from '@react-three/drei';
 import { Vector3, BufferGeometry, Material } from 'three';
 import { useGlbScene } from '@/hooks/canvas/use-glb-scene';
 import { getOptimizedMaterial } from '@/utilities/glb/modelUtils';
-import useEditorStore from '@/stores/editor';
+import useConfigurationStore from '@/stores/editor/configuration';
+import useTimestepStore from '@/stores/editor/timesteps';
 
 interface TimestepViewerProps {
     rotation?: { x?: number; y?: number; z?: number };
@@ -63,10 +64,10 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     const [geometryData, setGeometryData] = useState<{ geometry: BufferGeometry | null; material: Material | null }>({ geometry: null, material: null });
     const { instancedMeshRef, updateInstances } = useInstancedRenderer(instanceCount);
     const instancePositions = useRef<Vector3[]>([]);
-    const slicePlaneConfig = useEditorStore((state) => state.slicePlaneConfig);
+    const slicePlaneConfig = useConfigurationStore((state) => state.slicePlaneConfig);
     const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig);
-    const currentGlbUrl = useEditorStore((state) => state.currentGlbUrl);
-    const nextGlbUrl = useEditorStore((state) => state.nextGlbUrl);
+    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
+    const nextGlbUrl = useTimestepStore((state) => state.nextGlbUrl);
 
     const { meshRef, modelBounds } = useGlbScene({
         currentGlbUrl,
