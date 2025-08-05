@@ -26,6 +26,7 @@ import { createAsyncAction } from '@/utilities/asyncAction';
 import type { Trajectory } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
 import PreviewCacheService from '@/services/preview-cache-service';
+import { clearTrajectoryPreviewCache } from '@/hooks/trajectory/use-trajectory-preview';
 
 interface TrajectoryState {
     trajectories: Trajectory[];
@@ -191,7 +192,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 };
                 
                 set(removeTrajectoryFromList(id));
-                previewCache.delete(id);
+                clearTrajectoryPreviewCache(id);
                 
                 try{
                     await api.delete(`/trajectories/${id}`);
@@ -249,8 +250,13 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     );
 
                     const updatedTrajectory = result.data.data;
+                    clearTrajectoryPreviewCache(id);
+
                     set({
-                        ...updateTrajectoryInList(id, { preview: updatedTrajectory.preview }),
+                        ...updateTrajectoryInList(id, { 
+                            preview: updatedTrajectory.preview,
+                            updatedAt: updatedTrajectory.updatedAt
+                        }),
                         isSavingPreview: false
                     });
 
