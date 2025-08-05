@@ -24,6 +24,7 @@ import SideImageForm from '@/components/organisms/SideImageForm';
 import useAuthStore from '@/stores/authentication';
 import AuthOptions from '@/components/atoms/auth/AuthOptions';
 import ThirdPartySignIn from '@/components/atoms/auth/ThirdPartySignIn';
+import './SignUp.css';
 
 const SignUpPage = () => {
     const { signUp, isLoading } = useAuthStore();

@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import signInImage from '@/assets/images/sign-in.png';
 import FormInput from '@/components/atoms/form/FormInput';
@@ -63,6 +63,34 @@ const SideImageForm = ({
     const [formState, setFormState] = useState(initialState);
     const navigate = useNavigate();
     
+    const rightContainerRef = useRef<HTMLDivElement | null>(null);
+    const [isOverflowing, setIsOverflowing] = useState(false);
+
+    useEffect(() => {
+        const el = rightContainerRef.current;
+        if(!el) return;
+
+        const checkOverflow = () => {
+            const overflow = el.scrollHeight > el.clientHeight;
+            setIsOverflowing(overflow);
+        };
+
+        const ro = new (window as any).ResizeObserver(() => checkOverflow());
+        if(ro) ro.observe(el);
+
+        const mo = new MutationObserver(() => checkOverflow());
+        mo.observe(el, { childList: true, subtree: true, characterData: true });
+
+        checkOverflow();
+        window.addEventListener('resize', checkOverflow);
+
+        return () => {
+            if(ro) ro.disconnect();
+            mo.disconnect();
+            window.removeEventListener('resize', checkOverflow);
+        };
+    }, [inputs]);
+
     const handleChange = (e: any) => {
         const { name, value } = e.target;
         setFormState((prevState) => ({
@@ -90,7 +118,13 @@ const SideImageForm = ({
                 <img src={signInImage} className='side-image-form-image' />
             </figure>
 
-            <div className='side-image-form-right-container'>
+            <div
+                ref={rightContainerRef}
+                className={
+                    'side-image-form-right-container ' +
+                    (isOverflowing ? 'justify-start' : 'justify-center')
+                }
+            >
                 <div className='side-image-form-header-container'>
                     <h3 className='side-image-form-header-title'>{title}</h3>
                     <p className='side-image-form-header-description'>{description}</p>

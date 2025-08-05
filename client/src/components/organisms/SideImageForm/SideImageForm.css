@@ -26,11 +26,20 @@
     margin: 2rem 0;
 }
 
+.side-image-form-right-container.justify-start{
+    justify-content: flex-start;
+}
+
+.side-image-form-right-container.justify-center{
+    justify-content: center;
+}
+
 .side-image-form-right-container{
     display: flex;
     width: 600px;
+    height: 100%;
     margin: 0 auto;
-    justify-content: center;
+    overflow-y: scroll;
     flex-direction: column;
     gap: 3rem;
     padding: 2rem;

@@ -24,3 +24,15 @@
     padding: 1rem;
     width: 100%;
 }
+
+.auth-agree-text{
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: hsl(0,0%,40%);
+}
+
+.auth-agree-text span{
+    color: #000;
+    cursor: pointer;
+}
+
