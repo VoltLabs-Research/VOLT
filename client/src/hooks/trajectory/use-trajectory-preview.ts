@@ -23,7 +23,7 @@ const useTrajectoryPreview = ({
     enabled = true
 }: UseTrajectoryPreviewOptions): UseTrajectoryPreviewReturn => {
     const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
     const [lastPreviewId, setLastPreviewId] = useState<string | null>(null);
 

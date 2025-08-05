@@ -19,17 +19,22 @@ const TrajectoryPreview = () => {
         trajectoryId: trajectory?._id,
         previewId: trajectory?.preview,
         updatedAt: trajectory?.updatedAt,
-        enabled: true
-    })
+        enabled: !!trajectory
+    });
 
     useEffect(() => {
-        if(trajectory) return;
-        setTrajectory(trajectories[0]);
+        if(!trajectory && trajectories.length > 0){
+            console.log('Setting first trajectory as preview:', trajectories[0]);
+            setTrajectory(trajectories[0]);
+        }
+    }, [trajectories, trajectory]);
+
+    useEffect(() => {
         return () => {
             cleanupPreview();
             setTrajectory(null);
-        }
-    }, [trajectories]);
+        };
+    }, [cleanupPreview]);
 
     return (
         <div className='trajectory-preview-container'>
@@ -52,13 +57,14 @@ const TrajectoryPreview = () => {
                     </div>
                 </>
             )}
+            
             <div className='trajectory-preview-scene-container'>
                 {(previewBlobUrl && !previewError) && (
                     <img 
                         className='simulation-image' 
                         src={previewBlobUrl}
-                        alt={`Preview of ${trajectory.name || 'Trajectory'}`}
-                        key={`${trajectory._id}-${trajectory.preview}-${trajectory.updatedAt}`}
+                        alt={`Preview of ${trajectory?.name || 'Trajectory'}`}
+                        key={`${trajectory?._id}-${trajectory?.preview}-${trajectory?.updatedAt}`}
                         onError={() => {
                             retryPreview();
                         }}
