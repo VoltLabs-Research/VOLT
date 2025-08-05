@@ -1,45 +1,99 @@
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
 import { useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import usePlaybackStore from '@/stores/editor/playback';
 import useTimestepStore from '@/stores/editor/timesteps';
 import useTrajectoryStore from '@/stores/trajectories';
 
-const useEditorCoordinator = () => {
+const useCanvasCoordinator = () => {
+    const { trajectoryId } = useParams<{ trajectoryId: string }>();
+
     const trajectory = useTrajectoryStore((state) => state.trajectory);
+    const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
+    const isLoading = useTrajectoryStore((state) => state.isLoading);
+    const error = useTrajectoryStore((state) => state.error);
+    const clearCurrentTrajectory = useTrajectoryStore((state) => state.clearCurrentTrajectory);
+    
     const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
     const setCurrentTimestep = usePlaybackStore((state) => state.setCurrentTimestep);
+    const playNextFrame = usePlaybackStore((state) => state.playNextFrame);
+    const resetPlayback = usePlaybackStore((state) => state.reset);
+
     const computeTimestepData = useTimestepStore((state) => state.computeTimestepData);
     const timestepData = useTimestepStore((state) => state.timestepData);
-    const playNextFrame = usePlaybackStore((state) => state.playNextFrame);
+    const resetTimestep = useTimestepStore((state) => state.reset);
 
-    // Sincronizar datos de timesteps cuando cambie la trayectoria
+    // Load trajectory when hook is initialized
     useEffect(() => {
-        computeTimestepData(trajectory, currentTimestep);
-    }, [trajectory, currentTimestep, computeTimestepData]);
+        if(trajectoryId && (!trajectory || trajectory?._id !== trajectoryId)){
+            console.log(`Loading trajectory with ID: ${trajectoryId}`);
+            getTrajectoryById(trajectoryId);
+        }
+    }, [trajectoryId, trajectory, getTrajectoryById]);
 
-    // Coordinar playback con timesteps disponibles
-    const coordinatedPlayNextFrame = useCallback(() => {
-        playNextFrame(timestepData.timesteps);
-    }, [playNextFrame, timestepData.timesteps]);
-
-    // Manejar selección de trayectoria
-    const handleTrajectorySelection = useCallback((newTrajectory: any) => {
-        if (newTrajectory?.frames?.length > 0) {
-            const firstTimestep = newTrajectory.frames
-                .map((frame: any) => frame.timestep)
+    // Handle automatically the selection for the first timestep when trajectory is loaded
+    useEffect(() => {
+        if(trajectory && trajectory.frames?.length > 0 && currentTimestep === undefined){
+            const firstTimestep = trajectory.frames
+                ?.map((frame: any) => frame.timestep)
                 .sort((a: number, b: number) => a - b)[0];
-            
+            console.log(`Setting initial timestep: ${firstTimestep}`);
             setCurrentTimestep(firstTimestep);
         }
-    }, [setCurrentTimestep]);
+    }, [trajectory, currentTimestep, setCurrentTimestep]);
 
+    // Compute timestep data when trajectory or timestep changes
+    useEffect(() => {
+        if(trajectory && currentTimestep !== undefined){
+            computeTimestepData(trajectory, currentTimestep);
+        }
+    }, [trajectory, currentTimestep, computeTimestepData]);
+
+    const coordinatedPlayNextFrame = useCallback(() => {
+        if(timestepData.timesteps?.length > 0){
+            playNextFrame(timestepData.timesteps);
+        }
+    }, [playNextFrame, timestepData.timesteps]);
+
+    useEffect(() => {
+        return () => {
+            resetPlayback();
+            resetTimestep();
+            clearCurrentTrajectory();
+        };
+    }, []);
+    
     return {
         trajectory,
         currentTimestep,
         timestepData,
+        isLoading,
+        error,
+        trajectoryId,
         setCurrentTimestep,
-        handleTrajectorySelection,
-        coordinatedPlayNextFrame,
+        coordinatedPlayNextFrame
     };
 };
 
-export default useTrajectoryStore;
+export default useCanvasCoordinator;

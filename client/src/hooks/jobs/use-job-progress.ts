@@ -20,17 +20,8 @@
 * SOFTWARE.
 **/
 
-import { useEffect, useState, useRef } from 'react';
-
-interface JobStats {
-    total: number;
-    completionRate: number;
-    hasActiveJobs: boolean;
-}
-
-interface Jobs {
-    _stats?: JobStats;
-}
+import { useEffect, useState, useRef, useMemo } from 'react';
+import type { Job } from '@/types/jobs';
 
 interface JobProgressResult {
     totalJobs: number;
@@ -44,17 +35,24 @@ interface JobProgressResult {
     cleanup: () => void;
 }
 
-const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
+const useJobProgress = (jobs: Job[], itemId: string): JobProgressResult => {
     const [isCompleted, setIsCompleted] = useState<boolean>(false);
     const [shouldHideBorder, setShouldHideBorder] = useState<boolean>(false);
+    const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
     const completionTimeoutRef = useRef<number | null>(null);
     const previousCompletionRate = useRef<number>(0);
+    const previousTotalJobs = useRef<number>(0);
+    const hasBeenCompleted = useRef<boolean>(false);
 
-    const totalJobs = jobs._stats?.total || 0;
-    const completionRate = jobs._stats?.completionRate || 0;
-    const hasJobs = totalJobs > 0;
-    const hasActiveJobs = jobs._stats?.hasActiveJobs || false;
+    const jobStats = useMemo(() => ({
+        totalJobs: jobs._stats?.total || 0,
+        completionRate: jobs._stats?.completionRate || 0,
+        hasJobs: (jobs._stats?.total || 0) > 0,
+        hasActiveJobs: jobs._stats?.hasActiveJobs || false
+    }), [jobs._stats?.total, jobs._stats?.completionRate, jobs._stats?.hasActiveJobs]);
+
+    const { totalJobs, completionRate, hasJobs, hasActiveJobs } = jobStats;
 
     const getBorderColor = (): string => {
         if(!hasJobs || shouldHideBorder){
@@ -94,13 +92,48 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
     const cleanup = (): void => {
         if(completionTimeoutRef.current){
             clearTimeout(completionTimeoutRef.current);
+            completionTimeoutRef.current = null;
         }
     };
 
     useEffect(() => {
-        if(completionRate === 100 && previousCompletionRate.current !== 100 && hasJobs){
+        if(!isInitialized && hasJobs){
+            console.log(`Initializing job progress for item ${itemId}`);
+            previousCompletionRate.current = completionRate;
+            previousTotalJobs.current = totalJobs;
+            hasBeenCompleted.current = completionRate === 100;
+            setIsInitialized(true);
+        }
+    }, [itemId, hasJobs, completionRate, totalJobs, isInitialized]);
+
+    useEffect(() => {
+        if(!isInitialized || !hasJobs){
+            return;
+        }
+
+        const hasNewJobs = totalJobs > previousTotalJobs.current;
+        const completionChanged = completionRate !== previousCompletionRate.current;
+        const wasCompleted = previousCompletionRate.current === 100;
+        const isNowCompleted = completionRate === 100;
+
+        // If there are new jobs, reset status but keep progress
+        if(hasNewJobs){
+            console.log(`Item ${itemId}: New jobs detected (${previousTotalJobs.current} -> ${totalJobs})`);
+            
+            setShouldHideBorder(false);
+            setIsCompleted(false);
+            hasBeenCompleted.current = false;
+            
+            if(completionTimeoutRef.current){
+                clearTimeout(completionTimeoutRef.current);
+                completionTimeoutRef.current = null;
+            }
+        }else if(isNowCompleted && !wasCompleted && !hasBeenCompleted.current){
+            // If completed for the first time
             console.log(`Item ${itemId} completed! Starting 5-second countdown...`);
             setIsCompleted(true);
+            hasBeenCompleted.current = true;
+            
             if(completionTimeoutRef.current){
                 clearTimeout(completionTimeoutRef.current);
             }
@@ -110,39 +143,47 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
                 setShouldHideBorder(true);
                 setIsCompleted(false);
             }, 5000);
-        }else if(completionRate < 100 && previousCompletionRate.current === 100){
-            console.log(`Item ${itemId} has new jobs, showing border again`);
+        }else if(!isNowCompleted && wasCompleted){
+            // If it changed from completed to not completed (new jobs while in countdown)
+            console.log(`Item ${itemId} has new jobs while was completed, showing border again`);
             setShouldHideBorder(false);
             setIsCompleted(false);
+            hasBeenCompleted.current = false;
             
             if(completionTimeoutRef.current){
                 clearTimeout(completionTimeoutRef.current);
                 completionTimeoutRef.current = null;
             }
-        }else if(!hasJobs){
-            setShouldHideBorder(false);
-            setIsCompleted(false);
-            
-            if(completionTimeoutRef.current){
-                clearTimeout(completionTimeoutRef.current);
-                completionTimeoutRef.current = null;
-            }
+        }else if (completionChanged && !isNowCompleted) {
+            // Progress update only (no resetting)
+            console.log(`Item ${itemId}: Progress update ${previousCompletionRate.current}% -> ${completionRate}%`);
         }
 
+        // Update references for the next comparison
         previousCompletionRate.current = completionRate;
-
-        return () => {
-            if(completionTimeoutRef.current){
-                clearTimeout(completionTimeoutRef.current);
-            }
-        };
-    }, [completionRate, hasJobs, itemId]);
+        previousTotalJobs.current = totalJobs;
+    }, [itemId, completionRate, totalJobs, hasJobs, isInitialized]);
 
     useEffect(() => {
-        if(hasJobs){
-            console.log(`Item ${itemId}: ${completionRate}% complete (${totalJobs} jobs) | Completed: ${isCompleted} | Hidden: ${shouldHideBorder} | Active: ${hasActiveJobs}`);
+        if(!hasJobs && isInitialized){
+            console.log(`Item ${itemId}: No jobs, resetting states`);
+            setShouldHideBorder(false);
+            setIsCompleted(false);
+            hasBeenCompleted.current = false;
+            setIsInitialized(false);
+            
+            if(completionTimeoutRef.current){
+                clearTimeout(completionTimeoutRef.current);
+                completionTimeoutRef.current = null;
+            }
         }
-    }, [itemId, completionRate, totalJobs, hasJobs, isCompleted, shouldHideBorder, hasActiveJobs]);
+    }, [hasJobs, itemId, isInitialized]);
+
+    useEffect(() => {
+        return () => {
+            cleanup();
+        };
+    }, [itemId]);
 
     return {
         totalJobs,

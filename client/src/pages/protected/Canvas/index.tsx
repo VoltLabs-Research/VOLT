@@ -10,7 +10,19 @@ import EditorSidebar from '@/components/organisms/EditorSidebar';
 import AutoPreviewSaver from '@/components/atoms/scene/AutoPreviewSaver';
 import TimestepViewer from '@/components/organisms/TimestepViewer';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
+import LoadingOverlay from '@/components/atoms/LoadingOverlay';
+import CanvasWidgets from '@/components/atoms/CanvasWidgets';
 import { useParams } from 'react-router-dom';
+import './Canvas.css';
+
+const CANVAS_CONFIG = {
+    autoSaveDelay: 2000,
+    timestepViewerDefaults: {
+        scale: 1,
+        rotation: { x: Math.PI / 2 },
+        position: { x: 0, y: 0, z: 0 }
+    }
+} as const;
 
 const EditorPage: React.FC = () => {
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
@@ -21,27 +33,25 @@ const EditorPage: React.FC = () => {
         currentTimestep,
     } = useCanvasCoordinator();
 
-    if (!trajectory || currentTimestep === undefined) {
-        return <div>Loading...</div>;
-    }
-
     return (
-        <div className="editor-page">
+        <div className="editor-container">
+            <CanvasWidgets trajectory={trajectory} currentTimestep={currentTimestep} />
+
+            {(!trajectory || currentTimestep === undefined) && <LoadingOverlay />}
+
             <Scene3D ref={scene3DRef}>
-                <TimestepViewer />
-            </Scene3D>
-            
-            <EditorSidebar />
-            <TimestepControls />
-            <AnalysisConfiguration />
-            <SlicePlane />
-            
-            {trajectoryId && (
                 <AutoPreviewSaver
                     scene3DRef={scene3DRef}
+                    delay={CANVAS_CONFIG.autoSaveDelay}
                     trajectoryId={trajectoryId}
                 />
-            )}
+
+                <TimestepViewer
+                    scale={CANVAS_CONFIG.timestepViewerDefaults.scale}
+                    rotation={CANVAS_CONFIG.timestepViewerDefaults.rotation}
+                    position={CANVAS_CONFIG.timestepViewerDefaults.position}
+                />
+            </Scene3D>            
         </div>
     );
 };

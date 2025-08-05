@@ -21,69 +21,48 @@
 **/
 
 import { create } from 'zustand';
-import io, { Socket } from 'socket.io-client';
+import { socketService } from '@/services/socketio';
+import type { Job, JobsByStatus } from '@/types/jobs';
 
-const SOCKET_URL = 'http://172.20.10.5:8000/';
-
-interface Job {
-    jobId: string;
-    trajectoryId: string;
-    sessionId?: string;
-    status: 'queued' | 'running' | 'completed' | 'failed' | 'retrying' | 'unknown';
-    timestamp: string;
-    [key: string]: any;
-}
-
-interface JobStats {
-    total: number;
-    completed: number;
-    totalAllTime: number;
-    byStatus: Record<string, number>;
-    hasActiveJobs: boolean;
-    completionRate: number;
-    isActiveSession: boolean;
-}
-
-interface JobsByStatus {
-    [status: string]: Job[];
-    _stats?: JobStats;
-}
-
-interface TeamJobsState {
+interface TeamJobsState{
     // State
     jobs: Job[];
     isConnected: boolean;
     isLoading: boolean;
     expiredSessions: Set<string>;
     currentTeamId: string | null;
-    socket: Socket | null;
-    
+
     // Actions
     subscribeToTeam: (teamId: string, previousTeamId?: string | null) => void;
+    unsubscribeFromTeam: () => void;
     disconnect: () => void;
     hasJobForTrajectory: (trajectoryId: string) => boolean;
     getJobsForTrajectory: (trajectoryId: string) => JobsByStatus;
-    
+
     // Internal actions
     _initializeSocket: () => void;
-    _handleConnect: () => void;
-    _handleDisconnect: () => void;
+    _handleConnect: (connected: boolean) => void;
     _handleTeamJobs: (initialJobs: Job[]) => void;
     _handleJobUpdate: (updatedJob: any) => void;
     _sortJobsByTimestamp: (jobsArray: Job[]) => Job[];
 }
 
-const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
-    const store = {
-        // Initial state
-        jobs: [],
-        isConnected: false,
-        isLoading: true,
-        expiredSessions: new Set<string>(),
-        currentTeamId: null,
-        socket: null,
+const initialState = {
+    jobs: [],
+    isConnected: false,
+    isLoading: true,
+    expiredSessions: new Set<string>(),
+    currentTeamId: null
+};
 
-        // Internal helper methods
+const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
+    let connectionUnsubscribe: (() => void) | null = null;
+    let teamJobsUnsubscribe: (() => void) | null = null;
+    let jobUpdateUnsubscribe: (() => void) | null = null;
+
+    const store = {
+        ...initialState,
+
         _sortJobsByTimestamp: (jobsArray: Job[]) => {
             return [...jobsArray].sort((a, b) => {
                 if(!a.timestamp && !b.timestamp) return 0;
@@ -97,38 +76,30 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
             });
         },
 
-        _handleConnect: () => {
-            console.log('Socket.IO connected successfully.');
-            set({ isConnected: true });
-            
-            const { currentTeamId, socket } = get();
-            if(currentTeamId && socket) {
-                socket.emit('subscribe_to_team', {
-                    teamId: currentTeamId,
-                    previousTeamId: null,
-                });
-            }
-        },
+        _handleConnect: (connected: boolean) => {
+            console.log('Socket connection status:', connected);
+            set({ isConnected: connected });
 
-        _handleDisconnect: () => {
-            console.log('Socket.IO disconnected.');
-            set({ isConnected: false });
+            if(connected){
+                const { currentTeamId } = get();
+                if(currentTeamId){
+                    console.log('Reconnected, re-subscribing to team:', currentTeamId);
+                    socketService.subscribeToTeam(currentTeamId);
+                }
+            }
         },
 
         _handleTeamJobs: (initialJobs: Job[]) => {
             const { currentTeamId, _sortJobsByTimestamp } = get();
             console.log(`[${currentTeamId}] Received initial list of ${initialJobs.length} jobs:`, initialJobs);
-            
+
             const sortedJobs = _sortJobsByTimestamp(initialJobs);
-            set({ 
-                jobs: sortedJobs, 
-                isLoading: false 
-            });
+            set({ jobs: sortedJobs, isLoading: false });
         },
 
         _handleJobUpdate: (updatedJob: any) => {
             const { currentTeamId, jobs, expiredSessions, _sortJobsByTimestamp } = get();
-            
+
             if(updatedJob.type === 'session_expired'){
                 console.log(`Session ${updatedJob.sessionId} expired for trajectory ${updatedJob.trajectoryId}`);
                 const newExpiredSessions = new Set(expiredSessions);
@@ -138,50 +109,49 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
             }
 
             console.log(`[${currentTeamId}] Received job update:`, updatedJob);
-            
+
             const jobExists = jobs.some((job) => job.jobId === updatedJob.jobId);
             let newJobs: Job[];
-            
+
             if(jobExists){
                 console.log(`Updating existing job ${updatedJob.jobId}`);
-                newJobs = jobs.map((job) => 
-                    job.jobId === updatedJob.jobId ? { ...job, ...updatedJob } : job
-                );
+                newJobs = jobs.map((job) => job.jobId === updatedJob.jobId ? { ...job, ...updatedJob } : job);
             }else{
                 console.log(`Adding new job ${updatedJob.jobId}`);
                 newJobs = [...jobs, updatedJob];
             }
-            
+
             const sortedJobs = _sortJobsByTimestamp(newJobs);
             set({ jobs: sortedJobs });
         },
 
         _initializeSocket: () => {
-            const { socket } = get();
-            
-            // Don't create multiple socket instances
-            if(socket) return;
+            const { _handleConnect, _handleTeamJobs, _handleJobUpdate } = get();
+            console.log('Initializing socket listeners...');
 
-            console.log('Initializing socket connection...');
-            
-            const newSocket = io(SOCKET_URL, {
-                autoConnect: false
-            });
+            // Cleanup existing listeners
+            if(connectionUnsubscribe) connectionUnsubscribe();
+            if(teamJobsUnsubscribe) teamJobsUnsubscribe();
+            if(jobUpdateUnsubscribe) jobUpdateUnsubscribe();
 
-            const { _handleConnect, _handleDisconnect, _handleTeamJobs, _handleJobUpdate } = get();
+            // Setup event listeners using socketService singleton
+            connectionUnsubscribe = socketService.onConnectionChange(_handleConnect);
+            teamJobsUnsubscribe = socketService.on('team_jobs', _handleTeamJobs);
+            jobUpdateUnsubscribe = socketService.on('job_update', _handleJobUpdate);
 
-            // Setup event listeners
-            newSocket.on('connect', _handleConnect);
-            newSocket.on('disconnect', _handleDisconnect);
-            newSocket.on('team_jobs', _handleTeamJobs);
-            newSocket.on('job_update', _handleJobUpdate);
-
-            set({ socket: newSocket });
+            if(!socketService.isConnected()){
+                socketService.connect()
+                    .catch((error) => {
+                        console.error('Failed to connect socket:', error);
+                        set({ isLoading: false });
+                    });
+            }else{
+                set({ isConnected: true });
+            }
         },
 
-        // Public actions
         subscribeToTeam: (teamId: string, previousTeamId: string | null = null) => {
-            const { socket, currentTeamId, _initializeSocket } = get();
+            const { currentTeamId, _initializeSocket } = get();
             
             // Don't resubscribe to the same team
             if(currentTeamId === teamId){
@@ -190,51 +160,74 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
             }
 
             console.log(`Subscribing to team: ${teamId}`);
-            
-            // Initialize socket if not exists
-            if(!socket){
-                _initializeSocket();
-            }
+
+            // Initialize socket listeners
+            _initializeSocket();
 
             // Reset state for new team
-            set({ 
+            // TODO: can I use unsubscribeFromTeam to avoid duplicated code?
+            set({
                 currentTeamId: teamId,
                 jobs: [],
                 expiredSessions: new Set(),
                 isLoading: true
             });
 
-            const currentSocket = get().socket;
-            if (!currentSocket) {
-                console.error('Socket not initialized');
-                return;
+            // Connect and subcribe
+            if(!socketService.isConnected()){
+                socketService.connect()
+                    .then(() => {
+                        socketService.subscribeToTeam(teamId, previousTeamId || currentTeamId!);
+                    })
+                    .catch((error) => {
+                        console.error('Failed to connect and subscribe', error);
+                        set({ isLoading: false });
+                    });
+            }else{
+                socketService.subscribeToTeam(teamId, previousTeamId || currentTeamId!);
             }
-            
-            if (!currentSocket.connected) {
-                currentSocket.connect();
-            }
-
-            currentSocket.emit('subscribe_to_team', {
-                teamId: teamId,
-                previousTeamId: previousTeamId || currentTeamId,
-            });
         },
 
-        disconnect: () => {
-            const { socket } = get();
-            
-            if(socket){
-                console.log('Disconnecting socket...');
-                socket.disconnect();
-                set({ 
-                    socket: null,
-                    isConnected: false,
+        unsubscribeFromTeam: () => {
+            const { currentTeamId } = get();
+            if(currentTeamId){
+                console.log(`Unsubscribing from team: ${currentTeamId}`);
+                set({
                     currentTeamId: null,
                     jobs: [],
                     expiredSessions: new Set(),
                     isLoading: true
                 });
             }
+        },
+
+        disconnect: () => {
+            console.log('Disconnecting socket...');
+
+            if(connectionUnsubscribe){
+                connectionUnsubscribe();
+                connectionUnsubscribe = null;
+            }
+
+            if(teamJobsUnsubscribe){
+                teamJobsUnsubscribe();
+                teamJobsUnsubscribe = null;
+            }
+
+            if(jobUpdateUnsubscribe){
+                jobUpdateUnsubscribe();
+                jobUpdateUnsubscribe = null;
+            }
+
+            socketService.disconnect();
+            // TODO: duplicated code
+            set({ 
+                isConnected: false,
+                currentTeamId: null,
+                jobs: [],
+                expiredSessions: new Set(),
+                isLoading: true
+            });
         },
 
         hasJobForTrajectory: (trajectoryId: string) => {
@@ -245,60 +238,76 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
         getJobsForTrajectory: (trajectoryId: string): JobsByStatus => {
             const { jobs, expiredSessions } = get();
             const trajectoryJobs = jobs.filter((job) => job.trajectoryId === trajectoryId);
-            
-            if (trajectoryJobs.length === 0) {
+
+            if(trajectoryJobs.length === 0){
                 return {};
             }
-            
+
+            // Determine active jobs
+            // TODO: divide in smaller parts
+            const now = new Date().getTime();
+            const fiveMinuesAgo = now - (5 * 60 * 1000);
+
             const activeJobs = trajectoryJobs.filter((job) => {
-                if (job.sessionId && expiredSessions.has(job.sessionId)) {
-                    return false;
+                // If job status is completed or failed, always consider for the total progress
+                if(job.status === 'completed' || job.status === 'failed'){
+                    return true;
                 }
-                
-                if (!job.sessionId) {
-                    const now = new Date().getTime();
-                    const fiveMinutesAgo = now - (5 * 60 * 1000);
+
+                // If job status is running, retrying or queued, consider as active
+                if(job.status === 'running' || job.status === 'queued' || job.status === 'retrying'){
+                    // Filter by expired session if it has sessionId
+                    if(job.sessionId && expiredSessions.has(job.sessionId)){
+                        return false;
+                    }
                     
-                    if (!job.timestamp) return false;
-                    
+                    return true;
+                }
+
+                // For jobs without sessionId, use time filter
+                if(!job.sessionId){
+                    if(!job.timestamp) return false;
                     const jobTime = new Date(job.timestamp).getTime();
-                    return jobTime >= fiveMinutesAgo;
+                    return jobTime >= fiveMinuesAgo;
                 }
-                
+
                 return true;
             });
-            
+
             console.log(`Trajectory ${trajectoryId}: Total jobs: ${trajectoryJobs.length}, Active jobs: ${activeJobs.length}, Expired sessions: ${expiredSessions.size}`);
-            
-            if (activeJobs.length === 0) {
+            if(activeJobs.length === 0){
                 return {};
             }
-            
+
             const jobsByStatus = activeJobs.reduce((acc, job) => {
                 const status = job.status || 'unknown';
-                
-                if (!acc[status]) {
+                if(!acc[status]){
                     acc[status] = [];
                 }
                 
                 acc[status].push(job);
                 return acc;
             }, {} as Record<string, Job[]>);
-            
-            Object.keys(jobsByStatus).forEach(status => {
+
+            Object.keys(jobsByStatus).forEach((status) => {
                 jobsByStatus[status].sort((a, b) => {
-                    if (!a.timestamp && !b.timestamp) return 0;
-                    if (!a.timestamp) return 1;
-                    if (!b.timestamp) return -1;
-                    
+                    if(!a.timestamp && !b.timestamp) return 0;
+                    if(!a.timestamp) return 1;
+                    if(!b.timestamp) return -1;
+
                     return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
                 });
             });
-            
-            const completedJobs = jobsByStatus.completed?.length || 0;
+
+            // Calculate progress based on completed jobs vs active jobs
+            const completedJobs = (jobsByStatus.completed?.length || 0) + (jobsByStatus.failed?.length || 0);
             const totalActiveJobs = activeJobs.length;
-            const completionRate = totalActiveJobs > 0 ? Math.round((completedJobs / totalActiveJobs) * 100) : 0;
-            
+            const completionRate = totalActiveJobs > 0 ? Math.round((completedJobs / totalActiveJobs) * 100 ) : 0;
+
+            // Active jobs are those that are running, queued or retrying
+            const currentlyActiveJobs = activeJobs.filter((job) => ['running', 'queued', 'retrying'].includes(job.status));
+
+            // Stats for useJobProgress hook
             jobsByStatus._stats = {
                 total: totalActiveJobs,
                 completed: completedJobs,
@@ -309,13 +318,12 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
                     }
                     return acc;
                 }, {} as Record<string, number>),
-                hasActiveJobs: activeJobs.some(job => ['running', 'queued', 'retrying'].includes(job.status)),
+                hasActiveJobs: currentlyActiveJobs.length > 0,
                 completionRate: completionRate,
                 isActiveSession: totalActiveJobs > 0
             };
-            
+
             console.log(`Active session for trajectory ${trajectoryId}: ${completedJobs}/${totalActiveJobs} completed (${completionRate}%)`);
-            
             return jobsByStatus;
         }
     };

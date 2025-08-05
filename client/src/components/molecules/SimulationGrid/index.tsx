@@ -4,7 +4,7 @@ import SimulationSkeletonCard from '@/components/atoms/SimulationSkeletonCard';
 import useTrajectoryStore from '@/stores/trajectories';
 import useTeamStore from '@/stores/team';
 import useAnimationPresence from '@/hooks/ui/use-animation-presence';
-import useTeamJobs from '@/hooks/jobs/use-team-jobs';
+import useTeamJobsStore from '@/stores/team-jobs';
 import './SimulationGrid.css';
 
 const SimulationGrid = () => {
@@ -22,7 +22,7 @@ const SimulationGrid = () => {
     const showSkeleton = isLoading || isLoadingTeams || uploadingFileCount > 0;
     const skeletonCount = uploadingFileCount > 0 ? uploadingFileCount : 8;
     
-    const { getJobsForTrajectory } = useTeamJobs();
+    const getJobsForTrajectory = useTeamJobsStore((state) => state.getJobsForTrajectory);
 
     useEffect(() => {
         const handleKeyDown = (event) => {

@@ -63,6 +63,7 @@ interface TrajectoryActions {
     setTrajectory: (trajectory: Trajectory | null) => void;
     clearError: () => void;
     reset: () => void;
+    clearCurrentTrajectory: () => void;
 }
 
 export type TrajectoryStore = TrajectoryState & TrajectoryActions;
@@ -294,6 +295,15 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             setTrajectory: (trajectory: Trajectory | null) => set({ trajectory }),
 
             clearError: () => set({ error: null }),
+                    clearCurrentTrajectory: () => {
+            console.log('Clearing current trajectory but preserving list');
+            set({ 
+                trajectory: null,
+                error: null,
+                selectedTrajectories: [],
+                // Mantener: trajectories, isLoading, etc.
+            });
+        },
 
             reset: () => {
                 previewCache.clear();

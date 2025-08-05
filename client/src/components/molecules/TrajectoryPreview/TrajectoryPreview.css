@@ -3,6 +3,7 @@
     overflow: hidden;
     height: 400px;
     width: 50%;
+    border: 1px solid #dadada;
     /*box-shadow: 0 0 8px 0px #555555;*/
     position: relative;
 }

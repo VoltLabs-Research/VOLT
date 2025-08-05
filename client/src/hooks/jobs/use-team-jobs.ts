@@ -20,52 +20,41 @@
 * SOFTWARE.
 **/
 
-import { useEffect, useRef } from 'react';
-import useTeamStore from '@/stores/team';
+import { useEffect } from 'react';
 import useTeamJobsStore from '@/stores/team-jobs';
+import useTeamStore from '@/stores/team';
 
 const useTeamJobs = () => {
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
-    const previousTeamIdRef = useRef<string | null>(null);
+    const currentTeam = useTeamStore(state => state.selectedTeam);
     
-    // Get state and actions from store
     const {
         jobs,
         isConnected,
         isLoading,
-        expiredSessions,
         subscribeToTeam,
-        hasJobForTrajectory,
-        getJobsForTrajectory,
-        _initializeSocket
+        unsubscribeFromTeam,
+        disconnect,
+        getJobsForTrajectory
     } = useTeamJobsStore();
 
-    // Handle team changes
     useEffect(() => {
-        const teamId = selectedTeam?._id;
-
-        if (!teamId) {
-            // Clear data when no team is selected
-            previousTeamIdRef.current = null;
-            return;
+        if(currentTeam?._id){
+            subscribeToTeam(currentTeam._id);
         }
 
-        // Initialize socket on first mount
-        _initializeSocket();
-        
-        // Subscribe to new team
-        subscribeToTeam(teamId, previousTeamIdRef.current);
-        previousTeamIdRef.current = teamId;
-
-    }, [selectedTeam?._id, subscribeToTeam, _initializeSocket]);
+        return () => {
+            if(currentTeam?._id){
+                unsubscribeFromTeam();
+            }
+        };
+    }, [currentTeam?._id, subscribeToTeam, unsubscribeFromTeam]);
 
     return {
         jobs,
         isConnected,
         isLoading,
-        hasJobForTrajectory,
         getJobsForTrajectory,
-        expiredSessions: expiredSessions.size
+        disconnect
     };
 };
 

@@ -27,6 +27,7 @@ const TrajectoryPreview = () => {
         setTrajectory(trajectories[0]);
         return () => {
             cleanupPreview();
+            setTrajectory(null);
         }
     }, [trajectories]);
 
