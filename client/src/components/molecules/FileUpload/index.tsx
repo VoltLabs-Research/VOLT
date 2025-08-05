@@ -20,136 +20,124 @@
 * SOFTWARE.
 **/
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import useTrajectoryUpload from '@/hooks/trajectory/useTrajectoryUpload';
-import useTeamStore from '@/stores/team';
-import type { FileWithPath } from '@/hooks/trajectory/useTrajectoryUpload';
-import useEditorStore from '@/stores/editor';
+import { processFileSystemEntry } from '@/utilities/fs';
+import type { FileWithPath } from '@/hooks/trajectory/use-trajectory-upload';
+import useDragState from '@/hooks/ui/use-drag-state';
+import useFileUpload from '@/hooks/ui/use-file-upload';
 import './FileUpload.css';
 
 interface FileUploadProps{
     onUploadSuccess?: (res: any) => void;
+    onUploadError?: (res: any) => void;
     className?: string;
     children?: React.ReactNode;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
-    onUploadSuccess,
-    className = '',
+    onUploadSuccess = () => {},
     children,
 }) => {
-    const { uploadAndProcessTrajectory, error, data } = useTrajectoryUpload();
-    const { analysisConfig } = useEditorStore((state) => state.analysisConfig);
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const dropRef = useRef<HTMLDivElement>(null);
-    const [isDraggingOver, setIsDraggingOver] = useState(false);
-    
-    useEffect(() => {
-        const handleWindowDragEnter = (event: DragEvent) => {
-            event.preventDefault();
-            if(event.dataTransfer?.types.includes('Files')){
-                setIsDraggingOver(true);
-            }
-        };
+    const { isDraggingOver, handleDragEnter, handleDragLeave, resetDragState } = useDragState();
+    const { uploadFiles } = useFileUpload(onUploadSuccess);
 
+    const handleWindowDragEnter = useCallback((event: DragEvent) => {
+        event.preventDefault();
+        if(!event.dataTransfer?.types.includes('Files')){
+            return;
+        }
+
+        handleDragEnter();
+    }, [handleDragEnter]);
+
+    const handleDrop = useCallback(async (event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        resetDragState();
+
+        const items = event.dataTransfer.items;
+        if(!items || items.length === 0){
+            console.warn('No items found in drop event');
+            return;
+        }
+
+        try{
+            const allFiles: FileWithPath[] = [];
+            let commonFolderName: string | null = null;
+
+            const processPromises = Array.from(items).map(async (item) => {
+                const entry = item.webkitGetAsEntry();
+                if(!entry) return { files: [], folderName: null };
+
+                return processFileSystemEntry(entry);
+            });
+
+            const results = await Promise.all(processPromises);
+            results.forEach(({ files, folderName }) => {
+                allFiles.push(...files);
+                if(!commonFolderName && folderName){
+                    commonFolderName = folderName;
+                }
+            });
+
+            if(allFiles.length === 0){
+                const error = new Error('No files found in dropped items');
+                console.warn(error.message);
+                return;
+            }
+
+            const finalFolderName = commonFolderName || `upload_${Date.now()}`;
+            console.log(`Processing ${allFiles.length} files from folder: ${finalFolderName}`);
+
+            await uploadFiles(allFiles, finalFolderName);
+        }catch(err){
+            const error = err instanceof Error ? err : new Error('Failed to process dropped files');
+            console.error('Drop handler error:', error);
+        }
+    }, [uploadFiles, resetDragState]);
+
+    const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+    }, []);
+
+    const handleDropZoneDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        handleDragLeave();
+    }, [handleDragLeave]);
+
+    useEffect(() => {
         window.addEventListener('dragenter', handleWindowDragEnter);
 
         return () => {
             window.removeEventListener('dragenter', handleWindowDragEnter);
         };
-    }, []);
+    }, [handleWindowDragEnter]);
 
-    useEffect(() => {
-        if(data){
-            onUploadSuccess?.(data);
-        }
-    }, [data, onUploadSuccess]);
+    const containerClasses = useMemo(() => {
+        const classes = ['file-upload-container'];
+        
+        if(isDraggingOver) classes.push('is-dragging-over');
 
-    useEffect(() => {
-        if(error){
-            console.error(error);
-        }
-    }, [error]);
+        return classes.filter(Boolean).join(' ');
+    }, [isDraggingOver]);
 
-    const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        setIsDraggingOver(false);
-
-        const items = event.dataTransfer.items;
-        if(!items) return;
-
-        try{
-            const filesWithPaths: FileWithPath[] = []; 
-            let originalFolderName: string | null = null;
-
-            const processEntry = async (entry: any): Promise<void> => {
-                if(entry.isFile){
-                    const file = await new Promise<File>((resolve) => entry.file(resolve));
-                    const relativePath = entry.fullPath.startsWith('/') ? entry.fullPath.slice(1) : entry.fullPath;
-                    filesWithPaths.push({ file, path: relativePath });
-
-                    if(!originalFolderName && entry.fullPath){
-                        const pathParts = entry.fullPath.split('/').filter((part) => part);
-                        if(pathParts.length > 1){
-                            originalFolderName = pathParts[0];
-                        }
-                    }
-                }else if(entry.isDirectory){
-                    if(!originalFolderName && entry.fullPath){
-                        const pathParts = entry.fullPath.split('/').filter((part) => part);
-                        if(pathParts.length > 0){
-                            originalFolderName = pathParts[0];
-                        }
-                    }
-
-                    const dirReader = entry.createReader();
-                    const entries = await new Promise<any[]>((resolve) => dirReader.readEntries(resolve));
-                    for(const subEntry of entries){
-                        await processEntry(subEntry);
-                    }
-                }
-            };
-
-            for(let i = 0; i < items.length; i++){
-                const item = items[i].webkitGetAsEntry();
-                if(item){
-                    await processEntry(item);
-                }
-            }
-
-            if(filesWithPaths.length > 0 && originalFolderName){
-                console.log(selectedTeam?._id)
-                await uploadAndProcessTrajectory(filesWithPaths, originalFolderName, analysisConfig, selectedTeam?._id);
-            }else{
-                console.warn('No files were found or the parent folder could not be determined.');
-            }
-        }catch(err){
-            console.error(err);
-        }
-    };
-
-    const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        setIsDraggingOver(false);
-    }
-
-    const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-        event.preventDefault();
-    };
+    const dropZone = (
+        <div
+            ref={dropRef}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDropZoneDragLeave}
+            className={containerClasses}
+            aria-label="File upload drop zone"
+            role="button"
+        />
+    );
 
     return (
         <>
             {children}
-            {createPortal(
-                <div
-                    ref={dropRef}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    className={`file-upload-container ${className} ${isDraggingOver ? 'is-dragging-over' : ''}`.trim()}
-                />
-            , document.body)}
+            {createPortal(dropZone, document.body)}
         </>
 
     );

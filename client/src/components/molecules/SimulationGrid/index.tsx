@@ -3,8 +3,8 @@ import SimulationCard from '@/components/atoms/SimulationCard';
 import SimulationSkeletonCard from '@/components/atoms/SimulationSkeletonCard';
 import useTrajectoryStore from '@/stores/trajectories';
 import useTeamStore from '@/stores/team';
-import useAnimationPresence from '@/hooks/ui/useAnimationPresence';
-import useTeamJobs from '@/hooks/jobs/useTeamJobs';
+import useAnimationPresence from '@/hooks/ui/use-animation-presence';
+import useTeamJobs from '@/hooks/jobs/use-team-jobs';
 import './SimulationGrid.css';
 
 const SimulationGrid = () => {

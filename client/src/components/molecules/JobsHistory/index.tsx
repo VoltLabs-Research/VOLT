@@ -1,4 +1,4 @@
-import useTeamJobs from '@/hooks/jobs/useTeamJobs';
+import useTeamJobs from '@/hooks/jobs/use-team-jobs';
 import JobSkeleton from '@/components/atoms/JobSkeleton';
 import JobQueue from '@/components/atoms/JobQueue';
 import './JobsHistory.css';

@@ -25,7 +25,7 @@ import { useThree } from '@react-three/fiber';
 import { Group, Mesh, Box3, Object3D, BufferGeometry, Material, Plane } from 'three';
 import { calculateModelBounds, calculateOptimalTransforms } from '@/utilities/glb/modelUtils';
 import { getOptimizedMaterial } from '@/utilities/glb/modelUtils';
-import useThrottledCallback from '@/hooks/ui/useThrottledCallback';
+import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 import useEditorStore from '@/stores/editor';
 import loadGLB, { preloadGLBs, modelCache } from '@/utilities/glb/loader';
 import * as THREE from 'three';

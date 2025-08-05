@@ -26,11 +26,11 @@ import type { TrajectoryData } from '@/types/canvas';
 import Scene3D from '@/components/organisms/Scene3D';
 import TimestepViewer from '@/components/organisms/TimestepViewer';
 import FileUpload from '@/components/molecules/FileUpload';
-import useCanvasState from '@/hooks/canvas/useCanvasState';
+import useCanvasState from '@/hooks/canvas/use-canvas-state';
 import LoadingOverlay from '@/components/atoms/LoadingOverlay';
 import CanvasWidgets from '@/components/atoms/CanvasWidgets';
 import AutoPreviewSaver from '@/components/atoms/scene/AutoPreviewSaver';
-import useTrajectoryManager from '@/hooks/trajectory/useTrajectoryManager';
+import useTrajectoryManager from '@/hooks/trajectory/use-trajectory-manager';
 import './Canvas.css';
 
 const CANVAS_CONFIG = {

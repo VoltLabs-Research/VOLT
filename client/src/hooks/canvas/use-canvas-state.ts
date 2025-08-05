@@ -21,7 +21,7 @@
 **/
 
 import { useRef, useCallback, useEffect } from 'react';
-import useTrajectoryManager from '@/hooks/trajectory/useTrajectoryManager';
+import useTrajectoryManager from '@/hooks/trajectory/use-trajectory-manager';
 import useEditorStore from '@/stores/editor';
 
 const useCanvasState = (trajectoryId: string | undefined) => {

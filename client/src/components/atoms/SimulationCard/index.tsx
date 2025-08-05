@@ -33,9 +33,9 @@ import ActionBasedFloatingContainer from '@/components/atoms/ActionBasedFloating
 import ProgressBadge from '@/components/atoms/ProgressBadge';
 import ProgressBorderContainer from '@/components/atoms/ProgressBorderContainer';
 import useTrajectoryStore from '@/stores/trajectories';
-import useJobProgress from '@/hooks/jobs/useJobProgress';
-import useCardInteractions from '@/hooks/ui/useCardInteractions';
-import useTrajectoryPreview from '@/hooks/trajectory/useTrajectoryPreview';
+import useJobProgress from '@/hooks/jobs/use-job-progress';
+import useCardInteractions from '@/hooks/ui/use-card-interaction';
+import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
 import './SimulationCard.css';
 
 interface JobStats {
