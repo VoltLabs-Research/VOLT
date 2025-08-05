@@ -20,3 +20,10 @@
         animation-duration: 0.01ms !important;
     }
 }
+
+@media screen and (max-width: 768px){
+    .trajectories-container{
+        display: flex;
+        flex-direction: column;
+    }
+}

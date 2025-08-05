@@ -31,3 +31,15 @@
     flex-direction: column;
     gap: 2rem;
 }
+
+@media screen and (max-width: 768px){
+    .dashboard-main-container{
+        flex-direction: column;
+        height: auto;
+    }
+
+    /* TODO: FLOATING CONTAINER! */
+    .jobs-history-viewer{
+        display: none;
+    }
+}

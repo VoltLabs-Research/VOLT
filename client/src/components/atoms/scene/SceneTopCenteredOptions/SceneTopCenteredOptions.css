@@ -1,4 +1,3 @@
-
 .editor-top-centered-options-container .editor-sidebar-scene-option-icon-container{
     background-color: transparent;
     transition: .1s;
@@ -13,10 +12,23 @@
     top: 2rem;
     left: 50%;
     transform: translate(-50%, 0);
-    display: flex;
+    display: flex !important;
     gap: 1rem;
     flex-direction: row;
     height: 55px;
+    margin: 0 auto;
     width: auto;
     padding: .5rem;
+}
+
+@media screen and (max-width: 768px){
+    .editor-top-centered-options-container{
+        width: auto;
+        gap: .1rem;
+        top: 1rem;
+    }
+    
+    .editor-sidebar-scene-option-icon-container{
+        font-size: 1rem;
+    }
 }

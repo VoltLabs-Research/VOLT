@@ -183,3 +183,14 @@
     border-radius: 5rem;
     background-color: rgba(49, 49, 49, 0.8);
 }
+
+@media screen and (max-width: 768px){
+    .editor-scene-zoom-container{
+        padding: 0 1rem;
+        gap: .3rem;
+    }
+    
+    .editor-scene-zoom{
+        font-size: .8rem;
+    }
+}

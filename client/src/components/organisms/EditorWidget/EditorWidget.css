@@ -45,5 +45,6 @@
         left: 0;
         width: calc(100vw - 2rem);
         margin: 0 1rem;
+        display: none !important;
     }
 }

@@ -83,3 +83,9 @@
     transition: .3s;
     opacity: 0;
 }
+
+@media screen and (max-width: 768px){
+    .simulation-container{
+        width: 100%;
+    }
+}

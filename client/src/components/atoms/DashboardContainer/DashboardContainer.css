@@ -118,3 +118,9 @@
 .create-new-button-dropdown-icon-container{
     font-size: 1rem;
 }
+
+@media screen and (max-width: 768px){
+    .dashboard-container{
+        padding: 1rem;
+    }
+}

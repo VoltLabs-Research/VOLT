@@ -7,13 +7,16 @@
 
 @media screen and (max-width: 768px) {
     .editor-timesteps-controls-slider {
-        width: auto;
         min-width: 120px;
         flex: 1;
     }
-    
+
+    .editor-timestep-controls input[type='range']{
+        width: 2rem;
+    }
+
     .editor-timesteps-controls-slider label {
-        font-size: 0.75rem;
+        font-size: 0.85rem;
         flex-direction: row;
         align-items: center;
         gap: 0.5rem;
