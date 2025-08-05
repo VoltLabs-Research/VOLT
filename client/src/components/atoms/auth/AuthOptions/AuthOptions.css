@@ -1,0 +1,16 @@
+.side-image-form-opts-container{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.auth-remember-me-container{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.auth-forgot-password-link{
+    color: #5f5f5f;
+}

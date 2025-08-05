@@ -86,43 +86,6 @@
     opacity: .8;
 }
 
-.auth-third-party-account-container{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: .8rem;
-    width: 48%;
-    border: 1px solid #c0c0c0;
-    border-radius: 2rem;
-    padding: 1rem;
-}
-
-.auth-third-party-account-icon{
-    width: 22px;
-    height: 22px;
-}
-
-.auth-third-party-account-name{
-    font-size: 1.1rem;
-}
-
-.auth-remember-me-container{
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.side-image-form-opts-container{
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.auth-forgot-password-link{
-    color: #5f5f5f;
-}
-
 .button{
     padding: 1rem 2.5rem;
     border-radius: 2rem;

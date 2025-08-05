@@ -20,8 +20,10 @@
 * SOFTWARE.
 **/
 
-import BasicForm from '@/components/organisms/BasicForm';
+import SideImageForm from '@/components/organisms/SideImageForm';
 import useAuthStore from '@/stores/authentication';
+import AuthOptions from '@/components/atoms/auth/AuthOptions';
+import ThirdPartySignIn from '@/components/atoms/auth/ThirdPartySignIn';
 
 const SignUpPage = () => {
     const { signUp, isLoading } = useAuthStore();
@@ -81,16 +83,20 @@ const SignUpPage = () => {
     };
     
     return (
-        <article className='sign-in-form-container'>
-            <BasicForm
-                breadcrumbs={['Authentication', 'Create new Cloud ID']}
-                title="The start of something big is just a sign-up away"
-                isLoading={isLoading}
-                inputs={formInputs}
-                initialState={formInitialState}
-                onSubmit={handleSubmit}
-            />
-        </article>
+        <SideImageForm
+            title='Create an account'
+            description='Build and experiment on a single collaborative platform'
+            headerBtn={{
+                title: 'Sign In',
+                to: '/auth/sign-in'
+            }}
+            FormOpts={AuthOptions}
+            BottomExtras={ThirdPartySignIn}
+            isLoading={isLoading}
+            inputs={formInputs}
+            initialState={formInitialState}
+            onSubmit={handleSubmit}
+        />
     );
 };
 

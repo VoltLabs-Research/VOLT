@@ -22,57 +22,11 @@
 
 import SideImageForm from '@/components/organisms/SideImageForm';
 import useAuthStore from '@/stores/authentication';
-import googleLogo from '@/assets/images/google-logo.png';
-import microsoftLogo from '@/assets/images/microsoft-logo.png'
-import githubLogo from '@/assets/images/github-logo.png';
-import './SignIn.css';
-
-const ThirdPartySignIn = () => {
-    return (
-        <>
-          <div className='auth-third-party-account-container'>
-                <i className='auth-third-party-account-icon-container'>
-                    <img src={googleLogo} className='auth-third-party-account-icon' />
-                </i>
-                <span className='auth-third-party-account-name'>Google</span>
-            </div>
-
-            <div className='auth-third-party-account-container'>
-                <i className='auth-third-party-account-icon-container'>
-                    <img src={microsoftLogo} className='auth-third-party-account-icon' />
-                </i>
-                <span className='auth-third-party-account-name'>Microsoft</span>
-            </div>
-
-            <div className='auth-third-party-account-container'>
-                <i className='auth-third-party-account-icon-container'>
-                    <img src={githubLogo} className='auth-third-party-account-icon' />
-                </i>
-                <span className='auth-third-party-account-name'>GitHub</span>
-            </div>
-        </>
-    );
-};
-
-const AuthOptions = () => {
-    return (
-        <div className='side-image-form-opts-container'>
-            <div className='auth-remember-me-container'>
-                <input 
-                    type='checkbox'
-                    checked={true}
-                    name='remember-me' />
-
-                <p className='auth-remember-me-text'>Remember me</p>
-            </div>
-
-            <a className='auth-forgot-password-link'>Forgot Password?</a>
-        </div>
-    );
-};
+import AuthOptions from '@/components/atoms/auth/AuthOptions';
+import ThirdPartySignIn from '@/components/atoms/auth/ThirdPartySignIn';
 
 const SignInPage = () => {
-    const { signUp, isLoading } = useAuthStore();
+    const { signIn, isLoading } = useAuthStore();
 
     const formInitialState = {
         email: '',
@@ -94,10 +48,7 @@ const SignInPage = () => {
     ];
 
     const handleSubmit = async (formData) => {
-        if(formData.password !== formData.passwordConfirm){
-            return;
-        }
-        await signUp(formData);
+        await signIn(formData);
     };
     
     return (

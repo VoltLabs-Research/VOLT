@@ -30,7 +30,7 @@ import { IoSettingsOutline } from "react-icons/io5";
 import { TbBook } from 'react-icons/tb';
 import { IoIosHelpCircleOutline } from 'react-icons/io';
 import { CiChat1 } from 'react-icons/ci';
-import SidebarUserAvatar from '@/components/atoms/SidebarUserAvatar';
+import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import SidebarNavigationOption from '@/components/atoms/SidebarNavigationOption';
 import Select from '@/components/atoms/form/Select';
 import useTeamStore from '@/stores/team';

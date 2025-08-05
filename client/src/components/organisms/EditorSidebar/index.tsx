@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import SidebarUserAvatar from '@/components/atoms/SidebarUserAvatar';
+import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import { LuPanelRight } from "react-icons/lu";
 import { TbObjectScan } from "react-icons/tb";
 import { PiLineSegmentThin, PiAtomThin, PiTriangleDashedThin } from "react-icons/pi";

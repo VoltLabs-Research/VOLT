@@ -42,7 +42,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ mode, restrictTo }) => 
     if(isLoading){
         return (
             <main className='auth-loading-main'>
-                <Loader scale='0.6' />
+                <div className='auth-loading-layer-container'>
+                    <Loader scale={0.7} />
+                </div>
             </main>
         );
     }

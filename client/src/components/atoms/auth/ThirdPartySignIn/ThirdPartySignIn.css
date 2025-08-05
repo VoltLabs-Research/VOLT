@@ -1,0 +1,19 @@
+.auth-third-party-account-container{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .8rem;
+    width: 48%;
+    border: 1px solid #c0c0c0;
+    border-radius: 2rem;
+    padding: 1rem;
+}
+
+.auth-third-party-account-icon{
+    width: 22px;
+    height: 22px;
+}
+
+.auth-third-party-account-name{
+    font-size: 1.1rem;
+}
