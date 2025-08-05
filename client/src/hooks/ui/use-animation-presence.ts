@@ -20,132 +20,58 @@
 * SOFTWARE.
 **/
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useMemo } from 'react';
+import AnimationPresenceManager, { type AnimationConfig } from '@/utilities/animation-presence-manager';
 
-const useAnimationPresence = () => {
-    const positions = useRef(new Map()).current;
-    const timeoutId = useRef(null);
-    const animationDuration = 300;
+const DEFAULT_ANIMATION_DURATION = 300;
+const ANIMATION_EASING = 'ease-in-out';
+const FADE_OUT_EASING = 'ease-out';
 
-    const ref = useCallback((node) => {
-        if (!node) {
+interface UseAnimationPresenceOptions {
+    duration?: number;
+    easing?: string;
+    fadeOutEasing?: string;
+}
+
+const useAnimationPresence = (options: UseAnimationPresenceOptions = {}) => {
+    const animationManagerRef = useRef<AnimationPresenceManager | null>(null);
+
+    const config = useMemo((): AnimationConfig => ({
+        duration: options.duration ?? DEFAULT_ANIMATION_DURATION,
+        easing: options.easing ?? ANIMATION_EASING,
+        fadeOutEasing: options.fadeOutEasing ?? FADE_OUT_EASING,
+    }), [options.duration, options.easing, options.fadeOutEasing]);
+
+    const ref = useCallback((node: HTMLElement | null) => {
+        // Cleanup previous observer
+        if(animationManagerRef.current){
+            animationManagerRef.current.cleanup();
+        }
+
+        if(!node){
+            animationManagerRef.current = null;
             return;
         }
 
         node.style.position = 'relative';
 
-        const recordPositions = () => {
-            positions.clear();
-            for (const child of node.children) {
-                if (child.nodeType === 1) {
-                    positions.set(child, child.getBoundingClientRect());
-                }
-            }
-        };
+        const animationManager = new AnimationPresenceManager(config);
+        animationManagerRef.current = animationManager;
 
-        recordPositions();
+        // Record initial positions
+        animationManager.recordPositions(node);
 
         const observer = new MutationObserver((mutations) => {
-            const animations = [];
-            const newRects = new Map();
-            const parentRect = node.getBoundingClientRect();
-
-            for (const child of node.children) {
-                if (child.nodeType === 1) {
-                    newRects.set(child, child.getBoundingClientRect());
-                }
-            }
-
-            for (const mutation of mutations) {
-                for (const removedNode of mutation.removedNodes) {
-                    if (removedNode.nodeType !== 1) continue;
-
-                    const oldRect = positions.get(removedNode);
-                    if (!oldRect) continue;
-
-                    removedNode.style.position = 'absolute';
-                    removedNode.style.top = `${oldRect.top - parentRect.top}px`;
-                    removedNode.style.left = `${oldRect.left - parentRect.left}px`;
-                    removedNode.style.width = `${oldRect.width}px`;
-                    removedNode.style.height = `${oldRect.height}px`;
-                    node.appendChild(removedNode);
-
-                    requestAnimationFrame(() => {
-                        removedNode.style.pointerEvents = 'none';
-                        removedNode.style.transition = `opacity ${animationDuration}ms ease-out`;
-                        removedNode.style.opacity = '0';
-                        
-                        removedNode.addEventListener('transitionend', () => {
-                            try {
-                                if (removedNode.parentNode === node) {
-                                    node.removeChild(removedNode);
-                                }
-                            } catch (e) {}
-                        }, { once: true });
-                    });
-                }
-
-                for (const addedNode of mutation.addedNodes) {
-                    if (addedNode.nodeType !== 1 || addedNode.style.position === 'absolute') continue;
-
-                    addedNode.style.opacity = '0';
-                    addedNode.style.transform = 'scale(0.98)';
-                    
-                    animations.push(() => {
-                        addedNode.style.transition = `all ${animationDuration}ms ease-in-out`;
-                        addedNode.style.opacity = '1';
-                        addedNode.style.transform = 'scale(1)';
-                    });
-                }
-            }
-
-            for (const [element, newRect] of newRects.entries()) {
-                const oldRect = positions.get(element);
-                if (oldRect && newRect) {
-                    const deltaX = oldRect.left - newRect.left;
-                    const deltaY = oldRect.top - newRect.top;
-
-                    if (deltaX !== 0 || deltaY !== 0) {
-                        element.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                        element.style.transition = 'none';
-
-                        animations.push(() => {
-                            element.style.transition = `transform ${animationDuration}ms ease-in-out`;
-                            element.style.transform = 'none';
-                        });
-                    }
-                }
-            }
-
-            requestAnimationFrame(() => {
-                animations.forEach((animate) => animate());
-                
-                if (timeoutId.current) {
-                    clearTimeout(timeoutId.current);
-                }
-
-                timeoutId.current = setTimeout(() => {
-                    for (const child of node.children) {
-                        if (child.nodeType === 1 && child.style.position !== 'absolute') {
-                            child.style.transition = '';
-                            child.style.transform = '';
-                        }
-                    }
-                    recordPositions();
-                }, animationDuration);
-            });
+            animationManager.handleMutations(mutations, node);
         });
 
         observer.observe(node, { childList: true });
 
         return () => {
             observer.disconnect();
-            if (timeoutId.current) {
-                clearTimeout(timeoutId.current);
-            }
-            positions.clear();
+            animationManager.cleanup();
         };
-    }, [animationDuration]);
+    }, [config]);
 
     return [ref];
 };
