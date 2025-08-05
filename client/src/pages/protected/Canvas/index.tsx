@@ -3,10 +3,6 @@
  */
 import React, { useRef } from 'react';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/Scene3D';
-import TimestepControls from '@/components/organisms/TimestepControls';
-import AnalysisConfiguration from '@/components/organisms/AnalysisConfiguration';
-import SlicePlane from '@/components/organisms/SlicePlane';
-import EditorSidebar from '@/components/organisms/EditorSidebar';
 import AutoPreviewSaver from '@/components/atoms/scene/AutoPreviewSaver';
 import TimestepViewer from '@/components/organisms/TimestepViewer';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';

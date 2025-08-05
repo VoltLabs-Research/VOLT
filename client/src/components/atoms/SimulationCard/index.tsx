@@ -20,33 +20,23 @@
 * SOFTWARE.
 **/
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PiAtomThin, PiLineSegmentsLight, PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { RxTrash } from "react-icons/rx";
 import { CiShare1 } from "react-icons/ci";
 import { HiOutlineViewfinderCircle } from "react-icons/hi2";
-import { api } from '@/services/api';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
 import ActionBasedFloatingContainer from '@/components/atoms/ActionBasedFloatingContainer';
 import ProgressBadge from '@/components/atoms/ProgressBadge';
-import ProgressBorderContainer from '@/components/atoms/ProgressBorderContainer';
+import ProgressBorderContainer from '@/components/atoms/animations/ProgressBorderContainer';
 import useTrajectoryStore from '@/stores/trajectories';
 import useJobProgress from '@/hooks/jobs/use-job-progress';
 import useCardInteractions from '@/hooks/ui/use-card-interaction';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
+import type { Job } from '@/types/jobs';
 import './SimulationCard.css';
-
-interface JobStats {
-    total: number;
-    completionRate: number;
-    hasActiveJobs: boolean;
-}
-
-interface Jobs {
-    _stats?: JobStats;
-}
 
 interface Trajectory {
     _id: string;
@@ -60,7 +50,7 @@ interface SimulationCardProps {
     trajectory: Trajectory;
     isSelected: boolean;
     onSelect: (id: string) => void;
-    jobs?: Jobs;
+    jobs?: Job[];
 }
 
 const SimulationCard: React.FC<SimulationCardProps> = ({ 
@@ -95,8 +85,9 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
         isCompleted,
         shouldHideBorder,
         getBorderColor,
-        getProgressBorder,
-        cleanup: cleanupJobs
+        getAnimatedProgressBorder,
+        cleanup: cleanupJobs,
+        isAnimating
     } = jobProgress;
 
     const { isDeleting, handleClick, handleDelete } = useCardInteractions(
@@ -140,7 +131,8 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
             onClick={(e) => handleClick(e, trajectory._id)}
         >
             <ProgressBorderContainer
-                progressBorder={getProgressBorder()}
+                progressBorder={getAnimatedProgressBorder()}
+                isAnimating={isAnimating}
                 hasJobs={hasJobs}
                 shouldHideBorder={shouldHideBorder}
             >

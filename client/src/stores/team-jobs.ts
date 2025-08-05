@@ -38,6 +38,7 @@ interface TeamJobsState{
     disconnect: () => void;
     hasJobForTrajectory: (trajectoryId: string) => boolean;
     getJobsForTrajectory: (trajectoryId: string) => JobsByStatus;
+    _getCurrentActiveSession: (trajectoryJobs: Job[], expiredSessions: Set<string>) => string | null;
 
     // Internal actions
     _initializeSocket: () => void;
@@ -235,47 +236,63 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
             return jobs.some((job) => job.trajectoryId === trajectoryId);
         },
 
+        _getCurrentActiveSession: (trajectoryJobs: Job[], expiredSessions: Set<string>) => {
+            if(trajectoryJobs.length === 0) return null;
+
+            const activeJobs = trajectoryJobs.filter(job => 
+                ['running', 'queued', 'retrying'].includes(job.status) &&
+                job.sessionId &&
+                !expiredSessions.has(job.sessionId)
+            );
+
+            if(activeJobs.length === 0) return null;
+
+            const sessionCounts = activeJobs.reduce((acc, job) => {
+                if(job.sessionId){
+                    acc[job.sessionId] = (acc[job.sessionId] || 0) + 1;
+                }
+                return acc;
+            }, {} as Record<string, number>);
+
+            const mostActiveSession = Object.keys(sessionCounts).reduce((a, b) => 
+                sessionCounts[a] > sessionCounts[b] ? a : b
+            );
+
+            console.log(`Current active session for trajectory: ${mostActiveSession}`, {
+                sessionCounts,
+                expiredSessions: Array.from(expiredSessions)
+            });
+
+            return mostActiveSession;
+        },
+
         getJobsForTrajectory: (trajectoryId: string): JobsByStatus => {
-            const { jobs, expiredSessions } = get();
+            const { jobs, expiredSessions, _getCurrentActiveSession } = get();
             const trajectoryJobs = jobs.filter((job) => job.trajectoryId === trajectoryId);
 
             if(trajectoryJobs.length === 0){
                 return {};
             }
 
-            // Determine active jobs
-            // TODO: divide in smaller parts
-            const now = new Date().getTime();
-            const fiveMinuesAgo = now - (5 * 60 * 1000);
-
-            const activeJobs = trajectoryJobs.filter((job) => {
-                // If job status is completed or failed, always consider for the total progress
-                if(job.status === 'completed' || job.status === 'failed'){
-                    return true;
-                }
-
-                // If job status is running, retrying or queued, consider as active
-                if(job.status === 'running' || job.status === 'queued' || job.status === 'retrying'){
-                    // Filter by expired session if it has sessionId
-                    if(job.sessionId && expiredSessions.has(job.sessionId)){
-                        return false;
-                    }
-                    
-                    return true;
-                }
-
-                // For jobs without sessionId, use time filter
-                if(!job.sessionId){
-                    if(!job.timestamp) return false;
-                    const jobTime = new Date(job.timestamp).getTime();
-                    return jobTime >= fiveMinuesAgo;
-                }
-
-                return true;
+            const currentActiveSession = _getCurrentActiveSession(trajectoryJobs, expiredSessions);
+            
+            console.log(`Processing trajectory ${trajectoryId}:`, {
+                totalJobs: trajectoryJobs.length,
+                currentActiveSession,
+                expiredSessions: Array.from(expiredSessions)
             });
 
-            console.log(`Trajectory ${trajectoryId}: Total jobs: ${trajectoryJobs.length}, Active jobs: ${activeJobs.length}, Expired sessions: ${expiredSessions.size}`);
+            let activeJobs: Job[] = [];
+
+            if(currentActiveSession){
+                activeJobs = trajectoryJobs.filter((job) => 
+                    job.sessionId === currentActiveSession
+                );
+                console.log(`Using current session ${currentActiveSession}: ${activeJobs.length} jobs`);
+            }
+
             if(activeJobs.length === 0){
+                console.log(`No active jobs found for trajectory ${trajectoryId}`);
                 return {};
             }
 
@@ -299,15 +316,12 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
                 });
             });
 
-            // Calculate progress based on completed jobs vs active jobs
             const completedJobs = (jobsByStatus.completed?.length || 0) + (jobsByStatus.failed?.length || 0);
             const totalActiveJobs = activeJobs.length;
-            const completionRate = totalActiveJobs > 0 ? Math.round((completedJobs / totalActiveJobs) * 100 ) : 0;
+            const completionRate = totalActiveJobs > 0 ? Math.round((completedJobs / totalActiveJobs) * 100) : 0;
 
-            // Active jobs are those that are running, queued or retrying
             const currentlyActiveJobs = activeJobs.filter((job) => ['running', 'queued', 'retrying'].includes(job.status));
 
-            // Stats for useJobProgress hook
             jobsByStatus._stats = {
                 total: totalActiveJobs,
                 completed: completedJobs,
@@ -320,10 +334,17 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
                 }, {} as Record<string, number>),
                 hasActiveJobs: currentlyActiveJobs.length > 0,
                 completionRate: completionRate,
-                isActiveSession: totalActiveJobs > 0
+                isActiveSession: !!currentActiveSession || totalActiveJobs > 0
             };
 
-            console.log(`Active session for trajectory ${trajectoryId}: ${completedJobs}/${totalActiveJobs} completed (${completionRate}%)`);
+            console.log(`Final stats for trajectory ${trajectoryId}:`, {
+                session: currentActiveSession,
+                completed: completedJobs,
+                total: totalActiveJobs,
+                rate: completionRate,
+                hasActive: currentlyActiveJobs.length > 0
+            });
+
             return jobsByStatus;
         }
     };

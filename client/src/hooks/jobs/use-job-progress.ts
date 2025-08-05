@@ -20,27 +20,52 @@
 * SOFTWARE.
 **/
 
-import { useEffect, useState, useRef, useMemo } from 'react';
-import type { Job } from '@/types/jobs';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+
+// TODO: DUPLICATED CODE
+interface JobStats {
+    total: number;
+    completionRate: number;
+    hasActiveJobs: boolean;
+}
+
+interface Jobs {
+    _stats?: JobStats;
+}
 
 interface JobProgressResult {
     totalJobs: number;
     completionRate: number;
+    animatedCompletionRate: number;
     hasJobs: boolean;
     hasActiveJobs: boolean;
     isCompleted: boolean;
     shouldHideBorder: boolean;
+    isAnimating: boolean;
     getBorderColor: () => string;
     getProgressBorder: () => string;
+    getAnimatedProgressBorder: () => string;
     cleanup: () => void;
 }
 
-const useJobProgress = (jobs: Job[], itemId: string): JobProgressResult => {
+const ANIMATION_CONFIG = {
+    duration: 800,
+    easing: (t: number) => t * (2 - t),
+    frameRate: 60,
+} as const;
+
+const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
     const [isCompleted, setIsCompleted] = useState<boolean>(false);
     const [shouldHideBorder, setShouldHideBorder] = useState<boolean>(false);
     const [isInitialized, setIsInitialized] = useState<boolean>(false);
+    const [animatedCompletionRate, setAnimatedCompletionRate] = useState<number>(0);
+    const [isAnimating, setIsAnimating] = useState<boolean>(false);
 
     const completionTimeoutRef = useRef<number | null>(null);
+    const animationFrameRef = useRef<number | null>(null);
+    const animationStartRef = useRef<number | null>(null);
+    const animationStartValue = useRef<number>(0);
+    const animationTargetValue = useRef<number>(0);
     const previousCompletionRate = useRef<number>(0);
     const previousTotalJobs = useRef<number>(0);
     const hasBeenCompleted = useRef<boolean>(false);
@@ -54,54 +79,128 @@ const useJobProgress = (jobs: Job[], itemId: string): JobProgressResult => {
 
     const { totalJobs, completionRate, hasJobs, hasActiveJobs } = jobStats;
 
-    const getBorderColor = (): string => {
+    const animateProgress = useCallback((from: number, to: number) => {
+        console.log(`Animating progress from ${from}% to ${to}%`);
+        
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+        }
+
+        if (from === to) {
+            setAnimatedCompletionRate(to);
+            setIsAnimating(false);
+            return;
+        }
+
+        setIsAnimating(true);
+        animationStartRef.current = performance.now();
+        animationStartValue.current = from;
+        animationTargetValue.current = to;
+
+        const animate = (currentTime: number) => {
+            if (!animationStartRef.current) return;
+
+            const elapsed = currentTime - animationStartRef.current;
+            const progress = Math.min(elapsed / ANIMATION_CONFIG.duration, 1);
+            
+            const easedProgress = ANIMATION_CONFIG.easing(progress);
+            
+            const currentValue = animationStartValue.current + 
+                (animationTargetValue.current - animationStartValue.current) * easedProgress;
+            
+            setAnimatedCompletionRate(Math.round(currentValue));
+
+            if (progress < 1) {
+                animationFrameRef.current = requestAnimationFrame(animate);
+            } else {
+                setAnimatedCompletionRate(animationTargetValue.current);
+                setIsAnimating(false);
+                animationFrameRef.current = null;
+                console.log(`Animation completed at ${animationTargetValue.current}%`);
+            }
+        };
+
+        animationFrameRef.current = requestAnimationFrame(animate);
+    }, []);
+
+    const cleanupAnimation = useCallback(() => {
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+        setIsAnimating(false);
+    }, []);
+
+    const getBorderColor = useCallback((): string => {
         if(!hasJobs || shouldHideBorder){
             return 'transparent';
         }
 
-        if(completionRate === 100) return '#22c55e';
-        if(completionRate >= 75) return '#3b82f6';
-        if(completionRate >= 50) return '#f59e0b';
-        if(completionRate >= 25) return '#f97316';
+        if(animatedCompletionRate === 100) return '#22c55e';
+        if(animatedCompletionRate >= 75) return '#3b82f6';
+        if(animatedCompletionRate >= 50) return '#f59e0b';
+        if(animatedCompletionRate >= 25) return '#f97316';
 
         return '#dc2626';
-    };
+    }, [hasJobs, shouldHideBorder, animatedCompletionRate]);
 
-    const getWaitingBorder = (): string => {
+    const getWaitingBorder = useCallback((): string => {
         return 'conic-gradient(from -90deg, #6b7280 0deg, #6b7280 90deg, transparent 90deg, transparent 360deg)';
-    };
+    }, []);
 
-    const getProgressBorder = (): string => {
-        // If there are no jobs or you need to hide the border, show nothing
+    const getProgressBorder = useCallback((): string => {
         if(!hasJobs || shouldHideBorder) return 'none';
         
-        // If the completion rate is 0 but there are active jobs, display the waiting border
         if(completionRate === 0 && hasActiveJobs){
             return getWaitingBorder();
         }
         
-        // If the completion rate is 0 and there are no active jobs, do not show the border.
         if(completionRate === 0) return 'none';
 
-        // If there is progress, show the progress border
-        const borderColor = getBorderColor();
+        const borderColor = hasJobs && !shouldHideBorder ? (
+            completionRate === 100 ? '#22c55e' :
+            completionRate >= 75 ? '#3b82f6' :
+            completionRate >= 50 ? '#f59e0b' :
+            completionRate >= 25 ? '#f97316' : '#dc2626'
+        ) : 'transparent';
+        
         const degrees = (completionRate / 100) * 360;
         return `conic-gradient(from -90deg, ${borderColor} 0deg, ${borderColor} ${degrees}deg, transparent ${degrees}deg, transparent 360deg)`;
-    };
+    }, [hasJobs, shouldHideBorder, completionRate, hasActiveJobs, getWaitingBorder]);
 
-    const cleanup = (): void => {
+    const getAnimatedProgressBorder = useCallback((): string => {
+        if(!hasJobs || shouldHideBorder) return 'none';
+        
+        if(animatedCompletionRate === 0 && hasActiveJobs){
+            return getWaitingBorder();
+        }
+        
+        if(animatedCompletionRate === 0) return 'none';
+
+        const borderColor = getBorderColor();
+        const degrees = (animatedCompletionRate / 100) * 360;
+        
+        const result = `conic-gradient(from -90deg, ${borderColor} 0deg, ${borderColor} ${degrees}deg, transparent ${degrees}deg, transparent 360deg)`;
+        console.log(`Border: ${animatedCompletionRate}% -> ${borderColor} (${degrees}deg)`);
+        
+        return result;
+    }, [hasJobs, shouldHideBorder, animatedCompletionRate, hasActiveJobs, getBorderColor, getWaitingBorder]);
+
+    const cleanup = useCallback((): void => {
         if(completionTimeoutRef.current){
             clearTimeout(completionTimeoutRef.current);
             completionTimeoutRef.current = null;
         }
-    };
+        cleanupAnimation();
+    }, [cleanupAnimation]);
 
     useEffect(() => {
         if(!isInitialized && hasJobs){
-            console.log(`Initializing job progress for item ${itemId}`);
+            console.log(`Initializing job progress for item ${itemId} with ${completionRate}%`);
             previousCompletionRate.current = completionRate;
             previousTotalJobs.current = totalJobs;
             hasBeenCompleted.current = completionRate === 100;
+            setAnimatedCompletionRate(completionRate);
             setIsInitialized(true);
         }
     }, [itemId, hasJobs, completionRate, totalJobs, isInitialized]);
@@ -116,84 +215,92 @@ const useJobProgress = (jobs: Job[], itemId: string): JobProgressResult => {
         const wasCompleted = previousCompletionRate.current === 100;
         const isNowCompleted = completionRate === 100;
 
-        // If there are new jobs, reset status but keep progress
         if(hasNewJobs){
-            console.log(`Item ${itemId}: New jobs detected (${previousTotalJobs.current} -> ${totalJobs})`);
+            console.log(`New jobs detected for ${itemId}: ${previousTotalJobs.current} -> ${totalJobs}`);
             
             setShouldHideBorder(false);
             setIsCompleted(false);
             hasBeenCompleted.current = false;
+            
+            animateProgress(animatedCompletionRate, 0);
             
             if(completionTimeoutRef.current){
                 clearTimeout(completionTimeoutRef.current);
                 completionTimeoutRef.current = null;
             }
         }else if(isNowCompleted && !wasCompleted && !hasBeenCompleted.current){
-            // If completed for the first time
-            console.log(`Item ${itemId} completed! Starting 5-second countdown...`);
+            console.log(`${itemId} completed! Animating to 100%`);
             setIsCompleted(true);
             hasBeenCompleted.current = true;
+            
+            animateProgress(animatedCompletionRate, completionRate);
             
             if(completionTimeoutRef.current){
                 clearTimeout(completionTimeoutRef.current);
             }
 
             completionTimeoutRef.current = window.setTimeout(() => {
-                console.log(`Hiding progress border for item ${itemId}`);
+                console.log(`Hiding progress border for ${itemId}`);
                 setShouldHideBorder(true);
                 setIsCompleted(false);
             }, 5000);
         }else if(!isNowCompleted && wasCompleted){
-            // If it changed from completed to not completed (new jobs while in countdown)
-            console.log(`Item ${itemId} has new jobs while was completed, showing border again`);
+            console.log(`${itemId} new jobs while completed`);
             setShouldHideBorder(false);
             setIsCompleted(false);
             hasBeenCompleted.current = false;
+            
+            animateProgress(animatedCompletionRate, completionRate);
             
             if(completionTimeoutRef.current){
                 clearTimeout(completionTimeoutRef.current);
                 completionTimeoutRef.current = null;
             }
-        }else if (completionChanged && !isNowCompleted) {
-            // Progress update only (no resetting)
-            console.log(`Item ${itemId}: Progress update ${previousCompletionRate.current}% -> ${completionRate}%`);
+        }else if(completionChanged && !isNowCompleted){
+            console.log(`Progress update for ${itemId}: ${previousCompletionRate.current}% -> ${completionRate}%`);
+            
+            animateProgress(animatedCompletionRate, completionRate);
         }
 
-        // Update references for the next comparison
         previousCompletionRate.current = completionRate;
         previousTotalJobs.current = totalJobs;
-    }, [itemId, completionRate, totalJobs, hasJobs, isInitialized]);
+    }, [itemId, completionRate, totalJobs, hasJobs, isInitialized, animatedCompletionRate, animateProgress]);
 
     useEffect(() => {
         if(!hasJobs && isInitialized){
-            console.log(`Item ${itemId}: No jobs, resetting states`);
+            console.log(`No jobs for ${itemId}, resetting states`);
             setShouldHideBorder(false);
             setIsCompleted(false);
             hasBeenCompleted.current = false;
             setIsInitialized(false);
+            setAnimatedCompletionRate(0);
+            cleanupAnimation();
             
             if(completionTimeoutRef.current){
                 clearTimeout(completionTimeoutRef.current);
                 completionTimeoutRef.current = null;
             }
         }
-    }, [hasJobs, itemId, isInitialized]);
+    }, [hasJobs, itemId, isInitialized, cleanupAnimation]);
 
     useEffect(() => {
         return () => {
             cleanup();
         };
-    }, [itemId]);
+    }, [cleanup]);
 
     return {
         totalJobs,
         completionRate,
+        animatedCompletionRate,
         hasJobs,
         hasActiveJobs,
         isCompleted,
         shouldHideBorder,
+        isAnimating,
         getBorderColor,
         getProgressBorder,
+        getAnimatedProgressBorder,
         cleanup
     };
 };

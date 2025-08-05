@@ -1,0 +1,16 @@
+.progress-border-container{
+    position: relative;
+    border-radius: 12px;
+    padding: 3px;
+    background: var(--progress-border, transparent);
+    transition: all 0.15s ease;
+}
+
+.progress-border-container--animating{
+    filter: brightness(1.02);
+    transform: scale(1.001);
+}
+
+.progress-border-container[style*="conic-gradient"]{
+    outline: 2px solid rgba(255, 0, 0, 0.2);
+}
