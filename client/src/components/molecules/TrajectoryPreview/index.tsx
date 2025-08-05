@@ -1,25 +1,35 @@
-import React, { useEffect, useRef } from 'react';
-import Scene3D from '@/components/organisms/Scene3D';
-import TimestepViewer from '@/components/organisms/TimestepViewer';
+import { useEffect, useState } from 'react';
 import useEditorStore from '@/stores/editor';
 import useTrajectoryStore from '@/stores/trajectories';
 import Loader from '@/components/atoms/Loader';
+import useTrajectoryPreview from '@/hooks/trajectory/useTrajectoryPreview';
 import { GoArrowUpRight } from "react-icons/go";
 import './TrajectoryPreview.css';
 
 const TrajectoryPreview = () => {
-    const selectTrajectory = useEditorStore((state) => state.selectTrajectory);
-    const trajectory = useTrajectoryStore((state) => state.trajectory);
     const isModelLoading = useEditorStore((state) => state.isModelLoading);
     const trajectories = useTrajectoryStore((state) => state.trajectories);
-    const isPreviewRequested = useRef(false);
+    const [trajectory, setTrajectory] = useState<any>(null);
+
+    const {
+        previewBlobUrl,
+        isLoading: previewLoading,
+        error: previewError,
+        cleanup: cleanupPreview,
+        retry: retryPreview
+    } = useTrajectoryPreview({
+        trajectoryId: trajectory?._id,
+        previewId: trajectory?.preview,
+        updatedAt: trajectory?.updatedAt,
+        enabled: true
+    })
 
     useEffect(() => {
-        if(!trajectories.length && !isPreviewRequested.current){
-            return;
+        if(trajectory) return;
+        setTrajectory(trajectories[0]);
+        return () => {
+            cleanupPreview();
         }
-        isPreviewRequested.current = true;
-        selectTrajectory(trajectories[0]);
     }, [trajectories]);
 
     return (
@@ -44,13 +54,17 @@ const TrajectoryPreview = () => {
                 </>
             )}
             <div className='trajectory-preview-scene-container'>
-                <Scene3D showGizmo={false}>
-                    <TimestepViewer
-                        scale={0.9}
-                        rotation={{ x: Math.PI / 2 }}
-                        position={{ x: 0, y: 0, z: 0 }}
+                {(previewBlobUrl && !previewError) && (
+                    <img 
+                        className='simulation-image' 
+                        src={previewBlobUrl}
+                        alt={`Preview of ${trajectory.name || 'Trajectory'}`}
+                        key={`${trajectory._id}-${trajectory.preview}-${trajectory.updatedAt}`}
+                        onError={() => {
+                            retryPreview();
+                        }}
                     />
-                </Scene3D> 
+                )}
             </div>      
         </div>
     );
