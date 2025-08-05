@@ -10,6 +10,15 @@
     height: 45px;
     border: 1px solid hsl(0deg 0% 86.76%);
     border-radius: .5rem;
+    transition: all 0.2s;
+}
+
+.form-input-container:has(.form-input:focus){
+    border-color: rgb(31, 124, 231);
+}
+
+.form-input-container:hover{
+    border-color: rgba(31, 124, 231, 0.2);
 }
 
 .form-input-label{
