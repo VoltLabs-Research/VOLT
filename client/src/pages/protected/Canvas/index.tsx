@@ -12,7 +12,7 @@ import { useParams } from 'react-router-dom';
 import './Canvas.css';
 
 const CANVAS_CONFIG = {
-    autoSaveDelay: 500,
+    autoSaveDelay: 2000,
     timestepViewerDefaults: {
         scale: 1,
         rotation: { x: Math.PI / 2 },

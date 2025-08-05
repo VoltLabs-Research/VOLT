@@ -1,0 +1,145 @@
+.side-image-form{
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.side-image-form-left-container{
+    width: 50%;
+}
+
+.side-image-form-image{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.side-image-form-header-container{
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.side-image-form-submit-loader-container{
+    margin: 2rem 0;
+}
+
+.side-image-form-right-container{
+    display: flex;
+    width: 600px;
+    margin: 0 auto;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3rem;
+    padding: 2rem;
+}
+
+.side-image-form-header-title{
+    font-size: 2rem;
+}
+
+.side-image-form-body-container{
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.auth-sign-up-button{
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+}
+
+.side-image-form-submit-btn-container{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.side-image-form-footer-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    row-gap: 1.5rem;
+}
+
+.side-image-form-submit-btn-container .button{
+    width: 100%;
+    position: relative;
+}
+
+.side-image-form-submit-loader-container{
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 200;
+}
+
+.side-image-form-submit-btn-container .button.is-loading{
+    opacity: .8;
+}
+
+.auth-third-party-account-container{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .8rem;
+    width: 48%;
+    border: 1px solid #c0c0c0;
+    border-radius: 2rem;
+    padding: 1rem;
+}
+
+.auth-third-party-account-icon{
+    width: 22px;
+    height: 22px;
+}
+
+.auth-third-party-account-name{
+    font-size: 1.1rem;
+}
+
+.auth-remember-me-container{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.side-image-form-opts-container{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.auth-forgot-password-link{
+    color: #5f5f5f;
+}
+
+.button{
+    padding: 1rem 2.5rem;
+    border-radius: 2rem;
+    background-color: #212121;
+    color: #f1f1f1;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.button:hover{
+    opacity: .9;
+}
+
+.button.sm-radius{
+    border-radius: .5rem;
+}
+
+.button-text{
+    font-size: 1rem;
+}
