@@ -43,8 +43,9 @@ const App = () => {
     const containerStyle = useMemo(() => ({
         position: 'relative' as const,
         width: '100%',
-        height: '100vh',
-        overflow: 'hidden',
+        // TODO: CSS!
+        height: window.innerWidth > 768 ? '100vh' : 'auto',
+        overflow: window.innerWidth > 768 ? 'hidden' : 'auto',
         background: 'linear-gradient(135deg, #fafafa 0%, #ffffff 100%)',
         scrollBehavior: 'smooth' as const,
         isolation: 'isolate' as const,

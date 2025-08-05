@@ -63,3 +63,10 @@ input:-webkit-autofill:hover{
     box-shadow: 0 0 0 1000px #fff inset !important;
     -webkit-text-fill-color: #000 !important;
 }
+
+@media screen and (max-width: 768px){
+    html, body, #root{
+        overflow: scroll;
+        height: auto;
+    }
+}

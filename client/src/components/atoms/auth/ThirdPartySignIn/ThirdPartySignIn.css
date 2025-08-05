@@ -24,3 +24,9 @@
     opacity: .9;
     border-color: rgb(31, 124, 231);
 }
+
+@media screen and (max-width: 768px){
+    .auth-third-party-account-container{
+        width: 100%;
+    }
+}

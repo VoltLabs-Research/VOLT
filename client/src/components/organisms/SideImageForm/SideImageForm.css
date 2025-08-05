@@ -114,4 +114,20 @@
 
 .button-text{
     font-size: 1rem;
+    font-weight: 400;
+}
+
+@media screen and (max-width: 768px){
+    .side-image-form-left-container{
+        display: none;
+    }
+
+    .side-image-form-header-title{
+        padding-top: 5rem;
+    }
+
+    .auth-sign-up-button{
+        padding: .7rem 1.5rem;
+        font-size: .9rem;
+    }
 }
