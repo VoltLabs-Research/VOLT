@@ -33,9 +33,9 @@ import SharedWithMe from './pages/protected/SharedWithMe';
 import Tutorials from './pages/protected/Tutorials';
 import Messages from './pages/protected/Messages';
 
-import PageWrapper from '@/components/atoms/PageWrapper';
-import GlobalTransitionOverlay from '@/components/atoms/GlobalTransitionOverlay';
-import LoadingShimmer from '@/components/atoms/LoadingShimmer';
+import PageWrapper from '@/components/atoms/animations/PageWrapper';
+import GlobalTransitionOverlay from '@/components/atoms/animations/GlobalTransitionOverlay';
+import LoadingShimmer from '@/components/atoms/animations/LoadingShimmer';
 
 const App = () => {
     const location = useLocation();

@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { createPageVariants, createContentVariants } from '@/utilities/animation';
 import useLayoutDetection from '@/hooks/ui/useLayoutDetection';
-import PageOverlay from '@/components/atoms/PageOverlay';
-import ShineEffect from '@/components/atoms/ShineEffect';
+import PageOverlay from '@/components/atoms/animations/PageOverlay';
+import ShineEffect from '@/components/atoms/animations/ShineEffect';
 
 interface PageWrapperProps {
     children: React.ReactNode;

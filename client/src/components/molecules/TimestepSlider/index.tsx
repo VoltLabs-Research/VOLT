@@ -21,7 +21,7 @@
 **/
 
 import React from 'react';
-import Slider from '@/components/atoms/Slider';
+import Slider from '@/components/atoms/form/Slider';
 import './TimestepSlider.css';
 
 interface TimestepSliderProps {

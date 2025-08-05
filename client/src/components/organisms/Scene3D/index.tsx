@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
-import CanvasGrid from '@/components/atoms/CanvasGrid';
+import CanvasGrid from '@/components/atoms/scene/CanvasGrid';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';

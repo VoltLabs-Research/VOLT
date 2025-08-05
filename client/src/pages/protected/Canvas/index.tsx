@@ -13,11 +13,11 @@ import useEditorStore from '@/stores/editor';
 import Loader from '@/components/atoms/Loader';
 import SlicePlane from '@/components/organisms/SlicePlane';
 import EditorSidebar from '@/components/organisms/EditorSidebar';
-import TrajectoryVisibilityStatusFloatIcon from '@/components/atoms/TrajectoryVisibilityStatusFloatIcon';
-import SceneTopCenteredOptions from '@/components/atoms/SceneTopCenteredOptions';
+import TrajectoryVisibilityStatusFloatIcon from '@/components/atoms/scene/TrajectoryVisibilityStatusFloatIcon';
+import SceneTopCenteredOptions from '@/components/atoms/scene/SceneTopCenteredOptions';
 import DislocationResults from '@/components/atoms/DislocationResults';
 import AnalysisConfiguration from '@/components/organisms/AnalysisConfiguration';
-import AutoPreviewSaver from '@/components/atoms/AutoPreviewSaver';
+import AutoPreviewSaver from '@/components/atoms/scene/AutoPreviewSaver';
 import useUIStore from '@/stores/ui';
 import './Canvas.css';
 
@@ -92,7 +92,7 @@ const EditorPage: React.FC = () => {
     const trajectory = useTrajectoryStore(trajectorySelector);
     const isLoadingTrajectory = useTrajectoryStore(isLoadingSelector);
     const getTrajectoryById = useTrajectoryStore(getTrajectoryByIdSelector);
-    
+
     const currentGlbUrl = useEditorStore(currentGlbUrlSelector);
     const currentTimestep = useEditorStore(currentTimestepSelector);
     const selectTrajectory = useEditorStore(selectTrajectorySelector);
@@ -113,8 +113,6 @@ const EditorPage: React.FC = () => {
     }, [selectTrajectory]);
 
     const loadTrajectory = useCallback(async (id: string) => {
-        if (isInitialLoadDone.current) return;
-        
         isInitialLoadDone.current = true;
         const loadedTrajectory = await getTrajectoryById(id);
         
@@ -133,9 +131,9 @@ const EditorPage: React.FC = () => {
         if (!trajectoryId) return;
         console.log('Current trajectory:', trajectory);
 
-        if (currentTrajectoryId === trajectoryId && trajectory) return;
+        if(currentTrajectoryId === trajectoryId && trajectory) return;
         
-        if (isInitialLoadDone.current && trajectoryIdRef.current === trajectoryId) return;
+        if(isInitialLoadDone.current && trajectoryIdRef.current === trajectoryId) return;
 
         trajectoryIdRef.current = trajectoryId;
         

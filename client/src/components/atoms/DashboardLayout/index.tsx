@@ -32,7 +32,7 @@ import { IoIosHelpCircleOutline } from 'react-icons/io';
 import { CiChat1 } from 'react-icons/ci';
 import SidebarUserAvatar from '@/components/atoms/SidebarUserAvatar';
 import SidebarNavigationOption from '@/components/atoms/SidebarNavigationOption';
-import Select from '@/components/atoms/Select';
+import Select from '@/components/atoms/form/Select';
 import useTeamStore from '@/stores/team';
 import useTrajectoryStore from '@/stores/trajectories';
 import ShortcutsModal from '@/components/organisms/ShortcutsModal';

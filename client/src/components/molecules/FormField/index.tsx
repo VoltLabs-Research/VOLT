@@ -21,8 +21,8 @@
 **/
 
 import React from 'react';
-import Input from '@/components/atoms/Input';
-import Select from '@/components/atoms/Select';
+import Input from '@/components/atoms/form/Input';
+import Select from '@/components/atoms/form/Select';
 import './FormField.css';
 
 interface FormFieldProps {

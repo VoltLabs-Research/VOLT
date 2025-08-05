@@ -21,7 +21,7 @@
 **/
 
 import React, { useState } from 'react';
-import FormInput from '@/components/atoms/FormInput';
+import FormInput from '@/components/atoms/form/FormInput';
 import Loader from '@/components/atoms/Loader';
 import { GoArrowLeft } from 'react-icons/go';
 import './BasicForm.css';

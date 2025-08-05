@@ -21,7 +21,7 @@
 **/
 
 import React, { useState, useMemo, useRef } from 'react';
-import CameraManager from '@/components/atoms/CameraManager';
+import CameraManager from '@/components/atoms/scene/CameraManager';
 import useInstancedRenderer from '@/hooks/canvas/useInstancedRenderer';
 import useSlicingPlanes from '@/hooks/canvas/useSlicingPlanes';
 import { useFrame } from '@react-three/fiber';
