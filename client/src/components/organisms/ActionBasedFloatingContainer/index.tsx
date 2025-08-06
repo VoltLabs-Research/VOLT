@@ -21,7 +21,7 @@
 **/
 
 import React from 'react';
-import useFloatingContainer from '@/hooks/ui/use-floating-container';
+import useFloatingContainer from '@/hooks/ui/positioning/use-floating-container';
 import FloatingMenu from '@/components/molecules/FloatingMenu';
 import type { FloatingContainerProps } from '@/types/floating-container';
 import './ActionBasedFloatingContainer.css';

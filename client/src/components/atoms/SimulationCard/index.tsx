@@ -33,7 +33,7 @@ import ProgressBadge from '@/components/atoms/animations/ProgressBadge';
 import ProgressBorderContainer from '@/components/atoms/animations/ProgressBorderContainer';
 import useTrajectoryStore from '@/stores/trajectories';
 import useJobProgress from '@/hooks/jobs/use-job-progress';
-import useCardInteractions from '@/hooks/ui/use-card-interaction';
+import useCardInteractions from '@/hooks/ui/interaction/use-card-interaction';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
 import type { Job } from '@/types/jobs';
 import './SimulationCard.css';

@@ -3,7 +3,7 @@ import useTrajectoryStore from '@/stores/trajectories';
 import Loader from '@/components/atoms/Loader';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
 import { GoArrowUpRight } from "react-icons/go";
-import useLogger from '@/hooks/useLogger';
+import useLogger from '@/hooks/core/use-logger';
 import './TrajectoryPreview.css';
 
 const TrajectoryPreview = () => {

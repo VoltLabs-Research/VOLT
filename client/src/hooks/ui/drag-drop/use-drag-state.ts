@@ -20,24 +20,49 @@
 * SOFTWARE.
 **/
 
-import { useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
-import { getLayoutKey, detectSameLayout } from '@/utilities/layout';
+import { useState, useCallback } from 'react';
 
-const useLayoutDetection = (storageKey: string = 'previousLayoutKey') => {
-    const location = useLocation();
-    const currentLayoutKey = getLayoutKey(location.pathname);
+interface DragState {
+    isDraggingOver: boolean;
+    dragCounter: number;
+}
 
-    const isSameLayout = useMemo(() => 
-        detectSameLayout(currentLayoutKey, storageKey), 
-        [currentLayoutKey, storageKey]
-    );
+const useDragState = () => {
+    const [dragState, setDragState] = useState<DragState>({
+        isDraggingOver: false,
+        dragCounter: 0
+    });
+
+    const handleDragEnter = useCallback(() => {
+        setDragState((prev) => ({
+            isDraggingOver: true,
+            dragCounter: prev.dragCounter + 1
+        }));
+    }, []);
+
+    const handleDragLeave = useCallback(() => {
+        setDragState((prev) => {
+            const newCounter = prev.dragCounter - 1;
+            return {
+                isDraggingOver: newCounter > 0,
+                dragCounter: Math.max(0, newCounter)
+            };
+        });
+    }, []);
+
+    const resetDragState = useCallback(() => {
+        setDragState({
+            isDraggingOver: false,
+            dragCounter: 0
+        });
+    }, []);
 
     return {
-        currentLayoutKey,
-        isSameLayout,
-        pathname: location.pathname,
+        isDraggingOver: dragState.isDraggingOver,
+        handleDragEnter,
+        handleDragLeave,
+        resetDragState
     };
 };
 
-export default useLayoutDetection;
+export default useDragState;

@@ -20,24 +20,35 @@
 * SOFTWARE.
 **/
 
-import { useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
-import { getLayoutKey, detectSameLayout } from '@/utilities/layout';
+import { useRef, useCallback } from 'react';
 
-const useLayoutDetection = (storageKey: string = 'previousLayoutKey') => {
-    const location = useLocation();
-    const currentLayoutKey = getLayoutKey(location.pathname);
+interface UseDoubleTapProps {
+    onDoubleTap: () => void;
+    latency?: number;
+}
 
-    const isSameLayout = useMemo(() => 
-        detectSameLayout(currentLayoutKey, storageKey), 
-        [currentLayoutKey, storageKey]
-    );
+const useDoubleTap = ({ onDoubleTap, latency = 300 }: UseDoubleTapProps) => {
+    const tapTimeoutRef = useRef<number>(0);
+    const tapCountRef = useRef(0);
 
-    return {
-        currentLayoutKey,
-        isSameLayout,
-        pathname: location.pathname,
-    };
+    const handleInteraction = useCallback(() => {
+        tapCountRef.current += 1;
+
+        if(tapCountRef.current === 1){
+            tapTimeoutRef.current = setTimeout(() => {
+                tapCountRef.current = 0;
+            }, latency);
+        }else if(tapCountRef.current === 2){
+            if(tapTimeoutRef.current){
+                clearTimeout(tapTimeoutRef.current);
+            }
+
+            tapCountRef.current = 0;
+            onDoubleTap();
+        }
+    }, [onDoubleTap, latency]);
+
+    return { onMouseDown: handleInteraction };
 };
 
-export default useLayoutDetection;
+export default useDoubleTap;

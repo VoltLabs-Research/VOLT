@@ -29,7 +29,7 @@ import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 import useConfigurationStore from '@/stores/editor/configuration';
 import useTimestepStore from '@/stores/editor/timesteps';
 import loadGLB, { preloadGLBs, modelCache } from '@/utilities/glb/loader';
-import useLogger from '@/hooks/useLogger';
+import useLogger from '@/hooks/core/use-logger';
 import * as THREE from 'three';
 
 const DEFAULT_POSITION = { x: 0, y: 0, z: 0 };

@@ -25,7 +25,7 @@ import { useParams } from 'react-router-dom';
 import usePlaybackStore from '@/stores/editor/playback';
 import useTimestepStore from '@/stores/editor/timesteps';
 import useTrajectoryStore from '@/stores/trajectories';
-import useLogger from '@/hooks/useLogger';
+import useLogger from '@/hooks/core/use-logger';
 
 const useCanvasCoordinator = () => {
     const logger = useLogger('use-canvas-coordinator');

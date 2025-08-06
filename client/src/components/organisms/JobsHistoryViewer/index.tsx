@@ -4,8 +4,8 @@ import { RiCloseLargeFill } from 'react-icons/ri';
 import JobsHistory from '@/components/molecules/JobsHistory';
 import useIsMobile from '@/hooks/ui/use-is-mobile';
 import useResizable from '@/hooks/ui/use-resizable';
-import useDraggable from '@/hooks/ui/use-draggable';
-import useDoubleTap from '@/hooks/ui/use-double-tap';
+import useDraggable from '@/hooks/ui/drag-drop/use-draggable';
+import useDoubleTap from '@/hooks/ui/interaction/use-double-tap';
 
 type EditMode = 'inactive' | 'resize' | 'move';
 

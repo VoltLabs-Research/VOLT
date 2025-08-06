@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import useTrajectoryStore from '@/stores/trajectories';
 import useConfigurationStore from '@/stores/editor/configuration';
 import useTimestepStore from '@/stores/editor/timesteps';
-import useLogger from '@/hooks/useLogger';
+import useLogger from '@/hooks/core/use-logger';
 import type { Scene3DRef } from '@/components/organisms/Scene3D';
 
 interface AutoPreviewSaverProps{

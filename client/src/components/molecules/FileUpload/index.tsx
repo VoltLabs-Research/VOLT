@@ -24,9 +24,9 @@ import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { processFileSystemEntry } from '@/utilities/fs';
 import type { FileWithPath } from '@/hooks/trajectory/use-trajectory-upload';
-import useDragState from '@/hooks/ui/use-drag-state';
-import useFileUpload from '@/hooks/ui/use-file-upload';
-import useLogger from '@/hooks/useLogger';
+import useDragState from '@/hooks/ui/drag-drop/use-drag-state';
+import useFileUpload from '@/hooks/ui/drag-drop/use-file-upload';
+import useLogger from '@/hooks/core/use-logger';
 import './FileUpload.css';
 
 interface FileUploadProps{

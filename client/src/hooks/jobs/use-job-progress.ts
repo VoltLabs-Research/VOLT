@@ -17,7 +17,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 **/
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
-import useLogger from '@/hooks/useLogger';
+import useLogger from '@/hooks/core/use-logger';
 
 // TODO: DUPLICATED CODE
 interface JobStats {

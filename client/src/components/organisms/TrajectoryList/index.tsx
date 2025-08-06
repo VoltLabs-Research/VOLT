@@ -26,7 +26,7 @@ import FileItem from '@/components/molecules/FileItem';
 import Loader from '@/components/atoms/Loader';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
-import useLogger from '@/hooks/useLogger';
+import useLogger from '@/hooks/core/use-logger';
 import './TrajectoryList.css';
 
 interface TrajectoryListProps {
