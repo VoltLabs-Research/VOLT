@@ -344,8 +344,8 @@ class DislocationExporter{
                 copyright: 'https://github.com/rodyherrera/OpenDXA'
             },
             scene: 0,
-            scenes: [{ nodes: [0] }],
-            nodes: [{ name: 'Dislocations', mesh: 0 }],
+            scenes: [{ nodes: [] }],
+            nodes: [{ }],
             materials: [{
                 name: 'DislocationMaterial',
                 pbrMetallicRoughness: {
@@ -357,34 +357,8 @@ class DislocationExporter{
                 doubleSided: true
             }],
             meshes: [],
-            accessors: [{
-                // Position
-                bufferView: 0,
-                componentType: 5126,
-                count: geometry.vertexCount,
-                type: 'VEC3',
-                min: geometry.bounds.min,
-                max: geometry.bounds.max
-            }, {
-                // Normal
-                bufferView: 1,
-                componentType: 5126,
-                count: geometry.vertexCount,
-                type: 'VEC3'
-            }],
-            bufferViews: [{
-                // ARRAY_BUFFER (Positions)
-                buffer: 0,
-                byteOffset: positionOffset,
-                byteLength: positionBufferSize,
-                target: 34962
-            }, {
-                // ARRAY_BUFFER (Normals)
-                buffer: 0,
-                byteOffset: normalOffset,
-                byteLength: normalBufferSize,
-                target: 34962
-            }],
+            accessors: [],
+            bufferViews: [],
             buffers: [{
                 byteLength: totalBufferSize
             }],
@@ -398,58 +372,113 @@ class DislocationExporter{
             } : options.metadata.customProperties
         };
 
-        // Add color accessor and buffer view if colors are present
-        if(geometry.colors){
+        // Only create geometry-related structures if there are vertices
+        if(geometry.vertexCount > 0){
+            // Position Accessor & BufferView
             glb.accessors.push({
-                bufferView: 2,
+                bufferView: 0,
                 componentType: 5126,
                 count: geometry.vertexCount,
-                type: 'VEC4'
+                type: 'VEC3',
+                min: geometry.bounds.min,
+                max: geometry.bounds.max
             });
 
+            // ARRAY_BUFFER
             glb.bufferViews.push({
                 buffer: 0,
-                byteOffset: colorOffset,
-                byteLength: colorBufferSize,
+                byteOffset: positionOffset,
+                byteLength: positionBufferSize,
                 target: 34962
             });
+
+            // Normal Accessor & BufferView
+            glb.accessors.push({
+                bufferView: 1,
+                componentType: 5126,
+                count: geometry.vertexCount,
+                type: 'VEC3'
+            });
+
+            // ARRAY_BUFFER
+            glb.bufferViews.push({
+                buffer: 0,
+                byteOffset: normalOffset,
+                byteLength: normalBufferSize,
+                target: 34962 
+            });
+
+            // Color Accessor & BufferView (if present)
+            if(geometry.colors){
+                glb.accessors.push({
+                    bufferView: 2,
+                    componentType: 5126,
+                    count: geometry.vertexCount,
+                    type: 'VEC4'
+                });
+                glb.bufferViews.push({
+                    buffer: 0,
+                    byteOffset: colorOffset,
+                    byteLength: colorBufferSize,
+                    // ARRAY_BUFFER
+                    target: 34962
+                });
+            }
         }
 
-        // Add mesh primitive if there's geometry to render
+        // Add mesh primitive and node ONLY if there's geometry to render
         if(geometry.indices.length > 0){
             const attributes: any = { POSITION: 0, NORMAL: 1 };
-            let accessorIndex = 2;
+            // Starts after Position and Normal
+            let accessorIndex = 2; 
 
             if(geometry.colors){
-                attributes.COLOR_0 = accessorIndex++;
+                attributes.COLOR_0 = accessorIndex;
             }
 
+            const indicesAccessorIndex = accessorIndex;
+
+            // Push the mesh to the meshes array
             glb.meshes.push({
                 name: 'DislocationGeometry',
                 primitives: [{
                     attributes,
-                    indices: accessorIndex,
+                    indices: indicesAccessorIndex,
                     material: 0,
                     // 4 = TRIANGLES
                     mode: 4
                 }]
             });
 
-            // Add index accessor
+            // Add Index Accessor
             glb.accessors.push({
-                bufferView: geometry.colors ? 3 : 2,
+                // The next available bufferView
+                bufferView: glb.bufferViews.length,
+                // UNSIGNED_INT
                 componentType: 5125,
                 count: geometry.indices.length,
                 type: 'SCALAR'
             });
 
-            // Add index buffer view
+            // Add Index BufferView
             glb.bufferViews.push({
                 buffer: 0,
                 byteOffset: indexOffset,
                 byteLength: indexBufferSize,
+                // ELEMENT_ARRAY_BUFFER
                 target: 34963
             });
+
+            // Now that a mesh exists at index 0, create a 
+            // node that references it
+            glb.nodes.push({
+                name: 'Dislocations',
+                // References glb.meshes[0]
+                mesh: 0 
+            });
+
+            // Add the new node (at index 0) to the scene
+            glb.scenes[0].nodes.push(0);
         }
 
         assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
