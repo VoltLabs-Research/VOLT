@@ -22,7 +22,7 @@
 
 import { useMemo } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import Canvas from './pages/protected/Canvas';
 import Dashboard from './pages/protected/Dashboard';
 import SignUp from './pages/guest/SignUp';
@@ -35,16 +35,48 @@ import Messages from './pages/protected/Messages';
 
 import PageWrapper from '@/components/atoms/animations/PageWrapper';
 import GlobalTransitionOverlay from '@/components/atoms/animations/GlobalTransitionOverlay';
-import LoadingShimmer from '@/components/atoms/animations/LoadingShimmer';
+import Loader from '@/components/atoms/Loader';
+import useAuthStore from './stores/authentication';
+
+const AuthLoadingOverlay = () => (
+    <motion.div
+        key='global-auth-loader'
+        initial={{ opacity: 0 }}
+        animate={{
+            opacity: 1,
+            transition: { duration: 0.3, ease: 'easeInOut' }
+        }}
+        exit={{
+            opacity: 0,
+            transition: { duration: 0.5, ease: 'easeInOut' }
+        }}
+        style={{
+            // TODO: CSS
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100dvh',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'linear-gradient(135deg, #fafafa 0%, #ffffff 100%)',
+        }}
+    >
+        <Loader scale={0.7} />
+    </motion.div>
+);
 
 const App = () => {
     const location = useLocation();
+    const isLoading = useAuthStore((state) => state.isLoading);
 
     const containerStyle = useMemo(() => ({
+        // TODO: CSS
         position: 'relative' as const,
         width: '100%',
-        // TODO: CSS!
-        height: window.innerWidth > 768 ? '100vh' : 'auto',
+        height: '100dvh',
         overflow: window.innerWidth > 768 ? 'hidden' : 'auto',
         background: 'linear-gradient(135deg, #fafafa 0%, #ffffff 100%)',
         scrollBehavior: 'smooth' as const,
@@ -60,6 +92,10 @@ const App = () => {
 
     return (
         <div style={containerStyle}>
+            <AnimatePresence>
+                {isLoading && <AuthLoadingOverlay />}
+            </AnimatePresence>
+            
             <AnimatePresence
                 mode='wait'
                 initial={false}
