@@ -23,11 +23,13 @@
 import { useCallback } from 'react';
 import type { TrajectoryData } from '@/types/canvas';
 import useTrajectoryStore from '@/stores/trajectories';
+import useLogger from '@/hooks/useLogger';
 
 const useTrajectoryManager = () => {
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const isLoading = useTrajectoryStore((state) => state.isLoading);
     const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
+    const logger = useLogger('use-trajectory-manager');
 
     const loadTrajectory = useCallback(async (id: string): Promise<TrajectoryData | null> => {
         try{
