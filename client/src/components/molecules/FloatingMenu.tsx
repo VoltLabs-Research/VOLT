@@ -20,33 +20,42 @@
 * SOFTWARE.
 **/
 
-import useAuthStore from '@/stores/authentication';
-import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer';
-import { CiLogout, CiSettings } from 'react-icons/ci';
-import './SidebarUserAvatar.css';
+import React from 'react';
+import { createPortal } from 'react-dom';
+import type { FloatingMenuProps } from '@/types/floating-container';
+import FloatingMenuItem from '@/components/atoms/FloatingMenuItem';
 
-// TODO: USER AVATAR SHOULD BE A NEW COMPONENT
-const SidebarUserAvatar = ({ hideUsername = false, onClick = () => {} }) => {
-    const { user, signOut } = useAuthStore();
+const FloatingMenu: React.FC<FloatingMenuProps> = ({
+    isVisible,
+    menuRef,
+    styles,
+    options,
+    onItemClick,
+    className = 'action-based-floating-container',
+    portalTarget = document.body
+}) => {
+    if(!isVisible){
+        return null;
+    }
 
-    return (
-        <ActionBasedFloatingContainer
-            options={[
-                ['Account Settings', CiSettings, () => {}],
-                ['Sign Out', CiLogout, signOut]
-            ]}
+    return createPortal(
+        <div
+            ref={menuRef}
+            style={styles}
+            className={className}
         >
-            <div className='sidebar-user-container' onClick={onClick}>
-                <div className='sidebar-user-avatar-container'>
-                    <span className='sidebar-user-avatar'>{user.firstName[0]}</span>
-                </div>
-
-                {!hideUsername && (
-                    <span className='sidebar-user-fullname'>{user.firstName} {user.lastName}</span>
-                )}
-            </div>
-        </ActionBasedFloatingContainer>
-    );
+            {options.map(([ name, Icon, onClick ], index) => (
+                <FloatingMenuItem
+                    key={index}
+                    name={name}
+                    Icon={Icon}
+                    onClick={onClick}
+                    onItemClick={onItemClick}
+                />
+            ))}
+        </div>,
+        portalTarget
+    )
 };
 
-export default SidebarUserAvatar;
+export default FloatingMenu;

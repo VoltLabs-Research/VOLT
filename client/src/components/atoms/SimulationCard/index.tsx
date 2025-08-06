@@ -28,7 +28,7 @@ import { CiShare1 } from "react-icons/ci";
 import { HiOutlineViewfinderCircle } from "react-icons/hi2";
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
-import ActionBasedFloatingContainer from '@/components/atoms/ActionBasedFloatingContainer';
+import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer';
 import ProgressBadge from '@/components/atoms/animations/ProgressBadge';
 import ProgressBorderContainer from '@/components/atoms/animations/ProgressBorderContainer';
 import useTrajectoryStore from '@/stores/trajectories';
