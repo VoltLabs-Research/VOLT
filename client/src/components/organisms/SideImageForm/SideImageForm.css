@@ -22,10 +22,6 @@
     gap: .5rem;
 }
 
-.side-image-form-submit-loader-container{
-    margin: 2rem 0;
-}
-
 .side-image-form-right-container.justify-start{
     justify-content: flex-start;
 }
@@ -78,43 +74,9 @@
     row-gap: 1.5rem;
 }
 
-.side-image-form-submit-btn-container .button{
+.side-image-form-body-container .button{
     width: 100%;
     position: relative;
-}
-
-.side-image-form-submit-loader-container{
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 200;
-}
-
-.side-image-form-submit-btn-container .button.is-loading{
-    opacity: .8;
-}
-
-.button{
-    padding: 1rem 2.5rem;
-    border-radius: 2rem;
-    background-color: #212121;
-    color: #f1f1f1;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.button:hover{
-    opacity: .9;
-}
-
-.button.sm-radius{
-    border-radius: .5rem;
-}
-
-.button-text{
-    font-size: 1rem;
-    font-weight: 400;
 }
 
 @media screen and (max-width: 768px){

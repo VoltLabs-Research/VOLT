@@ -25,6 +25,7 @@ import { useNavigate } from 'react-router';
 import signInImage from '@/assets/images/sign-in.png';
 import FormInput from '@/components/atoms/form/FormInput';
 import Loader from '@/components/atoms/Loader';
+import Button from '@/components/atoms/Button';
 import './SideImageForm.css';
 
 const renderInput = (inputProps, formState, handleChange) => {
@@ -106,13 +107,11 @@ const SideImageForm = ({
 
     return (
         <form className='side-image-form' onSubmit={handleFormSubmit}>
-            <button
+            <Button
                 type='submit'
-                className='button auth-sign-up-button'
-                onClick={() => navigate(headerBtn.to)}
-            >
-                <span className='button-text'>{headerBtn.title}</span>
-            </button>
+                className='auth-sign-up-button'
+                title={headerBtn.title}
+                to={headerBtn.to} />
 
             <figure className='side-image-form-left-container'>
                 <img src={signInImage} className='side-image-form-image' />
@@ -136,18 +135,13 @@ const SideImageForm = ({
                     {FormOpts && <FormOpts />}
 
                     <div className='side-image-form-submit-btn-container'>
-                        <button
+                        <Button 
                             type='submit'
-                            className={'button sm-radius '.concat((isLoading) ? 'is-loading' : '')}
-                        >
-                            {isLoading ? (
-                                <div className='side-image-form-submit-loader-container'>
-                                    <Loader scale={0.6} />
-                                </div>
-                            ) : (
-                                <span className='button-text'>Continue</span>
-                            )}
-                        </button>
+                            className={'sm-radius '.concat((isLoading) ? 'is-loading' : '')}
+                            title='Continue'
+                            isLoading={isLoading} />
+                            
+            
                         <p className='auth-agree-text'>By joining, you agree to our <span>Terms of Service</span> and <span>Privacy Policy</span></p>
                     </div>
                 </div>

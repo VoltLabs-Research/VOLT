@@ -1,50 +1,32 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
 import React from 'react';
+import Loader from '@/components/atoms/Loader';
+import { useNavigate } from 'react-router';
+import './Button.css';
 
-interface ButtonProps {
-    children?: React.ReactNode;
-    onClick?: () => void;
-    disabled?: boolean;
-    icon?: any;
-    className?: string;
-}
+const Button = ({ title, isLoading = false, className = '', to = null, onClick = () => {}, ...props }) => {
+    const navigate = useNavigate();
 
-const Button: React.FC<ButtonProps> = ({
-    children,
-    onClick,
-    disabled = false,
-    icon: Icon,
-    className = ''
-}) => {
+    const handleClick = () => {
+        onClick();
+
+        if(to){
+            navigate(to);
+        }
+    };
+
     return (
-        <button 
-            className={className}
-            onClick={onClick}
-            disabled={disabled}
+        <button
+            {...props}
+            className={'button '.concat(className)}
+            onClick={handleClick}
         >
-            {Icon && <Icon />}
-            {children}
+            {isLoading ? (
+                <div className='button-loader-layer-container'>
+                    <Loader scale={0.6} />
+                </div>
+            ) : (
+                <span className='button-text'>{title}</span>
+            )}
         </button>
     );
 };

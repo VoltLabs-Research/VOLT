@@ -1,6 +1,3 @@
-/**
- * Página principal del editor usando los nuevos stores
- */
 import React, { useRef } from 'react';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/Scene3D';
 import AutoPreviewSaver from '@/components/atoms/scene/AutoPreviewSaver';

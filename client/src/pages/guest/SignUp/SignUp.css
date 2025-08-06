@@ -4,3 +4,7 @@
     display: flex;
     gap: 1rem;
 }
+
+.auth-sign-up-btn-container{
+    width: 100%;
+}

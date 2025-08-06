@@ -21,29 +21,32 @@
 **/
 
 import React from 'react';
-import { CiPlay1, CiPause1 } from 'react-icons/ci';
-import CanvasButton from '@/components/atoms/CanvasButton';
-import './PlayControls.css'
 
-interface PlayControlsProps {
-    isPlaying: boolean;
-    onPlayPause: () => void;
+interface ButtonProps {
+    children?: React.ReactNode;
+    onClick?: () => void;
     disabled?: boolean;
+    icon?: any;
+    className?: string;
 }
 
-const PlayControls: React.FC<PlayControlsProps> = ({
-    isPlaying,
-    onPlayPause,
-    disabled = false
+const CanvasButton: React.FC<ButtonProps> = ({
+    children,
+    onClick,
+    disabled = false,
+    icon: Icon,
+    className = ''
 }) => {
     return (
-        <CanvasButton
-            onClick={onPlayPause}
-            className='editor-timestep-controls-play-pause-button'
+        <button 
+            className={className}
+            onClick={onClick}
             disabled={disabled}
-            icon={isPlaying ? CiPause1 : CiPlay1}
-        />
+        >
+            {Icon && <Icon />}
+            {children}
+        </button>
     );
 };
 
-export default PlayControls;
+export default CanvasButton;
