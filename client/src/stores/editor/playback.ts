@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import useTimestepStore from '@/stores/editor/timesteps';
 
 interface PlaybackState {
     isPlaying: boolean;
@@ -11,7 +12,7 @@ interface PlaybackActions {
     togglePlay: () => void;
     setPlaySpeed: (speed: number) => void;
     setCurrentTimestep: (timestep: number) => void;
-    playNextFrame: (timesteps: number[]) => void;
+    playNextFrame: () => void;
     stopPlayback: () => void;
     reset: () => void;
 }
@@ -30,76 +31,74 @@ const initialState: PlaybackState = {
 };
 
 const usePlaybackStore = create<PlaybackStore>()((set, get) => ({
-        ...initialState,
+    ...initialState,
 
-        stopPlayback: () => {
-            const { intervalId } = get();
-            if (intervalId) {
-                clearInterval(intervalId);
-            }
-            set({ isPlaying: false, intervalId: null });
-        },
+    stopPlayback: () => {
+        const { intervalId } = get();
+        if(intervalId){
+            clearInterval(intervalId);
+        }
+        set({ isPlaying: false, intervalId: null });
+    },
 
-        togglePlay: () => {
-            const { isPlaying, playSpeed } = get();
-            
-            if (isPlaying) {
-                get().stopPlayback();
-            } else {
-                set({ isPlaying: true });
-                
-                const newIntervalId = setInterval(() => {
-                    // Note: This requires timesteps to be passed from parent component
-                    // or we need to subscribe to trajectory store
-                    const timesteps: number[] = []; // This would come from trajectory store
-                    get().playNextFrame(timesteps);
-                }, 1000 / playSpeed);
-                
-                set({ intervalId: newIntervalId });
-            }
-        },
+    togglePlay: () => {
+        const { isPlaying } = get();
 
-        setPlaySpeed: (speed: number) => {
-            const clampedSpeed = Math.max(MIN_PLAY_SPEED, Math.min(MAX_PLAY_SPEED, speed));
-            set({ playSpeed: clampedSpeed });
-            
-            // Restart playback with new speed if currently playing
-            if (get().isPlaying) {
-                get().stopPlayback();
-                get().togglePlay();
-            }
-        },
-
-        setCurrentTimestep: (timestep: number) => {
+        if(isPlaying){
             get().stopPlayback();
-            set({ currentTimestep: timestep });
-        },
+        }else{
+            const { timesteps } = useTimestepStore.getState().timestepData;
+            if(!timesteps.length) return;
 
-        playNextFrame: (timesteps: number[]) => {
-            const { currentTimestep } = get();
-            
-            if (!timesteps.length || currentTimestep === undefined) {
-                get().stopPlayback();
-                return;
-            }
+            set({ isPlaying: true });
+            const newIntervalId = setInterval(() => {
+                get().playNextFrame();
+            }, 1000 / get().playSpeed);
 
-            const currentIndex = timesteps.indexOf(currentTimestep);
-            if (currentIndex === -1) {
-                get().stopPlayback();
-                return;
-            }
+            set({ intervalId: newIntervalId });
+        }
+    },
 
-            const nextIndex = (currentIndex + 1) % timesteps.length;
-            const nextTimestep = timesteps[nextIndex];
-            
-            set({ currentTimestep: nextTimestep });
-        },
+    setPlaySpeed: (speed: number) => {
+        const clampedSpeed = Math.max(MIN_PLAY_SPEED, Math.min(MAX_PLAY_SPEED, speed));
+        set({ playSpeed: clampedSpeed });
 
-        reset: () => {
+        if(get().isPlaying){
             get().stopPlayback();
-            set(initialState);
-        },
-    }),
-);
+            get().togglePlay();
+        }
+    },
+
+    setCurrentTimestep: (timestep: number) => {
+        get().stopPlayback();
+        set({ currentTimestep: timestep });
+    },
+
+    playNextFrame: () => {
+        const { currentTimestep } = get();
+        const { timesteps } = useTimestepStore.getState().timestepData;
+
+        if(!timesteps.length || currentTimestep === undefined){
+            get().stopPlayback();
+            return;
+        }
+
+        const currentIndex = timesteps.indexOf(currentTimestep);
+        if(currentIndex === -1){
+            get().stopPlayback();
+            return;
+        }
+
+        const nextIndex = (currentIndex + 1) % timesteps.length;
+        const nextTimestep = timesteps[nextIndex];
+
+        set({ currentTimestep: nextTimestep });
+    },
+
+    reset: () => {
+        get().stopPlayback();
+        set(initialState);
+    }
+});
 
 export default usePlaybackStore;
