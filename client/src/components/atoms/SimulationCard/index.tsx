@@ -93,7 +93,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     const { isDeleting, handleClick, handleDelete } = useCardInteractions(
         onSelect,
         (id: string) => navigate(`/canvas/${id}/`),
-        hasJobs
+        hasActiveJobs
     );
 
     const containerClasses = `simulation-container ${hasActiveJobs ? 'has-jobs' : ''} ${isDeleting ? 'is-deleting' : ''} ${isSelected ? 'is-selected' : ''}`;
