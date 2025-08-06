@@ -36,4 +36,19 @@ export class JobStatusManager<T extends BaseJob> {
         const { emitJobUpdate } = await import('@/config/socket');
         await emitJobUpdate(teamId, jobData);
     }
+
+    async getJobStatus(jobId: string): Promise<any | null>{
+        const statusKey = `${this.statusKeyPrefix}${jobId}`;
+        try{
+            const statusData = await this.redisClient.get(statusKey);
+            if(!statusData){
+                return null;
+            }
+
+            return JSON.parse(statusData);
+        }catch(error){
+            console.error(`[${this.queueName}] Failed to get status for job ${jobId}:`, error);
+            return null;
+        }
+    }
 }
