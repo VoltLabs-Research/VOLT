@@ -1,60 +1,81 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
 import React, { memo } from 'react';
 import DashboardContainer from '@/components/atoms/DashboardContainer';
 import SimulationGrid from '@/components/molecules/SimulationGrid';
 import FileUpload from '@/components/molecules/FileUpload';
-import JobsHistory from '@/components/molecules/JobsHistory';
 import TrajectoryPreview from '@/components/molecules/TrajectoryPreview';
-import AIPromptBox from '@/components/atoms/AIPromptBox';
+import useUIStore from '@/stores/ui';
+import { HiPlus } from 'react-icons/hi';
+import { IoSearchOutline } from 'react-icons/io5';
+import { MdKeyboardArrowDown } from 'react-icons/md';
+import { IoNotificationsOutline } from "react-icons/io5";
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
+import JobsHistoryViewer from '@/components/organisms/JobsHistoryViewer';
+import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import './Dashboard.css';
 
-const DashboardPage = memo(() => {
-    // Initialize team jobs connection
+const DashboardPage: React.FC = memo(() => {
     useTeamJobs();
-    
+    const toggleDashboardSidebar = useUIStore((state) => state.toggleDashboardSidebar);
+
     return (
         <FileUpload>            
             <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
-                <div className='dashboard-main-container'>
-                    <TrajectoryPreview />
-
-                    <div className='jobs-history-viewer'>
-                        <div className='jobs-history-viewer-header'>
-                            <h3 className='jobs-history-title'>Team's Jobs History</h3>
-                        </div>
-
-                        <div className='jobs-history-viewer-body'>
-                            <JobsHistory />
-                        </div>
-                    </div>
+                            <article className='dashboard-header-container'>
+                <div className='dashboard-header-left-container'>
+                    <h3 className='dashboard-header-title'>Dashboard</h3>
                 </div>
 
+                <div className='dashboard-header-right-container'>
+                    <div className='dashboard-clickables-container'>
+                        {[IoNotificationsOutline].map((Icon, index) => (
+                            <div className='dashboard-clickable-container' key={index}>
+                                <Icon />
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className='search-container'>
+                        <i className='search-icon-container'>
+                            <IoSearchOutline />
+                        </i>
+                        <input placeholder='Search' className='search-input '/>
+                    </div>
+
+                    <div className='create-new-button-container'>
+                        <i className='create-new-button-icon-container'>
+                            <HiPlus />
+                        </i>
+                        <span className='create-new-button-title'>Create</span>
+                        <i className='create-new-button-dropdown-icon-container'>
+                            <MdKeyboardArrowDown />
+                        </i>
+                    </div>                    
+                </div>
+
+                <div className='dashboard-header-right-mobile-container'>
+                    <div className='dashboard-clickables-container'>
+                        {[IoNotificationsOutline].map((Icon, index) => (
+                            <div className='dashboard-clickable-container' key={index}>
+                                <Icon />
+                            </div>
+                        ))}
+                    </div>
+
+                    <SidebarUserAvatar
+                        onClick={toggleDashboardSidebar}
+                        hideUsername={true}
+                    />
+                </div>
+            </article>
+
+                <div className='dashboard-main-container'>
+                    <TrajectoryPreview />
+                    <JobsHistoryViewer />
+                </div>
                 <SimulationGrid />
             </DashboardContainer>
 
-            <AIPromptBox />
+            {/* <AIPromptBox /> */}
         </FileUpload>
     );
 });

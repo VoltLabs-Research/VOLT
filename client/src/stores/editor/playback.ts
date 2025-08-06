@@ -99,6 +99,6 @@ const usePlaybackStore = create<PlaybackStore>()((set, get) => ({
         get().stopPlayback();
         set(initialState);
     }
-});
+}));
 
 export default usePlaybackStore;

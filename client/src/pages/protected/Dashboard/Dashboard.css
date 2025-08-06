@@ -1,45 +1,203 @@
-.dashboard-main-container{
-    display: flex;
-    height: 400px;
-    gap: 1rem;
-}
-
-.jobs-history-viewer{
-    width: 50%;
-    padding: 0 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    border: 1px solid #dadada;
-    padding: 1.5rem;
-    border-radius: 2rem;
-}
-
-.jobs-history-viewer-body{
-    height: 100%;
-    overflow: scroll;
-    padding-right: .5rem;
-}
-
-.jobs-history-title{
-    font-size: 1.5rem;
-    font-weight: 500;
-}
-
-.dashboard-wrapper-container{
+.dashboard-wrapper-container {
     display: flex;
     flex-direction: column;
     gap: 2rem;
 }
-
-@media screen and (max-width: 768px){
-    .dashboard-main-container{
-        flex-direction: column;
-        height: auto;
+.dashboard-main-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: stretch;
+}
+.jobs-history-viewer-desktop {
+    flex: 1 1 400px;
+    height: 400px;
+    overflow: scroll;
+    display: flex;
+    flex-direction: column;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 1.25rem;
+    overflow: hidden;
+}
+.jobs-history-viewer-header-desktop {
+    padding: 1.5rem 2rem 0;
+    flex-shrink: 0;
+}
+.jobs-history-viewer-body-desktop {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1.25rem 2rem 2rem;
+}
+.jobs-history-title-enhanced {
+    font-size: 1.5rem;
+}
+.jobs-history-subtitle {
+    display: none;
+}
+@media screen and (max-width: 768px) {
+    body.jobs-history-expanded {
+        overflow: hidden;
     }
-
-    /* TODO: FLOATING CONTAINER! */
-    .jobs-history-viewer{
-        display: none;
+    .jobs-history-subtitle {
+        display: block;
+    }
+    .jobs-history-viewer-enhanced {
+        position: fixed;
+        z-index: 800;
+        overflow: hidden;
+        cursor: pointer;
+        width: 15rem;
+        height: 4.5rem;
+        left: 2rem;
+        bottom: 2rem;
+        border-radius: 2.25rem;
+        padding: 0.875rem 1.75rem;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+        backdrop-filter: blur(24px) saturate(180%);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1), height 0.5s cubic-bezier(0.65, 0, 0.35, 1), left 0.5s cubic-bezier(0.65, 0, 0.35, 1), bottom 0.5s cubic-bezier(0.65, 0, 0.35, 1), border-radius 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+    }
+    .jobs-history-viewer-enhanced.expanded {
+        left: 5vw;
+        bottom: 1rem;
+        border-radius: 1.75rem;
+        padding: 0;
+        cursor: default;
+    }
+    .jobs-history-viewer-enhanced.is-interacting {
+        transition: none;
+    }
+    .jobs-history-viewer-enhanced:not(.expanded):hover {
+        transform: translateY(-6px) scale(1.03);
+        box-shadow: 0 20px 55px rgba(0, 0, 0, 0.15);
+    }
+    .jobs-history-dispatch-container-enhanced {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        height: 100%;
+        transition: opacity 0.2s ease-out;
+    }
+    .jobs-history-viewer-enhanced.expanded .jobs-history-dispatch-container-enhanced {
+        opacity: 0;
+    }
+    .jobs-history-expanded-content {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease-in-out 0.2s;
+    }
+    .jobs-history-viewer-enhanced.expanded .jobs-history-expanded-content {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .jobs-history-viewer-header-enhanced {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+        flex-shrink: 0;
+    }
+    .jobs-history-viewer-header-enhanced.edit-mode-resize {
+        cursor: ns-resize;
+        background-color: rgba(240, 245, 250, 0.9);
+    }
+    .jobs-history-viewer-header-enhanced.edit-mode-move {
+        cursor: grab;
+        background-color: rgba(240, 245, 250, 0.9);
+    }
+    .header-content {
+        flex: 1;
+        min-width: 0;
+    }
+    .jobs-history-title-enhanced {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin: 0;
+    }
+    .jobs-history-subtitle {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .close-button-enhanced {
+        padding: 0.75rem;
+        border-radius: 50%;
+        width: 3rem;
+        height: 3rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(241, 245, 249, 0.9);
+        border: 1px solid transparent;
+        color: #64748b;
+        cursor: pointer;
+        font-size: 1.125rem;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        flex-shrink: 0;
+    }
+    .close-button-enhanced:hover {
+        transform: scale(1.1) rotate(90deg);
+        color: white;
+        background: #ef4444;
+    }
+    .jobs-history-viewer-body-enhanced {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.25rem 2rem 2rem;
+    }
+    .glow-effect {
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(16, 185, 129, 0.2), rgba(239, 68, 68, 0.2));
+        filter: blur(20px);
+        opacity: 0;
+        z-index: -1;
+        animation: glow-rotate 8s linear infinite;
+        transition: opacity 0.6s ease;
+    }
+    .jobs-history-viewer-enhanced:not(.expanded):hover .glow-effect {
+        opacity: 0.5;
+    }
+    @keyframes glow-rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .jobs-history-dispatch-icon-container-enhanced {
+        align-items: center;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        color: white;
+        border-radius: 50%;
+        font-size: 1.5rem;
+        display: flex;
+        justify-content: center;
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        height: 2.5rem;
+        flex-shrink: 0;
+        width: 2.5rem;
+    }
+    .jobs-dispatch-text {
+        white-space: nowrap;
+    }
+    .jobs-history-dispatch-title-enhanced {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+    .jobs-dispatch-subtitle {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-top: 0.25rem;
     }
 }

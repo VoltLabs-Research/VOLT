@@ -11,7 +11,7 @@ interface UseDraggableProps {
     isEnabled: boolean;
 }
 
-export const useDraggable = ({ elementRef, handleRef, isEnabled }: UseDraggableProps) => {
+const useDraggable = ({ elementRef, handleRef, isEnabled }: UseDraggableProps) => {
     const [isDragging, setIsDragging] = useState(false);
     const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
 
@@ -108,3 +108,5 @@ export const useDraggable = ({ elementRef, handleRef, isEnabled }: UseDraggableP
 
     return { position, isDragging, resetPosition };
 };
+
+export default useDraggable;

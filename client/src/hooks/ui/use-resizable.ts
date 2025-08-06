@@ -97,19 +97,18 @@ const useResizable = ({
         };
 
         const stopResizing = () => {
-            if(!isResizing){
-                setIsResizing(false);
+            if(!isResizing) return;
+            setIsResizing(false);
 
-                document.body.style.cursor = '';
-                document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
 
-                if(elementRef.current){
-                    const rect = elementRef.current.getBoundingClientRect();
-                    setSize({
-                        width: (rect.width / window.innerWidth) * 100,
-                        height: (rect.height / window.innerHeight) * 100,
-                    });
-                }
+            if(elementRef.current){
+                const rect = elementRef.current.getBoundingClientRect();
+                setSize({
+                    width: (rect.width / window.innerWidth) * 100,
+                    height: (rect.height / window.innerHeight) * 100,
+                });
             }
         };
 

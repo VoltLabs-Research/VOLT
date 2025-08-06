@@ -1,121 +1,170 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
+import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
+import { MdOutlineSchedule } from "react-icons/md";
+import { RiCloseLargeFill } from 'react-icons/ri';
+import JobsHistory from '@/components/molecules/JobsHistory';
+import useIsMobile from '@/hooks/ui/use-is-mobile';
+import useResizable from '@/hooks/ui/use-resizable';
+import useDraggable from '@/hooks/ui/use-draggable';
+import useDoubleTap from '@/hooks/ui/use-double-tap';
 
-import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
-import { GrHomeOption } from 'react-icons/gr';
-import { BsCommand } from 'react-icons/bs';
-import { GoTrash } from 'react-icons/go';
-import { TbCube3dSphere } from "react-icons/tb";
-import { IoSettingsOutline } from "react-icons/io5";
-import { TbBook } from 'react-icons/tb';
-import { IoIosHelpCircleOutline } from 'react-icons/io';
-import { CiChat1 } from 'react-icons/ci';
-import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
-import SidebarNavigationOption from '@/components/atoms/SidebarNavigationOption';
-import Select from '@/components/atoms/form/Select';
-import useTeamStore from '@/stores/team';
-import useTrajectoryStore from '@/stores/trajectories';
-import ShortcutsModal from '@/components/organisms/ShortcutsModal';
-import useUIStore from '@/stores/ui';
-import './DashboardLayout.css';
+type EditMode = 'inactive' | 'resize' | 'move';
 
-const DashboardLayout = () => {
-    const teams = useTeamStore((state) => state.teams);
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
-    const getUserTeams = useTeamStore((state) => state.getUserTeams);
-    const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
-    const areTeamsLoading = useTeamStore((state) => state.isLoading);
-    const toggleShortcutsModal = useUIStore((state) => state.toggleShortcutsModal);
-    const isDashboardSidebarEnabled = useUIStore((state) => state.isDashboardSidebarEnabled);
+const JobsHistoryViewerMobile: React.FC = memo(() => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [editMode, setEditMode] = useState<EditMode>('inactive');
 
-    const trajectories = useTrajectoryStore((state) => state.trajectories);
-    const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const headerRef = useRef<HTMLDivElement>(null);
+    const bodyRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if(selectedTeam === null || trajectories.length) return;
-        getTrajectories(selectedTeam._id);
-    }, [selectedTeam]);   
+    const { size, isResizing, resetSize } = useResizable({
+        elementRef: containerRef,
+        handleRef: headerRef,
+        initialSize: { width: 90, height: 85 },
+        isEnabled: editMode === 'resize'
+    });
 
-    useEffect(() => {
-        if(teams.length) return;
-        getUserTeams();
+    const { position, isDragging, resetPosition } = useDraggable({
+        elementRef: containerRef,
+        handleRef: headerRef,
+        isEnabled: editMode === 'move'
+    });
+
+    const headerDoubleTap = useDoubleTap({ onDoubleTap: () => setEditMode('resize') });
+    const bodyDoubleTap = useDoubleTap({ onDoubleTap: () => setEditMode('move') });
+
+    const isInteracting = isResizing || isDragging;
+
+    const toggleBodyScroll = useCallback((lock: boolean) => {
+        document.body.classList.toggle('jobs-history-expanded', lock);
     }, []);
 
-    const teamOptions = teams.map((team) => ({
-        value: team._id,
-        title: team.name
-    }));
+    const handleToggle = useCallback(() => {
+        if(isAnimating || isInteracting) return;
+        const nextIsExpanded = !isExpanded;
+        setIsAnimating(true);
+        toggleBodyScroll(nextIsExpanded);
+        setIsExpanded(nextIsExpanded);
+
+        if(!nextIsExpanded){
+            setEditMode('inactive');
+            resetSize();
+            resetPosition();
+        }
+
+        setTimeout(() => {
+            setIsAnimating(false);
+        }, 500);
+    }, [isAnimating, isInteracting, isExpanded, resetSize, resetPosition, toggleBodyScroll]);
+
+    useEffect(() => {
+        if(!isExpanded || editMode === 'inactive') return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if(containerRef.current && !containerRef.current.contains(event.target as Node)){
+                setEditMode('inactive');
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isExpanded, editMode]);
+
+    const containerClasses = [
+        'jobs-history-viewer-enhanced',
+        isExpanded && 'expanded',
+        isInteracting && 'is-interacting',
+    ].filter(Boolean).join(' ');
+
+    const headerClasses = [
+        'jobs-history-viewer-header-enhanced',
+        editMode === 'resize' && 'edit-mode-resize',
+        editMode === 'move' && 'edit-mode-move',
+    ].filter(Boolean).join(' ');
+
+    const getSubtitle = () => {
+        if(editMode === 'resize') return 'Drag the header to resize';
+        if(editMode === 'move') return 'Drag the header to move';
+        return 'Double-tap on header (resize) or body (move)';
+    };
+    
+    const dynamicStyles: React.CSSProperties = isExpanded ? { 
+        width: `${size.width}vw`, 
+        height: `${size.height}vh`,
+        transform: `translate(${position.x}px, ${position.y}px)`,
+    } : {};
 
     return (
-        <main className='dashboard-main'>
-            <section className='sidebar-container' data-isenabled={isDashboardSidebarEnabled}>
-                <article className='sidebar-top-container'>
-                    <SidebarUserAvatar />
-
-                    <div className='sidebar-team-selection-container'>
-                        <Select
-                            value={selectedTeam?._id || ''}
-                            className='team-select-container'
-                            onChange={(teamId) => setSelectedTeam(teamId)}
-                            options={teamOptions}
-                            disabled={areTeamsLoading || teams.length === 0}
-                        />
+        <>
+            <div 
+                ref={containerRef} 
+                className={containerClasses} 
+                onClick={!isExpanded && !isAnimating ? handleToggle : undefined} 
+                style={dynamicStyles}
+            >
+                <div className='jobs-history-dispatch-container-enhanced'>
+                    <div className='jobs-history-dispatch-icon-container-enhanced'><MdOutlineSchedule /></div>
+                    <div className='jobs-dispatch-text'>
+                        <h3 className='jobs-history-dispatch-title-enhanced'>Team Jobs</h3>
+                        <span className='jobs-dispatch-subtitle'>Tap to view</span>
                     </div>
-
-                    <div className='sidebar-nav-container'>
-                        {[
-                            ['Dashboard', GrHomeOption, '/dashboard'],
-                            ['Messages', CiChat1, '/dashboard/messages'],
-                            ['Studio', TbCube3dSphere, ''],
-                            ['Tutorials', TbBook, '/dashboard/tutorials'],
-                        ].map(([ name, Icon, to ], index) => (
-                            <SidebarNavigationOption 
-                                key={`${name}-${index}`} 
-                                name={name} 
-                                to={to}
-                                Icon={Icon} 
-                                isSelected={index === 0} />
-                        ))}
+                    <div className="glow-effect"></div>
+                </div>
+                <div className='jobs-history-expanded-content'>
+                    <div 
+                        ref={headerRef} 
+                        className={headerClasses}
+                        style={{ touchAction: 'none' }}
+                        onMouseDown={headerDoubleTap.onMouseDown}
+                    >
+                        <div className='header-content'>
+                            <h3 className='jobs-history-title-enhanced'>Jobs History</h3>
+                            <span className='jobs-history-subtitle'>{getSubtitle()}</span>
+                        </div>
+                        <button 
+                            className='close-button-enhanced' 
+                            onClick={(e) => { e.stopPropagation(); handleToggle(); }} 
+                            disabled={isAnimating || isInteracting}>
+                                <RiCloseLargeFill />
+                        </button>
                     </div>
-                </article>
-
-                <article className='sidebar-bottom-container'>
-                    {[
-                        ['Archive', GoTrash, () => {}],
-                        ['Shortcuts', BsCommand, toggleShortcutsModal],
-                        ['Settings', IoSettingsOutline, () => {}],
-                        ['Help & Feedback', IoIosHelpCircleOutline, () => {}]
-                    ].map(([ name, Icon, onClick ], index) => (
-                        <SidebarNavigationOption onClick={onClick} key={`${name}-${index}`} name={name} Icon={Icon} />
-                    ))}
-                </article>
-            </section>
-                
-            <Outlet />
-
-            <ShortcutsModal />
-        </main>
+                    <div 
+                        ref={bodyRef}
+                        className='jobs-history-viewer-body-enhanced'
+                        onMouseDown={bodyDoubleTap.onMouseDown}
+                    >
+                        <JobsHistory />
+                    </div>
+                </div>
+            </div>
+        </>
     );
-};
+});
 
-export default DashboardLayout;
+JobsHistoryViewerMobile.displayName = 'JobsHistoryViewerMobile';
+
+const JobsHistoryViewerDesktop: React.FC = memo(() => (
+    <div className='jobs-history-viewer-desktop'>
+        <div className='jobs-history-viewer-header-desktop'>
+            <h3 className='jobs-history-title-enhanced'>Team Jobs History</h3>
+            <span className='jobs-history-subtitle'>Review of recent jobs</span>
+        </div>
+        <div className='jobs-history-viewer-body-desktop'>
+            <JobsHistory />
+        </div>
+    </div>
+));
+
+JobsHistoryViewerDesktop.displayName = 'JobsHistoryViewerDesktop';
+
+const JobsHistoryViewer: React.FC = memo(() => {
+    const isMobile = useIsMobile();
+    return isMobile ? <JobsHistoryViewerMobile /> : <JobsHistoryViewerDesktop />;
+});
+
+JobsHistoryViewer.displayName = 'JobsHistoryViewer';
+
+export default JobsHistoryViewer;

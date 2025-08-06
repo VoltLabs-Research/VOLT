@@ -70,10 +70,9 @@ const createTrajectoryGLBs = (trajectoryId: string, timestep: number): Trajector
     interface_mesh: buildGlbUrl(trajectoryId, timestep, 'interface_mesh'),
     atoms_colored_by_type: buildGlbUrl(trajectoryId, timestep, 'atoms_colored_by_type'),
     dislocations: buildGlbUrl(trajectoryId, timestep, 'dislocations'),
-    core_atoms: '', // Empty as in original
+    core_atoms: '',
 });
 
-// Store implementation
 const useTimestepStore = create<TimestepStore>()((set) => ({
     ...initialState,
 
@@ -96,7 +95,6 @@ const useTimestepStore = create<TimestepStore>()((set) => ({
         if (trajectory._id && currentTimestep !== undefined && timesteps.length > 0) {
             currentGlbUrl = createTrajectoryGLBs(trajectory._id, currentTimestep);
             
-            // Calculate next timestep URL for preloading
             const currentIndex = timesteps.indexOf(currentTimestep);
             if (currentIndex !== -1 && timesteps.length > 1) {
                 const nextIndex = (currentIndex + 1) % timesteps.length;

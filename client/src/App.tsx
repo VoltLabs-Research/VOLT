@@ -36,7 +36,8 @@ import Messages from './pages/protected/Messages';
 import PageWrapper from '@/components/atoms/animations/PageWrapper';
 import GlobalTransitionOverlay from '@/components/atoms/animations/GlobalTransitionOverlay';
 import Loader from '@/components/atoms/Loader';
-import useAuthStore from './stores/authentication';
+import LoadingShimmer from '@/components/atoms/animations/LoadingShimmer';
+import useAuthStore from '@/stores/authentication';
 
 const AuthLoadingOverlay = () => (
     <motion.div
