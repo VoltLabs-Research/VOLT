@@ -50,7 +50,7 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         type: String,
         required: [true, 'Trajectory::Name::Required'],
         minlength: [4, 'Trajectory::Name::MinLength'],
-        maxlength: [32, 'Trajectory::Name::MaxLength'],
+        maxlength: [64, 'Trajectory::Name::MaxLength'],
         trim: true
     },
     folderId: {
