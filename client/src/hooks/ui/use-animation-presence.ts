@@ -1,26 +1,4 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
-import { useCallback, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import AnimationPresenceManager, { type AnimationConfig } from '@/utilities/animation-presence-manager';
 
 const DEFAULT_ANIMATION_DURATION = 300;
@@ -34,7 +12,9 @@ interface UseAnimationPresenceOptions {
 }
 
 const useAnimationPresence = (options: UseAnimationPresenceOptions = {}) => {
+    const elementRef = useRef<HTMLElement | null>(null);
     const animationManagerRef = useRef<AnimationPresenceManager | null>(null);
+    const observerRef = useRef<MutationObserver | null>(null);
 
     const config = useMemo((): AnimationConfig => ({
         duration: options.duration ?? DEFAULT_ANIMATION_DURATION,
@@ -42,15 +22,21 @@ const useAnimationPresence = (options: UseAnimationPresenceOptions = {}) => {
         fadeOutEasing: options.fadeOutEasing ?? FADE_OUT_EASING,
     }), [options.duration, options.easing, options.fadeOutEasing]);
 
-    const ref = useCallback((node: HTMLElement | null) => {
-        // Cleanup previous observer
-        if(animationManagerRef.current){
-            animationManagerRef.current.cleanup();
+    useEffect(() => {
+        const node = elementRef.current;
+        if(!node){
+            if(observerRef.current) observerRef.current.disconnect();
+            if(animationManagerRef.current) animationManagerRef.current.cleanup();
+            
+            animationManagerRef.current = null;
+            observerRef.current = null;
+
+            return;
         }
 
-        if(!node){
-            animationManagerRef.current = null;
-            return;
+        if(animationManagerRef.current){
+            animationManagerRef.current.cleanup();
+            if(observerRef.current) observerRef.current.disconnect(); 
         }
 
         node.style.position = 'relative';
@@ -58,22 +44,21 @@ const useAnimationPresence = (options: UseAnimationPresenceOptions = {}) => {
         const animationManager = new AnimationPresenceManager(config);
         animationManagerRef.current = animationManager;
 
-        // Record initial positions
         animationManager.recordPositions(node);
 
         const observer = new MutationObserver((mutations) => {
             animationManager.handleMutations(mutations, node);
         });
+        observerRef.current = observer;
 
         observer.observe(node, { childList: true });
-
         return () => {
-            observer.disconnect();
-            animationManager.cleanup();
+            if(observerRef.current) observerRef.current.disconnect();
+            if(animationManagerRef.current) animationManagerRef.current.cleanup();
         };
-    }, [config]);
+    }, [config, elementRef.current]);
 
-    return [ref];
+    return [elementRef];
 };
 
 export default useAnimationPresence;
