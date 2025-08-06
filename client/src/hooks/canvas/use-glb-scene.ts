@@ -30,6 +30,7 @@ import useConfigurationStore from '@/stores/editor/configuration';
 import useTimestepStore from '@/stores/editor/timesteps';
 import loadGLB, { preloadGLBs, modelCache } from '@/utilities/glb/loader';
 import useLogger from '@/hooks/core/use-logger';
+import useIsMobile from '@/hooks/ui/use-is-mobile';
 import * as THREE from 'three';
 
 const DEFAULT_POSITION = { x: 0, y: 0, z: 0 };
@@ -74,6 +75,7 @@ export const useGlbScene = ({
     const activeSceneObject = useConfigurationStore((state) => state.activeSceneObject);
     const setIsModelLoading = useConfigurationStore((state) => state.setIsModelLoading);
     const isLoading = useConfigurationStore((state) => state.isModelLoading);
+    const isMobile = useIsMobile();
 
     const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
     const nextGlbUrl = useTimestepStore((state) => state.nextGlbUrl);
@@ -99,6 +101,11 @@ export const useGlbScene = ({
     }, []);
 
     const handleModelPreloading = useCallback(() => {
+        // Safari, Chrome and blah blah blah are reloaded when 
+        // loading heavy glb models and these preloads 
+        // will only make the situation worse.
+        if(isMobile) return;
+
         const preloadUrls = [
             currentGlbUrl?.dislocations,
            nextGlbUrl?.dislocations,
@@ -108,7 +115,7 @@ export const useGlbScene = ({
         if(preloadUrls.length > 0){
             preloadGLBs(preloadUrls);
         }
-    }, [currentGlbUrl, nextGlbUrl, activeSceneObject]);
+    }, [isMobile, currentGlbUrl, nextGlbUrl, activeSceneObject]);
 
     const applyMeshOptimizations = useCallback((mesh: Mesh) => {
         mesh.frustumCulled = true;
