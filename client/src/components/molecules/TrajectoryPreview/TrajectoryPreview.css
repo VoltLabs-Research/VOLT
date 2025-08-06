@@ -8,6 +8,10 @@
     position: relative;
 }
 
+.simulation-image{
+    object-fit: fill;
+}
+
 .trajectory-preview-loading-container{
     position: absolute;
     width: 100%;
@@ -64,6 +68,6 @@
 @media screen and (max-width: 768px){
     .trajectory-preview-container{
         width: 100%;
-        height: 200px;
+        height: 250px;
     }
 }

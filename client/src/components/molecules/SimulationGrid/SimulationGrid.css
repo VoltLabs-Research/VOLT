@@ -21,9 +21,25 @@
     }
 }
 
-@media screen and (max-width: 768px){
+@media screen and (max-width: 768px) {
     .trajectories-container{
-        display: flex;
-        flex-direction: column;
+   display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 1rem;
+    height: 350px;
+    }
+
+    .trajectories-container > * {
+        flex: 0 0 auto;
+        min-width: 350px; 
+        scroll-snap-align: start;
+    }
+
+    .whitespace-container{
+        display: none;
     }
 }

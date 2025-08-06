@@ -1,5 +1,5 @@
 .simulation-container{
-    width: 340px;
+    width: 350px;
     height: 190px;
     cursor: pointer;
 }
@@ -87,5 +87,10 @@
 @media screen and (max-width: 768px){
     .simulation-container{
         width: 100%;
+        padding: .5rem;
+    }
+
+    .simulation-cover-container{
+        height: 250px;
     }
 }

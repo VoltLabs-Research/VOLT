@@ -14,3 +14,7 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+.select-option-title{
+    color: #000;
+}
