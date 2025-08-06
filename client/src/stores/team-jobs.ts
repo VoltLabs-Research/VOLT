@@ -1,31 +1,27 @@
 /**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
+Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 **/
-
 import { create } from 'zustand';
 import { socketService } from '@/services/socketio';
 import Logger from '@/services/logger';
 import type { Job, JobsByStatus } from '@/types/jobs';
 
-interface TeamJobsState{
+interface TeamJobsState {
     // State
     jobs: Job[];
     isConnected: boolean;
@@ -59,7 +55,7 @@ const initialState = {
 
 const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
     const logger = new Logger('use-team-job-store');
-
+    
     let connectionUnsubscribe: (() => void) | null = null;
     let teamJobsUnsubscribe: (() => void) | null = null;
     let jobUpdateUnsubscribe: (() => void) | null = null;
@@ -69,9 +65,9 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
 
         _sortJobsByTimestamp: (jobsArray: Job[]) => {
             return [...jobsArray].sort((a, b) => {
-                if(!a.timestamp && !b.timestamp) return 0;
-                if(!a.timestamp) return 1;
-                if(!b.timestamp) return -1;
+                if (!a.timestamp && !b.timestamp) return 0;
+                if (!a.timestamp) return 1;
+                if (!b.timestamp) return -1;
                 
                 const timestampA = new Date(a.timestamp);
                 const timestampB = new Date(b.timestamp);
@@ -84,9 +80,9 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
             logger.log('Socket connection status:', connected);
             set({ isConnected: connected });
 
-            if(connected){
+            if (connected) {
                 const { currentTeamId } = get();
-                if(currentTeamId){
+                if (currentTeamId) {
                     logger.log('Reconnected, re-subscribing to team:', currentTeamId);
                     socketService.subscribeToTeam(currentTeamId);
                 }
@@ -104,7 +100,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
         _handleJobUpdate: (updatedJob: any) => {
             const { currentTeamId, jobs, expiredSessions, _sortJobsByTimestamp } = get();
 
-            if(updatedJob.type === 'session_expired'){
+            if (updatedJob.type === 'session_expired') {
                 logger.log(`Session ${updatedJob.sessionId} expired for trajectory ${updatedJob.trajectoryId}`);
                 const newExpiredSessions = new Set(expiredSessions);
                 newExpiredSessions.add(updatedJob.sessionId);
@@ -117,10 +113,10 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
             const jobExists = jobs.some((job) => job.jobId === updatedJob.jobId);
             let newJobs: Job[];
 
-            if(jobExists){
+            if (jobExists) {
                 logger.log(`Updating existing job ${updatedJob.jobId}`);
                 newJobs = jobs.map((job) => job.jobId === updatedJob.jobId ? { ...job, ...updatedJob } : job);
-            }else{
+            } else {
                 logger.log(`Adding new job ${updatedJob.jobId}`);
                 newJobs = [...jobs, updatedJob];
             }
@@ -133,23 +129,21 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
             const { _handleConnect, _handleTeamJobs, _handleJobUpdate } = get();
             logger.log('Initializing socket listeners...');
 
-            // Cleanup existing listeners
-            if(connectionUnsubscribe) connectionUnsubscribe();
-            if(teamJobsUnsubscribe) teamJobsUnsubscribe();
-            if(jobUpdateUnsubscribe) jobUpdateUnsubscribe();
+            if (connectionUnsubscribe) connectionUnsubscribe();
+            if (teamJobsUnsubscribe) teamJobsUnsubscribe();
+            if (jobUpdateUnsubscribe) jobUpdateUnsubscribe();
 
-            // Setup event listeners using socketService singleton
             connectionUnsubscribe = socketService.onConnectionChange(_handleConnect);
             teamJobsUnsubscribe = socketService.on('team_jobs', _handleTeamJobs);
             jobUpdateUnsubscribe = socketService.on('job_update', _handleJobUpdate);
 
-            if(!socketService.isConnected()){
+            if (!socketService.isConnected()) {
                 socketService.connect()
                     .catch((error) => {
                         logger.error('Failed to connect socket:', error);
                         set({ isLoading: false });
                     });
-            }else{
+            } else {
                 set({ isConnected: true });
             }
         },
@@ -157,19 +151,14 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
         subscribeToTeam: (teamId: string, previousTeamId: string | null = null) => {
             const { currentTeamId, _initializeSocket } = get();
             
-            // Don't resubscribe to the same team
-            if(currentTeamId === teamId){
+            if (currentTeamId === teamId) {
                 logger.log(`Already subscribed to team ${teamId}`);
                 return;
             }
 
             logger.log(`Subscribing to team: ${teamId}`);
-
-            // Initialize socket listeners
             _initializeSocket();
-
-            // Reset state for new team
-            // TODO: can I use unsubscribeFromTeam to avoid duplicated code?
+            
             set({
                 currentTeamId: teamId,
                 jobs: [],
@@ -177,8 +166,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
                 isLoading: true
             });
 
-            // Connect and subcribe
-            if(!socketService.isConnected()){
+            if (!socketService.isConnected()) {
                 socketService.connect()
                     .then(() => {
                         socketService.subscribeToTeam(teamId, previousTeamId || currentTeamId!);
@@ -187,14 +175,14 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
                         logger.error('Failed to connect and subscribe', error);
                         set({ isLoading: false });
                     });
-            }else{
+            } else {
                 socketService.subscribeToTeam(teamId, previousTeamId || currentTeamId!);
             }
         },
 
         unsubscribeFromTeam: () => {
             const { currentTeamId } = get();
-            if(currentTeamId){
+            if (currentTeamId) {
                 logger.log(`Unsubscribing from team: ${currentTeamId}`);
                 set({
                     currentTeamId: null,
@@ -207,24 +195,19 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
 
         disconnect: () => {
             logger.log('Disconnecting socket...');
-
-            if(connectionUnsubscribe){
+            if (connectionUnsubscribe) {
                 connectionUnsubscribe();
                 connectionUnsubscribe = null;
             }
-
-            if(teamJobsUnsubscribe){
+            if (teamJobsUnsubscribe) {
                 teamJobsUnsubscribe();
                 teamJobsUnsubscribe = null;
             }
-
-            if(jobUpdateUnsubscribe){
+            if (jobUpdateUnsubscribe) {
                 jobUpdateUnsubscribe();
                 jobUpdateUnsubscribe = null;
             }
-
             socketService.disconnect();
-            // TODO: duplicated code
             set({ 
                 isConnected: false,
                 currentTeamId: null,
@@ -240,7 +223,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
         },
 
         _getCurrentActiveSession: (trajectoryJobs: Job[], expiredSessions: Set<string>) => {
-            if(trajectoryJobs.length === 0) return null;
+            if (trajectoryJobs.length === 0) return null;
 
             const activeJobs = trajectoryJobs.filter(job => 
                 ['running', 'queued', 'retrying'].includes(job.status) &&
@@ -248,10 +231,10 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
                 !expiredSessions.has(job.sessionId)
             );
 
-            if(activeJobs.length === 0) return null;
+            if (activeJobs.length === 0) return null;
 
             const sessionCounts = activeJobs.reduce((acc, job) => {
-                if(job.sessionId){
+                if (job.sessionId) {
                     acc[job.sessionId] = (acc[job.sessionId] || 0) + 1;
                 }
                 return acc;
@@ -270,10 +253,10 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
         },
 
         getJobsForTrajectory: (trajectoryId: string): JobsByStatus => {
-            const { jobs, expiredSessions, _getCurrentActiveSession } = get();
+            const { jobs, expiredSessions, _getCurrentActiveSession, _sortJobsByTimestamp } = get();
             const trajectoryJobs = jobs.filter((job) => job.trajectoryId === trajectoryId);
 
-            if(trajectoryJobs.length === 0){
+            if (trajectoryJobs.length === 0) {
                 return {};
             }
 
@@ -287,21 +270,35 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
 
             let activeJobs: Job[] = [];
 
-            if(currentActiveSession){
+            if (currentActiveSession) {
                 activeJobs = trajectoryJobs.filter((job) => 
                     job.sessionId === currentActiveSession
                 );
                 logger.log(`Using current session ${currentActiveSession}: ${activeJobs.length} jobs`);
             }
 
-            if(activeJobs.length === 0){
-                logger.log(`No active jobs found for trajectory ${trajectoryId}`);
+            if (activeJobs.length === 0 && trajectoryJobs.length > 0) {
+                logger.log(`No active session found for ${trajectoryId}. Finding the most recent completed session.`);
+                
+                const sortedAllJobs = _sortJobsByTimestamp(trajectoryJobs);
+                const mostRecentSessionId = sortedAllJobs[0]?.sessionId;
+
+                if (mostRecentSessionId) {
+                    logger.log(`Using most recent session ${mostRecentSessionId} as a fallback.`);
+                    activeJobs = trajectoryJobs.filter(job => job.sessionId === mostRecentSessionId);
+                } else {
+                     logger.log(`Could not determine the most recent session for ${trajectoryId}.`);
+                }
+            }
+
+            if (activeJobs.length === 0) {
+                logger.log(`No active jobs found for trajectory ${trajectoryId}, and no previous session could be determined.`);
                 return {};
             }
 
             const jobsByStatus = activeJobs.reduce((acc, job) => {
                 const status = job.status || 'unknown';
-                if(!acc[status]){
+                if (!acc[status]) {
                     acc[status] = [];
                 }
                 
@@ -311,9 +308,9 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
 
             Object.keys(jobsByStatus).forEach((status) => {
                 jobsByStatus[status].sort((a, b) => {
-                    if(!a.timestamp && !b.timestamp) return 0;
-                    if(!a.timestamp) return 1;
-                    if(!b.timestamp) return -1;
+                    if (!a.timestamp && !b.timestamp) return 0;
+                    if (!a.timestamp) return 1;
+                    if (!b.timestamp) return -1;
 
                     return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
                 });
@@ -341,7 +338,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
             };
 
             logger.log(`Final stats for trajectory ${trajectoryId}:`, {
-                session: currentActiveSession,
+                session: currentActiveSession || activeJobs[0]?.sessionId,
                 completed: completedJobs,
                 total: totalActiveJobs,
                 rate: completionRate,

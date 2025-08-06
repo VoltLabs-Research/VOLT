@@ -134,11 +134,10 @@ export class WorkerPoolManager<T extends BaseJob> {
         workerItem.timeouts.add(timeout);
         
         try{
-            await this.setJobStatus(job.jobId, 'running', { 
+            await this.setJobStatus(job.jobId, 'running', {
+                ...job, 
                 workerId: workerItem.worker.threadId,
                 startTime: new Date(startTime).toISOString(),
-                teamId: job.teamId,
-                trajectoryId: (job as any).trajectoryId
             });
             
             workerItem.worker.postMessage({ job });

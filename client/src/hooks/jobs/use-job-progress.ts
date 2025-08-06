@@ -1,25 +1,21 @@
 /**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
+Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 **/
-
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import useLogger from '@/hooks/useLogger';
 
@@ -62,7 +58,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
     const [isInitialized, setIsInitialized] = useState<boolean>(false);
     const [animatedCompletionRate, setAnimatedCompletionRate] = useState<number>(0);
     const [isAnimating, setIsAnimating] = useState<boolean>(false);
-
+    
     const completionTimeoutRef = useRef<number | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const animationStartRef = useRef<number | null>(null);
@@ -123,7 +119,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
         };
 
         animationFrameRef.current = requestAnimationFrame(animate);
-    }, []);
+    }, [logger]);
 
     const cleanupAnimation = useCallback(() => {
         if (animationFrameRef.current) {
@@ -186,7 +182,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
         logger.log(`Border: ${animatedCompletionRate}% -> ${borderColor} (${degrees}deg)`);
         
         return result;
-    }, [hasJobs, shouldHideBorder, animatedCompletionRate, hasActiveJobs, getBorderColor, getWaitingBorder]);
+    }, [hasJobs, shouldHideBorder, animatedCompletionRate, hasActiveJobs, getBorderColor, getWaitingBorder, logger]);
 
     const cleanup = useCallback((): void => {
         if(completionTimeoutRef.current){
@@ -197,15 +193,24 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
     }, [cleanupAnimation]);
 
     useEffect(() => {
-        if(!isInitialized && hasJobs){
+        if (!isInitialized && hasJobs) {
             logger.log(`Initializing job progress for item ${itemId} with ${completionRate}%`);
+
+            if (completionRate === 100) {
+                logger.log(`Job ${itemId} is already complete on initialization. Skipping animation.`);
+                hasBeenCompleted.current = true;
+                setIsCompleted(false);
+                setShouldHideBorder(true);
+            } else {
+                hasBeenCompleted.current = false;
+            }
+
             previousCompletionRate.current = completionRate;
             previousTotalJobs.current = totalJobs;
-            hasBeenCompleted.current = completionRate === 100;
             setAnimatedCompletionRate(completionRate);
             setIsInitialized(true);
         }
-    }, [itemId, hasJobs, completionRate, totalJobs, isInitialized]);
+    }, [itemId, hasJobs, completionRate, totalJobs, isInitialized, logger]);
 
     useEffect(() => {
         if(!isInitialized || !hasJobs){
@@ -230,7 +235,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
                 clearTimeout(completionTimeoutRef.current);
                 completionTimeoutRef.current = null;
             }
-        }else if(isNowCompleted && !wasCompleted && !hasBeenCompleted.current){
+        } else if (isNowCompleted && !wasCompleted && !hasBeenCompleted.current) {
             logger.log(`${itemId} completed! Animating to 100%`);
             setIsCompleted(true);
             hasBeenCompleted.current = true;
@@ -246,19 +251,19 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
                 setShouldHideBorder(true);
                 setIsCompleted(false);
             }, 5000);
-        }else if(!isNowCompleted && wasCompleted){
-            logger.log(`${itemId} new jobs while completed`);
+        } else if (!isNowCompleted && wasCompleted) {
+            logger.log(`${itemId} new jobs while completed, resetting progress animation.`);
             setShouldHideBorder(false);
             setIsCompleted(false);
             hasBeenCompleted.current = false;
             
-            animateProgress(animatedCompletionRate, completionRate);
+            animateProgress(0, completionRate);
             
             if(completionTimeoutRef.current){
                 clearTimeout(completionTimeoutRef.current);
                 completionTimeoutRef.current = null;
             }
-        }else if(completionChanged && !isNowCompleted){
+        } else if (completionChanged && !isNowCompleted) {
             logger.log(`Progress update for ${itemId}: ${previousCompletionRate.current}% -> ${completionRate}%`);
             
             animateProgress(animatedCompletionRate, completionRate);
@@ -266,7 +271,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
 
         previousCompletionRate.current = completionRate;
         previousTotalJobs.current = totalJobs;
-    }, [itemId, completionRate, totalJobs, hasJobs, isInitialized, animatedCompletionRate, animateProgress]);
+    }, [itemId, completionRate, totalJobs, hasJobs, isInitialized, animatedCompletionRate, animateProgress, logger]);
 
     useEffect(() => {
         if(!hasJobs && isInitialized){
@@ -283,7 +288,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
                 completionTimeoutRef.current = null;
             }
         }
-    }, [hasJobs, itemId, isInitialized, cleanupAnimation]);
+    }, [hasJobs, itemId, isInitialized, cleanupAnimation, logger]);
 
     useEffect(() => {
         return () => {

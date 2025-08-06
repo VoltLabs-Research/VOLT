@@ -60,5 +60,5 @@ export const initializeRedis = () => {
 }
 
 export const createRedisClient = () => {
-  return new Redis(getRedisConfig());
+    return new Redis(getRedisConfig());
 };

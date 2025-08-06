@@ -1,25 +1,3 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
 import { BaseJob, QueueOptions, CircuitBreaker } from '@/types/queues/base-processing-queue';
 import { createRedisClient } from '@config/redis';
 import { EventEmitter } from 'events';
@@ -152,7 +130,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
         this.sessionManager = new SessionManager(
             this.redisListenerClient,
-            this.statusKeyPrefix,
             (teamId, sessionId, trajectoryId) => this.emitSessionExpired(teamId, sessionId, trajectoryId)
         );
 
@@ -173,8 +150,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     private async initializeQueue(): Promise<void> {
         try{
-            console.log(`[${this.queueName}] Initializing optimized queue...`);
-            
             this.workerManager.initialize();
             await this.jobDispatcher.startDispatchLoop();
             
@@ -183,8 +158,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             }
             
             this.setupGracefulShutdown();
-            
-            console.log(`[${this.queueName}] Queue initialization complete.`);
         }catch(error){
             console.error(`[${this.queueName}] Failed to initialize queue:`, error);
             throw error;
@@ -193,30 +166,30 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     private async handleWorkerMessage(workerId: number, message: any): Promise<void> {
         const jobInfo = this.workerManager.getJobInfo(workerId);
-        if(!jobInfo) return;
+        if (!jobInfo) return;
 
         const { job, rawData, startTime } = jobInfo;
         const processingTime = Date.now() - startTime;
-        
-        switch(message.status) {
+        const statusKey = `${this.statusKeyPrefix}${job.jobId}`;
+        const twentyFourHoursInSeconds = 24 * 60 * 60;
+
+        switch (message.status) {
             case 'progress':
-                await this.jobStatusManager.setJobStatus(job.jobId, 'running', { 
+                await this.jobStatusManager.setJobStatus(job.jobId, 'running', {
+                    ...job, 
                     progress: message.progress,
                     processingTimeMs: processingTime,
-                    teamId: job.teamId,
-                    trajectoryId: (job as any).trajectoryId
                 });
                 this.emit('jobProgress', { job, progress: message.progress });
-                // Return early, don't release worker for progress updates
                 return;
 
             case 'completed':
-                await this.jobStatusManager.setJobStatus(job.jobId, 'completed', { 
+                await this.jobStatusManager.setJobStatus(job.jobId, 'completed', {
+                    ...job,
                     result: message.result,
                     processingTimeMs: processingTime,
-                    teamId: job.teamId,
-                    trajectoryId: (job as any).trajectoryId
                 });
+                this.redisListenerClient.expire(statusKey, twentyFourHoursInSeconds);
                 this.metricsCollector.updateMetrics(processingTime, false);
                 this.emit('jobCompleted', { job, result: message.result, processingTime });
                 await this.sessionManager.checkAndCleanupSession(job);
@@ -224,14 +197,14 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
             case 'failed':
                 const shouldCleanupSession = await this.handleJobFailure(job, message.error, processingTime);
-                if(shouldCleanupSession){
+                if (shouldCleanupSession) {
+                    this.redisListenerClient.expire(statusKey, twentyFourHoursInSeconds);
                     await this.sessionManager.checkAndCleanupSession(job);
                 }
                 break;
         }
 
-        // Only release worker and remove from processing for completed/failed jobs
-        if(message.status === 'completed' || message.status === 'failed'){
+        if (message.status === 'completed' || message.status === 'failed') {
             await this.queueManager.removeJobFromProcessing(rawData);
             this.workerManager.releaseWorker(workerId);
         }
@@ -243,29 +216,25 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         
         if(retries < maxRetries){
             const retryJob = { ...job, retries: retries + 1 };
-            await this.addJobs([retryJob]);
             await this.jobStatusManager.setJobStatus(job.jobId, 'retrying', { 
+                ...retryJob,
                 error,
-                retries: retries + 1,
-                maxRetries,
-                trajectoryId: (job as any).trajectoryId,
                 processingTimeMs: processingTime,
-                teamId: job.teamId
             });
             this.emit('jobRetry', { job: retryJob, error, attempt: retries + 1 });
             return false;
         }
         await this.jobStatusManager.setJobStatus(job.jobId, 'failed', { 
+            ...job,
             error,
             finalAttempt: true,
             processingTimeMs: processingTime,
-            teamId: job.teamId,
-            trajectoryId: (job as any).trajectoryId,
         });
         this.metricsCollector.updateMetrics(processingTime, true);
         this.emit('jobFailed', { job, error, processingTime });
         return true;
     }
+
 
     private emitSessionExpired(teamId: string, sessionId: string, trajectoryId: string): void {
         emitJobUpdate(teamId, {
@@ -302,14 +271,9 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             await this.queueManager.addJobStreaming(JSON.stringify(job));
 
             await this.jobStatusManager.setJobStatus(job.jobId, 'queued', {
-                name: job.name,
-                message: job.message,
+                ...job,
                 sessionId,
                 sessionStartTime,
-                trajectoryId: (job as any).trajectoryId, 
-                chunkIndex: (job as any).chunkIndex,
-                totalChunks: (job as any).totalChunks,
-                teamId: job.teamId
             });
 
             await this.sleep(50);
@@ -334,14 +298,9 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
         const statusPromises = jobs.map((job) => 
             this.jobStatusManager.setJobStatus(job.jobId, 'queued', {
-                teamId: job.teamId,
-                trajectoryId: (job as any).trajectoryId,
-                name: job.name,
+                ...job,
                 sessionId, 
                 sessionStartTime,
-                message: job.message,
-                chunkIndex: (job as any).chunkIndex,
-                totalChunks: (job as any).totalChunks
             })
         );
         
@@ -380,19 +339,16 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     public pause(): void {
         this.isPaused = true;
-        console.log(`[${this.queueName}] Queue paused`);
         this.emit('paused');
     }
 
     public resume(): void {
         this.isPaused = false;
-        console.log(`[${this.queueName}] Queue resumed`);
         this.emit('resumed');
     }
 
     private setupGracefulShutdown(): void {
         const shutdown = async (signal: string) => {
-            console.log(`[${this.queueName}] Received ${signal}, initiating graceful shutdown...`);
             await this.shutdown();
             process.exit(0);
         };
@@ -409,7 +365,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         
         const shutdownStart = Date.now();
         while (this.jobMap.size > 0 && (Date.now() - shutdownStart) < this.gracefulShutdownTimeout) {
-            console.log(`[${this.queueName}] Waiting for ${this.jobMap.size} jobs to complete...`);
             await this.sleep(1000);
         }
         
