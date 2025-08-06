@@ -21,6 +21,7 @@
 **/
 
 import { io, Socket } from 'socket.io-client';
+import Logger from '@/services/logger';
 
 export interface SocketOptions{
     url?: string;
@@ -49,10 +50,11 @@ class SocketIOService{
     private connecting: boolean = false;
     private manualDisconnect: boolean = false;
     private connectionListeners: Array<(connected: boolean) => void> = [];
+    private logger: Logger = new Logger('socket-io-service');
 
     constructor(baseUrl: string, options: SocketOptions = {}){
         this.connectionUrl = options.url || baseUrl;
-        console.log('Socket URL:', this.connectionUrl);
+        this.logger.log('Socket URL:', this.connectionUrl);
 
         this.options = {
             path: options.path || '/socket.io',
@@ -97,7 +99,7 @@ class SocketIOService{
                     this.connecting = false;
                     this.notifyConnectionListeners(true);
                     this.resubscribeToEvents();
-                    console.log('Socket connected successfully with ID:', this.socket?.id);
+                    this.logger.log('Socket connected successfully with ID:', this.socket?.id);
                     resolve();
                 });
 
@@ -112,7 +114,7 @@ class SocketIOService{
                 });
 
                 this.socket.on('disconnect', (reason) => {
-                    console.log('Socket disconnected:', reason);
+                    this.logger.log('Socket disconnected:', reason);
                     this.notifyConnectionListeners(false);
 
                     // If the connection was not initiated by the client and auto-reconnect is enabled
@@ -218,7 +220,7 @@ class SocketIOService{
             return;
         }
 
-        console.log(`Subscribing to team ${teamId}${previousTeamId ? ` (leaving ${previousTeamId})` : ''}`);
+        this.logger.log(`Subscribing to team ${teamId}${previousTeamId ? ` (leaving ${previousTeamId})` : ''}`);
         this.socket.emit('subscribe_to_team', { teamId, previousTeamId });
     }
 
@@ -238,6 +240,7 @@ class SocketIOService{
         this.socket.removeAllListeners();
 
         // Add back the internal listeners
+        // TODO:
         this.socket.on('connect', this.handleConnect);
         this.socket.on('disconnect', this.handleDisconnect);
         this.socket.on('connect_error', this.handleConnectError);

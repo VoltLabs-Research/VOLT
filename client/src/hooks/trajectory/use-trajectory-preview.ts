@@ -21,6 +21,7 @@
 **/
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import useLogger from '@/hooks/useLogger';
 import { api } from '@/services/api';
 
 interface UseTrajectoryPreviewOptions{
@@ -65,6 +66,7 @@ const useTrajectoryPreview = ({
     updatedAt,
     enabled = true
 }: UseTrajectoryPreviewOptions): UseTrajectoryPreviewReturn => {
+    const logger = useLogger('use-trajectory-preview');
     const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -86,19 +88,19 @@ const useTrajectoryPreview = ({
 
         const cached = previewCache.get(cacheKey);
         if(cached && cached.updatedAt === updated){
-            console.log('Using cached preview:', cacheKey);
+            logger.log('Using cached preview:', cacheKey);
             return cached.blobUrl;
         }
 
         if(loadingPromises.has(cacheKey)){
-            console.log('Waiting for existing load:', cacheKey);
+            logger.log('Waiting for existing load:', cacheKey);
             const existingPromise = loadingPromises.get(cacheKey);
             return existingPromise || null;
         }
 
         for(const [key, value] of previewCache.entries()){
             if(key.startsWith(`${trajId}:`)){
-                console.log('Cleaning old cache for trajectory:', key);
+                logger.log('Cleaning old cache for trajectory:', key);
                 URL.revokeObjectURL(value.blobUrl);
                 previewCache.delete(key);
             }
@@ -106,7 +108,7 @@ const useTrajectoryPreview = ({
 
         const loadPromise = (async (): Promise<string | null> => {
             try{
-                console.log('Loading preview from server (cache-busted):', cacheKey);
+                logger.log('Loading preview from server (cache-busted):', cacheKey);
                 const cacheBuster = new URLSearchParams({
                     t: Date.now().toString(),
                     updated: new Date(updated).getTime().toString(),
@@ -139,7 +141,7 @@ const useTrajectoryPreview = ({
                     timestamp: Date.now()
                 });
 
-                console.log('Preview loaded and cached:', cacheKey);
+                logger.log('Preview loaded and cached:', cacheKey);
 
                 return blobUrl;
             }catch(err){
@@ -210,11 +212,11 @@ const useTrajectoryPreview = ({
         }catch(err: any){
             // Don't set error state if request was cancelled
             if(err.name === 'CanceledError' || err.name === 'Aborterror'){
-                console.log('Preview request cancelled');
+                logger.log('Preview request cancelled');
                 return;
             }
 
-            console.log('Error in loadPreview:', err);
+            logger.log('Error in loadPreview:', err);
             setError(true);
             setPreviewBlobUrl(null);
             setLastLoadedKey(null);
@@ -235,7 +237,7 @@ const useTrajectoryPreview = ({
         const currentKey = getCacheKey(trajectoryId, previewId || '', updatedAt);
         const cached = previewCache.get(currentKey);
         if(cached){
-            console.log('Force retry: clearing cache for', currentKey);
+            logger.log('Force retry: clearing cache for', currentKey);
             URL.revokeObjectURL(cached.blobUrl);
             previewCache.delete(currentKey);
         }
@@ -267,7 +269,7 @@ const useTrajectoryPreview = ({
 };
 
 export const clearTrajectoryPreviewCache = (trajectoryId: string) => {
-    console.log('Clearing cache for trajectory:', trajectoryId);
+    logger.log('Clearing cache for trajectory:', trajectoryId);
     for(const [key, value] of previewCache.entries()){
         if(key.startsWith(`${trajectoryId}:`)){
             URL.revokeObjectURL(value.blobUrl);

@@ -21,6 +21,7 @@
 **/
 
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import useLogger from '@/hooks/useLogger';
 
 // TODO: DUPLICATED CODE
 interface JobStats {
@@ -55,6 +56,7 @@ const ANIMATION_CONFIG = {
 } as const;
 
 const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
+    const logger = useLogger('use-job-progress');
     const [isCompleted, setIsCompleted] = useState<boolean>(false);
     const [shouldHideBorder, setShouldHideBorder] = useState<boolean>(false);
     const [isInitialized, setIsInitialized] = useState<boolean>(false);
@@ -80,7 +82,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
     const { totalJobs, completionRate, hasJobs, hasActiveJobs } = jobStats;
 
     const animateProgress = useCallback((from: number, to: number) => {
-        console.log(`Animating progress from ${from}% to ${to}%`);
+        logger.log(`Animating progress from ${from}% to ${to}%`);
         
         if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
@@ -116,7 +118,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
                 setAnimatedCompletionRate(animationTargetValue.current);
                 setIsAnimating(false);
                 animationFrameRef.current = null;
-                console.log(`Animation completed at ${animationTargetValue.current}%`);
+                logger.log(`Animation completed at ${animationTargetValue.current}%`);
             }
         };
 
@@ -181,7 +183,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
         const degrees = (animatedCompletionRate / 100) * 360;
         
         const result = `conic-gradient(from -90deg, ${borderColor} 0deg, ${borderColor} ${degrees}deg, transparent ${degrees}deg, transparent 360deg)`;
-        console.log(`Border: ${animatedCompletionRate}% -> ${borderColor} (${degrees}deg)`);
+        logger.log(`Border: ${animatedCompletionRate}% -> ${borderColor} (${degrees}deg)`);
         
         return result;
     }, [hasJobs, shouldHideBorder, animatedCompletionRate, hasActiveJobs, getBorderColor, getWaitingBorder]);
@@ -196,7 +198,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
 
     useEffect(() => {
         if(!isInitialized && hasJobs){
-            console.log(`Initializing job progress for item ${itemId} with ${completionRate}%`);
+            logger.log(`Initializing job progress for item ${itemId} with ${completionRate}%`);
             previousCompletionRate.current = completionRate;
             previousTotalJobs.current = totalJobs;
             hasBeenCompleted.current = completionRate === 100;
@@ -216,7 +218,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
         const isNowCompleted = completionRate === 100;
 
         if(hasNewJobs){
-            console.log(`New jobs detected for ${itemId}: ${previousTotalJobs.current} -> ${totalJobs}`);
+            logger.log(`New jobs detected for ${itemId}: ${previousTotalJobs.current} -> ${totalJobs}`);
             
             setShouldHideBorder(false);
             setIsCompleted(false);
@@ -229,7 +231,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
                 completionTimeoutRef.current = null;
             }
         }else if(isNowCompleted && !wasCompleted && !hasBeenCompleted.current){
-            console.log(`${itemId} completed! Animating to 100%`);
+            logger.log(`${itemId} completed! Animating to 100%`);
             setIsCompleted(true);
             hasBeenCompleted.current = true;
             
@@ -240,12 +242,12 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
             }
 
             completionTimeoutRef.current = window.setTimeout(() => {
-                console.log(`Hiding progress border for ${itemId}`);
+                logger.log(`Hiding progress border for ${itemId}`);
                 setShouldHideBorder(true);
                 setIsCompleted(false);
             }, 5000);
         }else if(!isNowCompleted && wasCompleted){
-            console.log(`${itemId} new jobs while completed`);
+            logger.log(`${itemId} new jobs while completed`);
             setShouldHideBorder(false);
             setIsCompleted(false);
             hasBeenCompleted.current = false;
@@ -257,7 +259,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
                 completionTimeoutRef.current = null;
             }
         }else if(completionChanged && !isNowCompleted){
-            console.log(`Progress update for ${itemId}: ${previousCompletionRate.current}% -> ${completionRate}%`);
+            logger.log(`Progress update for ${itemId}: ${previousCompletionRate.current}% -> ${completionRate}%`);
             
             animateProgress(animatedCompletionRate, completionRate);
         }
@@ -268,7 +270,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
 
     useEffect(() => {
         if(!hasJobs && isInitialized){
-            console.log(`No jobs for ${itemId}, resetting states`);
+            logger.log(`No jobs for ${itemId}, resetting states`);
             setShouldHideBorder(false);
             setIsCompleted(false);
             hasBeenCompleted.current = false;

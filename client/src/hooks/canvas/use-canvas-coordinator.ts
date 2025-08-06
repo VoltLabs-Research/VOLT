@@ -25,8 +25,10 @@ import { useParams } from 'react-router-dom';
 import usePlaybackStore from '@/stores/editor/playback';
 import useTimestepStore from '@/stores/editor/timesteps';
 import useTrajectoryStore from '@/stores/trajectories';
+import useLogger from '@/hooks/useLogger';
 
 const useCanvasCoordinator = () => {
+    const logger = useLogger('use-canvas-coordinator');
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
 
     const trajectory = useTrajectoryStore((state) => state.trajectory);
@@ -47,7 +49,7 @@ const useCanvasCoordinator = () => {
     // Load trajectory when hook is initialized
     useEffect(() => {
         if(trajectoryId && (!trajectory || trajectory?._id !== trajectoryId)){
-            console.log(`Loading trajectory with ID: ${trajectoryId}`);
+            logger.log(`Loading trajectory with ID: ${trajectoryId}`);
             getTrajectoryById(trajectoryId);
         }
     }, [trajectoryId, trajectory, getTrajectoryById]);
@@ -58,7 +60,7 @@ const useCanvasCoordinator = () => {
             const firstTimestep = trajectory.frames
                 ?.map((frame: any) => frame.timestep)
                 .sort((a: number, b: number) => a - b)[0];
-            console.log(`Setting initial timestep: ${firstTimestep}`);
+            logger.log(`Setting initial timestep: ${firstTimestep}`);
             setCurrentTimestep(firstTimestep);
         }
     }, [trajectory, currentTimestep, setCurrentTimestep]);

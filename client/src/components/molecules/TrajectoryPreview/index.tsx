@@ -3,11 +3,13 @@ import useTrajectoryStore from '@/stores/trajectories';
 import Loader from '@/components/atoms/Loader';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
 import { GoArrowUpRight } from "react-icons/go";
+import useLogger from '@/hooks/useLogger';
 import './TrajectoryPreview.css';
 
 const TrajectoryPreview = () => {
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const [trajectory, setTrajectory] = useState<any>(null);
+    const logger = useLogger('trajectory-preview');
 
     const {
         previewBlobUrl,
@@ -24,7 +26,7 @@ const TrajectoryPreview = () => {
 
     useEffect(() => {
         if(!trajectory && trajectories.length > 0){
-            console.log('Setting first trajectory as preview:', trajectories[0]);
+            logger.log('Setting first trajectory as preview:', trajectories[0]);
             setTrajectory(trajectories[0]);
         }
     }, [trajectories, trajectory]);

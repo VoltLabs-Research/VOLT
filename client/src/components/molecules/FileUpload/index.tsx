@@ -26,6 +26,7 @@ import { processFileSystemEntry } from '@/utilities/fs';
 import type { FileWithPath } from '@/hooks/trajectory/use-trajectory-upload';
 import useDragState from '@/hooks/ui/use-drag-state';
 import useFileUpload from '@/hooks/ui/use-file-upload';
+import useLogger from '@/hooks/useLogger';
 import './FileUpload.css';
 
 interface FileUploadProps{
@@ -42,6 +43,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     const dropRef = useRef<HTMLDivElement>(null);
     const { isDraggingOver, handleDragEnter, handleDragLeave, resetDragState } = useDragState();
     const { uploadFiles } = useFileUpload(onUploadSuccess);
+    const logger = useLogger('file-upload');
 
     const handleWindowDragEnter = useCallback((event: DragEvent) => {
         event.preventDefault();
@@ -58,7 +60,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
         const items = event.dataTransfer.items;
         if(!items || items.length === 0){
-            console.warn('No items found in drop event');
+            logger.warn('No items found in drop event');
             return;
         }
 
@@ -83,17 +85,17 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
             if(allFiles.length === 0){
                 const error = new Error('No files found in dropped items');
-                console.warn(error.message);
+                logger.warn(error.message);
                 return;
             }
 
             const finalFolderName = commonFolderName || `upload_${Date.now()}`;
-            console.log(`Processing ${allFiles.length} files from folder: ${finalFolderName}`);
+            logger.log(`Processing ${allFiles.length} files from folder: ${finalFolderName}`);
 
             await uploadFiles(allFiles, finalFolderName);
         }catch(err){
             const error = err instanceof Error ? err : new Error('Failed to process dropped files');
-            console.error('Drop handler error:', error);
+            logger.error('Drop handler error:', error);
         }
     }, [uploadFiles, resetDragState]);
 

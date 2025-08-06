@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import useTrajectoryStore from '@/stores/trajectories';
 import useConfigurationStore from '@/stores/editor/configuration';
 import useTimestepStore from '@/stores/editor/timesteps';
+import useLogger from '@/hooks/useLogger';
 import type { Scene3DRef } from '@/components/organisms/Scene3D';
 
 interface AutoPreviewSaverProps{
@@ -15,6 +16,7 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
     trajectoryId,
     delay = 3000,
 }) => {
+    const logger = useLogger('auto-preview-saver');
     const saveTrajectoryPreview = useTrajectoryStore((state) => state.saveTrajectoryPreview);
     const isSavingPreview = useTrajectoryStore((state) => state.isSavingPreview);
     const isModelLoading = useConfigurationStore((state) => state.isModelLoading);
@@ -29,7 +31,7 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
             clearTimeout(timeoutIdRef.current);
             timeoutIdRef.current = null;
         }
-        console.log('AutoPreviewSaver: Reset for trajectory:', trajectoryId);
+        logger.log('Reset for trajectory:', trajectoryId);
     }, [trajectoryId]);
 
     useEffect(() => {
@@ -38,7 +40,7 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
         }
 
         if(isModelLoading){
-            console.log('Model is still loading, waiting...');
+            logger.log('Model is still loading, waiting...');
             return;
         }
 
@@ -47,7 +49,7 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
             return;
         }
 
-        console.log('Model loaded, setting up auto-save timer...');
+        logger.log('Model loaded, setting up auto-save timer...');
 
         if(timeoutIdRef.current){
             clearTimeout(timeoutIdRef.current);
@@ -58,7 +60,7 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
 
             try{
                 hasAutoSavedRef.current = true;
-                console.log('Auto-saving preview after model loaded...');
+                logger.log('Auto-saving preview after model loaded...');
                 
                 const dataURL = await scene3DRef.current!.captureScreenshot({
                     width: 800,
@@ -87,7 +89,7 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
 
     useEffect(() => {
         return () => {
-            console.log('Cleaning up AutoPreviewSaver...');
+            logger.log('Cleaning up AutoPreviewSaver...');
 
             if(timeoutIdRef.current){
                 clearTimeout(timeoutIdRef.current);
@@ -104,7 +106,7 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
                 scene3DRef.current && 
                 !isSavingPreview
             ){
-                console.log('Auto-saving on unmount after model was loaded...');
+                logger.log('Auto-saving on unmount after model was loaded...');
                 setTimeout(async () => {
                     try{
                         // TODO: duplicated code
@@ -118,7 +120,7 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
                         
                         await saveTrajectoryPreview(trajectoryId, dataURL);
                     }catch(error){
-                        console.warn('Failed to auto-save on unmount:', error);
+                        logger.warn('Failed to auto-save on unmount:', error);
                     }
                 }, 100);
             }

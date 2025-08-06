@@ -228,8 +228,6 @@ print(result)`
             return;
         }
 
-        console.log(output)
-
         if (output) {
             if (output.stdout) {
                 output.stdout.split('\n').forEach(line => {

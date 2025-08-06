@@ -22,6 +22,7 @@
 
 import { create } from 'zustand';
 import { socketService } from '@/services/socketio';
+import Logger from '@/services/logger';
 import type { Job, JobsByStatus } from '@/types/jobs';
 
 interface TeamJobsState{
@@ -57,6 +58,8 @@ const initialState = {
 };
 
 const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
+    const logger = new Logger('use-team-job-store');
+
     let connectionUnsubscribe: (() => void) | null = null;
     let teamJobsUnsubscribe: (() => void) | null = null;
     let jobUpdateUnsubscribe: (() => void) | null = null;
@@ -78,13 +81,13 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
         },
 
         _handleConnect: (connected: boolean) => {
-            console.log('Socket connection status:', connected);
+            logger.log('Socket connection status:', connected);
             set({ isConnected: connected });
 
             if(connected){
                 const { currentTeamId } = get();
                 if(currentTeamId){
-                    console.log('Reconnected, re-subscribing to team:', currentTeamId);
+                    logger.log('Reconnected, re-subscribing to team:', currentTeamId);
                     socketService.subscribeToTeam(currentTeamId);
                 }
             }
@@ -92,7 +95,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
 
         _handleTeamJobs: (initialJobs: Job[]) => {
             const { currentTeamId, _sortJobsByTimestamp } = get();
-            console.log(`[${currentTeamId}] Received initial list of ${initialJobs.length} jobs:`, initialJobs);
+            logger.log(`[${currentTeamId}] Received initial list of ${initialJobs.length} jobs:`, initialJobs);
 
             const sortedJobs = _sortJobsByTimestamp(initialJobs);
             set({ jobs: sortedJobs, isLoading: false });
@@ -102,23 +105,23 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
             const { currentTeamId, jobs, expiredSessions, _sortJobsByTimestamp } = get();
 
             if(updatedJob.type === 'session_expired'){
-                console.log(`Session ${updatedJob.sessionId} expired for trajectory ${updatedJob.trajectoryId}`);
+                logger.log(`Session ${updatedJob.sessionId} expired for trajectory ${updatedJob.trajectoryId}`);
                 const newExpiredSessions = new Set(expiredSessions);
                 newExpiredSessions.add(updatedJob.sessionId);
                 set({ expiredSessions: newExpiredSessions });
                 return;
             }
 
-            console.log(`[${currentTeamId}] Received job update:`, updatedJob);
+            logger.log(`[${currentTeamId}] Received job update:`, updatedJob);
 
             const jobExists = jobs.some((job) => job.jobId === updatedJob.jobId);
             let newJobs: Job[];
 
             if(jobExists){
-                console.log(`Updating existing job ${updatedJob.jobId}`);
+                logger.log(`Updating existing job ${updatedJob.jobId}`);
                 newJobs = jobs.map((job) => job.jobId === updatedJob.jobId ? { ...job, ...updatedJob } : job);
             }else{
-                console.log(`Adding new job ${updatedJob.jobId}`);
+                logger.log(`Adding new job ${updatedJob.jobId}`);
                 newJobs = [...jobs, updatedJob];
             }
 
@@ -128,7 +131,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
 
         _initializeSocket: () => {
             const { _handleConnect, _handleTeamJobs, _handleJobUpdate } = get();
-            console.log('Initializing socket listeners...');
+            logger.log('Initializing socket listeners...');
 
             // Cleanup existing listeners
             if(connectionUnsubscribe) connectionUnsubscribe();
@@ -156,11 +159,11 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
             
             // Don't resubscribe to the same team
             if(currentTeamId === teamId){
-                console.log(`Already subscribed to team ${teamId}`);
+                logger.log(`Already subscribed to team ${teamId}`);
                 return;
             }
 
-            console.log(`Subscribing to team: ${teamId}`);
+            logger.log(`Subscribing to team: ${teamId}`);
 
             // Initialize socket listeners
             _initializeSocket();
@@ -192,7 +195,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
         unsubscribeFromTeam: () => {
             const { currentTeamId } = get();
             if(currentTeamId){
-                console.log(`Unsubscribing from team: ${currentTeamId}`);
+                logger.log(`Unsubscribing from team: ${currentTeamId}`);
                 set({
                     currentTeamId: null,
                     jobs: [],
@@ -203,7 +206,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
         },
 
         disconnect: () => {
-            console.log('Disconnecting socket...');
+            logger.log('Disconnecting socket...');
 
             if(connectionUnsubscribe){
                 connectionUnsubscribe();
@@ -258,7 +261,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
                 sessionCounts[a] > sessionCounts[b] ? a : b
             );
 
-            console.log(`Current active session for trajectory: ${mostActiveSession}`, {
+            logger.log(`Current active session for trajectory: ${mostActiveSession}`, {
                 sessionCounts,
                 expiredSessions: Array.from(expiredSessions)
             });
@@ -276,7 +279,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
 
             const currentActiveSession = _getCurrentActiveSession(trajectoryJobs, expiredSessions);
             
-            console.log(`Processing trajectory ${trajectoryId}:`, {
+            logger.log(`Processing trajectory ${trajectoryId}:`, {
                 totalJobs: trajectoryJobs.length,
                 currentActiveSession,
                 expiredSessions: Array.from(expiredSessions)
@@ -288,11 +291,11 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
                 activeJobs = trajectoryJobs.filter((job) => 
                     job.sessionId === currentActiveSession
                 );
-                console.log(`Using current session ${currentActiveSession}: ${activeJobs.length} jobs`);
+                logger.log(`Using current session ${currentActiveSession}: ${activeJobs.length} jobs`);
             }
 
             if(activeJobs.length === 0){
-                console.log(`No active jobs found for trajectory ${trajectoryId}`);
+                logger.log(`No active jobs found for trajectory ${trajectoryId}`);
                 return {};
             }
 
@@ -337,7 +340,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
                 isActiveSession: !!currentActiveSession || totalActiveJobs > 0
             };
 
-            console.log(`Final stats for trajectory ${trajectoryId}:`, {
+            logger.log(`Final stats for trajectory ${trajectoryId}:`, {
                 session: currentActiveSession,
                 completed: completedJobs,
                 total: totalActiveJobs,

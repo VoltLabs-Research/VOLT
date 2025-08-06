@@ -82,241 +82,239 @@ const initialState: TrajectoryState = {
 const previewCache = new PreviewCacheService();
 
 const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
-        const asyncAction = createAsyncAction(set, get);
+    const asyncAction = createAsyncAction(set, get);
 
-        const updateTrajectoryInList = (id: string, updates: Partial<Trajectory>) => {
-            const currentTrajectories = get().trajectories;
-            const currentTrajectory = get().trajectory;
-            
-            return {
-                trajectories: currentTrajectories.map(trajectory =>
-                    trajectory._id === id ? { ...trajectory, ...updates } : trajectory
-                ),
-                trajectory: currentTrajectory?._id === id 
-                    ? { ...currentTrajectory, ...updates } 
-                    : currentTrajectory
-            };
-        };
-
-        const removeTrajectoryFromList = (id: string) => {
-            const currentTrajectories = get().trajectories;
-            const currentTrajectory = get().trajectory;
-            
-            return {
-                trajectories: currentTrajectories.filter(t => t._id !== id),
-                trajectory: currentTrajectory?._id === id ? null : currentTrajectory
-            };
-        };
-
+    const updateTrajectoryInList = (id: string, updates: Partial<Trajectory>) => {
+        const currentTrajectories = get().trajectories;
+        const currentTrajectory = get().trajectory;
+        
         return {
-            ...initialState,
+            trajectories: currentTrajectories.map(trajectory =>
+                trajectory._id === id ? { ...trajectory, ...updates } : trajectory
+            ),
+            trajectory: currentTrajectory?._id === id 
+                ? { ...currentTrajectory, ...updates } 
+                : currentTrajectory
+        };
+    };
 
-            getTrajectories: (teamId?: string) => {
-                const url = teamId ? `/trajectories?teamId=${teamId}` : '/trajectories';
-                
-                return asyncAction(() => api.get<ApiResponse<Trajectory[]>>(url),
-                    {
-                        loadingKey: 'isLoading',
-                        onSuccess: (res) => ({ 
-                            trajectories: res.data.data,
-                            error: null 
-                        }),
-                        onError: (error) => ({
-                            error: error?.response?.data?.message || 'Failed to load trajectories'
-                        })
-                    }
-                );
-            },
+    const removeTrajectoryFromList = (id: string) => {
+        const currentTrajectories = get().trajectories;
+        const currentTrajectory = get().trajectory;
+        
+        return {
+            trajectories: currentTrajectories.filter(t => t._id !== id),
+            trajectory: currentTrajectory?._id === id ? null : currentTrajectory
+        };
+    };
 
-            getTrajectoryById: (id: string) => asyncAction(() => api.get<ApiResponse<Trajectory>>(`/trajectories/${id}?populate=team`),
+    return {
+        ...initialState,
+
+        getTrajectories: (teamId?: string) => {
+            const url = teamId ? `/trajectories?teamId=${teamId}` : '/trajectories';
+            
+            return asyncAction(() => api.get<ApiResponse<Trajectory[]>>(url),
                 {
                     loadingKey: 'isLoading',
-                    onSuccess: (res) => ({
-                        trajectory: res.data.data,
-                        error: null
+                    onSuccess: (res) => ({ 
+                        trajectories: res.data.data,
+                        error: null 
                     }),
                     onError: (error) => ({
-                        error: error?.response?.data?.message || 'Failed to load trajectory'
+                        error: error?.response?.data?.message || 'Failed to load trajectories'
                     })
                 }
-            ),
+            );
+        },
 
-            createTrajectory: async (formData: FormData) => {
-                const currentFileCount = get().uploadingFileCount;
-                set({ uploadingFileCount: currentFileCount + 1, error: null });
-                
-                try{
-                    const response = await api.post<ApiResponse<Trajectory>>('/trajectories', formData);
-                    const newTrajectory = response.data.data;
-                    const currentTrajectories = get().trajectories;
-                    
-                    set({ 
-                        trajectories: [newTrajectory, ...currentTrajectories],
-                        uploadingFileCount: Math.max(0, get().uploadingFileCount - 1),
-                        error: null
-                    });
-                    
-                    return response.data;
-                }catch(error: any){
-                    set({ 
-                        uploadingFileCount: Math.max(0, get().uploadingFileCount - 1),
-                        error: error?.response?.data?.message || 'Error uploading trajectory'
-                    });
-                    throw error;
-                }
-            },
+        getTrajectoryById: (id: string) => asyncAction(() => api.get<ApiResponse<Trajectory>>(`/trajectories/${id}?populate=team`),
+            {
+                loadingKey: 'isLoading',
+                onSuccess: (res) => ({
+                    trajectory: res.data.data,
+                    error: null
+                }),
+                onError: (error) => ({
+                    error: error?.response?.data?.message || 'Failed to load trajectory'
+                })
+            }
+        ),
 
-            updateTrajectoryById: async (id: string, data: Partial<Pick<Trajectory, 'name'>>) => {
-                const originalState = { 
-                    trajectories: get().trajectories, 
-                    trajectory: get().trajectory 
-                };
+        createTrajectory: async (formData: FormData) => {
+            const currentFileCount = get().uploadingFileCount;
+            set({ uploadingFileCount: currentFileCount + 1, error: null });
+            
+            try{
+                const response = await api.post<ApiResponse<Trajectory>>('/trajectories', formData);
+                const newTrajectory = response.data.data;
+                const currentTrajectories = get().trajectories;
                 
-                set(updateTrajectoryInList(id, data));
-                
-                try{
-                    await api.patch<ApiResponse<Trajectory>>(`/trajectories/${id}`, data);
-                }catch(error: any){
-                    set(originalState);
-                    set({ 
-                        error: error?.response?.data?.message || 'Failed to update trajectory'
-                    });
-                    throw error;
-                }
-            },
-
-            deleteTrajectoryById: async (id: string) => {
-                const originalState = { 
-                    trajectories: get().trajectories, 
-                    trajectory: get().trajectory 
-                };
-                
-                set(removeTrajectoryFromList(id));
-                clearTrajectoryPreviewCache(id);
-                
-                try{
-                    await api.delete(`/trajectories/${id}`);
-                }catch(error: any){
-                    set(originalState);
-                    set({ 
-                        error: error?.response?.data?.message || 'Failed to delete trajectory'
-                    });
-                    throw error;
-                }
-            },
-
-            toggleTrajectorySelection: (id: string) => {
-                const currentSelected = get().selectedTrajectories;
-                const isSelected = currentSelected.includes(id);
-                
-                set({
-                    selectedTrajectories: isSelected
-                        ? currentSelected.filter(selectedId => selectedId !== id)
-                        : [...currentSelected, id]
+                set({ 
+                    trajectories: [newTrajectory, ...currentTrajectories],
+                    uploadingFileCount: Math.max(0, get().uploadingFileCount - 1),
+                    error: null
                 });
-            },
-
-            clearSelection: () => set({ selectedTrajectories: [] }),
-
-            deleteSelectedTrajectories: async () => {
-                const { selectedTrajectories } = get();
-                if(selectedTrajectories.length === 0) return;
-
-                const idsToDelete = [...selectedTrajectories];
-                set({ selectedTrajectories: [] });
-
-                const deletePromises = idsToDelete.map(id => 
-                    get().deleteTrajectoryById(id).catch((error) => 
-                        console.error(`Failed to delete trajectory ${id}:`, error)));
                 
-                await Promise.allSettled(deletePromises);
-            },
+                return response.data;
+            }catch(error: any){
+                set({ 
+                    uploadingFileCount: Math.max(0, get().uploadingFileCount - 1),
+                    error: error?.response?.data?.message || 'Error uploading trajectory'
+                });
+                throw error;
+            }
+        },
 
-            saveTrajectoryPreview: async (id: string, dataURL: string) => {
-                set({ isSavingPreview: true, error: null });
+        updateTrajectoryById: async (id: string, data: Partial<Pick<Trajectory, 'name'>>) => {
+            const originalState = { 
+                trajectories: get().trajectories, 
+                trajectory: get().trajectory 
+            };
+            
+            set(updateTrajectoryInList(id, data));
+            
+            try{
+                await api.patch<ApiResponse<Trajectory>>(`/trajectories/${id}`, data);
+            }catch(error: any){
+                set(originalState);
+                set({ 
+                    error: error?.response?.data?.message || 'Failed to update trajectory'
+                });
+                throw error;
+            }
+        },
+
+        deleteTrajectoryById: async (id: string) => {
+            const originalState = { 
+                trajectories: get().trajectories, 
+                trajectory: get().trajectory 
+            };
+            
+            set(removeTrajectoryFromList(id));
+            clearTrajectoryPreviewCache(id);
+            
+            try{
+                await api.delete(`/trajectories/${id}`);
+            }catch(error: any){
+                set(originalState);
+                set({ 
+                    error: error?.response?.data?.message || 'Failed to delete trajectory'
+                });
+                throw error;
+            }
+        },
+
+        toggleTrajectorySelection: (id: string) => {
+            const currentSelected = get().selectedTrajectories;
+            const isSelected = currentSelected.includes(id);
+            
+            set({
+                selectedTrajectories: isSelected
+                    ? currentSelected.filter(selectedId => selectedId !== id)
+                    : [...currentSelected, id]
+            });
+        },
+
+        clearSelection: () => set({ selectedTrajectories: [] }),
+
+        deleteSelectedTrajectories: async () => {
+            const { selectedTrajectories } = get();
+            if(selectedTrajectories.length === 0) return;
+
+            const idsToDelete = [...selectedTrajectories];
+            set({ selectedTrajectories: [] });
+
+            const deletePromises = idsToDelete.map(id => 
+                get().deleteTrajectoryById(id).catch((error) => 
+                    console.error(`Failed to delete trajectory ${id}:`, error)));
+            
+            await Promise.allSettled(deletePromises);
+        },
+
+        saveTrajectoryPreview: async (id: string, dataURL: string) => {
+            set({ isSavingPreview: true, error: null });
+            
+            try{
+                const response = await fetch(dataURL);
+                const blob = await response.blob();
+                const formData = new FormData();
+                formData.append('preview', blob, 'preview.png');
                 
-                try{
-                    const response = await fetch(dataURL);
-                    const blob = await response.blob();
-                    const formData = new FormData();
-                    formData.append('preview', blob, 'preview.png');
-                    
-                    const result = await api.patch<ApiResponse<Trajectory>>(
-                        `/trajectories/${id}`, 
-                        formData,
-                        {
-                            headers: { 'Content-Type': 'multipart/form-data' }
-                        }
-                    );
+                const result = await api.patch<ApiResponse<Trajectory>>(
+                    `/trajectories/${id}`, 
+                    formData,
+                    {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    }
+                );
 
-                    const updatedTrajectory = result.data.data;
-                    clearTrajectoryPreviewCache(id);
+                const updatedTrajectory = result.data.data;
+                clearTrajectoryPreviewCache(id);
 
-                    set({
-                        ...updateTrajectoryInList(id, { 
-                            preview: updatedTrajectory.preview,
-                            updatedAt: updatedTrajectory.updatedAt
-                        }),
-                        isSavingPreview: false
-                    });
+                set({
+                    ...updateTrajectoryInList(id, { 
+                        preview: updatedTrajectory.preview,
+                        updatedAt: updatedTrajectory.updatedAt
+                    }),
+                    isSavingPreview: false
+                });
 
-                    return { success: true };
-                }catch(error: any){
-                    set({ 
-                        isSavingPreview: false,
-                        error: error?.response?.data?.message || 'Error saving preview'
-                    });
-                    
-                    return { 
-                        success: false, 
-                        error: error?.message || 'Unknown error' 
-                    };
-                }
-            },
-
-            getTrajectoryPreviewUrl: (id: string) => {
-                const trajectory = get().trajectories.find(t => t._id === id) 
-                    || (get().trajectory?._id === id ? get().trajectory : null);
+                return { success: true };
+            }catch(error: any){
+                set({ 
+                    isSavingPreview: false,
+                    error: error?.response?.data?.message || 'Error saving preview'
+                });
                 
-                return trajectory?.preview ? `/trajectories/${id}/preview` : null;
-            },
+                return { 
+                    success: false, 
+                    error: error?.message || 'Unknown error' 
+                };
+            }
+        },
 
-            loadAuthenticatedPreview: (id: string) => previewCache.loadPreview(id),
+        getTrajectoryPreviewUrl: (id: string) => {
+            const trajectory = get().trajectories.find(t => t._id === id) 
+                || (get().trajectory?._id === id ? get().trajectory : null);
+            
+            return trajectory?.preview ? `/trajectories/${id}/preview` : null;
+        },
 
-            isPreviewLoading: (id: string) => previewCache.isLoading(id),
+        loadAuthenticatedPreview: (id: string) => previewCache.loadPreview(id),
 
-            clearPreviewCache: (id?: string) => previewCache.clear(id),
+        isPreviewLoading: (id: string) => previewCache.isLoading(id),
 
-            dislocationAnalysis: async (id: string, analysisConfig: any) => {
-                try{
-                    await api.post(`/dislocations/trajectory/${id}`, analysisConfig);
-                }catch(error: any){
-                    set({ 
-                        error: error?.response?.data?.message || 'Analysis failed'
-                    });
-                    throw error;
-                }
-            },
+        clearPreviewCache: (id?: string) => previewCache.clear(id),
 
-            setTrajectory: (trajectory: Trajectory | null) => set({ trajectory }),
+        dislocationAnalysis: async (id: string, analysisConfig: any) => {
+            try{
+                await api.post(`/dislocations/trajectory/${id}`, analysisConfig);
+            }catch(error: any){
+                set({ 
+                    error: error?.response?.data?.message || 'Analysis failed'
+                });
+                throw error;
+            }
+        },
 
-            clearError: () => set({ error: null }),
-                    clearCurrentTrajectory: () => {
-            console.log('Clearing current trajectory but preserving list');
+        setTrajectory: (trajectory: Trajectory | null) => set({ trajectory }),
+
+        clearError: () => set({ error: null }),
+            clearCurrentTrajectory: () => {
+
             set({ 
                 trajectory: null,
                 error: null,
                 selectedTrajectories: [],
-                // Mantener: trajectories, isLoading, etc.
             });
         },
 
-            reset: () => {
-                previewCache.clear();
-                set(initialState);
-            },
-        };
-    }
-);
+        reset: () => {
+            previewCache.clear();
+            set(initialState);
+        },
+    };
+});
 
 export default useTrajectoryStore;
