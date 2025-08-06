@@ -114,15 +114,20 @@ export class JobDispatcher<T extends BaseJob>{
     }
 
     private async dispatchJobs(jobs: string[]): Promise<void> {
-        const promises = jobs.map((rawData) => {
+        // We use a sequential loop and not a parallel loop (map + Promise.all) to
+        // avoid the race condition where multiple jobs are assigned to the same
+        // worker before its state is updated to "busy"
+        for(const rawData of jobs){
             try{
-                return this.workerManager.dispatchJob(rawData);
+                // By using 'await' here, we ensure that dispatchJob completes the
+                // assignment and updates the worker's state before moving
+                // on to the next job in the batch.
+                await this.workerManager.dispatchJob(rawData);
             }catch(error){
-                return this.queueManager.handleFailedJobDispatch(rawData);
+                console.error(`[${this.queueName}] Critical error dispatching job, returning to queue.`, error);
+                await this.queueManager.handleFailedJobDispatch(rawData);
             }
-        });
-
-        await Promise.allSettled(promises);
+        }
     }
 
     private async handleBackpressure(): Promise<void> {
