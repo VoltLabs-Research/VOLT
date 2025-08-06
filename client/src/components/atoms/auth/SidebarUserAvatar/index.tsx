@@ -25,7 +25,8 @@ import ActionBasedFloatingContainer from '@/components/atoms/ActionBasedFloating
 import { CiLogout, CiSettings } from 'react-icons/ci';
 import './SidebarUserAvatar.css';
 
-const SidebarUserAvatar = () => {
+// TODO: USER AVATAR SHOULD BE A NEW COMPONENT
+const SidebarUserAvatar = ({ hideUsername = false, onClick = () => {} }) => {
     const { user, signOut } = useAuthStore();
 
     return (
@@ -35,12 +36,14 @@ const SidebarUserAvatar = () => {
                 ['Sign Out', CiLogout, signOut]
             ]}
         >
-            <div className='sidebar-user-container'>
+            <div className='sidebar-user-container' onClick={onClick}>
                 <div className='sidebar-user-avatar-container'>
                     <span className='sidebar-user-avatar'>{user.firstName[0]}</span>
                 </div>
 
-                <span className='sidebar-user-fullname'>{user.firstName} {user.lastName}</span>
+                {!hideUsername && (
+                    <span className='sidebar-user-fullname'>{user.firstName} {user.lastName}</span>
+                )}
             </div>
         </ActionBasedFloatingContainer>
     );
