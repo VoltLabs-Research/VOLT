@@ -25,7 +25,7 @@ import { useState } from 'react';
 const useCardInteractions = (
     onSelect?: (itemId: string) => void, 
     onNavigate?: (itemId: string) => void, 
-    hasJobs?: boolean
+    isNavigationDisable?: boolean
 ): any => {
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
@@ -34,7 +34,7 @@ const useCardInteractions = (
         if(target.closest('.simulation-options-icon-container') || 
             target.closest('.simulation-caption-title') ||
             target.closest('.action-based-floating-container-element-wrapper') ||
-            hasJobs
+            isNavigationDisable
         ){
             return;
         }
