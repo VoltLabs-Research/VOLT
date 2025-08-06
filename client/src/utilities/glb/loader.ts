@@ -61,8 +61,10 @@ export const preloadGLBs = (urls: string[]): void => {
 }
 
 const loadGLB = (url: string): Promise<THREE.Group> => {
-    if(modelCache.has(url)){
-        return modelCache.get(url)! as Promise<THREE.Group>;
+    const endpoint = `${import.meta.env.VITE_API_URL}/api${url}`;
+
+    if(modelCache.has(endpoint)){
+        return modelCache.get(endpoint)! as Promise<THREE.Group>;
     }
 
     const loadPromise = new Promise<THREE.Group>((resolve, reject) => {
@@ -72,10 +74,10 @@ const loadGLB = (url: string): Promise<THREE.Group> => {
         pendingRequests.set(id, { resolve, reject });
 
         const token = localStorage.getItem('authToken');
-        workerInstance.postMessage({ url, token, id });
+        workerInstance.postMessage({ url: endpoint, token, id });
     });
 
-    modelCache.set(url, loadPromise);
+    modelCache.set(endpoint, loadPromise);
 
     return loadPromise;
 };

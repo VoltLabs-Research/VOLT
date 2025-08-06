@@ -43,7 +43,7 @@ self.onmessage = async (event: MessageEvent<{ url: string; token: string | null;
             headers['Authorization'] = `Bearer ${token}`;
         }
         
-        const response = await fetch('http://172.20.10.5:8000/api' + url, { headers });
+        const response = await fetch(url, { headers });
 
         if(!response.ok){
             throw new Error(`Error in request: ${url}`);

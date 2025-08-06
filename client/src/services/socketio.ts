@@ -261,6 +261,6 @@ class SocketIOService{
     }
 }
 
-export const socketService = new SocketIOService('http://172.20.10.5:8000');
+export const socketService = new SocketIOService(import.meta.env.VITE_API_URL);
 
 export default SocketIOService;

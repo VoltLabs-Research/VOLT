@@ -21,7 +21,6 @@
 **/
 
 import { Box3, Vector3, Sphere } from 'three';
-import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 
 type MaterialCache = Map<string, THREE.MeshStandardMaterial>;
