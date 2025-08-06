@@ -1,5 +1,8 @@
+import Logger from '@/services/logger';
+
 export class TokenStorage{
     private static readonly TOKEN_KEY = 'authToken';
+    private static readonly logger: Logger = new Logger('token-storage');
 
     static setToken(token: string): void{
         try{
@@ -7,7 +10,7 @@ export class TokenStorage{
                 localStorage.setItem(this.TOKEN_KEY, token);
             }
         }catch(error){
-            console.error('Failed to save token:', error);
+            this.logger.error('Failed to save token:', error);
         }
     }
 
@@ -17,7 +20,7 @@ export class TokenStorage{
                 return localStorage.getItem(this.TOKEN_KEY);
             }
         }catch(error){
-            console.error('Failed to get token:', error);
+            this.logger.error('Failed to get token:', error);
         }
 
         return null;
@@ -29,7 +32,7 @@ export class TokenStorage{
                 localStorage.removeItem(this.TOKEN_KEY);
             }
         }catch(error){
-            console.error('Failed to remove token:', error);
+            this.logger.error('Failed to remove token:', error);
         }
     }
 

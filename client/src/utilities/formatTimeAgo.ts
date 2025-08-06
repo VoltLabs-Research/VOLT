@@ -1,8 +1,11 @@
+import Logger from "@/services/logger";
+
 const formatTimeAgo = (timestampStr: string): string => {
+    const logger = new Logger('format-time-ago');
     const date = new Date(timestampStr);
     
     if(isNaN(date.getTime())){
-        console.error('Invalid timestamp string provided:', timestampStr);
+        logger.error('Invalid timestamp string provided:', timestampStr);
         return 'Invalid date';
     }
 

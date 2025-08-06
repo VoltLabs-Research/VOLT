@@ -3,6 +3,7 @@ import useTrajectoryUpload from '@/hooks/trajectory/use-trajectory-upload';
 import useTeamStore from '@/stores/team';
 import useConfigurationStore from '@/stores/editor/configuration';
 import type { FileWithPath } from '@/hooks/trajectory/use-trajectory-upload';
+import useLogger from '@/hooks/useLogger';
 
 const useFileUpload = (
     onUploadSuccess?: () => void
@@ -10,6 +11,7 @@ const useFileUpload = (
     const { uploadAndProcessTrajectory } = useTrajectoryUpload();
     const { analysisConfig } = useConfigurationStore((state) => state.analysisConfig);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const logger = useLogger('use-file-upload');
 
     useEffect(() => {
         if(onUploadSuccess){
@@ -23,7 +25,7 @@ const useFileUpload = (
     ) => {
         if(!selectedTeam?._id){
             const error = new Error('No team selected');
-            console.error(error.message);
+            logger.error(error.message);
             return;
         }
 
@@ -36,7 +38,7 @@ const useFileUpload = (
             );
         }catch(err){
             const error = err instanceof Error ? err : new Error('Upload failed');
-            console.error('Upload failed:', error);
+            logger.error('Upload failed:', error);
         }
     }, [uploadAndProcessTrajectory, analysisConfig, selectedTeam]);
 

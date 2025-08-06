@@ -27,6 +27,7 @@ import type { Trajectory } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
 import PreviewCacheService from '@/services/preview-cache-service';
 import { clearTrajectoryPreviewCache } from '@/hooks/trajectory/use-trajectory-preview';
+import Logger from '@/services/logger';
 
 interface TrajectoryState {
     trajectories: Trajectory[];
@@ -83,6 +84,7 @@ const previewCache = new PreviewCacheService();
 
 const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
     const asyncAction = createAsyncAction(set, get);
+    const logger = new Logger('use-trajectory-store');
 
     const updateTrajectoryInList = (id: string, updates: Partial<Trajectory>) => {
         const currentTrajectories = get().trajectories;
@@ -227,7 +229,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
 
             const deletePromises = idsToDelete.map(id => 
                 get().deleteTrajectoryById(id).catch((error) => 
-                    console.error(`Failed to delete trajectory ${id}:`, error)));
+                    logger.error(`Failed to delete trajectory ${id}:`, error)));
             
             await Promise.allSettled(deletePromises);
         },

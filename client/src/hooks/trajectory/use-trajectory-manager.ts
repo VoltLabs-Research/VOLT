@@ -34,7 +34,7 @@ const useTrajectoryManager = () => {
             await getTrajectoryById(id);
             return useTrajectoryStore.getState().trajectory;
         }catch(error){
-            console.error('Error loading trajectory:', error);
+            logger.error('Error loading trajectory:', error);
             return null;
         }
     }, [getTrajectoryById]);

@@ -72,7 +72,7 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
                 
                 await saveTrajectoryPreview(trajectoryId, dataURL);
             }catch(error){
-                console.error('Error auto-saving preview:', error);
+                logger.error('Error auto-saving preview:', error);
                 hasAutoSavedRef.current = false;
             }
         }, delay);

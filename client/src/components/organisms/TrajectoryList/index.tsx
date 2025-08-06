@@ -26,6 +26,7 @@ import FileItem from '@/components/molecules/FileItem';
 import Loader from '@/components/atoms/Loader';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
+import useLogger from '@/hooks/useLogger';
 import './TrajectoryList.css';
 
 interface TrajectoryListProps {
@@ -38,6 +39,7 @@ const TrajectoryList: React.FC<TrajectoryListProps> = ({ onFileSelect }) => {
     const isLoading = useTrajectoryStore((state) => state.isLoading);
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const selectedTrajectoryId = useTrajectoryStore(state => state.trajectory?._id); 
+    const logger = useLogger('trajectory-list');
 
     useEffect(() => {
         if(!trajectories.length){
@@ -51,7 +53,7 @@ const TrajectoryList: React.FC<TrajectoryListProps> = ({ onFileSelect }) => {
         try{
             await deleteTrajectoryById(trajectoryId);
         }catch(err){
-            console.error('Error deleting folder:', err);
+            logger.error('Error deleting folder:', err);
         }
     };
 

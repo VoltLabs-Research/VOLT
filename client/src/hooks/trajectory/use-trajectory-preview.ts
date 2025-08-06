@@ -21,6 +21,7 @@
 **/
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Logger from '@/services/logger';
 import useLogger from '@/hooks/useLogger';
 import { api } from '@/services/api';
 
@@ -145,7 +146,7 @@ const useTrajectoryPreview = ({
 
                 return blobUrl;
             }catch(err){
-                console.error('Error loading preview:', err);
+                logger.error('Error loading preview:', err);
                 throw err;
             }finally{
                 loadingPromises.delete(cacheKey);
@@ -269,6 +270,7 @@ const useTrajectoryPreview = ({
 };
 
 export const clearTrajectoryPreviewCache = (trajectoryId: string) => {
+    const logger = new Logger('clear-trajectory-preview-cache');
     logger.log('Clearing cache for trajectory:', trajectoryId);
     for(const [key, value] of previewCache.entries()){
         if(key.startsWith(`${trajectoryId}:`)){

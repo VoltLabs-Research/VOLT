@@ -1,4 +1,5 @@
 import { api } from '@/services/api';
+import Logger from '@/services/logger';
 
 class PreviewCacheService{
     private cache = new Map<string, string>();
@@ -6,6 +7,7 @@ class PreviewCacheService{
     private readonly maxSize: number;
     private readonly ttl: number;
     private readonly timestamps = new Map<string, number>();
+    private readonly logger: Logger = new Logger('preview-cache-service');
 
     constructor(maxSize: number = 50, ttlMinutes: number = 30){
         this.maxSize = maxSize;
@@ -96,7 +98,7 @@ class PreviewCacheService{
             
             return imageUrl;
         }catch(error){
-            console.error('Error loading authenticated preview:', error);
+            this.logger.error('Error loading authenticated preview:', error);
             this.loadingSet.delete(id);
             return null;
         }

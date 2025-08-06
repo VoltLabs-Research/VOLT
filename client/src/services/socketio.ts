@@ -104,7 +104,7 @@ class SocketIOService{
                 });
 
                 this.socket.on('connect_error', (error) => {
-                    console.error('Socket connection error:', error);
+                    this.logger.error('Socket connection error:', error);
                     this.connectionAttempts += 1;
 
                     if(this.connectionAttempts >= this.maxReconnectionAttempts){
@@ -119,7 +119,7 @@ class SocketIOService{
 
                     // If the connection was not initiated by the client and auto-reconnect is enabled
                     if(reason !== 'io client disconnect' && !this.manualDisconnect && this.autoReconnect){
-                        this.connect().catch(console.error);
+                        this.connect().catch(this.logger.error);
                     }
                 });
             }catch(error){
@@ -194,7 +194,7 @@ class SocketIOService{
                     resolve(response);
                 });
             }catch(error){
-                console.error(`Error emitting ${event}:`, error);
+                this.logger.error(`Error emitting ${event}:`, error);
                 reject(error);
             }
         });
@@ -216,7 +216,7 @@ class SocketIOService{
 
     public subscribeToTeam(teamId: string, previousTeamId?: string): void{
         if(!this.socket?.connected){
-            console.error('Cannot subscribe to team: Socket not connected');
+            this.logger.error('Cannot subscribe to team: Socket not connected');
             return;
         }
 
@@ -229,7 +229,7 @@ class SocketIOService{
         
         if(this.socket?.connected){
             this.disconnect();
-            this.connect().catch(console.error);
+            this.connect().catch(this.logger.error);
         }
     }
 
@@ -258,7 +258,7 @@ class SocketIOService{
             try{
                 listener(connected);
             }catch(error){
-                console.error('Error in connection listener:', error);
+                this.logger.error('Error in connection listener:', error);
             }
         });
     }

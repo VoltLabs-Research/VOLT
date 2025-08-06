@@ -29,6 +29,7 @@ import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 import useConfigurationStore from '@/stores/editor/configuration';
 import useTimestepStore from '@/stores/editor/timesteps';
 import loadGLB, { preloadGLBs, modelCache } from '@/utilities/glb/loader';
+import useLogger from '@/hooks/useLogger';
 import * as THREE from 'three';
 
 const DEFAULT_POSITION = { x: 0, y: 0, z: 0 };
@@ -68,6 +69,7 @@ export const useGlbScene = ({
     updateThrottle,
 }: UseGlbSceneProps) => {
     const { scene } = useThree();
+    const logger = useLogger('use-glb-scene');
 
     const activeSceneObject = useConfigurationStore((state) => state.activeSceneObject);
     const setIsModelLoading = useConfigurationStore((state) => state.setIsModelLoading);
@@ -214,7 +216,7 @@ export const useGlbScene = ({
 
             replaceSceneModel(newModel);
         }catch(err){
-            console.error('Error loading GLB model:', {
+            logger.error('Error loading GLB model:', {
                 url: targetUrl,
                 error: err instanceof Error ? err.message : String(err)
             });
@@ -243,7 +245,7 @@ export const useGlbScene = ({
                 handleModelPreloading();
             }
         }catch(err){
-            console.error('Failed to update scene:', err);
+            logger.error('Failed to update scene:', err);
         }finally{
             setIsModelLoading(false);
         }

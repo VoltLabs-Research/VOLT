@@ -1,4 +1,5 @@
 import type { FileWithPath } from '@/hooks/trajectory/use-trajectory-upload';
+import Logger from '@/services/logger';
 
 export const extractFolderName = (fullPath: string): string | null => {
     if(!fullPath) return null;
@@ -7,6 +8,7 @@ export const extractFolderName = (fullPath: string): string | null => {
 };
 
 export const processFileSystemEntry = async (entry: any): Promise<{ files: FileWithPath[], folderName: string | null }> => {
+    const logger = new Logger('process-file-system-entry');
     const files: FileWithPath[] = [];
     let folderName: string | null = null;
 
@@ -27,7 +29,7 @@ export const processFileSystemEntry = async (entry: any): Promise<{ files: FileW
                     folderName = extractFolderName(currentEntry.fullPath);
                 }
             }catch(err){
-                console.error(`Error processing file: ${currentEntry.fullPath}`, error);
+                logger.error(`Error processing file: ${currentEntry.fullPath}`, error);
             }
         }else if(currentEntry.isDirectory){
             if(!folderName){
@@ -42,7 +44,7 @@ export const processFileSystemEntry = async (entry: any): Promise<{ files: FileW
 
                 await Promise.all(entries.map((subEntry) => processEntry(subEntry)));
             }catch(err){
-                console.error(`Error reading directory: ${currentEntry.fullPath}`, err);
+                logger.error(`Error reading directory: ${currentEntry.fullPath}`, err);
             }
         }
     };

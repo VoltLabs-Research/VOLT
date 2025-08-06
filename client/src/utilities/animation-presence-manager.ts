@@ -1,3 +1,5 @@
+import Logger from '@/services/logger';
+
 export interface ElementRect {
     top: number;
     left: number;
@@ -20,6 +22,7 @@ class AnimationPresenceManager{
     private positions = new Map<Element, ElementRect>();
     private timeoutId: number | null = null;
     private config: AnimationConfig;
+    private readonly logger: Logger = new Logger('animation-presence-manager');
 
     constructor(config: AnimationConfig){
         this.config = config;
@@ -106,7 +109,7 @@ class AnimationPresenceManager{
                 container.removeChild(element);
             }
         }catch(err){
-            console.warn('Failed to remove animated element:', err);
+            this.logger.warn('Failed to remove animated element:', err);
         }
     }
 

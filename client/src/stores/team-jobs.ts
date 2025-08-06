@@ -146,7 +146,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
             if(!socketService.isConnected()){
                 socketService.connect()
                     .catch((error) => {
-                        console.error('Failed to connect socket:', error);
+                        logger.error('Failed to connect socket:', error);
                         set({ isLoading: false });
                     });
             }else{
@@ -184,7 +184,7 @@ const useTeamJobsStore = create<TeamJobsState>()((set, get) => {
                         socketService.subscribeToTeam(teamId, previousTeamId || currentTeamId!);
                     })
                     .catch((error) => {
-                        console.error('Failed to connect and subscribe', error);
+                        logger.error('Failed to connect and subscribe', error);
                         set({ isLoading: false });
                     });
             }else{
