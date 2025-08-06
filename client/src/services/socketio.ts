@@ -95,33 +95,15 @@ class SocketIOService{
                 });
 
                 this.socket.on('connect', () => {
-                    this.connectionAttempts = 0;
-                    this.connecting = false;
-                    this.notifyConnectionListeners(true);
-                    this.resubscribeToEvents();
-                    this.logger.log('Socket connected successfully with ID:', this.socket?.id);
+                    this.handleConnect();
                     resolve();
                 });
 
                 this.socket.on('connect_error', (error) => {
-                    this.logger.error('Socket connection error:', error);
-                    this.connectionAttempts += 1;
-
-                    if(this.connectionAttempts >= this.maxReconnectionAttempts){
-                        this.connecting = false;
-                        reject(new Error(`Failed to connect after ${this.maxReconnectionAttempts} attempts: ${error.message}`));
-                    }
+                    this.handleConnectError(error, reject);
                 });
 
-                this.socket.on('disconnect', (reason) => {
-                    this.logger.log('Socket disconnected:', reason);
-                    this.notifyConnectionListeners(false);
-
-                    // If the connection was not initiated by the client and auto-reconnect is enabled
-                    if(reason !== 'io client disconnect' && !this.manualDisconnect && this.autoReconnect){
-                        this.connect().catch(this.logger.error);
-                    }
-                });
+                this.socket.on('disconnect', this.handleDisconnect);
             }catch(error){
                 this.connecting = false;
                 reject(error);
@@ -230,6 +212,36 @@ class SocketIOService{
         if(this.socket?.connected){
             this.disconnect();
             this.connect().catch(this.logger.error);
+        }
+    }
+
+    private handleConnect(){
+        this.connectionAttempts = 0;
+        this.connecting = false;
+        this.notifyConnectionListeners(true);
+        this.resubscribeToEvents();
+        this.logger.log('Socket connected successfully with ID:', this.socket?.id);
+    }
+
+    private handleDisconnect(reason: string){
+        this.logger.log('Socket disconnected:', reason);
+        this.notifyConnectionListeners(false);
+
+        // If the connection was not initiated by the client and auto-reconnect is enabled
+        if(reason !== 'io client disconnect' && !this.manualDisconnect && this.autoReconnect){
+            this.connect().catch(this.logger.error);
+        }
+    }
+
+    private handleConnectError(error: any, reject: any = null){
+        this.logger.error('Socket connection error:', error);
+        this.connectionAttempts += 1;
+
+        if(this.connectionAttempts >= this.maxReconnectionAttempts){
+            this.connecting = false;
+            if(reject){
+                reject(new Error(`Failed to connect after ${this.maxReconnectionAttempts} attempts: ${error.message}`));
+            }
         }
     }
 
