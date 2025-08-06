@@ -54,8 +54,8 @@ const Select: React.FC<SelectProps> = ({
         >
             {children}
             {options.map((option) => (
-                <option key={option.value} value={option.value}>
-                    {option.title}
+                <option className='select-option-container' key={option.value} value={option.value}>
+                    <span className='select-option-title'>{option.title}</span>
                 </option>
             ))}
         </select>
