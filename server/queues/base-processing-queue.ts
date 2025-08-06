@@ -172,8 +172,9 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         const processingTime = Date.now() - startTime;
         const statusKey = `${this.statusKeyPrefix}${job.jobId}`;
         const twentyFourHoursInSeconds = 24 * 60 * 60;
+        const retryCountKey = `job:retries:${job.jobId}`;
 
-        switch (message.status) {
+        switch(message.status){
             case 'progress':
                 await this.jobStatusManager.setJobStatus(job.jobId, 'running', {
                     ...job, 
@@ -192,11 +193,12 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 this.redisListenerClient.expire(statusKey, twentyFourHoursInSeconds);
                 this.metricsCollector.updateMetrics(processingTime, false);
                 this.emit('jobCompleted', { job, result: message.result, processingTime });
+                await this.redisListenerClient.del(retryCountKey);
                 await this.sessionManager.checkAndCleanupSession(job);
                 break;
 
             case 'failed':
-                const shouldCleanupSession = await this.handleJobFailure(job, message.error, processingTime);
+                const shouldCleanupSession = await this.handleJobFailure(job, message.error, processingTime, rawData);
                 if (shouldCleanupSession) {
                     this.redisListenerClient.expire(statusKey, twentyFourHoursInSeconds);
                     await this.sessionManager.checkAndCleanupSession(job);
@@ -205,45 +207,63 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }
 
         if (message.status === 'completed' || message.status === 'failed') {
-            await this.queueManager.removeJobFromProcessing(rawData);
             this.workerManager.releaseWorker(workerId);
+            await this.queueManager.removeJobFromProcessing(rawData);
         }
     }
 
-    private async handleJobFailure(job: T, error: string, processingTime: number): Promise<boolean> {
-        const retries = job.retries || 0;
-        const maxRetries = job.maxRetries || 3;
-        
-        if(retries < maxRetries){
-            const retryJob = { ...job, retries: retries + 1 };
-            await this.jobStatusManager.setJobStatus(job.jobId, 'retrying', { 
+    private async handleJobFailure(job: T, error: string, processingTime: number, rawData: string): Promise<boolean> {
+        // TODO: I think retrying failed processes should be optional. 
+        // If it already fails, it will fail again. 
+        // I can't think of any reason why retrying after a failure should work.
+        const maxAttempts = job.maxRetries || 3;
+        const retryCountKey = `job:retries:${job.jobId}`;
+
+        // Increment the retry counter for this job ID in Redis.
+        // INCR is atomic, which prevents race conditions.
+        const currentAttempt = await this.redisListenerClient.incr(retryCountKey);
+
+        await this.redisListenerClient.expire(retryCountKey, 86400);
+
+        if(currentAttempt < maxAttempts){
+            console.log(`[${this.queueName}] Job ${job.jobId} failed. Attempt ${currentAttempt} of ${maxAttempts}. Re-queuing.`);
+            const retryJob = {
+                ...job,
+                retires: currentAttempt
+            };
+
+            await this.jobStatusManager.setJobStatus(job.jobId, 'retrying', {
                 ...retryJob,
                 error,
-                processingTimeMs: processingTime,
+                processingTimeMs: processingTime
             });
-            this.emit('jobRetry', { job: retryJob, error, attempt: retries + 1 });
+
+            // We add the original job back to the queue for a new attempt.
+            await this.queueManager.addJobStreaming(rawData);
+            this.emit('jobRetry', { job: retryJob, error, attemp: currentAttempt });
+
             return false;
         }
+
+        // If this part of the function is executed it means that the maximum attempt has been reached.
+        console.error(`[${this.queueName}] Job ${job.jobId} failed after ${maxAttempts} attempts. Removing from queue permanently.`);
+            
         await this.jobStatusManager.setJobStatus(job.jobId, 'failed', { 
             ...job,
+            retries: currentAttempt,
             error,
             finalAttempt: true,
             processingTimeMs: processingTime,
         });
+
+        await this.redisListenerClient.del(retryCountKey);
+
         this.metricsCollector.updateMetrics(processingTime, true);
         this.emit('jobFailed', { job, error, processingTime });
+
         return true;
     }
 
-
-    private emitSessionExpired(teamId: string, sessionId: string, trajectoryId: string): void {
-        emitJobUpdate(teamId, {
-            type: 'session_expired',
-            sessionId,
-            trajectoryId,
-            timestamp: new Date().toISOString()
-        });
-    }
 
     public async addJobs(jobs: T[]): Promise<void> {
         if(jobs.length === 0) return;
