@@ -23,7 +23,7 @@ class CullingService{
                     this.onCullResult(this.visibleIndices, e.data.lodLevel);
                 }
             };
-    }catch(error){
+        }catch(error){
             console.warn('Worker creation failed, using main thread culling');
             this.worker = null;
         }

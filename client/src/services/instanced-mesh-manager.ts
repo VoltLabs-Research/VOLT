@@ -1,7 +1,7 @@
 import { BufferGeometry, Material, InstancedMesh, Scene, Camera, Vector3 } from 'three';
-import { ObjectPools } from '@/utilities/glb/objectPools';
 import { createLODGeometry } from '@/utilities/glb/lodGeometry';
 import { GLB_CONSTANTS } from '@/utilities/glb/loader';
+import ObjectPools from '@/utilities/glb/objectPools';
 
 class InstancedMeshManager{
     private instancedMeshes: InstancedMesh[] = [];

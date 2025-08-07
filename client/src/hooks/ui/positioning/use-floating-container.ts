@@ -22,8 +22,8 @@
 
 import { type MouseEvent, useCallback } from 'react';
 import type { PositionStyles } from '@/types/floating-container';
-import useFloatingMenu from '@/hooks/ui/use-floating-menu';
-import usePositioning from '@/hooks/ui/use-positioning';
+import useFloatingMenu from '@/hooks/ui/positioning/use-floating-menu';
+import usePositioning from '@/hooks/ui/positioning/use-positioning';
 
 interface UseFloatingContainerReturn {
     triggerRef: React.RefObject<HTMLDivElement>;
