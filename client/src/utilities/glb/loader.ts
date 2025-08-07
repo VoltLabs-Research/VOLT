@@ -23,6 +23,17 @@
 import * as THREE from 'three';
 import { v4 } from 'uuid';
 
+export const GLB_CONSTANTS = {
+    DEFAULT_POSITION: Object.freeze({ x: 0, y: 0, z: 0 }),
+    DEFAULT_ROTATION: Object.freeze({ x: 0, y: 0, z: 0 }),
+    LOD_LEVELS: [1, 0.7, 0.4, 0.15],
+    MAX_VISIBLE_INSTANCES: 100000,
+    FRUSTUM_CULL_DISTANCE: 50,
+    CULL_FRAME_INTERVAL: 5,
+    POOL_SIZE: 500,
+    MIN_CAMERA_MOVEMENT: 1,
+} as const;
+
 export const modelCache = new Map<string, Promise<any>>();
 let worker: Worker | undefined;
 
