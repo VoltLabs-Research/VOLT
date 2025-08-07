@@ -20,51 +20,124 @@
 * SOFTWARE.
 **/
 
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+interface WorkerMessage {
+    id: string;
+    type: 'load' | 'preload' | 'cleanup';
+    url?: string;
+    token?: string;
+    urls?: string[];
+}
 
-const loader = new GLTFLoader();
-const draco = new DRACOLoader();
+class GLBWorkerLoader{
+    private readonly MAX_CACHE_SIZE = 5;
+    private cache = new Map<string, ArrayBuffer>();
+    private lruQueue: string[] = [];
+    private requestQueue: WorkerMessage[] = [];
+    private isProcessing = false;
 
-draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/'); 
-draco.setDecoderConfig({ type: 'wasm' });
-draco.preload();
+    public addTask(task: WorkerMessage): void{
+        if(task.type === 'load'){
+            this.requestQueue = this.requestQueue.filter((t) => !(t.type === 'load' && t.url === task.url));
+            this.requestQueue.unshift(task);
+        }else{
+            this.requestQueue.push(task);
+        }
 
-loader.setMeshoptDecoder(MeshoptDecoder);
-loader.setDRACOLoader(draco);
+        this.processNext();
+    }
 
-self.onmessage = async (event: MessageEvent<{ url: string; token: string | null; id: string }>) => {
-    const { url, token, id } = event.data;
+    private async processNext(): Promise<void>{
+        if(this.isProcessing || this.requestQueue.length === 0){
+            return;
+        }
 
-    try{
-        const headers: HeadersInit = {};
+        this.isProcessing = true;
+        const task = this.requestQueue.shift()!;
+
+        try{
+            switch(task.type){
+                case 'load':
+                    const buffer = await this.fetchAndCache(task.url!, task.token);
+                    self.postMessage({ id: task.id, type: 'success', data: buffer }, [buffer]);
+                    break;
+
+                case 'preload':
+                    await this.preloadGLBs(task.urls!, task.token);
+                    self.postMessage({ id: task.id, type: 'success' });
+                    break;
+
+                case 'cleanup':
+                    this.cleanup();
+                    self.postMessage({ id: task.id, type: 'success' });
+                    break;
+            }
+        }catch(error){
+            const errorMessage = error instanceof Error ? error.message : 'Unknown worker error';
+            self.postMessage({ id: task.id, type: 'error', error: errorMessage });
+        }finally{
+            this.isProcessing = false;
+            this.processNext();
+        }
+    }
+
+    private manageCache(url: string, buffer: ArrayBuffer): void{
+        const index = this.lruQueue.indexOf(url);
+        if(index > -1){
+            this.lruQueue.splice(index, 1);
+        }
+
+        this.lruQueue.push(url);
+        this.cache.set(url, buffer);
+
+        if(this.lruQueue.length > this.MAX_CACHE_SIZE){
+            const urlToRemove = this.lruQueue.shift()!;
+            this.cache.delete(urlToRemove);
+        }
+    }
+
+    private async fetchAndCache(url: string, token?: string): Promise<ArrayBuffer>{
+        if(this.cache.has(url)){
+            const cachedBuffer = this.cache.get(url)!.slice(0);
+            this.manageCache(url, cachedBuffer);
+            return cachedBuffer;
+        }
+
+        const headers: HeadersInit = { 'Accept': 'model/gltf-binary' };
         if(token){
             headers['Authorization'] = `Bearer ${token}`;
         }
-        
-        const response = await fetch(url, { headers });
 
+        const response = await fetch(url, { headers });
         if(!response.ok){
-            throw new Error(`Error in request: ${url}`);
+            throw new Error(`Failed to fetch GLB: ${response.status} ${response.statusText}`);
         }
 
-        const glbBuffer = await response.arrayBuffer();
-        const glb = await loader.parseAsync(glbBuffer, '');
-        const sceneJSON = glb.scene.toJSON();
-
-        const buffers: ArrayBuffer[] = [];
-        glb.parser.getDependencies('buffer').then((bufferViews) => {
-             bufferViews.forEach(bufferView => {
-                if(!buffers.includes(bufferView.buffer)){
-                    buffers.push(bufferView.buffer);
-                }
-            });
-        });
-        
-        self.postMessage({ status: 'success', sceneJSON, id }, buffers);
-    }catch(error: any){
-        draco.dispose();
-        self.postMessage({ status: 'error', error: error.message, id });
+        const buffer = await response.arrayBuffer();
+        this.manageCache(url, buffer.slice(0));
+        return buffer;
     }
+
+    private async preloadGLBs(urls: string[], token?: string): Promise<void>{
+        for(const url of urls){
+            try{
+                if(!this.cache.has(url)){
+                    await this.fetchAndCache(url, token);
+                }
+            }catch(error){
+                console.warn(`Preloading failed for ${url}:`, error);
+            }
+        }
+    }
+
+    public cleanup(): void{
+        this.cache.clear();
+        this.lruQueue = [];
+        this.requestQueue = [];
+    }
+}
+
+const workerLoader = new GLBWorkerLoader();
+
+self.onmessage = (event: MessageEvent<WorkerMessage>) => {
+    workerLoader.addTask(event.data);
 };
