@@ -13,9 +13,12 @@ export const computeMissorientationAngle = (atom: OAtom): number => {
     const qx = atom.ptm_quaternion[0];
     const qy = atom.ptm_quaternion[1];
     const qz = atom.ptm_quaternion[2];
-    const qw = atom.ptm_quaternion[3];
+    let qw = atom.ptm_quaternion[3];
 
-    if(qw === 0) return MissorientationAngleError.DivisionByZero;
+    if(qw === 0){
+        // TODO: warning 
+        qw = 1e-4;
+    }
 
     // Dipole Orientation
     const dox = Math.abs(qx / qw);

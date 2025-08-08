@@ -67,7 +67,8 @@ function buildCliArgs(options: ConfigParameters): string[] {
         identificationMode: '--identificationMode',
         lineSmoothingLevel: '--lineSmoothingLevel',
         linePointInterval: '--linePointInterval',
-        markCoreAtoms: '--markCoreAtoms',
+        markCoreAtoms: '--markCoreAtoms true',
+        structureIdentificationOnly: '--structureIdentificationOnly true'
     };
 
     for(const key in options){
@@ -108,7 +109,7 @@ class OpenDXAService{
             frameResult.metadata = { timestep };
 
             console.log(`[OpenDXAService] Processing data for timestep ${timestep}`);
-            await this.processFrameData(frameResult, timestep);
+            await this.processFrameData(frameResult, timestep, options);
 
             console.log(`[OpenDXAService] Cleaning up temporary files for ${baseFilename}`);
             await Promise.all(generatedFiles.map(file =>
@@ -186,8 +187,13 @@ class OpenDXAService{
         return { frameResult, generatedFiles };
     }
     
-    private async processFrameData(frameResult: any, timestep: number): Promise<void> {
+    private async processFrameData(frameResult: any, timestep: number, options: ConfigParameters): Promise<void> {
         const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
+
+        if(options.structureIdentificationOnly){
+            this.exportAtomsColoredByType(atoms, timestep);
+            return;
+        }
 
         await Promise.all([
             this.exportMesh(defect_mesh, timestep, 'defect'),

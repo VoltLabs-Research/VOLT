@@ -9,7 +9,8 @@ export interface DislocationAnalysisModifierConfig{
     team: string;
     name: string;
     trajectoryId: string;
-    frames: any[]
+    frames: any[],
+    analysisConfig: any
 };
 
 export enum DislocationAnalysisModifierError{
@@ -53,7 +54,7 @@ export const dislocationAnalysis = async (config: DislocationAnalysisModifierCon
 
     metadata.lastAnalysis = {
         jobId: `queue-${Date.now()}`,
-        config,
+        config: config.analysisConfig,
         status: 'queued',
         updatedAt: new Date().toISOString()
     };
@@ -69,9 +70,9 @@ export const dislocationAnalysis = async (config: DislocationAnalysisModifierCon
             folderPath,
             inputFile,
             teamId: config.team,
-            name: `Dislocation Analysis - Frame ${basename(inputFile)}/${frames[trajectoryFiles.length - 1].timestep}`,
+            name: `Dislocation Analysis - Frame ${basename(inputFile)}/${config.frames[trajectoryFiles.length - 1].timestep}`,
             message: config.name,
-            config
+            config: config.analysisConfig
         };
     });
 

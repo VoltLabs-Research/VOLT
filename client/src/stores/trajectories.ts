@@ -60,6 +60,7 @@ interface TrajectoryActions {
     
     // Analysis
     dislocationAnalysis: (id: string, analysisConfig: any) => Promise<void>;
+    structureIdentification: (id: string, analysisConfig: any, identificationMode: string) => Promise<void>;
     
     // State management
     setTrajectory: (trajectory: Trajectory | null) => void;
@@ -289,9 +290,26 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
 
         clearPreviewCache: (id?: string) => previewCache.clear(id),
 
+        structureIdentification: async (id: string, analysisConfig: any, identificationMode: string) => {
+            try{
+                const config = {
+                    ...analysisConfig,
+                    // Force Structure Identification Only Option
+                    structureIdentificationOnly: true,
+                    identificationMode
+                }
+                await api.post(`/modifiers/crystal-analysis/${id}`, config);
+            }catch(error: any){
+                set({
+                    error: error?.response?.data?.message || 'Structure Identification failed'
+                });
+                throw error;
+            }
+        },
+
         dislocationAnalysis: async (id: string, analysisConfig: any) => {
             try{
-                await api.post(`/dislocations/trajectory/${id}`, analysisConfig);
+                await api.post(`/modifiers/crystal-analysis/${id}`, analysisConfig);
             }catch(error: any){
                 set({ 
                     error: error?.response?.data?.message || 'Analysis failed'

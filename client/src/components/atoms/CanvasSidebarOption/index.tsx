@@ -12,7 +12,7 @@ interface CanvasSidebarOptionProps{
 }
 
 const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSelect, activeOption }) => {
-    
+   
     return (
         <div 
             className='editor-sidebar-scene-option-container' 

@@ -30,9 +30,9 @@ const router = Router();
 router.use(authMiddleware.protect);
 
 router.post(
-    '/dislocation-analysis/:id', 
+    '/crystal-analysis/:id', 
     trajectoryMiddleware.checkTeamMembershipForTrajectory, 
-    controller.getTrajectoryDislocations
+    controller.crystalAnalysis
 );
 
 export default router;

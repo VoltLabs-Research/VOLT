@@ -41,6 +41,7 @@ export interface ConfigParameters {
     lineSmoothingLevel?: number;
     linePointInterval?: number;
     markCoreAtoms?: boolean;
+    structureIdentificationOnly?: boolean;
 }
 
 export interface StructureTypeStat {

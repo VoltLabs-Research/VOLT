@@ -56,6 +56,7 @@ const DEFAULT_ANALYSIS_CONFIG: AnalysisConfig = {
     linePointInterval: 2.5,
     onlyPerfectDislocations: false,
     markCoreAtoms: false,
+    structureIdentificationOnly: true
 };
 
 const DEFAULT_SLICE_PLANE_CONFIG: SlicePlaneConfig = {

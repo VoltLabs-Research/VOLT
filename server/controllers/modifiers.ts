@@ -22,8 +22,9 @@
 
 import { Request, Response } from 'express';
 import { dislocationAnalysis, DislocationAnalysisModifierError } from '@/modifiers/dislocation-analysis';
+import { computeMissorientationDeltas, computeMissorientationAngle } from '@/modifiers/missorientation';
 
-export const getTrajectoryDislocations = async (req: Request, res: Response) => {
+export const crystalAnalysis = async (req: Request, res: Response) => {
     try {
         const { folderId, _id: trajectoryId, team, name, frames } = res.locals.trajectory;
         const result = await dislocationAnalysis({
@@ -31,7 +32,8 @@ export const getTrajectoryDislocations = async (req: Request, res: Response) => 
             trajectoryId,
             team,
             name,
-            frames
+            frames,
+            analysisConfig: req.body
         });
 
         switch(result){
@@ -54,6 +56,20 @@ export const getTrajectoryDislocations = async (req: Request, res: Response) => 
             }
         });
     }catch(error){
+        res.status(500).json({
+            status: 'error',
+            data: { error: error instanceof Error ? error.message : 'Unknown error' }
+        });
+    }
+};
+
+export const getMissorientationDeltas = async (req: Request, res: Response) => {
+    try{
+        const { _id: trajectoryId, frames } = res.locals.trajectory;
+        const theta0Frame = req.query?.theta0Frame;
+        const frame = req.query?.frame;
+        // TODO:
+    }catch(error){  
         res.status(500).json({
             status: 'error',
             data: { error: error instanceof Error ? error.message : 'Unknown error' }
