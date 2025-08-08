@@ -152,6 +152,8 @@ public:
         return _structureStatistics;
     }
     
+	Quaternion getPTMAtomOrientation(int atom) const;
+
     std::map<std::string, int> getNamedStructureStatistics() const {
         if (!_statisticsValid) {
             calculateStructureStatistics();
@@ -276,7 +278,6 @@ private:
 	void processDefectCluster(Cluster* defectCluster);
 	void reorientAtomsToAlignClusters();
 	void applyPreferredOrientation(Cluster* cluster);
-	Quaternion getPTMAtomOrientation(int atom);
 
 	void growCluster(
 		Cluster* cluster,

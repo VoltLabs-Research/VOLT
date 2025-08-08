@@ -23,10 +23,10 @@
 import { StructureAnalysisData, ConfigParameters } from '@/types/services/opendxa';
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
-import { decode } from '@msgpack/msgpack';
 import { Mesh } from '@/types/utilities/export/mesh';
 import { Dislocation } from '@/types/utilities/export/dislocations';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
+import { readMsgpackFile } from '@/utilities/msgpack';
 import path from 'path';
 import os from 'os';
 import MeshExporter from '@utilities/export/mesh';
@@ -82,12 +82,6 @@ function buildCliArgs(options: ConfigParameters): string[] {
     }
 
     return args;
-}
-
-async function readMsgPackFile(filePath: string): Promise<any> {
-    const fileBuffer = await fs.readFile(filePath);
-    console.log(`[OpenDXAService] Reading file ${path.basename(filePath)} (${(fileBuffer.byteLength / 1024 / 1024).toFixed(2)} MB)`);
-    return decode(fileBuffer);
 }
 
 class OpenDXAService{
@@ -172,7 +166,7 @@ class OpenDXAService{
             const filePath = outputBase + suffix;
 
             try{
-                frameResult[key] = await readMsgPackFile(filePath);
+                frameResult[key] = await readMsgpackFile(filePath);
                 generatedFiles.push(filePath);
 
                 console.log(`[OpenDXAService] Successfully read ${key} from ${path.basename(filePath)}`);
@@ -191,7 +185,7 @@ class OpenDXAService{
         }
         return { frameResult, generatedFiles };
     }
-
+    
     private async processFrameData(frameResult: any, timestep: number): Promise<void> {
         const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
 
@@ -256,10 +250,10 @@ class OpenDXAService{
         return path.join(this.exportDirectory, `frame_${frame}_${exportName}.glb`)
     }
 
-    private exportAtomsColoredByType(atoms: AtomsGroupedByType, frame: number): void {
+    private exportAtomsColoredByType(groupedAtoms: AtomsGroupedByType, frame: number): void {
         const exporter = new LAMMPSToGLBExporter();
         const outputPath = this.getOutputPath(frame, 'atoms_colored_by_type');
-        exporter.exportAtomsTypeToGLB(atoms, outputPath);
+        exporter.exportAtomsTypeToGLB(groupedAtoms, outputPath);
     }
 
     private exportDislocations(dislocation: Dislocation, frame: number): void {

@@ -39,9 +39,12 @@ export interface ParsedFrame{
     atoms: LammpsAtom[];
 }
 
+export interface OAtom{
+    id: number;
+    pos: [number, number, number];
+    ptm_quaternion?: [number, number, number, number],
+}
+
 export interface AtomsGroupedByType {
-    [typeName: string]: {
-        id: number;
-        pos: [number, number, number];
-    }[];
+    [typeName: string]: OAtom[];
 }
