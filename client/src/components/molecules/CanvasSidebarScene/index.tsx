@@ -3,10 +3,14 @@ import { TbObjectScan } from 'react-icons/tb';
 import { PiAtomThin, PiLineSegmentThin, PiTriangleDashedThin } from 'react-icons/pi';
 import { SiTraefikmesh } from 'react-icons/si';
 import { IoIosColorFilter } from 'react-icons/io';
-import CanvasSidebarSceneOption from '@/components/atoms/CanvasSidebarSceneOption';
+import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
+import useConfigurationStore from '@/stores/editor/configuration';
 import './CanvasSidebarScene.css';
 
 const CanvasSidebarScene: React.FC = () => {
+    const setActiveSceneObject = useConfigurationStore((state) => state.activeSceneObject);
+    const activeSceneObject = useConfigurationStore((state) => state.activeSceneObject);
+
     const options = [{
         Icon: TbObjectScan,
         title: 'Camera 1',
@@ -37,7 +41,12 @@ const CanvasSidebarScene: React.FC = () => {
         <div className='editor-sidebar-scene-container'>
             <div className='editor-sidebar-scene-options-container'>
                 {options.map((option, index) => (
-                    <CanvasSidebarSceneOption option={option} key={index} />
+                    <CanvasSidebarOption
+                        onSelect={setActiveSceneObject}
+                        activeOption={activeSceneObject}
+                        option={option}
+                        key={index}
+                    />
                 ))}
             </div>
         </div>

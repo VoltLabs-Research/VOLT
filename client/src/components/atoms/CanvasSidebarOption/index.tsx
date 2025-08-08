@@ -1,21 +1,27 @@
 import React from 'react';
-import useConfigurationStore from '@/stores/editor/configuration';
+import type { IconType } from 'react-icons/lib';
 import './CanvasSidebarOption.css';
 
 interface CanvasSidebarOptionProps{
-    option: string
-};
+    onSelect: (option: any) => void;
+    activeOption: boolean;
+    option: {
+        Icon: IconType;
+        title: string;
+    };
+}
 
-const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option }) => {
-    const setActiveSidebarTag = useConfigurationStore((state) => state.setActiveSidebarTag);
-    const activeSidebarTab = useConfigurationStore((state) => state.activeSidebarTab);
-
+const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSelect, activeOption }) => {
+    
     return (
         <div 
-            className={'editor-sidebar-option-container '.concat((option === activeSidebarTab) ? 'selected': '')} 
-            onClick={() => setActiveSidebarTag(option)}
+            className='editor-sidebar-scene-option-container' 
+            onClick={() => onSelect(option)}
         >
-            <h3 className='editor-sidebar-option-title'>{option}</h3>
+            <i className='editor-sidebar-scene-option-icon-container'>
+                <option.Icon />
+            </i>
+            <h3 className='editor-sidebar-scene-option-title'>{option.title}</h3>
         </div>
     );
 };

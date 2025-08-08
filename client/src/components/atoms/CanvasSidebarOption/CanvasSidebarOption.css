@@ -1,24 +1,28 @@
-
-.editor-sidebar-option-container.selected{
-    background-color: rgba(49, 49, 49, 0.8);
-}
-
-.editor-sidebar-option-container:not(.selected):hover{
-    background-color: rgba(49, 49, 49, 0.3);
-}
-
-.editor-sidebar-option-container{
-    border-radius: 5rem;
-    width: 48%;
-    transition: .1s;
-    cursor: pointer;
-    height: 45px;
+.editor-sidebar-scene-option-container{
     display: flex;
-    justify-content: center;
     align-items: center;
+    gap: 1.2rem;
+    padding: .5rem;
+    cursor: pointer;
+    border-radius: .5rem;
+    will-change: transform;
 }
 
-.editor-sidebar-option-title{
-    font-size: 1.05rem;
-    font-weight: 500;
+.editor-sidebar-scene-option-container:active{
+    transform: scale(.99);
+}
+
+.editor-sidebar-scene-option-container:hover{
+    background-color: rgb(85 85 85 / 18%);
+}
+
+.editor-sidebar-scene-option-title{
+    font-size: 1.2rem;
+}
+
+.editor-sidebar-scene-option-icon-container{
+    background-color: #212121;
+    padding: .8rem;
+    font-size: 1.3rem;
+    border-radius: .5rem;
 }

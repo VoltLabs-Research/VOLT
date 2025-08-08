@@ -24,6 +24,7 @@ interface ConfigurationState {
     activeSidebarTab: string;
     activeSidebarOption: string;
     isModelLoading: boolean;
+    activeModifier: string;
 }
 
 interface ConfigurationActions {
@@ -36,6 +37,7 @@ interface ConfigurationActions {
     updateAnalysisConfig: (config: Partial<AnalysisConfig>) => void;
     resetAnalysisConfig: () => void;
     setActiveSidebarTag: (tag: string) => void;
+    setActiveModifier: (modifier: string) => void;
     setActiveSidebarOption: (option: string) => void;
     setActiveSceneObject: (sceneObject: SceneObjectType) => void;
     setIsModelLoading: (loading: boolean) => void;
@@ -88,6 +90,10 @@ const useConfigurationStore = create<ConfigurationStore>()(persist((set, get) =>
 
         setActiveSidebarTag(tag: string){
             set({ activeSidebarTab: tag });
+        },
+
+        setActiveModifier(modifier: string){
+            set({ activeModifier: modifier });
         },
 
         resetSlicePlaneConfig: () => {
