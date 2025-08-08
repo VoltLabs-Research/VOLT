@@ -10,13 +10,13 @@ import EditorWidget from '@/components/organisms/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
+import CanvasSidebarSceneOption from '@/components/atoms/CanvasSidebarSceneOption';
 import useConfigurationStore from '@/stores/editor/configuration';
 import './EditorSidebar.css';
 
 const EditorSidebar = () => {
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const setActiveSceneObject = useConfigurationStore((state) => state.setActiveSceneObject);
-    const [activeSidebarTab, setActiveSidebarTag] = useState('Scene');
+    const activeSidebarTab = useConfigurationStore((state) => state.activeSidebarTab);
 
     return (
         <EditorWidget className='editor-sidebar-container' draggable={false}>
@@ -60,16 +60,12 @@ const EditorSidebar = () => {
                                 [PiTriangleDashedThin, 'Interface Mesh', 'interface_mesh'],
                                 [IoIosColorFilter, 'Structure Identification', 'atoms_colored_by_type']
                             ].map(([ Icon, title, sceneType ], index) => (
-                                <div 
-                                    className='editor-sidebar-scene-option-container' 
-                                    onClick={() => setActiveSceneObject(sceneType)}
+                                <CanvasSidebarSceneOption
+                                    Icon={Icon}
+                                    title={title}
+                                    sceneType={sceneType}
                                     key={index}
-                                >
-                                    <i className='editor-sidebar-scene-option-icon-container'>
-                                        <Icon />
-                                    </i>
-                                    <h3 className='editor-sidebar-scene-option-title'>{title}</h3>
-                                </div>
+                                />
                             ))}
                         </div>
                     </div>
