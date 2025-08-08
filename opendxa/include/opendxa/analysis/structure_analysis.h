@@ -8,9 +8,10 @@
 #include <opendxa/structures/neighbor_bond_array.h>
 #include <opendxa/structures/coordination_structure.h>
 #include <opendxa/structures/lattice_structure.h>
-#include <nlohmann/json.hpp>
 #include <opendxa/core/coordination_structures.h>
 #include <opendxa/analysis/polyhedral_template_matching.h>
+#include <opendxa/core/lammps_parser.h>
+#include <nlohmann/json.hpp>
 #include <mutex>
 
 using json = nlohmann::json;
@@ -49,6 +50,11 @@ public:
 	float computeAdaptiveRMSDCutoff();
 
 	void buildClustersPTM();
+
+	json getAtomsData(
+		const LammpsParser::Frame &frame,
+		const std::vector<int>* structureTypes
+	);
 
 	int atomCount() const{
 		return positions()->size();

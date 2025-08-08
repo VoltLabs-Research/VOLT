@@ -21,6 +21,7 @@ void show_usage(const std::string& name){
               << "                             Available types: BCC, FCC, HCP, CUBIC_DIAMOND, HEX_DIAMOND.\n\n"
               << "  --customRmsd <float> Structure Analysis will use the specified RMSD, otherwise adaptive RMSD.\n\n"
               << "  --identificationMode <mode> Structure identification mode. Default: CNA.\n"
+              << "  --structureIdentificationOnly Only generates a output file with the structure identification.\n\n"
               << "                             Available modes: CNA, PTM.\n\n"
               << "  --maxTrialCircuitSize <int> Maximum size of the Burgers circuit. Default: 14.\n\n"
               << "  --circuitStretchability <int> Circuit stretchability factor. Default: 9.\n\n"
@@ -109,6 +110,9 @@ int main(int argc, char* argv[]){
         if(options.count("--customRmsd")){
             analyzer.setCustomRmsd(std::stod(options["--customRmsd"]));
         }
+        if(options.count("--structureIdentificationOnly")){
+            analyzer.setStructureIdentificationOnly(options["--structureIdentificationOnly"] == "true");
+        }
         if(options.count("--maxTrialCircuitSize")){
             analyzer.setMaxTrialCircuitSize(std::stod(options["--maxTrialCircuitSize"]));
         }
@@ -128,7 +132,7 @@ int main(int argc, char* argv[]){
             analyzer.setMarkCoreAtoms(options["--markCoreAtoms"] == "true");
         }
     }catch(const std::exception& e){
-        spdlog::error("Error while processing options:{}", e.what());
+        spdlog::error("Error while processing options: {}", e.what());
         return 1;
     }
     

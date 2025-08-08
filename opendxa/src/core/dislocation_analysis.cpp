@@ -17,6 +17,11 @@ void DislocationAnalysis::setInputCrystalStructure(LatticeStructureType structur
     _inputCrystalStructure = structure;
 }
 
+// Output structure identification only
+void DislocationAnalysis::setStructureIdentificationOnly(bool structureIdentificationOnly){
+    _structureIdentificationOnly = structureIdentificationOnly;
+}
+
 // Define the maximum number of edges that a Burgers circuit may have.
 // The tracer will not attempt to close loops longer than this size,
 // preventing runaway searches in very complex meshes.
@@ -167,6 +172,25 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         structureAnalysis->identifyStructures();
     }
 
+    std::vector<int> extractedStructureTypes;
+    extractedStructureTypes.reserve(frame.natoms);
+    
+    for(int i = 0; i < frame.natoms; ++i){
+        int structureType = structureAnalysis->structureTypes()->getInt(i);
+        extractedStructureTypes.push_back(structureType);
+    }
+
+    if(_structureIdentificationOnly){
+        json atomsData = structureAnalysis->getAtomsData(frame, &extractedStructureTypes);
+
+        std::ofstream atomsOf(outputFile + "_atoms.msgpack", std::ios::binary);
+        std::vector<std::uint8_t> atomsMsgPack = nlohmann::json::to_msgpack(result["atoms"]);
+        atomsOf.write(reinterpret_cast<const char*>(atomsMsgPack.data()), atomsMsgPack.size());
+        atomsOf.close();
+        
+        return atomsData;
+    }
+
     // Once every atom has a type, we group them into clusters that represent grains or regions of the same lattice.
     // Dislocations do NOT appear everywhere. They appear specifically at grain boundaries.
     // Without clusters, we would have to search for dislocations in every atom, which is inefficient; 
@@ -189,14 +213,6 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     {
         PROFILE("Form Super Clusters");
         structureAnalysis->formSuperClusters();
-    }
-
-    std::vector<int> extractedStructureTypes;
-    extractedStructureTypes.reserve(frame.natoms);
-    
-    for(int i = 0; i < frame.natoms; ++i){
-        int structureType = structureAnalysis->structureTypes()->getInt(i);
-        extractedStructureTypes.push_back(structureType);
     }
 
     // Next, we perform a periodic Delaunay Tessellation of all atomic positions.
@@ -334,7 +350,6 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     }
 
     spdlog::debug("Json output file: {}", outputFile);
-
 
     if(!outputFile.empty()){
         std::ofstream defectMeshOf(outputFile + "_defect_mesh.msgpack", std::ios::binary);

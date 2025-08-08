@@ -49,6 +49,7 @@ public:
         _customRmsd(-1),
         _onlyPerfectDislocations(false){}
 
+    void setStructureIdentificationOnly(bool structureIdentificationOnly);
     void setCustomRmsd(float rmsd);
     void setInputCrystalStructure(LatticeStructureType structure);
     void setMaxTrialCircuitSize(double size);
@@ -76,6 +77,7 @@ private:
     StructureAnalysis::Mode _identificationMode;
 
     bool _markCoreAtoms;
+    bool _structureIdentificationOnly;
     bool _onlyPerfectDislocations;
     
     mutable json _lastJsonData;
