@@ -29,7 +29,7 @@ import SceneTopCenteredOptions from '@/components/atoms/scene/SceneTopCenteredOp
 import AnalysisConfiguration from '@/components/organisms/AnalysisConfiguration';
 import SlicePlane from '@/components/organisms/SlicePlane';
 import TimestepControls from '@/components/organisms/TimestepControls';
-//import DislocationResults from '@/components/atoms/DislocationResults';
+import DislocationResults from '@/components/atoms/DislocationResults';
 
 const CanvasWidgets = React.memo<EditorWidgetsProps>(({ 
   trajectory, 
@@ -46,7 +46,6 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({
             <SceneTopCenteredOptions />
             <SlicePlane />
             <AnalysisConfiguration />
-
             {(trajectory && currentTimestep !== undefined) && (
                 <TimestepControls />
             )}

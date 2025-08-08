@@ -46,8 +46,10 @@ public:
         _defectMeshSmoothingLevel(8),
         _identificationMode(StructureAnalysis::Mode::CNA),
         _markCoreAtoms(false),
+        _customRmsd(-1),
         _onlyPerfectDislocations(false){}
 
+    void setCustomRmsd(float rmsd);
     void setInputCrystalStructure(LatticeStructureType structure);
     void setMaxTrialCircuitSize(double size);
     void setCircuitStretchability(double stretch);
@@ -68,6 +70,9 @@ private:
     double _lineSmoothingLevel;
     double _linePointInterval;
     double _defectMeshSmoothingLevel;
+
+    float _customRmsd;
+
     StructureAnalysis::Mode _identificationMode;
 
     bool _markCoreAtoms;

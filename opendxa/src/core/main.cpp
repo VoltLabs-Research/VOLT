@@ -19,6 +19,7 @@ void show_usage(const std::string& name){
               << "Options:\n"
               << "  --crystalStructure <type>  Reference crystal structure type. Default: BCC.\n"
               << "                             Available types: BCC, FCC, HCP, CUBIC_DIAMOND, HEX_DIAMOND.\n\n"
+              << "  --customRmsd <float> Structure Analysis will use the specified RMSD, otherwise adaptive RMSD.\n\n"
               << "  --identificationMode <mode> Structure identification mode. Default: CNA.\n"
               << "                             Available modes: CNA, PTM.\n\n"
               << "  --maxTrialCircuitSize <int> Maximum size of the Burgers circuit. Default: 14.\n\n"
@@ -104,6 +105,9 @@ int main(int argc, char* argv[]){
             std::string val = options["--identificationMode"];
             if(val == "CNA")analyzer.setIdentificationMode(OpenDXA::StructureAnalysis::Mode::CNA);
             else if(val == "PTM")analyzer.setIdentificationMode(OpenDXA::StructureAnalysis::Mode::PTM);
+        }
+        if(options.count("--customRmsd")){
+            analyzer.setCustomRmsd(std::stod(options["--customRmsd"]));
         }
         if(options.count("--maxTrialCircuitSize")){
             analyzer.setMaxTrialCircuitSize(std::stod(options["--maxTrialCircuitSize"]));

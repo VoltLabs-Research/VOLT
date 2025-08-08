@@ -31,7 +31,9 @@ public:
 			ParticleProperty* particleSelection,
 			ParticleProperty* outputStructures,
 			std::vector<Matrix3>&& preferredCrystalOrientations = std::vector<Matrix3>(),
-			bool identifyPlanarDefects = true, Mode _identificationMode = Mode::CNA);
+			bool identifyPlanarDefects = true, 
+			Mode _identificationMode = Mode::CNA,
+			float customRmsd = -1);
 
 	void identifyStructures();
 	void buildClusters();
@@ -110,7 +112,7 @@ public:
 	const SimulationCell& cell() const{
 		return _simCell;
 	}
-
+	
 	void freeNeighborLists(){
 		_neighborLists.reset();
 		_atomSymmetryPermutations.reset();
@@ -234,6 +236,7 @@ public:
         
         return stats;
     }
+
 private:
 	bool alreadyProcessedAtom(int index);
 	bool calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition);
@@ -303,17 +306,23 @@ private:
 	LatticeStructureType _inputCrystalType;
 	ParticleProperty* _positions; 
 	std::mutex cluster_graph_mutex;
-	ParticleProperty* _structureTypes; 
+	ParticleProperty* _structureTypes;
+	
+	float _customRmsd = -1;
 	std::shared_ptr<ParticleProperty> _ptmRmsd; 
 	std::shared_ptr<ParticleProperty> _ptmOrientation; 
 	std::shared_ptr<ParticleProperty> _ptmDeformationGradient; 
 	std::shared_ptr<ParticleProperty> _neighborLists; 
 	std::shared_ptr<ParticleProperty> _atomClusters;
 	std::shared_ptr<ParticleProperty> _atomSymmetryPermutations; 
+
 	ParticleProperty* _particleSelection; 
+
 	std::shared_ptr<ClusterGraph> _clusterGraph; 
 	std::atomic<double> _maximumNeighborDistance;
+	
 	SimulationCell _simCell;
+	
 	std::vector<Matrix3> _preferredCrystalOrientations;
 };
 
