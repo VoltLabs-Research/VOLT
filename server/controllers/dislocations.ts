@@ -21,78 +21,36 @@
 **/
 
 import { Request, Response } from 'express';
-import { readdir, writeFile, readFile } from 'fs/promises';
-import { getAnalysisQueue } from '@/queues';
-import { existsSync } from 'fs';
-import { join, basename } from 'path';
-import { v4 } from 'uuid';
+import { dislocationAnalysis, DislocationAnalysisModifierError } from '@/modifiers/dislocation-analysis';
 
 export const getTrajectoryDislocations = async (req: Request, res: Response) => {
     try {
         const { folderId, _id: trajectoryId, team, name, frames } = res.locals.trajectory;
-        const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
-
-        if(!existsSync(folderPath)){
-            return res.status(404).json({ error: 'Trajectory folder not found' });
-        }
-
-        const files = await readdir(folderPath);
-        const trajectoryFiles = files
-            .filter((file) => /^\d+$/.test(file))
-            .sort((a, b) => parseInt(a) - parseInt(b))
-            .map((file) => join(folderPath, file));
-
-        if(trajectoryFiles.length === 0){
-            return res.status(400).json({ error: 'No trajectory files found' });
-        }
-        
-        const metadataPath = join(folderPath, 'metadata.json');
-
-        let metadata: any = {};
-        if(existsSync(metadataPath)){
-            try{
-                metadata = JSON.parse(await readFile(metadataPath, 'utf-8'));
-            }catch(err){
-                return res.status(400).json({ error: 'Failed to read or parse metadata.json' });
-            }
-        }else{
-            metadata = {};
-        }
-
-        metadata.lastAnalysis = {
-            jobId: `queue-${Date.now()}`,
-            config: req.body,
-            status: 'queued',
-            updatedAt: new Date().toISOString()
-        };
-        await writeFile(metadataPath, JSON.stringify(metadata, null, 4), 'utf-8');
-        
-        const queueService = getAnalysisQueue();
-        const jobsToEnqueue = trajectoryFiles.map((inputFile) => {
-            const jobId = v4();
-            return {
-                jobId,
-                trajectoryId,
-                folderPath,
-                inputFile,
-                teamId: team,
-                name: `Dislocation Analysis - Frame ${basename(inputFile)}/${frames[trajectoryFiles.length - 1].timestep}`,
-                message: name,
-                config: req.body
-            };
+        const result = await dislocationAnalysis({
+            folderId,
+            trajectoryId,
+            team,
+            name,
+            frames
         });
 
-        if(jobsToEnqueue.length > 0){
-            await queueService.addJobs(jobsToEnqueue);
+        switch(result){
+            case DislocationAnalysisModifierError.TrajectoryFolderNotFound:
+                return res.status(404).json({ error: 'Trajectory folder not found' });
+
+            case DislocationAnalysisModifierError.TrajectoryFolderIsEmpty:
+                return res.status(400).json({ error: 'No trajectory files found' });
+
+            case DislocationAnalysisModifierError.MetadataParseError:
+                return res.status(400).json({ error: 'Failed to read or parse metadata.json' });
         }
 
-        const queueStatus = await queueService.getStatus(); 
         return res.status(202).json({
             status: 'success',
             data: {
                 trajectoryId,
-                jobIds: jobsToEnqueue.map(j => j.jobId), 
-                queueStatus
+                jobIds: result.jobsToEnqueue.map(j => j.jobId), 
+                queueStatus: result.queueStatus
             }
         });
     }catch(error){
