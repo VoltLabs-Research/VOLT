@@ -180,7 +180,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         extractedStructureTypes.push_back(structureType);
     }
 
-    if(_structureIdentificationOnly){
+    if(_structureIdentificationOnly && !outputFile.empty()){
         json atomsData = structureAnalysis->getAtomsData(frame, &extractedStructureTypes);
 
         std::ofstream atomsOf(outputFile + "_atoms.msgpack", std::ios::binary);
