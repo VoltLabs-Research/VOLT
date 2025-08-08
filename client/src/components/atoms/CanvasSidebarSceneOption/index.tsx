@@ -1,25 +1,28 @@
 import React from 'react';
 import useConfigurationStore, { type SceneObjectType } from '@/stores/editor/configuration';
+import type { IconType } from 'react-icons/lib';
 import './CanvasSidebarSceneOption.css';
 
 interface CanvasSidebarSceneOptionProps{
-    Icon: any;
-    title: string;
-    sceneType: SceneObjectType;
+    option: {
+        Icon: IconType;
+        title: string;
+        sceneType: SceneObjectType;
+    }
 }
 
-const CanvasSidebarSceneOption: React.FC<CanvasSidebarSceneOptionProps> = ({ Icon, title, sceneType }) => {
+const CanvasSidebarSceneOption: React.FC<CanvasSidebarSceneOptionProps> = ({ option }) => {
     const setActiveSceneObject = useConfigurationStore((state) => state.setActiveSceneObject);
     
     return (
         <div 
             className='editor-sidebar-scene-option-container' 
-            onClick={() => setActiveSceneObject(sceneType)}
+            onClick={() => setActiveSceneObject(option.sceneType)}
         >
             <i className='editor-sidebar-scene-option-icon-container'>
-                <Icon />
+                <option.Icon />
             </i>
-            <h3 className='editor-sidebar-scene-option-title'>{title}</h3>
+            <h3 className='editor-sidebar-scene-option-title'>{option.title}</h3>
         </div>
     );
 };

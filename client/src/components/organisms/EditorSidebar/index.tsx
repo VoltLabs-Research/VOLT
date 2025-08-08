@@ -1,16 +1,11 @@
-import { useState } from 'react';
 import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import { LuPanelRight } from "react-icons/lu";
-import { TbObjectScan } from "react-icons/tb";
-import { PiLineSegmentThin, PiAtomThin, PiTriangleDashedThin } from "react-icons/pi";
-import { SiTraefikmesh } from "react-icons/si";
-import { IoIosColorFilter } from "react-icons/io";
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
-import CanvasSidebarSceneOption from '@/components/atoms/CanvasSidebarSceneOption';
+import CanvasSidebarScene from '@/components/molecules/CanvasSidebarScene';
 import useConfigurationStore from '@/stores/editor/configuration';
 import './EditorSidebar.css';
 
@@ -50,25 +45,7 @@ const EditorSidebar = () => {
                 </div>
 
                 {activeSidebarTab === 'Scene' ? (
-                    <div className='editor-sidebar-scene-container'>
-                        <div className='editor-sidebar-scene-options-container'>
-                            {[
-                                [TbObjectScan, 'Camera 1', 'trajectory'],
-                                [PiLineSegmentThin, 'Dislocations', 'dislocations'],
-                                [SiTraefikmesh, 'Defect Mesh', 'defect_mesh'],
-                                [PiAtomThin, 'Dislocation Core Atoms', 'core_atoms'],
-                                [PiTriangleDashedThin, 'Interface Mesh', 'interface_mesh'],
-                                [IoIosColorFilter, 'Structure Identification', 'atoms_colored_by_type']
-                            ].map(([ Icon, title, sceneType ], index) => (
-                                <CanvasSidebarSceneOption
-                                    Icon={Icon}
-                                    title={title}
-                                    sceneType={sceneType}
-                                    key={index}
-                                />
-                            ))}
-                        </div>
-                    </div>
+                    <CanvasSidebarScene />
                 ) : (
                     <div className='editor-sidebar-modifiers-container'>
 
