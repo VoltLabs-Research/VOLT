@@ -8,7 +8,7 @@ import useConfigurationStore from '@/stores/editor/configuration';
 import './CanvasSidebarScene.css';
 
 const CanvasSidebarScene: React.FC = () => {
-    const setActiveSceneObject = useConfigurationStore((state) => state.activeSceneObject);
+    const setActiveSceneObject = useConfigurationStore((state) => state.setActiveSceneObject);
     const activeSceneObject = useConfigurationStore((state) => state.activeSceneObject);
 
     const options = [{
@@ -37,12 +37,16 @@ const CanvasSidebarScene: React.FC = () => {
         sceneType: 'atoms_colored_by_type'
     }];
 
+    const onSelect = (option) => {
+        setActiveSceneObject(option.sceneType);
+    };
+
     return (
         <div className='editor-sidebar-scene-container'>
             <div className='editor-sidebar-scene-options-container'>
                 {options.map((option, index) => (
                     <CanvasSidebarOption
-                        onSelect={setActiveSceneObject}
+                        onSelect={onSelect}
                         activeOption={activeSceneObject}
                         option={option}
                         key={index}

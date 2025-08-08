@@ -72,6 +72,7 @@ const initialState: ConfigurationState = {
     analysisConfig: DEFAULT_ANALYSIS_CONFIG,
     activeSceneObject: DEFAULT_SCENE_OBJECT,
     isModelLoading: false,
+    activeSidebarTab: 'Scene',
 };
 
 const useConfigurationStore = create<ConfigurationStore>()(persist((set, get) => ({

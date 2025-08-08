@@ -12,7 +12,7 @@ class CullingService{
 
     private initializeWorker(): void{
         try{
-            this.worker = new Worker(new URL('@/workers/cullingWorker.ts', import.meta.url));
+            this.worker = new Worker(new URL('@/workers/culling.ts', import.meta.url));
             
             this.worker.onmessage = (e) => {
                 if(e.data.type === 'cullResult'){
