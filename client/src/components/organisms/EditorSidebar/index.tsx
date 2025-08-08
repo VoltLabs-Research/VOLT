@@ -9,6 +9,7 @@ import { MdKeyboardArrowDown } from 'react-icons/md';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
+import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
 import useConfigurationStore from '@/stores/editor/configuration';
 import './EditorSidebar.css';
 
@@ -43,13 +44,7 @@ const EditorSidebar = () => {
                 <div className='editor-sidebar-options-wrapper-container'>
                     <div className='editor-sidebar-options-container'>
                         {['Scene', 'Modifiers'].map((option, index) => (
-                            <div 
-                                className={'editor-sidebar-option-container '.concat((option === activeSidebarTab) ? 'selected': '')} 
-                                onClick={() => setActiveSidebarTag(option)}
-                                key={index}
-                            >
-                                <h3 className='editor-sidebar-option-title'>{option}</h3>
-                            </div>
+                            <CanvasSidebarOption option={option} key={index} />
                         ))}
                     </div>
                 </div>
