@@ -181,13 +181,15 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     }
 
     if(_structureIdentificationOnly && !outputFile.empty()){
-        json atomsData = structureAnalysis->getAtomsData(frame, &extractedStructureTypes);
+        json atomsData = structureAnalysis->getStructureStatisticsJson();
 
-        std::ofstream atomsOf(outputFile + "_atoms.msgpack", std::ios::binary);
-        std::vector<std::uint8_t> atomsMsgPack = nlohmann::json::to_msgpack(result["atoms"]);
-        atomsOf.write(reinterpret_cast<const char*>(atomsMsgPack.data()), atomsMsgPack.size());
+        std::ofstream atomsOf(outputFile + "_atoms.msgpack");
+        std::vector<std::uint8_t> atomsMsgPack = nlohmann::json::to_msgpack(atomsData);
+//        atomsOf.write(reinterpret_cast<const char*>(atomsMsgPack.data()), atomsMsgPack.size());
+        atomsOf << atomsData.dump().c_str();
+
         atomsOf.close();
-        
+
         return atomsData;
     }
 

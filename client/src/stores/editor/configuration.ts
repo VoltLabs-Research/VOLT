@@ -46,6 +46,7 @@ interface ConfigurationActions {
 
 export type ConfigurationStore = ConfigurationState & ConfigurationActions;
 
+// CNA?
 const DEFAULT_ANALYSIS_CONFIG: AnalysisConfig = {
     crystalStructure: 'CUBIC_DIAMOND',
     identificationMode: 'PTM',

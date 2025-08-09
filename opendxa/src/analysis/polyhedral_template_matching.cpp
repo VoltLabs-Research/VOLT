@@ -272,7 +272,7 @@ StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::ve
 
     // TODO: Should I implement graphene and other types like ICO, SC...?
     // Build bitmask of structure type to test
-    int32_t flags = PTM_CHECK_FCC | PTM_CHECK_HCP | PTM_CHECK_BCC | PTM_CHECK_DCUB | PTM_CHECK_DHEX;
+    int32_t flags = PTM_CHECK_SC | PTM_CHECK_FCC | PTM_CHECK_HCP | PTM_CHECK_ICO | PTM_CHECK_BCC | PTM_CHECK_DCUB | PTM_CHECK_DHEX | PTM_CHECK_GRAPHENE;
     ptm_result_t result;
     int errorCode = ptm_index(_handle, particleIndex, getNeighbors, (void*) &nbrdata, flags, _algorithm._calculateDefGradient, &result, &_env);
     //assert(errorCode == PTM_NO_ERROR);
