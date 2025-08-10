@@ -287,52 +287,67 @@ class DislocationExporter{
             bounds
         };
     }
-
+    
     private createGLB(
         geometry: ProcessedDislocationGeometry,
         options: Required<DislocationExportOptions>,
         outputFilePath: string
-    ): any{
+    ): any {
+        const useU16 = geometry.vertexCount > 0 && geometry.vertexCount <= 65535;
+        const indicesArray = useU16
+            ? new Uint16Array(geometry.indices)
+            : geometry.indices;
+        
+        // 5123 = UNSIGNED_SHORT; 5125 = UNSIGNED INT
+        const indexComponentType = useU16 ? 5123  : 5125;
+
+        // Float32Array
         const positionBufferSize = geometry.positions.byteLength;
         const normalBufferSize = geometry.normals.byteLength;
         const colorBufferSize = geometry.colors ? geometry.colors.byteLength : 0;
-        const indexBufferSize = geometry.indices.byteLength;
+        // Uint16 or Uint32
+        const indexBufferSize = indicesArray.byteLength;
 
         const positionOffset = 0;
-        const normalOffset = positionBufferSize;
+        const normalOffset = positionOffset + positionBufferSize;
         const colorOffset = normalOffset + normalBufferSize;
         const indexOffset = colorOffset + colorBufferSize;
         const totalBufferSize = indexOffset + indexBufferSize;
 
         const arrayBuffer = new ArrayBuffer(totalBufferSize);
 
-        // Copy data to buffer
         new Float32Array(
-            arrayBuffer,
-            positionOffset,
+            arrayBuffer, 
+            positionOffset, 
             geometry.positions.length
         ).set(geometry.positions);
 
         new Float32Array(
-            arrayBuffer,
-            normalOffset,
+            arrayBuffer, 
+            normalOffset, 
             geometry.normals.length
         ).set(geometry.normals);
 
         if(geometry.colors){
             new Float32Array(
-                arrayBuffer,
-                colorOffset,
+                arrayBuffer, 
+                colorOffset, 
                 geometry.colors.length
             ).set(geometry.colors);
         }
 
-        if(geometry.indices.length > 0){
+        if(useU16){
+            new Uint16Array(
+                arrayBuffer, 
+                indexOffset, 
+                indicesArray.length
+            ).set(indicesArray as Uint16Array);
+        }else{
             new Uint32Array(
-                arrayBuffer,
-                indexOffset,
-                geometry.indices.length
-            ).set(geometry.indices)
+                arrayBuffer, 
+                indexOffset, 
+                indicesArray.length
+            ).set(indicesArray as Uint32Array);
         }
 
         const glb: any = {
@@ -343,144 +358,142 @@ class DislocationExporter{
             },
             scene: 0,
             scenes: [{ nodes: [] }],
-            nodes: [{ }],
+            nodes: [],
             materials: [{
-                name: 'DislocationMaterial',
-                pbrMetallicRoughness: {
-                    baseColorFactor: options.material.baseColor,
-                    metallicFactor: options.material.metallic,
-                    roughnessFactor: options.material.roughness,
-                },
-                emissiveFactor: options.material.emissive,
-                doubleSided: true
+            name: 'DislocationMaterial',
+            pbrMetallicRoughness: {
+                baseColorFactor: options.material.baseColor,
+                metallicFactor: options.material.metallic,
+                roughnessFactor: options.material.roughness,
+            },
+            emissiveFactor: options.material.emissive,
+            doubleSided: true
             }],
             meshes: [],
             accessors: [],
             bufferViews: [],
-            buffers: [{
-                byteLength: totalBufferSize
-            }],
+            buffers: [{ byteLength: totalBufferSize }],
             extras: options.metadata.includeOriginalStats ? {
-                stats: {
-                    vertexCount: geometry.vertexCount,
-                    triangleCount: geometry.triangleCount,
-                    segmentCount: geometry.triangleCount / (options.tubularSegments * 2)
-                },
-                ...options.metadata.customProperties,
+            stats: {
+                vertexCount: geometry.vertexCount,
+                triangleCount: geometry.triangleCount,
+                segmentCount: geometry.triangleCount / (options.tubularSegments * 2)
+            },
+            ...options.metadata.customProperties,
             } : options.metadata.customProperties
         };
 
-        // Only create geometry-related structures if there are vertices
-        if(geometry.vertexCount > 0){
-            // Position Accessor & BufferView
-            glb.accessors.push({
-                bufferView: 0,
-                componentType: 5126,
-                count: geometry.vertexCount,
-                type: 'VEC3',
-                min: geometry.bounds.min,
-                max: geometry.bounds.max
-            });
+        if(geometry.vertexCount === 0 || indicesArray.length === 0){
+            assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
+            return;
+        }
 
+        // POSITION
+        const bvPosition = glb.bufferViews.length;
+        glb.bufferViews.push({
+            buffer: 0,
+            byteOffset: positionOffset,
+            byteLength: positionBufferSize,
             // ARRAY_BUFFER
+            target: 34962
+        });
+        const accPosition = glb.accessors.length;
+        glb.accessors.push({
+            bufferView: bvPosition,
+            // FLOAT
+            componentType: 5126, 
+            count: geometry.vertexCount,
+            type: 'VEC3',
+            min: geometry.bounds.min,
+            max: geometry.bounds.max
+        });
+
+        // NORMAL
+        const bvNormal = glb.bufferViews.length;
+        glb.bufferViews.push({
+            buffer: 0,
+            byteOffset: normalOffset,
+            byteLength: normalBufferSize,
+            // ARRAY_BUFFER
+            target: 34962 
+        });
+        const accNormal = glb.accessors.length;
+        glb.accessors.push({
+            bufferView: bvNormal,
+            // FLOAT
+            componentType: 5126, 
+            count: geometry.vertexCount,
+            type: 'VEC3'
+        });
+
+        // COLOR_0 
+        let accColor: number | undefined;
+        if (geometry.colors) {
+            const bvColor = glb.bufferViews.length;
             glb.bufferViews.push({
                 buffer: 0,
-                byteOffset: positionOffset,
-                byteLength: positionBufferSize,
+                byteOffset: colorOffset,
+                byteLength: colorBufferSize,
+                // ARRAY_BUFFER
                 target: 34962
             });
-
-            // Normal Accessor & BufferView
+            accColor = glb.accessors.length;
             glb.accessors.push({
-                bufferView: 1,
-                componentType: 5126,
+                bufferView: bvColor,
+                // FLOAT
+                componentType: 5126, 
                 count: geometry.vertexCount,
-                type: 'VEC3'
+                type: 'VEC4'
             });
-
-            // ARRAY_BUFFER
-            glb.bufferViews.push({
-                buffer: 0,
-                byteOffset: normalOffset,
-                byteLength: normalBufferSize,
-                target: 34962 
-            });
-
-            // Color Accessor & BufferView (if present)
-            if(geometry.colors){
-                glb.accessors.push({
-                    bufferView: 2,
-                    componentType: 5126,
-                    count: geometry.vertexCount,
-                    type: 'VEC4'
-                });
-                glb.bufferViews.push({
-                    buffer: 0,
-                    byteOffset: colorOffset,
-                    byteLength: colorBufferSize,
-                    // ARRAY_BUFFER
-                    target: 34962
-                });
-            }
         }
 
-        // Add mesh primitive and node ONLY if there's geometry to render
-        if(geometry.indices.length > 0){
-            const attributes: any = { POSITION: 0, NORMAL: 1 };
-            // Starts after Position and Normal
-            let accessorIndex = 2; 
+        // INDICES
+        const bvIndices = glb.bufferViews.length;
+        glb.bufferViews.push({
+            buffer: 0,
+            byteOffset: indexOffset,
+            byteLength: indexBufferSize,
+            // ELEMENT_ARRAY_BUFFER
+            target: 34963 
+        });
+        const accIndices = glb.accessors.length;
+        glb.accessors.push({
+            bufferView: bvIndices,
+            componentType: indexComponentType,
+            count: indicesArray.length,
+            type: 'SCALAR'
+        });
 
-            if(geometry.colors){
-                attributes.COLOR_0 = accessorIndex;
-            }
+        const attributes: Record<string, number> = {
+            POSITION: accPosition,
+            NORMAL: accNormal
+        };
 
-            const indicesAccessorIndex = accessorIndex;
-
-            // Push the mesh to the meshes array
-            glb.meshes.push({
-                name: 'DislocationGeometry',
-                primitives: [{
-                    attributes,
-                    indices: indicesAccessorIndex,
-                    material: 0,
-                    // 4 = TRIANGLES
-                    mode: 4
-                }]
-            });
-
-            // Add Index Accessor
-            glb.accessors.push({
-                // The next available bufferView
-                bufferView: glb.bufferViews.length,
-                // UNSIGNED_INT
-                componentType: 5125,
-                count: geometry.indices.length,
-                type: 'SCALAR'
-            });
-
-            // Add Index BufferView
-            glb.bufferViews.push({
-                buffer: 0,
-                byteOffset: indexOffset,
-                byteLength: indexBufferSize,
-                // ELEMENT_ARRAY_BUFFER
-                target: 34963
-            });
-
-            // Now that a mesh exists at index 0, create a 
-            // node that references it
-            glb.nodes.push({
-                name: 'Dislocations',
-                // References glb.meshes[0]
-                mesh: 0 
-            });
-
-            // Add the new node (at index 0) to the scene
-            glb.scenes[0].nodes.push(0);
+        if(accColor !== undefined){
+            attributes.COLOR_0 = accColor;
         }
+
+        glb.meshes.push({
+            name: 'DislocationGeometry',
+            primitives: [{
+                attributes,
+                indices: accIndices,
+                material: 0,
+                // TRIANGLES
+                mode: 4
+            }]
+        });
+
+        const nodeIndex = glb.nodes.length;
+        glb.nodes.push({
+            name: 'Dislocations',
+            mesh: 0
+        });
+        glb.scenes[0].nodes.push(nodeIndex);
 
         assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
     }
+
 
     public toGLB(
         dislocationData: Dislocation,

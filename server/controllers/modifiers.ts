@@ -33,7 +33,10 @@ export const crystalAnalysis = async (req: Request, res: Response) => {
             team,
             name,
             frames,
-            analysisConfig: req.body
+            analysisConfig: {
+                identificationMode: 'PTM',
+                cristalStructure: 'BCC'
+            }
         });
 
         switch(result){

@@ -49,7 +49,7 @@ export type ConfigurationStore = ConfigurationState & ConfigurationActions;
 // CNA?
 const DEFAULT_ANALYSIS_CONFIG: AnalysisConfig = {
     crystalStructure: 'BCC',
-    identificationMode: 'PTM',
+    identificationMode: 'CNA',
     maxTrialCircuitSize: 14.0,
     circuitStretchability: 9.0,
     defectMeshSmoothingLevel: 8,
