@@ -30,7 +30,7 @@ export class MetricsCollector extends EventEmitter {
     constructor(
         private enableMetrics: boolean,
         private healthCheckInterval: number = 30000,
-        private jobTimeout: number = 900000,
+        private jobTimeout: number = 1.8e+6,
         private queueName: string = '',
         private jobMap: Map<number, { job: any; rawData: string; startTime: number }> = new Map()
     ){

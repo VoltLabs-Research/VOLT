@@ -540,7 +540,3 @@ class DislocationExporter{
 };
 
 export default DislocationExporter;
-/*
-const d = fs.readFileSync('/home/rodyherrera/Escritorio/Development/OpenDXA/opendxa/x/75000_dxa_results_dislocations.json').toString();
-const a = new DislocationExporter();
-a.toGLB(JSON.parse(d), 'd.glb');*/
