@@ -148,6 +148,18 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         );
     }
 
+    private emitSessionExpired(teamId: string, sessionId: string, trajectoryId: string): void {
+        const expiredEvent = {
+            type: 'session_expired',
+            sessionId,
+            trajectoryId,
+            timestamp: new Date().toISOString()
+        };
+        
+        emitJobUpdate(teamId, expiredEvent);
+        console.log(`Session expired event emitted to team ${teamId}`);
+    }
+
     private async initializeQueue(): Promise<void> {
         try{
             this.workerManager.initialize();
