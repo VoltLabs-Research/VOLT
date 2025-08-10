@@ -2,13 +2,38 @@
     position: relative;
     border-radius: 12px;
     padding: 3px;
-    background: var(--progress-border, transparent);
-    transition: all 0.15s ease;
+    background: var(--progress-border-static, transparent);
+    transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.progress-border-container::before{
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 3px;
+    border-radius: inherit;
+    pointer-events: none;
+
+    background: var(--progress-border-animated, transparent);
+
+    animation: pbc-slide 2s linear infinite;
+
+    -webkit-mask: conic-gradient(#000 0 calc(var(--progress, 0) * 1%), transparent 0);
+            mask: conic-gradient(#000 0 calc(var(--progress, 0) * 1%), transparent 0);
+}
+
+@keyframes pbc-slide{
+    from{
+        background-position: 0 0;
+    }
+    to{
+        background-position: 200px 0;
+    }
 }
 
 .progress-border-container--animating{
-    filter: brightness(1.02);
-    transform: scale(1.001);
+  filter: brightness(1.02);
+  transform: scale(1.001);
 }
 
 .progress-border-container[style*="conic-gradient"]{
