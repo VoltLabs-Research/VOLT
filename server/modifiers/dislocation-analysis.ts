@@ -22,7 +22,6 @@ export enum DislocationAnalysisModifierError{
 // TODO: I think that it's better create a BaseModifier class.
 export const dislocationAnalysis = async (config: DislocationAnalysisModifierConfig) => {
     const folderPath = join(process.env.TRAJECTORY_DIR as string, config.folderId);
-
     if(!existsSync(folderPath)){
         return DislocationAnalysisModifierError.TrajectoryFolderNotFound;
     }

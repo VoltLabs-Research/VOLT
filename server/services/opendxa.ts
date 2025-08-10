@@ -67,8 +67,8 @@ function buildCliArgs(options: ConfigParameters): string[] {
         identificationMode: '--identificationMode',
         lineSmoothingLevel: '--lineSmoothingLevel',
         linePointInterval: '--linePointInterval',
-        markCoreAtoms: '--markCoreAtoms true',
-        structureIdentificationOnly: '--structureIdentificationOnly true'
+        markCoreAtoms: '--markCoreAtoms',
+        structureIdentificationOnly: '--structureIdentificationOnly'
     };
 
     for(const key in options){
@@ -131,6 +131,7 @@ class OpenDXAService{
     private runCliProcess(inputFile: string, outputBase: string, optionsArgs: string[]): Promise<void> {
         return new Promise((resolve, reject) => {
             const args = [inputFile, outputBase, ...optionsArgs];
+
             console.log(`[OpenDXAService] Running CLI with arguments: ${args.join(' ')}`);
 
             const cliProcess = spawn(CLI_EXECUTABLE_PATH, args);
@@ -194,7 +195,7 @@ class OpenDXAService{
         const atomsFilePath = path.join(this.trajectoryFolderPath, `grouped_atoms_${timestep}.json`);
         await fs.writeFile(atomsFilePath, JSON.stringify(atoms));
 
-        if(options.structureIdentificationOnly){
+        if(options?.structureIdentificationOnly){
             this.exportAtomsColoredByType(atoms, timestep);
             return;
         }
