@@ -5,9 +5,18 @@
     color: #f1f1f1;
     cursor: pointer;
     transition: all 0.2s;
+    position: relative;
 }
 
-.button:hover{
+.button.smooth{
+    background-color: rgba(35, 35, 35, 0.7);
+}
+
+.button.click-scale:active{
+    transform: scale(.95);
+}
+
+.button:hover(:not(.smooth)){
     opacity: .9;
 }
 

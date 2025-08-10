@@ -137,7 +137,7 @@ const SideImageForm = ({
                     <div className='side-image-form-submit-btn-container'>
                         <Button 
                             type='submit'
-                            className={'sm-radius '.concat((isLoading) ? 'is-loading' : '')}
+                            className='sm-radius'
                             title='Continue'
                             isLoading={isLoading} />
                             

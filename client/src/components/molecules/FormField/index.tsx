@@ -33,7 +33,9 @@ interface FormFieldProps {
     onFieldChange: (key: string, value: any) => void;
     inputProps?: React.InputHTMLAttributes<HTMLInputElement>; 
     options?: string[]; 
+    isLoading?: boolean;
 }
+
 const FormField: React.FC<FormFieldProps> = ({
     label,
     fieldKey,
@@ -41,7 +43,8 @@ const FormField: React.FC<FormFieldProps> = ({
     fieldValue,
     onFieldChange,
     inputProps,
-    options
+    options,
+    isLoading = false
 }) => {
 
     const handleChange = (value: string | number | boolean) => {
@@ -88,7 +91,7 @@ const FormField: React.FC<FormFieldProps> = ({
     };
 
     return (
-        <div className={`labeled-input-container ${fieldType === 'checkbox' ? 'checkbox-container' : ''}`}>
+        <div className={`labeled-input-container ${fieldType === 'checkbox' ? 'checkbox-container' : ''} ${isLoading ? 'is-loading' : ''}`}>
             <h4 className='labeled-input-label'>{label}</h4>
             <div className='labeled-input-tag-container'>
                 {renderInput()}

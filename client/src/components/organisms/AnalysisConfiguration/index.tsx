@@ -24,11 +24,17 @@ import { IoIosArrowDown } from 'react-icons/io';
 import FormField from '@/components/molecules/FormField';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import useConfigurationStore from '@/stores/editor/configuration';
+import Button from '@/components/atoms/Button';
+import useTrajectoryStore from '@/stores/trajectories';
+import { useNavigate } from 'react-router';
 import './AnalysisConfiguration.css';
 
 const AnalysisConfiguration = () => {
     const analysisConfig = useConfigurationStore((state) => state.analysisConfig);
     const setAnalysisConfig = useConfigurationStore((state) => state.setAnalysisConfig);
+    const dislocationAnalysis = useTrajectoryStore((state) => state.dislocationAnalysis);
+    const trajectory = useTrajectoryStore((state) => state.trajectory);
+    const navigate = useNavigate();
 
     const configFields = [
         { 
@@ -59,16 +65,24 @@ const AnalysisConfiguration = () => {
         { key: 'markCoreAtoms', label: 'Mark Core Atoms', type: 'checkbox' },
     ];
 
-       return (
-        <EditorWidget className='editor-analysis-config'>
+    const startAnalysis = () => {
+        console.log('Starting Dislocation Analysis:', analysisConfig);
+        dislocationAnalysis(trajectory?._id, analysisConfig);
+        // TODO: Show analysis progress in CAnvas
+        navigate('/dashboard');
+    };
+
+    return (
+        <EditorWidget className='editor-analysis-config' draggable={false}>
             <div className='editor-analysis-config-header-container'>
-                <h3 className='editor-analysis-config-header-title'>Analysis Configuration</h3>
+                <h3 className='editor-analysis-config-header-title'>Dislocation Analysis</h3>
                 <IoIosArrowDown />
             </div>
 
             <div className='editor-analysis-config-body-container'>
                 {configFields.map((field) => (
                     <FormField
+                        isLoading={false}
                         key={field.key}
                         label={field.label}
                         fieldKey={field.key}
@@ -79,6 +93,15 @@ const AnalysisConfiguration = () => {
                         onFieldChange={setAnalysisConfig}
                     />
                 ))}
+            </div>
+
+            <div className='editor-analysis-config-footer-container'>
+                <Button 
+                    isLoading={false}
+                    className='smooth click-scale start-analysis-btn' 
+                    title='Start'
+                    onClick={startAnalysis}
+                />
             </div>
         </EditorWidget>
     );

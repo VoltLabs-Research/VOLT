@@ -53,7 +53,7 @@ const CanvasSidebarModifiers = () => {
             modifierId: 'missorientation' 
         }, {
             Icon: TfiSlice,
-            title: 'Slice',
+            title: 'Slice Plane',
             modifierId: 'slice-plane' 
         }, {
             Icon: GiAtom,

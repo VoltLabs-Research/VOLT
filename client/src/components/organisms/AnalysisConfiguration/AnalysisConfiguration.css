@@ -21,3 +21,7 @@
     padding-right: 1rem;
     overflow-y: scroll;
 }
+
+.editor-analysis-config .start-analysis-btn{
+    width: 100%;
+}

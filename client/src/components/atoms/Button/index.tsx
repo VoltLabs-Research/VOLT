@@ -17,7 +17,7 @@ const Button = ({ title, isLoading = false, className = '', to = null, onClick =
     return (
         <button
             {...props}
-            className={'button '.concat(className)}
+            className={`button ${isLoading ? 'is-loading' : ''} ${className}`}
             onClick={handleClick}
         >
             {isLoading ? (

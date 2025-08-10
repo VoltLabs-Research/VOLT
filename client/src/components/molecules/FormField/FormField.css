@@ -1,14 +1,19 @@
-.labeled-input-container {
+.labeled-input-container{
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.labeled-input-label {
+.labeled-input-label{
     font-weight: 400;
 }
 
-.labeled-input-tag-container {
+.labeled-input-tag-container{
     display: flex;
     align-items: center;
+}
+
+.labeled-input-container.is-loading{
+    opacity: .85;
+    pointer-events: none;
 }
