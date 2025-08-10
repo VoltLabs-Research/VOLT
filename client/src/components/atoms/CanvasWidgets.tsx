@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { EditorWidgetsProps } from '@/types/canvas';
 import useUIStore from '@/stores/ui';
 import EditorSidebar from '@/components/organisms/EditorSidebar';
@@ -36,19 +36,35 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({
   currentTimestep 
 }) => {
     const showWidgets = useUIStore((state) => state.showEditorWidgets);
+    const activeModifiers = useUIStore((state) => state.activeModifiers);
+
+    const modifiersMap = useMemo(() => ({
+        'slice-plane': SlicePlane,
+        'dislocation-analysis-config': AnalysisConfiguration,
+    } as Record<string, React.ComponentType<any>>), []);
 
     if(!showWidgets) return null;
+
+    const modifierComponents = useMemo(() => {
+        const uniqueKeys = Array.from(new Set(activeModifiers));
+        return uniqueKeys
+        .map((key) => [key, modifiersMap[key] as React.ComponentType | undefined] as const)
+        .filter(([, Comp]) => !!Comp);
+    }, [activeModifiers, modifiersMap]);
 
     return (
         <>
             <EditorSidebar />
             <TrajectoryVisibilityStatusFloatIcon />
             <SceneTopCenteredOptions />
-            <SlicePlane />
-            <AnalysisConfiguration />
+
             {(trajectory && currentTimestep !== undefined) && (
                 <TimestepControls />
             )}
+
+            {modifierComponents.map(([key, Comp]) => (
+                <Comp key={`modifier-${key}`} />
+            ))}
         </>
     );
 });

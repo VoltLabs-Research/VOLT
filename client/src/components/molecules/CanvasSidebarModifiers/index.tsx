@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { GiAtom } from 'react-icons/gi';
 import { PiLineSegmentThin, PiAtomThin } from 'react-icons/pi';
 import { TbSquareRotated } from 'react-icons/tb';
@@ -7,64 +7,78 @@ import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
 import useConfigurationStore from '@/stores/editor/configuration';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
+import useUIStore from '@/stores/ui';
 import './CanvasSidebarModifiers.css';
 
 const CanvasSidebarModifiers = () => {
-    const activeModifier = useConfigurationStore((state) => state.activeModifier);
-    const setActiveModifier = useConfigurationStore((state) => state.setActiveModifier);
+    const logger = useLogger('canvas-sidebar-modifiers');
+    const activeModifiers = useUIStore((state) => state.activeModifiers);
+    const toggleModifiers = useUIStore((state) => state.toggleModifier);
+
     const structureIdentification = useTrajectoryStore((state) => state.structureIdentification);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
+
     const analysisConfig = useConfigurationStore((state) => state.analysisConfig);
-    const logger = useLogger('canvas-sidebar-modifiers');
+
+    // We save the previous state to detect which modifiers have just been activated
+    const prevActiveRef = useRef<string[]>(activeModifiers);
 
     useEffect(() => {
-        if(!activeModifier?.length || !trajectory?._id) return;
-        logger.log('Active modifier:', activeModifier);
-
-        switch(activeModifier){
-            case 'PTM':
-            case 'CNA':
-                structureIdentification(trajectory._id, analysisConfig, activeModifier);
-                break;
+        if(!trajectory?._id){
+            prevActiveRef.current = activeModifiers;
+            return;
         }
-        
-    }, [trajectory, analysisConfig, activeModifier]);
+
+        const prev = prevActiveRef.current;
+        const justActivated = activeModifiers.filter((modifier) => !prev.includes(modifier));
+
+        // Only for those who matter
+        for(const modifier of justActivated){
+            if(modifier === 'PTM' || modifier === 'CNA'){
+                logger.log('Activating structure identification:', modifier);
+                structureIdentification(trajectory?._id, analysisConfig, modifier);
+            }
+        }
+
+        prevActiveRef.current = activeModifiers;
+    }, [activeModifiers, analysisConfig, structureIdentification, trajectory, logger]);
 
     const modifiers = [{
-        Icon: PiLineSegmentThin,
-        title: 'Dislocation Analysis',
-        modifierId: 'dislocation-analysis'
-    }, {
-        Icon: TbSquareRotated,
-        modifierId: 'missorientation',
-        title: 'Missorientation'
-    }, {
-        Icon: TfiSlice,
-        modifierId: 'slice',
-        title: 'Slice' 
-    }, {
-        Icon: GiAtom,
-        modifierId: 'CNA',
-        title: 'Common Neighbor Analysis'
-    }, {
-        Icon: PiAtomThin,
-        modifierId: 'PTM',
-        title: 'Polyhedral Template Matching'
-    }];
+            Icon: PiLineSegmentThin,
+            title: 'Dislocation Analysis', 
+            modifierId: 'dislocation-analysis-config' 
+        }, {
+            Icon: TbSquareRotated, 
+            title: 'Missorientation',
+            modifierId: 'missorientation' 
+        }, {
+            Icon: TfiSlice,
+            title: 'Slice',
+            modifierId: 'slice-plane' 
+        }, {
+            Icon: GiAtom,
+            title: 'Common Neighbor Analysis', 
+            modifierId: 'CNA' 
+        }, {
+            Icon: PiAtomThin,
+            title: 'Polyhedral Template Matching', 
+            modifierId: 'PTM' 
+        },
+    ];
 
     return (
         <div className='editor-sidebar-scene-container'>
             <div className='editor-sidebar-scene-options-container'>
-                {modifiers.map((modifier, index) => (
-                    <CanvasSidebarOption 
+                {modifiers.map((option, index) => (
+                    <CanvasSidebarOption
                         key={index}
-                        onSelect={(option) => setActiveModifier(option.modifierId)}
-                        option={modifier}
-                        activeOption={activeModifier} />
+                        option={option}
+                        activeOption={activeModifiers.includes(option.modifierId ? option.modifierId : '')}
+                        onSelect={(option) => toggleModifiers(option.modifierId)} />
                 ))}
             </div>
         </div>
-    )
+    );
 };
 
 export default CanvasSidebarModifiers;
