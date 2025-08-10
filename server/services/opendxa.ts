@@ -88,10 +88,12 @@ function buildCliArgs(options: ConfigParameters): string[] {
 class OpenDXAService{
     private trajectoryId: string;
     private exportDirectory: string;
+    private trajectoryFolderPath: string;
 
     constructor(trajectoryId: string, trajectoryFolderPath: string){
         this.exportDirectory = path.join(trajectoryFolderPath, 'glb');
         this.trajectoryId = trajectoryId;
+        this.trajectoryFolderPath = trajectoryFolderPath;
     }
 
     public async processSingleFile(inputFile: string, options: ConfigParameters): Promise<any> {
@@ -186,9 +188,11 @@ class OpenDXAService{
         }
         return { frameResult, generatedFiles };
     }
-    
+  
     private async processFrameData(frameResult: any, timestep: number, options: ConfigParameters): Promise<void> {
         const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
+        const atomsFilePath = path.join(this.trajectoryFolderPath, `grouped_atoms_${timestep}.json`);
+        await fs.writeFile(atomsFilePath, JSON.stringify(atoms));
 
         if(options.structureIdentificationOnly){
             this.exportAtomsColoredByType(atoms, timestep);

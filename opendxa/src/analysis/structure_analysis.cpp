@@ -20,8 +20,7 @@ StructureAnalysis::StructureAnalysis(
     ParticleProperty* outputStructures, 
     std::vector<Matrix3>&& preferredCrystalOrientations,
     bool identifyPlanarDefects, 
-    Mode identificationMode,
-    float customRmsd
+    Mode identificationMode
 ) :
     _positions(positions),
     _simCell(simCell),
@@ -33,8 +32,7 @@ StructureAnalysis::StructureAnalysis(
     _atomClusters(std::make_unique<ParticleProperty>(positions->size(), DataType::Int, 1, 0, true)),
     _atomSymmetryPermutations(std::make_unique<ParticleProperty>(positions->size(), DataType::Int, 1, 0, false)),
     _clusterGraph(std::make_unique<ClusterGraph>()),
-    _preferredCrystalOrientations(std::move(preferredCrystalOrientations)),
-    _customRmsd(customRmsd)
+    _preferredCrystalOrientations(std::move(preferredCrystalOrientations))
 {
     static std::once_flag init_flag;
     std::call_once(init_flag, []() {
@@ -116,23 +114,32 @@ StructureAnalysis::computeRawRMSD(const OpenDXA::PTM& ptm, size_t N){
 // ensure that the cut is not biased by extremely high values. 
 // Furthermore, we guarantee a robust, flexible, and adaptive PTM.  
 float StructureAnalysis::computeAdaptiveRMSDCutoff(){
-    if(_customRmsd != -1){
-        spdlog::debug("Using custom PTM RMSD: {}", _customRmsd);
-        return _customRmsd;
-    }
     const size_t N = positions()->size();
-    std::vector<float> rmsdValues(_ptmRmsd->dataFloat(), _ptmRmsd->dataFloat() + N);
-    
-    if(rmsdValues.empty()) return 0.0f;
-    
-    size_t idx95 = (rmsdValues.size() > 1) ? static_cast<size_t>(0.95 * (rmsdValues.size() - 1)) : 0;
+    if(!_ptmRmsd || N == 0) return 0.15f;
+
+    std::vector<float> rmsdValues;
+    rmsdValues.reserve(N);
+
+    for(size_t i = 0; i < N; ++i){
+        float v = _ptmRmsd->getFloat(i);
+        if(std::isfinite(v) && v > 0.0f){
+            rmsdValues.push_back(v);
+        }
+    }
+
+    if(rmsdValues.size() < 8){
+        // Stable fallback if there were almost no matches in the first pass
+        return 0.15f;
+    }
+
+    size_t idx95 = static_cast<size_t>(0.95 * (rmsdValues.size() - 1));
     std::nth_element(rmsdValues.begin(), rmsdValues.begin() + idx95, rmsdValues.end());
-    
+
     const float cutoffMin = 0.15f;
-    float autoCutoff = rmsdValues[idx95];
+    float autoCutoff  = rmsdValues[idx95];
     float finalCutoff = std::max(cutoffMin, autoCutoff);
-    
-    spdlog::debug("PTM auto-cutoff (95th percentile): {}, using final cutoff: {}", autoCutoff, finalCutoff);
+
+    spdlog::debug("PTM auto-cutoff (95th over valid matches): {}, final: {}", autoCutoff, finalCutoff);
     return finalCutoff;
 }
 
@@ -242,6 +249,7 @@ void StructureAnalysis::determineLocalStructuresWithPTM() {
     }
 
     auto [ptmTypes, cached] = computeRawRMSD(ptm, N);
+    
     float finalCutoff = computeAdaptiveRMSDCutoff();
 
     if(finalCutoff > 0){
@@ -673,11 +681,15 @@ StructureAnalysis::getAtomStructureInfo(int atomIndex){
 
 void StructureAnalysis::connectClusterNeighbors(int atomIndex, Cluster* cluster1){
     const auto [structureType, latticeStructureType, coordStructure, permutation] = getAtomStructureInfo(atomIndex);
-    for(int ni = 0; ni < coordStructure.numNeighbors; ni++){
+
+    const int nn = numberOfNeighbors(atomIndex); 
+    for (int ni = 0; ni < nn; ++ni){
         int neighbor = getNeighbor(atomIndex, ni);
+        if (neighbor < 0 || neighbor == atomIndex) continue;
         processNeighborConnection(atomIndex, neighbor, ni, cluster1, structureType);
     }
 }
+
 
 void StructureAnalysis::addReverseNeighbor(int neighbor, int atomIndex){
     int otherListCount = numberOfNeighbors(neighbor);
@@ -687,6 +699,8 @@ void StructureAnalysis::addReverseNeighbor(int neighbor, int atomIndex){
 }
 
 void StructureAnalysis::processNeighborConnection(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, int structureType){
+    if (neighbor < 0 || static_cast<size_t>(neighbor) >= positions()->size()) return; 
+
     int neighborClusterId = _atomClusters->getInt(neighbor);
     if(neighborClusterId == 0){
         addReverseNeighbor(neighbor, atomIndex);

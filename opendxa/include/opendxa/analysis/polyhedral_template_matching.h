@@ -19,7 +19,7 @@ extern "C" {
 
 namespace OpenDXA{
 
-class PTM : private NearestNeighborFinder{
+class PTM : public NearestNeighborFinder{
 public:
     // This enumeration classifies the possible chemical 
     // arrangement schemes that a region or cluster can have in the crystal lattice.

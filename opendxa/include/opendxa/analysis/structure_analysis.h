@@ -33,8 +33,7 @@ public:
 			ParticleProperty* outputStructures,
 			std::vector<Matrix3>&& preferredCrystalOrientations = std::vector<Matrix3>(),
 			bool identifyPlanarDefects = true, 
-			Mode _identificationMode = Mode::CNA,
-			float customRmsd = -1);
+			Mode identificationMode = Mode::CNA);
 
 	void identifyStructures();
 	void buildClusters();
@@ -315,7 +314,6 @@ private:
 	std::mutex cluster_graph_mutex;
 	ParticleProperty* _structureTypes;
 	
-	float _customRmsd = -1;
 	std::shared_ptr<ParticleProperty> _ptmRmsd; 
 	std::shared_ptr<ParticleProperty> _ptmOrientation; 
 	std::shared_ptr<ParticleProperty> _ptmDeformationGradient; 

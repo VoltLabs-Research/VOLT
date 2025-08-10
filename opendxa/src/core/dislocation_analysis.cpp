@@ -74,12 +74,6 @@ void DislocationAnalysis::setLinePointInterval(double linePointInterval){
     _linePointInterval = linePointInterval;
 }
 
-// RMSD is adaptive from Structure Analysis. Custom RMSD
-// can be provided by command line to be used by the algorithm.
-void DislocationAnalysis::setCustomRmsd(float rmsd){
-    _customRmsd = rmsd;
-}
-
 // Set how aggressively to smooth the defect surface mesh.
 // Smooths the grain-boundary mesh to reduce numerical noise.
 // Larger values yield smoother interfaces but may blur sharp features.
@@ -160,8 +154,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
             structureTypes.get(),
             std::move(preferredOrientations),
             !_onlyPerfectDislocations,
-            _identificationMode,
-            _customRmsd
+            _identificationMode
         );
     }
     

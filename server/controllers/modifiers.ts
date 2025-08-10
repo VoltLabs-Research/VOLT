@@ -65,10 +65,10 @@ export const crystalAnalysis = async (req: Request, res: Response) => {
 
 export const getMissorientationDeltas = async (req: Request, res: Response) => {
     try{
-        const { _id: trajectoryId, frames } = res.locals.trajectory;
+        const { _id: trajectoryId, folderId, frames } = res.locals.trajectory;
         const theta0Frame = req.query?.theta0Frame;
         const frame = req.query?.frame;
-        // TODO:
+
     }catch(error){  
         res.status(500).json({
             status: 'error',

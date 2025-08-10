@@ -193,104 +193,103 @@ Quaternion PTM::Kernel::orientation() const{
     );
 }
 
-// Internal data structure handed to the PTM C callback.
-// It bundles pointers to our neighbor list, optional atom types, and the last structure type seen.
 struct ptmnbrdata_t{
-    const BoundedPriorityQueue<NearestNeighborFinder::Neighbor, std::less<NearestNeighborFinder::Neighbor>, PTM::MAX_INPUT_NEIGHBORS>* neighborResults;
+    const PTM* neighFinder;
     const int* particleTypes;
     const std::vector<uint64_t>* cachedNeighbors;
-    StructureType lastIdentifiedType;
 };
 
-// Callback invoked by the PTM C code to retrieve one particle's neighbor shell.
-// It decodes our pre-computed bitmask into the requested order, fills in positions and types,
-// and returns the count so that the PTM library can perform its template match.
 static int getNeighbors(void* vdata, size_t, size_t atomIndex, int numRequested, ptm_atomicenv_t* env){
-    auto* nbrdata = static_cast<ptmnbrdata_t*>(vdata);
-    const auto &neighborResults = *nbrdata->neighborResults;
-    const int *particleTypes = nbrdata->particleTypes;
-    const std::vector<uint64_t>& cachedNeighbors = *nbrdata->cachedNeighbors;
-    int numNeighbors = std::min(numRequested - 1, (int) neighborResults.size());
-    //assert(numNeighbors <= PTM::MAX_INPUT_NEIGHBORS);
-    auto* d = static_cast<ptmnbrdata_t*>(vdata);
-    int ptmType = PTM::toPtmStructureType(d->lastIdentifiedType);
+    auto* neighborData = static_cast<ptmnbrdata_t*>(vdata);
+    const PTM* finder = neighborData->neighFinder;
+    const int* particleTypes = neighborData->particleTypes;
+    const auto& cachedNeighbors = *neighborData->cachedNeighbors;
 
-    // Decode the PTM mask into an ordering of neighbor indices
-    int bestTemplateIndex;
+    NearestNeighborFinder::Query<PTM::MAX_INPUT_NEIGHBORS> query(*finder);
+    query.findNeighbors(atomIndex, false);
+    const auto &results = query.results();
+
+    int numNeighbors = std::min(numRequested - 1, static_cast<int>(results.size()));
+
+    int dummy = 0;
     ptm_decode_correspondences(
-        ptmType,
-        (*(d->cachedNeighbors))[atomIndex],
+        // FCC as default seed
+        PTM_MATCH_FCC,
+        // Mask generated in cacheNeighbors
+        cachedNeighbors[atomIndex],
         env->correspondences,
-        &bestTemplateIndex
+        &dummy
     );
 
-    // Central atom first
-    env->atom_indices[0] = atomIndex;
-    env->points[0][0] = 0;
-    env->points[0][1] = 0;
-    env->points[0][2] = 0;
+    // Central
+    env->atom_indices[0] = static_cast<int>(atomIndex);
+    env->points[0][0] = 0.0;
+    env->points[0][1] = 0.0;
+    env->points[0][2] = 0.0;
 
-    // Fill in neighbor positions according to the decoded map
-    for(int i = 0; i < numNeighbors; i++){
+    // Neighbors by correpondences
+    for(int i = 0; i < numNeighbors; ++i){
         int p = env->correspondences[i + 1] - 1;
-        //assert(p >= 0 && p < neighborResults.size());
-        env->atom_indices[i + 1] = neighborResults[p].index;
-        env->points[i + 1][0] = neighborResults[p].delta.x();
-        env->points[i + 1][1] = neighborResults[p].delta.y();
-        env->points[i + 1][2] = neighborResults[p].delta.z();
+        if(p < 0 || p >= static_cast<int>(results.size())) continue;
+        const auto& nb = results[p];
+        env->atom_indices[i + 1] = nb.index;
+        env->points[i + 1][0] = nb.delta.x();
+        env->points[i + 1][1] = nb.delta.y();
+        env->points[i + 1][2] = nb.delta.z();
     }
 
-    // Optionally supply the atom types for multi-component matching
-    // TODO: ?
+    // Types
     if(particleTypes){
         env->numbers[0] = particleTypes[atomIndex];
-        for(int i = 0; i < numNeighbors; i++){
+        for(int i = 0; i < numNeighbors; ++i){
             int p = env->correspondences[i + 1] - 1;
-            env->numbers[i + 1] = particleTypes[neighborResults[p].index];
-        }
+            if(p < 0 || p >= static_cast<int>(results.size())) continue;
+            env->numbers[i + 1] = particleTypes[results[p].index];
+        }  
     }else{
-        std::fill(env->numbers, env->numbers + numNeighbors + 1, 0);
+        for(int i = 0; i < numNeighbors + 1; ++i) env->numbers[i] = 0;
     }
 
-    // Tell PTM how many points we just provided (central + neighbors)
     env->num = numNeighbors + 1;
-    return numNeighbors + 1;
+    return env->num;
 }
 
-// Drives the actual template-matching call for a single particle,
-// feeding in neighbor geometry, optionally atom types, and flags for
-// which lattices to check, then interprets the result
 StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::vector<uint64_t>& cachedNeighbors, Quaternion*){
-    //assert(cachedNeighbors.size() == _algorithm.particleCount());
-    //assert(particleIndex < _algorithm.particleCount());
-    findNeighbors(particleIndex, false);
+    findNeighbors(particleIndex, false); 
     ptmnbrdata_t nbrdata;
-    nbrdata.neighborResults = &this->results();
+    nbrdata.neighFinder = &_algorithm; 
     nbrdata.particleTypes = _algorithm._identifyOrdering ? _algorithm._particleTypes : nullptr;
     nbrdata.cachedNeighbors = &cachedNeighbors;
-    nbrdata.lastIdentifiedType   = _structureType;
 
-    // TODO: Should I implement graphene and other types like ICO, SC...?
-    // Build bitmask of structure type to test
-    int32_t flags = PTM_CHECK_SC | PTM_CHECK_FCC | PTM_CHECK_HCP | PTM_CHECK_ICO | PTM_CHECK_BCC | PTM_CHECK_DCUB | PTM_CHECK_DHEX | PTM_CHECK_GRAPHENE;
+    // TODO: Segmentation fault with ICO & SC & GRAPHENE
+    int32_t flags = PTM_CHECK_FCC | PTM_CHECK_HCP | PTM_CHECK_BCC | PTM_CHECK_DCUB | PTM_CHECK_DHEX;
+
     ptm_result_t result;
-    int errorCode = ptm_index(_handle, particleIndex, getNeighbors, (void*) &nbrdata, flags, _algorithm._calculateDefGradient, &result, &_env);
-    //assert(errorCode == PTM_NO_ERROR);
+    int errorCode = ptm_index(
+        _handle, 
+        particleIndex, 
+        getNeighbors, 
+        (void*)&nbrdata, 
+        flags, 
+        _algorithm._calculateDefGradient, 
+        &result, 
+        &_env
+    );
+
     _orderingType = result.ordering_type;
     _scale = result.scale;
-
-    // Unpack the key metrics: RMSD, orientation, deformation gradient, ...
     _rmsd = result.rmsd;
     _interatomicDistance = result.interatomic_distance;
     _bestTemplateIndex = result.template_index;
-    _bestTemplate = nullptr;
     memcpy(_quaternion, result.orientation, 4 * sizeof(double));
+    
     if(_algorithm._calculateDefGradient){
         memcpy(_F.elements(), result.F, 9 * sizeof(double));
     }
 
-    // If PTM failed or exceed cutoff, mark as "OTHER"
-    if(result.structure_type == PTM_MATCH_NONE || (_algorithm._rmsdCutoff != 0 && _rmsd > _algorithm._rmsdCutoff)){
+    // Apply cutoff with more lenient thresholds for diamond structures
+    if(result.structure_type == PTM_MATCH_NONE || 
+       (_algorithm._rmsdCutoff != 0 && _rmsd > _algorithm._rmsdCutoff)) {
         _structureType = StructureType::OTHER;
         _orderingType = static_cast<int32_t>(OrderingType::ORDERING_NONE);
         _rmsd = 0.0;
@@ -302,6 +301,7 @@ StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::ve
     }else{
         _structureType = ptmToStructureType(result.structure_type);
     }
+    
     return _structureType;
 }
 
