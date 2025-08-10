@@ -48,7 +48,7 @@ export type ConfigurationStore = ConfigurationState & ConfigurationActions;
 
 // CNA?
 const DEFAULT_ANALYSIS_CONFIG: AnalysisConfig = {
-    crystalStructure: 'CUBIC_DIAMOND',
+    crystalStructure: 'BCC',
     identificationMode: 'PTM',
     maxTrialCircuitSize: 14.0,
     circuitStretchability: 9.0,

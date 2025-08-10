@@ -36,6 +36,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ mode, restrictTo }) => 
     const location = useLocation();
     const user = useAuthStore((state) => state.user);
     const isAuthenticated = !!user;
+    const isLoading = useAuthStore((state) => state.isLoading);
+
+    if(isLoading) return;
 
     if(mode === 'protect'){
         if(!isAuthenticated){
