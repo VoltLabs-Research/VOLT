@@ -28,8 +28,6 @@ import {
 } from '@/types/utilities/export/dislocations';
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
 
-import * as fs from 'fs';
-
 class DislocationExporter{
     private validate(dislocationData: Dislocation): DislocationValidationResult{
         const { data, metadata } = dislocationData;

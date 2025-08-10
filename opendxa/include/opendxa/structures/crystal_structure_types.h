@@ -10,10 +10,10 @@ enum StructureType{
     FCC,
     HCP,
     BCC,
-    ICO,
-    SC,
     CUBIC_DIAMOND,
     HEX_DIAMOND,
+    ICO,
+    SC,
     GRAPHENE,
     NUM_STRUCTURE_TYPES
 };
@@ -22,6 +22,7 @@ enum StructureType{
 // Describes how each atom's neighbors connect to each other, allowing
 // distinguishing subtly different packings, like FCC vs HCP, or diamond
 // vs hexagonal diamond.
+// TODO: CREATE A FUNCTION STRUCTURETYPE TO COORDINATION STRUCTURE TYPE
 enum CoordinationStructureType{
     // No matching coordination pattern
     COORD_OTHER = 0,

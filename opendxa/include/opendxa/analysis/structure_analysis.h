@@ -101,11 +101,6 @@ public:
 	}
 
 	bool usingPTM() const{
-		// TODO: CUBIC_DIAMOND frames causes core dumped in cluster construction.
-		// Ugly solution is build clusters using CNA method.
-		if(_inputCrystalType == OpenDXA::LATTICE_CUBIC_DIAMOND){
-			return false;
-		}
 		return _identificationMode == StructureAnalysis::Mode::PTM;
 	}
 
