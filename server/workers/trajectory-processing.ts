@@ -28,25 +28,16 @@ import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-qu
 import LAMMPSToGLBExporter from '@/utilities/export/atoms';
 import '@config/env';
 
-const logMemoryUsage = (context: string) => {
-    const usage = process.memoryUsage();
-    console.log(`[Worker #${process.pid}] ${context} - Memory:`, {
-        rss: `${Math.round(usage.rss / 1024 / 1024)} MB`,
-        heapUsed: `${Math.round(usage.heapUsed / 1024 / 1024)} MB`,
-        heapTotal: `${Math.round(usage.heapTotal / 1024 / 1024)} MB`
-    });
-};
-
 const checkMemoryPressure = (): boolean => {
     const usage = process.memoryUsage();
     const heapUsedMB = usage.heapUsed / 1024 / 1024;
     const heapTotalMB = usage.heapTotal / 1024 / 1024;
     
     if(heapUsedMB > 1500 || (heapUsedMB / heapTotalMB) > 0.85){
-        console.warn(`[Worker #${process.pid}] High memory usage: ${heapUsedMB}MB`);
+        //console.warn(`[Worker #${process.pid}] High memory usage: ${heapUsedMB}MB`);
         
         if(global.gc){
-            console.log(`[Worker #${process.pid}] Forcing garbage collection...`);
+            //console.log(`[Worker #${process.pid}] Forcing garbage collection...`);
             global.gc();
         }
         
@@ -58,7 +49,6 @@ const checkMemoryPressure = (): boolean => {
 
 const processJob = async (job: TrajectoryProcessingJob) => {
     console.log(`[Worker #${process.pid}] Starting job ${job.jobId} (chunk ${job.chunkIndex + 1}/${job.totalChunks})`);
-    logMemoryUsage('Job start');
 
     if(!job || !job.jobId){
         throw new Error('No job data received in message.');
@@ -105,8 +95,6 @@ const processJob = async (job: TrajectoryProcessingJob) => {
             }
         }
 
-        logMemoryUsage('Job completed');
-
         parentPort?.postMessage({
             status: 'completed',
             jobId: job.jobId,
@@ -117,7 +105,6 @@ const processJob = async (job: TrajectoryProcessingJob) => {
         console.log(`[Worker #${process.pid}] Finished job ${job.jobId} successfully`);
         
     }catch(error){
-        logMemoryUsage('Job error');
         console.error(`[Worker #${process.pid}] Error processing job ${job.jobId}:`, error);
         
         // Clean up any remaining temp files
@@ -140,11 +127,9 @@ const processJob = async (job: TrajectoryProcessingJob) => {
 
 const main = async () => {
     console.log(`[Worker #${process.pid}] Worker started`);
-    logMemoryUsage('Worker initialization');
     
     // Monitor memory every 30 seconds
     setInterval(() => {
-        logMemoryUsage('Periodic check');
         checkMemoryPressure();
     }, 30000);
     

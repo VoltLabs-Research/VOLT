@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import { LuPanelRight } from "react-icons/lu";
 import { MdKeyboardArrowDown } from 'react-icons/md';
@@ -13,6 +14,15 @@ import './EditorSidebar.css';
 const EditorSidebar = () => {
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const activeSidebarTab = useConfigurationStore((state) => state.activeSidebarTab);
+    const setActiveSidebarTag = useConfigurationStore((state) => state.setActiveSidebarTag);
+    const setActiveSidebarModifier = useConfigurationStore((state) => state.setActiveSceneObject)
+
+    useEffect(() => {
+        return () => {
+            setActiveSidebarTag('Scene');
+            setActiveSidebarModifier('trajectory');
+        };
+    }, []);
 
     return (
         <EditorWidget className='editor-sidebar-container' draggable={false}>

@@ -24,7 +24,7 @@ const useUIStore = create<UIState>((set, get) => ({
     showCanvasGrid: true,
     toggleCanvasGrid: () => set((s) => ({ showCanvasGrid: !s.showCanvasGrid })),
 
-    activeModifiers: [],
+    activeModifiers: ['dislocation-analysis-config', 'slice-plane'],
     hasModifier: (modifier) => get().activeModifiers.includes(modifier),
 
     addModifier: (modifier) => set((s) => {
