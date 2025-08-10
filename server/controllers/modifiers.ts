@@ -27,16 +27,15 @@ import { computeMissorientationDeltas, computeMissorientationAngle } from '@/mod
 export const crystalAnalysis = async (req: Request, res: Response) => {
     try {
         const { folderId, _id: trajectoryId, team, name, frames } = res.locals.trajectory;
+        const analysisConfig = req.body;
+        console.log('Analysis Config for', name, ' is ', analysisConfig);
         const result = await dislocationAnalysis({
             folderId,
             trajectoryId,
             team,
             name,
             frames,
-            analysisConfig: {
-                identificationMode: 'PTM',
-                cristalStructure: 'BCC'
-            }
+            analysisConfig
         });
 
         switch(result){
