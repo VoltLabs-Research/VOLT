@@ -81,7 +81,9 @@ public:
 		}
 		return -1;
 	}
-	
+
+	void allocatePTMOutputArrays(size_t N);
+
 	ParticleProperty* positions() const{
 		return _positions;
 	}
@@ -99,6 +101,11 @@ public:
 	}
 
 	bool usingPTM() const{
+		// TODO: CUBIC_DIAMOND frames causes core dumped in cluster construction.
+		// Ugly solution is build clusters using CNA method.
+		if(_inputCrystalType == OpenDXA::LATTICE_CUBIC_DIAMOND){
+			return false;
+		}
 		return _identificationMode == StructureAnalysis::Mode::PTM;
 	}
 
@@ -272,7 +279,7 @@ private:
 		const std::vector<uint64_t>& cached,
 		float cutoff
 	);
-	void allocatePTMOutputArrays(size_t N);
+
 	void initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex);
 	void processAtomConnections(size_t atomIndex);
 	std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&> getAtomStructureInfo(int atomIndex);
