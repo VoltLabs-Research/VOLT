@@ -20,9 +20,11 @@
 * SOFTWARE.
 **/
 
-import { createReadStream } from 'fs';
+import { createReadStream, createWriteStream } from 'fs';
 import { stat, copyFile as fsCopyFile, rm } from 'fs/promises';
 import { createInterface } from 'readline';
+import { once } from 'events';
+import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 
 interface ReadLargeFileOptions{
     maxLines?: number;
@@ -36,6 +38,57 @@ interface ReadLargeFileResult {
     totalLines: number;
     metadata: Record<string, any>;
 }
+
+interface ReadBinaryFileOptions{
+    chunkSize?: number;
+    onChunk?: (chunk: Buffer, bytesRead: number) => void;
+    onProgress?: (bytesRead: number) => void;
+}
+
+interface ReadBinaryFileResult{
+    buffer: Buffer;
+    totalBytes: number;
+    metadata: Record<string, any>
+}
+
+export const readBinaryFile = async (
+    filePath: string,
+    options: ReadBinaryFileOptions = {}
+): Promise<ReadBinaryFileResult> => {
+    const {
+        // 1 mb
+        chunkSize = 1024 * 1024,
+        onChunk,
+        onProgress
+    } = options;
+
+    return new Promise((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        let bytesRead = 0;
+        const metadata: Record<string, any> = {};
+
+        const stream = createReadStream(filePath, { highWaterMark: chunkSize });
+        // @ts-ignore
+        stream.on('data', (chunk: Buffer) => {
+            bytesRead += chunk.length;
+            chunks.push(chunk);
+            if(onChunk) onChunk(chunk, bytesRead);
+            if(onProgress && bytesRead % (10 * 1024 * 1024) < chunk.length){
+                onProgress(bytesRead);
+            }
+        });
+
+        stream.on('end', () => {
+            resolve({
+                buffer: Buffer.concat(chunks),
+                totalBytes: bytesRead,
+                metadata
+            })
+        });
+        
+        stream.on('error', reject);
+    });
+};
 
 export const copyFile = async (source: string, destination: string): Promise<void> => {
     console.log(`Starting file copy: ${source} -> ${destination}`);
@@ -120,5 +173,43 @@ export const readLargeFile = async (
         rl.on('error', (err) => {
             reject(err);
         });
+    });
+};
+
+export const writeChunk = async (stream: NodeJS.WritableStream, chunk: string) => {
+    if(!stream.write(chunk)){
+        await once(stream, 'drain');
+    }
+};
+
+export const writeGroupedJsonStreaming = async (filePath: string, data: AtomsGroupedByType) => {
+    const writeStream = createWriteStream(filePath, { encoding: 'utf8' });
+    writeStream.once('error', (err) => {
+        throw err;
+    });
+
+    await writeChunk(writeStream, '{');
+    const keys = Object.keys(data);
+
+    for(let ki = 0; ki < keys.length; ki++){
+        const key = keys[ki];
+        const arr = data[key] ?? [];
+        if(ki > 0) await writeChunk(writeStream, ',');
+
+        await writeChunk(writeStream, JSON.stringify(key));
+        await writeChunk(writeStream, ':[');
+
+        for(let i = 0; i < arr.length; i++){
+            if(i > 0) await writeChunk(writeStream, ',');
+            await writeChunk(writeStream, JSON.stringify(arr[i]));
+        }
+
+        await writeChunk(writeStream, ']');
+    }
+
+    await writeChunk(writeStream, '}');
+    await new Promise<void>((resolve, reject) => {
+        writeStream.end(() => resolve());
+        writeStream.once('error', reject);
     });
 };

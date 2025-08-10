@@ -27,6 +27,7 @@ import { Mesh } from '@/types/utilities/export/mesh';
 import { Dislocation } from '@/types/utilities/export/dislocations';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { readMsgpackFile } from '@/utilities/msgpack';
+import { writeGroupedJsonStreaming } from '@/utilities/fs';
 import path from 'path';
 import os from 'os';
 import MeshExporter from '@utilities/export/mesh';
@@ -193,8 +194,8 @@ class OpenDXAService{
     private async processFrameData(frameResult: any, timestep: number, options: ConfigParameters): Promise<void> {
         const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
         const atomsFilePath = path.join(this.trajectoryFolderPath, `grouped_atoms_${timestep}.json`);
-        await fs.writeFile(atomsFilePath, JSON.stringify(atoms));
-
+        await writeGroupedJsonStreaming(atomsFilePath, atoms);
+        
         if(options?.structureIdentificationOnly){
             this.exportAtomsColoredByType(atoms, timestep);
             return;

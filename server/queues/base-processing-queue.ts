@@ -216,7 +216,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         // TODO: I think retrying failed processes should be optional. 
         // If it already fails, it will fail again. 
         // I can't think of any reason why retrying after a failure should work.
-        const maxAttempts = job.maxRetries || 3;
+        const maxAttempts = job.maxRetries || 1;
         const retryCountKey = `job:retries:${job.jobId}`;
 
         // Increment the retry counter for this job ID in Redis.
