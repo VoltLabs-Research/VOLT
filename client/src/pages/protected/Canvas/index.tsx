@@ -33,11 +33,11 @@ const EditorPage: React.FC = () => {
             {(!trajectory || currentTimestep === undefined) && <LoadingOverlay />}
 
             <Scene3D ref={scene3DRef}>
-                {/*<AutoPreviewSaver
+                <AutoPreviewSaver
                     scene3DRef={scene3DRef}
                     delay={CANVAS_CONFIG.autoSaveDelay}
                     trajectoryId={trajectoryId}
-                />*/}
+                />
 
                 <TimestepViewer
                     scale={CANVAS_CONFIG.timestepViewerDefaults.scale}

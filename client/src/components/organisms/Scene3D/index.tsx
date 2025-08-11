@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import CanvasGrid from '@/components/atoms/scene/CanvasGrid';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
@@ -26,6 +26,9 @@ export interface Scene3DRef {
         download?: boolean;
         zoomFactor?: number;
     } | null) => Promise<string>;
+    waitForVisibleFrame: () => Promise<void>;
+    markContentReady: () => void;
+    waitForContentFrame: () => Promise<void>;
 }
 
 const CAMERA_CONFIG = {
@@ -51,7 +54,7 @@ const GL_CONFIG = {
     autoClear: true,
     autoClearColor: true,
     autoClearDepth: true,
-    autoClearStencil: false,  
+    autoClearStencil: false,
 };
 
 const SSAO_CONFIG = {
@@ -132,10 +135,49 @@ const TrajectoryLighting = React.memo(() => (
 ));
 
 const ScreenshotHandler: React.FC<{ 
-    onScreenshotReady: (fn: any) => void;
+    onToolsReady: (tools: { captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> }) => void;
     backgroundColor: string;
-}> = ({ onScreenshotReady, backgroundColor }) => {
-    const { gl, scene, camera, size } = useThree();
+}> = ({ onToolsReady, backgroundColor }) => {
+    const { gl, scene, camera } = useThree();
+    const hasRenderedRef = useRef(false);
+    const contentReadyRef = useRef(false);
+
+    useFrame(() => {
+        hasRenderedRef.current = true;
+    });
+
+    const waitForVisibleFrame = useCallback(() => {
+        return new Promise<void>((resolve) => {
+            const el = gl.domElement;
+            const okSize = () => el.clientWidth > 0 && el.clientHeight > 0;
+            const tick = () => {
+                if (okSize() && hasRenderedRef.current) {
+                    requestAnimationFrame(() => requestAnimationFrame(resolve));
+                } else {
+                    requestAnimationFrame(tick);
+                }
+            };
+            tick();
+        });
+    }, [gl]);
+
+    const waitForContentFrame = useCallback(async () => {
+        await waitForVisibleFrame();
+        return new Promise<void>((resolve) => {
+            const tick = () => {
+                if (contentReadyRef.current && hasRenderedRef.current) {
+                    requestAnimationFrame(() => requestAnimationFrame(resolve));
+                } else {
+                    requestAnimationFrame(tick);
+                }
+            };
+            tick();
+        });
+    }, [waitForVisibleFrame]);
+
+    const markContentReady = useCallback(() => {
+        contentReadyRef.current = true;
+    }, []);
 
     const captureScreenshot = useCallback((options?: any) => {
         const safeOptions = options || {};
@@ -143,9 +185,7 @@ const ScreenshotHandler: React.FC<{
             width,
             height,
             format = 'png',
-            quality = 1.0,
-            // TODO:
-            zoomFactor = 1.0
+            quality = 1.0
         } = safeOptions;
 
         return new Promise<string>((resolve, reject) => {
@@ -154,23 +194,21 @@ const ScreenshotHandler: React.FC<{
                 const originalZoom = camera.zoom;
                 const originalFov = camera.fov;
 
-                // Force a render with the new camera settings
                 gl.render(scene, camera);
-                
-                // Wait for a frame to ensure everything is rendered
+
                 requestAnimationFrame(() => {
                     try{
                         const canvas = gl.domElement;
                         let finalCanvas = canvas;
-                        
+
                         if((width && height && (width !== canvas.width || height !== canvas.height)) || format === 'jpeg'){
                             const tempCanvas = document.createElement('canvas');
                             const targetWidth = width || canvas.width;
                             const targetHeight = height || canvas.height;
-                            
+
                             tempCanvas.width = targetWidth;
                             tempCanvas.height = targetHeight;
-                            
+
                             const tempCtx = tempCanvas.getContext('2d');
                             if(!tempCtx){
                                 camera.position.copy(originalPosition);
@@ -180,39 +218,33 @@ const ScreenshotHandler: React.FC<{
                                 reject(new Error('No se pudo obtener el contexto 2D del canvas temporal'));
                                 return;
                             }
-                            
+
                             if(format === 'jpeg'){
                                 tempCtx.fillStyle = backgroundColor || '#1E1E1E';
                                 tempCtx.fillRect(0, 0, targetWidth, targetHeight);
                             }
-                            
-                            // Draw the original canvas on the temporary one
+
                             tempCtx.drawImage(canvas, 0, 0, targetWidth, targetHeight);
                             finalCanvas = tempCanvas;
                         }
-                        
-                        // TODO: duplicated code
+
                         const mimeType = `image/${format}`;
                         const dataURL = finalCanvas.toDataURL(mimeType, quality);
-                        
-                        // Restore the camera to its original state
+
                         camera.position.copy(originalPosition);
                         camera.zoom = originalZoom;
                         camera.fov = originalFov;
                         camera.updateProjectionMatrix();
-                        
-                        // Render once more to restore the original view
+
                         gl.render(scene, camera);
-                        
-                        // Verificar que el dataURL tenga contenido válido
+
                         if(dataURL === 'data:,' || dataURL.length < 100){
                             reject(new Error('The canvas is empty or could not be captured'));
                             return;
                         }
-                        
+
                         resolve(dataURL);
                     }catch(innerError){
-                        // Restore the camera in case of error
                         camera.position.copy(originalPosition);
                         camera.zoom = originalZoom;
                         camera.fov = originalFov;
@@ -228,10 +260,8 @@ const ScreenshotHandler: React.FC<{
     }, [gl, scene, camera, backgroundColor]);
 
     useEffect(() => {
-        if (typeof onScreenshotReady === 'function') {
-            onScreenshotReady(captureScreenshot);
-        }
-    }, [captureScreenshot, onScreenshotReady]);
+        onToolsReady({ captureScreenshot, waitForVisibleFrame, markContentReady, waitForContentFrame });
+    }, [captureScreenshot, waitForVisibleFrame, waitForContentFrame, markContentReady, onToolsReady]);
 
     return null;
 };
@@ -243,7 +273,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     onCameraControlsRef
 }, ref) => {
     const orbitControlsRef = useRef<any>(null);
-    const [screenshotCapture, setScreenshotCapture] = useState<((options?: any) => Promise<string>) | null>(null);
+    const [tools, setTools] = useState<{ captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> } | null>(null);
     const activeSceneObject = useConfigurationStore(state => state.activeSceneObject);
     const showCanvasGrid = useUIStore((state) => state.showCanvasGrid);
     const toggleCanvasGrid = useUIStore((state) => state.toggleCanvasGrid);
@@ -256,19 +286,35 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
         !showEditorWidgets ? '#e6e6e6' : '#1E1E1E'
     , [showEditorWidgets]);
 
-    const handleScreenshotReady = useCallback((captureFunction: (options?: any) => Promise<string>) => {
-        setScreenshotCapture(() => captureFunction);
+    const handleToolsReady = useCallback((t: { captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> }) => {
+        setTools(() => t);
     }, []);
 
     useImperativeHandle(ref, () => ({
         captureScreenshot: (options) => {
-            if(screenshotCapture && typeof screenshotCapture === 'function'){
-                return screenshotCapture(options);
+            if(tools && typeof tools.captureScreenshot === 'function'){
+                return tools.captureScreenshot(options);
             }
-            
             return Promise.reject(new Error('Screenshot not available yet.'));
+        },
+        waitForVisibleFrame: () => {
+            if(tools && typeof tools.waitForVisibleFrame === 'function'){
+                return tools.waitForVisibleFrame();
+            }
+            return Promise.resolve();
+        },
+        markContentReady: () => {
+            if(tools && typeof tools.markContentReady === 'function'){
+                return tools.markContentReady();
+            }
+        },
+        waitForContentFrame: () => {
+            if(tools && typeof tools.waitForContentFrame === 'function'){
+                return tools.waitForContentFrame();
+            }
+            return Promise.resolve();
         }
-    }), [screenshotCapture]);
+    }), [tools]);
 
     const handleControlsRef = useCallback((ref: any) => {
         orbitControlsRef.current = ref;
@@ -309,13 +355,10 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
                 toggleEditorWidgets();
             }
 
-            // TODO: It occurs to me that there may be global settings in a scene, 
-            // so that when saving it they are updated in the cloud and everyone 
-            // can have the same settings.
             if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 's'){
                 e.preventDefault();
-                if(screenshotCapture && typeof screenshotCapture === 'function'){
-                    screenshotCapture({
+                if(tools && typeof tools.captureScreenshot === 'function'){
+                    tools.captureScreenshot({
                         format: 'png',
                         quality: 1.0
                     });
@@ -327,7 +370,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [screenshotCapture, toggleCanvasGrid, toggleEditorWidgets]);
+    }, [tools, toggleCanvasGrid, toggleEditorWidgets]);
 
     return (
         <Canvas
@@ -346,7 +389,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
             }}
         >
             <ScreenshotHandler 
-                onScreenshotReady={handleScreenshotReady} 
+                onToolsReady={handleToolsReady} 
                 backgroundColor={backgroundColor}
             />
             
