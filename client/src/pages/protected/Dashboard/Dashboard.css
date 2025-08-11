@@ -21,7 +21,6 @@
 }
 
 .dashboard-stat-analytic-container{
-    overflow: hidden;
     position: relative;
     right: 2rem;
 }

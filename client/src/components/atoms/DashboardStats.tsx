@@ -5,6 +5,7 @@ import { PiLineSegments } from 'react-icons/pi';
 import { FaArrowUpLong, FaArrowDownLong } from 'react-icons/fa6';
 import { useDashboardMetrics } from '@/hooks/dashboard/use-dashboard-metrics';
 import TinyLineChart from '@/components/atoms/TinyLineChart';
+import DashboardStatsSkeleton from '@/components/atoms/DashboardStatsSkeleton';
 
 const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
     const { loading, error, cards } = useDashboardMetrics(teamId);
@@ -15,17 +16,11 @@ const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
         Dislocations: PiLineSegments
     };
 
-    if (loading) {
-        return (
-            <div className='dashboard-stats-container'>
-                {Array.from({ length: 3 }).map((_, i) => (
-                    <div className='dashboard-stat-container skeleton' key={i} />
-                ))}
-            </div>
-        );
+    if(loading){
+        return <DashboardStatsSkeleton count={3} />;
     }
 
-    if (error) {
+    if(error){
         return (
             <div className='dashboard-stats-container'>
                 <div className='dashboard-error'>{error}</div>
@@ -69,7 +64,7 @@ const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
                                 pData={series}
                                 xLabels={labels}
                                 yDomain={yDomain}
-                                width={200}
+                                width={150}
                                 height={80}
                             />
                         </div>

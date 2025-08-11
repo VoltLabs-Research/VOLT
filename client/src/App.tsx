@@ -29,7 +29,7 @@ import SignUp from './pages/guest/SignUp';
 import SignIn from './pages/guest/SignIn';
 import ProtectedRoute from './components/atoms/ProtectedRoute';
 import DashboardLayout from './components/atoms/DashboardLayout';
-import SharedWithMe from './pages/protected/SharedWithMe';
+import Studio from './pages/protected/Studio';
 import Tutorials from './pages/protected/Tutorials';
 import Messages from './pages/protected/Messages';
 
@@ -125,10 +125,10 @@ const App = () => {
                                 }
                             />
                             <Route
-                                path='/dashboard/shared-with-me/'
+                                path='/dashboard/studio/'
                                 element={
                                     <PageWrapper>
-                                        <SharedWithMe />
+                                        <Studio />
                                     </PageWrapper>
                                 }
                             />
