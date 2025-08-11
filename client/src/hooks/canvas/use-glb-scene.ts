@@ -283,6 +283,26 @@ export const useGlbScene = ({
         activeSceneObject
     ]);
 
+    const applyClippingPlanesToNode = useCallback((root: Group, planes: Plane[]) => {
+        root.traverse((child: any) => {
+            if(child.isMesh && child.material){
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                for(const m of mats){
+                    m.clippingPlanes = planes;
+                    m.clipIntersection = true;
+                    m.needsUpdate = true;
+                }
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        const model = stateRef.current.model as Group | null;
+        if (model) {
+            applyClippingPlanesToNode(model, sliceClippingPlanes);
+        }
+    }, [sliceClippingPlanes, applyClippingPlanesToNode]);
+
     const loadAndSetupModel = useCallback(async (url: string) => {
         if(stateRef.current.lastLoadedUrl === url || loadingState.isLoading) return;
 

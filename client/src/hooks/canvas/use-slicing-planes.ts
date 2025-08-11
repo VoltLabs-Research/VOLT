@@ -22,41 +22,55 @@
 
 import { useMemo } from 'react';
 import { Plane, Vector3 } from 'three';
-import type { SlicePlaneConfig } from '@/stores/editor';
+import type { SlicePlaneConfig } from '@/stores/editor/configuration';
+import useConfigurationStore from '@/stores/editor/configuration';
+
+const EPS = 1e-6;
 
 const useSlicingPlanes = (
     enableSlice: boolean,
     slicePlaneConfig: SlicePlaneConfig
 ): Plane[] => {
+    const origin = useConfigurationStore((s) => s.slicingOrigin);
 
-    const sliceClippingPlanes = useMemo(() => {
-        if(!enableSlice){
-            return [];
-        }
+    return useMemo(() => {
+        if(!enableSlice) return [];
 
-        const planes: Plane[] = [];
-        const { normal: normalConfig, distance, slabWidth, reverseOrientation } = slicePlaneConfig;
-        const normal = new Vector3(normalConfig.x, normalConfig.y, normalConfig.z);
+        const n = new Vector3(
+            Number(slicePlaneConfig.normal.x) || 0,
+            Number(slicePlaneConfig.normal.y) || 0,
+            Number(slicePlaneConfig.normal.z) || 0
+        );
 
-        if(normal.lengthSq() > 0.001){
-            normal.normalize();
-        }
+        if(n.lengthSq() < EPS) return [];
 
-        const plane1 = new Plane(normal.clone(), -distance);
+        n.normalize();
 
-        if(slabWidth && slabWidth > 0){
-            planes.push(plane1);
-            const plane2Distance = distance + slabWidth;
-            const plane2 = new Plane(normal.clone().negate(), plane2Distance);
-            planes.push(plane2);
+        const p0 = new Vector3(origin.x || 0, origin.y || 0, origin.z || 0);
+        const d = Number(slicePlaneConfig.distance) || 0;
+        const w = Math.max(0, Number(slicePlaneConfig.slabWidth) || 0);
+
+        if(w > EPS){
+            const upper = d + w * 0.5;
+            const lower = d - w * 0.5;
+
+            const c1 = n.dot(p0) - upper;            
+            const c2 = n.dot(p0) + lower;
+
+            return [
+                new Plane(n.clone(), c1),
+                new Plane(n.clone().negate(), c2),
+            ];
         }else{
-            planes.push(reverseOrientation ? new Plane(normal.clone().negate(), distance) : plane1);
+            if(!slicePlaneConfig.reverseOrientation){
+                const c = n.dot(p0) - d;           
+                return [ new Plane(n, c) ];
+            }else{
+                const c = n.dot(p0) + d;
+                return [ new Plane(n.clone().negate(), c) ];
+            }
         }
-
-        return planes;
-    }, [enableSlice, slicePlaneConfig]);
-
-    return sliceClippingPlanes;
+    }, [enableSlice, slicePlaneConfig, origin]);
 };
 
 export default useSlicingPlanes;

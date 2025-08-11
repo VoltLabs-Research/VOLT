@@ -27,12 +27,10 @@ import './SlicePlane.css';
 const SlicePlane = () => {
     const slicePlaneConfig = useConfigurationStore((state) => state.slicePlaneConfig);
     const setSlicePlaneConfig = useConfigurationStore((state) => state.setSlicePlaneConfig);
-    
+
     const handleNormalChange = (axis: 'x' | 'y' | 'z', value: string) => {
-        setSlicePlaneConfig({
-            ...slicePlaneConfig,
-            normal: { ...slicePlaneConfig.normal, [axis]: parseFloat(value) }
-        });
+        const v = Number.isNaN(parseFloat(value)) ? 0 : parseFloat(value);
+        setSlicePlaneConfig({ normal: { [axis]: v } as any });
     };
 
     return (
@@ -45,16 +43,17 @@ const SlicePlane = () => {
                 <div className='slice-plane-normals-container'>
                     <span className='slice-plane-normals-title'>Normals</span>
                     <div className='slice-plane-normals-inputs-container'>
-                        {['x', 'y', 'z'].map((axis, index) => (
+                        {(['x','y','z'] as const).map((axis, index) => (
                             <div className='slice-plane-normals-inputs' key={index}>
                                 <div className='slice-plane-normal-input-container'>
                                     <span className='slice-plane-normal-input-label'>{axis}</span>
-                                    <input 
-                                        value={parseFloat(slicePlaneConfig.normal[axis])}
+                                    <input
+                                        value={slicePlaneConfig.normal[axis]}
                                         onChange={(e) => handleNormalChange(axis, e.target.value)}
-                                        className='slice-plane-normal-input' 
+                                        className='slice-plane-normal-input'
                                         step={0.01}
-                                        type='number' />
+                                        type='number'
+                                    />
                                 </div>
                             </div>
                         ))}
@@ -63,22 +62,33 @@ const SlicePlane = () => {
 
                 <div className='slice-plane-params-container'>
                     {[
-                        ['Slab Width', parseFloat(slicePlaneConfig.slabWidth), 'slabWidth', 0.01],
-                        ['Distance', parseFloat(slicePlaneConfig.distance), 'distance', 0.1]
+                        ['Slab Width', slicePlaneConfig.slabWidth, 'slabWidth', 0.01],
+                        ['Distance', slicePlaneConfig.distance, 'distance', 0.1]
                     ].map(([ inputTitle, value, keyName, step ], index) => (
                         <div className='slice-plane-normals-inputs extended' key={index}>
                             <span className='slice-plane-param-input-title'>{inputTitle}</span>
                             <div className='slice-plane-normal-input-container'>
                                 <input
-                                    value={value}
-                                    onChange={(e) => setSlicePlaneConfig({ ...slicePlaneConfig, [keyName]: e.target.value })}
-                                    className='slice-plane-normal-input' 
-                                    step={step}
+                                    value={value as number}
+                                    onChange={(e) => setSlicePlaneConfig({ [keyName as 'slabWidth'|'distance']: e.currentTarget.valueAsNumber })}
+                                    className='slice-plane-normal-input'
+                                    step={step as number}
                                     type='number'
                                 />
                             </div>
                         </div>
                     ))}
+                    <div className='slice-plane-normals-inputs extended'>
+                        <span className='slice-plane-param-input-title'>Reverse Orientation</span>
+                        <div className='slice-plane-normal-input-container'>
+                            <input
+                                type='checkbox'
+                                className='slice-plane-toggle'
+                                checked={slicePlaneConfig.reverseOrientation}
+                                onChange={(e) => setSlicePlaneConfig({ reverseOrientation: e.currentTarget.checked })}
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         </EditorWidget>
