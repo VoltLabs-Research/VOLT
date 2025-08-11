@@ -22,12 +22,12 @@
 
 import DashboardContainer from '../../../components/atoms/DashboardContainer';
 
-const SharedWithMePage = () => {
+const Studio = () => {
     return (
-        <DashboardContainer pageName='Shared with me'>
+        <DashboardContainer pageName='Studio'>
             
         </DashboardContainer>
     );
 };
 
-export default SharedWithMePage;
+export default Studio;

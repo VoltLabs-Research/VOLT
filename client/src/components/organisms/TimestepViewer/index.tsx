@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
 import { BufferGeometry, Material } from 'three';
 import CameraManager from '@/components/atoms/scene/CameraManager';
 import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
@@ -17,77 +16,6 @@ interface TimestepViewerProps {
     instanceCount?: number;
     updateThrottle?: number;
 }
-
-const AtomCounter = React.memo<{ 
-    atomCount: number; 
-    visibleCount: number; 
-    isLoading: boolean;
-    progress: number;
-}>(({ atomCount, visibleCount, isLoading, progress }) => {
-    if (!atomCount && !isLoading) return null;
-    
-    return (
-        <div style={{
-            position: 'absolute',
-            top: '10px',
-            left: '10px',
-            background: 'rgba(0,0,0,0.7)',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            fontFamily: 'monospace',
-            fontSize: '12px',
-            zIndex: 1000,
-            pointerEvents: 'none'
-        }}>
-            {isLoading ? (
-                <div>Loading: {progress}%</div>
-            ) : (
-                <>
-                    <div>Atoms: {atomCount.toLocaleString()}</div>
-                    <div>Visible: {visibleCount.toLocaleString()}</div>
-                    <div>Culled: {(atomCount - visibleCount).toLocaleString()}</div>
-                </>
-            )}
-        </div>
-    );
-});
-
-const PerformanceMonitor = React.memo(() => {
-    const frameCount = useRef(0);
-    const lastTime = useRef(performance.now());
-    const [fps, setFps] = useState(60);
-
-    useFrame(() => {
-        frameCount.current++;
-        const now = performance.now();
-        
-        if (now - lastTime.current >= 1000) {
-            const currentFps = Math.round((frameCount.current * 1000) / (now - lastTime.current));
-            setFps(currentFps);
-            frameCount.current = 0;
-            lastTime.current = now;
-        }
-    });
-
-    return (
-        <div style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            background: fps < 20 ? 'rgba(255,0,0,0.7)' : fps < 40 ? 'rgba(255,165,0,0.7)' : 'rgba(0,128,0,0.7)',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            fontFamily: 'monospace',
-            fontSize: '12px',
-            zIndex: 1000,
-            pointerEvents: 'none'
-        }}>
-            FPS: {fps}
-        </div>
-    );
-});
 
 const TimestepViewer: React.FC<TimestepViewerProps> = ({
     rotation = {},
