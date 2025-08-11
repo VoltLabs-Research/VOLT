@@ -32,12 +32,14 @@ import DashboardLayout from './components/atoms/DashboardLayout';
 import Studio from './pages/protected/Studio';
 import Tutorials from './pages/protected/Tutorials';
 import Messages from './pages/protected/Messages';
-
+import StructureAnalysisListing from './pages/protected/StructureAnalysisListing';
+import DislocationsListing from './pages/protected/DislocationsListing';
 import PageWrapper from '@/components/atoms/animations/PageWrapper';
 import GlobalTransitionOverlay from '@/components/atoms/animations/GlobalTransitionOverlay';
 import Loader from '@/components/atoms/Loader';
 import LoadingShimmer from '@/components/atoms/animations/LoadingShimmer';
 import useAuthStore from '@/stores/authentication';
+import TrajectoriesListing from './pages/protected/TrajectoriesListing';
 
 const AuthLoadingOverlay = () => (
     <motion.div
@@ -124,6 +126,34 @@ const App = () => {
                                     </PageWrapper>
                                 }
                             />
+
+                            <Route
+                                path='/dashboard/trajectories/list'
+                                element={
+                                    <PageWrapper>
+                                        <TrajectoriesListing />
+                                    </PageWrapper>
+                                }
+                            />
+
+                            <Route
+                                path='/dashboard/structure-analysis/list'
+                                element={
+                                    <PageWrapper>
+                                        <StructureAnalysisListing />
+                                    </PageWrapper>
+                                }
+                            />
+
+                            <Route
+                                path='/dashboard/dislocations/list'
+                                element={
+                                    <PageWrapper>
+                                        <DislocationsListing />
+                                    </PageWrapper>
+                                }
+                            />
+                            
                             <Route
                                 path='/dashboard/studio/'
                                 element={

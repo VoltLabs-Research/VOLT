@@ -4,12 +4,14 @@ import { HiOutlineServerStack } from 'react-icons/hi2';
 import { PiLineSegments } from 'react-icons/pi';
 import { FaArrowUpLong, FaArrowDownLong } from 'react-icons/fa6';
 import { GoArrowRight } from 'react-icons/go';
+import { useNavigate } from 'react-router';
 import { useDashboardMetrics } from '@/hooks/dashboard/use-dashboard-metrics';
 import TinyLineChart from '@/components/atoms/TinyLineChart';
 import DashboardStatsSkeleton from '@/components/atoms/DashboardStatsSkeleton';
 
 const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
     const { loading, error, cards } = useDashboardMetrics(teamId);
+    const navigate = useNavigate();
 
     const icons: Record<string, React.ComponentType<any>> = {
         StructureAnalysis: TbHexagons,
@@ -31,11 +33,15 @@ const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
 
     return (
         <div className='dashboard-stats-container'>
-            {cards.map(({ name, count, lastMonthStatus, series, labels, yDomain }, index) => {
+            {cards.map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain }, index) => {
                 const Icon = icons[name.replace(' ', '')] || TbHexagons;
                 const up = (lastMonthStatus ?? 0) >= 0;
                 return (
-                    <div className='dashboard-stat-container' key={index}>
+                    <div 
+                        onClick={() => navigate(listingUrl)}
+                        className='dashboard-stat-container' 
+                        key={index}
+                    >
                         <div className='dashboard-stat-left-container'>
                             <div className='dashboard-stat-header-container'>
                                 <i className='dashboard-stat-icon-container'>

@@ -107,6 +107,7 @@ export const useDashboardMetrics = (teamId?: string) => {
             {
                 key: 'structureAnalysis' as MetricKey,
                 name: 'Structure Analysis',
+                listingUrl: '/dashboard/structure-analysis/list',
                 count: abbreviate(Number(data.totals.structureAnalysis) || 0),
                 lastMonthStatus: Number(data.lastMonth.structureAnalysis) || 0,
                 series: seriesS,
@@ -116,6 +117,7 @@ export const useDashboardMetrics = (teamId?: string) => {
             {
                 key: 'trajectories' as MetricKey,
                 name: 'Trajectories',
+                listingUrl: '/dashboard/trajectories/list',
                 count: abbreviate(Number(data.totals.trajectories) || 0),
                 lastMonthStatus: Number(data.lastMonth.trajectories) || 0,
                 series: seriesT,
@@ -125,6 +127,7 @@ export const useDashboardMetrics = (teamId?: string) => {
             {
                 key: 'dislocations' as MetricKey,
                 name: 'Dislocations',
+                listingUrl: '/dashboard/dislocations/list',
                 count: abbreviate(Number(data.totals.dislocations) || 0),
                 lastMonthStatus: Number(data.lastMonth.dislocations) || 0,
                 series: seriesD,
