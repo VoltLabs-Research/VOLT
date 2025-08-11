@@ -7,9 +7,29 @@
     gap: 2rem;
 }
 
+.dashboard-stat-arrow-icon-container{
+    position: absolute;
+    bottom: 0rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    opacity: 0;
+    transition: 0.15s;
+    color: #3d3d3d;
+}
+
+.dashboard-stat-container:hover .dashboard-stat-arrow-icon-container{
+    opacity: 1;
+}
+
 .dashboard-stat-container{
     width: 33.3%;
     display: flex;
+    position: relative;
+    cursor: pointer;
+}
+
+.dashboard-stat-container:hover{
+    opacity: 0.8;
 }
 
 .dashboard-stat-container:not(:last-child){
@@ -25,11 +45,15 @@
     right: 2rem;
 }
 
+.dashboard-stat-analytic-container:has(.MuiChartsGrid-root){
+    top: 2rem;
+}
+
 .dashboard-stat-left-container{
     display: flex;
     flex-direction: column;
     width: 100%;
-    gap: 2rem;
+    gap: 3rem;
 }
 
 .dashboard-stat-header-container{

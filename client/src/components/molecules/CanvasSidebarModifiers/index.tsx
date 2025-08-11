@@ -16,7 +16,6 @@ const CanvasSidebarModifiers = () => {
     const toggleModifiers = useUIStore((state) => state.toggleModifier);
 
     const structureIdentification = useTrajectoryStore((state) => state.structureIdentification);
-    const missorientationAnalysis = useTrajectoryStore((state) => state.missorientationAnalysis);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
 
     const analysisConfig = useConfigurationStore((state) => state.analysisConfig);
@@ -40,10 +39,6 @@ const CanvasSidebarModifiers = () => {
                 logger.log('Activating structure identification:', modifier);
                 structureIdentification(trajectory?._id, analysisConfig, modifier);
             }
-            
-            if(modifier === 'missorientation-analysis'){
-                missorientationAnalysis(trajectory?._id, trajectory.frames[trajectory.frames.length - 1].timestep, trajectory.frames[0].timestep)
-            }
         }
 
         prevActiveRef.current = activeModifiers;
@@ -53,10 +48,6 @@ const CanvasSidebarModifiers = () => {
             Icon: PiLineSegmentThin,
             title: 'Dislocation Analysis', 
             modifierId: 'dislocation-analysis-config' 
-        }, {
-            Icon: TbSquareRotated, 
-            title: 'Missorientation',
-            modifierId: 'missorientation-analysis' 
         }, {
             Icon: TfiSlice,
             title: 'Slice Plane',

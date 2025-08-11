@@ -3,6 +3,7 @@ import { TbHexagons } from 'react-icons/tb';
 import { HiOutlineServerStack } from 'react-icons/hi2';
 import { PiLineSegments } from 'react-icons/pi';
 import { FaArrowUpLong, FaArrowDownLong } from 'react-icons/fa6';
+import { GoArrowRight } from 'react-icons/go';
 import { useDashboardMetrics } from '@/hooks/dashboard/use-dashboard-metrics';
 import TinyLineChart from '@/components/atoms/TinyLineChart';
 import DashboardStatsSkeleton from '@/components/atoms/DashboardStatsSkeleton';
@@ -58,13 +59,17 @@ const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
                             </div>
                         </div>
 
+                        <i className='dashboard-stat-arrow-icon-container'>
+                            <GoArrowRight />
+                        </i>
+
                         <div className='dashboard-stat-analytic-container'>
                             <TinyLineChart
                                 lineColor={up ? '#28b85d' : '#e35151'}
                                 pData={series}
                                 xLabels={labels}
                                 yDomain={yDomain}
-                                width={150}
+                                width={200}
                                 height={80}
                             />
                         </div>

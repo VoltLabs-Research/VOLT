@@ -35,10 +35,4 @@ router.post(
     controller.crystalAnalysis
 );
 
-router.post(
-    '/missorientation/:id',
-    trajectoryMiddleware.checkTeamMembershipForTrajectory,
-    controller.getMissorientationDeltas
-)
-
 export default router;
