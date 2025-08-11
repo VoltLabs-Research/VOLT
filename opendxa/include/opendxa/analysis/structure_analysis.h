@@ -33,7 +33,8 @@ public:
 			ParticleProperty* outputStructures,
 			std::vector<Matrix3>&& preferredCrystalOrientations = std::vector<Matrix3>(),
 			bool identifyPlanarDefects = true, 
-			Mode identificationMode = Mode::CNA);
+			Mode identificationMode = Mode::CNA,
+			float rmsd = 0.15);
 
 	void identifyStructures();
 	void buildClusters();
@@ -46,7 +47,6 @@ public:
 		std::deque<int>& atomsToVisit,
 		int structureType
 	);
-	float computeAdaptiveRMSDCutoff();
 
 	void buildClustersPTM();
 
@@ -293,6 +293,7 @@ private:
 		Matrix_3<double>& orientationW,
 		int structureType
 	);
+
 	bool setupPTM(OpenDXA::PTM& ptm, size_t N);
 	void filterAtomsByRMSD(
 		const OpenDXA::PTM& ptm, 
@@ -316,6 +317,8 @@ private:
 	std::mutex cluster_graph_mutex;
 	ParticleProperty* _structureTypes;
 	
+	float _rmsd;
+
 	std::shared_ptr<ParticleProperty> _ptmRmsd; 
 	std::shared_ptr<ParticleProperty> _ptmOrientation; 
 	std::shared_ptr<ParticleProperty> _ptmDeformationGradient; 

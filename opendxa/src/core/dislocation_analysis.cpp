@@ -59,6 +59,10 @@ void DislocationAnalysis::setOnlyPerfectDislocations(bool flag){
     _onlyPerfectDislocations = flag;
 }
 
+void DislocationAnalysis::setRmsd(float rmsd){
+    _rmsd = rmsd;
+}
+
 // Set the smoothing intensity for each dislocation line.
 // Higher smoothing levels produce smoother, less jagged polylines
 // at the expense of some geometric detail.
@@ -154,7 +158,8 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
             structureTypes.get(),
             std::move(preferredOrientations),
             !_onlyPerfectDislocations,
-            _identificationMode
+            _identificationMode,
+            _rmsd
         );
     }
     

@@ -126,12 +126,14 @@ void ElasticMapping::assignVerticesToClusters(){
 // verify closed-loops balances.
 void ElasticMapping::assignIdealVectorsToEdges(bool reconstructEdgeVectors, int crystalPathSteps){
     CrystalPathFinder pathFinder{ structureAnalysis(), crystalPathSteps };
+    size_t total=  0, withVec = 0;
 
     // Walk every vertex's outgoing edges
 	for(auto const& [head, tail] : _vertexEdges){
         for(auto* edge = head; edge; edge = edge->nextLeavingEdge){
+            ++total;
             // Skip edges that already have a vector
-            if(edge->hasClusterVector()) continue;
+            if(edge->hasClusterVector()) { ++withVec; continue; }
 
             // Identify the two grain clusters at the edge's endpoints
             Cluster* c1 = clusterOfVertex(edge->vertex1);
@@ -164,6 +166,8 @@ void ElasticMapping::assignIdealVectorsToEdges(bool reconstructEdgeVectors, int 
             }
         }
     }
+    spdlog::debug("[ElasticMapping] Edge vectors assigned: {} / {} ({:.1f}%)",
+              withVec, total, 100.0 * (double)withVec / std::max<size_t>(1,total));
 }
 
 // Before accepting the elastic mapping as valid for simulation or further analysis

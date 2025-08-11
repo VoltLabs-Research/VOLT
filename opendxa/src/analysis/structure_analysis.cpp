@@ -20,7 +20,8 @@ StructureAnalysis::StructureAnalysis(
     ParticleProperty* outputStructures, 
     std::vector<Matrix3>&& preferredCrystalOrientations,
     bool identifyPlanarDefects, 
-    Mode identificationMode
+    Mode identificationMode,
+    float rmsd
 ) :
     _positions(positions),
     _simCell(simCell),
@@ -32,7 +33,8 @@ StructureAnalysis::StructureAnalysis(
     _atomClusters(std::make_unique<ParticleProperty>(positions->size(), DataType::Int, 1, 0, true)),
     _atomSymmetryPermutations(std::make_unique<ParticleProperty>(positions->size(), DataType::Int, 1, 0, false)),
     _clusterGraph(std::make_unique<ClusterGraph>()),
-    _preferredCrystalOrientations(std::move(preferredCrystalOrientations))
+    _preferredCrystalOrientations(std::move(preferredCrystalOrientations)),
+    _rmsd(rmsd)
 {
     static std::once_flag init_flag;
     std::call_once(init_flag, []() {
@@ -106,41 +108,6 @@ StructureAnalysis::computeRawRMSD(const OpenDXA::PTM& ptm, size_t N){
     });
 
     return { std::move(ptmTypes), std::move(cached) };
-}
-
-// By calculating the 95th percentile of the RMSD distribution, we 
-// discard the worst 5% of matches (potential outliers or defects). 
-// This way, we ignore highly deformed or poorly fitted structures and 
-// ensure that the cut is not biased by extremely high values. 
-// Furthermore, we guarantee a robust, flexible, and adaptive PTM.  
-float StructureAnalysis::computeAdaptiveRMSDCutoff(){
-    const size_t N = positions()->size();
-    if(!_ptmRmsd || N == 0) return 0.15f;
-
-    std::vector<float> rmsdValues;
-    rmsdValues.reserve(N);
-
-    for(size_t i = 0; i < N; ++i){
-        float v = _ptmRmsd->getFloat(i);
-        if(std::isfinite(v) && v > 0.0f){
-            rmsdValues.push_back(v);
-        }
-    }
-
-    if(rmsdValues.size() < 8){
-        // Stable fallback if there were almost no matches in the first pass
-        return 0.15f;
-    }
-
-    size_t idx95 = static_cast<size_t>(0.95 * (rmsdValues.size() - 1));
-    std::nth_element(rmsdValues.begin(), rmsdValues.begin() + idx95, rmsdValues.end());
-
-    const float cutoffMin = 0.15f;
-    float autoCutoff  = rmsdValues[idx95];
-    float finalCutoff = std::max(cutoffMin, autoCutoff);
-
-    spdlog::debug("PTM auto-cutoff (95th over valid matches): {}, final: {}", autoCutoff, finalCutoff);
-    return finalCutoff;
 }
 
 bool StructureAnalysis::setupPTM(OpenDXA::PTM& ptm, size_t N){
@@ -232,11 +199,7 @@ void StructureAnalysis::processPTMAtom(
 }
 
 // Runs the Polyhedral Template Matching (PTM) algorithm on every atom,
-// collects raw RMSD values (with no initial cutoff), then computes
-// an adaptive threshold (95th percentile of the distribution, clamped to a minimum)
-// and finally reruns structure identification keeping only those whose 
-// RMSD <= threshold. We store per-atom orientation quaternions and
-// deformation gradients for all "good" matches.
+// collects raw RMSD values (with no initial cutoff).
 void StructureAnalysis::determineLocalStructuresWithPTM() {
     const size_t N = positions()->size();
     if(N == 0){
@@ -250,18 +213,16 @@ void StructureAnalysis::determineLocalStructuresWithPTM() {
 
     auto [ptmTypes, cached] = computeRawRMSD(ptm, N);
     
-    float finalCutoff = computeAdaptiveRMSDCutoff();
-
-    if(finalCutoff > 0){
-        allocatePTMOutputArrays(N);
-        filterAtomsByRMSD(ptm, N, ptmTypes, cached, finalCutoff);
-    }
+    allocatePTMOutputArrays(N);
+    filterAtomsByRMSD(ptm, N, ptmTypes, cached, _rmsd);
 }
 
 /// Once we have neighbor lists from PTM, find the single largest atom‐to‐neighbor
 /// distance (respecting periodic wrapping).  This maximum sets a safe "search radius"
 /// for all later routines (e.g. ghost‐layer size in Delaunay, node‐connect threshold in
 /// mesh building) so we reliably include every bond in subsequent stages.
+//
+// TODO: MAYBE DIAMOND PROBLEM HERE??!
 void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
     const size_t N = positions()->size();
     if(N == 0){

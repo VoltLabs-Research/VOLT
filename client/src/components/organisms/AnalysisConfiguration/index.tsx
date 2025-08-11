@@ -44,7 +44,8 @@ const AnalysisConfiguration = () => {
             options: [
                 { value: 'FCC', title: 'FCC (Face-Centered Cubic)' }, 
                 { value: 'BCC', title: 'BCC (Body-Centered Cubic)' }, 
-                { value: 'HCP', title: 'HCP (Hexagonal Close-Packed)' }
+                { value: 'HCP', title: 'HCP (Hexagonal Close-Packed)' },
+                { value: 'CUBIC_DIAMOND', title: 'Cubic Diamond' }
             ] 
         },
         { 

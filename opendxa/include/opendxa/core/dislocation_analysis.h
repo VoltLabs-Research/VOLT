@@ -58,6 +58,7 @@ public:
     void setIdentificationMode(StructureAnalysis::Mode identificationMode);
     void setDefectMeshSmoothingLevel(double defectMeshSmoothingLevel);
     void setMarkCoreAtoms(bool markCoreAtoms);
+    void setRmsd(float rmsd);
     json compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile = "");
     json exportResultsToJson(const std::string& filename = "") const;
 
@@ -69,6 +70,8 @@ private:
     double _lineSmoothingLevel;
     double _linePointInterval;
     double _defectMeshSmoothingLevel;
+
+    float _rmsd;
 
     StructureAnalysis::Mode _identificationMode;
 
