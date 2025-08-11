@@ -34,6 +34,7 @@ export enum IdentificationMode {
 
 export interface ConfigParameters {
     crystalStructure?: LatticeStructure;
+    RMSD: number;
     maxTrialCircuitSize?: number;
     circuitStretchability?: number;
     onlyPerfectDislocations?: boolean;

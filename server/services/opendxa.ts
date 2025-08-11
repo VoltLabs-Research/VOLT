@@ -65,6 +65,7 @@ function buildCliArgs(options: ConfigParameters): string[] {
         maxTrialCircuitSize: '--maxTrialCircuitSize',
         circuitStretchability: '--circuitStretchability',
         onlyPerfectDislocations: '--onlyPerfectDislocations',
+        RMSD: '--rmsd',
         identificationMode: '--identificationMode',
         lineSmoothingLevel: '--lineSmoothingLevel',
         linePointInterval: '--linePointInterval',

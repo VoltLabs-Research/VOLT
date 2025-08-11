@@ -46,12 +46,12 @@ interface ConfigurationActions {
 
 export type ConfigurationStore = ConfigurationState & ConfigurationActions;
 
-// CNA?
 const DEFAULT_ANALYSIS_CONFIG: AnalysisConfig = {
     crystalStructure: 'BCC',
     identificationMode: 'CNA',
     maxTrialCircuitSize: 14.0,
     circuitStretchability: 9.0,
+    RMSD: 0.10,
     defectMeshSmoothingLevel: 8,
     lineSmoothingLevel: 5,
     linePointInterval: 2.5,

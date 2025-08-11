@@ -96,5 +96,6 @@ export interface AnalysisConfig {
     linePointInterval: number;
     onlyPerfectDislocations: boolean;
     markCoreAtoms: boolean;
+    RMSD: number;
     structureIdentificationOnly: boolean;
 }

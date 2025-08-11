@@ -57,6 +57,7 @@ const AnalysisConfiguration = () => {
                 { value: 'CNA', title: 'CNA (Common Neighbor Analysis)' }
             ] 
         },
+        { key: 'RMSD', label: 'RMSD', type: 'input', inputProps: { type: 'input', inputProps: { type: 'number', step: '0.1' } } },
         { key: 'maxTrialCircuitSize', label: 'Max Trial Circuit Size', type: 'input', inputProps: { type: 'number', step: '0.1' }},
         { key: 'circuitStretchability', label: 'Circuit Stretchability', type: 'input', inputProps: { type: 'number', step: '0.1' }},
         { key: 'defectMeshSmoothingLevel', label: 'Defect Mesh Smoothing', type: 'input', inputProps: { type: 'number', step: '1' }},
@@ -69,7 +70,7 @@ const AnalysisConfiguration = () => {
     const startAnalysis = () => {
         console.log('Starting Dislocation Analysis:', analysisConfig);
         dislocationAnalysis(trajectory?._id, analysisConfig);
-        // TODO: Show analysis progress in CAnvas
+        // TODO: Show analysis progress in canvas
         navigate('/dashboard');
     };
 
@@ -81,19 +82,20 @@ const AnalysisConfiguration = () => {
             </div>
 
             <div className='editor-analysis-config-body-container'>
-                {configFields.map((field) => (
+            {configFields
+                .filter(f => f.key !== 'RMSD' || analysisConfig.identificationMode === 'PTM')
+                .map((field) => (
                     <FormField
-                        isLoading={false}
                         key={field.key}
                         label={field.label}
                         fieldKey={field.key}
                         fieldType={field.type}
-                        options={field.options} 
+                        options={field.options}
                         inputProps={field.type === 'input' ? field.inputProps : undefined}
                         fieldValue={analysisConfig[field.key]}
                         onFieldChange={setAnalysisConfig}
                     />
-                ))}
+            ))}
             </div>
 
             <div className='editor-analysis-config-footer-container'>
