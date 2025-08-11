@@ -1,3 +1,81 @@
+.dashboard-stats-container{
+    display: flex;
+    width: 100%;
+    border: 1px solid #dadada;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    gap: 2rem;
+}
+
+.dashboard-stat-container{
+    width: 33.3%;
+    display: flex;
+}
+
+.dashboard-stat-container:not(:last-child){
+    border-right: 1px solid #dadada;
+}
+
+.dashboard-stat-count{
+    font-size: 1.6rem;
+}
+
+.dashboard-stat-analytic-container{
+    overflow: hidden;
+    position: relative;
+    right: 2rem;
+}
+
+.dashboard-stat-left-container{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 2rem;
+}
+
+.dashboard-stat-header-container{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.dashboard-stat-last-month-icon-container{
+    display: flex;
+    gap: .5rem;
+    color: #28b85d;
+}
+
+.dashboard-stat-last-month-helper-text{
+    font-weight: 600;
+    font-size: .9rem;
+}
+
+.dashboard-stat-last-month-title{
+    font-size: .9rem;
+    color: #282828;
+}
+
+.dashboard-stat-last-month-container{
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.dashboard-stat-footer-container{
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.dashboard-stat-icon-container{
+    background-color: #ddffdf;
+    width: 32px;
+    height: 32px;
+    border-radius: .5rem;
+    color: #0f7515;
+    font-size: 1.2rem;
+}
+
 .dashboard-wrapper-container {
     display: flex;
     flex-direction: column;
@@ -35,6 +113,7 @@
 .jobs-history-subtitle {
     display: none;
 }
+
 @media screen and (max-width: 768px) {
     body.jobs-history-expanded {
         overflow: hidden;
