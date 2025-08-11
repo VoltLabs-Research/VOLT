@@ -61,7 +61,8 @@ interface TrajectoryActions {
     // Analysis
     dislocationAnalysis: (id: string, analysisConfig: any) => Promise<void>;
     structureIdentification: (id: string, analysisConfig: any, identificationMode: string) => Promise<void>;
-    
+    missorientationAnalysis: (id: string, frame: number, theta0Frame: number) => Promise<void>;
+
     // State management
     setTrajectory: (trajectory: Trajectory | null) => void;
     clearError: () => void;
@@ -316,6 +317,10 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 });
                 throw error;
             }
+        },
+
+        missorientationAnalysis: async (id: string, frame: number, theta0Frame: number) => {
+            await api.post(`/modifiers/missorientation/${id}?frame=${frame}&theta0Frame=${theta0Frame}`);
         },
 
         setTrajectory: (trajectory: Trajectory | null) => set({ trajectory }),

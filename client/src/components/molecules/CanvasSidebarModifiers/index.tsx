@@ -16,6 +16,7 @@ const CanvasSidebarModifiers = () => {
     const toggleModifiers = useUIStore((state) => state.toggleModifier);
 
     const structureIdentification = useTrajectoryStore((state) => state.structureIdentification);
+    const missorientationAnalysis = useTrajectoryStore((state) => state.missorientationAnalysis);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
 
     const analysisConfig = useConfigurationStore((state) => state.analysisConfig);
@@ -34,9 +35,14 @@ const CanvasSidebarModifiers = () => {
 
         // Only for those who matter
         for(const modifier of justActivated){
+            console.log('modifier', modifier);
             if(modifier === 'PTM' || modifier === 'CNA'){
                 logger.log('Activating structure identification:', modifier);
                 structureIdentification(trajectory?._id, analysisConfig, modifier);
+            }
+            
+            if(modifier === 'missorientation-analysis'){
+                missorientationAnalysis(trajectory?._id, trajectory.frames[trajectory.frames.length - 1].timestep, trajectory.frames[0].timestep)
             }
         }
 
@@ -50,7 +56,7 @@ const CanvasSidebarModifiers = () => {
         }, {
             Icon: TbSquareRotated, 
             title: 'Missorientation',
-            modifierId: 'missorientation' 
+            modifierId: 'missorientation-analysis' 
         }, {
             Icon: TfiSlice,
             title: 'Slice Plane',

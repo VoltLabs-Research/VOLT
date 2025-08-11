@@ -27,7 +27,7 @@ export const computeMissorientationAngle = (atom: OAtom): number => {
 
     // Dipole Magnitude
     const threshold = 1e-9;
-    const norm = Math.abs(dox ** 2 + doy ** 2 + doz ** 2);
+    const norm = Math.sqrt(Math.abs(dox ** 2 + doy ** 2 + doz ** 2));
     const magnitude = (norm > threshold) ? norm : threshold;
 
     const theta = Math.atan(magnitude);
@@ -35,12 +35,14 @@ export const computeMissorientationAngle = (atom: OAtom): number => {
     return theta;
 };
 
-export const computeMissorientationDeltas = (groupedAtoms: AtomsGroupedByType, theta0: number) => {
+export const computeMissorientationDeltas = (groupedAtoms: AtomsGroupedByType, theta0GroupedAtoms: AtomsGroupedByType) => {
     const atoms = Object.values(groupedAtoms).flat();
+    const theta0Atoms = Object.values(theta0GroupedAtoms).flat();
     const deltaThetas: number[] = [];
 
-    for(const atom of atoms){
-        const theta = computeMissorientationAngle(atom);
+    for(let atomIndex = 0; atomIndex < atoms.length; atomIndex++){
+        const theta = computeMissorientationAngle(atoms[atomIndex]);
+        const theta0 = computeMissorientationAngle(theta0Atoms[atomIndex]);
 
         // If atom doesn't have ptm_quaternion property, then we assume
         // that the Dislocation Analysis was performed using CNA and not PTM.

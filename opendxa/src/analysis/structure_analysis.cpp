@@ -93,31 +93,25 @@ json StructureAnalysis::getAtomsData(
 
 std::pair<std::vector<StructureType>, std::vector<uint64_t>>
 StructureAnalysis::computeRawRMSD(const OpenDXA::PTM& ptm, size_t N){
-    // Allocate space to record every atom's RMSD
     _ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Float, 1, 0.0f, true);
     std::vector<uint64_t> cached(N, 0ull);
     std::vector<StructureType> ptmTypes(N);
-    
+
     tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto& r) {
         PTM::Kernel kernel(ptm);
         for(size_t i = r.begin(); i < r.end(); ++i){
             kernel.cacheNeighbors(i, &cached[i]);
             ptmTypes[i] = kernel.identifyStructure(i, cached);
             _ptmRmsd->setFloat(i, static_cast<float>(kernel.rmsd()));
+            storeOrientationData(kernel, i);
         }
     });
 
     return { std::move(ptmTypes), std::move(cached) };
 }
 
+
 bool StructureAnalysis::setupPTM(OpenDXA::PTM& ptm, size_t N){
-    // By running with an infinite RMSD cutoff, the PTM kernel never rejects any structure for 
-    // exceeding the threshold, so we collect the true RMSD of all atoms against the model without 
-    // any bias. With that full collection of RMSDs (stored in _ptmRmsd), we then compute an 
-    // adaptive cutoff (the 95th percentile) that reflects the typical fit quality in the particular 
-    // system. Only after this distribution is known, a final cutoff (the maximum between the 95th 
-    // percentile and an absolute minimum) is applied to robustly and flexibly filter out bad matches 
-    // instead of using a fixed or arbitrary value.
     ptm.setCalculateDefGradient(true);
     ptm.setRmsdCutoff(std::numeric_limits<double>::infinity());
     
@@ -188,7 +182,7 @@ void StructureAnalysis::processPTMAtom(
     float cutoff
 ){
     float rmsd = _ptmRmsd->getFloat(atomIndex);
-    if(type == StructureType::OTHER || rmsd > cutoff) return;
+    if(/*type == StructureType::OTHER || */rmsd > cutoff) return;
     
     kernel.identifyStructure(atomIndex, cached);
     
@@ -202,18 +196,17 @@ void StructureAnalysis::processPTMAtom(
 // collects raw RMSD values (with no initial cutoff).
 void StructureAnalysis::determineLocalStructuresWithPTM() {
     const size_t N = positions()->size();
-    if(N == 0){
-        return;
-    }
+    if (N == 0) return;
 
     OpenDXA::PTM ptm;
-    if(!setupPTM(ptm, N)){
+    if (!setupPTM(ptm, N)) {
         throw std::runtime_error("Error trying to initialize PTM.");
     }
 
-    auto [ptmTypes, cached] = computeRawRMSD(ptm, N);
-    
     allocatePTMOutputArrays(N);
+
+    auto [ptmTypes, cached] = computeRawRMSD(ptm, N);
+
     filterAtomsByRMSD(ptm, N, ptmTypes, cached, _rmsd);
 }
 

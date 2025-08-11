@@ -22,7 +22,9 @@
 
 import { Request, Response } from 'express';
 import { dislocationAnalysis, DislocationAnalysisModifierError } from '@/modifiers/dislocation-analysis';
-import { computeMissorientationDeltas, computeMissorientationAngle } from '@/modifiers/missorientation';
+import { computeMissorientationDeltas } from '@/modifiers/missorientation';
+import { readFile } from 'fs/promises';
+import path from 'path';
 
 export const crystalAnalysis = async (req: Request, res: Response) => {
     try {
@@ -71,6 +73,23 @@ export const getMissorientationDeltas = async (req: Request, res: Response) => {
         const theta0Frame = req.query?.theta0Frame;
         const frame = req.query?.frame;
 
+        if(!theta0Frame || !frame){
+            return res.status(400).json({
+                status: 'error',
+                data: { error: 'Missing theta0Frame and frame params' }
+            });
+        }
+
+        const folderPath = path.join(process.env.TRAJECTORY_DIR as string, folderId);
+        const theta0AtomsPath = path.join(folderPath, `grouped_atoms_${theta0Frame}.json`);
+        // TODO: targetFrame is better name
+        const frameAtomsPath = path.join(folderPath, `grouped_atoms_${frame}.json`);
+
+        const theta0Atoms = await readFile(theta0AtomsPath);
+        const frameAtoms = await readFile(frameAtomsPath);
+        const result = computeMissorientationDeltas(JSON.parse(theta0Atoms), JSON.parse(frameAtoms));
+
+        
     }catch(error){  
         res.status(500).json({
             status: 'error',
