@@ -32,6 +32,8 @@ import Trajectory from '@models/trajectory';
 import Team from '@models/team';
 import HandlerFactory from '@/controllers/handler-factory';
 import RuntimeError from '@/utilities/runtime-error';
+import StructureAnalysis from '@models/structure-analysis';
+import Dislocation from '@models/dislocations';
 
 const factory = new HandlerFactory({
     model: Trajectory,
@@ -48,6 +50,139 @@ const factory = new HandlerFactory({
 
 export const getTrajectoryById = factory.getOne();
 export const updateTrajectoryById = factory.updateOne();
+
+export const getTrajectoryMetrics = async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+    const { teamId } = req.query;
+    const now = new Date();
+    const tz = process.env.TZ || 'UTC';
+    const weeks = 12;
+
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const teamQuery: any = { members: userId };
+    if(teamId && typeof teamId === 'string'){
+        teamQuery._id = teamId;
+    }
+    const teams = await Team.find(teamQuery).select('_id');
+    const teamIds = teams.map(t => t._id);
+
+    if(teamIds.length === 0){
+        return res.status(200).json({
+            status: 'success',
+            data: {
+                totals: { structureAnalysis: 0, trajectories: 0, dislocations: 0 },
+                lastMonth: { structureAnalysis: 0, trajectories: 0, dislocations: 0 },
+                weekly: { labels: [], structureAnalysis: [], trajectories: [], dislocations: [] }
+            }
+        });
+    }
+
+    const trajectories = await Trajectory.find({ team: { $in: teamIds } }).select('_id createdAt');
+    const trajectoryIds = trajectories.map(t => t._id);
+
+    const totals = await Promise.all([
+        Trajectory.countDocuments({ team: { $in: teamIds } }),
+        StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds } }),
+        Dislocation.aggregate([
+            { $match: { trajectory: { $in: trajectoryIds } } },
+            { $group: { _id: null, total: { $sum: '$totalSegments' } } }
+        ])
+    ]);
+    const totalTraj = totals[0] || 0;
+    const totalStruct = totals[1] || 0;
+    const totalDisl = (totals[2][0]?.total as number) || 0;
+
+    const [trajCurr, trajPrev] = await Promise.all([
+        Trajectory.countDocuments({ team: { $in: teamIds }, createdAt: { $gte: monthStart, $lt: now } }),
+        Trajectory.countDocuments({ team: { $in: teamIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } })
+    ]);
+    const [structCurr, structPrev] = await Promise.all([
+        StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds }, createdAt: { $gte: monthStart, $lt: now } }),
+        StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } })
+    ]);
+    const dislCurrAgg = await Dislocation.aggregate([
+        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: monthStart, $lt: now } } },
+        { $group: { _id: null, total: { $sum: '$totalSegments' } } }
+    ]);
+    const dislPrevAgg = await Dislocation.aggregate([
+        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } } },
+        { $group: { _id: null, total: { $sum: '$totalSegments' } } }
+    ]);
+    const dislCurr = (dislCurrAgg[0]?.total as number) || 0;
+    const dislPrev = (dislPrevAgg[0]?.total as number) || 0;
+
+    const pct = (c: number, p: number) => p === 0 ? (c > 0 ? 100 : 0) : Math.round(((c - p) / p) * 100);
+    const lastMonth = {
+        trajectories: pct(trajCurr, trajPrev),
+        structureAnalysis: pct(structCurr, structPrev),
+        dislocations: pct(dislCurr, dislPrev)
+    };
+
+    const sinceDate = new Date(now);
+    sinceDate.setUTCDate(sinceDate.getUTCDate() - (weeks * 7));
+    sinceDate.setUTCHours(0, 0, 0, 0);
+
+    const trajWeekly = await Trajectory.aggregate([
+        { $match: { team: { $in: teamIds }, createdAt: { $gte: sinceDate } } },
+        { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: 'week', timezone: tz } }, value: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+    ]);
+
+    const structWeekly = await StructureAnalysis.aggregate([
+        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: sinceDate } } },
+        { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: 'week', timezone: tz } }, value: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+    ]);
+
+    const dislWeekly = await Dislocation.aggregate([
+        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: sinceDate } } },
+        { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: 'week', timezone: tz } }, value: { $sum: '$totalSegments' } } },
+        { $sort: { _id: 1 } }
+    ]);
+
+    const key = (d: any) => new Date(d).toISOString().slice(0,10);
+    const allKeys = new Set<string>();
+    for (const r of trajWeekly) allKeys.add(key(r._id));
+    for (const r of structWeekly) allKeys.add(key(r._id));
+    for (const r of dislWeekly) allKeys.add(key(r._id));
+
+    const sorted = Array.from(allKeys).sort();
+    const clampLastN = sorted.slice(-weeks); 
+
+    const toDict = (arr: Array<{ _id: Date; value: number }>) => {
+        const m = new Map<string, number>();
+        for (const r of arr) m.set(key(r._id), r.value);
+        return m;
+    };
+
+    const dTraj = toDict(trajWeekly as any);
+    const dStruct = toDict(structWeekly as any);
+    const dDisl = toDict(dislWeekly as any);
+
+    const seriesTraj = clampLastN.map((k) => dTraj.get(k) ?? 0);
+    const seriesStruct = clampLastN.map((k) => dStruct.get(k) ?? 0);
+    const seriesDisl = clampLastN.map((k) => dDisl.get(k) ?? 0);
+
+    return res.status(200).json({
+        status: 'success',
+        data: {
+            totals: {
+                structureAnalysis: totalStruct,
+                trajectories: totalTraj,
+                dislocations: totalDisl
+            },
+            lastMonth,
+            weekly: {
+                labels: clampLastN,      
+                trajectories: seriesTraj,
+                structureAnalysis: seriesStruct,
+                dislocations: seriesDisl
+            }
+        }
+    });
+};
 
 export const deleteTrajectoryById = factory.deleteOne({
     beforeDelete: async (doc: any, req: Request) => {

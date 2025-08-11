@@ -1,54 +1,45 @@
-import React from 'react';
-import { ChartContainer } from '@mui/x-charts/ChartContainer';
+import React, { useMemo } from 'react';
 import { alpha } from '@mui/material/styles';
-import {
-    LinePlot,
-    MarkPlot,
-    AreaPlot,
-    lineElementClasses,
-    markElementClasses,
-    areaElementClasses
-} from '@mui/x-charts/LineChart';
+import { LineChart } from '@mui/x-charts/LineChart';
 
-const TinyLineChart = ({ lineColor, xLabels, pData }) => {
-    const gradId = React.useId();
+interface Props {
+    lineColor: string;
+    xLabels: string[];
+    pData: number[];
+    yDomain?: { min: number; max: number };
+    width?: number;
+    height?: number;
+}
+
+const TinyLineChart: React.FC<Props> = ({ lineColor, xLabels, pData, yDomain, width = 300, height = 80 }) => {
+    const { labels, data } = useMemo(() => {
+        const L = Math.max(xLabels?.length || 0, pData?.length || 0);
+        const safeLabels = Array.from({ length: L }, (_, i) => xLabels?.[i] ?? '');
+        const safeData = Array.from({ length: L }, (_, i) => {
+            const v = Number(pData?.[i]);
+            return Number.isFinite(v) ? v : 0;
+        });
+        return { labels: safeLabels, data: safeData };
+    }, [xLabels, pData]);
+
+    const areaColor = alpha(lineColor, 0.25);
 
     return (
-        <ChartContainer
-            width={300}
-            series={[
-                { type: 'line', data: pData, color: lineColor, area: true },
-            ]}
-            xAxis={[{ scaleType: 'point', data: xLabels, position: 'none' }]}
-            yAxis={[{ position: 'none' }]}
-            sx={{
-                [`& .${lineElementClasses.root}`]: {
-                    stroke: lineColor,
-                    strokeWidth: 2,
-                },
-                [`& .${markElementClasses.root}`]: {
-                    stroke: lineColor,
-                    r: 0,
-                    fill: '#fff',
-                    strokeWidth: 2,
-                },
-                [`& .${areaElementClasses.root}`]: {
-                    fill: `url(#${gradId})`,
-                },
+        <LineChart
+            width={width}
+            height={height}
+            series={[{ data, area: true, color: lineColor }]}
+            xAxis={[{ scaleType: 'point', data: labels, position: 'none' }]}
+            yAxis={[{ position: 'none', min: yDomain?.min, max: yDomain?.max }]}
+            slotProps={{
+                legend: { hidden: true },
             }}
-            disableAxisListener
-        >
-            <defs>
-                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stopColor={alpha(lineColor, 0.25)} />
-                    <stop offset="100%" stopColor={alpha(lineColor, 0.00)} />
-                </linearGradient>
-            </defs>
-    
-          <AreaPlot />
-          <LinePlot />
-          <MarkPlot />
-        </ChartContainer>
+            sx={{
+                '& .MuiLineElement-root': { strokeWidth: 2 },
+                '& .MuiAreaElement-root': { fill: areaColor },
+                '& .MuiMarkElement-root': { r: 0 },
+            }}
+        />
     );
 };
 
