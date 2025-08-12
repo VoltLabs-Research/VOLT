@@ -33,16 +33,17 @@ export enum IdentificationMode {
 }
 
 export interface ConfigParameters {
-    crystalStructure?: LatticeStructure;
+    crystalStructure: LatticeStructure;
+    identificationMode: IdentificationMode;
+    maxTrialCircuitSize: number;
+    circuitStretchability: number;
     RMSD: number;
-    maxTrialCircuitSize?: number;
-    circuitStretchability?: number;
-    onlyPerfectDislocations?: boolean;
-    identificationMode?: IdentificationMode;
-    lineSmoothingLevel?: number;
-    linePointInterval?: number;
-    markCoreAtoms?: boolean;
-    structureIdentificationOnly?: boolean;
+    defectMeshSmoothingLevel: number;
+    lineSmoothingLevel: number;
+    linePointInterval: number;
+    onlyPerfectDislocations: boolean;
+    markCoreAtoms: boolean;
+    structureIdentificationOnly: boolean;
 }
 
 export interface StructureTypeStat {

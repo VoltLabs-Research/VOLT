@@ -30,6 +30,7 @@ import Team from '@models/team';
 import StructureAnalysis from '@/models/structure-analysis';
 import SimulationCell from '@/models/simulation-cell';
 import Dislocations from '@/models/dislocations';
+import AnalysisConfig from '@/models/analysis-config';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
@@ -81,6 +82,10 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         enum: ['processing', 'ready'],
         default: 'processing'
     },
+    analysis: [{
+        type: Schema.Types.ObjectId,
+        ref: 'AnalysisConfig'
+    }],
     frames: [TimestepInfoSchema],
     preview: {
         type: String,
@@ -100,7 +105,7 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
         return next();
     }
 
-    const { _id, folderId, team, preview } = trajectoryToDelete;
+    const { _id, folderId, team } = trajectoryToDelete;
     const trajectoryPath = join(process.env.TRAJECTORY_DIR as string, folderId);
 
     try{
@@ -109,14 +114,17 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
             await rm(trajectoryPath, { recursive: true });
         }
 
-        await StructureAnalysis.deleteMany({ trajectory: _id });
-        await SimulationCell.deleteMany({ trajectory: _id });
-        await Dislocations.deleteMany({ trajectory: _id });
-
-        await Team.updateOne(
-            { _id: team },
-            { $pull: { trajectories: _id } }
-        );
+        const filter = { trajectory: _id };
+        await Promise.all([
+            StructureAnalysis.deleteMany(filter),
+            SimulationCell.deleteMany(filter),
+            Dislocations.deleteMany(filter),
+            AnalysisConfig.deleteMany(filter),
+            Team.updateOne(
+                { _id: team },
+                { $pull: { trajectories: _id } }
+            )
+        ]);
 
         console.log('Trajectory and all related data cleaned up successfully');
         next();

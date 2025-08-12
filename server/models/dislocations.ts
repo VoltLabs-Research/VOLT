@@ -20,8 +20,9 @@
 * SOFTWARE.
 **/
 
-import mongoose, { Schema, Model, Document } from 'mongoose';
-import Trajectory from './trajectory';
+import mongoose, { Schema, Model } from 'mongoose';
+import Trajectory from '@/models/trajectory';
+import AnalysisConfig from '@/models/analysis-config'
 
 const BurgersSchema = new Schema({
     vector: {
@@ -95,6 +96,10 @@ const DislocationSchema: Schema<any> = new Schema({
         type: Number,
         required: true
     },
+    analysisConfig: {
+        type: Schema.Types.ObjectId,
+        ref: 'AnalysisConfig'
+    },
     dislocations: [DislocationDataSchema],
     totalPoints: {
         type: Number,
@@ -121,7 +126,11 @@ const DislocationSchema: Schema<any> = new Schema({
 DislocationSchema.index({ trajectory: 1, timestep: 1 }, { unique: true });
 
 DislocationSchema.post('save', async function(doc, next){
-    await Trajectory.findByIdAndUpdate(doc.trajectory, {
+    await Trajectory.findByIdAndUpdate(this.trajectoryId, {
+        $addToSet: { dislocations: doc._id }
+    });
+
+    await AnalysisConfig.findByIdAndUpdate(doc.analysisConfig, {
         dislocations: doc._id
     });
 

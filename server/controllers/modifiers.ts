@@ -19,7 +19,6 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 **/
-
 import { Request, Response } from 'express';
 import { dislocationAnalysis, DislocationAnalysisModifierError } from '@/modifiers/dislocation-analysis';
 
@@ -27,7 +26,9 @@ export const crystalAnalysis = async (req: Request, res: Response) => {
     try {
         const { folderId, _id: trajectoryId, team, name, frames } = res.locals.trajectory;
         const analysisConfig = req.body;
+
         console.log('Analysis Config for', name, ' is ', analysisConfig);
+
         const result = await dislocationAnalysis({
             folderId,
             trajectoryId,

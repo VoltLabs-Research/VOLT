@@ -24,6 +24,7 @@ import mongoose, { Schema, Model } from 'mongoose';
 // @ts-ignore
 import { ICellAnalysis } from '@/types/models/simulation-cell';
 import Trajectory from '@/models/trajectory';
+import AnalysisConfig from './analysis-config';
 
 const PeriodicBoundarySchema = new Schema({
     x: { type: Boolean, required: true },
@@ -52,10 +53,6 @@ const SimulationCellSchema: Schema<ICellAnalysis> = new Schema({
         type: [[Number]],
         required: true
     },
-    inverseMatrix: {
-        type: [[Number]],
-        required: true
-    },
     volume: {
         type: Number,
         required: true
@@ -67,6 +64,10 @@ const SimulationCellSchema: Schema<ICellAnalysis> = new Schema({
     angles: {
         type: LatticeAnglesSchema,
         required: true
+    },
+    analysisConfig: {
+        type: Schema.Types.ObjectId,
+        ref: 'AnalysisConfig'
     },
     reciprocalLattice: {
         type: ReciprocalLatticeSchema,
@@ -92,9 +93,10 @@ const SimulationCellSchema: Schema<ICellAnalysis> = new Schema({
 SimulationCellSchema.index({ trajectory: 1, timestep: 1 }, { unique: true });
 
 SimulationCellSchema.post('save', async function(doc, next){
-    await Trajectory.findByIdAndUpdate(doc.trajectory, {
-        simulationCell: doc._id
-    });
+    const updateData = { simulationCell: doc._id };
+
+    await Trajectory.findByIdAndUpdate(doc.trajectory, updateData);
+    await AnalysisConfig.findByIdAndUpdate(doc.analysisConfig, updateData);
 
     next();
 });

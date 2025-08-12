@@ -22,6 +22,7 @@
 
 import { Document } from 'mongoose';
 import { ITrajectory } from '@types/models/trajectory';
+import { IAnalysisConfig } from '@/types/models/analysis-config';
 
 export interface IStructureTypeStat{
     name: string;
@@ -39,4 +40,5 @@ export interface IStructureAnalysis extends Document{
     unidentifiedStructures: number;
     identificationRate: number;
     trajectory: mongoose.Types.ObjectId;
+    analysisConfig: mongoose.Types.ObjectId;
 }

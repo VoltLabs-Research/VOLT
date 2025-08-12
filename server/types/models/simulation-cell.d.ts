@@ -21,6 +21,7 @@
 **/
 
 import { Document, Types } from 'mongoose';
+import { IAnalysisConfig } from '@/types/models/analysis-config';
 
 interface IPeriodicBoundaryConditions {
     x: boolean;
@@ -46,7 +47,6 @@ interface IDimensionality {
 
 export interface ICellAnalysis extends Document {
     matrix: number[][];
-    inverseMatrix: number[][];
     volume: number;
     periodicBoundaryConditions: IPeriodicBoundaryConditions;
     angles: ILatticeAngles;
@@ -54,4 +54,5 @@ export interface ICellAnalysis extends Document {
     dimensionality: IDimensionality;
     timestep: number;
     trajectory: Types.ObjectId;
+    analysisConfig: Types.ObjectId;
 }

@@ -21,20 +21,8 @@
 **/
 
 import mongoose, { Schema, Model } from 'mongoose';
-
-export interface IAnalysisConfig{
-    crystalStructure: string;
-    identificationMode: string;
-    maxTrialCircuitSize: number;
-    circuitStretchability: number;
-    RMSD: number;
-    defectMeshSmoothingLevel: number;
-    lineSmoothingLevel: number;
-    linePointInterval: number;
-    onlyPerfectDislocations: boolean;
-    markCoreAtoms: boolean;
-    structureIdentificationOnly: boolean;
-}
+import type { IAnalysisConfig } from '@/types/models/analysis-config';
+import Trajectory from '@/models/trajectory';
 
 const AnalysisConfigSchema: Schema<IAnalysisConfig> = new Schema({
     crystalStructure: {
@@ -77,10 +65,37 @@ const AnalysisConfigSchema: Schema<IAnalysisConfig> = new Schema({
         type: Boolean,
         required: true
     },
+    trajectory: {
+        type: Schema.Types.ObjectId,
+        required: true,
+        ref: 'Trajectory'
+    },
+    structureAnalysis: {
+        type: Schema.Types.ObjectId,
+        ref: 'StructureAnalysis'
+    },
+    simulationCell: {
+        type: Schema.Types.ObjectId,
+        ref: 'SimulationCell'
+    },
+    dislocations: {
+        type: Schema.Types.ObjectId,
+        ref: 'Dislocations'
+    },
     structureIdentificationOnly: {
         type: Boolean,
         required: true
     }
+}, {
+    timestamps: true
+});
+
+AnalysisConfigSchema.post('save', async function(doc, next){
+    await Trajectory.findByIdAndUpdate(doc.trajectory, {
+        $addToSet: { analysis: doc._id }
+    });
+
+    next();
 });
 
 const AnalysisConfig: Model<IAnalysisConfig> = mongoose.model<IAnalysisConfig>('AnalysisConfig', AnalysisConfigSchema);

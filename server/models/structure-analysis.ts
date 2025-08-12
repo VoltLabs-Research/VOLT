@@ -24,6 +24,7 @@ import mongoose, { Schema, Model } from 'mongoose';
 // @ts-ignore
 import { IStructureAnalysis, IStructureTypeStat } from '@/types/models/structure-analysis';
 import Trajectory from '@models/trajectory';
+import AnalysisConfig from '@models/analysis-config';
 
 const StructureTypeStatSchema = new Schema<IStructureTypeStat>({
     name: {
@@ -75,6 +76,10 @@ const StructureAnalysisSchema: Schema<IStructureAnalysis> = new Schema({
         type: Number,
         required: true
     },
+    analysisConfig: {
+        type: Schema.Types.ObjectId,
+        ref: 'AnalysisConfig'
+    },
     trajectory: {
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
@@ -87,9 +92,14 @@ const StructureAnalysisSchema: Schema<IStructureAnalysis> = new Schema({
 StructureAnalysisSchema.index({ trajectory: 1, timestep: 1, analysisMethod: 1 }, { unique: true });
 
 StructureAnalysisSchema.post('save', async function(doc, next){
+    const updateData = { structureAnalysis: doc._id };
+
     await Trajectory.findByIdAndUpdate(doc.trajectory, {
-        $addToSet: { structureAnalysis: doc._id }
+        $addToSet: updateData
     });
+
+    await AnalysisConfig.findByIdAndUpdate(doc.analysisConfig, updateData);
+
     next();
 });
 

@@ -29,6 +29,7 @@ import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { readMsgpackFile } from '@/utilities/msgpack';
 import { writeGroupedJsonStreaming } from '@/utilities/fs';
 import { upsert } from '@/utilities/mongo-utils';
+import { IAnalysisConfig } from '@/types/models/analysis-config';
 import path from 'path';
 import os from 'os';
 import MeshExporter from '@utilities/export/mesh';
@@ -37,7 +38,7 @@ import LAMMPSToGLBExporter from '@utilities/export/atoms';
 import StructureAnalysis from '@/models/structure-analysis';
 import SimulationCell from '@/models/simulation-cell';
 import Dislocations from '@models/dislocations';
-import Trajectory from '@/models/trajectory';
+import AnalysisConfig from '@/models/analysis-config';
 
 const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build/opendxa');
 
@@ -65,6 +66,7 @@ function buildCliArgs(options: ConfigParameters): string[] {
         crystalStructure: '--crystalStructure',
         maxTrialCircuitSize: '--maxTrialCircuitSize',
         circuitStretchability: '--circuitStretchability',
+        defectMeshSmoothingLevel: '--defectSmoothingLevel',
         onlyPerfectDislocations: '--onlyPerfectDislocations',
         RMSD: '--rmsd',
         identificationMode: '--identificationMode',
@@ -92,6 +94,7 @@ class OpenDXAService{
     private trajectoryId: string;
     private exportDirectory: string;
     private trajectoryFolderPath: string;
+    private analysisConfig: IAnalysisConfig | undefined;
 
     constructor(trajectoryId: string, trajectoryFolderPath: string){
         this.exportDirectory = path.join(trajectoryFolderPath, 'glb');
@@ -102,6 +105,13 @@ class OpenDXAService{
     public async processSingleFile(inputFile: string, options: ConfigParameters): Promise<any> {
         const baseFilename = path.basename(inputFile);
         console.log(`[OpenDXAService] Starting processing for: ${baseFilename}`);
+
+        this.analysisConfig = await this.storeAnalysisConfig(options);
+
+        if(!this.analysisConfig){
+            console.error('Could not create Analysis Config document. Nothing to do!');
+            return;
+        }
 
         const outputBase = path.join(os.tmpdir(), `opendxa-out-${this.trajectoryId}-${Date.now()}-${baseFilename}`);
         const cliOptions = buildCliArgs(options);
@@ -195,16 +205,9 @@ class OpenDXAService{
   
     private async processFrameData(frameResult: any, timestep: number, options: ConfigParameters): Promise<void> {
         const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
+
         const atomsFilePath = path.join(this.trajectoryFolderPath, `grouped_atoms_${timestep}.json`);
         await writeGroupedJsonStreaming(atomsFilePath, atoms);
-       
-        try{
-            console.log('Simulation Cell:', simulation_cell);
-            console.log('Timestep:', timestep);
-            this.handleSimulationCellData(simulation_cell, timestep);
-        }catch(err){
-            console.error(err);
-        }
 
         if(options?.structureIdentificationOnly){
             this.exportAtomsColoredByType(atoms, timestep);
@@ -216,10 +219,18 @@ class OpenDXAService{
             this.exportMesh(interface_mesh, timestep, 'interface'),
             this.exportDislocations(dislocations, timestep),
             this.exportAtomsColoredByType(atoms, timestep),
-            this.handleStructuralData(structures, timestep),
             this.handleSimulationCellData(simulation_cell, timestep),
+            this.handleStructuralData(structures, timestep),
             this.handleDislocationData(dislocations, timestep)
         ]);
+    }
+
+    private async storeAnalysisConfig(config: ConfigParameters): Promise<IAnalysisConfig>{
+        const analysisConfig = await AnalysisConfig.create({
+            trajectory: this.trajectoryId,
+            ...config,
+        });
+        return analysisConfig;
     }
 
     private async handleDislocationData(data: Dislocation, timestep: number): Promise<void>{
@@ -249,16 +260,13 @@ class OpenDXAService{
             maxSegmentLength: data.summary.max_segment_length,
             minSegmentLength: data.summary.min_segment_length,
             totalLength: data.summary.total_length,
+            analysisConfig: this.analysisConfig,
             trajectory: this.trajectoryId,
             timestep
         };
 
         try{
-            const dislocationDoc = await upsert(Dislocations, filter, { $set: updateData });
-
-            await Trajectory.findByIdAndUpdate(this.trajectoryId, {
-                $addToSet: { dislocations: dislocationDoc._id }
-            });
+            await upsert(Dislocations, filter, { $set: updateData });
         }catch(err){
             console.error(`[OpenDXAService] Failed to save dislocation data for timestep ${timestep}:`, err);
         }
@@ -332,7 +340,8 @@ class OpenDXAService{
             identifiedStructures: data.summary.total_identified,
             unidentifiedStructures: data.summary.total_unidentified,
             identificationRate: data.summary.identification_rate,
-            trajectory: this.trajectoryId
+            trajectory: this.trajectoryId,
+            analysisConfig: this.analysisConfig
         };
 
         await upsert(StructureAnalysis, filter, { $set: updateData });
@@ -344,13 +353,17 @@ class OpenDXAService{
             timestep: frame
         };
 
+        // TODO: I'm saving all information? What about other handler* methods?
         const updateData = {
             periodicBoundaryConditions: data.periodic_boundary_conditions,
             angles: data.angles,
-            reciprocalLattice: data.reciprocalLattice,
+            matrix: data.matrix,
+            reciprocalLattice: data.reciprocal_lattice,
             dimensionality: data.dimensionality,
             trajectory: this.trajectoryId,
-            timestep: frame
+            volume: data.volume,
+            timestep: frame,
+            analysisConfig: this.analysisConfig
         };
         
         await upsert(SimulationCell, filter, { $set: updateData });
