@@ -317,6 +317,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     structureIdentificationOnly: true,
                     identificationMode
                 }
+                delete config._id;
                 await api.post(`/modifiers/crystal-analysis/${id}`, config);
             }catch(error: any){
                 set({
@@ -328,6 +329,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
 
         dislocationAnalysis: async (id: string, analysisConfig: any) => {
             try{
+                delete analysisConfig._id;
                 await api.post(`/modifiers/crystal-analysis/${id}`, analysisConfig);
             }catch(error: any){
                 set({ 

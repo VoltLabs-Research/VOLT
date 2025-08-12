@@ -30,6 +30,7 @@ import AnalysisConfiguration from '@/components/organisms/AnalysisConfiguration'
 import SlicePlane from '@/components/organisms/SlicePlane';
 import TimestepControls from '@/components/organisms/TimestepControls';
 import DislocationResults from '@/components/atoms/DislocationResults';
+import AnalysisConfigSelection from '../molecules/AnalysisConfigSelection';
 
 const CanvasWidgets = React.memo<EditorWidgetsProps>(({ 
     trajectory, 
@@ -60,6 +61,7 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({
             <EditorSidebar />
             <TrajectoryVisibilityStatusFloatIcon />
             <SceneTopCenteredOptions />
+            <AnalysisConfigSelection />
 
             {(trajectory && currentTimestep !== undefined) && (
                 <TimestepControls />

@@ -32,7 +32,7 @@ import './AnalysisConfiguration.css';
 
 const AnalysisConfiguration = () => {
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
-    const setAnalysisConfig = useConfigurationStore((state) => state.setAnalysisConfig);
+    const setAnalysisConfig = useAnalysisConfigStore((state) => state.setAnalysisConfig);
     const dislocationAnalysis = useTrajectoryStore((state) => state.dislocationAnalysis);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const navigate = useNavigate();

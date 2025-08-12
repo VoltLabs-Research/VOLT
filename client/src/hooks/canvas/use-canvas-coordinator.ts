@@ -38,7 +38,8 @@ const useCanvasCoordinator = () => {
     const error = useTrajectoryStore((state) => state.error);
     const clearCurrentTrajectory = useTrajectoryStore((state) => state.clearCurrentTrajectory);
     const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
-    
+    const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
+
     const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
     const setCurrentTimestep = usePlaybackStore((state) => state.setCurrentTimestep);
     const playNextFrame = usePlaybackStore((state) => state.playNextFrame);
@@ -72,6 +73,11 @@ const useCanvasCoordinator = () => {
             }
         }
     }, [trajectory, currentTimestep, setCurrentTimestep]);
+
+    useEffect(() => {
+        if(!analysisConfig?._id) return;
+        computeTimestepData(trajectory, currentTimestep);
+    }, [analysisConfig]);
 
     // Compute timestep data when trajectory or timestep changes
     useEffect(() => {
