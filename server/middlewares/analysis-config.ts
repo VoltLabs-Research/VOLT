@@ -20,33 +20,23 @@
 * SOFTWARE.
 **/
 
-import useTrajectoryStore from '@/stores/trajectories';
+import { Request, Response, NextFunction } from 'express';
+import AnalysisConfig from '@/models/analysis-config';
 
-export interface FileWithPath{
-    file: File;
-    path: string;
-}
+export const checkTeamMembershipForAnalysisTrajectory = async (
+    req: Request, 
+    res: Response, 
+    next: NextFunction
+) => {
+    const { id } = req.params;
+    const analysisConfig = await AnalysisConfig.findById(id);
 
-const useTrajectoryUpload = () => {
-    const { createTrajectory } = useTrajectoryStore();
-
-    const uploadAndProcessTrajectory = async (
-        filesWithPaths: FileWithPath[], 
-        originalFolderName: string,
-        teamId: string
-    ) => {
-        const formData = new FormData();
-        filesWithPaths.forEach(({ file, path }) => {
-            formData.append('trajectoryFiles', file, path);
+    if(!analysisConfig){
+        return res.status(404).json({
+            status: 'error',
+            data: { error: 'Analysis config not found' }
         });
+    }
 
-        formData.append('originalFolderName', originalFolderName);
-        formData.append('teamId', teamId);
-        
-        await createTrajectory(formData);
-    };
-
-    return { uploadAndProcessTrajectory }
+    checkTeamMembershipForAnalysisTrajectory(req, res, next);
 };
-
-export default useTrajectoryUpload;

@@ -27,18 +27,36 @@ import { api } from '@/services/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 
 interface AnalysisConfigState{
-    analysisConfig: AnalysisConfig | null,
+    analysisConfig: AnalysisConfig,
     isLoading: boolean;
 }
 
 interface AnalysisConfigActions{
     setIsLoading: (loading: boolean) => void;
-    setAnalysisConfig: (config: AnalysisConfig | null) => void;
     getAnalysisConfigById: (id: string) => Promise<void>;
+    resetAnalysisConfig: () => void;
+    setAnalysisConfig: <K extends keyof AnalysisConfig>(
+        key: K,
+        value: AnalysisConfig[K]
+    ) => void;
 }
 
+const DEFAULT_ANALYSIS_CONFIG: AnalysisConfig = {
+    crystalStructure: 'BCC',
+    identificationMode: 'CNA',
+    maxTrialCircuitSize: 14.0,
+    circuitStretchability: 9.0,
+    RMSD: 0.10,
+    defectMeshSmoothingLevel: 8,
+    lineSmoothingLevel: 5,
+    linePointInterval: 2.5,
+    onlyPerfectDislocations: false,
+    markCoreAtoms: false,
+    structureIdentificationOnly: false
+};
+
 const initialState = {
-    analysisConfig: null,
+    analysisConfig: DEFAULT_ANALYSIS_CONFIG,
     isLoading: true
 };
 
@@ -48,14 +66,28 @@ const useAnalysisConfigStore = create<AnalysisConfigStore>((set, get) => {
     const asyncAction = createAsyncAction(set, get);
 
     return {
-            ...initialState,
+        ...initialState,
+
+        setAnalysisConfig: (key: string, value: any) => {
+            const currentConfig = get().analysisConfig;
+            set({
+                analysisConfig: { ...currentConfig, [key]: value },
+            });
+        },
+
+        updateAnalysisConfig: (config: Partial<AnalysisConfig>) => {
+            const currentConfig = get().analysisConfig;
+            set({
+                analysisConfig: { ...currentConfig, ...config },
+            });
+        },
+
+        resetAnalysisConfig: () => {
+            set({ analysisConfig: DEFAULT_ANALYSIS_CONFIG });
+        },
 
         setIsLoading: (loading: boolean) => {
             set({ isLoading: loading });
-        },
-
-        setAnalysisConfig: (config: AnalysisConfig | null) => {
-            set({ analysisConfig: config });
         },
 
         getAnalysisConfigById: (configId: string) => asyncAction(() => api.get<ApiResponse<AnalysisConfig>>(`/analysis-config/${configId}`), {

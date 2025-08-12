@@ -78,6 +78,7 @@ configureApp({
     routes: [
         'modifiers',
         'teams',
+        'analysis-config',
         'trajectories',
         'structure-analysis',
         'auth'

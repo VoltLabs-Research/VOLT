@@ -31,7 +31,6 @@ const useFileUpload = (
     onUploadSuccess?: () => void
 ) => {
     const { uploadAndProcessTrajectory } = useTrajectoryUpload();
-    const { analysisConfig } = useConfigurationStore((state) => state.analysisConfig);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const logger = useLogger('use-file-upload');
 
@@ -55,14 +54,13 @@ const useFileUpload = (
             await uploadAndProcessTrajectory(
                 filesWithPath,
                 folderName,
-                analysisConfig,
                 selectedTeam._id
             );
         }catch(err){
             const error = err instanceof Error ? err : new Error('Upload failed');
             logger.error('Upload failed:', error);
         }
-    }, [uploadAndProcessTrajectory, analysisConfig, selectedTeam]);
+    }, [uploadAndProcessTrajectory, selectedTeam]);
 
     return {
         uploadFiles

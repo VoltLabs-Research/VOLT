@@ -118,7 +118,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         ...initialState,
 
         getTrajectories: (teamId?: string) => {
-            const url = teamId ? `/trajectories?teamId=${teamId}` : '/trajectories';
+            const url = teamId ? `/trajectories?teamId=${teamId}&populate=analysis` : '/trajectories';
             
             return asyncAction(() => api.get<ApiResponse<Trajectory[]>>(url),
                 {
@@ -148,7 +148,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             });
         },
         
-        getTrajectoryById: (id: string) => asyncAction(() => api.get<ApiResponse<Trajectory>>(`/trajectories/${id}?populate=team`),
+        getTrajectoryById: (id: string) => asyncAction(() => api.get<ApiResponse<Trajectory>>(`/trajectories/${id}?populate=team,analysis`),
             {
                 loadingKey: 'isLoading',
                 onSuccess: (res) => ({

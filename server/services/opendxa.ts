@@ -206,7 +206,8 @@ class OpenDXAService{
     private async processFrameData(frameResult: any, timestep: number, options: ConfigParameters): Promise<void> {
         const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
 
-        const atomsFilePath = path.join(this.trajectoryFolderPath, `grouped_atoms_${timestep}.json`);
+        // @ts-ignore
+        const atomsFilePath = path.join(this.trajectoryFolderPath, `grouped_atoms_${timestep}-${this.analysisConfig._id}.json`);
         await writeGroupedJsonStreaming(atomsFilePath, atoms);
 
         if(options?.structureIdentificationOnly){
@@ -273,7 +274,9 @@ class OpenDXAService{
     }
 
     private getOutputPath(frame: number, exportName: string): string {
-        return path.join(this.exportDirectory, `frame_${frame}_${exportName}.glb`)
+        // TODO: mongoose document type
+        // @ts-ignore
+        return path.join(this.exportDirectory, `frame-${frame}_${exportName}_analysis-${this.analysisConfig._id}.glb`)
     }
 
     private exportAtomsColoredByType(groupedAtoms: AtomsGroupedByType, frame: number): void {

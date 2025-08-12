@@ -20,33 +20,12 @@
 * SOFTWARE.
 **/
 
-import useTrajectoryStore from '@/stores/trajectories';
+import HandlerFactory from '@/controllers/handler-factory';
+import AnalysisConfig from "@/models/analysis-config";
 
-export interface FileWithPath{
-    file: File;
-    path: string;
-}
+const factory = new HandlerFactory({
+    model: AnalysisConfig,
+    fields: [],
+});
 
-const useTrajectoryUpload = () => {
-    const { createTrajectory } = useTrajectoryStore();
-
-    const uploadAndProcessTrajectory = async (
-        filesWithPaths: FileWithPath[], 
-        originalFolderName: string,
-        teamId: string
-    ) => {
-        const formData = new FormData();
-        filesWithPaths.forEach(({ file, path }) => {
-            formData.append('trajectoryFiles', file, path);
-        });
-
-        formData.append('originalFolderName', originalFolderName);
-        formData.append('teamId', teamId);
-        
-        await createTrajectory(formData);
-    };
-
-    return { uploadAndProcessTrajectory }
-};
-
-export default useTrajectoryUpload;
+export const getAnalysisConfigById = factory.getOne();

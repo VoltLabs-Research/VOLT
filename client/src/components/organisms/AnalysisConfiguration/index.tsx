@@ -21,16 +21,17 @@
 **/
 
 import { IoIosArrowDown } from 'react-icons/io';
+import { useNavigate } from 'react-router';
 import FormField from '@/components/molecules/FormField';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import useConfigurationStore from '@/stores/editor/configuration';
 import Button from '@/components/atoms/Button';
 import useTrajectoryStore from '@/stores/trajectories';
-import { useNavigate } from 'react-router';
+import useAnalysisConfigStore from '@/stores/analysis-config';
 import './AnalysisConfiguration.css';
 
 const AnalysisConfiguration = () => {
-    const analysisConfig = useConfigurationStore((state) => state.analysisConfig);
+    const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const setAnalysisConfig = useConfigurationStore((state) => state.setAnalysisConfig);
     const dislocationAnalysis = useTrajectoryStore((state) => state.dislocationAnalysis);
     const trajectory = useTrajectoryStore((state) => state.trajectory);

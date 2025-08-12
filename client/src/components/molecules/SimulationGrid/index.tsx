@@ -25,6 +25,10 @@ const SimulationGrid = () => {
     const getJobsForTrajectory = useTeamJobsStore((state) => state.getJobsForTrajectory);
 
     useEffect(() => {
+        console.log('trajectories:', trajectories)
+    }, [trajectories]);
+
+    useEffect(() => {
         const handleKeyDown = (event) => {
             if(selectedTrajectories.length === 0){
                 return;

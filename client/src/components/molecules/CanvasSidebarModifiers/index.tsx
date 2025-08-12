@@ -7,6 +7,7 @@ import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
 import useConfigurationStore from '@/stores/editor/configuration';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
+import useAnalysisConfigStore from '@/stores/analysis-config';
 import useUIStore from '@/stores/ui';
 import './CanvasSidebarModifiers.css';
 
@@ -18,7 +19,7 @@ const CanvasSidebarModifiers = () => {
     const structureIdentification = useTrajectoryStore((state) => state.structureIdentification);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
 
-    const analysisConfig = useConfigurationStore((state) => state.analysisConfig);
+    const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
 
     // We save the previous state to detect which modifiers have just been activated
     const prevActiveRef = useRef<string[]>(activeModifiers);
