@@ -1,0 +1,25 @@
+.analysis-config-selection-container{
+    position: absolute;
+    padding: 0;
+    right: 2rem;
+    top: 1.5rem;
+    width: 200px;
+}
+
+.analysis-config-select-container option{
+    color: #000;
+}
+
+.analysis-config-select-container{
+    color: #dadada;
+    padding: .8rem 1.5rem;
+    border-radius: .5rem;
+    font-size: .9rem;
+    font-weight: 450;
+    background-color: transparent;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 8px center;
+    background-repeat: no-repeat;
+    background-size: 20px;
+}

@@ -15,6 +15,7 @@
     width: 100%;
     padding: .8rem;
     border-radius: .5rem;
+    border: 1px solid #e9e9e9;
     font-size: .9rem;
     font-weight: 450;
     background-color: transparent;
@@ -23,7 +24,6 @@
     background-position: right 8px center;
     background-repeat: no-repeat;
     background-size: 20px;
-    border: 1px solid #e9e9e9;
 }
 
 .sidebar-top-container,
