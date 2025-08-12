@@ -28,6 +28,7 @@ import { Dislocation } from '@/types/utilities/export/dislocations';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { readMsgpackFile } from '@/utilities/msgpack';
 import { writeGroupedJsonStreaming } from '@/utilities/fs';
+import { upsert } from '@/utilities/mongo-utils';
 import path from 'path';
 import os from 'os';
 import MeshExporter from '@utilities/export/mesh';
@@ -196,7 +197,15 @@ class OpenDXAService{
         const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
         const atomsFilePath = path.join(this.trajectoryFolderPath, `grouped_atoms_${timestep}.json`);
         await writeGroupedJsonStreaming(atomsFilePath, atoms);
-        
+       
+        try{
+            console.log('Simulation Cell:', simulation_cell);
+            console.log('Timestep:', timestep);
+            this.handleSimulationCellData(simulation_cell, timestep);
+        }catch(err){
+            console.error(err);
+        }
+
         if(options?.structureIdentificationOnly){
             this.exportAtomsColoredByType(atoms, timestep);
             return;
@@ -245,12 +254,8 @@ class OpenDXAService{
         };
 
         try{
-            const dislocationDoc = await Dislocations.findOneAndUpdate(filter, updateData, {
-                upsert: true,
-                new: true,
-                runValidators: true
-            });
- 
+            const dislocationDoc = await upsert(Dislocations, filter, { $set: updateData });
+
             await Trajectory.findByIdAndUpdate(this.trajectoryId, {
                 $addToSet: { dislocations: dislocationDoc._id }
             });
@@ -330,11 +335,7 @@ class OpenDXAService{
             trajectory: this.trajectoryId
         };
 
-        await StructureAnalysis.findOneAndUpdate(filter, updateData, {
-            upsert: true,
-            new: true,
-            runValidators: true
-        });
+        await upsert(StructureAnalysis, filter, { $set: updateData });
     }
 
     private async handleSimulationCellData(data: any, frame: number): Promise<void> {
@@ -344,16 +345,15 @@ class OpenDXAService{
         };
 
         const updateData = {
-            ...data,
+            periodicBoundaryConditions: data.periodic_boundary_conditions,
+            angles: data.angles,
+            reciprocalLattice: data.reciprocalLattice,
+            dimensionality: data.dimensionality,
             trajectory: this.trajectoryId,
             timestep: frame
         };
-
-        await SimulationCell.findOneAndUpdate(filter, updateData, {
-            upsert: true,
-            new: true,
-            runValidators: true
-        });
+        
+        await upsert(SimulationCell, filter, { $set: updateData });
     }
 }
 
