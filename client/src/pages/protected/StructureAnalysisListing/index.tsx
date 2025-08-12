@@ -3,7 +3,8 @@ import DocumentListing from '@/components/organisms/DocumentListing';
 
 const StructureAnalysisListing = () => {
 
-    return <DocumentListing />
+    return <DocumentListing
+        title='Structure Analysis' />
 };
 
 export default StructureAnalysisListing;
