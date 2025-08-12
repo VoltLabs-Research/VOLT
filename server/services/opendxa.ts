@@ -94,19 +94,18 @@ class OpenDXAService{
     private trajectoryId: string;
     private exportDirectory: string;
     private trajectoryFolderPath: string;
-    private analysisConfig: IAnalysisConfig | undefined;
+    private analysisConfig: IAnalysisConfig;
 
-    constructor(trajectoryId: string, trajectoryFolderPath: string){
+    constructor(trajectoryId: string, trajectoryFolderPath: string, analysisConfig: IAnalysisConfig){
         this.exportDirectory = path.join(trajectoryFolderPath, 'glb');
         this.trajectoryId = trajectoryId;
         this.trajectoryFolderPath = trajectoryFolderPath;
+        this.analysisConfig = analysisConfig;
     }
 
     public async processSingleFile(inputFile: string, options: ConfigParameters): Promise<any> {
         const baseFilename = path.basename(inputFile);
         console.log(`[OpenDXAService] Starting processing for: ${baseFilename}`);
-
-        this.analysisConfig = await this.storeAnalysisConfig(options);
 
         if(!this.analysisConfig){
             console.error('Could not create Analysis Config document. Nothing to do!');
@@ -224,14 +223,6 @@ class OpenDXAService{
             this.handleStructuralData(structures, timestep),
             this.handleDislocationData(dislocations, timestep)
         ]);
-    }
-
-    private async storeAnalysisConfig(config: ConfigParameters): Promise<IAnalysisConfig>{
-        const analysisConfig = await AnalysisConfig.create({
-            trajectory: this.trajectoryId,
-            ...config,
-        });
-        return analysisConfig;
     }
 
     private async handleDislocationData(data: Dislocation, timestep: number): Promise<void>{

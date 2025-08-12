@@ -327,6 +327,7 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
         ? `frame-${timestep}_${type}_analysis-${analysisId}.glb`
         : `${timestep}.glb`;
 
+    console.log(fileName);
     const glbFilePath = join(basePath, trajectory.folderId, 'glb', fileName);
 
     try{

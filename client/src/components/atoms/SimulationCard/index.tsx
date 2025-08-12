@@ -65,6 +65,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const dislocationAnalysis = useTrajectoryStore((state) => state.dislocationAnalysis);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
+    const setTrajectory = useTrajectoryStore((state) => state.setTrajectory);
 
     const {
         previewBlobUrl,

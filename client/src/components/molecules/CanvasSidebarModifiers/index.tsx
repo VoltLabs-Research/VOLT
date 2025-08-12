@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { GiAtom } from 'react-icons/gi';
 import { PiLineSegmentThin, PiAtomThin } from 'react-icons/pi';
 import { TbSquareRotated } from 'react-icons/tb';
+import { IoIosStats } from "react-icons/io";
 import { TfiSlice } from 'react-icons/tfi';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
 import useConfigurationStore from '@/stores/editor/configuration';
@@ -17,6 +18,7 @@ const CanvasSidebarModifiers = () => {
     const toggleModifiers = useUIStore((state) => state.toggleModifier);
 
     const structureIdentification = useTrajectoryStore((state) => state.structureIdentification);
+    const computeAnalysisDifferences = useTrajectoryStore((state) => state.computeAnalysisDifferences);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
 
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
@@ -39,6 +41,8 @@ const CanvasSidebarModifiers = () => {
             if(modifier === 'PTM' || modifier === 'CNA'){
                 logger.log('Activating structure identification:', modifier);
                 structureIdentification(trajectory?._id, analysisConfig, modifier);
+            }else if(modifier === 'compute-analysis-differences'){
+                computeAnalysisDifferences(trajectory?._id);
             }
         }
 
@@ -61,7 +65,11 @@ const CanvasSidebarModifiers = () => {
             Icon: PiAtomThin,
             title: 'Polyhedral Template Matching', 
             modifierId: 'PTM' 
-        },
+        }, {
+            Icon: IoIosStats,
+            title: 'Compute Analysis Differences',
+            modifierId: 'compute-analysis-differences'
+        }
     ];
 
     return (

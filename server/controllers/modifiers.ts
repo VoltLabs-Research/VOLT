@@ -21,6 +21,14 @@
 **/
 import { Request, Response } from 'express';
 import { dislocationAnalysis, DislocationAnalysisModifierError } from '@/modifiers/dislocation-analysis';
+import { computeAnalysisStats } from '@/modifiers/analysis-stats';
+
+export const getAnalysisStats = async (req: Request, res: Response) => {
+    const { trajectoryId } = res.locals.trajectory;
+    await computeAnalysisStats(trajectoryId);
+    
+    res.status(200).json({ status: 'success' });
+};
 
 export const crystalAnalysis = async (req: Request, res: Response) => {
     try {

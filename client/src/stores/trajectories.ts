@@ -46,6 +46,7 @@ interface TrajectoryActions {
     createTrajectory: (formData: FormData) => Promise<void>;
     updateTrajectoryById: (id: string, data: Partial<Pick<Trajectory, 'name'>>) => Promise<void>;
     deleteTrajectoryById: (id: string) => Promise<void>;
+    computeAnalysisDifferences: (id: string) => Promise<void>;
     
     // Selection management
     toggleTrajectorySelection: (id: string) => void;
@@ -134,6 +135,14 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     })
                 }
             );
+        },
+
+        computeAnalysisDifferences: (id: string) => {
+            return asyncAction(() => api.get<ApiResponse<any>>(`/modifiers/compute-analysis-differences/${id}`), {
+                onSuccess: (res) => {
+                    console.log('ok')
+                }
+            });
         },
 
         getStructureAnalysis: (teamId: string) => {

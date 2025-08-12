@@ -35,4 +35,10 @@ router.post(
     controller.crystalAnalysis
 );
 
+router.get(
+    '/compute-analysis-differences/:id',
+    trajectoryMiddleware.checkTeamMembershipForTrajectory,
+    controller.getAnalysisStats
+);
+
 export default router;

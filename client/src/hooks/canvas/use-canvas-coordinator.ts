@@ -67,7 +67,7 @@ const useCanvasCoordinator = () => {
             setCurrentTimestep(firstTimestep);
             
             // If trajectory has analysis configs, then select the most recent
-            if(trajectory?.analysis?.length >= 1){
+            if((trajectory.analysis ?? []).length >= 1){
                 const config = trajectory.analysis[trajectory.analysis.length - 1];
                 updateAnalysisConfig(config);
             }

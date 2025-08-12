@@ -84,7 +84,8 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     },
     analysis: [{
         type: Schema.Types.ObjectId,
-        ref: 'AnalysisConfig'
+        ref: 'AnalysisConfig',
+        default: []
     }],
     frames: [TimestepInfoSchema],
     preview: {
