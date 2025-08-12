@@ -90,8 +90,6 @@ const SimulationCellSchema: Schema<ICellAnalysis> = new Schema({
     timestamps: true
 });
 
-SimulationCellSchema.index({ trajectory: 1, timestep: 1 }, { unique: true });
-
 SimulationCellSchema.post('save', async function(doc, next){
     const updateData = { simulationCell: doc._id };
 

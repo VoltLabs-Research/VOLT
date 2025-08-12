@@ -137,12 +137,9 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             );
         },
 
-        computeAnalysisDifferences: (id: string) => {
-            return asyncAction(() => api.get<ApiResponse<any>>(`/modifiers/compute-analysis-differences/${id}`), {
-                onSuccess: (res) => {
-                    console.log('ok')
-                }
-            });
+        computeAnalysisDifferences: async (id: string) => {
+            const url = `/modifiers/compute-analysis-differences/${id}`;
+            await api.get(url);
         },
 
         getStructureAnalysis: (teamId: string) => {
@@ -339,6 +336,11 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         dislocationAnalysis: async (id: string, analysisConfig: any) => {
             try{
                 delete analysisConfig._id;
+                delete analysisConfig.trajectory;
+                delete analysisConfig.structureAnalysis;
+                delete analysisConfig.simulationCell;
+                delete analysisConfig.dislocations;
+                delete analysisConfig.__v;
                 await api.post(`/modifiers/crystal-analysis/${id}`, analysisConfig);
             }catch(error: any){
                 set({ 

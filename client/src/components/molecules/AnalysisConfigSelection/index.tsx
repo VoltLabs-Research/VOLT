@@ -5,30 +5,37 @@ import Select from '@/components/atoms/form/Select';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import './AnalysisConfigSelection.css';
 
-// TODO: ugly component
 const AnalysisConfigSelection = () => {
-    const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const isLoading = useTrajectoryStore((state) => state.isLoading);
-    const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
-    const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
+    const trajectory = useTrajectoryStore((s) => s.trajectory);
+    const isLoading = useTrajectoryStore((s) => s.isLoading);
+    const analysisConfig = useAnalysisConfigStore((s) => s.analysisConfig);
+    const updateAnalysisConfig = useAnalysisConfigStore((s) => s.updateAnalysisConfig);
+
+    const analysisList = trajectory?.analysis ?? [];
+    const selectedId = analysisConfig?._id ?? '';
 
     const handleChange = (configId: string) => {
-        if(trajectory && !trajectory.analysis.length) return;
-        
-        const config = trajectory?.analysis.find(({ _id }) => _id === configId);
-        updateAnalysisConfig(config);
+        if(!analysisList.length) return;
+        const config = analysisList.find(({ _id }) => _id === configId);
+        if(config) updateAnalysisConfig(config);
     };
 
-    return (!isLoading) && (
-        <EditorWidget className='analysis-config-selection-container'>
-            <Select
-                value={analysisConfig._id}
-                className='analysis-config-select-container'
-                onChange={handleChange}
-                options={(trajectory.analysis ?? []).map((config) => ({
-                    value: config._id,
-                    title: `${config.identificationMode} - ${formatTimeAgo(config.createdAt)} ${config.identificationMode === 'PTM' ? '(RMSD' + config.RMSD + ')' : ''}`
-                }))} />
+    if(isLoading) return null;
+
+    return (
+        <EditorWidget className="analysis-config-selection-container">
+        <Select
+            value={selectedId}
+            className="analysis-config-select-container"
+            onChange={handleChange}
+            options={analysisList.map((config) => ({
+            value: config._id,
+            title: `${config.identificationMode} - ${formatTimeAgo(config.createdAt)}${
+                config.identificationMode === 'PTM' && config.RMSD != null ? ` (RMSD ${config.RMSD})` : ''
+            }`,
+            }))}
+            disabled={!analysisList.length}
+        />
         </EditorWidget>
     );
 };

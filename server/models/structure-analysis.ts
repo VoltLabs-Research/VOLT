@@ -89,7 +89,10 @@ const StructureAnalysisSchema: Schema<IStructureAnalysis> = new Schema({
     timestamps: true
 });
 
-StructureAnalysisSchema.index({ trajectory: 1, timestep: 1, analysisMethod: 1 }, { unique: true });
+/*StructureAnalysisSchema.index(
+    { trajectory: 1, timestep: 1, analysisMethod: 1, analysisConfig: 1 },
+    { unique: true }
+);*/
 
 StructureAnalysisSchema.post('save', async function(doc, next){
     const updateData = { structureAnalysis: doc._id };

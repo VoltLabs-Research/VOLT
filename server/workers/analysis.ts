@@ -24,7 +24,6 @@ import { parentPort } from 'worker_threads';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import OpenDXAService from '@services/opendxa';
 import mongoConnector from '@/utilities/mongo-connector';
-import AnalysisConfig from '@/models/analysis-config';
 import '@config/env';
 
 const processJob = async (job: AnalysisJob): Promise<void> => {
@@ -32,14 +31,9 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
         throw new Error('No job data received in message.');
     }
 
-    const analysisConfig = await AnalysisConfig.create({
-        trajectory: job.trajectoryId,
-        ...job.config
-    });
-
     try{
         console.log(`[Worker #${process.pid}] Received job ${job.jobId}. Starting processing...`);
-        const analysis = new OpenDXAService(job.trajectoryId, job.folderPath, analysisConfig);
+        const analysis = new OpenDXAService(job.trajectoryId, job.folderPath, job.analysisConfigId);
         const results = await analysis.processSingleFile(job.inputFile, job.config);
         parentPort?.postMessage({
             status: 'completed',

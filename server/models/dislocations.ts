@@ -123,10 +123,13 @@ const DislocationSchema: Schema<any> = new Schema({
     }
 }, { timestamps: true });
 
-DislocationSchema.index({ trajectory: 1, timestep: 1 }, { unique: true });
+/*DislocationSchema.index(
+    { trajectory: 1, timestep: 1 },
+    { unique: true }
+);*/
 
 DislocationSchema.post('save', async function(doc, next){
-    await Trajectory.findByIdAndUpdate(this.trajectoryId, {
+    await Trajectory.findByIdAndUpdate(doc.trajectory, {
         $addToSet: { dislocations: doc._id }
     });
 

@@ -3,6 +3,7 @@ import { existsSync } from 'fs';
 import { getAnalysisQueue } from '@/queues';
 import { v4 } from 'uuid';
 import fs from 'fs/promises';
+import AnalysisConfig from '@/models/analysis-config';
 
 export interface DislocationAnalysisModifierConfig{
     folderId: string;
@@ -25,6 +26,10 @@ export const dislocationAnalysis = async (config: DislocationAnalysisModifierCon
     if(!existsSync(folderPath)){
         return DislocationAnalysisModifierError.TrajectoryFolderNotFound;
     }
+    const analysisConfig = await AnalysisConfig.create({
+        trajectory: config.trajectoryId,
+        ...config.analysisConfig
+    });
 
     const files = await fs.readdir(folderPath);
     const trajectoryFiles = files
@@ -66,6 +71,7 @@ export const dislocationAnalysis = async (config: DislocationAnalysisModifierCon
         return {
             jobId,
             trajectoryId: config.trajectoryId,
+            analysisConfigId: analysisConfig._id,
             folderPath,
             inputFile,
             teamId: config.team,

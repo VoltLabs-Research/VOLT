@@ -24,8 +24,9 @@ import { dislocationAnalysis, DislocationAnalysisModifierError } from '@/modifie
 import { computeAnalysisStats } from '@/modifiers/analysis-stats';
 
 export const getAnalysisStats = async (req: Request, res: Response) => {
-    const { trajectoryId } = res.locals.trajectory;
-    await computeAnalysisStats(trajectoryId);
+    console.log('Get Analysis Stats');
+    const { _id } = res.locals.trajectory;
+    await computeAnalysisStats(_id);
     
     res.status(200).json({ status: 'success' });
 };

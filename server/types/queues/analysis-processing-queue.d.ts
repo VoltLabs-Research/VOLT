@@ -5,4 +5,5 @@ export interface AnalysisJob extends BaseJob{
     folderPath: string;
     config: any;
     inputFile: string;
+    analysisConfigId: string;
 }
