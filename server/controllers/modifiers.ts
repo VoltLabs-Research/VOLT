@@ -22,9 +22,6 @@
 
 import { Request, Response } from 'express';
 import { dislocationAnalysis, DislocationAnalysisModifierError } from '@/modifiers/dislocation-analysis';
-import { computeMissorientationDeltas } from '@/modifiers/missorientation';
-import { readFile } from 'fs/promises';
-import path from 'path';
 
 export const crystalAnalysis = async (req: Request, res: Response) => {
     try {

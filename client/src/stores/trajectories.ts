@@ -37,6 +37,7 @@ interface TrajectoryState {
     uploadingFileCount: number;
     error: string | null;
     selectedTrajectories: string[];
+    structureAnalysis: any[];
 }
 
 interface TrajectoryActions {
@@ -61,6 +62,7 @@ interface TrajectoryActions {
     // Analysis
     dislocationAnalysis: (id: string, analysisConfig: any) => Promise<void>;
     structureIdentification: (id: string, analysisConfig: any, identificationMode: string) => Promise<void>;
+    getStructureAnalysis: (teamId: string) => Promise<void>;
 
     // State management
     setTrajectory: (trajectory: Trajectory | null) => void;
@@ -78,6 +80,7 @@ const initialState: TrajectoryState = {
     isSavingPreview: false,
     uploadingFileCount: 0,
     error: null,
+    structureAnalysis: [],
     selectedTrajectories: [],
 };
 
@@ -131,6 +134,20 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             );
         },
 
+        getStructureAnalysis: (teamId: string) => {
+            const url = `/structure-analysis/${teamId}`;
+            return asyncAction(() => api.get<ApiResponse<any>>(url), {
+                loadingKey: 'isLoading',
+                onSuccess: (res) => ({
+                    structureAnalysis: res.data.data,
+                    error: null
+                }),
+                onError: (error) => ({
+                    error: error?.response?.data?.message || 'Failed to load trajectories'
+                })
+            });
+        },
+        
         getTrajectoryById: (id: string) => asyncAction(() => api.get<ApiResponse<Trajectory>>(`/trajectories/${id}?populate=team`),
             {
                 loadingKey: 'isLoading',
