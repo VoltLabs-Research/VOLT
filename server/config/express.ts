@@ -79,6 +79,7 @@ configureApp({
         'modifiers',
         'teams',
         'trajectories',
+        'structure-analysis',
         'auth'
     ],
     middlewares: [
