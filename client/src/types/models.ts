@@ -68,6 +68,7 @@ export interface Trajectory{
     name: string;
     folderId: string;
     team: Team | string;
+    analysis: [AnalysisConfig];
     frames: TimestepInfo[];
     stats: TrajectoryStats;
     createdAt: string;

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Trajectory } from '@/types/models';
+import useAnalysisConfigStore from '../analysis-config';
 
 export interface TimestepData {
     timesteps: number[];
@@ -60,16 +61,21 @@ const createTimestepData = (timesteps: number[]): TimestepData => ({
     timestepCount: timesteps.length,
 });
 
-const buildGlbUrl = (trajectoryId: string, timestep: number, type: string = ''): string => {
-    return `/trajectories/${trajectoryId}/glb/${timestep}${type ? `?type=${type}` : ''}`;
+const buildGlbUrl = (
+    trajectoryId: string, 
+    timestep: number, 
+    analysisId: number,
+    type: string = ''
+): string => {
+    return `/trajectories/${trajectoryId}/glb/${timestep}/${analysisId}${type ? `?type=${type}` : ''}`;
 };
 
-const createTrajectoryGLBs = (trajectoryId: string, timestep: number): TrajectoryGLBs => ({
-    trajectory: buildGlbUrl(trajectoryId, timestep),
-    defect_mesh: buildGlbUrl(trajectoryId, timestep, 'defect_mesh'),
-    interface_mesh: buildGlbUrl(trajectoryId, timestep, 'interface_mesh'),
-    atoms_colored_by_type: buildGlbUrl(trajectoryId, timestep, 'atoms_colored_by_type'),
-    dislocations: buildGlbUrl(trajectoryId, timestep, 'dislocations'),
+const createTrajectoryGLBs = (trajectoryId: string, timestep: number, analysisId: number): TrajectoryGLBs => ({
+    trajectory: buildGlbUrl(trajectoryId, timestep, analysisId),
+    defect_mesh: buildGlbUrl(trajectoryId, timestep, analysisId, 'defect_mesh'),
+    interface_mesh: buildGlbUrl(trajectoryId, timestep, analysisId, 'interface_mesh'),
+    atoms_colored_by_type: buildGlbUrl(trajectoryId, timestep, analysisId, 'atoms_colored_by_type'),
+    dislocations: buildGlbUrl(trajectoryId, timestep, analysisId, 'dislocations'),
     core_atoms: '',
 });
 
@@ -93,13 +99,14 @@ const useTimestepStore = create<TimestepStore>()((set) => ({
         let nextGlbUrl: TrajectoryGLBs | null = null;
 
         if (trajectory._id && currentTimestep !== undefined && timesteps.length > 0) {
-            currentGlbUrl = createTrajectoryGLBs(trajectory._id, currentTimestep);
+            const analysis = useAnalysisConfigStore.getState().analysisConfig;
+            currentGlbUrl = createTrajectoryGLBs(trajectory._id, currentTimestep, analysis._id);
             
             const currentIndex = timesteps.indexOf(currentTimestep);
             if (currentIndex !== -1 && timesteps.length > 1) {
                 const nextIndex = (currentIndex + 1) % timesteps.length;
                 const nextTimestep = timesteps[nextIndex];
-                nextGlbUrl = createTrajectoryGLBs(trajectory._id, nextTimestep);
+                nextGlbUrl = createTrajectoryGLBs(trajectory._id, nextTimestep, analysis._id);
             }
         }
 

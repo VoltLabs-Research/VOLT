@@ -26,6 +26,7 @@ import usePlaybackStore from '@/stores/editor/playback';
 import useTimestepStore from '@/stores/editor/timesteps';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
+import useAnalysisConfigStore from '@/stores/analysis-config';
 
 const useCanvasCoordinator = () => {
     const logger = useLogger('use-canvas-coordinator');
@@ -36,6 +37,7 @@ const useCanvasCoordinator = () => {
     const isLoading = useTrajectoryStore((state) => state.isLoading);
     const error = useTrajectoryStore((state) => state.error);
     const clearCurrentTrajectory = useTrajectoryStore((state) => state.clearCurrentTrajectory);
+    const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
     
     const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
     const setCurrentTimestep = usePlaybackStore((state) => state.setCurrentTimestep);
@@ -62,6 +64,12 @@ const useCanvasCoordinator = () => {
                 .sort((a: number, b: number) => a - b)[0];
             logger.log(`Setting initial timestep: ${firstTimestep}`);
             setCurrentTimestep(firstTimestep);
+            
+            // If trajectory has analysis configs, then select the most recent
+            if(trajectory?.analysis?.length >= 1){
+                const config = trajectory.analysis[trajectory.analysis.length - 1];
+                updateAnalysisConfig(config);
+            }
         }
     }, [trajectory, currentTimestep, setCurrentTimestep]);
 

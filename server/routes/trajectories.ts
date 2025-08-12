@@ -66,7 +66,7 @@ router.route('/')
     );
 
 router.get(
-    '/:id/glb/:timestep', 
+    '/:id/glb/:timestep/:analysisId', 
     middleware.checkTeamMembershipForTrajectory, 
     controller.getTrajectoryGLB
 );

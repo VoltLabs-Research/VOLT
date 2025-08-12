@@ -123,10 +123,12 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             return asyncAction(() => api.get<ApiResponse<Trajectory[]>>(url),
                 {
                     loadingKey: 'isLoading',
-                    onSuccess: (res) => ({ 
-                        trajectories: res.data.data,
-                        error: null 
-                    }),
+                    onSuccess: (res) => {
+                        return { 
+                            trajectories: res.data.data,
+                            error: null 
+                        };
+                    },
                     onError: (error) => ({
                         error: error?.response?.data?.message || 'Failed to load trajectories'
                     })

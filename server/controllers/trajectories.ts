@@ -310,7 +310,7 @@ export const getTrajectoryPreview = async (req: Request, res: Response) => {
 };
 
 export const getTrajectoryGLB = async (req: Request, res: Response) => {
-    const { timestep } = req.params;
+    const { timestep, analysisId } = req.params;
     const { type } = req.query;
     const trajectory = res.locals.trajectory;
 
@@ -324,11 +324,10 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
 
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
     const fileName = type
-        ? `frame_${timestep}_${type}.glb`
+        ? `frame-${timestep}_${type}_analysis-${analysisId}.glb`
         : `${timestep}.glb`;
 
     const glbFilePath = join(basePath, trajectory.folderId, 'glb', fileName);
-    console.log(glbFilePath);
 
     try{
         await access(glbFilePath, constants.F_OK);

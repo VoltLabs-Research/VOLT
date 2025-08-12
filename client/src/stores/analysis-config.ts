@@ -22,9 +22,7 @@
 
 import { create } from 'zustand';
 import type { AnalysisConfig } from '@/types/models';
-import type { ApiResponse } from '@/types/api';
-import { api } from '@/services/api';
-import { createAsyncAction } from '@/utilities/asyncAction';
+// import { createAsyncAction } from '@/utilities/asyncAction';
 
 interface AnalysisConfigState{
     analysisConfig: AnalysisConfig,
@@ -33,8 +31,8 @@ interface AnalysisConfigState{
 
 interface AnalysisConfigActions{
     setIsLoading: (loading: boolean) => void;
-    getAnalysisConfigById: (id: string) => Promise<void>;
     resetAnalysisConfig: () => void;
+    updateAnalysisConfig: (config: Partial<AnalysisConfig>) => void;
     setAnalysisConfig: <K extends keyof AnalysisConfig>(
         key: K,
         value: AnalysisConfig[K]
@@ -63,7 +61,7 @@ const initialState = {
 export type AnalysisConfigStore = AnalysisConfigState & AnalysisConfigActions;
 
 const useAnalysisConfigStore = create<AnalysisConfigStore>((set, get) => {
-    const asyncAction = createAsyncAction(set, get);
+    // const asyncAction = createAsyncAction(set, get);
 
     return {
         ...initialState,
@@ -89,14 +87,6 @@ const useAnalysisConfigStore = create<AnalysisConfigStore>((set, get) => {
         setIsLoading: (loading: boolean) => {
             set({ isLoading: loading });
         },
-
-        getAnalysisConfigById: (configId: string) => asyncAction(() => api.get<ApiResponse<AnalysisConfig>>(`/analysis-config/${configId}`), {
-            loadingKey: 'isLoading',
-            onSuccess: (res) => {
-                const config = res.data.data;
-                set({ analysisConfig: config });
-            }
-        })
     }
 });
 
