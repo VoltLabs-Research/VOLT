@@ -12,7 +12,7 @@ const CANVAS_CONFIG = {
     autoSaveDelay: 2000,
     timestepViewerDefaults: {
         scale: 1,
-        rotation: { x: Math.PI / 2 },
+        rotation: { x: 0, y: 0, z: 0 },
         position: { x: 0, y: 0, z: 0 }
     }
 } as const;

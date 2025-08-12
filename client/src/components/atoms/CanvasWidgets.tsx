@@ -32,18 +32,19 @@ import TimestepControls from '@/components/organisms/TimestepControls';
 import DislocationResults from '@/components/atoms/DislocationResults';
 
 const CanvasWidgets = React.memo<EditorWidgetsProps>(({ 
-  trajectory, 
-  currentTimestep 
+    trajectory, 
+    currentTimestep 
 }) => {
     const showWidgets = useUIStore((state) => state.showEditorWidgets);
-    const activeModifiers = useUIStore((state) => state.activeModifiers);
+    const activeModifiers = useUIStore((state) => state.activeModifiers) ?? [];
 
-    const modifiersMap = useMemo(() => ({
-        'slice-plane': SlicePlane,
-        'dislocation-analysis-config': AnalysisConfiguration,
-    } as Record<string, React.ComponentType<any>>), []);
-
-    if(!showWidgets) return null;
+        const modifiersMap = useMemo(() =>
+            ({
+                'slice-plane': SlicePlane,
+                'dislocation-analysis-config': AnalysisConfiguration,
+                'dislocation-results': DislocationResults,
+            }) as Record<string, React.ComponentType<any>>,
+        []);
 
     const modifierComponents = useMemo(() => {
         const uniqueKeys = Array.from(new Set(activeModifiers));
@@ -51,6 +52,8 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({
         .map((key) => [key, modifiersMap[key] as React.ComponentType | undefined] as const)
         .filter(([, Comp]) => !!Comp);
     }, [activeModifiers, modifiersMap]);
+
+    if (!showWidgets) return null;
 
     return (
         <>

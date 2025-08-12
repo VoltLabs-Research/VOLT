@@ -32,12 +32,12 @@ export interface Scene3DRef {
 }
 
 const CAMERA_CONFIG = {
-    position: [8, 6, 8] as [number, number, number],
+    position: [8, 8, 6] as [number, number, number],
     fov: 50,
     near: 0.1,
-    far: 100
+    far: 100,
+    up: [0, 0, 1] as [number, number, number],
 };
-
 const GL_CONFIG = {
     localClippingEnabled: true,
     alpha: false,

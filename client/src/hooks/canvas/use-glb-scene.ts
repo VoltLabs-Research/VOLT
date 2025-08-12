@@ -192,10 +192,9 @@ export const useGlbScene = ({
 
     const adjustModelToGround = useCallback((model: Group) => {
         const finalBox = new Box3().setFromObject(model);
-        const minY = finalBox.min.y;
-
-        if(minY < 0){
-            model.position.y += Math.abs(minY);
+        const minZ = finalBox.min.z;
+        if(minZ < 0){
+            model.position.z += Math.abs(minZ);
         }
     }, []);
 
