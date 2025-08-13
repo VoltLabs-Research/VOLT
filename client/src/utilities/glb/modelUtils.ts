@@ -39,24 +39,52 @@ export const getOptimizedMaterial = (
         return cached;
     }
 
-    const base = baseMaterial as THREE.MeshStandardMaterial;
-    const optimized = new THREE.MeshStandardMaterial({
-        color: base.color,
-        map: base.map,
-        normalMap: base.normalMap,
-        roughnessMap: base.roughnessMap,
-        metalnessMap: base.metalnessMap,
-        clippingPlanes,
-        clipShadows: true,
-        transparent: false,
-        alphaTest: 0.1,
-        side: THREE.FrontSide,
-        depthWrite: true,
-        depthTest: true,
-    });
+    if(baseMaterial instanceof THREE.MeshStandardMaterial){
+        baseMaterial = new THREE.MeshStandardMaterial({
+            color: baseMaterial.color,
+            map: baseMaterial.map,
+            normalMap: baseMaterial.normalMap,
+            roughnessMap: baseMaterial.roughnessMap,
+            metalnessMap: baseMaterial.metalnessMap,
+            emissiveMap: baseMaterial.emissiveMap,
+            emissive: baseMaterial.emissive,
+            roughness: baseMaterial.roughness,
+            metalness: baseMaterial.metalness,
+            opacity: baseMaterial.opacity,
+            vertexColors: baseMaterial.vertexColors,
+            clipShadows: true,
+            transparent: false,
+            alphaTest: 0.1,
+            side: THREE.FrontSide,
+            depthWrite: true,
+            depthTest: true,
+        });
+    }else if(baseMaterial instanceof THREE.MeshBasicMaterial){
+        baseMaterial = {
+            color: baseMaterial.color,
+            map: baseMaterial.map,
+            opacity: baseMaterial.opacity,
+            vertexColors: baseMaterial.vertexColors,
+            clipShadows: true,
+            transparent: false,
+            alphaTest: 0.1,
+            side: THREE.FrontSide,
+            depthWrite: true,
+            depthTest: true,
+        }
+    }else{
+        baseMaterial = baseMaterial.clone();
+    }   
 
-    cache.set(key, optimized);
-    return optimized;
+    if(clippingPlanes.length > 0){
+        baseMaterial.clippingPlanes = clippingPlanes;
+        baseMaterial.clipIntersection = true;
+    }
+
+    baseMaterial.precision = 'lowp';
+    baseMaterial.fog = false;
+    baseMaterial.userData.isOptimized = true;
+    return baseMaterial;
 };
 
 export const calculateModelBounds = (glb: any) => {

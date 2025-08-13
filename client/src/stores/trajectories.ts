@@ -139,7 +139,8 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
 
         computeAnalysisDifferences: async (id: string) => {
             const url = `/modifiers/compute-analysis-differences/${id}`;
-            await api.get(url);
+            const data = await api.get(url);
+            console.log(data);
         },
 
         getStructureAnalysis: (teamId: string) => {

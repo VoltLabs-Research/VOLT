@@ -49,11 +49,10 @@ export const dislocationRenderOptions = async (req: Request, res: Response) => {
 };
 
 export const getAnalysisStats = async (req: Request, res: Response) => {
-    console.log('Get Analysis Stats');
     const { _id } = res.locals.trajectory;
-    await computeAnalysisStats(_id);
+    const stats = await computeAnalysisStats(_id);
     
-    res.status(200).json({ status: 'success' });
+    res.status(200).json({ status: 'success', data: stats });
 };
 
 export const crystalAnalysis = async (req: Request, res: Response) => {

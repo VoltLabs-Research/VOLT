@@ -53,7 +53,7 @@ export const getMyAccount = userFactory.getOne(withAuthenticatedUser());
 export const updateMyAccount = userFactory.updateOne(
     withAuthenticatedUser({
         beforeUpdate: async (data: any, req: Request, doc: IUser) => {
-            console.log(`📝 Updating user: ${doc.email}`);
+            console.log(`Updating user: ${doc.email}`);
             return data;
         }
     })
@@ -62,7 +62,7 @@ export const updateMyAccount = userFactory.updateOne(
 export const deleteMyAccount = userFactory.deleteOne(
     withAuthenticatedUser({
         beforeDelete: async (doc: IUser, req: Request) => {
-            console.log(`🗑️ Deleting user account: ${doc.email}`);
+            console.log(`Deleting user account: ${doc.email}`);
         }
     })
 );

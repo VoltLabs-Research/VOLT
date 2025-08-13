@@ -2,32 +2,23 @@ import React, { useEffect, useRef } from 'react';
 import { GiAtom } from 'react-icons/gi';
 import { PiLineSegmentThin, PiAtomThin } from 'react-icons/pi';
 import { GrFormViewHide } from "react-icons/gr";
-import { TbSquareRotated } from 'react-icons/tb';
 import { IoIosStats } from "react-icons/io";
 import { TfiSlice } from 'react-icons/tfi';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
-import useConfigurationStore from '@/stores/editor/configuration';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import useUIStore from '@/stores/ui';
-import useTimestepStore from '@/stores/editor/timesteps';
-import usePlaybackStore from '@/stores/editor/playback';
 import './CanvasSidebarModifiers.css';
-import { clearTrajectoryPreviewCache } from '@/hooks/trajectory/use-trajectory-preview';
 
 const CanvasSidebarModifiers = () => {
     const logger = useLogger('canvas-sidebar-modifiers');
     const activeModifiers = useUIStore((state) => state.activeModifiers);
     const toggleModifiers = useUIStore((state) => state.toggleModifier);
 
-    const dislocationRenderOptions = useTimestepStore((state) => state.dislocationRenderOptions);
-    const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
-
     const structureIdentification = useTrajectoryStore((state) => state.structureIdentification);
     const computeAnalysisDifferences = useTrajectoryStore((state) => state.computeAnalysisDifferences);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const clearCurrentTrajectory = useTrajectoryStore((state) => state.clearCurrentTrajectory);
 
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
 

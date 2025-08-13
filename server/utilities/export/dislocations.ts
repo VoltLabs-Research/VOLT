@@ -53,6 +53,7 @@ class DislocationExporter{
             // Validate point coordinates
             for(let j = 0; j < segment.points.length; j++){
                 const point = segment.points[j];
+                // @ts-ignore
                 if(point.length !== 3 || point.some((coord) => !isFinite(coord))){
                     errors.push(`Segment ${i}, point ${j} has invalid coordinates.`);
                 }
@@ -191,25 +192,94 @@ class DislocationExporter{
         return { positions, normals, indices };
     }
 
-    private getDefaultTypeColors(): Record<string, [number, number, number, number]> {
-        return {
-            // Green
-            'edge': [0.0, 1.0, 0.0, 1.0],
-            // Red
-            'screw': [1.0, 0.0, 0.0, 1.0],
-            // Blue
-            'mixed': [0.0, 0.0, 1.0, 1.0],
-            // Yellow
-            'partial': [1.0, 1.0, 0.0, 1.0],
-            // Gray
-            'default': [0.5, 0.5, 0.5, 1.0]
-        };
+    private calculateDislocationType(segment: any): string {
+        if(!segment.burgers || !segment.burgers.vector || segment.burgers.vector.length !== 3){
+            return 'Other';
+        }
+
+        const burgersVector = segment.burgers.vector;
+        const [bx, by, bz] = burgersVector.map(Math.abs);
+        const tolerance = 1e-6;
+
+        if(this.isType111Half(bx, by, bz, tolerance)){
+            return '1/2<111>';
+        }
+
+        if(this.isType100(bx, by, bz, tolerance)){
+            return '<100>';
+        }
+
+        if(this.isType110(bx, by, bz, tolerance)){
+            return '<110>';
+        }
+
+        if(this.isType111(bx, by, bz, tolerance)){
+            return '<111>';
+        }
+
+        if(this.isType112Sixth(bx, by, bz, tolerance)){
+            return '1/6<112>';
+        }
+
+        return 'Other';
     }
 
+    private isType111Half(bx: number, by: number, bz: number, tol: number): boolean {
+        const components = [bx, by, bz].filter(x => x > tol);
+        if(components.length !== 3) return false;
+        
+        const maxComp = Math.max(...components);
+        const minComp = Math.min(...components);
+        
+        return (maxComp - minComp) / maxComp < tol && maxComp > 0.4 && maxComp < 0.6;
+    }
+
+    private isType100(bx: number, by: number, bz: number, tol: number): boolean {
+        const nonZeroCount = [bx, by, bz].filter(x => x > tol).length;
+        return nonZeroCount === 1;
+    }
+
+    private isType110(bx: number, by: number, bz: number, tol: number): boolean {
+        const components = [bx, by, bz].sort((a, b) => b - a);
+        return Math.abs(components[0] - components[1]) < tol && components[2] < tol;
+    }
+
+    private isType111(bx: number, by: number, bz: number, tol: number): boolean {
+        const maxComp = Math.max(bx, by, bz);
+        if(maxComp < tol) return false;
+        
+        const ratio1 = Math.abs(bx / maxComp - 1);
+        const ratio2 = Math.abs(by / maxComp - 1);
+        const ratio3 = Math.abs(bz / maxComp - 1);
+        
+        return ratio1 < tol && ratio2 < tol && ratio3 < tol && maxComp >= 0.8;
+    }
+
+    private isType112Sixth(bx: number, by: number, bz: number, tol: number): boolean {
+        const components = [bx, by, bz].sort((a, b) => b - a);
+        if (components[0] < tol) return false;
+        
+        const ratio1 = Math.abs(components[0] / components[1] - 2);
+        const ratio2 = Math.abs(components[1] / components[2] - 1);
+        
+        return ratio1 < tol && ratio2 < tol && components[0] < 0.4;
+    }
+
+    private getDefaultTypeColors(): Record<string, [number, number, number, number]> {
+        return {
+            'Other': [0.95, 0.1, 0.1, 1.0],
+            '1/2<111>': [0.1, 0.9, 0.1, 1.0],
+            '<100>': [1, 0.45, 0.74, 1.0],
+            '<110>': [0.1, 0.7, 0.95, 1.0],
+            '<111>': [0.95, 0.9, 0.1, 1.0],
+            '1/6<112>': [0.9, 0.5, 0.1, 1.0],
+        };
+    }
+        
     private processGeometry(
         dislocationData: any,
         options: Required<DislocationExportOptions>
-    ): ProcessedDislocationGeometry{
+    ): ProcessedDislocationGeometry {
         const { data } = dislocationData;
         console.log(`Processing ${data.length} dislocation segments...`);
         
@@ -225,15 +295,21 @@ class DislocationExporter{
         let currentVertexOffset = 0;
         let validSegments = 0;
         
+        const typeStats: Record<string, number> = {};
+        
         for(const segment of data){
             if(!segment.points || segment.points.length < 2){
                 continue;
             }
 
             validSegments++;
-            let geometry;
+            
+            const calculatedType = this.calculateDislocationType(segment);
+            segment.type = calculatedType;
+            
+            typeStats[calculatedType] = (typeStats[calculatedType] || 0) + 1;
 
-            geometry = this.createLineGeometry(
+            let geometry = this.createLineGeometry(
                 segment.points,
                 options.lineWidth,
                 options.tubularSegments
@@ -241,20 +317,17 @@ class DislocationExporter{
 
             if(geometry.positions.length === 0) continue;
 
-            // Add positions and normals
             allPositions.push(...geometry.positions);
             allNormals.push(...geometry.normals);
 
-            // Add colors if color by type is enabled
             if(options.colorByType){
-                const color = typeColors[segment.type] || typeColors['default'];
+                const color = typeColors[calculatedType] || typeColors['default'];
                 const vertexCount = geometry.positions.length / 3;
                 for(let i = 0; i < vertexCount; i++){
                     allColors.push(...color);
                 }
             }
 
-            // Add indices with offset
             for(const index of geometry.indices){
                 allIndices.push(index + currentVertexOffset);
             }
@@ -263,13 +336,13 @@ class DislocationExporter{
         }
 
         console.log(`Processed ${validSegments} valid segments.`);
+        console.log('Dislocation type distribution:', typeStats);
 
         const positions = new Float32Array(allPositions);
         const normals = new Float32Array(allNormals);
         const indices = new Uint32Array(allIndices);
         const colors = options.colorByType ? new Float32Array(allColors) : undefined;
 
-        // Calculate bounds
         const allPoints: [number, number, number][] = [];
         for(let i = 0; i < positions.length; i += 3){
             allPoints.push([positions[i], positions[i + 1], positions[i + 2]]);
@@ -287,7 +360,7 @@ class DislocationExporter{
             bounds
         };
     }
-    
+
     private createGLB(
         geometry: ProcessedDislocationGeometry,
         options: Required<DislocationExportOptions>,
@@ -514,7 +587,6 @@ class DislocationExporter{
                 throw new Error(`No dislocation data found for timestep ${timestep}, analysisConfig ${analysisConfigId}, trajectory ${trajectoryId}`);
             }
 
-            console.log(`[DislocationExporter] Found ${dislocationDoc.totalSegments} segments in database`);
 
             const dislocationData = this.convertDBDataToDislocationFormat(dislocationDoc);
 
@@ -529,15 +601,15 @@ class DislocationExporter{
             }
 
             const opts: Required<DislocationExportOptions> = {
-                lineWidth: options.lineWidth ?? 0.1,
-                tubularSegments: options.tubularSegments ?? 8,
+                lineWidth: options.lineWidth ?? 0.08,
+                tubularSegments: options.tubularSegments ?? 12, 
                 material: {
-                    baseColor: options.material?.baseColor ?? [1.0, 0.5, 0.0, 1.0],
-                    metallic: options.material?.metallic ?? 0.0,
-                    roughness: options.material?.roughness ?? 0.8,
+                    baseColor: options.material?.baseColor ?? [1.0, 1.0, 1.0, 1.0], 
+                    metallic: options.material?.metallic ?? 0.1,
+                    roughness: options.material?.roughness ?? 0.3, 
                     emissive: options.material?.emissive ?? [0.0, 0.0, 0.0],
                 },
-                colorByType: options.colorByType ?? true,
+                colorByType: options.colorByType ?? true, 
                 typeColors: options.typeColors ?? {},
                 metadata: {
                     includeOriginalStats: options.metadata?.includeOriginalStats ?? true,
@@ -597,19 +669,19 @@ class DislocationExporter{
             }
         };
     }
-    
+        
     public toGLB(
         dislocationData: any,
         outputFilePath: string,
         options: DislocationExportOptions = {}
     ): void {
         const opts: Required<DislocationExportOptions> = {
-            lineWidth: options.lineWidth ?? 0.1,
-            tubularSegments: options.tubularSegments ?? 8,
+            lineWidth: options.lineWidth ?? 0.08,
+            tubularSegments: options.tubularSegments ?? 12,
             material: {
-                baseColor: options.material?.baseColor ?? [1.0, 0.5, 0.0, 1.0],
-                metallic: options.material?.metallic ?? 0.0,
-                roughness: options.material?.roughness ?? 0.8,
+                baseColor: options.material?.baseColor ?? [1.0, 1.0, 1.0, 1.0], 
+                metallic: options.material?.metallic ?? 0.1,
+                roughness: options.material?.roughness ?? 0.3,
                 emissive: options.material?.emissive ?? [0.0, 0.0, 0.0],
             },
             colorByType: options.colorByType ?? true,
@@ -620,7 +692,7 @@ class DislocationExporter{
             }
         };
 
-        console.log('Starting dislocation export...');
+        console.log('Starting dislocation export with automatic type calculation...');
 
         const validation = this.validate(dislocationData);
 

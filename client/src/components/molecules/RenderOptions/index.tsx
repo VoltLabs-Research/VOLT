@@ -9,7 +9,8 @@ import Loader from '@/components/atoms/Loader';
 import './RenderOptions.css';
 
 const RenderOptions = () => {
-    const [dislocationLineWidth, setDislocationLineWidth] = useState(0.8);
+    const [dislocationLineWidth, setDislocationLineWidth] = useState(1.5);
+    const [tubularSegments, setTubularSegments] = useState(16);
     const dislocationRenderOptions = useTimestepStore((state) => state.dislocationRenderOptions);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
@@ -29,7 +30,7 @@ const RenderOptions = () => {
                 {
                     lineWidth: dislocationLineWidth,
                     colorByType: true,
-                    tubularSegments: 16,
+                    tubularSegments: tubularSegments,
                     material: {
                         baseColor: [1.0, 0.5, 0.0, 1.0],
                         metallic: 0.0,
@@ -74,6 +75,14 @@ const RenderOptions = () => {
                 fieldType='input'
                 label='Dislocation Line Width'
                 onFieldChange={(_, value) => setDislocationLineWidth(value)}
+            />
+
+            <FormField
+                fieldValue={tubularSegments}
+                fieldKey='tubularSegments'
+                fieldType='input'
+                label='Tubular Segments'
+                onFieldChange={(_, value) => setTubularSegments(value)}
             />
         </EditorWidget>
     );

@@ -12,14 +12,14 @@ export enum AnalysisStatsError{
 }
 
 export const computeDislocationsDensity = async (dislocations: any[]): Promise<any> => {
-    const stats = [];
+    const stats: any = [];
 
     // Dislocation Density = 1/V * Total Segments Length
-    for(const dislocation of dislocations){
-        const { timestep, trajectory, totalLength } = dislocation;
+    const promises = dislocations.map(async (dislocation) => {
+      const { timestep, trajectory, totalLength } = dislocation;
         
         const simulationCell = await SimulationCell.findOne({ timestep, trajectory });
-        if(!simulationCell) continue;
+        if(!simulationCell) return;
 
         const { volume } = simulationCell;
         const density = (1 / volume) * totalLength;
@@ -28,7 +28,9 @@ export const computeDislocationsDensity = async (dislocations: any[]): Promise<a
             timestep,
             density
         });
-    }
+    });
+
+    await Promise.all(promises);
 
     return stats;
 };
@@ -49,9 +51,8 @@ export const computeAnalysisStats = async (trajectoryId: string): Promise<any> =
 
     console.log('Trajectory Analysis (GET) [OK]', trajectoryAnalysis.length);
 
-    const stats = [];
-
-    for(const analysis of trajectoryAnalysis){
+    const stats: any = [];
+    const promises = trajectoryAnalysis.map(async (analysis) => {
         console.log('Working with:', analysis._id)
         const filter = { analysisConfig: analysis._id };
         const dislocations = await Dislocation
@@ -95,10 +96,14 @@ export const computeAnalysisStats = async (trajectoryId: string): Promise<any> =
             structureAnalysis,
             rmsd: identificationMode === 'PTM' ? analysis.RMSD : 0
         });
-    }
+    });
+
+    await Promise.all(promises);
 
     const folderPath = path.join(process.env.TRAJECTORY_DIR as string, trajectory.folderId);
     const analysisPath = path.join(folderPath, 'analysis-stats.json');
 
     await fs.writeFile(analysisPath, JSON.stringify(stats));
+
+    return stats;
 };
