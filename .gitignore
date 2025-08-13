@@ -16,6 +16,8 @@ client/wasm/zstd/dependencies
 
 server/storage/
 
+build-debug/
+
 # Logs
 logs
 *.log

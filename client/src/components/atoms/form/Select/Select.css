@@ -94,7 +94,7 @@
 
 .select-option-title {
     flex: 1 1 auto;
-    font-size: .9rem;
+    font-size: .85rem;
     min-width: 0;  
     overflow: hidden;
     text-overflow: ellipsis;

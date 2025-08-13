@@ -7,6 +7,8 @@ import { BlendFunction } from 'postprocessing';
 import useConfigurationStore from '@/stores/editor/configuration';
 import { AdaptiveDpr, Bvh, Preload } from '@react-three/drei';
 import useUIStore from '@/stores/ui';
+import useTimestepStore from '@/stores/editor/timesteps';
+import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
 import './Scene3D.css';
 
 interface Scene3DProps {
@@ -141,6 +143,7 @@ const ScreenshotHandler: React.FC<{
     const { gl, scene, camera } = useThree();
     const hasRenderedRef = useRef(false);
     const contentReadyRef = useRef(false);
+    const modelBounds = useTimestepStore((state) => state.modelBounds);
 
     useFrame(() => {
         hasRenderedRef.current = true;
@@ -185,6 +188,8 @@ const ScreenshotHandler: React.FC<{
             width,
             height,
             format = 'png',
+            zoomFactor = 1,
+            backgroundColor: customBackgroundColor = null,
             quality = 1.0
         } = safeOptions;
 
@@ -192,7 +197,6 @@ const ScreenshotHandler: React.FC<{
             try{
                 const originalPosition = camera.position.clone();
                 const originalZoom = camera.zoom;
-                const originalFov = camera.fov;
 
                 gl.render(scene, camera);
 
@@ -209,18 +213,19 @@ const ScreenshotHandler: React.FC<{
                             tempCanvas.width = targetWidth;
                             tempCanvas.height = targetHeight;
 
+                            camera.zoom = originalZoom * zoomFactor;
+
                             const tempCtx = tempCanvas.getContext('2d');
                             if(!tempCtx){
                                 camera.position.copy(originalPosition);
                                 camera.zoom = originalZoom;
-                                camera.fov = originalFov;
                                 camera.updateProjectionMatrix();
-                                reject(new Error('No se pudo obtener el contexto 2D del canvas temporal'));
+                                reject(new Error("Can't get temporal 2D canvas"));
                                 return;
                             }
 
                             if(format === 'jpeg'){
-                                tempCtx.fillStyle = backgroundColor || '#1E1E1E';
+                                tempCtx.fillStyle = customBackgroundColor || (backgroundColor);
                                 tempCtx.fillRect(0, 0, targetWidth, targetHeight);
                             }
 
@@ -233,7 +238,6 @@ const ScreenshotHandler: React.FC<{
 
                         camera.position.copy(originalPosition);
                         camera.zoom = originalZoom;
-                        camera.fov = originalFov;
                         camera.updateProjectionMatrix();
 
                         gl.render(scene, camera);
@@ -247,7 +251,6 @@ const ScreenshotHandler: React.FC<{
                     }catch(innerError){
                         camera.position.copy(originalPosition);
                         camera.zoom = originalZoom;
-                        camera.fov = originalFov;
                         camera.updateProjectionMatrix();
                         gl.render(scene, camera);
                         reject(innerError);
@@ -279,6 +282,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     const toggleCanvasGrid = useUIStore((state) => state.toggleCanvasGrid);
     const toggleEditorWidgets = useUIStore((state) => state.toggleEditorWidgets);
     const showEditorWidgets = useUIStore((state) => state.showEditorWidgets);
+    const modelBounds = useTimestepStore((state) => state.modelBounds);
 
     const maxDpr = useMemo(() => (window.devicePixelRatio > 1 ? 2 : 1), []);
 
@@ -355,22 +359,29 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
                 toggleEditorWidgets();
             }
 
-            if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 's'){
+            if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'z') {
                 e.preventDefault();
-                if(tools && typeof tools.captureScreenshot === 'function'){
-                    tools.captureScreenshot({
-                        format: 'png',
-                        quality: 1.0
-                    });
+                if (orbitControlsRef.current) {
+                    const optimal = calculateClosestCameraPositionZY(
+                        modelBounds.box,
+                        orbitControlsRef.current.object
+                    );
+
+                    orbitControlsRef.current.object.position.copy(optimal.position);
+                    orbitControlsRef.current.target.copy(optimal.target);
+                    orbitControlsRef.current.object.up.copy(optimal.up);
+                    orbitControlsRef.current.object.lookAt(optimal.target);
+                    orbitControlsRef.current.update();
                 }
             }
+
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [tools, toggleCanvasGrid, toggleEditorWidgets]);
+    }, [tools, toggleCanvasGrid, toggleEditorWidgets, modelBounds]);
 
     return (
         <Canvas
@@ -378,7 +389,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
             shadows='basic'
             camera={CAMERA_CONFIG}
             style={canvasStyle}
-            dpr={[0.8, maxDpr]}
+            dpr={[maxDpr, maxDpr]}
             frameloop='always'
             flat={true}
             performance={{

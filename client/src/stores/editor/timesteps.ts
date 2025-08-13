@@ -27,12 +27,14 @@ interface TimestepState {
     nextGlbUrl: TrajectoryGLBs | null;
     isRenderOptionsLoading: boolean;
     lastRefreshTimestamp: number;
+    modelBounds: any;
 }
 
 interface TimestepActions {
     computeTimestepData: (trajectory: Trajectory | null, currentTimestep?: number) => void;
     refreshGlbUrls: (trajectoryId: string, currentTimestep: number, analysisId: number) => void;
     reset: () => void;
+    setModelBounds: (modelBounds: any) => void;
     dislocationRenderOptions: (trajectoryId: string, timestep: string, analysisId: string, options: any) => Promise<void>;
 }
 
@@ -42,7 +44,7 @@ const initialTimestepData: TimestepData = {
     timesteps: [],
     minTimestep: 0,
     maxTimestep: 0,
-    timestepCount: 0,
+    timestepCount: 0
 };
 
 const initialState: TimestepState = {
@@ -51,6 +53,7 @@ const initialState: TimestepState = {
     nextGlbUrl: null,
     isRenderOptionsLoading: false,
     lastRefreshTimestamp: 0,
+    modelBounds: null
 };
 
 const extractTimesteps = (trajectory: Trajectory | null): number[] => {
@@ -101,6 +104,10 @@ const createTrajectoryGLBs = (
 
 const useTimestepStore = create<TimestepStore>()((set, get) => ({
     ...initialState,
+
+    setModelBounds: (modelBounds: any) => {
+        set({ modelBounds });
+    },
 
     computeTimestepData: (trajectory: Trajectory | null, currentTimestep?: number) => {
         if (!trajectory?.frames || trajectory.frames.length === 0) {

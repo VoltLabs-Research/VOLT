@@ -124,3 +124,24 @@ export const calculateOptimalTransforms = (bounds: ReturnType<typeof calculateMo
 
     return { position, rotation, scale };
 };
+
+export const calculateClosestCameraPositionZY = (modelBounds: Box3, camera: any) => {
+    const center = modelBounds.getCenter(new THREE.Vector3());
+    const size = modelBounds.getSize(new THREE.Vector3());
+
+    const viewHeight = size.z;
+    const viewWidth = size.y;
+    const fovRad = THREE.MathUtils.degToRad(camera.fov);
+
+    let distByHeight = (viewHeight / 2) / Math.tan(fovRad / 2);
+    let distByWidth = (viewWidth / 2) / (Math.tan(fovRad / 2) * camera.aspect);
+
+    let distance = Math.max(distByHeight, distByWidth);
+    distance *= 1.01; 
+
+    return {
+        position: new THREE.Vector3(center.x + distance, center.y, center.z),
+        target: center.clone(),
+        up: new THREE.Vector3(0, 0, 1)
+    };
+};

@@ -33,6 +33,7 @@ import MemoryManager from '@/utilities/memoryManager';
 import CullingService from '@/services/culling-service';
 import InstancedMeshManager from '@/services/instanced-mesh-manager';
 import ObjectPools from '@/utilities/glb/objectPools';
+import { useTime } from 'framer-motion';
 
 export const modelCache = new Map<string, Promise<any>>();
 
@@ -73,7 +74,8 @@ export const useGlbScene = ({
         visibleIndices: new Set<number>(),
     });
 
-    const [modelBounds, setModelBounds] = useState<Box3 | null>(null);
+    const modelBounds = useTimestepStore((state) => state.modelBounds);
+    const setModelBounds = useTimestepStore((state) => state.setModelBounds);
     const [loadingState, setLoadingState] = useState({
         isLoading: false,
         progress: 0,
@@ -311,7 +313,8 @@ export const useGlbScene = ({
 
         try{
             if(!memoryManager.canLoadModel()){
-                throw new Error('Insufficient memory for model loading');
+                // TODO: CHANGETHIS TO OPTIONAL IN UI (MODIFIERS/OPTIONS)!
+                // throw new Error('Insufficient memory for model loading');
             }
 
             const loadedModel = await loadGLB((url), (progress) => {
