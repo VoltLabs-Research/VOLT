@@ -85,20 +85,15 @@ export const computeAnalysisStats = async (trajectoryId: string): Promise<any> =
         console.log('Structure Analysis (GET) [OK]', structureAnalysis.length);
 
         const identificationMode = analysis.identificationMode.toUpperCase();
-        let name = `${identificationMode}`;
-
-        if(identificationMode === 'PTM'){
-            name += ` (${analysis.RMSD} RMSD)`;
-        }
 
         const dislocationsDensity = await computeDislocationsDensity(dislocations);
         console.log('Dislocations Density [OK]', dislocationsDensity.length);
 
         stats.push({
-            name,
             dislocations,
             dislocationsDensity,
-            structureAnalysis
+            structureAnalysis,
+            rmsd: identificationMode === 'PTM' ? analysis.RMSD : 0
         });
     }
 

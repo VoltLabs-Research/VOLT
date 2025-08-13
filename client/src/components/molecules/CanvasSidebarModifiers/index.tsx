@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { GiAtom } from 'react-icons/gi';
 import { PiLineSegmentThin, PiAtomThin } from 'react-icons/pi';
+import { GrFormViewHide } from "react-icons/gr";
 import { TbSquareRotated } from 'react-icons/tb';
 import { IoIosStats } from "react-icons/io";
 import { TfiSlice } from 'react-icons/tfi';
@@ -69,6 +70,10 @@ const CanvasSidebarModifiers = () => {
             Icon: IoIosStats,
             title: 'Compute Analysis Differences',
             modifierId: 'compute-analysis-differences'
+        }, {
+            Icon: GrFormViewHide,
+            title: 'Render Options',
+            modifierId: 'render-options'
         }
     ];
 

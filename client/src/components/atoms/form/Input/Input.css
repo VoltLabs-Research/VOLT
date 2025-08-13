@@ -7,6 +7,10 @@
     border-radius: .5rem;
 }
 
+.labeled-input.rh-select{
+    padding: 0;
+}
+
 .labeled-input:focus{
     outline: 2px solid #fd5b01;
     outline-offset: 2px;
