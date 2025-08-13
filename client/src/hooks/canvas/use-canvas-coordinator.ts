@@ -47,6 +47,8 @@ const useCanvasCoordinator = () => {
 
     const computeTimestepData = useTimestepStore((state) => state.computeTimestepData);
     const timestepData = useTimestepStore((state) => state.timestepData);
+    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
+    const lastRefreshTimestamp = useTimestepStore((state) => state.lastRefreshTimestamp);
     const resetTimestep = useTimestepStore((state) => state.reset);
 
     // Load trajectory when hook is initialized
@@ -72,19 +74,28 @@ const useCanvasCoordinator = () => {
                 updateAnalysisConfig(config);
             }
         }
-    }, [trajectory, currentTimestep, setCurrentTimestep]);
+    }, [trajectory, currentTimestep, setCurrentTimestep, updateAnalysisConfig]);
 
     useEffect(() => {
         if(!analysisConfig?._id) return;
         computeTimestepData(trajectory, currentTimestep);
-    }, [analysisConfig]);
+    }, [analysisConfig, trajectory, currentTimestep, computeTimestepData]);
 
-    // Compute timestep data when trajectory or timestep changes
     useEffect(() => {
         if(trajectory && currentTimestep !== undefined){
             computeTimestepData(trajectory, currentTimestep);
         }
     }, [trajectory, currentTimestep, computeTimestepData]);
+
+    useEffect(() => {
+        if(currentGlbUrl && lastRefreshTimestamp > 0){
+            logger.log('GLB URLs updated:', {
+                timestamp: lastRefreshTimestamp,
+                trajectoryUrl: currentGlbUrl.trajectory,
+                dislocationsUrl: currentGlbUrl.dislocations
+            });
+        }
+    }, [currentGlbUrl, lastRefreshTimestamp, logger]);
 
     const coordinatedPlayNextFrame = useCallback(() => {
         if(timestepData.timesteps?.length > 0){
@@ -98,12 +109,14 @@ const useCanvasCoordinator = () => {
             resetTimestep();
             clearCurrentTrajectory();
         };
-    }, []);
+    }, [resetPlayback, resetTimestep, clearCurrentTrajectory]);
     
     return {
         trajectory,
         currentTimestep,
         timestepData,
+        currentGlbUrl,
+        lastRefreshTimestamp,
         isLoading,
         error,
         trajectoryId,

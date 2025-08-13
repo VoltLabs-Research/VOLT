@@ -1,6 +1,7 @@
 import React from 'react';
 import type { IconType } from 'react-icons/lib';
 import './CanvasSidebarOption.css';
+import FormField from '@/components/molecules/FormField';
 
 interface CanvasSidebarOptionProps{
     onSelect: (option: any) => void;

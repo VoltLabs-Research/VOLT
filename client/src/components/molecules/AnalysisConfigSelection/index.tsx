@@ -24,18 +24,18 @@ const AnalysisConfigSelection = () => {
 
     return (
         <EditorWidget className="analysis-config-selection-container">
-        <Select
-            value={selectedId}
-            className="analysis-config-select-container"
-            onChange={handleChange}
-            options={analysisList.map((config) => ({
-            value: config._id,
-            title: `${config.identificationMode} - ${formatTimeAgo(config.createdAt)}${
-                config.identificationMode === 'PTM' && config.RMSD != null ? ` (RMSD ${config.RMSD})` : ''
-            }`,
-            }))}
-            disabled={!analysisList.length}
-        />
+            <Select
+                value={selectedId}
+                className="analysis-config-select-container"
+                onChange={handleChange}
+                options={analysisList.map((config) => ({
+                value: config._id,
+                title: `${config.identificationMode} - ${formatTimeAgo(config.createdAt)}${
+                    config.identificationMode === 'PTM' && config.RMSD != null ? ` (RMSD ${config.RMSD})` : ''
+                }`,
+                }))}
+                disabled={!analysisList.length}
+            />
         </EditorWidget>
     );
 };

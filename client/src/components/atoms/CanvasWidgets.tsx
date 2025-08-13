@@ -31,6 +31,7 @@ import SlicePlane from '@/components/organisms/SlicePlane';
 import TimestepControls from '@/components/organisms/TimestepControls';
 import DislocationResults from '@/components/atoms/DislocationResults';
 import AnalysisConfigSelection from '../molecules/AnalysisConfigSelection';
+import RenderOptions from '../molecules/RenderOptions';
 
 const CanvasWidgets = React.memo<EditorWidgetsProps>(({ 
     trajectory, 
@@ -44,6 +45,7 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({
                 'slice-plane': SlicePlane,
                 'dislocation-analysis-config': AnalysisConfiguration,
                 'dislocation-results': DislocationResults,
+                'render-options': RenderOptions
             }) as Record<string, React.ComponentType<any>>,
         []);
 

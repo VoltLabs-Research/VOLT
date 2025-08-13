@@ -46,38 +46,6 @@ class LAMMPSToGLBExporter{
         'Default': [0.5, 0.5, 0.5]
     };
 
-    private parseAtoms(lines: string[]): LammpsAtom[]{
-        const atoms: LammpsAtom[] = [];
-        let inAtomsSection = false;
-
-        for(const line of lines){
-            const trimmed = line.trim();
-            if(trimmed.startsWith('ITEM: ATOMS')){
-                inAtomsSection = true;
-                continue;
-            }
-
-            if(trimmed.startsWith('ITEM:') && inAtomsSection){
-                break;
-            }
-
-            if(inAtomsSection && trimmed){
-                const parts = trimmed.split(/\s+/);
-                if(parts.length >= 5){
-                    atoms.push({
-                        id: parseInt(parts[0]),
-                        type: parseInt(parts[1]),
-                        x: parseFloat(parts[2]),
-                        y: parseFloat(parts[3]),
-                        z: parseFloat(parts[4])
-                    });
-                }
-            }
-        }
-
-        return atoms;
-    }
-
     private static uniformSubsampling(atoms: LammpsAtom[], targetCount: number): LammpsAtom[]{
         const step = Math.floor(atoms.length / targetCount);
         const selected: LammpsAtom[] = [];

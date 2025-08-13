@@ -353,7 +353,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         setTrajectory: (trajectory: Trajectory | null) => set({ trajectory }),
 
         clearError: () => set({ error: null }),
-            clearCurrentTrajectory: () => {
+        clearCurrentTrajectory: () => {
 
             set({ 
                 trajectory: null,

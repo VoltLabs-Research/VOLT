@@ -35,6 +35,12 @@ router.post(
     controller.crystalAnalysis
 );
 
+router.post(
+    '/render-options/dislocations/:id/:timestep/:analysisConfigId/',
+    trajectoryMiddleware.checkTeamMembershipForTrajectory,
+    controller.dislocationRenderOptions
+);
+
 router.get(
     '/compute-analysis-differences/:id',
     trajectoryMiddleware.checkTeamMembershipForTrajectory,

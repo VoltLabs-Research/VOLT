@@ -20,8 +20,8 @@
 * SOFTWARE.
 **/
 
+import Dislocation from '@/models/dislocations';
 import { 
-    Dislocation, 
     DislocationExportOptions, 
     DislocationValidationResult, 
     ProcessedDislocationGeometry 
@@ -29,7 +29,7 @@ import {
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
 
 class DislocationExporter{
-    private validate(dislocationData: Dislocation): DislocationValidationResult{
+    private validate(dislocationData: any): DislocationValidationResult{
         const { data, metadata } = dislocationData;
         const errors: string[] = [];
         const warnings: string[] = [];
@@ -207,7 +207,7 @@ class DislocationExporter{
     }
 
     private processGeometry(
-        dislocationData: Dislocation,
+        dislocationData: any,
         options: Required<DislocationExportOptions>
     ): ProcessedDislocationGeometry{
         const { data } = dislocationData;
@@ -494,12 +494,115 @@ class DislocationExporter{
         assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
     }
 
-
-    public toGLB(
-        dislocationData: Dislocation,
+    public async rebuildGLBFromDB(
+        analysisConfigId: string,
+        timestep: number,
+        trajectoryId: string,
         outputFilePath: string,
         options: DislocationExportOptions = {}
-    ): void{
+    ): Promise<void> {
+        try {
+            console.log(`[DislocationExporter] Rebuilding GLB from DB for timestep ${timestep}...`);
+
+            const dislocationDoc = await Dislocation.findOne({
+                analysisConfig: analysisConfigId,
+                timestep: timestep,
+                trajectory: trajectoryId
+            }).lean();
+
+            if (!dislocationDoc) {
+                throw new Error(`No dislocation data found for timestep ${timestep}, analysisConfig ${analysisConfigId}, trajectory ${trajectoryId}`);
+            }
+
+            console.log(`[DislocationExporter] Found ${dislocationDoc.totalSegments} segments in database`);
+
+            const dislocationData = this.convertDBDataToDislocationFormat(dislocationDoc);
+
+            const validation = this.validate(dislocationData);
+            if (!validation.isValid) {
+                console.error('Validation failed:', validation.errors);
+                throw new Error(`Invalid dislocation data from DB: ${validation.errors.join(', ')}`);
+            }
+
+            if (validation.warnings.length > 0) {
+                console.warn('Validation warnings:', validation.warnings);
+            }
+
+            const opts: Required<DislocationExportOptions> = {
+                lineWidth: options.lineWidth ?? 0.1,
+                tubularSegments: options.tubularSegments ?? 8,
+                material: {
+                    baseColor: options.material?.baseColor ?? [1.0, 0.5, 0.0, 1.0],
+                    metallic: options.material?.metallic ?? 0.0,
+                    roughness: options.material?.roughness ?? 0.8,
+                    emissive: options.material?.emissive ?? [0.0, 0.0, 0.0],
+                },
+                colorByType: options.colorByType ?? true,
+                typeColors: options.typeColors ?? {},
+                metadata: {
+                    includeOriginalStats: options.metadata?.includeOriginalStats ?? true,
+                    customProperties: options.metadata?.customProperties ?? {},
+                }
+            };
+
+            const processedGeometry = this.processGeometry(dislocationData, opts);
+            this.createGLB(processedGeometry, opts, outputFilePath);
+
+            console.log(`[DislocationExporter] GLB successfully rebuilt and saved to: ${outputFilePath}`);
+            console.log(`[DislocationExporter] Statistics: ${processedGeometry.triangleCount} triangles, ${processedGeometry.vertexCount} vertices`);
+
+        } catch (error) {
+            console.error(`[DislocationExporter] Failed to rebuild GLB from DB:`, error);
+            throw error;
+        }
+    }
+
+    private convertDBDataToDislocationFormat(dbData: any): any {
+        const dislocationSegments = dbData.dislocations.map((segment: any) => ({
+            segment_id: segment.segmentId,
+            type: segment.type,
+            point_index_offset: segment.pointIndexOffset,
+            num_points: segment.numPoints,
+            length: segment.length,
+            points: segment.points,
+            burgers: {
+                vector: segment.burgers.vector,
+                magnitude: segment.burgers.magnitude,
+                fractional: segment.burgers.fractional
+            },
+            nodes: segment.nodes,
+            line_direction: segment.lineDirection ? {
+                vector: segment.lineDirection.vector || [0, 0, 0],
+                string: segment.lineDirection.string || ''
+            } : {
+                vector: [0, 0, 0],
+                string: ''
+            }
+        }));
+
+        return {
+            data: dislocationSegments,
+            metadata: {
+                count: dbData.totalSegments,
+                timestep: dbData.timestep,
+                trajectoryId: dbData.trajectory.toString(),
+                analysisConfigId: dbData.analysisConfig.toString()
+            },
+            summary: {
+                total_points: dbData.totalPoints,
+                average_segment_length: dbData.averageSegmentLength,
+                max_segment_length: dbData.maxSegmentLength,
+                min_segment_length: dbData.minSegmentLength,
+                total_length: dbData.totalLength
+            }
+        };
+    }
+    
+    public toGLB(
+        dislocationData: any,
+        outputFilePath: string,
+        options: DislocationExportOptions = {}
+    ): void {
         const opts: Required<DislocationExportOptions> = {
             lineWidth: options.lineWidth ?? 0.1,
             tubularSegments: options.tubularSegments ?? 8,

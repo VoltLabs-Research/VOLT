@@ -77,7 +77,7 @@ const DashboardPage: React.FC = memo(() => {
                     <TrajectoryPreview />
                     <JobsHistoryViewer />
                 </div>
-
+                
                 <SimulationGrid />
             </DashboardContainer>
 

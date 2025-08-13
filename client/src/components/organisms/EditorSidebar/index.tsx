@@ -20,7 +20,7 @@ const EditorSidebar = () => {
     useEffect(() => {
         return () => {
             setActiveSidebarTag('Scene');
-            setActiveSidebarModifier('trajectory');
+            //setActiveSidebarModifier('trajectory');
         };
     }, []);
 

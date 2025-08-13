@@ -381,129 +381,6 @@ class MeshExporter{
             }
         }
     }
-
-    // TODO: From base 64 using GLB? 
-    public async fromGLB(inputFilePath: string): Promise<Mesh> {
-        console.log(`Loading GLB file from: ${inputFilePath}`);
-        const glbContent = fs.readFileSync(inputFilePath, 'utf8');
-        const glb = JSON.parse(glbContent);
-
-        if(!glb.asset || glb.asset.version !== '2.0'){
-            throw new Error('Invalid GLB file: Asset version must be 2.0.');
-        }
-
-        if(!glb.meshes || glb.meshes.length === 0){
-            throw new Error('GLB file contains no meshes.');
-        }
-
-        if(!glb.buffers || glb.buffers.length === 0){
-            throw new Error('GLB file contains no buffers.');
-        }
-
-        if(!glb.bufferViews || glb.bufferViews.length === 0){
-            throw new Error('GLB file contains no buffer views.');
-        }
-
-        if(!glb.accessors || glb.accessors.length === 0){
-            throw new Error('GLB file contains no accessors.');
-        }
-
-        const meshGLB = glb.meshes[0];
-        if(!meshGLB.primitives || meshGLB.primitives.length === 0){
-            throw new Error('Mesh in GLB file contains no primitives.');
-        }
-
-        const primitive = meshGLB.primitives[0];
-
-        const buffer = glb.buffers[0];
-        if(!buffer.uri || !buffer.uri.startsWith('data:application/octet-stream;base64,')){
-            throw new Error('Unsupported GLB buffer format. Only base64-encoded buffers are supported for now.');
-        }
-
-        const base64Data = buffer.uri.split(',')[1];
-        const binaryData = Buffer.from(base64Data, 'base64');
-
-        let positions: [number, number, number][] = [];
-        let facets: { vertices: [number, number, number] }[] = [];
-
-        if(primitive.attributes && primitive.attributes.POSITION !== undefined){
-            const positionAccessor = glb.accessors[primitive.attributes.POSITION];
-            const positionBufferView = glb.bufferViews[positionAccessor.bufferView];
-
-            const positionArrayBuffer = new Float32Array(
-                binaryData.buffer,
-                binaryData.byteOffset + positionBufferView.byteOffset,
-                positionBufferView.byteLength / Float32Array.BYTES_PER_ELEMENT
-            );
-
-            for(let i = 0; i < positionArrayBuffer.length; i += 3){
-                positions.push([
-                    positionArrayBuffer[i],
-                    positionArrayBuffer[i + 1],
-                    positionArrayBuffer[i + 2]
-                ]);
-            }
-        }else{
-            throw new Error('GLB primitive does not contain POSITION attribute.');
-        }
-
-        // facets
-        if(primitive.indices !== undefined){
-            const indexAccessor = glb.accessors[primitive.indices];
-            const indexBufferView = glb.bufferViews[indexAccessor.bufferView];
-
-            // Determine array type based on componentType (5121=UNSIGNED_BYTE, 5123=UNSIGNED_SHORT, 5125=UNSIGNED_INT)
-            let indexArray: Uint8Array | Uint16Array | Uint32Array;
-            switch(indexAccessor.componentType){
-                // UNSIGNED_BYTE
-                case 5121:
-                    indexArray = new Uint8Array(
-                        binaryData.buffer,
-                        binaryData.byteOffset + indexBufferView.byteOffset,
-                        indexBufferView.byteLength / Uint8Array.BYTES_PER_ELEMENT
-                    );
-                    break;
-                // UNSIGNED_SHORT
-                case 5123:
-                    indexArray = new Uint16Array(
-                        binaryData.buffer,
-                        binaryData.byteOffset + indexBufferView.byteOffset,
-                        indexBufferView.byteLength / Uint16Array.BYTES_PER_ELEMENT
-                    );
-                    break;
-                // UNSIGNED_INT
-                case 5125: 
-                    indexArray = new Uint32Array(
-                        binaryData.buffer,
-                        binaryData.byteOffset + indexBufferView.byteOffset,
-                        indexBufferView.byteLength / Uint32Array.BYTES_PER_ELEMENT
-                    );
-                    break;
-                default:
-                    throw new Error(`Unsupported index componentType: ${indexAccessor.componentType}`);
-            }
-
-            for(let i = 0; i < indexArray.length; i += 3){
-                facets.push({
-                    vertices: [indexArray[i], indexArray[i + 1], indexArray[i + 2]]
-                });
-            }
-        }else{
-            console.warn('GLB primitive does not contain indices. Mesh might be a point cloud or line set.');
-        }
-
-        const points = positions.map((pos, index) => ({ index, position: pos }));
-
-        console.log(`GLB loaded: ${points.length} points, ${facets.length} facets.`);
-
-        return {
-            data: {
-                points,
-                facets,
-                metadata: glb.extras || {} 
-            }
-        };
-    }
 };
 
 export default MeshExporter;
@@ -524,7 +401,6 @@ async function processGlbFile(inputPath: string, outputPath: string, smoothItera
     });
 }
 
-const inputGlbPath = '/home/rodyherrera/Escritorio/Development/OpenDXA/server/storage/trajectories/61b3c0e9-2939-4b31-a872-226948cabe06/glb/frame_0_interface_mesh.glb';
 const outputGlbPath = './output_taubin_smoothed_mesh.glb'; 
 const iterations = 8; 
 processGlbFile(inputGlbPath, inputGlbPath, iterations);

@@ -22,6 +22,31 @@
 import { Request, Response } from 'express';
 import { dislocationAnalysis, DislocationAnalysisModifierError } from '@/modifiers/dislocation-analysis';
 import { computeAnalysisStats } from '@/modifiers/analysis-stats';
+import { getGLBPath } from '@/utilities/trajectory-glbs';
+import DislocationExporter from '@/utilities/export/dislocations';
+
+export const dislocationRenderOptions = async (req: Request, res: Response) => {
+    const { folderId, _id } = res.locals.trajectory;
+    const { timestep, analysisConfigId } = req.params;
+
+    // TODO: verify trajectory analysis ownership
+
+    const options = req.body;
+    const exporter = new DislocationExporter();
+    const glbFilePath = await getGLBPath(timestep, 'dislocations', analysisConfigId, folderId);
+    if(!glbFilePath){
+        return res.status(404).json({
+            status: 'error',
+            data: { error: `GLB file for timestep ${timestep} not found` }
+        });
+    }
+    console.log('glb file path:', glbFilePath)
+    await exporter.rebuildGLBFromDB(analysisConfigId, timestep, _id, glbFilePath, options)
+    res.status(200).json({
+        status: 'success',
+        data: {}
+    })
+};
 
 export const getAnalysisStats = async (req: Request, res: Response) => {
     console.log('Get Analysis Stats');

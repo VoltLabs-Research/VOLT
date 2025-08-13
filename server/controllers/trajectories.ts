@@ -28,6 +28,7 @@ import { isValidObjectId } from 'mongoose';
 import { getTrajectoryProcessingQueue } from '@/queues';
 import { processTrajectoryFile } from '@/utilities/lammps';
 import { v4 } from 'uuid';
+import { getGLBPath } from '@/utilities/trajectory-glbs';
 import Trajectory from '@models/trajectory';
 import Team from '@models/team';
 import HandlerFactory from '@/controllers/handler-factory';
@@ -322,17 +323,8 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
         });
     }
 
-    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-    const fileName = type
-        ? `frame-${timestep}_${type}_analysis-${analysisId}.glb`
-        : `${timestep}.glb`;
-
-    console.log(fileName);
-    const glbFilePath = join(basePath, trajectory.folderId, 'glb', fileName);
-
-    try{
-        await access(glbFilePath, constants.F_OK);
-    }catch(error){
+    const glbFilePath = await getGLBPath(timestep, type as string, analysisId, trajectory.folderId);
+    if(!glbFilePath){
         return res.status(404).json({
             status: 'error',
             data: { error: `GLB file for timestep ${timestep} not found` }
