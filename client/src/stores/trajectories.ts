@@ -36,8 +36,13 @@ interface TrajectoryState {
     isSavingPreview: boolean;
     uploadingFileCount: number;
     error: string | null;
+    analysisStats: object,
+    isAnalysisLoading: boolean
     selectedTrajectories: string[];
     structureAnalysis: any[];
+    avgSegmentSeries: any[];
+    idRateSeries: [],
+    dislocationSeries: []
 }
 
 interface TrajectoryActions {
@@ -76,6 +81,7 @@ export type TrajectoryStore = TrajectoryState & TrajectoryActions;
 
 const initialState: TrajectoryState = {
     trajectories: [],
+    isAnalysisLoading: true,
     trajectory: null,
     isLoading: true,
     isSavingPreview: false,
@@ -83,6 +89,11 @@ const initialState: TrajectoryState = {
     error: null,
     structureAnalysis: [],
     selectedTrajectories: [],
+
+    analysisStats: {},
+    avgSegmentSeries: [],
+    idRateSeries: [],
+    dislocationSeries: []
 };
 
 const previewCache = new PreviewCacheService();
@@ -137,11 +148,47 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             );
         },
 
-        computeAnalysisDifferences: async (id: string) => {
-            const url = `/modifiers/compute-analysis-differences/${id}`;
-            const data = await api.get(url);
-            console.log(data);
-        },
+        computeAnalysisDifferences: (id: string) => asyncAction(() => api.get<ApiResponse<any>>(`/modifiers/compute-analysis-differences/${id}`),  {
+            isLoading: 'isAnalysisLoading',
+            onSuccess: (res) => {
+                // TODO: refactor this
+                const createSeries = (stats: any[], key: string) => {
+                    const map = new Map()
+                    stats.forEach((stat) => {
+                        if (!stat || stat.rmsd === 0) return
+                        const sourceArray =
+                            key === 'identificationRate'
+                                ? stat.structureAnalysis
+                                : stat.dislocations
+                        if (!Array.isArray(sourceArray)) return
+                        sourceArray.forEach((item: any) => {
+                            if (!map.has(item.timestep)) map.set(item.timestep, [])
+                            map.set(item.timestep, [
+                                { rmsd: stat.rmsd, y: item[key] ?? 0 },
+                                ...map.get(item.timestep)
+                            ])
+                        })
+                    })
+                    return Array.from(map.entries()).map(([timestep, points]) => ({
+                        label: timestep === 0 ? 'Initial State' : 'Final State',
+                        data: points.map(({ rmsd, y }) => ({ x: rmsd, y }))
+                    }))
+                };
+
+                const analysisStats = res.data.data;
+                const avgSegmentSeries = createSeries(analysisStats, 'averageSegmentLength');
+                const idRateSeries = createSeries(analysisStats, 'identificationRate');
+                const dislocationSeries = createSeries(analysisStats, 'totalSegments');
+                console.log(avgSegmentSeries)
+                return {
+                    analysisStats,
+                    avgSegmentSeries,
+                    idRateSeries,
+                    dislocationSeries,
+                    error: null
+                };
+            }
+        }),
 
         getStructureAnalysis: (teamId: string) => {
             const url = `/structure-analysis/${teamId}`;
@@ -359,6 +406,10 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             set({ 
                 trajectory: null,
                 error: null,
+                analysisStats: [],
+                dislocationSeries: [],
+                idRateSeries: [],
+                avgSegmentSeries: [],
                 selectedTrajectories: [],
             });
         },

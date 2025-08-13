@@ -1,7 +1,9 @@
 import React from 'react';
 import type { IconType } from 'react-icons/lib';
+import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
+import { RiMore2Fill } from "react-icons/ri";
+import Loader from '@/components/atoms/Loader';
 import './CanvasSidebarOption.css';
-import FormField from '@/components/molecules/FormField';
 
 interface CanvasSidebarOptionProps{
     onSelect: (option: any) => void;
@@ -9,21 +11,61 @@ interface CanvasSidebarOptionProps{
     option: {
         Icon: IconType;
         title: string;
+        modifierId: string;
+        options?: [{
+            title: string;
+            modifierId: string;
+        }]
     };
+    isLoading: boolean;
 }
 
-const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSelect, activeOption }) => {
-   
+const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSelect, activeOption, isLoading }) => {
+
     return (
-        <div 
-            className='editor-sidebar-scene-option-container' 
-            onClick={() => onSelect(option)}
-        >
-            <i className='editor-sidebar-scene-option-icon-container'>
-                <option.Icon />
-            </i>
-            <h3 className='editor-sidebar-scene-option-title'>{option.title}</h3>
-        </div>
+        <>
+            <div 
+                className={`editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''}`}
+                onClick={() => onSelect(option)}
+                
+            >
+                <div className='editor-sidebar-scene-option-left-container'>
+                    <i className='editor-sidebar-scene-option-icon-container'>
+                        <option.Icon />
+                    </i>
+                    <h3 className='editor-sidebar-scene-option-title'>{option.title}</h3>
+                </div>
+
+                {option.options && (
+                    <div className='editor-sidebar-scene-option-right-container'>
+                        <i className='editor-sidebar-scene-option-dropdown-icon-container'>
+                            {activeOption ? (
+                                isLoading ? <Loader scale={0.5} /> : <RiArrowUpSLine />
+                            ) : (
+                                <RiArrowDownSLine />
+                            )}
+                        </i>
+                    </div>
+                )}
+            </div>
+                
+            {(option.options && activeOption && !isLoading) && (
+                <div className={`editor-sidebar-scene-option-select-container`}>
+                    {option.options.map(({ title, modifierId }, index) => (
+                        <div 
+                            className={`editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''}`}
+                            onClick={() => onSelect({ title, modifierId })}
+                            key={title + '-' + index}
+                        >
+                            <h3 className='editor-sidebar-scene-option-title'>{title}</h3>
+                            <i className='editor-sidebar-scene-option-more-icon-container'>
+                                <RiMore2Fill />
+                            </i>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </>
     );
 };
 

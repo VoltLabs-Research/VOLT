@@ -184,6 +184,29 @@
     background-color: rgba(49, 49, 49, 0.8);
 }
 
+.editor-chart-container{
+    position: absolute;
+    right: 0;
+    z-index: 200000;
+    background-color: rgb(30 30 30 / 42%);
+    backdrop-filter: blur(5px);
+    width: 600px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    text-align: center;
+    padding: 1rem;
+}
+
+.editor-chart-title{
+    color: #dadada;
+    font-weight: 500;
+}
+
 @media screen and (max-width: 768px){
     .editor-scene-zoom-container{
         padding: 0 1rem;

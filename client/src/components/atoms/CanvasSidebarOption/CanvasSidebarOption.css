@@ -1,19 +1,32 @@
-.editor-sidebar-scene-option-container{
+.editor-sidebar-scene-option-left-container{
     display: flex;
     align-items: center;
     gap: 1.2rem;
-    padding: .5rem;
-    cursor: pointer;
-    border-radius: .5rem;
-    will-change: transform;
+}
+
+.editor-sidebar-scene-option-select-container{
+    position: relative;
+}
+
+.editor-sidebar-scene-option-select-container .editor-sidebar-scene-option-title{
+    font-size: 1rem;
+    margin-left: 3.8rem;
 }
 
 .editor-sidebar-scene-option-container:active{
     transform: scale(.99);
 }
 
+.editor-sidebar-scene-option-more-icon-container{
+    display: none;
+}
+
 .editor-sidebar-scene-option-container:hover{
     background-color: rgb(85 85 85 / 18%);
+}
+
+.editor-sidebar-scene-option-container:hover .editor-sidebar-scene-option-more-icon-container{
+    display: unset;
 }
 
 .editor-sidebar-scene-option-title{
@@ -25,4 +38,14 @@
     padding: .8rem;
     font-size: 1.3rem;
     border-radius: .5rem;
+}
+
+.editor-sidebar-scene-option-container{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .5rem;
+    cursor: pointer;
+    border-radius: .5rem;
+    will-change: transform;
 }

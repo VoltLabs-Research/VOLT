@@ -20,6 +20,7 @@ const CanvasSidebarModifiers = () => {
     const computeAnalysisDifferences = useTrajectoryStore((state) => state.computeAnalysisDifferences);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
 
+    const idRateSeries = useTrajectoryStore((state) => state.idRateSeries);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
 
     // We save the previous state to detect which modifiers have just been activated
@@ -66,8 +67,19 @@ const CanvasSidebarModifiers = () => {
             modifierId: 'PTM' 
         }, {
             Icon: IoIosStats,
-            title: 'Compute Analysis Differences',
-            modifierId: 'compute-analysis-differences'
+            title: 'Analysis Metrics',
+            modifierId: 'compute-analysis-differences',
+            isLoading: !idRateSeries?.length,
+            options: [{
+                title: 'Total Dislocation Segments',
+                modifierId: 'total-dislocation-segments'
+            }, {
+                title: 'Average Segment Length',
+                modifierId: 'average-segment-length'
+            }, {
+                title: 'Identification Rate',
+                modifierId: 'structure-identification-rate'
+            }]
         }, {
             Icon: GrFormViewHide,
             title: 'Render Options',
@@ -82,6 +94,7 @@ const CanvasSidebarModifiers = () => {
                     <CanvasSidebarOption
                         key={index}
                         option={option}
+                        isLoading={option.isLoading}
                         activeOption={activeModifiers.includes(option.modifierId ? option.modifierId : '')}
                         onSelect={(option) => toggleModifiers(option.modifierId)} />
                 ))}
