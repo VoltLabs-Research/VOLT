@@ -37,6 +37,29 @@ import { axisClasses } from '@mui/x-charts/ChartsAxis'
 import { ScatterChart } from '@mui/x-charts'
 import useTrajectoryStore from '@/stores/trajectories';
 
+const CHART_COLORS = [
+    '#3B82F6',
+    '#10B981', 
+    '#F59E0B',
+    '#EF4444',
+    '#8B5CF6',
+    '#06B6D4',
+    '#F97316', 
+    '#EC4899',
+];
+
+const CHART_THEME = {
+    background: 'rgba(15, 23, 42, 0.8)', 
+    border: 'rgba(148, 163, 184, 0.2)',
+    text: {
+        primary: '#F1F5F9',
+        secondary: '#94A3B8',
+        muted: '#64748B'
+    },
+    grid: 'rgba(148, 163, 184, 0.1)',
+    axis: '#475569'
+};
+
 function niceNum(range: number, round: boolean): number {
     const exponent = Math.floor(Math.log10(range))
     const fraction = range / Math.pow(10, exponent)
@@ -79,50 +102,141 @@ const CustomScatterPlot = ({
     series: { label: string; data: { x: number; y: number }[] }[]
 }) => {
     if (!series.length) return null
+    
     const allPoints = series.flatMap((s) => s.data)
     const xMin = Math.min(...allPoints.map((p) => p.x))
     const xMax = Math.max(...allPoints.map((p) => p.x))
     const yMin = Math.min(...allPoints.map((p) => p.y))
     const yMax = Math.max(...allPoints.map((p) => p.y))
-    const xTicks = generateNiceTicks(xMin, xMax, 8)
-    const yTicks = generateNiceTicks(yMin, yMax, 8)
+    const xTicks = generateNiceTicks(xMin, xMax, 6) 
+    const yTicks = generateNiceTicks(yMin, yMax, 6)
+
+    // Asignar colores a las series
+    const styledSeries = series.map((s, index) => ({
+        ...s,
+        color: CHART_COLORS[index % CHART_COLORS.length]
+    }))
 
     return (
         <EditorWidget className='editor-chart-container'>
-            <h3 className='editor-chart-title'>{title}</h3>
-            <ScatterChart
-                height={300}
-                series={series}
-                grid={{ horizontal: false, vertical: false }}
-                slotProps={{
-                    legend: { sx: { fontSize: 14, color: '#dadada' } }
-                }}
-                xAxis={[
-                    {
-                        min: xMin,
-                        max: xMax,
-                        label: xlabel,
-                        labelStyle: { fontSize: 16, fill: '#dadada' },
-                        tickInterval: xTicks
-                    }
-                ]}
-                yAxis={[
-                    {
-                        min: 0,
-                        max: yMax * 1.15,
-                        label: ylabel,
-                        labelStyle: { fontSize: 16, fill: '#dadada' },
-                        tickInterval: yTicks
-                    }
-                ]}
-                sx={{
-                    [`& .${axisClasses.root}`]: {
-                        line: { stroke: '#dadada' },
-                        text: { fill: '#dadada' }
-                    },
-                    [`& .${axisClasses.bottom}`]: { text: { fill: '#dadada' } }
-                }}
-            />
+            <div className="chart-header">
+                <h3 className='editor-chart-title' style={{
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    color: CHART_THEME.text.primary,
+                    margin: 0,
+                    letterSpacing: '-0.025em'
+                }}>
+                    {title}
+                </h3>
+            </div>
+            
+            <div style={{ 
+                borderRadius: '8px',
+                margin: '0 12px'
+            }}>
+                <ScatterChart
+                    height={350} 
+                    series={styledSeries}
+                    grid={{ 
+                        horizontal: true, 
+                        vertical: true 
+                    }}
+                    slotProps={{
+                        legend: { 
+                            sx: { 
+                                fontSize: 13,
+                                color: CHART_THEME.text.primary,
+                                fontWeight: '500',
+                                '& .MuiChartsLegend-series': {
+                                    '& text': {
+                                        fill: `${CHART_THEME.text.primary} !important`
+                                    }
+                                }
+                            } 
+                        }
+                    }}
+                    xAxis={[
+                        {
+                            min: xMin * 0.95, 
+                            max: xMax * 1.05,
+                            label: xlabel,
+                            labelStyle: { 
+                                fontSize: 14, 
+                                fill: CHART_THEME.text.primary,
+                                fontWeight: '500'
+                            },
+                            tickLabelStyle: {
+                                fontSize: 12,
+                                fill: CHART_THEME.text.secondary,
+                                fontWeight: '400'
+                            },
+                            tickInterval: xTicks
+                        }
+                    ]}
+                    yAxis={[
+                        {
+                            min: Math.max(0, yMin * 0.9),
+                            max: yMax * 1.1,
+                            label: ylabel,
+                            labelStyle: { 
+                                fontSize: 14, 
+                                fill: CHART_THEME.text.primary,
+                                fontWeight: '500'
+                            },
+                            tickLabelStyle: {
+                                fontSize: 12,
+                                fill: CHART_THEME.text.secondary,
+                                fontWeight: '400'
+                            },
+                            tickInterval: yTicks
+                        }
+                    ]}
+                    sx={{
+                        [`& .${axisClasses.root}`]: {
+                            line: { 
+                                stroke: CHART_THEME.axis,
+                                strokeWidth: 1.5
+                            },
+                            text: { fill: CHART_THEME.text.secondary }
+                        },
+                        [`& .${axisClasses.bottom}`]: { 
+                            text: { fill: CHART_THEME.text.secondary },
+                            line: { stroke: CHART_THEME.axis }
+                        },
+                        [`& .${axisClasses.left}`]: { 
+                            text: { fill: CHART_THEME.text.secondary },
+                            line: { stroke: CHART_THEME.axis }
+                        },
+                        '& .MuiChartsGrid-root': {
+                            '& line': {
+                                stroke: CHART_THEME.grid,
+                                strokeWidth: 0.5,
+                                strokeDasharray: '2,4'
+                            }
+                        },
+                        '& .MuiScatterChart-root': {
+                            '& circle': {
+                                strokeWidth: 1.5,
+                                stroke: 'rgba(255,255,255,0.3)',
+                                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))'
+                            }
+                        },
+                        '& circle:hover': {
+                            r: '6 !important',
+                            strokeWidth: '2 !important',
+                            stroke: 'rgba(255,255,255,0.8) !important',
+                            filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))'
+                        },
+                        '& .MuiChartsTooltip-root': {
+                            border: `1px solid ${CHART_THEME.border}`,
+                            borderRadius: '8px',
+                            backdropFilter: 'blur(8px)',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+                        }
+                    }}
+                />
+            </div>
         </EditorWidget>
     )
 }
@@ -133,9 +247,9 @@ const AverageSegmentLengthPlot = () => {
 
     return avgSegmentSeries && (
         <CustomScatterPlot
-            title={`${trajectory?.name ?? ''} - Average Segment Length`}
-            xlabel='RMSD'
-            ylabel='Average Segment Length'
+            title={`Average Segment Length Analysis`}
+            xlabel='RMSD (Å)'
+            ylabel='Average Segment Length (Å)'
             series={avgSegmentSeries}
         />
     );
@@ -147,9 +261,9 @@ const StructureIdentificationRatePlot = () => {
     
     return idRateSeries && (
         <CustomScatterPlot
-            title={`${trajectory?.name ?? ''} - Identification Rate`}
-            xlabel='RMSD'
-            ylabel='Structure Identification Rate %'
+            title={`Structure Identification Rate Analysis`}
+            xlabel='RMSD (Å)'
+            ylabel='Identification Rate (%)'
             series={idRateSeries}
         />
     );
@@ -161,9 +275,9 @@ const TotalDislocationSegmentsPlot = () => {
 
     return dislocationsSeries && (
         <CustomScatterPlot
-            title={`${trajectory?.name ?? ''} - Total Dislocation Segments`}
-            xlabel='RMSD'
-            ylabel='Total Dislocation Segments'
+            title={`Total Dislocation Segments Analysis`}
+            xlabel='RMSD (Å)'
+            ylabel='Total Segments Count'
             series={dislocationsSeries}
         />
     );
