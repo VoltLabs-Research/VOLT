@@ -249,20 +249,22 @@ json DXAJsonExporter::exportDislocationsToJson(
                     currentChunk.push_back(p2);
             });
 
-            saveChunk(currentChunk, segment, i);
+            if(!currentChunk.empty()){
+                saveChunk(currentChunk, segment, i);
+            }
         }
     }
 
     dislocations["metadata"]["count"] = dataArray.size();
     dislocations["data"] = dataArray;
     
-    if(segments.empty()){
+    if(dataArray.empty()){
         minLength = 0.0;
     }
     
     dislocations["summary"] = {
         {"total_points", totalPoints},
-        {"average_segment_length", segments.empty() ? 0.0 : totalLength / segments.size()},
+        {"average_segment_length", dataArray.empty() ? 0.0 : totalLength / dataArray.size()}, // CORREGIDO: usar dataArray.size()
         {"max_segment_length", maxLength},
         {"min_segment_length", minLength},
         {"total_length", totalLength}

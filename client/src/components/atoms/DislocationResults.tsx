@@ -26,7 +26,6 @@ import EditorWidget from '../organisms/EditorWidget';
 interface DislocationData {
     segmentId: number;
     type: string;
-    pointIndexOffset: number;
     numPoints: number;
     length: number;
     points: number[][];

@@ -11,6 +11,7 @@ import './RenderOptions.css';
 const RenderOptions = () => {
     const [dislocationLineWidth, setDislocationLineWidth] = useState(1.5);
     const [tubularSegments, setTubularSegments] = useState(16);
+    const [minSegmentPoints, setMinSegmentPoints] = useState(2);
     const dislocationRenderOptions = useTimestepStore((state) => state.dislocationRenderOptions);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
@@ -31,6 +32,7 @@ const RenderOptions = () => {
                     lineWidth: dislocationLineWidth,
                     colorByType: true,
                     tubularSegments: tubularSegments,
+                    minSegmentPoints,
                     material: {
                         baseColor: [1.0, 0.5, 0.0, 1.0],
                         metallic: 0.0,
@@ -75,6 +77,14 @@ const RenderOptions = () => {
                 fieldType='input'
                 label='Dislocation Line Width'
                 onFieldChange={(_, value) => setDislocationLineWidth(value)}
+            />
+
+            <FormField
+                fieldValue={minSegmentPoints}
+                fieldKey='minSegmentPoints'
+                fieldType='input'
+                label='Minimum Segment Points'
+                onFieldChange={(_, value) => setMinSegmentPoints(value)}
             />
 
             <FormField

@@ -69,6 +69,7 @@ export interface Dislocation {
 export interface DislocationExportOptions {
     lineWidth?: number;
     tubularSegments?: number;
+    minSegmentPoints?: number;
     material?: {
         baseColor?: [number, number, number, number];
         metallic?: number;

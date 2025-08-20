@@ -298,7 +298,7 @@ class DislocationExporter{
         const typeStats: Record<string, number> = {};
         
         for(const segment of data){
-            if(!segment.points || segment.points.length < 2){
+            if(!segment.points || segment.points.length < options.minSegmentPoints){
                 continue;
             }
 
@@ -602,7 +602,8 @@ class DislocationExporter{
 
             const opts: Required<DislocationExportOptions> = {
                 lineWidth: options.lineWidth ?? 0.08,
-                tubularSegments: options.tubularSegments ?? 12, 
+                tubularSegments: options.tubularSegments ?? 12,
+                minSegmentPoints: options.minSegmentPoints ?? 2, 
                 material: {
                     baseColor: options.material?.baseColor ?? [1.0, 1.0, 1.0, 1.0], 
                     metallic: options.material?.metallic ?? 0.1,
@@ -633,7 +634,6 @@ class DislocationExporter{
         const dislocationSegments = dbData.dislocations.map((segment: any) => ({
             segment_id: segment.segmentId,
             type: segment.type,
-            point_index_offset: segment.pointIndexOffset,
             num_points: segment.numPoints,
             length: segment.length,
             points: segment.points,
@@ -678,6 +678,7 @@ class DislocationExporter{
         const opts: Required<DislocationExportOptions> = {
             lineWidth: options.lineWidth ?? 0.08,
             tubularSegments: options.tubularSegments ?? 12,
+            minSegmentPoints: options.minSegmentPoints ?? 2,
             material: {
                 baseColor: options.material?.baseColor ?? [1.0, 1.0, 1.0, 1.0], 
                 metallic: options.material?.metallic ?? 0.1,

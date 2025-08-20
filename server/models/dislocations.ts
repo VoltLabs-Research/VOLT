@@ -58,10 +58,6 @@ const DislocationDataSchema = new Schema({
         type: String,
         required: true
     },
-    pointIndexOffset: {
-        type: Number,
-        required: true
-    },
     numPoints: {
         type: Number,
         required: true

@@ -232,7 +232,6 @@ class OpenDXAService{
             dislocations: data.data.map((dislocation) => ({
                 segmentId: dislocation.segment_id,
                 type: dislocation.type,
-                pointIndexOffset: dislocation.point_index_offset,
                 numPoints: dislocation.num_points,
                 length: dislocation.length,
                 points: dislocation.points,
