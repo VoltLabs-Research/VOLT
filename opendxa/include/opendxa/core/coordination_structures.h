@@ -14,11 +14,12 @@ class CoordinationStructures{
 public:
     CoordinationStructures(ParticleProperty* structureTypes, LatticeStructureType inputCrystalType, bool identifyPlanarDefects, const SimulationCell& simCell);
 
-double determineLocalStructure(
-	const NearestNeighborFinder& neighList, 
-	int particleIndex,
-	std::shared_ptr<ParticleProperty> neighborLists
-) const;
+    double determineLocalStructure(
+        const NearestNeighborFinder& neighList, 
+        int particleIndex,
+        std::shared_ptr<ParticleProperty> neighborLists
+    ) const;
+    
     static void initializeStructures();
 
     static const LatticeStructure& latticeStructure(int structureIndex){

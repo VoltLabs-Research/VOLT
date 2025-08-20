@@ -855,7 +855,7 @@ void BurgersLoopBuilder::identifyNodeCoreAtoms(DislocationNode& node, const Poin
     Box3 bbox;
 	
 	do{
-		const auto& cell = mesh().structureAnalysis().cell();
+		const auto& cell = mesh().structureAnalysis().context().simCell;
 		// Each triangle is defined by two vertices of the edge and the `newPoint`
         _triangles.push_back({
             newPoint + cell.wrapVector(edge->vertex1()->pos() - newPoint),

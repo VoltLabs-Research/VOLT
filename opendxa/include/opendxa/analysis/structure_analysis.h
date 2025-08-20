@@ -10,10 +10,12 @@
 #include <opendxa/structures/lattice_structure.h>
 #include <opendxa/core/coordination_structures.h>
 #include <opendxa/analysis/polyhedral_template_matching.h>
+#include <opendxa/analysis/analysis_context.h>
 #include <opendxa/core/lammps_parser.h>
 #include <nlohmann/json.hpp>
 #include <mutex>
 #include <tbb/spin_mutex.h>
+
 using json = nlohmann::json;
 
 namespace OpenDXA{
@@ -26,21 +28,19 @@ public:
 	};
 
 	StructureAnalysis(
-			ParticleProperty* positions,
-			const SimulationCell& simCell,
-			LatticeStructureType inputCrystalType,
-			ParticleProperty* particleSelection,
-			ParticleProperty* outputStructures,
-			std::vector<Matrix3>&& preferredCrystalOrientations = std::vector<Matrix3>(),
-			bool identifyPlanarDefects = true, 
-			Mode identificationMode = Mode::CNA,
-			float rmsd = 0.15);
+		AnalysisContext& context,
+		bool identifyPlanarDefects, 
+		Mode identificationMode,
+		float rmsd
+	);
 
 	void identifyStructures();
 	void buildClusters();
 	void connectClusters();
 	void formSuperClusters();
 	void computeMaximumNeighborDistance();
+	void processAtomConnections(size_t atomIndex);
+	void connectClusterNeighbors(int atomIndex, Cluster* cluster1);
 
 	void growClusterPTM(
 		Cluster* cluster,
@@ -55,43 +55,28 @@ public:
 		const std::vector<int>* structureTypes
 	);
 
-	int atomCount() const{
-		return positions()->size();
-	}
 	int numberOfNeighbors(int atomIndex) const {
-		assert(_neighborLists);
-		const int* neighborList = _neighborLists->constDataInt() + (size_t)atomIndex * _neighborLists->componentCount();
+		assert(_context.neighborLists);
+		const int* neighborList = _context.neighborLists->constDataInt() + (size_t)atomIndex * _context.neighborLists->componentCount();
 		size_t count = 0;
-		while(count < _neighborLists->componentCount() && neighborList[count] != -1){
+		while(count < _context.neighborLists->componentCount() && neighborList[count] != -1){
 			count++;
 		}
 		return count;
 	}
 	int getNeighbor(int centralAtomIndex, int neighborListIndex) const{
-		assert(_neighborLists);
-		return _neighborLists->getIntComponent(centralAtomIndex, neighborListIndex);
+		assert(_context.neighborLists);
+		return _context.neighborLists->getIntComponent(centralAtomIndex, neighborListIndex);
 	}
 	int findNeighbor(int centralAtomIndex, int neighborAtomIndex) const{
-		assert(_neighborLists);
-		const int* neighborList = _neighborLists->constDataInt() + (size_t)centralAtomIndex * _neighborLists->componentCount();
-		for(size_t index = 0; index < _neighborLists->componentCount() && neighborList[index] != -1; index++){
+		assert(_context.neighborLists);
+		const int* neighborList = _context.neighborLists->constDataInt() + (size_t)centralAtomIndex * _context.neighborLists->componentCount();
+		for(size_t index = 0; index < _context.neighborLists->componentCount() && neighborList[index] != -1; index++){
 			if(neighborList[index] == neighborAtomIndex){
 				return index;
 			}
 		}
 		return -1;
-	}
-
-	ParticleProperty* positions() const{
-		return _positions;
-	}
-
-	ParticleProperty* structureTypes() const{
-		return _structureTypes;
-	}
-
-	ParticleProperty* atomClusters() const{
-		return _atomClusters.get();
 	}
 
 	double maximumNeighborDistance() const{
@@ -100,6 +85,10 @@ public:
 
 	bool usingPTM() const{
 		return _identificationMode == StructureAnalysis::Mode::PTM;
+	}
+
+	const AnalysisContext& context() const{
+		return _context;
 	}
 
 	const ClusterGraph& clusterGraph() const{
@@ -111,16 +100,12 @@ public:
 	}
 
 	Cluster* atomCluster(int atomIndex) const{
-		return clusterGraph().findCluster(_atomClusters->getInt(atomIndex));
-	}
-
-	const SimulationCell& cell() const{
-		return _simCell;
+		return clusterGraph().findCluster(_context.atomClusters->getInt(atomIndex));
 	}
 	
 	void freeNeighborLists(){
-		_neighborLists.reset();
-		_atomSymmetryPermutations.reset();
+		_context.neighborLists.reset();
+		_context.atomSymmetryPermutations.reset();
 	}
 
 	void setIdentificationMode(Mode identificationMode){
@@ -128,11 +113,11 @@ public:
 	}
 
 	const Vector3& neighborLatticeVector(int centralAtomIndex, int neighborIndex) const{
-		assert(_atomSymmetryPermutations);
-		int structureType = _structureTypes->getInt(centralAtomIndex);
+		assert(_context.atomSymmetryPermutations);
+		int structureType = _context.structureTypes->getInt(centralAtomIndex);
 		const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
 		assert(neighborIndex >= 0 && neighborIndex < CoordinationStructures::_coordinationStructures[structureType].numNeighbors);
-		int symmetryPermutationIndex = _atomSymmetryPermutations->getInt(centralAtomIndex);
+		int symmetryPermutationIndex = _context.atomSymmetryPermutations->getInt(centralAtomIndex);
 		assert(symmetryPermutationIndex >= 0 && symmetryPermutationIndex < latticeStructure.permutations.size());
 		const auto& permutation = latticeStructure.permutations[symmetryPermutationIndex].permutation;
 		return latticeStructure.latticeVectors[permutation[neighborIndex]];
@@ -141,9 +126,9 @@ public:
 	void calculateStructureStatistics() const {
         _structureStatistics.clear();
         
-        const size_t N = positions()->size();
+        const size_t N = _context.atomCount();
         for (size_t i = 0; i < N; ++i) {
-            int structureType = _structureTypes->getInt(i);
+            int structureType = _context.structureTypes->getInt(i);
             _structureStatistics[structureType]++;
         }
         
@@ -211,7 +196,7 @@ public:
         }
         
         json stats;
-        stats["total_atoms"] = positions()->size();
+        stats["total_atoms"] = _context.atomCount();
         stats["analysis_method"] = usingPTM() ? "PTM" : "CNA";
         
         json typeStats;
@@ -222,7 +207,7 @@ public:
             
             json typeInfo;
             typeInfo["count"] = count;
-            typeInfo["percentage"] = (count * 100.0) / positions()->size();
+            typeInfo["percentage"] = (count * 100.0) / _context.atomCount();
             typeInfo["type_id"] = structureType;
             
             typeStats[name] = typeInfo;
@@ -237,7 +222,7 @@ public:
         stats["summary"] = {
             {"total_identified", totalIdentified},
             {"total_unidentified", _structureStatistics.count(static_cast<int>(StructureType::OTHER)) ? _structureStatistics.at(static_cast<int>(StructureType::OTHER)) : 0},
-            {"identification_rate", (totalIdentified * 100.0) / positions()->size()},
+            {"identification_rate", (totalIdentified * 100.0) / _context.atomCount()},
             {"unique_structure_types", static_cast<int>(_structureStatistics.size())}
         };
         
@@ -247,9 +232,8 @@ public:
 private:
 	bool alreadyProcessedAtom(int index);
 	bool calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition);
-	void connectClusterNeighbors(int atomIndex, Cluster* cluster1);
 	bool areOrientationsCompatible(int atom1, int atom2, int structureType);
-	bool verifyLocalSymmetryCompatibility(int atom1, int atom2, int structureType);
+
 	void storeDeformationGradient(const PTM::Kernel& kernel, size_t atomIndex);
 	void storeOrientationData(const PTM::Kernel& kernel, size_t atomIndex);
 	void storeNeighborIndices(const PTM::Kernel& kernel, size_t atomIndex);
@@ -257,13 +241,8 @@ private:
 	void processDefectClusters();
 	void buildClustersCNA();
 	void mergeCompatibleGrains(size_t oldTransitionCount, size_t newTransitionCount);
-	std::pair<Cluster*, Cluster*> getParentGrains(ClusterTransition* transition);
-	ClusterTransition* buildParentTransition(ClusterTransition* transition, Cluster* parent1, Cluster* parent2);
-	void assignParentTransition(Cluster* parent1, Cluster* parent2, ClusterTransition* parentTransition);
 	void finalizeParentGrains();
-	Cluster* getParentGrain(Cluster* c);
-	Matrix3 calculateLocalTransformationMatrix(int atom1, int atom2, int structureType);
-
+	void assignParentTransition(Cluster* parent1, Cluster* parent2, ClusterTransition* parentTransition);
 	void processPTMAtom(
 		PTM::Kernel& kernel,
 		size_t atomIndex,
@@ -272,10 +251,14 @@ private:
 		float cutoff
 	);
 
+	std::pair<Cluster*, Cluster*> getParentGrains(ClusterTransition* transition);
+	ClusterTransition* buildParentTransition(ClusterTransition* transition, Cluster* parent1, Cluster* parent2);
+	Cluster* getParentGrain(Cluster* c);
+	Matrix3 calculateLocalTransformationMatrix(int atom1, int atom2, int structureType);
+
 	Matrix3 quaternionToMatrix(const Quaternion& q);
 
 	void initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex);
-	void processAtomConnections(size_t atomIndex);
 	std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&> getAtomStructureInfo(int atomIndex);
 	void processNeighborConnection(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, int structureType);
 	void addReverseNeighbor(int neighbor, int atomIndex);
@@ -301,30 +284,14 @@ private:
     mutable bool _statisticsValid = false;
 
 	Mode _identificationMode;
+	AnalysisContext& _context;
 	CoordinationStructures _coordStructures;
-	LatticeStructureType _inputCrystalType;
-	ParticleProperty* _positions; 
 	std::mutex cluster_graph_mutex;
-	ParticleProperty* _structureTypes;
 	
 	float _rmsd;
 
-	std::shared_ptr<ParticleProperty> _ptmRmsd; 
-	std::shared_ptr<ParticleProperty> _ptmOrientation; 
-	std::shared_ptr<ParticleProperty> _ptmDeformationGradient; 
-	std::shared_ptr<ParticleProperty> _neighborLists; 
-	std::shared_ptr<ParticleProperty> _atomClusters;
-	std::shared_ptr<ParticleProperty> _atomSymmetryPermutations; 
-    std::shared_ptr<ParticleProperty> _ptmInteratomicDistance;
-	tbb::spin_mutex _transitionMutex;
-	ParticleProperty* _particleSelection; 
-
 	std::shared_ptr<ClusterGraph> _clusterGraph; 
 	std::atomic<double> _maximumNeighborDistance;
-	
-	SimulationCell _simCell;
-	
-	std::vector<Matrix3> _preferredCrystalOrientations;
 };
 
 }

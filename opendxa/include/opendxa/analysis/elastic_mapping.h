@@ -39,8 +39,8 @@ public:
         : _structureAnalysis(sa)
         , _tessellation(tess)
         , _clusterGraph(sa.clusterGraph())
-        , _vertexEdges(sa.atomCount(), {nullptr, nullptr})
-        , _vertexClusters(sa.atomCount(), nullptr){}
+        , _vertexEdges(sa.context().atomCount(), {nullptr, nullptr})
+        , _vertexClusters(sa.context().atomCount(), nullptr){}
 
     [[nodiscard]] auto structureAnalysis() const noexcept -> StructureAnalysis& {
 		return _structureAnalysis;

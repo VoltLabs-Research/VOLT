@@ -3,6 +3,7 @@
 #include <opendxa/core/property_base.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/burgers_loop_builder.h>
+#include <opendxa/analysis/analysis_context.h>
 
 namespace OpenDXA{
 
@@ -142,21 +143,23 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     // Construct the StructureAnalysis object to perform PTM/CNA, clustering,
     // and super-cluster formation. It will fill our structureTypes buffer
     // with a type code per atom.
-    std::unique_ptr<ParticleProperty> structureTypes;
     std::unique_ptr<StructureAnalysis> structureAnalysis;
     
+    auto structureTypes = std::make_unique<ParticleProperty>(frame.natoms, DataType::Int, 1, 0, true);
+    AnalysisContext context(
+        positions.get(),
+        frame.simulationCell,
+        _inputCrystalStructure,
+        nullptr,
+        structureTypes.get(),
+        std::move(preferredOrientations)
+    );
+
     {
         PROFILE("Structure Analysis Setup");
-        structureTypes = std::make_unique<ParticleProperty>(frame.natoms, DataType::Int, 1, 0, true);
 
         structureAnalysis = std::make_unique<StructureAnalysis>(
-            positions.get(),
-            frame.simulationCell,
-            _inputCrystalStructure,
-            // TODO:
-            nullptr,
-            structureTypes.get(),
-            std::move(preferredOrientations),
+            context,
             !_onlyPerfectDislocations,
             _identificationMode,
             _rmsd
@@ -174,7 +177,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     extractedStructureTypes.reserve(frame.natoms);
     
     for(int i = 0; i < frame.natoms; ++i){
-        int structureType = structureAnalysis->structureTypes()->getInt(i);
+        int structureType = structureAnalysis->context().structureTypes->getInt(i);
         extractedStructureTypes.push_back(structureType);
     }
 
@@ -183,7 +186,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
         std::ofstream atomsOf(outputFile + "_atoms.msgpack");
         std::vector<std::uint8_t> atomsMsgPack = nlohmann::json::to_msgpack(atomsData);
-//        atomsOf.write(reinterpret_cast<const char*>(atomsMsgPack.data()), atomsMsgPack.size());
+        // atomsOf.write(reinterpret_cast<const char*>(atomsMsgPack.data()), atomsMsgPack.size());
         atomsOf << atomsData.dump().c_str();
 
         atomsOf.close();
@@ -224,9 +227,9 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         PROFILE("Delaunay Tessellation");
         ghostLayerSize = 3.5f * structureAnalysis->maximumNeighborDistance();
         tessellation.generateTessellation(
-            structureAnalysis->cell(),
-            structureAnalysis->positions()->constDataPoint3(),
-            structureAnalysis->atomCount(),
+            context.simCell,
+            context.positions->constDataPoint3(),
+            context.atomCount(),
             ghostLayerSize,
             false,
             nullptr

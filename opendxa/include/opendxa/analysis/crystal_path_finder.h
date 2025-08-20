@@ -15,7 +15,7 @@ public:
     explicit CrystalPathFinder(StructureAnalysis& sa, int maxPathLength)
       : _structureAnalysis(sa),
         _nodePool(1024),
-        _visitedAtoms(sa.atomCount()),
+        _visitedAtoms(sa.context().atomCount()),
         _maxPathLength(maxPathLength){
         assert(maxPathLength >= 1);
     }

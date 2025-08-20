@@ -108,9 +108,9 @@ void InterfaceMesh::createMesh(double maxNeighborDist){
             // Verify that no coordinate exceeds half the cell length in that axis,
             // which would imply we need a larger box or ghost cells
             for(int d = 0; d < 3; ++d){
-                if(structureAnalysis().cell().pbcFlags()[d]){
+                if(structureAnalysis().context().simCell.pbcFlags()[d]){
                     if(std::abs(
-                        structureAnalysis().cell().inverseMatrix().prodrow(e->physicalVector, d)
+                        structureAnalysis().context().simCell.inverseMatrix().prodrow(e->physicalVector, d)
 					) >= double{0.5} + EPSILON)
                     {
                         CoordinationStructures::generateCellTooSmallError(d);
@@ -134,7 +134,7 @@ void InterfaceMesh::createMesh(double maxNeighborDist){
         tessellation(),
         *this,
         alpha,
-        structureAnalysis().positions()
+        structureAnalysis().context().positions
     };
 
     // Build the faces and topology. If any step fails, bail out.

@@ -42,7 +42,7 @@ void ElasticMapping::generateTessellationEdges(){
 
             // If the vector between p1 and p2 crosses a periodic boundary,
             // we ignore it here-those connections will be picked up elsewhere.
-            if(structureAnalysis().cell().isWrappedVector(p1 - p2)) continue;
+            if(structureAnalysis().context().simCell.isWrappedVector(p1 - p2)) continue;
 
             //assert(v1 >= 0 && v2 >= 0);
             // If we haven't seen this (v1, v2) pair before, create it

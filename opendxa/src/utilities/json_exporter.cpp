@@ -283,7 +283,7 @@ json DXAJsonExporter::getMeshData(
     json meshData;
     const auto& originalVertices = mesh.vertices(); 
     const auto& originalFaces = mesh.faces();
-    const auto& cell = structureAnalysis.cell();
+    const auto& cell = structureAnalysis.context().simCell;
 
     std::vector<Point3> exportPoints;
     exportPoints.reserve(originalVertices.size());

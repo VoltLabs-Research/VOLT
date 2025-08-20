@@ -13,28 +13,22 @@
 namespace OpenDXA {
 
 StructureAnalysis::StructureAnalysis(
-    ParticleProperty* positions, 
-    const SimulationCell& simCell,
-    LatticeStructureType inputCrystalType, 
-    ParticleProperty* particleSelection,
-    ParticleProperty* outputStructures, 
-    std::vector<Matrix3>&& preferredCrystalOrientations,
+    AnalysisContext& context,
     bool identifyPlanarDefects, 
     Mode identificationMode,
     float rmsd
 ) :
-    _positions(positions),
-    _simCell(simCell),
-    _inputCrystalType(inputCrystalType),
+    _context(context),
     _identificationMode(identificationMode),
-    _structureTypes(outputStructures),
-    _particleSelection(particleSelection),
-    _coordStructures(outputStructures, inputCrystalType, identifyPlanarDefects, simCell),
-    _atomClusters(std::make_unique<ParticleProperty>(positions->size(), DataType::Int, 1, 0, true)),
-    _atomSymmetryPermutations(std::make_unique<ParticleProperty>(positions->size(), DataType::Int, 1, 0, false)),
+    _rmsd(rmsd),
+
     _clusterGraph(std::make_unique<ClusterGraph>()),
-    _preferredCrystalOrientations(std::move(preferredCrystalOrientations)),
-    _rmsd(rmsd)
+    _coordStructures(
+        _context.structureTypes, 
+        context.inputCrystalType, 
+        identifyPlanarDefects, 
+        context.simCell
+    )
 {
     static std::once_flag init_flag;
     std::call_once(init_flag, []() {
@@ -42,25 +36,25 @@ StructureAnalysis::StructureAnalysis(
     });
 
     if(usingPTM()){
-        _neighborLists = std::make_shared<ParticleProperty>(
-            positions->size(), 
+        _context.neighborLists = std::make_shared<ParticleProperty>(
+            _context.atomCount(),
             DataType::Int, 
             PTM_MAX_NBRS, 
             0, 
             false
         );
     }else{
-        _neighborLists = std::make_shared<ParticleProperty>(
-            positions->size(), 
+        _context.neighborLists = std::make_shared<ParticleProperty>(
+            _context.atomCount(), 
             DataType::Int,
-            _coordStructures.latticeStructure(inputCrystalType).maxNeighbors, 
+            _coordStructures.latticeStructure(_context.inputCrystalType).maxNeighbors, 
             0, 
             false
         );
     }
 
-    std::fill(_neighborLists->dataInt(), _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
-    std::fill(_structureTypes->dataInt(), _structureTypes->dataInt() + _structureTypes->size(), LATTICE_OTHER);
+    std::fill(_context.neighborLists->dataInt(), _context.neighborLists->dataInt() + _context.neighborLists->size() * _context.neighborLists->componentCount(), -1);
+    std::fill(_context.structureTypes->dataInt(), _context.structureTypes->dataInt() + _context.structureTypes->size(), LATTICE_OTHER);
 }
 
 json StructureAnalysis::getAtomsData(
@@ -106,21 +100,21 @@ bool StructureAnalysis::setupPTM(OpenDXA::PTM& ptm, size_t N){
     ptm.setCalculateDefGradient(true);
     ptm.setRmsdCutoff(std::numeric_limits<double>::infinity());
     
-    return ptm.prepare(positions()->constDataPoint3(), N, cell());
+    return ptm.prepare(_context.positions->constDataPoint3(), N, _context.simCell);
 }
 
 void StructureAnalysis::storeNeighborIndices(const PTM::Kernel& kernel, size_t atomIndex){
     int numNeighbors = kernel.numTemplateNeighbors();
-    assert(numNeighbors <= _neighborLists->componentCount());
+    assert(numNeighbors <= _context.neighborLists->componentCount());
     
     for(int j = 0; j < numNeighbors; ++j){
-        _neighborLists->setIntComponent(atomIndex, j, kernel.getTemplateNeighbor(j).index);
+        _context.neighborLists->setIntComponent(atomIndex, j, kernel.getTemplateNeighbor(j).index);
     }
 }
 
 void StructureAnalysis::storeOrientationData(const PTM::Kernel& kernel, size_t atomIndex){
     auto quaternion = kernel.orientation();
-    double* orientation = _ptmOrientation->dataFloat() + 4 * atomIndex;
+    double* orientation = _context.ptmOrientation->dataFloat() + 4 * atomIndex;
     
     orientation[0] = static_cast<float>(quaternion.x());
     orientation[1] = static_cast<float>(quaternion.y());
@@ -130,7 +124,7 @@ void StructureAnalysis::storeOrientationData(const PTM::Kernel& kernel, size_t a
 
 void StructureAnalysis::storeDeformationGradient(const PTM::Kernel& kernel, size_t atomIndex) {
     const auto& F = kernel.deformationGradient();
-    double* F_dest = _ptmDeformationGradient->dataFloat() + 9 * atomIndex;
+    double* F_dest = _context.ptmDeformationGradient->dataFloat() + 9 * atomIndex;
     const double* F_src = F.elements();
     
     for(int k = 0; k < 9; ++k){
@@ -145,13 +139,13 @@ void StructureAnalysis::processPTMAtom(
     const std::vector<uint64_t>& cached,
     float cutoff
 ){
-    float rmsd = _ptmRmsd->getFloat(atomIndex);
-    if(/*type == StructureType::OTHER || */rmsd > cutoff) return;
+    float rmsd = _context.ptmRmsd->getFloat(atomIndex);
+    if(rmsd > cutoff) return;
     
     kernel.identifyStructure(atomIndex, cached);
     
     storeNeighborIndices(kernel, atomIndex);
-    _structureTypes->setInt(atomIndex, type);
+    _context.structureTypes->setInt(atomIndex, type);
     storeOrientationData(kernel, atomIndex);
     storeDeformationGradient(kernel, atomIndex);
 }
@@ -160,7 +154,7 @@ void StructureAnalysis::processPTMAtom(
 /// for all later routines (e.g. ghost‐layer size in Delaunay, node‐connect threshold in
 /// mesh building) so we reliably include every bond in subsequent stages.
 void StructureAnalysis::computeMaximumNeighborDistance(){
-    const size_t N = positions()->size();
+    const size_t N = _context.atomCount();
     if(N == 0){
         _maximumNeighborDistance = 0.0;
         return;
@@ -170,18 +164,18 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
     // TODO: Hack for CUBIC_DIAMOND in PTM
     // TODO: Now that the atoms are classified, we obtain the
     // TODO: neighbor lists and maximum distance, ensuring compatibility with the rest of the pipeline.
-    if(_inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND || !usingPTM()){
-        int maxNeighborListSize = std::min((int)_neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
+    if(_context.inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND || !usingPTM()){
+        int maxNeighborListSize = std::min((int)_context.neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
         NearestNeighborFinder neighFinder(maxNeighborListSize);
-        if(!neighFinder.prepare(positions(), cell(), _particleSelection)){
+        if(!neighFinder.prepare(_context.positions, _context.simCell, _context.particleSelection)){
             throw std::runtime_error("Error in neighFinder.prepare(...)");
         }
 
-        _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, positions()->size()),
+        _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, _context.atomCount()),
             0.0, [this, &neighFinder](const tbb::blocked_range<size_t>& r, double max_dist_so_far) -> double {
                 for(size_t index = r.begin(); index != r.end(); ++index){
-                    double localMaxDistance = _coordStructures.determineLocalStructure(neighFinder, index, _neighborLists);
-                    if (localMaxDistance > max_dist_so_far) {
+                    double localMaxDistance = _coordStructures.determineLocalStructure(neighFinder, index, _context.neighborLists);
+                    if(localMaxDistance > max_dist_so_far){
                         max_dist_so_far = localMaxDistance;
                     }
                 }
@@ -196,10 +190,10 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
     }
 
     // PTM
-    const int M = _neighborLists->componentCount();
-    const auto* pos = positions()->constDataPoint3();
-    const auto& invMat = cell().inverseMatrix();
-    const auto& dirMat = cell().matrix();
+    const int M = _context.neighborLists->componentCount();
+    const auto* pos = _context.positions->constDataPoint3();
+    const auto& invMat = _context.simCell.inverseMatrix();
+    const auto& dirMat = _context.simCell.matrix();
 
     auto indices = std::views::iota(size_t{0}, N);
 
@@ -212,7 +206,7 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
         [&](size_t i){
             double localMaxDist = 0.0;
             for(int j = 0; j < M; ++j){
-                int nb = _neighborLists->getIntComponent(i, j);
+                int nb = _context.neighborLists->getIntComponent(i, j);
                 if(nb < 0) break;
 
                 Vector3 delta = pos[nb] - pos[i];
@@ -241,7 +235,7 @@ void StructureAnalysis::identifyStructures(){
     if(usingPTM()){
         // Runs the Polyhedral Template Matching (PTM) algorithm on every atom,
         // collects raw RMSD values (with no initial cutoff).
-        const size_t N = positions()->size();
+        const size_t N = _context.atomCount();
         if (N == 0) return;
 
         OpenDXA::PTM ptm;
@@ -250,15 +244,15 @@ void StructureAnalysis::identifyStructures(){
         }
 
         // Allocate PTM output arrays
-        _ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Float, 4, 0.0f, true);
-        _ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Float, 9, 0.0f, true);
+        _context.ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Float, 4, 0.0f, true);
+        _context.ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Float, 9, 0.0f, true);
         
         // Clear arrays for second pass
-        std::fill(_neighborLists->dataInt(), _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
-        std::fill(_structureTypes->dataInt(), _structureTypes->dataInt() + _structureTypes->size(), LATTICE_OTHER);
+        std::fill(_context.neighborLists->dataInt(), _context.neighborLists->dataInt() + _context.neighborLists->size() * _context.neighborLists->componentCount(), -1);
+        std::fill(_context.structureTypes->dataInt(), _context.structureTypes->dataInt() + _context.structureTypes->size(), LATTICE_OTHER);
 
         // Compute raw RMSD
-        _ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Float, 1, 0.0f, true);
+        _context.ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Float, 1, 0.0f, true);
         std::vector<uint64_t> cached(N, 0ull);
         std::vector<StructureType> ptmTypes(N);
 
@@ -267,7 +261,7 @@ void StructureAnalysis::identifyStructures(){
             for(size_t i = r.begin(); i < r.end(); ++i){
                 kernel.cacheNeighbors(i, &cached[i]);
                 ptmTypes[i] = kernel.identifyStructure(i, cached);
-                _ptmRmsd->setFloat(i, static_cast<float>(kernel.rmsd()));
+                _context.ptmRmsd->setFloat(i, static_cast<float>(kernel.rmsd()));
                 storeOrientationData(kernel, i);
             }
         });
@@ -280,9 +274,9 @@ void StructureAnalysis::identifyStructures(){
             }
         });
     }else{
-        int maxNeighborListSize = std::min((int)_neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
+        int maxNeighborListSize = std::min((int)_context.neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
         NearestNeighborFinder neighFinder(maxNeighborListSize);
-        if(!neighFinder.prepare(positions(), cell(), _particleSelection)){
+        if(!neighFinder.prepare(_context.positions, _context.simCell, _context.particleSelection)){
             throw std::runtime_error("Error in neighFinder.preapre(...)");
         }
     }
@@ -292,9 +286,9 @@ void StructureAnalysis::identifyStructures(){
 
 bool StructureAnalysis::alreadyProcessedAtom(int index) {
     if(usingPTM()){
-        return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == StructureType::OTHER;
+        return _context.atomClusters->getInt(index) != 0 || _context.structureTypes->getInt(index) == StructureType::OTHER;
     }
-    return _atomClusters->getInt(index) != 0 || _structureTypes->getInt(index) == CoordinationStructureType::COORD_OTHER;
+    return _context.atomClusters->getInt(index) != 0 || _context.structureTypes->getInt(index) == CoordinationStructureType::COORD_OTHER;
 }
 
 // Groups atoms with the same structure (FCC, BCC, HCP, etc.).
@@ -302,13 +296,13 @@ Cluster* StructureAnalysis::startNewCluster(int atomIndex, int structureType){
     Cluster* cluster = clusterGraph().createCluster(structureType);
     //assert(cluster->id > 0);
     cluster->atomCount = 1;
-    _atomClusters->setInt(atomIndex, cluster->id);
-    _atomSymmetryPermutations->setInt(atomIndex, 0);
+    _context.atomClusters->setInt(atomIndex, cluster->id);
+    _context.atomSymmetryPermutations->setInt(atomIndex, 0);
     return cluster;
 }
 
 void StructureAnalysis::processAtomConnections(size_t atomIndex){
-    int clusterId = _atomClusters->getInt(atomIndex);
+    int clusterId = _context.atomClusters->getInt(atomIndex);
     if(clusterId == 0) return;
     Cluster* cluster1 = clusterGraph().findCluster(clusterId);
     //assert(cluster1);
@@ -316,7 +310,7 @@ void StructureAnalysis::processAtomConnections(size_t atomIndex){
 }
 
 void StructureAnalysis::initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex){
-    double* qdat = _ptmOrientation->dataFloat() + seedAtomIndex * 4;
+    double* qdat = _context.ptmOrientation->dataFloat() + seedAtomIndex * 4;
     Quaternion q(qdat[0], qdat[1], qdat[2], qdat[3]);
     q.normalize();
     
@@ -330,12 +324,12 @@ void StructureAnalysis::initializePTMClusterOrientation(Cluster* cluster, size_t
 }
 
 void StructureAnalysis::buildClustersPTM(){
-    const size_t N = positions()->size();
+    const size_t N = _context.atomCount();
 
     for(size_t seedAtomIndex = 0; seedAtomIndex < N; ++seedAtomIndex){
         if(alreadyProcessedAtom(seedAtomIndex)) continue;
 
-        int structureType = _structureTypes->getInt(seedAtomIndex);
+        int structureType = _context.structureTypes->getInt(seedAtomIndex);
         Cluster* cluster = startNewCluster(seedAtomIndex, structureType);
 
         initializePTMClusterOrientation(cluster, seedAtomIndex);
@@ -348,7 +342,7 @@ void StructureAnalysis::buildClustersPTM(){
 }
 
 Quaternion StructureAnalysis::getPTMAtomOrientation(int atom) const{
-    const double *qdata = _ptmOrientation->dataFloat() + atom * 4;
+    const double *qdata = _context.ptmOrientation->dataFloat() + atom * 4;
     Quaternion quat(qdata[0], qdata[1], qdata[2], qdata[3]);
     return quat;
 }
@@ -367,8 +361,8 @@ bool StructureAnalysis::areOrientationsCompatible(int atom1, int atom2, int stru
     Quaternion q2 = getPTMAtomOrientation(atom2);
     Quaternion quatDiff = q1.inverse() * q2;
     
-    float rmsd1 = _ptmRmsd->getFloat(atom1);
-    float rmsd2 = _ptmRmsd->getFloat(atom2);
+    float rmsd1 = _context.ptmRmsd->getFloat(atom1);
+    float rmsd2 = _context.ptmRmsd->getFloat(atom2);
     float avgRmsd = (rmsd1 + rmsd2) * 0.5f;
     
     const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
@@ -403,15 +397,15 @@ Matrix3 StructureAnalysis::calculateLocalTransformationMatrix(int atom1, int ato
     Quaternion q2 = getPTMAtomOrientation(atom2);
     Matrix3 rot2 = quaternionToMatrix(q2);
     
-    const auto* pos = positions()->constDataPoint3();
+    const auto* pos = _context.positions->constDataPoint3();
     
     for(int i = 0; i < std::min(3, coordStructure.numNeighbors); ++i){
         int neighbor1 = getNeighbor(atom1, i);
         int neighbor2 = getNeighbor(atom2, i);
         
         if(neighbor1 >= 0 && neighbor2 >= 0){
-            Vector3 vec1 = cell().wrapVector(pos[neighbor1] - pos[atom1]);
-            Vector3 vec2 = cell().wrapVector(pos[neighbor2] - pos[atom2]);
+            Vector3 vec1 = _context.simCell.wrapVector(pos[neighbor1] - pos[atom1]);
+            Vector3 vec2 = _context.simCell.wrapVector(pos[neighbor2] - pos[atom2]);
             
             basis1.push_back(vec1);
             basis2.push_back(vec2);
@@ -442,10 +436,10 @@ void StructureAnalysis::growClusterPTM(Cluster* cluster, std::deque<int>& atomsT
         for(int ni = 0; ni < numNeighbors; ++ni){
             int neighbor = getNeighbor(currentAtom, ni);
             if(neighbor < 0 || neighbor == currentAtom) continue;
-            if(_atomClusters->getInt(neighbor) != 0) continue;
-            if(_structureTypes->getInt(neighbor) != structureType) continue;
+            if(_context.atomClusters->getInt(neighbor) != 0) continue;
+            if(_context.structureTypes->getInt(neighbor) != structureType) continue;
             if(areOrientationsCompatible(currentAtom, neighbor, structureType)){
-                _atomClusters->setInt(neighbor, cluster->id);
+                _context.atomClusters->setInt(neighbor, cluster->id);
                 cluster->atomCount++;
                 atomsToVisit.push_back(neighbor);
             }
@@ -471,7 +465,7 @@ void StructureAnalysis::growCluster(
         int currentAtomIndex = atomsToVisit.front();
         atomsToVisit.pop_front();
 
-        int symmetryPermutationIndex = _atomSymmetryPermutations->getInt(static_cast<size_t>(currentAtomIndex));
+        int symmetryPermutationIndex = _context.atomSymmetryPermutations->getInt(static_cast<size_t>(currentAtomIndex));
         const auto& permutation = latticeStructure.permutations[symmetryPermutationIndex].permutation;
 
         for(int neighborIndex = 0; neighborIndex < coordStructure.numNeighbors; neighborIndex++){
@@ -479,8 +473,8 @@ void StructureAnalysis::growCluster(
             //assert(neighborAtomIndex != currentAtomIndex);
 
             const Vector3& latticeVector = latticeStructure.latticeVectors[permutation[neighborIndex]];
-            const Vector3& spatialVector = cell().wrapVector(
-                positions()->getPoint3(static_cast<size_t>(neighborAtomIndex)) - positions()->getPoint3(static_cast<size_t>(currentAtomIndex))
+            const Vector3& spatialVector = _context.simCell.wrapVector(
+                _context.positions->getPoint3(static_cast<size_t>(neighborAtomIndex)) - _context.positions->getPoint3(static_cast<size_t>(currentAtomIndex))
             );
 
             for(size_t i = 0; i < 3; i++){
@@ -490,8 +484,8 @@ void StructureAnalysis::growCluster(
                 }
             }
 
-            if(_atomClusters->getInt(neighborAtomIndex) != 0) continue;
-            if(_structureTypes->getInt(neighborAtomIndex) != structureType) continue;
+            if(_context.atomClusters->getInt(neighborAtomIndex) != 0) continue;
+            if(_context.structureTypes->getInt(neighborAtomIndex) != structureType) continue;
 
             Matrix3 tm1, tm2;
             bool properOverlap = true;
@@ -526,9 +520,9 @@ void StructureAnalysis::growCluster(
 
             for(size_t i = 0; i < latticeStructure.permutations.size(); i++){
                 if(transition.equals(latticeStructure.permutations[i].transformation, CA_TRANSITION_MATRIX_EPSILON)){
-                    _atomClusters->setInt(neighborAtomIndex, cluster->id);
+                    _context.atomClusters->setInt(neighborAtomIndex, cluster->id);
                     cluster->atomCount++;
-                    _atomSymmetryPermutations->setInt(neighborAtomIndex, i);
+                    _context.atomSymmetryPermutations->setInt(neighborAtomIndex, i);
                     atomsToVisit.push_back(neighborAtomIndex);
                     break;
                 }
@@ -547,7 +541,7 @@ void StructureAnalysis::applyPreferredOrientation(Cluster* cluster) {
         Matrix3 newOrientation = oldOrientation * symMatrix.inverse();
         double scaling = std::pow(std::abs(newOrientation.determinant()), 1.0 / 3.0);
 
-        for(const auto& preferredOrientation : _preferredCrystalOrientations){
+        for(const auto& preferredOrientation : _context.preferredCrystalOrientations){
             double deviation = 0;
             for(size_t i = 0; i < 3; i++){
                 for(size_t j = 0; j < 3; j++){
@@ -565,10 +559,10 @@ void StructureAnalysis::applyPreferredOrientation(Cluster* cluster) {
 
 void StructureAnalysis::reorientAtomsToAlignClusters(){
     tbb::parallel_for(
-        tbb::blocked_range<size_t>(0, positions()->size()),
+        tbb::blocked_range<size_t>(0, _context.atomCount()),
         [this](const tbb::blocked_range<size_t>& r) {
             for (size_t atomIndex = r.begin(); atomIndex != r.end(); ++atomIndex) {
-                int clusterId = _atomClusters->getInt(atomIndex);
+                int clusterId = _context.atomClusters->getInt(atomIndex);
                 if (clusterId == 0) continue;
 
                 Cluster* cluster = clusterGraph().findCluster(clusterId);
@@ -576,19 +570,19 @@ void StructureAnalysis::reorientAtomsToAlignClusters(){
                 if (cluster->symmetryTransformation == 0) continue;
 
                 const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[cluster->structure];
-                int oldSymmetry = _atomSymmetryPermutations->getInt(atomIndex);
+                int oldSymmetry = _context.atomSymmetryPermutations->getInt(atomIndex);
                 int newSymmetry = latticeStructure.permutations[oldSymmetry].inverseProduct[cluster->symmetryTransformation];
-                _atomSymmetryPermutations->setInt(atomIndex, newSymmetry);
+                _context.atomSymmetryPermutations->setInt(atomIndex, newSymmetry);
             }
         }
     );
 }
 
 void StructureAnalysis::buildClustersCNA(){
-    for(size_t seedAtomIndex = 0; seedAtomIndex < positions()->size(); seedAtomIndex++){
+    for(size_t seedAtomIndex = 0; seedAtomIndex < _context.atomCount(); seedAtomIndex++){
         if(alreadyProcessedAtom(seedAtomIndex)) continue;
 
-        int structureType = _structureTypes->getInt(seedAtomIndex);
+        int structureType = _context.structureTypes->getInt(seedAtomIndex);
         Cluster* cluster = startNewCluster(seedAtomIndex, structureType);
 
         Matrix_3<double> orientationV = Matrix_3<double>::Zero();
@@ -598,7 +592,7 @@ void StructureAnalysis::buildClustersCNA(){
         growCluster(cluster, atomsToVisit, orientationV, orientationW, structureType);
         cluster->orientation = Matrix3(orientationW * orientationV.inverse());
 
-        if(structureType == _inputCrystalType && !_preferredCrystalOrientations.empty()){
+        if(structureType == _context.inputCrystalType && !_context.preferredCrystalOrientations.empty()){
             applyPreferredOrientation(cluster);
         }
     }
@@ -608,7 +602,7 @@ void StructureAnalysis::buildClustersCNA(){
 
 void StructureAnalysis::buildClusters(){
     // Hack for CUBIC_DIAMOND in PTM
-    if(!usingPTM() || _inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND){
+    if(!usingPTM() || _context.inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND){
         buildClustersCNA();
         return;
     }
@@ -618,10 +612,10 @@ void StructureAnalysis::buildClusters(){
 
 std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&>
 StructureAnalysis::getAtomStructureInfo(int atomIndex){
-    int structureType = _structureTypes->getInt(atomIndex);
+    int structureType = _context.structureTypes->getInt(atomIndex);
     const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
     const CoordinationStructure& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
-    int symPermIndex = _atomSymmetryPermutations->getInt(atomIndex);
+    int symPermIndex = _context.atomSymmetryPermutations->getInt(atomIndex);
     const auto& permutation = latticeStructure.permutations[symPermIndex].permutation;
     
     return {structureType, latticeStructure, coordStructure, permutation};
@@ -641,15 +635,15 @@ void StructureAnalysis::connectClusterNeighbors(int atomIndex, Cluster* cluster1
 
 void StructureAnalysis::addReverseNeighbor(int neighbor, int atomIndex){
     int otherListCount = numberOfNeighbors(neighbor);
-    if(otherListCount < _neighborLists->componentCount()){
-        _neighborLists->setIntComponent(neighbor, otherListCount, atomIndex);
+    if(otherListCount < _context.neighborLists->componentCount()){
+        _context.neighborLists->setIntComponent(neighbor, otherListCount, atomIndex);
     }
 }
 
 void StructureAnalysis::processNeighborConnection(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, int structureType){
-    if (neighbor < 0 || static_cast<size_t>(neighbor) >= positions()->size()) return; 
+    if (neighbor < 0 || static_cast<size_t>(neighbor) >= _context.atomCount()) return; 
 
-    int neighborClusterId = _atomClusters->getInt(neighbor);
+    int neighborClusterId = _context.atomClusters->getInt(neighbor);
     if(neighborClusterId == 0){
         addReverseNeighbor(neighbor, atomIndex);
         return;
@@ -681,17 +675,17 @@ void StructureAnalysis::createNewClusterTransition(int atomIndex, int neighbor, 
 }
 
 void StructureAnalysis::connectClusters(){
-    auto indices = std::views::iota(size_t{0}, positions()->size());
+    auto indices = std::views::iota(size_t{0}, _context.atomCount());
     std::for_each(std::execution::par, indices.begin(), indices.end(), [this](size_t atomIndex){
         processAtomConnections(atomIndex);
     });
 }
 
 bool StructureAnalysis::calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition) {
-    int structureType = _structureTypes->getInt(atomIndex);
+    int structureType = _context.structureTypes->getInt(atomIndex);
     const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
     const CoordinationStructure& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
-    int symIndex = _atomSymmetryPermutations->getInt(atomIndex);
+    int symIndex = _context.atomSymmetryPermutations->getInt(atomIndex);
     const auto& permutation = latticeStructure.permutations[symIndex].permutation;
 
     Matrix3 tm1, tm2;
@@ -710,9 +704,9 @@ bool StructureAnalysis::calculateMisorientation(int atomIndex, int neighbor, int
         int j = findNeighbor(neighbor, ai);
         if(j == -1) return false;
 
-        int neighborStructureType = _structureTypes->getInt(neighbor);
+        int neighborStructureType = _context.structureTypes->getInt(neighbor);
         const LatticeStructure& neighborLattice = CoordinationStructures::_latticeStructures[neighborStructureType];
-        int neighborSymIndex = _atomSymmetryPermutations->getInt(neighbor);
+        int neighborSymIndex = _context.atomSymmetryPermutations->getInt(neighbor);
         const auto& neighborPerm = neighborLattice.permutations[neighborSymIndex].permutation;
 
         tm2.column(i) = neighborLattice.latticeVectors[neighborPerm[j]];
@@ -737,7 +731,7 @@ void StructureAnalysis::initializeClustersForSuperclusterFormation(){
 void StructureAnalysis::processDefectClusters(){
     for(Cluster* cluster : clusterGraph().clusters()){
         if(!cluster || cluster->id == 0) continue;
-        if(cluster->structure != _inputCrystalType){
+        if(cluster->structure != _context.inputCrystalType){
             processDefectCluster(cluster);
         }
     }
@@ -748,8 +742,8 @@ void StructureAnalysis::mergeCompatibleGrains(size_t oldTransitionCount, size_t 
         ClusterTransition* transition = clusterGraph().clusterTransitions()[i];
         // Validate transitions properties
         //assert(transition->distance == 2);
-        //assert(transition->cluster1->structure == _inputCrystalType);
-        //assert(transition->cluster2->structure == _inputCrystalType);
+        //assert(transition->cluster1->structure == _context.inputCrystalType);
+        //assert(transition->cluster2->structure == _context.inputCrystalType);
                 
         auto [parent1, parent2] = getParentGrains(transition);
         if(parent1 == parent2) continue;
@@ -809,9 +803,9 @@ void StructureAnalysis::assignParentTransition(Cluster* parent1, Cluster* parent
 
 void StructureAnalysis::processDefectCluster(Cluster* defectCluster){
     for(ClusterTransition* t = defectCluster->transitions; t; t = t->next){
-        if(t->cluster2->structure != _inputCrystalType || t->distance != 1) continue;
+        if(t->cluster2->structure != _context.inputCrystalType || t->distance != 1) continue;
         for(ClusterTransition* t2 = t->next; t2; t2 = t2->next) {
-            if(t2->cluster2->structure != _inputCrystalType || t2->distance != 1) continue;
+            if(t2->cluster2->structure != _context.inputCrystalType || t2->distance != 1) continue;
             if(t2->cluster2 == t->cluster2) continue;
 
             const LatticeStructure& lattice = CoordinationStructures::latticeStructure(t2->cluster2->structure);

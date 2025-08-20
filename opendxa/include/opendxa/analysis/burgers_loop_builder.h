@@ -39,7 +39,7 @@ public:
 	}
 
 	const SimulationCell& cell() const{
-		return mesh().structureAnalysis().cell();
+		return mesh().structureAnalysis().context().simCell;
 	}
 
 	void traceDislocationSegments();

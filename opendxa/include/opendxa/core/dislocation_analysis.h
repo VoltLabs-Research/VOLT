@@ -9,18 +9,12 @@
 #include <opendxa/geometry/interface_mesh.h>
 #include <opendxa/math/lin_alg.h>
 #include <opendxa/utilities/json_exporter.h>
-#include <semaphore>
-#include <latch>
 #include <format> 
 #include <thread>
-#include <barrier> 
-#include <sys/wait.h>
-#include <unistd.h>
 #include <fstream>
 #include <map>
 #include <algorithm>
 #include <signal.h>
-#include <sys/stat.h>
 #include <errno.h>
 
 namespace OpenDXA{
@@ -44,6 +38,7 @@ public:
         _lineSmoothingLevel(10),
         _linePointInterval(2.5),
         _defectMeshSmoothingLevel(8),
+        _structureIdentificationOnly(false),
         _identificationMode(StructureAnalysis::Mode::CNA),
         _markCoreAtoms(false),
         _onlyPerfectDislocations(false){}
