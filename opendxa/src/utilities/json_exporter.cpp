@@ -397,8 +397,8 @@ json DXAJsonExporter::getAtomsData(
         atomJson["id"] = i;
 
         if(tracer->mesh().structureAnalysis().usingPTM()){
-            Quaternion quat = tracer->mesh().structureAnalysis().getPTMAtomOrientation(i);
-            atomJson["ptm_quaternion"] = {quat.x(), quat.y(), quat.z(), quat.w()};
+            //Quaternion quat = tracer->mesh().structureAnalysis().getPTMAtomOrientation(i);
+            //atomJson["ptm_quaternion"] = {quat.x(), quat.y(), quat.z(), quat.w()};
         }
         
         if(i < static_cast<int>(frame.positions.size())){

@@ -40,7 +40,7 @@ import SimulationCell from '@/models/simulation-cell';
 import Dislocations from '@models/dislocations';
 import AnalysisConfig from '@/models/analysis-config';
 
-const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build/opendxa');
+const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build-debug/opendxa');
 
 const MSGPACK_OUTPUT_MAP = {
     defect_mesh: '_defect_mesh.msgpack',

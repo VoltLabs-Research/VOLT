@@ -175,7 +175,7 @@ public:
     }
 
     [[nodiscard]] const Point3& getPoint3(std::size_t idx) const{
-        assert(idx < _numElements);
+        // assert(idx < _numElements);
         return constDataPoint3()[idx];
     }
 

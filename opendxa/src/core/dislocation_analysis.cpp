@@ -4,6 +4,7 @@
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/burgers_loop_builder.h>
 #include <opendxa/analysis/analysis_context.h>
+#include <opendxa/analysis/cluster_connector.h>
 
 namespace OpenDXA{
 
@@ -194,6 +195,8 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         return atomsData;
     }
 
+    ClusterConnector clusterConnector(*structureAnalysis, context);
+
     // Once every atom has a type, we group them into clusters that represent grains or regions of the same lattice.
     // Dislocations do NOT appear everywhere. They appear specifically at grain boundaries.
     // Without clusters, we would have to search for dislocations in every atom, which is inefficient; 
@@ -201,21 +204,21 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     // "an atom in cluster A has a neighbor in cluster B," that is, those two atoms are on the boundary.
     {
         PROFILE("Build Clusters");
-        structureAnalysis->buildClusters();
+        clusterConnector.buildClusters();
     }
 
     // After clustering, we connect neighboring clusters to map out the boundaries.
     // This connectivity informs how we will mesh the interface between grains.
     {
         PROFILE("Connect Clusters");
-        structureAnalysis->connectClusters();
+        clusterConnector.connectClusters();
     }
 
     // We then detect and merge any defect clusters into superclusters, ensuring that
     // planar defects are treated properly rather tan as random noise.
     {
         PROFILE("Form Super Clusters");
-        structureAnalysis->formSuperClusters();
+        clusterConnector.formSuperClusters();
     }
 
     // Next, we perform a periodic Delaunay Tessellation of all atomic positions.

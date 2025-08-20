@@ -14,7 +14,6 @@
 #include <opendxa/core/lammps_parser.h>
 #include <nlohmann/json.hpp>
 #include <mutex>
-#include <tbb/spin_mutex.h>
 
 using json = nlohmann::json;
 
@@ -35,20 +34,8 @@ public:
 	);
 
 	void identifyStructures();
-	void buildClusters();
-	void connectClusters();
-	void formSuperClusters();
+
 	void computeMaximumNeighborDistance();
-	void processAtomConnections(size_t atomIndex);
-	void connectClusterNeighbors(int atomIndex, Cluster* cluster1);
-
-	void growClusterPTM(
-		Cluster* cluster,
-		std::deque<int>& atomsToVisit,
-		int structureType
-	);
-
-	void buildClustersPTM();
 
 	json getAtomsData(
 		const LammpsParser::Frame &frame,
@@ -64,10 +51,12 @@ public:
 		}
 		return count;
 	}
+	
 	int getNeighbor(int centralAtomIndex, int neighborListIndex) const{
 		assert(_context.neighborLists);
 		return _context.neighborLists->getIntComponent(centralAtomIndex, neighborListIndex);
 	}
+
 	int findNeighbor(int centralAtomIndex, int neighborAtomIndex) const{
 		assert(_context.neighborLists);
 		const int* neighborList = _context.neighborLists->constDataInt() + (size_t)centralAtomIndex * _context.neighborLists->componentCount();
@@ -142,8 +131,6 @@ public:
         return _structureStatistics;
     }
     
-	Quaternion getPTMAtomOrientation(int atom) const;
-
     std::map<std::string, int> getNamedStructureStatistics() const {
         if (!_statisticsValid) {
             calculateStructureStatistics();
@@ -230,19 +217,10 @@ public:
     }
 
 private:
-	bool alreadyProcessedAtom(int index);
-	bool calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition);
-	bool areOrientationsCompatible(int atom1, int atom2, int structureType);
-
 	void storeDeformationGradient(const PTM::Kernel& kernel, size_t atomIndex);
 	void storeOrientationData(const PTM::Kernel& kernel, size_t atomIndex);
 	void storeNeighborIndices(const PTM::Kernel& kernel, size_t atomIndex);
-	void initializeClustersForSuperclusterFormation();
-	void processDefectClusters();
-	void buildClustersCNA();
-	void mergeCompatibleGrains(size_t oldTransitionCount, size_t newTransitionCount);
-	void finalizeParentGrains();
-	void assignParentTransition(Cluster* parent1, Cluster* parent2, ClusterTransition* parentTransition);
+
 	void processPTMAtom(
 		PTM::Kernel& kernel,
 		size_t atomIndex,
@@ -251,34 +229,7 @@ private:
 		float cutoff
 	);
 
-	std::pair<Cluster*, Cluster*> getParentGrains(ClusterTransition* transition);
-	ClusterTransition* buildParentTransition(ClusterTransition* transition, Cluster* parent1, Cluster* parent2);
-	Cluster* getParentGrain(Cluster* c);
-	Matrix3 calculateLocalTransformationMatrix(int atom1, int atom2, int structureType);
-
-	Matrix3 quaternionToMatrix(const Quaternion& q);
-
-	void initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex);
-	std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&> getAtomStructureInfo(int atomIndex);
-	void processNeighborConnection(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, int structureType);
-	void addReverseNeighbor(int neighbor, int atomIndex);
-	void createNewClusterTransition(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, Cluster* cluster2);
-
-	void processDefectCluster(Cluster* defectCluster);
-	void reorientAtomsToAlignClusters();
-	void applyPreferredOrientation(Cluster* cluster);
-
-	void growCluster(
-		Cluster* cluster,
-		std::deque<int>& atomsToVisit,
-		Matrix_3<double>& orientationV,
-		Matrix_3<double>& orientationW,
-		int structureType
-	);
-
 	bool setupPTM(OpenDXA::PTM& ptm, size_t N);
-
-	Cluster* startNewCluster(int atomIndex, int structureType);
 
 	mutable std::map<int, int> _structureStatistics;
     mutable bool _statisticsValid = false;
