@@ -42,10 +42,21 @@ StructureAnalysis::StructureAnalysis(
     });
 
     if(usingPTM()){
-        _neighborLists = std::make_shared<ParticleProperty>(positions->size(), DataType::Int, PTM_MAX_NBRS, 0, false);
+        _neighborLists = std::make_shared<ParticleProperty>(
+            positions->size(), 
+            DataType::Int, 
+            PTM_MAX_NBRS, 
+            0, 
+            false
+        );
     }else{
-        _neighborLists = std::make_shared<ParticleProperty>(positions->size(), DataType::Int,
-            _coordStructures.latticeStructure(inputCrystalType).maxNeighbors, 0, false);
+        _neighborLists = std::make_shared<ParticleProperty>(
+            positions->size(), 
+            DataType::Int,
+            _coordStructures.latticeStructure(inputCrystalType).maxNeighbors, 
+            0, 
+            false
+        );
     }
 
     std::fill(_neighborLists->dataInt(), _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
@@ -91,26 +102,6 @@ json StructureAnalysis::getAtomsData(
     return json(groupedAtoms);
 }
 
-std::pair<std::vector<StructureType>, std::vector<uint64_t>>
-StructureAnalysis::computeRawRMSD(const OpenDXA::PTM& ptm, size_t N){
-    _ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Float, 1, 0.0f, true);
-    std::vector<uint64_t> cached(N, 0ull);
-    std::vector<StructureType> ptmTypes(N);
-
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto& r) {
-        PTM::Kernel kernel(ptm);
-        for(size_t i = r.begin(); i < r.end(); ++i){
-            kernel.cacheNeighbors(i, &cached[i]);
-            ptmTypes[i] = kernel.identifyStructure(i, cached);
-            _ptmRmsd->setFloat(i, static_cast<float>(kernel.rmsd()));
-            storeOrientationData(kernel, i);
-        }
-    });
-
-    return { std::move(ptmTypes), std::move(cached) };
-}
-
-
 bool StructureAnalysis::setupPTM(OpenDXA::PTM& ptm, size_t N){
     ptm.setCalculateDefGradient(true);
     ptm.setRmsdCutoff(std::numeric_limits<double>::infinity());
@@ -118,36 +109,9 @@ bool StructureAnalysis::setupPTM(OpenDXA::PTM& ptm, size_t N){
     return ptm.prepare(positions()->constDataPoint3(), N, cell());
 }
 
-void StructureAnalysis::allocatePTMOutputArrays(size_t N){
-    _ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Float, 4, 0.0f, true);
-    _ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Float, 9, 0.0f, true);
-    
-    // Clear arrays for second pass
-    std::fill(_neighborLists->dataInt(), 
-              _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
-    std::fill(_structureTypes->dataInt(), 
-              _structureTypes->dataInt() + _structureTypes->size(), LATTICE_OTHER);
-}
-
-void StructureAnalysis::filterAtomsByRMSD(
-    const OpenDXA::PTM& ptm, 
-    size_t N,
-    const std::vector<StructureType>& ptmTypes,
-    const std::vector<uint64_t>& cached,
-    float cutoff
-){
-    // Only keep atoms whose RMSD <= finalCutoff
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto &r){
-        PTM::Kernel kernel(ptm);
-        for(size_t i = r.begin(); i < r.end(); ++i){
-            processPTMAtom(kernel, i, ptmTypes[i], cached, cutoff);
-        }
-    });
-}
-
 void StructureAnalysis::storeNeighborIndices(const PTM::Kernel& kernel, size_t atomIndex){
     int numNeighbors = kernel.numTemplateNeighbors();
-    //assert(numNeighbors <= _neighborLists->componentCount());
+    assert(numNeighbors <= _neighborLists->componentCount());
     
     for(int j = 0; j < numNeighbors; ++j){
         _neighborLists->setIntComponent(atomIndex, j, kernel.getTemplateNeighbor(j).index);
@@ -192,37 +156,46 @@ void StructureAnalysis::processPTMAtom(
     storeDeformationGradient(kernel, atomIndex);
 }
 
-// Runs the Polyhedral Template Matching (PTM) algorithm on every atom,
-// collects raw RMSD values (with no initial cutoff).
-void StructureAnalysis::determineLocalStructuresWithPTM() {
-    const size_t N = positions()->size();
-    if (N == 0) return;
-
-    OpenDXA::PTM ptm;
-    if (!setupPTM(ptm, N)) {
-        throw std::runtime_error("Error trying to initialize PTM.");
-    }
-
-    allocatePTMOutputArrays(N);
-
-    auto [ptmTypes, cached] = computeRawRMSD(ptm, N);
-
-    filterAtomsByRMSD(ptm, N, ptmTypes, cached, _rmsd);
-}
-
-/// Once we have neighbor lists from PTM, find the single largest atom‐to‐neighbor
-/// distance (respecting periodic wrapping).  This maximum sets a safe "search radius"
+/// This maximum sets a safe "search radius"
 /// for all later routines (e.g. ghost‐layer size in Delaunay, node‐connect threshold in
 /// mesh building) so we reliably include every bond in subsequent stages.
-//
-// TODO: MAYBE DIAMOND PROBLEM HERE??!
-void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
+void StructureAnalysis::computeMaximumNeighborDistance(){
     const size_t N = positions()->size();
     if(N == 0){
         _maximumNeighborDistance = 0.0;
         return;
     }
 
+    // Ignore the use of PTM for this when input crystal type is CUBIC_DIAMOND
+    // TODO: Hack for CUBIC_DIAMOND in PTM
+    // TODO: Now that the atoms are classified, we obtain the
+    // TODO: neighbor lists and maximum distance, ensuring compatibility with the rest of the pipeline.
+    if(_inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND || !usingPTM()){
+        int maxNeighborListSize = std::min((int)_neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
+        NearestNeighborFinder neighFinder(maxNeighborListSize);
+        if(!neighFinder.prepare(positions(), cell(), _particleSelection)){
+            throw std::runtime_error("Error in neighFinder.prepare(...)");
+        }
+
+        _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, positions()->size()),
+            0.0, [this, &neighFinder](const tbb::blocked_range<size_t>& r, double max_dist_so_far) -> double {
+                for(size_t index = r.begin(); index != r.end(); ++index){
+                    double localMaxDistance = _coordStructures.determineLocalStructure(neighFinder, index, _neighborLists);
+                    if (localMaxDistance > max_dist_so_far) {
+                        max_dist_so_far = localMaxDistance;
+                    }
+                }
+                return max_dist_so_far;
+            },
+            [](double a, double b) -> double {
+                return std::max(a, b);
+            }
+        );
+
+        return;
+    }
+
+    // PTM
     const int M = _neighborLists->componentCount();
     const auto* pos = positions()->constDataPoint3();
     const auto& invMat = cell().inverseMatrix();
@@ -264,37 +237,57 @@ void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
     _maximumNeighborDistance = maxDistance;
 }
 
-void StructureAnalysis::identifyStructuresCNA(){
-    int maxNeighborListSize = std::min((int)_neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
-    NearestNeighborFinder neighFinder(maxNeighborListSize);
-    if(!neighFinder.prepare(positions(), cell(), _particleSelection)){
-        throw std::runtime_error("Error in neighFinder.preapre(...)");
-    }
-
-    _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, positions()->size()),
-        0.0, [this, &neighFinder](const tbb::blocked_range<size_t>& r, double max_dist_so_far) -> double {
-            for(size_t index = r.begin(); index != r.end(); ++index){
-                double localMaxDistance = _coordStructures.determineLocalStructure(neighFinder, index, _neighborLists);
-                if (localMaxDistance > max_dist_so_far) {
-                    max_dist_so_far = localMaxDistance;
-                }
-            }
-            return max_dist_so_far;
-        },
-        [](double a, double b) -> double {
-            return std::max(a, b);
-        }
-    );
-}
-
 void StructureAnalysis::identifyStructures(){
     if(usingPTM()){
-        determineLocalStructuresWithPTM();
-        computeMaximumNeighborDistanceFromPTM();
-        return;
+        // Runs the Polyhedral Template Matching (PTM) algorithm on every atom,
+        // collects raw RMSD values (with no initial cutoff).
+        const size_t N = positions()->size();
+        if (N == 0) return;
+
+        OpenDXA::PTM ptm;
+        if(!setupPTM(ptm, N)){
+            throw std::runtime_error("Error trying to initialize PTM.");
+        }
+
+        // Allocate PTM output arrays
+        _ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Float, 4, 0.0f, true);
+        _ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Float, 9, 0.0f, true);
+        
+        // Clear arrays for second pass
+        std::fill(_neighborLists->dataInt(), _neighborLists->dataInt() + _neighborLists->size() * _neighborLists->componentCount(), -1);
+        std::fill(_structureTypes->dataInt(), _structureTypes->dataInt() + _structureTypes->size(), LATTICE_OTHER);
+
+        // Compute raw RMSD
+        _ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Float, 1, 0.0f, true);
+        std::vector<uint64_t> cached(N, 0ull);
+        std::vector<StructureType> ptmTypes(N);
+
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto& r) {
+            PTM::Kernel kernel(ptm);
+            for(size_t i = r.begin(); i < r.end(); ++i){
+                kernel.cacheNeighbors(i, &cached[i]);
+                ptmTypes[i] = kernel.identifyStructure(i, cached);
+                _ptmRmsd->setFloat(i, static_cast<float>(kernel.rmsd()));
+                storeOrientationData(kernel, i);
+            }
+        });
+        
+        // Only keep atoms whose RMSD <= finalCutoff
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto &r){
+            PTM::Kernel kernel(ptm);
+            for(size_t i = r.begin(); i < r.end(); ++i){
+                processPTMAtom(kernel, i, ptmTypes[i], cached, _rmsd);
+            }
+        });
+    }else{
+        int maxNeighborListSize = std::min((int)_neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
+        NearestNeighborFinder neighFinder(maxNeighborListSize);
+        if(!neighFinder.prepare(positions(), cell(), _particleSelection)){
+            throw std::runtime_error("Error in neighFinder.preapre(...)");
+        }
     }
 
-    identifyStructuresCNA();
+    computeMaximumNeighborDistance();
 }
 
 bool StructureAnalysis::alreadyProcessedAtom(int index) {
@@ -360,7 +353,7 @@ Quaternion StructureAnalysis::getPTMAtomOrientation(int atom) const{
     return quat;
 }
 
-Matrix3 quaternionToMatrix(const Quaternion& q)  {
+Matrix3 StructureAnalysis::quaternionToMatrix(const Quaternion& q)  {
     double w = q.w(), x = q.x(), y = q.y(), z = q.z();
     Matrix3 R;
     R(0,0) = 1 - 2*(y*y + z*z); R(0,1) = 2*(x*y - w*z);     R(0,2) = 2*(x*z + w*y);
@@ -614,12 +607,13 @@ void StructureAnalysis::buildClustersCNA(){
 }
 
 void StructureAnalysis::buildClusters(){
-    if(usingPTM()){
-        buildClustersPTM();
+    // Hack for CUBIC_DIAMOND in PTM
+    if(!usingPTM() || _inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND){
+        buildClustersCNA();
         return;
     }
-
-    buildClustersCNA();
+    
+    buildClustersPTM();
 }
 
 std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&>

@@ -13,7 +13,7 @@
 #include <opendxa/core/lammps_parser.h>
 #include <nlohmann/json.hpp>
 #include <mutex>
-
+#include <tbb/spin_mutex.h>
 using json = nlohmann::json;
 
 namespace OpenDXA{
@@ -40,8 +40,8 @@ public:
 	void buildClusters();
 	void connectClusters();
 	void formSuperClusters();
-	void determineLocalStructuresWithPTM();
-	void computeMaximumNeighborDistanceFromPTM();
+	void computeMaximumNeighborDistance();
+
 	void growClusterPTM(
 		Cluster* cluster,
 		std::deque<int>& atomsToVisit,
@@ -81,8 +81,6 @@ public:
 		}
 		return -1;
 	}
-
-	void allocatePTMOutputArrays(size_t N);
 
 	ParticleProperty* positions() const{
 		return _positions;
@@ -258,7 +256,6 @@ private:
 	void initializeClustersForSuperclusterFormation();
 	void processDefectClusters();
 	void buildClustersCNA();
-	void identifyStructuresCNA();
 	void mergeCompatibleGrains(size_t oldTransitionCount, size_t newTransitionCount);
 	std::pair<Cluster*, Cluster*> getParentGrains(ClusterTransition* transition);
 	ClusterTransition* buildParentTransition(ClusterTransition* transition, Cluster* parent1, Cluster* parent2);
@@ -274,6 +271,8 @@ private:
 		const std::vector<uint64_t>& cached,
 		float cutoff
 	);
+
+	Matrix3 quaternionToMatrix(const Quaternion& q);
 
 	void initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex);
 	void processAtomConnections(size_t atomIndex);
@@ -295,15 +294,6 @@ private:
 	);
 
 	bool setupPTM(OpenDXA::PTM& ptm, size_t N);
-	void filterAtomsByRMSD(
-		const OpenDXA::PTM& ptm, 
-		size_t N,
-		const std::vector<StructureType>& ptmTypes,
-		const std::vector<uint64_t>& cached,
-		float cutoff
-	);
-
-	std::pair<std::vector<StructureType>, std::vector<uint64_t>> computeRawRMSD(const OpenDXA::PTM& ptm, size_t N);
 
 	Cluster* startNewCluster(int atomIndex, int structureType);
 
@@ -325,7 +315,8 @@ private:
 	std::shared_ptr<ParticleProperty> _neighborLists; 
 	std::shared_ptr<ParticleProperty> _atomClusters;
 	std::shared_ptr<ParticleProperty> _atomSymmetryPermutations; 
-
+    std::shared_ptr<ParticleProperty> _ptmInteratomicDistance;
+	tbb::spin_mutex _transitionMutex;
 	ParticleProperty* _particleSelection; 
 
 	std::shared_ptr<ClusterGraph> _clusterGraph; 
