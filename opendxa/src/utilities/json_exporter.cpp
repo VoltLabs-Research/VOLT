@@ -97,7 +97,86 @@ json DXAJsonExporter::exportAnalysisData(
     return data;
 }
 
-// TODO: EXPORT DISLOCATIONS TO VTK!? 
+void clipDislocationLine(
+    const std::deque<Point3>& line,
+    const SimulationCell& simulationCell,
+    const std::function<void(const Point3&, const Point3&, bool)>& segmentCallback
+){
+    if(line.size() < 2) return;
+    bool isInitialSegment = true;
+
+    // initialize the first point and the shift vector
+    auto v1Iter = line.cbegin();
+    Point3 rp1 = simulationCell.absoluteToReduced(*v1Iter);
+    Vector3 shiftVector = Vector3::Zero();
+    for(size_t dimension = 0; dimension < 3; dimension++){
+        if(simulationCell.pbcFlags()[dimension]){
+            // move the start point to the main box [0,1) and record the offset
+            double shift = -std::floor(rp1[dimension]);
+            rp1[dimension] += shift;
+            shiftVector[dimension] += shift;
+        }
+    }
+
+    // iterate over the original line segments
+    for(auto v2Iter = v1Iter + 1; v2Iter != line.cend(); v1Iter = v2Iter, ++v2Iter){
+        Point3 rp2 = simulationCell.absoluteToReduced(*v2Iter) + shiftVector;
+        // ugly hack
+        int maxIterations = 10;
+        int iterationCount = 0;
+        do{
+            iterationCount++;
+            if(iterationCount > maxIterations){
+                segmentCallback(
+                    simulationCell.reducedToAbsolute(rp1),
+                    simulationCell.reducedToAbsolute(rp2),
+                    isInitialSegment
+                );
+                break;
+            }
+
+            size_t crossDim = -1;
+            double crossDir = 0;
+            double smallestT = std::numeric_limits<double>::max();
+            for(size_t dimension = 0; dimension < 3; dimension++){
+                if(simulationCell.pbcFlags()[dimension]){
+                    // crossing detection
+                    int d = (int) std::floor(rp2[dimension]) - (int) std::floor(rp1[dimension]);
+                    if(d == 0) continue;
+
+                    double dr = rp2[dimension] - rp1[dimension];
+                    if(std::abs(dr) < 1e-9) continue;
+
+                    double t = (d > 0) ? (std::ceil(rp1[dimension]) - rp1[dimension]) / dr
+                                       : (std::floor(rp1[dimension]) - rp1[dimension]) / dr;
+                    if(t > 1e-9 && t < smallestT){
+                        smallestT = t;
+                        crossDim = dimension;
+                        crossDir = (d > 0) ? 1.0 : -1.0;
+                    }
+                }
+            }
+
+            // tolerance to avoid very small intersections
+            if(smallestT < (1.0 - 1e-9)){
+                Point3 intersection = rp1 + smallestT * (rp2 - rp1);
+                intersection[crossDim] = std::round(intersection[crossDim]);
+                segmentCallback(simulationCell.reducedToAbsolute(rp1), simulationCell.reducedToAbsolute(intersection), isInitialSegment);
+                shiftVector[crossDim] -= crossDir;
+                rp1 = intersection;
+                rp1[crossDim] -= crossDir;
+                rp2[crossDim] -= crossDir;
+                isInitialSegment = true;
+            }else{
+                // no more intersections for this segment
+                segmentCallback(simulationCell.reducedToAbsolute(rp1), simulationCell.reducedToAbsolute(rp2), isInitialSegment);
+                isInitialSegment = false;
+                break;
+            }
+        }while(true);
+        rp1 = rp2;
+    }
+}
 
 json DXAJsonExporter::exportDislocationsToJson(
     const DislocationNetwork* network, 
@@ -117,121 +196,64 @@ json DXAJsonExporter::exportDislocationsToJson(
     int totalPoints = 0;
     double maxLength = 0.0;
     double minLength = std::numeric_limits<double>::max();
-    int pointOffset = 0;
-    
+
+    auto saveChunk = [&](const std::deque<Point3>& chunk, const DislocationSegment* originalSegment, int originalIndex){
+        // if(chunk.size() < 2) return;
+        json segmentJson;
+        json points = json::array();
+
+        segmentJson["segment_id"] = originalIndex;
+        double chunkLength = 0.0;
+        for(size_t pointIdx = 0; pointIdx < chunk.size(); ++pointIdx){
+            points.push_back({ chunk[pointIdx].x(), chunk[pointIdx].y(), chunk[pointIdx].z() });
+            if(pointIdx > 0){
+                chunkLength += (chunk[pointIdx] - chunk[pointIdx - 1]).length();
+            }
+        }
+
+        segmentJson["points"] = points;
+        segmentJson["length"] = chunkLength;
+        segmentJson["num_points"] = chunk.size();
+
+        segmentJson["type"] = getDislocationType(originalSegment);
+        Vector3 burgers = originalSegment->burgersVector.localVec();
+        segmentJson["burgers"] = {
+            {"vector", {burgers.x(), burgers.y(), burgers.z()}},
+            {"magnitude", burgers.length()},
+            {"fractional", getBurgersVectorString(burgers)}
+        };
+
+        dataArray.push_back(segmentJson);
+        
+        totalLength += chunkLength;
+        totalPoints += chunk.size();
+        maxLength = std::max(maxLength, chunkLength);
+        minLength = std::min(minLength, chunkLength);
+    };
+
     for(size_t i = 0; i < segments.size(); ++i){
         auto* segment = segments[i];
         if(segment && !segment->isDegenerate()){
-            json segmentJson;
-            
-            double length = segment->calculateLength();
-            segmentJson["index"] = static_cast<int>(i);
-            segmentJson["type"] = getDislocationType(segment);
-            segmentJson["point_index_offset"] = pointOffset;
-            segmentJson["num_points"] = static_cast<int>(segment->line.size());
-            segmentJson["length"] = length;
-            
-            json points = json::array();
-            
-            // Ensure segment continuity across periodic boundaries
-            // TODO: NO!
-            if(simulationCell && !segment->line.empty()){
-                // Start with the first point
-                Point3 prevWrappedPoint = simulationCell->wrapPoint(segment->line[0]);
-                points.push_back({prevWrappedPoint.x(), prevWrappedPoint.y(), prevWrappedPoint.z()});
-                
-                // For subsequent points, ensure continuity by choosing the periodic image closest to the previous point
-                for(int ptIdx = 1; ptIdx < segment->line.size(); ++ptIdx){
-                    const Point3& currentPoint = segment->line[ptIdx];
-                    Point3 bestPoint = currentPoint;
-                    double minDistance = (currentPoint - prevWrappedPoint).length();
-                    
-                    // Check all periodic images to find the one closest to the previous point
-                    for(int dx = -1; dx <= 1; ++dx){
-                        for(int dy = -1; dy <= 1; ++dy){
-                            for(int dz = -1; dz <= 1; ++dz){
-                                if(!simulationCell->pbcFlags()[0] && dx != 0) continue;
-                                if(!simulationCell->pbcFlags()[1] && dy != 0) continue; 
-                                if(!simulationCell->pbcFlags()[2] && dz != 0) continue;
-                                
-                                Vector3 translation = dx * simulationCell->matrix().column(0) +
-                                                    dy * simulationCell->matrix().column(1) +
-                                                    dz * simulationCell->matrix().column(2);
-                                Point3 candidatePoint = currentPoint + translation;
-                                double distance = (candidatePoint - prevWrappedPoint).length();
-                                
-                                if(distance < minDistance){
-                                    minDistance = distance;
-                                    bestPoint = candidatePoint;
-                                }
-                            }
-                        }
+            std::deque<Point3> currentChunk;
+            clipDislocationLine(segment->line, *simulationCell, 
+                [&](const Point3& p1, const Point3& p2, bool isInitialSegment){
+                    if(isInitialSegment && !currentChunk.empty()){
+                        saveChunk(currentChunk, segment, i);
+                        currentChunk.clear();
                     }
-                    
-                    points.push_back({bestPoint.x(), bestPoint.y(), bestPoint.z()});
-                    prevWrappedPoint = bestPoint;
-                }
-            } else {
-                // Fallback: just export points as-is
-                for(const auto& point : segment->line){
-                    points.push_back({point.x(), point.y(), point.z()});
-                }
-            }
 
-            segmentJson["points"] = points;
-            
-            Vector3 burgers = segment->burgersVector.localVec();
-            segmentJson["burgers"] = {
-                {"vector", {burgers.x(), burgers.y(), burgers.z()}},
-                {"magnitude", burgers.length()},
-                {"fractional", getBurgersVectorString(burgers)}
-            };
-            
-            if(includeDetailedInfo){
-                segmentJson["junction_info"] = {
-                    {"forward_node_dangling", segment->forwardNode().isDangling()},
-                    {"backward_node_dangling", segment->backwardNode().isDangling()},
-                    {"junction_arms_count", segment->forwardNode().countJunctionArms()},
-                    {"forms_junction", !segment->forwardNode().isDangling()}
-                };
-                
-                if(!segment->coreSize.empty()){
-                    json coreSizes = json::array();
-                    for(size_t coreSize : segment->coreSize){
-                        coreSizes.push_back(coreSize);
+                    if(currentChunk.empty()){
+                        currentChunk.push_back(p1);
                     }
-                    segmentJson["core_sizes"] = coreSizes;
-                    segmentJson["average_core_size"] = 
-                        std::accumulate(segment->coreSize.begin(), segment->coreSize.end(), 0.0) / segment->coreSize.size();
-                }
-                
-                segmentJson["is_closed_loop"] = segment->isClosedLoop();
-                segmentJson["is_infinite_line"] = segment->isInfiniteLine();
-                segmentJson["segment_id"] = segment->id;
-                
-                if(segment->line.size() >= 2){
-                    Vector3 lineDir = (segment->line.back() - segment->line.front()).normalized();
-                    segmentJson["line_direction"] = {
-                        {"vector", {lineDir.x(), lineDir.y(), lineDir.z()}},
-                        {"string", getLineDirectionString(lineDir)}
-                    };
-                }
-                
-                segmentJson["nodes"] = {
-                    {"forward", nodeToJson(&segment->forwardNode())},
-                    {"backward", nodeToJson(&segment->backwardNode())}
-                };
-            }
-            
-            dataArray.push_back(segmentJson);
-            totalLength += length;
-            totalPoints += segment->line.size();
-            maxLength = std::max(maxLength, length);
-            minLength = std::min(minLength, length);
-            pointOffset += segment->line.size();
+
+                    currentChunk.push_back(p2);
+            });
+
+            saveChunk(currentChunk, segment, i);
         }
     }
-    
+
+    dislocations["metadata"]["count"] = dataArray.size();
     dislocations["data"] = dataArray;
     
     if(segments.empty()){
