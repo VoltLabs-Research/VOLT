@@ -68,7 +68,7 @@
 
 .document-listing-body-container{
     border-top: 1px solid #dadada;
-    padding: 1rem 2rem 0;
+    padding: 0 2rem 0;
     flex: 1;
     overflow: auto;
 }
@@ -98,11 +98,12 @@
     justify-content: space-between;
     gap: 1rem;
     border-bottom: 1px solid #dadada;
-    padding: 1rem 0;
+    padding: 2rem 0 1rem;
     position: sticky;
     top: 0;
-    background-color: white;
-    z-index: 1;
+    z-index: 200000;
+    background-color: rgba(255, 255, 255, .98);
+    backdrop-filter: blur(5px);
 }
 
 .document-listing-table-body-container{

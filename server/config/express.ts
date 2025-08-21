@@ -81,6 +81,7 @@ configureApp({
         'analysis-config',
         'trajectories',
         'structure-analysis',
+        'dislocations',
         'auth'
     ],
     middlewares: [

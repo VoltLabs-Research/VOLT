@@ -188,8 +188,6 @@
     position: absolute;
     right: 0;
     z-index: 200000;
-    background-color: rgb(30 30 30 / 42%);
-    backdrop-filter: blur(5px);
     width: 600px;
     top: 50%;
     left: 50%;
@@ -199,7 +197,7 @@
     flex-direction: column;
     gap: .5rem;
     text-align: center;
-    padding: 1rem;
+    padding: 0;
 }
 
 .editor-chart-title{

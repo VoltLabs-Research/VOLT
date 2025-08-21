@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/services/api';
 import type { ApiResponse } from '@/types/api';
 
@@ -14,6 +14,10 @@ interface TrajectoryMetrics {
         dislocations: number[];
     };
 }
+
+type CacheEntry = { data: TrajectoryMetrics; fetchedAt: number };
+const cache = new Map<string, CacheEntry>();
+const inFlight = new Map<string, Promise<TrajectoryMetrics>>();
 
 const abbreviate = (n: number) => {
     const abs = Math.abs(n);
@@ -62,47 +66,87 @@ const padSeriesToLabels = (labels: string[], series: number[], desired = 12) => 
     return { fullLabels, fullSeries };
 };
 
-export const useDashboardMetrics = (teamId?: string) => {
-    const [data, setData] = useState<TrajectoryMetrics | null>(null);
-    const [loading, setLoading] = useState(true);
+const keyOf = (teamId?: string) => teamId || 'all';
+
+const fetchOnce = (teamId?: string, signal?: AbortSignal) => {
+    const key = keyOf(teamId);
+    if (inFlight.has(key)) return inFlight.get(key)!;
+    const p = api
+        .get<ApiResponse<TrajectoryMetrics>>('/trajectories/metrics', { params: teamId ? { teamId } : undefined, signal })
+        .then((res) => res.data.data)
+        .finally(() => {
+            inFlight.delete(key);
+        });
+    inFlight.set(key, p);
+    return p;
+};
+
+export const useDashboardMetrics = (
+    teamId?: string,
+    opts?: { ttlMs?: number; force?: boolean; }
+) => {
+    const key = keyOf(teamId);
+    const ttlMs = opts?.ttlMs ?? 5 * 60 * 1000;
+
+    const [data, setData] = useState<TrajectoryMetrics | null>(() => {
+        const hit = cache.get(key);
+        if (!hit) return null;
+        return hit.data;
+    });
+    const [loading, setLoading] = useState<boolean>(() => !cache.has(key));
     const [error, setError] = useState<string | null>(null);
 
+    const abortRef = useRef<AbortController | null>(null);
+
     useEffect(() => {
-        let mounted = true;
+        const hit = cache.get(key);
+        const expired = hit ? Date.now() - hit.fetchedAt > ttlMs : true;
+        const shouldFetch = opts?.force ? true : expired;
+
+        if (!shouldFetch && hit) {
+            setData(hit.data);
+            setLoading(false);
+            setError(null);
+            return;
+        }
+
+        abortRef.current?.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+
         setLoading(true);
         setError(null);
-        api.get<ApiResponse<TrajectoryMetrics>>('/trajectories/metrics', { params: teamId ? { teamId } : undefined })
-            .then((res) => {
-                if (!mounted) return;
-                setData(res.data.data);
+
+        fetchOnce(teamId, controller.signal)
+            .then((payload) => {
+                if (controller.signal.aborted) return;
+                cache.set(key, { data: payload, fetchedAt: Date.now() });
+                setData(payload);
+                setLoading(false);
             })
             .catch((err) => {
-                if (!mounted) return;
-                setError(err?.response?.data?.message || 'Failed to load metrics');
-            })
-            .finally(() => {
-                if (!mounted) return;
-                setLoading(false);
+                if (controller.signal.aborted) return;
+                //setError(err?.response?.data?.message || 'Failed to load metrics');
+                //setLoading(false);
             });
-        return () => { mounted = false; };
-    }, [teamId]);
+
+        return () => {
+            controller.abort();
+        };
+    }, [key, teamId, ttlMs, opts?.force]);
 
     const cards = useMemo(() => {
         if (!data) return [];
-
         const baseLabels = data.weekly.labels || [];
         const sStruct = toNumericArray(data.weekly.structureAnalysis as any);
         const sTraj = toNumericArray(data.weekly.trajectories as any);
         const sDisl = toNumericArray(data.weekly.dislocations as any);
-
         const { fullLabels: labelsS, fullSeries: seriesS } = padSeriesToLabels(baseLabels, sStruct, 12);
         const { fullLabels: labelsT, fullSeries: seriesT } = padSeriesToLabels(baseLabels, sTraj, 12);
         const { fullLabels: labelsD, fullSeries: seriesD } = padSeriesToLabels(baseLabels, sDisl, 12);
-
         const dStruct = withPaddingDomain(seriesS);
         const dTraj = withPaddingDomain(seriesT);
         const dDisl = withPaddingDomain(seriesD);
-
         return [
             {
                 key: 'structureAnalysis' as MetricKey,
