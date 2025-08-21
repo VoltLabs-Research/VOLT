@@ -186,7 +186,7 @@ void DislocationNetwork::smoothDislocationLine(double smoothingLevel, std::deque
 	// Smoothing parameters (two-pass lambda/mu scheme to avoid shrinkage)
 	// These are standard parameters in Laplacian smoothing.
     const double lambda = 0.5;
-    const double mu = -0.52; 
+    const double mu = -0.53; 
     const double prefactors[2] = { lambda, mu };
     
     std::vector<Vector3> laplacians(line.size());
@@ -211,12 +211,12 @@ void DislocationNetwork::smoothDislocationLine(double smoothingLevel, std::deque
                 // The next neighbor to the last is the second (the first is repeated at the end).
 				const Point3& p_next = (i == line.size() - 1) ? line[1] : line[i + 1];
 
-				laplacians[i] = (p_prev - p_curr) + (p_next - p_curr);
+                laplacians[i] = 0.5 * ((p_prev - p_curr) + (p_next - p_curr));
 			}
 
 			// Move each point a fraction of its Laplacian.
 			for(size_t i = 0; i < line.size(); ++i){
-				line[i] += prefactors[pass] * 0.5 * laplacians[i];
+				line[i] += prefactors[pass] * laplacians[i];
 			}
 		}
 	}
