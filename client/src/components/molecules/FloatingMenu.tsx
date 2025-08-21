@@ -25,34 +25,93 @@ import { createPortal } from 'react-dom';
 import type { FloatingMenuProps } from '@/types/floating-container';
 import FloatingMenuItem from '@/components/atoms/FloatingMenuItem';
 
-const FloatingMenu: React.FC<FloatingMenuProps> = ({
+interface ExtendedFloatingMenuProps extends FloatingMenuProps {
+    deleteMenuStyle?: boolean;
+}
+
+const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
     isVisible,
     menuRef,
     styles,
     options,
     onItemClick,
     className = 'action-based-floating-container',
-    portalTarget = document.body
+    portalTarget = document.body,
+    deleteMenuStyle = false
 }) => {
     if(!isVisible){
         return null;
     }
 
+    const baseMenuStyles: React.CSSProperties = {
+        backgroundColor: 'white',
+        border: '1px solid #e5e5e5',
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+        minWidth: '150px',
+        padding: '4px 0',
+        ...styles
+    };
+
     return createPortal(
         <div
             ref={menuRef}
-            style={styles}
+            style={baseMenuStyles}
             className={className}
         >
-            {options.map(([ name, Icon, onClick ], index) => (
-                <FloatingMenuItem
-                    key={index}
-                    name={name}
-                    Icon={Icon}
-                    onClick={onClick}
-                    onItemClick={onItemClick}
-                />
-            ))}
+            {options.map((option, index) => {
+                if (Array.isArray(option)) {
+                    const [name, Icon, onClick] = option;
+                    return (
+                        <div
+                            key={index}
+                            className={`floating-menu-item ${deleteMenuStyle ? 'delete-menu-item' : ''}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (typeof onClick === 'function') {
+                                    onClick();
+                                }
+                                if (onItemClick) {
+                                    onItemClick(onClick, e);
+                                }
+                            }}
+                            style={{
+                                padding: '8px 16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                color: deleteMenuStyle ? '#dc2626' : '#374151',
+                                transition: 'background-color 0.2s ease',
+                                borderRadius: '4px',
+                                margin: '0 4px'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = deleteMenuStyle ? '#fee2e2' : '#f3f4f6';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                        >
+                            <Icon size={16} />
+                            <span>{name}</span>
+                        </div>
+                    );
+                } else {
+                    return (
+                        <FloatingMenuItem
+                            key={option.id || index}
+                            name={option.label}
+                            Icon={option.icon}
+                            onClick={option.onClick}
+                            onItemClick={onItemClick}
+                            className={option.className}
+                            danger={option.danger}
+                        />
+                    );
+                }
+            })}
         </div>,
         portalTarget
     )

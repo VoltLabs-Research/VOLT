@@ -20,18 +20,26 @@
 * SOFTWARE.
 **/
 
+
 import React from 'react';
 import useFloatingContainer from '@/hooks/ui/positioning/use-floating-container';
 import FloatingMenu from '@/components/molecules/FloatingMenu';
 import type { FloatingContainerProps } from '@/types/floating-container';
 import './ActionBasedFloatingContainer.css';
 
-const ActionBasedFloatingContainer: React.FC<FloatingContainerProps> = ({
+interface ExtendedFloatingContainerProps extends FloatingContainerProps {
+    useCursorPosition?: boolean;
+    deleteMenuStyle?: boolean;
+}
+
+const ActionBasedFloatingContainer: React.FC<ExtendedFloatingContainerProps> = ({
     options,
     children,
     className,
     menuClassName,
-    portalTarget
+    portalTarget,
+    useCursorPosition = false,
+    deleteMenuStyle = false
 }) => {
     const {
         triggerRef,
@@ -40,7 +48,11 @@ const ActionBasedFloatingContainer: React.FC<FloatingContainerProps> = ({
         styles,
         handleToggle,
         handleOptionClick,
-    } = useFloatingContainer();
+    } = useFloatingContainer({ useCursorPosition });
+
+    const finalMenuClassName = deleteMenuStyle 
+        ? `${menuClassName || ''} delete-menu-style`.trim()
+        : menuClassName;
 
     return (
         <>
@@ -58,8 +70,10 @@ const ActionBasedFloatingContainer: React.FC<FloatingContainerProps> = ({
                 styles={styles}
                 options={options}
                 onItemClick={handleOptionClick}
-                className={menuClassName}
-                portalTarget={portalTarget} />
+                className={finalMenuClassName}
+                portalTarget={portalTarget} 
+                deleteMenuStyle={deleteMenuStyle}
+            />
         </>
     );
 };

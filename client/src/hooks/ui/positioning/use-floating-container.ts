@@ -20,10 +20,14 @@
 * SOFTWARE.
 **/
 
-import { type MouseEvent, useCallback } from 'react';
+import { type MouseEvent, useCallback, useState } from 'react';
 import type { PositionStyles } from '@/types/floating-container';
 import useFloatingMenu from '@/hooks/ui/positioning/use-floating-menu';
 import usePositioning from '@/hooks/ui/positioning/use-positioning';
+
+interface UseFloatingContainerProps {
+    useCursorPosition?: boolean;
+}
 
 interface UseFloatingContainerReturn {
     triggerRef: React.RefObject<HTMLDivElement>;
@@ -36,7 +40,10 @@ interface UseFloatingContainerReturn {
     show: () => void;
 }
 
-const useFloatingContainer = (): UseFloatingContainerReturn => {
+const useFloatingContainer = (props: UseFloatingContainerProps = {}): UseFloatingContainerReturn => {
+    const { useCursorPosition = false } = props;
+    const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+
     const {
         triggerRef,
         menuRef,
@@ -46,18 +53,31 @@ const useFloatingContainer = (): UseFloatingContainerReturn => {
         show,
     } = useFloatingMenu();
 
-    const { styles, setInitialPosition } = usePositioning(triggerRef, menuRef, isVisible);
+    const { styles: positioningStyles, setInitialPosition } = usePositioning(triggerRef, menuRef, isVisible);
+    
+    const cursorStyles: PositionStyles = {
+        position: 'fixed',
+        top: `${cursorPosition.y}px`,
+        left: `${cursorPosition.x}px`,
+        zIndex: 9999,
+    };
+
+    const styles = useCursorPosition ? cursorStyles : positioningStyles;
     
     const handleToggle = useCallback((e: MouseEvent<HTMLDivElement>): void => {
         e.stopPropagation();
 
         if(!isVisible){
-            setInitialPosition();
+            if (useCursorPosition) {
+                setCursorPosition({ x: e.clientX, y: e.clientY });
+            } else {
+                setInitialPosition();
+            }
             show();
         }else{
             hide();
         }
-    }, [isVisible, setInitialPosition, show, hide]);
+    }, [isVisible, useCursorPosition, setInitialPosition, show, hide]);
 
     const handleOptionClick = useCallback((originalOnClick: () => void, event: MouseEvent): void => {
         event.stopPropagation();
