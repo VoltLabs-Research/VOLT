@@ -150,12 +150,16 @@ bool LammpsParser::readAtomData(std::istream &in, Frame &f){
     int zsCol = findColumn(cols, "zs");
     bool scaled = (xsCol >= 0 && ysCol >= 0 && zsCol >=0 );
 
+    std::vector<std::string> vals;
+    vals.reserve(cols.size());
+
     for(int i=0; i<f.natoms; ++i){
         if(!std::getline(in, line)){
             return false;
         }
 
         std::istringstream ss(line);
+        vals.clear();
         std::vector<std::string> vals;
         std::string v;
         
@@ -200,21 +204,19 @@ bool LammpsParser::readAtomData(std::istream &in, Frame &f){
         return posA.z() < posB.z();
     });
     
-    // Reorder all arrays according to sorted indices
-    std::vector<int> sortedIds(f.natoms);
-    std::vector<int> sortedTypes(f.natoms);
-    std::vector<Point3> sortedPositions(f.natoms);
-    
-    for (size_t i = 0; i < indices.size(); ++i) {
-        sortedIds[i] = f.ids[indices[i]];
-        sortedTypes[i] = f.types[indices[i]];
-        sortedPositions[i] = f.positions[indices[i]];
+    // Reorder all arrays IN-PLACE according to sorted indices.
+    // This avoids allocating large temporary vectors, which significantly reduces peak memory usage.
+    for(size_t i = 0; i < indices.size(); ++i){
+        size_t j = indices[j];
+        while(j < i){
+            j = indices[j];
+        }
+
+        std::swap(f.ids[i], f.ids[j]);
+        std::swap(f.types[i], f.types[j]);
+        std::swap(f.positions[i], f.positions[j]);
     }
-    
-    f.ids = std::move(sortedIds);
-    f.types = std::move(sortedTypes);
-    f.positions = std::move(sortedPositions);
-    
+
     return true;
 }
 
