@@ -5,6 +5,14 @@ import useTrajectoryStore from '@/stores/trajectories'
 import useTeamStore from '@/stores/team'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
 
+const formatSize = (bytes: number): string => {
+    if (!bytes || bytes <= 0) return '0 B'
+    const units = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(1024))
+    const value = bytes / Math.pow(1024, i)
+    return `${value.toFixed(2).replace(/\.?0+$/, '')} ${units[i]}`
+}
+
 const TrajectoriesListing = () => {
     const getTrajectories = useTrajectoryStore((s) => s.getTrajectories)
     const deleteTrajectoryById = useTrajectoryStore((s) => s.deleteTrajectoryById)
@@ -59,7 +67,7 @@ const TrajectoriesListing = () => {
         {
             title: 'Total Size',
             key: 'stats.totalSize',
-            render: (_, row) => formatNumber(row?.stats?.totalSize ?? 0) + ' MB',
+            render: (_, row) => formatSize(row?.stats?.totalSize ?? 0),
             skeleton: { variant: 'text', width: 70 }
         },
         {
