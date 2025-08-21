@@ -1,133 +1,90 @@
-import { useEffect, useState } from 'react';
-import { RxDotsHorizontal } from "react-icons/rx";
-import { RiListUnordered } from "react-icons/ri";
-import { Skeleton } from '@mui/material';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
-import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer';
-import './DocumentListing.css';
+import React, { useEffect, useState } from 'react'
+import { RxDotsHorizontal } from 'react-icons/rx'
+import { RiListUnordered } from 'react-icons/ri'
+import { Skeleton } from '@mui/material'
+import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer'
+import './DocumentListing.css'
 
-const getMethodBadgeClass = (method: string) => {
-    const methodLower = method.toLowerCase();
-    switch(methodLower){
-        case 'cna':
-            return 'method-badge method-badge-green';
-        case 'ptm':
-            return 'method-badge method-badge-purple';
-        default:
-            return 'method-badge method-badge-gray';
+export type ColumnConfig = {
+    key: string
+    title: string
+    render?: (value: any, row?: any) => React.ReactNode
+    skeleton?: { variant: 'text' | 'rounded'; width: number; height?: number }
+}
+
+export const formatNumber = (num: number) => {
+    if (num === 0) return '0'
+    const absNum = Math.abs(num)
+    const sign = num < 0 ? '-' : ''
+    if (absNum >= 1000000000) {
+        return sign + (absNum / 1000000000).toFixed(2).replace(/\.?0+$/, '') + 'B'
     }
-};
-
-const getIdentificationRateBadgeClass = (rate: number) => {
-    if(rate >= 90) return 'rate-badge rate-badge-green';
-    if(rate >= 75) return 'rate-badge rate-badge-blue'; 
-    if(rate >= 60) return 'rate-badge rate-badge-yellow'; 
-    if(rate >= 40) return 'rate-badge rate-badge-orange'; 
-    if(rate >= 20) return 'rate-badge rate-badge-red';  
-    return 'rate-badge rate-badge-gray';
-};
-
-const formatNumber = (num: number) => {
-    if(num === 0) return '0';
-    
-    const absNum = Math.abs(num);
-    const sign = num < 0 ? '-' : '';
-    
-    if(absNum >= 1000000000){
-        return sign + (absNum / 1000000000).toFixed(2).replace(/\.?0+$/, '') + 'B';
+    if (absNum >= 1000000) {
+        return sign + (absNum / 1000000).toFixed(2).replace(/\.?0+$/, '') + 'M'
     }
-
-    if(absNum >= 1000000){
-        return sign + (absNum / 1000000).toFixed(2).replace(/\.?0+$/, '') + 'M';
+    if (absNum >= 1000) {
+        return sign + (absNum / 1000).toFixed(2).replace(/\.?0+$/, '') + 'K'
     }
+    return sign + absNum.toString()
+}
 
-    if(absNum >= 1000){
-        return sign + (absNum / 1000).toFixed(2).replace(/\.?0+$/, '') + 'K';
-    }
-    
-    return sign + absNum.toString();
-};
+export const MethodBadge = ({ method }: { method: string }) => {
+    const methodLower = method?.toLowerCase()
+    const className =
+        methodLower === 'cna'
+            ? 'method-badge method-badge-green'
+            : methodLower === 'ptm'
+            ? 'method-badge method-badge-purple'
+            : 'method-badge method-badge-gray'
 
-const defaultFormatValue = (key: string, value: any) => {
-    if(value === null || value === undefined) return '—';
-    switch (key) {
-        case 'createdAt':
-        case 'updatedAt':
-        case 'date':
-            return formatTimeAgo(value);
-        case 'identificationRate':
-            const rate = Number(value);
-            return (
-                <span className={getIdentificationRateBadgeClass(rate)}>
-                    {`${rate.toFixed(2)}%`}
-                </span>
-            );
-        case 'identifiedStructures':
-        case 'unidentifiedStructures':
-        case 'totalAtoms':
-        case 'count':
-        case 'size':
-            return formatNumber(Number(value));
-        case 'trajectory':
-            return typeof value === 'object' ? (value.name ?? '—') : String(value);
-        case 'analysisMethod':
-        case 'method':
-            return (
-                <span className={getMethodBadgeClass(value)}>
-                    {String(value)}
-                </span>
-            );
-        default:
-            return String(value);
-    }
-};
+    return <span className={className}>{method}</span>
+}
 
-const SkeletonRow = ({ columns }) => {
-    const getSkeletonVariant = (columnKey) => {
-        switch (columnKey) {
-            case 'identificationRate':
-                return { variant: "rounded", width: 60, height: 24 };
-            case 'analysisMethod':
-            case 'method':
-                return { variant: "rounded", width: 80, height: 24 };
-            case 'identifiedStructures':
-            case 'unidentifiedStructures':
-            case 'totalAtoms':
-            case 'timestep':
-                return { variant: "text", width: 70 };
-            case 'trajectory':
-                return { variant: "text", width: 120 };
-            case 'createdAt':
-            case 'updatedAt':
-            case 'date':
-                return { variant: "text", width: 90 };
-            default:
-                return { variant: "text", width: 100 };
-        }
-    };
+export const RateBadge = ({ rate }: { rate: number }) => {
+    let className = 'rate-badge rate-badge-gray'
+    if (rate >= 90) className = 'rate-badge rate-badge-green'
+    else if (rate >= 75) className = 'rate-badge rate-badge-blue'
+    else if (rate >= 60) className = 'rate-badge rate-badge-yellow'
+    else if (rate >= 40) className = 'rate-badge rate-badge-orange'
+    else if (rate >= 20) className = 'rate-badge rate-badge-red'
 
+    return <span className={className}>{rate.toFixed(2)}%</span>
+}
+
+export const StatusBadge = ({ status }: { status: string }) => {
+    const statusLower = status?.toLowerCase()
+    const className =
+        statusLower === 'ready'
+            ? 'status-badge status-badge-green'
+            : statusLower === 'processing'
+            ? 'status-badge status-badge-orange'
+            : statusLower === 'failed'
+            ? 'status-badge status-badge-red'
+            : 'status-badge status-badge-gray'
+
+    return <span className={className}>{status}</span>
+}
+
+const SkeletonRow = ({ columns }: { columns: ColumnConfig[] }) => {
     return (
-        <div className="document-listing-table-row-container skeleton-row">
-            {columns.map((column) => {
-                const skeletonProps = getSkeletonVariant(column.key);
-                return (
-                    <div className='document-listing-cell' key={column.key}>
-                        <Skeleton 
-                            {...skeletonProps}
-                            animation="wave"
-                            sx={{ 
-                                bgcolor: 'rgba(0, 0, 0, 0.06)',
-                                borderRadius: skeletonProps.variant === 'rounded' ? '12px' : '4px'
-                            }}
-                        />
-                    </div>
-                );
-            })}
+        <div className='document-listing-table-row-container skeleton-row'>
+            {columns.map((col) => (
+                <div className='document-listing-cell' key={col.key}>
+                    <Skeleton
+                        {...(col.skeleton ?? { variant: 'text', width: 100 })}
+                        animation='wave'
+                        sx={{
+                            bgcolor: 'rgba(0, 0, 0, 0.06)',
+                            borderRadius: col.skeleton?.variant === 'rounded' ? '12px' : '4px'
+                        }}
+                    />
+                </div>
+            ))}
         </div>
-    );
-};
+    )
+}
 
-const DocumentListing = ({ 
+const DocumentListing = ({
     title,
     breadcrumbs = ['Dashboard'],
     columns = [],
@@ -135,21 +92,38 @@ const DocumentListing = ({
     isLoading = false,
     onMenuAction,
     getMenuOptions,
-    formatValue = defaultFormatValue,
     showSearch = false,
-    emptyMessage = "No data available",
+    emptyMessage = 'No data available',
     keyExtractor = (item, index) => item?._id ?? item?.id ?? index
+}: {
+    title: string
+    breadcrumbs?: string[]
+    columns: ColumnConfig[]
+    data: any[]
+    isLoading?: boolean
+    onMenuAction?: (action: string, item: any) => void
+    getMenuOptions?: (item: any) => any[]
+    showSearch?: boolean
+    emptyMessage?: string
+    keyExtractor?: (item: any, index: number) => string | number
 }) => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [filteredData, setFilteredData] = useState(data);
+    const [searchQuery, setSearchQuery] = useState('')
+    const [filteredData, setFilteredData] = useState(data)
 
     useEffect(() => {
         if (!showSearch || !searchQuery.trim()) {
-            setFilteredData(data);
-            return;
+            setFilteredData(data)
+            return
         }
-
-    }, [data, columns, showSearch]);
+        const query = searchQuery.toLowerCase()
+        setFilteredData(
+            data.filter((item) =>
+                columns.some((col) =>
+                    String(item[col.key] ?? '').toLowerCase().includes(query)
+                )
+            )
+        )
+    }, [data, searchQuery, showSearch])
 
     return (
         <div className='document-listing-container'>
@@ -169,7 +143,6 @@ const DocumentListing = ({
                         </i>
                     </div>
                 </div>
-                
                 <div className='document-listing-header-bottom-container'>
                     <div className='document-listing-header-tabs-container'>
                         <div className='document-listing-header-tab-container'>
@@ -179,25 +152,20 @@ const DocumentListing = ({
                             <p className='document-listing-header-tab-name'>List</p>
                         </div>
                     </div>
-
-                    <div className='document-listing-header-filters-container'>
-            
-                    </div>
+                    <div className='document-listing-header-filters-container'></div>
                 </div>
             </div>
-
             <div className='document-listing-body-container'>
                 <div className='document-listing-table-container'>
                     {columns.length > 0 && (
                         <div className='document-listing-table-header-container'>
-                            {columns.map((column) => (
-                                <div className='document-listing-cell header-cell' key={column.key}>
-                                    <h4 className='document-listing-cell-title'>{column.title}</h4>
+                            {columns.map((col) => (
+                                <div className='document-listing-cell header-cell' key={col.key}>
+                                    <h4 className='document-listing-cell-title'>{col.title}</h4>
                                 </div>
                             ))}
                         </div>
                     )}
-
                     <div className='document-listing-table-body-container'>
                         {isLoading ? (
                             <>
@@ -213,30 +181,31 @@ const DocumentListing = ({
                             filteredData.map((item, idx) => (
                                 <ActionBasedFloatingContainer
                                     key={keyExtractor(item, idx)}
-                                    options={getMenuOptions(item)}
-                                    className="document-listing-table-row-container"
+                                    options={getMenuOptions ? getMenuOptions(item) : []}
+                                    className='document-listing-table-row-container'
                                     useCursorPosition={true}
                                     deleteMenuStyle={true}
                                 >
-                                    {columns.map((column) => (
+                                    {columns.map((col) => (
                                         <div
                                             className='document-listing-cell'
-                                            key={column.key}
-                                            title={String(item?.[column.key] ?? '')}
+                                            key={col.key}
+                                            title={String(item?.[col.key] ?? '')}
                                         >
-                                            {formatValue(column.key, item?.[column.key])}
+                                            {col.render
+                                                ? col.render(item[col.key], item)
+                                                : String(item[col.key] ?? '—')}
                                         </div>
                                     ))}
                                 </ActionBasedFloatingContainer>
                             ))
                         )}
                     </div>
-
                     <div className='document-listing-table-footer-container' />
                 </div>
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default DocumentListing;
+export default DocumentListing

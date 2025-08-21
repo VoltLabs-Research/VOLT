@@ -101,6 +101,7 @@
     padding: 1rem 0;
     position: sticky;
     top: 0;
+    background-color: white;
     z-index: 1;
 }
 
@@ -112,7 +113,6 @@
 .document-listing-table-row-container{
     display: flex;
     justify-content: space-between;
-    cursor: pointer;
     gap: 1rem;
     padding: 1rem 0;
     border-bottom: 1px solid #f0f0f0;
@@ -153,7 +153,9 @@
     padding: 1rem 0;
 }
 
-.method-badge{
+.method-badge,
+.rate-badge,
+.status-badge{
     display: inline-flex;
     align-items: center;
     padding: 0.4rem 0.8rem;
@@ -165,32 +167,6 @@
     text-transform: capitalize;
 }
 
-/* Badge base para métodos */
-.method-badge{
-    display: inline-flex;
-    align-items: center;
-    padding: 0.4rem 0.8rem;
-    border-radius: 1rem;
-    font-size: 0.8rem;
-    font-weight: 500;
-    border: 1px solid;
-    white-space: nowrap;
-    text-transform: capitalize;
-}
-
-/* Badge base para identification rates */
-.rate-badge{
-    display: inline-flex;
-    align-items: center;
-    padding: 0.4rem 0.8rem;
-    border-radius: 1rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    border: 1px solid;
-    white-space: nowrap;
-}
-
-/* Colores específicos para cada método */
 .method-badge-blue{
     background-color: #dbeafe;
     color: #1d4ed8;
@@ -239,7 +215,6 @@
     border-color: #e2e8f0;
 }
 
-/* Colores para identification rates por rango de porcentaje */
 .rate-badge-green{
     background-color: #dcfce7;
     color: #15803d;
@@ -276,28 +251,26 @@
     border-color: #e2e8f0;
 }
 
-/* Estilos para las acciones de fila */
-.row-actions-trigger{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+.status-badge-green{
+    background-color: #dcfce7;
+    color: #166534;
+    border-color: #86efac;
 }
 
-.row-actions-trigger:hover{
+.status-badge-orange{
+    background-color: #fed7aa;
+    color: #c2410c;
+    border-color: #fdba74;
+}
+
+.status-badge-red{
+    background-color: #fee2e2;
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+.status-badge-gray{
     background-color: #f1f5f9;
-}
-
-.row-actions-icon{
-    font-size: 1.2rem;
-    color: #64748b;
-}
-
-.document-listing-header-bottom-container{
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
+    color: #475569;
+    border-color: #e2e8f0;
 }

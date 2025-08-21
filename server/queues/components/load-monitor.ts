@@ -43,7 +43,7 @@ export class LoadMonitor{
         const ramUsage = ((totalMem - freeMem) / totalMem) * 100;
         
         return { 
-            overloaded: cpuUsage > this.cpuLoadThreshold || ramUsage > this.ramLoadThreshold,
+            overloaded: false, /* cpuUsage > this.cpuLoadThreshold || ramUsage > this.ramLoadThreshold,*/
             cpu: Math.round(cpuUsage * 100) / 100, 
             ram: Math.round(ramUsage * 100) / 100
         };
