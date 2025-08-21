@@ -7,7 +7,8 @@
 #include "quaternion.h"
 #include "scaling.h"
 #include "rotation.h"
-#include <cassert>
+#include <array>
+#include <cmath>
 
 namespace OpenDXA{
 
@@ -37,180 +38,193 @@ public:
 	};
 
 public:
-	Matrix_3() {}
-	 Matrix_3(T m11, T m12, T m13,
+	constexpr Matrix_3() noexcept {}
+	constexpr Matrix_3(T m11, T m12, T m13,
 					   T m21, T m22, T m23,
-					   T m31, T m32, T m33)
-		: std::array<Vector_3<T>,3>{{Vector_3<T>(m11,m21,m31),
-									 Vector_3<T>(m12,m22,m32),
-									 Vector_3<T>(m13,m23,m33)}} {}
-	 Matrix_3(const column_type& c1, const column_type& c2, const column_type& c3)
+					   T m31, T m32, T m33) noexcept
+		: std::array<Vector_3<T>,3>{{ {m11,m21,m31},
+									  {m12,m22,m32},
+									  {m13,m23,m33} }} {}
+
+	constexpr Matrix_3(const column_type& c1, const column_type& c2, const column_type& c3) noexcept
 		: std::array<Vector_3<T>,3>{{c1, c2, c3}} {}
-	 Matrix_3(Zero)
+	constexpr Matrix_3(Zero) noexcept
 		: std::array<Vector_3<T>,3>{{typename Vector_3<T>::Zero(), typename Vector_3<T>::Zero(), typename Vector_3<T>::Zero()}} {}
-	 Matrix_3(Identity)
-		: std::array<Vector_3<T>,3>{{Vector_3<T>(T(1),T(0),T(0)),
-									 Vector_3<T>(T(0),T(1),T(0)),
-									 Vector_3<T>(T(0),T(0),T(1))}} {}
+	constexpr Matrix_3(Identity) noexcept
+		: std::array<Vector_3<T>,3>{{ {T(1),T(0),T(0)},
+									  {T(0),T(1),T(0)},
+									  {T(0),T(0),T(1)} }} {}
 
 	template<typename U>
-	explicit operator Matrix_3<U>() const {
+	explicit constexpr operator Matrix_3<U>() const noexcept {
 		return Matrix_3<U>(
 				static_cast<U>((*this)(0,0)), static_cast<U>((*this)(0,1)), static_cast<U>((*this)(0,2)),
 				static_cast<U>((*this)(1,0)), static_cast<U>((*this)(1,1)), static_cast<U>((*this)(1,2)),
 				static_cast<U>((*this)(2,0)), static_cast<U>((*this)(2,1)), static_cast<U>((*this)(2,2)));
 	}
 
-	static  size_type row_count() { return 3; }
-	static  size_type col_count() { return 3; }
-	inline T operator()(size_type row, size_type col) const {
+	static constexpr size_type row_count() noexcept { return 3; }
+	static constexpr size_type col_count() noexcept { return 3; }
+
+	constexpr T operator()(size_type row, size_type col) const noexcept {
 		return (*this)[col][row];
 	}
 
-	inline T& operator()(size_type row, size_type col) {
+	T& operator()(size_type row, size_type col) noexcept {
 		return (*this)[col][row];
 	}
 
-	const column_type& column(size_type col) const {
+	constexpr const column_type& column(size_type col) const noexcept {
 		return (*this)[col];
 	}
 
-	column_type& column(size_type col) {
+	column_type& column(size_type col) noexcept {
 		return (*this)[col];
 	}
 
-	Vector_3<T> row(size_type row) const {
+	constexpr Vector_3<T> row(size_type row) const noexcept {
 		return { (*this)[0][row], (*this)[1][row], (*this)[2][row] };
 	}
 
-	element_type* elements() {
+	element_type* elements() noexcept {
 		return column(0).data();
 	}
 
-	const element_type* elements() const {
+	const element_type* elements() const noexcept {
 		return column(0).data();
 	}
 
-	void setZero() {
+	void setZero() noexcept {
 		(*this)[0].setZero();
 		(*this)[1].setZero();
 		(*this)[2].setZero();
 	}
 
-	Matrix_3& operator=(Zero) {
+	Matrix_3& operator=(Zero) noexcept {
 		setZero();
 		return *this;
 	}
 
-	void setIdentity() {
-		(*this)[0] = Vector_3<T>(1,0,0);
-		(*this)[1] = Vector_3<T>(0,1,0);
-		(*this)[2] = Vector_3<T>(0,0,1);
+	void setIdentity() noexcept {
+		(*this)[0] = Vector_3<T>(T(1),T(0),T(0));
+		(*this)[1] = Vector_3<T>(T(0),T(1),T(0));
+		(*this)[2] = Vector_3<T>(T(0),T(0),T(1));
 	}
 
-	Matrix_3& operator=(Identity) {
+	Matrix_3& operator=(Identity) noexcept {
 		setIdentity();
 		return *this;
 	}
 
-	bool operator==(const Matrix_3& b) const {
+	constexpr bool operator==(const Matrix_3& b) const noexcept {
 		return (b[0] == (*this)[0]) && (b[1] == (*this)[1]) && (b[2] == (*this)[2]);
 	}
 
-	bool operator!=(const Matrix_3& b) const {
+	constexpr bool operator!=(const Matrix_3& b) const noexcept {
 		return !(*this == b);
 	}
 
-	inline bool equals(const Matrix_3& m, T tolerance = T(EPSILON)) const {
-		for(size_type i = 0; i < col_count(); i++)
-			if(!column(i).equals(m.column(i), tolerance)) return false;
-		return true;
+	inline bool equals(const Matrix_3& m, T tolerance = T(EPSILON)) const noexcept {
+		return column(0).equals(m.column(0), tolerance) &&
+			   column(1).equals(m.column(1), tolerance) &&
+			   column(2).equals(m.column(2), tolerance);
 	}
 
-	inline bool isZero(T tolerance = T(EPSILON)) const {
-		for(size_type i = 0; i < col_count(); i++)
-			if(!column(i).isZero(tolerance)) return false;
-		return true;
+	inline bool isZero(T tolerance = T(EPSILON)) const noexcept {
+		return column(0).isZero(tolerance) &&
+			   column(1).isZero(tolerance) &&
+			   column(2).isZero(tolerance);
 	}
 
-	Matrix_3 inverse() const {
+	inline Matrix_3 inverse() const {
+		if (isOrthogonalMatrix()) {
+			return transposed();
+		}
 		T det = determinant();
-		assert("Singular matrix cannot be inverted: Determinant is zero.");
 		if(det == 0) throw std::runtime_error("Matrix3 cannot be inverted: determinant is zero.");
-		return Matrix_3(((*this)[1][1]*(*this)[2][2] - (*this)[1][2]*(*this)[2][1])/det,
-						((*this)[2][0]*(*this)[1][2] - (*this)[1][0]*(*this)[2][2])/det,
-						((*this)[1][0]*(*this)[2][1] - (*this)[1][1]*(*this)[2][0])/det,
-						((*this)[2][1]*(*this)[0][2] - (*this)[0][1]*(*this)[2][2])/det,
-						((*this)[0][0]*(*this)[2][2] - (*this)[2][0]*(*this)[0][2])/det,
-						((*this)[0][1]*(*this)[2][0] - (*this)[0][0]*(*this)[2][1])/det,
-						((*this)[0][1]*(*this)[1][2] - (*this)[1][1]*(*this)[0][2])/det,
-						((*this)[0][2]*(*this)[1][0] - (*this)[0][0]*(*this)[1][2])/det,
-						((*this)[0][0]*(*this)[1][1] - (*this)[1][0]*(*this)[0][1])/det);
+		
+        T inv_det = T(1) / det;
+		return Matrix_3(((*this)[1][1]*(*this)[2][2] - (*this)[1][2]*(*this)[2][1])*inv_det,
+						((*this)[2][0]*(*this)[1][2] - (*this)[1][0]*(*this)[2][2])*inv_det,
+						((*this)[1][0]*(*this)[2][1] - (*this)[1][1]*(*this)[2][0])*inv_det,
+						((*this)[2][1]*(*this)[0][2] - (*this)[0][1]*(*this)[2][2])*inv_det,
+						((*this)[0][0]*(*this)[2][2] - (*this)[2][0]*(*this)[0][2])*inv_det,
+						((*this)[0][1]*(*this)[2][0] - (*this)[0][0]*(*this)[2][1])*inv_det,
+						((*this)[0][1]*(*this)[1][2] - (*this)[1][1]*(*this)[0][2])*inv_det,
+						((*this)[0][2]*(*this)[1][0] - (*this)[0][0]*(*this)[1][2])*inv_det,
+						((*this)[0][0]*(*this)[1][1] - (*this)[1][0]*(*this)[0][1])*inv_det);
 	}
 
-	bool inverse(Matrix_3& result, T epsilon = T(EPSILON)) const {
+	inline bool inverse(Matrix_3& result, T epsilon = T(EPSILON)) const noexcept {
+		if (isOrthogonalMatrix(epsilon)) {
+			result = transposed();
+			return true;
+		}
 		T det = determinant();
 		if(std::abs(det) <= epsilon) return false;
-		result = Matrix_3(((*this)[1][1]*(*this)[2][2] - (*this)[1][2]*(*this)[2][1])/det,
-						((*this)[2][0]*(*this)[1][2] - (*this)[1][0]*(*this)[2][2])/det,
-						((*this)[1][0]*(*this)[2][1] - (*this)[1][1]*(*this)[2][0])/det,
-						((*this)[2][1]*(*this)[0][2] - (*this)[0][1]*(*this)[2][2])/det,
-						((*this)[0][0]*(*this)[2][2] - (*this)[2][0]*(*this)[0][2])/det,
-						((*this)[0][1]*(*this)[2][0] - (*this)[0][0]*(*this)[2][1])/det,
-						((*this)[0][1]*(*this)[1][2] - (*this)[1][1]*(*this)[0][2])/det,
-						((*this)[0][2]*(*this)[1][0] - (*this)[0][0]*(*this)[1][2])/det,
-						((*this)[0][0]*(*this)[1][1] - (*this)[1][0]*(*this)[0][1])/det);
+
+		T inv_det = T(1) / det;
+		result = Matrix_3(((*this)[1][1]*(*this)[2][2] - (*this)[1][2]*(*this)[2][1])*inv_det,
+						((*this)[2][0]*(*this)[1][2] - (*this)[1][0]*(*this)[2][2])*inv_det,
+						((*this)[1][0]*(*this)[2][1] - (*this)[1][1]*(*this)[2][0])*inv_det,
+						((*this)[2][1]*(*this)[0][2] - (*this)[0][1]*(*this)[2][2])*inv_det,
+						((*this)[0][0]*(*this)[2][2] - (*this)[2][0]*(*this)[0][2])*inv_det,
+						((*this)[0][1]*(*this)[2][0] - (*this)[0][0]*(*this)[2][1])*inv_det,
+						((*this)[0][1]*(*this)[1][2] - (*this)[1][1]*(*this)[0][2])*inv_det,
+						((*this)[0][2]*(*this)[1][0] - (*this)[0][0]*(*this)[1][2])*inv_det,
+						((*this)[0][0]*(*this)[1][1] - (*this)[1][0]*(*this)[0][1])*inv_det);
 		return true;
 	}
-	inline T determinant() const {
+
+	constexpr T determinant() const noexcept {
 		return(((*this)[0][0]*(*this)[1][1] - (*this)[0][1]*(*this)[1][0])*((*this)[2][2])
 			  -((*this)[0][0]*(*this)[1][2] - (*this)[0][2]*(*this)[1][0])*((*this)[2][1])
 			  +((*this)[0][1]*(*this)[1][2] - (*this)[0][2]*(*this)[1][1])*((*this)[2][0]));
 	}
 
-	Matrix_3 transposed() const {
+	constexpr Matrix_3 transposed() const noexcept {
 		return Matrix_3((*this)[0][0], (*this)[0][1], (*this)[0][2],
 						(*this)[1][0], (*this)[1][1], (*this)[1][2],
 						(*this)[2][0], (*this)[2][1], (*this)[2][2]);
 	}
 
-	inline  T prodrow(const Point_3<T>& p, typename Point_3<T>::size_type index) const {
+	constexpr T prodrow(const Point_3<T>& p, typename Point_3<T>::size_type index) const noexcept {
 		return (*this)[0][index] * p[0] + (*this)[1][index] * p[1] + (*this)[2][index] * p[2];
 	}
 
-	inline  T prodrow(const Vector_3<T>& v, typename Vector_3<T>::size_type index) const {
+	constexpr T prodrow(const Vector_3<T>& v, typename Vector_3<T>::size_type index) const noexcept {
 		return (*this)[0][index] * v[0] + (*this)[1][index] * v[1] + (*this)[2][index] * v[2];
 	}
 
-	bool isOrthogonalMatrix(T epsilon = T(EPSILON)) const {
+	inline bool isOrthogonalMatrix(T epsilon = T(EPSILON)) const noexcept {
 		return
-			(std::abs((*this)[0][0]*(*this)[1][0] + (*this)[0][1]*(*this)[1][1] + (*this)[0][2]*(*this)[1][2]) <= epsilon) &&
-			(std::abs((*this)[0][0]*(*this)[2][0] + (*this)[0][1]*(*this)[2][1] + (*this)[0][2]*(*this)[2][2]) <= epsilon) &&
-			(std::abs((*this)[1][0]*(*this)[2][0] + (*this)[1][1]*(*this)[2][1] + (*this)[1][2]*(*this)[2][2]) <= epsilon) &&
-			(std::abs((*this)[0][0]*(*this)[0][0] + (*this)[0][1]*(*this)[0][1] + (*this)[0][2]*(*this)[0][2] - T(1)) <= epsilon) &&
-			(std::abs((*this)[1][0]*(*this)[1][0] + (*this)[1][1]*(*this)[1][1] + (*this)[1][2]*(*this)[1][2] - T(1)) <= epsilon) &&
-			(std::abs((*this)[2][0]*(*this)[2][0] + (*this)[2][1]*(*this)[2][1] + (*this)[2][2]*(*this)[2][2] - T(1)) <= epsilon);
+			(std::abs(column(0).dot(column(1))) <= epsilon) &&
+			(std::abs(column(0).dot(column(2))) <= epsilon) &&
+			(std::abs(column(1).dot(column(2))) <= epsilon) &&
+			(std::abs(column(0).dot(column(0)) - T(1)) <= epsilon) &&
+			(std::abs(column(1).dot(column(1)) - T(1)) <= epsilon) &&
+			(std::abs(column(2).dot(column(2)) - T(1)) <= epsilon);
 	}
 
-	static inline Matrix_3 rotationX(T angle) {
-		const T c = cos(angle);
-		const T s = sin(angle);
+	static inline Matrix_3 rotationX(T angle) noexcept {
+		const T c = std::cos(angle);
+		const T s = std::sin(angle);
 		return {T(1), T(0), T(0),
 				T(0), c,   -s,
 				T(0), s,    c};
 	}
 
-	static inline Matrix_3 rotationY(T angle) {
-		const T c = cos(angle);
-		const T s = sin(angle);
+	static inline Matrix_3 rotationY(T angle) noexcept {
+		const T c = std::cos(angle);
+		const T s = std::sin(angle);
 		return { c,    T(0), s,
 				 T(0), T(1), T(0),
 			    -s,    T(0), c};
 	}
 
-	static inline Matrix_3 rotationZ(T angle) {
-		const T c = cos(angle);
-		const T s = sin(angle);
+	static inline Matrix_3 rotationZ(T angle) noexcept {
+		const T c = std::cos(angle);
+		const T s = std::sin(angle);
 		return {c,    -s,    T(0),
 				s,     c,    T(0),
 				T(0),  T(0), T(1)};
@@ -225,8 +239,8 @@ template<typename T>
 inline Matrix_3<T> Matrix_3<T>::rotation(const RotationT<T>& rot){
 	if(rot.angle() == T(0))
 		return Matrix_3<T>::Identity();
-	T c = cos(rot.angle());
-	T s = sin(rot.angle());
+	T c = std::cos(rot.angle());
+	T s = std::sin(rot.angle());
 	T t = T(1) - c;
 	const auto& a = rot.axis();
 	return Matrix_3<T>(	t * a.x() * a.x() + c,       t * a.x() * a.y() - s * a.z(), t * a.x() * a.z() + s * a.y(),
@@ -245,23 +259,17 @@ inline Matrix_3<T> Matrix_3<T>::rotation(const QuaternionT<T>& q){
 
 template<typename T>
 inline Matrix_3<T> Matrix_3<T>::rotation(T ai, T aj, T ak, EulerAxisSequence axisSequence){
-	//assert(axisSequence == Matrix_3<T>::szyx);
-	int firstaxis = 2;
-	int parity = 1;
-	bool repetition = false;
-	bool frame = false;
+	int firstaxis = (axisSequence >> 2) & 3;
+	int parity = (axisSequence >> 1) & 1;
+	bool repetition = axisSequence & 1;
+	bool frame = (axisSequence >> 5) & 1;
 
 	int i = firstaxis;
-	int j = (i + parity + 1) % 3;
-	int k = (i - parity + 2) % 3;
-
-	if(frame)
-		std::swap(ai, ak);
-	if(parity) {
-		ai = -ai;
-		aj = -aj;
-		ak = -ak;
-	}
+	int j = (firstaxis + 1 + parity) % 3;
+	int k = (firstaxis + 2 - parity) % 3;
+	
+	if(frame) std::swap(ai, ak);
+	if(parity) { aj = -aj; }
 
 	T si = std::sin(ai), sj = std::sin(aj), sk = std::sin(ak);
 	T ci = std::cos(ai), cj = std::cos(aj), ck = std::cos(ak);
@@ -270,48 +278,33 @@ inline Matrix_3<T> Matrix_3<T>::rotation(T ai, T aj, T ak, EulerAxisSequence axi
 
 	Matrix_3<T> M;
 	if(repetition) {
-		M(i, i) = cj;
-		M(i, j) = sj*si;
-		M(i, k) = sj*ci;
-		M(j, i) = sj*sk;
-		M(j, j) = -cj*ss+cc;
-		M(j, k) = -cj*cs-sc;
-		M(k, i) = -sj*ck;
-		M(k, j) = cj*sc+cs;
-		M(k, k) = cj*cc-ss;
-	}
-	else {
-		M(i, i) = cj*ck;
-		M(i, j) = sj*sc-cs;
-		M(i, k) = sj*cc+ss;
-		M(j, i) = cj*sk;
-		M(j, j) = sj*ss+cc;
-		M(j, k) = sj*cs-sc;
-		M(k, i) = -sj;
-		M(k, j) = cj*si;
-		M(k, k) = cj*ci;
+		M(i, i) = cj; M(i, j) = sj*si; M(i, k) = sj*ci;
+		M(j, i) = sj*sk; M(j, j) = -cj*ss+cc; M(j, k) = -cj*cs-sc;
+		M(k, i) = -sj*ck; M(k, j) = cj*sc+cs; M(k, k) = cj*cc-ss;
+	} else {
+		M(i, i) = cj*ck; M(i, j) = sj*sc-cs; M(i, k) = sj*cc+ss;
+		M(j, i) = cj*sk; M(j, j) = sj*ss+cc; M(j, k) = sj*cs-sc;
+		M(k, i) = -sj; M(k, j) = cj*si; M(k, k) = cj*ci;
 	}
 	return M;
 }
 
 template<typename T>
-inline Vector_3<T> operator*(const Matrix_3<T>& m, const Vector_3<T>& v){
+constexpr Vector_3<T> operator*(const Matrix_3<T>& m, const Vector_3<T>& v) noexcept {
 	return { m(0,0)*v[0] + m(0,1)*v[1] + m(0,2)*v[2],
 			 m(1,0)*v[0] + m(1,1)*v[1] + m(1,2)*v[2],
 			 m(2,0)*v[0] + m(2,1)*v[1] + m(2,2)*v[2] };
-
 }
 
 template<typename T>
-inline Point_3<T> operator*(const Matrix_3<T>& m, const Point_3<T>& p){
+constexpr Point_3<T> operator*(const Matrix_3<T>& m, const Point_3<T>& p) noexcept {
 	return { m(0,0)*p[0] + m(0,1)*p[1] + m(0,2)*p[2],
 			 m(1,0)*p[0] + m(1,1)*p[1] + m(1,2)*p[2],
 			 m(2,0)*p[0] + m(2,1)*p[1] + m(2,2)*p[2] };
-
 }
 
 template<typename T>
-inline Matrix_3<T> operator*(const Matrix_3<T>& a, const Matrix_3<T>& b){
+constexpr Matrix_3<T> operator*(const Matrix_3<T>& a, const Matrix_3<T>& b) noexcept {
 	return Matrix_3<T>(
 			a(0,0)*b(0,0) + a(0,1)*b(1,0) + a(0,2)*b(2,0),
 			a(0,0)*b(0,1) + a(0,1)*b(1,1) + a(0,2)*b(2,1),
@@ -328,26 +321,22 @@ inline Matrix_3<T> operator*(const Matrix_3<T>& a, const Matrix_3<T>& b){
 }
 
 template<typename T>
-inline Matrix_3<T> operator+(const Matrix_3<T>& a, const Matrix_3<T>& b){
+constexpr Matrix_3<T> operator+(const Matrix_3<T>& a, const Matrix_3<T>& b) noexcept {
 	return Matrix_3<T>(a[0] + b[0], a[1] + b[1], a[2] + b[2]);
 }
 
 template<typename T>
-inline Matrix_3<T> operator-(const Matrix_3<T>& a, const Matrix_3<T>& b){
+constexpr Matrix_3<T> operator-(const Matrix_3<T>& a, const Matrix_3<T>& b) noexcept {
 	return Matrix_3<T>(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }
 
 template<typename T>
-inline Matrix_3<T> operator*(const Matrix_3<T>& a, T s){
-	return Matrix_3<T>(
-			a(0,0)*s, a(0,1)*s, a(0,2)*s,
-			a(1,0)*s, a(1,1)*s, a(1,2)*s,
-			a(2,0)*s, a(2,1)*s, a(2,2)*s
-	);
+constexpr Matrix_3<T> operator*(const Matrix_3<T>& a, T s) noexcept {
+	return Matrix_3<T>(a[0] * s, a[1] * s, a[2] * s);
 }
 
 template<typename T>
-inline Matrix_3<T> operator*(T s, const Matrix_3<T>& a) {
+constexpr Matrix_3<T> operator*(T s, const Matrix_3<T>& a) noexcept {
 	return a * s;
 }
 
