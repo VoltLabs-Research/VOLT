@@ -264,7 +264,7 @@ json DXAJsonExporter::exportDislocationsToJson(
     
     dislocations["summary"] = {
         {"total_points", totalPoints},
-        {"average_segment_length", dataArray.empty() ? 0.0 : totalLength / dataArray.size()}, // CORREGIDO: usar dataArray.size()
+        {"average_segment_length", dataArray.empty() ? 0.0 : totalLength / dataArray.size()}, 
         {"max_segment_length", maxLength},
         {"min_segment_length", minLength},
         {"total_length", totalLength}

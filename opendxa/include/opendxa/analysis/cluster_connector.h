@@ -18,8 +18,6 @@ public:
 private:
 	void initializeClustersForSuperclusterFormation();
 	void processDefectClusters();
-	void buildClustersCNA();
-	void buildClustersPTM();
 
 	void connectClusterNeighbors(int atomIndex, Cluster* cluster1);
 	void processAtomConnections(size_t atomIndex);
@@ -46,8 +44,6 @@ private:
 
 	Matrix3 quaternionToMatrix(const Quaternion& q);
 
-	void initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex);
-	std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&> getAtomStructureInfo(int atomIndex);
 	void processNeighborConnection(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, int structureType);
 	void addReverseNeighbor(int neighbor, int atomIndex);
 	void createNewClusterTransition(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, Cluster* cluster2);

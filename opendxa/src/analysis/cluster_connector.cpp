@@ -11,23 +11,17 @@ ClusterConnector::ClusterConnector(
     AnalysisContext& context
 ) : _sa(sa), _context(context){}
 
-std::tuple<int, const LatticeStructure&, const CoordinationStructure&, const std::array<int, 16>&>
-ClusterConnector::getAtomStructureInfo(int atomIndex){
+void ClusterConnector::connectClusterNeighbors(int atomIndex, Cluster* cluster1){
     int structureType = _context.structureTypes->getInt(atomIndex);
     const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
     const CoordinationStructure& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
     int symPermIndex = _context.atomSymmetryPermutations->getInt(atomIndex);
     const auto& permutation = latticeStructure.permutations[symPermIndex].permutation;
-    
-    return {structureType, latticeStructure, coordStructure, permutation};
-}
 
-void ClusterConnector::connectClusterNeighbors(int atomIndex, Cluster* cluster1){
-    const auto [structureType, latticeStructureType, coordStructure, permutation] = getAtomStructureInfo(atomIndex);
     const int nn = _sa.numberOfNeighbors(atomIndex); 
-    for (int ni = 0; ni < nn; ++ni){
+    for(int ni = 0; ni < nn; ++ni){
         int neighbor = _sa.getNeighbor(atomIndex, ni);
-        if (neighbor < 0 || neighbor == atomIndex) continue;
+        if(neighbor < 0 || neighbor == atomIndex) continue;
         processNeighborConnection(atomIndex, neighbor, ni, cluster1, structureType);
     }
 }
@@ -59,7 +53,7 @@ void ClusterConnector::growCluster(
 
             const Vector3& latticeVector = latticeStructure.latticeVectors[permutation[neighborIndex]];
             const Vector3& spatialVector = _context.simCell.wrapVector(
-                _context.positions->getPoint3(static_cast<size_t>(neighborAtomIndex)) - _context.positions->getPoint3(static_cast<size_t>(currentAtomIndex))
+                _context.positions->getPoint3(static_cast<size_t>(neighborIndex)) - _context.positions->getPoint3(static_cast<size_t>(currentAtomIndex))
             );
 
             for(size_t i = 0; i < 3; i++){
@@ -119,33 +113,26 @@ void ClusterConnector::growCluster(
 // Groups atoms with the same structure (FCC, BCC, HCP, etc.).
 Cluster* ClusterConnector::startNewCluster(int atomIndex, int structureType){
     Cluster* cluster = _sa.clusterGraph().createCluster(structureType);
-    //assert(cluster->id > 0);
+    assert(cluster->id > 0);
+    
     cluster->atomCount = 1;
     _context.atomClusters->setInt(atomIndex, cluster->id);
     _context.atomSymmetryPermutations->setInt(atomIndex, 0);
     return cluster;
 }
 
-void ClusterConnector::initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex){
-    double* qdat = _context.ptmOrientation->dataFloat() + seedAtomIndex * 4;
-    Quaternion q(qdat[0], qdat[1], qdat[2], qdat[3]);
-    q.normalize();
-    
-    // We save the orientations, that is, where the crystallographic X, Y, Z axis points.
-    Vector3 ex(1.0, 0.0, 0.0), ey(0.0, 1.0, 0.0), ez(0.0, 0.0, 1.0);
-    Matrix3 R;
-    R.column(0) = q * ex;
-    R.column(1) = q * ey;
-    R.column(2) = q * ez;
-    cluster->orientation = R;
-}
-
 Matrix3 ClusterConnector::quaternionToMatrix(const Quaternion& q)  {
     double w = q.w(), x = q.x(), y = q.y(), z = q.z();
     Matrix3 R;
-    R(0,0) = 1 - 2*(y*y + z*z); R(0,1) = 2*(x*y - w*z);     R(0,2) = 2*(x*z + w*y);
-    R(1,0) = 2*(x*y + w*z);     R(1,1) = 1 - 2*(x*x + z*z); R(1,2) = 2*(y*z - w*x);
-    R(2,0) = 2*(x*z - w*y);     R(2,1) = 2*(y*z + w*x);     R(2,2) = 1 - 2*(x*x + y*y);
+    R(0,0) = 1 - 2 * (y * y + z * z);
+    R(0,1) = 2 * (x * y - w * z);
+    R(0,2) = 2 * (x * z + w * y);
+    R(1,0) = 2 * (x * y + w * z);
+    R(1,1) = 1 - 2 * (x * x + z * z);
+    R(1,2) = 2 * (y * z - w * x);
+    R(2,0) = 2 * (x * z - w * y);
+    R(2,1) = 2 * (y * z + w * x);
+    R(2,2) = 1 - 2 * (x * x + y * y);
     return R;
 }
 
@@ -155,7 +142,7 @@ Quaternion ClusterConnector::getPTMAtomOrientation(int atom) const{
     return quat;
 }
 
-bool ClusterConnector::areOrientationsCompatible(int atom1, int atom2, int structureType){
+bool ClusterConnector::areOrientationsCompatible(int atom1, int atom2, int structureType){  
     Quaternion q1 = getPTMAtomOrientation(atom1);
     Quaternion q2 = getPTMAtomOrientation(atom2);
     Quaternion quatDiff = q1.inverse() * q2;
@@ -176,32 +163,13 @@ bool ClusterConnector::areOrientationsCompatible(int atom1, int atom2, int struc
         
         double angle = 2.0 * std::acos(std::abs(quatDiff.w()));
         const double STRICT_THRESHOLD = 3.0 * M_PI / 180.0; 
+
         return angle < STRICT_THRESHOLD;
     }
     
     double angle = 2.0 * std::acos(std::abs(quatDiff.w()));
     const double RELAXED_THRESHOLD = 8.0 * M_PI / 180.0; 
     return angle < RELAXED_THRESHOLD;
-}
-
-void ClusterConnector::growClusterPTM(Cluster* cluster, std::deque<int>& atomsToVisit, int structureType){
-    while(!atomsToVisit.empty()){
-        int currentAtom = atomsToVisit.front();
-        atomsToVisit.pop_front();
-
-        int numNeighbors = _sa.numberOfNeighbors(currentAtom);
-        for(int ni = 0; ni < numNeighbors; ++ni){
-            int neighbor = _sa.getNeighbor(currentAtom, ni);
-            if(neighbor < 0 || neighbor == currentAtom) continue;
-            if(_context.atomClusters->getInt(neighbor) != 0) continue;
-            if(_context.structureTypes->getInt(neighbor) != structureType) continue;
-            if(areOrientationsCompatible(currentAtom, neighbor, structureType)){
-                _context.atomClusters->setInt(neighbor, cluster->id);
-                cluster->atomCount++;
-                atomsToVisit.push_back(neighbor);
-            }
-        }
-    }
 }
 
 bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition) {
@@ -419,22 +387,157 @@ void ClusterConnector::formSuperClusters(){
 }
 
 void ClusterConnector::buildClusters(){
-    // Hack for CUBIC_DIAMOND in PTM
-    if(!_sa.usingPTM() || _context.inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND){
-        buildClustersCNA();
-        return;
+    const size_t N = _context.atomCount();
+
+    for(size_t seedAtomIndex = 0; seedAtomIndex < N; seedAtomIndex++){
+        if(alreadyProcessedAtom(seedAtomIndex)){
+            continue;
+        }
+
+        int structureType = _context.structureTypes->getInt(seedAtomIndex);
+        Cluster* cluster = startNewCluster(seedAtomIndex, structureType);
+
+        std::deque<int> atomsToVisit{ int(seedAtomIndex) };
+
+        // TODO: If the identification method is PTM and the crystal structure is CUBIC_DIAMOND, 
+        // TODO: for some reason, the instructions executed to construct PTM clusters cause the algorithm to fail to 
+        // TODO: find dislocations for CUBIC_DIAMOND. This doesn't happen when using FCC/BCC. 
+        // TODO: This is a HACK and a temporary solution.
+        if(!_sa.usingPTM() || _context.inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND){
+            // Set cluster orientation
+            Matrix_3<double> orientationV = Matrix_3<double>::Zero();
+            Matrix_3<double> orientationW = Matrix_3<double>::Zero();
+
+            // Grow Cluster
+            const auto& coordStruct = CoordinationStructures::_coordinationStructures[structureType];
+            const auto& latticeStruct = CoordinationStructures::_latticeStructures[structureType];
+
+            while(!atomsToVisit.empty()){
+                int currentAtomIdx = atomsToVisit.front();
+                atomsToVisit.pop_front();
+
+                int symmetryPermutationIdx = _context.atomSymmetryPermutations->getInt(static_cast<size_t>(currentAtomIdx));
+                const auto& permutation = latticeStruct.permutations[symmetryPermutationIdx].permutation;
+
+                for(int neighborIdx = 0; neighborIdx < coordStruct.numNeighbors; neighborIdx++){
+                    int neighborAtomIdx = _sa.getNeighbor(currentAtomIdx, neighborIdx);
+                    assert(neighborAtomIdx != currentAtomIdx);
+
+                    const auto& latticeVector = latticeStruct.latticeVectors[permutation[neighborIdx]];
+                    const auto& spatialVector = _context.simCell.wrapVector(
+                        _context.positions->getPoint3(static_cast<size_t>(neighborIdx)) - _context.positions->getPoint3(static_cast<size_t>(currentAtomIdx))
+                    );
+
+                    for(size_t i = 0; i < 3; i++){
+                        for(size_t j = 0; j < 3; j++){
+                            orientationV(i, j) += (latticeVector[j] * latticeVector[i]);
+                            orientationW(i, j) += (latticeVector[j] * spatialVector[i]);
+                        }
+                    }
+
+                    if(_context.atomClusters->getInt(neighborAtomIdx) != 0) continue;
+                    if(_context.structureTypes->getInt(neighborAtomIdx) != structureType) continue;
+
+                    Matrix3 tm1, tm2;
+                    bool properOverlap = true;
+
+                    for(int i = 0; i < 3; i++){
+                        int atomIdx;
+
+                        if(i != 2){
+                            atomIdx = _sa.getNeighbor(
+                                currentAtomIdx,
+                                coordStruct.commonNeighbors[neighborIdx][i]
+                            );
+                            tm1.column(i) = latticeStruct.latticeVectors[permutation[coordStruct.commonNeighbors[neighborIdx][i]]] -
+                                            latticeStruct.latticeVectors[permutation[neighborIdx]];
+                        }else{
+                            atomIdx = currentAtomIdx;
+                            tm1.column(i) = -(latticeStruct.latticeVectors[permutation[neighborIdx]]);
+                        }
+
+                        assert(_sa.numberOfNeighbors(neighborAtomIdx) == coordStruct.numNeighbors);
+                        int j = _sa.findNeighbor(neighborAtomIdx, atomIdx);
+                        if(j == -1){
+                            properOverlap = false;
+                            break;
+                        }
+
+                        tm2.column(i) = latticeStruct.latticeVectors[j];
+                    }
+
+                    if(!properOverlap) continue;
+
+                    assert(std::abs(tm1.determinant()) > EPSILON);
+
+                    Matrix3 tm2inverse;
+                    if(!tm2.inverse(tm2inverse)) continue;
+
+                    Matrix3 transition = tm1 * tm2inverse;
+
+                    for(size_t i = 0; i < latticeStruct.permutations.size(); i++){
+                        if(transition.equals(latticeStruct.permutations[i].transformation, CA_TRANSITION_MATRIX_EPSILON)){
+                            _context.atomClusters->setInt(neighborAtomIdx, cluster->id);
+                            cluster->atomCount++;
+                            _context.atomSymmetryPermutations->setInt(neighborAtomIdx, i);
+                            atomsToVisit.push_back(neighborAtomIdx);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            cluster->orientation = Matrix3(orientationW * orientationV.inverse());
+        }else{
+            // Set cluster orientation (using PTM data)
+            double* qdata = _context.ptmOrientation->dataFloat() + seedAtomIndex * 4;
+            Quaternion q(qdata[0], qdata[1], qdata[2], qdata[3]);
+            q.normalize();
+
+            Vector3 ex(1.0, 0.0, 0.0);
+            Vector3 ey(0.0, 1.0, 0.0);
+            Vector3 ez(0.0, 0.0, 1.0);
+            Matrix3 R;
+            R.column(0) = q * ex;
+            R.column(1) = q * ey;
+            R.column(2) = q * ez;
+            
+            cluster->orientation = R;
+
+            // Grow cluster
+            while(!atomsToVisit.empty()){
+                int currentAtomIdx = atomsToVisit.front();
+                atomsToVisit.pop_front();
+
+                int numNeighbors = _sa.numberOfNeighbors(currentAtomIdx);
+                for(int neighborIdx = 0; neighborIdx < numNeighbors; ++neighborIdx){
+                    int neighbor = _sa.getNeighbor(currentAtomIdx, neighborIdx);
+
+                    if(neighbor < 0 || neighbor == currentAtomIdx) continue;
+                    if(_context.atomClusters->getInt(neighbor) != 0) continue;
+                    if(_context.structureTypes->getInt(neighbor) != structureType) continue;
+
+                    if(areOrientationsCompatible(currentAtomIdx, neighbor, structureType)){
+                        _context.atomClusters->setInt(neighbor, cluster->id);
+                        cluster->atomCount++;
+                        atomsToVisit.push_back(neighbor);
+                    }
+                }
+            }
+        }        
+        
     }
-    
-    buildClustersPTM();
+
+    reorientAtomsToAlignClusters();
 }
 
 void ClusterConnector::applyPreferredOrientation(Cluster* cluster) {
-    const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[cluster->structure];
+    const auto& latticeStruct = CoordinationStructures::_latticeStructures[cluster->structure];
     double smallestDeviation = std::numeric_limits<double>::max();
     Matrix3 oldOrientation = cluster->orientation;
 
-    for(int symIndex = 0; symIndex < latticeStructure.permutations.size(); ++symIndex){
-        const Matrix3& symMatrix = latticeStructure.permutations[symIndex].transformation;
+    for(int symIndex = 0; symIndex < latticeStruct.permutations.size(); ++symIndex){
+        const Matrix3& symMatrix = latticeStruct.permutations[symIndex].transformation;
         Matrix3 newOrientation = oldOrientation * symMatrix.inverse();
         double scaling = std::pow(std::abs(newOrientation.determinant()), 1.0 / 3.0);
 
@@ -455,71 +558,27 @@ void ClusterConnector::applyPreferredOrientation(Cluster* cluster) {
 }
 
 void ClusterConnector::reorientAtomsToAlignClusters(){
-    tbb::parallel_for(
-        tbb::blocked_range<size_t>(0, _context.atomCount()),
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, _context.atomCount()),
         [this](const tbb::blocked_range<size_t>& r) {
-            for (size_t atomIndex = r.begin(); atomIndex != r.end(); ++atomIndex) {
+            for(size_t atomIndex = r.begin(); atomIndex != r.end(); ++atomIndex){
                 int clusterId = _context.atomClusters->getInt(atomIndex);
-                if (clusterId == 0) continue;
+                if(clusterId == 0) continue;
 
                 Cluster* cluster = _sa.clusterGraph().findCluster(clusterId);
-                //assert(cluster);
-                if (cluster->symmetryTransformation == 0) continue;
+                assert(cluster);
+                if(cluster->symmetryTransformation == 0) continue;
 
-                const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[cluster->structure];
+                const auto& latticeStruct = CoordinationStructures::_latticeStructures[cluster->structure];
                 int oldSymmetry = _context.atomSymmetryPermutations->getInt(atomIndex);
-                int newSymmetry = latticeStructure.permutations[oldSymmetry].inverseProduct[cluster->symmetryTransformation];
+                int newSymmetry = latticeStruct.permutations[oldSymmetry].inverseProduct[cluster->symmetryTransformation];
                 _context.atomSymmetryPermutations->setInt(atomIndex, newSymmetry);
             }
         }
     );
 }
 
-bool ClusterConnector::alreadyProcessedAtom(int index) {
-    if(_sa.usingPTM()){
-        return _context.atomClusters->getInt(index) != 0 || _context.structureTypes->getInt(index) == StructureType::OTHER;
-    }
-    return _context.atomClusters->getInt(index) != 0 || _context.structureTypes->getInt(index) == CoordinationStructureType::COORD_OTHER;
-}
-
-void ClusterConnector::buildClustersCNA(){
-    for(size_t seedAtomIndex = 0; seedAtomIndex < _context.atomCount(); seedAtomIndex++){
-        if(alreadyProcessedAtom(seedAtomIndex)) continue;
-
-        int structureType = _context.structureTypes->getInt(seedAtomIndex);
-        Cluster* cluster = startNewCluster(seedAtomIndex, structureType);
-
-        Matrix_3<double> orientationV = Matrix_3<double>::Zero();
-        Matrix_3<double> orientationW = Matrix_3<double>::Zero();
-        std::deque<int> atomsToVisit(1, seedAtomIndex);
-
-        growCluster(cluster, atomsToVisit, orientationV, orientationW, structureType);
-        cluster->orientation = Matrix3(orientationW * orientationV.inverse());
-
-        if(structureType == _context.inputCrystalType && !_context.preferredCrystalOrientations.empty()){
-            applyPreferredOrientation(cluster);
-        }
-    }
-
-    reorientAtomsToAlignClusters();
-}
-
-void ClusterConnector::buildClustersPTM(){
-    const size_t N = _context.atomCount();
-
-    for(size_t seedAtomIndex = 0; seedAtomIndex < N; ++seedAtomIndex){
-        if(alreadyProcessedAtom(seedAtomIndex)) continue;
-
-        int structureType = _context.structureTypes->getInt(seedAtomIndex);
-        Cluster* cluster = startNewCluster(seedAtomIndex, structureType);
-
-        initializePTMClusterOrientation(cluster, seedAtomIndex);
-
-        std::deque<int> atomsToVisit{ int(seedAtomIndex) };
-        growClusterPTM(cluster, atomsToVisit, structureType);
-    }
-
-    reorientAtomsToAlignClusters();
+bool ClusterConnector::alreadyProcessedAtom(int index){
+    return _context.atomClusters->getInt(index) != 0 || _context.structureTypes->getInt(index) == StructureType::OTHER;
 }
 
 }
