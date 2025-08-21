@@ -66,44 +66,8 @@ public:
         return reinterpret_cast<const Point3*>(constData());
     }
 
-    [[nodiscard]] const Point3I* constDataPoint3I() const noexcept{
-        return reinterpret_cast<const Point3I*>(constData());
-    }
-
-    [[nodiscard]] const SymmetricTensor2* constDataSymmetricTensor2() const noexcept{
-        return reinterpret_cast<const SymmetricTensor2*>(constData());
-    }
-
-    [[nodiscard]] const Matrix3* constDataMatrix3() const noexcept{
-        return reinterpret_cast<const Matrix3*>(constData());
-    }
-
-    [[nodiscard]] const Quaternion* constDataQuaternion() const noexcept{
-        return reinterpret_cast<const Quaternion*>(constData());
-    }
-
-    [[nodiscard]] boost::iterator_range<const int*> constIntRange() const{
-        return { constDataInt(), constDataInt() + _numElements };
-    }
-
-    [[nodiscard]] boost::iterator_range<const double*> constFloatRange() const{
-        return { constDataFloat(), constDataFloat() + _numElements };
-    }
-
     [[nodiscard]] boost::iterator_range<const Point3*> constPoint3Range() const{
         return { constDataPoint3(), constDataPoint3() + _numElements };
-    }
-
-    [[nodiscard]] boost::iterator_range<const SymmetricTensor2*> constSymmetricTensor2Range() const{
-        return { constDataSymmetricTensor2(), constDataSymmetricTensor2() + _numElements };
-    }
-
-    [[nodiscard]] boost::iterator_range<const Matrix3*> constMatrix3Range() const{
-        return { constDataMatrix3(), constDataMatrix3() + _numElements };
-    }
-
-    [[nodiscard]] boost::iterator_range<const Quaternion*> constQuaternionRange() const{
-        return { constDataQuaternion(), constDataQuaternion() + _numElements };
     }
 
     void* data() noexcept{
@@ -138,34 +102,12 @@ public:
         return reinterpret_cast<Quaternion*>(data());
     }
 
-    boost::iterator_range<int*> intRange(){
-        assert(_componentCount == 1);
-        return { dataInt(), dataInt() + _numElements };
-    }
-
-    boost::iterator_range<double*> floatRange(){
-        assert(_componentCount == 1);
-        return { dataFloat(), dataFloat() + _numElements };
-    }
-
     boost::iterator_range<Point3*> point3Range(){
         return { dataPoint3(), dataPoint3() + _numElements };
     }
 
-    boost::iterator_range<SymmetricTensor2*> symmetricTensor2Range(){
-        return { dataSymmetricTensor2(), dataSymmetricTensor2() + _numElements };
-    }
-
-    boost::iterator_range<Matrix3*> matrix3Range(){
-        return { dataMatrix3(), dataMatrix3() + _numElements };
-    }
-
-    boost::iterator_range<Quaternion*> quaternionRange(){
-        return { dataQuaternion(), dataQuaternion() + _numElements };
-    }
-
     [[nodiscard]] int getInt(std::size_t idx) const{
-        assert(idx < _numElements);
+        //assert(idx < _numElements);
         return constDataInt()[idx];
     }
 

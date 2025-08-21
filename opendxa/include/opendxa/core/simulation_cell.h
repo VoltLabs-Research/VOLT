@@ -14,20 +14,12 @@ public:
 	}
 
 	[[nodiscard]] bool hasPbc(size_t dim) const noexcept {
-        //assert(dim < 3);
+        assert(dim < 3);
         return _pbcFlags[dim];
     }
 
 	[[nodiscard]] constexpr bool is2D() const noexcept{
 		return _is2D;
-	}
-
-	void set2D(bool is2D){
-		_is2D = is2D;
-		if(is2D){
-			_pbcFlags[2] = false;
-		}
-		computeInverseMatrix();
 	}
 
 	[[nodiscard]] const AffineTransformation& matrix() const noexcept{
@@ -57,17 +49,6 @@ public:
 
 	[[nodiscard]] double volume3D() const{
 		return std::abs(_simulationCell.determinant());
-	}
-
-	[[nodiscard]] double volume2D() const{
-		return _simulationCell.column(0).cross(_simulationCell.column(1)).length();
-	}
-
-	[[nodiscard]] bool isAxisAligned() const{
-		const auto& m = matrix();
-		return m(1,0)==0 && m(2,0)==0 &&
-		       m(0,1)==0 && m(2,1)==0 &&
-		       m(0,2)==0 && m(1,2)==0;
 	}
 
 	[[nodiscard]] bool operator==(const SimulationCell& other) const = default;
@@ -152,15 +133,6 @@ public:
 			}
 		}
 		return false;
-	}
-
-	static constexpr int modulo(int k, int n){
-		return ((k %= n) < 0) ? k + n : k;
-	}
-
-	static constexpr double modulo(double k, double n){
-		k = std::fmod(k, n);
-		return (k < 0) ? k + n : k;
 	}
 
 private:
