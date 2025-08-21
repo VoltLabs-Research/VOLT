@@ -29,7 +29,6 @@ import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { readMsgpackFile } from '@/utilities/msgpack';
 import { writeGroupedJsonStreaming } from '@/utilities/fs';
 import { upsert } from '@/utilities/mongo-utils';
-import { IAnalysisConfig } from '@/types/models/analysis-config';
 import path from 'path';
 import os from 'os';
 import MeshExporter from '@utilities/export/mesh';
@@ -38,9 +37,8 @@ import LAMMPSToGLBExporter from '@utilities/export/atoms';
 import StructureAnalysis from '@/models/structure-analysis';
 import SimulationCell from '@/models/simulation-cell';
 import Dislocations from '@models/dislocations';
-import AnalysisConfig from '@/models/analysis-config';
 
-const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build-debug/opendxa');
+const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build/opendxa');
 
 const MSGPACK_OUTPUT_MAP = {
     defect_mesh: '_defect_mesh.msgpack',

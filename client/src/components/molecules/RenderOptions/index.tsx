@@ -9,7 +9,7 @@ import Loader from '@/components/atoms/Loader';
 import './RenderOptions.css';
 
 const RenderOptions = () => {
-    const [dislocationLineWidth, setDislocationLineWidth] = useState(1.5);
+    const [dislocationLineWidth, setDislocationLineWidth] = useState(0.8);
     const [tubularSegments, setTubularSegments] = useState(16);
     const [minSegmentPoints, setMinSegmentPoints] = useState(2);
     const dislocationRenderOptions = useTimestepStore((state) => state.dislocationRenderOptions);

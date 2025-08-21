@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { RxDotsHorizontal } from "react-icons/rx";
+import { RiListUnordered } from "react-icons/ri";
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import useTrajectoryStore from '@/stores/trajectories';
 import useTeamStore from '@/stores/team';
@@ -37,7 +39,7 @@ const DocumentListing = ({ title }) => {
         setValues(flat);
     }, [isLoading, structureAnalysis]);
 
-    const rows = [
+    const columns = [
         { title: 'Trajectory', key: 'trajectory' },
         { title: 'Method', key: 'analysisMethod' },
         { title: 'Identification Rate', key: 'identificationRate' },
@@ -51,38 +53,56 @@ const DocumentListing = ({ title }) => {
     return (
         <div className='document-listing-container'>
             <div className='document-listing-header-container'>
-                <div className='document-listing-header-title-container'>
-                    <h3 className='document-listing-header-title'>{title}</h3>
+                <div className='document-listing-header-top-container'>
+                    <div className='breadcrumbs-container'>
+                        {['Dashboard', 'Structure Analysis'].map((name, index) => (
+                            <div className='breadcrumb-item-container' key={index}>
+                                <p className='breadcrumb-item-name'>{name}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <div className='document-listing-header-title-container'>
+                        <h3 className='document-listing-header-title'>{title}</h3>
+                        <i className='document-listing-header-icon-container'>
+                            <RxDotsHorizontal />
+                        </i>
+                    </div>
+                </div>
+                
+                <div className='document-listing-header-tabs-container'>
+                    <div className='document-listing-header-tab-container'>
+                        <i className='document-listing-header-tab-icon-container'>
+                            <RiListUnordered />
+                        </i>
+                        <p className='document-listing-header-tab-name'>List</p>
+                    </div>
                 </div>
             </div>
 
             <div className='document-listing-body-container'>
                 <div className='document-listing-table-container'>
                     <div className='document-listing-table-header-container'>
-                        {rows.map((row) => (
-                            <div className='document-listing-cell header-cell' key={row.key}>
-                                <h4 className='document-listing-cell-title'>{row.title}</h4>
+                        {columns.map((column) => (
+                            <div className='document-listing-cell header-cell' key={column.key}>
+                                <h4 className='document-listing-cell-title'>{column.title}</h4>
                             </div>
                         ))}
                     </div>
 
                     <div className='document-listing-table-body-container'>
-                        <div className='document-listing-table-row-container'>
-                            {rows.map((row) => (
-                                <div className='document-listing-row' key={row.key}>
-                                    {values.map((item, idx) => (
-                                        <div
-                                            className='document-listing-cell'
-                                            key={item?._id ?? `${row.key}-${idx}`}
-                                            title={String(item?.[row.key] ?? '')}
-                                            >
-                                                <span>{formatValue(row.key, item?.[row.key])}</span>
-                                            </div>
-                                        ))
-                                    }
-                                </div>
-                            ))}
-                        </div>
+                        {values.map((item, idx) => (
+                            <div className='document-listing-table-row-container' key={item?._id ?? idx}>
+                                {columns.map((column) => (
+                                    <div
+                                        className='document-listing-cell'
+                                        key={column.key}
+                                        title={String(item?.[column.key] ?? '')}
+                                    >
+                                        <span>{formatValue(column.key, item?.[column.key])}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
                     </div>
 
                     <div className='document-listing-table-footer-container' />

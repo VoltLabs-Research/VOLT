@@ -207,7 +207,7 @@ bool LammpsParser::readAtomData(std::istream &in, Frame &f){
     // Reorder all arrays IN-PLACE according to sorted indices.
     // This avoids allocating large temporary vectors, which significantly reduces peak memory usage.
     for(size_t i = 0; i < indices.size(); ++i){
-        size_t j = indices[j];
+        size_t j = indices[i];
         while(j < i){
             j = indices[j];
         }

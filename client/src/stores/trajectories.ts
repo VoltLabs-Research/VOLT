@@ -389,6 +389,9 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 delete analysisConfig.simulationCell;
                 delete analysisConfig.dislocations;
                 delete analysisConfig.__v;
+                delete analysisConfig.updatedAt;
+                delete analysisConfig.createdAt;
+
                 await api.post(`/modifiers/crystal-analysis/${id}`, analysisConfig);
             }catch(error: any){
                 set({ 
