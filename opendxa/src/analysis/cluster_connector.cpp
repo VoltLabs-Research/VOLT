@@ -88,7 +88,26 @@ bool ClusterConnector::areOrientationsCompatible(int atom1, int atom2, int struc
     return angle < RELAXED_THRESHOLD;
 }
 
-bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition) {
+bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition){
+    if(_sa.usingPTM()){
+        int structureType = _context.structureTypes->getInt(atomIndex);
+        int neighborStructureType = _context.structureTypes->getInt(neighbor);
+
+        if(structureType != neighborStructureType) return false;
+
+        double* q1Data = _context.ptmOrientation->dataFloat() + atomIndex * 4;
+        double* q2Data = _context.ptmOrientation->dataFloat() + neighbor * 4;
+
+        Quaternion q1(q1Data[0], q1Data[1], q1Data[2], q1Data[3]);
+        Quaternion q2(q2Data[0], q2Data[1], q2Data[2], q2Data[3]);
+
+        Quaternion quatDiff = q1.inverse() * q2;
+
+        outTransition = quaternionToMatrix(quatDiff);
+
+        return outTransition.isOrthogonalMatrix();
+    }
+
     int structureType = _context.structureTypes->getInt(atomIndex);
     const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
     const CoordinationStructure& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
