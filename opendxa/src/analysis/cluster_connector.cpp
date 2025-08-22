@@ -324,43 +324,63 @@ void ClusterConnector::formSuperClusters(){
 void ClusterConnector::buildClusters(){
     const size_t N = _context.atomCount();
 
+    size_t totalProcessedAtoms = 0;
+    size_t rejectedByDeformation = 0;
+    size_t rejectedByOrientation = 0;
+    size_t rejectedByGeometry = 0;
+    size_t acceptedConnections = 0;
+
+    // Iterate over atoms, looking for those that have not been visited yet
     for(size_t seedAtomIndex = 0; seedAtomIndex < N; seedAtomIndex++){
-        if(alreadyProcessedAtom(seedAtomIndex)){
+        if(_context.atomClusters->getInt(seedAtomIndex) != 0){
+            continue;
+        }
+        
+        int structureType = _context.structureTypes->getInt(seedAtomIndex);
+        if(structureType == COORD_OTHER){
             continue;
         }
 
-        int structureType = _context.structureTypes->getInt(seedAtomIndex);
+        // Start a new cluster
         Cluster* cluster = startNewCluster(seedAtomIndex, structureType);
 
+        // For calculating the cluster orientation (if using CNA)
+        Matrix_3<double> orientationV = Matrix_3<double>::Zero();
+        Matrix_3<double> orientationW = Matrix_3<double>::Zero();
+
+        // Add neighboring atoms to the cluster
         std::deque<int> atomsToVisit{ int(seedAtomIndex) };
+        const auto& coordStruct = CoordinationStructures::_coordinationStructures[structureType];
+        const auto& latticeStruct = CoordinationStructures::_latticeStructures[structureType];
 
-        // TODO: If the identification method is PTM and the crystal structure is CUBIC_DIAMOND, 
-        // TODO: for some reason, the instructions executed to construct PTM clusters cause the algorithm to fail to 
-        // TODO: find dislocations for CUBIC_DIAMOND. This doesn't happen when using FCC/BCC. 
-        // TODO: This is a HACK and a temporary solution.
-        if(!_sa.usingPTM() || _context.inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND){
-            // Set cluster orientation
-            Matrix_3<double> orientationV = Matrix_3<double>::Zero();
-            Matrix_3<double> orientationW = Matrix_3<double>::Zero();
+        while(!atomsToVisit.empty()){
+            int currentAtomIdx = atomsToVisit.front();
+            atomsToVisit.pop_front();
+            totalProcessedAtoms++;
 
-            // Grow Cluster
-            const auto& coordStruct = CoordinationStructures::_coordinationStructures[structureType];
-            const auto& latticeStruct = CoordinationStructures::_latticeStructures[structureType];
+            // Look up symmetry permutation of current atom
+            int symmetryPermutationIdx = _context.atomSymmetryPermutations->getInt(static_cast<size_t>(currentAtomIdx));
+            const auto& permutation = latticeStruct.permutations[symmetryPermutationIdx].permutation;
+            
+            // Visit neighbors of the current atom
+            for(int neighborIdx = 0; neighborIdx < coordStruct.numNeighbors; neighborIdx++){
+                // An atom should not be a neighbor of itself
+                // We use the minimum image convention for simulation cells with periodic boundary conditions
+                int neighborAtomIdx = _sa.getNeighbor(currentAtomIdx, neighborIdx);
+                assert(neighborAtomIdx != currentAtomIdx);
 
-            while(!atomsToVisit.empty()){
-                int currentAtomIdx = atomsToVisit.front();
-                atomsToVisit.pop_front();
+                // Skip neighbors which are already part of the cluster, or which 
+                // have a different coordination structure type
+                if(neighborAtomIdx < 0 || neighborAtomIdx == currentAtomIdx) continue;
+                if(_context.atomClusters->getInt(neighborAtomIdx) != 0) continue;
+                if(_context.structureTypes->getInt(neighborAtomIdx) != structureType) continue;
 
-                int symmetryPermutationIdx = _context.atomSymmetryPermutations->getInt(static_cast<size_t>(currentAtomIdx));
-                const auto& permutation = latticeStruct.permutations[symmetryPermutationIdx].permutation;
-
-                for(int neighborIdx = 0; neighborIdx < coordStruct.numNeighbors; neighborIdx++){
-                    int neighborAtomIdx = _sa.getNeighbor(currentAtomIdx, neighborIdx);
-                    assert(neighborAtomIdx != currentAtomIdx);
-
+                if(!_sa.usingPTM()){
+                    // Add vector pair to matrices for computing the cluster orientation
                     const auto& latticeVector = latticeStruct.latticeVectors[permutation[neighborIdx]];
                     const auto& spatialVector = _context.simCell.wrapVector(
-                        _context.positions->getPoint3(static_cast<size_t>(neighborIdx)) - _context.positions->getPoint3(static_cast<size_t>(currentAtomIdx))
+                        _context.positions->getPoint3(static_cast<size_t>(neighborAtomIdx)) - 
+                        _context.positions->getPoint3(static_cast<size_t>(currentAtomIdx))
                     );
 
                     for(size_t i = 0; i < 3; i++){
@@ -369,62 +389,132 @@ void ClusterConnector::buildClusters(){
                             orientationW(i, j) += (latticeVector[j] * spatialVector[i]);
                         }
                     }
+                }
+        
+                // Select three non-coplanar atoms, which are all neighbors of the current neighbor.
+                // One of them is the current central atom, two are common neighbors.
+                Matrix3 tm1, tm2;
+                bool properOverlap = true;
 
-                    if(_context.atomClusters->getInt(neighborAtomIdx) != 0) continue;
-                    if(_context.structureTypes->getInt(neighborAtomIdx) != structureType) continue;
+                for(int i = 0; i < 3; i++){
+                    int atomIdx;
 
-                    Matrix3 tm1, tm2;
-                    bool properOverlap = true;
-
-                    for(int i = 0; i < 3; i++){
-                        int atomIdx;
-
-                        if(i != 2){
-                            atomIdx = _sa.getNeighbor(
-                                currentAtomIdx,
-                                coordStruct.commonNeighbors[neighborIdx][i]
-                            );
-                            tm1.column(i) = latticeStruct.latticeVectors[permutation[coordStruct.commonNeighbors[neighborIdx][i]]] -
-                                            latticeStruct.latticeVectors[permutation[neighborIdx]];
-                        }else{
-                            atomIdx = currentAtomIdx;
-                            tm1.column(i) = -(latticeStruct.latticeVectors[permutation[neighborIdx]]);
-                        }
-
-                        assert(_sa.numberOfNeighbors(neighborAtomIdx) == coordStruct.numNeighbors);
-                        int j = _sa.findNeighbor(neighborAtomIdx, atomIdx);
-                        if(j == -1){
-                            properOverlap = false;
-                            break;
-                        }
-
-                        tm2.column(i) = latticeStruct.latticeVectors[j];
+                    if(i != 2){
+                        atomIdx = _sa.getNeighbor(
+                            currentAtomIdx,
+                            coordStruct.commonNeighbors[neighborIdx][i]
+                        );
+                        tm1.column(i) = latticeStruct.latticeVectors[permutation[coordStruct.commonNeighbors[neighborIdx][i]]] -
+                                        latticeStruct.latticeVectors[permutation[neighborIdx]];
+                    }else{
+                        atomIdx = currentAtomIdx;
+                        tm1.column(i) = -(latticeStruct.latticeVectors[permutation[neighborIdx]]);
                     }
 
-                    if(!properOverlap) continue;
+                    assert(_sa.numberOfNeighbors(neighborAtomIdx) == coordStruct.numNeighbors);
+                    int j = _sa.findNeighbor(neighborAtomIdx, atomIdx);
+                    if(j == -1){
+                        properOverlap = false;
+                        break;
+                    }
 
-                    assert(std::abs(tm1.determinant()) > EPSILON);
+                    tm2.column(i) = latticeStruct.latticeVectors[j];
+                }
 
-                    Matrix3 tm2inverse;
-                    if(!tm2.inverse(tm2inverse)) continue;
+                if(!properOverlap){
+                    rejectedByGeometry++;
+                    continue;
+                }
 
-                    Matrix3 transition = tm1 * tm2inverse;
+                // Determine the misorientation matrix
+                assert(std::abs(tm1.determinant()) > EPSILON);
 
+                Matrix3 tm2inverse;
+                if(!tm2.inverse(tm2inverse)) continue;
+
+                Matrix3 transition = tm1 * tm2inverse;
+
+                bool shouldAddToCluster = false;
+                size_t bestPermutation = 0;
+
+                if(_sa.usingPTM()){
+                    // Check deformation
+                    const double* currentF = _context.ptmDeformationGradient->dataFloat() + currentAtomIdx * 9;
+                    const double* neighborF = _context.ptmDeformationGradient->dataFloat() + neighborAtomIdx * 9;
+
+                    Matrix3 F1(currentF);
+                    Matrix3 F2(neighborF);
+
+                    double det1 = F1.determinant();
+                    double det2 = F2.determinant();
+                    double volumeStrainDiff = std::abs(det1 - det2) / std::max(std::abs(det1), std::abs(det2));
+
+                    Matrix3 strain1 = 0.5 * (F1.transposed() * F1 - Matrix3::Identity());
+                    Matrix3 strain2 = 0.5 * (F2.transposed() * F2 - Matrix3::Identity());
+                    double strainDifference = (strain1 - strain2).frobeniusNorm();
+                    
+                    const double VOLUME_STRAIN_TOLERANCE = 0.08;
+                    const double STRAIN_DIFF_TOLERANCE = 0.15;
+
+                    bool deformationCompatible = (volumeStrainDiff < VOLUME_STRAIN_TOLERANCE && strainDifference < STRAIN_DIFF_TOLERANCE);
+                    if(!deformationCompatible){
+                        rejectedByDeformation++;
+                        continue;
+                    }
+
+                    // Check orientation
+                    double* currentQ = _context.ptmOrientation->dataFloat() + currentAtomIdx * 4;
+                    double* neighborQ = _context.ptmOrientation->dataFloat() + neighborAtomIdx * 4;
+                    
+                    Quaternion q1(currentQ[0], currentQ[1], currentQ[2], currentQ[3]);
+                    Quaternion q2(neighborQ[0], neighborQ[1], neighborQ[2], neighborQ[3]);
+                    q1.normalize();
+                    q2.normalize();
+
+                    Quaternion quatDiff = q2 * q1.inverse();
+                    double angle = 2.0 * std::acos(std::abs(quatDiff.w()));
+
+                    const double PTM_ANGLE_THRESHOLD = (20.0 * M_PI) / 180.0;
+                    if(angle < PTM_ANGLE_THRESHOLD){
+                        // TODO: NOT PROVIDED FROM PTM?
+                        // Finding the best permutation using the geometric method
+                        for(size_t i = 0; i < latticeStruct.permutations.size(); i++){
+                            if(transition.equals(latticeStruct.permutations[i].transformation, CA_TRANSITION_MATRIX_EPSILON)){
+                                shouldAddToCluster = true;
+                                bestPermutation = i;
+                                break;
+                            }
+                        }
+
+                        if(!shouldAddToCluster){
+                            rejectedByGeometry++;
+                        }
+                    }else{
+                        rejectedByOrientation++;
+                    }
+                }else{
+                    // CNA
                     for(size_t i = 0; i < latticeStruct.permutations.size(); i++){
                         if(transition.equals(latticeStruct.permutations[i].transformation, CA_TRANSITION_MATRIX_EPSILON)){
-                            _context.atomClusters->setInt(neighborAtomIdx, cluster->id);
-                            cluster->atomCount++;
-                            _context.atomSymmetryPermutations->setInt(neighborAtomIdx, i);
-                            atomsToVisit.push_back(neighborAtomIdx);
+                            shouldAddToCluster = true;
+                            bestPermutation = i;
                             break;
                         }
                     }
                 }
-            }
 
-            cluster->orientation = Matrix3(orientationW * orientationV.inverse());
-        }else{
-            // Set cluster orientation (using PTM data)
+                if(shouldAddToCluster){
+                    _context.atomClusters->setInt(neighborAtomIdx, cluster->id);
+                    cluster->atomCount++;
+                    _context.atomSymmetryPermutations->setInt(neighborAtomIdx, bestPermutation);
+                    atomsToVisit.push_back(neighborAtomIdx);
+                    acceptedConnections++;
+                }
+            }
+        }
+
+        // Compute matrix which transforms vectors from lattice space to simulation coordinates
+        if(_sa.usingPTM()){
             double* qdata = _context.ptmOrientation->dataFloat() + seedAtomIndex * 4;
             Quaternion q(qdata[0], qdata[1], qdata[2], qdata[3]);
             q.normalize();
@@ -438,32 +528,112 @@ void ClusterConnector::buildClusters(){
             R.column(2) = q * ez;
             
             cluster->orientation = R;
+        }else{
+            // TODO: CHECK canInvert?
+            Matrix_3<double> orientationVInverse;
+            bool canInvert = orientationV.inverse(orientationVInverse);
 
-            // Grow cluster
-            while(!atomsToVisit.empty()){
-                int currentAtomIdx = atomsToVisit.front();
-                atomsToVisit.pop_front();
-
-                int numNeighbors = _sa.numberOfNeighbors(currentAtomIdx);
-                for(int neighborIdx = 0; neighborIdx < numNeighbors; ++neighborIdx){
-                    int neighbor = _sa.getNeighbor(currentAtomIdx, neighborIdx);
-
-                    if(neighbor < 0 || neighbor == currentAtomIdx) continue;
-                    if(_context.atomClusters->getInt(neighbor) != 0) continue;
-                    if(_context.structureTypes->getInt(neighbor) != structureType) continue;
-
-                    if(areOrientationsCompatible(currentAtomIdx, neighbor, structureType)){
-                        _context.atomClusters->setInt(neighbor, cluster->id);
-                        cluster->atomCount++;
-                        atomsToVisit.push_back(neighbor);
-                    }
-                }
+            if(canInvert && std::abs(orientationV.determinant()) > EPSILON){
+                cluster->orientation = Matrix3(orientationW * orientationVInverse);
+            }else{
+                cluster->orientation = Matrix3::Identity();
             }
-        }        
-        
+        }
+
+        // Determine the symmetry permutation that leads to the best cluster orientation.
+        // The best cluster orientation is the one that forms the smallest angle with
+        // one of the preferred crystal orientations.
+        if(structureType == _context.inputCrystalType && !_context.preferredCrystalOrientations.empty()){
+            applyPreferredOrientation(cluster);
+        }
     }
 
+    // Hierarchical clustering for merger clusters supported only for PTM
+    if(_sa.usingPTM()){
+        spdlog::info("Starting post-processing cluster merging...");
+
+        std::vector<Cluster*> clusters;
+        for(Cluster* cluster : _sa.clusterGraph().clusters()){
+            if(cluster && cluster->id != 0 && cluster->structure == _context.inputCrystalType){
+                clusters.push_back(cluster);
+            }
+        }
+
+        size_t mergedPairs = 0;
+        const double CLUSTER_MERGE_ANGLE_THRESHOLD = (8.0 * M_PI )/ 180.0;
+
+        // Find compatible clusters to merge
+        for(size_t i = 0; i < clusters.size(); i++){
+            // Only consider small clusters for merge
+            if(clusters[i]->atomCount < 50) continue;
+
+            for(size_t j = i + 1; j < clusters.size(); j++){
+                if(clusters[j]->atomCount < 50) continue;
+
+                // Check if clusters have existing transitions (are neighbors)
+                bool areNeighbors = false;
+                for(ClusterTransition* t = clusters[i]->transitions; t; t = t->next){
+                    if(t->cluster2 == clusters[j]){
+                        areNeighbors = true;
+                        break;
+                    }
+                }
+
+                if(!areNeighbors) continue;
+
+                // Check orientation compatibility
+                Matrix3 orientation1 = clusters[i]->orientation;
+                Matrix3 orientation2 = clusters[j]->orientation;
+                Matrix3 relativeOrientation = orientation2 * orientation1.inverse();
+
+                // Calculate rotation angle using trace
+                double trace = relativeOrientation(0,0) + relativeOrientation(1,1) + relativeOrientation(2,2);
+                double angle = std::acos(std::max(-1.0, std::min(1.0, (trace - 1.0) / 2.0)));
+
+                if(angle < CLUSTER_MERGE_ANGLE_THRESHOLD){
+                    // Merger cluster j into cluster i
+                    const size_t N = _context.atomCount();
+                    for(size_t atomIdx = 0; atomIdx < N; atomIdx++){
+                        if(_context.atomClusters->getInt(atomIdx) == clusters[j]->id){
+                            _context.atomClusters->setInt(atomIdx, clusters[i]->id);
+                        }      
+                    }
+
+                    clusters[i]->atomCount += clusters[j]->atomCount;
+                    clusters[j]->atomCount = 0;
+                    mergedPairs++;
+                }
+            }
+        }
+
+        spdlog::info("Post-processing merged {} cluster pairs", mergedPairs);
+    }
+
+    // Reorient atoms to align clusters with global coordinate system
     reorientAtomsToAlignClusters();
+
+    if(_sa.usingPTM()){
+        size_t finalClusterCount = 0;
+        for(Cluster* cluster : _sa.clusterGraph().clusters()){
+            if(cluster && cluster->id != 0 && cluster->atomCount > 0){
+                finalClusterCount++;
+            }
+        }
+        
+        spdlog::info("PTM Clustering Statistics:");
+        spdlog::info("  Total atoms processed: {}", totalProcessedAtoms);
+        spdlog::info("  Accepted connections: {}", acceptedConnections);
+        spdlog::info("  Rejected by deformation: {}", rejectedByDeformation);
+        spdlog::info("  Rejected by orientation: {}", rejectedByOrientation);
+        spdlog::info("  Rejected by geometry: {}", rejectedByGeometry);
+        spdlog::info("  Final active clusters: {}", finalClusterCount);
+        
+        double rejectionRate = (double)(rejectedByDeformation + rejectedByOrientation + rejectedByGeometry) 
+                              / (double)(acceptedConnections + rejectedByDeformation + rejectedByOrientation + rejectedByGeometry) * 100.0;
+        spdlog::info("  Total rejection rate: {:.1f}%", rejectionRate);
+    }
+
+    spdlog::debug("Number of clusters: {}", _sa.clusterGraph().clusters().size() - 1);
 }
 
 void ClusterConnector::applyPreferredOrientation(Cluster* cluster) {

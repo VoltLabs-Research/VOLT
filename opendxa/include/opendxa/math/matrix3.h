@@ -74,6 +74,37 @@ public:
 		return (*this)[col][row];
 	}
 
+	T frobeniusNorm() const{
+		T sum = 0;
+		for(int i = 0; i < 3; i++){
+			for(int j = 0; j < 3; j++){
+				sum += (*this)(i, j) * (*this)(i, j);
+			}
+		}
+
+		return std::sqrt(sum);
+	}
+
+	explicit Matrix_3(const T* d) noexcept{
+		(*this)[0] = { d[0], d[3], d[6] }; 
+        (*this)[1] = { d[1], d[4], d[7] }; 
+        (*this)[2] = { d[2], d[5], d[8] };
+	}
+
+	friend constexpr Matrix_3 operator-(const Matrix_3& A, Identity /*unused*/) noexcept{
+        return Matrix_3(
+            A(0,0)-T(1), A(0,1),      A(0,2),
+            A(1,0),      A(1,1)-T(1), A(1,2),
+            A(2,0),      A(2,1),      A(2,2)-T(1) );
+    }
+
+	friend constexpr Matrix_3 operator-(Identity /*unused*/, const Matrix_3& A) noexcept{
+        return Matrix_3(
+            T(1)-A(0,0), -A(0,1),     -A(0,2),
+            -A(1,0),     T(1)-A(1,1), -A(1,2),
+            -A(2,0),     -A(2,1),     T(1)-A(2,2) );
+    }
+
 	constexpr const column_type& column(size_type col) const noexcept {
 		return (*this)[col];
 	}
