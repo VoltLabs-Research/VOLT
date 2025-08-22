@@ -356,6 +356,7 @@ bool NearestNeighborFinder::prepare(
 }
 
 // Explicit instantiations of the templated Query for common neighbor limits
+template class NearestNeighborFinder::Query<4>;
 template class NearestNeighborFinder::Query<16>;
 template class NearestNeighborFinder::Query<18>;
 template class NearestNeighborFinder::Query<32>;

@@ -23,7 +23,8 @@ class StructureAnalysis{
 public:
 	enum Mode{
 		CNA,
-		PTM
+		PTM,
+		DIAMOND,
 	};
 
 	StructureAnalysis(
@@ -151,7 +152,7 @@ public:
     }
     
     std::string getStructureTypeName(int structureType) const {
-        if (usingPTM()) {
+		if (usingPTM()) {
             switch (static_cast<StructureType>(structureType)) {
                 case StructureType::OTHER: return "OTHER";
                 case StructureType::FCC: return "FCC";
@@ -160,18 +161,26 @@ public:
                 case StructureType::ICO: return "ICO";
                 case StructureType::SC: return "SC";
                 case StructureType::CUBIC_DIAMOND: return "CUBIC_DIAMOND";
+				case StructureType::CUBIC_DIAMOND_FIRST_NEIGH: return "CUBIC_DIAMOND_FIRST_NEIGH";
+				case StructureType::CUBIC_DIAMOND_SECOND_NEIGH: return "CUBIC_DIAMOND_SECOND_NEIGH";
+				case StructureType::HEX_DIAMOND_FIRST_NEIGH: return "HEX_DIAMOND_FIRST_NEIGH";
+				case StructureType::HEX_DIAMOND_SECOND_NEIGH: return "HEX_DIAMOND_SECOND_NEIGH";
                 case StructureType::HEX_DIAMOND: return "HEX_DIAMOND";
                 case StructureType::GRAPHENE: return "GRAPHENE";
                 default: return "UNKNOWN";
             }
         } else {
-            switch (static_cast<CoordinationStructureType>(structureType)) {
-                case CoordinationStructureType::COORD_OTHER: return "OTHER";
-                case CoordinationStructureType::COORD_FCC: return "FCC";
-                case CoordinationStructureType::COORD_HCP: return "HCP";
-                case CoordinationStructureType::COORD_BCC: return "BCC";
-                case CoordinationStructureType::COORD_CUBIC_DIAMOND: return "CUBIC_DIAMOND";
-                case CoordinationStructureType::COORD_HEX_DIAMOND: return "HEX_DIAMOND";
+            switch (structureType) {
+                case static_cast<int>(CoordinationStructureType::COORD_OTHER): return "OTHER";
+                case static_cast<int>(CoordinationStructureType::COORD_FCC): return "FCC";
+                case static_cast<int>(CoordinationStructureType::COORD_HCP): return "HCP";
+                case static_cast<int>(CoordinationStructureType::COORD_BCC): return "BCC";
+                case static_cast<int>(CoordinationStructureType::COORD_CUBIC_DIAMOND): return "CUBIC_DIAMOND";
+                case static_cast<int>(CoordinationStructureType::COORD_HEX_DIAMOND): return "HEX_DIAMOND";
+                case static_cast<int>(StructureType::CUBIC_DIAMOND_FIRST_NEIGH): return "CUBIC_DIAMOND_FIRST_NEIGH";
+				case static_cast<int>(StructureType::CUBIC_DIAMOND_SECOND_NEIGH): return "CUBIC_DIAMOND_SECOND_NEIGH";
+				case static_cast<int>(StructureType::HEX_DIAMOND_FIRST_NEIGH): return "HEX_DIAMOND_FIRST_NEIGH";
+				case static_cast<int>(StructureType::HEX_DIAMOND_SECOND_NEIGH): return "HEX_DIAMOND_SECOND_NEIGH";
                 default: return "UNKNOWN";
             }
         }
@@ -184,7 +193,8 @@ public:
         
         json stats;
         stats["total_atoms"] = _context.atomCount();
-        stats["analysis_method"] = usingPTM() ? "PTM" : "CNA";
+		// TODO: Create a private method with a switch for handle this.
+        stats["analysis_method"] = _identificationMode == StructureAnalysis::Mode::DIAMOND ? "DIAMOND" : usingPTM() ? "PTM" : "CNA";
         
         json typeStats;
         int totalIdentified = 0;

@@ -2,6 +2,7 @@
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/structure_analysis.h>
 #include <opendxa/analysis/polyhedral_template_matching.h>
+#include <opendxa/analysis/diamond_identifier.h>
 #include <ptm_constants.h>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
@@ -232,12 +233,15 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
 }
 
 void StructureAnalysis::identifyStructures(){
-    if(usingPTM()){
+    if(_identificationMode == StructureAnalysis::Mode::DIAMOND){
+        auto diamondAnalyzer = std::make_unique<DiamondStructureAnalysis>(_context);
+        diamondAnalyzer->identifyDiamondStructures();
+    }else if(usingPTM()){
+        const size_t N = _context.atomCount();
+        if(N == 0) return;
+
         // Runs the Polyhedral Template Matching (PTM) algorithm on every atom,
         // collects raw RMSD values (with no initial cutoff).
-        const size_t N = _context.atomCount();
-        if (N == 0) return;
-
         OpenDXA::PTM ptm;
         if(!setupPTM(ptm, N)){
             throw std::runtime_error("Error trying to initialize PTM.");
