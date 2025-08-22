@@ -31,12 +31,6 @@ private:
 	bool areOrientationsCompatible(int atom1, int atom2, int structureType);
     Quaternion getPTMAtomOrientation(int atom) const;
 
-    void growClusterPTM(
-		Cluster* cluster,
-		std::deque<int>& atomsToVisit,
-		int structureType
-	);
-
 	std::pair<Cluster*, Cluster*> getParentGrains(ClusterTransition* transition);
 	ClusterTransition* buildParentTransition(ClusterTransition* transition, Cluster* parent1, Cluster* parent2);
 	Cluster* startNewCluster(int atomIndex, int structureType);
@@ -51,14 +45,6 @@ private:
 	void processDefectCluster(Cluster* defectCluster);
 	void reorientAtomsToAlignClusters();
 	void applyPreferredOrientation(Cluster* cluster);
-
-	void growCluster(
-		Cluster* cluster,
-		std::deque<int>& atomsToVisit,
-		Matrix_3<double>& orientationV,
-		Matrix_3<double>& orientationW,
-		int structureType
-	);
 
     AnalysisContext& _context;
     StructureAnalysis& _sa;
