@@ -102,6 +102,7 @@ public:
 		_identificationMode = identificationMode;
 	}
 
+
 	const Vector3& neighborLatticeVector(int centralAtomIndex, int neighborIndex) const{
 		assert(_context.atomSymmetryPermutations);
 		int structureType = _context.structureTypes->getInt(centralAtomIndex);

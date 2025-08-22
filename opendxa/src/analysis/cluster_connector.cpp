@@ -58,56 +58,45 @@ Quaternion ClusterConnector::getPTMAtomOrientation(int atom) const{
     return quat;
 }
 
-bool ClusterConnector::areOrientationsCompatible(int atom1, int atom2, int structureType){  
-    Quaternion q1 = getPTMAtomOrientation(atom1);
-    Quaternion q2 = getPTMAtomOrientation(atom2);
-    Quaternion quatDiff = q1.inverse() * q2;
-    
-    float rmsd1 = _context.ptmRmsd->getFloat(atom1);
-    float rmsd2 = _context.ptmRmsd->getFloat(atom2);
-    float avgRmsd = (rmsd1 + rmsd2) * 0.5f;
-    
-    const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
-    Matrix3 rotationMatrix = quaternionToMatrix(quatDiff);
-    
-    if(avgRmsd < 0.1f){
-        for(const auto& symmetryOp : latticeStructure.permutations){
-            if(rotationMatrix.equals(symmetryOp.transformation, CA_TRANSITION_MATRIX_EPSILON)){
-                return true;
-            }
-        }
-        
-        double angle = 2.0 * std::acos(std::abs(quatDiff.w()));
-        const double STRICT_THRESHOLD = 3.0 * M_PI / 180.0; 
+Matrix3 orthogonalizeMatrix(const Matrix3& matrix){
+    Matrix3 result = matrix;
+    Vector3 col0 = result.column(0);
+    Vector3 col1 = result.column(1);
+    Vector3 col2 = result.column(2);
 
-        return angle < STRICT_THRESHOLD;
-    }
+    double len0 = std::sqrt(
+        col0.x() * col0.x() +
+        col0.y() * col0.y() +
+        col0.z() * col0.z()
+    );
+
+    if(len0 > 1e-12) col0 = col0 / len0;
+
+    double dot01 = col0.x() * col1.x() + col0.y() * col1.y() + col0.z() * col1.z();
+
+    col1 = col1 - col0 * dot01;
+
+    double len1 = std::sqrt(
+        col1.x() * col1.x() + 
+        col1.y() * col1.y() + 
+        col1.z() * col1.z()
+    );
+
+    if(len1 > 1e-12) col1 = col1 / len1;
+    col2 = Vector3(
+        col0.y() * col1.z() - col0.z() * col1.y(),
+        col0.z() * col1.x() - col0.x() * col1.z(),
+        col0.x() * col1.y() - col0.y() * col1.x()
+    );
+
+    result.column(0) = col0;
+    result.column(1) = col1;
+    result.column(2) = col2;
     
-    double angle = 2.0 * std::acos(std::abs(quatDiff.w()));
-    const double RELAXED_THRESHOLD = 8.0 * M_PI / 180.0; 
-    return angle < RELAXED_THRESHOLD;
+    return result;
 }
 
 bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition){
-    if(_sa.usingPTM()){
-        int structureType = _context.structureTypes->getInt(atomIndex);
-        int neighborStructureType = _context.structureTypes->getInt(neighbor);
-
-        if(structureType != neighborStructureType) return false;
-
-        double* q1Data = _context.ptmOrientation->dataFloat() + atomIndex * 4;
-        double* q2Data = _context.ptmOrientation->dataFloat() + neighbor * 4;
-
-        Quaternion q1(q1Data[0], q1Data[1], q1Data[2], q1Data[3]);
-        Quaternion q2(q2Data[0], q2Data[1], q2Data[2], q2Data[3]);
-
-        Quaternion quatDiff = q1.inverse() * q2;
-
-        outTransition = quaternionToMatrix(quatDiff);
-
-        return outTransition.isOrthogonalMatrix();
-    }
-
     int structureType = _context.structureTypes->getInt(atomIndex);
     const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
     const CoordinationStructure& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
@@ -149,7 +138,22 @@ bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int 
 void ClusterConnector::createNewClusterTransition(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, Cluster* cluster2){
     Matrix3 transition;
     if(!calculateMisorientation(atomIndex, neighbor, neighborIndex, transition)) return;
-    if(!transition.isOrthogonalMatrix()) return;
+
+    bool isOrthogonal = false;
+    if(_sa.usingPTM()){
+        const double PTM_ORTHOGONALITY_TOLERANCE = 1e-4;
+        isOrthogonal = transition.isOrthogonalMatrix(PTM_ORTHOGONALITY_TOLERANCE);
+
+        if(!isOrthogonal){
+            transition = orthogonalizeMatrix(transition);
+            isOrthogonal = transition.isOrthogonalMatrix(PTM_ORTHOGONALITY_TOLERANCE);
+        }
+    }else{
+        isOrthogonal = transition.isOrthogonalMatrix();
+    }
+
+    if(!isOrthogonal) return;
+
     if(!cluster1->findTransition(cluster2)){
         ClusterTransition* t = _sa.clusterGraph().createClusterTransition(cluster1, cluster2, transition);
         t->area++;
