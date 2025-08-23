@@ -76,8 +76,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
                 await glbExporter.exportAtomsToGLB(
                     frameFilePath,
                     glbFilePath,
-                    extractTimestepInfo,
-                    { maxInstancesPerMesh: 10000 }
+                    extractTimestepInfo
                 );
 
                 // Force GC every 5 files
