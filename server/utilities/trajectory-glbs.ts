@@ -1,4 +1,3 @@
-import { access, constants } from 'fs/promises';
 import path from 'path';
 
 export const getGLBPath = async (timestep: string, type: string, analysisId: string, folderId: string): Promise<null | string> => {

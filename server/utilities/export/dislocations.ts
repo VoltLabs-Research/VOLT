@@ -25,6 +25,7 @@ import {
     DislocationExportOptions, 
     ProcessedDislocationGeometry 
 } from '@/types/utilities/export/dislocations';
+import { calculateDislocationType } from '@/utilities/dislocation-utils';
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
 
 class DislocationExporter{
@@ -153,79 +154,6 @@ class DislocationExporter{
         return { positions, normals, indices };
     }
 
-    private calculateDislocationType(segment: any): string {
-        if(!segment.burgers || !segment.burgers.vector || segment.burgers.vector.length !== 3){
-            return 'Other';
-        }
-
-        const burgersVector = segment.burgers.vector;
-        const [bx, by, bz] = burgersVector.map(Math.abs);
-        const tolerance = 1e-6;
-
-        if(this.isType111Half(bx, by, bz, tolerance)){
-            return '1/2<111>';
-        }
-
-        if(this.isType100(bx, by, bz, tolerance)){
-            return '<100>';
-        }
-
-        if(this.isType110(bx, by, bz, tolerance)){
-            return '<110>';
-        }
-
-        if(this.isType111(bx, by, bz, tolerance)){
-            return '<111>';
-        }
-
-        if(this.isType112Sixth(bx, by, bz, tolerance)){
-            return '1/6<112>';
-        }
-
-        return 'Other';
-    }
-
-    private isType111Half(bx: number, by: number, bz: number, tol: number): boolean {
-        const components = [bx, by, bz].filter(x => x > tol);
-        if(components.length !== 3) return false;
-        
-        const maxComp = Math.max(...components);
-        const minComp = Math.min(...components);
-        
-        return (maxComp - minComp) / maxComp < tol && maxComp > 0.4 && maxComp < 0.6;
-    }
-
-    private isType100(bx: number, by: number, bz: number, tol: number): boolean {
-        const nonZeroCount = [bx, by, bz].filter(x => x > tol).length;
-        return nonZeroCount === 1;
-    }
-
-    private isType110(bx: number, by: number, bz: number, tol: number): boolean {
-        const components = [bx, by, bz].sort((a, b) => b - a);
-        return Math.abs(components[0] - components[1]) < tol && components[2] < tol;
-    }
-
-    private isType111(bx: number, by: number, bz: number, tol: number): boolean {
-        const maxComp = Math.max(bx, by, bz);
-        if(maxComp < tol) return false;
-        
-        const ratio1 = Math.abs(bx / maxComp - 1);
-        const ratio2 = Math.abs(by / maxComp - 1);
-        const ratio3 = Math.abs(bz / maxComp - 1);
-        
-        return ratio1 < tol && ratio2 < tol && ratio3 < tol && maxComp >= 0.8;
-    }
-
-    private isType112Sixth(bx: number, by: number, bz: number, tol: number): boolean {
-        const components = [bx, by, bz].sort((a, b) => b - a);
-        if (components[0] < tol) return false;
-        
-        const ratio1 = Math.abs(components[0] / components[1] - 2);
-        const ratio2 = Math.abs(components[1] / components[2] - 1);
-        
-        return ratio1 < tol && ratio2 < tol && components[0] < 0.4;
-    }
-
     private getDefaultTypeColors(): Record<string, [number, number, number, number]> {
         return {
             'Other': [0.95, 0.1, 0.1, 1.0],
@@ -265,7 +193,7 @@ class DislocationExporter{
 
             validSegments++;
             
-            const calculatedType = this.calculateDislocationType(segment);
+            const calculatedType = calculateDislocationType(segment);
             segment.type = calculatedType;
             
             typeStats[calculatedType] = (typeStats[calculatedType] || 0) + 1;
