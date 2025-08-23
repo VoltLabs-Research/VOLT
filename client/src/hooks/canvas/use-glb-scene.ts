@@ -21,8 +21,8 @@
 **/
 
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import { useThree } from '@react-three/fiber';
-import { Group, Mesh, Box3, BufferGeometry, Material, Vector3, Color } from 'three';
+import { useFrame, useThree } from '@react-three/fiber';
+import { Group, Mesh, Box3, BufferGeometry, Material, Vector3, Color, Points, ShaderMaterial } from 'three';
 import { calculateModelBounds, calculateOptimalTransforms, getOptimizedMaterial } from '@/utilities/glb/modelUtils';
 import { GLB_CONSTANTS, loadGLB, preloadGLBs } from '@/utilities/glb/loader';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
@@ -33,6 +33,9 @@ import MemoryManager from '@/utilities/memoryManager';
 import CullingService from '@/services/culling-service';
 import InstancedMeshManager from '@/services/instanced-mesh-manager';
 import ObjectPools from '@/utilities/glb/objectPools';
+
+import vertexShader from '@/shaders/point-cloud.vert?raw';
+import fragmentShader from '@/shaders/point-cloud.frag?raw';
 
 export const modelCache = new Map<string, Promise<any>>();
 
@@ -199,6 +202,17 @@ export const useGlbScene = ({
         }
     }, []);
 
+    useFrame(() => {
+        const mesh = stateRef.current.mesh;
+        if(
+            mesh &&
+            mesh instanceof Points && 
+            mesh.material instanceof ShaderMaterial
+        ){
+            mesh.material.uniforms.cameraPosition.value.copy(camera.position);
+        }
+    });
+
     const setupModel = useCallback((model: Group) => {
         if(stateRef.current.isSetup){
             return model;
@@ -213,6 +227,50 @@ export const useGlbScene = ({
         const isNonAtomistic = activeSceneObject === 'dislocations' || 
                            activeSceneObject === 'interface_mesh' || 
                            activeSceneObject === 'defect_mesh';
+
+        let pointCloudObject: Points | null = null;
+
+        model.traverse((child) => {
+            if(child instanceof Points){
+                pointCloudObject = child;
+            }
+        });
+
+        if(pointCloudObject){
+            const points: Points = pointCloudObject;
+            // points.frustumCulled = false;
+            const optimalRadius = points.userData?.extras?.optimalRadius || 0.4;
+            const calculatedPointSize = optimalRadius * 0.3;
+
+            points.material = new ShaderMaterial({
+                vertexShader,
+                fragmentShader,
+                uniforms: {
+                    pointScale: { value: calculatedPointSize * scale },
+                    cameraPosition: { value: new Vector3() },
+                    ambientFactor: { value: 0.15 },
+                    diffuseFactor: { value: 0.6 },
+                    specularFactor: { value: 0.5 },
+                    shininess: { value: 120.0 },
+                    rimFactor: { value: 0.1 },
+                    rimPower: { value: 3.0 },
+                },
+                vertexColors: true,
+                transparent: true,
+                depthWrite: true,
+                depthTest: true,
+                clipping: true
+            });
+
+            stateRef.current.mesh = points;
+            onGeometryReady({
+                geometry: points.geometry,
+                material: points.material,
+                instanceCount: points.geometry.attributes.position.count
+            });
+
+            return;
+        }
 
         model.traverse((child) => {
             if(child instanceof Mesh && !mainGeometry){
@@ -285,11 +343,11 @@ export const useGlbScene = ({
 
     const applyClippingPlanesToNode = useCallback((root: Group, planes: Plane[]) => {
         root.traverse((child: any) => {
-            if(child.isMesh && child.material){
+            if((child.isMesh || child.isPoints) && child.material){
                 const mats = Array.isArray(child.material) ? child.material : [child.material];
                 for(const m of mats){
                     m.clippingPlanes = planes;
-                    m.clipIntersection = true;
+                    // m.clipIntersection = true;
                     m.needsUpdate = true;
                 }
             }
@@ -312,7 +370,6 @@ export const useGlbScene = ({
 
         try{
             if(!memoryManager.canLoadModel()){
-                // TODO: CHANGETHIS TO OPTIONAL IN UI (MODIFIERS/OPTIONS)!
                 // throw new Error('Insufficient memory for model loading');
             }
 
