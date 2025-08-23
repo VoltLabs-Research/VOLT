@@ -23,50 +23,11 @@
 import Dislocation from '@/models/dislocations';
 import { 
     DislocationExportOptions, 
-    DislocationValidationResult, 
     ProcessedDislocationGeometry 
 } from '@/types/utilities/export/dislocations';
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
 
 class DislocationExporter{
-    private validate(dislocationData: any): DislocationValidationResult{
-        const { data, metadata } = dislocationData;
-        const errors: string[] = [];
-        const warnings: string[] = [];
-
-        if(!data || data.length === 0){
-            warnings.push('No dislocation segments found. An empty file will be generated.');
-        }
-
-        if(metadata.count !== data.length){
-            warnings.push(`Metadata count (${metadata.count}) doesn't match actual data length (${data.length}).`);
-        }
-
-        let emptySegments = 0;
-        for(let i = 0; i < data.length; i++){
-            const segment = data[i];
-            if(!segment.points || segment.points.length < 2){
-                emptySegments++;
-                continue;
-            }
-
-            // Validate point coordinates
-            for(let j = 0; j < segment.points.length; j++){
-                const point = segment.points[j];
-                // @ts-ignore
-                if(point.length !== 3 || point.some((coord) => !isFinite(coord))){
-                    errors.push(`Segment ${i}, point ${j} has invalid coordinates.`);
-                }
-            }
-        }
-
-        if(emptySegments > 0){
-            warnings.push(`Found ${emptySegments} segments with less than 2 points.`);
-        }
-
-        return { isValid: errors.length === 0, errors, warnings, stats: {} };
-    }
-
     private calculateBounds(points: [number, number, number][]): {
         min: [number, number, number];
         max: [number, number, number];
@@ -590,16 +551,6 @@ class DislocationExporter{
 
             const dislocationData = this.convertDBDataToDislocationFormat(dislocationDoc);
 
-            const validation = this.validate(dislocationData);
-            if (!validation.isValid) {
-                console.error('Validation failed:', validation.errors);
-                throw new Error(`Invalid dislocation data from DB: ${validation.errors.join(', ')}`);
-            }
-
-            if (validation.warnings.length > 0) {
-                console.warn('Validation warnings:', validation.warnings);
-            }
-
             const opts: Required<DislocationExportOptions> = {
                 lineWidth: options.lineWidth ?? 0.08,
                 tubularSegments: options.tubularSegments ?? 12,
@@ -694,17 +645,6 @@ class DislocationExporter{
         };
 
         console.log('Starting dislocation export with automatic type calculation...');
-
-        const validation = this.validate(dislocationData);
-
-        if(!validation.isValid){
-            console.error('Validation failed:', validation.errors);
-            throw new Error(`Invalid dislocation data: ${validation.errors.join(', ')}`);
-        }
-        
-        if(validation.warnings.length > 0){
-            console.warn('Validation warnings:', validation.warnings);
-        }
 
         const processedGeometry = this.processGeometry(dislocationData, opts);
         this.createGLB(processedGeometry, opts, outputFilePath);

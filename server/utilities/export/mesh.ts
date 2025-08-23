@@ -20,46 +20,11 @@
 * SOFTWARE.
 **/
 
-import { Mesh, DefectMeshExportOptions, MeshValidationResult, ProcessedMesh } from '@/types/utilities/export/mesh';
+import { Mesh, DefectMeshExportOptions, ProcessedMesh } from '@/types/utilities/export/mesh';
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
 import * as fs from 'fs';
 
 class MeshExporter{
-    private validate(mesh: Mesh): MeshValidationResult{
-        const { points, facets } = mesh.data;
-        const errors: string[] = [];
-        const warnings: string[] = [];
-
-        if(!points || points.length === 0){
-            errors.push('No points were found in the mesh.');
-        }
-
-        if(!facets || facets.length === 0){
-            warnings.push('No facets were found in the mesh. A file with no visible geometry will be generated.');
-        }
-
-        const maxPointIndex = points.length - 1;
-        let degenerateTriangles = 0;
-
-        for(let i = 0; i < facets.length; i++){
-            const facet = facets[i];
-            if(facet.vertices.some((idx) => idx < 0 || idx > maxPointIndex)){
-                errors.push(`Facet ${i} has vertex indices out of range.`);
-                continue;
-            }
-            const [v0, v1, v2] = facet.vertices;
-            if(v0 === v1 || v1 === v2 || v0 === v2){
-                degenerateTriangles++;
-            }
-        }
-        
-        if(degenerateTriangles > 0){
-            warnings.push(`Found ${degenerateTriangles} degenerate triangles.`);
-        }
-
-        return { isValid: errors.length === 0, errors, warnings, stats: {} };
-    }
-
     private calculateMinBounds(position: [number, number, number][]): [number, number, number]{
         if(position.length === 0) return [0, 0, 0];
         return position.reduce((min, p) => [
@@ -100,16 +65,6 @@ class MeshExporter{
         };
 
         console.log('Starting mesh export...');
-
-        const validation = this.validate(mesh);
-        if(!validation.isValid){
-            console.error('Validation failed:', validation.errors);
-            throw new Error(`Invalid defect mesh: ${validation.errors.join(', ')}`);
-        }
-
-        if(validation.warnings.length > 0){
-            console.warn('Validation warnings:', validation.warnings);
-        }
 
         const processedMesh = this.processMeshGeometry(mesh, opts);
         this.createMeshGLB(processedMesh, opts, outputFilePath);

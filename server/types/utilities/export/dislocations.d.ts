@@ -84,13 +84,6 @@ export interface DislocationExportOptions {
     };
 }
 
-export interface DislocationValidationResult {
-    isValid: boolean;
-    errors: string[];
-    warnings: string[];
-    stats: object;
-}
-
 export interface ProcessedDislocationGeometry {
     positions: Float32Array;
     normals: Float32Array;

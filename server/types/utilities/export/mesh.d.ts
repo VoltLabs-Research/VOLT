@@ -49,13 +49,6 @@ export interface DefectMeshExportOptions{
     };
 }
 
-export interface MeshValidationResult{
-    isValid: boolean;
-    errors: string[];
-    warnings: string[];
-    stats: object;
-}
-
 export interface ProcessedMesh{
     positions: Float32Array;
     normals: Float32Array;

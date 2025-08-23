@@ -20,9 +20,9 @@
 * SOFTWARE.
 **/
 
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
-import { Group, Mesh, Box3, BufferGeometry, Material, Vector3, Points, ShaderMaterial } from 'three';
+import { Group, Mesh, Box3, BufferGeometry, Vector3, Points, ShaderMaterial } from 'three';
 import { calculateModelBounds, calculateOptimalTransforms, getOptimizedMaterial } from '@/utilities/glb/modelUtils';
 import { GLB_CONSTANTS, loadGLB, preloadGLBs } from '@/utilities/glb/loader';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
@@ -163,12 +163,10 @@ export const useGlbScene = ({
 
     const configureGeometry = useCallback((model: Group, optimalScale: number) => {
         let mainGeometry: BufferGeometry | null = null;
-        let mainMaterial: Material | null = null;
 
         model.traverse((child) => {
             if(child instanceof Mesh && !mainGeometry){
                 mainGeometry = child.geometry;
-                mainMaterial = child.material;
 
                 child.frustumCulled = true;
                 child.visible = true;
@@ -346,8 +344,6 @@ export const useGlbScene = ({
         isLoading: loadingState.isLoading,
         loadProgress: loadingState.progress,
         loadError: loadingState.error,
-        atomCount: stateRef.current.atoms.length,
-        visibleAtomCount: stateRef.current.visibleIndices.size,
         forceReload: useCallback(() => {
             stateRef.current.lastLoadedUrl = null;
             throttledUpdateScene();
