@@ -25,6 +25,8 @@ import mongoose, { Schema, Model } from 'mongoose';
 import { IStructureAnalysis, IStructureTypeStat } from '@/types/models/structure-analysis';
 import Trajectory from '@models/trajectory';
 import AnalysisConfig from '@models/analysis-config';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import useInverseRelations from '@/utilities/mongo/inverse-relations';
 
 const StructureTypeStatSchema = new Schema<IStructureTypeStat>({
     name: {
@@ -78,33 +80,29 @@ const StructureAnalysisSchema: Schema<IStructureAnalysis> = new Schema({
     },
     analysisConfig: {
         type: Schema.Types.ObjectId,
-        ref: 'AnalysisConfig'
+        ref: 'AnalysisConfig',
+        cascade: 'unset',
+        inverse: { path: 'structureAnalysis', behavior: 'set' },
     },
     trajectory: {
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
-        required: true
+        inverse: { path: 'structureAnalysis', behavior: 'addToSet' },
+        required: true,
+        cascade: 'delete'
     }
 }, {
     timestamps: true
 });
+
+StructureAnalysisSchema.plugin(useInverseRelations);
+StructureAnalysisSchema.plugin(useCascadeDelete);
 
 /*StructureAnalysisSchema.index(
     { trajectory: 1, timestep: 1, analysisMethod: 1, analysisConfig: 1 },
     { unique: true }
 );*/
 
-StructureAnalysisSchema.post('save', async function(doc, next){
-    const updateData = { structureAnalysis: doc._id };
-
-    await Trajectory.findByIdAndUpdate(doc.trajectory, {
-        $addToSet: updateData
-    });
-
-    await AnalysisConfig.findByIdAndUpdate(doc.analysisConfig, updateData);
-
-    next();
-});
 
 const StructureAnalysis: Model<IStructureAnalysis> = mongoose.model<IStructureAnalysis>('StructureAnalysis', StructureAnalysisSchema);
 

@@ -25,6 +25,8 @@ import mongoose, { Schema, Model } from 'mongoose';
 import { ITeam } from '@types/models/team';
 import User from '@models/user';
 import Trajectory from '@models/trajectory';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import useInverseRelations from '@/utilities/mongo/inverse-relations';
 
 const TeamSchema: Schema<ITeam> = new Schema({
     name: {
@@ -42,52 +44,27 @@ const TeamSchema: Schema<ITeam> = new Schema({
     owner: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: [true, 'Team::Owner::Required']
+        required: [true, 'Team::Owner::Required'],
+        cascade: 'delete'
     },
     members: [{
         type: Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        inverse: { path: 'teams', behavior: 'addToSet' },
+        cascade: 'pull'
     }],
     trajectories: [{
         type: Schema.Types.ObjectId,
-        ref: 'Trajectory'
+        ref: 'Trajectory',
+        cascade: 'pull',
+        inverse: { path: 'team', behavior: 'set' }
     }]
 }, {
     timestamps: true
 });
 
-TeamSchema.pre('findOneAndDelete', async function (next){
-    const teamToDelete = await this.model.findOne(this.getFilter());
-    if(!teamToDelete){
-        return next();
-    }
-
-    await Trajectory.deleteMany({ _id: { $in: teamToDelete.trajectories } });
-
-    await User.updateMany(
-        { _id: { $in: [teamToDelete.owner, ...teamToDelete.members] } },
-        { $pull: { teams: teamToDelete._id } }
-    );
-    
-    next();
-});
-
-TeamSchema.post('save', async function(doc, next){
-    // @ts-ignore
-    const isNewTeam = doc.createdAt.getTime() === doc.updatedAt.getTime();
-
-    if(isNewTeam){
-        try{
-            await User.updateMany(
-                { _id: { $in: doc.members } },
-                { $push: { teams: doc._id } }
-            );
-        }catch(error){
-            console.error('Failed to link new team to user documents:', error);
-        }
-    }
-    next();
-});
+TeamSchema.plugin(useCascadeDelete);
+TeamSchema.plugin(useInverseRelations);
 
 const Team: Model<ITeam> = mongoose.model<ITeam>('Team', TeamSchema);
 

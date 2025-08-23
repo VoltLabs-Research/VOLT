@@ -24,7 +24,9 @@ import mongoose, { Schema, Model } from 'mongoose';
 // @ts-ignore
 import { ICellAnalysis } from '@/types/models/simulation-cell';
 import Trajectory from '@/models/trajectory';
-import AnalysisConfig from './analysis-config';
+import AnalysisConfig from '@/models/analysis-config';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import useInverseRelations from '@/utilities/mongo/inverse-relations';
 
 const PeriodicBoundarySchema = new Schema({
     x: { type: Boolean, required: true },
@@ -67,7 +69,9 @@ const SimulationCellSchema: Schema<ICellAnalysis> = new Schema({
     },
     analysisConfig: {
         type: Schema.Types.ObjectId,
-        ref: 'AnalysisConfig'
+        ref: 'AnalysisConfig',
+        inverse: { path: 'simulationCell', behavior: 'set' },
+        cascade: 'unset'
     },
     reciprocalLattice: {
         type: ReciprocalLatticeSchema,
@@ -84,20 +88,16 @@ const SimulationCellSchema: Schema<ICellAnalysis> = new Schema({
     trajectory: {
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
+        cascade: 'delete',
+        inverse: { path: 'simulationCell', behavior: 'set' },
         required: true
     }
 }, {
     timestamps: true
 });
 
-SimulationCellSchema.post('save', async function(doc, next){
-    const updateData = { simulationCell: doc._id };
-
-    await Trajectory.findByIdAndUpdate(doc.trajectory, updateData);
-    await AnalysisConfig.findByIdAndUpdate(doc.analysisConfig, updateData);
-
-    next();
-});
+SimulationCellSchema.plugin(useInverseRelations);
+SimulationCellSchema.plugin(useCascadeDelete);
 
 const SimulationCell: Model<ICellAnalysis> = mongoose.model<ICellAnalysis>('SimulationCell', SimulationCellSchema);
 

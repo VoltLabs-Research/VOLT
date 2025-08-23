@@ -22,14 +22,16 @@
 
 export enum LatticeStructure {
     FCC = 'FCC',
-    HCO = 'HCP',
+    BCC = 'BCC',
+    HCP = 'HCP',
     CubicDiamond = 'CUBIC_DIAMOND',
     HexDiamond = 'HEX_DIAMOND'
 }
 
 export enum IdentificationMode {
     CNA = 'CNA',
-    PTM = 'PTM'
+    PTM = 'PTM',
+    DIAMOND = 'DIAMOND'
 }
 
 export interface ConfigParameters {

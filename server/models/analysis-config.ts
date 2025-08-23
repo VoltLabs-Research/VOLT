@@ -22,16 +22,21 @@
 
 import mongoose, { Schema, Model } from 'mongoose';
 import type { IAnalysisConfig } from '@/types/models/analysis-config';
+import { IdentificationMode, LatticeStructure } from '@/types/services/opendxa';
 import Trajectory from '@/models/trajectory';
+import useInverseRelations from '@/utilities/mongo/inverse-relations';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 const AnalysisConfigSchema: Schema<IAnalysisConfig> = new Schema({
     crystalStructure: {
         type: String,
-        required: true
+        enum: Object.values(LatticeStructure),
+        default: LatticeStructure.BCC
     },
     identificationMode: {
         type: String,
-        required: true
+        enum: Object.values(IdentificationMode),
+        default: IdentificationMode.CNA
     },
     maxTrialCircuitSize: {
         type: Number,
@@ -67,21 +72,29 @@ const AnalysisConfigSchema: Schema<IAnalysisConfig> = new Schema({
     },
     trajectory: {
         type: Schema.Types.ObjectId,
+        ref: 'Trajectory',
         required: true,
-        ref: 'Trajectory'
+        cascade: 'delete',
+        inverse: { path: 'analysis', behavior: 'addToSet' } 
     },
     structureAnalysis: {
         type: Schema.Types.ObjectId,
-        ref: 'StructureAnalysis'
+        ref: 'StructureAnalysis',
+        cascade: 'unset',
+        inverse: { path: 'analysisConfig', behavior: 'set' }
     },
     simulationCell: {
         type: Schema.Types.ObjectId,
-        ref: 'SimulationCell'
+        ref: 'SimulationCell',
+        cascade: 'unset',
+        inverse: { path: 'analysisConfig', behavior: 'set' }
     },
-    dislocations: {
+    dislocations: [{
         type: Schema.Types.ObjectId,
-        ref: 'Dislocations'
-    },
+        ref: 'Dislocation',
+        cascade: 'pull',
+        inverse: { path: 'analysisConfig', behavior: 'set' }
+    }],
     structureIdentificationOnly: {
         type: Boolean,
         required: true
@@ -90,13 +103,8 @@ const AnalysisConfigSchema: Schema<IAnalysisConfig> = new Schema({
     timestamps: true
 });
 
-AnalysisConfigSchema.post('save', async function(doc, next){
-    await Trajectory.findByIdAndUpdate(doc.trajectory, {
-        $addToSet: { analysis: doc._id }
-    });
-
-    next();
-});
+AnalysisConfigSchema.plugin(useInverseRelations);
+AnalysisConfigSchema.plugin(useCascadeDelete);
 
 const AnalysisConfig: Model<IAnalysisConfig> = mongoose.model<IAnalysisConfig>('AnalysisConfig', AnalysisConfigSchema);
 

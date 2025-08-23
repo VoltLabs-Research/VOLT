@@ -23,6 +23,8 @@
 import mongoose, { Schema, Model } from 'mongoose';
 import Trajectory from '@/models/trajectory';
 import AnalysisConfig from '@/models/analysis-config'
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import useInverseRelations from '@/utilities/mongo/inverse-relations';
 
 const BurgersSchema = new Schema({
     vector: {
@@ -76,12 +78,14 @@ const DislocationDataSchema = new Schema({
     },
     nodes: NodesSchema,
     lineDirection: LineDirectionSchema
-});
+}, { _id: false });
 
 const DislocationSchema: Schema<any> = new Schema({
     trajectory: {
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
+        cascade: 'delete',
+        inverse: { path: 'dislocations', behavior: 'addToSet' },
         required: true
     },
     timestep: {
@@ -94,7 +98,9 @@ const DislocationSchema: Schema<any> = new Schema({
     },
     analysisConfig: {
         type: Schema.Types.ObjectId,
-        ref: 'AnalysisConfig'
+        ref: 'AnalysisConfig',
+        cascade: 'unset',
+        inverse: { path: 'dislocations', behavior: 'addToSet' }
     },
     dislocations: [DislocationDataSchema],
     totalPoints: {
@@ -124,17 +130,8 @@ const DislocationSchema: Schema<any> = new Schema({
     { unique: true }
 );*/
 
-DislocationSchema.post('save', async function(doc, next){
-    await Trajectory.findByIdAndUpdate(doc.trajectory, {
-        $addToSet: { dislocations: doc._id }
-    });
-
-    await AnalysisConfig.findByIdAndUpdate(doc.analysisConfig, {
-        dislocations: doc._id
-    });
-
-    next();
-});
+DislocationSchema.plugin(useInverseRelations);
+DislocationSchema.plugin(useCascadeDelete);
 
 const Dislocation: Model<any> = mongoose.model<any>('Dislocation', DislocationSchema);
 

@@ -22,11 +22,13 @@
 
 import mongoose, { Schema, Model } from 'mongoose';
 import { INotification } from '@/types/models/notification';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 const NotificationSchema: Schema<INotification> = new Schema({
     recipient: {
         type: Schema.Types.ObjectId,
         ref: 'User',
+        cascade: 'delete',
         required: true,
         index: true
     },
@@ -52,6 +54,8 @@ const NotificationSchema: Schema<INotification> = new Schema({
 }, {
     timestamps: true
 });
+
+NotificationSchema.plugin(useCascadeDelete);
 
 const Notification: Model<INotification> = mongoose.model<INotification>('Notification', NotificationSchema);
 

@@ -26,11 +26,8 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 // @ts-ignore
 import type { ITrajectory, ITimestepInfo } from '@types/models/trajectory';
-import Team from '@models/team';
-import StructureAnalysis from '@/models/structure-analysis';
-import SimulationCell from '@/models/simulation-cell';
-import Dislocations from '@/models/dislocations';
-import AnalysisConfig from '@/models/analysis-config';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import useInverseRelations from '@/utilities/mongo/inverse-relations';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
@@ -62,19 +59,27 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: true
+        required: true,
+        cascade: 'delete',
+        inverse: { path: 'trajectories', behavior: 'addToSet' }
     },
     structureAnalysis: [{
         type: Schema.Types.ObjectId,
-        ref: 'StructureAnalysis'
+        ref: 'StructureAnalysis',
+        inverse: { path: 'trajectory', behavior: 'set' },
+        cascade: 'pull'
     }],
     simulationCell: {
         type: Schema.Types.ObjectId,
-        ref: 'SimulationCell'
+        inverse: { path: 'trajectory', behavior: 'set' },
+        ref: 'SimulationCell',
+        cascade: 'unset'
     },
     dislocations: [{
         type: Schema.Types.ObjectId,
-        ref: 'Dislocation'
+        ref: 'Dislocation',
+        inverse: { path: 'trajectory', behavior: 'set' },
+        cascade: 'pull'
     }],
     status: {
         type: String,
@@ -85,6 +90,8 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     analysis: [{
         type: Schema.Types.ObjectId,
         ref: 'AnalysisConfig',
+        cascade: 'pull',
+        inverse: { path: 'trajectory', behavior: 'set' },
         default: []
     }],
     frames: [TimestepInfoSchema],
@@ -100,13 +107,16 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     timestamps: true,
 });
 
+TrajectorySchema.plugin(useInverseRelations);
+TrajectorySchema.plugin(useCascadeDelete);
+
 TrajectorySchema.pre('findOneAndDelete', async function(next){
     const trajectoryToDelete = await this.model.findOne(this.getFilter());
     if(!trajectoryToDelete){
         return next();
     }
 
-    const { _id, folderId, team } = trajectoryToDelete;
+    const { folderId } = trajectoryToDelete;
     const trajectoryPath = join(process.env.TRAJECTORY_DIR as string, folderId);
 
     try{
@@ -115,30 +125,10 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
             await rm(trajectoryPath, { recursive: true });
         }
 
-        const filter = { trajectory: _id };
-        await Promise.all([
-            StructureAnalysis.deleteMany(filter),
-            SimulationCell.deleteMany(filter),
-            Dislocations.deleteMany(filter),
-            AnalysisConfig.deleteMany(filter),
-            Team.updateOne(
-                { _id: team },
-                { $pull: { trajectories: _id } }
-            )
-        ]);
-
-        console.log('Trajectory and all related data cleaned up successfully');
         next();
     }catch(error){
-        console.error('❌ Error during trajectory cascade delete:', error);
         next(error as Error);
     }
-});
-TrajectorySchema.post('save', async function(doc, next){
-    await Team.findByIdAndUpdate(doc.team, {
-        $addToSet: { trajectories: doc._id }
-    });
-    next();
 });
 
 const Trajectory: Model<ITrajectory> = mongoose.model('Trajectory', TrajectorySchema);

@@ -28,7 +28,7 @@ import { Dislocation } from '@/types/utilities/export/dislocations';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { readMsgpackFile } from '@/utilities/msgpack';
 import { writeGroupedJsonStreaming } from '@/utilities/fs';
-import { upsert } from '@/utilities/mongo-utils';
+import { upsert } from '@/utilities/mongo/mongo-utils';
 import path from 'path';
 import os from 'os';
 import MeshExporter from '@utilities/export/mesh';

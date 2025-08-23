@@ -23,7 +23,7 @@
 import { parentPort } from 'worker_threads';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import OpenDXAService from '@services/opendxa';
-import mongoConnector from '@/utilities/mongo-connector';
+import mongoConnector from '@/utilities/mongo/mongo-connector';
 import '@config/env';
 
 const processJob = async (job: AnalysisJob): Promise<void> => {

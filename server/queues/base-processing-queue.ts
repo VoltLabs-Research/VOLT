@@ -24,6 +24,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     private isShutdown = false;
     private redis: IORedis;
+    private redisBlocking: IORedis;
 
     constructor(options: QueueOptions){
         super();
@@ -39,6 +40,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         this.useStreamingAdd = options.useStreamingAdd || false;
 
         this.redis = createRedisClient();
+        this.redisBlocking = createRedisClient();
+        
         this.initializeQueue();
     }
 
@@ -205,7 +208,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             this.workerPool[workerIdx].lastUsed = Date.now();
         }
 
-        this.jobMap.delete(workerIdx);
+        this.jobMap.delete(workerId);
 
         await this.redis.lrem(this.processingKey, 1, rawData);
     }
@@ -316,21 +319,21 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         if(count <= 0) return [];
         
         const jobs: string[] = [];
-        const pipeline = this.redis.pipeline();
+        const first = await this.redisBlocking.blmove(
+            this.queueKey,
+            this.processingKey,
+            'RIGHT',
+            'LEFT',
+            1 
+        );
+        if(typeof first === 'string') jobs.push(first);
 
-        for(let i = 0; i < count; i++){
-            pipeline.blmove(this.queueKey, this.processingKey, 'RIGHT', 'LEFT', 0.1);
+        for(let i = jobs.length; i < count; i++){
+            const j = await this.redisBlocking.lmove(this.queueKey, this.processingKey, 'RIGHT', 'LEFT');
+            if (!j) break;
+            jobs.push(j);
         }
 
-        const results = await pipeline.exec();
-        if(results){
-            for(const result of results){
-                if(result && result[1] && typeof result[1] === 'string'){
-                    jobs.push(result[1]);
-                }
-            }
-        }
-        
         return jobs;
     }
 

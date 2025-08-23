@@ -25,6 +25,7 @@ import validator from 'validator';
 import Notification from '@models/notification';
 import bcrypt from 'bcryptjs';
 import Team from '@models/team';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 // @ts-ignore
 import { IUser } from '@types/models/user';
 
@@ -69,28 +70,15 @@ const UserSchema: Schema<IUser> = new Schema({
     },
     teams: [{
         type: Schema.Types.ObjectId,
-        ref: 'Team'
+        ref: 'Team',
+        cascade: 'pull'
     }]
 }, {
     timestamps: true
 });
 
+UserSchema.plugin(useCascadeDelete);
 UserSchema.index({ email: 'text' });
-
-UserSchema.pre<any>('findOneAndDelete', async function(next) {
-    const userToDelete = await this.model.findOne(this.getFilter());
-    if(!userToDelete) return next();
-
-    await Team.deleteMany({ owner: userToDelete._id });
-    await Team.updateMany(
-        { members: userToDelete._id }, 
-        { $pull: { members: userToDelete._id } }
-    );
-    
-    await Notification.deleteMany({ recipient: userToDelete._id });
-    
-    next();
-});
 
 UserSchema.pre('save', async function(this: IUser & { isNew: boolean }, next) {
     if(!this.isModified('password')) return next();
