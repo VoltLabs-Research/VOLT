@@ -20,8 +20,8 @@
 * SOFTWARE.
 **/
 
-import { ParsedFrame, AtomsGroupedByType, PerformanceProfile, GLBExportOptions } from '@/types/utilities/export/atoms';
-import { TimestepInfo, LammpsAtom } from '@/types/utilities/lammps';
+import { ParsedFrame, AtomsGroupedByType } from '@/types/utilities/export/atoms';
+import { LammpsAtom } from '@/types/utilities/lammps';
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
 import { readLargeFile } from '@/utilities/fs';
 
@@ -49,15 +49,6 @@ class LAMMPSToGLBExporter{
         'OTHER': [242, 242, 242]
     };
 
-    private static uniformSubsampling(atoms: LammpsAtom[], targetCount: number): LammpsAtom[]{
-        const step = Math.floor(atoms.length / targetCount);
-        const selected: LammpsAtom[] = [];
-        for(let i = 0; i < atoms.length && selected.length < targetCount; i += step){
-            selected.push(atoms[i]);
-        }
-        return selected;
-    }
-
     private static calculateAtomBounds(atoms: LammpsAtom[]): { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } }{
         let minX = Number.MAX_VALUE, maxX = Number.MIN_VALUE;
         let minY = Number.MAX_VALUE, maxY = Number.MIN_VALUE;
@@ -70,101 +61,6 @@ class LAMMPSToGLBExporter{
         }
 
         return { min: { x: minX, y: minY, z: minZ }, max: { x: maxX, y: maxY, z: maxZ } };
-    }
-
-    private static boundaryPreservingSubsampling(atoms: LammpsAtom[], targetCount: number): LammpsAtom[]{
-        if(atoms.length <= targetCount) return atoms;
-        const bounds = this.calculateAtomBounds(atoms);
-        const margin = 0.05;
-        const xMargin = (bounds.max.x - bounds.min.x) * margin;
-        const yMargin = (bounds.max.y - bounds.min.y) * margin;
-        const zMargin = (bounds.max.z - bounds.min.z) * margin;
-
-        const boundaryAtoms: LammpsAtom[] = [];
-        const interiorAtoms: LammpsAtom[] = [];
-
-        for(const atom of atoms){
-            const isOnBoundary = (
-                atom.x <= bounds.min.x + xMargin || atom.x >= bounds.max.x - xMargin ||
-                atom.y <= bounds.min.y + yMargin || atom.y >= bounds.max.y - yMargin ||
-                atom.z <= bounds.min.z + zMargin || atom.z >= bounds.max.z - zMargin
-            );
-
-            if(isOnBoundary){
-                boundaryAtoms.push(atom);
-            }else{
-                interiorAtoms.push(atom);
-            }
-        }
-
-        const minBoundaryCount = Math.min(boundaryAtoms.length, Math.floor(targetCount * 0.15));
-        const remainingTarget = targetCount - minBoundaryCount;
-
-        const selectedBoundary = this.uniformSubsampling(boundaryAtoms, minBoundaryCount);
-        const selectedInterior = interiorAtoms.length <= remainingTarget ? interiorAtoms : this.uniformSubsampling(interiorAtoms, remainingTarget);
-
-        const result = [...selectedBoundary, ...selectedInterior];
-        return result;
-    }
-
-    private static stratifiedSubsampling(atoms: LammpsAtom[], targetCount: number): LammpsAtom[]{
-        if(atoms.length <= targetCount) return atoms;
-        const bounds = this.calculateAtomBounds(atoms);
-        const regions = this.divideIntoOctants(atoms, bounds);
-        const selected: LammpsAtom[] = [];
-        const atomsPerRegion = Math.floor(targetCount / regions.length);
-        let remainingTarget = targetCount;
-
-        for(let i = 0; i < regions.length; i++){
-            const region = regions[i];
-            if(region.length === 0) continue;
-            const isLastRegion = i === regions.length - 1;
-            const regionTarget = isLastRegion ? remainingTarget : Math.min(atomsPerRegion, region.length);
-            if(region.length <= regionTarget){
-                selected.push(...region);
-            }else{
-                const regionSelected = this.uniformSubsampling(region, regionTarget);
-                selected.push(...regionSelected);
-            }
-
-            remainingTarget -= regionTarget;
-            if(remainingTarget <= 0) break;
-        }
-
-        return selected;
-    }
-
-    private static divideIntoOctants(atoms: LammpsAtom[], bounds: any): LammpsAtom[][]{
-        const centerX = (bounds.min.x + bounds.max.x) / 2;
-        const centerY = (bounds.min.y + bounds.max.y) / 2;
-        const centerZ = (bounds.min.z + bounds.max.z) / 2;
-
-        const octants: LammpsAtom[][] = [[], [], [], [], [], [], [], []];
-
-        for(const atom of atoms){
-            const octantIndex =
-               (atom.x >= centerX ? 1 : 0) +
-               (atom.y >= centerY ? 2 : 0) +
-               (atom.z >= centerZ ? 4 : 0);
-
-            octants[octantIndex].push(atom);
-        }
-
-        return octants.filter((octant) => octant.length > 0);
-    }
-
-    private static subsampling(atoms: LammpsAtom[], targetCount: number, method: 'uniform' | 'boundary' | 'stratified'): LammpsAtom[]{
-        if(atoms.length <= targetCount) return atoms;
-        switch(method){
-            case 'uniform':
-                return this.uniformSubsampling(atoms, targetCount);
-            case 'boundary':
-                return this.boundaryPreservingSubsampling(atoms, targetCount);
-            case 'stratified':
-                return this.stratifiedSubsampling(atoms, targetCount);
-            default:
-                return this.boundaryPreservingSubsampling(atoms, targetCount);
-        }
     }
 
     // TODO: DUPLICATED CODE!?
@@ -221,95 +117,6 @@ class LAMMPSToGLBExporter{
         return { timestepInfo, atoms };
     }
 
-    private selectAtoms(atoms: LammpsAtom[], options: GLBExportOptions, profile: PerformanceProfile): { atoms: LammpsAtom[], finalRadius: number }{
-        let selectedAtoms = [...atoms];
-        let finalRadius = options.atomRadius as number;
-
-        if(selectedAtoms.length > profile.recommendedMaxAtoms){
-            let method: 'uniform' | 'boundary' | 'stratified' = 'boundary';
-
-            if(selectedAtoms.length > 2000000){
-                method = 'stratified';
-            }else if(selectedAtoms.length > 500000){
-                method = 'boundary';
-            }else{
-                method = 'uniform';
-            }
-
-            selectedAtoms = LAMMPSToGLBExporter.subsampling(selectedAtoms, profile.recommendedMaxAtoms, method);
-            finalRadius = LAMMPSToGLBExporter.calculateOptimalRadius(selectedAtoms);
-            console.log(`Recalculated radius after optimization: ${finalRadius.toFixed(3)}`);
-        }
-
-        if(options.maxAtoms && selectedAtoms.length > options.maxAtoms){
-            selectedAtoms = LAMMPSToGLBExporter.boundaryPreservingSubsampling(selectedAtoms, options.maxAtoms);
-            finalRadius = LAMMPSToGLBExporter.calculateOptimalRadius(selectedAtoms);
-            console.log(`Recalculated radius after second optimization: ${finalRadius.toFixed(3)}`);
-        }
-
-        const reductionPercent = ((atoms.length - selectedAtoms.length) / atoms.length * 100).toFixed(1);
-        console.log(`Optimization complete: ${reductionPercent}% reduction(${selectedAtoms.length.toLocaleString()} final atoms)`);
-
-        return { atoms: selectedAtoms, finalRadius };
-    }
-
-    private generateSphere(radius: number, segments: number, rings: number): {
-        vertices: number[];
-        indices: number[];
-        bounds: { min: number[]; max: number[] }
-    }{
-        const vertices: number[] = [];
-        const indices: number[] = [];
-
-        let minX = radius, maxX = -radius;
-        let minY = radius, maxY = -radius;
-        let minZ = radius, maxZ = -radius;
-
-        for(let ring = 0; ring <= rings; ring++){
-            const phi = Math.PI * ring / rings;
-            const y = Math.cos(phi) * radius;
-            const ringRadius = Math.sin(phi) * radius;
-
-            for(let segment = 0; segment <= segments; segment++){
-                const theta = 2.0 * Math.PI * segment / segments;
-                const x = Math.cos(theta) * ringRadius;
-                const z = Math.sin(theta) * ringRadius;
-
-                minX = Math.min(minX, x);
-                maxX = Math.max(maxX, x);
-                minY = Math.min(minY, y);
-                maxY = Math.max(maxY, y);
-                minZ = Math.min(minZ, z);
-                maxZ = Math.max(maxZ, z);
-
-                vertices.push(x, y, z);
-
-                const normLen = Math.sqrt(x * x + y * y + z * z);
-                if(normLen > 0.0){
-                    vertices.push(x / normLen, y / normLen, z / normLen);
-                }else{
-                    vertices.push(0, 1, 0);
-                }
-            }
-        }
-
-        for(let ring = 0; ring < rings; ring++){
-            for(let segment = 0; segment < segments; segment++){
-                const current = ring *(segments + 1) + segment;
-                const next = current + segments + 1;
-
-                indices.push(current, next, current + 1);
-                indices.push(current + 1, next, next + 1);
-            }
-        }
-
-        return {
-            vertices,
-            indices,
-            bounds: { min: [minX, minY, minZ], max: [maxX, maxY, maxZ] }
-        };
-    }
-
     static calculateOptimalRadius(atoms: LammpsAtom[]): number{
         let minDistance = Number.MAX_VALUE;
         const sampleSize = Math.min(1000, atoms.length);
@@ -344,489 +151,158 @@ class LAMMPSToGLBExporter{
             return 0.8;
         }
 
-        let optimalRadius = 0.45 * minDistance;
+        let optimalRadius = 0.35 * minDistance;
         return Math.max(0.1, Math.min(3.0, optimalRadius));
     }
 
-    static detectPerfomanceProfile(atomCount: number): PerformanceProfile{
-        return {
-            atomCount,
-            recommendedMaxAtoms: atomCount,
-            sphereResolution: { segments: 4, rings: 2 },
+    public async exportAtomsToPointCloudGLB(
+        positions: Float32Array,
+        colors: Float32Array,
+        outputFilePath: string,
+        bounds: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } },
+        optimalRadius: number
+    ): Promise<void>{
+        const glb: any = {
+            asset: { 
+                version: '2.0', 
+                generator: 'OpenDXA PointCloud Exporter'
+            },
+            scene: 0,
+            scenes: [{ nodes: [0] }],
+            nodes: [{ mesh: 0 }],
+            meshes: [],
+            materials: [],
+            accessors: [],
+            bufferViews: [],
+            buffers: []
         };
-        /*
-        if(atomCount <= 10000){
-            return {
-                atomCount,
-                recommendedMaxAtoms: atomCount,
-                sphereResolution: { segments: 16, rings: 12 },
-            };
-        }else if(atomCount <= 100000){
-            return {
-                atomCount,
-                recommendedMaxAtoms: atomCount,
-                sphereResolution: { segments: 12, rings: 8 },
-            };
-        }else if(atomCount <= 500000){
-            return {
-                atomCount,
-                recommendedMaxAtoms: 300000,
-                sphereResolution: { segments: 8, rings: 6 },
-            };
-        }else if(atomCount <= 2000000){
-            return {
-                atomCount,
-                recommendedMaxAtoms: 200000,
-                sphereResolution: { segments: 4, rings: 2 },
-            };
-        }else{
-            return {
-                atomCount,
-                recommendedMaxAtoms: 150000,
-                sphereResolution: { segments: 4, rings: 2 },
-            };
-        }*/
-    }
 
-    static calculateRadiusFromDensity(timestepInfo: TimestepInfo, atomCount: number): number{
-        const{ boxBounds } = timestepInfo;
-        const volume = (boxBounds.xhi - boxBounds.xlo) *
-           (boxBounds.yhi - boxBounds.ylo) *
-           (boxBounds.zhi - boxBounds.zlo);
-        const density = atomCount / volume;
-        const averageDistance = Math.pow(1 / density, 1 / 3);
-        const optimalRadius = averageDistance * 0.35;
-        console.log('Optimal radius:', optimalRadius);
-        return Math.max(0.1, Math.min(2.0, optimalRadius));
-    }
+        const positionBufferSize = positions.byteLength;
+        const colorBufferSize = colors.byteLength;
+        const totalBufferSize = positionBufferSize + colorBufferSize;
 
-    static calculateGlobalOptimalRadius(firstFrame: { timestepInfo: TimestepInfo, atoms: LammpsAtom[] }): number{
-        const radiusFromAtoms = this.calculateOptimalRadius(firstFrame.atoms);
-        const radiusFromDensity = this.calculateRadiusFromDensity(firstFrame.timestepInfo, firstFrame.atoms.length);
-        const finalRadius = (radiusFromAtoms + radiusFromDensity) / 2;
-        return finalRadius;
+        const arrayBuffer = new ArrayBuffer(totalBufferSize);
+        
+        new Float32Array(
+            arrayBuffer,
+            0,
+            positions.length
+        ).set(positions);
+
+        new Float32Array(
+            arrayBuffer,
+            positionBufferSize,
+            colors.length
+        ).set(colors);
+
+        glb.buffers.push({ byteLength: totalBufferSize });
+        glb.bufferViews.push({ 
+            buffer: 0, 
+            byteOffset: 0,
+            byteLength: positionBufferSize, 
+            target: 34962 
+        });
+
+        glb.bufferViews.push({ 
+            buffer: 0, 
+            byteOffset: positionBufferSize, 
+            byteLength: colorBufferSize, 
+            target: 34962 
+        });
+
+        glb.accessors.push({ 
+            bufferView: 0, 
+            componentType: 5126, 
+            count: positions.length / 3, 
+            type: 'VEC3', 
+            min: [bounds.min.x, bounds.min.y, bounds.min.z], 
+            max: [bounds.max.x, bounds.max.y, bounds.max.z] 
+        });
+
+        glb.accessors.push({ 
+            bufferView: 1, 
+            componentType: 5126, 
+            count: colors.length / 3,
+            type: 'VEC3' 
+        });
+        
+        glb.materials.push({ 
+            name: 'PointCloudMaterial', 
+            pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1] } 
+        });
+
+        glb.meshes.push({
+            primitives: [{
+                attributes: { POSITION: 0, COLOR_0: 1 },
+                material: 0,
+                // POINTS
+                mode: 0 
+            }],
+               extras: {
+                optimalRadius: optimalRadius
+            }
+        });
+
+        assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
     }
 
     async exportAtomsToGLB(
         filePath: string,
         outputFilePath: string,
-        extractTimestepInfo: Function,
-        options: GLBExportOptions = { atomRadius: 0.8 }
+        extractTimestepInfo: Function
     ): Promise<void> {
         const frame = await this.parseFrame(filePath, extractTimestepInfo);
-        const autoRadius = LAMMPSToGLBExporter.calculateGlobalOptimalRadius(frame);
 
-        const opts: Required<GLBExportOptions> = {
-            atomRadius: options.atomRadius ?? autoRadius,
-            maxAtoms: options.maxAtoms ?? 0,
-            maxInstancesPerMesh: options.maxInstancesPerMesh ?? 10000
-        };
+        const positions = new Float32Array(frame.atoms.length * 3);
+        const colors = new Float32Array(frame.atoms.length * 3);
+        const optimalRadius = LAMMPSToGLBExporter.calculateOptimalRadius(frame.atoms);
 
-        console.log(`Using atom radius: ${opts.atomRadius.toFixed(3)}(${options.atomRadius ? 'specified' : 'auto-detected'})`);
-        const profile = LAMMPSToGLBExporter.detectPerfomanceProfile(frame.atoms.length);
-        const{ atoms: selectedAtoms, finalRadius } = this.selectAtoms(frame.atoms, opts, profile);
-        const{ segments, rings } = profile.sphereResolution;
-        const sphere = this.generateSphere(finalRadius, segments, rings);
+        frame.atoms.forEach((atom, i) => {
+            const posIdx = i * 3;
+            positions[posIdx] = atom.x;
+            positions[posIdx + 1] = atom.y;
+            positions[posIdx + 2] = atom.z;
 
-        console.log(`Exporting ${selectedAtoms.length} of ${frame.atoms.length} atoms(${(100.0 * selectedAtoms.length / frame.atoms.length).toFixed(1)}%)`);
-        console.log(`Final atom radius: ${finalRadius.toFixed(3)}`);
-
-        const glb: any = {
-            asset: {
-                version: '2.0',
-                generator: 'OpenDXA Lammps GLB Exporter',
-                copyright: 'https://github.com/rodyherrera/OpenDXA'
-            },
-            extensionsUsed: ['EXT_mesh_gpu_instancing'],
-            extensionsRequired: ['EXT_mesh_gpu_instancing'],
-            scene: 0,
-            scenes: [{ nodes: [] }],
-            nodes: [],
-            meshes: [],
-            materials: [],
-            accessors: [],
-            bufferViews: [],
-            buffers: []
-        };
-
-        const vertexBufferSize = sphere.vertices.length * 4;
-        const indexBufferSize = sphere.indices.length * 2;
-
-        const vertexBufferOffset = 0
-        const indexBufferOffset = vertexBufferSize;
-        const alignedIndexBufferOffset = Math.ceil(indexBufferOffset / 4) * 4;
-
-        let bufferSize = alignedIndexBufferOffset + indexBufferSize;
-        let arrayBuffer = new ArrayBuffer(bufferSize);
-        const vertexView = new Float32Array(arrayBuffer, vertexBufferOffset, sphere.vertices.length);
-        const indexView = new Uint16Array(arrayBuffer, alignedIndexBufferOffset, sphere.indices.length);
-
-        vertexView.set(sphere.vertices);
-        indexView.set(sphere.indices);
-
-        glb.bufferViews.push({
-            buffer: 0,
-            byteOffset: vertexBufferOffset,
-            byteLength: vertexBufferSize,
-            byteStride: 24,
-            target: 34962
-        },{
-            buffer: 0,
-            byteOffset: alignedIndexBufferOffset,
-            byteLength: indexBufferSize,
-            target: 34963
+            const color = this.lammpsTypeColors.get(atom.type) || this.lammpsTypeColors.get(0)!;
+            colors[posIdx] = color[0];
+            colors[posIdx + 1] = color[1];
+            colors[posIdx + 2] = color[2];
         });
 
-        glb.accessors.push({
-            bufferView: 0,
-            byteOffset: 0,
-            componentType: 5126,
-            count: sphere.vertices.length / 6,
-            type: 'VEC3',
-            min: sphere.bounds.min,
-            max: sphere.bounds.max
-        },{
-            bufferView: 0,
-            byteOffset: 12,
-            componentType: 5126,
-            count: sphere.vertices.length / 6,
-            type: 'VEC3',
-            min: [-1.0, -1.0, -1.0],
-            max: [1.0, 1.0, 1.0]
-        },{
-            bufferView: 1,
-            byteOffset: 0,
-            componentType: 5123,
-            count: sphere.indices.length,
-            type: 'SCALAR'
-        });
-
-        const atomsByType = new Map<number, LammpsAtom[]>();
-        for(const atom of selectedAtoms){
-            if(!atomsByType.has(atom.type)){
-                atomsByType.set(atom.type, []);
-            }
-            atomsByType.get(atom.type)!.push(atom);
-        }
-
-        let currentMeshIndex = 0;
-
-        for(const [atomType, typeAtoms] of atomsByType){
-            if(typeAtoms.length === 0) continue;
-            const color = this.lammpsTypeColors.get(atomType) || this.lammpsTypeColors.get(0)!;
-            glb.materials.push({
-                name: `Material_LammpsType_${atomType}`,
-                pbrMetallicRoughness: {
-                    baseColorFactor: color,
-                    metallicFactor: 0.1,
-                    roughnessFactor: 0.8
-                }
-            });
-
-            const totalAtoms = typeAtoms.length;
-            const chunks = Math.max(1, Math.ceil(totalAtoms / opts.maxInstancesPerMesh));
-            const atomsPerChunk = Math.ceil(totalAtoms / chunks);
-            for(let chunk = 0; chunk < chunks; chunk++){
-                const startIdx = chunk * atomsPerChunk;
-                const endIdx = Math.min(startIdx + atomsPerChunk, totalAtoms);
-                if(startIdx >= endIdx) break;
-
-                const chunkAtoms = typeAtoms.slice(startIdx, endIdx);
-                const meshName = chunks > 1 ?
-                    `AtomSphere_Type_${atomType}_Chunk_${chunk}` :
-                    `AtomSphere_Type_${atomType}`;
-
-                glb.meshes.push({
-                    name: meshName,
-                    primitives: [{
-                        attributes: { POSITION: 0, NORMAL: 1 },
-                        indices: 2,
-                        material: currentMeshIndex,
-                        mode: 4
-                    }]
-                });
-
-                const translations: number[] = [];
-                let transMinX = Number.MAX_VALUE, transMaxX = Number.MIN_VALUE;
-                let transMinY = Number.MAX_VALUE, transMaxY = Number.MIN_VALUE;
-                let transMinZ = Number.MAX_VALUE, transMaxZ = Number.MIN_VALUE;
-
-                for(const atom of chunkAtoms){
-                    translations.push(atom.x, atom.y, atom.z);
-                    transMinX = Math.min(transMinX, atom.x);
-                    transMaxX = Math.max(transMaxX, atom.x);
-                    transMinY = Math.min(transMinY, atom.y);
-                    transMaxY = Math.max(transMaxY, atom.y);
-                    transMinZ = Math.min(transMinZ, atom.z);
-                    transMaxZ = Math.max(transMaxZ, atom.z);
-                }
-
-                const translationBufferSize = translations.length * 4;
-                const currentBufferSize = bufferSize;
-                const translationBufferOffset = currentBufferSize;
-
-                const newBufferSize = currentBufferSize + translationBufferSize;
-                const newArrayBuffer = new ArrayBuffer(newBufferSize);
-
-                new Uint8Array(newArrayBuffer).set(new Uint8Array(arrayBuffer));
-
-                const translationView = new Float32Array(newArrayBuffer, translationBufferOffset, translations.length);
-                translationView.set(translations);
-
-                arrayBuffer = newArrayBuffer;
-                bufferSize = newBufferSize;
-
-                glb.bufferViews.push({
-                    buffer: 0,
-                    byteOffset: translationBufferOffset,
-                    byteLength: translationBufferSize,
-                    target: 34962
-                });
-
-                const translationAccessorIndex = glb.accessors.length;
-                glb.accessors.push({
-                    bufferView: glb.bufferViews.length - 1,
-                    byteOffset: 0,
-                    componentType: 5126,
-                    count: chunkAtoms.length,
-                    type: "VEC3",
-                    min: [transMinX, transMinY, transMinZ],
-                    max: [transMaxX, transMaxY, transMaxZ]
-                });
-
-                const nodeName = chunks > 1 ?
-                    `Atoms_Instanced_Type_${atomType}_Chunk_${chunk}` :
-                    `Atoms_Instanced_Type_${atomType}`;
-
-                glb.nodes.push({
-                    name: nodeName,
-                    mesh: glb.meshes.length - 1,
-                    extensions: {
-                        EXT_mesh_gpu_instancing: {
-                            attributes: { TRANSLATION: translationAccessorIndex }
-                        }
-                    }
-                });
-
-                glb.scenes[0].nodes.push(glb.nodes.length - 1);
-            }
-
-            currentMeshIndex++;
-        }
-
-        glb.buffers.push({
-            byteLength: arrayBuffer.byteLength
-        });
-
-
-        glb.extras = {
-            originalAtomCount: frame.atoms.length,
-            exportedAtomCount: selectedAtoms.length,
-            sphereResolution: [segments, rings],
-            timestep: frame.timestepInfo.timestep,
-            finalAtomRadius: finalRadius,
-            performanceProfile: {
-                reductionRatio:(1 - selectedAtoms.length / frame.atoms.length),
-                optimizationsApplied: [
-                    'optimized_sphere_resolution'
-                ].filter(Boolean)
-            },
-            optimizationSettings: {
-                maxAtoms: opts.maxAtoms,
-                maxInstancesPerMesh: opts.maxInstancesPerMesh
-            }
-        };
-
-        assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
+        const bounds = LAMMPSToGLBExporter.calculateAtomBounds(frame.atoms);
+        await this.exportAtomsToPointCloudGLB(positions, colors, outputFilePath, bounds, optimalRadius);
     }
 
     public exportAtomsTypeToGLB(
         atomsByType: AtomsGroupedByType,
-        outputFilePath: string,
-        options: GLBExportOptions = {}
+        outputFilePath: string
     ): void{
-        const totalAtomCount = Object.values(atomsByType).reduce((sum, atoms) => sum + atoms.length, 0);
+        const totalAtoms = Object.values(atomsByType).reduce((sum, atoms) => sum + atoms.length, 0);
+        const positions = new Float32Array(totalAtoms * 3);
+        const colors = new Float32Array(totalAtoms * 3);
+        let atomIndex = 0;
 
-        const allAtomsForRadiusCalc = Object.values(atomsByType).flat().map(a => ({
-            x: a.pos[0], y: a.pos[1], z: a.pos[2],
-            id: a.id, type: 0, typeName: '' 
-        }));
-        const autoRadius = LAMMPSToGLBExporter.calculateOptimalRadius(allAtomsForRadiusCalc);
-
-        const opts: Required<GLBExportOptions> = {
-            atomRadius: options.atomRadius ?? autoRadius,
-            maxAtoms: options.maxAtoms ?? 0,
-            maxInstancesPerMesh: options.maxInstancesPerMesh ?? 10000
-        };
-
-        console.log(`Using atom radius: ${opts.atomRadius.toFixed(3)}(${options.atomRadius ? 'specified' : 'auto-detected'})`);
-        const profile = LAMMPSToGLBExporter.detectPerfomanceProfile(totalAtomCount);
-
-        const finalRadius = opts.atomRadius;
-        const { segments, rings } = profile.sphereResolution;
-    
-        const sphere = this.generateSphere(finalRadius, segments, rings);
-        console.log(`Exporting ${totalAtomCount.toLocaleString()} atoms.`);
-        console.log(`Atom final radius: ${finalRadius.toFixed(3)}`);
-
-        const glb: any = {
-            asset: {
-                version: '2.0',
-                generator: 'OpenDXA Lammps GLB Exporter',
-                copyright: 'https://github.com/rodyherrera/OpenDXA'
-            },
-            extensionsUsed: ['EXT_mesh_gpu_instancing'],
-            extensionsRequired: ['EXT_mesh_gpu_instancing'],
-            scene: 0,
-            scenes: [{ nodes: [] }],
-            nodes: [],
-            meshes: [],
-            materials: [],
-            accessors: [],
-            bufferViews: [],
-            buffers: []
-        };
-
-        const vertexBufferSize = sphere.vertices.length * 4;
-        const indexBufferSize = sphere.indices.length * 2;
-        const alignedIndexBufferOffset = Math.ceil(vertexBufferSize / 4) * 4;
-        let bufferSize = alignedIndexBufferOffset + indexBufferSize;
-        let arrayBuffer = new ArrayBuffer(bufferSize);
-
-        new Float32Array(
-            arrayBuffer,
-            0,
-            sphere.vertices.length
-        ).set(sphere.vertices);
-
-        new Uint16Array(
-            arrayBuffer,
-            alignedIndexBufferOffset,
-            sphere.indices.length
-        ).set(sphere.indices);
-
-        glb.bufferViews.push({
-            buffer: 0,
-            byteOffset: 0,
-            byteLength: vertexBufferSize,
-            byteStride: 24,
-            target: 34962
-        });
-
-        glb.bufferViews.push({
-            buffer: 0,
-            byteOffset: alignedIndexBufferOffset,
-            byteLength: indexBufferSize,
-            target: 34963
-        });
-
-        glb.accessors.push({
-            bufferView: 0,
-            byteOffset: 0,
-            componentType: 5126,
-            count: sphere.vertices.length / 6,
-            type: 'VEC3',
-            min: sphere.bounds.min,
-            max: sphere.bounds.max
-        });
-
-        glb.accessors.push({
-            bufferView: 0,
-            byteOffset: 12,
-            componentType: 5126,
-            count: sphere.vertices.length / 6,
-            type: 'VEC3'
-        });
-
-        glb.accessors.push({
-            bufferView: 1,
-            byteOffset: 0,
-            componentType: 5123,
-            count: sphere.indices.length,
-            type: 'SCALAR'
-        });
-
-        let materialIndex = 0;
-        for(const [typeName, typeAtoms] of Object.entries(atomsByType)){
-            if(typeAtoms.length === 0) continue;
-            console.log(`Processing ${typeAtoms.length.toLocaleString()} atoms of type "${typeName}".`);
-
-            const colorRGB = this.STRUCTURE_COLORS[typeName].map((color) => color / 255);
-            glb.materials.push({
-                name: `Material_Type_${typeName}`,
-                pbrMetallicRoughness: {
-                    baseColorFactor: [...colorRGB, 1.0],
-                    metallicFactor: 0.1,
-                    roughnessFactor: 0.8
-                }
-            });
-
-            const chunks = Math.ceil(typeAtoms.length / opts.maxInstancesPerMesh);
-            for(let i = 0; i < chunks; i++){
-                const chunkAtoms = typeAtoms.slice(i * opts.maxInstancesPerMesh,(i + 1) * opts.maxInstancesPerMesh);
-                const translations = chunkAtoms.flatMap(a => a.pos); 
-
-                const translationBufferOffset = bufferSize;
-                const translationBufferSize = translations.length * 4;
-                const newArrayBuffer = new ArrayBuffer(bufferSize + translationBufferSize);
-                new Uint8Array(newArrayBuffer).set(new Uint8Array(arrayBuffer));
-                new Float32Array(newArrayBuffer, translationBufferOffset, translations.length).set(translations);
-                arrayBuffer = newArrayBuffer;
-                bufferSize += translationBufferSize;
-
-                glb.bufferViews.push({
-                    buffer: 0,
-                    byteOffset: translationBufferOffset,
-                    byteLength: translationBufferSize,
-                    target: 34962
-                });
-
-                const translationAccessorIndex = glb.accessors.length;
-
-                glb.accessors.push({
-                    bufferView: glb.bufferViews.length - 1,
-                    byteOffset: 0,
-                    componentType: 5126,
-                    count: chunkAtoms.length,
-                    type: 'VEC3'
-                });
-
-                const meshIndex = glb.meshes.length;
-                glb.meshes.push({
-                    primitives: [{
-                        attributes: {
-                            POSITION: 0,
-                            NORMAL: 1
-                        },
-                        indices: 2,
-                        material: materialIndex,
-                        mode: 4
-                    }]
-                });
-
-                const nodeIndex = glb.nodes.length;
-                glb.nodes.push({
-                    mesh: meshIndex,
-                    extensions: {
-                        EXT_mesh_gpu_instancing: {
-                            attributes: {
-                                TRANSLATION: translationAccessorIndex
-                            }
-                        }
-                    }
-                });
-
-                glb.scenes[0].nodes.push(nodeIndex);
+        for(const [typeName, atoms] of Object.entries(atomsByType)){
+            const key = typeName.toUpperCase().replace(/ /g, '_');
+            const color = this.STRUCTURE_COLORS[key].map((color) => color / 255);
+            for(const atom of atoms){
+                const i = atomIndex * 3;
+                positions[i] = atom.pos[0];
+                positions[i + 1] = atom.pos[1];
+                positions[i + 2] = atom.pos[2];
+                colors[i] = color[0];
+                colors[i + 1] = color[1];
+                colors[i + 2] = color[2];
+                atomIndex++;
             }
-
-            materialIndex++;
         }
 
-        glb.buffers.push({
-            byteLength: arrayBuffer.byteLength,
-        });
-
-        assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
+        const allAtomsFlat = Object.values(atomsByType)
+            .flat()
+            .map(a => ({ x: a.pos[0], y: a.pos[1], z: a.pos[2] } as LammpsAtom));
+        const bounds = LAMMPSToGLBExporter.calculateAtomBounds(allAtomsFlat);
+        const optimalRadius = LAMMPSToGLBExporter.calculateOptimalRadius(allAtomsFlat);
+        this.exportAtomsToPointCloudGLB(positions, colors, outputFilePath, bounds, optimalRadius);
     }
 };
 

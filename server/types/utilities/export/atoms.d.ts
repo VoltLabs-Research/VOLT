@@ -22,18 +22,6 @@
 
 import { LammpsAtom, TimestepInfo } from '@/types/utilities/lammps';
 
-export interface GLBExportOptions{
-    atomRadius?: number;
-    maxAtoms?: number;
-    maxInstancesPerMesh?: number;
-}
-
-export interface PerformanceProfile{
-    atomCount: number;
-    recommendedMaxAtoms: number;
-    sphereResolution: { segments: number; rings: number };
-}
-
 export interface ParsedFrame{
     timestepInfo: TimestepInfo;
     atoms: LammpsAtom[];
