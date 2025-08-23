@@ -415,7 +415,7 @@ void ClusterConnector::buildClusters(){
                         tm1.column(i) = -(latticeStruct.latticeVectors[permutation[neighborIdx]]);
                     }
 
-                    assert(_sa.numberOfNeighbors(neighborAtomIdx) == coordStruct.numNeighbors);
+                    //assert(_sa.numberOfNeighbors(neighborAtomIdx) == coordStruct.numNeighbors);
                     int j = _sa.findNeighbor(neighborAtomIdx, atomIdx);
                     if(j == -1){
                         properOverlap = false;

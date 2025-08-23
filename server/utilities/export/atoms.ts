@@ -238,7 +238,7 @@ class LAMMPSToGLBExporter{
                 // POINTS
                 mode: 0 
             }],
-               extras: {
+            extras: {
                 optimalRadius: optimalRadius
             }
         });
@@ -273,7 +273,7 @@ class LAMMPSToGLBExporter{
         await this.exportAtomsToPointCloudGLB(positions, colors, outputFilePath, bounds, optimalRadius);
     }
 
-    public exportAtomsTypeToGLB(
+public exportAtomsTypeToGLB(
         atomsByType: AtomsGroupedByType,
         outputFilePath: string
     ): void{
@@ -284,22 +284,21 @@ class LAMMPSToGLBExporter{
 
         for(const [typeName, atoms] of Object.entries(atomsByType)){
             const key = typeName.toUpperCase().replace(/ /g, '_');
-            const color = this.STRUCTURE_COLORS[key].map((color) => color / 255);
+            const color = this.STRUCTURE_COLORS[key] || this.STRUCTURE_COLORS['OTHER'];
+            
             for(const atom of atoms){
                 const i = atomIndex * 3;
                 positions[i] = atom.pos[0];
                 positions[i + 1] = atom.pos[1];
                 positions[i + 2] = atom.pos[2];
-                colors[i] = color[0];
-                colors[i + 1] = color[1];
-                colors[i + 2] = color[2];
+                colors[i] = color[0] / 255;
+                colors[i + 1] = color[1] / 255;
+                colors[i + 2] = color[2] / 255;
                 atomIndex++;
             }
         }
 
-        const allAtomsFlat = Object.values(atomsByType)
-            .flat()
-            .map(a => ({ x: a.pos[0], y: a.pos[1], z: a.pos[2] } as LammpsAtom));
+        const allAtomsFlat = Object.values(atomsByType).flat().map(a => ({ x: a.pos[0], y: a.pos[1], z: a.pos[2] } as LammpsAtom));
         const bounds = LAMMPSToGLBExporter.calculateAtomBounds(allAtomsFlat);
         const optimalRadius = LAMMPSToGLBExporter.calculateOptimalRadius(allAtomsFlat);
         this.exportAtomsToPointCloudGLB(positions, colors, outputFilePath, bounds, optimalRadius);

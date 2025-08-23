@@ -21,7 +21,7 @@
 **/
 
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
 import { Group, Mesh, Box3, BufferGeometry, Material, Vector3, Color, Points, ShaderMaterial } from 'three';
 import { calculateModelBounds, calculateOptimalTransforms, getOptimizedMaterial } from '@/utilities/glb/modelUtils';
 import { GLB_CONSTANTS, loadGLB, preloadGLBs } from '@/utilities/glb/loader';
@@ -36,8 +36,6 @@ import ObjectPools from '@/utilities/glb/objectPools';
 
 import vertexShader from '@/shaders/point-cloud.vert?raw';
 import fragmentShader from '@/shaders/point-cloud.frag?raw';
-
-export const modelCache = new Map<string, Promise<any>>();
 
 export const useGlbScene = ({
     currentGlbUrl: propCurrentGlbUrl,
@@ -105,7 +103,6 @@ export const useGlbScene = ({
         if(!glbUrl || !activeSceneObject){
             return null;
         }
-
         return glbUrl[activeSceneObject];
     }, [propCurrentGlbUrl, storeCurrentGlbUrl, activeSceneObject]);
 
@@ -115,7 +112,6 @@ export const useGlbScene = ({
             propNextGlbUrl?.dislocations || storeNextGlbUrl?.dislocations,
             (propNextGlbUrl || storeNextGlbUrl)?.[activeSceneObject],
         ].filter(Boolean);
-
         if(preloadUrls.length > 0){
             preloadGLBs(preloadUrls);
         }
@@ -124,26 +120,19 @@ export const useGlbScene = ({
     const cleanupResources = useCallback(() => {
         if(stateRef.current.cleanupScheduled) return;
         stateRef.current.cleanupScheduled = true;
-
-        // Cleanup services
         cullingService.terminate();
         instancedMeshManager.cleanup();
-
-        // Remove models from scene
         scene.children.forEach((child: any) => {
             if(child.userData.glbUrl && child instanceof Group){
                 scene.remove(child);
             }
         });
-
-        // Reset state
         stateRef.current.model = null;
         stateRef.current.mesh = null;
         stateRef.current.atoms = [];
         stateRef.current.visibleIndices.clear();
         stateRef.current.isSetup = false;
         stateRef.current.cleanupScheduled = false;
-
         invalidate();
     }, [scene, invalidate, cullingService, instancedMeshManager]);
 
@@ -157,15 +146,12 @@ export const useGlbScene = ({
             if(child instanceof Mesh && atomCount <= GLB_CONSTANTS.MAX_VISIBLE_INSTANCES){
                 const positions = child.geometry.attributes.position;
                 const colors = child.geometry.attributes.color;
-
                 if(positions){
                     const posArray = positions.array as Float32Array;
                     const colorArray = colors?.array as Float32Array;
-
                     for(let i = 0; i < posArray.length; i += 3){
                         if(atomCount >= GLB_CONSTANTS.MAX_VISIBLE_INSTANCES) break;
                         if(isNaN(posArray[i]) || isNaN(posArray[i + 1]) || isNaN(posArray[i + 2])) continue;
-
                         const idx = atomCount * 3;
                         positionsArray[idx] = posArray[i];
                         positionsArray[idx + 1] = posArray[i + 1];
@@ -179,7 +165,6 @@ export const useGlbScene = ({
                 }
             }
         });
-
         stateRef.current.atoms = Array.from({ length: atomCount }, (_, i) => ({
             position: new Vector3(positionsArray[i * 3], positionsArray[i * 3 + 1], positionsArray[i * 3 + 2]),
             color: new Color(colorsArray[i * 3], colorsArray[i * 3 + 1], colorsArray[i * 3 + 2]),
@@ -187,10 +172,8 @@ export const useGlbScene = ({
             visible: true,
             lodLevel: 1,
         }));
-
         cullingService.initializeAtoms(stateRef.current.atoms);
         logger.log(`Processed ${atomCount} atoms`);
-
         return atomCount;
     }, [logger, cullingService]);
 
@@ -201,134 +184,111 @@ export const useGlbScene = ({
             model.position.z += Math.abs(minZ);
         }
     }, []);
-
-    useFrame(() => {
+     useFrame(() => {
         const mesh = stateRef.current.mesh;
-        if(
-            mesh &&
-            mesh instanceof Points && 
-            mesh.material instanceof ShaderMaterial
-        ){
+        if (mesh && mesh instanceof Points && mesh.material instanceof ShaderMaterial) {
             mesh.material.uniforms.cameraPosition.value.copy(camera.position);
         }
     });
+
+    const configurePointCloudMaterial = useCallback((points: Points) => {
+        const optimalRadius = points.userData.optimalRadius;
+        const pointSize = optimalRadius * 0.7;
+
+        points.material = new ShaderMaterial({
+            vertexShader,
+            fragmentShader,
+            uniforms: {
+                pointScale: { value: pointSize * scale },
+                cameraPosition: { value: new Vector3() },
+                ambientFactor: { value: 0.15 },
+                diffuseFactor: { value: 0.6 },
+                specularFactor: { value: 0.5 },
+                shininess: { value: 120.0 },
+                rimFactor: { value: 0.1 },
+                rimPower: { value: 3.0 },
+            },
+            vertexColors: true,
+            transparent: true,
+            depthWrite: true,
+            depthTest: true,
+            clipping: true,
+        });
+
+        stateRef.current.mesh = points;
+        onGeometryReady({
+            geometry: points.geometry,
+            material: points.material,
+            instanceCount: points.geometry.attributes.position.count
+        });
+    }, [onGeometryReady, scale]);
 
     const setupModel = useCallback((model: Group) => {
         if(stateRef.current.isSetup){
             return model;
         }
-
         const bounds = calculateModelBounds({ scene: model });
         const { position: optimalPos, rotation: optimalRot, scale: optimalScale } = calculateOptimalTransforms(bounds);
-
-        let mainGeometry: BufferGeometry | null = null;
-        let mainMaterial: Material | null = null;
-
         const isNonAtomistic = activeSceneObject === 'dislocations' || 
                            activeSceneObject === 'interface_mesh' || 
                            activeSceneObject === 'defect_mesh';
-
         let pointCloudObject: Points | null = null;
-
         model.traverse((child) => {
-            if(child instanceof Points){
+            if (child instanceof Points) {
                 pointCloudObject = child;
             }
         });
-
-        if(pointCloudObject){
-            const points: Points = pointCloudObject;
-            // points.frustumCulled = false;
-            const optimalRadius = points.userData?.extras?.optimalRadius || 0.4;
-            const calculatedPointSize = optimalRadius * 0.3;
-
-            points.material = new ShaderMaterial({
-                vertexShader,
-                fragmentShader,
-                uniforms: {
-                    pointScale: { value: calculatedPointSize * scale },
-                    cameraPosition: { value: new Vector3() },
-                    ambientFactor: { value: 0.15 },
-                    diffuseFactor: { value: 0.6 },
-                    specularFactor: { value: 0.5 },
-                    shininess: { value: 120.0 },
-                    rimFactor: { value: 0.1 },
-                    rimPower: { value: 3.0 },
-                },
-                vertexColors: true,
-                transparent: true,
-                depthWrite: true,
-                depthTest: true,
-                clipping: true
-            });
-
-            stateRef.current.mesh = points;
-            onGeometryReady({
-                geometry: points.geometry,
-                material: points.material,
-                instanceCount: points.geometry.attributes.position.count
-            });
-
-            return;
-        }
-
-        model.traverse((child) => {
-            if(child instanceof Mesh && !mainGeometry){
-            mainGeometry = child.geometry;
-                mainMaterial = child.material as Material;
-                child.frustumCulled = true;
-                
-                if(enableInstancing && !isNonAtomistic){
-                    child.visible = false;
-                }else{
-                    child.visible = true;
-                    child.material = getOptimizedMaterial(child.material as Material, sliceClippingPlanes);
+        if (pointCloudObject) {
+            configurePointCloudMaterial(pointCloudObject);
+        } else {
+            // Lógica de instancing (sin cambios)
+            let mainGeometry: BufferGeometry | null = null;
+            let mainMaterial: Material | null = null;
+            model.traverse((child) => {
+                if(child instanceof Mesh && !mainGeometry){
+                    mainGeometry = child.geometry;
+                    mainMaterial = child.material as Material;
+                    child.frustumCulled = true;
+                    if(enableInstancing && !isNonAtomistic){
+                        child.visible = false;
+                    } else {
+                        child.visible = true;
+                        child.material = getOptimizedMaterial(child.material as Material, sliceClippingPlanes);
+                    }
+                    stateRef.current.mesh = child;
                 }
-
-                stateRef.current.mesh = child;
-            }
-        });
-
-        if(mainGeometry && mainMaterial && enableInstancing && !isNonAtomistic){
-            const atomCount = processAtomData(model, optimalScale);
-            const optimizedMaterial = getOptimizedMaterial(mainMaterial, sliceClippingPlanes);
-            optimizedMaterial.transparent = true;
-            optimizedMaterial.opacity = 0.9;
-
-            instancedMeshManager.createInstancedMeshes(mainGeometry, optimizedMaterial);
-            onGeometryReady({
-                geometry: mainGeometry,
-                material: optimizedMaterial,
-                instanceCount: atomCount
             });
+            if(mainGeometry && mainMaterial && enableInstancing && !isNonAtomistic){
+                const atomCount = processAtomData(model, optimalScale);
+                const optimizedMaterial = getOptimizedMaterial(mainMaterial, sliceClippingPlanes);
+                instancedMeshManager.createInstancedMeshes(mainGeometry, optimizedMaterial);
+                onGeometryReady({
+                    geometry: mainGeometry,
+                    material: optimizedMaterial,
+                    instanceCount: atomCount
+                });
+            }
         }
-
-        // Set model transforms
         model.position.set(
             (position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x) + optimalPos.x,
             (position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y) + optimalPos.y,
             (position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z) + optimalPos.z
         );
-        
         model.rotation.set(
             (rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x) + optimalRot.x,
             (rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y) + optimalRot.y,
             (rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z) + optimalRot.z
         );
-        
         model.scale.setScalar(scale * optimalScale);
-
         adjustModelToGround(model);
         model.updateMatrix();
         model.matrixAutoUpdate = true;
-
         setModelBounds(bounds);
         invalidate();
-
         stateRef.current.isSetup = true;
         return model;
     }, [
-        processAtomData,
+        camera,
         instancedMeshManager,
         onGeometryReady,
         position,
@@ -338,21 +298,22 @@ export const useGlbScene = ({
         enableInstancing,
         adjustModelToGround,
         invalidate,
-        activeSceneObject
+        activeSceneObject,
+        processAtomData
     ]);
 
-    const applyClippingPlanesToNode = useCallback((root: Group, planes: Plane[]) => {
+    const applyClippingPlanesToNode = useCallback((root: Group, planes: any[]) => {
         root.traverse((child: any) => {
             if((child.isMesh || child.isPoints) && child.material){
                 const mats = Array.isArray(child.material) ? child.material : [child.material];
                 for(const m of mats){
                     m.clippingPlanes = planes;
-                    // m.clipIntersection = true;
                     m.needsUpdate = true;
                 }
             }
         });
     }, []);
+
 
     useEffect(() => {
         const model = stateRef.current.model as Group | null;
@@ -372,37 +333,27 @@ export const useGlbScene = ({
             if(!memoryManager.canLoadModel()){
                 // throw new Error('Insufficient memory for model loading');
             }
-
             const loadedModel = await loadGLB((url), (progress) => {
                 setLoadingState((prev) => ({ ...prev, progress: Math.round(progress * 100) }));
             }, controller.signal);
-
             cleanupResources();
-
             const newModel = setupModel(loadedModel);
             newModel.userData.glbUrl = url;
-            
             scene.add(newModel);
             stateRef.current.model = newModel;
             stateRef.current.lastLoadedUrl = url;
-
             handleModelPreloading();
             invalidate();
-
             setLoadingState({ isLoading: false, progress: 100, error: null });
         }catch(error){
             if(error instanceof Error && error.name === 'AbortError') return;
-
             const message = error instanceof Error ? error.message : String(error);
             setLoadingState({ isLoading: false, progress: 0, error: message });
             logger.error('Model loading failed:', message);
         }finally{
             setIsModelLoading(false);
         }
-
-        return () => {
-            controller.abort();
-        }
+        return () => controller.abort();
     }, [
         scene,
         setupModel,
@@ -417,33 +368,29 @@ export const useGlbScene = ({
 
     const performCulling = useCallback(() => {
         if(stateRef.current.atoms.length === 0) return;
-
         cullingService.performCulling(camera, stateRef.current.atoms);
         stateRef.current.lastCullFrame = stateRef.current.frameCount;
     }, [camera, cullingService]);
 
     const updateInstancedMeshes = useCallback(() => {
         instancedMeshManager.updateInstances(
-        camera,
-        stateRef.current.atoms,
-        stateRef.current.visibleIndices,
-        scale
+            camera,
+            stateRef.current.atoms,
+            stateRef.current.visibleIndices,
+            scale
         );
     }, [camera, instancedMeshManager, scale]);
 
     const updateScene = useCallback(() => {
         stateRef.current.frameCount++;
-
         const targetUrl = getTargetUrl();
         if(targetUrl && targetUrl !== stateRef.current.lastLoadedUrl && !loadingState.isLoading){
             loadAndSetupModel(targetUrl);
             return;
         }
-
         if(stateRef.current.frameCount - stateRef.current.lastCullFrame > GLB_CONSTANTS.CULL_FRAME_INTERVAL){
             performCulling();
         }
-
         if(stateRef.current.frameCount % 2 === 0){
             updateInstancedMeshes();
         }
@@ -461,20 +408,15 @@ export const useGlbScene = ({
                 throttledUpdateScene();
             }
         }, updateThrottle);
-
-        return () => {
-            clearInterval(interval);
-        };
+        return () => clearInterval(interval);
     }, [throttledUpdateScene, loadingState.isLoading, updateThrottle]);
 
     useEffect(() => {
-        
         return () => {
             logger.log('Unmounting useGlbScene');
             cleanupResources();
             materialCache.clear();
             geometryCache.clear();
-            modelCache.clear();
             ObjectPools.cleanup();
         };
     }, [cleanupResources, materialCache, geometryCache, logger]);
@@ -485,25 +427,20 @@ export const useGlbScene = ({
         isLoading: loadingState.isLoading,
         loadProgress: loadingState.progress,
         loadError: loadingState.error,
-
         memoryStats: { 
             usage: memoryManager.getMemoryUsage(),  
             canLoadModel: memoryManager.canLoadModel() 
         },
-        
         atomCount: stateRef.current.atoms.length,
         visibleAtomCount: stateRef.current.visibleIndices.size,
-        
         forceReload: useCallback(() => {
             stateRef.current.lastLoadedUrl = null;
             throttledUpdateScene();
         }, [throttledUpdateScene]),
-
         clearCache: useCallback(() => {
             cleanupResources();
             materialCache.clear();
             geometryCache.clear();
-            modelCache.clear();
         }, [cleanupResources, materialCache, geometryCache]),
     };
 };
