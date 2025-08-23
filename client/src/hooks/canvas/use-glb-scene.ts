@@ -33,7 +33,6 @@ import MemoryManager from '@/utilities/memoryManager';
 import CullingService from '@/services/culling-service';
 import InstancedMeshManager from '@/services/instanced-mesh-manager';
 import ObjectPools from '@/utilities/glb/objectPools';
-import { useTime } from 'framer-motion';
 
 export const modelCache = new Map<string, Promise<any>>();
 
