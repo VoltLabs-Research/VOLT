@@ -28,25 +28,6 @@ import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-qu
 import LAMMPSToGLBExporter from '@/utilities/export/atoms';
 import '@config/env';
 
-const checkMemoryPressure = (): boolean => {
-    const usage = process.memoryUsage();
-    const heapUsedMB = usage.heapUsed / 1024 / 1024;
-    const heapTotalMB = usage.heapTotal / 1024 / 1024;
-    
-    if(heapUsedMB > 1500 || (heapUsedMB / heapTotalMB) > 0.85){
-        //console.warn(`[Worker #${process.pid}] High memory usage: ${heapUsedMB}MB`);
-        
-        if(global.gc){
-            //console.log(`[Worker #${process.pid}] Forcing garbage collection...`);
-            global.gc();
-        }
-        
-        return true;
-    }
-    
-    return false;
-};
-
 const processJob = async (job: TrajectoryProcessingJob) => {
     console.log(`[Worker #${process.pid}] Starting job ${job.jobId} (chunk ${job.chunkIndex + 1}/${job.totalChunks})`);
 
@@ -61,12 +42,6 @@ const processJob = async (job: TrajectoryProcessingJob) => {
             
             console.log(`[Worker #${process.pid}] Processing file ${i + 1}/${job.files.length}: timestep ${frameData.timestep}`);
             
-            // Check memory before processing
-            if(checkMemoryPressure()){
-                // Wait a bit for GC to complete
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-
             try{
                 // Create glb file path
                 const glbFilePath = join(job.glbFolderPath, `${frameData.timestep}.glb`);
@@ -78,12 +53,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
                     glbFilePath,
                     extractTimestepInfo
                 );
-
-                // Force GC every 5 files
-                if(i % 5 === 0 && global.gc){
-                    global.gc();
-                }
-
+                
                 console.log(`[Worker #${process.pid}] Completed timestep ${frameData.timestep}`);
                 
             }catch(fileError){
@@ -126,11 +96,6 @@ const processJob = async (job: TrajectoryProcessingJob) => {
 
 const main = async () => {
     console.log(`[Worker #${process.pid}] Worker started`);
-    
-    // Monitor memory every 30 seconds
-    setInterval(() => {
-        checkMemoryPressure();
-    }, 30000);
     
     parentPort?.on('message', async (message: { job: TrajectoryProcessingJob }) => {
         try {

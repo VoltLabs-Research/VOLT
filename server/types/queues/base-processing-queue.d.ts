@@ -1,10 +1,15 @@
+import { Worker } from 'worker_threads';
+
 export interface BaseJob {
     jobId: string;
     priority?: number;
     retries?: number;
     maxRetries?: number;
+    trajectoryId?: string;
+    teamId: string;
     estimatedDurationMs?: number;
     name?: string;
+    sessionId?: string;
     message?: string;
 }
 

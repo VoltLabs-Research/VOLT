@@ -12,7 +12,6 @@ const SimulationGrid = () => {
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const selectedTrajectories = useTrajectoryStore((state) => state.selectedTrajectories);
-    const toggleTrajectorySelection = useTrajectoryStore((state) => state.toggleTrajectorySelection);
     const deleteSelectedTrajectories = useTrajectoryStore((state) => state.deleteSelectedTrajectories);
 
     const isLoading = useTrajectoryStore((state) => state.isLoading);
@@ -61,7 +60,6 @@ const SimulationGrid = () => {
                         jobs={getJobsForTrajectory(trajectory._id)}
                         trajectory={trajectory}
                         isSelected={selectedTrajectories.includes(trajectory._id)}
-                        onSelect={toggleTrajectorySelection}
                     />
                 ))}
             </div>

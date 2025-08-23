@@ -30,8 +30,6 @@ const useCardInteractions = (
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const handleClick = (event: React.MouseEvent, itemId: string): void => {
-            onNavigate?.(itemId);
-
         const target = event.target as HTMLElement;
         if(target.closest('.simulation-options-icon-container') || 
             target.closest('.simulation-caption-title') ||

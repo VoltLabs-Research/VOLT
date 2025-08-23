@@ -192,10 +192,9 @@ Cluster* ClusterConnector::getParentGrain(Cluster* c){
 }
 
 void ClusterConnector::connectClusters(){
-    auto indices = std::views::iota(size_t{0}, _context.atomCount());
-    std::for_each(std::execution::par, indices.begin(), indices.end(), [this](size_t atomIndex){
+    for(size_t atomIndex = 0; atomIndex < _context.atomCount(); ++atomIndex){
         processAtomConnections(atomIndex);
-    });
+    }
 }
 
 void ClusterConnector::processAtomConnections(size_t atomIndex){

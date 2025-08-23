@@ -35,7 +35,6 @@ import useTrajectoryStore from '@/stores/trajectories';
 import useJobProgress from '@/hooks/jobs/use-job-progress';
 import useCardInteractions from '@/hooks/ui/interaction/use-card-interaction';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
-import useConfigurationStore from '@/stores/editor/configuration';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import type { Job } from '@/types/jobs';
 import './SimulationCard.css';
@@ -58,12 +57,13 @@ interface SimulationCardProps {
 const SimulationCard: React.FC<SimulationCardProps> = ({ 
     trajectory, 
     isSelected, 
-    onSelect, 
     jobs = {} 
 }) => {
     const navigate = useNavigate();
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const dislocationAnalysis = useTrajectoryStore((state) => state.dislocationAnalysis);
+    const toggleTrajectorySelection = useTrajectoryStore((state) => state.toggleTrajectorySelection);
+    
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const setTrajectory = useTrajectoryStore((state) => state.setTrajectory);
 
@@ -95,7 +95,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     } = jobProgress;
 
     const { isDeleting, handleClick, handleDelete } = useCardInteractions(
-        onSelect,
+        toggleTrajectorySelection,
         (id: string) => navigate(`/canvas/${id}/`),
         hasActiveJobs
     );
