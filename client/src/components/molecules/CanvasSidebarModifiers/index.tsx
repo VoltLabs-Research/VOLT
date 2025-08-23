@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { GiAtom } from 'react-icons/gi';
-import { PiLineSegmentThin, PiAtomThin } from 'react-icons/pi';
+import { PiLineSegmentThin } from 'react-icons/pi';
 import { GrFormViewHide } from "react-icons/gr";
 import { IoIosStats } from "react-icons/io";
 import { TfiSlice } from 'react-icons/tfi';
+import { RiVipDiamondLine } from "react-icons/ri";
+import { HiCubeTransparent } from "react-icons/hi2";
+import { PiCirclesThreeLight } from "react-icons/pi";
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
@@ -38,7 +40,7 @@ const CanvasSidebarModifiers = () => {
         // Only for those who matter
         for(const modifier of justActivated){
             console.log('modifier', modifier);
-            if(modifier === 'PTM' || modifier === 'CNA'){
+            if(modifier === 'PTM' || modifier === 'CNA' || modifier === 'DIAMOND'){
                 logger.log('Activating structure identification:', modifier);
                 structureIdentification(trajectory?._id, analysisConfig, modifier);
             }else if(modifier === 'compute-analysis-differences'){
@@ -58,13 +60,17 @@ const CanvasSidebarModifiers = () => {
             title: 'Slice Plane',
             modifierId: 'slice-plane' 
         }, {
-            Icon: GiAtom,
+            Icon: PiCirclesThreeLight,
             title: 'Common Neighbor Analysis', 
             modifierId: 'CNA' 
         }, {
-            Icon: PiAtomThin,
+            Icon: HiCubeTransparent,
             title: 'Polyhedral Template Matching', 
             modifierId: 'PTM' 
+        }, {
+            Icon: RiVipDiamondLine,
+            title: 'Diamond Identifier',
+            modifierId: 'DIAMOND'
         }, {
             Icon: IoIosStats,
             title: 'Analysis Metrics',
