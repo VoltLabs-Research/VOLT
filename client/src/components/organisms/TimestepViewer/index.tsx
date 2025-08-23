@@ -27,29 +27,8 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     enableInstancing = true,
     updateThrottle = 16,
 }) => {
-    const [geometryData, setGeometryData] = useState<{ 
-        geometry: BufferGeometry | null; 
-        material: Material | null;
-        instanceCount: number;
-    }>({ geometry: null, material: null, instanceCount: 0 });
-
     const slicePlaneConfig = useConfigurationStore(s => s.slicePlaneConfig);
     const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig);
-
-    const handleGeometryReady = useCallback((data: { 
-        geometry: BufferGeometry; 
-        material: Material;
-        instanceCount: number;
-    }) => {
-        setGeometryData(prev => {
-            if (prev.geometry !== data.geometry || 
-                prev.material !== data.material || 
-                prev.instanceCount !== data.instanceCount) {
-                return data;
-            }
-            return prev;
-        });
-    }, []);
 
     const sceneProps = useMemo(() => ({
         sliceClippingPlanes,
@@ -57,17 +36,10 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
         rotation,
         scale,
         enableInstancing,
-        onGeometryReady: handleGeometryReady,
         updateThrottle,
-    }), [sliceClippingPlanes, position, rotation, scale, enableInstancing, handleGeometryReady, updateThrottle]);
+    }), [sliceClippingPlanes, position, rotation, scale, enableInstancing, updateThrottle]);
 
-    const { 
-        modelBounds, 
-        isLoading, 
-        loadProgress, 
-        atomCount, 
-        visibleAtomCount 
-    } = useGlbScene(sceneProps);
+    const { modelBounds } = useGlbScene(sceneProps);
 
     const shouldRenderCamera = useMemo(() => 
         autoFit && modelBounds, 

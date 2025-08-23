@@ -22,17 +22,13 @@
 
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
-import { Group, Mesh, Box3, BufferGeometry, Material, Vector3, Color, Points, ShaderMaterial } from 'three';
+import { Group, Mesh, Box3, BufferGeometry, Material, Vector3, Points, ShaderMaterial } from 'three';
 import { calculateModelBounds, calculateOptimalTransforms, getOptimizedMaterial } from '@/utilities/glb/modelUtils';
 import { GLB_CONSTANTS, loadGLB, preloadGLBs } from '@/utilities/glb/loader';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 import useConfigurationStore from '@/stores/editor/configuration';
 import useTimestepStore from '@/stores/editor/timesteps';
 import useLogger from '@/hooks/core/use-logger';
-import MemoryManager from '@/utilities/memoryManager';
-import CullingService from '@/services/culling-service';
-import InstancedMeshManager from '@/services/instanced-mesh-manager';
-import ObjectPools from '@/utilities/glb/objectPools';
 
 import vertexShader from '@/shaders/point-cloud.vert?raw';
 import fragmentShader from '@/shaders/point-cloud.frag?raw';
@@ -45,7 +41,6 @@ export const useGlbScene = ({
     rotation,
     scale,
     enableInstancing,
-    onGeometryReady,
     updateThrottle,
 }: any) => {
     const { scene, camera, invalidate } = useThree();
@@ -82,27 +77,12 @@ export const useGlbScene = ({
         error: null,
     });
 
-    const materialCache = useMemo(() => new Map<string, Material>(), []);
-    const geometryCache = useMemo(() => new Map<string, BufferGeometry>(), []);
-    const memoryManager = useMemo(() => MemoryManager.getInstance(), []);
-
-    const cullingService = useMemo(() => {
-        return new CullingService((visibleIndice, lodLevel) => {
-            stateRef.current.getVisibleIndices = visibleIndice;
-            instancedMeshManager.markLODUpdateNeeded();
-            invalidate();
-        });
-    }, [invalidate]);
-
-    const instancedMeshManager = useMemo(() => {
-        return new InstancedMeshManager(scene);
-    }, [scene]);
-
     const getTargetUrl = useCallback((): string | null => {
         const glbUrl = propCurrentGlbUrl || storeCurrentGlbUrl;
         if(!glbUrl || !activeSceneObject){
             return null;
         }
+
         return glbUrl[activeSceneObject];
     }, [propCurrentGlbUrl, storeCurrentGlbUrl, activeSceneObject]);
 
@@ -112,6 +92,7 @@ export const useGlbScene = ({
             propNextGlbUrl?.dislocations || storeNextGlbUrl?.dislocations,
             (propNextGlbUrl || storeNextGlbUrl)?.[activeSceneObject],
         ].filter(Boolean);
+        
         if(preloadUrls.length > 0){
             preloadGLBs(preloadUrls);
         }
@@ -119,63 +100,24 @@ export const useGlbScene = ({
 
     const cleanupResources = useCallback(() => {
         if(stateRef.current.cleanupScheduled) return;
+        
         stateRef.current.cleanupScheduled = true;
-        cullingService.terminate();
-        instancedMeshManager.cleanup();
+
         scene.children.forEach((child: any) => {
             if(child.userData.glbUrl && child instanceof Group){
                 scene.remove(child);
             }
         });
+
         stateRef.current.model = null;
         stateRef.current.mesh = null;
         stateRef.current.atoms = [];
         stateRef.current.visibleIndices.clear();
         stateRef.current.isSetup = false;
         stateRef.current.cleanupScheduled = false;
+        
         invalidate();
-    }, [scene, invalidate, cullingService, instancedMeshManager]);
-
-    const processAtomData = useCallback((model: Group, optimalScale: number): number => {
-        const positionsArray = new Float32Array(GLB_CONSTANTS.MAX_VISIBLE_INSTANCES * 3);
-        const colorsArray = new Float32Array(GLB_CONSTANTS.MAX_VISIBLE_INSTANCES * 3);
-        const sizesArray = new Float32Array(GLB_CONSTANTS.MAX_VISIBLE_INSTANCES);
-        let atomCount = 0;
-
-        model.traverse((child) => {
-            if(child instanceof Mesh && atomCount <= GLB_CONSTANTS.MAX_VISIBLE_INSTANCES){
-                const positions = child.geometry.attributes.position;
-                const colors = child.geometry.attributes.color;
-                if(positions){
-                    const posArray = positions.array as Float32Array;
-                    const colorArray = colors?.array as Float32Array;
-                    for(let i = 0; i < posArray.length; i += 3){
-                        if(atomCount >= GLB_CONSTANTS.MAX_VISIBLE_INSTANCES) break;
-                        if(isNaN(posArray[i]) || isNaN(posArray[i + 1]) || isNaN(posArray[i + 2])) continue;
-                        const idx = atomCount * 3;
-                        positionsArray[idx] = posArray[i];
-                        positionsArray[idx + 1] = posArray[i + 1];
-                        positionsArray[idx + 2] = posArray[i + 2];
-                        colorsArray[idx] = colorArray ? colorArray[i] : 1;
-                        colorsArray[idx + 1] = colorArray ? colorArray[i + 1] : 1;
-                        colorsArray[idx + 2] = colorArray ? colorArray[i + 2] : 1;
-                        sizesArray[atomCount] = 0.1 * optimalScale;
-                        atomCount++;
-                    }
-                }
-            }
-        });
-        stateRef.current.atoms = Array.from({ length: atomCount }, (_, i) => ({
-            position: new Vector3(positionsArray[i * 3], positionsArray[i * 3 + 1], positionsArray[i * 3 + 2]),
-            color: new Color(colorsArray[i * 3], colorsArray[i * 3 + 1], colorsArray[i * 3 + 2]),
-            size: sizesArray[i],
-            visible: true,
-            lodLevel: 1,
-        }));
-        cullingService.initializeAtoms(stateRef.current.atoms);
-        logger.log(`Processed ${atomCount} atoms`);
-        return atomCount;
-    }, [logger, cullingService]);
+    }, [scene, invalidate]);
 
     const adjustModelToGround = useCallback((model: Group) => {
         const finalBox = new Box3().setFromObject(model);
@@ -184,16 +126,17 @@ export const useGlbScene = ({
             model.position.z += Math.abs(minZ);
         }
     }, []);
-     useFrame(() => {
+
+    useFrame(() => {
         const mesh = stateRef.current.mesh;
-        if (mesh && mesh instanceof Points && mesh.material instanceof ShaderMaterial) {
+        if(mesh && mesh instanceof Points && mesh.material instanceof ShaderMaterial){
             mesh.material.uniforms.cameraPosition.value.copy(camera.position);
         }
     });
 
     const configurePointCloudMaterial = useCallback((points: Points) => {
         const optimalRadius = points.userData.optimalRadius;
-        const pointSize = optimalRadius * 0.7;
+        const pointSize = optimalRadius * 0.1;
 
         points.material = new ShaderMaterial({
             vertexShader,
@@ -216,81 +159,81 @@ export const useGlbScene = ({
         });
 
         stateRef.current.mesh = points;
-        onGeometryReady({
-            geometry: points.geometry,
-            material: points.material,
-            instanceCount: points.geometry.attributes.position.count
+    }, [scale]);
+
+    const configureGeometry = useCallback((model: Group, optimalScale: number) => {
+        let mainGeometry: BufferGeometry | null = null;
+        let mainMaterial: Material | null = null;
+
+        model.traverse((child) => {
+            if(child instanceof Mesh && !mainGeometry){
+                mainGeometry = child.geometry;
+                mainMaterial = child.material;
+
+                child.frustumCulled = true;
+                child.visible = true;
+                child.material = getOptimizedMaterial(child.material, sliceClippingPlanes);
+
+                stateRef.current.mesh = child;
+            }
         });
-    }, [onGeometryReady, scale]);
+    }, [enableInstancing]);
+
+    const isPointCloudObject = useCallback((model: Group) => {
+        let pointCloudObject: Points | null = null;
+
+        model.traverse((child) => {
+            if(child instanceof Points){
+                pointCloudObject = child;
+            }
+        });
+
+        return pointCloudObject;
+    }, []);
 
     const setupModel = useCallback((model: Group) => {
         if(stateRef.current.isSetup){
             return model;
         }
+
         const bounds = calculateModelBounds({ scene: model });
         const { position: optimalPos, rotation: optimalRot, scale: optimalScale } = calculateOptimalTransforms(bounds);
-        const isNonAtomistic = activeSceneObject === 'dislocations' || 
-                           activeSceneObject === 'interface_mesh' || 
-                           activeSceneObject === 'defect_mesh';
-        let pointCloudObject: Points | null = null;
-        model.traverse((child) => {
-            if (child instanceof Points) {
-                pointCloudObject = child;
-            }
-        });
-        if (pointCloudObject) {
+
+        // The visualization of atoms or the structural identification of a 
+        // simulation frame are exported as a point cloud. 
+        // The defect mesh, dislocations, and others are geometries.
+        let pointCloudObject = isPointCloudObject(model);
+        if(pointCloudObject){
             configurePointCloudMaterial(pointCloudObject);
-        } else {
-            // Lógica de instancing (sin cambios)
-            let mainGeometry: BufferGeometry | null = null;
-            let mainMaterial: Material | null = null;
-            model.traverse((child) => {
-                if(child instanceof Mesh && !mainGeometry){
-                    mainGeometry = child.geometry;
-                    mainMaterial = child.material as Material;
-                    child.frustumCulled = true;
-                    if(enableInstancing && !isNonAtomistic){
-                        child.visible = false;
-                    } else {
-                        child.visible = true;
-                        child.material = getOptimizedMaterial(child.material as Material, sliceClippingPlanes);
-                    }
-                    stateRef.current.mesh = child;
-                }
-            });
-            if(mainGeometry && mainMaterial && enableInstancing && !isNonAtomistic){
-                const atomCount = processAtomData(model, optimalScale);
-                const optimizedMaterial = getOptimizedMaterial(mainMaterial, sliceClippingPlanes);
-                instancedMeshManager.createInstancedMeshes(mainGeometry, optimizedMaterial);
-                onGeometryReady({
-                    geometry: mainGeometry,
-                    material: optimizedMaterial,
-                    instanceCount: atomCount
-                });
-            }
+        }else{
+            configureGeometry(model, optimalScale);
         }
+
         model.position.set(
             (position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x) + optimalPos.x,
             (position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y) + optimalPos.y,
             (position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z) + optimalPos.z
         );
+
         model.rotation.set(
             (rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x) + optimalRot.x,
             (rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y) + optimalRot.y,
             (rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z) + optimalRot.z
         );
+        
         model.scale.setScalar(scale * optimalScale);
+
         adjustModelToGround(model);
+
         model.updateMatrix();
         model.matrixAutoUpdate = true;
+
         setModelBounds(bounds);
         invalidate();
         stateRef.current.isSetup = true;
         return model;
     }, [
         camera,
-        instancedMeshManager,
-        onGeometryReady,
         position,
         rotation,
         scale,
@@ -298,8 +241,7 @@ export const useGlbScene = ({
         enableInstancing,
         adjustModelToGround,
         invalidate,
-        activeSceneObject,
-        processAtomData
+        activeSceneObject
     ]);
 
     const applyClippingPlanesToNode = useCallback((root: Group, planes: any[]) => {
@@ -317,7 +259,7 @@ export const useGlbScene = ({
 
     useEffect(() => {
         const model = stateRef.current.model as Group | null;
-        if (model) {
+        if(model){
             applyClippingPlanesToNode(model, sliceClippingPlanes);
         }
     }, [sliceClippingPlanes, applyClippingPlanesToNode]);
@@ -330,29 +272,31 @@ export const useGlbScene = ({
         setLoadingState({ isLoading: true, progress: 0, error: null });
 
         try{
-            if(!memoryManager.canLoadModel()){
-                // throw new Error('Insufficient memory for model loading');
-            }
             const loadedModel = await loadGLB((url), (progress) => {
                 setLoadingState((prev) => ({ ...prev, progress: Math.round(progress * 100) }));
-            }, controller.signal);
+            }, /*controller.signal*/);
+
             cleanupResources();
             const newModel = setupModel(loadedModel);
+
             newModel.userData.glbUrl = url;
             scene.add(newModel);
             stateRef.current.model = newModel;
             stateRef.current.lastLoadedUrl = url;
+
             handleModelPreloading();
             invalidate();
             setLoadingState({ isLoading: false, progress: 100, error: null });
-        }catch(error){
+
+        }catch(error: any){
             if(error instanceof Error && error.name === 'AbortError') return;
             const message = error instanceof Error ? error.message : String(error);
-            setLoadingState({ isLoading: false, progress: 0, error: message });
+            setLoadingState({ isLoading: false, progress: 0, error: null });
             logger.error('Model loading failed:', message);
         }finally{
             setIsModelLoading(false);
         }
+        
         return () => controller.abort();
     }, [
         scene,
@@ -362,24 +306,8 @@ export const useGlbScene = ({
         handleModelPreloading,
         logger,
         invalidate,
-        loadingState.isLoading,
-        memoryManager
+        loadingState.isLoading
     ]);
-
-    const performCulling = useCallback(() => {
-        if(stateRef.current.atoms.length === 0) return;
-        cullingService.performCulling(camera, stateRef.current.atoms);
-        stateRef.current.lastCullFrame = stateRef.current.frameCount;
-    }, [camera, cullingService]);
-
-    const updateInstancedMeshes = useCallback(() => {
-        instancedMeshManager.updateInstances(
-            camera,
-            stateRef.current.atoms,
-            stateRef.current.visibleIndices,
-            scale
-        );
-    }, [camera, instancedMeshManager, scale]);
 
     const updateScene = useCallback(() => {
         stateRef.current.frameCount++;
@@ -388,13 +316,7 @@ export const useGlbScene = ({
             loadAndSetupModel(targetUrl);
             return;
         }
-        if(stateRef.current.frameCount - stateRef.current.lastCullFrame > GLB_CONSTANTS.CULL_FRAME_INTERVAL){
-            performCulling();
-        }
-        if(stateRef.current.frameCount % 2 === 0){
-            updateInstancedMeshes();
-        }
-    }, [getTargetUrl, loadingState.isLoading, loadAndSetupModel, performCulling, updateInstancedMeshes]);
+    }, [getTargetUrl, loadingState.isLoading, loadAndSetupModel]);
 
     const throttledUpdateScene = useThrottledCallback(updateScene, updateThrottle);
 
@@ -415,11 +337,8 @@ export const useGlbScene = ({
         return () => {
             logger.log('Unmounting useGlbScene');
             cleanupResources();
-            materialCache.clear();
-            geometryCache.clear();
-            ObjectPools.cleanup();
         };
-    }, [cleanupResources, materialCache, geometryCache, logger]);
+    }, [cleanupResources, logger]);
 
     return {
         meshRef: { current: stateRef.current.mesh },
@@ -427,10 +346,6 @@ export const useGlbScene = ({
         isLoading: loadingState.isLoading,
         loadProgress: loadingState.progress,
         loadError: loadingState.error,
-        memoryStats: { 
-            usage: memoryManager.getMemoryUsage(),  
-            canLoadModel: memoryManager.canLoadModel() 
-        },
         atomCount: stateRef.current.atoms.length,
         visibleAtomCount: stateRef.current.visibleIndices.size,
         forceReload: useCallback(() => {
@@ -439,8 +354,6 @@ export const useGlbScene = ({
         }, [throttledUpdateScene]),
         clearCache: useCallback(() => {
             cleanupResources();
-            materialCache.clear();
-            geometryCache.clear();
-        }, [cleanupResources, materialCache, geometryCache]),
+        }, [cleanupResources]),
     };
 };

@@ -32,7 +32,6 @@ export const getOptimizedMaterial = (
     clippingPlanes: THREE.Plane[]
 ): THREE.MeshStandardMaterial => {
     const key = `${baseMaterial.uuid}-${clippingPlanes.length}`;
-
     if(cache.has(key)){
         const cached = cache.get(key)!;
         cached.clippingPlanes = clippingPlanes;
