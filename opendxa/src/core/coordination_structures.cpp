@@ -1,4 +1,5 @@
 #include <opendxa/core/coordination_structures.h>
+#include <opendxa/analysis/analysis_context.h>
 
 namespace OpenDXA{
 
@@ -91,12 +92,13 @@ double CoordinationStructures::computeLocalCutoff(
 					outputIndex++;
 				}
 
+                // consistency check: each of the first 4 contributes 3 second neighbors => outputIndex should be (i*3)+7 after loop for i
 				if(outputIndex != (i * 3) + 7) return 0;
 			}
 
-			// Compute local scale factor
+            // Compute local scale factor from the 12 second neighbors (positions 4..15)
 			localScaling = 0;
-			for(int neighbor = 4; neighbor< 16; neighbor++){
+			for(int neighbor = 4; neighbor < 16; neighbor++){
 				localScaling += neighborVectors[neighbor].length();
 			}
 
@@ -158,10 +160,11 @@ double CoordinationStructures::determineLocalStructure(
 ) const { 
     std::vector<int> neighborIndices(MAX_NEIGHBORS);
     std::vector<Vector3> neighborVectors(MAX_NEIGHBORS);
-    NeighborBondArray neighborArray;
     std::vector<int> cnaSignatures(MAX_NEIGHBORS);
     std::vector<int> neighborMapping(MAX_NEIGHBORS);
     std::vector<int> previousMapping(MAX_NEIGHBORS);
+
+    NeighborBondArray neighborArray;
 
     //assert(_structureTypes->getInt(particleIndex) == COORD_OTHER);
     
@@ -181,7 +184,13 @@ double CoordinationStructures::determineLocalStructure(
         neighborArray
 	);
 
-    if (localCutoff == 0.0) return 0.0;
+    if(localCutoff == 0.0) return 0.0;
+
+    // Prepare mapping indices
+    for(int n = 0; n < coordinationNumber; ++n){
+        neighborMapping[n] = n;
+        previousMapping[n] = -1;
+    }
 
 	CoordinationStructureType coordinationType = CommonNeighborAnalysis::computeCoordinationType(
 		neighborArray, coordinationNumber, cnaSignatures.data(),
@@ -200,8 +209,33 @@ double CoordinationStructures::determineLocalStructure(
 
 	if(!found) return 0.0;
 
-	_structureTypes->setInt(particleIndex, coordinationType);
+    // Map coordinationType -> StructureType for the central atom
+    StructureType atomStructure = StructureType::OTHER;
+    switch(coordinationType){
+        case COORD_CUBIC_DIAMOND: 
+            atomStructure = StructureType::CUBIC_DIAMOND; 
+            break;
+        case COORD_HEX_DIAMOND: 
+            atomStructure = StructureType::HEX_DIAMOND;
+            break;
+        case COORD_FCC: 
+            atomStructure = StructureType::FCC;
+            break;
+        case COORD_HCP: 
+            atomStructure = StructureType::HCP;
+             break;
+        case COORD_BCC: 
+            atomStructure = StructureType::BCC;
+            break;
+        default: 
+            atomStructure = StructureType::OTHER;
+            break;
+    }
 
+    // Set central atom type
+    _structureTypes->setInt(particleIndex, static_cast<int>(atomStructure));
+
+    // Fill neighborLists 
 	for(int i = 0; i < coordinationNumber; i++){
 		const Vector3& neighborVector = neighborVectors[neighborMapping[i]];
 		for(int dim = 0; dim < 3; dim++){
@@ -215,6 +249,73 @@ double CoordinationStructures::determineLocalStructure(
 	}
 
 	return localCutoff;
+}
+
+void CoordinationStructures::postProcessDiamondNeighbors(
+    AnalysisContext& context,
+    const NearestNeighborFinder& neighList
+) const{
+    if(_inputCrystalType != LATTICE_CUBIC_DIAMOND && _inputCrystalType != LATTICE_HEX_DIAMOND) return;
+    
+    const size_t N = _structureTypes->size();
+    std::vector<int> newStructureTypes(N);
+
+    for(size_t i = 0; i < N; ++i){
+        newStructureTypes[i] = _structureTypes->getInt(i);
+    }
+    
+    NearestNeighborFinder firstNeighborFinder(4);
+    firstNeighborFinder.prepare(context.positions, context.simCell, nullptr);
+    
+    // Mark first neighbors of diamond atoms
+    for(size_t i = 0; i < N; ++i){
+        int currentType = _structureTypes->getInt(i);
+        if(currentType != static_cast<int>(StructureType::CUBIC_DIAMOND) && 
+           currentType != static_cast<int>(StructureType::HEX_DIAMOND)) continue;
+           
+        NearestNeighborFinder::Query<4> query(firstNeighborFinder);
+        // false = do not include self
+        query.findNeighbors(i, false); 
+        
+        StructureType firstNeighType = (currentType == static_cast<int>(StructureType::CUBIC_DIAMOND)) 
+            ? StructureType::CUBIC_DIAMOND_FIRST_NEIGH 
+            : StructureType::HEX_DIAMOND_FIRST_NEIGH;
+            
+        for(const auto& neighbor : query.results()){
+            if(_structureTypes->getInt(neighbor.index) == static_cast<int>(StructureType::OTHER)){
+                newStructureTypes[neighbor.index] = static_cast<int>(firstNeighType);
+            }
+        }
+    }
+    
+    // Apply changes for first neighbors
+    for(size_t i = 0; i < N; ++i){
+        _structureTypes->setInt(i, newStructureTypes[i]);
+    }
+    
+    // Mark second neighbors from first neighbors
+    for(size_t i = 0; i < N; ++i){
+        int currentType = _structureTypes->getInt(i);
+        if(currentType != static_cast<int>(StructureType::CUBIC_DIAMOND_FIRST_NEIGH) && 
+           currentType != static_cast<int>(StructureType::HEX_DIAMOND_FIRST_NEIGH)) continue;
+           
+        NearestNeighborFinder::Query<4> query(firstNeighborFinder);
+        query.findNeighbors(i, false);
+        
+        StructureType secondNeighType = (currentType == static_cast<int>(StructureType::CUBIC_DIAMOND_FIRST_NEIGH)) 
+            ? StructureType::CUBIC_DIAMOND_SECOND_NEIGH 
+            : StructureType::HEX_DIAMOND_SECOND_NEIGH;
+            
+        for(const auto& neighbor : query.results()){
+            if(_structureTypes->getInt(neighbor.index) == static_cast<int>(StructureType::OTHER)){
+                newStructureTypes[neighbor.index] = static_cast<int>(secondNeighType);
+            }
+        }
+    }
+    
+    for(size_t i = 0; i < N; ++i){
+        _structureTypes->setInt(i, newStructureTypes[i]);
+    }
 }
 
 void CoordinationStructures::initializeFCC(){
@@ -306,36 +407,27 @@ void CoordinationStructures::initializeLatticeStructure(
     _latticeStructures[latticeType].maxNeighbors = coordStruct->numNeighbors;
 }
 
-void CoordinationStructures::initializeDiamondStructure(
-    int coordType, 
-    int latticeType,
-    const Vector3* vectors, 
-    int numNeighbors, 
-    int totalVectors
-){
+void CoordinationStructures::initializeDiamondStructure(int coordType, int latticeType, const Vector3* vectors, int numNeighbors, int totalVectors){
     _coordinationStructures[coordType].numNeighbors = numNeighbors;
-    
-    for(int ni1 = 0; ni1 < numNeighbors; ni1++){
+    for(int ni1 = 0; ni1 < numNeighbors; ++ni1){
         _coordinationStructures[coordType].neighborArray.setNeighborBond(ni1, ni1, false);
-        double cutoff = (ni1 < 4) ? (sqrt(3.0)*0.25+sqrt(0.5))/2 : (1.0+sqrt(0.5))/2;
+        double cutoff = (ni1 < 4) ? (sqrt(3.0)*0.25+sqrt(0.5))/2.0 : (1.0+sqrt(0.5))/2.0;
 
-        for(int ni2 = ni1 + 1; ni2 < 4; ni2++){
-            _coordinationStructures[coordType].neighborArray.setNeighborBond(ni1, ni2, false);
+        for(int ni2 = 0; ni2 < 4; ++ni2){
+            if(ni1 < 4 && ni2 < 4) _coordinationStructures[coordType].neighborArray.setNeighborBond(ni1, ni2, false);
         }
 
-        for(int ni2 = std::max(ni1 + 1, static_cast<int>(4)); ni2 < numNeighbors; ni2++){
+        for(int ni2 = std::max(ni1 + 1, 4); ni2 < numNeighbors; ++ni2){
             bool bonded = (vectors[ni1] - vectors[ni2]).length() < cutoff;
             _coordinationStructures[coordType].neighborArray.setNeighborBond(ni1, ni2, bonded);
         }
-        
+
         if(coordType == COORD_HEX_DIAMOND){
-            _coordinationStructures[coordType].cnaSignatures[ni1] = 
-                (ni1 < 4) ? 0 : ((vectors[ni1].z() == 0) ? 2 : 1);
-        }else{
+            _coordinationStructures[coordType].cnaSignatures[ni1] = (ni1 < 4) ? 0 : ((vectors[ni1].z() == 0) ? 2 : 1);
+        } else {
             _coordinationStructures[coordType].cnaSignatures[ni1] = (ni1 < 4) ? 0 : 1;
         }
     }
-
     _coordinationStructures[coordType].latticeVectors.assign(vectors, vectors + numNeighbors);
     initializeLatticeStructure(latticeType, vectors, totalVectors, &_coordinationStructures[coordType]);
 }

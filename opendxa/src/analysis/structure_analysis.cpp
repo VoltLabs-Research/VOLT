@@ -2,7 +2,6 @@
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/structure_analysis.h>
 #include <opendxa/analysis/polyhedral_template_matching.h>
-#include <opendxa/analysis/diamond_identifier.h>
 #include <ptm_constants.h>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
@@ -172,7 +171,7 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
             throw std::runtime_error("Error in neighFinder.prepare(...)");
         }
 
-        _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, _context.atomCount()),
+       _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, _context.atomCount()),
             0.0, [this, &neighFinder](const tbb::blocked_range<size_t>& r, double max_dist_so_far) -> double {
                 for(size_t index = r.begin(); index != r.end(); ++index){
                     double localMaxDistance = _coordStructures.determineLocalStructure(neighFinder, index, _context.neighborLists);
@@ -187,6 +186,7 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
             }
         );
 
+        _coordStructures.postProcessDiamondNeighbors(_context, neighFinder);
         return;
     }
 
@@ -233,10 +233,7 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
 }
 
 void StructureAnalysis::identifyStructures(){
-    if(_identificationMode == StructureAnalysis::Mode::DIAMOND){
-        auto diamondAnalyzer = std::make_unique<DiamondStructureAnalysis>(_context);
-        diamondAnalyzer->identifyDiamondStructures();
-    }else if(usingPTM()){
+    if(usingPTM()){
         const size_t N = _context.atomCount();
         if(N == 0) return;
 

@@ -7,6 +7,7 @@
 #include <opendxa/core/particle_property.h>
 #include <opendxa/analysis/common_neighbor_analysis.h>
 #include <opendxa/structures/lattice_vectors.h>
+#include <opendxa/analysis/analysis_context.h>
 
 namespace OpenDXA{
     
@@ -21,6 +22,10 @@ public:
     ) const;
     
     static void initializeStructures();
+    void postProcessDiamondNeighbors(
+        AnalysisContext& context,
+        const NearestNeighborFinder& neighList
+    ) const;
 
     static const LatticeStructure& latticeStructure(int structureIndex){
         return _latticeStructures[structureIndex];
