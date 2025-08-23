@@ -33,6 +33,7 @@ public:
 
     static CoordinationStructure _coordinationStructures[NUM_COORD_TYPES];
     static LatticeStructure _latticeStructures[NUM_LATTICE_TYPES];
+    int getCoordinationNumber() const;
 
     const SimulationCell& cell() const{
         return _simCell;
@@ -41,8 +42,6 @@ public:
     static void generateCellTooSmallError(int dimension);
 
 private:
-    int getCoordinationNumber() const;
-
     CoordinationStructureType computeCoordinationType(
         const NeighborBondArray& neighborArray,
         int coordinationNumber,

@@ -35,23 +35,27 @@ StructureAnalysis::StructureAnalysis(
         CoordinationStructures::initializeStructures();
     });
 
+    int requestedMaxNeighbors = 0;
     if(usingPTM()){
-        _context.neighborLists = std::make_shared<ParticleProperty>(
-            _context.atomCount(),
-            DataType::Int, 
-            PTM_MAX_NBRS, 
-            0, 
-            false
-        );
+        requestedMaxNeighbors = PTM_MAX_NBRS;
     }else{
-        _context.neighborLists = std::make_shared<ParticleProperty>(
-            _context.atomCount(), 
-            DataType::Int,
-            _coordStructures.latticeStructure(_context.inputCrystalType).maxNeighbors, 
-            0, 
-            false
+        // take the max between the lattice-definition maxNeighbors and the coordination
+        // number the algorithm expects (safety for diamond where coord. number = 16).
+        requestedMaxNeighbors = std::max(
+            _coordStructures.latticeStructure(_context.inputCrystalType).maxNeighbors,
+            _coordStructures.getCoordinationNumber()
         );
+        // defensive: ensure at least 1
+        if(requestedMaxNeighbors <= 0) requestedMaxNeighbors = 1;
     }
+
+    _context.neighborLists = std::make_shared<ParticleProperty>(
+        _context.atomCount(),
+        DataType::Int,
+        static_cast<size_t>(requestedMaxNeighbors),
+        0,
+        false
+    );
 
     std::fill(_context.neighborLists->dataInt(), _context.neighborLists->dataInt() + _context.neighborLists->size() * _context.neighborLists->componentCount(), -1);
     std::fill(_context.structureTypes->dataInt(), _context.structureTypes->dataInt() + _context.structureTypes->size(), LATTICE_OTHER);
