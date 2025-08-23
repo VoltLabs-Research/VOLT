@@ -18,7 +18,7 @@ public:
 private:
 	void initializeClustersForSuperclusterFormation();
 	void processDefectClusters();
-
+bool areOrientationsCompatible(int atom1, int atom2, int structureType);
 	void connectClusterNeighbors(int atomIndex, Cluster* cluster1);
 	void processAtomConnections(size_t atomIndex);
 
@@ -28,7 +28,6 @@ private:
     
     bool alreadyProcessedAtom(int index);
 	bool calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition);
-	bool areOrientationsCompatible(int atom1, int atom2, int structureType);
     Quaternion getPTMAtomOrientation(int atom) const;
 
 	std::pair<Cluster*, Cluster*> getParentGrains(ClusterTransition* transition);

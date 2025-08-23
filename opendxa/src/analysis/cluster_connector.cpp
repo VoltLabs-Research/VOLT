@@ -138,22 +138,7 @@ bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int 
 void ClusterConnector::createNewClusterTransition(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, Cluster* cluster2){
     Matrix3 transition;
     if(!calculateMisorientation(atomIndex, neighbor, neighborIndex, transition)) return;
-
-    bool isOrthogonal = false;
-    if(_sa.usingPTM()){
-        const double PTM_ORTHOGONALITY_TOLERANCE = 1e-4;
-        isOrthogonal = transition.isOrthogonalMatrix(PTM_ORTHOGONALITY_TOLERANCE);
-
-        if(!isOrthogonal){
-            transition = orthogonalizeMatrix(transition);
-            isOrthogonal = transition.isOrthogonalMatrix(PTM_ORTHOGONALITY_TOLERANCE);
-        }
-    }else{
-        isOrthogonal = transition.isOrthogonalMatrix();
-    }
-
-    if(!isOrthogonal) return;
-
+    if(!transition.isOrthogonalMatrix()) return;
     if(!cluster1->findTransition(cluster2)){
         ClusterTransition* t = _sa.clusterGraph().createClusterTransition(cluster1, cluster2, transition);
         t->area++;
@@ -457,8 +442,8 @@ void ClusterConnector::buildClusters(){
                     Matrix3 strain2 = 0.5 * (F2.transposed() * F2 - Matrix3::Identity());
                     double strainDifference = (strain1 - strain2).frobeniusNorm();
                     
-                    const double VOLUME_STRAIN_TOLERANCE = 0.08;
-                    const double STRAIN_DIFF_TOLERANCE = 0.15;
+                    const double VOLUME_STRAIN_TOLERANCE = 0.05;
+                    const double STRAIN_DIFF_TOLERANCE = 0.08;
 
                     bool deformationCompatible = (volumeStrainDiff < VOLUME_STRAIN_TOLERANCE && strainDifference < STRAIN_DIFF_TOLERANCE);
                     if(!deformationCompatible){
@@ -478,7 +463,7 @@ void ClusterConnector::buildClusters(){
                     Quaternion quatDiff = q2 * q1.inverse();
                     double angle = 2.0 * std::acos(std::abs(quatDiff.w()));
 
-                    const double PTM_ANGLE_THRESHOLD = (20.0 * M_PI) / 180.0;
+                    const double PTM_ANGLE_THRESHOLD = (8.0 * M_PI) / 180.0;
                     if(angle < PTM_ANGLE_THRESHOLD){
                         // TODO: NOT PROVIDED FROM PTM?
                         // Finding the best permutation using the geometric method
@@ -612,7 +597,7 @@ void ClusterConnector::buildClusters(){
 
         spdlog::info("Post-processing merged {} cluster pairs", mergedPairs);
     }
-
+    
     // Reorient atoms to align clusters with global coordinate system
     reorientAtomsToAlignClusters();
 

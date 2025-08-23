@@ -57,6 +57,7 @@ StructureAnalysis::StructureAnalysis(
         false
     );
 
+
     std::fill(_context.neighborLists->dataInt(), _context.neighborLists->dataInt() + _context.neighborLists->size() * _context.neighborLists->componentCount(), -1);
     std::fill(_context.structureTypes->dataInt(), _context.structureTypes->dataInt() + _context.structureTypes->size(), LATTICE_OTHER);
 }
@@ -164,10 +165,7 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
         return;
     }
 
-    // Ignore the use of PTM for this when input crystal type is CUBIC_DIAMOND
-    // TODO: Hack for CUBIC_DIAMOND in PTM
-    // TODO: Now that the atoms are classified, we obtain the
-    // TODO: neighbor lists and maximum distance, ensuring compatibility with the rest of the pipeline.
+    // Hack for DIAMOND
     if(_context.inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND || !usingPTM()){
         int maxNeighborListSize = std::min((int)_context.neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
         NearestNeighborFinder neighFinder(maxNeighborListSize);
@@ -175,7 +173,7 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
             throw std::runtime_error("Error in neighFinder.prepare(...)");
         }
 
-       _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, _context.atomCount()),
+        _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, _context.atomCount()),
             0.0, [this, &neighFinder](const tbb::blocked_range<size_t>& r, double max_dist_so_far) -> double {
                 for(size_t index = r.begin(); index != r.end(); ++index){
                     double localMaxDistance = _coordStructures.determineLocalStructure(neighFinder, index, _context.neighborLists);
@@ -190,7 +188,7 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
             }
         );
 
-        _coordStructures.postProcessDiamondNeighbors(_context, neighFinder);
+        // _coordStructures.postProcessDiamondNeighbors(_context, neighFinder);
         return;
     }
 

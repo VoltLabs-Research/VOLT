@@ -78,7 +78,7 @@ private:
     static void initializeCubicDiamond();
     static void initializeHexagonalDiamond();
     static void initializeOther();
-    
+
     double computeLocalCutoff(
         const NearestNeighborFinder& neighList, 
         const NearestNeighborFinder::Query<MAX_NEIGHBORS>& neighQuery,
