@@ -37,13 +37,16 @@ class LAMMPSToGLBExporter{
     ]);
 
     private readonly STRUCTURE_COLORS: { [key: string]: number[] } = {
-        'Other': [1.0, 1.0, 1.0],
-        'FCC': [0.0, 1.0, 0.0],
-        'HCP': [1.0, 0.0, 0.0],
-        'BCC': [0.0, 0.0, 1.0],
-        'Cubic diamond': [0.0, 1.0, 1.0],
-        'Hexagonal diamond': [1.0, 0.5, 0.0],
-        'Default': [0.5, 0.5, 0.5]
+        'FCC': [102, 255, 102],
+        'HCP': [255, 102, 102],
+        'BCC': [102, 102, 255],
+        'CUBIC_DIAMOND': [19, 160, 254],
+        'CUBIC_DIAMOND_FIRST_NEIGH': [0, 254, 245],
+        'CUBIC_DIAMOND_SECOND_NEIGH': [126, 254, 181],
+        'HEX_DIAMOND_FIRST_NEIGH': [254, 220, 0],
+        'HEX_DIAMOND_SECOND_NEIGH': [204, 229, 81],
+        'HEX_DIAMOND': [254, 137, 0],
+        'OTHER': [242, 242, 242]
     };
 
     private static uniformSubsampling(atoms: LammpsAtom[], targetCount: number): LammpsAtom[]{
@@ -748,7 +751,7 @@ class LAMMPSToGLBExporter{
             if(typeAtoms.length === 0) continue;
             console.log(`Processing ${typeAtoms.length.toLocaleString()} atoms of type "${typeName}".`);
 
-            const colorRGB = this.STRUCTURE_COLORS[typeName] || this.STRUCTURE_COLORS['Default'];
+            const colorRGB = this.STRUCTURE_COLORS[typeName].map((color) => color / 255);
             glb.materials.push({
                 name: `Material_Type_${typeName}`,
                 pbrMetallicRoughness: {
