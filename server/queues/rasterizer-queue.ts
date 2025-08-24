@@ -25,20 +25,17 @@ import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import path from 'path';
 
-export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob>{
+export class RasterizerQueue extends BaseProcessingQueue<AnalysisJob>{
     constructor(){
         const options: QueueOptions = {
-            queueName: 'analysis-processing-queue',
-            workerPath: path.resolve(__dirname, '../workers/analysis.ts'),
-            maxConcurrentJobs: 10,
-            cpuLoadThreshold: 80,
-            ramLoadThreshold: 85,
+            queueName: 'rasterizer-queue',
+            workerPath: path.resolve(__dirname, '../workers/headless-rasterizer.ts')
         };
 
         super(options);
     }
 
-    protected deserializeJob(rawData: string): AnalysisJob{
+    protected deserializeJob(rawData: string): AnalysisJob {
         return JSON.parse(rawData) as AnalysisJob;
     }
 }

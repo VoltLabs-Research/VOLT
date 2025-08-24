@@ -21,7 +21,7 @@
 **/
 
 import { NextFunction, Request, Response } from 'express';
-import { join, resolve } from 'path';
+import { basename, join, resolve } from 'path';
 import { access, stat, readdir, mkdir, rm, writeFile, constants } from 'fs/promises';
 import { copyFile } from '@/utilities/fs';
 import { isValidObjectId } from 'mongoose';
@@ -35,6 +35,8 @@ import HandlerFactory from '@/controllers/handler-factory';
 import RuntimeError from '@/utilities/runtime-error';
 import StructureAnalysis from '@models/structure-analysis';
 import Dislocation from '@models/dislocations';
+import { catchAsync } from '@/utilities/runtime';
+import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
 
 const factory = new HandlerFactory({
     model: Trajectory,
@@ -225,6 +227,39 @@ export const getUserTrajectories = factory.getAll({
         const teamIds = userTeams.map(team => team._id);
         return { team: { $in: teamIds } };
     }
+});
+
+// TODO: Duplicated code
+const listGlbFiles = async (dir: string, out: string[] = []): Promise<string[]> => {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for(const e of entries){
+        if(!e.isFile()) continue;
+        if(!/\.(glb|gltf)$/i.test(e.name)) continue;
+        out.push(join(dir, e.name));
+    }
+    return out;
+};
+
+export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
+    const trajectory = res.locals.trajectory;
+    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+    const glbDir = join(basePath, trajectory.folderId, 'glb');
+    const outputDir = join(basePath, trajectory.folderId, 'raster');
+    const glbs = listGlbFiles(glbDir);
+    const customOpts: Partial<HeadlessRasterizerOptions> = req.body;
+
+    const jobs = (await glbs).map((glbPath) => {
+        const base = basename(glbPath).replace(/\.[^.]+$/i, '');
+        const outPath = join(outputDir, `${base}.png`);
+        const opts: Partial<HeadlessRasterizerOptions> = {
+            inputPath: glbPath,
+            outputPath: outPath,
+            ...customOpts
+        };
+        return { opts };
+    });
+
+    res.status(200).json({ status: 'success' });
 });
 
 // TODO: change controller name
