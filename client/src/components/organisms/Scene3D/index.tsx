@@ -276,7 +276,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     showGizmo = true,
     background = null,
     cameraControlsEnabled = true,
-    showCanvasGrid = false,
+    showCanvasGrid = true,
     orbitControlsConfig = {},
     onCameraControlsRef
 }, ref) => {

@@ -101,7 +101,7 @@ const DashboardPage: React.FC = memo(() => {
                                 </div>
                                 
                                 <div className='badge-container scene-preview-natoms-badge'>
-                                    <p className='badge-text'>{formatNumber(trajectory.frames[currentTimestep].natoms)} atoms</p>
+                                    <p className='badge-text'>{formatNumber(trajectory.frames[currentTimestep]?.natoms ?? 0)} atoms</p>
                                 </div>
 
                                 <div className='badge-container scene-preview-navigate-icon'>

@@ -28,17 +28,12 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     enableSlice = true,
     enableInstancing = true,
     updateThrottle = 16,
-    centerModelToCamera = false
 }) => {
     const slicePlaneConfig = useConfigurationStore(s => s.slicePlaneConfig);
     const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig);
-    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
-    const nextGlbUrl = useTimestepStore((state) => state.nextGlbUrl);
     const activeSceneObject = useConfigurationStore((state) => state.activeSceneObject);
 
     const sceneProps = useMemo(() => ({
-        currentGlbUrl,
-        nextGlbUrl,
         activeSceneObject,
         sliceClippingPlanes,
         position,

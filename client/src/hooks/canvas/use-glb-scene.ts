@@ -28,13 +28,10 @@ import { GLB_CONSTANTS, loadGLB, preloadGLBs } from '@/utilities/glb/loader';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 import useTimestepStore from '@/stores/editor/timesteps';
 import useLogger from '@/hooks/core/use-logger';
-
 import vertexShader from '@/shaders/point-cloud.vert?raw';
 import fragmentShader from '@/shaders/point-cloud.frag?raw';
 
 export const useGlbScene = ({
-    currentGlbUrl,
-    nextGlbUrl,
     activeSceneObject,
     sliceClippingPlanes,
     position,
@@ -45,6 +42,8 @@ export const useGlbScene = ({
 }: any) => {
     const { scene, camera, invalidate } = useThree();
     const logger = useLogger('use-glb-scene');
+    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
+    const nextGlbUrl = useTimestepStore((state) => state.nextGlbUrl);
 
     const stateRef = useRef<any & {
         frameCount: number;
@@ -72,6 +71,40 @@ export const useGlbScene = ({
         progress: 0,
         error: null,
     });
+
+    const configurePointCloudMaterial = useCallback((points: Points) => {   
+        points.material = new ShaderMaterial({
+            vertexShader,
+            fragmentShader,
+            uniforms: {
+                cameraPosition: { value: new Vector3() },
+                ambientFactor: { value: 0.15 },
+                diffuseFactor: { value: 0.6 },
+                specularFactor: { value: 0.5 },
+                shininess: { value: 120.0 },
+                rimFactor: { value: 0.1 },
+                rimPower: { value: 3.0 },
+            },
+            vertexColors: true,
+            transparent: true,
+            depthWrite: true,
+            depthTest: true,
+            clipping: true,
+        });
+
+        const numPoints = points.geometry.attributes.position.count;
+
+        // For 2,520,147, pointScale = 0.125.
+        // Then, Math.cbrt(2,520,147) = 136.05.
+        // Now, VISUAL_ADJUSTMENT_FACTOR = 0.125 * 136.05 = 17.
+        const VISUAL_ADJUSTMENT_FACTOR = 17;
+        const dynamicPointScale = VISUAL_ADJUSTMENT_FACTOR / Math.cbrt(numPoints);
+        if(points.material instanceof ShaderMaterial){
+            points.material.uniforms.pointScale = { value: dynamicPointScale };
+        }
+
+        stateRef.current.mesh = points;
+    }, []);
 
     const getTargetUrl = useCallback((): string | null => {
         if(!currentGlbUrl || !activeSceneObject){
@@ -128,34 +161,7 @@ export const useGlbScene = ({
             mesh.material.uniforms.cameraPosition.value.copy(camera.position);
         }
     });
-
-    const configurePointCloudMaterial = useCallback((points: Points) => {
-        const optimalRadius = points.userData.optimalRadius;
-        const pointSize = optimalRadius * 0.1;
-
-        points.material = new ShaderMaterial({
-            vertexShader,
-            fragmentShader,
-            uniforms: {
-                pointScale: { value: pointSize * scale },
-                cameraPosition: { value: new Vector3() },
-                ambientFactor: { value: 0.15 },
-                diffuseFactor: { value: 0.6 },
-                specularFactor: { value: 0.5 },
-                shininess: { value: 120.0 },
-                rimFactor: { value: 0.1 },
-                rimPower: { value: 3.0 },
-            },
-            vertexColors: true,
-            transparent: true,
-            depthWrite: true,
-            depthTest: true,
-            clipping: true,
-        });
-
-        stateRef.current.mesh = points;
-    }, [scale]);
-
+    
     const configureGeometry = useCallback((model: Group) => {
         let mainGeometry: BufferGeometry | null = null;
 
@@ -190,21 +196,30 @@ export const useGlbScene = ({
         }
 
         const bounds = calculateModelBounds({ scene: model });
-        const { position: optimalPos, rotation: optimalRot, scale: optimalScale } = calculateOptimalTransforms(bounds);
 
-        // The visualization of atoms or the structural identification of a 
-        // simulation frame are exported as a point cloud. 
-        // The defect mesh, dislocations, and others are geometries.
         let pointCloudObject = isPointCloudObject(model);
         if(pointCloudObject){
             configurePointCloudMaterial(pointCloudObject);
         }else{
             configureGeometry(model);
         }
+        
+        const { position: optimalPos, rotation: optimalRot, scale: optimalScale } = calculateOptimalTransforms(bounds);
 
-     
+        model.position.set(
+            (position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x) + optimalPos.x,
+            (position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y) + optimalPos.y,
+            (position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z) + optimalPos.z
+        );
+
+        model.rotation.set(
+            (rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x) + optimalRot.x,
+            (rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y) + optimalRot.y,
+            (rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z) + optimalRot.z
+        );
+        
         model.scale.setScalar(scale * optimalScale);
-        // adjustModelToGround(model);
+        adjustModelToGround(model);
         model.updateMatrixWorld(true);
         const finalBounds = calculateModelBounds({ scene: model });
         setModelBounds(finalBounds);

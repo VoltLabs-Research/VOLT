@@ -117,50 +117,11 @@ class LAMMPSToGLBExporter{
         return { timestepInfo, atoms };
     }
 
-    static calculateOptimalRadius(atoms: LammpsAtom[]): number{
-        let minDistance = Number.MAX_VALUE;
-        const sampleSize = Math.min(1000, atoms.length);
-
-        const sampledAtoms = atoms
-            .sort(() => Math.random() - 0.5)
-            .slice(0, sampleSize);
-
-        let comparisons = 0;
-        const maxComparisons = 10000;
-
-        for(let i = 0; i < sampledAtoms.length - 1 && comparisons < maxComparisons; i++){
-            for(let j = i + 1; j < Math.min(i + 20, sampledAtoms.length) && comparisons < maxComparisons; j++){
-                const atom1 = sampledAtoms[i];
-                const atom2 = sampledAtoms[j];
-
-                const dx = atom1.x - atom2.x;
-                const dy = atom1.y - atom2.y;
-                const dz = atom1.z - atom2.z;
-
-                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                if(distance > 0.1 && distance < minDistance){
-                    minDistance = distance;
-                }
-
-                comparisons++;
-            }
-        }
-
-        if(minDistance === Number.MAX_VALUE){
-            console.warn('Could not calculate minimum distance, using default radius');
-            return 0.8;
-        }
-
-        let optimalRadius = 0.35 * minDistance;
-        return Math.max(0.1, Math.min(3.0, optimalRadius));
-    }
-
     public async exportAtomsToPointCloudGLB(
         positions: Float32Array,
         colors: Float32Array,
         outputFilePath: string,
-        bounds: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } },
-        optimalRadius: number
+        bounds: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } }
     ): Promise<void>{
         const glb: any = {
             asset: { 
@@ -169,7 +130,9 @@ class LAMMPSToGLBExporter{
             },
             scene: 0,
             scenes: [{ nodes: [0] }],
-            nodes: [{ mesh: 0 }],
+            nodes: [{ 
+                mesh: 0
+            }],
             meshes: [],
             materials: [],
             accessors: [],
@@ -237,10 +200,7 @@ class LAMMPSToGLBExporter{
                 material: 0,
                 // POINTS
                 mode: 0 
-            }],
-            extras: {
-                optimalRadius: optimalRadius
-            }
+            }]
         });
 
         assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
@@ -255,7 +215,6 @@ class LAMMPSToGLBExporter{
 
         const positions = new Float32Array(frame.atoms.length * 3);
         const colors = new Float32Array(frame.atoms.length * 3);
-        const optimalRadius = LAMMPSToGLBExporter.calculateOptimalRadius(frame.atoms);
 
         frame.atoms.forEach((atom, i) => {
             const posIdx = i * 3;
@@ -270,10 +229,10 @@ class LAMMPSToGLBExporter{
         });
 
         const bounds = LAMMPSToGLBExporter.calculateAtomBounds(frame.atoms);
-        await this.exportAtomsToPointCloudGLB(positions, colors, outputFilePath, bounds, optimalRadius);
+        await this.exportAtomsToPointCloudGLB(positions, colors, outputFilePath, bounds);
     }
 
-public exportAtomsTypeToGLB(
+    public exportAtomsTypeToGLB(
         atomsByType: AtomsGroupedByType,
         outputFilePath: string
     ): void{
@@ -300,8 +259,7 @@ public exportAtomsTypeToGLB(
 
         const allAtomsFlat = Object.values(atomsByType).flat().map(a => ({ x: a.pos[0], y: a.pos[1], z: a.pos[2] } as LammpsAtom));
         const bounds = LAMMPSToGLBExporter.calculateAtomBounds(allAtomsFlat);
-        const optimalRadius = LAMMPSToGLBExporter.calculateOptimalRadius(allAtomsFlat);
-        this.exportAtomsToPointCloudGLB(positions, colors, outputFilePath, bounds, optimalRadius);
+        this.exportAtomsToPointCloudGLB(positions, colors, outputFilePath, bounds);
     }
 };
 

@@ -104,12 +104,12 @@
 }
 
 .dashboard-stat-analytic-container{
-    position: relative;
+    position: absolute;
     right: 2rem;
 }
 
 .dashboard-stat-analytic-container:has(.MuiChartsGrid-root){
-    top: 2rem;
+    top: 3rem;
 }
 
 .dashboard-stat-left-container{
@@ -163,12 +163,12 @@
     font-size: 1.2rem;
 }
 
-.dashboard-stat-icon-container:not(:has(.MuiSkeleton-root)){
-    padding: .5rem;
-}
-
 .dashboard-stat-analytic-container:has(.MuiSkeleton-root){
     right: 0;
+}
+
+.dashboard-stat-container:first-child{
+    background-color: #f8f8f8;
 }
 
 .dashboard-wrapper-container{

@@ -21,14 +21,13 @@
 **/
 
 import { useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
 import usePlaybackStore from '@/stores/editor/playback';
 import useTimestepStore from '@/stores/editor/timesteps';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 
-const useCanvasCoordinator = ({ trajectoryId }) => {
+const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
     const logger = useLogger('use-canvas-coordinator');
 
     const trajectory = useTrajectoryStore((state) => state.trajectory);
@@ -56,7 +55,7 @@ const useCanvasCoordinator = ({ trajectoryId }) => {
             logger.log(`Loading trajectory with ID: ${trajectoryId}`);
             getTrajectoryById(trajectoryId);
         }
-    }, [trajectoryId, trajectory, getTrajectoryById]);
+    }, [trajectoryId, isLoading, trajectory, getTrajectoryById]);
 
     // Handle automatically the selection for the first timestep when trajectory is loaded
     useEffect(() => {
