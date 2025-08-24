@@ -25,7 +25,7 @@ import { parentPort } from 'worker_threads';
 import { join } from 'path';
 import { unlink } from 'fs/promises';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
-import LAMMPSToGLBExporter from '@/utilities/export/atoms';
+import AtomisticExporter from '@/utilities/export/atoms';
 import '@config/env';
 
 const processJob = async (job: TrajectoryProcessingJob) => {
@@ -47,7 +47,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
                 const glbFilePath = join(job.glbFolderPath, `${frameData.timestep}.glb`);
                 
                 // Process glb export
-                const glbExporter = new LAMMPSToGLBExporter();
+                const glbExporter = new AtomisticExporter();
                 await glbExporter.exportAtomsToGLB(
                     frameFilePath,
                     glbFilePath,

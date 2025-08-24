@@ -33,7 +33,7 @@ import path from 'path';
 import os from 'os';
 import MeshExporter from '@utilities/export/mesh';
 import DislocationExporter from '@utilities/export/dislocations';
-import LAMMPSToGLBExporter from '@utilities/export/atoms';
+import AtomisticExporter from '@utilities/export/atoms';
 import StructureAnalysis from '@/models/structure-analysis';
 import SimulationCell from '@/models/simulation-cell';
 import Dislocations from '@models/dislocations';
@@ -264,7 +264,7 @@ class OpenDXAService{
     }
 
     private exportAtomsColoredByType(groupedAtoms: AtomsGroupedByType, frame: number): void {
-        const exporter = new LAMMPSToGLBExporter();
+        const exporter = new AtomisticExporter();
         const outputPath = this.getOutputPath(frame, 'atoms_colored_by_type');
         exporter.exportAtomsTypeToGLB(groupedAtoms, outputPath);
     }
