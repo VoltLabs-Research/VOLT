@@ -11,8 +11,11 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     protected readonly workerPath: string;
     protected readonly maxConcurrentJobs: number;
     protected readonly useStreamingAdd: boolean;
+
     protected readonly TTL: number = 24 * 60 * 60;
     protected readonly batchSize = 20;
+    protected readonly minWorkers = 1;
+    protected readonly idleWorkerTTL = 30000;
 
     readonly queueKey: string;
     readonly processingKey: string;
@@ -43,6 +46,49 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         this.redisBlocking = createRedisClient();
         
         this.initializeQueue();
+    }
+    
+    private spawnWorker(): WorkerPoolItem{
+        const item: WorkerPoolItem = {
+            worker: this.createWorker(),
+            isIdle: true,
+            jobCount: 0,
+            lastUsed: Date.now(),
+            timeouts: new Set()
+        };
+
+        this.workerPool.push(item);
+        return item;
+    };
+
+    private scheduleScaleDown(item: WorkerPoolItem){
+        const timeout = setTimeout(() => {
+            if(!item.isIdle) return;
+            if(this.workerPool.length <= this.minWorkers) return;
+
+            const idx = this.workerPool.findIndex(({ worker }) => worker.threadId === item.worker.threadId);
+            if(idx !== -1){
+                const [gone] = this.workerPool.splice(idx, 1);
+                gone.timeouts.forEach(clearTimeout);
+                gone.worker.terminate();
+            }
+        }, this.idleWorkerTTL);
+
+        item.timeouts.add(timeout);
+    }
+
+    private clearWorkerTimers(item: WorkerPoolItem){
+        item.timeouts.forEach(clearTimeout);
+        item.timeouts.clear();
+    }
+
+    private async scaleUp(n: number): Promise<void>{
+        const canSpawn = Math.max(0, this.maxConcurrentJobs - this.workerPool.length);
+        const toSpawn = Math.min(n, canSpawn);
+
+        for(let i = 0; i < toSpawn; i++){
+            this.spawnWorker();
+        }
     }
 
     private async executeCleanupScript(sessionId: string, trajectoryId: string, teamId: string): Promise<[number, number, string]> {
@@ -204,12 +250,14 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     private async finishJob(workerId: number, rawData: string): Promise<void>{
         const workerIdx = this.workerPool.findIndex(({ worker }) => worker.threadId === workerId);
         if(workerIdx !== -1){
-            this.workerPool[workerIdx].isIdle = true;
-            this.workerPool[workerIdx].lastUsed = Date.now();
+            const item = this.workerPool[workerIdx];
+            item.isIdle = true;
+            item.lastUsed = Date.now();
+            this.clearWorkerTimers(item);
+            this.scheduleScaleDown(item);
         }
 
         this.jobMap.delete(workerId);
-
         await this.redis.lrem(this.processingKey, 1, rawData);
     }
 
@@ -289,22 +337,24 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     }
 
     private replaceWorker(workerId: number): void {
-        const workerIndex = this.workerPool.findIndex(item => item.worker.threadId === workerId);
-        
-        if(workerIndex !== -1){
-            const oldWorker = this.workerPool[workerIndex];
-            oldWorker.worker.terminate();
-            
-            this.workerPool[workerIndex] = {
-                worker: this.createWorker(),
-                isIdle: true,
-                jobCount: 0,
-                lastUsed: Date.now(),
-                timeouts: new Set()
-            };
-            
-            console.log(`[${this.queueName}] Replaced worker #${workerId} with new worker #${this.workerPool[workerIndex].worker.threadId}`);
+        const idx = this.workerPool.findIndex(({ worker }) => worker.threadId === workerId);
+        if(idx !== -1){
+            const old = this.workerPool[idx];
+            old.worker.terminate();
+            old.timeouts.forEach(clearTimeout);
+            this.workerPool.splice(idx, 1);
         }
+
+        const backlogPromise = this.redis.llen(this.queueKey);
+        backlogPromise.then((backlog) => {
+            if(this.workerPool.length < this.minWorkers || backlog > 0){
+                this.spawnWorker();
+            }
+        }).catch(() => {
+            if(this.workerPool.length < this.minWorkers){
+                this.spawnWorker();
+            }
+        });
     }
 
     private handleWorkerExit(workerId: number, code: number): void {
@@ -383,6 +433,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     private async assignJobToWorker(workerItem: WorkerPoolItem, job: T, rawData: string): Promise<void> {
         const startTime = Date.now();
         workerItem.isIdle = false;
+        this.clearWorkerTimers(workerItem);
         workerItem.currentJobId = job.jobId;
         workerItem.startTime = startTime;
         workerItem.lastUsed = startTime;
@@ -404,7 +455,13 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     }
 
     private async dispatchJob(rawData: string): Promise<void>{
-        const idleWorker = this.workerPool.find((item) => item.isIdle);
+        let idleWorker = this.workerPool.find((item) => item.isIdle);
+        if(!idleWorker && this.workerPool.length < this.maxConcurrentJobs){
+            await this.scaleUp(1);
+            idleWorker = this.workerPool.find((item) => item.isIdle) ?? null as any;
+        }
+
+        // Max capacity
         if(!idleWorker) return;
 
         const job = this.deserializeJob(rawData);
@@ -447,38 +504,31 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         console.log(`[${this.queueName}] Dispatcher started.`);
 
         while(!this.isShutdown){
-            // Process available jobs
-            const availableWorkers = this.getAvailableWorkerCount();
-            if(availableWorkers === 0){
+            const backlog = await this.redis.llen(this.queueKey);
+            const workers = this.workerPool.length;
+            const desired = Math.min(this.maxConcurrentJobs, backlog);
+            const toSpawn = Math.max(0, desired - workers);
+            if(toSpawn > 0) await this.scaleUp(toSpawn);
+
+            const available = this.getAvailableWorkerCount();
+            if(available === 0){
                 await this.sleep(100);
                 continue;
             }
 
-            const jobsToProcess = Math.min(availableWorkers, this.batchSize);
+            const jobsToProcess = Math.min(available, this.batchSize);
             const jobs = await this.fetchJobs(jobsToProcess);
-
             if(jobs.length === 0){
                 await this.sleep(100);
                 continue;
             }
-
+    
             await this.dispatchJobs(jobs);
         }
     }
 
     private async initializeQueue(): Promise<void>{
-        // Initialize workers
-        for(let i = 0; i < this.maxConcurrentJobs; i++){
-            this.workerPool.push({
-                worker: this.createWorker(),
-                isIdle: true,
-                jobCount: 0,
-                lastUsed: Date.now(),
-                timeouts: new Set()
-            });
-        }
-
-        // Start job dispatcher
+        await this.scaleUp(this.minWorkers);
         await this.startDispatchLoop();
     }
 

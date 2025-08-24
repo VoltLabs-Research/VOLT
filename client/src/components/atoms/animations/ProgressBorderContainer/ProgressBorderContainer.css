@@ -35,7 +35,3 @@
   filter: brightness(1.02);
   transform: scale(1.001);
 }
-
-.progress-border-container[style*="conic-gradient"]{
-    outline: 2px solid rgba(255, 0, 0, 0.2);
-}
