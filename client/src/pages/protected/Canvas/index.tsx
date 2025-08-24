@@ -20,7 +20,7 @@ const CANVAS_CONFIG = {
 const EditorPage: React.FC = () => {
     const { trajectoryId } = useParams<{ trajectoryId: string }>()
     const scene3DRef = useRef<Scene3DRef>(null)
-    const { trajectory, currentTimestep } = useCanvasCoordinator()
+    const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId });
     
     return (
         <div className='editor-container'>

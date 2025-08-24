@@ -14,7 +14,9 @@ import './Scene3D.css';
 interface Scene3DProps {
     children?: React.ReactNode;
     cameraControlsEnabled?: boolean;
+    background?: string;
     showGizmo?: boolean;
+    orbitControlsConfig?: any;
     onCameraControlsRef?: (ref: any) => void;
 }
 
@@ -40,6 +42,7 @@ const CAMERA_CONFIG = {
     far: 100,
     up: [0, 0, 1] as [number, number, number],
 };
+
 const GL_CONFIG = {
     localClippingEnabled: true,
     alpha: false,
@@ -143,7 +146,6 @@ const ScreenshotHandler: React.FC<{
     const { gl, scene, camera } = useThree();
     const hasRenderedRef = useRef(false);
     const contentReadyRef = useRef(false);
-    const modelBounds = useTimestepStore((state) => state.modelBounds);
 
     useFrame(() => {
         hasRenderedRef.current = true;
@@ -272,13 +274,16 @@ const ScreenshotHandler: React.FC<{
 const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     children,
     showGizmo = true,
+    background = null,
     cameraControlsEnabled = true,
+    showCanvasGrid = false,
+    orbitControlsConfig = {},
     onCameraControlsRef
 }, ref) => {
     const orbitControlsRef = useRef<any>(null);
     const [tools, setTools] = useState<{ captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> } | null>(null);
     const activeSceneObject = useConfigurationStore(state => state.activeSceneObject);
-    const showCanvasGrid = useUIStore((state) => state.showCanvasGrid);
+    // const showCanvasGrid = useUIStore((state) => state.showCanvasGrid);
     const toggleCanvasGrid = useUIStore((state) => state.toggleCanvasGrid);
     const toggleEditorWidgets = useUIStore((state) => state.toggleEditorWidgets);
     const showEditorWidgets = useUIStore((state) => state.showEditorWidgets);
@@ -286,9 +291,13 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 
     const maxDpr = useMemo(() => (window.devicePixelRatio > 1 ? 2 : 1), []);
 
-    const backgroundColor = useMemo(() => 
-        !showEditorWidgets ? '#e6e6e6' : '#1E1E1E'
-    , [showEditorWidgets]);
+    const backgroundColor = useMemo(() => {
+        if(background !== null){
+            return background;
+        }
+
+        return !showEditorWidgets ? '#e6e6e6' : '#1E1E1E'
+    }, [showEditorWidgets, background]);
 
     const handleToolsReady = useCallback((t: { captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> }) => {
         setTools(() => t);
@@ -432,6 +441,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
             <OrbitControls
                 ref={handleControlsRef}
                 {...orbitControlsProps}
+                {...orbitControlsConfig}
             />
             
             {showCanvasGrid && <CanvasGrid />}

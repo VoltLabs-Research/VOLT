@@ -28,9 +28,8 @@ import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 
-const useCanvasCoordinator = () => {
+const useCanvasCoordinator = ({ trajectoryId }) => {
     const logger = useLogger('use-canvas-coordinator');
-    const { trajectoryId } = useParams<{ trajectoryId: string }>();
 
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);

@@ -1,61 +1,73 @@
 .dashboard-main{
     display: flex;
+    flex-direction: column;
     height: 100%;
 }
 
-.sidebar-container{
-    width: 350px;
-    height: 100vh;
+.dashboard-layout-header-container{
+    padding: 1rem 2rem 0;
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: space-between;
 }
 
-.team-select-container{
-    width: 100%;
-}
-
-.team-select-container .rh-select-trigger{
-    border: 1px solid #e9e9e9;
-    background-color: transparent;
-    padding: .8rem 1rem;
-}
-
-.team-select-container .rh-select-value,
-.team-select-container .rh-select-chevron{
-    color: #212121;
-}
-
-.sidebar-top-container,
-.sidebar-bottom-container{
+.dashboard-user-container{
     display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    padding: 2rem 2.5rem;
-}
-
-.sidebar-nav-container{
-    display: flex;
-    flex-direction: column;
     gap: 1.5rem;
 }
 
-.sidebar-nav-option-container:hover,
-.sidebar-nav-option-container.selected{
-    background-color: #f5f5f5;
-    border-radius: .5rem;
+.badge-container.as-icon-container{
+    position: unset;
+    padding: .5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-@media screen and (max-width: 768px){
-    .sidebar-container{
-        position: fixed;
-        z-index: 500;
-        background-color: rgba(255, 255, 255, .8);
-        backdrop-filter: blur(5px);
-        visibility: hidden;
-    }
+.badge-container.as-icon-container.over-light-bg{
+    background-color: rgb(225 225 225);
+    color: #212121;
+}
 
-    .sidebar-container[data-isenabled='true']{
-        visibility: unset;
-    }
+.navigation-container{
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    background-color: #e7e7e7;
+    width: fit-content;
+    border-radius: 5rem;
+    padding: 5px;
+}
+
+.navigation-item-container{
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .5rem 1.5rem;
+    border-radius: 1rem;
+}
+
+.navigation-item-icon{
+    display: none;
+    font-size: 1.2rem;
+}
+
+.navigation-item-container.is-selected{
+    background-color: #FFF;
+}
+
+.navigation-item-container.is-selected .navigation-item-icon{
+    display: flex;
+}
+
+.navigation-item-name{
+    font-size: .95rem;
+    font-weight: 500;
+    color: #5e5e5e;
+}
+
+.navigation-item-container.is-selected .navigation-item-name{
+    color: #212121;
 }

@@ -26,7 +26,7 @@ import { CiLogout, CiSettings } from 'react-icons/ci';
 import './SidebarUserAvatar.css';
 
 // TODO: USER AVATAR SHOULD BE A NEW COMPONENT
-const SidebarUserAvatar = ({ hideUsername = false, onClick = () => {} }) => {
+const SidebarUserAvatar = ({ avatarRounded = false, hideEmail = true, hideUsername = false, onClick = () => {} }) => {
     const { user, signOut } = useAuthStore();
 
     return (
@@ -37,13 +37,18 @@ const SidebarUserAvatar = ({ hideUsername = false, onClick = () => {} }) => {
             ]}
         >
             <div className='sidebar-user-container' onClick={onClick}>
-                <div className='sidebar-user-avatar-container'>
+                <div 
+                    className='sidebar-user-avatar-container'
+                    data-avatarRounded={avatarRounded}
+                >
                     <span className='sidebar-user-avatar'>{user.firstName[0]}</span>
                 </div>
 
-                {!hideUsername && (
-                    <span className='sidebar-user-fullname'>{user.firstName} {user.lastName}</span>
-                )}
+                <div className='sidebar-user-details-container'>
+                    {!hideUsername && (
+                        <span className='sidebar-user-fullname'>{user.firstName} {user.lastName}</span>
+                    )}
+                </div>
             </div>
         </ActionBasedFloatingContainer>
     );

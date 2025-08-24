@@ -26,8 +26,11 @@ import { GrHomeOption } from 'react-icons/gr';
 import { BsCommand } from 'react-icons/bs';
 import { GoTrash } from 'react-icons/go';
 import { TbCube3dSphere } from "react-icons/tb";
-import { IoSettingsOutline } from "react-icons/io5";
+import { IoSearchOutline, IoSettingsOutline } from "react-icons/io5";
 import { TbBook } from 'react-icons/tb';
+import { RiHomeSmile2Fill } from "react-icons/ri";
+import { IoNotificationsOutline } from "react-icons/io5";
+
 import { IoIosHelpCircleOutline } from 'react-icons/io';
 import { CiChat1 } from 'react-icons/ci';
 import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
@@ -67,7 +70,7 @@ const DashboardLayout = () => {
 
     return (
         <main className='dashboard-main'>
-            <section className='sidebar-container'>
+            {/*<section className='sidebar-container'>
                 <article className='sidebar-top-container'>
                     <SidebarUserAvatar />
 
@@ -108,6 +111,48 @@ const DashboardLayout = () => {
                         <SidebarNavigationOption onClick={onClick} key={`${name}-${index}`} name={name} Icon={Icon} />
                     ))}
                 </article>
+            </section>*/}
+
+            <section className='dashboard-layout-header-container'>
+                <nav className='navigation-container'>
+                    {[
+                        ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
+                        ['Messages', CiChat1, '/dashboard/messages'],
+                        ['Studio', TbCube3dSphere, ''],
+                        ['Tutorials', TbBook, '/dashboard/tutorials'],
+                    ].map(([ name, Icon, to ], index) => (
+                        <div 
+                            className={`navigation-item-container ${(index === 0) ? 'is-selected' : ''}`}
+                            key={index}
+                        >
+                            <i className='navigation-item-icon'>
+                                <Icon />
+                            </i>
+                            <p className='navigation-item-name'>{name}</p>                           
+                        </div> 
+                    ))}
+                </nav>
+
+                <div className='dashboard-search-container'>
+                    <div className='search-container'>
+                        <i className='search-icon-container'>
+                            <IoSearchOutline />
+                        </i>
+                        <input placeholder='Search' className='search-input '/>
+                    </div>
+                </div>
+
+                <div className='dashboard-user-container'>
+                    <div className='badge-container as-icon-container over-light-bg'>
+                        <IoSettingsOutline />
+                    </div>
+
+                    <div className='badge-container as-icon-container over-light-bg'>
+                        <IoNotificationsOutline />
+                    </div>
+
+                    <SidebarUserAvatar avatarRounded />
+                </div>
             </section>
                 
             <Outlet />

@@ -11,7 +11,7 @@ const DashboardStatsSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => 
                             <i className='dashboard-stat-icon-container'>
                                 <Skeleton variant='circular' width={28} height={28} />
                             </i>
-                            <div style={{ width: 160 }}>
+                            <div style={{ width: 120 }}>
                                 <Skeleton variant='text' width='100%' height={22} />
                             </div>
                         </div>
@@ -31,7 +31,7 @@ const DashboardStatsSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => 
                         </div>
                     </div>
                     <div className='dashboard-stat-analytic-container'>
-                        <Skeleton variant='rounded' width={200} height='100%' />
+                        <Skeleton variant='rounded' width={150} height='100%' />
                     </div>
                 </div>
             ))}

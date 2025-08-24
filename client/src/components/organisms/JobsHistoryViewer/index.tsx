@@ -2,14 +2,13 @@ import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { MdOutlineSchedule } from "react-icons/md";
 import { RiCloseLargeFill } from 'react-icons/ri';
 import JobsHistory from '@/components/molecules/JobsHistory';
-import useIsMobile from '@/hooks/ui/use-is-mobile';
 import useResizable from '@/hooks/ui/use-resizable';
 import useDraggable from '@/hooks/ui/drag-drop/use-draggable';
 import useDoubleTap from '@/hooks/ui/interaction/use-double-tap';
 
 type EditMode = 'inactive' | 'resize' | 'move';
 
-const JobsHistoryViewerMobile: React.FC = memo(() => {
+const JobsHistoryViewer: React.FC = memo(() => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
     const [editMode, setEditMode] = useState<EditMode>('inactive');
@@ -21,7 +20,7 @@ const JobsHistoryViewerMobile: React.FC = memo(() => {
     const { size, isResizing, resetSize } = useResizable({
         elementRef: containerRef,
         handleRef: headerRef,
-        initialSize: { width: 90, height: 85 },
+        initialSize: { width: 25, height: 50 },
         isEnabled: editMode === 'resize'
     });
 
@@ -108,7 +107,7 @@ const JobsHistoryViewerMobile: React.FC = memo(() => {
                 <div className='jobs-history-dispatch-container-enhanced'>
                     <div className='jobs-history-dispatch-icon-container-enhanced'><MdOutlineSchedule /></div>
                     <div className='jobs-dispatch-text'>
-                        <h3 className='jobs-history-dispatch-title-enhanced'>Team Jobs</h3>
+                        <h3 className='jobs-history-dispatch-title-enhanced'>Team Activity</h3>
                         <span className='jobs-dispatch-subtitle'>Tap to view</span>
                     </div>
                     <div className="glow-effect"></div>
@@ -144,27 +143,6 @@ const JobsHistoryViewerMobile: React.FC = memo(() => {
     );
 });
 
-JobsHistoryViewerMobile.displayName = 'JobsHistoryViewerMobile';
-
-const JobsHistoryViewerDesktop: React.FC = memo(() => (
-    <div className='jobs-history-viewer-desktop'>
-        <div className='jobs-history-viewer-header-desktop'>
-            <h3 className='jobs-history-title-enhanced'>Team Jobs History</h3>
-            <span className='jobs-history-subtitle'>Review of recent jobs</span>
-        </div>
-        <div className='jobs-history-viewer-body-desktop'>
-            <JobsHistory />
-        </div>
-    </div>
-));
-
-JobsHistoryViewerDesktop.displayName = 'JobsHistoryViewerDesktop';
-
-const JobsHistoryViewer: React.FC = memo(() => {
-    const isMobile = useIsMobile();
-    return isMobile ? <JobsHistoryViewerMobile /> : <JobsHistoryViewerDesktop />;
-});
-
-JobsHistoryViewer.displayName = 'JobsHistoryViewer';
+JobsHistoryViewer.displayName = 'JobsHistoryViewerMobile';
 
 export default JobsHistoryViewer;

@@ -25,12 +25,10 @@ import './DashboardContainer.css';
 const DashboardContainer = ({ children, pageName, className = '' }) => {
 
     return (
-        <div className={'dashboard-container '.concat(className + ' wrapper')}>
+        <div className={'dashboard-container '.concat(className + '-wrapper')}>
             <div className={className}>
                 {children}
             </div>
-
-            <div className='whitespace-container'></div>
         </div>
     );
 };

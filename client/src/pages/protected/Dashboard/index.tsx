@@ -1,29 +1,35 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import DashboardContainer from '@/components/atoms/DashboardContainer';
-import SimulationGrid from '@/components/molecules/SimulationGrid';
 import FileUpload from '@/components/molecules/FileUpload';
-import TrajectoryPreview from '@/components/molecules/TrajectoryPreview';
-import useUIStore from '@/stores/ui';
-import { HiPlus } from 'react-icons/hi';
-import { IoSearchOutline } from 'react-icons/io5';
-import { MdKeyboardArrowDown } from 'react-icons/md';
-import { IoNotificationsOutline } from "react-icons/io5";
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
-import JobsHistoryViewer from '@/components/organisms/JobsHistoryViewer';
-import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
+import TimestepViewer from '@/components/organisms/TimestepViewer';
+import Scene3D, { type Scene3DRef } from '@/components/organisms/Scene3D';
+import useTrajectoryStore from '@/stores/trajectories';
+import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
+import { formatNumber } from '@/components/organisms/DocumentListing';
+import './Dashboard.css';
+import { GoArrowRight, GoArrowUpRight } from 'react-icons/go';
+import TrajectoryPreview from '@/components/molecules/TrajectoryPreview';
+import SimulationGrid from '@/components/molecules/SimulationGrid';
 import DashboardStats from '@/components/atoms/DashboardStats';
 import useTeamStore from '@/stores/team';
-import './Dashboard.css';
+import JobsHistoryViewer from '@/components/organisms/JobsHistoryViewer';
 
 const DashboardPage: React.FC = memo(() => {
     useTeamJobs();
-    const toggleDashboardSidebar = useUIStore((state) => state.toggleDashboardSidebar);
-    const teamId = useTeamStore((state) => state.selectedTeam?._id);
+    const trajectories = useTrajectoryStore((state) => state.trajectories);
+    const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId: trajectories?.[0]?._id });
+    const scene3DRef = useRef<Scene3DRef>(null)
+    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+
+    useEffect(() => {
+        console.log(trajectories);
+    }, [trajectories]);
 
     return (
         <FileUpload>            
             <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
-                <article className='dashboard-header-container'>
+                {/*<article className='dashboard-header-container'>
                     <div className='dashboard-header-left-container'>
                         <h3 className='dashboard-header-title'>Dashboard</h3>
                     </div>
@@ -70,7 +76,8 @@ const DashboardPage: React.FC = memo(() => {
                         />
                     </div>
                 </article>
-
+                
+                {/*
                 <DashboardStats teamId={teamId} />
 
                 <div className='dashboard-main-container'>
@@ -79,6 +86,50 @@ const DashboardPage: React.FC = memo(() => {
                 </div>
                 
                 <SimulationGrid />
+                */}
+
+                <div className='dashboard-body-left-container'>
+                    <div className='dashboard-body-left-header-container'>
+                        <h3 className='dashboard-body-left-header-title'>Good Morning, Rodolfo</h3>
+                    </div>
+
+                    <div className='scene-preview-container'>
+                        {(trajectory?._id && currentTimestep !== undefined) && (
+                            <>
+                                <div className='badge-container scene-preview-name-badge'>
+                                    <p className='badge-text'>{trajectory.name}</p>
+                                </div>
+                                
+                                <div className='badge-container scene-preview-natoms-badge'>
+                                    <p className='badge-text'>{formatNumber(trajectory.frames[currentTimestep].natoms)} atoms</p>
+                                </div>
+
+                                <div className='badge-container scene-preview-navigate-icon'>
+                                    <GoArrowRight />
+                                </div>
+                            </>
+                        )}
+
+                        <Scene3D 
+                            showGizmo={false}
+                            ref={scene3DRef}
+                            orbitControlsConfig={{
+                                enablePan: false,
+                                enableZoom: false
+                            }}
+                        >
+                            <TimestepViewer />
+                        </Scene3D>
+                    </div>
+                </div>
+
+                <JobsHistoryViewer />
+
+                <div className='dashboard-body-right-container'>
+                    <DashboardStats teamId={selectedTeam?._id} />
+
+                    <SimulationGrid />
+                </div>
             </DashboardContainer>
 
             {/* <AIPromptBox /> */}

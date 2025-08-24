@@ -38,8 +38,4 @@
         min-width: 350px; 
         scroll-snap-align: start;
     }
-
-    .whitespace-container{
-        display: none;
-    }
 }

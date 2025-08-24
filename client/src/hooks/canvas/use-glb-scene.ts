@@ -26,7 +26,6 @@ import { Group, Mesh, Box3, BufferGeometry, Vector3, Points, ShaderMaterial } fr
 import { calculateModelBounds, calculateOptimalTransforms, getOptimizedMaterial } from '@/utilities/glb/modelUtils';
 import { GLB_CONSTANTS, loadGLB, preloadGLBs } from '@/utilities/glb/loader';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
-import useConfigurationStore from '@/stores/editor/configuration';
 import useTimestepStore from '@/stores/editor/timesteps';
 import useLogger from '@/hooks/core/use-logger';
 
@@ -34,8 +33,9 @@ import vertexShader from '@/shaders/point-cloud.vert?raw';
 import fragmentShader from '@/shaders/point-cloud.frag?raw';
 
 export const useGlbScene = ({
-    currentGlbUrl: propCurrentGlbUrl,
-    nextGlbUrl: propNextGlbUrl,
+    currentGlbUrl,
+    nextGlbUrl,
+    activeSceneObject,
     sliceClippingPlanes,
     position,
     rotation,
@@ -45,10 +45,6 @@ export const useGlbScene = ({
 }: any) => {
     const { scene, camera, invalidate } = useThree();
     const logger = useLogger('use-glb-scene');
-    const activeSceneObject = useConfigurationStore((state) => state.activeSceneObject);
-    const setIsModelLoading = useConfigurationStore((state) => state.setIsModelLoading);
-    const storeCurrentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
-    const storeNextGlbUrl = useTimestepStore((state) => state.nextGlbUrl);
 
     const stateRef = useRef<any & {
         frameCount: number;
@@ -78,25 +74,24 @@ export const useGlbScene = ({
     });
 
     const getTargetUrl = useCallback((): string | null => {
-        const glbUrl = propCurrentGlbUrl || storeCurrentGlbUrl;
-        if(!glbUrl || !activeSceneObject){
+        if(!currentGlbUrl || !activeSceneObject){
             return null;
         }
 
-        return glbUrl[activeSceneObject];
-    }, [propCurrentGlbUrl, storeCurrentGlbUrl, activeSceneObject]);
+        return currentGlbUrl[activeSceneObject];
+    }, [currentGlbUrl, activeSceneObject]);
 
     const handleModelPreloading = useCallback(() => {
         const preloadUrls = [
-            propCurrentGlbUrl?.dislocations || storeCurrentGlbUrl?.dislocations,
-            propNextGlbUrl?.dislocations || storeNextGlbUrl?.dislocations,
-            (propNextGlbUrl || storeNextGlbUrl)?.[activeSceneObject],
+            currentGlbUrl?.dislocations ||
+            nextGlbUrl?.dislocations
+            (nextGlbUrl)?.[activeSceneObject],
         ].filter(Boolean);
         
         if(preloadUrls.length > 0){
             preloadGLBs(preloadUrls);
         }
-    }, [propCurrentGlbUrl, propNextGlbUrl, storeCurrentGlbUrl, storeNextGlbUrl, activeSceneObject]);
+    }, [currentGlbUrl, nextGlbUrl, activeSceneObject]);
 
     const cleanupResources = useCallback(() => {
         if(stateRef.current.cleanupScheduled) return;
@@ -161,7 +156,7 @@ export const useGlbScene = ({
         stateRef.current.mesh = points;
     }, [scale]);
 
-    const configureGeometry = useCallback((model: Group, optimalScale: number) => {
+    const configureGeometry = useCallback((model: Group) => {
         let mainGeometry: BufferGeometry | null = null;
 
         model.traverse((child) => {
@@ -204,29 +199,15 @@ export const useGlbScene = ({
         if(pointCloudObject){
             configurePointCloudMaterial(pointCloudObject);
         }else{
-            configureGeometry(model, optimalScale);
+            configureGeometry(model);
         }
 
-        model.position.set(
-            (position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x) + optimalPos.x,
-            (position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y) + optimalPos.y,
-            (position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z) + optimalPos.z
-        );
-
-        model.rotation.set(
-            (rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x) + optimalRot.x,
-            (rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y) + optimalRot.y,
-            (rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z) + optimalRot.z
-        );
-        
+     
         model.scale.setScalar(scale * optimalScale);
-
-        adjustModelToGround(model);
-
-        model.updateMatrix();
-        model.matrixAutoUpdate = true;
-
-        setModelBounds(bounds);
+        // adjustModelToGround(model);
+        model.updateMatrixWorld(true);
+        const finalBounds = calculateModelBounds({ scene: model });
+        setModelBounds(finalBounds);
         invalidate();
         stateRef.current.isSetup = true;
         return model;
@@ -266,7 +247,7 @@ export const useGlbScene = ({
         if(stateRef.current.lastLoadedUrl === url || loadingState.isLoading) return;
 
         const controller = new AbortController();
-        setIsModelLoading(true);
+        // setIsModelLoading(true);
         setLoadingState({ isLoading: true, progress: 0, error: null });
 
         try{
@@ -292,14 +273,14 @@ export const useGlbScene = ({
             setLoadingState({ isLoading: false, progress: 0, error: null });
             logger.error('Model loading failed:', message);
         }finally{
-            setIsModelLoading(false);
+            // setIsModelLoading(false);
         }
         
         return () => controller.abort();
     }, [
         scene,
         setupModel,
-        setIsModelLoading,
+        // setIsModelLoading,
         cleanupResources,
         handleModelPreloading,
         logger,

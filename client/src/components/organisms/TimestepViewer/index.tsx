@@ -4,6 +4,7 @@ import CameraManager from '@/components/atoms/scene/CameraManager';
 import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
 import { useGlbScene } from '@/hooks/canvas/use-glb-scene';
 import useConfigurationStore from '@/stores/editor/configuration';
+import useTimestepStore from '@/stores/editor/timesteps';
 
 interface TimestepViewerProps {
     rotation?: { x?: number; y?: number; z?: number };
@@ -15,6 +16,7 @@ interface TimestepViewerProps {
     enableInstancing?: boolean;
     instanceCount?: number;
     updateThrottle?: number;
+    centerModelToCamera?: boolean;
 }
 
 const TimestepViewer: React.FC<TimestepViewerProps> = ({
@@ -26,11 +28,18 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     enableSlice = true,
     enableInstancing = true,
     updateThrottle = 16,
+    centerModelToCamera = false
 }) => {
     const slicePlaneConfig = useConfigurationStore(s => s.slicePlaneConfig);
     const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig);
+    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
+    const nextGlbUrl = useTimestepStore((state) => state.nextGlbUrl);
+    const activeSceneObject = useConfigurationStore((state) => state.activeSceneObject);
 
     const sceneProps = useMemo(() => ({
+        currentGlbUrl,
+        nextGlbUrl,
+        activeSceneObject,
         sliceClippingPlanes,
         position,
         rotation,
@@ -52,20 +61,11 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
                 <CameraManager 
                     modelBounds={modelBounds} 
                     orbitControlsRef={orbitControlsRef} 
+                    face='ny'
                 />
             )}
         </>
     );
 };
 
-export default React.memo(TimestepViewer, (prevProps, nextProps) => {
-    return (
-        prevProps.scale === nextProps.scale &&
-        prevProps.autoFit === nextProps.autoFit &&
-        prevProps.enableSlice === nextProps.enableSlice &&
-        prevProps.enableInstancing === nextProps.enableInstancing &&
-        prevProps.updateThrottle === nextProps.updateThrottle &&
-        JSON.stringify(prevProps.position) === JSON.stringify(nextProps.position) &&
-        JSON.stringify(prevProps.rotation) === JSON.stringify(nextProps.rotation)
-    );
-});
+export default TimestepViewer;

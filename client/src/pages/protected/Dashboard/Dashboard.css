@@ -2,14 +2,75 @@
     display: flex;
     width: 100%;
     border: 1px solid #dadada;
-    border-radius: 1rem;
-    padding: 1.5rem;
+    border-radius: .5rem;
+}
+
+.dashboard-body-left-container{
+    height: 100%;
+    display: flex;
+    width: 600px;
+    flex-direction: column;
     gap: 2rem;
+}
+
+.dashboard-body-right-container{
+    display: flex;
+    width: calc(100% - 600px - 3rem);
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.badge-container{
+    position: absolute;
+    background-color: rgb(46 46 46 / 50%);
+    backdrop-filter: blur(5px);
+    z-index: 300;
+    padding: .5rem 1.2rem;
+    border-radius: 5rem;
+    color: #dadada;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.badge-text{
+    font-size: .95rem;
+    font-weight: 500;
+}
+
+.scene-preview-name-badge{
+    top: 1rem;
+    left: 1rem;
+}
+
+.scene-preview-natoms-badge{
+    right: 1rem;
+    bottom: 1rem;
+}
+
+.scene-preview-navigate-icon{
+    right: 1rem;
+    top: 1rem;
+    padding: .5rem;
+    font-size: 1.5rem;
+}
+
+.scene-preview-container{
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.dashboard-body-left-header-title{
+    font-size: 2rem;
+    font-weight: 550;
 }
 
 .dashboard-stat-arrow-icon-container{
     position: absolute;
-    bottom: 0rem;
+    bottom: 1rem;
     right: 1rem;
     font-size: 1.5rem;
     opacity: 0;
@@ -24,6 +85,8 @@
 .dashboard-stat-container{
     width: 33.3%;
     display: flex;
+    gap: 2rem;
+    padding: 1rem 1.5rem;
     position: relative;
     cursor: pointer;
 }
@@ -52,6 +115,7 @@
 .dashboard-stat-left-container{
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     width: 100%;
     gap: 3rem;
 }
@@ -99,11 +163,20 @@
     font-size: 1.2rem;
 }
 
-.dashboard-wrapper-container {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+.dashboard-stat-icon-container:not(:has(.MuiSkeleton-root)){
+    padding: .5rem;
 }
+
+.dashboard-stat-analytic-container:has(.MuiSkeleton-root){
+    right: 0;
+}
+
+.dashboard-wrapper-container{
+    display: flex;
+    height: 100%;
+    gap: 3rem;
+}
+
 .dashboard-main-container {
     display: flex;
     flex-wrap: wrap;
@@ -137,7 +210,6 @@
     display: none;
 }
 
-@media screen and (max-width: 768px) {
     body.jobs-history-expanded {
         overflow: hidden;
     }
@@ -148,10 +220,11 @@
         position: fixed;
         z-index: 800;
         overflow: hidden;
+        transition: .5s;
         cursor: pointer;
         width: 15rem;
         height: 4.5rem;
-        left: 2rem;
+        right: 2rem;
         bottom: 2rem;
         border-radius: 2.25rem;
         padding: 0.875rem 1.75rem;
@@ -161,18 +234,14 @@
         transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1), height 0.5s cubic-bezier(0.65, 0, 0.35, 1), left 0.5s cubic-bezier(0.65, 0, 0.35, 1), bottom 0.5s cubic-bezier(0.65, 0, 0.35, 1), border-radius 0.5s cubic-bezier(0.65, 0, 0.35, 1);
     }
     .jobs-history-viewer-enhanced.expanded {
-        left: 5vw;
+        right: 2rem;
         bottom: 1rem;
-        border-radius: 1.75rem;
+        border-radius: 1rem;
         padding: 0;
         cursor: default;
     }
     .jobs-history-viewer-enhanced.is-interacting {
         transition: none;
-    }
-    .jobs-history-viewer-enhanced:not(.expanded):hover {
-        transform: translateY(-6px) scale(1.03);
-        box-shadow: 0 20px 55px rgba(0, 0, 0, 0.15);
     }
     .jobs-history-dispatch-container-enhanced {
         display: flex;
@@ -201,7 +270,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 1.5rem 2rem;
+        padding: 1.5rem;
         border-bottom: 1px solid rgba(226, 232, 240, 0.6);
         flex-shrink: 0;
     }
@@ -255,7 +324,7 @@
     .jobs-history-viewer-body-enhanced {
         flex: 1;
         overflow-y: auto;
-        padding: 1.25rem 2rem 2rem;
+        padding: 1.25rem;
     }
     .glow-effect {
         position: absolute;
@@ -302,4 +371,3 @@
         color: #64748b;
         margin-top: 0.25rem;
     }
-}
