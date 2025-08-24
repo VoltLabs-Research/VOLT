@@ -36,17 +36,11 @@ const processJob = async (job: TrajectoryProcessingJob) => {
     }
 
     try{
-        // Process files sequentially
-        for(let i = 0; i < job.files.length; i++){
-            const { frameData, frameFilePath } = job.files[i];
-            
-            console.log(`[Worker #${process.pid}] Processing file ${i + 1}/${job.files.length}: timestep ${frameData.timestep}`);
+        const promises = job.files.map(async ({ frameData, frameFilePath }) => {
+            console.log(`[Worker #${process.pid}] Processing timestep ${frameData.timestep}`);
             
             try{
-                // Create glb file path
                 const glbFilePath = join(job.glbFolderPath, `${frameData.timestep}.glb`);
-                
-                // Process glb export
                 const glbExporter = new AtomisticExporter();
                 await glbExporter.exportAtomsToGLB(
                     frameFilePath,
@@ -55,14 +49,12 @@ const processJob = async (job: TrajectoryProcessingJob) => {
                 );
                 
                 console.log(`[Worker #${process.pid}] Completed timestep ${frameData.timestep}`);
-                
             }catch(fileError){
                 console.error(`[Worker #${process.pid}] Error processing file ${frameFilePath}:`, fileError);
-                
-                // Continue with next file instead of failing entire job
-                continue;
             }
-        }
+        });
+
+        await Promise.all(promises);
 
         parentPort?.postMessage({
             status: 'completed',

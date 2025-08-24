@@ -54,6 +54,7 @@ const CameraManager: React.FC<Props> = ({
 }) => {
   const { camera, size, controls: defaultControls } = useThree() as any;
 
+  // maybe centro de masa rotate?
   useEffect(() => {
     if (!modelBounds) return;
 
@@ -79,7 +80,6 @@ const CameraManager: React.FC<Props> = ({
     camera.updateProjectionMatrix();
 
     if (controls?.setLookAt) {
-      // sincroniza posición + target + estado interno
       controls.setLookAt(pos.x, pos.y, pos.z, target.x, target.y, target.z, true);
     } else {
       // fallback
