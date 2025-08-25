@@ -26,10 +26,12 @@
 }
 
 .job-status-badge{
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
+    padding: .5rem 1rem;
+    border-radius: 5rem;
+    font-size: 13px;
+    font-weight: 600;
+    width: 100px;
+    text-align: center;
     text-transform: capitalize;
 }
 
@@ -42,6 +44,7 @@
 .job-name{
     font-size: .85rem;
     font-weight: 400;
+    color: #dadada;
 }
 
 .job-message{

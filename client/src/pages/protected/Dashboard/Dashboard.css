@@ -233,7 +233,7 @@
         bottom: 2rem;
         border-radius: 2.25rem;
         padding: 0.875rem 1.75rem;
-        background: #212121;
+        background: #1c1c1c;
         backdrop-filter: blur(24px) saturate(180%);
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1), height 0.5s cubic-bezier(0.65, 0, 0.35, 1), left 0.5s cubic-bezier(0.65, 0, 0.35, 1), bottom 0.5s cubic-bezier(0.65, 0, 0.35, 1), border-radius 0.5s cubic-bezier(0.65, 0, 0.35, 1);

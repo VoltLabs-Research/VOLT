@@ -56,7 +56,7 @@ const GL_CONFIG = {
     preserveDrawingBuffer: false,
     failIfMajorPerformanceCaveat: true,
     desynchronized: false,
-    precision: 'lowp',
+    precision: 'highp',
     xrCompatible: false,
     autoClear: true,
     autoClearColor: true,

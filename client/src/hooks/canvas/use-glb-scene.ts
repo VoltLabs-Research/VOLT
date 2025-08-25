@@ -1,36 +1,42 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
-import { Group, Mesh, Box3, BufferGeometry, Vector3, Points, ShaderMaterial } from 'three';
-import { calculateModelBounds, calculateOptimalTransforms, getOptimizedMaterial } from '@/utilities/glb/modelUtils';
 import { GLB_CONSTANTS, loadGLB, preloadGLBs } from '@/utilities/glb/loader';
+import { calculateModelBounds, calculateOptimalTransforms } from '@/utilities/glb/modelUtils';
+import { ANIMATION_CONSTANTS } from '@/utilities/glb/simulation-box';
+import type { SelectionRefs, SceneState } from '@/types/scene';
+import { makeSelectionGroup, updateSelectionGeometry } from '@/utilities/glb/selection';
+import { ensureSimulationBox, runSizeAnimationStep, startSizeAnimAfterRotation } from '@/utilities/glb/simulation-box';
+import { configurePointCloudMaterial, configureGeometry, isPointCloudObject } from '@/utilities/glb/materials';
+import { attachPointerEvents, attachKeyboard } from '@/utilities/glb/interaction';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 import useTimestepStore from '@/stores/editor/timesteps';
-import useLogger from '@/hooks/core/use-logger';
-import vertexShader from '@/shaders/point-cloud.vert?raw';
-import fragmentShader from '@/shaders/point-cloud.frag?raw';
 import useConfigurationStore from '@/stores/editor/configuration';
+import useLogger from '@/hooks/core/use-logger';
+import {
+    Group,
+    Mesh,
+    Box3,
+    Vector3,
+    Points,
+    ShaderMaterial,
+    Plane,
+    Raycaster,
+    EdgesGeometry,
+    Color,
+    Euler,
+    MeshBasicMaterial,
+    BoxGeometry
+} from 'three';
+
+type UseGlbSceneParams = {
+    activeSceneObject: string;
+    sliceClippingPlanes: any;
+    position: { x: number; y: number; z: number; };
+    rotation: { x: number; y: number; z: number; };
+    scale: number;
+    enableInstancing?: boolean;
+    updateThrottle: number;
+};
 
 export const useGlbScene = ({
     activeSceneObject,
@@ -38,307 +44,406 @@ export const useGlbScene = ({
     position,
     rotation,
     scale,
-    enableInstancing,
-    updateThrottle,
-}: any) => {
-    const { scene, camera, invalidate } = useThree();
+    updateThrottle
+}: UseGlbSceneParams) => {
+    const { scene, camera, gl, invalidate } = useThree();
     const logger = useLogger('use-glb-scene');
-    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
-    const nextGlbUrl = useTimestepStore((state) => state.nextGlbUrl);
-    const setIsModelLoading = useConfigurationStore((state) => state.setIsModelLoading);
 
-    const stateRef = useRef<any & {
-        frameCount: number;
-        lastCullFrame: number;
-        cleanupScheduled: boolean;
-        lastCameraPosition: Vector3;
-        visibleIndices: Set<number>;
-    }>({
+    const currentGlbUrl = useTimestepStore((s) => s.currentGlbUrl);
+    const nextGlbUrl = useTimestepStore((s) => s.nextGlbUrl);
+    const modelBoundsStore = useTimestepStore((s) => s.modelBounds);
+    const setModelBounds = useTimestepStore((s) => s.setModelBounds);
+    const setIsModelLoading = useConfigurationStore((s) => s.setIsModelLoading);
+
+    const stateRef = useRef<SceneState>({
         model: null,
         mesh: null,
-        atoms: [],
         isSetup: false,
         lastLoadedUrl: null,
-        frameCount: 0,
-        lastCullFrame: 0,
-        cleanupScheduled: false,
-        lastCameraPosition: new Vector3(),
-        visibleIndices: new Set<number>(),
+
+        dragging: false,
+        selected: null,
+        selection: null,
+        isSelectedPersistent: false,
+        targetPosition: null,
+        showSelection: false,
+        isHovered: false,
+
+        targetRotation: null,
+        currentRotation: new Euler(0, 0, 0),
+        targetScale: 1,
+        currentScale: 1,
+
+        modelBounds: null,
+        lastInteractionTime: 0,
+
+        simBoxMesh: null,
+        simBoxSize: null,
+        simBoxBaseSize: null,
+
+        isRotating: false,
+        rotationFreezeSize: null,
+        lastRotationActiveMs: 0,
+
+        sizeAnimActive: false,
+        sizeAnimFrom: null,
+        sizeAnimTo: null,
+        sizeAnimStartMs: 0,
     });
 
-    const modelBounds = useTimestepStore((state) => state.modelBounds);
-    const setModelBounds = useTimestepStore((state) => state.setModelBounds);
-    const [loadingState, setLoadingState] = useState({
-        isLoading: false,
-        progress: 0,
-        error: null,
-    });
+    const [loadingState, setLoadingState] = useState({ isLoading: false, progress: 0, error: null as null | string });
 
-    const configurePointCloudMaterial = useCallback((points: Points) => {   
-        points.material = new ShaderMaterial({
-            vertexShader,
-            fragmentShader,
-            uniforms: {
-                cameraPosition: { value: new Vector3() },
-                ambientFactor: { value: 0.15 },
-                diffuseFactor: { value: 0.6 },
-                specularFactor: { value: 0.5 },
-                shininess: { value: 120.0 },
-                rimFactor: { value: 0.1 },
-                rimPower: { value: 3.0 },
-            },
-            vertexColors: true,
-            transparent: true,
-            depthWrite: true,
-            depthTest: true,
-            clipping: true,
-        });
+    const raycaster = useRef(new Raycaster()).current;
+    const groundPlane = useRef(new Plane(new Vector3(0, 0, 1), 0));
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
-        const numPoints = points.geometry.attributes.position.count;
+    const createSelectionGroup = useCallback((hover = false) => {
+        const sel = makeSelectionGroup();
+        if(stateRef.current.selection) scene.remove(stateRef.current.selection.group);
+        scene.add(sel.group);
+        stateRef.current.selection = sel;
+        stateRef.current.showSelection = true;
+        stateRef.current.lastInteractionTime = Date.now();
 
-        // For 2,520,147, pointScale = 0.125.
-        // Then, Math.cbrt(2,520,147) = 136.05.
-        // Now, VISUAL_ADJUSTMENT_FACTOR = 0.125 * 136.05 = 17.
-        const VISUAL_ADJUSTMENT_FACTOR = 17;
-        const dynamicPointScale = VISUAL_ADJUSTMENT_FACTOR / Math.cbrt(numPoints);
-        if(points.material instanceof ShaderMaterial){
-            points.material.uniforms.pointScale = { value: dynamicPointScale };
-        }
-
-        stateRef.current.mesh = points;
-    }, []);
-
-    const getTargetUrl = useCallback((): string | null => {
-        if(!currentGlbUrl || !activeSceneObject){
-            return null;
-        }
-
-        return currentGlbUrl[activeSceneObject];
-    }, [currentGlbUrl, activeSceneObject]);
-
-    const handleModelPreloading = useCallback(() => {
-        const preloadUrls = [
-            currentGlbUrl?.dislocations ||
-            nextGlbUrl?.dislocations
-            (nextGlbUrl)?.[activeSceneObject],
-        ].filter(Boolean);
-        
-        if(preloadUrls.length > 0){
-            preloadGLBs(preloadUrls);
-        }
-    }, [currentGlbUrl, nextGlbUrl, activeSceneObject]);
-
-    const cleanupResources = useCallback(() => {
-        if(stateRef.current.cleanupScheduled) return;
-        
-        stateRef.current.cleanupScheduled = true;
-
-        scene.children.forEach((child: any) => {
-            if(child.userData.glbUrl && child instanceof Group){
-                scene.remove(child);
-            }
-        });
-
-        stateRef.current.model = null;
-        stateRef.current.mesh = null;
-        stateRef.current.atoms = [];
-        stateRef.current.visibleIndices.clear();
-        stateRef.current.isSetup = false;
-        stateRef.current.cleanupScheduled = false;
-        
-        invalidate();
-    }, [scene, invalidate]);
-
-    const adjustModelToGround = useCallback((model: Group) => {
-        const finalBox = new Box3().setFromObject(model);
-        const minZ = finalBox.min.z;
-        if(minZ < 0){
-            model.position.z += Math.abs(minZ);
-        }
-    }, []);
-
-    useFrame(() => {
-        const mesh = stateRef.current.mesh;
-        if(mesh && mesh instanceof Points && mesh.material instanceof ShaderMaterial){
-            mesh.material.uniforms.cameraPosition.value.copy(camera.position);
-        }
-    });
-    
-    const configureGeometry = useCallback((model: Group) => {
-        let mainGeometry: BufferGeometry | null = null;
-
-        model.traverse((child) => {
-            if(child instanceof Mesh && !mainGeometry){
-                mainGeometry = child.geometry;
-
-                child.frustumCulled = true;
-                child.visible = true;
-                child.material = getOptimizedMaterial(child.material, sliceClippingPlanes);
-
-                stateRef.current.mesh = child;
-            }
-        });
-    }, [enableInstancing]);
-
-    const isPointCloudObject = useCallback((model: Group) => {
-        let pointCloudObject: Points | null = null;
-
-        model.traverse((child) => {
-            if(child instanceof Points){
-                pointCloudObject = child;
-            }
-        });
-
-        return pointCloudObject;
-    }, []);
-
-    const setupModel = useCallback((model: Group) => {
-        if(stateRef.current.isSetup){
-            return model;
-        }
-
-        const bounds = calculateModelBounds({ scene: model });
-
-        let pointCloudObject = isPointCloudObject(model);
-        if(pointCloudObject){
-            configurePointCloudMaterial(pointCloudObject);
-        }else{
-            configureGeometry(model);
-        }
-        
-        const { position: optimalPos, rotation: optimalRot, scale: optimalScale } = calculateOptimalTransforms(bounds);
-
-        model.position.set(
-            (position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x) + optimalPos.x,
-            (position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y) + optimalPos.y,
-            (position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z) + optimalPos.z
-        );
-
-        model.rotation.set(
-            (rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x) + optimalRot.x,
-            (rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y) + optimalRot.y,
-            (rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z) + optimalRot.z
-        );
-        
-        model.scale.setScalar(scale * optimalScale);
-        adjustModelToGround(model);
-        model.updateMatrixWorld(true);
-        const finalBounds = calculateModelBounds({ scene: model });
-        setModelBounds(finalBounds);
-        invalidate();
-        stateRef.current.isSetup = true;
-        return model;
-    }, [
-        camera,
-        position,
-        rotation,
-        scale,
-        sliceClippingPlanes,
-        enableInstancing,
-        adjustModelToGround,
-        invalidate,
-        activeSceneObject
-    ]);
-
-    const applyClippingPlanesToNode = useCallback((root: Group, planes: any[]) => {
-        root.traverse((child: any) => {
-            if((child.isMesh || child.isPoints) && child.material){
-                const mats = Array.isArray(child.material) ? child.material : [child.material];
-                for(const m of mats){
-                    m.clippingPlanes = planes;
-                    m.needsUpdate = true;
-                }
-            }
-        });
-    }, []);
-
-
-    useEffect(() => {
-        const model = stateRef.current.model as Group | null;
-        if(model){
-            applyClippingPlanesToNode(model, sliceClippingPlanes);
-        }
-    }, [sliceClippingPlanes, applyClippingPlanesToNode]);
-
-    const loadAndSetupModel = useCallback(async (url: string) => {
-        if(stateRef.current.lastLoadedUrl === url || loadingState.isLoading) return;
-
-        const controller = new AbortController();
-        setIsModelLoading(true);
-        setLoadingState({ isLoading: true, progress: 0, error: null });
-
-        try{
-            const loadedModel = await loadGLB((url), (progress) => {
-                setLoadingState((prev) => ({ ...prev, progress: Math.round(progress * 100) }));
-            }, /*controller.signal*/);
-
-            cleanupResources();
-            const newModel = setupModel(loadedModel);
-
-            newModel.userData.glbUrl = url;
-            scene.add(newModel);
-            stateRef.current.model = newModel;
-            stateRef.current.lastLoadedUrl = url;
-
-            handleModelPreloading();
-            invalidate();
-            setLoadingState({ isLoading: false, progress: 100, error: null });
-
-        }catch(error: any){
-            if(error instanceof Error && error.name === 'AbortError') return;
-            const message = error instanceof Error ? error.message : String(error);
-            setLoadingState({ isLoading: false, progress: 0, error: null });
-            logger.error('Model loading failed:', message);
-        }finally{
-            setIsModelLoading(false);
-        }
-        
-        return () => controller.abort();
+        const box = new Box3().setFromObject(stateRef.current.model!);
+        const size = new Vector3();
+        const center = new Vector3();
+        box.getSize(size).multiplyScalar(hover ? ANIMATION_CONSTANTS.HOVER_BOX_PADDING : ANIMATION_CONSTANTS.SELECTION_BOX_PADDING);
+        box.getCenter(center);
+        sel.group.position.copy(center);
+        updateSelectionGeometry(sel, size, hover);
+        return sel.group;
     }, [scene]);
 
-    const updateScene = useCallback(() => {
-        stateRef.current.frameCount++;
-        const targetUrl = getTargetUrl();
-        if(targetUrl && targetUrl !== stateRef.current.lastLoadedUrl && !loadingState.isLoading){
-            loadAndSetupModel(targetUrl);
-            return;
-        }
-    }, [getTargetUrl, loadingState.isLoading, loadAndSetupModel]);
+    const showSelectionBox = useCallback((hover = false) => {
+        if(!stateRef.current.model) return;
+        createSelectionGroup(hover);
+    }, [createSelectionGroup]);
 
-    const throttledUpdateScene = useThrottledCallback(updateScene, updateThrottle);
+  const hideSelectionBox = useCallback(() => {
+    stateRef.current.showSelection = false;
+    if (stateRef.current.selection) {
+      scene.remove(stateRef.current.selection.group);
+      stateRef.current.selection = null;
+    }
+  }, [scene]);
 
-    useEffect(() => {
-        throttledUpdateScene();
-    }, [throttledUpdateScene]);
+  const deselect = useCallback(() => {
+    stateRef.current.isSelectedPersistent = false;
+    stateRef.current.selected = null;
+    hideSelectionBox();
+    invalidate();
+  }, [hideSelectionBox, invalidate]);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if(stateRef.current.isSetup && !loadingState.isLoading){
-                throttledUpdateScene();
-            }
-        }, updateThrottle);
-        return () => clearInterval(interval);
-    }, [throttledUpdateScene, loadingState.isLoading, updateThrottle]);
+  const rotateModel = useCallback((dx: number, dy: number, dz: number) => {
+    if (!stateRef.current.selected) return;
+    const r = stateRef.current.currentRotation.clone();
+    r.x += dx; r.y += dy; r.z += dz;
+    stateRef.current.targetRotation = r;
+    stateRef.current.lastInteractionTime = Date.now();
+  }, []);
 
-    useEffect(() => {
-        return () => {
-            logger.log('Unmounting useGlbScene');
-            cleanupResources();
-        };
-    }, [cleanupResources, logger]);
+  const scaleModel = useCallback((delta: number) => {
+    if (!stateRef.current.selected) return;
+    const s = Math.max(
+      ANIMATION_CONSTANTS.MIN_SCALE,
+      Math.min(ANIMATION_CONSTANTS.MAX_SCALE, stateRef.current.targetScale + delta)
+    );
+    stateRef.current.targetScale = s;
+    stateRef.current.lastInteractionTime = Date.now();
+  }, []);
 
-    return {
-        meshRef: { current: stateRef.current.mesh },
-        modelBounds,
-        isLoading: loadingState.isLoading,
-        loadProgress: loadingState.progress,
-        loadError: loadingState.error,
-        forceReload: useCallback(() => {
-            stateRef.current.lastLoadedUrl = null;
-            throttledUpdateScene();
-        }, [throttledUpdateScene]),
-        clearCache: useCallback(() => {
-            cleanupResources();
-        }, [cleanupResources]),
+  // ---- setup model ----
+  const adjustModelToGround = useCallback((model: Group) => {
+    const finalBox = new Box3().setFromObject(model);
+    const minZ = finalBox.min.z;
+    if (minZ < 0) model.position.z += Math.abs(minZ);
+  }, []);
+
+  const setupModel = useCallback((model: Group) => {
+    if (stateRef.current.isSetup) return model;
+
+    const bounds = calculateModelBounds({ scene: model });
+    stateRef.current.modelBounds = bounds;
+
+    const pc = isPointCloudObject(model);
+    if (pc) {
+      configurePointCloudMaterial(pc);
+      stateRef.current.mesh = pc;
+    } else {
+      configureGeometry(model, sliceClippingPlanes, (m) => (stateRef.current.mesh = m));
+    }
+
+    const { position: p, rotation: r, scale: s } = calculateOptimalTransforms(bounds);
+
+    model.position.set(
+      (position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x) + p.x,
+      (position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y) + p.y,
+      (position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z) + p.z
+    );
+
+    model.rotation.set(
+      (rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x) + r.x,
+      (rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y) + r.y,
+      (rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z) + r.z
+    );
+
+    const finalScale = scale * s;
+    model.scale.setScalar(finalScale);
+
+    stateRef.current.currentRotation.copy(model.rotation);
+    stateRef.current.targetScale = finalScale;
+    stateRef.current.currentScale = finalScale;
+
+    adjustModelToGround(model);
+    model.updateMatrixWorld(true);
+    const finalBounds = calculateModelBounds({ scene: model });
+    setModelBounds(finalBounds);
+    invalidate();
+    stateRef.current.isSetup = true;
+
+    return model;
+  }, [position, rotation, scale, sliceClippingPlanes, adjustModelToGround, setModelBounds, invalidate]);
+
+  // ---- cleanup ----
+  const cleanupResources = useCallback(() => {
+    scene.children.forEach((child: any) => {
+      if (child.userData?.glbUrl && child instanceof Group) scene.remove(child);
+    });
+    if (stateRef.current.selection) {
+      scene.remove(stateRef.current.selection.group);
+      stateRef.current.selection = null;
+    }
+    if (stateRef.current.simBoxMesh) {
+      scene.remove(stateRef.current.simBoxMesh);
+      stateRef.current.simBoxMesh.geometry.dispose();
+      (stateRef.current.simBoxMesh.material as MeshBasicMaterial).dispose();
+      stateRef.current.simBoxMesh = null;
+      stateRef.current.simBoxSize = null;
+      stateRef.current.simBoxBaseSize = null;
+    }
+    stateRef.current.model = null;
+    stateRef.current.mesh = null;
+    stateRef.current.isSetup = false;
+    stateRef.current.selected = null;
+    stateRef.current.isSelectedPersistent = false;
+    stateRef.current.isRotating = false;
+    stateRef.current.rotationFreezeSize = null;
+    stateRef.current.sizeAnimActive = false;
+    invalidate();
+  }, [scene, invalidate]);
+
+  // ---- loader/update ----
+  const loadAndSetupModel = useCallback(async (url: string) => {
+    if (stateRef.current.lastLoadedUrl === url || loadingState.isLoading) return;
+    setIsModelLoading(true);
+    setLoadingState({ isLoading: true, progress: 0, error: null });
+
+    try {
+      const loadedModel = await loadGLB(url, (progress) => {
+        setLoadingState((prev) => ({ ...prev, progress: Math.round(progress * 100) }));
+      });
+
+      cleanupResources();
+      const newModel = setupModel(loadedModel);
+      newModel.userData.glbUrl = url;
+      scene.add(newModel);
+      stateRef.current.model = newModel;
+      stateRef.current.lastLoadedUrl = url;
+      if (nextGlbUrl) preloadGLBs([nextGlbUrl?.[activeSceneObject]]);
+      setLoadingState({ isLoading: false, progress: 100, error: null });
+    } catch (error: any) {
+      const message = error instanceof Error ? error.message : String(error);
+      setLoadingState({ isLoading: false, progress: 0, error: null });
+      logger.error('Model loading failed:', message);
+    } finally {
+      setIsModelLoading(false);
+      invalidate();
+    }
+  }, [scene, activeSceneObject]);
+
+  const getTargetUrl = useCallback((): string | null => {
+    if (!currentGlbUrl || !activeSceneObject) return null;
+    return currentGlbUrl[activeSceneObject];
+  }, [currentGlbUrl, activeSceneObject]);
+
+  const updateScene = useCallback(() => {
+    const targetUrl = getTargetUrl();
+    if (targetUrl && targetUrl !== stateRef.current.lastLoadedUrl && !loadingState.isLoading) {
+      loadAndSetupModel(targetUrl);
+    }
+  }, [getTargetUrl, loadingState.isLoading, loadAndSetupModel]);
+
+  const throttledUpdateScene = useThrottledCallback(updateScene, updateThrottle);
+  useEffect(() => { throttledUpdateScene(); }, [throttledUpdateScene]);
+
+  // ---- interactions ----
+  useEffect(() => {
+    if (!gl?.domElement) return;
+    const detachPointer = attachPointerEvents({
+      glCanvas: gl.domElement,
+      camera,
+      scene,
+      raycaster,
+      groundPlane: groundPlane.current,
+      state: stateRef.current,
+      showSelectionBox: (hover) => showSelectionBox(!!hover),
+      hideSelectionBox,
+      deselect
+    });
+
+    const detachKeyboard = attachKeyboard({
+      state: stateRef.current,
+      rotateModel,
+      scaleModel,
+      deselect
+    });
+
+    return () => {
+      detachPointer?.();
+      detachKeyboard?.();
     };
+  }, [camera, gl, raycaster, showSelectionBox, hideSelectionBox, deselect, rotateModel, scaleModel]);
+
+  // ---- frame loop ----
+  useFrame(() => {
+    const S = stateRef.current;
+    const now = Date.now();
+
+    // uniforms point cloud (si aplica)
+    if (S.mesh && S.mesh instanceof Points && S.mesh.material instanceof ShaderMaterial) {
+      S.mesh.material.uniforms.cameraPosition.value.copy(camera.position);
+    }
+
+    // SimBox centrada al modelo
+    if (S.model) {
+      const worldBox = new Box3().setFromObject(S.model);
+      const center = new Vector3();
+      worldBox.getCenter(center);
+      ensureSimulationBox(S, scene, worldBox);
+      if (S.simBoxMesh) S.simBoxMesh.position.copy(center);
+    }
+
+    // Drag
+    if (S.selected && S.targetPosition) {
+      S.targetPosition.z = Math.max(0, S.targetPosition.z);
+      S.selected.position.lerp(S.targetPosition, ANIMATION_CONSTANTS.POSITION_LERP_SPEED);
+      invalidate();
+    }
+
+    // Rotación + settle
+    if (S.selected && S.targetRotation) {
+      const f = ANIMATION_CONSTANTS.ROTATION_LERP_SPEED;
+      S.currentRotation.x += (S.targetRotation.x - S.currentRotation.x) * f;
+      S.currentRotation.y += (S.targetRotation.y - S.currentRotation.y) * f;
+      S.currentRotation.z += (S.targetRotation.z - S.currentRotation.z) * f;
+      S.selected.rotation.copy(S.currentRotation);
+      invalidate();
+
+      const dx = Math.abs(S.targetRotation.x - S.currentRotation.x);
+      const dy = Math.abs(S.targetRotation.y - S.currentRotation.y);
+      const dz = Math.abs(S.targetRotation.z - S.currentRotation.z);
+      const rotatingNow = (dx + dy + dz) > ANIMATION_CONSTANTS.ROT_EPS;
+
+      if (rotatingNow) {
+        if (!S.isRotating) {
+          if (S.selection) {
+            const baseGeo = S.selection.base.geometry as EdgesGeometry;
+            baseGeo.computeBoundingBox();
+            const curBB = baseGeo.boundingBox!;
+            const curSize = new Vector3();
+            curBB.getSize(curSize);
+            S.rotationFreezeSize = curSize.clone();
+          }
+          if (S.sizeAnimActive) {
+            S.sizeAnimActive = false;
+            if (S.sizeAnimTo && S.selection) {
+              updateSelectionGeometry(S.selection, S.sizeAnimTo.clone(), S.isHovered && !S.isSelectedPersistent);
+            }
+            if (S.sizeAnimTo && S.simBoxMesh && S.simBoxBaseSize) {
+              const target = S.sizeAnimTo;
+              const base = S.simBoxBaseSize;
+              S.simBoxMesh.scale.set(target.x / base.x, target.y / base.y, target.z / base.z);
+              S.simBoxSize = target.clone();
+            }
+          }
+        }
+        S.isRotating = true;
+        S.lastRotationActiveMs = now;
+      } else {
+        if (S.isRotating && now - S.lastRotationActiveMs >= ANIMATION_CONSTANTS.ROTATION_SETTLE_MS) {
+          S.isRotating = false;
+          startSizeAnimAfterRotation(S, scene, now);
+        }
+      }
+    }
+
+    if (S.selected && Math.abs(S.targetScale - S.currentScale) > 1e-3) {
+      const newScale = S.currentScale + (S.targetScale - S.currentScale) * ANIMATION_CONSTANTS.SCALE_LERP_SPEED;
+      S.selected.scale.setScalar(newScale);
+      S.currentScale = newScale;
+      invalidate();
+    }
+
+    if (runSizeAnimationStep(S, now)) invalidate();
+
+    if (S.selection && S.model) {
+      const hover = S.isHovered && !S.isSelectedPersistent;
+
+      const box = new Box3().setFromObject(S.model);
+      const center = new Vector3();
+      box.getCenter(center);
+      S.selection.group.position.lerp(center, ANIMATION_CONSTANTS.SELECTION_LERP_SPEED);
+
+      const timeSince = (now - S.lastInteractionTime) / 1000;
+      const pulseI = Math.max(0, 1 - timeSince * 0.5);
+      const pulse = 0.7 + 0.3 * Math.sin(now * ANIMATION_CONSTANTS.PULSE_SPEED) * pulseI;
+
+      const mat = S.selection.base.material as MeshBasicMaterial;
+      (mat as any).opacity = (hover ? 0.9 : 0.75) * (0.9 + 0.1 * pulse);
+
+      const tgt = (S.showSelection || S.isHovered) ? 1 : 0.001;
+      const curScale = S.selection.group.scale.x || 1;
+      const next = curScale + (tgt - curScale) * ANIMATION_CONSTANTS.SELECTION_LERP_SPEED;
+      S.selection.group.scale.setScalar(next);
+
+      if (!S.showSelection && !S.isHovered && next < 0.01) {
+        scene.remove(S.selection.group);
+        S.selection = null;
+      }
+      invalidate();
+    }
+  });
+
+  // ---- public API ----
+  const resetModel = useCallback(() => {
+    if (!stateRef.current.selected) return;
+    stateRef.current.targetRotation = new Euler(0, 0, 0);
+    stateRef.current.targetScale = 1;
+    stateRef.current.lastInteractionTime = Date.now();
+
+    const bounds = stateRef.current.modelBounds;
+    if (bounds) {
+      const center = new Vector3();
+      bounds.box.getCenter(center);
+      stateRef.current.targetPosition = new Vector3(0, 0, Math.max(0, center.z));
+    }
+  }, []);
+
+  return {
+    meshRef: { current: stateRef.current.mesh },
+    modelBounds: modelBoundsStore,
+    isLoading: loadingState.isLoading,
+    loadProgress: loadingState.progress,
+    loadError: loadingState.error,
+    isSelected: stateRef.current.isSelectedPersistent,
+    isHovered: stateRef.current.isHovered,
+    resetModel,
+    forceReload: useCallback(() => {
+      stateRef.current.lastLoadedUrl = null;
+      throttledUpdateScene();
+    }, [throttledUpdateScene]),
+    clearCache: useCallback(() => { cleanupResources(); }, [cleanupResources]),
+    deselect,
+  };
 };
