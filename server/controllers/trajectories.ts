@@ -33,8 +33,7 @@ import Trajectory from '@models/trajectory';
 import Team from '@models/team';
 import HandlerFactory from '@/controllers/handler-factory';
 import RuntimeError from '@/utilities/runtime-error';
-import StructureAnalysis from '@models/structure-analysis';
-import Dislocation from '@models/dislocations';
+import { getMetricsByTeamId } from '@/metrics/team';
 import { catchAsync } from '@/utilities/runtime';
 import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
@@ -56,135 +55,12 @@ export const getTrajectoryById = factory.getOne();
 export const updateTrajectoryById = factory.updateOne();
 
 export const getTrajectoryMetrics = async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
     const { teamId } = req.query;
-    const now = new Date();
-    const tz = process.env.TZ || 'UTC';
-    const weeks = 12;
-
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-
-    const teamQuery: any = { members: userId };
-    if(teamId && typeof teamId === 'string'){
-        teamQuery._id = teamId;
-    }
-    const teams = await Team.find(teamQuery).select('_id');
-    const teamIds = teams.map(t => t._id);
-
-    if(teamIds.length === 0){
-        return res.status(200).json({
-            status: 'success',
-            data: {
-                totals: { structureAnalysis: 0, trajectories: 0, dislocations: 0 },
-                lastMonth: { structureAnalysis: 0, trajectories: 0, dislocations: 0 },
-                weekly: { labels: [], structureAnalysis: [], trajectories: [], dislocations: [] }
-            }
-        });
-    }
-
-    const trajectories = await Trajectory.find({ team: { $in: teamIds } }).select('_id createdAt');
-    const trajectoryIds = trajectories.map(t => t._id);
-
-    const totals = await Promise.all([
-        Trajectory.countDocuments({ team: { $in: teamIds } }),
-        StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds } }),
-        Dislocation.aggregate([
-            { $match: { trajectory: { $in: trajectoryIds } } },
-            { $group: { _id: null, total: { $sum: '$totalSegments' } } }
-        ])
-    ]);
-    const totalTraj = totals[0] || 0;
-    const totalStruct = totals[1] || 0;
-    const totalDisl = (totals[2][0]?.total as number) || 0;
-
-    const [trajCurr, trajPrev] = await Promise.all([
-        Trajectory.countDocuments({ team: { $in: teamIds }, createdAt: { $gte: monthStart, $lt: now } }),
-        Trajectory.countDocuments({ team: { $in: teamIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } })
-    ]);
-    const [structCurr, structPrev] = await Promise.all([
-        StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds }, createdAt: { $gte: monthStart, $lt: now } }),
-        StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } })
-    ]);
-    const dislCurrAgg = await Dislocation.aggregate([
-        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: monthStart, $lt: now } } },
-        { $group: { _id: null, total: { $sum: '$totalSegments' } } }
-    ]);
-    const dislPrevAgg = await Dislocation.aggregate([
-        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } } },
-        { $group: { _id: null, total: { $sum: '$totalSegments' } } }
-    ]);
-    const dislCurr = (dislCurrAgg[0]?.total as number) || 0;
-    const dislPrev = (dislPrevAgg[0]?.total as number) || 0;
-
-    const pct = (c: number, p: number) => p === 0 ? (c > 0 ? 100 : 0) : Math.round(((c - p) / p) * 100);
-    const lastMonth = {
-        trajectories: pct(trajCurr, trajPrev),
-        structureAnalysis: pct(structCurr, structPrev),
-        dislocations: pct(dislCurr, dislPrev)
-    };
-
-    const sinceDate = new Date(now);
-    sinceDate.setUTCDate(sinceDate.getUTCDate() - (weeks * 7));
-    sinceDate.setUTCHours(0, 0, 0, 0);
-
-    const trajWeekly = await Trajectory.aggregate([
-        { $match: { team: { $in: teamIds }, createdAt: { $gte: sinceDate } } },
-        { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: 'week', timezone: tz } }, value: { $sum: 1 } } },
-        { $sort: { _id: 1 } }
-    ]);
-
-    const structWeekly = await StructureAnalysis.aggregate([
-        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: sinceDate } } },
-        { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: 'week', timezone: tz } }, value: { $sum: 1 } } },
-        { $sort: { _id: 1 } }
-    ]);
-
-    const dislWeekly = await Dislocation.aggregate([
-        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: sinceDate } } },
-        { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: 'week', timezone: tz } }, value: { $sum: '$totalSegments' } } },
-        { $sort: { _id: 1 } }
-    ]);
-
-    const key = (d: any) => new Date(d).toISOString().slice(0,10);
-    const allKeys = new Set<string>();
-    for (const r of trajWeekly) allKeys.add(key(r._id));
-    for (const r of structWeekly) allKeys.add(key(r._id));
-    for (const r of dislWeekly) allKeys.add(key(r._id));
-
-    const sorted = Array.from(allKeys).sort();
-    const clampLastN = sorted.slice(-weeks); 
-
-    const toDict = (arr: Array<{ _id: Date; value: number }>) => {
-        const m = new Map<string, number>();
-        for (const r of arr) m.set(key(r._id), r.value);
-        return m;
-    };
-
-    const dTraj = toDict(trajWeekly as any);
-    const dStruct = toDict(structWeekly as any);
-    const dDisl = toDict(dislWeekly as any);
-
-    const seriesTraj = clampLastN.map((k) => dTraj.get(k) ?? 0);
-    const seriesStruct = clampLastN.map((k) => dStruct.get(k) ?? 0);
-    const seriesDisl = clampLastN.map((k) => dDisl.get(k) ?? 0);
+    const teamMetrics = await getMetricsByTeamId(teamId as string);
 
     return res.status(200).json({
         status: 'success',
-        data: {
-            totals: {
-                structureAnalysis: totalStruct,
-                trajectories: totalTraj,
-                dislocations: totalDisl
-            },
-            lastMonth,
-            weekly: {
-                labels: clampLastN,      
-                trajectories: seriesTraj,
-                structureAnalysis: seriesStruct,
-                dislocations: seriesDisl
-            }
-        }
+        data: teamMetrics
     });
 };
 
@@ -399,27 +275,22 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     await mkdir(folderPath, { recursive: true });
     await mkdir(glbFolderPath, { recursive: true });
 
-    const validFiles = [];
-    const frames = [];
+    const startTime = performance.now();
 
-    for(let i = 0; i < files.length; i++){
-        const file = files[i];
-        
-        try{
+    const filePromises = files.map(async (file: any, i: number) => {
+        try {
             console.log(`Processing file ${i + 1}/${files.length}: ${file.originalname || 'unnamed'} (${file.size} bytes)`);
 
-            // Write file to disk first regardless of size
-            const tempFilePath = join(folderPath, `temp_${i}_${Date.now()}`);
+            const tempFilePath = join(folderPath, `temp_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
             await writeFile(tempFilePath, file.buffer);
 
-            // Verify the temp file was written correctly
             const tempStats = await stat(tempFilePath);
             console.log(`Temp file written: ${tempStats.size} bytes`);
 
             if(tempStats.size !== file.size){
                 console.error(`Temp file size mismatch: expected ${file.size}, got ${tempStats.size}`);
                 await rm(tempFilePath).catch(console.error);
-                continue;
+                return null;
             }
 
             try{
@@ -427,17 +298,12 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
                 if(!frameInfo || !isValid){
                     console.log(`File ${i} is not valid, skipping...`);
                     await rm(tempFilePath).catch(console.error);
-                    continue;
+                    return null;
                 }
 
                 const frameFilePath = join(folderPath, `${frameInfo.timestep}`);
-                
-                // Remove existing file if it exists
                 await rm(frameFilePath).catch(() => {});
-
                 await copyFile(tempFilePath, frameFilePath);
-
-                // Clean up temp file
                 await rm(tempFilePath).catch(console.error);
 
                 const frameData = {
@@ -445,31 +311,32 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
                     glbPath: `glb/${frameInfo.timestep}.glb`
                 };
 
-                frames.push(frameData);
-                validFiles.push({
+                console.log(`File ${i} processed successfully (timestep: ${frameInfo.timestep})`);
+
+                return {
                     frameData,
                     frameFilePath,
                     originalSize: file.size
-                });
+                };
 
-                console.log(`File ${i} processed successfully (timestep: ${frameInfo.timestep})`);
             }catch(processError){
                 console.error(`Error processing file ${i}:`, processError);
                 await rm(tempFilePath).catch(console.error);
-                // Clean up references for GC
-                file.buffer = null;
-                files[i] = null;
-                // Force GC every 5 files if available
-                if(i % 5 === 0 && global.gc){
-                    console.log(`Forcing garbage collection...`);
-                    global.gc();
-                }
+                return null;
             }
         }catch(err){
             console.error(`Error processing file ${i}:`, err);
-            continue;
+            return null;
+        } finally {
+            // Clean up references for GC
+            file.buffer = null;
+            files[i] = null;
         }
-    }
+    });
+
+    const results = await Promise.all(filePromises);
+    const validFiles = results.filter(result => result !== null);
+    const processingTime = performance.now() - startTime;
 
     if(validFiles.length === 0){
         await rm(folderPath, { recursive: true });
@@ -477,6 +344,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     }
 
     const totalSize = validFiles.reduce((acc, file) => acc + file.originalSize, 0);
+    const frames = validFiles.map(file => file.frameData);
 
     const trajectoryName = req.body.originalFolderName || 'Untitled Trajectory';
     const newTrajectory = await Trajectory.create({
@@ -487,7 +355,8 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         status: 'processing',
         stats: {
             totalFiles: validFiles.length,
-            totalSize
+            totalSize,
+            processingTime: Math.round(processingTime)
         } 
     });
 
@@ -521,9 +390,8 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         // Short pause to avoid overloading
         await new Promise((resolve) => setTimeout(resolve, 100));
     }
-
     res.status(201).json({
         status: 'success',
-        data: newTrajectory
-    })
+        data: newTrajectory,
+    });
 };
