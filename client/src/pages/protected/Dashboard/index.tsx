@@ -12,7 +12,7 @@ import { GoArrowRight, GoArrowUpRight } from 'react-icons/go';
 import TrajectoryPreview from '@/components/molecules/TrajectoryPreview';
 import SimulationGrid from '@/components/molecules/SimulationGrid';
 import DashboardStats from '@/components/atoms/DashboardStats';
-import useTeamStore from '@/stores/team';
+import useTeamStore from '@/stores/team/team';
 import JobsHistoryViewer from '@/components/organisms/JobsHistoryViewer';
 
 const DashboardPage: React.FC = memo(() => {

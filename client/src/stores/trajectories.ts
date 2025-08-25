@@ -55,7 +55,6 @@ interface TrajectoryActions {
     createTrajectory: (formData: FormData, teamId?: string) => Promise<void>;
     updateTrajectoryById: (id: string, data: Partial<Pick<Trajectory, 'name'>>) => Promise<void>;
     deleteTrajectoryById: (id: string, teamId?: string) => Promise<void>;
-    computeAnalysisDifferences: (id: string, opts?: { force?: boolean }) => Promise<void>;
     rasterize: (id: string) => Promise<void>;
     toggleTrajectorySelection: (id: string) => void;
     deleteSelectedTrajectories: () => Promise<void>;
@@ -65,8 +64,6 @@ interface TrajectoryActions {
     loadAuthenticatedPreview: (id: string) => Promise<string | null>;
     isPreviewLoading: (id: string) => boolean;
     clearPreviewCache: (id?: string) => void;
-    dislocationAnalysis: (id: string, analysisConfig: any) => Promise<void>;
-    structureIdentification: (id: string, analysisConfig: any, identificationMode: string) => Promise<void>;
     getStructureAnalysis: (teamId: string, opts?: { force?: boolean }) => Promise<void>;
     setTrajectory: (trajectory: Trajectory | null) => void;
     clearError: () => void;
@@ -133,11 +130,13 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const key = keyForTeam(teamId);
             const force = !!opts?.force;
             const cached = get().cache[key];
-            if (cached && !force) {
+            if(cached && !force){
                 set({ trajectories: cached, isLoading: false, error: null });
                 return Promise.resolve();
             }
+
             const url = teamId ? `/trajectories?teamId=${teamId}&populate=analysis` : '/trajectories';
+            
             return asyncAction(() => api.get<ApiResponse<Trajectory[]>>(url), {
                 loadingKey: 'isLoading',
                 onSuccess: (res) => {
@@ -152,63 +151,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 onError: (error) => ({
                     error: error?.response?.data?.message || 'Failed to load trajectories'
                 })
-            });
-        },
-
-        computeAnalysisDifferences: (id: string, opts?: { force?: boolean }) => {
-            const force = !!opts?.force;
-            const cached = get().differencesCache[id];
-            if (cached && !force) {
-                set({
-                    analysisStats: cached.analysisStats,
-                    avgSegmentSeries: cached.avgSegmentSeries,
-                    idRateSeries: cached.idRateSeries,
-                    dislocationSeries: cached.dislocationSeries
-                });
-                return Promise.resolve();
-            }
-            return asyncAction(() => api.get<ApiResponse<any>>(`/modifiers/compute-analysis-differences/${id}`), {
-                isLoading: 'isAnalysisLoading',
-                onSuccess: (res) => {
-                    const createSeriesByTimestep = (stats: any[], key: string) => {
-                        const byTimestep = new Map<number, { x: number; y: number }[]>();
-                        stats.forEach((stat) => {
-                            if (!stat || typeof stat.rmsd !== 'number') return;
-                            const source = key === 'identificationRate' ? stat.structureAnalysis : stat.dislocations;
-                            if (!Array.isArray(source)) return;
-                            source.forEach((item: any) => {
-                                const t = Number(item?.timestep);
-                                const y = Number(item?.[key] ?? 0);
-                                if (!Number.isFinite(t)) return;
-                                const arr = byTimestep.get(t) ?? [];
-                                arr.push({ x: stat.rmsd, y });
-                                byTimestep.set(t, arr);
-                            });
-                        });
-                        return Array.from(byTimestep.entries())
-                            .sort((a, b) => a[0] - b[0])
-                            .map(([timestep, points]) => ({
-                                label: `Timestep ${timestep}`,
-                                data: points
-                            }));
-                    };
-                    const analysisStats = res.data.data;
-                    const avgSegmentSeries = createSeriesByTimestep(analysisStats, 'averageSegmentLength');
-                    const idRateSeries = createSeriesByTimestep(analysisStats, 'identificationRate');
-                    const dislocationSeries = createSeriesByTimestep(analysisStats, 'totalSegments');
-                    const differencesCache = {
-                        ...get().differencesCache,
-                        [id]: { analysisStats, avgSegmentSeries, idRateSeries, dislocationSeries }
-                    };
-                    return {
-                        analysisStats,
-                        avgSegmentSeries,
-                        idRateSeries,
-                        dislocationSeries,
-                        error: null,
-                        differencesCache
-                    };
-                }
             });
         },
 
@@ -392,34 +334,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         loadAuthenticatedPreview: (id: string) => previewCache.loadPreview(id),
         isPreviewLoading: (id: string) => previewCache.isLoading(id),
         clearPreviewCache: (id?: string) => previewCache.clear(id),
-
-        structureIdentification: async (id: string, analysisConfig: any, identificationMode: string) => {
-            try {
-                const config = { ...analysisConfig, structureIdentificationOnly: true, identificationMode };
-                delete (config as any)._id;
-                await api.post(`/modifiers/crystal-analysis/${id}`, config);
-            } catch (error: any) {
-                set({ error: error?.response?.data?.message || 'Structure Identification failed' });
-                throw error;
-            }
-        },
-
-        dislocationAnalysis: async (id: string, analysisConfig: any) => {
-            try {
-                delete analysisConfig._id;
-                delete analysisConfig.trajectory;
-                delete analysisConfig.structureAnalysis;
-                delete analysisConfig.simulationCell;
-                delete analysisConfig.dislocations;
-                delete analysisConfig.__v;
-                delete analysisConfig.updatedAt;
-                delete analysisConfig.createdAt;
-                await api.post(`/modifiers/crystal-analysis/${id}`, analysisConfig);
-            } catch (error: any) {
-                set({ error: error?.response?.data?.message || 'Analysis failed' });
-                throw error;
-            }
-        },
 
         setTrajectory: (trajectory: Trajectory | null) => set({ trajectory }),
         clearError: () => set({ error: null }),

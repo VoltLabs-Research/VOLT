@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, MethodBadge, RateBadge, formatNumber } from '@/components/organisms/DocumentListing'
 import useTrajectoryStore from '@/stores/trajectories'
-import useTeamStore from '@/stores/team'
+import useTeamStore from '@/stores/team/team'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
 
 const StructureAnalysisListing = () => {

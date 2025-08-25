@@ -21,8 +21,8 @@
 **/
 
 import { useEffect } from 'react';
-import useTeamJobsStore from '@/stores/team-jobs';
-import useTeamStore from '@/stores/team';
+import useTeamJobsStore from '@/stores/team/jobs';
+import useTeamStore from '@/stores/team/team';
 
 const useTeamJobs = () => {
     const currentTeam = useTeamStore(state => state.selectedTeam);

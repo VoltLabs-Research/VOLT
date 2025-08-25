@@ -22,8 +22,8 @@
 
 import { NextFunction, Request, Response } from 'express';
 import { basename, join, resolve } from 'path';
-import { access, stat, readdir, mkdir, rm, writeFile, constants } from 'fs/promises';
-import { copyFile } from '@/utilities/fs';
+import { access, stat, mkdir, rm, writeFile, constants } from 'fs/promises';
+import { copyFile, listGlbFiles } from '@/utilities/fs';
 import { isValidObjectId } from 'mongoose';
 import { getRasterizerQueue, getTrajectoryProcessingQueue } from '@/queues';
 import { processTrajectoryFile } from '@/utilities/lammps';
@@ -106,17 +106,6 @@ export const getUserTrajectories = factory.getAll({
     }
 });
 
-// TODO: Duplicated code
-const listGlbFiles = async (dir: string, out: string[] = []): Promise<string[]> => {
-    const entries = await readdir(dir, { withFileTypes: true });
-    for(const e of entries){
-        if(!e.isFile()) continue;
-        if(!/\.(glb|gltf)$/i.test(e.name)) continue;
-        out.push(join(dir, e.name));
-    }
-    return out;
-};
-
 export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
@@ -166,15 +155,7 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
     const glbDir = join(basePath, trajectory.folderId, 'glb');
 
-    let files: string[];
-    try{
-        files = await readdir(glbDir);
-    }catch(err){
-        return res.status(500).json({
-            status: 'error',
-            data: { error: 'Failed to read GLB directory' },
-        });
-    }
+    let files: string[] = await listGlbFiles(glbDir);
 
     const typeMap: Record<string, string | null> = {
         atoms_colored_by_type: null,

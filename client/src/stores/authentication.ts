@@ -33,7 +33,7 @@ interface AuthState {
     error: string | null;
 }
 
-interface AuthActions {
+interface AuthActions{
     initializeAuth: () => Promise<void>;
     signIn: (credentials: Record<string, string>) => Promise<void>;
     signUp: (details: Record<string, string>) => Promise<void>;
@@ -62,37 +62,42 @@ const useAuthStore = create<AuthStore>()((set, get) => {
     return {
         ...initialState,
 
-        initializeAuth: () => asyncAction(
-            () => api.get<ApiResponse<User>>('/auth/me'),
-            {
+        initializeAuth(){
+            const req = api.get<ApiResponse<User>>('/auth/me');
+
+            return asyncAction(() => req, {
                 loadingKey: 'isLoading',
                 onSuccess: (res) => ({ user: res.data.data }),
                 onError: () => ({ user: null })
-            }
-        ),
+            });
+        },
 
-        signIn: (credentials) => asyncAction(
-            () => api.post<ApiResponse<AuthResponsePayload>>('/auth/sign-in', credentials),
-            {
+        signIn(credentials){
+            const req = api.post<ApiResponse<AuthResponsePayload>>('/auth/sign-in', credentials);
+
+            return asyncAction(() => req, {
                 loadingKey: 'isLoading',
                 onSuccess: handleAuthSuccess,
-            }     
-        ),
+            });
+        },
 
-        signUp: (details) => asyncAction(
-            () => api.post<ApiResponse<AuthResponsePayload>>('/auth/sign-up', details),
-            {
+        signUp(details){
+            const req = api.post<ApiResponse<AuthResponsePayload>>('/auth/sign-up', details);
+
+            return asyncAction(() => req, {
                 loadingKey: 'isLoading',
                 onSuccess: handleAuthSuccess,
-            }
-        ),
+            });
+        },
 
-        signOut: () => {
+        signOut(){
             TokenStorage.removeToken();
             set({ user: null, error: null });
         },
 
-        clearError: () => set({ error: null })
+        clearError(){
+            set({ error: null });
+        }
     };
 });
 

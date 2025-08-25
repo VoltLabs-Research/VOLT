@@ -22,7 +22,6 @@
 
 import { create } from 'zustand';
 import type { AnalysisConfig } from '@/types/models';
-// import { createAsyncAction } from '@/utilities/asyncAction';
 
 interface AnalysisConfigState{
     analysisConfig: AnalysisConfig,
@@ -66,25 +65,25 @@ const useAnalysisConfigStore = create<AnalysisConfigStore>((set, get) => {
     return {
         ...initialState,
 
-        setAnalysisConfig: (key: string, value: any) => {
+        setAnalysisConfig(key: string, value: any){
             const currentConfig = get().analysisConfig;
             set({
                 analysisConfig: { ...currentConfig, [key]: value },
             });
         },
 
-        updateAnalysisConfig: (config: Partial<AnalysisConfig>) => {
+        updateAnalysisConfig(config: Partial<AnalysisConfig>){
             const currentConfig = get().analysisConfig;
             set({
                 analysisConfig: { ...currentConfig, ...config },
             });
         },
 
-        resetAnalysisConfig: () => {
+        resetAnalysisConfig(){
             set({ analysisConfig: DEFAULT_ANALYSIS_CONFIG });
         },
 
-        setIsLoading: (loading: boolean) => {
+        setIsLoading(loading: boolean){
             set({ isLoading: loading });
         },
     }

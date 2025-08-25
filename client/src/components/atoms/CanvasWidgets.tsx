@@ -22,7 +22,7 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import type { EditorWidgetsProps } from '@/types/canvas';
-import useUIStore from '@/stores/ui';
+import useEditorUIStore from '@/stores/ui/editor';
 import EditorSidebar from '@/components/organisms/EditorSidebar';
 import TrajectoryVisibilityStatusFloatIcon from '@/components/atoms/scene/TrajectoryVisibilityStatusFloatIcon';
 import SceneTopCenteredOptions from '@/components/atoms/scene/SceneTopCenteredOptions';
@@ -461,7 +461,7 @@ const StructureIdentificationRatePlot = () => {
 
 const TotalDislocationSegmentsPlot = () => {
     const dislocationsSeries = useTrajectoryStore((s) => s.dislocationSeries);
-    const trajectory = useTrajectoryStore((s) => s.trajectory);
+
     return dislocationsSeries && (
         <ChartCard
             title="Total Dislocation Segments"
@@ -473,26 +473,26 @@ const TotalDislocationSegmentsPlot = () => {
 };
 
 const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimestep }) => {
-    const showWidgets = useUIStore((s) => s.showEditorWidgets);
-    const activeModifiers = useUIStore((s) => s.activeModifiers) ?? [];
-    const modifiersMap = useMemo(
-        () =>
-            ({
-                'slice-plane': SlicePlane,
-                'dislocation-analysis-config': AnalysisConfiguration,
-                'dislocation-results': DislocationResults,
-                'render-options': RenderOptions,
-                'average-segment-length': AverageSegmentLengthPlot,
-                'structure-identification-rate': StructureIdentificationRatePlot,
-                'total-dislocation-segments': TotalDislocationSegmentsPlot
-            }) as Record<string, React.ComponentType<any>>,
-        []
-    );
+    const showWidgets = useEditorUIStore((store) => store.showEditorWidgets);
+    const activeModifiers = useEditorUIStore((store) => store.activeModifiers);
+
+    const modifiersMap = useMemo(() => ({
+        'slice-plane': SlicePlane,
+        'dislocation-analysis-config': AnalysisConfiguration,
+        'dislocation-results': DislocationResults,
+        'render-options': RenderOptions,
+        'average-segment-length': AverageSegmentLengthPlot,
+        'structure-identification-rate': StructureIdentificationRatePlot,
+        'total-dislocation-segments': TotalDislocationSegmentsPlot
+    }) as Record<string, React.ComponentType<any>>, []);
+
     const modifierComponents = useMemo(() => {
         const unique = Array.from(new Set(activeModifiers));
         return unique.map((k) => [k, modifiersMap[k] as React.ComponentType | undefined] as const).filter(([, C]) => !!C);
     }, [activeModifiers, modifiersMap]);
-    if (!showWidgets) return null;
+    
+    if(!showWidgets) return null;
+    
     return (
         <>
             <EditorSidebar />

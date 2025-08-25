@@ -6,7 +6,7 @@ import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import useConfigurationStore from '@/stores/editor/configuration';
 import { AdaptiveDpr, Bvh, Preload } from '@react-three/drei';
-import useUIStore from '@/stores/ui';
+import useEditorUIStore from '@/stores/ui/editor';
 import useTimestepStore from '@/stores/editor/timesteps';
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
 import './Scene3D.css';
@@ -284,9 +284,9 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     const [tools, setTools] = useState<{ captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> } | null>(null);
     const activeSceneObject = useConfigurationStore(state => state.activeSceneObject);
     // const showCanvasGrid = useUIStore((state) => state.showCanvasGrid);
-    const toggleCanvasGrid = useUIStore((state) => state.toggleCanvasGrid);
-    const toggleEditorWidgets = useUIStore((state) => state.toggleEditorWidgets);
-    const showEditorWidgets = useUIStore((state) => state.showEditorWidgets);
+    const toggleCanvasGrid = useEditorUIStore((state) => state.toggleCanvasGrid);
+    const toggleEditorWidgets = useEditorUIStore((state) => state.toggleEditorWidgets);
+    const showEditorWidgets = useEditorUIStore((state) => state.showEditorWidgets);
     const modelBounds = useTimestepStore((state) => state.modelBounds);
 
     const maxDpr = useMemo(() => (window.devicePixelRatio > 1 ? 2 : 1), []);

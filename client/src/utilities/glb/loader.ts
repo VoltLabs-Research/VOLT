@@ -192,9 +192,9 @@ export const preloadGLBs = (urls: string[]): void => {
     if(urls.length === 0) return;
     const endpoints = urls.map(url => `${import.meta.env.VITE_API_URL}/api${url}`);
     const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-    workerLoader.preloadGLBs(endpoints, token || undefined).catch(error => {
+    /*workerLoader.preloadGLBs(endpoints, token || undefined).catch(error => {
         console.warn('Preload failed:', error);
-    });
+    });*/
 };
 
 export const clearModelCache = (): void => {

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RiEyeLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig, formatNumber } from '@/components/organisms/DocumentListing';
-import useTeamStore from '@/stores/team';
+import useTeamStore from '@/stores/team/team';
 import useDislocationStore from '@/stores/dislocations';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 

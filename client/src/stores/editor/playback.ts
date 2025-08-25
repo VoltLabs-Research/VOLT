@@ -33,7 +33,7 @@ const initialState: PlaybackState = {
 const usePlaybackStore = create<PlaybackStore>()((set, get) => ({
     ...initialState,
 
-    stopPlayback: () => {
+    stopPlayback(){
         const { intervalId } = get();
         if(intervalId){
             clearInterval(intervalId);
@@ -41,7 +41,7 @@ const usePlaybackStore = create<PlaybackStore>()((set, get) => ({
         set({ isPlaying: false, intervalId: null });
     },
 
-    togglePlay: () => {
+    togglePlay(){
         const { isPlaying } = get();
 
         if(isPlaying){
@@ -59,7 +59,7 @@ const usePlaybackStore = create<PlaybackStore>()((set, get) => ({
         }
     },
 
-    setPlaySpeed: (speed: number) => {
+    setPlaySpeed(speed: number){
         const clampedSpeed = Math.max(MIN_PLAY_SPEED, Math.min(MAX_PLAY_SPEED, speed));
         set({ playSpeed: clampedSpeed });
 
@@ -69,12 +69,12 @@ const usePlaybackStore = create<PlaybackStore>()((set, get) => ({
         }
     },
 
-    setCurrentTimestep: (timestep: number) => {
+    setCurrentTimestep(timestep: number){
         get().stopPlayback();
         set({ currentTimestep: timestep });
     },
 
-    playNextFrame: () => {
+    playNextFrame(){
         const { currentTimestep } = get();
         const { timesteps } = useTimestepStore.getState().timestepData;
 
@@ -95,7 +95,7 @@ const usePlaybackStore = create<PlaybackStore>()((set, get) => ({
         set({ currentTimestep: nextTimestep });
     },
 
-    reset: () => {
+    reset(){
         get().stopPlayback();
         set(initialState);
     }

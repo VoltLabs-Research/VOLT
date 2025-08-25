@@ -71,6 +71,7 @@ export interface Trajectory{
     analysis: [AnalysisConfig];
     frames: TimestepInfo[];
     stats: TrajectoryStats;
+    preview?: any;
     createdAt: string;
     updatedAt: string;
     users: (User | string)[];

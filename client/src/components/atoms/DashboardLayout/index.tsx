@@ -22,33 +22,22 @@
 
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
-import { GrHomeOption } from 'react-icons/gr';
-import { BsCommand } from 'react-icons/bs';
-import { GoTrash } from 'react-icons/go';
 import { TbCube3dSphere } from "react-icons/tb";
 import { IoSearchOutline, IoSettingsOutline } from "react-icons/io5";
 import { TbBook } from 'react-icons/tb';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { IoNotificationsOutline } from "react-icons/io5";
-
-import { IoIosHelpCircleOutline } from 'react-icons/io';
 import { CiChat1 } from 'react-icons/ci';
 import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
-import SidebarNavigationOption from '@/components/atoms/SidebarNavigationOption';
-import Select from '@/components/atoms/form/Select';
-import useTeamStore from '@/stores/team';
+import useTeamStore from '@/stores/team/team';
 import useTrajectoryStore from '@/stores/trajectories';
 import ShortcutsModal from '@/components/organisms/ShortcutsModal';
-import useUIStore from '@/stores/ui';
 import './DashboardLayout.css';
 
 const DashboardLayout = () => {
     const teams = useTeamStore((state) => state.teams);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const getUserTeams = useTeamStore((state) => state.getUserTeams);
-    const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
-    const areTeamsLoading = useTeamStore((state) => state.isLoading);
-    const toggleShortcutsModal = useUIStore((state) => state.toggleShortcutsModal);
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
@@ -62,11 +51,6 @@ const DashboardLayout = () => {
         if(teams.length) return;
         getUserTeams();
     }, []);
-
-    const teamOptions = teams.map((team) => ({
-        value: team._id,
-        title: team.name
-    }));
 
     return (
         <main className='dashboard-main'>

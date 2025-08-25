@@ -10,16 +10,17 @@ import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
 import useAnalysisConfigStore from '@/stores/analysis-config';
-import useUIStore from '@/stores/ui';
+import useEditorUIStore from '@/stores/ui/editor';
+import useModifiersStore from '@/stores/modifiers';
 import './CanvasSidebarModifiers.css';
 
 const CanvasSidebarModifiers = () => {
     const logger = useLogger('canvas-sidebar-modifiers');
-    const activeModifiers = useUIStore((state) => state.activeModifiers);
-    const toggleModifiers = useUIStore((state) => state.toggleModifier);
+    const activeModifiers = useEditorUIStore((state) => state.activeModifiers);
+    const toggleModifiers = useEditorUIStore((state) => state.toggleModifier);
 
-    const structureIdentification = useTrajectoryStore((state) => state.structureIdentification);
-    const computeAnalysisDifferences = useTrajectoryStore((state) => state.computeAnalysisDifferences);
+    const structureIdentification = useModifiersStore((state) => state.structureIdentification);
+    const computeAnalyses = useModifiersStore((state) => state.computeAnalyses);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
 
     const idRateSeries = useTrajectoryStore((state) => state.idRateSeries);
@@ -44,7 +45,7 @@ const CanvasSidebarModifiers = () => {
                 logger.log('Activating structure identification:', modifier);
                 structureIdentification(trajectory?._id, analysisConfig, modifier);
             }else if(modifier === 'compute-analysis-differences'){
-                computeAnalysisDifferences(trajectory?._id);
+                computeAnalyses(trajectory?._id);
             }
         }
 

@@ -1,8 +1,5 @@
 import { create } from 'zustand';
 import type { Trajectory } from '@/types/models';
-import { api } from '@/services/api';
-import { clearTrajectoryPreviewCache } from '@/hooks/trajectory/use-trajectory-preview';
-import useTrajectoryStore from '../trajectories';
 import useAnalysisConfigStore from '../analysis-config';
 
 export interface TimestepData {
@@ -35,7 +32,6 @@ interface TimestepActions {
     refreshGlbUrls: (trajectoryId: string, currentTimestep: number, analysisId: number) => void;
     reset: () => void;
     setModelBounds: (modelBounds: any) => void;
-    dislocationRenderOptions: (trajectoryId: string, timestep: string, analysisId: string, options: any) => Promise<void>;
 }
 
 export type TimestepStore = TimestepState & TimestepActions;
@@ -105,11 +101,11 @@ const createTrajectoryGLBs = (
 const useTimestepStore = create<TimestepStore>()((set, get) => ({
     ...initialState,
 
-    setModelBounds: (modelBounds: any) => {
+    setModelBounds(modelBounds: any){
         set({ modelBounds });
     },
 
-    computeTimestepData: (trajectory: Trajectory | null, currentTimestep?: number) => {
+    computeTimestepData(trajectory: Trajectory | null, currentTimestep?: number){
         if (!trajectory?.frames || trajectory.frames.length === 0) {
             set({
                 timestepData: initialTimestepData,
@@ -149,14 +145,10 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
             }
         }
 
-        set({
-            timestepData,
-            currentGlbUrl,
-            nextGlbUrl,
-        });
+        set({ timestepData, currentGlbUrl, nextGlbUrl });
     },
 
-    refreshGlbUrls: (trajectoryId: string, currentTimestep: number, analysisId: number) => {
+    refreshGlbUrls(trajectoryId: string, currentTimestep: number, analysisId: number){
         const state = get();
         const newTimestamp = Date.now();
         
@@ -165,52 +157,20 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
         const currentGlbUrl = createTrajectoryGLBs(trajectoryId, currentTimestep, analysisId, newTimestamp);
         
         let nextGlbUrl: TrajectoryGLBs | null = null;
-        if (state.timestepData.timesteps.length > 1) {
+        if(state.timestepData.timesteps.length > 1){
             const currentIndex = state.timestepData.timesteps.indexOf(currentTimestep);
-            if (currentIndex !== -1) {
+            if(currentIndex !== -1){
                 const nextIndex = (currentIndex + 1) % state.timestepData.timesteps.length;
                 const nextTimestep = state.timestepData.timesteps[nextIndex];
                 nextGlbUrl = createTrajectoryGLBs(trajectoryId, nextTimestep, analysisId, newTimestamp);
             }
         }
 
-        console.log('New GLB URLs:', currentGlbUrl);
-
         set({
             currentGlbUrl,
             nextGlbUrl,
             lastRefreshTimestamp: newTimestamp,
         });
-    },
-    
-    dislocationRenderOptions: async (trajectoryId: string, timestep: string, analysisId: string, options: any) => {
-        set({ isRenderOptionsLoading: true });
-        
-        try {
-            console.log(`Applying render options for trajectory ${trajectoryId}, timestep ${timestep}, analysis ${analysisId}`);
-            
-            const url = `/modifiers/render-options/dislocations/${trajectoryId}/${timestep}/${analysisId}`;
-            await api.post(url, options);
-            
-            console.log('Render options applied successfully');
-            
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            const currentTimestep = parseInt(timestep);
-            const analysisIdNum = parseInt(analysisId);
-            
-            get().refreshGlbUrls(trajectoryId, currentTimestep, analysisIdNum);
-            
-            clearTrajectoryPreviewCache(trajectoryId);
-            
-            useTrajectoryStore.getState().clearCurrentTrajectory();
-            
-        } catch (error) {
-            console.error('Error applying render options:', error);
-            throw error;
-        } finally {
-            set({ isRenderOptionsLoading: false });
-        }
     },
 
     reset: () => set(initialState)

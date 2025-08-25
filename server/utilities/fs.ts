@@ -21,10 +21,11 @@
 **/
 
 import { createReadStream, createWriteStream } from 'fs';
-import { stat, copyFile as fsCopyFile, rm } from 'fs/promises';
+import { stat, copyFile as fsCopyFile, rm, readdir } from 'fs/promises';
 import { createInterface } from 'readline';
 import { once } from 'events';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
+import { join } from 'path';
 
 interface ReadLargeFileOptions{
     maxLines?: number;
@@ -50,6 +51,16 @@ interface ReadBinaryFileResult{
     totalBytes: number;
     metadata: Record<string, any>
 }
+
+export const listGlbFiles = async (dir: string, out: string[] = []): Promise<string[]> => {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for(const e of entries){
+        if(!e.isFile()) continue;
+        if(!/\.(glb|gltf)$/i.test(e.name)) continue;
+        out.push(join(dir, e.name));
+    }
+    return out;
+};
 
 export const readBinaryFile = async (
     filePath: string,
