@@ -292,16 +292,7 @@ export const useGlbScene = ({
         }
         
         return () => controller.abort();
-    }, [
-        scene,
-        setupModel,
-        // setIsModelLoading,
-        cleanupResources,
-        handleModelPreloading,
-        logger,
-        invalidate,
-        loadingState.isLoading
-    ]);
+    }, [scene]);
 
     const updateScene = useCallback(() => {
         stateRef.current.frameCount++;

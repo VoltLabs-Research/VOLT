@@ -39,6 +39,7 @@ interface TrajectoryState {
     analysisStats: object;
     rasterData: object;
     isAnalysisLoading: boolean;
+    isLoadingTrajectories: boolean;
     selectedTrajectories: string[];
     structureAnalysis: any;
     avgSegmentSeries: any[];
@@ -78,7 +79,7 @@ const initialState: TrajectoryState = {
     rasterData: {},
     isAnalysisLoading: true,
     trajectory: null,
-    isLoading: false,
+    isLoading: true,
     isSavingPreview: false,
     uploadingFileCount: 0,
     error: null,
@@ -87,6 +88,7 @@ const initialState: TrajectoryState = {
     analysisStats: {},
     avgSegmentSeries: [],
     idRateSeries: [],
+    isLoadingTrajectories: true,
     dislocationSeries: [],
     cache: {},
     analysisCache: {},
@@ -138,7 +140,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const url = teamId ? `/trajectories?teamId=${teamId}&populate=analysis` : '/trajectories';
             
             return asyncAction(() => api.get<ApiResponse<Trajectory[]>>(url), {
-                loadingKey: 'isLoading',
+                loadingKey: 'isLoadingTrajectories',
                 onSuccess: (res) => {
                     const list = res.data.data;
                     const nextCache = { ...get().cache, [key]: list };
