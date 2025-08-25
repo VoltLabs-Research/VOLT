@@ -22,9 +22,11 @@
 
 import { AnalysisProcessingQueue } from '@/queues/analysis-processing-queue';
 import { TrajectoryProcessingQueue } from '@/queues/trajectory-processing-queue';
+import { RasterizerQueue } from '@/queues/rasterizer-queue';
 
 let analysisQueueInstance: AnalysisProcessingQueue | null = null;
 let trajectoryProcessingQueueInstance: TrajectoryProcessingQueue | null = null;
+let rasterizerQueue: RasterizerQueue | null = null;
 
 export const getAnalysisQueue = (): AnalysisProcessingQueue => {
     if(!analysisQueueInstance){
@@ -32,6 +34,14 @@ export const getAnalysisQueue = (): AnalysisProcessingQueue => {
     }
 
     return analysisQueueInstance;
+};
+
+export const getRasterizerQueue = (): RasterizerQueue => {
+    if(!rasterizerQueue){
+        rasterizerQueue = new RasterizerQueue();
+    }
+
+    return rasterizerQueue;
 };
 
 export const getTrajectoryProcessingQueue = (): TrajectoryProcessingQueue => {

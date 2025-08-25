@@ -68,11 +68,13 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
                             className={`floating-menu-item ${deleteMenuStyle ? 'delete-menu-item' : ''}`}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (typeof onClick === 'function') {
-                                    onClick();
-                                }
                                 if (onItemClick) {
                                     onItemClick(onClick, e);
+                                    return;
+                                }
+
+                                if(typeof onClick === 'function'){
+                                    onClick();
                                 }
                             }}
                             style={{
@@ -104,7 +106,6 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
                             key={option.id || index}
                             name={option.label}
                             Icon={option.icon}
-                            onClick={option.onClick}
                             onItemClick={onItemClick}
                             className={option.className}
                             danger={option.danger}

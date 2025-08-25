@@ -26,6 +26,8 @@ import { createCanvas } from 'canvas';
 import { NodeIO, type Document, type Primitive, type Node as GNode } from '@gltf-transform/core';
 import { mat4, vec3, vec4 } from 'gl-matrix';
 import { createWriteStream } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
+import path from 'path';
 
 type Point = { 
     x: number; 
@@ -335,7 +337,8 @@ class HeadlessRasterizer{
             ctx.fill();
         }
 
-        await new Promise<void>((resolve, reject) => {
+        await new Promise<void>(async (resolve, reject) => {
+            await mkdir(path.dirname(this.opts.outputPath), { recursive: true });
             const out = createWriteStream(this.opts.outputPath);
             canvas.createPNGStream().pipe(out);
             out.on('finish', resolve);

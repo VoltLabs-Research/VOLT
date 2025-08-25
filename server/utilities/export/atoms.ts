@@ -355,7 +355,7 @@ class AtomisticExporter{
         const mortonKeys = new Uint32Array(n);
 
         for(let i = 0; i < n; i++){
-            const p = i*3;
+            const p = i * 3;
             const nx = (positions[p]   - bounds.min.x) / extent.x;
             const ny = (positions[p + 1] - bounds.min.y) / extent.y;
             const nz = (positions[p + 2] - bounds.min.z) / extent.z;

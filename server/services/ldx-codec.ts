@@ -259,7 +259,7 @@ const ceilDiv = (a: number, b: number) => {
     return Math.floor((a + b - 1) / b);
 };
 
-async function *parseTrajectoryInput(
+export async function *parseTrajectoryInput(
     inputPath: string, 
     opts: DumpParseOptions = {}
 ) : AsyncGenerator<Frame>{
@@ -287,7 +287,7 @@ async function *parseTrajectoryInput(
     }
 }
 
-class LdxEncoder{
+export class LdxEncoder{
     private output: fs.WriteStream;
     private opts: Required<EncodeOptions>;
     private header?: Header;
@@ -523,7 +523,7 @@ class LdxEncoder{
     }
 }
 
-class LdxDecoder{
+export class LdxDecoder{
     private fileHandle!: FileHandle;
     private filePath: string;
     private fileSize = 0;

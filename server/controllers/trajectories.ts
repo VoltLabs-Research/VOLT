@@ -25,7 +25,7 @@ import { basename, join, resolve } from 'path';
 import { access, stat, readdir, mkdir, rm, writeFile, constants } from 'fs/promises';
 import { copyFile } from '@/utilities/fs';
 import { isValidObjectId } from 'mongoose';
-import { getTrajectoryProcessingQueue } from '@/queues';
+import { getRasterizerQueue, getTrajectoryProcessingQueue } from '@/queues';
 import { processTrajectoryFile } from '@/utilities/lammps';
 import { v4 } from 'uuid';
 import { getGLBPath } from '@/utilities/trajectory-glbs';
@@ -37,6 +37,7 @@ import StructureAnalysis from '@models/structure-analysis';
 import Dislocation from '@models/dislocations';
 import { catchAsync } from '@/utilities/runtime';
 import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
+import { RasterizerJob } from '@/types/services/rasterizer-queue';
 
 const factory = new HandlerFactory({
     model: Trajectory,
@@ -248,17 +249,30 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
     const glbs = listGlbFiles(glbDir);
     const customOpts: Partial<HeadlessRasterizerOptions> = req.body;
 
-    const jobs = (await glbs).map((glbPath) => {
-        const base = basename(glbPath).replace(/\.[^.]+$/i, '');
-        const outPath = join(outputDir, `${base}.png`);
+    const jobs: RasterizerJob[] = (await glbs).map((glbPath) => {
+        const frame = basename(glbPath).replace(/\.[^.]+$/i, '');
+        const outPath = join(outputDir, `${frame}.png`);
         const opts: Partial<HeadlessRasterizerOptions> = {
             inputPath: glbPath,
             outputPath: outPath,
             ...customOpts
         };
-        return { opts };
+
+        const job = {
+            opts,
+            jobId: v4(),
+            trajectoryId: trajectory._id,
+            teamId: trajectory.team._id,
+            name: 'Headless Rasterizer',
+            message: `${trajectory.name} - Frame ${frame}`
+        };
+
+        return job;
     });
 
+    const queueService= getRasterizerQueue();
+    queueService.addJobs(jobs);
+    
     res.status(200).json({ status: 'success' });
 });
 

@@ -37,6 +37,7 @@ interface TrajectoryState {
     uploadingFileCount: number;
     error: string | null;
     analysisStats: object;
+    rasterData: object;
     isAnalysisLoading: boolean;
     selectedTrajectories: string[];
     structureAnalysis: any;
@@ -55,6 +56,7 @@ interface TrajectoryActions {
     updateTrajectoryById: (id: string, data: Partial<Pick<Trajectory, 'name'>>) => Promise<void>;
     deleteTrajectoryById: (id: string, teamId?: string) => Promise<void>;
     computeAnalysisDifferences: (id: string, opts?: { force?: boolean }) => Promise<void>;
+    rasterize: (id: string) => Promise<void>;
     toggleTrajectorySelection: (id: string) => void;
     deleteSelectedTrajectories: () => Promise<void>;
     clearSelection: () => void;
@@ -76,6 +78,7 @@ export type TrajectoryStore = TrajectoryState & TrajectoryActions;
 
 const initialState: TrajectoryState = {
     trajectories: [],
+    rasterData: {},
     isAnalysisLoading: true,
     trajectory: null,
     isLoading: false,
@@ -208,6 +211,13 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 }
             });
         },
+
+        rasterize: (id: string) => asyncAction(() => api.post<ApiResponse<any>>(`/trajectories/${id}/glb/raster/`), {
+            loadingKey: 'isAnalysisLoading',
+            onSuccess: (res) => {
+                return { rasterData: res.data.data };
+            }
+        }),
 
         getStructureAnalysis: (teamId: string, opts?: { force?: boolean }) => {
             const force = !!opts?.force;

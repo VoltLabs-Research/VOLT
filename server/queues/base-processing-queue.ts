@@ -208,7 +208,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         // INCR is atomic, which prevents race conditions.
         const currentAttempt = await this.redis.incr(retryCountKey);
         await this.redis.expire(retryCountKey, this.TTL);
-
+        /*
         if(currentAttempt < maxAttempts){
             console.log(`[${this.queueName}] Job ${job.jobId} failed. Attempt ${currentAttempt} of ${maxAttempts}. Re-queuing.`);
             const retryJob = {
@@ -228,7 +228,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
             return false;
         }
-
+        */
         // If this part of the function is executed it means that the maximum attempt has been reached.
         console.error(`[${this.queueName}] Job ${job.jobId} failed after ${maxAttempts} attempts. Removing from queue permanently.`);
             

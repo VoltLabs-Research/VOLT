@@ -1,8 +1,9 @@
 .dashboard-stats-container{
     display: flex;
     width: 100%;
-    border: 1px solid #dadada;
+    overflow: hidden;
     border-radius: .5rem;
+    box-shadow: 0 0 5px 0 #dadada;
 }
 
 .dashboard-body-left-container{
@@ -96,7 +97,7 @@
 }
 
 .dashboard-stat-container:not(:last-child){
-    border-right: 1px solid #dadada;
+    border-right: 1px solid #dfdfdf;
 }
 
 .dashboard-stat-count{
@@ -167,10 +168,6 @@
     right: 0;
 }
 
-.dashboard-stat-container:first-child{
-    background-color: #f8f8f8;
-}
-
 .dashboard-wrapper-container{
     display: flex;
     height: 100%;
@@ -222,8 +219,8 @@
         overflow: hidden;
         transition: .5s;
         cursor: pointer;
-        width: 15rem;
-        height: 4.5rem;
+        width: 18rem;
+        height: 4rem;
         right: 2rem;
         bottom: 2rem;
         border-radius: 2.25rem;
@@ -361,7 +358,7 @@
         white-space: nowrap;
     }
     .jobs-history-dispatch-title-enhanced {
-        font-size: 1.125rem;
+        font-size: 1rem;
         font-weight: 700;
         color: #1e293b;
         margin: 0;

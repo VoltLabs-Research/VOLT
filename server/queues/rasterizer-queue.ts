@@ -22,20 +22,21 @@
 
 import { BaseProcessingQueue } from '@/queues/base-processing-queue';
 import { QueueOptions } from '@/types/queues/base-processing-queue';
-import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
+import { RasterizerJob } from '@/types/services/rasterizer-queue';
 import path from 'path';
 
-export class RasterizerQueue extends BaseProcessingQueue<AnalysisJob>{
+export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
     constructor(){
         const options: QueueOptions = {
             queueName: 'rasterizer-queue',
-            workerPath: path.resolve(__dirname, '../workers/headless-rasterizer.ts')
+            workerPath: path.resolve(__dirname, '../workers/headless-rasterizer.ts'),
+            maxConcurrentJobs: 10
         };
 
         super(options);
     }
 
-    protected deserializeJob(rawData: string): AnalysisJob {
-        return JSON.parse(rawData) as AnalysisJob;
+    protected deserializeJob(rawData: string): RasterizerJob {
+        return JSON.parse(rawData) as RasterizerJob;
     }
 }

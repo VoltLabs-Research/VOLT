@@ -65,6 +65,12 @@ router.route('/')
         controller.createTrajectory
     );
 
+router.post(
+    '/:id/glb/:raster',
+    middleware.checkTeamMembershipForTrajectory,
+    controller.rasterizeFrames
+);
+
 router.get(
     '/:id/glb/:timestep/:analysisId', 
     middleware.checkTeamMembershipForTrajectory, 

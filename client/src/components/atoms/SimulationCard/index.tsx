@@ -20,9 +20,9 @@
 * SOFTWARE.
 **/
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PiAtomThin, PiLineSegmentsLight, PiDotsThreeVerticalBold } from 'react-icons/pi';
+import { PiAtomThin, PiLineSegmentsLight, PiDotsThreeVerticalBold, PiImagesSquareThin } from 'react-icons/pi';
 import { RxTrash } from "react-icons/rx";
 import { CiShare1 } from "react-icons/ci";
 import { HiOutlineViewfinderCircle } from "react-icons/hi2";
@@ -63,7 +63,8 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const dislocationAnalysis = useTrajectoryStore((state) => state.dislocationAnalysis);
     const toggleTrajectorySelection = useTrajectoryStore((state) => state.toggleTrajectorySelection);
-    
+    const rasterize = useTrajectoryStore((state) => state.rasterize);
+
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const setTrajectory = useTrajectoryStore((state) => state.setTrajectory);
 
@@ -119,6 +120,10 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     const handleDislocationAnalysis = (): void => {
         dislocationAnalysis(trajectory._id, analysisConfig);
     };
+
+    const handleRasterize = useCallback(() => {
+        rasterize(trajectory._id);
+    }, [trajectory._id]);
 
     const getJobStatusText = (): string => {
         if(isCompleted) return 'completed';
@@ -195,6 +200,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
                 <ActionBasedFloatingContainer
                     options={[
                         ['View Scene', HiOutlineViewfinderCircle, handleViewScene],
+                        ['Rasterize', PiImagesSquareThin, handleRasterize],
                         ['Share with Team', CiShare1, handleShare],
                         ['Dislocation Analysis', PiLineSegmentsLight, handleDislocationAnalysis],
                         ['Delete', RxTrash, onDelete],
