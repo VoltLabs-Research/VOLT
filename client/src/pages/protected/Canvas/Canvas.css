@@ -10,6 +10,73 @@
     align-items: center;
 }
 
+.editor-model-loading-container{
+    border-radius: 24px;
+    padding: 60px;
+    max-width: 550px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        0 8px 16px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+    background: rgba(26, 26, 26, 0.93);
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+}
+
+.editor-model-loading-body-container{
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.editor-model-loading-wrapper{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 999999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(1px);
+    color: #dadada;
+}
+
+.editor-model-loading-title{
+    font-size: 1.8rem;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+}
+
+.editor-model-loading-description{
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.2rem;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: -0.1px;
+    margin: 0 auto;
+}
+
+.editor-model-loading-container::before{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+}
+
 .editor-container {
     width: 100%;
     height: 100vh;

@@ -9,6 +9,7 @@ import { AdaptiveDpr, Bvh, Preload } from '@react-three/drei';
 import useEditorUIStore from '@/stores/ui/editor';
 import useTimestepStore from '@/stores/editor/timesteps';
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
+import TetrahedronLoader from '@/components/atoms/TetrahedronLoader';
 import './Scene3D.css';
 
 interface Scene3DProps {
@@ -417,7 +418,6 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
             
             <Preload all />
             <AdaptiveDpr pixelated />
-            
             {showGizmo && (
                 <GizmoHelper
                     alignment='top-left'

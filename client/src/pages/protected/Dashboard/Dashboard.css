@@ -1,7 +1,6 @@
 .dashboard-stats-container{
     display: flex;
     width: 100%;
-    overflow: hidden;
     border-radius: .5rem;
     box-shadow: 0 0 5px 0 #dadada;
 }

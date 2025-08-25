@@ -105,3 +105,7 @@
     color: #6366F1;
     flex: 0 0 auto;
 }
+
+.rh-select.on-dark .rh-select-trigger{
+    background-color: transparent !important;
+}

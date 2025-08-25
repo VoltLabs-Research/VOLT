@@ -25,6 +25,7 @@ const AnalysisConfigSelection = () => {
     return (
         <EditorWidget className="analysis-config-selection-container">
             <Select
+                onDark={true}
                 value={selectedId}
                 className="analysis-config-select-container"
                 onChange={handleChange}

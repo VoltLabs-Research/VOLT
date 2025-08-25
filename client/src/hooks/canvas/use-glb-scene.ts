@@ -30,6 +30,7 @@ import useTimestepStore from '@/stores/editor/timesteps';
 import useLogger from '@/hooks/core/use-logger';
 import vertexShader from '@/shaders/point-cloud.vert?raw';
 import fragmentShader from '@/shaders/point-cloud.frag?raw';
+import useConfigurationStore from '@/stores/editor/configuration';
 
 export const useGlbScene = ({
     activeSceneObject,
@@ -44,6 +45,7 @@ export const useGlbScene = ({
     const logger = useLogger('use-glb-scene');
     const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
     const nextGlbUrl = useTimestepStore((state) => state.nextGlbUrl);
+    const setIsModelLoading = useConfigurationStore((state) => state.setIsModelLoading);
 
     const stateRef = useRef<any & {
         frameCount: number;
@@ -262,7 +264,7 @@ export const useGlbScene = ({
         if(stateRef.current.lastLoadedUrl === url || loadingState.isLoading) return;
 
         const controller = new AbortController();
-        // setIsModelLoading(true);
+        setIsModelLoading(true);
         setLoadingState({ isLoading: true, progress: 0, error: null });
 
         try{
@@ -288,7 +290,7 @@ export const useGlbScene = ({
             setLoadingState({ isLoading: false, progress: 0, error: null });
             logger.error('Model loading failed:', message);
         }finally{
-            // setIsModelLoading(false);
+            setIsModelLoading(false);
         }
         
         return () => controller.abort();

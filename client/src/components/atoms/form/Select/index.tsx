@@ -12,6 +12,7 @@ export interface SelectProps{
     onChange: (value: string) => void;
     disabled?: boolean;
     placeholder?: string;
+    onDark?: boolean;
     className?: string;
     optionClassName?: string;
 }
@@ -21,6 +22,7 @@ const Select: React.FC<SelectProps> = ({
     value,
     onChange,
     disabled = false,
+    onDark = false,
     placeholder = 'Select...',
     className = '',
     optionClassName = ''
@@ -140,7 +142,7 @@ const Select: React.FC<SelectProps> = ({
     return (
         <div
         ref={rootRef}
-        className={`rh-select ${open ? "is-open" : ""} ${disabled ? "is-disabled" : ""} ${className}`}
+        className={`rh-select ${open ? "is-open" : ""} ${onDark ? 'on-dark' : ''} ${disabled ? "is-disabled" : ""} ${className}`}
         data-open={open}
         data-disabled={disabled}
         >
