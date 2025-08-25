@@ -49,7 +49,10 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
         borderRadius: '8px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
         minWidth: '150px',
-        padding: '4px 0',
+        padding: '8px',
+        display: 'flex',
+        gap: '1rem',
+        flexDirection: 'column',
         ...styles
     };
 
@@ -86,7 +89,7 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
                                 fontSize: '14px',
                                 color: deleteMenuStyle ? '#dc2626' : '#374151',
                                 transition: 'background-color 0.2s ease',
-                                borderRadius: '4px',
+                                borderRadius: '.5rem',
                                 margin: '0 4px'
                             }}
                             onMouseEnter={(e) => {

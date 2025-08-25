@@ -2,7 +2,9 @@
     display: flex;
     width: 100%;
     border-radius: .5rem;
-    box-shadow: 0 0 5px 0 #dadada;
+    border: 1px solid #191919;
+    box-shadow: -1px 1px 3px 0 #0f0f0f;
+    background-color: #00000000;
 }
 
 .dashboard-body-left-container{
@@ -58,6 +60,7 @@
 .scene-preview-container{
     position: relative;
     height: 100vh;
+    box-shadow: 0 0 3px 0 #4f4f4f;
     width: 100%;
     border-radius: 1rem;
     overflow: hidden;
@@ -65,7 +68,12 @@
 
 .dashboard-body-left-header-title{
     font-size: 2rem;
+    color: #dadada;
     font-weight: 550;
+}
+
+.dashboard-stat-title{
+    color: #dadada;
 }
 
 .dashboard-stat-arrow-icon-container{
@@ -75,7 +83,7 @@
     font-size: 1.5rem;
     opacity: 0;
     transition: 0.15s;
-    color: #3d3d3d;
+    color: #bebebe;
 }
 
 .dashboard-stat-container:hover .dashboard-stat-arrow-icon-container{
@@ -86,7 +94,7 @@
     width: 33.3%;
     display: flex;
     gap: 2rem;
-    padding: 1rem 1.5rem;
+    padding: 1.5rem;
     position: relative;
     cursor: pointer;
 }
@@ -96,11 +104,12 @@
 }
 
 .dashboard-stat-container:not(:last-child){
-    border-right: 1px solid #dfdfdf;
+    border-right: 1px solid #191919;
 }
 
 .dashboard-stat-count{
     font-size: 1.6rem;
+    color: #dadada;
 }
 
 .dashboard-stat-analytic-container{
@@ -139,7 +148,7 @@
 
 .dashboard-stat-last-month-title{
     font-size: .9rem;
-    color: #282828;
+    color: #dadada;
 }
 
 .dashboard-stat-last-month-container{
@@ -224,7 +233,7 @@
         bottom: 2rem;
         border-radius: 2.25rem;
         padding: 0.875rem 1.75rem;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+        background: #212121;
         backdrop-filter: blur(24px) saturate(180%);
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1), height 0.5s cubic-bezier(0.65, 0, 0.35, 1), left 0.5s cubic-bezier(0.65, 0, 0.35, 1), bottom 0.5s cubic-bezier(0.65, 0, 0.35, 1), border-radius 0.5s cubic-bezier(0.65, 0, 0.35, 1);
@@ -267,7 +276,7 @@
         align-items: center;
         justify-content: space-between;
         padding: 1.5rem;
-        border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+        border-bottom: 1px solid rgb(69 69 69 / 60%);
         flex-shrink: 0;
     }
     .jobs-history-viewer-header-enhanced.edit-mode-resize {
@@ -285,12 +294,12 @@
     .jobs-history-title-enhanced {
         font-size: 1.25rem;
         font-weight: 800;
-        color: #1e293b;
+        color: #dadada;
         margin: 0;
     }
     .jobs-history-subtitle {
         font-size: 0.8rem;
-        color: #64748b;
+        color: #c2c2c2;
         margin-top: 0.25rem;
         white-space: nowrap;
         overflow: hidden;
@@ -341,17 +350,17 @@
         100% { transform: rotate(360deg); }
     }
     .jobs-history-dispatch-icon-container-enhanced {
-        align-items: center;
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-        color: white;
-        border-radius: 50%;
-        font-size: 1.5rem;
-        display: flex;
-        justify-content: center;
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        height: 2.5rem;
-        flex-shrink: 0;
-        width: 2.5rem;
+    align-items: center;
+    background: linear-gradient(135deg, #6b5aff, #8259de);
+    color: white;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    display: flex;
+    justify-content: center;
+    box-shadow: -3px 1px 20px rgb(59 130 246 / 33%);
+    height: 2.5rem;
+    flex-shrink: 0;
+    width: 2.5rem;
     }
     .jobs-dispatch-text {
         white-space: nowrap;
@@ -359,11 +368,11 @@
     .jobs-history-dispatch-title-enhanced {
         font-size: 1rem;
         font-weight: 700;
-        color: #1e293b;
+        color: #dadada;
         margin: 0;
     }
     .jobs-dispatch-subtitle {
         font-size: 0.8rem;
-        color: #64748b;
+        color: #b5b5b5;
         margin-top: 0.25rem;
     }

@@ -18,6 +18,7 @@ interface Scene3DProps {
     background?: string;
     showGizmo?: boolean;
     orbitControlsConfig?: any;
+    showCanvasGrid?: boolean;
     onCameraControlsRef?: (ref: any) => void;
 }
 
@@ -284,7 +285,6 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     const orbitControlsRef = useRef<any>(null);
     const [tools, setTools] = useState<{ captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> } | null>(null);
     const activeSceneObject = useConfigurationStore(state => state.activeSceneObject);
-    // const showCanvasGrid = useUIStore((state) => state.showCanvasGrid);
     const toggleCanvasGrid = useEditorUIStore((state) => state.toggleCanvasGrid);
     const toggleEditorWidgets = useEditorUIStore((state) => state.toggleEditorWidgets);
     const showEditorWidgets = useEditorUIStore((state) => state.showEditorWidgets);

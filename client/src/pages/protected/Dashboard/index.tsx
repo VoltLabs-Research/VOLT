@@ -22,10 +22,6 @@ const DashboardPage: React.FC = memo(() => {
     const scene3DRef = useRef<Scene3DRef>(null)
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
 
-    useEffect(() => {
-        console.log(trajectories);
-    }, [trajectories]);
-
     return (
         <FileUpload>            
             <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
@@ -113,6 +109,7 @@ const DashboardPage: React.FC = memo(() => {
                         <Scene3D 
                             showGizmo={false}
                             ref={scene3DRef}
+                            showCanvasGrid={false}
                             orbitControlsConfig={{
                                 enablePan: false,
                                 enableZoom: false

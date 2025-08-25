@@ -40,5 +40,6 @@
 
 .sidebar-user-fullname{
     font-size: 1.1rem;
+    color: #fff;
     text-transform: capitalize;
 }

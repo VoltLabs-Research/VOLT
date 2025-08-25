@@ -7,6 +7,7 @@ import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator'
 import CanvasWidgets from '@/components/atoms/CanvasWidgets'
 import TetrahedronLoader from '@/components/atoms/TetrahedronLoader'
 import useConfigurationStore from '@/stores/editor/configuration'
+import useEditorUIStore from '@/stores/ui/editor'
 import { useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from "framer-motion";
 import './Canvas.css'
@@ -25,6 +26,7 @@ const EditorPage: React.FC = () => {
     const scene3DRef = useRef<Scene3DRef>(null)
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId });
     const isModelLoading = useConfigurationStore((state) => state.isModelLoading);
+    const showCanvasGrid = useEditorUIStore((state) => state.showCanvasGrid);
     
     return (
         <div className='editor-container'>
@@ -58,6 +60,7 @@ const EditorPage: React.FC = () => {
             />
             <Scene3D 
                 ref={scene3DRef}
+                showCanvasGrid={showCanvasGrid}
             >
                 <AutoPreviewSaver
                     scene3DRef={scene3DRef}

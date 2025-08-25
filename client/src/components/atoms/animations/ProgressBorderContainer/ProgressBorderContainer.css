@@ -1,7 +1,7 @@
 .progress-border-container{
     position: relative;
     border-radius: 12px;
-    padding: 3px;
+    height: 100%;
     background: var(--progress-border-static, transparent);
     transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -10,7 +10,6 @@
     content: "";
     position: absolute;
     inset: 0;
-    padding: 3px;
     border-radius: inherit;
     pointer-events: none;
 

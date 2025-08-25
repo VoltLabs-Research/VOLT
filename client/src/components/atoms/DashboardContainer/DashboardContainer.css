@@ -55,8 +55,9 @@
 .search-container{
     display: flex;
     gap: 1rem;
-    background-color: #ececec;
+    background-color: #212121;
     height: 2.7rem;
+    color: #FFF;
     padding: 0 1.5rem;
     border-radius: 5rem;
     width: 500px;
@@ -64,7 +65,7 @@
 }
 
 .search-container:hover{
-    background-color: #f1f1f1;
+    opacity: .9;
 }
 
 .create-new-button-container{

@@ -20,12 +20,12 @@ const initialState = {
     activeModifiers: []
 };
 
-const useEditorUIStore = create<EditorUIStore>((set) => {
+const useEditorUIStore = create<EditorUIStore>((set, get) => {
     return {
         ...initialState,
 
         toggleModifier(modifier: string){
-            const modifiers = new Set(this.activeModifiers);
+            const modifiers = new Set(get().activeModifiers);
             if(modifiers.has(modifier)){
                 modifiers.delete(modifier);
             }else{
@@ -36,11 +36,11 @@ const useEditorUIStore = create<EditorUIStore>((set) => {
         },
 
         toggleCanvasGrid(){
-            return { showCanvasGrid: !this.showCanvasGrid }
+            return { showCanvasGrid: !get().showCanvasGrid }
         },
 
         toggleEditorWidgets(){
-            return { showEditorWidgets: !this.showEditorWidgets }
+            return { showEditorWidgets: !get().showEditorWidgets }
         },
     };
 });
