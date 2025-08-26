@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/services/api';
 import type { ApiResponse } from '@/types/api';
+import useTrajectoryStore from '@/stores/trajectories';
 
 type MetricKey = 'structureAnalysis' | 'trajectories' | 'dislocations';
 
@@ -87,12 +88,9 @@ export const useDashboardMetrics = (
 ) => {
     const key = keyOf(teamId);
     const ttlMs = opts?.ttlMs ?? 5 * 60 * 1000;
+    const data = useTrajectoryStore((store) => store.metrics);
+    const setData = useTrajectoryStore((store) => store.setMetrics);
 
-    const [data, setData] = useState<TrajectoryMetrics | null>(() => {
-        const hit = cache.get(key);
-        if (!hit) return null;
-        return hit.data;
-    });
     const [loading, setLoading] = useState<boolean>(() => !cache.has(key));
     const [error, setError] = useState<string | null>(null);
 

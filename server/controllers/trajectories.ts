@@ -22,7 +22,7 @@
 
 import { NextFunction, Request, Response } from 'express';
 import { basename, join, resolve } from 'path';
-import { access, stat, mkdir, rm, writeFile, constants } from 'fs/promises';
+import { access, stat, mkdir, rm, writeFile, constants, readFile, readdir } from 'fs/promises';
 import { copyFile, listGlbFiles } from '@/utilities/fs';
 import { isValidObjectId } from 'mongoose';
 import { getRasterizerQueue, getTrajectoryProcessingQueue } from '@/queues';
@@ -63,6 +63,93 @@ export const getTrajectoryMetrics = async (req: Request, res: Response) => {
         data: teamMetrics
     });
 };
+
+export const getTrajectoryRasterizedFrames = catchAsync(async (req: Request, res: Response) => {
+    const trajectory = res.locals.trajectory;
+    if(!trajectory){
+        return res.status(400).json({
+            status: 'error',
+            data: { error: 'Trajectory not found in context' },
+        });
+    }
+
+    const includeData = (req.query.includeData ?? 'true').toString().toLowerCase() === 'true';
+    const offset = Number.isFinite(Number(req.query.offset)) ? Number(req.query.offset) : 0;
+    const limit = req.query.limit !== undefined && Number.isFinite(Number(req.query.limit))
+        ? Number(req.query.limit)
+        : undefined;
+    const matchStr = (req.query.match ?? '').toString().trim();
+
+    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+    const rasterDir = join(basePath, trajectory.folderId, 'raster');
+
+    try{
+        await access(rasterDir, constants.F_OK);
+    }catch{
+        return res.status(200).json({
+            status: 'success',
+            data: [],
+            meta: { total: 0, offset: 0, limit: limit ?? null }
+        });
+    }
+
+    const allFiles = await readdir(rasterDir);
+    let pngs = allFiles.filter(f => f.toLowerCase().endsWith('.png'));
+
+      const parseFrame = (name: string): number | null => {
+        const withoutExt = name.replace(/\.png$/i, '');
+        const m1 = withoutExt.match(/frame_(\d+)(?:_|$)/i);
+        if (m1) return parseInt(m1[1], 10);
+        const m2 = withoutExt.match(/^(\d+)$/);
+        if (m2) return parseInt(m2[1], 10);
+        const m3 = withoutExt.match(/(?:^|_)t(?:imestep)?_?(\d+)(?:_|$)/i);
+        if (m3) return parseInt(m3[1], 10);
+        return null;
+    };
+
+    pngs.sort((a, b) => {
+        const fa = parseFrame(a);
+        const fb = parseFrame(b);
+        if (fa !== null && fb !== null) return fa - fb;
+        if (fa !== null) return -1;
+        if (fb !== null) return 1;
+        return a.localeCompare(b, undefined, { numeric: true });
+    });
+
+    const items: any[] = [];
+    for (const filename of pngs){
+        const abs = join(rasterDir, filename);
+        const st = await stat(abs);
+        const frame = parseFrame(filename);
+
+        const item: any = {
+        frame,
+        filename,
+        url: join('raster', filename).replace(/\\/g, '/'), 
+        mime: 'image/png',
+        size: st.size,
+        mtime: st.mtime.getTime(),
+        };
+
+        if (includeData) {
+            const buf = await readFile(abs);
+            item.data = `data:image/png;base64,${buf.toString('base64')}`;
+        }
+
+        items.push(item);
+    }
+
+    const newestMtime = Math.max(0, ...items.map(i => i.mtime));
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('ETag', `"raster-${trajectory._id}-${items.length}-${newestMtime}-${includeData ? 'withdata' : 'nodata'}"`);
+
+    return res.status(200).json({
+        status: 'success',
+        data: items
+    });
+});
 
 export const deleteTrajectoryById = factory.deleteOne({
     beforeDelete: async (doc: any, req: Request) => {

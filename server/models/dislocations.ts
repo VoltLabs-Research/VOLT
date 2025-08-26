@@ -85,7 +85,7 @@ const DislocationSchema: Schema<any> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
         cascade: 'delete',
-        inverse: { path: 'dislocations', behavior: 'addToSet' },
+        inverse: { path: 'dislocations', behavior: 'set' },
         required: true
     },
     timestep: {

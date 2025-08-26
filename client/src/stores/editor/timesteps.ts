@@ -1,40 +1,9 @@
 import { create } from 'zustand';
 import type { Trajectory } from '@/types/models';
-import useAnalysisConfigStore from '../analysis-config';
-
-export interface TimestepData {
-    timesteps: number[];
-    minTimestep: number;
-    maxTimestep: number;
-    timestepCount: number;
-}
-
-export interface TrajectoryGLBs {
-    trajectory: string;
-    defect_mesh: string;
-    interface_mesh: string;
-    dislocations: string;
-    core_atoms: string;
-    atoms_colored_by_type: string;
-}
-
-interface TimestepState {
-    timestepData: TimestepData;
-    currentGlbUrl: TrajectoryGLBs | null;
-    nextGlbUrl: TrajectoryGLBs | null;
-    isRenderOptionsLoading: boolean;
-    lastRefreshTimestamp: number;
-    modelBounds: any;
-}
-
-interface TimestepActions {
-    computeTimestepData: (trajectory: Trajectory | null, currentTimestep?: number) => void;
-    refreshGlbUrls: (trajectoryId: string, currentTimestep: number, analysisId: number) => void;
-    reset: () => void;
-    setModelBounds: (modelBounds: any) => void;
-}
-
-export type TimestepStore = TimestepState & TimestepActions;
+import useAnalysisConfigStore from '@/stores/analysis-config';
+import useModelStore from '@/stores/editor/model';
+import { createTrajectoryGLBs } from '@/utilities/glb/modelUtils';
+import type { TimestepData, TimestepState, TimestepStore } from '@/types/stores/editor/timesteps';
 
 const initialTimestepData: TimestepData = {
     timesteps: [],
@@ -45,11 +14,7 @@ const initialTimestepData: TimestepData = {
 
 const initialState: TimestepState = {
     timestepData: initialTimestepData,
-    currentGlbUrl: null,
-    nextGlbUrl: null,
-    isRenderOptionsLoading: false,
-    lastRefreshTimestamp: 0,
-    modelBounds: null
+    isRenderOptionsLoading: false
 };
 
 const extractTimesteps = (trajectory: Trajectory | null): number[] => {
@@ -69,108 +34,30 @@ const createTimestepData = (timesteps: number[]): TimestepData => ({
     timestepCount: timesteps.length,
 });
 
-const buildGlbUrl = (
-    trajectoryId: string, 
-    timestep: number, 
-    analysisId: number,
-    type: string = '',
-    cacheBuster?: number
-): string => {
-    const baseUrl = `/trajectories/${trajectoryId}/glb/${timestep}/${analysisId}`;
-    const typeParam = type ? `type=${type}` : '';
-    const cacheParam = cacheBuster ? `t=${cacheBuster}` : '';
-    
-    const params = [typeParam, cacheParam].filter(Boolean).join('&');
-    return params ? `${baseUrl}?${params}` : baseUrl;
-};
-
-const createTrajectoryGLBs = (
-    trajectoryId: string, 
-    timestep: number, 
-    analysisId: number, 
-    cacheBuster?: number
-): TrajectoryGLBs => ({
-    trajectory: buildGlbUrl(trajectoryId, timestep, analysisId, '', cacheBuster),
-    defect_mesh: buildGlbUrl(trajectoryId, timestep, analysisId, 'defect_mesh', cacheBuster),
-    interface_mesh: buildGlbUrl(trajectoryId, timestep, analysisId, 'interface_mesh', cacheBuster),
-    atoms_colored_by_type: buildGlbUrl(trajectoryId, timestep, analysisId, 'atoms_colored_by_type', cacheBuster),
-    dislocations: buildGlbUrl(trajectoryId, timestep, analysisId, 'dislocations', cacheBuster),
-    core_atoms: '',
-});
-
 const useTimestepStore = create<TimestepStore>()((set, get) => ({
     ...initialState,
 
-    setModelBounds(modelBounds: any){
-        set({ modelBounds });
-    },
-
     computeTimestepData(trajectory: Trajectory | null, currentTimestep?: number){
-        if (!trajectory?.frames || trajectory.frames.length === 0) {
-            set({
-                timestepData: initialTimestepData,
-                currentGlbUrl: null,
-                nextGlbUrl: null,
-            });
+        if(!trajectory?.frames || trajectory.frames.length === 0){
+            set({ timestepData: initialTimestepData });
             return;
         }
 
         const timesteps = extractTimesteps(trajectory);
         const timestepData = createTimestepData(timesteps);
 
-        let currentGlbUrl: TrajectoryGLBs | null = null;
-        let nextGlbUrl: TrajectoryGLBs | null = null;
-
-        if (trajectory._id && currentTimestep !== undefined && timesteps.length > 0) {
+        if(trajectory._id && currentTimestep !== undefined && timesteps.length > 0){
             const analysis = useAnalysisConfigStore.getState().analysisConfig;
-            const cacheBuster = get().lastRefreshTimestamp;
-            
-            currentGlbUrl = createTrajectoryGLBs(
-                trajectory._id, 
-                currentTimestep, 
-                analysis._id, 
-                cacheBuster || undefined
+            const glbs = createTrajectoryGLBs(
+                trajectory._id,
+                currentTimestep,
+                analysis._id
             );
-            
-            const currentIndex = timesteps.indexOf(currentTimestep);
-            if (currentIndex !== -1 && timesteps.length > 1) {
-                const nextIndex = (currentIndex + 1) % timesteps.length;
-                const nextTimestep = timesteps[nextIndex];
-                nextGlbUrl = createTrajectoryGLBs(
-                    trajectory._id, 
-                    nextTimestep, 
-                    analysis._id, 
-                    cacheBuster || undefined
-                );
-            }
+
+            useModelStore.getState().selectModel(glbs);
         }
 
-        set({ timestepData, currentGlbUrl, nextGlbUrl });
-    },
-
-    refreshGlbUrls(trajectoryId: string, currentTimestep: number, analysisId: number){
-        const state = get();
-        const newTimestamp = Date.now();
-        
-        console.log(`Refreshing GLB URLs for trajectory ${trajectoryId}, timestep ${currentTimestep}, analysis ${analysisId}`);
-        
-        const currentGlbUrl = createTrajectoryGLBs(trajectoryId, currentTimestep, analysisId, newTimestamp);
-        
-        let nextGlbUrl: TrajectoryGLBs | null = null;
-        if(state.timestepData.timesteps.length > 1){
-            const currentIndex = state.timestepData.timesteps.indexOf(currentTimestep);
-            if(currentIndex !== -1){
-                const nextIndex = (currentIndex + 1) % state.timestepData.timesteps.length;
-                const nextTimestep = state.timestepData.timesteps[nextIndex];
-                nextGlbUrl = createTrajectoryGLBs(trajectoryId, nextTimestep, analysisId, newTimestamp);
-            }
-        }
-
-        set({
-            currentGlbUrl,
-            nextGlbUrl,
-            lastRefreshTimestamp: newTimestamp,
-        });
+        set({ timestepData });
     },
 
     reset: () => set(initialState)

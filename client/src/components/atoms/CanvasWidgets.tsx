@@ -36,6 +36,7 @@ import EditorWidget from '@/components/organisms/EditorWidget';
 import { axisClasses } from '@mui/x-charts/ChartsAxis';
 import { ScatterChart } from '@mui/x-charts';
 import useTrajectoryStore from '@/stores/trajectories';
+import { useRasterizedFrames } from '@/hooks/trajectory/use-rasterized-frames';
 
 const CHART_COLORS = [
     '#7bc6ff',
@@ -475,6 +476,7 @@ const TotalDislocationSegmentsPlot = () => {
 const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimestep }) => {
     const showWidgets = useEditorUIStore((store) => store.showEditorWidgets);
     const activeModifiers = useEditorUIStore((store) => store.activeModifiers);
+    const { items } = useRasterizedFrames(trajectory?._id);
 
     const modifiersMap = useMemo(() => ({
         'slice-plane': SlicePlane,
@@ -495,6 +497,21 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
     
     return (
         <>
+        {/*
+            <EditorWidget className='raster-frames-container'>
+                {items.map((it) => {
+                    const src = it.src; 
+                    const title = it.frame !== null ? `${it.frame}` : it.filename;
+                    if (!src) return null;
+                    return (
+                        <figure key={it.filename} className='raster-frame-container'>
+                            <figcaption className='raster-frame-caption-container'>Timestep {title}</figcaption>
+                            <img src={src} alt={title} className='raster-frame' />
+                        </figure>
+                    );
+                })}
+            </EditorWidget>*/}
+
             <EditorSidebar />
             <TrajectoryVisibilityStatusFloatIcon />
             <SceneTopCenteredOptions />

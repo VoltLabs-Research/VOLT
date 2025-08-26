@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import Scene3D, { type Scene3DRef } from '@/components/organisms/Scene3D'
 import { Canvas } from '@react-three/fiber'
 import AutoPreviewSaver from '@/components/atoms/scene/AutoPreviewSaver'
@@ -6,10 +6,10 @@ import TimestepViewer from '@/components/organisms/TimestepViewer'
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator'
 import CanvasWidgets from '@/components/atoms/CanvasWidgets'
 import TetrahedronLoader from '@/components/atoms/TetrahedronLoader'
-import useConfigurationStore from '@/stores/editor/configuration'
 import useEditorUIStore from '@/stores/ui/editor'
 import { useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from "framer-motion";
+import useModelStore from '@/stores/editor/model'
 import './Canvas.css'
 
 const CANVAS_CONFIG = {
@@ -25,9 +25,17 @@ const EditorPage: React.FC = () => {
     const { trajectoryId } = useParams<{ trajectoryId: string }>()
     const scene3DRef = useRef<Scene3DRef>(null)
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId });
-    const isModelLoading = useConfigurationStore((state) => state.isModelLoading);
+    const isModelLoading = useModelStore((state) => state.isModelLoading);
     const showCanvasGrid = useEditorUIStore((state) => state.showCanvasGrid);
     
+    const reset = useModelStore((state) => state.reset);
+
+    useEffect(() => {
+        return () => {
+            reset();
+        };
+    }, []);
+
     return (
         <div className='editor-container'>
             <AnimatePresence>
@@ -69,6 +77,7 @@ const EditorPage: React.FC = () => {
                 />
 
                 <TimestepViewer
+                    centerCamera={false}
                     scale={CANVAS_CONFIG.timestepViewerDefaults.scale}
                     rotation={CANVAS_CONFIG.timestepViewerDefaults.rotation}
                     position={CANVAS_CONFIG.timestepViewerDefaults.position}

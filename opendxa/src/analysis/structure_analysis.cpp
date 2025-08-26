@@ -188,7 +188,11 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
             }
         );
 
-        // _coordStructures.postProcessDiamondNeighbors(_context, neighFinder);
+
+        if(_identificationMode == StructureAnalysis::Mode::DIAMOND){
+            _coordStructures.postProcessDiamondNeighbors(_context, neighFinder);
+        }
+        
         return;
     }
 

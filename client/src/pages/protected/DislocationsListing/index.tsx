@@ -31,8 +31,6 @@ const DislocationsListing = () => {
 
   const handleMenuAction = async (action: string, item: any) => {
     if (action === 'view') {
-      // TODO: navega al detalle si lo tienes (por ahora sólo log)
-      // e.g. router.push(`/dislocations/${item._id}`)
       console.log('view :: dislocation doc', item);
     }
   };

@@ -11,6 +11,7 @@ import useTimestepStore from '@/stores/editor/timesteps';
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
 import TetrahedronLoader from '@/components/atoms/TetrahedronLoader';
 import './Scene3D.css';
+import useModelStore from '@/stores/editor/model';
 
 interface Scene3DProps {
     children?: React.ReactNode;
@@ -284,11 +285,11 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 }, ref) => {
     const orbitControlsRef = useRef<any>(null);
     const [tools, setTools] = useState<{ captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> } | null>(null);
-    const activeSceneObject = useConfigurationStore(state => state.activeSceneObject);
+    const activeScene = useModelStore(state => state.activeScene);
     const toggleCanvasGrid = useEditorUIStore((state) => state.toggleCanvasGrid);
     const toggleEditorWidgets = useEditorUIStore((state) => state.toggleEditorWidgets);
     const showEditorWidgets = useEditorUIStore((state) => state.showEditorWidgets);
-    const modelBounds = useTimestepStore((state) => state.modelBounds);
+    const activeModel = useModelStore((state) => state.activeModel);
 
     const maxDpr = useMemo(() => (window.devicePixelRatio > 1 ? 2 : 1), []);
 
@@ -336,13 +337,13 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     }, [onCameraControlsRef]);
 
     const isDefectScene = useMemo(() => 
-        ['defect_mesh', 'interface_mesh'].includes(activeSceneObject), 
-        [activeSceneObject]
+        ['defect_mesh', 'interface_mesh'].includes(activeScene), 
+        [activeScene]
     );
 
     const isTrajectoryScene = useMemo(() => 
-        ['trajectory', 'atoms_colored_by_type', 'dislocations'].includes(activeSceneObject), 
-        [activeSceneObject]
+        ['trajectory', 'atoms_colored_by_type', 'dislocations'].includes(activeScene), 
+        [activeScene]
     );
 
     const canvasStyle = useMemo(() => ({
@@ -358,7 +359,11 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     }), [cameraControlsEnabled]);
 
     useEffect(() => {
+        if(!activeModel?.modelBounds) return;
+
         const handleKeyDown = (e: KeyboardEvent) => {
+            if(!activeModel?.modelBounds) return;
+
             if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b'){
                 e.preventDefault();
                 toggleCanvasGrid();
@@ -373,7 +378,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
                 e.preventDefault();
                 if (orbitControlsRef.current) {
                     const optimal = calculateClosestCameraPositionZY(
-                        modelBounds.box,
+                        activeModel?.modelBounds.box,
                         orbitControlsRef.current.object
                     );
 
@@ -391,7 +396,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [tools, toggleCanvasGrid, toggleEditorWidgets, modelBounds]);
+    }, [tools, toggleCanvasGrid, toggleEditorWidgets, activeModel]);
 
     return (
         <Canvas

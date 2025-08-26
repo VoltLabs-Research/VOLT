@@ -1,18 +1,5 @@
 import { create } from 'zustand';
-
-interface EditorUIState{
-    showCanvasGrid: boolean;
-    showEditorWidgets: boolean;
-    activeModifiers: string[];
-}
-
-interface EditorUIActions{
-    toggleCanvasGrid: () => void;
-    toggleModifier: (modifier: string) => void;
-    toggleEditorWidgets: () => void;
-}
-
-export type EditorUIStore = EditorUIState & EditorUIActions;
+import type { EditorUIStore } from '@/types/stores/ui/editor';
 
 const initialState = {
     showCanvasGrid: true,

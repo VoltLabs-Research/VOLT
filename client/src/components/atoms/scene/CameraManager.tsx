@@ -50,6 +50,7 @@ const CameraManager: React.FC<Props> = ({
   modelBounds,
   orbitControlsRef,
   face = 'pz',
+  centerCamera = false,
   padding = 1.2,
 }) => {
   const { camera, size, controls: defaultControls } = useThree() as any;
@@ -57,6 +58,7 @@ const CameraManager: React.FC<Props> = ({
   // maybe centro de masa rotate?
   useEffect(() => {
     if (!modelBounds) return;
+    if(!centerCamera) return;
 
     const controls = orbitControlsRef?.current ?? defaultControls;
     const box = modelBounds.box;
@@ -78,7 +80,6 @@ const CameraManager: React.FC<Props> = ({
     camera.near = Math.max(0.01, dist * 0.01);
     camera.far  = dist * 100;
     camera.updateProjectionMatrix();
-
     if (controls?.setLookAt) {
       controls.setLookAt(pos.x, pos.y, pos.z, target.x, target.y, target.z, true);
     } else {

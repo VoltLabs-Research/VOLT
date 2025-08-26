@@ -26,6 +26,7 @@ import useTimestepStore from '@/stores/editor/timesteps';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
 import useAnalysisConfigStore from '@/stores/analysis-config';
+import useModelStore from '@/stores/editor/model';
 
 const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
     const logger = useLogger('use-canvas-coordinator');
@@ -40,14 +41,14 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
 
     const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
     const setCurrentTimestep = usePlaybackStore((state) => state.setCurrentTimestep);
-    const playNextFrame = usePlaybackStore((state) => state.playNextFrame);
     const resetPlayback = usePlaybackStore((state) => state.reset);
 
     const computeTimestepData = useTimestepStore((state) => state.computeTimestepData);
     const timestepData = useTimestepStore((state) => state.timestepData);
-    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
-    const lastRefreshTimestamp = useTimestepStore((state) => state.lastRefreshTimestamp);
+    const activeModel = useModelStore((state) => state.activeModel);
     const resetTimestep = useTimestepStore((state) => state.reset);
+
+    const resetModel = useModelStore((state) => state.reset);
 
     // Load trajectory when hook is initialized
     useEffect(() => {
@@ -72,34 +73,18 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
                 updateAnalysisConfig(config);
             }
         }
-    }, [trajectory, currentTimestep, setCurrentTimestep, updateAnalysisConfig]);
+    }, [trajectory, currentTimestep]);
 
     useEffect(() => {
-        if(!analysisConfig?._id) return;
-        computeTimestepData(trajectory, currentTimestep);
-    }, [analysisConfig, trajectory, currentTimestep, computeTimestepData]);
-
-    useEffect(() => {
-        if(trajectory && currentTimestep !== undefined){
+        if(trajectory && currentTimestep !== undefined && analysisConfig?._id){
             computeTimestepData(trajectory, currentTimestep);
-        }
-    }, [trajectory, currentTimestep, computeTimestepData]);
 
-    useEffect(() => {
-        if(currentGlbUrl && lastRefreshTimestamp > 0){
-            logger.log('GLB URLs updated:', {
-                timestamp: lastRefreshTimestamp,
-                trajectoryUrl: currentGlbUrl.trajectory,
-                dislocationsUrl: currentGlbUrl.dislocations
-            });
+            return () => {
+                resetModel();
+            }
         }
-    }, [currentGlbUrl, lastRefreshTimestamp, logger]);
 
-    const coordinatedPlayNextFrame = useCallback(() => {
-        if(timestepData.timesteps?.length > 0){
-            playNextFrame(timestepData.timesteps);
-        }
-    }, [playNextFrame, timestepData.timesteps]);
+    }, [analysisConfig, trajectory, currentTimestep]);
 
     useEffect(() => {
         return () => {
@@ -113,13 +98,10 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
         trajectory,
         currentTimestep,
         timestepData,
-        currentGlbUrl,
-        lastRefreshTimestamp,
+        activeModel,
         isLoading,
         error,
-        trajectoryId,
-        setCurrentTimestep,
-        coordinatedPlayNextFrame
+        trajectoryId
     };
 };
 

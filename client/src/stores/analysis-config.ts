@@ -22,21 +22,7 @@
 
 import { create } from 'zustand';
 import type { AnalysisConfig } from '@/types/models';
-
-interface AnalysisConfigState{
-    analysisConfig: AnalysisConfig,
-    isLoading: boolean;
-}
-
-interface AnalysisConfigActions{
-    setIsLoading: (loading: boolean) => void;
-    resetAnalysisConfig: () => void;
-    updateAnalysisConfig: (config: Partial<AnalysisConfig>) => void;
-    setAnalysisConfig: <K extends keyof AnalysisConfig>(
-        key: K,
-        value: AnalysisConfig[K]
-    ) => void;
-}
+import type { AnalysisConfigStore } from '@/types/stores/analysis-config';
 
 const DEFAULT_ANALYSIS_CONFIG: AnalysisConfig = {
     crystalStructure: 'BCC',
@@ -56,8 +42,6 @@ const initialState = {
     analysisConfig: DEFAULT_ANALYSIS_CONFIG,
     isLoading: true
 };
-
-export type AnalysisConfigStore = AnalysisConfigState & AnalysisConfigActions;
 
 const useAnalysisConfigStore = create<AnalysisConfigStore>((set, get) => {
     // const asyncAction = createAsyncAction(set, get);

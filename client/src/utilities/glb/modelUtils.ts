@@ -22,6 +22,7 @@
 
 import { Box3, Vector3, Sphere } from 'three';
 import * as THREE from 'three';
+import type { TrajectoryGLBs } from '@/types/stores/editor/model';
 
 type MaterialCache = Map<string, THREE.MeshStandardMaterial>;
 
@@ -60,6 +61,7 @@ export const getOptimizedMaterial = (
         });
     }else if(baseMaterial instanceof THREE.MeshBasicMaterial){
         baseMaterial = {
+            // @ts-ignore
             color: baseMaterial.color,
             map: baseMaterial.map,
             opacity: baseMaterial.opacity,
@@ -80,9 +82,11 @@ export const getOptimizedMaterial = (
         baseMaterial.clipIntersection = true;
     }
 
-    baseMaterial.precision = 'lowp';
+    baseMaterial.precision = 'highp';
+    // @ts-ignore
     baseMaterial.fog = false;
     baseMaterial.userData.isOptimized = true;
+    // @ts-ignore
     return baseMaterial;
 };
 
@@ -144,3 +148,32 @@ export const calculateClosestCameraPositionZY = (modelBounds: Box3, camera: any)
         up: new THREE.Vector3(0, 0, 1)
     };
 };
+
+export const buildGlbUrl = (
+    trajectoryId: string, 
+    timestep: number, 
+    analysisId: number,
+    type: string = '',
+    cacheBuster?: number
+): string => {
+    const baseUrl = `/trajectories/${trajectoryId}/glb/${timestep}/${analysisId}`;
+    const typeParam = type ? `type=${type}` : '';
+    const cacheParam = cacheBuster ? `t=${cacheBuster}` : '';
+    
+    const params = [typeParam, cacheParam].filter(Boolean).join('&');
+    return params ? `${baseUrl}?${params}` : baseUrl;
+};
+
+export const createTrajectoryGLBs = (
+    trajectoryId: string, 
+    timestep: number, 
+    analysisId: number, 
+    cacheBuster?: number
+): TrajectoryGLBs => ({
+    trajectory: buildGlbUrl(trajectoryId, timestep, analysisId, '', cacheBuster),
+    defect_mesh: buildGlbUrl(trajectoryId, timestep, analysisId, 'defect_mesh', cacheBuster),
+    interface_mesh: buildGlbUrl(trajectoryId, timestep, analysisId, 'interface_mesh', cacheBuster),
+    atoms_colored_by_type: buildGlbUrl(trajectoryId, timestep, analysisId, 'atoms_colored_by_type', cacheBuster),
+    dislocations: buildGlbUrl(trajectoryId, timestep, analysisId, 'dislocations', cacheBuster),
+    core_atoms: '',
+});

@@ -22,45 +22,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-export interface SlicePlaneConfig {
-    normal: { x: number; y: number; z: number };
-    distance: number;
-    slabWidth: number;
-    reverseOrientation: boolean;
-}
-
-export type SceneObjectType = 
-    | 'trajectory' 
-    | 'dislocations' 
-    | 'defect_mesh'
-    | 'core_atoms' 
-    | 'interface_mesh' 
-    | 'atoms_colored_by_type';
-
-interface ConfigurationState {
-    slicePlaneConfig: SlicePlaneConfig;
-    activeSceneObject: SceneObjectType;
-    activeSidebarTab: string;
-    activeSidebarOption: string;
-    isModelLoading: boolean;
-    activeModifier: string;
-    slicingOrigin: { x: number; y: number; z: number };
-}
-
-interface ConfigurationActions {
-    setSlicePlaneConfig: (config: Partial<SlicePlaneConfig>) => void;
-    resetSlicePlaneConfig: () => void;
-    setSlicingOrigin: (origin: { x: number; y: number; z: number }) => void;
-    setActiveSidebarTag: (tag: string) => void;
-    setActiveModifier: (modifier: string) => void;
-    setActiveSidebarOption: (option: string) => void;
-    setActiveSceneObject: (sceneObject: SceneObjectType) => void;
-    setIsModelLoading: (loading: boolean) => void;
-    reset: () => void;
-}
-
-export type ConfigurationStore = ConfigurationState & ConfigurationActions;
+import type { SlicePlaneConfig, ConfigurationStore, ConfigurationState } from '@/types/stores/editor/configuration';
 
 const DEFAULT_SLICE_PLANE_CONFIG: SlicePlaneConfig = {
     normal: { x: 0, y: 0, z: 0 },
@@ -69,12 +31,8 @@ const DEFAULT_SLICE_PLANE_CONFIG: SlicePlaneConfig = {
     reverseOrientation: false,
 };
 
-const DEFAULT_SCENE_OBJECT: SceneObjectType = 'trajectory';
-
 const initialState: ConfigurationState = {
     slicePlaneConfig: DEFAULT_SLICE_PLANE_CONFIG,
-    activeSceneObject: DEFAULT_SCENE_OBJECT,
-    isModelLoading: false,
     activeSidebarTab: 'Scene',
     activeSidebarOption: '',
     activeModifier: '',
@@ -116,14 +74,6 @@ const useConfigurationStore = create<ConfigurationStore>()(persist((set, get) =>
             set({ slicePlaneConfig: DEFAULT_SLICE_PLANE_CONFIG });
         },
 
-        setActiveSceneObject: (sceneObject: SceneObjectType) => {
-            set({ activeSceneObject: sceneObject });
-        },
-
-        setIsModelLoading: (loading: boolean) => {
-            set({ isModelLoading: loading });
-        },
-
         reset: () => {
             set(initialState);
         },
@@ -131,8 +81,7 @@ const useConfigurationStore = create<ConfigurationStore>()(persist((set, get) =>
     {
         name: 'configuration-storage',
         partialize: (state) => ({
-            slicePlaneConfig: state.slicePlaneConfig,
-            activeSceneObject: state.activeSceneObject,
+            slicePlaneConfig: state.slicePlaneConfig
         }),
     }
 ));

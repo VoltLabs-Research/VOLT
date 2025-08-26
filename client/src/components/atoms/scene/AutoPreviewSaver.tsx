@@ -4,6 +4,7 @@ import useConfigurationStore from '@/stores/editor/configuration';
 import useTimestepStore from '@/stores/editor/timesteps';
 import useLogger from '@/hooks/core/use-logger';
 import type { Scene3DRef } from '@/components/organisms/Scene3D';
+import useModelStore from '@/stores/editor/model';
 
 const savedRegistry = new Map<string, number>();
 const pendingTimeouts = new Map<string, number>();
@@ -50,10 +51,13 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
     const logger = useLogger('auto-preview-saver');
     const saveTrajectoryPreview = useTrajectoryStore((state) => state.saveTrajectoryPreview);
     const isSavingPreview = useTrajectoryStore((state) => state.isSavingPreview);
-    const isModelLoading = useConfigurationStore((state) => state.isModelLoading);
-    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
+    const isModelLoading = useModelStore((state) => state.isModelLoading);
+    const activeModel = useModelStore((state) => state.activeModel);
 
-    const glbKey = useMemo(() => stableKey(currentGlbUrl), [currentGlbUrl]);
+    const glbKey = useMemo(() => {
+        if(!activeModel?.glbs) return;
+        return stableKey(activeModel.glbs);
+    }, [activeModel]);
 
     useEffect(() => {
         logger.log('Mounted');

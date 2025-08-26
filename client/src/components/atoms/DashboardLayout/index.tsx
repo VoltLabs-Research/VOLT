@@ -21,7 +21,7 @@
 **/
 
 import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { TbCube3dSphere } from "react-icons/tb";
 import { IoSearchOutline, IoSettingsOutline } from "react-icons/io5";
 import { TbBook } from 'react-icons/tb';
@@ -38,6 +38,7 @@ const DashboardLayout = () => {
     const teams = useTeamStore((state) => state.teams);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const getUserTeams = useTeamStore((state) => state.getUserTeams);
+    const navigate = useNavigate();
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
@@ -108,6 +109,7 @@ const DashboardLayout = () => {
                         <div 
                             className={`navigation-item-container ${(index === 0) ? 'is-selected' : ''}`}
                             key={index}
+                            onClick={() => navigate(to)}
                         >
                             <i className='navigation-item-icon'>
                                 <Icon />

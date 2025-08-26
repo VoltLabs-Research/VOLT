@@ -24,13 +24,12 @@ import { useRef, useCallback, useEffect } from 'react';
 import useTrajectoryManager from '@/hooks/trajectory/use-trajectory-manager';
 import usePlaybackStore from '@/stores/editor/playback';
 import useTimestepStore from '@/stores/editor/timesteps';
-import useConfigurationStore from '@/stores/editor/configuration';
+import useModelStore from '@/stores/editor/model';
 
 const useCanvasState = (trajectoryId: string | undefined) => {
     const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
     const setCurrentTimestep = usePlaybackStore((state) => state.setCurrentTimestep);
-    const currentGlbUrl = useTimestepStore((state) => state.currentGlbUrl);
-    const isModelLoading = useConfigurationStore((state) => state.isModelLoading);
+    const isModelLoading = useModelStore((state) => state.isModelLoading);
     
     const { trajectory, loadTrajectory } = useTrajectoryManager();
     const computeTimestepData = useTimestepStore((state) => state.computeTimestepData);
@@ -48,7 +47,7 @@ const useCanvasState = (trajectoryId: string | undefined) => {
             
             setCurrentTimestep(firstTimestep);
         }
-    }, [computeTimestepData, setCurrentTimestep]);
+    }, [setCurrentTimestep]);
 
 
     useEffect(() => {
@@ -78,11 +77,9 @@ const useCanvasState = (trajectoryId: string | undefined) => {
     return {
         trajectory,
         isReady: isInitialLoadDone.current,
-        currentGlbUrl,
         currentTimestep,
         selectTrajectory,
         isModelLoading,
-        hasModel: Boolean(currentGlbUrl),
         setTimestep: setCurrentTimestep
     };
 };

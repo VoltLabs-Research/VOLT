@@ -19,6 +19,5 @@ export interface EditorWidgetsProps {
 
 export interface Scene3DContainerProps {
     trajectoryId: string | undefined;
-    hasModel: boolean;
     onTrajectoryUpload: (trajectory: TrajectoryData) => void;
 }

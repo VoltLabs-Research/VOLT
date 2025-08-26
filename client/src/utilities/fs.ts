@@ -28,8 +28,8 @@ export const processFileSystemEntry = async (entry: any): Promise<{ files: FileW
                 if(!folderName){
                     folderName = extractFolderName(currentEntry.fullPath);
                 }
-            }catch(err){
-                logger.error(`Error processing file: ${currentEntry.fullPath}`, error);
+            }catch(err: any){
+                logger.error(`Error processing file: ${currentEntry.fullPath}`, err);
             }
         }else if(currentEntry.isDirectory){
             if(!folderName){

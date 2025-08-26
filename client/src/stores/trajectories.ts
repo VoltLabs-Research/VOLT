@@ -25,54 +25,11 @@ import { api } from '@/services/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import type { Trajectory } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
+import type { RasterFrameItem, RasterPage } from '@/types/raster';
+import type { TrajectoryState, TrajectoryStore } from '@/types/stores/trajectories';
 import PreviewCacheService from '@/services/preview-cache-service';
 import { clearTrajectoryPreviewCache } from '@/hooks/trajectory/use-trajectory-preview';
 import Logger from '@/services/logger';
-
-interface TrajectoryState {
-    trajectories: Trajectory[];
-    trajectory: Trajectory | null;
-    isLoading: boolean;
-    isSavingPreview: boolean;
-    uploadingFileCount: number;
-    error: string | null;
-    analysisStats: object;
-    rasterData: object;
-    isAnalysisLoading: boolean;
-    isLoadingTrajectories: boolean;
-    selectedTrajectories: string[];
-    structureAnalysis: any;
-    avgSegmentSeries: any[];
-    idRateSeries: [];
-    dislocationSeries: [];
-    cache: Record<string, Trajectory[]>;
-    analysisCache: Record<string, any>;
-    differencesCache: Record<string, any>;
-}
-
-interface TrajectoryActions {
-    getTrajectories: (teamId?: string, opts?: { force?: boolean }) => Promise<void>;
-    getTrajectoryById: (id: string) => Promise<void>;
-    createTrajectory: (formData: FormData, teamId?: string) => Promise<void>;
-    updateTrajectoryById: (id: string, data: Partial<Pick<Trajectory, 'name'>>) => Promise<void>;
-    deleteTrajectoryById: (id: string, teamId?: string) => Promise<void>;
-    rasterize: (id: string) => Promise<void>;
-    toggleTrajectorySelection: (id: string) => void;
-    deleteSelectedTrajectories: () => Promise<void>;
-    clearSelection: () => void;
-    saveTrajectoryPreview: (id: string, dataURL: string) => Promise<{ success: boolean; error?: string }>;
-    getTrajectoryPreviewUrl: (id: string) => string | null;
-    loadAuthenticatedPreview: (id: string) => Promise<string | null>;
-    isPreviewLoading: (id: string) => boolean;
-    clearPreviewCache: (id?: string) => void;
-    getStructureAnalysis: (teamId: string, opts?: { force?: boolean }) => Promise<void>;
-    setTrajectory: (trajectory: Trajectory | null) => void;
-    clearError: () => void;
-    reset: () => void;
-    clearCurrentTrajectory: () => void;
-}
-
-export type TrajectoryStore = TrajectoryState & TrajectoryActions;
 
 const initialState: TrajectoryState = {
     trajectories: [],
@@ -85,15 +42,42 @@ const initialState: TrajectoryState = {
     error: null,
     structureAnalysis: null,
     selectedTrajectories: [],
+    rasterObjectUrlCache: {},
     analysisStats: {},
     avgSegmentSeries: [],
     idRateSeries: [],
     isLoadingTrajectories: true,
     dislocationSeries: [],
+    rasterCache: {},
+    isRasterLoading: false,
+    metrics: {},
     cache: {},
     analysisCache: {},
     differencesCache: {}
 };
+
+export function dataURLToBlob(dataURL: string): Blob {
+  // data:[<mediatype>][;base64],<data>
+  const [header, data] = dataURL.split(',');
+  const isBase64 = /;base64/i.test(header);
+  const mimeMatch = header.match(/data:([^;]+)/i);
+  const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+
+  if (isBase64) {
+    const byteString = atob(data);
+    const len = byteString.length;
+    const u8 = new Uint8Array(len);
+    for (let i = 0; i < len; i++) u8[i] = byteString.charCodeAt(i);
+    return new Blob([u8], { type: mime });
+  } else {
+    return new Blob([decodeURIComponent(data)], { type: mime });
+  }
+}
+
+export function dataURLToObjectURL(dataURL: string): string {
+  const blob = dataURLToBlob(dataURL);
+  return URL.createObjectURL(blob);
+}
 
 const previewCache = new PreviewCacheService();
 
@@ -114,6 +98,15 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         };
     };
 
+      const revokeObjectUrls = (trajectoryId: string) => {
+    const cache = get().rasterObjectUrlCache[trajectoryId];
+    if (cache) {
+      Object.values(cache).forEach((url) => {
+        try { URL.revokeObjectURL(url); } catch {}
+      });
+    }
+  };
+
     const removeTrajectoryFromList = (id: string) => {
         const currentTrajectories = get().trajectories;
         const currentTrajectory = get().trajectory;
@@ -127,6 +120,9 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
 
     return {
         ...initialState,
+        
+        metrics: null,
+        setMetrics: (data) => set({ metrics: data }),
 
         getTrajectories: (teamId?: string, opts?: { force?: boolean }) => {
             const key = keyForTeam(teamId);
@@ -155,6 +151,91 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 })
             });
         },
+    getRasterizedFrames: async (id, query) => {
+
+
+            const includeData = true;
+      const offset = query?.offset ?? 0;
+      const limit  = query?.limit;
+      const match  = query?.match;
+      const force  = !!query?.force;
+
+      const cacheKey = id;
+      const cached = get().rasterCache[cacheKey];
+      const sameParams =
+        cached &&
+        cached.includeData === includeData &&
+        cached.offset === offset &&
+        (cached.limit ?? null) === (limit ?? null) &&
+        (cached.match ?? '') === (match ?? '');
+
+      if (cached && sameParams && !force) {
+        return cached;
+      }
+
+      const params = new URLSearchParams();
+      params.set('includeData', 'true');
+      params.set('offset', String(offset));
+      if (typeof limit === 'number') params.set('limit', String(limit));
+      if (match && match.trim()) params.set('match', match.trim());
+
+      set({ isRasterLoading: true });
+
+      try {
+        const res = await api.get(`/trajectories/${id}/glb/raster?${params.toString()}`);
+        const items: RasterFrameItem[] = res.data?.data ?? [];
+        const meta = res.data?.meta ?? null;
+
+        // Antes de generar nuevos ObjectURLs, revoca los anteriores de ese trajectory
+        revokeObjectUrls(id);
+
+        // Construimos y cacheamos ObjectURLs por filename
+        const map: Record<string, string> = {};
+        for (const it of items) {
+          if (!it.data) continue; // por seguridad
+          map[it.filename] = dataURLToObjectURL(it.data);
+        }
+
+        const page: RasterPage = {
+          items,
+          total: meta?.total ?? items.length,
+          offset: meta?.offset ?? offset,
+          limit: meta?.limit ?? (typeof limit === 'number' ? limit : null),
+          includeData,
+          match,
+          fetchedAt: Date.now(),
+        };
+
+        set((s) => ({
+          rasterCache: { ...s.rasterCache, [cacheKey]: page },
+          rasterObjectUrlCache: { ...s.rasterObjectUrlCache, [cacheKey]: map },
+          isRasterLoading: false,
+        }));
+        return page;
+      } catch (error) {
+        // no cambies nada, pero corta el loading
+        set({ isRasterLoading: false });
+        return null;
+      }
+    },
+
+    clearRasterCache: (id?: string) => {
+      if (!id) {
+        // revoca TODO
+        const all = get().rasterObjectUrlCache;
+        Object.keys(all).forEach(revokeObjectUrls);
+        set({ rasterCache: {}, rasterObjectUrlCache: {} });
+        return;
+      }
+      revokeObjectUrls(id);
+      set((s) => {
+        const nextPages = { ...s.rasterCache };
+        const nextUrls  = { ...s.rasterObjectUrlCache };
+        delete nextPages[id];
+        delete nextUrls[id];
+        return { rasterCache: nextPages, rasterObjectUrlCache: nextUrls };
+      });
+    },
 
         rasterize: (id: string) => asyncAction(() => api.post<ApiResponse<any>>(`/trajectories/${id}/glb/raster/`), {
             loadingKey: 'isAnalysisLoading',

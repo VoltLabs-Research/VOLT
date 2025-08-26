@@ -26,22 +26,7 @@ import { api } from '@/services/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import type { ApiResponse, AuthResponsePayload } from '@/types/api';
 import type { User } from '@/types/models';
-
-interface AuthState {
-    user: User | null;
-    isLoading: boolean;
-    error: string | null;
-}
-
-interface AuthActions{
-    initializeAuth: () => Promise<void>;
-    signIn: (credentials: Record<string, string>) => Promise<void>;
-    signUp: (details: Record<string, string>) => Promise<void>;
-    signOut: () => void;
-    clearError: () => void;
-}
-
-type AuthStore = AuthState & AuthActions;
+import type { AuthState, AuthStore } from '@/types/stores/authentication';
 
 const initialState: AuthState = {
     user: null,

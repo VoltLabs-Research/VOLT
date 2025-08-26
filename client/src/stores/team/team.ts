@@ -1,37 +1,9 @@
-import { create, type StateCreator } from 'zustand';
+import { create } from 'zustand';
 import { api } from '@/services/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import type { Team } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
-
-interface TeamState {
-    teams: Team[];
-    selectedTeam: Team | null;
-    isLoading: boolean;
-    error: string | null;
-}
-
-interface TeamActions {
-    getUserTeams: () => Promise<void>;
-    setSelectedTeam: (teamId: string) => void;
-    createTeam: (data: CreateTeamData) => Promise<Team>;
-    updateTeam: (teamId: string, data: UpdateTeamData) => Promise<void>;
-    deleteTeam: (teamId: string) => Promise<void>;
-    clearError: () => void;
-    reset: () => void;
-}
-
-interface CreateTeamData {
-    name: string;
-    description?: string;
-}
-
-interface UpdateTeamData {
-    name?: string;
-    description?: string;
-}
-
-export type TeamStore = TeamState & TeamActions;
+import type { TeamState, UpdateTeamData } from '@/types/stores/team/team';
 
 const initialState: TeamState = {
     teams: [],

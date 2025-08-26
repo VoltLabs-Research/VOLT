@@ -1,10 +1,9 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { BufferGeometry, Material } from 'three';
+import React, { useMemo } from 'react';
 import CameraManager from '@/components/atoms/scene/CameraManager';
 import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
 import { useGlbScene } from '@/hooks/canvas/use-glb-scene';
 import useConfigurationStore from '@/stores/editor/configuration';
-import useTimestepStore from '@/stores/editor/timesteps';
+import useModelStore from '@/stores/editor/model';
 
 interface TimestepViewerProps {
     rotation?: { x?: number; y?: number; z?: number };
@@ -25,16 +24,17 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     scale = 1,
     autoFit = true,
     orbitControlsRef,
+    centerCamera = true,
     enableSlice = true,
     enableInstancing = true,
     updateThrottle = 16,
 }) => {
     const slicePlaneConfig = useConfigurationStore(s => s.slicePlaneConfig);
     const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig);
-    const activeSceneObject = useConfigurationStore((state) => state.activeSceneObject);
+    const activeScene = useModelStore((state) => state.activeScene);
 
     const sceneProps = useMemo(() => ({
-        activeSceneObject,
+        activeScene,
         sliceClippingPlanes,
         position,
         rotation,
@@ -54,6 +54,7 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
         <>
             {shouldRenderCamera && (
                 <CameraManager 
+                    centerCamera={centerCamera}
                     modelBounds={modelBounds} 
                     orbitControlsRef={orbitControlsRef} 
                     face='ny'

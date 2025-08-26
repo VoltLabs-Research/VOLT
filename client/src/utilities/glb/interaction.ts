@@ -33,7 +33,7 @@ export const attachPointerEvents = (params: {
                     state.selected = state.model;
                     showSelectionBox(false);
                 }
-                state.dragging = true;
+                // state.dragging = true;
             }
         }else{
             deselect();

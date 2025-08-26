@@ -1,6 +1,11 @@
 .trajectories-container{
     width: 100%;
     display: flex;
+    flex-wrap: wrap;
+    height: 100%;
+    padding-top: 1px;
+    overflow-y: scroll;
+    overflow-x: hidden;
     gap: 2rem;
 }
 

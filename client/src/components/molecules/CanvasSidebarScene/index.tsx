@@ -4,12 +4,12 @@ import { PiAtomThin, PiLineSegmentThin, PiTriangleDashedThin } from 'react-icons
 import { SiTraefikmesh } from 'react-icons/si';
 import { IoIosColorFilter } from 'react-icons/io';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
-import useConfigurationStore from '@/stores/editor/configuration';
+import useModelStore, { type SceneObjectType } from '@/stores/editor/model';
 import './CanvasSidebarScene.css';
 
 const CanvasSidebarScene: React.FC = () => {
-    const setActiveSceneObject = useConfigurationStore((state) => state.setActiveSceneObject);
-    const activeSceneObject = useConfigurationStore((state) => state.activeSceneObject);
+    const setActiveScene = useModelStore((state) => state.setActiveScene);
+    const activeScene = useModelStore((state) => state.activeScene);
 
     const options = [{
         Icon: TbObjectScan,
@@ -37,8 +37,8 @@ const CanvasSidebarScene: React.FC = () => {
         sceneType: 'atoms_colored_by_type'
     }];
 
-    const onSelect = (option) => {
-        setActiveSceneObject(option.sceneType);
+    const onSelect = (option: SceneObjectType) => {
+        setActiveScene(option.sceneType);
     };
 
     return (
@@ -47,7 +47,7 @@ const CanvasSidebarScene: React.FC = () => {
                 {options.map((option, index) => (
                     <CanvasSidebarOption
                         onSelect={onSelect}
-                        activeOption={activeSceneObject}
+                        activeOption={activeScene}
                         option={option}
                         key={index}
                     />

@@ -55,7 +55,8 @@ const AnalysisConfiguration = () => {
             type: 'select', 
             options: [
                 { value: 'PTM', title: 'PTM (Polyhedral Template Matching)' },
-                { value: 'CNA', title: 'CNA (Common Neighbor Analysis)' }
+                { value: 'CNA', title: 'CNA (Common Neighbor Analysis)' },
+                { value: 'DIAMOND', title: 'Diamond' }
             ] 
         },
         { key: 'RMSD', label: 'RMSD', type: 'input', inputProps: { type: 'input', inputProps: { type: 'number', step: '0.1' } } },
@@ -69,7 +70,6 @@ const AnalysisConfiguration = () => {
     ];
 
     const startAnalysis = () => {
-        console.log('Starting Dislocation Analysis:', analysisConfig);
         dislocationAnalysis(trajectory?._id, analysisConfig);
         // TODO: Show analysis progress in canvas
         navigate('/dashboard');

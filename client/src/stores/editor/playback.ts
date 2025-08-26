@@ -1,23 +1,6 @@
 import { create } from 'zustand';
 import useTimestepStore from '@/stores/editor/timesteps';
-
-interface PlaybackState {
-    isPlaying: boolean;
-    playSpeed: number;
-    currentTimestep?: number;
-    intervalId: ReturnType<typeof setInterval> | null;
-}
-
-interface PlaybackActions {
-    togglePlay: () => void;
-    setPlaySpeed: (speed: number) => void;
-    setCurrentTimestep: (timestep: number) => void;
-    playNextFrame: () => void;
-    stopPlayback: () => void;
-    reset: () => void;
-}
-
-export type PlaybackStore = PlaybackState & PlaybackActions;
+import type { PlaybackState, PlaybackStore } from '@/types/stores/editor/playback';
 
 const DEFAULT_PLAY_SPEED = 1;
 const MIN_PLAY_SPEED = 0.1;

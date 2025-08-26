@@ -67,7 +67,6 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     const rasterize = useTrajectoryStore((state) => state.rasterize);
 
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
-    const setTrajectory = useTrajectoryStore((state) => state.setTrajectory);
 
     const {
         previewBlobUrl,

@@ -112,6 +112,27 @@
     color: #dadada;
 }
 
+.raster-frame-container{
+    pointer-events: none;
+    width: 100%;
+}
+
+.raster-frame-caption-container{
+    background-color: #1b1b1b;
+    border-radius: 2rem;
+    padding: .2rem;
+    font-size: .9rem;
+    display: flex;
+    width: 150px;
+    margin: 0 auto;
+    justify-content: center;
+    align-items: center;
+}
+
+.raster-frame{
+    width: 100%;
+}
+
 .dashboard-stat-analytic-container{
     position: absolute;
     right: 2rem;
@@ -376,3 +397,9 @@
         color: #b5b5b5;
         margin-top: 0.25rem;
     }
+
+@media screen and (max-width: 768px){
+    .dashboard-body-left-container{
+        width: 100%;
+    }
+}

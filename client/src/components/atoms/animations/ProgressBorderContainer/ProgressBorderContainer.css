@@ -1,5 +1,6 @@
 .progress-border-container{
     position: relative;
+    padding: 1px;
     border-radius: 12px;
     height: 100%;
     background: var(--progress-border-static, transparent);

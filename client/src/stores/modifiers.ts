@@ -26,23 +26,9 @@ import type { ApiResponse } from '@/types/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import { clearTrajectoryPreviewCache } from '@/hooks/trajectory/use-trajectory-preview';
 import useTrajectoryStore from '@/stores/trajectories';
-import useTimestepStore from '@/stores/editor/timesteps';
-
-interface ModifiersState{
-    isAnalysisLoading: boolean;
-    error: string | null;
-    isRenderOptionsLoading: boolean;
-    isLoading: boolean;
-}
-
-interface ModifiersActions{
-    structureIdentification(id: string, analysisConfig: any, identificationMode: string): Promise<void>;
-    computeAnalyses(id: string): Promise<void>;
-    dislocationAnalysis(trajectoryId: string, analysisConfig: any): Promise<void>;
-    dislocationRenderOptions(trajectoryId: string, timestep: string, analysisId: string, options: any): Promise<void>;
-}
-
-type ModifiersStore = ModifiersState & ModifiersActions;
+import { createTrajectoryGLBs } from '@/utilities/glb/modelUtils';
+import useModelStore from './editor/model';
+import type { ModifiersStore } from '@/types/stores/modifier';
 
 const initialState = {
     isAnalysisLoading: false,
@@ -111,7 +97,13 @@ const useModifiersStore = create<ModifiersStore>()((set, get) => {
                 const currentTimestep = parseInt(timestep);
                 const analysisIdNum = parseInt(analysisId);
                 
-                useTimestepStore.getState().refreshGlbUrls(trajectoryId, currentTimestep, analysisIdNum);
+                const glbs = createTrajectoryGLBs(
+                    trajectoryId,
+                    currentTimestep,
+                    analysisIdNum
+                );
+                
+                useModelStore.getState().selectModel(glbs);
                 
                 clearTrajectoryPreviewCache(trajectoryId);
                 

@@ -40,9 +40,7 @@
 }
 
 .simulation-cover-container:not(:has(.simulation-image)){
-    border: 1px solid #d9d9d9;
-    background-color: #fbfbfb;
-    box-shadow: 0 0 0px 1px rgb(205 205 205 / 80%);
+    background-color: #181818;
 }
 
 .simulation-cover-container{

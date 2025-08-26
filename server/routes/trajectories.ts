@@ -78,6 +78,12 @@ router.get(
 );
 
 router.get(
+    '/:id/glb/raster/',
+    middleware.checkTeamMembershipForTrajectory,
+    controller.getTrajectoryRasterizedFrames
+);
+
+router.get(
     '/metrics',
     authMiddleware.protect,
     controller.getTrajectoryMetrics
