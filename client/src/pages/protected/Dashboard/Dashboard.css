@@ -402,4 +402,8 @@
     .dashboard-body-left-container{
         width: 100%;
     }
+
+    .dashboard-wrapper-container{
+        flex-direction: column;
+    }
 }

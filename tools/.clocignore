@@ -6,5 +6,6 @@
 ./server/package-lock.json
 
 ./opendxa/dependencies/
+./opendxa/build-debug/
 ./opendxa/build/
 ./bindings/
