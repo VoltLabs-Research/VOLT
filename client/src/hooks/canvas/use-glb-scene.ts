@@ -9,8 +9,6 @@ import { ensureSimulationBox, runSizeAnimationStep, startSizeAnimAfterRotation }
 import { configurePointCloudMaterial, configureGeometry, isPointCloudObject } from '@/utilities/glb/materials';
 import { attachPointerEvents, attachKeyboard } from '@/utilities/glb/interaction';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
-import useTimestepStore from '@/stores/editor/timesteps';
-import useConfigurationStore from '@/stores/editor/configuration';
 import useLogger from '@/hooks/core/use-logger';
 import {
     Group,

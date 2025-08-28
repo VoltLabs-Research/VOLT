@@ -425,97 +425,24 @@ void ClusterConnector::buildClusters(){
                 bool shouldAddToCluster = false;
                 size_t bestPermutation = 0;
 
-                if(_sa.usingPTM()){
-                    // Check deformation
-                    const double* currentF = _context.ptmDeformationGradient->dataFloat() + currentAtomIdx * 9;
-                    const double* neighborF = _context.ptmDeformationGradient->dataFloat() + neighborAtomIdx * 9;
-
-                    Matrix3 F1(currentF);
-                    Matrix3 F2(neighborF);
-
-                    double det1 = F1.determinant();
-                    double det2 = F2.determinant();
-                    double volumeStrainDiff = std::abs(det1 - det2) / std::max(std::abs(det1), std::abs(det2));
-
-                    Matrix3 strain1 = 0.5 * (F1.transposed() * F1 - Matrix3::Identity());
-                    Matrix3 strain2 = 0.5 * (F2.transposed() * F2 - Matrix3::Identity());
-                    double strainDifference = (strain1 - strain2).frobeniusNorm();
-                    
-                    const double VOLUME_STRAIN_TOLERANCE = 0.05;
-                    const double STRAIN_DIFF_TOLERANCE = 0.08;
-
-                    bool deformationCompatible = (volumeStrainDiff < VOLUME_STRAIN_TOLERANCE && strainDifference < STRAIN_DIFF_TOLERANCE);
-                    if(!deformationCompatible){
-                        rejectedByDeformation++;
-                        continue;
-                    }
-
-                    // Check orientation
-                    double* currentQ = _context.ptmOrientation->dataFloat() + currentAtomIdx * 4;
-                    double* neighborQ = _context.ptmOrientation->dataFloat() + neighborAtomIdx * 4;
-                    
-                    Quaternion q1(currentQ[0], currentQ[1], currentQ[2], currentQ[3]);
-                    Quaternion q2(neighborQ[0], neighborQ[1], neighborQ[2], neighborQ[3]);
-                    q1.normalize();
-                    q2.normalize();
-
-                    Quaternion quatDiff = q2 * q1.inverse();
-                    double angle = 2.0 * std::acos(std::abs(quatDiff.w()));
-
-                    const double PTM_ANGLE_THRESHOLD = (8.0 * M_PI) / 180.0;
-                    if(angle < PTM_ANGLE_THRESHOLD){
-                        // TODO: NOT PROVIDED FROM PTM?
-                        // Finding the best permutation using the geometric method
-                        for(size_t i = 0; i < latticeStruct.permutations.size(); i++){
-                            if(transition.equals(latticeStruct.permutations[i].transformation, CA_TRANSITION_MATRIX_EPSILON)){
-                                shouldAddToCluster = true;
-                                bestPermutation = i;
-                                break;
-                            }
-                        }
-
-                        if(!shouldAddToCluster){
-                            rejectedByGeometry++;
-                        }
-                    }else{
-                        rejectedByOrientation++;
-                    }
-                }else{
-                    // CNA
-                    for(size_t i = 0; i < latticeStruct.permutations.size(); i++){
-                        if(transition.equals(latticeStruct.permutations[i].transformation, CA_TRANSITION_MATRIX_EPSILON)){
-                            shouldAddToCluster = true;
-                            bestPermutation = i;
-                            break;
-                        }
-                    }
-                }
-
-                if(shouldAddToCluster){
-                    _context.atomClusters->setInt(neighborAtomIdx, cluster->id);
-                    cluster->atomCount++;
-                    _context.atomSymmetryPermutations->setInt(neighborAtomIdx, bestPermutation);
-                    atomsToVisit.push_back(neighborAtomIdx);
-                    acceptedConnections++;
-                }
             }
         }
 
         // Compute matrix which transforms vectors from lattice space to simulation coordinates
         if(_sa.usingPTM()){
-            double* qdata = _context.ptmOrientation->dataFloat() + seedAtomIndex * 4;
-            Quaternion q(qdata[0], qdata[1], qdata[2], qdata[3]);
-            q.normalize();
+                double* qdata = _context.ptmOrientation->dataFloat() + seedAtomIndex * 4;
+                Quaternion q(qdata[0], qdata[1], qdata[2], qdata[3]);
+                q.normalize();
 
-            Vector3 ex(1.0, 0.0, 0.0);
-            Vector3 ey(0.0, 1.0, 0.0);
-            Vector3 ez(0.0, 0.0, 1.0);
-            Matrix3 R;
-            R.column(0) = q * ex;
-            R.column(1) = q * ey;
-            R.column(2) = q * ez;
-            
-            cluster->orientation = R;
+                Vector3 ex(1.0, 0.0, 0.0);
+                Vector3 ey(0.0, 1.0, 0.0);
+                Vector3 ez(0.0, 0.0, 1.0);
+                Matrix3 R;
+                R.column(0) = q * ex;
+                R.column(1) = q * ey;
+                R.column(2) = q * ez;
+                
+                cluster->orientation = R;
         }else{
             // TODO: CHECK canInvert?
             Matrix_3<double> orientationVInverse;
@@ -536,90 +463,8 @@ void ClusterConnector::buildClusters(){
         }
     }
 
-    // Hierarchical clustering for merger clusters supported only for PTM
-    if(_sa.usingPTM()){
-        spdlog::info("Starting post-processing cluster merging...");
-
-        std::vector<Cluster*> clusters;
-        for(Cluster* cluster : _sa.clusterGraph().clusters()){
-            if(cluster && cluster->id != 0 && cluster->structure == _context.inputCrystalType){
-                clusters.push_back(cluster);
-            }
-        }
-
-        size_t mergedPairs = 0;
-        const double CLUSTER_MERGE_ANGLE_THRESHOLD = (8.0 * M_PI )/ 180.0;
-
-        // Find compatible clusters to merge
-        for(size_t i = 0; i < clusters.size(); i++){
-            // Only consider small clusters for merge
-            if(clusters[i]->atomCount < 50) continue;
-
-            for(size_t j = i + 1; j < clusters.size(); j++){
-                if(clusters[j]->atomCount < 50) continue;
-
-                // Check if clusters have existing transitions (are neighbors)
-                bool areNeighbors = false;
-                for(ClusterTransition* t = clusters[i]->transitions; t; t = t->next){
-                    if(t->cluster2 == clusters[j]){
-                        areNeighbors = true;
-                        break;
-                    }
-                }
-
-                if(!areNeighbors) continue;
-
-                // Check orientation compatibility
-                Matrix3 orientation1 = clusters[i]->orientation;
-                Matrix3 orientation2 = clusters[j]->orientation;
-                Matrix3 relativeOrientation = orientation2 * orientation1.inverse();
-
-                // Calculate rotation angle using trace
-                double trace = relativeOrientation(0,0) + relativeOrientation(1,1) + relativeOrientation(2,2);
-                double angle = std::acos(std::max(-1.0, std::min(1.0, (trace - 1.0) / 2.0)));
-
-                if(angle < CLUSTER_MERGE_ANGLE_THRESHOLD){
-                    // Merger cluster j into cluster i
-                    const size_t N = _context.atomCount();
-                    for(size_t atomIdx = 0; atomIdx < N; atomIdx++){
-                        if(_context.atomClusters->getInt(atomIdx) == clusters[j]->id){
-                            _context.atomClusters->setInt(atomIdx, clusters[i]->id);
-                        }      
-                    }
-
-                    clusters[i]->atomCount += clusters[j]->atomCount;
-                    clusters[j]->atomCount = 0;
-                    mergedPairs++;
-                }
-            }
-        }
-
-        spdlog::info("Post-processing merged {} cluster pairs", mergedPairs);
-    }
-    
     // Reorient atoms to align clusters with global coordinate system
     reorientAtomsToAlignClusters();
-
-    if(_sa.usingPTM()){
-        size_t finalClusterCount = 0;
-        for(Cluster* cluster : _sa.clusterGraph().clusters()){
-            if(cluster && cluster->id != 0 && cluster->atomCount > 0){
-                finalClusterCount++;
-            }
-        }
-        
-        spdlog::info("PTM Clustering Statistics:");
-        spdlog::info("  Total atoms processed: {}", totalProcessedAtoms);
-        spdlog::info("  Accepted connections: {}", acceptedConnections);
-        spdlog::info("  Rejected by deformation: {}", rejectedByDeformation);
-        spdlog::info("  Rejected by orientation: {}", rejectedByOrientation);
-        spdlog::info("  Rejected by geometry: {}", rejectedByGeometry);
-        spdlog::info("  Final active clusters: {}", finalClusterCount);
-        
-        double rejectionRate = (double)(rejectedByDeformation + rejectedByOrientation + rejectedByGeometry) 
-                              / (double)(acceptedConnections + rejectedByDeformation + rejectedByOrientation + rejectedByGeometry) * 100.0;
-        spdlog::info("  Total rejection rate: {:.1f}%", rejectionRate);
-    }
 
     spdlog::debug("Number of clusters: {}", _sa.clusterGraph().clusters().size() - 1);
 }

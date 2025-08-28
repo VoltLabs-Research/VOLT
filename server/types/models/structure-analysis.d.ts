@@ -33,7 +33,7 @@ export interface IStructureTypeStat{
 
 export interface IStructureAnalysis extends Document{
     totalAtoms: number;
-    analysisMethod: 'PTM' | 'CNA';
+    analysisMethod: 'PTM' | 'CNA' | 'DIAMOND';
     types: IStructureTypeStat[];
     timestep: number;
     identifiedStructures: number;
