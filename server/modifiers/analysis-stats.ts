@@ -11,12 +11,12 @@ export enum AnalysisStatsError{
     AnalysisDocumentNotFound
 }
 
-export const computeDislocationsDensity = async (dislocations: any[]): Promise<any> => {
+export const computeDislocationsDensity = async (dislocations: any[], trajectory: string): Promise<any> => {
     const stats: any = [];
 
     // Dislocation Density = 1/V * Total Segments Length
     const promises = dislocations.map(async (dislocation) => {
-      const { timestep, trajectory, totalLength } = dislocation;
+      const { timestep, totalLength } = dislocation;
         
         const simulationCell = await SimulationCell.findOne({ timestep, trajectory });
         if(!simulationCell) return;
@@ -37,23 +37,19 @@ export const computeDislocationsDensity = async (dislocations: any[]): Promise<a
 
 // TODO: clean analysisConfig from front-end
 export const computeAnalysisStats = async (trajectoryId: string): Promise<any> => {
-    console.log('Getting Trajectory:', trajectoryId);
-
     const trajectory = await Trajectory.findById(trajectoryId);
     if(!trajectory){
         return AnalysisStatsError.TrajectoryDocumentNotFound;
     }
-
+    console.log('here');
     const trajectoryAnalysis = await AnalysisConfig.find({ trajectory: trajectory._id });
     if(!trajectoryAnalysis.length){
         return AnalysisStatsError.AnalysisDocumentNotFound;
     }
 
-    console.log('Trajectory Analysis (GET) [OK]', trajectoryAnalysis.length);
-
     const stats: any = [];
+    console.log('waiting');
     const promises = trajectoryAnalysis.map(async (analysis) => {
-        console.log('Working with:', analysis._id)
         const filter = { analysisConfig: analysis._id };
         const dislocations = await Dislocation
             .find(filter)
@@ -69,7 +65,6 @@ export const computeAnalysisStats = async (trajectoryId: string): Promise<any> =
                 totalLength: 1
             });
         
-        console.log('Dislocations (GET) [OK]', dislocations.length);
 
         const structureAnalysis = await StructureAnalysis
             .find(filter)
@@ -83,22 +78,22 @@ export const computeAnalysisStats = async (trajectoryId: string): Promise<any> =
                 identificationRate: 1
             });
 
-        console.log('Structure Analysis (GET) [OK]', structureAnalysis.length);
 
         const identificationMode = analysis.identificationMode.toUpperCase();
 
-        const dislocationsDensity = await computeDislocationsDensity(dislocations);
-        console.log('Dislocations Density [OK]', dislocationsDensity.length);
-
+        const dislocationsDensity = await computeDislocationsDensity(dislocations, trajectory._id);
+        console.log(identificationMode, dislocations.length, analysis.RMSD)
         stats.push({
             dislocations,
             dislocationsDensity,
             structureAnalysis,
+            identificationMode, 
             rmsd: identificationMode === 'PTM' ? analysis.RMSD : 0
         });
     });
 
     await Promise.all(promises);
+    console.log('ok')
 
     const folderPath = path.join(process.env.TRAJECTORY_DIR as string, trajectory.folderId);
     const analysisPath = path.join(folderPath, 'analysis-stats.json');

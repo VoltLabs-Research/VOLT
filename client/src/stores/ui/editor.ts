@@ -4,30 +4,31 @@ import type { EditorUIStore } from '@/types/stores/ui/editor';
 const initialState = {
     showCanvasGrid: true,
     showEditorWidgets: true,
-    activeModifiers: []
+    activeModifiers: [],
+    isSceneInteracting: false,
 };
 
 const useEditorUIStore = create<EditorUIStore>((set, get) => {
     return {
         ...initialState,
 
-        toggleModifier(modifier: string){
+        toggleModifier(modifier: string) {
             const modifiers = new Set(get().activeModifiers);
-            if(modifiers.has(modifier)){
-                modifiers.delete(modifier);
-            }else{
-                modifiers.add(modifier);
-            }
-
-            set({ activeModifiers: Array.from(modifiers) })
+            if (modifiers.has(modifier)) modifiers.delete(modifier);
+            else modifiers.add(modifier);
+            set({ activeModifiers: Array.from(modifiers) });
         },
 
-        toggleCanvasGrid(){
-            return { showCanvasGrid: !get().showCanvasGrid }
+        toggleCanvasGrid() {
+            set({ showCanvasGrid: !get().showCanvasGrid });
         },
 
-        toggleEditorWidgets(){
-            return { showEditorWidgets: !get().showEditorWidgets }
+        toggleEditorWidgets() {
+            set({ showEditorWidgets: !get().showEditorWidgets });
+        },
+
+        setSceneInteracting(isInteracting: boolean) { 
+            set({ isSceneInteracting: isInteracting });
         },
     };
 });

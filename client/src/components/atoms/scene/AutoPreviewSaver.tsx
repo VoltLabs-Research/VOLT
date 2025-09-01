@@ -61,30 +61,34 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
 
     useEffect(() => {
         logger.log('Mounted');
-        return () => {
-            if(!trajectoryId) return;
-            if(!glbKey) return;
-            if(isModelLoading) return;
-            if(isSavingPreview) return;
-            if(!scene3DRef.current) return;
 
-            const key = `${trajectoryId}|${glbKey}`;
-            if(inFlight.has(key)){
-                logger.log('Skip auto-save: in-flight', key);
-                return;
+        return () => {
+            const id = trajectoryId;
+            const keyPart = glbKey;
+
+            if (!id) return;
+            if (!keyPart) return;
+            if (isModelLoading) return;
+            if (isSavingPreview) return;
+            if (!scene3DRef.current) return;
+
+            const key = `${id}|${keyPart}`;
+            if (inFlight.has(key)) {
+            logger.log('Skip auto-save: in-flight', key);
+            return;
             }
 
             const now = Date.now();
             const last = savedRegistry.get(key) ?? 0;
-            if(now - last < cooldownMs){
-                logger.log('Skip auto-save due to cooldown:', key);
-                return;
+            if (now - last < cooldownMs) {
+            logger.log('Skip auto-save due to cooldown:', key);
+            return;
             }
 
             const existing = pendingTimeouts.get(key);
-            if(existing){
-                clearTimeout(existing);
-                pendingTimeouts.delete(key);
+            if (existing) {
+            clearTimeout(existing);
+            pendingTimeouts.delete(key);
             }
 
             savedRegistry.set(key, now);
@@ -92,37 +96,27 @@ const AutoPreviewSaver: React.FC<AutoPreviewSaverProps> = ({
             logger.log('Auto-saving on unmount for key:', key);
 
             const tid = window.setTimeout(async () => {
-                try{
-                    await scene3DRef.current!.waitForVisibleFrame();
-                    const dataURL = await scene3DRef.current!.captureScreenshot({
-                        width: 800,
-                        height: 600,
-                        format: 'png',
-                        quality: 0.8,
-                        zoomFactor: 0.8,
-                    });
-                    await saveTrajectoryPreview(trajectoryId, dataURL);
-                }catch(error){
-                    logger.warn('Failed to auto-save on unmount:', error);
-                }finally{
-                    inFlight.delete(key);
-                    pendingTimeouts.delete(key);
-                }
+            try {
+                await scene3DRef.current!.waitForVisibleFrame();
+                const dataURL = await scene3DRef.current!.captureScreenshot({
+                width: 800,
+                height: 600,
+                format: 'png',
+                quality: 0.8,
+                zoomFactor: 0.8,
+                });
+                await saveTrajectoryPreview(id, dataURL);
+            } catch (error) {
+                logger.warn('Failed to auto-save on unmount:', error);
+            } finally {
+                inFlight.delete(key);
+                pendingTimeouts.delete(key);
+            }
             }, delay);
 
             pendingTimeouts.set(key, tid);
         };
-    }, [
-        trajectoryId,
-        glbKey,
-        isModelLoading,
-        isSavingPreview,
-        scene3DRef,
-        saveTrajectoryPreview,
-        logger,
-        delay,
-        cooldownMs,
-    ]);
+    }, []);
 
     return null;
 };

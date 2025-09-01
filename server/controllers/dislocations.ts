@@ -104,7 +104,7 @@ export const getUserDislocations = async (req: Request, res: Response) => {
             .skip(skip)
             .limit(limitNum)
             .populate({ path: 'trajectory', select: 'name _id team' })
-            .populate({ path: 'analysisConfig', select: '_id crystalStructure identificationMode' })
+            .populate({ path: 'analysisConfig', select: '_id crystalStructure RMSD identificationMode' })
             .lean(),
             Dislocation.countDocuments(match),
             Dislocation.aggregate([

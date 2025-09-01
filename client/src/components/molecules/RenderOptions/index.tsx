@@ -95,6 +95,10 @@ const RenderOptions = () => {
                 label='Tubular Segments'
                 onFieldChange={(_, value) => setTubularSegments(value)}
             />
+
+            <button onClick={() => applyRenderOptions()}>
+                APPLY
+            </button>
         </EditorWidget>
     );
 };

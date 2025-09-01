@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import type { Trajectory } from '@/types/models';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import useModelStore from '@/stores/editor/model';
-import { createTrajectoryGLBs } from '@/utilities/glb/modelUtils';
+import useTrajectoryStore from '@/stores/trajectories';
+import { createTrajectoryGLBs, fetchModels, type TimelineGLBMap } from '@/utilities/glb/modelUtils';
 import type { TimestepData, TimestepState, TimestepStore } from '@/types/stores/editor/timesteps';
 
 const initialTimestepData: TimestepData = {
@@ -21,7 +22,6 @@ const extractTimesteps = (trajectory: Trajectory | null): number[] => {
     if (!trajectory?.frames || trajectory.frames.length === 0) {
         return [];
     }
-    
     return trajectory.frames
         .map((frame: any) => frame.timestep)
         .sort((a: number, b: number) => a - b);
@@ -36,6 +36,27 @@ const createTimestepData = (timesteps: number[]): TimestepData => ({
 
 const useTimestepStore = create<TimestepStore>()((set, get) => ({
     ...initialState,
+
+    async loadModels(preloadBehavior?: boolean, onProgress?: (p: number, m?: { bps: number }) => void): Promise<TimelineGLBMap>{
+        const trajectory = useTrajectoryStore.getState().trajectory;
+        const analysis = useAnalysisConfigStore.getState().analysisConfig;
+        const { timesteps } = get().timestepData;
+
+        if(!trajectory?._id) throw new Error('No trajectory loaded');
+        if(!analysis?._id) throw new Error('No analysis configuration available');
+        if(timesteps.length === 0) throw new Error('No timesteps available in trajectory');
+
+        const map = await fetchModels({
+            trajectoryId: trajectory._id,
+            analysisId: analysis._id,
+            timesteps,
+            preloadBehavior,
+            concurrency: 6,
+            onProgress
+        });
+
+        return map;
+    },
 
     computeTimestepData(trajectory: Trajectory | null, currentTimestep?: number){
         if(!trajectory?.frames || trajectory.frames.length === 0){
@@ -53,7 +74,6 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
                 currentTimestep,
                 analysis._id
             );
-
             useModelStore.getState().selectModel(glbs);
         }
 

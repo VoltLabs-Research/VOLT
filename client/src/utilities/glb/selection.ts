@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import type { SelectionRefs } from '@/types/scene';
 
 const COLORS = {
-    BORDER: 0xffffff,
-    BORDER_HOVER: 0xe6e6e6,
+    BORDER: 0x333333,
+    BORDER_HOVER: 0x333333,
 };
 
 export const makeSelectionGroup = (): SelectionRefs => {

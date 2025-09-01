@@ -29,8 +29,7 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
     enableInstancing = true,
     updateThrottle = 16,
 }) => {
-    const slicePlaneConfig = useConfigurationStore(s => s.slicePlaneConfig);
-    const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig);
+    const sliceClippingPlanes = useSlicingPlanes(enableSlice);
     const activeScene = useModelStore((state) => state.activeScene);
 
     const sceneProps = useMemo(() => ({

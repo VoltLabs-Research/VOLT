@@ -88,7 +88,7 @@ const App = () => {
 
     const handleExitComplete = () => {
         if(typeof window !== 'undefined'){
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
             document.body.style.transform = '';
         }
     };
@@ -99,14 +99,14 @@ const App = () => {
                 {isLoading && <AuthLoadingOverlay />}
             </AnimatePresence>
             
+            <GlobalTransitionOverlay />
+            <LoadingShimmer />
+            
             <AnimatePresence
                 mode='wait'
                 initial={false}
                 onExitComplete={handleExitComplete}
             >
-                <GlobalTransitionOverlay key={`overlay-${location.pathname}`} />
-                <LoadingShimmer key={`shimmer-${location.pathname}`} />
-
                 <Routes location={location} key={location.pathname}>
                     <Route element={<ProtectedRoute mode='protect' />}>
                         <Route

@@ -45,21 +45,26 @@ void main(){
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
     vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
     
+    // Iluminación difusa más sutil
     float diffuse = max(0.0, dot(fakeNormal, lightDir));
     
-    vec3 diffuseColor = vColor * diffuse * diffuseFactor;
+    // Aumentar el factor ambiental para colores más sólidos
     vec3 ambientColor = vColor * ambientFactor;
+    vec3 diffuseColor = vColor * diffuse * diffuseFactor;
+    
+    // Reducir drásticamente la especularidad
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    
     float spec = pow(max(dot(fakeNormal, halfwayDir), 0.0), shininess);
+    vec3 specularColor = vec3(0.8) * spec * specularFactor; // Reducido de vec3(1.0) a vec3(0.8)
     
-    vec3 specularColor = vec3(1.0) * spec * specularFactor;
-    
+    // Reducir el rim lighting
     float rimDot = 1.0 - max(dot(viewDir, fakeNormal), 0.0);
     float rim = pow(rimDot, rimPower);
+    vec3 rimColor = vec3(0.5) * rim * rimFactor; // Reducido de vec3(1.0) a vec3(0.5)
     
-    vec3 rimColor = vec3(1.0) * rim * rimFactor;
-    vec3 finalColor = ambientColor + diffuseColor + specularColor + rimColor;
+    // Combinar colores con mayor peso en el color base
+    vec3 finalColor = ambientColor + diffuseColor + specularColor * 0.3 + rimColor * 0.2;
     
-    gl_FragColor = vec4(pow(finalColor, vec3(1.0/2.2)), 1.0);
+    // Eliminar la corrección gamma para colores más saturados
+    gl_FragColor = vec4(finalColor, 1.0);
 }

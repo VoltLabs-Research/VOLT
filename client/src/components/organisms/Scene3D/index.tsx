@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei';
+import { OrbitControls, GizmoHelper, GizmoViewport, Environment } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { AdaptiveDpr, Bvh, Preload } from '@react-three/drei';
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
@@ -12,6 +12,7 @@ import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
 import useRenderConfigStore from '@/stores/editor/render-config';
 import './Scene3D.css';
+import { ACESFilmicToneMapping, PCFSoftShadowMap, SRGBColorSpace } from 'three';
 
 interface Scene3DProps {
     children?: React.ReactNode;
@@ -48,6 +49,8 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     onCameraControlsRef
 }, ref) => {
     const orbitControlsRef = useRef<any>(null);
+    const interactionTimeoutRef = useRef<number | null>(null);
+
     const [tools, setTools] = useState<{ captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> } | null>(null);
     const activeScene = useModelStore(state => state.activeScene);
     const toggleCanvasGrid = useEditorUIStore((state) => state.toggleCanvasGrid);
@@ -58,21 +61,49 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     const glConfig = useRenderConfigStore((state) => state.gl);
     const orbitConfig = useRenderConfigStore((state) => state.orbitControls);
     const ssaoConfig = useRenderConfigStore((state) => state.SSAO);
+    const setSceneInteracting = useEditorUIStore((state) => state.setSceneInteracting);
 
     const maxDpr = useMemo(() => (window.devicePixelRatio > 1 ? 2 : 1), []);
+
+    const markInteractingNow = useCallback(() => {
+        setSceneInteracting(true);
+    }, [setSceneInteracting]);
+
+    const markInteractingDebounced = useCallback(() => {
+        setSceneInteracting(true);
+        if(interactionTimeoutRef.current){
+            window.clearTimeout(interactionTimeoutRef.current);
+        }
+
+        interactionTimeoutRef.current = window.setTimeout(() => {
+            setSceneInteracting(false);
+            interactionTimeoutRef.current = null;
+        }, 100);
+    }, [setSceneInteracting]);
+
+    const endInteracting = useCallback(() => {
+        if(interactionTimeoutRef.current){
+            window.clearTimeout(interactionTimeoutRef.current);
+            interactionTimeoutRef.current = null;
+        }
+
+        setSceneInteracting(false);
+    }, [setSceneInteracting]);
 
     const backgroundColor = useMemo(() => {
         if(background !== null){
             return background;
-        }
+        }   
 
-        return !showEditorWidgets ? '#e6e6e6' : '#1E1E1E'
+        // 1E1E1E
+        return !showEditorWidgets ? '#FFF' : '#1E1E1E'
     }, [showEditorWidgets, background]);
 
     const handleToolsReady = useCallback((t: { captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> }) => {
         setTools(() => t);
     }, []);
 
+    
     useImperativeHandle(ref, () => ({
         captureScreenshot: (options) => {
             if(tools && typeof tools.captureScreenshot === 'function'){
@@ -127,10 +158,9 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     }), [cameraControlsEnabled]);
 
     useEffect(() => {
-        if(!activeModel?.modelBounds) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if(!activeModel?.modelBounds) return;
+            console.log('x', e.altKey, e.ctrlKey, e.key);
 
             if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b'){
                 e.preventDefault();
@@ -138,6 +168,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
             }
 
             if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'n'){
+                console.log('here');
                 e.preventDefault();
                 toggleEditorWidgets();
             }
@@ -166,6 +197,14 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
         };
     }, [tools, toggleCanvasGrid, toggleEditorWidgets, activeModel]);
 
+    useEffect(() => {
+        return () => {
+            if(interactionTimeoutRef.current){
+                window.clearTimeout(interactionTimeoutRef.current);
+            }
+        };
+    }, []);
+
     return (
         <Canvas
             gl={glConfig}
@@ -174,13 +213,20 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
             style={canvasStyle}
             dpr={[maxDpr, maxDpr]}
             frameloop='always'
-            flat={true}
             performance={{
                 current: 1,
                 min: 0.1,
                 max: 1,
                 debounce: 50,
             }}
+              onCreated={({ gl, scene }) => {
+    gl.outputColorSpace = SRGBColorSpace;
+    gl.toneMapping = ACESFilmicToneMapping;
+    gl.toneMappingExposure =5;   // <- más “punch”
+    gl.physicallyCorrectLights = true;
+    gl.shadowMap.enabled = true;
+    gl.shadowMap.type = PCFSoftShadowMap;
+  }}
         >
             <ScreenshotHandler 
                 onToolsReady={handleToolsReady} 
@@ -198,7 +244,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
                     margin={[450, 70]} 
                 >
                     <directionalLight position={[5, 5, 5]} intensity={1} />
-                    <ambientLight intensity={1.5} />
+                    <ambientLight intensity={2} />
 
                     <GizmoViewport 
                         scale={30}
@@ -215,6 +261,9 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
                 ref={handleControlsRef}
                 {...orbitControlsProps}
                 {...orbitControlsConfig}
+                onStart={markInteractingNow}
+                onChange={markInteractingDebounced}
+                onEnd={endInteracting}
             />
             
             {showCanvasGrid && <CanvasGrid />}

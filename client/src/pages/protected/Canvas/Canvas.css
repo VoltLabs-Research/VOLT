@@ -18,7 +18,6 @@
     overflow: scroll;
 
 }
-
 .editor-model-loading-container{
     border-radius: 24px;
     padding: 60px;
@@ -36,12 +35,60 @@
     display: flex;
     flex-direction: column;
     gap: 3rem;
+    isolation: isolate;
+}
+
+.editor-model-loading-container::before{
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    padding: var(--stroke, 8px);
+    background: conic-gradient(rgba(255,255,255,0.10) 0turn, rgba(255,255,255,0.10) 1turn);
+    -webkit-mask: 
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: .7;
+    pointer-events: none;
+}
+
+.editor-model-loading-container::after{
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    padding: var(--stroke, 8px);
+    background: conic-gradient(
+        rgba(255,255,255,0.85) 0deg,
+        rgba(255,255,255,0.85) calc(var(--p, 0) * 360deg),
+        rgba(255,255,255,0.08) calc(var(--p, 0) * 360deg)
+    );
+    -webkit-mask: 
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    filter: drop-shadow(0 2px 16px rgba(255,255,255,0.10));
+    transition: background 360ms cubic-bezier(.2,.7,.2,1);
+    pointer-events: none;
 }
 
 .editor-model-loading-body-container{
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+.editor-loading-indicator{
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    font-size: .85rem;
+    color: rgb(190, 190, 190)
 }
 
 .editor-model-loading-wrapper{
@@ -72,19 +119,7 @@
     margin: 0 auto;
 }
 
-.editor-model-loading-container::before{
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, 
-        transparent,
-        rgba(255, 255, 255, 0.1),
-        transparent
-    );
-}
+.editor-model-loading-container::marker{ display:none }
 
 .editor-container {
     width: 100%;
@@ -121,6 +156,7 @@
     align-items: center;
     gap: .5rem;
 }
+
 
 .dislocation-results-container{
     top: 7rem;

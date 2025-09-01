@@ -5,6 +5,8 @@ import useLayoutDetection from '@/hooks/ui/use-layout-detection';
 import PageOverlay from '@/components/atoms/animations/PageOverlay';
 import ShineEffect from '@/components/atoms/animations/ShineEffect';
 
+const EASING = [0.22, 1, 0.36, 1] as const;
+
 interface PageWrapperProps {
     children: React.ReactNode;
 }
@@ -34,9 +36,10 @@ const PageWrapper = ({ children }: PageWrapperProps) => {
                 width: '100%',
                 height: '100%',
                 overflow: 'hidden',
-                willChange: 'transform, opacity, filter',
-                transformStyle: isSameLayout ? 'flat' : 'preserve-3d',
-                perspective: isSameLayout ? 'none' : '1200px',
+                willChange: 'transform, opacity',
+                transformStyle: 'flat',
+                perspective: 'none',
+                transform: 'translateZ(0)',
                 isolation: 'isolate',
                 backfaceVisibility: 'hidden',
             }}
@@ -45,8 +48,8 @@ const PageWrapper = ({ children }: PageWrapperProps) => {
 
             <motion.div
                 variants={contentVariants}
-                initial="initial"
-                animate="animate"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, transition: { duration: 0.28, ease: EASING, delay: 0.05 } }}
                 style={{
                     position: 'relative',
                     width: '100%',

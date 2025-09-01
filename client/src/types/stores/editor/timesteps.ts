@@ -1,4 +1,5 @@
 import type { Trajectory } from '@/types/models';
+import type { TimelineGLBMap } from '@/utilities/glb/modelUtils';
 
 export interface TimestepData {
     timesteps: number[];
@@ -14,6 +15,7 @@ export interface TimestepState {
 
 export interface TimestepActions {
     computeTimestepData: (trajectory: Trajectory | null, currentTimestep?: number) => void;
+    loadModels: (preloadBehavior?: boolean) => Promise<TimelineGLBMap>;
     reset: () => void;
 }
 

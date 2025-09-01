@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import usePlaybackStore from '@/stores/editor/playback';
 import useTimestepStore from '@/stores/editor/timesteps';
 import useTrajectoryStore from '@/stores/trajectories';
@@ -76,7 +76,13 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
     }, [trajectory, currentTimestep]);
 
     useEffect(() => {
-        if(trajectory && currentTimestep !== undefined && analysisConfig?._id){
+        console.log('------- canvas coordinator');
+        console.log('trajectory:', trajectory);
+        console.log('current timestep:', currentTimestep);
+        console.log('analysis config:', analysisConfig)
+        console.log('------- canvas coordinator');
+        if(trajectory?._id && currentTimestep !== undefined){
+            console.log('Compute Timestep Data ')
             computeTimestepData(trajectory, currentTimestep);
 
             return () => {

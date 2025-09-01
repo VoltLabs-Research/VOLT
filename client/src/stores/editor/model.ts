@@ -32,7 +32,10 @@ const useModelStore = create<ModelStore>()((set, get) => ({
     },
 
     reset(){
-        set(initialState);
+        set({
+            activeModel: null,
+            isModelLoading: false
+        });
     }
 }));
 

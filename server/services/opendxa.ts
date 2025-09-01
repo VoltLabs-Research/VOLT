@@ -38,7 +38,7 @@ import StructureAnalysis from '@/models/structure-analysis';
 import SimulationCell from '@/models/simulation-cell';
 import Dislocations from '@models/dislocations';
 
-const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build/opendxa');
+const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build-release/opendxa');
 
 const MSGPACK_OUTPUT_MAP = {
     defect_mesh: '_defect_mesh.msgpack',
@@ -200,7 +200,7 @@ class OpenDXAService{
 
         // @ts-ignore
         const atomsFilePath = path.join(this.trajectoryFolderPath, `grouped_atoms_${timestep}-${this.analysisConfigId}.json`);
-        await writeGroupedJsonStreaming(atomsFilePath, atoms);
+        //await writeGroupedJsonStreaming(atomsFilePath, atoms);
 
         if(options?.structureIdentificationOnly){
             this.exportAtomsColoredByType(atoms, timestep);

@@ -40,48 +40,56 @@ const StructureAnalysisListing = () => {
     const columns: ColumnConfig[] = [
         {
             title: 'Trajectory',
+            sortable: true,
             key: 'trajectory',
             render: (v) => (typeof v === 'object' ? v?.name ?? '—' : String(v)),
             skeleton: { variant: 'text', width: 120 }
         },
         {
             title: 'Method',
+            sortable: true,
             key: 'analysisMethod',
             render: (v) => <MethodBadge method={v} />,
             skeleton: { variant: 'rounded', width: 80, height: 24 }
         },
         {
             title: 'Identification Rate',
+            sortable: true,
             key: 'identificationRate',
             render: (v) => <RateBadge rate={Number(v)} />,
             skeleton: { variant: 'rounded', width: 60, height: 24 }
         },
         {
             title: 'Total Identified',
+            sortable: true,
             key: 'identifiedStructures',
             render: (v) => formatNumber(Number(v)),
             skeleton: { variant: 'text', width: 70 }
         },
         {
             title: 'Total Unidentified',
+            sortable: true,
             key: 'unidentifiedStructures',
             render: (v) => formatNumber(Number(v)),
             skeleton: { variant: 'text', width: 70 }
         },
         {
             title: 'Total Atoms',
+            sortable: true,
             key: 'totalAtoms',
             render: (v) => formatNumber(Number(v)),
             skeleton: { variant: 'text', width: 70 }
         },
         {
             title: 'Timestep',
+            sortable: true,
             key: 'timestep',
-            render: (v) => formatNumber(Number(v)),
+            render: (v) => Number(v),
             skeleton: { variant: 'text', width: 70 }
         },
         {
             title: 'Creation Date',
+            sortable: true,
             key: 'createdAt',
             render: (v) => formatTimeAgo(v),
             skeleton: { variant: 'text', width: 90 }

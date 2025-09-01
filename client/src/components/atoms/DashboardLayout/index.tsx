@@ -137,7 +137,7 @@ const DashboardLayout = () => {
                         <IoNotificationsOutline />
                     </div>
 
-                    <SidebarUserAvatar avatarRounded />
+                    <SidebarUserAvatar avatarrounded />
                 </div>
             </section>
                 

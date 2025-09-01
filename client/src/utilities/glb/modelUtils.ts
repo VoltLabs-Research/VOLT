@@ -1,45 +1,170 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
 import { Box3, Vector3, Sphere } from 'three';
 import * as THREE from 'three';
 import type { TrajectoryGLBs } from '@/types/stores/editor/model';
 
 type MaterialCache = Map<string, THREE.MeshStandardMaterial>;
+export type TimelineGLBMap = Record<number, string>;
 
 const cache: MaterialCache = new Map();
+
+type LoadModelsParams = {
+    trajectoryId: string;
+    analysisId: string;
+    timesteps: number[];
+    preloadBehavior?: boolean;
+    concurrency?: number;
+    signal?: AbortSignal;
+    onProgress?: (progress: number, metrics?: { bps: number }) => void;
+};
+
+export const buildGlbUrl = (
+    trajectoryId: string,
+    timestep: number,
+    analysisId: string,
+    type: string = '',
+    cacheBuster?: number
+): string => {
+    const baseUrl = `/trajectories/${trajectoryId}/glb/${timestep}/${analysisId}`;
+    const typeParam = type ? `type=${type}` : '';
+    const cacheParam = cacheBuster ? `t=${cacheBuster}` : '';
+    const params = [typeParam, cacheParam].filter(Boolean).join('&');
+    return params ? `${baseUrl}?${params}` : baseUrl;
+};
+
+export const createTrajectoryGLBs = (
+    trajectoryId: string,
+    timestep: number,
+    analysisId: string,
+    cacheBuster?: number
+): TrajectoryGLBs => ({
+    trajectory: buildGlbUrl(trajectoryId, timestep, analysisId, '', cacheBuster),
+    defect_mesh: buildGlbUrl(trajectoryId, timestep, analysisId, 'defect_mesh', cacheBuster),
+    interface_mesh: buildGlbUrl(trajectoryId, timestep, analysisId, 'interface_mesh', cacheBuster),
+    atoms_colored_by_type: buildGlbUrl(trajectoryId, timestep, analysisId, 'atoms_colored_by_type', cacheBuster),
+    dislocations: buildGlbUrl(trajectoryId, timestep, analysisId, 'dislocations', cacheBuster),
+    core_atoms: '',
+});
+
+const resolveGlbUrl = (trajectoryId: string, timestep: number, analysisId: string): string => {
+    const res = createTrajectoryGLBs(trajectoryId, timestep, analysisId);
+    if (typeof res === 'string') return res as unknown as string;
+    if (res && typeof res.trajectory === 'string') return res.trajectory;
+    throw new Error('Invalid GLB URL');
+};
+
+export const fetchModels = async (params: LoadModelsParams): Promise<TimelineGLBMap> => {
+    const {
+        trajectoryId,
+        analysisId,
+        timesteps,
+        preloadBehavior = true,
+        concurrency = 3,
+        signal,
+        onProgress
+    } = params;
+
+    const unique = Array.from(new Set(timesteps)).sort((a, b) => a - b);
+
+    const urlsByTs: TimelineGLBMap = {};
+    for (const ts of unique) {
+        urlsByTs[ts] = resolveGlbUrl(trajectoryId, ts, analysisId);
+    }
+
+    if (!preloadBehavior || unique.length === 0) {
+        onProgress?.(0, { bps: 0 });
+        return urlsByTs;
+    }
+
+    const endpoint = (u: string) => `${import.meta.env.VITE_API_URL}/api${u}`;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
+    const totalFiles = unique.length;
+    let completedFiles = 0;
+    const partials = new Map<number, number>();
+
+    let totalLoaded = 0;
+    let speedBps = 0;
+    let lastSampleTime = performance.now();
+    let lastSampleBytes = 0;
+
+    const emitProgress = () => {
+        const now = performance.now();
+        const dt = Math.max(1, now - lastSampleTime);
+        const dBytes = totalLoaded - lastSampleBytes;
+        const inst = dBytes * (1000 / dt);
+        speedBps = speedBps === 0 ? inst : speedBps * 0.8 + inst * 0.2;
+        lastSampleTime = now;
+        lastSampleBytes = totalLoaded;
+        let partialSum = 0;
+        partials.forEach((v) => (partialSum += v));
+        const p = Math.min(0.999, (completedFiles + partialSum) / totalFiles);
+        onProgress?.(p, { bps: speedBps });
+    };
+
+    const queue = [...unique];
+    const workers = Array.from({ length: Math.min(concurrency, unique.length) }, () => (async () => {
+        while (queue.length) {
+            if (signal?.aborted) return;
+            const ts = queue.shift() as number;
+            const url = urlsByTs[ts];
+            const res = await fetch(endpoint(url), {
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                cache: 'default',
+                method: 'GET'
+            });
+            const len = parseInt(res.headers.get('content-length') || '0', 10);
+            const reader = res.body?.getReader();
+            const start = performance.now();
+            let loadedThis = 0;
+            if (!reader) {
+                completedFiles++;
+                partials.delete(ts);
+                emitProgress();
+                continue;
+            }
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (value && value.byteLength) {
+                    loadedThis += value.byteLength;
+                    totalLoaded += value.byteLength;
+                    if (len > 0) {
+                        const frac = Math.min(0.95, loadedThis / len * 0.95);
+                        partials.set(ts, frac);
+                    } else {
+                        const t = performance.now() - start;
+                        const frac = Math.min(0.9, 1 - Math.exp(-t / 900));
+                        partials.set(ts, frac);
+                    }
+                    emitProgress();
+                }
+            }
+            completedFiles++;
+            partials.delete(ts);
+            emitProgress();
+        }
+    })());
+
+    await Promise.all(workers);
+
+    onProgress?.(1, { bps: 0 });
+
+    return urlsByTs;
+};
 
 export const getOptimizedMaterial = (
     baseMaterial: THREE.Material,
     clippingPlanes: THREE.Plane[]
 ): THREE.MeshStandardMaterial => {
     const key = `${baseMaterial.uuid}-${clippingPlanes.length}`;
-    if(cache.has(key)){
+    if (cache.has(key)) {
         const cached = cache.get(key)!;
+        // @ts-ignore
         cached.clippingPlanes = clippingPlanes;
         return cached;
     }
 
-    if(baseMaterial instanceof THREE.MeshStandardMaterial){
+    if (baseMaterial instanceof THREE.MeshStandardMaterial) {
         baseMaterial = new THREE.MeshStandardMaterial({
             color: baseMaterial.color,
             map: baseMaterial.map,
@@ -59,9 +184,8 @@ export const getOptimizedMaterial = (
             depthWrite: true,
             depthTest: true,
         });
-    }else if(baseMaterial instanceof THREE.MeshBasicMaterial){
-        baseMaterial = {
-            // @ts-ignore
+    } else if (baseMaterial instanceof THREE.MeshBasicMaterial) {
+        baseMaterial = new THREE.MeshStandardMaterial({
             color: baseMaterial.color,
             map: baseMaterial.map,
             opacity: baseMaterial.opacity,
@@ -72,19 +196,20 @@ export const getOptimizedMaterial = (
             side: THREE.FrontSide,
             depthWrite: true,
             depthTest: true,
-        }
-    }else{
+        });
+    } else {
         baseMaterial = baseMaterial.clone();
-    }   
-
-    if(clippingPlanes.length > 0){
-        baseMaterial.clippingPlanes = clippingPlanes;
-        baseMaterial.clipIntersection = true;
     }
 
+    // @ts-ignore
+    if (clippingPlanes.length > 0) baseMaterial.clippingPlanes = clippingPlanes;
+    // @ts-ignore
+    (baseMaterial as any).clipIntersection = true;
+    // @ts-ignore
     baseMaterial.precision = 'highp';
     // @ts-ignore
     baseMaterial.fog = false;
+    // @ts-ignore
     baseMaterial.userData.isOptimized = true;
     // @ts-ignore
     return baseMaterial;
@@ -115,9 +240,7 @@ export const calculateOptimalTransforms = (bounds: ReturnType<typeof calculateMo
     const scale = maxDimension > 0 ? targetSize / maxDimension : 1;
 
     const shouldRotate = size.y > size.z * 1.2 || size.z < Math.min(size.x, size.y) * 0.8;
-    const rotation = shouldRotate 
-        ? { x: Math.PI / 2, y: 0, z: 0 } 
-        : { x: 0, y: 0, z: 0 };
+    const rotation = shouldRotate ? { x: Math.PI / 2, y: 0, z: 0 } : { x: 0, y: 0, z: 0 };
 
     const position = {
         x: -center.x * scale,
@@ -140,7 +263,7 @@ export const calculateClosestCameraPositionZY = (modelBounds: Box3, camera: any)
     let distByWidth = (viewWidth / 2) / (Math.tan(fovRad / 2) * camera.aspect);
 
     let distance = Math.max(distByHeight, distByWidth);
-    distance *= 1.01; 
+    distance *= 1.01;
 
     return {
         position: new THREE.Vector3(center.x + distance, center.y, center.z),
@@ -148,32 +271,3 @@ export const calculateClosestCameraPositionZY = (modelBounds: Box3, camera: any)
         up: new THREE.Vector3(0, 0, 1)
     };
 };
-
-export const buildGlbUrl = (
-    trajectoryId: string, 
-    timestep: number, 
-    analysisId: number,
-    type: string = '',
-    cacheBuster?: number
-): string => {
-    const baseUrl = `/trajectories/${trajectoryId}/glb/${timestep}/${analysisId}`;
-    const typeParam = type ? `type=${type}` : '';
-    const cacheParam = cacheBuster ? `t=${cacheBuster}` : '';
-    
-    const params = [typeParam, cacheParam].filter(Boolean).join('&');
-    return params ? `${baseUrl}?${params}` : baseUrl;
-};
-
-export const createTrajectoryGLBs = (
-    trajectoryId: string, 
-    timestep: number, 
-    analysisId: number, 
-    cacheBuster?: number
-): TrajectoryGLBs => ({
-    trajectory: buildGlbUrl(trajectoryId, timestep, analysisId, '', cacheBuster),
-    defect_mesh: buildGlbUrl(trajectoryId, timestep, analysisId, 'defect_mesh', cacheBuster),
-    interface_mesh: buildGlbUrl(trajectoryId, timestep, analysisId, 'interface_mesh', cacheBuster),
-    atoms_colored_by_type: buildGlbUrl(trajectoryId, timestep, analysisId, 'atoms_colored_by_type', cacheBuster),
-    dislocations: buildGlbUrl(trajectoryId, timestep, analysisId, 'dislocations', cacheBuster),
-    core_atoms: '',
-});

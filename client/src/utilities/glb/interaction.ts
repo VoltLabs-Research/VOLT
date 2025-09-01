@@ -15,7 +15,6 @@ export const attachPointerEvents = (params: {
 }) => {
     const { glCanvas, camera, raycaster, groundPlane, state, showSelectionBox, hideSelectionBox, deselect } = params;
     const mouse = new THREE.Vector3();
-
     const handlePointerDown = (event: MouseEvent) => {
         if(!state.model || !state.simBoxMesh) return;
 

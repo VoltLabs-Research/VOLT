@@ -33,7 +33,7 @@
     gap: .1rem;
 }
 
-.sidebar-user-avatar-container[data-avatarRounded='true']{
+.sidebar-user-avatar-container[data-avatarrounded='true']{
     font-size: 1rem;
     background-image: linear-gradient(to top, #5602b6 0%, #9472cdf5 100%);
 }

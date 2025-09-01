@@ -21,6 +21,7 @@
 **/
 
 import React, { useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import useEditorUIStore from '@/stores/ui/editor';
 import './EditorWidget.css';
 
 interface EditorWidgetProps {
@@ -47,6 +48,7 @@ const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>(({
     const isDraggingRef = useRef(false);
     const startPosRef = useRef({ x: 0, y: 0 });
     const currentTranslateRef = useRef({ x: 0, y: 0 });
+    const isSceneInteracting = useEditorUIStore((state) => state.isSceneInteracting);
 
     useImperativeHandle(ref, () => ({
         getElement: () => widgetRef.current,
@@ -112,11 +114,9 @@ const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>(({
     return (
         <div 
             ref={widgetRef}
-            className={`editor-floating-container ${className}`}
+            className={`editor-floating-container ${isSceneInteracting ? 'dimmed' : ''} ${className}`}
             onDoubleClick={handleDoubleClick}
             style={{ 
-                willChange: 'transform',
-                transition: 'transform 0.1s ease-out',
                 ...style
             }}
         >

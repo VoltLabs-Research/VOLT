@@ -16,27 +16,9 @@ const GlobalTransitionOverlay = () => {
 
     return (
         <motion.div
-            initial={{ opacity: 1, scale: 1.008 }}
-            animate={{ 
-                opacity: 0, 
-                scale: 1,
-                transition: {
-                    duration: 0.8,
-                    ease: BALANCED_EASING,
-                    opacity: { duration: 0.9, ease: BALANCED_EASING },
-                    scale: { duration: 0.7, ease: BALANCED_EASING },
-                }
-            }}
-            exit={{ 
-                opacity: 1, 
-                scale: 0.992,
-                transition: {
-                    duration: 0.5,
-                    ease: PREMIUM_EASING,
-                    opacity: { duration: 0.4 },
-                    scale: { duration: 0.5 },
-                }
-            }}
+            initial={{ opacity: 0.6 }}
+            animate={{ opacity: 0, transition: { duration: 0.28, ease: BALANCED_EASING } }}
+            exit={{ opacity: 0.5, transition: { duration: 0.2, ease: BALANCED_EASING } }}
             style={{
                 position: 'fixed',
                 inset: 0,

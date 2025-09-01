@@ -10,6 +10,7 @@ export type ColumnConfig = {
     title: string
     render?: (value: any, row?: any) => React.ReactNode
     skeleton?: { variant: 'text' | 'rounded'; width: number; height?: number }
+    sortable?: boolean
 }
 
 export const formatNumber = (num: number) => {
@@ -109,21 +110,61 @@ const DocumentListing = ({
 }) => {
     const [searchQuery, setSearchQuery] = useState('')
     const [filteredData, setFilteredData] = useState(data)
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
 
     useEffect(() => {
-        if (!showSearch || !searchQuery.trim()) {
-            setFilteredData(data)
-            return
-        }
-        const query = searchQuery.toLowerCase()
-        setFilteredData(
-            data.filter((item) =>
+        let workingData = [...data]
+
+        if (showSearch && searchQuery.trim()) {
+            const query = searchQuery.toLowerCase()
+            workingData = workingData.filter((item) =>
                 columns.some((col) =>
                     String(item[col.key] ?? '').toLowerCase().includes(query)
                 )
             )
+        }
+
+        if (sortConfig) {
+            workingData.sort((a, b) => {
+                const aVal = a[sortConfig.key]
+                const bVal = b[sortConfig.key]
+
+                if (aVal == null && bVal == null) return 0
+                if (aVal == null) return sortConfig.direction === 'asc' ? -1 : 1
+                if (bVal == null) return sortConfig.direction === 'asc' ? 1 : -1
+
+                if (typeof aVal === 'number' && typeof bVal === 'number') {
+                    return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal
+                }
+
+                return sortConfig.direction === 'asc'
+                    ? String(aVal).localeCompare(String(bVal))
+                    : String(bVal).localeCompare(String(aVal))
+            })
+        }
+
+        setFilteredData(workingData)
+    }, [data, searchQuery, showSearch, sortConfig, columns])
+
+    const handleSort = (col: ColumnConfig) => {
+        if (!col.sortable) return
+        setSortConfig((prev) => {
+            if (prev && prev.key === col.key) {
+                return { key: col.key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+            }
+            return { key: col.key, direction: 'asc' }
+        })
+    }
+
+    const getSortIndicator = (col: ColumnConfig) => {
+        if (!col.sortable) return null
+        if (!sortConfig || sortConfig.key !== col.key) return <span className='sort-indicator'>⇅</span>
+        return sortConfig.direction === 'asc' ? (
+            <span className='sort-indicator'>↑</span>
+        ) : (
+            <span className='sort-indicator'>↓</span>
         )
-    }, [data, searchQuery, showSearch])
+    }
 
     return (
         <div className='document-listing-container'>
@@ -159,9 +200,15 @@ const DocumentListing = ({
                 <div className='document-listing-table-container'>
                     {columns.length > 0 && (
                         <div className='document-listing-table-header-container'>
-                            {columns.map((col) => (
-                                <div className='document-listing-cell header-cell' key={col.key}>
-                                    <h4 className='document-listing-cell-title'>{col.title}</h4>
+                            {columns.map((col, colIdx) => (
+                                <div
+                                    className={`document-listing-cell header-cell ${col.sortable ? 'sortable' : ''}`}
+                                    key={`header-${col.title}-${colIdx}`} 
+                                    onClick={() => handleSort(col)}
+                                >
+                                    <h4 className='document-listing-cell-title'>
+                                        {col.title} {getSortIndicator(col)}
+                                    </h4>
                                 </div>
                             ))}
                         </div>
@@ -186,10 +233,10 @@ const DocumentListing = ({
                                     useCursorPosition={true}
                                     deleteMenuStyle={true}
                                 >
-                                    {columns.map((col) => (
+                                    {columns.map((col, colIdx) => (
                                         <div
                                             className='document-listing-cell'
-                                            key={col.key}
+                                            key={`cell-${col.title}-${colIdx}`}
                                             title={String(item?.[col.key] ?? '')}
                                         >
                                             {col.render

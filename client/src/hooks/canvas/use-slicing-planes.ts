@@ -22,16 +22,15 @@
 
 import { useMemo } from 'react';
 import { Plane, Vector3 } from 'three';
-import type { SlicePlaneConfig } from '@/stores/editor/configuration';
 import useConfigurationStore from '@/stores/editor/configuration';
 
 const EPS = 1e-6;
 
 const useSlicingPlanes = (
     enableSlice: boolean,
-    slicePlaneConfig: SlicePlaneConfig
 ): Plane[] => {
     const origin = useConfigurationStore((s) => s.slicingOrigin);
+    const slicePlaneConfig = useConfigurationStore((s) => s.slicePlaneConfig);
 
     return useMemo(() => {
         if(!enableSlice) return [];
