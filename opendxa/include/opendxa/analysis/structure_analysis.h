@@ -43,6 +43,10 @@ public:
 		const std::vector<int>* structureTypes
 	);
 
+	void identifyStructuresCNA();
+	void computeMaximumNeighborDistanceFromPTM();
+	void determineLocalStructuresWithPTM();
+
 	int numberOfNeighbors(int atomIndex) const {
 		assert(_context.neighborLists);
 		const int* neighborList = _context.neighborLists->constDataInt() + (size_t)atomIndex * _context.neighborLists->componentCount();

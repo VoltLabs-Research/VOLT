@@ -25,7 +25,18 @@ private:
 	void mergeCompatibleGrains(size_t oldTransitionCount, size_t newTransitionCount);
 	void finalizeParentGrains();
 	void assignParentTransition(Cluster* parent1, Cluster* parent2, ClusterTransition* parentTransition);
-    
+	void buildClustersForPTM();
+	void baseBuildClusters();
+	void initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex);
+	void growClusterPTM(Cluster* cluster, std::deque<int>& atomsToVisit, int structureType);
+	void growCluster(
+		Cluster* cluster,
+		std::deque<int>& atomsToVisit,
+		Matrix_3<double>& orientationV,
+		Matrix_3<double>& orientationW,
+		int structureType
+	);
+
     bool alreadyProcessedAtom(int index);
 	bool calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition);
 	bool areOrientationsCompatible(int atom1, int atom2, int structureType);
