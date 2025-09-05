@@ -42,6 +42,18 @@ inline const Vector3 BCC_VECTORS[] = {
     { 0.0,  0.0,  1.0}, { 0.0,  0.0, -1.0}
 };
 
+inline const Vector3 SC_VECTORS[] = {
+    { 1.0,  0.0,  0.0}, {-1.0,  0.0,  0.0},
+    { 0.0,  1.0,  0.0}, { 0.0, -1.0,  0.0},
+    { 0.0,  0.0,  1.0}, { 0.0,  0.0, -1.0}
+};
+
+inline const Vector3 SC_PRIMITIVE_CELL[3] = {
+    {1.0, 0.0, 0.0},
+    {0.0, 1.0, 0.0},
+    {0.0, 0.0, 1.0}
+};
+
 // Twenty common neighbor directions in the cubic diamond (zinc‐blende)
 // structure, combining both tetrahedral bonds and the underlying fcc frame.
 inline const Vector3 DIAMOND_CUBIC_VECTORS[] = {

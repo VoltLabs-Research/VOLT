@@ -243,8 +243,6 @@ void StructureAnalysis::computeMaximumNeighborDistance(){
 /// distance (respecting periodic wrapping).  This maximum sets a safe "search radius"
 /// for all later routines (e.g. ghost‐layer size in Delaunay, node‐connect threshold in
 /// mesh building) so we reliably include every bond in subsequent stages.
-//
-// TODO: MAYBE DIAMOND PROBLEM HERE??!
 void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
     const size_t N = _context.atomCount();
     if(N == 0){
