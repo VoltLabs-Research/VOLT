@@ -4,11 +4,6 @@
 
 namespace OpenDXA{
 
-// In a perfect crystal, each atom has a fixed set of nearest-neighbor
-// directions. These static arrays list those unit vectors (up to a scale factor) for
-// common lattices so we can compare against simulation data.
-// All coordinates are given in fractional units of the lattice constants.
-
 // Twelve face-centered cubic neighbor directions, pointing from
 // one atom toward the centers of its 12 nearest-neighbor atoms.
 inline const Vector3 FCC_VECTORS[] = {
@@ -46,12 +41,6 @@ inline const Vector3 SC_VECTORS[] = {
     { 1.0,  0.0,  0.0}, {-1.0,  0.0,  0.0},
     { 0.0,  1.0,  0.0}, { 0.0, -1.0,  0.0},
     { 0.0,  0.0,  1.0}, { 0.0,  0.0, -1.0}
-};
-
-inline const Vector3 SC_PRIMITIVE_CELL[3] = {
-    {1.0, 0.0, 0.0},
-    {0.0, 1.0, 0.0},
-    {0.0, 0.0, 1.0}
 };
 
 // Twenty common neighbor directions in the cubic diamond (zinc‐blende)
@@ -129,6 +118,12 @@ inline const Vector3 CUBIC_DIAMOND_PRIMITIVE_CELL[3] = {
     {0.5, 0.5, 0.0},
     {0.0, 0.5, 0.5},
     {0.5, 0.0, 0.5}
+};
+
+inline const Vector3 SC_PRIMITIVE_CELL[3] = {
+    {1.0, 0.0, 0.0},
+    {0.0, 1.0, 0.0},
+    {0.0, 0.0, 1.0}
 };
 
 inline const Vector3 HEXAGONAL_DIAMOND_PRIMITIVE_CELL[3] = {

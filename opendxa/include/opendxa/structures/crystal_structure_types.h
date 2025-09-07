@@ -7,13 +7,13 @@ namespace OpenDXA{
 // type (e.g. FCC, BCC) or mark it as "OTHER" if it doesn't fit.
 enum StructureType{
     OTHER = 0,
+    SC,
     FCC,
     HCP,
     BCC,
     CUBIC_DIAMOND,
     HEX_DIAMOND,
     ICO,
-    SC,
     GRAPHENE,
     CUBIC_DIAMOND_FIRST_NEIGH,
     CUBIC_DIAMOND_SECOND_NEIGH,
@@ -30,6 +30,7 @@ enum StructureType{
 enum CoordinationStructureType{
     // No matching coordination pattern
     COORD_OTHER = 0,
+    COORD_SC,
     // 12 neighbors in 4-2-1 ring pattern
     COORD_FCC,
     // 12 neighbors in 4-2-2 ring pattern
@@ -48,6 +49,7 @@ enum CoordinationStructureType{
 // can detect such as FCC or hexagonal diamond
 enum LatticeStructureType{
     LATTICE_OTHER = 0,
+    LATTICE_SC,
     LATTICE_FCC,
     LATTICE_HCP,
     LATTICE_BCC,

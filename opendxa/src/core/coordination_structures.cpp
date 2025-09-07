@@ -9,6 +9,42 @@ CoordinationStructure CoordinationStructures::_coordinationStructures[NUM_COORD_
 // Contains the known lattice types.
 LatticeStructure CoordinationStructures::_latticeStructures[NUM_LATTICE_TYPES];
 
+inline std::vector<Matrix3> generateCubicSymmetryRotations(){
+    std::vector<Matrix3> rotations;
+    std::array<std::array<int,3>,6> perms = {{
+        {0,1,2}, {0,2,1}, {1,0,2}, {1,2,0}, {2,0,1}, {2,1,0}
+    }};
+
+    int signs[8][3] = {
+        { 1,  1,  1},
+        { 1, -1, -1},
+        {-1,  1, -1},
+        {-1, -1,  1},
+        { 1,  1, -1},
+        { 1, -1,  1},
+        {-1,  1,  1},
+        {-1, -1, -1}
+    };
+
+    for(auto &p : perms){
+        for(auto &s : signs){
+            Matrix3 R;
+            for(int i = 0; i < 3; i++){
+                Vector3 col(0, 0, 0);
+                col[p[i]] = double(s[i]);
+                R.column(i) = col;
+            }
+
+            // Accept only rotations with det=+1
+            if(std::abs(R.determinant() - 1.0) < 1e-8){
+                rotations.push_back(R);
+            }
+        }
+    }
+
+    return rotations;
+}
+
 CoordinationStructures::CoordinationStructures(
 	ParticleProperty* structureTypes,
 	LatticeStructureType inputCrystalType,
@@ -34,6 +70,8 @@ int CoordinationStructures::getCoordinationNumber() const{
 		case LATTICE_CUBIC_DIAMOND:
 		case LATTICE_HEX_DIAMOND:
 			return 16;
+        case LATTICE_SC:
+            return 6;
 		default:
 			return 0;
 	}
@@ -367,6 +405,41 @@ void CoordinationStructures::initializeHexagonalDiamond(){
     _latticeStructures[LATTICE_HEX_DIAMOND].primitiveCell.column(2) = HEXAGONAL_DIAMOND_PRIMITIVE_CELL[2];
 }
 
+void CoordinationStructures::initializeSC(){
+    initializeCoordinationStructure(COORD_SC, SC_VECTORS, 6, [](const Vector3& v1, const Vector3& v2){
+        const double dot = v1.dot(v2);
+        // 90°
+        if(std::abs(dot) < EPSILON) return true;
+        // opposites
+        if((v1 + v2).squaredLength() < EPSILON) return true;
+        return false;
+    }, [](int /* ni */){ return 0; });
+
+    initializeLatticeStructure(LATTICE_SC, SC_VECTORS, 6, &_coordinationStructures[COORD_SC]);
+    _latticeStructures[LATTICE_SC].primitiveCell.column(0) = SC_PRIMITIVE_CELL[0];
+    _latticeStructures[LATTICE_SC].primitiveCell.column(1) = SC_PRIMITIVE_CELL[1];
+    _latticeStructures[LATTICE_SC].primitiveCell.column(2) = SC_PRIMITIVE_CELL[2];
+
+    // permutations in all 6 directions
+    _latticeStructures[LATTICE_SC].permutations.clear();
+    for(const auto &R : generateCubicSymmetryRotations()){
+        SymmetryPermutation sp;
+        sp.transformation = R;
+        for(int i = 0; i < 6; ++i){
+            const Vector3 vec = R * SC_VECTORS[i];
+            // match with index j such that R * vi == vj
+            for(int j = 0; j < 6; ++j){
+                if(vec.equals(SC_VECTORS[j])){
+                    sp.permutation[i] = j;
+                    break;
+                }
+            }
+        }
+
+        _latticeStructures[LATTICE_SC].permutations.push_back(sp);
+    }
+}   
+
 void CoordinationStructures::initializeOther(){
     _coordinationStructures[COORD_OTHER].numNeighbors = 0;
     _latticeStructures[LATTICE_OTHER].coordStructure = &_coordinationStructures[COORD_OTHER];
@@ -444,7 +517,10 @@ void CoordinationStructures::findCommonNeighborsForBond(CoordinationStructure& c
 	Matrix3 tm;
 	tm.column(0) = coordStruct.latticeVectors[neighborIndex];
     bool found = false;
-
+    
+    coordStruct.commonNeighbors[neighborIndex][0] = -1;
+    coordStruct.commonNeighbors[neighborIndex][1] = -1;
+    
     for(int i1 = 0; i1 < coordStruct.numNeighbors && !found; i1++){
         if(!coordStruct.neighborArray.neighborBond(neighborIndex, i1)) continue;
         tm.column(1) = coordStruct.latticeVectors[i1];
@@ -610,6 +686,7 @@ void CoordinationStructures::initializeStructures(){
 	initializeFCC();
 	initializeHCP();
 	initializeBCC();
+    initializeSC();
 	initializeCubicDiamond();
 	initializeHexagonalDiamond();
 	initializeCommonNeighbors();
