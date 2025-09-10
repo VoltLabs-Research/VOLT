@@ -191,6 +191,7 @@ double CoordinationStructures::computeLocalCutoff(
 	return localCutoff;
 }
 
+// Determines the coordination structure of a particle
 double CoordinationStructures::determineLocalStructure(
 	const NearestNeighborFinder& neighList, 
 	int particleIndex,
@@ -204,14 +205,17 @@ double CoordinationStructures::determineLocalStructure(
 
     NeighborBondArray neighborArray;
 
-    //assert(_structureTypes->getInt(particleIndex) == COORD_OTHER);
+    assert(_structureTypes->getInt(particleIndex) == COORD_OTHER);
     
+    // Find N nearest neighbors of current atom
     NearestNeighborFinder::Query<MAX_NEIGHBORS> neighQuery(neighList);
     neighQuery.findNeighbors(neighList.particlePos(particleIndex));
-    
     int numNeighbors = neighQuery.results().size();
+    
+    // Number of neighbors to analyze
     int coordinationNumber = getCoordinationNumber();
 
+    // Early rejection of under-coordinated atoms
     if(numNeighbors < coordinationNumber) return 0.0;
 
 	double localCutoff = computeLocalCutoff(

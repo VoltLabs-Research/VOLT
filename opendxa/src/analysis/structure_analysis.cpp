@@ -155,94 +155,7 @@ void StructureAnalysis::processPTMAtom(
     storeDeformationGradient(kernel, atomIndex);
 }
 
-/// This maximum sets a safe "search radius"
-/// for all later routines (e.g. ghost‐layer size in Delaunay, node‐connect threshold in
-/// mesh building) so we reliably include every bond in subsequent stages.
-void StructureAnalysis::computeMaximumNeighborDistance(){
-    const size_t N = _context.atomCount();
-    if(N == 0){
-        _maximumNeighborDistance = 0.0;
-        return;
-    }
-
-    // Hack for DIAMOND
-    if(_context.inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND || !usingPTM()){
-        int maxNeighborListSize = std::min((int)_context.neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
-        NearestNeighborFinder neighFinder(maxNeighborListSize);
-        if(!neighFinder.prepare(_context.positions, _context.simCell, _context.particleSelection)){
-            throw std::runtime_error("Error in neighFinder.prepare(...)");
-        }
-
-        _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, _context.atomCount()),
-            0.0, [this, &neighFinder](const tbb::blocked_range<size_t>& r, double max_dist_so_far) -> double {
-                for(size_t index = r.begin(); index != r.end(); ++index){
-                    double localMaxDistance = _coordStructures.determineLocalStructure(neighFinder, index, _context.neighborLists);
-                    if(localMaxDistance > max_dist_so_far){
-                        max_dist_so_far = localMaxDistance;
-                    }
-                }
-                return max_dist_so_far;
-            },
-            [](double a, double b) -> double {
-                return std::max(a, b);
-            }
-        );
-
-
-        if(_identificationMode == StructureAnalysis::Mode::DIAMOND){
-            _coordStructures.postProcessDiamondNeighbors(_context, neighFinder);
-        }
-        
-        return;
-    }
-
-    // PTM
-    const int M = _context.neighborLists->componentCount();
-    const auto* pos = _context.positions->constDataPoint3();
-    const auto& invMat = _context.simCell.inverseMatrix();
-    const auto& dirMat = _context.simCell.matrix();
-
-    auto indices = std::views::iota(size_t{0}, N);
-
-    double maxDistance = std::transform_reduce(
-        std::execution::par,
-        indices.begin(),
-        indices.end(),
-        0.0,
-        [](double a, double b) { return std::max(a, b); },
-        [&](size_t i){
-            double localMaxDist = 0.0;
-            for(int j = 0; j < M; ++j){
-                int nb = _context.neighborLists->getIntComponent(i, j);
-                if(nb < 0) break;
-
-                Vector3 delta = pos[nb] - pos[i];
-                double f[3];
-                for(int d = 0; d < 3; ++d){
-                    f[d] = invMat.prodrow(delta, d);
-                    f[d] -= std::round(f[d]);
-                }
-
-                Vector3 mind;
-                mind = dirMat.column(0) * f[0];
-                mind += dirMat.column(1) * f[1];
-                mind += dirMat.column(2) * f[2];
-                double d = mind.length();
-                if(d > localMaxDist) localMaxDist = d;
-            }
-            return localMaxDist;
-        }
-    );
-
-    spdlog::debug("Maximum neighbor distance (from PTM): {}", maxDistance);
-    _maximumNeighborDistance = maxDistance;
-}
-
-
-/// Once we have neighbor lists from PTM, find the single largest atom‐to‐neighbor
-/// distance (respecting periodic wrapping).  This maximum sets a safe "search radius"
-/// for all later routines (e.g. ghost‐layer size in Delaunay, node‐connect threshold in
-/// mesh building) so we reliably include every bond in subsequent stages.
+// Compute the maximum distance of any neighbor from a crystalline atom
 void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
     const size_t N = _context.atomCount();
     if(N == 0){
@@ -250,35 +163,6 @@ void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
         return;
     }
 
-    // Hack for DIAMOND
-    if(_context.inputCrystalType == LatticeStructureType::LATTICE_CUBIC_DIAMOND || !usingPTM()){
-        int maxNeighborListSize = std::min((int)_context.neighborLists->componentCount() + 1, (int)MAX_NEIGHBORS);
-        NearestNeighborFinder neighFinder(maxNeighborListSize);
-        if(!neighFinder.prepare(_context.positions, _context.simCell, _context.particleSelection)){
-            throw std::runtime_error("Error in neighFinder.prepare(...)");
-        }
-
-        _maximumNeighborDistance = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, N),
-            0.0, [this, &neighFinder](const tbb::blocked_range<size_t>& r, double max_dist_so_far) -> double {
-                for(size_t index = r.begin(); index != r.end(); ++index){
-                    double localMaxDistance = _coordStructures.determineLocalStructure(neighFinder, index, _context.neighborLists);
-                    if(localMaxDistance > max_dist_so_far){
-                        max_dist_so_far = localMaxDistance;
-                    }
-                }
-                return max_dist_so_far;
-            },
-            [](double a, double b) -> double {
-                return std::max(a, b);
-            }
-        );
-
-
-        std::cout << "OK RETURN" << std::endl;
-        return;
-    }
-
-    // PTM
     const int M = _context.neighborLists->componentCount();
     const auto* pos = _context.positions->constDataPoint3();
     const auto& invMat = _context.simCell.inverseMatrix();
