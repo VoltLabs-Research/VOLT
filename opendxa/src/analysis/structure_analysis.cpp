@@ -42,7 +42,7 @@ StructureAnalysis::StructureAnalysis(
         // take the max between the lattice-definition maxNeighbors and the coordination
         // number the algorithm expects (safety for diamond where coord. number = 16).
         requestedMaxNeighbors = std::max(
-            _coordStructures.latticeStructure(_context.inputCrystalType).maxNeighbors,
+            _coordStructures.getLatticeStruct(_context.inputCrystalType).maxNeighbors,
             _coordStructures.getCoordinationNumber()
         );
         // defensive: ensure at least 1
@@ -152,8 +152,9 @@ void StructureAnalysis::processPTMAtom(
     storeNeighborIndices(kernel, atomIndex);
     _context.structureTypes->setInt(atomIndex, type);
     storeOrientationData(kernel, atomIndex);
+    
     storeDeformationGradient(kernel, atomIndex);
-}
+  }
 
 // Compute the maximum distance of any neighbor from a crystalline atom
 void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
@@ -217,7 +218,8 @@ void StructureAnalysis::determineLocalStructuresWithPTM() {
 
     _context.ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Float, 4, 0.0f, true);
     _context.ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Float, 9, 0.0f, true);
-    
+    _context.correspondencesCode = std::make_shared<ParticleProperty>(N, DataType::Int64, 1, 0, true);
+
     // Clear arrays for second pass
     std::fill(_context.neighborLists->dataInt(), 
               _context.neighborLists->dataInt() + _context.neighborLists->size() * _context.neighborLists->componentCount(), -1);
@@ -235,6 +237,8 @@ void StructureAnalysis::determineLocalStructuresWithPTM() {
             ptmTypes[i] = kernel.identifyStructure(i, cached);
             _context.ptmRmsd->setFloat(i, static_cast<float>(kernel.rmsd()));
             storeOrientationData(kernel, i);
+                    auto* c = reinterpret_cast<uint64_t*>(_context.correspondencesCode->data());
+        c[i] = kernel.correspondencesCode();
         }
     });
 
@@ -271,7 +275,7 @@ void StructureAnalysis::identifyStructuresCNA(){
 }
 
 void StructureAnalysis::identifyStructures(){
-    if(usingPTM()){
+   if(usingPTM()){
         determineLocalStructuresWithPTM();
         computeMaximumNeighborDistanceFromPTM();
         return;

@@ -12,6 +12,7 @@
 #include <opendxa/analysis/polyhedral_template_matching.h>
 #include <opendxa/analysis/analysis_context.h>
 #include <opendxa/core/lammps_parser.h>
+#include <opendxa/analysis/ptm_neighbor_finder.h>
 #include <nlohmann/json.hpp>
 #include <mutex>
 
@@ -110,8 +111,8 @@ public:
 	const Vector3& neighborLatticeVector(int centralAtomIndex, int neighborIndex) const{
 		assert(_context.atomSymmetryPermutations);
 		int structureType = _context.structureTypes->getInt(centralAtomIndex);
-		const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
-		assert(neighborIndex >= 0 && neighborIndex < CoordinationStructures::_coordinationStructures[structureType].numNeighbors);
+		const LatticeStructure& latticeStructure = CoordinationStructures::getLatticeStruct(structureType);
+		assert(neighborIndex >= 0 && neighborIndex < CoordinationStructures::getCoordStruct(structureType).numNeighbors);
 		int symmetryPermutationIndex = _context.atomSymmetryPermutations->getInt(centralAtomIndex);
 		assert(symmetryPermutationIndex >= 0 && symmetryPermutationIndex < latticeStructure.permutations.size());
 		const auto& permutation = latticeStructure.permutations[symmetryPermutationIndex].permutation;

@@ -16,7 +16,8 @@ namespace OpenDXA::Particles{
 enum class DataType : int{
     Void = 0,
     Int = 2,
-    Float = 6
+    Float = 6,
+     Int64= 7 
 };
 
 class PropertyBase{
@@ -45,7 +46,27 @@ public:
     [[nodiscard]] std::size_t stride() const noexcept{
         return _stride;
     }
+    
+    [[nodiscard]] const std::int64_t* constDataInt64() const noexcept{
+        return reinterpret_cast<const std::int64_t*>(constData());
+    }
+    
+    std::int64_t* dataInt64() noexcept{
+        return reinterpret_cast<std::int64_t*>(data());
+    }
+      [[nodiscard]] std::int64_t getInt64(std::size_t idx) const{
+        return constDataInt64()[idx];
+    }
+    void setInt64(std::size_t idx, std::int64_t v){
+        dataInt64()[idx] = v;
+    }
 
+    std::int64_t getInt64Component(std::size_t index, std::size_t componentIndex) const{
+        return constDataInt64()[index * _componentCount + componentIndex];
+    }
+    void setInt64Component(std::size_t index, std::size_t componentIndex, std::int64_t v){
+        dataInt64()[index * _componentCount + componentIndex] = v;
+    }
     [[nodiscard]] std::size_t componentCount() const noexcept{
         return _componentCount;
     }

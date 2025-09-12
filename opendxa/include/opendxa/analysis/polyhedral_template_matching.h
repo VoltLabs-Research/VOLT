@@ -61,6 +61,31 @@ public:
 		return ref->points[templateIndex];
 	}
 
+    static double calculateInterfacialDisorientation(
+        StructureType structureTypeA,
+        StructureType structureTypeB,
+        const Quaternion& qa,
+        const Quaternion& qb,
+        Quaternion &output
+    ){
+        double disorientation = std::numeric_limits<double>::infinity();
+        double orientA[4] = { qa.w(), qa.x(), qa.y(), qa.z() };
+        double orientB[4] = { qb.w(), qb.x(), qb.y(), qb.z() };
+
+        if(structureTypeA == StructureType::FCC || structureTypeA == StructureType::CUBIC_DIAMOND) {
+            disorientation = (double)ptm::quat_disorientation_hexagonal_to_cubic(orientA, orientB);
+        }else{
+            disorientation = (double)ptm::quat_disorientation_cubic_to_hexagonal(orientA, orientB);
+        }
+
+        output.w() = orientB[0];
+        output.x() = orientB[1];
+        output.y() = orientB[2];
+        output.z() = orientB[3];
+
+        return disorientation * (180 / M_PI);
+    }
+
     template <typename QuaternionType1, typename QuaternionType2>
     static double calculateDisorientation(
         StructureType structureTypeA, 
@@ -128,6 +153,8 @@ public:
             return _F;
         }
 
+        uint64_t correspondencesCode() const { return _corrCode; }
+
         double interatomicDistance() const{
             return _interatomicDistance;
         }
@@ -150,6 +177,7 @@ public:
         const PTM& _algorithm;
         ptm_local_handle_t _handle;
         double _rmsd;
+        uint64_t _corrCode = 0;
         double _scale;
         double _interatomicDistance;
         double _quaternion[4];

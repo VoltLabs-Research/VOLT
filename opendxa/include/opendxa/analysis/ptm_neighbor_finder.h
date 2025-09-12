@@ -1,3 +1,5 @@
+#pragma once
+
 #include <opendxa/analysis/nearest_neighbor_finder.h>
 #include <opendxa/analysis/polyhedral_template_matching.h>
 #include <opendxa/analysis/analysis_context.h>
@@ -14,6 +16,21 @@ public:
         Vector3 idealVector;
         double disorientation;
     };
+
+    PTMNeighborFinder(
+        bool /*unused*/,
+        std::shared_ptr<ParticleProperty> positions,
+        std::shared_ptr<ParticleProperty> structures,
+        std::shared_ptr<ParticleProperty> orientations,
+        std::shared_ptr<ParticleProperty> correspondences,
+        const SimulationCell& cell
+    )
+    : _structuresArray(std::move(structures))
+    , _orientationsArray(std::move(orientations))
+    , _correspondencesArray(std::move(correspondences))
+    {
+        this->prepare(positions.get(), cell, nullptr);
+    }
 
     // Performs a PTM calculation on a single input particle.
     class Query{
@@ -42,6 +59,9 @@ public:
         int neighborCount() const{
             return _list.size();
         }
+
+        const auto& neighbors() const { return _list; }
+        StructureType structureType() const { return _structureType; }
 
     private:
         void getNeighbors(size_t particleIndex, int ptmType);

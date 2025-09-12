@@ -27,7 +27,9 @@ public:
 	constexpr QuaternionT(T x, T y, T z, T w) noexcept : std::array<T, 4>{{x,y,z,w}} {}
 	explicit constexpr QuaternionT(Identity) noexcept : std::array<T, 4>{{ T(0), T(0), T(0), T(1) }} {}
 	explicit QuaternionT(const Matrix_3<T>& tm);
-
+    constexpr inline T norm() const {
+        return std::sqrt(dot(*this));
+    }
 	template<typename U>
 	explicit constexpr operator QuaternionT<U>() const noexcept { return QuaternionT<U>(static_cast<U>(x()), static_cast<U>(y()), static_cast<U>(z()), static_cast<U>(w())); }
 

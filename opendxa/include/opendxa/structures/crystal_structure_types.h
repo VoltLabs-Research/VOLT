@@ -60,7 +60,7 @@ enum LatticeStructureType{
     NUM_LATTICE_TYPES
 };
 
-// Maximum number of nearest neighbors supported by CNA/PTM.
+// Maximum number of nearest neighbors supported by CNA.
 // this limit defines buffer sizes for neighbor lists and common-neighbor mask.
 enum { MAX_NEIGHBORS = 16 };
 

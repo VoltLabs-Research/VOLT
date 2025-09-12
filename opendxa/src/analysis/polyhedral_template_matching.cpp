@@ -293,6 +293,7 @@ StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::ve
         _structureType = StructureType::OTHER;
         _orderingType = static_cast<int32_t>(OrderingType::ORDERING_NONE);
         _rmsd = 0.0;
+        _corrCode = 0;
         _interatomicDistance = 0.0;
         memset(_quaternion, 0, 4 * sizeof(double));
         _scale = 0.0;
@@ -300,6 +301,14 @@ StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::ve
         _F.setZero();
     }else{
         _structureType = ptmToStructureType(result.structure_type);
+        int ptmType = PTM::toPtmStructureType(_structureType);
+
+        _corrCode = ptm_encode_correspondences(
+            ptmType,
+            _env.num,
+            _env.correspondences,
+            _bestTemplateIndex
+        );
     }
     
     return _structureType;

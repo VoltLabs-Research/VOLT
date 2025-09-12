@@ -13,8 +13,8 @@ ClusterConnector::ClusterConnector(
 
 void ClusterConnector::connectClusterNeighbors(int atomIndex, Cluster* cluster1){
     int structureType = _context.structureTypes->getInt(atomIndex);
-    const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
-    const CoordinationStructure& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
+    const LatticeStructure& latticeStructure = CoordinationStructures::getLatticeStruct(structureType);
+    const CoordinationStructure& coordStructure = CoordinationStructures::getCoordStruct(structureType);
     int symPermIndex = _context.atomSymmetryPermutations->getInt(atomIndex);
     const auto& permutation = latticeStructure.permutations[symPermIndex].permutation;
 
@@ -67,7 +67,7 @@ bool ClusterConnector::areOrientationsCompatible(int atom1, int atom2, int struc
     float rmsd2 = _context.ptmRmsd->getFloat(atom2);
     float avgRmsd = (rmsd1 + rmsd2) * 0.5f;
     
-    const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
+    const LatticeStructure& latticeStructure = CoordinationStructures::getLatticeStruct(structureType);
     Matrix3 rotationMatrix = quaternionToMatrix(quatDiff);
     
     if(avgRmsd < 0.1f){
@@ -90,8 +90,8 @@ bool ClusterConnector::areOrientationsCompatible(int atom1, int atom2, int struc
 
 bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition){
     int structureType = _context.structureTypes->getInt(atomIndex);
-    const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
-    const CoordinationStructure& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
+    const LatticeStructure& latticeStructure = CoordinationStructures::getLatticeStruct(structureType);
+    const CoordinationStructure& coordStructure = CoordinationStructures::getCoordStruct(structureType);
     int symIndex = _context.atomSymmetryPermutations->getInt(atomIndex);
     const auto& permutation = latticeStructure.permutations[symIndex].permutation;
 
@@ -112,7 +112,7 @@ bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int 
         if(j == -1) return false;
 
         int neighborStructureType = _context.structureTypes->getInt(neighbor);
-        const LatticeStructure& neighborLattice = CoordinationStructures::_latticeStructures[neighborStructureType];
+        const LatticeStructure& neighborLattice = CoordinationStructures::getLatticeStruct(neighborStructureType);
         int neighborSymIndex = _context.atomSymmetryPermutations->getInt(neighbor);
         const auto& neighborPerm = neighborLattice.permutations[neighborSymIndex].permutation;
 
@@ -188,6 +188,7 @@ void ClusterConnector::connectClusters(){
     std::for_each(std::execution::par, indices.begin(), indices.end(), [this](size_t atomIndex){
         processAtomConnections(atomIndex);
     });
+    spdlog::info("Number of cluster transitions: {}", _sa.clusterGraph().clusterTransitions().size());
 }
 
 void ClusterConnector::processAtomConnections(size_t atomIndex){
@@ -242,7 +243,7 @@ void ClusterConnector::processDefectCluster(Cluster* defectCluster){
             if(t2->cluster2->structure != _context.inputCrystalType || t2->distance != 1) continue;
             if(t2->cluster2 == t->cluster2) continue;
 
-            const LatticeStructure& lattice = CoordinationStructures::latticeStructure(t2->cluster2->structure);
+            const LatticeStructure& lattice = CoordinationStructures::getLatticeStruct(t2->cluster2->structure);
             Matrix3 misorientation = t2->tm * t->reverse->tm;
 
             for(const auto& sym : lattice.permutations){
@@ -383,8 +384,8 @@ void ClusterConnector::growCluster(
     Matrix_3<double>& orientationW,
     int structureType
 ){
-    const CoordinationStructure& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
-    const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
+    const CoordinationStructure& coordStructure = CoordinationStructures::getCoordStruct(structureType);
+    const LatticeStructure& latticeStructure = CoordinationStructures::getLatticeStruct(structureType);
 
     while(!atomsToVisit.empty()){
         int currentAtomIndex = atomsToVisit.front();
@@ -457,16 +458,17 @@ void ClusterConnector::growCluster(
 }
 
 void ClusterConnector::buildClusters(){
-    // baseBuildClusters();
+    baseBuildClusters();
 
     if(_sa.usingPTM()){
         buildClustersForPTM();
-        return;
     }
+
+    spdlog::info("Number of clusters: {}", _sa.clusterGraph().clusters().size() - 1);
 }
 
-void ClusterConnector::applyPreferredOrientation(Cluster* cluster) {
-    const auto& latticeStruct = CoordinationStructures::_latticeStructures[cluster->structure];
+void ClusterConnector::applyPreferredOrientation(Cluster* cluster){
+    const LatticeStructure& latticeStruct = CoordinationStructures::getLatticeStruct(cluster->structure);
     double smallestDeviation = std::numeric_limits<double>::max();
     Matrix3 oldOrientation = cluster->orientation;
 
@@ -502,7 +504,7 @@ void ClusterConnector::reorientAtomsToAlignClusters(){
                 assert(cluster);
                 if(cluster->symmetryTransformation == 0) continue;
 
-                const auto& latticeStruct = CoordinationStructures::_latticeStructures[cluster->structure];
+                const LatticeStructure& latticeStruct = CoordinationStructures::getLatticeStruct(cluster->structure);
                 int oldSymmetry = _context.atomSymmetryPermutations->getInt(atomIndex);
                 int newSymmetry = latticeStruct.permutations[oldSymmetry].inverseProduct[cluster->symmetryTransformation];
                 _context.atomSymmetryPermutations->setInt(atomIndex, newSymmetry);

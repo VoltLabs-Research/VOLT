@@ -19,6 +19,7 @@ public:
     std::shared_ptr<ParticleProperty> ptmRmsd;
     std::shared_ptr<ParticleProperty> ptmOrientation;
     std::shared_ptr<ParticleProperty> ptmDeformationGradient;
+    std::shared_ptr<ParticleProperty> correspondencesCode;
 
     // Simulation
     const SimulationCell& simCell;

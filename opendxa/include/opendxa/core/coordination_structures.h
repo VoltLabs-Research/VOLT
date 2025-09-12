@@ -22,13 +22,72 @@ public:
     ) const;
     
     static void initializeStructures();
+
     void postProcessDiamondNeighbors(
         AnalysisContext& context,
         const NearestNeighborFinder& neighList
     ) const;
 
-    static const LatticeStructure& latticeStructure(int structureIndex){
-        return _latticeStructures[structureIndex];
+    static const LatticeStructureType getLatticeIdx(int s){
+        switch(s){
+            case StructureType::SC:  return LATTICE_SC;
+            case StructureType::FCC: return LATTICE_FCC;
+            case StructureType::HCP: return LATTICE_HCP;
+            case StructureType::BCC: return LATTICE_BCC;
+
+            case StructureType::CUBIC_DIAMOND:
+            case StructureType::CUBIC_DIAMOND_FIRST_NEIGH:
+            case StructureType::CUBIC_DIAMOND_SECOND_NEIGH:
+                return LATTICE_CUBIC_DIAMOND;
+
+            case StructureType::HEX_DIAMOND:
+            case StructureType::HEX_DIAMOND_FIRST_NEIGH:
+            case StructureType::HEX_DIAMOND_SECOND_NEIGH:
+                return LATTICE_HEX_DIAMOND;
+
+            case StructureType::ICO:
+            case StructureType::GRAPHENE:
+                return LATTICE_OTHER;
+
+            default:
+                spdlog::warn("getLatticeIdx: unknown {}", s);
+                return LATTICE_OTHER;
+        }
+    }
+
+    static const CoordinationStructureType getCoordIdx(int s){
+        switch(s){
+            case StructureType::SC:  return COORD_SC;
+            case StructureType::FCC: return COORD_FCC;
+            case StructureType::HCP: return COORD_HCP;
+            case StructureType::BCC: return COORD_BCC;
+
+            case StructureType::CUBIC_DIAMOND:
+            case StructureType::CUBIC_DIAMOND_FIRST_NEIGH:
+            case StructureType::CUBIC_DIAMOND_SECOND_NEIGH:
+                return COORD_CUBIC_DIAMOND;
+
+            case StructureType::HEX_DIAMOND:
+            case StructureType::HEX_DIAMOND_FIRST_NEIGH:
+            case StructureType::HEX_DIAMOND_SECOND_NEIGH:
+                return COORD_HEX_DIAMOND;
+
+            case StructureType::ICO:
+            case StructureType::GRAPHENE:
+                return COORD_OTHER;
+
+            default:
+                spdlog::warn("getCoordIdx: unknown {}", s);
+                return COORD_OTHER;
+        }
+    }
+
+    static const CoordinationStructure& getCoordStruct(int structureType){
+        return _coordinationStructures[CoordinationStructures::getCoordIdx(structureType)];
+    }
+
+    static const LatticeStructure& getLatticeStruct(int structureType){
+        return _latticeStructures[CoordinationStructures::getLatticeIdx(structureType)];
     }
 
     static CoordinationStructure _coordinationStructures[NUM_COORD_TYPES];

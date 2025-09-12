@@ -32,6 +32,8 @@ PropertyBase::PropertyBase(
 				return sizeof(int);
 			case DataType::Float:
 				return sizeof(double);
+			case DataType::Int64:
+				return sizeof(std::uint64_t);
 			case DataType::Void:
 				return 0;
 			default:
