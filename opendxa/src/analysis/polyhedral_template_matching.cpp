@@ -262,7 +262,7 @@ StructureType PTM::Kernel::identifyStructure(size_t particleIndex, const std::ve
     nbrdata.cachedNeighbors = &cachedNeighbors;
 
     // TODO: Segmentation fault with ICO & SC & GRAPHENE
-    int32_t flags = PTM_CHECK_FCC | PTM_CHECK_HCP | PTM_CHECK_BCC | PTM_CHECK_DCUB | PTM_CHECK_DHEX;
+    int32_t flags = PTM_CHECK_SC | PTM_CHECK_FCC | PTM_CHECK_HCP | PTM_CHECK_BCC | PTM_CHECK_DCUB | PTM_CHECK_DHEX;
 
     ptm_result_t result;
     int errorCode = ptm_index(

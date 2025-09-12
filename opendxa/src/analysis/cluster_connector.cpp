@@ -12,17 +12,16 @@ ClusterConnector::ClusterConnector(
 ) : _sa(sa), _context(context){}
 
 void ClusterConnector::connectClusterNeighbors(int atomIndex, Cluster* cluster1){
-    // Look up symmetry permutation of the current atom.
     int structureType = _context.structureTypes->getInt(atomIndex);
     const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
     const CoordinationStructure& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
     int symPermIndex = _context.atomSymmetryPermutations->getInt(atomIndex);
     const auto& permutation = latticeStructure.permutations[symPermIndex].permutation;
 
-    // Visit neighbors of the current atom
     const int nn = _sa.numberOfNeighbors(atomIndex); 
     for(int ni = 0; ni < nn; ++ni){
         int neighbor = _sa.getNeighbor(atomIndex, ni);
+        if(neighbor < 0 || neighbor == atomIndex) continue;
         processNeighborConnection(atomIndex, neighbor, ni, cluster1, structureType);
     }
 }
@@ -90,7 +89,6 @@ bool ClusterConnector::areOrientationsCompatible(int atom1, int atom2, int struc
 }
 
 bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition){
-    // TODO: Duplicate code!
     int structureType = _context.structureTypes->getInt(atomIndex);
     const LatticeStructure& latticeStructure = CoordinationStructures::_latticeStructures[structureType];
     const CoordinationStructure& coordStructure = CoordinationStructures::_coordinationStructures[structureType];
@@ -126,7 +124,6 @@ bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int 
     if (!tm1.inverse(tm1inv)) return false;
 
     outTransition = tm2 * tm1inv;
-    spdlog::info("Number of cluster transitions: {}", _sa.clusterGraph().clusterTransitions().size());
     return true;
 }
 
@@ -149,20 +146,19 @@ void ClusterConnector::addReverseNeighbor(int neighbor, int atomIndex){
 }
 
 void ClusterConnector::processNeighborConnection(int atomIndex, int neighbor, int neighborIndex, Cluster* cluster1, int structureType){
-    // if(neighbor < 0 || static_cast<size_t>(neighbor) >= _context.atomCount()) return; 
+    if (neighbor < 0 || static_cast<size_t>(neighbor) >= _context.atomCount()) return; 
 
-    // Skip neighbor atoms belonging to the same cluster or to no cluster at all
     int neighborClusterId = _context.atomClusters->getInt(neighbor);
-    if(neighborClusterId == 0 || neighborClusterId == cluster1->id){
-        // Add this atom to the neighbors's list of neighbors
+    if(neighborClusterId == 0){
         addReverseNeighbor(neighbor, atomIndex);
         return;
     }
 
-    Cluster* cluster2 = _sa.clusterGraph().findCluster(neighborClusterId);
-    assert(cluster2);
+    if(neighborClusterId == cluster1->id) return;
 
-    // Skip if there is already a transition between the two clusters
+    Cluster* cluster2 = _sa.clusterGraph().findCluster(neighborClusterId);
+    //assert(cluster2);
+
     if(ClusterTransition* existing = cluster1->findTransition(cluster2)){
         existing->area++;
         existing->reverse->area++;
@@ -187,7 +183,6 @@ Cluster* ClusterConnector::getParentGrain(Cluster* c){
     return parent;
 }
 
-// Determines the transition matrices between clusters
 void ClusterConnector::connectClusters(){
     auto indices = std::views::iota(size_t{0}, _context.atomCount());
     std::for_each(std::execution::par, indices.begin(), indices.end(), [this](size_t atomIndex){
@@ -199,7 +194,7 @@ void ClusterConnector::processAtomConnections(size_t atomIndex){
     int clusterId = _context.atomClusters->getInt(atomIndex);
     if(clusterId == 0) return;
     Cluster* cluster1 = _sa.clusterGraph().findCluster(clusterId);
-    assert(cluster1);
+    //assert(cluster1);
     connectClusterNeighbors(atomIndex, cluster1);
 }
 
@@ -209,6 +204,14 @@ void ClusterConnector::processDefectClusters(){
         if(cluster->structure != _context.inputCrystalType){
             processDefectCluster(cluster);
         }
+    }
+}
+
+void ClusterConnector::initializeClustersForSuperclusterFormation(){
+    for(Cluster* cluster : _sa.clusterGraph().clusters()){
+        if(!cluster || cluster->id == 0) continue;
+        cluster->rank = 0;
+        //assert(cluster->parentTransition == nullptr);
     }
 }
 
@@ -233,14 +236,12 @@ std::pair<Cluster*, Cluster*> ClusterConnector::getParentGrains(ClusterTransitio
 }
 
 void ClusterConnector::processDefectCluster(Cluster* defectCluster){
-    // Create transition between lattice clusters on both sides of the defect
     for(ClusterTransition* t = defectCluster->transitions; t; t = t->next){
         if(t->cluster2->structure != _context.inputCrystalType || t->distance != 1) continue;
-        for(ClusterTransition* t2 = t->next; t2; t2 = t2->next){
+        for(ClusterTransition* t2 = t->next; t2; t2 = t2->next) {
             if(t2->cluster2->structure != _context.inputCrystalType || t2->distance != 1) continue;
             if(t2->cluster2 == t->cluster2) continue;
 
-            // Check if the two clusters form a single crystal
             const LatticeStructure& lattice = CoordinationStructures::latticeStructure(t2->cluster2->structure);
             Matrix3 misorientation = t2->tm * t->reverse->tm;
 
@@ -274,13 +275,12 @@ void ClusterConnector::assignParentTransition(Cluster* parent1, Cluster* parent2
 }
 
 void ClusterConnector::mergeCompatibleGrains(size_t oldTransitionCount, size_t newTransitionCount){
-    // Merge crystal-crystal pairs
     for(size_t i = oldTransitionCount; i < newTransitionCount; i++){
         ClusterTransition* transition = _sa.clusterGraph().clusterTransitions()[i];
         // Validate transitions properties
-        assert(transition->distance == 2);
-        assert(transition->cluster1->structure == _context.inputCrystalType);
-        assert(transition->cluster2->structure == _context.inputCrystalType);
+        //assert(transition->distance == 2);
+        //assert(transition->cluster1->structure == _context.inputCrystalType);
+        //assert(transition->cluster2->structure == _context.inputCrystalType);
                 
         auto [parent1, parent2] = getParentGrains(transition);
         if(parent1 == parent2) continue;
@@ -290,18 +290,12 @@ void ClusterConnector::mergeCompatibleGrains(size_t oldTransitionCount, size_t n
     }
 }
 
-// Combines clusters to super clusters
 void ClusterConnector::formSuperClusters(){
     size_t oldTransitionCount = _sa.clusterGraph().clusterTransitions().size();
     
-    for(Cluster* cluster : _sa.clusterGraph().clusters()){
-        if(!cluster || cluster->id == 0) continue;
-        cluster->rank = 0;
-        assert(cluster->parentTransition == nullptr);
-    }
-
+    initializeClustersForSuperclusterFormation();
     processDefectClusters();
-
+    
     size_t newTransitionCount = _sa.clusterGraph().clusterTransitions().size();
     mergeCompatibleGrains(oldTransitionCount, newTransitionCount);
     
@@ -361,37 +355,25 @@ void ClusterConnector::growClusterPTM(Cluster* cluster, std::deque<int>& atomsTo
 }
 
 void ClusterConnector::baseBuildClusters(){
-    // Iterate over atoms, looking for those that have not been visited yet
     for(size_t seedAtomIndex = 0; seedAtomIndex < _context.atomCount(); seedAtomIndex++){
         if(alreadyProcessedAtom(seedAtomIndex)) continue;
 
-        // Start a new cluster
         int structureType = _context.structureTypes->getInt(seedAtomIndex);
         Cluster* cluster = startNewCluster(seedAtomIndex, structureType);
 
-        // For calculating the cluster orientation
         Matrix_3<double> orientationV = Matrix_3<double>::Zero();
         Matrix_3<double> orientationW = Matrix_3<double>::Zero();
-
-        // Add neighboring atoms to the cluster
         std::deque<int> atomsToVisit(1, seedAtomIndex);
-        growCluster(cluster, atomsToVisit, orientationV, orientationW, structureType);
 
-        // Compute matrix, which transforms vectors from lattice space to simulation coordinates
+        growCluster(cluster, atomsToVisit, orientationV, orientationW, structureType);
         cluster->orientation = Matrix3(orientationW * orientationV.inverse());
 
         if(structureType == _context.inputCrystalType && !_context.preferredCrystalOrientations.empty()){
-            // Determine the symmetry permutation that leads to the best cluster orientation.
-            // The best cluster orientation is the one that forms the smallest angle with one
-            // of the preferred crystal orientations
             applyPreferredOrientation(cluster);
         }
     }
 
-    // Reorient atoms to align clusters with global coordinate system.
     reorientAtomsToAlignClusters();
-
-    spdlog::debug("Number of clusters: {}", _sa.clusterGraph().clusters().size());
 }
 
 void ClusterConnector::growCluster(
@@ -408,22 +390,18 @@ void ClusterConnector::growCluster(
         int currentAtomIndex = atomsToVisit.front();
         atomsToVisit.pop_front();
 
-        // Look up symmetry permutation of current atom
         int symmetryPermutationIndex = _context.atomSymmetryPermutations->getInt(static_cast<size_t>(currentAtomIndex));
         const auto& permutation = latticeStructure.permutations[symmetryPermutationIndex].permutation;
 
-        // Visit neighbors of current atom
         for(int neighborIndex = 0; neighborIndex < coordStructure.numNeighbors; neighborIndex++){
-            // An atom should not be a neighbor of itself.
-            // Minimum image convention for simulation cells with periodic boundary conditions.
             int neighborAtomIndex = _sa.getNeighbor(currentAtomIndex, neighborIndex);
             //assert(neighborAtomIndex != currentAtomIndex);
 
-            // Add vector pair to matrices for computing the cluster orientation
             const Vector3& latticeVector = latticeStructure.latticeVectors[permutation[neighborIndex]];
             const Vector3& spatialVector = _context.simCell.wrapVector(
                 _context.positions->getPoint3(static_cast<size_t>(neighborAtomIndex)) - _context.positions->getPoint3(static_cast<size_t>(currentAtomIndex))
             );
+
             for(size_t i = 0; i < 3; i++){
                 for(size_t j = 0; j < 3; j++){
                     orientationV(i, j) += (latticeVector[j] * latticeVector[i]);
@@ -431,13 +409,9 @@ void ClusterConnector::growCluster(
                 }
             }
 
-            // Skip neighbors which are already part of the cluster, or 
-            // which have a different coordination structure type.
             if(_context.atomClusters->getInt(neighborAtomIndex) != 0) continue;
             if(_context.structureTypes->getInt(neighborAtomIndex) != structureType) continue;
 
-            // Select three non-coplanar atoms, which are all neighbors of the current neighbor.
-            // One of them is the current central atom, two are common neighbors.
             Matrix3 tm1, tm2;
             bool properOverlap = true;
 
@@ -463,61 +437,27 @@ void ClusterConnector::growCluster(
 
             if(!properOverlap) continue;
 
-            // Determine the misorientation matrix
-            assert(std::abs(tm1.determinant()) > EPSILON);
+            //assert(std::abs(tm1.determinant()) > EPSILON);
             Matrix3 tm2inverse;
             if(!tm2.inverse(tm2inverse)) continue;
 
             Matrix3 transition = tm1 * tm2inverse;
 
-            if(latticeStructure.permutations.empty()) continue;
-            if(_sa.usingPTM()){
-                const double *q = _context.ptmOrientation->dataFloat() + 4 * neighborAtomIndex;
-                Quaternion quat(q[0], q[1], q[2], q[3]); 
-                Matrix3 R;
-                Vector3 ex(1,0,0), ey(0,1,0), ez(0,0,1);
-                R.column(0) = quat * ex; 
-                R.column(1) = quat * ey; 
-                R.column(2) = quat * ez;
-                
-                double best = 1e9;
-                int bestIdx = 0;
-                Matrix3 Rt = R.transposed();
-                for(int i = 0; i < (int)latticeStructure.permutations.size(); ++i){
-                    const Matrix3& S = latticeStructure.permutations[i].transformation;
-                    Matrix3 Rrel = Rt * S * R;
-                    double tr = Rrel(0, 0) + Rrel(1, 1) + Rrel(2, 2);
-                    double c = std::max(-1.0, std::min(1.0, (tr - 1.0) * 0.5));
-                    double angle = std::acos(c);
-                    if(angle < best){
-                        best = angle;
-                        bestIdx = i;
-                    }
-                }
-
-                _context.atomSymmetryPermutations->setInt(neighborAtomIndex, bestIdx);
-            }else{
-                // Find the corresponding symmetry permutation
-                for(size_t i = 0; i < latticeStructure.permutations.size(); i++){
-                    if(transition.equals(latticeStructure.permutations[i].transformation, CA_TRANSITION_MATRIX_EPSILON)){
-                        // Make the neighbor atom part of the current cluster
-                        _context.atomClusters->setInt(neighborAtomIndex, cluster->id);
-                        cluster->atomCount++;
-                        // Save the permutation index
-                        _context.atomSymmetryPermutations->setInt(neighborAtomIndex, i);
-                        // Recursively continue with the neighbor
-                        atomsToVisit.push_back(neighborAtomIndex);
-                        break;
-                    }
+            for(size_t i = 0; i < latticeStructure.permutations.size(); i++){
+                if(transition.equals(latticeStructure.permutations[i].transformation, CA_TRANSITION_MATRIX_EPSILON)){
+                    _context.atomClusters->setInt(neighborAtomIndex, cluster->id);
+                    cluster->atomCount++;
+                    _context.atomSymmetryPermutations->setInt(neighborAtomIndex, i);
+                    atomsToVisit.push_back(neighborAtomIndex);
+                    break;
                 }
             }
         }
     }
 }
 
-// Combines adjacent atoms to clusters
 void ClusterConnector::buildClusters(){
-    baseBuildClusters();
+    // baseBuildClusters();
 
     if(_sa.usingPTM()){
         buildClustersForPTM();

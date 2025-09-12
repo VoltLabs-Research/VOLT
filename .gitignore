@@ -4,6 +4,8 @@ dislocations.json
 
 __pycache__
 
+build-release/
+
 /opendxa/dependencies/*
 
 !/opendxa/dependencies/ptm/

@@ -96,6 +96,7 @@ int main(int argc, char* argv[]){
             else if(val == "HCP")analyzer.setInputCrystalStructure(OpenDXA::LATTICE_HCP);
             else if(val == "CUBIC_DIAMOND")analyzer.setInputCrystalStructure(OpenDXA::LATTICE_CUBIC_DIAMOND);
             else if(val == "HEX_DIAMOND")analyzer.setInputCrystalStructure(OpenDXA::LATTICE_HEX_DIAMOND);
+            else if(val == "SC") analyzer.setInputCrystalStructure(OpenDXA::LATTICE_SC);
             else{
                  spdlog::error("Unknown crystal structure '{}' specified.", val);
                  show_usage(argv[0]);

@@ -51,6 +51,46 @@ public:
         return _rmsdCutoff;
     }
 
+    static const double (*getTemplate(StructureType structureType, int templateIndex))[3]{
+		if(structureType == StructureType::OTHER){
+			return nullptr;
+		}
+
+		int ptmType = toPtmStructureType(structureType);
+		const ptm::refdata_t* ref = ptm::refdata[ptmType];
+		return ref->points[templateIndex];
+	}
+
+    template <typename QuaternionType1, typename QuaternionType2>
+    static double calculateDisorientation(
+        StructureType structureTypeA, 
+        StructureType structureTypeB, 
+        const QuaternionType1 &qa, 
+        const QuaternionType2& qb
+    ){
+        double disorientation = std::numeric_limits<double>::max();
+        if(structureTypeA != structureTypeB){
+            return disorientation;
+        }
+
+        double orientA[4] = { qa.w(), qa.x(), qa.y(), qa.z() };
+        double orientB[4] = { qb.w(), qb.x(), qb.y(), qb.z() };
+
+        int structureType = structureTypeA;
+        if(structureType == StructureType::SC ||
+            structureType == StructureType::FCC ||
+            structureType == StructureType::BCC || 
+            structureType == StructureType::CUBIC_DIAMOND){
+            disorientation = static_cast<double>(ptm::quat_disorientation_cubic(orientA, orientB));
+        }else if(structureType == StructureType::HCP || structureType == StructureType::HEX_DIAMOND){
+            disorientation = static_cast<double>(ptm::quat_disorientation_hcp_conventional(orientA, orientB));
+        }else{
+            return disorientation;
+        }
+
+        return disorientation * double(180 / M_PI);
+    }
+
     void setCalculateDefGradient(bool calculateDefGradient){
         _calculateDefGradient = calculateDefGradient;
     }

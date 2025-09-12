@@ -41,6 +41,10 @@ public:
 		bucketSize = std::max(_numNeighbors / 2, 8);
 	}
 
+	size_t particleCount() const{
+		return atoms.size();
+	}
+
 	bool prepare(ParticleProperty* posProperty, const SimulationCell& cellData, ParticleProperty* selectionProperty = nullptr);
 
 	const Point3& particlePos(size_t index) const;
