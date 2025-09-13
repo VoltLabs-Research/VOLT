@@ -4,6 +4,7 @@
 #include <string>
 #include <filesystem>
 #include <fstream>
+#include <tbb/info.h>
 #include <iomanip>
 #include <nlohmann/json.hpp>
 #include <map>

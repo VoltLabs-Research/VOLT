@@ -5,6 +5,12 @@
 #include <opendxa/core/particle_property.h>
 #include <opendxa/geometry/delaunay_tessellation.h>
 
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range.h>
+#include <tbb/concurrent_unordered_map.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/mutex.h>
+
 #include <boost/functional/hash.hpp>
 #include <type_traits>
 #include <unordered_map>
@@ -56,56 +62,88 @@ private:
 	template<typename CellRegionFunc>
 	bool classifyTetrahedra(CellRegionFunc&& determineCellRegion){
 		_numSolidCells = 0;
-		// -2 = indeterminate, -1 = multiple
 		_spaceFillingRegion = -2;
 
+		std::vector<DelaunayTessellation::CellHandle> cells;
 		for(auto cell : _tessellation.cells()){
-			// shape + fallback neighbors
-			bool isFilled = false;
-			if(_tessellation.isValidCell(cell)){
-				if (auto res = _tessellation.alphaTest(cell, _alpha)){
-					isFilled = *res;
-				}else{
-					// sliver, only if all 4 neighbors are not clearly empty
-					int f = 0;
-					for(; f < 4; ++f){
-						auto nbr = _tessellation.mirrorFacet(cell, f).first;
-						if(!_tessellation.isValidCell(nbr)) break;
-						auto nr = _tessellation.alphaTest(nbr, _alpha);
-						if(nr.has_value() && !nr.value()) break;
+			cells.push_back(cell);
+		}
+
+		tbb::mutex space_filling_mutex;
+		std::atomic<int> numSolidCells{0};
+
+		tbb::parallel_for(
+			tbb::blocked_range<size_t>(0, cells.size()),
+			[&](const tbb::blocked_range<size_t>& range) {
+				int localSpaceFillingRegion = -2;
+				int localSolidCells = 0;
+
+				for(size_t i = range.begin(); i != range.end(); ++i){
+					auto cell = cells[i];
+					
+					bool isFilled = false;
+					if(_tessellation.isValidCell(cell)){
+						if (auto res = _tessellation.alphaTest(cell, _alpha)){
+							isFilled = *res;
+						}else{
+							// sliver test
+							int f = 0;
+							for(; f < 4; ++f){
+								auto nbr = _tessellation.mirrorFacet(cell, f).first;
+								if(!_tessellation.isValidCell(nbr)) break;
+								auto nr = _tessellation.alphaTest(nbr, _alpha);
+								if(nr.has_value() && !nr.value()) break;
+							}
+							if (f == 4) isFilled = true;
+						}
 					}
-					if (f == 4) isFilled = true;
+
+					if(!isFilled){
+						_tessellation.setUserField(cell, 0);
+					}else{
+						_tessellation.setUserField(cell, determineCellRegion(cell));
+					}
+
+					if(!_tessellation.isGhostCell(cell)){
+						int reg = _tessellation.getUserField(cell);
+						if(localSpaceFillingRegion == -2){
+							localSpaceFillingRegion = reg;
+						}else if(localSpaceFillingRegion != reg){
+							localSpaceFillingRegion = -1;
+						}
+					}
+
+					if(_tessellation.getUserField(cell) != 0 && !_tessellation.isGhostCell(cell)){
+						localSolidCells++;
+					}else{
+						_tessellation.setCellIndex(cell, -1);
+					}
 				}
-			}
 
-			// userField: 0 = empty, >0 = region
-			if(!isFilled){
-				_tessellation.setUserField(cell, 0);
-			}else{
-				_tessellation.setUserField(cell, determineCellRegion(cell));
-			}
-
-			// Update spaceFillingRegion with only local cells
-			if(!_tessellation.isGhostCell(cell)){
-				int reg = _tessellation.getUserField(cell);
-				if(_spaceFillingRegion == -2){
-					_spaceFillingRegion = reg;
-				}else if(_spaceFillingRegion != reg){
-					_spaceFillingRegion = -1;
+				{
+					tbb::mutex::scoped_lock lock(space_filling_mutex);
+					if(_spaceFillingRegion == -2){
+						_spaceFillingRegion = localSpaceFillingRegion;
+					}else if(localSpaceFillingRegion != -2 && _spaceFillingRegion != localSpaceFillingRegion){
+						_spaceFillingRegion = -1;
+					}
 				}
-			}
 
+				numSolidCells += localSolidCells;
+			}
+		);
+
+		_numSolidCells = numSolidCells.load();
+		
+		int cellIndex = 0;
+		for(auto cell : cells){
 			if(_tessellation.getUserField(cell) != 0 && !_tessellation.isGhostCell(cell)){
-				_tessellation.setCellIndex(cell, _numSolidCells++);
-			}else{
-				_tessellation.setCellIndex(cell, -1);
+				_tessellation.setCellIndex(cell, cellIndex++);
 			}
 		}
 
-		// If there was never a local cell, we assign 0
 		if(_spaceFillingRegion == -2) _spaceFillingRegion = 0;
 		
-		// TODO: void.
 		return true;
 	}
 

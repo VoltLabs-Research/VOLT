@@ -310,8 +310,6 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         spdlog::debug("Defect mesh facets: {} ", defectMesh.faces().size());
     }
 
-    std::cout << defectMesh.faces().size() << std::endl;
-
     double totalLineLength = 0.0;
     const auto& segments = networkUptr->segments();
     
