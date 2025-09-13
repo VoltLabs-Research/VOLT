@@ -36,7 +36,7 @@ export const getMetricsByTeamId = async (teamId: string) => {
     const totals = await Promise.all([
         Trajectory.countDocuments({ team: { $in: [teamId] } }),
         StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds } }),
-        Dislocation.aggregate([
+        Dislocations.aggregate([
             { $match: { trajectory: { $in: trajectoryIds } } },
             { $group: { _id: null, total: { $sum: '$totalSegments' } } }
         ])
@@ -56,12 +56,12 @@ export const getMetricsByTeamId = async (teamId: string) => {
         StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } })
     ]);
 
-    const currDislocationsAgg = await Dislocation.aggregate([
+    const currDislocationsAgg = await Dislocations.aggregate([
         { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: monthStart, $lt: now } } },
         { $group: { _id: null, total: { $sum: '$totalSegments' } } }
     ]);
 
-    const prevDislocationsAgg = await Dislocation.aggregate([
+    const prevDislocationsAgg = await Dislocations.aggregate([
         { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } } },
         { $group: { _id: null, total: { $sum: '$totalSegments' } } }
     ]);
@@ -92,7 +92,7 @@ export const getMetricsByTeamId = async (teamId: string) => {
         { $sort: { _id: 1 } }
     ]);
 
-    const dislWeekly = await Dislocation.aggregate([
+    const dislWeekly = await Dislocations.aggregate([
         { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: sinceDate } } },
         { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: 'week', timezone: tz } }, value: { $sum: '$totalSegments' } } },
         { $sort: { _id: 1 } }

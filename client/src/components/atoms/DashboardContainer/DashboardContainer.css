@@ -4,6 +4,28 @@
     height: 100%;
 }
 
+.search-container{
+    display: flex;
+    gap: 1rem;
+    background-color: #212121;
+    height: 2.7rem;
+    color: #FFF;
+    padding: 0 1.5rem;
+    border-radius: 5rem;
+    width: 500px;
+    transition: .2s;
+}
+
+.search-input{
+    height: 100%;
+    font-size: .95rem;
+    background-color: transparent;
+}
+
+.search-container:hover{
+    opacity: .9;
+}
+
 @media screen and (max-width: 768px){
     .dashboard-container{
         padding: 1rem;

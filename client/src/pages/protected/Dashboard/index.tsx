@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef } from 'react';
+import React, { memo, useRef } from 'react';
 import DashboardContainer from '@/components/atoms/DashboardContainer';
 import FileUpload from '@/components/molecules/FileUpload';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
@@ -7,14 +7,12 @@ import Scene3D, { type Scene3DRef } from '@/components/organisms/Scene3D';
 import useTrajectoryStore from '@/stores/trajectories';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import { formatNumber } from '@/components/organisms/DocumentListing';
-import { GoArrowRight, GoArrowUpRight } from 'react-icons/go';
-import TrajectoryPreview from '@/components/molecules/TrajectoryPreview';
+import { GoArrowRight } from 'react-icons/go';
 import SimulationGrid from '@/components/molecules/SimulationGrid';
 import DashboardStats from '@/components/atoms/DashboardStats';
 import useTeamStore from '@/stores/team/team';
 import JobsHistoryViewer from '@/components/organisms/JobsHistoryViewer';
 import './Dashboard.css';
-import useModelStore from '@/stores/editor/model';
 
 const DashboardPage: React.FC = memo(() => {
     useTeamJobs();
