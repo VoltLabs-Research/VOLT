@@ -55,49 +55,6 @@ const DashboardLayout = () => {
 
     return (
         <main className='dashboard-main'>
-            {/*<section className='sidebar-container'>
-                <article className='sidebar-top-container'>
-                    <SidebarUserAvatar />
-
-                    <div className='sidebar-team-selection-container'>
-                        <Select
-                            value={selectedTeam?._id || ''}
-                            className='team-select-container'
-                            onChange={(teamId) => setSelectedTeam(teamId)}
-                            options={teamOptions}
-                            disabled={areTeamsLoading || teams.length === 0}
-                        />
-                    </div>
-
-                    <div className='sidebar-nav-container'>
-                        {[
-                            ['Dashboard', GrHomeOption, '/dashboard'],
-                            ['Messages', CiChat1, '/dashboard/messages'],
-                            ['Studio', TbCube3dSphere, ''],
-                            ['Tutorials', TbBook, '/dashboard/tutorials'],
-                        ].map(([ name, Icon, to ], index) => (
-                            <SidebarNavigationOption 
-                                key={`${name}-${index}`} 
-                                name={name} 
-                                to={to}
-                                Icon={Icon} 
-                                isSelected={index === 0} />
-                        ))}
-                    </div>
-                </article>
-
-                <article className='sidebar-bottom-container'>
-                    {[
-                        ['Archive', GoTrash, () => {}],
-                        ['Shortcuts', BsCommand, toggleShortcutsModal],
-                        ['Settings', IoSettingsOutline, () => {}],
-                        ['Help & Feedback', IoIosHelpCircleOutline, () => {}]
-                    ].map(([ name, Icon, onClick ], index) => (
-                        <SidebarNavigationOption onClick={onClick} key={`${name}-${index}`} name={name} Icon={Icon} />
-                    ))}
-                </article>
-            </section>*/}
-
             <section className='dashboard-layout-header-container'>
                 <nav className='navigation-container'>
                     {[

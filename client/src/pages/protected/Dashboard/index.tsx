@@ -26,65 +26,6 @@ const DashboardPage: React.FC = memo(() => {
     return (
         <FileUpload>            
             <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
-                {/*<article className='dashboard-header-container'>
-                    <div className='dashboard-header-left-container'>
-                        <h3 className='dashboard-header-title'>Dashboard</h3>
-                    </div>
-
-                    <div className='dashboard-header-right-container'>
-                        <div className='dashboard-clickables-container'>
-                            {[IoNotificationsOutline].map((Icon, index) => (
-                                <div className='dashboard-clickable-container' key={index}>
-                                    <Icon />
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className='search-container'>
-                            <i className='search-icon-container'>
-                                <IoSearchOutline />
-                            </i>
-                            <input placeholder='Search' className='search-input '/>
-                        </div>
-
-                        <div className='create-new-button-container'>
-                            <i className='create-new-button-icon-container'>
-                                <HiPlus />
-                            </i>
-                            <span className='create-new-button-title'>Create</span>
-                            <i className='create-new-button-dropdown-icon-container'>
-                                <MdKeyboardArrowDown />
-                            </i>
-                        </div>                    
-                    </div>
-
-                    <div className='dashboard-header-right-mobile-container'>
-                        <div className='dashboard-clickables-container'>
-                            {[IoNotificationsOutline].map((Icon, index) => (
-                                <div className='dashboard-clickable-container' key={index}>
-                                    <Icon />
-                                </div>
-                            ))}
-                        </div>
-
-                        <SidebarUserAvatar
-                            onClick={toggleDashboardSidebar}
-                            hideUsername={true}
-                        />
-                    </div>
-                </article>
-                
-                {/*
-                <DashboardStats teamId={teamId} />
-
-                <div className='dashboard-main-container'>
-                    <TrajectoryPreview />
-                    <JobsHistoryViewer />
-                </div>
-                
-                <SimulationGrid />
-                */}
-
                 <div className='dashboard-body-left-container'>
                     <div className='dashboard-body-left-header-container'>
                         <h3 className='dashboard-body-left-header-title'>Good Morning, Rodolfo</h3>

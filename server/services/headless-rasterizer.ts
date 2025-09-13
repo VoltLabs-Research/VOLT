@@ -329,7 +329,7 @@ class HeadlessRasterizer{
             ctx.fillRect(0, 0, this.opts.width, this.opts.width);
         }
 
-        const radius = Math.max(0.5, this.opts.pointSize * 0.5);
+        const radius = Math.max(0.5, this.opts.pointSize * 1);
         for(const p of out2D){
             ctx.fillStyle = colorToCSS(p.c, 1);
             ctx.beginPath();
