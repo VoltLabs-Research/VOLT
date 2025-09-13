@@ -38,6 +38,8 @@ int main(int argc, char* argv[]){
         show_usage(argv[0]);
         return 1;
     }
+    int n = oneapi::tbb::info::default_concurrency();
+    spdlog::info("Using {} threads (OneTBB)", n);
 
     std::string filename;
     std::string output_base;

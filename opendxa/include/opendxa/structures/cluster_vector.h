@@ -11,11 +11,11 @@ inline constexpr double CA_ATOM_VECTOR_EPSILON = double(1e-4);
 
 class ClusterVector{
 public:
-	explicit ClusterVector(Vector3::Zero vec, Cluster* cluster = nullptr)
-		: _vec(Vector3::Zero()), _cluster(cluster){}
+    ClusterVector() noexcept
+        : _vec(Vector3::Zero()), _cluster(nullptr) {}
 
-	explicit ClusterVector(const Vector3& vec, Cluster* cluster)
-		: _vec(vec), _cluster(cluster){}
+    explicit ClusterVector(const Vector3& vec, Cluster* cluster = nullptr) noexcept
+        : _vec(vec), _cluster(cluster) {}
 
 	[[nodiscard]] const Vector3& localVec() const noexcept{
 		return _vec;
@@ -34,13 +34,13 @@ public:
 	}
 
 	[[nodiscard]] Vector3 toSpatialVector() const{
-		//assert(_cluster != nullptr);
+		assert(_cluster != nullptr);
 		return _cluster->orientation * _vec;
 	}
 
 	[[nodiscard]] bool transformToCluster(Cluster* otherCluster, ClusterGraph& graph){
-		//assert(otherCluster);
-		//assert(_cluster);
+		assert(otherCluster);
+		assert(_cluster);
 		if(_cluster == otherCluster) return true;
 
 		auto* transition = graph.determineClusterTransition(_cluster, otherCluster);

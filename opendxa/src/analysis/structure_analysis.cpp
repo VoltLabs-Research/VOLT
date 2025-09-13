@@ -20,8 +20,7 @@ StructureAnalysis::StructureAnalysis(
 ) :
     _context(context),
     _identificationMode(identificationMode),
-    _rmsd(rmsd),
-
+    _rmsd(rmsd),    
     _clusterGraph(std::make_unique<ClusterGraph>()),
     _coordStructures(
         _context.structureTypes, 
@@ -39,26 +38,28 @@ StructureAnalysis::StructureAnalysis(
     if(usingPTM()){
         requestedMaxNeighbors = PTM_MAX_NBRS;
     }else{
-        // take the max between the lattice-definition maxNeighbors and the coordination
-        // number the algorithm expects (safety for diamond where coord. number = 16).
         requestedMaxNeighbors = std::max(
             _coordStructures.getLatticeStruct(_context.inputCrystalType).maxNeighbors,
             _coordStructures.getCoordinationNumber()
         );
-        // defensive: ensure at least 1
         if(requestedMaxNeighbors <= 0) requestedMaxNeighbors = 1;
     }
 
+    _context.atomSymmetryPermutations = std::make_shared<ParticleProperty>(
+        _context.atomCount(), DataType::Int, 1, 0, true);
+
     _context.neighborLists = std::make_shared<ParticleProperty>(
-        _context.atomCount(),
-        DataType::Int,
+        _context.atomCount(), DataType::Int,
         static_cast<size_t>(requestedMaxNeighbors),
-        0,
-        false
+        0, false
     );
 
-    std::fill(_context.neighborLists->dataInt(), _context.neighborLists->dataInt() + _context.neighborLists->size() * _context.neighborLists->componentCount(), -1);
-    std::fill(_context.structureTypes->dataInt(), _context.structureTypes->dataInt() + _context.structureTypes->size(), LATTICE_OTHER);
+    std::fill(_context.neighborLists->dataInt(),
+              _context.neighborLists->dataInt() + _context.neighborLists->size()*_context.neighborLists->componentCount(),
+              -1);
+    std::fill(_context.structureTypes->dataInt(),
+              _context.structureTypes->dataInt() + _context.structureTypes->size(),
+              LATTICE_OTHER);
 }
 
 json StructureAnalysis::getAtomsData(
@@ -136,25 +137,6 @@ void StructureAnalysis::storeDeformationGradient(const PTM::Kernel& kernel, size
     }
 }
 
-void StructureAnalysis::processPTMAtom(
-    PTM::Kernel& kernel,
-    size_t atomIndex,
-    StructureType type,
-    const std::vector<uint64_t>& cached,
-    float cutoff
-){
-    float rmsd = _context.ptmRmsd->getDouble(atomIndex);
-    if(rmsd > cutoff) return;
-    
-    kernel.identifyStructure(atomIndex, cached);
-    
-    storeNeighborIndices(kernel, atomIndex);
-    _context.structureTypes->setInt(atomIndex, type);
-    storeOrientationData(kernel, atomIndex);
-    
-    storeDeformationGradient(kernel, atomIndex);
-  }
-
 // Compute the maximum distance of any neighbor from a crystalline atom
 void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
     const size_t N = _context.atomCount();
@@ -208,44 +190,48 @@ void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
 // collects raw RMSD values (with no initial cutoff).
 void StructureAnalysis::determineLocalStructuresWithPTM() {
     const size_t N = _context.atomCount();
-    if (N == 0) return;
+    if(!N) return;
 
     OpenDXA::PTM ptm;
-    if (!setupPTM(ptm, N)) {
+    if(!setupPTM(ptm, N)){
         throw std::runtime_error("Error trying to initialize PTM.");
     }
 
-    _context.ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Double, 4, 0.0f, true);
-    _context.ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Double, 9, 0.0f, true);
+    _context.ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Double, 4, 0.0, true);
+    _context.ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Double, 9, 0.0, true);
+    _context.ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Double, 1, 0.0, true);
     _context.correspondencesCode = std::make_shared<ParticleProperty>(N, DataType::Int64, 1, 0, true);
 
+
     // Clear arrays for second pass
-    std::fill(_context.neighborLists->dataInt(), 
-              _context.neighborLists->dataInt() + _context.neighborLists->size() * _context.neighborLists->componentCount(), -1);
-    std::fill(_context.structureTypes->dataInt(), 
+    std::fill(_context.neighborLists->dataInt(),
+              _context.neighborLists->dataInt() + _context.neighborLists->size()*_context.neighborLists->componentCount(), -1);
+    std::fill(_context.structureTypes->dataInt(),
               _context.structureTypes->dataInt() + _context.structureTypes->size(), LATTICE_OTHER);
 
-    _context.ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Double, 1, 0.0f, true);
     std::vector<uint64_t> cached(N, 0ull);
-    std::vector<StructureType> ptmTypes(N);
 
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto& r) {
-        PTM::Kernel kernel(ptm);
-        for(size_t i = r.begin(); i < r.end(); ++i){
-            kernel.cacheNeighbors(i, &cached[i]);
-            ptmTypes[i] = kernel.identifyStructure(i, cached);
-            _context.ptmRmsd->setDouble(i, kernel.rmsd());
-            storeOrientationData(kernel, i);
-            auto* c = reinterpret_cast<uint64_t*>(_context.correspondencesCode->data());
-            c[i] = kernel.correspondencesCode();
-        }
-    });
-
-    // Only keep atoms whose RMSD <= finalCutoff
     tbb::parallel_for(tbb::blocked_range<size_t>(0, N), [&](const auto &r){
         PTM::Kernel kernel(ptm);
         for(size_t i = r.begin(); i < r.end(); ++i){
-            processPTMAtom(kernel, i, ptmTypes[i], cached, _rmsd);
+            kernel.cacheNeighbors(i, &cached[i]);
+            StructureType type = kernel.identifyStructure(i, cached);
+
+            const double rmsd = kernel.rmsd();
+            _context.ptmRmsd->setDouble(i, rmsd);
+
+            auto* c = reinterpret_cast<uint64_t*>(_context.correspondencesCode->data());
+            c[i] = kernel.correspondencesCode();
+
+            // Only keep atoms whose RMSD <= finalCutoff
+            if(type == StructureType::OTHER || rmsd > _rmsd){
+                continue;
+            }
+
+            _context.structureTypes->setInt(i, type);
+            storeNeighborIndices(kernel, i);
+            storeOrientationData(kernel, i);
+            storeDeformationGradient(kernel, i);
         }
     });
 }

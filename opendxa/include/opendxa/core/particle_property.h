@@ -11,7 +11,7 @@ class ParticleProperty : public PropertyBase{
 public:
 
     enum Type {
-        UserProperty                = 0,
+        UserProperty                   = 0,
         ParticleTypeProperty        = 1,
         PositionProperty            = 2,
         SelectionProperty           = 3,

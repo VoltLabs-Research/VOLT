@@ -44,11 +44,11 @@ struct DislocationNode{
 	}
 
 	void connectNodes(DislocationNode* other){
-		//assert(!formsJunctionWith(other));
-		//assert(!other->formsJunctionWith(this));
+		assert(!formsJunctionWith(other));
+		assert(!other->formsJunctionWith(this));
 		std::swap(junctionRing, other->junctionRing);
-		//assert(formsJunctionWith(other));
-		//assert(other->formsJunctionWith(this));
+		assert(formsJunctionWith(other));
+		assert(other->formsJunctionWith(this));
 	}
 
 	void dissolveJunction(){
@@ -79,23 +79,22 @@ struct DislocationSegment{
 	DislocationNode* nodes[2];
 	DislocationSegment* replacedWith;
 
-DislocationSegment(const ClusterVector& b, DislocationNode* forward, DislocationNode* backward)
-	: id(-1), burgersVector(b), replacedWith(nullptr){
-	//assert(b.localVec() != Vector3::Zero());
+	DislocationSegment(const ClusterVector& b, DislocationNode* forward, DislocationNode* backward)
+		: id(-1), burgersVector(b), replacedWith(nullptr){
+		//assert(b.localVec() != Vector3::Zero());
 
-	nodes[0] = forward;
-	nodes[1] = backward;
+		nodes[0] = forward;
+		nodes[1] = backward;
 
-	// Primero asigna punteros
-	forward->segment = this;
-	forward->oppositeNode = backward;
-	forward->junctionRing = forward;
+		// Primero asigna punteros
+		forward->segment = this;
+		forward->oppositeNode = backward;
+		forward->junctionRing = forward;
 
-	backward->segment = this;
-	backward->oppositeNode = forward;
-	backward->junctionRing = backward;
-}
-
+		backward->segment = this;
+		backward->oppositeNode = forward;
+		backward->junctionRing = backward;
+	}
 
 	[[nodiscard]] DislocationNode &forwardNode() const{
 		return *nodes[0];
@@ -122,7 +121,7 @@ DislocationSegment(const ClusterVector& b, DislocationNode* forward, Dislocation
 
 		double length = 0;
 		auto i1 = line.begin();
-		for(;;) {
+		for(;;){
 			auto i2 = i1 + 1;
 			if(i2 == line.end()) break;
 			length += (*i1 - *i2).length();
