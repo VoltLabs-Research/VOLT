@@ -23,6 +23,7 @@
 export enum LatticeStructure {
     FCC = 'FCC',
     BCC = 'BCC',
+    SC = 'SC',
     HCP = 'HCP',
     CubicDiamond = 'CUBIC_DIAMOND',
     HexDiamond = 'HEX_DIAMOND'

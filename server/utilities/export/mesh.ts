@@ -79,75 +79,121 @@ class MeshExporter{
         const triangleCount = facets.length;
         
         console.log(`Processing mesh: ${triangleCount} triangles, ${vertexCount} vertices.`);
+        const positions = new Float32Array(vertexCount * 3);
+        
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+        let minZ = Infinity;
+        let maxZ = -Infinity;
 
-        const positionsData = points.flatMap((p) => p.position);
-        const positions = new Float32Array(positionsData);
+        for(let i = 0; i < vertexCount; i++){
+            const position = points[i].position;
+            const o = i * 3;
 
-        const indicesData = facets.flatMap((f) => f.vertices);
-        const indices = new Uint32Array(indicesData);
+            const x = Number(position[0]);
+            const y = Number(position[1]);
+            const z = Number(position[2]);
+
+            position[o] = x;
+            position[o + 1] = y;
+            position[o + 2] = z;
+
+            if(x < minX) minX = x;
+            if(y < minY) minY = y; 
+            if(z < minZ) minZ = z;
+            if(x > maxX) maxX = x; 
+            if(y > maxY) maxY = y; 
+            if(z > maxZ) maxZ = z;
+        }
+
+        let indexCount = 0;
+        for(let i = 0; i < triangleCount; i++){
+            const v = (facets[i] as any).vertices;
+            if(!Array.isArray(v) || v.length !== 3){
+                throw new Error(`Facet ${i} not a triangle.`);
+            }
+            indexCount += 3;
+        }
+
+        const indices = new Uint32Array(indexCount);
+        let k = 0;
+        for(let i = 0; i < triangleCount; i++){
+            const v = (facets[i] as any).vertices;
+            const a = Number(v[0]);
+            const b = Number(v[1]);
+            const c = Number(v[2]);
+
+            if(!Number.isInteger(a) || !Number.isInteger(b) || !Number.isInteger(c)){
+                throw new Error(`Facet ${i} contains non-integer indices: [${a}, ${b}, ${c}]`); 
+            }
+
+            if(a < 0 || b < 0 || c < 0 || a >= vertexCount || b >= vertexCount || c >= vertexCount){
+                throw new Error(`Facet ${i} with index out of range: [${a}, ${b}, ${c}] vs vertexCount=${vertexCount}`);
+            }
+
+            indices[k++] = a;
+            indices[k++] = b;
+            indices[k++] = c;
+        }
 
         if(options.smoothIterations){
             taubinSmoothing(positions, indices, options.smoothIterations);
         }
 
         const normals = new Float32Array(vertexCount * 3);
-
         for(let i = 0; i < indices.length; i += 3){
             const i0 = indices[i];
             const i1 = indices[i + 1];
             const i2 = indices[i + 2];
 
-            const p0_idx = i0 * 3;
-            const p1_idx = i1 * 3;
-            const p2_idx = i2 * 3;
-            
-            const p0 = [positions[p0_idx], positions[p0_idx + 1], positions[p0_idx + 2]];
-            const p1 = [positions[p1_idx], positions[p1_idx + 1], positions[p1_idx + 2]];
-            const p2 = [positions[p2_idx], positions[p2_idx + 1], positions[p2_idx + 2]];
+            const p0 = i0 * 3;
+            const p1 = i1 * 3;
+            const p2 = i2 * 3;
 
-            const edge1 = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]];
-            const edge2 = [p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]];
+            const e1x = positions[p1] - positions[p0];
+            const e1y = positions[p1 + 1] - positions[p0 + 1];
+            const e1z = positions[p1 + 2] - positions[p0 + 2];
 
-            const faceNormal = [
-                edge1[1] * edge2[2] - edge1[2] * edge2[1],
-                edge1[2] * edge2[0] - edge1[0] * edge2[2],
-                edge1[0] * edge2[1] - edge1[1] * edge2[0]
-            ];
+            const e2x = positions[p2] - positions[p0];
+            const e2y = positions[p2 + 1] - positions[p0 + 1];
+            const e2z = positions[p2 + 2] - positions[p0 + 2];
 
-            normals[p0_idx] += faceNormal[0]; 
-            normals[p0_idx + 1] += faceNormal[1]; 
-            normals[p0_idx + 2] += faceNormal[2];
+            const nx = (e1y * e2z) - (e1z * e2y);
+            const ny = (e1z * e2x) - (e1x * e2z);
+            const nz = (e1x * e2y) - (e1y * e2x);
+
+            normals[p0] += nx; normals[p0 + 1] += ny; 
+            normals[p0 + 2] += nz;
             
-            normals[p1_idx] += faceNormal[0]; 
-            normals[p1_idx + 1] += faceNormal[1]; 
-            normals[p1_idx + 2] += faceNormal[2];
+            normals[p1] += nx; normals[p1 + 1] += ny; 
+            normals[p1 + 2] += nz;
             
-            normals[p2_idx] += faceNormal[0]; 
-            normals[p2_idx + 1] += faceNormal[1]; 
-            normals[p2_idx + 2] += faceNormal[2];
+            normals[p2] += nx; normals[p2 + 1] += ny; 
+            normals[p2 + 2] += nz;
         }
-
+         
         for(let i = 0; i < normals.length; i += 3){
             const nx = normals[i];
             const ny = normals[i + 1];
             const nz = normals[i + 2];
-            const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
 
+            const len = Math.hypot(nx, ny, nz);
             if(len > 1e-6){
-                normals[i] /= len;
-                normals[i + 1] /= len;
-                normals[i + 2] /= len;
+                normals[i] /= len; 
+                normals[i + 1] /= len; 
+                normals[i + 2] /= len; 
             }else{
-                // If length is zero (isolated vertex), assign a default normal to comply with the glTF specification.
-                normals[i] = 0;
-                normals[i + 1] = 0;
+                normals[i] = 0; 
+                normals[i + 1] = 0; 
                 normals[i + 2] = 1;
             }
         }
 
-        const bounds = {
-            min: this.calculateMinBounds(points.map((p) => p.position)),
-            max: this.calculateMaxBounds(points.map((p) => p.position))
+        const bounds = { 
+            min: [minX, minY, minZ] as [number, number, number],
+            max: [maxX, maxY, maxZ] as [number, number, number] 
         };
 
         return { positions, normals, indices, vertexCount, triangleCount, bounds };
