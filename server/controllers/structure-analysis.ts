@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 import { isValidObjectId } from 'mongoose';
-import Team from '@models/team';
-import Trajectory from '@models/trajectory';
-import StructureAnalysis from '@models/structure-analysis';
+import { Team, Trajectory, StructureAnalysis } from '@models/index';
 
 export const getStructureAnalysesByTeam = async (req: Request, res: Response) => {
     try{

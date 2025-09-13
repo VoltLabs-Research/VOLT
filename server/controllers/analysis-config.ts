@@ -21,7 +21,7 @@
 **/
 
 import HandlerFactory from '@/controllers/handler-factory';
-import AnalysisConfig from "@/models/analysis-config";
+import { AnalysisConfig } from "@/models";
 
 const factory = new HandlerFactory({
     model: AnalysisConfig,

@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import { Schema, Types } from 'mongoose';
+import mongoose, { Schema, Types } from 'mongoose';
 
 type InverseBehavior = 'addToSet' | 'push' | 'set' | 'pull';
 type OutMeta = {
@@ -101,47 +101,66 @@ const useInverseRelations = (schema: Schema) => {
         doc.$locals.__prevRefs = prev ?? {};
         next();
     });
+// Dentro de useInverseRelations (reemplaza el bloque de diffs por esto)
+schema.post('save', async function (doc: any, next) {
+  try {
+    const base = doc.constructor.base;
+    const metas = getOutMeta(base, doc.constructor.modelName).filter(m => m.inversePath);
+    if (metas.length === 0) return next();
 
-    schema.post('save', async function (doc: any, next) {
-        try {
-            const base = doc.constructor.base;
-            const metas = getOutMeta(base, doc.constructor.modelName).filter(m => m.inversePath);
-            if (metas.length === 0) return next();
+    const session = doc.$session?.();
+    const prevRefs = doc.$locals?.__prevRefs ?? {};
+    const ops: Promise<any>[] = [];
 
-            const session = doc.$session?.();
-            const ops: Promise<any>[] = [];
+    for (const m of metas) {
+const RefModel = doc.model(m.refModel);
+if (!RefModel) {
+  console.warn(`[useInverseRelations] Modelo ${m.refModel} no encontrado`);
+  continue;
+}
+      const nowIds = asIdArray(doc[m.path], m.isArray).map((x: any) => x.toString());
+      const prevIds = asIdArray(prevRefs[m.path], m.isArray).map((x: any) => x.toString());
 
-            for (const m of metas) {
-                if (!doc.db.models[m.refModel]) continue;
+      // 1) Siempre garantizar presencia (idempotente)
+      if (m.behavior === 'addToSet' && nowIds.length) {
+        ops.push(
+          RefModel.updateMany(
+            { _id: { $in: nowIds }, [m.inversePath!]: { $ne: doc._id } },
+            { $addToSet: { [m.inversePath!]: doc._id } },
+            { session }
+          )
+        );
+      } else if (m.behavior === 'set' && nowIds.length) {
+        // Para relaciones 1:1
+        ops.push(
+          RefModel.updateMany(
+            { _id: { $in: nowIds } },
+            { $set: { [m.inversePath!]: doc._id } },
+            { session }
+          )
+        );
+      }
 
-                const RefModel = doc.model(m.refModel);
-                const nowIds = new Set(asIdArray(doc[m.path], m.isArray).map((x: any) => x.toString()));
-                const prevRefs = doc.$locals?.__prevRefs ?? {};
-                const prevIds = new Set(asIdArray(prevRefs[m.path], m.isArray).map((x: any) => x.toString()));
+      // 2) Limpiar los que ya no están (solo si tenemos prev)
+      const toRemove = prevIds.filter(id => !nowIds.includes(id));
+      if (toRemove.length) {
+        ops.push(
+          RefModel.updateMany(
+            { _id: { $in: toRemove } },
+            { $pull: { [m.inversePath!]: doc._id } },
+            { session }
+          )
+        );
+      }
+    }
 
-                const toAdd = [...nowIds].filter(id => !prevIds.has(id));
-                const toRemove = [...prevIds].filter(id => !nowIds.has(id));
+    await Promise.all(ops);
+    next();
+  } catch (e) {
+    next(e as any);
+  }
+});
 
-                for (const id of toAdd) {
-                    if (m.behavior === 'addToSet') {
-                        ops.push(RefModel.updateOne({ _id: id }, { $addToSet: { [m.inversePath!]: doc._id } }, { session }));
-                    } else if (m.behavior === 'push') {
-                        ops.push(RefModel.updateOne({ _id: id }, { $push: { [m.inversePath!]: doc._id } }, { session }));
-                    } else if (m.behavior === 'set') {
-                        ops.push(RefModel.updateOne({ _id: id }, { $set: { [m.inversePath!]: doc._id } }, { session }));
-                    }
-                }
-                for (const id of toRemove) {
-                    ops.push(RefModel.updateOne({ _id: id }, { $pull: { [m.inversePath!]: doc._id } }, { session }));
-                }
-            }
-
-            await Promise.all(ops);
-            next();
-        } catch (e) {
-            next(e as any);
-        }
-    });
 }
 
 export default useInverseRelations;

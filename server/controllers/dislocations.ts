@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 import { isValidObjectId } from 'mongoose';
-import Team from '@models/team';
-import Trajectory from '@models/trajectory';
-import Dislocation from '@models/dislocations';
+import { Team, Trajectory, Dislocations } from '@models/index';
 
 export const getUserDislocations = async (req: Request, res: Response) => {
   try{

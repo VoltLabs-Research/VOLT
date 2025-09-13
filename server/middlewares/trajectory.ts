@@ -24,8 +24,7 @@ import { Request, Response, NextFunction } from 'express';
 import { existsSync } from 'fs';
 import { rm, writeFile, mkdir, readdir } from 'fs/promises';
 import { join } from 'path';
-import Trajectory from '@models/trajectory';
-import Team from '@models/team';
+import { Trajectory, Team } from '@/models/index';
 
 export const processPreviewUpload = async (req: Request, res: Response, next: NextFunction) => {
     const file = req.file;

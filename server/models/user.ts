@@ -22,9 +22,8 @@
 
 import mongoose, { Schema, Model } from 'mongoose';
 import validator from 'validator';
-import Notification from '@models/notification';
+import { Notification, Team } from '@/models/index';
 import bcrypt from 'bcryptjs';
-import Team from '@models/team';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 // @ts-ignore
 import { IUser } from '@types/models/user';

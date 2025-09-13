@@ -21,8 +21,7 @@
 **/
 
 import mongoose, { Schema, Model } from 'mongoose';
-import Trajectory from '@/models/trajectory';
-import AnalysisConfig from '@/models/analysis-config'
+import { Trajectory, AnalysisConfig } from '@/models/index';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 
@@ -85,7 +84,7 @@ const DislocationSchema: Schema<any> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
         cascade: 'delete',
-        inverse: { path: 'dislocations', behavior: 'set' },
+        inverse: { path: 'dislocations', behavior: 'addToSet' },
         required: true
     },
     timestep: {

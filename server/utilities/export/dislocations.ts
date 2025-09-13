@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import Dislocation from '@/models/dislocations';
+import { Dislocations } from '@/models/index';
 import { 
     DislocationExportOptions, 
     ProcessedDislocationGeometry 
@@ -466,7 +466,7 @@ class DislocationExporter{
         try {
             console.log(`[DislocationExporter] Rebuilding GLB from DB for timestep ${timestep}...`);
 
-            const dislocationDoc = await Dislocation.findOne({
+            const dislocationDoc = await Dislocations.findOne({
                 analysisConfig: analysisConfigId,
                 timestep: timestep,
                 trajectory: trajectoryId

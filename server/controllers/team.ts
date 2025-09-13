@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Team from '@models/team';
+import { Team } from '@models/index';
 import HandlerFactory from '@/controllers/handler-factory';
 
 const factory = new HandlerFactory({

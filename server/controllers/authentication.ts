@@ -23,7 +23,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { IUser } from '@/types/models/user';
 import HandlerFactory from '@/controllers/handler-factory';
-import User from '@models/user';
+import { User } from '@models/index';
 import jwt from 'jsonwebtoken';
 
 const userFactory = new HandlerFactory({

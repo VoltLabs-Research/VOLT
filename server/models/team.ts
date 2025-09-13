@@ -23,8 +23,7 @@
 import mongoose, { Schema, Model } from 'mongoose';
 // @ts-ignore
 import { ITeam } from '@types/models/team';
-import User from '@models/user';
-import Trajectory from '@models/trajectory';
+import { User, Trajectory } from '@/models/index';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 

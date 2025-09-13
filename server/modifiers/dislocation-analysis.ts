@@ -3,7 +3,7 @@ import { existsSync } from 'fs';
 import { getAnalysisQueue } from '@/queues';
 import { v4 } from 'uuid';
 import fs from 'fs/promises';
-import AnalysisConfig from '@/models/analysis-config';
+import { AnalysisConfig } from '@/models/index';
 
 export interface DislocationAnalysisModifierConfig{
     folderId: string;

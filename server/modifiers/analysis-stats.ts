@@ -1,8 +1,4 @@
-import AnalysisConfig from '@/models/analysis-config';
-import Dislocation from '@/models/dislocations';
-import StructureAnalysis from '@/models/structure-analysis';
-import Trajectory from '@/models/trajectory';
-import SimulationCell from '@/models/simulation-cell';
+import { AnalysisConfig, Dislocation, StructureAnalysis, Trajectory, SimulationCell } from '@/models/index';
 import fs from 'fs/promises';
 import path from 'path';
 

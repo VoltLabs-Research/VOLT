@@ -23,8 +23,7 @@
 import mongoose, { Schema, Model } from 'mongoose';
 // @ts-ignore
 import { ICellAnalysis } from '@/types/models/simulation-cell';
-import Trajectory from '@/models/trajectory';
-import AnalysisConfig from '@/models/analysis-config';
+import { Trajectory, AnalysisConfig } from '@/models/index';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 

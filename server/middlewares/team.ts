@@ -21,7 +21,7 @@
 **/
 
 import { Request, Response, NextFunction } from 'express';
-import Team from '@models/team';
+import { Team } from '@models/index';
 import RuntimeError from '@/utilities/runtime-error';
 
 export const checkTeamMembership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {

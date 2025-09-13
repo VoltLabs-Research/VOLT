@@ -21,7 +21,7 @@
 **/
 
 import { Request, Response, NextFunction } from 'express';
-import AnalysisConfig from '@/models/analysis-config';
+import { AnalysisConfig } from '@/models/index';
 
 export const checkTeamMembershipForAnalysisTrajectory = async (
     req: Request, 
