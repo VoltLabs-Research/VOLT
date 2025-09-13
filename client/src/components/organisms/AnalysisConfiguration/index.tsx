@@ -46,7 +46,8 @@ const AnalysisConfiguration = () => {
                 { value: 'FCC', title: 'FCC (Face-Centered Cubic)' }, 
                 { value: 'BCC', title: 'BCC (Body-Centered Cubic)' }, 
                 { value: 'HCP', title: 'HCP (Hexagonal Close-Packed)' },
-                { value: 'CUBIC_DIAMOND', title: 'Cubic Diamond' }
+                { value: 'CUBIC_DIAMOND', title: 'Cubic Diamond' },
+                { value: 'SC', title: 'Simple Cubic' }
             ] 
         },
         { 
@@ -70,21 +71,7 @@ const AnalysisConfiguration = () => {
     ];
 
     const startAnalysis = () => {
-        const rmsds = ['0.08', '0.09', '0.095', '0.10', '0.11', '0.12', '0.14'];
-        //const rmsds = ['0.09', '0.10', '0.12'];
-        /*rmsds.forEach((rmsd) => {
-            dislocationAnalysis(trajectory?._id, {
-                ...analysisConfig,
-                identificationMode: 'PTM',
-                RMSD: rmsd
-            });
-        });*/
-      /* dislocationAnalysis(trajectory?._id, {
-            ...analysisConfig,
-            identificationMode: 'CNA'
-        });*/
-       dislocationAnalysis(trajectory?._id, analysisConfig);
-        // TODO: Show analysis progress in canvas
+        dislocationAnalysis(trajectory?._id, analysisConfig);
         //navigate('/dashboard');
     };
 
