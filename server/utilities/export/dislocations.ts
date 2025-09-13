@@ -27,29 +27,10 @@ import {
 } from '@/types/utilities/export/dislocations';
 import { calculateDislocationType } from '@/utilities/dislocation-utils';
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
+import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
+import { computeBoundsFromPoints } from '@/utilities/export/bounds';
 
 class DislocationExporter{
-    private calculateBounds(points: [number, number, number][]): {
-        min: [number, number, number];
-        max: [number, number, number];
-    }{
-        if(points.length === 0){
-            return { min: [0, 0, 0], max: [0, 0, 0] };
-        }
-
-        const min: [number, number, number] = [Infinity, Infinity, Infinity];
-        const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
-
-        for(const point of points){
-            for(let i = 0; i < 3; i++){
-                min[i] = Math.min(min[i], point[i]);
-                max[i] = Math.max(max[i], point[i]); 
-            }
-        }
-
-        return { min, max };
-    }
-
     private createLineGeometry(
         points: [number, number, number][],
         lineWidth: number,
@@ -237,7 +218,7 @@ class DislocationExporter{
             allPoints.push([positions[i], positions[i + 1], positions[i + 2]]);
         }
 
-        const bounds = this.calculateBounds(allPoints);
+        const bounds = computeBoundsFromPoints(allPoints);
 
         return {
             positions,
@@ -256,202 +237,40 @@ class DislocationExporter{
         outputFilePath: string
     ): any {
         const useU16 = geometry.vertexCount > 0 && geometry.vertexCount <= 65535;
-        const indicesArray = useU16
-            ? new Uint16Array(geometry.indices)
-            : geometry.indices;
+        const idx = useU16 ? new Uint16Array(geometry.indices) : geometry.indices;
         
-        // 5123 = UNSIGNED_SHORT; 5125 = UNSIGNED INT
-        const indexComponentType = useU16 ? 5123  : 5125;
-
-        // Float32Array
-        const positionBufferSize = geometry.positions.byteLength;
-        const normalBufferSize = geometry.normals.byteLength;
-        const colorBufferSize = geometry.colors ? geometry.colors.byteLength : 0;
-        // Uint16 or Uint32
-        const indexBufferSize = indicesArray.byteLength;
-
-        const positionOffset = 0;
-        const normalOffset = positionOffset + positionBufferSize;
-        const colorOffset = normalOffset + normalBufferSize;
-        const indexOffset = colorOffset + colorBufferSize;
-        const totalBufferSize = indexOffset + indexBufferSize;
-
-        const arrayBuffer = new ArrayBuffer(totalBufferSize);
-
-        new Float32Array(
-            arrayBuffer, 
-            positionOffset, 
-            geometry.positions.length
-        ).set(geometry.positions);
-
-        new Float32Array(
-            arrayBuffer, 
-            normalOffset, 
-            geometry.normals.length
-        ).set(geometry.normals);
-
-        if(geometry.colors){
-            new Float32Array(
-                arrayBuffer, 
-                colorOffset, 
-                geometry.colors.length
-            ).set(geometry.colors);
-        }
-
-        if(useU16){
-            new Uint16Array(
-                arrayBuffer, 
-                indexOffset, 
-                indicesArray.length
-            ).set(indicesArray as Uint16Array);
-        }else{
-            new Uint32Array(
-                arrayBuffer, 
-                indexOffset, 
-                indicesArray.length
-            ).set(indicesArray as Uint32Array);
-        }
-
-        const glb: any = {
-            asset: {
-                version: '2.0',
-                generator: 'OpenDXA Dislocation Exporter',
-                copyright: 'https://github.com/rodyherrera/OpenDXA'
+        const { glb, arrayBuffer } = buildPrimitiveGLB({
+            positions: geometry.positions,
+            normals: geometry.normals,
+            colors: geometry.colors,
+            indices: idx,
+            // TRIANGLES
+            mode: 4,
+            nodeName: 'Dislocations',
+            meshName: 'DislocationGeometry',
+            generator: 'OpenDXA Dislocation Exporter',
+            copyright: 'https://github.com/rodyherrera/OpenDXA',
+            material: {
+                baseColor: options.material.baseColor,
+                metallic: options.material.metallic,
+                roughness: options.material.roughness,
+                emissive: options.material.emissive,
+                doubleSided: true,
+                name: 'DislocationMaterial'
             },
-            scene: 0,
-            scenes: [{ nodes: [] }],
-            nodes: [],
-            materials: [{
-            name: 'DislocationMaterial',
-            pbrMetallicRoughness: {
-                baseColorFactor: options.material.baseColor,
-                metallicFactor: options.material.metallic,
-                roughnessFactor: options.material.roughness,
-            },
-            emissiveFactor: options.material.emissive,
-            doubleSided: true
-            }],
-            meshes: [],
-            accessors: [],
-            bufferViews: [],
-            buffers: [{ byteLength: totalBufferSize }],
             extras: options.metadata.includeOriginalStats ? {
-            stats: {
+                stats: {
                 vertexCount: geometry.vertexCount,
                 triangleCount: geometry.triangleCount,
                 segmentCount: geometry.triangleCount / (options.tubularSegments * 2)
-            },
-            ...options.metadata.customProperties,
+                },
+                ...options.metadata.customProperties
             } : options.metadata.customProperties
-        };
+        }); 
 
-        if(geometry.vertexCount === 0 || indicesArray.length === 0){
-            assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
-            return;
-        }
-
-        // POSITION
-        const bvPosition = glb.bufferViews.length;
-        glb.bufferViews.push({
-            buffer: 0,
-            byteOffset: positionOffset,
-            byteLength: positionBufferSize,
-            // ARRAY_BUFFER
-            target: 34962
-        });
-        const accPosition = glb.accessors.length;
-        glb.accessors.push({
-            bufferView: bvPosition,
-            // FLOAT
-            componentType: 5126, 
-            count: geometry.vertexCount,
-            type: 'VEC3',
-            min: geometry.bounds.min,
-            max: geometry.bounds.max
-        });
-
-        // NORMAL
-        const bvNormal = glb.bufferViews.length;
-        glb.bufferViews.push({
-            buffer: 0,
-            byteOffset: normalOffset,
-            byteLength: normalBufferSize,
-            // ARRAY_BUFFER
-            target: 34962 
-        });
-        const accNormal = glb.accessors.length;
-        glb.accessors.push({
-            bufferView: bvNormal,
-            // FLOAT
-            componentType: 5126, 
-            count: geometry.vertexCount,
-            type: 'VEC3'
-        });
-
-        // COLOR_0 
-        let accColor: number | undefined;
-        if (geometry.colors) {
-            const bvColor = glb.bufferViews.length;
-            glb.bufferViews.push({
-                buffer: 0,
-                byteOffset: colorOffset,
-                byteLength: colorBufferSize,
-                // ARRAY_BUFFER
-                target: 34962
-            });
-            accColor = glb.accessors.length;
-            glb.accessors.push({
-                bufferView: bvColor,
-                // FLOAT
-                componentType: 5126, 
-                count: geometry.vertexCount,
-                type: 'VEC4'
-            });
-        }
-
-        // INDICES
-        const bvIndices = glb.bufferViews.length;
-        glb.bufferViews.push({
-            buffer: 0,
-            byteOffset: indexOffset,
-            byteLength: indexBufferSize,
-            // ELEMENT_ARRAY_BUFFER
-            target: 34963 
-        });
-        const accIndices = glb.accessors.length;
-        glb.accessors.push({
-            bufferView: bvIndices,
-            componentType: indexComponentType,
-            count: indicesArray.length,
-            type: 'SCALAR'
-        });
-
-        const attributes: Record<string, number> = {
-            POSITION: accPosition,
-            NORMAL: accNormal
-        };
-
-        if(accColor !== undefined){
-            attributes.COLOR_0 = accColor;
-        }
-
-        glb.meshes.push({
-            name: 'DislocationGeometry',
-            primitives: [{
-                attributes,
-                indices: accIndices,
-                material: 0,
-                // TRIANGLES
-                mode: 4
-            }]
-        });
-
-        const nodeIndex = glb.nodes.length;
-        glb.nodes.push({
-            name: 'Dislocations',
-            mesh: 0
-        });
-        glb.scenes[0].nodes.push(nodeIndex);
+        const accPos = glb.accessors[0];
+        accPos.min = geometry.bounds.min;
+        accPos.max = geometry.bounds.max;
 
         assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
     }
@@ -472,10 +291,9 @@ class DislocationExporter{
                 trajectory: trajectoryId
             }).lean();
 
-            if (!dislocationDoc) {
+            if(!dislocationDoc){
                 throw new Error(`No dislocation data found for timestep ${timestep}, analysisConfig ${analysisConfigId}, trajectory ${trajectoryId}`);
             }
-
 
             const dislocationData = this.convertDBDataToDislocationFormat(dislocationDoc);
 

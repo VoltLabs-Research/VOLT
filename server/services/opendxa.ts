@@ -276,7 +276,8 @@ class OpenDXAService{
             material: {
                 baseColor: [1.0, 0.5, 0.0, 1.0],
                 metallic: 0.0,
-                roughness: 0.8
+                roughness: 0.8,
+                emissive: [0.0, 0.0, 0.0]
             }
         });
     }

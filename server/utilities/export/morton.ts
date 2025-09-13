@@ -20,43 +20,25 @@
 * SOFTWARE.
 **/
 
-export interface Mesh{
-    data: {
-        points: {
-            index: number;
-            position: [number, number, number];
-        }[];
-        facets: {
-            vertices: [number, number, number];
-        }[];
-        metadata: any;
-    }
-}
+const splitBy3 = (v: number) => {
+    v = (v | (v << 16)) & 0x030000FF;
+    v = (v | (v << 8))  & 0x0300F00F;
+    v = (v | (v << 4))  & 0x030C30C3;
+    v = (v | (v << 2))  & 0x09249249;
+    return v >>> 0;
+};
 
-export interface DefectMeshExportOptions{
-    generateNormals?: boolean;
-    enableDoubleSided?: boolean;
-    smoothIterations?: number;
-    material?: {
-        baseColor: [number, number, number, number];
-        metallic: number;
-        roughness: number;
-        emissive: [number, number, number];
-    };
-    metadata?: {
-        includeOriginalStats?: boolean;
-        customProperties?: Record<string, any>;
-    };
-}
+const encodeMorton = (nx: number, ny: number, nz: number, bits = 10): number => {
+    const maxv = (1 << bits) - 1;
+    let xi = Math.max(0, Math.min(maxv, (nx * maxv) | 0));
+    let yi = Math.max(0, Math.min(maxv, (ny * maxv) | 0));
+    let zi = Math.max(0, Math.min(maxv, (nz * maxv) | 0));
 
-export interface ProcessedMesh{
-    positions: Float32Array;
-    normals: Float32Array;
-    indices: Uint32Array;
-    vertexCount: number;
-    triangleCount: number;
-    bounds: {
-        min: [number, number, number];
-        max: [number, number, number];
-    };
-}
+    const xx = splitBy3(xi);
+    const yy = splitBy3(yi);
+    const zz = splitBy3(zi);
+
+    return (xx | (yy << 1) | (zz << 2)) >>> 0;
+};
+
+export default encodeMorton;

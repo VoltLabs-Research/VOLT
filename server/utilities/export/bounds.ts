@@ -1,0 +1,85 @@
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
+export type Bounds = {
+    min: [number, number, number];
+    max: [number, number, number];
+};
+
+export const computeBoundsFromFlat = (positions: ArrayLike<number>, stride = 3) => {
+    let minX = Infinity;
+    let minY = Infinity;
+    let minZ = Infinity;
+
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    let maxZ = -Infinity;
+
+    for(let i = 0; i < positions.length; i += stride){
+        const x = +positions[i];
+        const y = +positions[i + 1];
+        const z = +positions[i + 2];
+
+        if(x < minX) minX = x;
+        if(y < minY) minY = y; 
+        if(z < minZ) minZ = z;
+        if(x > maxX) maxX = x; 
+        if(y > maxY) maxY = y;
+        if(z > maxZ) maxZ = z;
+    }
+
+    return {
+        min: [minX, minY, minZ],
+        max: [maxX, maxY, maxZ]
+    };
+};
+
+export const computeBoundsFromPoints = (points: [number, number, number][]): Bounds => {
+    if(points.length === 0){
+        return {
+            min: [0, 0, 0],
+            max: [0, 0, 0]
+        };
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let minZ = Infinity;
+
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    let maxZ = -Infinity;
+
+    for(const [x, y, z] of points){
+        if(x < minX) minX = x; 
+        if(y < minY) minY = y; 
+        if(z < minZ) minZ = z;
+        if(x > maxX) maxX = x; 
+        if(y > maxY) maxY = y; 
+        if(z > maxZ) maxZ = z;
+    }
+
+    return {
+        min: [minX, minY, minZ],
+        max: [maxX, maxY, maxZ]
+    };
+};

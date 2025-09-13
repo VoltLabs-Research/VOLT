@@ -71,10 +71,10 @@ export interface DislocationExportOptions {
     tubularSegments?: number;
     minSegmentPoints?: number;
     material?: {
-        baseColor?: [number, number, number, number];
-        metallic?: number;
-        roughness?: number;
-        emissive?: [number, number, number];
+        baseColor: [number, number, number, number];
+        metallic: number;
+        roughness: number;
+        emissive: [number, number, number];
     };
     colorByType?: boolean;
     typeColors?: Record<string, [number, number, number, number]>;

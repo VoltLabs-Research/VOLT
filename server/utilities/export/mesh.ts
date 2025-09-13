@@ -22,27 +22,11 @@
 
 import { Mesh, DefectMeshExportOptions, ProcessedMesh } from '@/types/utilities/export/mesh';
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
+import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
+import { computeBoundsFromFlat } from '@utilities/export/bounds';
 import taubinSmoothing from '@/utilities/export/taubin-smoothing';
 
 class MeshExporter{
-    private calculateMinBounds(position: [number, number, number][]): [number, number, number]{
-        if(position.length === 0) return [0, 0, 0];
-        return position.reduce((min, p) => [
-            Math.min(min[0], p[0]),
-            Math.min(min[1], p[1]),
-            Math.min(min[2], p[2]),
-        ], [Infinity, Infinity, Infinity]);
-    }
-    
-    private calculateMaxBounds(positions: [number, number, number][]): [number, number, number]{
-        if(positions.length === 0) return [0, 0, 0];
-        return positions.reduce((max, p) => [
-            Math.max(max[0], p[0]),
-            Math.max(max[1], p[1]),
-            Math.max(max[2], p[2]),
-        ], [-Infinity, -Infinity, -Infinity]);
-    }
-
     public toGLB(
         mesh: Mesh,
         outputFilePath: string,
@@ -64,13 +48,42 @@ class MeshExporter{
             }
         };
 
-        console.log('Starting mesh export...');
-
         const processedMesh = this.processMeshGeometry(mesh, opts);
-        this.createMeshGLB(processedMesh, opts, outputFilePath);
+        const useU16 = processedMesh.vertexCount > 0 && processedMesh.vertexCount <= 65535;
+        const indices = useU16 ? new Uint16Array(processedMesh.indices) : processedMesh.indices;
 
-        console.log(`Mesh successfully exported to: ${outputFilePath}`);
-        console.log(`Final statistics: ${processedMesh.triangleCount} triangles, ${processedMesh.vertexCount} vertices.`);
+        const { glb, arrayBuffer } = buildPrimitiveGLB({
+            positions: processedMesh.positions,
+            normals: processedMesh.normals,
+            indices,
+            // TRIANGLES
+            mode: 4,
+            nodeName: 'Mesh',
+            meshName: 'MeshGeometry',
+            generator: 'OpenDXA Mesh Exporter',
+            copyright: 'https://github.com/rodyherrera/OpenDXA',
+            material: {
+                baseColor: opts.material.baseColor,
+                metallic: opts.material.metallic,
+                roughness: opts.material.roughness,
+                emissive: opts.material.emissive,
+                doubleSided: opts.enableDoubleSided,
+                name: 'Mesh'
+            },
+            extras: opts.metadata.includeOriginalStats ? {
+                stats: {
+                    vertexCount: processedMesh.vertexCount,
+                    triangleCount: processedMesh.triangleCount,
+                },
+                ...opts.metadata.customProperties
+            } : opts.metadata.customProperties
+        });
+
+        const accPos = glb.accessors[0];
+        accPos.min = processedMesh.bounds.min;
+        accPos.max = processedMesh.bounds.max;
+
+        assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
     }
 
     private processMeshGeometry(mesh: Mesh, options: Required<DefectMeshExportOptions>): ProcessedMesh{
@@ -96,9 +109,9 @@ class MeshExporter{
             const y = Number(position[1]);
             const z = Number(position[2]);
 
-            position[o] = x;
-            position[o + 1] = y;
-            position[o + 2] = z;
+            positions[o] = x;
+            positions[o + 1] = y;
+            positions[o + 2] = z;
 
             if(x < minX) minX = x;
             if(y < minY) minY = y; 
@@ -197,94 +210,6 @@ class MeshExporter{
         };
 
         return { positions, normals, indices, vertexCount, triangleCount, bounds };
-    }
-
-    private createMeshGLB(
-        mesh: ProcessedMesh, 
-        options: Required<DefectMeshExportOptions>, 
-        outputFilePath: string
-    ): any{
-        const positionBufferSize = mesh.positions.byteLength;
-        const normalBufferSize = mesh.normals.byteLength;
-        const indexBufferSize = mesh.indices.byteLength;
-
-        const positionOffset = 0;
-        const normalOffset = positionBufferSize;
-        const indexOffset = normalOffset + normalBufferSize;
-        const totalBufferSize = indexOffset + indexBufferSize;
-
-        const arrayBuffer = new ArrayBuffer(totalBufferSize);
-        
-        new Float32Array(arrayBuffer, positionOffset, mesh.positions.length).set(mesh.positions);
-        new Float32Array(arrayBuffer, normalOffset, mesh.normals.length).set(mesh.normals);
-
-        if(mesh.indices.length > 0){
-            new Uint32Array(arrayBuffer, indexOffset, mesh.indices.length).set(mesh.indices);
-        }
-
-        const glb: any = {
-            asset: {
-                version: '2.0',
-                generator: 'OpenDXA Mesh Exporter',
-                copyright: 'https://github.com/rodyherrera/OpenDXA'
-            },
-            scene: 0,
-            scenes: [{ nodes: [0] }],
-            nodes: [{ name: 'Mesh', mesh: 0 }],
-            materials: [{
-                name: 'Mesh',
-                pbrMetallicRoughness: {
-                    baseColorFactor: options.material.baseColor,
-                    metallicFactor: options.material.metallic,
-                    roughnessFactor: options.material.roughness,
-                },
-                emissiveFactor: options.material.emissive,
-                doubleSided: options.enableDoubleSided
-            }],
-            meshes: [],
-            accessors: [
-                // POSITION
-                { bufferView: 0, componentType: 5126, count: mesh.vertexCount, type: 'VEC3', min: mesh.bounds.min, max: mesh.bounds.max },
-                // NORMAL
-                { bufferView: 1, componentType: 5126, count: mesh.vertexCount, type: 'VEC3' },
-            ],
-            bufferViews: [
-                // ARRAY_BUFFER (Positions)
-                { buffer: 0, byteOffset: positionOffset, byteLength: positionBufferSize, target: 34962 },
-                // ARRAY_BUFFER (Normals)
-                { buffer: 0, byteOffset: normalOffset, byteLength: normalBufferSize, target: 34962 },
-            ],
-            buffers: [{
-                byteLength: totalBufferSize
-            }],
-            extras: options.metadata.includeOriginalStats ? {
-                stats: {
-                    vertexCount: mesh.vertexCount,
-                    triangleCount: mesh.triangleCount,
-                },
-                ...options.metadata.customProperties,
-            } : options.metadata.customProperties
-        };
-
-        // Only add the mesh primitive if there are triangles to render
-        if(mesh.indices.length > 0){
-            glb.meshes.push({
-                name: 'MeshGeometry',
-                primitives: [{
-                    attributes: { POSITION: 0, NORMAL: 1 },
-                    // Points to the index accessor
-                    indices: 2, 
-                    material: 0,
-                    // 4 = TRIANGLES
-                    mode: 4,
-                }]
-            });
-
-            glb.accessors.push({ bufferView: 2, componentType: 5125, count: mesh.indices.length, type: 'SCALAR' });
-            glb.bufferViews.push({ buffer: 0, byteOffset: indexOffset, byteLength: indexBufferSize, target: 34963 });
-        }
-
-        assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
     }
 };
 

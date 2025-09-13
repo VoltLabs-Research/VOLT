@@ -258,7 +258,7 @@ export const assembleAndWriteGLB = (glbJson: any, binaryBuffer: ArrayBuffer, out
 
     new Uint8Array(glbBuffer, byteOffset).set(new Uint8Array(binaryBuffer));
     byteOffset += binaryChunkLength;
-ensureDir(outputFilePath)
+    ensureDir(outputFilePath)
 
     fs.writeFileSync(outputFilePath, Buffer.from(glbBuffer));
 };

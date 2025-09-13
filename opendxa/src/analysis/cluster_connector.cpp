@@ -442,7 +442,7 @@ void ClusterConnector::growCluster(
             if(!tm2.inverse(tm2inverse)) continue;
 
             Matrix3 transition = tm1 * tm2inverse;
-
+            
             for(size_t i = 0; i < latticeStructure.permutations.size(); i++){
                 if(transition.equals(latticeStructure.permutations[i].transformation, CA_TRANSITION_MATRIX_EPSILON)){
                     _context.atomClusters->setInt(neighborAtomIndex, cluster->id);
@@ -457,7 +457,7 @@ void ClusterConnector::growCluster(
 }
 
 void ClusterConnector::buildClusters(){
-    //baseBuildClusters();
+    baseBuildClusters();
 
     if(_sa.usingPTM()){
        buildClustersForPTM();

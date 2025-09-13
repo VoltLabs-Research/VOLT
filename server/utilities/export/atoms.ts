@@ -1,11 +1,13 @@
 import { Document, NodeIO, Accessor } from '@gltf-transform/core';
-import { EXTMeshoptCompression, KHRDracoMeshCompression } from '@gltf-transform/extensions';
-import { quantize as gtQuantize, meshopt as gtMeshopt, draco as gtDraco } from '@gltf-transform/functions';
+import { EXTMeshoptCompression } from '@gltf-transform/extensions';
+import { quantize as gtQuantize, meshopt as gtMeshopt } from '@gltf-transform/functions';
 import { MeshoptEncoder } from 'meshoptimizer';
-
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { readLargeFile } from '@/utilities/fs';
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
+import { applyQuantizeAndMeshopt, writeGLB } from '@/utilities/export/gltf-pipeline';
+import { computeBoundsFromFlat } from '@/utilities/export/bounds';
+import encodeMorton from '@/utilities/export/morton';
 
 export type CompressionOptions = {
     quantization?: {
@@ -16,7 +18,6 @@ export type CompressionOptions = {
     epsilon?: number;
     maxMortonBitsPerAxis?: number;
     meshopt?: Boolean;
-    requireExtensions?: Boolean;
 }
 
 class AtomisticExporter{
@@ -42,52 +43,6 @@ class AtomisticExporter{
         'HEX_DIAMOND': [254, 137, 0],
         'OTHER': [242, 242, 242]
     };
-
-    private static calculateBoundsFromPositions(positions: Float32Array){
-        let minX = Infinity,  maxX = -Infinity;
-        let minY = Infinity,  maxY = -Infinity;
-        let minZ = Infinity,  maxZ = -Infinity;
-
-        for(let i = 0; i < positions.length; i += 3){
-            const x = positions[i];
-            const y = positions[i + 1];
-            const z = positions[i + 2];
-
-            if(x < minX) minX = x;
-            if(x > maxX) maxX = x;
-
-            if(y < minY) minY = y;
-            if(y > maxY) maxY = y;
-
-            if(z < minZ) minZ = z;
-            if(z > maxZ) maxZ = z;
-        }
-    
-        return { 
-            min: { x: minX, y: minY, z: minZ }, 
-            max: { x: maxX, y: maxY, z: maxZ} 
-        };
-    }
-
-    private static encodeMorton10(nx: number, ny: number, nz: number, bits = 10): number{
-        const maxv = (1 << bits) - 1;
-        let xi = Math.max(0, Math.min(maxv, (nx * maxv) | 0));
-        let yi = Math.max(0, Math.min(maxv, (ny * maxv) | 0));
-        let zi = Math.max(0, Math.min(maxv, (nz * maxv) | 0));
-
-        const splitBy3 = (v: number) => {
-            v = (v | (v << 16)) & 0x030000FF;
-            v = (v | (v << 8))  & 0x0300F00F;
-            v = (v | (v << 4))  & 0x030C30C3;
-            v = (v | (v << 2))  & 0x09249249;
-            return v >>> 0;
-        };
-
-        const xx = splitBy3(xi);
-        const yy = splitBy3(yi);
-        const zz = splitBy3(zi);
-        return (xx | (yy << 1) | (zz << 2)) >>> 0;
-    }
 
     private async parseToTypedArrays(
         filePath: string,
@@ -210,113 +165,57 @@ class AtomisticExporter{
     public async exportAtomsToPointCloudGLB(
         positions: Float32Array,
         colors: Float32Array | undefined,
-        outputFilePath: string
+        outputFilePath: string,
+        opts: CompressionOptions = {}
     ): Promise<void>{
-        const bounds = AtomisticExporter.calculateBoundsFromPositions(positions);
-        const scale = {
-            x: Math.max(1e-20, bounds.max.x - bounds.min.x),
-            y: Math.max(1e-20, bounds.max.y - bounds.min.y),
-            z: Math.max(1e-20, bounds.max.z - bounds.min.z)
+        const { min, max } = computeBoundsFromFlat(positions);
+        const extent = {
+            x: Math.max(1e-20, max[0] - min[0]),
+            y: Math.max(1e-20, max[1] - min[1]),
+            z: Math.max(1e-20, max[2] - min[2]),
         };
 
-        const qPos = new Uint16Array(positions.length);
-        for(let i = 0; i < positions.length; i += 3){
-            const nx = (positions[i]   - bounds.min.x) / scale.x;
-            const ny = (positions[i + 1] - bounds.min.y) / scale.y;
-            const nz = (positions[i + 2] - bounds.min.z) / scale.z;
+        const doc = new Document();
+        const buffer = doc.createBuffer('bin');
 
-            qPos[i] = Math.min(65535, Math.max(0, Math.round(nx * 65535)));
-            qPos[i + 1] = Math.min(65535, Math.max(0, Math.round(ny * 65535)));
-            qPos[i + 2] = Math.min(65535, Math.max(0, Math.round(nz * 65535)));
-        }
- 
-        let qCol: Uint8Array | undefined;
+        const positionAcc = doc.createAccessor('POSITION')
+            .setArray(positions)
+            .setType(Accessor.Type.VEC3)
+            .setBuffer(buffer);
+
+        let colorAcc: any;
         if(colors){
-            qCol = new Uint8Array(colors.length);
-            for(let i = 0; i < colors.length; i++){
-                qCol[i] = Math.min(255, Math.max(0, Math.round(colors[i] * 255)));
-            }
+            colorAcc = doc.createAccessor('COLOR_0')
+                .setArray(colors)
+                .setType(Accessor.Type.VEC3)
+                .setBuffer(buffer);
         }
 
-        const glb: any = {
-            asset: {
-                version: '2.0', 
-                generator: 'OpenDXA Atomistic Exporter' 
-            },
-            extensionsUsed: ['KHR_mesh_quantization'],
-            scene: 0,
-            scenes: [{ nodes: [0] }],
-            nodes: [{ 
-                mesh: 0, 
-                translation: [bounds.min.x, bounds.min.y, bounds.min.z], 
-                scale: [scale.x, scale.y, scale.z] 
-            }],
-            meshes: [{
-                primitives: [{
-                    attributes: { POSITION: 0, ...(qCol? { COLOR_0: 1 }: {}) }, 
-                    material: 0, 
-                    mode: 0 
-                }]
-            }],
-            materials: [{
-                name: 'PointCloudMaterial', 
-                pbrMetallicRoughness: { baseColorFactor: [1,1,1,1] } 
-            }],
-            accessors: [{
-                bufferView: 0, 
-                componentType: 5123, 
-                count: qPos.length / 3, 
-                type: 'VEC3', 
-                normalized: true 
-            }],
-            bufferViews: [{
-                buffer: 0,
-                byteOffset: 0,
-                byteLength: qPos.byteLength,
-                target: 34962
-            }],
-            buffers: [{ byteLength: 0 }]
-        };
-
-        if(qCol){
-            glb.accessors.push({
-                bufferView: 1, 
-                componentType: 5121, 
-                count: qCol.length / 3, 
-                type: 'VEC3', 
-                normalized: true 
-            });
-
-            glb.bufferViews.push({ 
-                buffer: 0, 
-                byteOffset: 0, 
-                byteLength: qCol.byteLength, 
-                target: 34962 
-            });
-        }
-
-        const chunks = qCol ? [qPos.buffer, qCol.buffer].map((b) => ({ data: b })) : [{ data: qPos.buffer }];
+        const primitive = doc.createPrimitive()
+            .setAttribute('POSITIONS', positionAcc)
+            // POINTS
+            .setMode(0);
         
-        let offset = 0; 
-        const offsets: number[] = [];
-
-        for(const ch of chunks){
-            offsets.push(offset); 
-            offset = (offset + ch.data.byteLength + 3) & ~3; 
+        if(colorAcc){
+            primitive.setAttribute('COLOR_0', colorAcc);
         }
 
-        const bin = new Uint8Array(offset);
-        for(let idx = 0, cur = 0; idx < chunks.length; idx++){
-            const arr = new Uint8Array(chunks[idx].data); 
-            cur = offsets[idx]; 
-            bin.set(arr, cur);
-            if(idx < glb.bufferViews.length){
-                glb.bufferViews[idx].byteOffset = cur;
-            }
-        }
-        glb.buffers[0].byteLength = bin.byteLength;
+        const mesh = doc.createMesh('AtomsPoints').addPrimitive(primitive);
+        const node = doc.createNode('Frame').setMesh(mesh);
 
-        assembleAndWriteGLB(glb, bin.buffer, outputFilePath);
+        doc.createScene('Scene').addChild(node);
+        doc.createMaterial('PointMat');
+
+        await applyQuantizeAndMeshopt(doc, {
+            quantization: {
+                positionBits: opts.quantization?.positionBits ?? 15,
+                colorBits: opts.quantization?.colorBits ?? 8, 
+            },
+            epsilon: opts.epsilon,
+            requireExtensions: true
+        }, extent);
+
+        await writeGLB(doc, outputFilePath);
     }
 
     public async exportAtomsToGLB(
@@ -328,11 +227,11 @@ class AtomisticExporter{
         const mortonBits = opts.maxMortonBitsPerAxis ?? 10;
         const { positions, types } = await this.parseToTypedArrays(filePath, extractTimestepInfo);
 
-        const bounds = AtomisticExporter.calculateBoundsFromPositions(positions);
+        const { min, max } = computeBoundsFromFlat(positions);
         const extent = {
-            x: Math.max(1e-20, bounds.max.x - bounds.min.x),
-            y: Math.max(1e-20, bounds.max.y - bounds.min.y),
-            z: Math.max(1e-20, bounds.max.z - bounds.min.z)
+            x: Math.max(1e-20, max[0] - min[0]),
+            y: Math.max(1e-20, max[1] - min[1]),
+            z: Math.max(1e-20, max[2] - min[2]),
         };
 
         const n = positions.length / 3;
@@ -352,14 +251,14 @@ class AtomisticExporter{
         }
 
         const perTypePrimitives = opts.perTypePrimitives ?? (uniqueTypesCount <= 16);
-        const mortonKeys = new Uint32Array(n);
 
+        const mortonKeys = new Uint32Array(n);
         for(let i = 0; i < n; i++){
             const p = i * 3;
-            const nx = (positions[p]   - bounds.min.x) / extent.x;
-            const ny = (positions[p + 1] - bounds.min.y) / extent.y;
-            const nz = (positions[p + 2] - bounds.min.z) / extent.z;
-            mortonKeys[i] = AtomisticExporter.encodeMorton10(nx, ny, nz, mortonBits);
+            const nx = (positions[p] - min[0]) / extent.x;
+            const ny = (positions[p + 1] - min[1]) / extent.y;
+            const nz = (positions[p + 2] - min[2]) / extent.z;
+            mortonKeys[i] = encodeMorton(nx, ny, nz, mortonBits);
         }
 
         idx.sort((a, b) => {
@@ -377,34 +276,8 @@ class AtomisticExporter{
 
         const doc = new Document();
         const buffer = doc.createBuffer('bin');
-        const mesh = doc.createMesh('Atoms');
-
-        const ranges = [];
-        let start = 0; 
-        let currentType = typesR![0];
-
-        for(let i = 1; i < n; i++){
-            if(typesR![i] !== currentType){
-                ranges.push({
-                    type: currentType, 
-                    start, 
-                    count: i - start, 
-                    color: this.lammpsTypeColors.get(currentType)
-                });
-
-                start = i;
-                currentType = typesR![i];
-            }
-        }
-
-        ranges.push({
-            type: currentType, 
-            start, 
-            count: n - start, 
-            color: this.lammpsTypeColors.get(currentType)
-        });
-
-        const posAcc = doc.createAccessor('POSITION')
+        
+        const positionAcc = doc.createAccessor('POSITION')
             .setArray(posR)
             .setType(Accessor.Type.VEC3)
             .setBuffer(buffer);
@@ -413,50 +286,37 @@ class AtomisticExporter{
         for(let i = 0, p = 0; i < n; i++){
             const t = typesR![i];
             const c = this.lammpsTypeColors.get(t) || [0.6, 0.6, 0.6, 1];
-
-            colors[p++] = c[0]; 
-            colors[p++] = c[1]; 
+            colors[p++] = c[0];
+            colors[p++] = c[1];
             colors[p++] = c[2];
         }
 
-        const colAcc = doc.createAccessor('COLOR_0')
+        const colorAcc = doc.createAccessor('COLOR_0')
             .setArray(colors)
             .setType(Accessor.Type.VEC3)
             .setBuffer(buffer);
 
-        const prim = doc.createPrimitive()
-            .setAttribute('POSITION', posAcc)
-            .setAttribute('COLOR_0', colAcc)
+        const primitive = doc.createPrimitive()
+            .setAttribute('POSITION', positionAcc)
+            .setAttribute('COLOR_0', colorAcc)
             .setMode(0);
 
-        mesh.addPrimitive(prim);
+        const mesh = doc.createMesh('Atoms').addPrimitive(primitive);
         doc.createMaterial('PointMat');
+        
         const node = doc.createNode('Frame').setMesh(mesh);
         doc.createScene('Scene').addChild(node);
 
-        let qPos = opts.quantization?.positionBits ?? 15;
-        const qCol = opts.quantization?.colorBits ?? 8;
+        await applyQuantizeAndMeshopt(doc, {
+            quantization: {
+                positionBits: opts.quantization?.positionBits ?? 15,
+                colorBits: opts.quantization?.colorBits ?? 8,
+            },
+            epsilon: opts.epsilon,
+            requireExtensions: true
+        }, extent);
 
-        if(opts.epsilon && isFinite(opts.epsilon) && opts.epsilon > 0){
-            const e = opts.epsilon;
-            const bitsX = Math.ceil(Math.log2(extent.x / (2 * e) + 1));
-            const bitsY = Math.ceil(Math.log2(extent.y / (2 * e) + 1));
-            const bitsZ = Math.ceil(Math.log2(extent.z / (2 * e) + 1));
-
-            qPos = Math.max(8, Math.min(16, Math.max(bitsX, bitsY, bitsZ)));
-        }
-
-        await doc.transform(gtQuantize({ quantizePosition: qPos, quantizeColor: qCol }));
-
-        await MeshoptEncoder.ready;
-        doc.createExtension(EXTMeshoptCompression).setRequired(Boolean(opts.requireExtensions));
-        await doc.transform(gtMeshopt({ encoder: MeshoptEncoder }));
-
-        const io = new NodeIO()
-            .registerExtensions([EXTMeshoptCompression])
-            .registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
-
-        await io.write(outputFilePath, doc);
+        await writeGLB(doc, outputFilePath);
     }
 
     public async exportAtomsTypeToGLB(
@@ -488,6 +348,13 @@ class AtomisticExporter{
             cursor += atoms.length;
         }
 
+        const { min, max } = computeBoundsFromFlat(positions);
+        const extent = {
+            x: Math.max(1e-20, max[0] - min[0]),
+            y: Math.max(1e-20, max[1] - min[1]),
+            z: Math.max(1e-20, max[2] - min[2])
+        };
+
         const doc = new Document();
         const buffer = doc.createBuffer('bin');
 
@@ -510,19 +377,17 @@ class AtomisticExporter{
         const node = doc.createNode('Frame').setMesh(mesh);
         doc.createScene('Scene').addChild(node);
 
-        const qPos = opts.quantization?.positionBits ?? 15;
-        const qCol = opts.quantization?.colorBits    ?? 8;
-        await doc.transform(gtQuantize({ quantizePosition: qPos, quantizeColor: qCol }));
+        doc.createMaterial('PointMat');
+        await applyQuantizeAndMeshopt(doc, {
+            quantization: {
+                positionBits: opts.quantization?.positionBits ?? 15,
+                colorBits: opts.quantization?.colorBits ?? 8,
+            },
+            epsilon: opts.epsilon,
+            requireExtensions: true
+        }, extent);
 
-        await MeshoptEncoder.ready;
-        doc.createExtension(EXTMeshoptCompression).setRequired(Boolean(opts.requireExtensions));
-        await doc.transform(gtMeshopt({ encoder: MeshoptEncoder }));
-
-        const io = new NodeIO()
-            .registerExtensions([EXTMeshoptCompression])
-            .registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
-
-        await io.write(outputFilePath, doc);
+        await writeGLB(doc, outputFilePath);
     }
 };
 
