@@ -31,6 +31,7 @@ import ProtectedRoute from './components/atoms/ProtectedRoute';
 import DashboardLayout from './components/atoms/DashboardLayout';
 import Studio from './pages/protected/Studio';
 import Tutorials from './pages/protected/Tutorials';
+import HeadlessRasterizerView from './pages/protected/HeadlessRasterizerView';
 import Messages from './pages/protected/Messages';
 import StructureAnalysisListing from './pages/protected/StructureAnalysisListing';
 import DislocationsListing from './pages/protected/DislocationsListing';
@@ -132,6 +133,15 @@ const App = () => {
                                 element={
                                     <PageWrapper>
                                         <TrajectoriesListing />
+                                    </PageWrapper>
+                                }
+                            />
+
+                            <Route
+                                path='/raster/:trajectoryId'
+                                element={
+                                    <PageWrapper>
+                                        <HeadlessRasterizerView />
                                     </PageWrapper>
                                 }
                             />

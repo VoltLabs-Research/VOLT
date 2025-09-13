@@ -108,7 +108,6 @@ export const checkTeamMembershipForTrajectory = async (req: Request, res: Respon
     const { id } = req.params;
     const userId = (req as any).user.id;
     const trajectory = await Trajectory.findById(id);
-
     if(!trajectory){
         return res.status(404).json({
             status: 'error',

@@ -72,13 +72,6 @@ export const getTrajectoryRasterizedFrames = catchAsync(async (req: Request, res
         });
     }
 
-    const includeData = (req.query.includeData ?? 'true').toString().toLowerCase() === 'true';
-    const offset = Number.isFinite(Number(req.query.offset)) ? Number(req.query.offset) : 0;
-    const limit = req.query.limit !== undefined && Number.isFinite(Number(req.query.limit))
-        ? Number(req.query.limit)
-        : undefined;
-    const matchStr = (req.query.match ?? '').toString().trim();
-
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
     const rasterDir = join(basePath, trajectory.folderId, 'raster');
 
@@ -87,21 +80,27 @@ export const getTrajectoryRasterizedFrames = catchAsync(async (req: Request, res
     }catch{
         return res.status(200).json({
             status: 'success',
-            data: [],
-            meta: { total: 0, offset: 0, limit: limit ?? null }
+            data: {
+                trajectory,
+                items: [],
+                meta: {
+                    total: 0,
+                }
+            }
         });
     }
 
     const allFiles = await readdir(rasterDir);
     let pngs = allFiles.filter(f => f.toLowerCase().endsWith('.png'));
+    const pngSet = new Set(pngs.map(f => f.toLowerCase()));
 
-      const parseFrame = (name: string): number | null => {
-        const withoutExt = name.replace(/\.png$/i, '');
-        const m1 = withoutExt.match(/frame_(\d+)(?:_|$)/i);
+    const parseFrame = (name: string): number | null => {
+        const withoutExt = name.replace(/\.(png|glb)$/i, '');
+        const m1 = withoutExt.match(/frame[-_](\d+)(?:[_-]|$)/i);
         if (m1) return parseInt(m1[1], 10);
         const m2 = withoutExt.match(/^(\d+)$/);
         if (m2) return parseInt(m2[1], 10);
-        const m3 = withoutExt.match(/(?:^|_)t(?:imestep)?_?(\d+)(?:_|$)/i);
+        const m3 = withoutExt.match(/(?:^|_)t(?:imestep)?_?(\d+)(?:[_-]|$)/i);
         if (m3) return parseInt(m3[1], 10);
         return null;
     };
@@ -115,38 +114,141 @@ export const getTrajectoryRasterizedFrames = catchAsync(async (req: Request, res
         return a.localeCompare(b, undefined, { numeric: true });
     });
 
+    const total = pngs.length;
+
     const items: any[] = [];
+    let maxMtime = 0;
+
     for (const filename of pngs){
         const abs = join(rasterDir, filename);
         const st = await stat(abs);
         const frame = parseFrame(filename);
-
         const item: any = {
-        frame,
-        filename,
-        url: join('raster', filename).replace(/\\/g, '/'), 
-        mime: 'image/png',
-        size: st.size,
-        mtime: st.mtime.getTime(),
+            frame,
+            filename,
+            url: `/trajectories/${trajectory._id}/files/raster/${filename}`,
+            mime: 'image/png',
+            size: st.size,
+            mtime: st.mtime.getTime(),
         };
-
-        if (includeData) {
-            const buf = await readFile(abs);
-            item.data = `data:image/png;base64,${buf.toString('base64')}`;
-        }
-
+        
+        const buf = await readFile(abs);
+        item.data = `data:image/png;base64,${buf.toString('base64')}`;
+        
         items.push(item);
+        if (st.mtime.getTime() > maxMtime) {
+            maxMtime = st.mtime.getTime();
+        }
     }
 
-    const newestMtime = Math.max(0, ...items.map(i => i.mtime));
+    const glbDir = join(basePath, trajectory.folderId, 'glb');
+    const byFrame: Record<number, Array<{
+        type: 'atoms_colored_by_type' | 'dislocations' | 'interface_mesh' | 'defect_mesh';
+        frame: number;
+        filename: string;
+        url: string;
+        mime: string;
+        size: number;
+        mtime: number;
+        data?: string;
+    }>> = {};
+    
+    const typeOrder: Record<string, number> = {
+        defect_mesh: 0,
+        interface_mesh: 1,
+        dislocations: 2,
+        atoms_colored_by_type: 3
+    };
+    
+    const parseType = (name: string) => {
+        const s = name.toLowerCase();
+        if (s.includes('atoms_colored_by_type')) return 'atoms_colored_by_type' as const;
+        if (s.includes('dislocations')) return 'dislocations' as const;
+        if (s.includes('interface_mesh')) return 'interface_mesh' as const;
+        if (s.includes('defect_mesh')) return 'defect_mesh' as const;
+        return null;
+    };
+    
+    const resolvePngForGlb = (glbName: string, frame: number | null): string | null => {
+        const primary = glbName.replace(/\.glb$/i, '.png');
+        if (pngSet.has(primary.toLowerCase())) return primary;
+        const c1 = `frame-${frame}.png`;
+        const c2 = `frame_${frame}.png`;
+        const c3 = `${frame}.png`;
+        const c4 = `timestep_${frame}.png`;
+        if (frame !== null){
+            if (pngSet.has(c1.toLowerCase())) return c1;
+            if (pngSet.has(c2.toLowerCase())) return c2;
+            if (pngSet.has(c3.toLowerCase())) return c3;
+            if (pngSet.has(c4.toLowerCase())) return c4;
+        }
+        return null;
+    };
+
+    try{
+        await access(glbDir, constants.F_OK);
+        const allGlb = await readdir(glbDir);
+        const glbs = allGlb.filter(f => f.toLowerCase().endsWith('.glb'));
+        
+        for (const glbFilename of glbs){
+            const frame = parseFrame(glbFilename);
+            const t = parseType(glbFilename);
+            if (!t || frame === null) continue;
+            
+            const pngName = resolvePngForGlb(glbFilename, frame);
+            if (!pngName) continue;
+            
+            const pngAbs = join(rasterDir, pngName);
+            try {
+                const st = await stat(pngAbs);
+                const it: any = {
+                    type: t,
+                    frame,
+                    filename: pngName,
+                    url: `/trajectories/${trajectory._id}/files/raster/${pngName}`,
+                    mime: 'image/png',
+                    size: st.size,
+                    mtime: st.mtime.getTime()
+                };
+                
+                const buf = await readFile(pngAbs);
+                it.data = `data:image/png;base64,${buf.toString('base64')}`;
+                
+                (byFrame[frame] ||= []).push(it);
+                if (it.mtime > maxMtime) maxMtime = it.mtime;
+            } catch (error) {
+                continue;
+            }
+        }
+    }catch{}
+
+    const frames = Object.keys(byFrame).map(Number).sort((a,b)=>a-b);
+    for (const f of frames){
+        byFrame[f].sort((a,b) => {
+            const ta = typeOrder[a.type] ?? 999;
+            const tb = typeOrder[b.type] ?? 999;
+            if (ta !== tb) return ta - tb;
+            if (a.filename !== b.filename) return a.filename.localeCompare(b.filename, undefined, { numeric: true });
+            return a.size - b.size;
+        });
+    }
+
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    res.setHeader('ETag', `"raster-${trajectory._id}-${items.length}-${newestMtime}-${includeData ? 'withdata' : 'nodata'}"`);
+    res.setHeader('ETag', `"raster-${trajectory._id}-${total}-${maxMtime}"`);
 
     return res.status(200).json({
         status: 'success',
-        data: items
+        data: {
+            trajectory,
+            items,
+            byFrame,
+            meta: {
+                total,
+                returned: items.length
+            }
+        }
     });
 });
 
