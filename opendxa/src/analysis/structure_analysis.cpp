@@ -57,7 +57,6 @@ StructureAnalysis::StructureAnalysis(
         false
     );
 
-
     std::fill(_context.neighborLists->dataInt(), _context.neighborLists->dataInt() + _context.neighborLists->size() * _context.neighborLists->componentCount(), -1);
     std::fill(_context.structureTypes->dataInt(), _context.structureTypes->dataInt() + _context.structureTypes->size(), LATTICE_OTHER);
 }
@@ -119,21 +118,21 @@ void StructureAnalysis::storeNeighborIndices(const PTM::Kernel& kernel, size_t a
 
 void StructureAnalysis::storeOrientationData(const PTM::Kernel& kernel, size_t atomIndex){
     auto quaternion = kernel.orientation();
-    double* orientation = _context.ptmOrientation->dataFloat() + 4 * atomIndex;
+    double* orientation = _context.ptmOrientation->dataDouble() + 4 * atomIndex;
     
-    orientation[0] = static_cast<float>(quaternion.x());
-    orientation[1] = static_cast<float>(quaternion.y());
-    orientation[2] = static_cast<float>(quaternion.z());
-    orientation[3] = static_cast<float>(quaternion.w());
+    orientation[0] = quaternion.x();
+    orientation[1] = quaternion.y();
+    orientation[2] = quaternion.z();
+    orientation[3] = quaternion.w();
 }
 
 void StructureAnalysis::storeDeformationGradient(const PTM::Kernel& kernel, size_t atomIndex) {
     const auto& F = kernel.deformationGradient();
-    double* F_dest = _context.ptmDeformationGradient->dataFloat() + 9 * atomIndex;
+    double* F_dest = _context.ptmDeformationGradient->dataDouble() + 9 * atomIndex;
     const double* F_src = F.elements();
     
     for(int k = 0; k < 9; ++k){
-        F_dest[k] = static_cast<float>(F_src[k]);
+        F_dest[k] = F_src[k];
     }
 }
 
@@ -144,7 +143,7 @@ void StructureAnalysis::processPTMAtom(
     const std::vector<uint64_t>& cached,
     float cutoff
 ){
-    float rmsd = _context.ptmRmsd->getFloat(atomIndex);
+    float rmsd = _context.ptmRmsd->getDouble(atomIndex);
     if(rmsd > cutoff) return;
     
     kernel.identifyStructure(atomIndex, cached);
@@ -216,8 +215,8 @@ void StructureAnalysis::determineLocalStructuresWithPTM() {
         throw std::runtime_error("Error trying to initialize PTM.");
     }
 
-    _context.ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Float, 4, 0.0f, true);
-    _context.ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Float, 9, 0.0f, true);
+    _context.ptmOrientation = std::make_shared<ParticleProperty>(N, DataType::Double, 4, 0.0f, true);
+    _context.ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Double, 9, 0.0f, true);
     _context.correspondencesCode = std::make_shared<ParticleProperty>(N, DataType::Int64, 1, 0, true);
 
     // Clear arrays for second pass
@@ -226,7 +225,7 @@ void StructureAnalysis::determineLocalStructuresWithPTM() {
     std::fill(_context.structureTypes->dataInt(), 
               _context.structureTypes->dataInt() + _context.structureTypes->size(), LATTICE_OTHER);
 
-    _context.ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Float, 1, 0.0f, true);
+    _context.ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Double, 1, 0.0f, true);
     std::vector<uint64_t> cached(N, 0ull);
     std::vector<StructureType> ptmTypes(N);
 
@@ -235,10 +234,10 @@ void StructureAnalysis::determineLocalStructuresWithPTM() {
         for(size_t i = r.begin(); i < r.end(); ++i){
             kernel.cacheNeighbors(i, &cached[i]);
             ptmTypes[i] = kernel.identifyStructure(i, cached);
-            _context.ptmRmsd->setFloat(i, static_cast<float>(kernel.rmsd()));
+            _context.ptmRmsd->setDouble(i, kernel.rmsd());
             storeOrientationData(kernel, i);
-                    auto* c = reinterpret_cast<uint64_t*>(_context.correspondencesCode->data());
-        c[i] = kernel.correspondencesCode();
+            auto* c = reinterpret_cast<uint64_t*>(_context.correspondencesCode->data());
+            c[i] = kernel.correspondencesCode();
         }
     });
 

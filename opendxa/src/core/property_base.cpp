@@ -30,7 +30,7 @@ PropertyBase::PropertyBase(
 		switch(dataType){
 			case DataType::Int:
 				return sizeof(int);
-			case DataType::Float:
+			case DataType::Double:
 				return sizeof(double);
 			case DataType::Int64:
 				return sizeof(std::uint64_t);

@@ -19,7 +19,7 @@ ParticleProperty::ParticleProperty(size_t particleCount,
         particleCount,
         // Determina el tipo de dato según el tipo estándar
         (type == ParticleTypeProperty || type == StructureTypeProperty || type == SelectionProperty || type == ClusterProperty || type == CoordinationProperty || type == IdentifierProperty || type == MoleculeProperty || type == MoleculeTypeProperty || type == PeriodicImageProperty) ? DataType::Int :
-        (type == UserProperty) ? DataType::Void : DataType::Float,
+        (type == UserProperty) ? DataType::Void : DataType::Double,
         // Usa el componentCount del usuario si es válido, si no el estándar
         (componentCount > 0) ? componentCount :
         (type == PositionProperty || type == DisplacementProperty || type == VelocityProperty || type == ForceProperty || type == DipoleOrientationProperty || type == AngularVelocityProperty || type == AngularMomentumProperty || type == TorqueProperty || type == AsphericalShapeProperty || type == ColorProperty || type == VectorColorProperty || type == PeriodicImageProperty) ? 3 :

@@ -16,8 +16,8 @@ namespace OpenDXA::Particles{
 enum class DataType : int{
     Void = 0,
     Int = 2,
-    Float = 6,
-     Int64= 7 
+    Double = 6,
+    Int64= 7 
 };
 
 class PropertyBase{
@@ -79,7 +79,7 @@ public:
         return reinterpret_cast<const int*>(constData());
     }
 
-    [[nodiscard]] const double* constDataFloat() const noexcept{
+    [[nodiscard]] const double* constDataDouble() const noexcept{
         return reinterpret_cast<const double*>(constData());
     }
 
@@ -99,7 +99,7 @@ public:
         return reinterpret_cast<int*>(data());
     }
 
-    double* dataFloat() noexcept{
+    double* dataDouble() noexcept{
         return reinterpret_cast<double*>(data());
     }
 
@@ -132,9 +132,9 @@ public:
         return constDataInt()[idx];
     }
 
-    [[nodiscard]] double getFloat(std::size_t idx) const{
+    [[nodiscard]] double getDouble(std::size_t idx) const{
         assert(idx < _numElements);
-        return constDataFloat()[idx];
+        return constDataDouble()[idx];
     }
 
     [[nodiscard]] const Point3& getPoint3(std::size_t idx) const{
@@ -147,9 +147,9 @@ public:
         dataInt()[idx] = v;
     }
 
-    void setFloat(std::size_t idx, double v){
+    void setDouble(std::size_t idx, double v){
         assert(idx < _numElements);
-        dataFloat()[idx] = v;
+        dataDouble()[idx] = v;
     }
 
     void setPoint3(std::size_t idx, const Point3& p){
@@ -162,9 +162,9 @@ public:
         return constDataInt()[index * _componentCount + componentIndex];
     }
     
-    double getFloatComponent(std::size_t index, std::size_t componentIndex) const{
+    double getDoubleComponent(std::size_t index, std::size_t componentIndex) const{
         assert(index < _numElements && componentIndex < _componentCount);
-        return constDataFloat()[index * _componentCount + componentIndex];
+        return constDataDouble()[index * _componentCount + componentIndex];
     }
 
     void setIntComponent(std::size_t index, std::size_t componentIndex, int newValue){
@@ -172,9 +172,9 @@ public:
         dataInt()[index * _componentCount + componentIndex] = newValue;
     }
 
-    void setFloatComponent(std::size_t index, std::size_t componentIndex, double newValue){
+    void setDoubleComponent(std::size_t index, std::size_t componentIndex, double newValue){
         assert(index < _numElements && componentIndex < _componentCount);
-        dataFloat()[index * _componentCount + componentIndex] = newValue;
+        dataDouble()[index * _componentCount + componentIndex] = newValue;
     }
 
     void resize(std::size_t newSize, bool preserveData);

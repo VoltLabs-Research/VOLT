@@ -99,6 +99,7 @@ public:
     }
 
     static void generateCellTooSmallError(int dimension);
+    static void findNonCoplanarVectors(const CoordinationStructure& coordStruct, int nindices[3], Matrix3& tm1);
 
 private:
     CoordinationStructureType computeCoordinationType(
@@ -151,7 +152,6 @@ private:
     ) const;
 
     static void calculateSymmetryProducts(LatticeStructure& latticeStruct);
-    static void findNonCoplanarVectors(const CoordinationStructure& coordStruct, int nindices[3], Matrix3& tm1);
     static void generateSymmetryPermutations(LatticeStructure& latticeStruct);
     static void initializeSymmetryInformation();
     static void findCommonNeighborsForBond(CoordinationStructure& coordStruct, int neighborIndex);

@@ -33,8 +33,7 @@ Cluster* ClusterConnector::startNewCluster(int atomIndex, int structureType){
     
     cluster->atomCount = 1;
     _context.atomClusters->setInt(atomIndex, cluster->id);
-    _context.atomSymmetryPermutations->setInt(atomIndex, 0);
-    return cluster;
+     return cluster;
 }
 
 Matrix3 ClusterConnector::quaternionToMatrix(const Quaternion& q)  {
@@ -53,7 +52,7 @@ Matrix3 ClusterConnector::quaternionToMatrix(const Quaternion& q)  {
 }
 
 Quaternion ClusterConnector::getPTMAtomOrientation(int atom) const{
-    const double *qdata = _context.ptmOrientation->dataFloat() + atom * 4;
+    const double *qdata = _context.ptmOrientation->dataDouble() + atom * 4;
     Quaternion quat(qdata[0], qdata[1], qdata[2], qdata[3]);
     return quat;
 }
@@ -63,8 +62,8 @@ bool ClusterConnector::areOrientationsCompatible(int atom1, int atom2, int struc
     Quaternion q2 = getPTMAtomOrientation(atom2);
     Quaternion quatDiff = q1.inverse() * q2;
     
-    float rmsd1 = _context.ptmRmsd->getFloat(atom1);
-    float rmsd2 = _context.ptmRmsd->getFloat(atom2);
+    float rmsd1 = _context.ptmRmsd->getDouble(atom1);
+    float rmsd2 = _context.ptmRmsd->getDouble(atom2);
     float avgRmsd = (rmsd1 + rmsd2) * 0.5f;
     
     const LatticeStructure& latticeStructure = CoordinationStructures::getLatticeStruct(structureType);
@@ -304,7 +303,7 @@ void ClusterConnector::formSuperClusters(){
 }
 
 void ClusterConnector::initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex){
-    double* qdat = _context.ptmOrientation->dataFloat() + seedAtomIndex * 4;
+    double* qdat = _context.ptmOrientation->dataDouble() + seedAtomIndex * 4;
     Quaternion q(qdat[0], qdat[1], qdat[2], qdat[3]);
     q.normalize();
     
@@ -461,7 +460,7 @@ void ClusterConnector::buildClusters(){
     baseBuildClusters();
 
     if(_sa.usingPTM()){
-        buildClustersForPTM();
+       buildClustersForPTM();
     }
 
     spdlog::info("Number of clusters: {}", _sa.clusterGraph().clusters().size() - 1);

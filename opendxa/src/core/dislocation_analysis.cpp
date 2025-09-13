@@ -363,18 +363,16 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         defectMeshOf.write(reinterpret_cast<const char*>(defectMeshMsgPack.data()), defectMeshMsgPack.size());
         defectMeshOf.close();
 
-        /*
         std::ofstream atomsOf(outputFile + "_atoms.msgpack", std::ios::binary);
         std::vector<std::uint8_t> atomsMsgPack = nlohmann::json::to_msgpack(result["atoms"]);
         atomsOf.write(reinterpret_cast<const char*>(atomsMsgPack.data()), atomsMsgPack.size());
-        atomsOf.close();*/
+        atomsOf.close();
 
         std::ofstream dislocationsOf(outputFile + "_dislocations.msgpack", std::ios::binary);
         std::vector<std::uint8_t> dislocationsMsgPack = nlohmann::json::to_msgpack(result["dislocations"]);
         dislocationsOf.write(reinterpret_cast<const char*>(dislocationsMsgPack.data()), dislocationsMsgPack.size());
         dislocationsOf.close();
 
-        /*
         std::ofstream interfaceMeshOf(outputFile + "_interface_mesh.msgpack", std::ios::binary);
         std::vector<std::uint8_t> interfaceMeshMsgPack = nlohmann::json::to_msgpack(result["interface_mesh"]);
         interfaceMeshOf.write(reinterpret_cast<const char*>(interfaceMeshMsgPack.data()), interfaceMeshMsgPack.size());
@@ -388,7 +386,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         std::ofstream simulationCellOf(outputFile + "_simulation_cell.msgpack", std::ios::binary);
         std::vector<std::uint8_t> simulationCellMsgPack = nlohmann::json::to_msgpack(result["simulation_cell"]);
         simulationCellOf.write(reinterpret_cast<const char*>(simulationCellMsgPack.data()), simulationCellMsgPack.size());
-        simulationCellOf.close();*/
+        simulationCellOf.close();
     }
 
     // Clean up all intermediate data to free memory before returning.
