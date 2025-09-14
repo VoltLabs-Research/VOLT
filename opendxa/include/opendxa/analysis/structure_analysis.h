@@ -38,9 +38,6 @@ public:
 	void identifyStructures();
 
 	void computeMaximumNeighborDistance();
-	void canonicalizePTMAtom(size_t atomIndex,
-                                            StructureType type,
-                                            const PTM::Kernel& kernel);
 
 	json getAtomsData(
 		const LammpsParser::Frame &frame,
@@ -48,8 +45,6 @@ public:
 	);
 
 	void identifyStructuresCNA();
-	template<typename NeighborFinderType>
-	void identifyStructuresWithNeighborFinder();
 	void computeMaximumNeighborDistanceFromPTM();
 	void determineLocalStructuresWithPTM();
 

@@ -206,7 +206,6 @@ void StructureAnalysis::determineLocalStructuresWithPTM() {
     _context.ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Double, 1, 0.0, true);
     _context.correspondencesCode = std::make_shared<ParticleProperty>(N, DataType::Int64, 1, 0, true);
 
-
     // Clear arrays for second pass
     std::fill(_context.neighborLists->dataInt(),
               _context.neighborLists->dataInt() + _context.neighborLists->size()*_context.neighborLists->componentCount(), -1);

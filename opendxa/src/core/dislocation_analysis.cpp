@@ -197,33 +197,21 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     ClusterConnector clusterConnector(*structureAnalysis, context);
 
-    // Once every atom has a type, we group them into clusters that represent grains or regions of the same lattice.
-    // Dislocations do NOT appear everywhere. They appear specifically at grain boundaries.
-    // Without clusters, we would have to search for dislocations in every atom, which is inefficient; 
-    // with clusters, we only search at boundaries. And boundaries are found when 
-    // "an atom in cluster A has a neighbor in cluster B," that is, those two atoms are on the boundary.
     {
         PROFILE("Build Clusters");
         clusterConnector.buildClusters();
     }
 
-    // After clustering, we connect neighboring clusters to map out the boundaries.
-    // This connectivity informs how we will mesh the interface between grains.
     {
         PROFILE("Connect Clusters");
         clusterConnector.connectClusters();
     }
 
-    // We then detect and merge any defect clusters into superclusters, ensuring that
-    // planar defects are treated properly rather tan as random noise.
     {
         PROFILE("Form Super Clusters");
         clusterConnector.formSuperClusters();
     }
 
-    // Next, we perform a periodic Delaunay Tessellation of all atomic positions.
-    // The ghostLayerSize is chosen based on the maximum neighbor distance so that
-    // our mesh seamlessly wraps across periodic boundaries.
     DelaunayTessellation tessellation;
     double ghostLayerSize;
     {
@@ -363,18 +351,16 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         defectMeshOf.write(reinterpret_cast<const char*>(defectMeshMsgPack.data()), defectMeshMsgPack.size());
         defectMeshOf.close();
 
-        /*
         std::ofstream atomsOf(outputFile + "_atoms.msgpack", std::ios::binary);
         std::vector<std::uint8_t> atomsMsgPack = nlohmann::json::to_msgpack(result["atoms"]);
         atomsOf.write(reinterpret_cast<const char*>(atomsMsgPack.data()), atomsMsgPack.size());
-        atomsOf.close();*/
+        atomsOf.close();
 
         std::ofstream dislocationsOf(outputFile + "_dislocations.msgpack", std::ios::binary);
         std::vector<std::uint8_t> dislocationsMsgPack = nlohmann::json::to_msgpack(result["dislocations"]);
         dislocationsOf.write(reinterpret_cast<const char*>(dislocationsMsgPack.data()), dislocationsMsgPack.size());
         dislocationsOf.close();
 
-        /*
         std::ofstream interfaceMeshOf(outputFile + "_interface_mesh.msgpack", std::ios::binary);
         std::vector<std::uint8_t> interfaceMeshMsgPack = nlohmann::json::to_msgpack(result["interface_mesh"]);
         interfaceMeshOf.write(reinterpret_cast<const char*>(interfaceMeshMsgPack.data()), interfaceMeshMsgPack.size());
@@ -388,7 +374,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         std::ofstream simulationCellOf(outputFile + "_simulation_cell.msgpack", std::ios::binary);
         std::vector<std::uint8_t> simulationCellMsgPack = nlohmann::json::to_msgpack(result["simulation_cell"]);
         simulationCellOf.write(reinterpret_cast<const char*>(simulationCellMsgPack.data()), simulationCellMsgPack.size());
-        simulationCellOf.close();*/
+        simulationCellOf.close();
     }
 
     // Clean up all intermediate data to free memory before returning.
