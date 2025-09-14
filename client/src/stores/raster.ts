@@ -1,142 +1,97 @@
-import { create } from 'zustand';
-import { api } from '@/services/api';
-import { dataURLToObjectURL } from './trajectories';
-import { createAsyncAction } from '@/utilities/asyncAction';
-import type { ApiResponse } from '@/types/api';
+import { create } from "zustand";
+import { api } from "@/services/api";
+import { createAsyncAction } from "@/utilities/asyncAction";
+import type { ApiResponse } from "@/types/api";
+
+interface AnalysisName {
+  _id: string;
+  name: string;
+}
 
 interface RasterState {
-    trajectory: any;
-    isLoading: boolean;
-    isAnalysisLoading: boolean;
-    rasterData: {
-        items: any[];
-        byFrame: Record<number, any[]>;
-        byFrameUrls: Record<number, Record<string, string>>;
-        itemUrls: Record<string, string>;
-    } | null;
-    error: string | null;
+  trajectory: any;
+  isLoading: boolean;
+  isAnalysisLoading: boolean;
+  analyses: Record<string, any>;       // objeto indexado por _id
+  analysesNames: AnalysisName[];       // lista ligera para selects
+  selectedAnalysis: string | null;     // id seleccionado
+  error: string | null;
+
+  // actions
+  getRasterFrames: (id: string) => Promise<void>;
+  clearRasterData: () => void;
+  setSelectedAnalysis: (id: string | null) => void;
 }
 
 const initialState: RasterState = {
-    trajectory: null,
-    isLoading: false,
-    rasterData: null,
-    isAnalysisLoading: true,
-    error: null
+  trajectory: null,
+  isLoading: false,
+  isAnalysisLoading: false,
+  analyses: {},
+  analysesNames: [],
+  selectedAnalysis: null,
+  error: null,
 };
 
-const useRasterStore = create<RasterState & {
-    getRasterFrames: (id: string) => Promise<void>;
-    clearRasterData: () => void;
-    revokeUrls: () => void;
-}>((set, get) => {
-    const asyncAction = createAsyncAction(set, get);
+const useRasterStore = create<RasterState>((set, get) => {
+  const asyncAction = createAsyncAction(set, get);
 
-    return {
-        ...initialState,
+  return {
+    ...initialState,
 
-        rasterize: (id: string) => asyncAction(() => api.post<ApiResponse<any>>(`/raster/${id}/glb/`), {
-            loadingKey: 'isAnalysisLoading',
-            onSuccess: (res) => {
-                return { rasterData: res.data.data };
-            }
-        }),
-
-        async getRasterFrames(id: string){
-            set({ isLoading: true, error: null });
-
-            try{
-                const res = await api.get(`/raster/${id}/glb`);
-                const items: any[] = res?.data?.data?.items ?? [];
-                const byFrame = res.data?.data?.byFrame ?? {};
-
-                const currentData = get().rasterData;
-                if(currentData){
-                    Object.values(currentData.itemUrls || {}).forEach((url) => {
-                        if(url) URL.revokeObjectURL(url);
-                    });
-                    
-                    Object.values(currentData.byFrameUrls || {}).forEach((frameUrls) => {
-                        Object.values(frameUrls).forEach(url => {
-                            if(url) URL.revokeObjectURL(url);
-                        });
-                    });
-                }
-
-                const itemUrls: Record<string, string> = {};
-                for(const item of items){
-                    if(!item.data) continue;
-                    itemUrls[item.filename] = dataURLToObjectURL(item.data);
-                }
-
-                const byFrameUrls: Record<number, Record<string, string>> = {};
-                Object.keys(byFrame).forEach((frameKey) => {
-                    const frame = parseInt(frameKey, 10);
-                    byFrameUrls[frame] = {};
-                    const analyses = byFrame[frame] || [];
-                    
-                    analyses.forEach((analysis: any) => {
-                        if(analysis.data){
-                            byFrameUrls[frame][analysis.filename] = dataURLToObjectURL(analysis.data);
-                        }
-                    });
-                });
-
-                const rasterData = {
-                    items,
-                    byFrame,
-                    byFrameUrls,
-                    itemUrls
-                };
-
-                set({
-                    trajectory: res.data.data.trajectory,
-                    isLoading: false,
-                    rasterData,
-                    error: null
-                });
-
-            }catch(error){
-                console.error('Error loading raster frames:', error);
-                set({ 
-                    isLoading: false, 
-                    error: error instanceof Error ? error.message : 'Unknown error'
-                });
-            }
+    rasterize: (id: string) =>
+      asyncAction(() => api.post<ApiResponse<any>>(`/raster/${id}/glb/`), {
+        loadingKey: "isAnalysisLoading",
+        onSuccess: (res) => {
+          return { analyses: res.data.data.analyses };
         },
+      }),
 
-        clearRasterData() {
-            const currentData = get().rasterData;
-            if(currentData){
-                Object.values(currentData.itemUrls || {}).forEach(url => {
-                    if(url) URL.revokeObjectURL(url);
-                });
-                
-                Object.values(currentData.byFrameUrls || {}).forEach(frameUrls => {
-                    Object.values(frameUrls).forEach(url => {
-                        if(url) URL.revokeObjectURL(url);
-                    });
-                });
-            }
-            
-            set({ rasterData: null, trajectory: null, error: null });
-        },
+    async getRasterFrames(id: string) {
+      set({ isLoading: true, error: null });
 
-        revokeUrls() {
-            const currentData = get().rasterData;
-            if(currentData){
-                Object.values(currentData.itemUrls || {}).forEach((url) => {
-                    if(url) URL.revokeObjectURL(url);
-                });
-                
-                Object.values(currentData.byFrameUrls || {}).forEach((frameUrls) => {
-                    Object.values(frameUrls).forEach(url => {
-                        if(url) URL.revokeObjectURL(url);
-                    });
-                });
-            }
-        }
-    };
+      try {
+        const res = await api.get(`/raster/${id}/glb`);
+        const { analyses, trajectory } = res.data.data;
+
+        const analysesNames = Object.values(analyses).map((a: any) => ({
+          _id: a._id,
+          name: `${a.identificationMode}${
+            a.identificationMode === "PTM" ? ` - RMSD: ${a.RMSD}` : ""
+          }`,
+        }));
+
+        set({
+          trajectory,
+          analyses,
+          analysesNames,
+          isLoading: false,
+          error: null,
+          selectedAnalysis: analysesNames.length > 0 ? analysesNames[0]._id : null,
+        });
+      } catch (error) {
+        console.error("Error loading raster frames:", error);
+        set({
+          isLoading: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    },
+
+    setSelectedAnalysis(id) {
+      set({ selectedAnalysis: id });
+    },
+
+    clearRasterData() {
+      set({
+        trajectory: null,
+        analyses: {},
+        analysesNames: [],
+        selectedAnalysis: null,
+        error: null,
+      });
+    },
+  };
 });
 
 export default useRasterStore;

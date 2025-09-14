@@ -26,8 +26,7 @@ import { createCanvas } from 'canvas';
 import { NodeIO, type Document, type Primitive, type Node as GNode } from '@gltf-transform/core';
 import { mat4, vec3, vec4 } from 'gl-matrix';
 import { createWriteStream } from 'node:fs';
-import { mkdir, readFile, stat } from 'node:fs/promises';
-import { parseFrame, parseType, resolvePngForGlb, typeOrder } from '@/utilities/raster';
+import { mkdir } from 'node:fs/promises';
 import path from 'path';
 
 type Point = { 
@@ -153,72 +152,6 @@ const reservoirSample = <T>(arr: T[], k: number): T[] => {
 
     return res;
 }
-
-export const buildAnalyses = async (rasterDir: string, glbFiles: string[], pngSet: Set<string>, trajectoryId: string) => {
-    const byFrame: Record<number, any[]> = {};
-    for(const glbFilename of glbFiles){
-        const frame = parseFrame(glbFilename);
-        const type = parseType(glbFilename);
-        if(!type || frame === null) continue;
-        
-        const pngName = resolvePngForGlb(glbFilename, frame, pngSet);
-        if(!pngName) continue;
-
-        const pngAbs = path.join(rasterDir, pngName);
-        try{
-            const st = await stat(pngAbs);
-            const buffer = await readFile(pngAbs);
-
-            const item = {
-                type,
-                frame,
-        filename: `${type}_${pngName}`, // asegura unicidad
-                mime: 'image/png',
-                size: st.size,
-                data: `data:image/png;base64,${buffer.toString('base64')}`
-            };
-
-            (byFrame[frame] ||= []).push(item);
-        }catch{
-            continue;
-        }
-    }
-
-    for(const frame of Object.keys(byFrame).map(Number)){
-        byFrame[frame].sort((a, b) => {
-            const ta = typeOrder[a.type] ?? 999;
-            const tb = typeOrder[b.type] ?? 999;
-            if(ta !== tb) return ta - tb;
-            if(a.filename !== b.filename) return a.filename.localeCompare(b.filename, undefined, { numeric: true });
-            return a.size - b.size;
-        });
-    }
-
-    return byFrame;
-};
-
-export const buildRasterItems = async (rasterDir: string, filenames: string[]) => {
-    const items: any[] = [];
-
-    for(const filename of filenames){
-        const abs = path.join(rasterDir, filename);
-        const st = await stat(abs);
-        const frame = parseFrame(filename);
-        const buffer = await readFile(abs);
-
-        const item = {
-            frame,
-            filename,
-            mime: 'image/png',
-            size: st.size,
-            data: `data:image/png;base64,${buffer.toString('base64')}`
-        };
-
-        items.push(item);
-    }
-
-    return items;
-};
 
 class HeadlessRasterizer{
     private opts: HeadlessRasterizerOptions;

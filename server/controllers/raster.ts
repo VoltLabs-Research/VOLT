@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
-import { readdir } from 'fs/promises';
 import { join, resolve, basename } from 'path';
 import { getRasterizerQueue } from '@/queues';
 import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
-import { buildRasterItems, buildAnalyses } from '@/services/headless-rasterizer';
-import { parseFrame } from '@/utilities/raster';
 import { listGlbFiles } from '@/utilities/fs';
 import { catchAsync } from '@/utilities/runtime';
+import { readFile } from 'fs/promises';;
 import { v4 } from 'uuid';
+import { listRasterModels } from '@/utilities/raster';
+import { AnalysisConfig } from '@/models';
 
 export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
@@ -45,43 +45,74 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
     res.status(200).json({ status: 'success' });
 });
 
+export const readRasterModel = async (modelType: string,  analysisId: string, rasterDir: string, frame: number): Promise<Buffer> => {
+    const filename = `frame-${frame}_${modelType}_analysis-${analysisId}.png`;
+    const absPath = join(rasterDir, filename);
+    const buffer = await readFile(absPath);
+    return buffer;
+};
+
 export const getRasterizedFrames = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
     const rasterDir = join(basePath, trajectory.folderId, 'raster');
-    const glbDir = join(basePath, trajectory.folderId, 'glb');
 
-    const allFiles = await readdir(rasterDir);
-    const pngs = allFiles.filter((file) => file.toLowerCase().endsWith('.png'));
-    const pngSet = new Set(pngs.map((file) => file.toLowerCase()));
+    const analyses = await AnalysisConfig
+        .find({ trajectory: trajectory._id })
+        .select('-createdAt -updatedAt -__v')
+        .lean();
 
-    pngs.sort((a, b) => {
-        const fa = parseFrame(a);
-        const fb = parseFrame(b);
-        if(fa !== null && fb !== null) return fa - fb;
-        if(fa !== null) return -1;
-        if(fb !== null) return 1;
-        return a.localeCompare(b, undefined, { numeric: true });
-    });
+    const analysesData: Record<string, any> = {};
 
-    const total = pngs.length;
-    const items = await buildRasterItems(rasterDir, pngs);
-  
-    const glbs = (await readdir(glbDir)).filter((file) => file.toLowerCase().endsWith('.glb'));
-    const byFrame = await buildAnalyses(rasterDir, glbs, pngSet, trajectory._id);
+    // The raster frame is stored in the following format "<frame>.glb".
+    // Other models produced by modifiers, such as dislocations, are exported in 
+    // the following format: "frame-<frame>_<model>-analysis-<analysisId>".
+    for(const analysis of analyses){
+        const id = analysis._id.toString();
+        const data: Record<string, any> = {
+            ...analysis,
+            frames: {}
+        };
+
+        for(const { timestep } of trajectory.frames){
+            const models: Record<string, any> = {};
+            // [ 'defect_mesh', 'dislocations', 'interface_mesh', ... ]
+            const availableModels = await listRasterModels(rasterDir, timestep, id);
+
+            for(const model of availableModels){
+                const buffer = await readRasterModel(model, id, rasterDir, timestep);
+                models[model] = {
+                    model,
+                    frame: timestep,
+                    analysisId: id,
+                    data: `data:image/png;base64,${buffer.toString('base64')}`
+                };
+            }
+
+            const previewBuffer = await readFile(join(rasterDir, `${timestep}.png`));
+            models['preview'] = {
+                model: 'preview',
+                frame: timestep,
+                analysisId: id,
+                data: `data:image/png;base64,${previewBuffer.toString('base64')}`
+            }
+
+            data.frames[timestep] = models;
+        }
+
+        analysesData[id] = data;
+    }
 
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    res.setHeader('ETag', `"raster-${trajectory._id}-${total}"`);
+    res.setHeader('ETag', `"raster-${trajectory._id}"`);
 
     return res.status(200).json({
         status: 'success',
         data: {
             trajectory,
-            items,
-            byFrame,
-            total
+            analyses: analysesData
         }
     })
 };

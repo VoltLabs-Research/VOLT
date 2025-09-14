@@ -1,19 +1,23 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { useRasterizedFrames } from '@/hooks/trajectory/use-raster';
-import { useParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { GoArrowUpRight } from 'react-icons/go';
-import { IoPlayOutline, IoPauseOutline, IoChevronBack, IoChevronForward } from 'react-icons/io5';
-import Skeleton from '@mui/material/Skeleton';
-import './HeadlessRasterizerView.css';
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { GoArrowUpRight } from "react-icons/go";
+import {
+    IoPlayOutline,
+    IoPauseOutline,
+    IoChevronBack,
+    IoChevronForward,
+} from "react-icons/io5";
+import Skeleton from "@mui/material/Skeleton";
+import useRasterStore from "@/stores/raster";
+import Select from "@/components/atoms/form/Select";
+import "./HeadlessRasterizerView.css";
 
 interface RasterSceneProps {
     scene: {
-        frame: number | null;
-        filename: string;
-        src?: string | null;
-        data?: string;
-        url?: string;
+        frame: number;
+        model: string;
+        data: string;
     };
     trajectory: any;
     disableAnimation?: boolean;
@@ -21,6 +25,9 @@ interface RasterSceneProps {
     onPlayPause: () => void;
     onPrev: () => void;
     onNext: () => void;
+    analysesNames: { _id: string; name: string }[];
+    selectedAnalysis: string | null;
+    setSelectedAnalysis: (id: string | null) => void;
 }
 
 const RasterScene: React.FC<RasterSceneProps> = ({
@@ -30,14 +37,35 @@ const RasterScene: React.FC<RasterSceneProps> = ({
     isPlaying,
     onPlayPause,
     onPrev,
-    onNext
+    onNext,
+    analysesNames,
+    selectedAnalysis,
+    setSelectedAnalysis,
 }) => {
-    if (scene.frame === null) return null;
+    if (!scene) return null;
 
     return (
         <figure className="raster-scene-container">
             <div className="raster-view-trajectory-name-container raster-floating-container">
                 <h3 className="raster-view-trajectory-name">{trajectory?.name}</h3>
+            </div>
+
+            <div className="raster-view-trajectory-frame-container raster-floating-container">
+                <span className="raster-view-trajectory-frame">Frame {scene.frame}</span>
+            </div>
+
+            <div className="raster-analysis-selection-container raster-floating-container">
+                <Select
+                    onDark={true}
+                    value={selectedAnalysis ?? ""}
+                    className="raster-analysis-select"
+                    onChange={(id) => setSelectedAnalysis(id)}
+                    options={analysesNames.map((a) => ({
+                        value: a._id,
+                        title: a.name,
+                    }))}
+                    disabled={!analysesNames.length}
+                />
             </div>
 
             <div className="raster-view-trajectory-editor-icon-container raster-floating-container">
@@ -56,17 +84,22 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             </div>
 
             {disableAnimation ? (
-                <img key={scene.filename} className="raster-scene" src={scene.src ?? undefined} alt={scene.filename} />
+                <img
+                    key={`${scene.frame}-${scene.model}`}
+                    className="raster-scene"
+                    src={scene.data}
+                    alt={`${scene.model} - Frame ${scene.frame}`}
+                />
             ) : (
                 <AnimatePresence mode="wait">
                     <motion.img
-                        key={scene.filename}
+                        key={`${scene.frame}-${scene.model}`}
                         className="raster-scene"
-                        src={scene.src ?? undefined}
-                        alt={scene.filename}
-                        initial={{ opacity: 0, filter: 'blur(12px)' }}
-                        animate={{ opacity: 1, filter: 'blur(0px)' }}
-                        exit={{ opacity: 0, filter: 'blur(12px)' }}
+                        src={scene.data}
+                        alt={`${scene.model} - Frame ${scene.frame}`}
+                        initial={{ opacity: 0, filter: "blur(12px)" }}
+                        animate={{ opacity: 1, filter: "blur(0px)" }}
+                        exit={{ opacity: 0, filter: "blur(12px)" }}
                         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                     />
                 </AnimatePresence>
@@ -77,88 +110,80 @@ const RasterScene: React.FC<RasterSceneProps> = ({
 
 const RasterView: React.FC = () => {
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
-    const { items, trajectory, byFrame, loading } = useRasterizedFrames(trajectoryId);
+    const {
+        trajectory,
+        analyses,
+        analysesNames,
+        selectedAnalysis,
+        setSelectedAnalysis,
+        getRasterFrames,
+        isLoading,
+    } = useRasterStore();
 
-    const [selectedIndex, setSelectedIndex] = useState(0);
-    const [selectedType, setSelectedType] = useState<string | null>(null);
+    const [selectedFrameIndex, setSelectedFrameIndex] = useState(0);
+    const [selectedModel, setSelectedModel] = useState<string>("preview");
     const [isPlaying, setIsPlaying] = useState(false);
 
     const thumbnailsRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (items.length > 0) setSelectedIndex(0);
-    }, [items]);
+        if (trajectoryId) getRasterFrames(trajectoryId);
+    }, [trajectoryId]);
 
-    const baseFrames = items.filter((item) => !item.filename.includes('_'));
-    const typeFrames =
-        selectedType != null
-            ? Object.values(byFrame).flat().filter((a) => a.type === selectedType)
-            : [];
-    const activeList = selectedType ? typeFrames : baseFrames;
+    const analysisData = selectedAnalysis ? analyses[selectedAnalysis] : null;
+    const frames = analysisData ? Object.values(analysisData.frames) : [];
+    const sortedFrames = frames.sort((a: any, b: any) => a.frame - b.frame);
 
-    const activeIndex = activeList.findIndex((frame) => frame.frame === items[selectedIndex]?.frame);
+    const currentFrame = sortedFrames[selectedFrameIndex];
+    const currentScene = currentFrame
+        ? currentFrame[selectedModel] || currentFrame["preview"]
+        : null;
 
     useEffect(() => {
-        if (!isPlaying || activeList.length === 0) return;
+        if (!isPlaying || sortedFrames.length === 0) return;
         const interval = setInterval(() => {
             handleNext();
-        }, 200);
+        }, 300);
         return () => clearInterval(interval);
-    }, [isPlaying, activeList]);
+    }, [isPlaying, sortedFrames, selectedFrameIndex]);
 
     const handlePlayPause = () => setIsPlaying((prev) => !prev);
     const handlePrev = () => {
-        if (activeList.length === 0) return;
-        const prev = (activeIndex - 1 + activeList.length) % activeList.length;
-        const prevFrame = activeList[prev];
-        setSelectedIndex(items.findIndex((i) => i.frame === prevFrame.frame));
+        if (sortedFrames.length === 0) return;
+        setSelectedFrameIndex(
+            (prev) => (prev - 1 + sortedFrames.length) % sortedFrames.length
+        );
     };
     const handleNext = () => {
-        if (activeList.length === 0) return;
-        const next = (activeIndex + 1) % activeList.length;
-        const nextFrame = activeList[next];
-        setSelectedIndex(items.findIndex((i) => i.frame === nextFrame.frame));
+        if (sortedFrames.length === 0) return;
+        setSelectedFrameIndex((prev) => (prev + 1) % sortedFrames.length);
     };
 
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
-        if (e.ctrlKey && e.key === 'Enter') {
+        if (e.ctrlKey && e.key === "Enter") {
             setIsPlaying((prev) => !prev);
         }
     }, []);
-    
+
     useEffect(() => {
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
     }, [handleKeyDown]);
-
-    const currentFrame = items[selectedIndex]?.frame ?? null;
-    const baseScene = items[selectedIndex];
-    const analysesForFrame = currentFrame != null ? byFrame?.[currentFrame] ?? [] : [];
-    const selectedScene =
-        currentFrame != null && selectedType
-            ? analysesForFrame.find((a) => a.type === selectedType) ?? baseScene
-            : baseScene;
-
-    let sceneAnalyses = analysesForFrame;
-    if (selectedType && currentFrame != null) {
-        sceneAnalyses = [baseScene, ...analysesForFrame.filter((a) => a.type !== selectedType)];
-    }
 
     return (
         <main className="raster-view-container">
             <div className="raster-scenes-container">
                 <div className="raster-scenes-top-container">
-                    {loading ? (
+                    {isLoading || !currentScene ? (
                         <>
                             <div className="raster-scene-container">
                                 <Skeleton
                                     variant="rectangular"
                                     width="100%"
                                     height="100%"
-                                    sx={{ borderRadius: '1rem' }}
+                                    sx={{ borderRadius: "1rem" }}
                                 />
                             </div>
-
                             <div className="raster-analyses-container">
                                 {Array.from({ length: 4 }).map((_, i) => (
                                     <Skeleton
@@ -166,72 +191,90 @@ const RasterView: React.FC = () => {
                                         variant="rectangular"
                                         width={280}
                                         height={150}
-                                        sx={{ borderRadius: '1rem' }}
+                                        sx={{ borderRadius: "1rem" }}
                                     />
                                 ))}
                             </div>
                         </>
                     ) : (
                         <>
-                            {selectedScene && (
-                                <RasterScene
-                                    key={`${selectedScene.frame}-${selectedScene.filename}`}
-                                    scene={selectedScene}
-                                    trajectory={trajectory}
-                                    disableAnimation={isPlaying}
-                                    isPlaying={isPlaying}
-                                    onPlayPause={handlePlayPause}
-                                    onPrev={handlePrev}
-                                    onNext={handleNext}
-                                />
-                            )}
+                            <RasterScene
+                                key={`${currentScene.frame}-${currentScene.model}`}
+                                scene={currentScene}
+                                trajectory={trajectory}
+                                disableAnimation={isPlaying}
+                                isPlaying={isPlaying}
+                                onPlayPause={handlePlayPause}
+                                onPrev={handlePrev}
+                                onNext={handleNext}
+                                analysesNames={analysesNames}
+                                selectedAnalysis={selectedAnalysis}
+                                setSelectedAnalysis={setSelectedAnalysis}
+                            />
+
                             <div className="raster-analyses-container">
-                                {sceneAnalyses.map((analysis) => (
-                                    <motion.img
-                                        key={`${analysis.frame}-${analysis.type ?? 'frame'}-${analysis.filename}`}
-                                        className="raster-analysis-scene"
-                                        src={analysis.src ?? undefined}
-                                        alt={`${analysis.type ?? 'Frame'} - Frame ${analysis.frame}`}
-                                        title={analysis.type ?? 'Frame'}
-                                        whileHover={{ scale: 1.08, boxShadow: '0 15px 30px rgba(0,0,0,0.4)' }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => setSelectedType(analysis.type ?? null)}
-                                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                                    />
-                                ))}
+                                {currentFrame &&
+                                    Object.values(currentFrame).map((model: any) => (
+                                        <motion.img
+                                            key={`${model.frame}-${model.model}`}
+                                            className={`raster-analysis-scene ${
+                                                model.model === selectedModel ? "selected" : ""
+                                            }`}
+                                            src={model.data}
+                                            alt={`${model.model} - Frame ${model.frame}`}
+                                            title={model.model}
+                                            whileHover={{
+                                                scale: 1.08,
+                                                boxShadow: "0 15px 30px rgba(0,0,0,0.4)",
+                                            }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => setSelectedModel(model.model)}
+                                            transition={{
+                                                type: "spring",
+                                                stiffness: 300,
+                                                damping: 25,
+                                            }}
+                                        />
+                                    ))}
                             </div>
                         </>
                     )}
                 </div>
 
                 <div className="raster-thumbnails" ref={thumbnailsRef}>
-                    {loading
+                    {isLoading
                         ? Array.from({ length: 10 }).map((_, i) => (
                               <Skeleton
                                   key={i}
                                   variant="rectangular"
                                   width={280}
                                   height={200}
-                                  sx={{ borderRadius: '1rem', flexShrink: 0 }}
+                                  sx={{ borderRadius: "1rem", flexShrink: 0 }}
                               />
                           ))
-                        : activeList.map((frame, index) => (
-                              <motion.img
-                                  key={`${frame.frame}-${frame.filename}-thumb`}
-                                  className={`raster-thumbnail ${index === activeIndex ? 'selected' : ''}`}
-                                  src={frame.src ?? undefined}
-                                  alt={`${frame.type ?? 'Frame'} - Frame ${frame.frame}`}
-                                  whileHover={{
-                                      scale: 1.05,
-                                      boxShadow: '0 10px 25px rgba(0,0,0,0.35)',
-                                  }}
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={() =>
-                                      setSelectedIndex(items.findIndex((i) => i.frame === frame.frame))
-                                  }
-                                  transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-                              />
-                          ))}
+                        : sortedFrames.map((frame: any, index: number) => {
+                              const preview = frame["preview"];
+                              return <div className="raster-thumbnail-container ">
+                                <div className="raster-thumbnail-timestep-container">
+                                    <p className="raster-thumbnail-timestep">{preview.frame}</p>
+                                </div>
+                                  <motion.img
+                                      key={`${preview.frame}-thumb`}
+                                      className={`raster-thumbnail ${
+                                          index === selectedFrameIndex ? "selected" : ""
+                                      }`}
+                                      src={preview.data}
+                                      alt={`Preview - Frame ${preview.frame}`}
+                                      whileHover={{
+                                          scale: 1.05,
+                                          boxShadow: "0 10px 25px rgba(0,0,0,0.35)",
+                                      }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => setSelectedFrameIndex(index)}
+                                      transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                                  />
+                                </div>
+                          })}
                 </div>
             </div>
         </main>

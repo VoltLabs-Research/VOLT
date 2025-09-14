@@ -23,7 +23,6 @@
 import mongoose, { Schema, Model } from 'mongoose';
 import type { IAnalysisConfig } from '@/types/models/analysis-config';
 import { IdentificationMode, LatticeStructure } from '@/types/services/opendxa';
-import { Trajectory } from '@/models/index';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
