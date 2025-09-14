@@ -1,188 +1,201 @@
+/* ====== CONTENEDORES EXISTENTES ====== */
 .raster-view-container{
-    height: 100%;
-    overflow: hidden;
-    padding: .5rem 2rem;
+  height: 100%;
+  overflow: hidden;
+  padding: .5rem 2rem;
+}
+.raster-scenes-container{
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  justify-content: space-between;
+  position: relative;
+  border-radius: 1rem;
+}
+.raster-scenes-top-container{
+  width: 100%;
+  height: 85%;
+  display: flex;
+  gap: 1rem;
+}
+.raster-scene-container{
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  border: 1px solid #161616;
+  border-radius: 1rem;
+  flex-direction: column; /* importante: para topbar/main/bottombar */
+  background: #0d0d0d;
+}
+.raster-scene{ height: clamp(360px, 52vh, 520px); }
+.raster-analyses-container{
+  width: 280px;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  flex-direction: column;
+  top: 0;
+  right: 0;
 }
 
-.raster-view-trajectory-name-container{
-    top: 1rem;
-    left: 1rem;
-    background-color: #161616;
-    padding: .8rem 2.5rem;
-    border-radius: 5rem;
+/* ====== CORRECCIÓN: quitar absolutos de UI superpuesta ====== */
+.raster-floating-container{ position: static; background-color: transparent; }
+.raster-view-trajectory-name-container,
+.raster-view-trajectory-frame-container,
+.raster-view-trajectory-playback-container,
+.raster-view-trajectory-editor-icon-container,
+.raster-analysis-selection-container{
+  position: static !important;
+  inset: auto !important;
 }
 
-.raster-view-trajectory-frame-container{
-    top: 1.5rem;
-    padding: .8rem 2.5rem;
-    font-size: 1rem;
-    border-radius: 5rem;
+/* Chips/estética igual que antes */
+.raster-chip{
+  background-color: #161616;
+  color: #dadada;
+  padding: .5rem 1rem;
+  border-radius: 5rem;
+  border: 1px solid #262626;
+}
+.btn-chip{
+  background-color: #161616;
+  color: #dadada;
+  border: 1px solid #262626;
+  padding: .5rem 1rem;
+  border-radius: 5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.btn-chip:hover{ background-color: #191919; }
+
+.raster-view-trajectory-name{ text-transform: capitalize; font-size: .95rem; }
+.raster-floating-helper-text{ font-size: .95rem; font-weight: 500; }
+
+/* ====== NUEVO: barras internas para mantener layout ====== */
+.raster-scene-topbar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .5rem .75rem;
+}
+.raster-scene-topbar-left{ display:flex; align-items:center; gap:.5rem; }
+.raster-scene-topbar-center{
+  min-width: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 520px;
+  flex: 0 1 40%;
+}
+.raster-analysis-selection-container .rh-select-value{ font-size: .9rem; font-weight: 500; }
+.raster-analysis-selection-container .rh-select-trigger{ padding: .6rem 1.25rem; }
+
+.raster-scene-main{
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: .25rem .5rem;
 }
 
-.raster-floating-container{
-    background-color: #161616;
-    position: absolute;
-    color: #dadada;
+.raster-scene-bottombar{
+  display: grid;
+  grid-template-columns: 1fr auto 1fr; /* izq = frame, centro = playback, der = espacio */
+  align-items: center;
+  gap: .75rem;
+  padding: .5rem .75rem .75rem;
 }
 
+/* ====== Playback ====== */
 .raster-view-trajectory-playback-container{
-    bottom: 1.5rem;
-    font-size: 1.5rem;
-    border-radius: 5rem;
-    padding: .5rem 1rem;
-    display: flex;
-    gap: .5rem;
-    justify-content: center;
-    align-items: center;
+  grid-column: 2;                 /* columna central del grid */
+  justify-self: center;           /* centra el pill en la escena */
+  background: #161616;
+  color: #dadada;                 /* <-- color del contenido (currentColor) */
+  font-size: 1.5rem;
+  border-radius: 5rem;
+  padding: .3rem .75rem;
+  display: inline-flex;
+  gap: .5rem;
+  align-items: center;
 }
 
 .raster-view-trajectory-play-icon{
-    font-size: 1.8rem;
+  font-size: 1.8rem;
+  color: #dadada;                 /* <-- asegura el color de los íconos */
+  cursor: pointer;
+  line-height: 1;                 /* evita desajustes verticales */
+  display: inline-flex;           /* centra el glifo en su caja */
+  align-items: center;
+  justify-content: center;
 }
-
-.raster-view-trajectory-editor-icon-container{
-    right: 1rem;
-    top: 1rem;
-    padding: .8rem 1.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 5rem;
-    font-size: 1.3rem;
-    gap: .5rem;
-}
-
-.raster-floating-helper-text{
-    font-size: 1rem;
-    font-weight: 500;
-}
-
-.raster-view-trajectory-name{
-    text-transform: capitalize;
-    font-size: 1rem;
-}
-
-.raster-scenes-container{
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    justify-content: space-between;
-    position: relative;
-    border-radius: 1rem;
-}
-
-.raster-scene-container{
-    width: 100%;
-    height: 100%;
-    position: relative;
-    display: flex;
-    border: 1px solid #161616;
-    border-radius: 1rem;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-}
-
-.raster-scene{
-    height: 500px;
-}
-
-.raster-scenes-top-container{
-    width: 100%;
-    height: 85%;
-    display: flex;
-    gap: 1rem;
-}
-
+/* ====== Thumbnails globales ====== */
 .raster-thumbnails{
-    display: flex;
-    bottom: 0;
-    gap: 1rem;
-    overflow-x: scroll;
-    overflow-y: hidden;
-    width: 100%;
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
 }
-
-.raster-analysis-selection-container{
-    top: 1rem;
-    right: 13rem;
-    border-radius: 2rem;
-}
-
-.raster-analysis-selection-container .rh-select-value{
-    font-size: .9rem;
-    font-weight: 500;
-}
-
-.raster-analysis-selection-container .rh-select-trigger{
-    padding: .8rem 1.5rem;
-}
-
-.raster-thumbnail-container {
-    border: 2px solid #323232;
-    border-radius: 1rem;
-    width: 280px;
-    position: relative;
-    display: flex;
-    cursor: pointer;
-    justify-content: center;
-    align-items: center;
-    perspective: 1000px;
-    transform-style: preserve-3d;
-    transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+.raster-thumbnail-container{
+  border: 2px solid #323232;
+  border-radius: 1rem;
+  width: 280px;
+  position: relative;
+  display: flex;
+  cursor: pointer;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  flex-shrink: 0;
 }
 .raster-thumbnail-container.active {
-    border: 3px solid #6366F1;
-    box-shadow: 0 12px 32px rgba(99,102,241,0.45);
-    z-index: 2;
+  border: 3px solid #6366F1;
+  box-shadow: 0 12px 32px rgba(99,102,241,0.45);
+  z-index: 2;
 }
-.raster-thumbnail {
-    width: 280px;
-    border-radius: 0.75rem;
-    transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.raster-thumbnail-container:not(.active) .raster-thumbnail {
-    filter: grayscale(40%) brightness(0.8);
-}
-.raster-thumbnail-container:hover{
-    opacity: .8;
-}
-
-.raster-thumbnail-timestep-container{
-    position: absolute;
-    top: .5rem;
-    right: .5rem;
-    background-color: #323232;
-    padding: .5rem 1rem;
-    border-radius: 5rem;
-}
-
-.raster-thumbnail-timestep{
-    color: #dadada;
-    font-size: .8rem;
-}
-
-.raster-analyses-container{
-    width: 280px;
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
-    flex-direction: column;
-    top: 0;
-    right: 0;
-}
-
 .raster-analysis-scene{
-    height: 150px;
-    border: 1px solid #323232;
+    border: 1px solid #2b2b2b;
     border-radius: 1rem;
-    width: auto;
+}
+.raster-thumbnail{ width: 280px; border-radius: 0.75rem; transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+.raster-thumbnail-container:not(.active) .raster-thumbnail{ filter: grayscale(40%) brightness(0.8); }
+.raster-thumbnail-container:hover{ opacity: .9; }
+.raster-thumbnail-timestep-container{
+  position: absolute; top: .5rem; right: .5rem;
+  background-color: #323232; padding: .5rem 1rem; border-radius: 5rem;
+}
+.raster-thumbnail-timestep{ color: #dadada; font-size: .8rem; }
+
+/* ====== Rail (solo este queda absoluto y con espacio reservado) ====== */
+.raster-rail-container{
+  position: absolute;
+  right: .5rem;
+  bottom: 0;
+  background: transparent;
+  border-radius: 1rem;
+  padding: .5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  max-height: 75%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1;
 }
 
-.raster-frames-container{
-    width: 100%;
-    display: flex;
-    overflow-x: scroll;
+/* ====== Detalles varios ====== */
+.raster-view-trajectory-frame-container{
+  grid-column: 1;
+  justify-self: start;
 }
+.raster-frames-container{ width: 100%; display: flex; overflow-x: scroll; }
