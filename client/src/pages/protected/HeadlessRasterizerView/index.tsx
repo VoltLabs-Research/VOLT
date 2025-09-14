@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRasterizedFrames } from '@/hooks/trajectory/use-raster';
 import { useParams } from 'react-router-dom';
 import './HeadlessRasterizerView.css';
@@ -19,9 +19,10 @@ interface RasterSceneProps {
         data?: string;
         url?: string;
     }>;
+    onSelectAnalysis: (analysis: any) => void;
 }
 
-const RasterScene: React.FC<RasterSceneProps> = ({ scene, analyses }) => {
+const RasterScene: React.FC<RasterSceneProps> = ({ scene, analyses, onSelectAnalysis }) => {
     if (scene.frame === null) return null;
     
     return (
@@ -41,6 +42,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({ scene, analyses }) => {
                             src={analysis.src}
                             alt={`${analysis.type} - Frame ${analysis.frame}`}
                             title={analysis.type}
+                            onClick={() => onSelectAnalysis(analysis)}
                         />
                     ))}
                 </div>
@@ -61,11 +63,20 @@ const RasterView: React.FC = () => {
         totalFrames 
     } = useRasterizedFrames(trajectoryId);
 
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const [analysisFrame, setAnalysisFrame] = useState<number | null>(null);
+
     useEffect(() => {
         console.log('Raster items:', items);
         console.log('By frame analyses:', byFrame);
         console.log('Total frames with analyses:', totalFrames);
+        if(items.length > 0) setSelectedIndex(0);
     }, [items, byFrame, totalFrames]);
+
+    const selectedScene = items[selectedIndex] ?? null;
+    const selectedAnalyses = selectedScene?.frame != null ? byFrame?.[selectedScene.frame] ?? [] : [];
+
+    const analysisThumbnails = analysisFrame != null ? byFrame?.[analysisFrame] ?? [] : [];
 
     return (
         <main className='raster-view-container'>
@@ -75,13 +86,37 @@ const RasterView: React.FC = () => {
                         {trajectory?.name}
                     </h3>
                 </div>
-                {items.map((item, index) => (
+                {selectedScene && (
                     <RasterScene
-                        key={`${item.frame}-${item.filename}`}
-                        scene={item}
-                        analyses={item.frame != null ? byFrame?.[item.frame] ?? [] : []}
+                        key={`${selectedScene.frame}-${selectedScene.filename}`}
+                        scene={selectedScene}
+                        analyses={selectedAnalyses}
+                        onSelectAnalysis={(analysis) => setAnalysisFrame(analysis.frame)}
                     />
-                ))}
+                )}
+                <div className='raster-thumbnails'>
+                    {analysisFrame == null ? (
+                        items.map((item, index) => (
+                            <img
+                                key={`${item.frame}-${item.filename}-thumb`}
+                                className={`raster-thumbnail ${index === selectedIndex ? 'selected' : ''}`}
+                                src={item.src}
+                                alt={`Frame ${item.frame}`}
+                                onClick={() => setSelectedIndex(index)}
+                            />
+                        ))
+                    ) : (
+                        analysisThumbnails.map((analysis, index) => (
+                            <img
+                                key={`${analysis.frame}-${analysis.filename}-thumb`}
+                                className='raster-thumbnail'
+                                src={analysis.src}
+                                alt={`${analysis.type} - Frame ${analysis.frame}`}
+                                onClick={() => setSelectedIndex(items.findIndex(i => i.frame === analysis.frame))}
+                            />
+                        ))
+                    )}
+                </div>
             </div>
         </main>
     );

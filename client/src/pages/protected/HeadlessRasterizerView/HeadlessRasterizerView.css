@@ -40,6 +40,22 @@
     height: 500px;
 }
 
+.raster-thumbnails{
+    position: absolute;
+    display: flex;
+    bottom: 0;
+    padding: .5rem;
+    gap: 1rem;
+    overflow-x: scroll;
+    width: 100%;
+}
+
+.raster-thumbnail{
+    border: 1px solid #323232;
+    border-radius: 1rem;
+    width: 250px;
+}
+
 .raster-analyses-container{
     display: flex;
     position: absolute;
@@ -55,4 +71,10 @@
     border: 1px solid #323232;
     border-radius: 1rem;
     width: auto;
+}
+
+.raster-frames-container{
+    width: 100%;
+    display: flex;
+    overflow-x: scroll;
 }
