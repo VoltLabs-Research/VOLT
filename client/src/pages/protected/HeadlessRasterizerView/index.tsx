@@ -36,7 +36,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({ scene, analyses }) => {
                 <div className='raster-analyses-container'>
                     {analyses.map((analysis, i) => (
                         <img
-                            key={`${analysis.type}-${analysis.filename}-${i}`}
+                            key={`${analysis.frame}-${analysis.type}-${analysis.filename}`}
                             className='raster-analysis-scene'
                             src={analysis.src}
                             alt={`${analysis.type} - Frame ${analysis.frame}`}
@@ -77,7 +77,7 @@ const RasterView: React.FC = () => {
                 </div>
                 {items.map((item, index) => (
                     <RasterScene
-                        key={`${item.filename}-${index}`}
+                        key={`${item.frame}-${item.filename}`}
                         scene={item}
                         analyses={item.frame != null ? byFrame?.[item.frame] ?? [] : []}
                     />

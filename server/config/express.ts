@@ -79,6 +79,7 @@ configureApp({
         'modifiers',
         'teams',
         'analysis-config',
+        'raster',
         'trajectories',
         'structure-analysis',
         'dislocations',

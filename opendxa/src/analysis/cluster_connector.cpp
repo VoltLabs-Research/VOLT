@@ -457,7 +457,7 @@ void ClusterConnector::growCluster(
 }
 
 void ClusterConnector::buildClusters(){
-    baseBuildClusters();
+    // baseBuildClusters();
 
     if(_sa.usingPTM()){
        buildClustersForPTM();

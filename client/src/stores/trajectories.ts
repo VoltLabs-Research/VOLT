@@ -138,13 +138,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             });
         },
 
-        rasterize: (id: string) => asyncAction(() => api.post<ApiResponse<any>>(`/trajectories/${id}/glb/raster/`), {
-            loadingKey: 'isAnalysisLoading',
-            onSuccess: (res) => {
-                return { rasterData: res.data.data };
-            }
-        }),
-
         getStructureAnalysis: (teamId: string, opts?: { force?: boolean }) => {
             const force = !!opts?.force;
             const cached = get().analysisCache[teamId];

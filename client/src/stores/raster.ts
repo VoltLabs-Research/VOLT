@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 import { api } from '@/services/api';
 import { dataURLToObjectURL } from './trajectories';
+import { createAsyncAction } from '@/utilities/asyncAction';
+import type { ApiResponse } from '@/types/api';
 
 interface RasterState {
     trajectory: any;
     isLoading: boolean;
+    isAnalysisLoading: boolean;
     rasterData: {
         items: any[];
         byFrame: Record<number, any[]>;
@@ -18,6 +21,7 @@ const initialState: RasterState = {
     trajectory: null,
     isLoading: false,
     rasterData: null,
+    isAnalysisLoading: true,
     error: null
 };
 
@@ -26,16 +30,23 @@ const useRasterStore = create<RasterState & {
     clearRasterData: () => void;
     revokeUrls: () => void;
 }>((set, get) => {
+    const asyncAction = createAsyncAction(set, get);
+
     return {
         ...initialState,
 
+        rasterize: (id: string) => asyncAction(() => api.post<ApiResponse<any>>(`/raster/${id}/glb/`), {
+            loadingKey: 'isAnalysisLoading',
+            onSuccess: (res) => {
+                return { rasterData: res.data.data };
+            }
+        }),
+
         async getRasterFrames(id: string){
-            const params = new URLSearchParams();
-            params.set('includeData', 'true');
             set({ isLoading: true, error: null });
 
             try{
-                const res = await api.get(`/trajectories/${id}/glb/raster?${params.toString()}`);
+                const res = await api.get(`/raster/${id}/glb`);
                 const items: any[] = res?.data?.data?.items ?? [];
                 const byFrame = res.data?.data?.byFrame ?? {};
 
@@ -64,7 +75,7 @@ const useRasterStore = create<RasterState & {
                     byFrameUrls[frame] = {};
                     const analyses = byFrame[frame] || [];
                     
-                    analyses.forEach((analysis) => {
+                    analyses.forEach((analysis: any) => {
                         if(analysis.data){
                             byFrameUrls[frame][analysis.filename] = dataURLToObjectURL(analysis.data);
                         }

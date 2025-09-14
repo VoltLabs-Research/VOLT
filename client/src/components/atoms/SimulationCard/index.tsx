@@ -37,6 +37,7 @@ import useCardInteractions from '@/hooks/ui/interaction/use-card-interaction';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import useModifiersStore from '@/stores/modifiers';
+import useRasterStore from '@/stores/raster';
 import type { Job } from '@/types/jobs';
 import './SimulationCard.css';
 
@@ -64,7 +65,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const dislocationAnalysis = useModifiersStore((state) => state.dislocationAnalysis);
     const toggleTrajectorySelection = useTrajectoryStore((state) => state.toggleTrajectorySelection);
-    const rasterize = useTrajectoryStore((state) => state.rasterize);
+    const rasterize = useRasterStore((state) => state.rasterize);
 
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
 
