@@ -101,6 +101,7 @@
     bottom: 0;
     gap: 1rem;
     overflow-x: scroll;
+    overflow-y: hidden;
     width: 100%;
 }
 
@@ -119,8 +120,8 @@
     padding: .8rem 1.5rem;
 }
 
-.raster-thumbnail-container{
-    border: 1px solid #323232;
+.raster-thumbnail-container {
+    border: 2px solid #323232;
     border-radius: 1rem;
     width: 280px;
     position: relative;
@@ -128,9 +129,23 @@
     cursor: pointer;
     justify-content: center;
     align-items: center;
-    transition: .2s;
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
-
+.raster-thumbnail-container.active {
+    border: 3px solid #6366F1;
+    box-shadow: 0 12px 32px rgba(99,102,241,0.45);
+    z-index: 2;
+}
+.raster-thumbnail {
+    width: 280px;
+    border-radius: 0.75rem;
+    transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.raster-thumbnail-container:not(.active) .raster-thumbnail {
+    filter: grayscale(40%) brightness(0.8);
+}
 .raster-thumbnail-container:hover{
     opacity: .8;
 }
@@ -147,10 +162,6 @@
 .raster-thumbnail-timestep{
     color: #dadada;
     font-size: .8rem;
-}
-
-.raster-thumbnail{
-    width: 280px;
 }
 
 .raster-analyses-container{
