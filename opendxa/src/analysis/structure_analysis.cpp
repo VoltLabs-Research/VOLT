@@ -2,6 +2,7 @@
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/structure_analysis.h>
 #include <opendxa/analysis/polyhedral_template_matching.h>
+#include <opendxa/analysis/ptm_neighbor_finder.h>
 #include <ptm_constants.h>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
@@ -53,6 +54,9 @@ StructureAnalysis::StructureAnalysis(
         static_cast<size_t>(requestedMaxNeighbors),
         0, false
     );
+
+    _context.templateIndex = std::make_shared<ParticleProperty>(
+        _context.atomCount(), DataType::Int, 1, 0, true);
 
     std::fill(_context.neighborLists->dataInt(),
               _context.neighborLists->dataInt() + _context.neighborLists->size()*_context.neighborLists->componentCount(),
@@ -232,6 +236,7 @@ void StructureAnalysis::determineLocalStructuresWithPTM() {
             storeNeighborIndices(kernel, i);
             storeOrientationData(kernel, i);
             storeDeformationGradient(kernel, i);
+            _context.templateIndex->setInt(i, kernel.bestTemplateIndex());
         }
     });
 }
@@ -260,7 +265,7 @@ void StructureAnalysis::identifyStructuresCNA(){
 }
 
 void StructureAnalysis::identifyStructures(){
-   if(usingPTM()){
+    if(usingPTM()){
         determineLocalStructuresWithPTM();
         computeMaximumNeighborDistanceFromPTM();
         return;

@@ -3,6 +3,10 @@
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_reduce.h>
 #include <execution>
+#include <limits>
+#include <cmath>
+
+inline constexpr double CA_TRANSITION_MATRIX_EPSILON = 1e-6;
 
 namespace OpenDXA{
 
@@ -54,6 +58,7 @@ Matrix3 ClusterConnector::quaternionToMatrix(const Quaternion& q)  {
 Quaternion ClusterConnector::getPTMAtomOrientation(int atom) const{
     const double *qdata = _context.ptmOrientation->dataDouble() + atom * 4;
     Quaternion quat(qdata[0], qdata[1], qdata[2], qdata[3]);
+    quat.normalize();
     return quat;
 }
 
@@ -327,14 +332,18 @@ void ClusterConnector::buildClustersForPTM(){
 
         initializePTMClusterOrientation(cluster, seedAtomIndex);
 
+        int bestSym = _context.templateIndex->getInt(seedAtomIndex);
+        cluster->symmetryTransformation = bestSym;
+        _context.atomSymmetryPermutations->setInt(seedAtomIndex, bestSym);
+
         std::deque<int> atomsToVisit{ int(seedAtomIndex) };
-        growClusterPTM(cluster, atomsToVisit, structureType);
+        growClusterPTM(cluster, atomsToVisit, structureType, bestSym);
     }
 
     reorientAtomsToAlignClusters();
 }
 
-void ClusterConnector::growClusterPTM(Cluster* cluster, std::deque<int>& atomsToVisit, int structureType){
+void ClusterConnector::growClusterPTM(Cluster* cluster, std::deque<int>& atomsToVisit, int structureType, int symmetryIndex){
     while(!atomsToVisit.empty()){
         int currentAtom = atomsToVisit.front();
         atomsToVisit.pop_front();
@@ -348,6 +357,7 @@ void ClusterConnector::growClusterPTM(Cluster* cluster, std::deque<int>& atomsTo
             if(areOrientationsCompatible(currentAtom, neighbor, structureType)){
                 _context.atomClusters->setInt(neighbor, cluster->id);
                 cluster->atomCount++;
+                _context.atomSymmetryPermutations->setInt(neighbor, symmetryIndex);
                 atomsToVisit.push_back(neighbor);
             }
         }
@@ -457,10 +467,10 @@ void ClusterConnector::growCluster(
 }
 
 void ClusterConnector::buildClusters(){
-    // baseBuildClusters();
-
     if(_sa.usingPTM()){
        buildClustersForPTM();
+    }else{
+        baseBuildClusters();
     }
 
     spdlog::info("Number of clusters: {}", _sa.clusterGraph().clusters().size() - 1);

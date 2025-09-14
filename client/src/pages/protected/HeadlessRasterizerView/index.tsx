@@ -106,7 +106,7 @@ const RasterView: React.FC = () => {
                             />
                         ))
                     ) : (
-                        analysisThumbnails.map((analysis, index) => (
+                        analysisThumbnails.map((analysis, index) => (   
                             <img
                                 key={`${analysis.frame}-${analysis.filename}-thumb`}
                                 className='raster-thumbnail'

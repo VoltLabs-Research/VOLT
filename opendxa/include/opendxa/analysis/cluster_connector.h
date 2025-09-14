@@ -28,7 +28,7 @@ private:
 	void buildClustersForPTM();
 	void baseBuildClusters();
 	void initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex);
-	void growClusterPTM(Cluster* cluster, std::deque<int>& atomsToVisit, int structureType);
+void growClusterPTM(Cluster* cluster, std::deque<int>& atomsToVisit, int structureType, int symmetryIndex);
 	void growCluster(
 		Cluster* cluster,
 		std::deque<int>& atomsToVisit,

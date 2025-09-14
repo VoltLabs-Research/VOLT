@@ -48,6 +48,8 @@ public:
 	);
 
 	void identifyStructuresCNA();
+	template<typename NeighborFinderType>
+	void identifyStructuresWithNeighborFinder();
 	void computeMaximumNeighborDistanceFromPTM();
 	void determineLocalStructuresWithPTM();
 
