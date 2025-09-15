@@ -1,34 +1,34 @@
+// HeadlessRasterizerView.tsx
 import { TbCube3dSphere } from "react-icons/tb";
-import { useEffect, useRef, useState, useCallback, useMemo } from "react"
-import { useParams } from "react-router-dom"
-import { motion, AnimatePresence } from "framer-motion"
-import { GoArrowUpRight } from "react-icons/go"
-import { IoPlayOutline, IoPauseOutline, IoSearchOutline, IoLogInOutline } from "react-icons/io5"
-import Skeleton from "@mui/material/Skeleton"
-import useRasterStore from "@/stores/raster"
-import Select from "@/components/atoms/form/Select"
-import "./HeadlessRasterizerView.css"
-import { BsArrowLeft } from "react-icons/bs"
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { IoPlayOutline, IoPauseOutline, IoSearchOutline, IoLogInOutline } from "react-icons/io5";
+import Skeleton from "@mui/material/Skeleton";
+import useRasterStore from "@/stores/raster";
+import Select from "@/components/atoms/form/Select";
+import "./HeadlessRasterizerView.css";
+import { BsArrowLeft } from "react-icons/bs";
 
 interface RasterSceneProps {
-  scene: { frame: number; model: string; data: string } | null
-  trajectory: any
-  disableAnimation?: boolean
-  isPlaying: boolean
-  onPlayPause: () => void
-  onPrev: () => void
-  onNext: () => void
-  analysesNames: { _id: string; name: string }[]
-  selectedAnalysis: string | null
-  setSelectedAnalysis: (id: string | null) => void
-  modelsForCurrentFrame: any[]
-  selectedModel: string
-  setSelectedModel: (m: string) => void
+  scene: { frame: number; model: string; data: string } | null;
+  trajectory: any;
+  disableAnimation?: boolean;
+  isPlaying: boolean;
+  onPlayPause: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  analysesNames: { _id: string; name: string }[];
+  selectedAnalysis: string | null;
+  setSelectedAnalysis: (id: string | null) => void;
+  modelsForCurrentFrame: any[];
+  selectedModel: string;
+  setSelectedModel: (m: string) => void;
+  isLoading?: boolean;
 }
 
 const RasterScene: React.FC<RasterSceneProps> = ({
   scene,
-  trajectory,
   disableAnimation,
   isPlaying,
   onPlayPause,
@@ -38,39 +38,94 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   modelsForCurrentFrame,
   selectedModel,
   setSelectedModel,
+  isLoading = false,
 }) => {
-  const pickerDockWidth = 132
+  const pickerDockWidth = 132;
 
+  // ========= SKELETON ABSOLUTO (separado del loader del canvas) =========
+  if (isLoading) {
+    return (
+      <figure className="raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
+        {/* Loader del canvas (rectangular, ocupa la zona de imagen) */}
+        <div className="raster-scene-main">
+          <Skeleton
+            variant="rectangular"
+            animation="wave"
+            width="100%"
+            height="100%"
+            sx={{ borderRadius: "0.75rem", bgcolor: "rgba(255,255,255,0.06)" }}
+          />
+        </div>
+
+        {/* Overlays absolutos */}
+        <div className="raster-skel raster-skel-select">
+          <Skeleton variant="rounded" animation="wave" height={40} sx={{ borderRadius: "0.75rem", bgcolor: "rgba(255,255,255,0.10)" }} />
+        </div>
+
+        <div className="raster-skel raster-skel-frame">
+          <Skeleton variant="rounded" animation="wave" width={140} height={36} sx={{ borderRadius: "9999px", bgcolor: "rgba(255,255,255,0.10)" }} />
+        </div>
+
+        <div className="raster-skel raster-skel-playback">
+          <Skeleton variant="rounded" animation="wave" width={180} height={42} sx={{ borderRadius: "9999px", bgcolor: "rgba(255,255,255,0.12)" }} />
+        </div>
+
+        <div className="raster-skel raster-skel-rail" style={{ width: `${pickerDockWidth}px` }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton
+              key={`rail-skel-${i}`}
+              variant="rounded"
+              animation="wave"
+              height={84}
+              width="100%"
+              sx={{ borderRadius: "0.75rem", bgcolor: "rgba(255,255,255,0.08)" }}
+            />
+          ))}
+        </div>
+      </figure>
+    );
+  }
+
+  // ========= Estado con datos =========
   useEffect(() => {
-    if (!modelsForCurrentFrame?.length) return
+    if (!modelsForCurrentFrame?.length) return;
     if (!modelsForCurrentFrame.some((m: any) => m.model === selectedModel)) {
-      setSelectedModel(modelsForCurrentFrame[0].model)
+      setSelectedModel(modelsForCurrentFrame[0].model);
     }
-  }, [modelsForCurrentFrame, selectedModel, setSelectedModel])
+  }, [modelsForCurrentFrame, selectedModel, setSelectedModel]);
 
-  const [railOpen, setRailOpen] = useState(false)
+  const [railOpen, setRailOpen] = useState(false);
   const selectedThumb = useMemo(
     () =>
       (modelsForCurrentFrame || []).find((m: any) => m.model === selectedModel) ||
       (modelsForCurrentFrame || [])[0],
     [modelsForCurrentFrame, selectedModel]
-  )
+  );
   const restThumbs = useMemo(
     () => (modelsForCurrentFrame || []).filter((m: any) => m.model !== selectedThumb?.model),
     [modelsForCurrentFrame, selectedThumb]
-  )
+  );
 
   if (!scene) {
+    // Seguridad por si llega null fuera del loading
     return (
       <figure className="raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
-        <Skeleton variant="rectangular" width="100%" height="100%" sx={{ borderRadius: "1rem" }} />
+        <div className="raster-scene-main">
+          <Skeleton
+            variant="rectangular"
+            animation="wave"
+            width="100%"
+            height="100%"
+            sx={{ borderRadius: "0.75rem", bgcolor: "rgba(255,255,255,0.06)" }}
+          />
+        </div>
       </figure>
-    )
+    );
   }
 
   return (
     <figure className="raster-scene-container" style={{ flex: 1, minWidth: 0, position: "relative" }}>
-      {/* TOPBAR */}
+      {/* TOPBAR: solo selector centrado */}
       <div className="raster-scene-topbar">
         <div className="raster-scene-topbar-center">
           <div className="raster-analysis-selection-container">
@@ -124,7 +179,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
         </div>
       </div>
 
-      {/* RAIL */}
+      {/* RAIL (hover para expandir) */}
       {selectedThumb && (
         <motion.div
           className="raster-rail-container"
@@ -149,7 +204,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
               height: 84,
               objectFit: "cover",
               borderRadius: "0.75rem",
-              border: "1px solid #6366F1",
+              border: "1px solid var(--accent)",
               cursor: "pointer",
               flexShrink: 0,
             }}
@@ -182,147 +237,169 @@ const RasterScene: React.FC<RasterSceneProps> = ({
         </motion.div>
       )}
     </figure>
-  )
-}
+  );
+};
 
-const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4)
+const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4);
 
 const smoothScrollIntoView = (container: HTMLElement, target: HTMLElement) => {
-  const start = container.scrollLeft
-  const end = target.offsetLeft - container.clientWidth / 2 + target.clientWidth / 2
-  const distance = end - start
-  const duration = 800
-  let startTime: number | null = null
+  const start = container.scrollLeft;
+  const end = target.offsetLeft - container.clientWidth / 2 + target.clientWidth / 2;
+  const distance = end - start;
+  const duration = 800;
+  let startTime: number | null = null;
   const step = (timestamp: number) => {
-    if (!startTime) startTime = timestamp
-    const elapsed = timestamp - startTime
-    const progress = Math.min(elapsed / duration, 1)
-    const eased = easeOutQuart(progress)
-    container.scrollLeft = start + distance * eased
-    if (elapsed < duration) requestAnimationFrame(step)
-  }
-  requestAnimationFrame(step)
-}
+    if (!startTime) startTime = timestamp;
+    const elapsed = timestamp - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = easeOutQuart(progress);
+    container.scrollLeft = start + distance * eased;
+    if (elapsed < duration) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+};
 
 const RasterView: React.FC = () => {
-  const { trajectoryId } = useParams<{ trajectoryId: string }>()
-  const { trajectory, analyses, analysesNames, getRasterFrames, isLoading } = useRasterStore()
+  const navigate = useNavigate();
+  const { trajectoryId } = useParams<{ trajectoryId: string }>();
+  const { trajectory, analyses, analysesNames, getRasterFrames, isLoading } = useRasterStore();
 
-  const [selectedAnalysisLeft, setSelectedAnalysisLeft] = useState<string | null>(null)
-  const [selectedAnalysisRight, setSelectedAnalysisRight] = useState<string | null>(null)
+  const [selectedAnalysisLeft, setSelectedAnalysisLeft] = useState<string | null>(null);
+  const [selectedAnalysisRight, setSelectedAnalysisRight] = useState<string | null>(null);
 
-  const [selectedModelLeft, setSelectedModelLeft] = useState("preview")
-  const [selectedModelRight, setSelectedModelRight] = useState("preview")
+  const [selectedModelLeft, setSelectedModelLeft] = useState("preview");
+  const [selectedModelRight, setSelectedModelRight] = useState("preview");
 
-  const [selectedFrameIndex, setSelectedFrameIndex] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(false)
+  const [selectedFrameIndex, setSelectedFrameIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  const thumbnailsRef = useRef<HTMLDivElement>(null)
-  const thumbnailItemsRef = useRef<(HTMLDivElement | null)[]>([])
-
-  useEffect(() => {
-    if (trajectoryId) getRasterFrames(trajectoryId)
-  }, [trajectoryId, getRasterFrames])
+  const thumbnailsRef = useRef<HTMLDivElement>(null);
+  const thumbnailItemsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
-    if (!analysesNames?.length) return
+    if (trajectoryId) getRasterFrames(trajectoryId);
+  }, [trajectoryId, getRasterFrames]);
+
+  useEffect(() => {
+    if (!analysesNames?.length) return;
     if (analysesNames.length >= 2) {
-      setSelectedAnalysisLeft(analysesNames[0]._id)
-      setSelectedAnalysisRight(analysesNames[1]._id)
+      setSelectedAnalysisLeft(analysesNames[0]._id);
+      setSelectedAnalysisRight(analysesNames[1]._id);
     } else {
-      setSelectedAnalysisLeft(analysesNames[0]._id)
-      setSelectedAnalysisRight(analysesNames[0]._id)
-      setSelectedModelRight("atoms_colored_by_type")
+      setSelectedAnalysisLeft(analysesNames[0]._id);
+      setSelectedAnalysisRight(analysesNames[0]._id);
+      setSelectedModelRight("atoms_colored_by_type");
     }
-  }, [analysesNames])
+  }, [analysesNames]);
 
   const getSortedFrames = (analysisId: string | null) => {
-    if (!analysisId) return []
-    const a = analyses?.[analysisId]
-    if (!a?.frames) return []
-    const frames = Object.values(a.frames)
+    if (!analysisId) return [];
+    const a = analyses?.[analysisId];
+    if (!a?.frames) return [];
+    const frames = Object.values(a.frames);
     // @ts-ignore
-    return frames.sort((x: any, y: any) => x.frame - y.frame)
-  }
+    return frames.sort((x: any, y: any) => x.frame - y.frame);
+  };
 
-  const sortedFramesLeft = useMemo(() => getSortedFrames(selectedAnalysisLeft), [selectedAnalysisLeft, analyses])
-  const sortedFramesRight = useMemo(() => getSortedFrames(selectedAnalysisRight), [selectedAnalysisRight, analyses])
+  const sortedFramesLeft = useMemo(() => getSortedFrames(selectedAnalysisLeft), [selectedAnalysisLeft, analyses]);
+  const sortedFramesRight = useMemo(() => getSortedFrames(selectedAnalysisRight), [selectedAnalysisRight, analyses]);
 
-  const currentFrameLeft = sortedFramesLeft.length ? sortedFramesLeft[selectedFrameIndex % sortedFramesLeft.length] : null
-  const currentFrameRight = sortedFramesRight.length ? sortedFramesRight[selectedFrameIndex % sortedFramesRight.length] : null
+  const currentFrameLeft = sortedFramesLeft.length ? sortedFramesLeft[selectedFrameIndex % sortedFramesLeft.length] : null;
+  const currentFrameRight = sortedFramesRight.length ? sortedFramesRight[selectedFrameIndex % sortedFramesRight.length] : null;
 
-  const currentSceneLeft = currentFrameLeft ? (currentFrameLeft as any)[selectedModelLeft] || (currentFrameLeft as any)["preview"] : null
-  let currentSceneRight = currentFrameRight ? (currentFrameRight as any)[selectedModelRight] : null
-  if (!currentSceneRight && currentFrameRight) {
-    currentSceneRight = (currentFrameRight as any)["preview"]
-  }
+  const currentSceneLeft = currentFrameLeft ? (currentFrameLeft as any)[selectedModelLeft] || (currentFrameLeft as any)["preview"] : null;
+  let currentSceneRight = currentFrameRight ? (currentFrameRight as any)[selectedModelRight] : null;
+  if (!currentSceneRight && currentFrameRight) currentSceneRight = (currentFrameRight as any)["preview"];
 
-  const refFrames = sortedFramesLeft.length ? sortedFramesLeft : sortedFramesRight
+  const refFrames = sortedFramesLeft.length ? sortedFramesLeft : sortedFramesRight;
 
   useEffect(() => {
-    if (!isPlaying || refFrames.length === 0) return
-    const interval = setInterval(() => handleNext(), 300)
-    return () => clearInterval(interval)
+    if (!isPlaying || refFrames.length === 0) return;
+    const id = setInterval(() => handleNext(), 300);
+    return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying, refFrames, selectedFrameIndex])
+  }, [isPlaying, refFrames, selectedFrameIndex]);
 
   useEffect(() => {
     if (thumbnailsRef.current && thumbnailItemsRef.current[selectedFrameIndex]) {
-      smoothScrollIntoView(thumbnailsRef.current, thumbnailItemsRef.current[selectedFrameIndex]!)
+      smoothScrollIntoView(thumbnailsRef.current, thumbnailItemsRef.current[selectedFrameIndex]!);
     }
-  }, [selectedFrameIndex])
+  }, [selectedFrameIndex]);
 
-  const handlePlayPause = () => setIsPlaying((prev) => !prev)
+  const handlePlayPause = () => setIsPlaying((prev) => !prev);
   const handlePrev = () => {
-    const len = refFrames.length
-    if (!len) return
-    setSelectedFrameIndex((prev) => (prev - 1 + len) % len)
-  }
+    const len = refFrames.length;
+    if (!len) return;
+    setSelectedFrameIndex((prev) => (prev - 1 + len) % len);
+  };
   const handleNext = () => {
-    const len = refFrames.length
-    if (!len) return
-    setSelectedFrameIndex((prev) => (prev + 1) % len)
-  }
+    const len = refFrames.length;
+    if (!len) return;
+    setSelectedFrameIndex((prev) => (prev + 1) % len);
+  };
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.ctrlKey && e.key === "Enter") setIsPlaying((prev) => !prev)
-  }, [])
+    if (e.ctrlKey && e.key === "Enter") setIsPlaying((prev) => !prev);
+  }, []);
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [handleKeyDown])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
-  const thumbnailsFrames = refFrames
-  const thumbnailsModel = refFrames === sortedFramesLeft ? selectedModelLeft : selectedModelRight
+  const thumbnailsFrames = refFrames;
+  const thumbnailsModel = refFrames === sortedFramesLeft ? selectedModelLeft : selectedModelRight;
 
-  const handleSignIn = () => {
-    console.log("Sign in clicked")
-  }
-  const handleView3D = () => {
-    console.log("View in 3D clicked")
-    // Aquí puedes abrir tu visor 3D, navegar o disparar un modal
-  }
+  const handleSignIn = () => console.log("Sign in clicked");
+  const handleView3D = () => console.log("View in 3D clicked");
 
   return (
     <main className="raster-view-container">
+      {/* HEADER con skeleton del bloque solicitado */}
       <div className="raster-scene-header-container">
         <div className="raster-scene-header-left-container">
-          <i className="raster-scene-header-go-back-icon-container">
+          <i 
+            className="raster-scene-header-go-back-icon-container"
+            onClick={() => navigate('/dashboard')}
+          >
             <BsArrowLeft />
           </i>
+
           <div className="raster-scene-header-team-container">
-            <h3 className="raster-scene-header-title">{trajectory?.name}</h3>
-            <p className="raster-scene-header-last-edited">Last Edited by Rodolfo H</p>
+            {isLoading ? (
+              <>
+                {/* Title skeleton */}
+                <Skeleton
+                  variant="rounded"
+                  animation="wave"
+                  width={220}
+                  height={22}
+                  sx={{ borderRadius: "6px", bgcolor: "rgba(255,255,255,0.12)" }}
+                />
+                {/* Subtitle skeleton */}
+                <Skeleton
+                  variant="rounded"
+                  animation="wave"
+                  width={180}
+                  height={14}
+                  sx={{ borderRadius: "6px", mt: 0.75, bgcolor: "rgba(255,255,255,0.08)" }}
+                />
+              </>
+            ) : (
+              <>
+                <h3 className="raster-scene-header-title">{trajectory?.name}</h3>
+                <p className="raster-scene-header-last-edited">Last Edited by Rodolfo H</p>
+              </>
+            )}
           </div>
         </div>
 
         <div className="raster-scene-header-search-container">
-          <div className='dashboard-search-container'>
-            <div className='search-container'>
-              <i className='search-icon-container'>
+          <div className="dashboard-search-container">
+            <div className="search-container">
+              <i className="search-icon-container">
                 <IoSearchOutline />
               </i>
-              <input placeholder='Search uploaded team trajectories' className='search-input '/>
+              <input placeholder="Search uploaded team trajectories" className="search-input " />
             </div>
           </div>
         </div>
@@ -354,66 +431,79 @@ const RasterView: React.FC = () => {
         </div>
       </div>
 
+      {/* ESCENAS */}
       <div className="raster-scenes-container" style={{ position: "relative" }}>
         <div className="raster-scenes-top-container" style={{ alignItems: "stretch", gap: ".75rem" }}>
-          {isLoading ? (
-            <>
-              <div className="raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
-                <Skeleton variant="rectangular" width="100%" height="100%" sx={{ borderRadius: "1rem" }} />
-              </div>
-              <div className="raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
-                <Skeleton variant="rectangular" width="100%" height="100%" sx={{ borderRadius: "1rem" }} />
-              </div>
-            </>
-          ) : (
-            <>
-              <motion.div style={{ flex: 1, minWidth: 0 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                <RasterScene
-                  scene={currentSceneLeft}
-                  trajectory={trajectory}
-                  disableAnimation={isPlaying}
-                  isPlaying={isPlaying}
-                  onPlayPause={handlePlayPause}
-                  onPrev={handlePrev}
-                  onNext={handleNext}
-                  analysesNames={analysesNames}
-                  selectedAnalysis={selectedAnalysisLeft}
-                  setSelectedAnalysis={setSelectedAnalysisLeft}
-                  modelsForCurrentFrame={currentFrameLeft ? Object.values(currentFrameLeft as any) : []}
-                  selectedModel={selectedModelLeft}
-                  setSelectedModel={setSelectedModelLeft}
-                />
-              </motion.div>
-              <motion.div style={{ flex: 1, minWidth: 0 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-                <RasterScene
-                  scene={currentSceneRight}
-                  trajectory={trajectory}
-                  disableAnimation={isPlaying}
-                  isPlaying={isPlaying}
-                  onPlayPause={handlePlayPause}
-                  onPrev={handlePrev}
-                  onNext={handleNext}
-                  analysesNames={analysesNames}
-                  selectedAnalysis={selectedAnalysisRight}
-                  setSelectedAnalysis={setSelectedAnalysisRight}
-                  modelsForCurrentFrame={currentFrameRight ? Object.values(currentFrameRight as any) : []}
-                  selectedModel={selectedModelRight}
-                  setSelectedModel={setSelectedModelRight}
-                />
-              </motion.div>
-            </>
-          )}
+          <motion.div style={{ flex: 1, minWidth: 0 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <RasterScene
+              scene={currentSceneLeft}
+              trajectory={trajectory}
+              disableAnimation={isPlaying}
+              isPlaying={isPlaying}
+              onPlayPause={handlePlayPause}
+              onPrev={handlePrev}
+              onNext={handleNext}
+              analysesNames={analysesNames}
+              selectedAnalysis={selectedAnalysisLeft}
+              setSelectedAnalysis={setSelectedAnalysisLeft}
+              modelsForCurrentFrame={currentFrameLeft ? Object.values(currentFrameLeft as any) : []}
+              selectedModel={selectedModelLeft}
+              setSelectedModel={setSelectedModelLeft}
+              isLoading={isLoading}
+            />
+          </motion.div>
+
+          <motion.div style={{ flex: 1, minWidth: 0 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+            <RasterScene
+              scene={currentSceneRight}
+              trajectory={trajectory}
+              disableAnimation={isPlaying}
+              isPlaying={isPlaying}
+              onPlayPause={handlePlayPause}
+              onPrev={handlePrev}
+              onNext={handleNext}
+              analysesNames={analysesNames}
+              selectedAnalysis={selectedAnalysisRight}
+              setSelectedAnalysis={setSelectedAnalysisRight}
+              modelsForCurrentFrame={currentFrameRight ? Object.values(currentFrameRight as any) : []}
+              selectedModel={selectedModelRight}
+              setSelectedModel={setSelectedModelRight}
+              isLoading={isLoading}
+            />
+          </motion.div>
         </div>
-        {/* Thumbnails */}
+
+        {/* THUMBNAILS */}
         <div className="raster-thumbnails" ref={thumbnailsRef} style={{ paddingBlock: ".25rem" }}>
           {isLoading || !thumbnailsFrames.length
-            ? Array.from({ length: 10 }).map((_, i) => (
-                <Skeleton key={i} variant="rectangular" width={280} height={200} sx={{ borderRadius: "1rem", flexShrink: 0 }} />
+            ? Array.from({ length: 8 }).map((_, i) => (
+                <div key={`thumb-skel-${i}`} className="raster-thumbnail-container" style={{ position: "relative" }}>
+                  <Skeleton
+                    variant="rectangular"
+                    animation="wave"
+                    width={280}
+                    height={160}
+                    sx={{ borderRadius: "0.75rem", bgcolor: "rgba(255,255,255,0.06)" }}
+                  />
+                  <Skeleton
+                    variant="rounded"
+                    animation="wave"
+                    width={58}
+                    height={26}
+                    sx={{
+                      position: "absolute",
+                      top: 10,
+                      right: 10,
+                      borderRadius: "9999px",
+                      bgcolor: "rgba(255,255,255,0.10)",
+                    }}
+                  />
+                </div>
               ))
             : thumbnailsFrames.map((frame: any, index: number) => {
-                const modelData = frame[thumbnailsModel] || frame["preview"]
-                if (!modelData) return null
-                const isActive = index === selectedFrameIndex
+                const modelData = frame[thumbnailsModel] || frame["preview"];
+                if (!modelData) return null;
+                const isActive = index === selectedFrameIndex;
                 return (
                   <motion.div
                     key={`${modelData.frame}-${modelData.model}-container`}
@@ -433,12 +523,12 @@ const RasterView: React.FC = () => {
                     </div>
                     <img className="raster-thumbnail" src={modelData.data} alt={`${modelData.model} - Frame ${modelData.frame}`} />
                   </motion.div>
-                )
+                );
               })}
         </div>
       </div>
     </main>
-  )
-}
+  );
+};
 
-export default RasterView
+export default RasterView;

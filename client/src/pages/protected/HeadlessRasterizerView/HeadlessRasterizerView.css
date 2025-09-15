@@ -161,6 +161,12 @@
 .raster-scene-header-team-container{ display: flex; flex-direction: column; gap: .5rem; }
 .raster-scene-header-go-back-icon-container{
   color: #dadada; font-size: 1.3rem; width: 70px; display: flex; justify-content: center; align-items: center;
+  transition: .2s;
+  cursor: pointer;
+}
+
+.raster-scene-header-go-back-icon-container:hover{
+  opacity: .8;
 }
 
 .raster-scenes-container{
@@ -286,4 +292,59 @@
   .raster-scene-topbar { flex-direction: column; align-items: flex-start; gap: .5rem; }
   .raster-scene-topbar-center { min-width: unset; max-width: 100%; flex: 1; }
   .btn-chip { width: 100%; justify-content: center; }
+}
+
+/* ====== SKELETON OVERLAYS (ABSOLUTOS) ======
+   Se muestran como capas aparte del loader del canvas.
+   NO cambian colores ni layout existente. */
+.raster-skel{
+  position: absolute;
+  z-index: 3;              /* sobre el rectángulo del canvas y bajo la UI real */
+  pointer-events: none;    /* no bloquea interacciones cuando haya UI real */
+}
+
+/* Selector centrado arriba (mismo ancho aproximado del select real) */
+.raster-skel-select{
+  top: .75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  max-width: 520px;
+  min-width: 200px;
+  padding: 0 .75rem;       /* separa visualmente del borde */
+}
+
+/* Chip/frame (esquina inferior izquierda) */
+.raster-skel-frame{
+  bottom: .9rem;
+  left: .9rem;
+}
+
+/* Playback centrado abajo */
+.raster-skel-playback{
+  bottom: .75rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Rail vertical a la derecha (mismo stack que el real) */
+.raster-skel-rail{
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  max-height: 75%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Pequeño ajuste responsive para que no tape en móviles */
+@media (max-width: 1024px){
+  .raster-skel-select{ width: 60%; }
+  .raster-skel-rail{ top: auto; bottom: .5rem; transform: none; }
+}
+
+@media (max-width: 600px){
+  .raster-skel-select{ width: 80%; }
 }
