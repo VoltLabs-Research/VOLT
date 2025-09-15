@@ -118,6 +118,16 @@ const App = () => {
                                 </PageWrapper>
                             }
                         />
+
+                        <Route
+                            path='/raster/:trajectoryId'
+                            element={
+                                <PageWrapper>
+                                    <HeadlessRasterizerView />
+                                </PageWrapper>
+                            }
+                        />
+
                         <Route element={<DashboardLayout />}>
                             <Route
                                 path='/dashboard'
@@ -133,15 +143,6 @@ const App = () => {
                                 element={
                                     <PageWrapper>
                                         <TrajectoriesListing />
-                                    </PageWrapper>
-                                }
-                            />
-
-                            <Route
-                                path='/raster/:trajectoryId'
-                                element={
-                                    <PageWrapper>
-                                        <HeadlessRasterizerView />
                                     </PageWrapper>
                                 }
                             />

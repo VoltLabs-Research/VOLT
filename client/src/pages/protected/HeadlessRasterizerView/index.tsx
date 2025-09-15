@@ -1,12 +1,14 @@
+import { TbCube3dSphere } from "react-icons/tb";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { useParams } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { GoArrowUpRight } from "react-icons/go"
-import { IoPlayOutline, IoPauseOutline, IoChevronBack, IoChevronForward } from "react-icons/io5"
+import { IoPlayOutline, IoPauseOutline, IoSearchOutline, IoLogInOutline } from "react-icons/io5"
 import Skeleton from "@mui/material/Skeleton"
 import useRasterStore from "@/stores/raster"
 import Select from "@/components/atoms/form/Select"
 import "./HeadlessRasterizerView.css"
+import { BsArrowLeft } from "react-icons/bs"
 
 interface RasterSceneProps {
   scene: { frame: number; model: string; data: string } | null
@@ -22,7 +24,6 @@ interface RasterSceneProps {
   modelsForCurrentFrame: any[]
   selectedModel: string
   setSelectedModel: (m: string) => void
-  showInlineModelPicker?: boolean
 }
 
 const RasterScene: React.FC<RasterSceneProps> = ({
@@ -31,19 +32,15 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   disableAnimation,
   isPlaying,
   onPlayPause,
-  onPrev,
-  onNext,
   analysesNames,
   selectedAnalysis,
   setSelectedAnalysis,
   modelsForCurrentFrame,
   selectedModel,
   setSelectedModel,
-  showInlineModelPicker = false,
 }) => {
-  const pickerDockWidth = 132 // ancho del rail en split
+  const pickerDockWidth = 132
 
-  // Asegura que siempre haya un seleccionado válido
   useEffect(() => {
     if (!modelsForCurrentFrame?.length) return
     if (!modelsForCurrentFrame.some((m: any) => m.model === selectedModel)) {
@@ -51,7 +48,6 @@ const RasterScene: React.FC<RasterSceneProps> = ({
     }
   }, [modelsForCurrentFrame, selectedModel, setSelectedModel])
 
-  // Rail: cerrado = solo seleccionado; abierto (hover) = todos
   const [railOpen, setRailOpen] = useState(false)
   const selectedThumb = useMemo(
     () =>
@@ -74,14 +70,8 @@ const RasterScene: React.FC<RasterSceneProps> = ({
 
   return (
     <figure className="raster-scene-container" style={{ flex: 1, minWidth: 0, position: "relative" }}>
-      {/* TOPBAR (sin absolute) */}
+      {/* TOPBAR */}
       <div className="raster-scene-topbar">
-        <div className="raster-scene-topbar-left">
-          <div className="raster-view-trajectory-name-container raster-chip">
-            <h3 className="raster-view-trajectory-name" title={trajectory?.name}>{trajectory?.name}</h3>
-          </div>
-        </div>
-
         <div className="raster-scene-topbar-center">
           <div className="raster-analysis-selection-container">
             <Select
@@ -94,14 +84,9 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             />
           </div>
         </div>
-
-        <button className="raster-view-trajectory-editor-icon-container btn-chip" title="Ver en Editor">
-          <span className="raster-floating-helper-text">View in Editor</span>
-          <GoArrowUpRight />
-        </button>
       </div>
 
-      {/* CANVAS (reserva espacio lateral si hay rail) */}
+      {/* CANVAS */}
       <div className="raster-scene-main">
         {disableAnimation ? (
           <img
@@ -128,25 +113,19 @@ const RasterScene: React.FC<RasterSceneProps> = ({
         )}
       </div>
 
-      {/* BOTTOMBAR (frame + playback) */}
+      {/* BOTTOMBAR */}
       <div className="raster-scene-bottombar">
-        <div className="raster-view-trajectory-frame-container raster-chip">
-          <span className="raster-view-trajectory-frame">Frame {scene.frame}</span>
-        </div>
-
         <div className="raster-view-trajectory-playback-container">
-          <IoChevronBack onClick={onPrev} className="raster-view-trajectory-play-icon" />
           {isPlaying ? (
             <IoPauseOutline onClick={onPlayPause} className="raster-view-trajectory-play-icon" />
           ) : (
             <IoPlayOutline onClick={onPlayPause} className="raster-view-trajectory-play-icon" />
           )}
-          <IoChevronForward onClick={onNext} className="raster-view-trajectory-play-icon" />
         </div>
       </div>
 
-      {/* RAIL de modelos: solo seleccionado; en hover muestra todos */}
-      {showInlineModelPicker && selectedThumb && (
+      {/* RAIL */}
+      {selectedThumb && (
         <motion.div
           className="raster-rail-container"
           style={{ width: `${pickerDockWidth}px` }}
@@ -155,7 +134,6 @@ const RasterScene: React.FC<RasterSceneProps> = ({
           initial={false}
           transition={{ duration: 0.2 }}
         >
-          {/* Siempre visible: seleccionado */}
           <motion.img
             key={`sel-${selectedThumb.frame}-${selectedThumb.model}`}
             className={`raster-analysis-scene selected`}
@@ -177,7 +155,6 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             }}
           />
 
-          {/* En hover: el resto */}
           <AnimatePresence>
             {railOpen &&
               restThumbs.map((m: any) => (
@@ -231,8 +208,6 @@ const RasterView: React.FC = () => {
   const { trajectoryId } = useParams<{ trajectoryId: string }>()
   const { trajectory, analyses, analysesNames, getRasterFrames, isLoading } = useRasterStore()
 
-  const [splitMode, setSplitMode] = useState(false)
-
   const [selectedAnalysisLeft, setSelectedAnalysisLeft] = useState<string | null>(null)
   const [selectedAnalysisRight, setSelectedAnalysisRight] = useState<string | null>(null)
 
@@ -251,9 +226,15 @@ const RasterView: React.FC = () => {
 
   useEffect(() => {
     if (!analysesNames?.length) return
-    if (!selectedAnalysisLeft) setSelectedAnalysisLeft(analysesNames[0]._id)
-    if (!selectedAnalysisRight) setSelectedAnalysisRight(analysesNames[1]?._id ?? analysesNames[0]._id)
-  }, [analysesNames, selectedAnalysisLeft, selectedAnalysisRight])
+    if (analysesNames.length >= 2) {
+      setSelectedAnalysisLeft(analysesNames[0]._id)
+      setSelectedAnalysisRight(analysesNames[1]._id)
+    } else {
+      setSelectedAnalysisLeft(analysesNames[0]._id)
+      setSelectedAnalysisRight(analysesNames[0]._id)
+      setSelectedModelRight("atoms_colored_by_type")
+    }
+  }, [analysesNames])
 
   const getSortedFrames = (analysisId: string | null) => {
     if (!analysisId) return []
@@ -271,7 +252,10 @@ const RasterView: React.FC = () => {
   const currentFrameRight = sortedFramesRight.length ? sortedFramesRight[selectedFrameIndex % sortedFramesRight.length] : null
 
   const currentSceneLeft = currentFrameLeft ? (currentFrameLeft as any)[selectedModelLeft] || (currentFrameLeft as any)["preview"] : null
-  const currentSceneRight = currentFrameRight ? (currentFrameRight as any)[selectedModelRight] || (currentFrameRight as any)["preview"] : null
+  let currentSceneRight = currentFrameRight ? (currentFrameRight as any)[selectedModelRight] : null
+  if (!currentSceneRight && currentFrameRight) {
+    currentSceneRight = (currentFrameRight as any)["preview"]
+  }
 
   const refFrames = sortedFramesLeft.length ? sortedFramesLeft : sortedFramesRight
 
@@ -311,64 +295,78 @@ const RasterView: React.FC = () => {
   const thumbnailsFrames = refFrames
   const thumbnailsModel = refFrames === sortedFramesLeft ? selectedModelLeft : selectedModelRight
 
+  const handleSignIn = () => {
+    console.log("Sign in clicked")
+  }
+  const handleView3D = () => {
+    console.log("View in 3D clicked")
+    // Aquí puedes abrir tu visor 3D, navegar o disparar un modal
+  }
+
   return (
     <main className="raster-view-container">
-      <div className="raster-scenes-container" style={{ position: "relative" }}>
-        {/* Toggle Split / Single */}
-        <motion.button
-          onClick={() => setSplitMode((v) => !v)}
-          aria-pressed={splitMode}
-          whileTap={{ scale: 0.96 }}
-          whileHover={{ scale: 1.03 }}
-          transition={{ type: "spring", stiffness: 300, damping: 22 }}
-          style={{
-            position: "absolute",
-            top: "0.75rem",
-            right: "0.75rem",
-            zIndex: 10,
-            background: "#161616",
-            color: "#dadada",
-            border: "1px solid #323232",
-            borderRadius: "9999px",
-            padding: ".6rem 1rem",
-            fontWeight: 600,
-            fontSize: ".9rem",
-            boxShadow: splitMode ? "0 12px 32px rgba(99,102,241,0.45)" : "0 8px 20px rgba(0,0,0,0.35)",
-          }}
-          title={splitMode ? "Volver a vista simple" : "Activar vista dividida"}
-        >
-          {splitMode ? "Split: ON" : "Split: OFF"}
-        </motion.button>
+      <div className="raster-scene-header-container">
+        <div className="raster-scene-header-left-container">
+          <i className="raster-scene-header-go-back-icon-container">
+            <BsArrowLeft />
+          </i>
+          <div className="raster-scene-header-team-container">
+            <h3 className="raster-scene-header-title">{trajectory?.name}</h3>
+            <p className="raster-scene-header-last-edited">Last Edited by Rodolfo H</p>
+          </div>
+        </div>
 
-        <div
-          className="raster-scenes-top-container"
-          style={{
-            alignItems: "stretch",
-            gap: splitMode ? ".75rem" : "1rem",
-          }}
-        >
+        <div className="raster-scene-header-search-container">
+          <div className='dashboard-search-container'>
+            <div className='search-container'>
+              <i className='search-icon-container'>
+                <IoSearchOutline />
+              </i>
+              <input placeholder='Search uploaded team trajectories' className='search-input '/>
+            </div>
+          </div>
+        </div>
+
+        <div className="raster-scene-header-nav-container">
+          <motion.button
+            className="btn-3d"
+            aria-label="View in 3D"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleView3D}
+          >
+            <span className="btn-3d-glow" />
+            <TbCube3dSphere size={18} />
+            <span>View in 3D</span>
+          </motion.button>
+
+          <motion.button
+            className="btn-signin"
+            aria-label="Sign in"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleSignIn}
+          >
+            <span className="btn-signin-glow" />
+            <IoLogInOutline size={18} />
+            <span>Sign in</span>
+          </motion.button>
+        </div>
+      </div>
+
+      <div className="raster-scenes-container" style={{ position: "relative" }}>
+        <div className="raster-scenes-top-container" style={{ alignItems: "stretch", gap: ".75rem" }}>
           {isLoading ? (
             <>
-              {/* Izquierda */}
               <div className="raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
                 <Skeleton variant="rectangular" width="100%" height="100%" sx={{ borderRadius: "1rem" }} />
               </div>
-              {/* Derecha o panel modelos */}
-              {splitMode ? (
-                <div className="raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
-                  <Skeleton variant="rectangular" width="100%" height="100%" sx={{ borderRadius: "1rem" }} />
-                </div>
-              ) : (
-                <div className="raster-analyses-container">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} variant="rectangular" width={280} height={150} sx={{ borderRadius: "1rem" }} />
-                  ))}
-                </div>
-              )}
+              <div className="raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
+                <Skeleton variant="rectangular" width="100%" height="100%" sx={{ borderRadius: "1rem" }} />
+              </div>
             </>
           ) : (
             <>
-              {/* Vista izquierda */}
               <motion.div style={{ flex: 1, minWidth: 0 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                 <RasterScene
                   scene={currentSceneLeft}
@@ -384,54 +382,29 @@ const RasterView: React.FC = () => {
                   modelsForCurrentFrame={currentFrameLeft ? Object.values(currentFrameLeft as any) : []}
                   selectedModel={selectedModelLeft}
                   setSelectedModel={setSelectedModelLeft}
-                  showInlineModelPicker={splitMode}
                 />
               </motion.div>
-
-              {/* Vista derecha en Split */}
-              {splitMode ? (
-                <motion.div style={{ flex: 1, minWidth: 0 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-                  <RasterScene
-                    scene={currentSceneRight}
-                    trajectory={trajectory}
-                    disableAnimation={isPlaying}
-                    isPlaying={isPlaying}
-                    onPlayPause={handlePlayPause}
-                    onPrev={handlePrev}
-                    onNext={handleNext}
-                    analysesNames={analysesNames}
-                    selectedAnalysis={selectedAnalysisRight}
-                    setSelectedAnalysis={setSelectedAnalysisRight}
-                    modelsForCurrentFrame={currentFrameRight ? Object.values(currentFrameRight as any) : []}
-                    selectedModel={selectedModelRight}
-                    setSelectedModel={setSelectedModelRight}
-                    showInlineModelPicker={splitMode}
-                  />
-                </motion.div>
-              ) : (
-                // En Single mantenemos el panel de modelos a la derecha (como antes)
-                <div className="raster-analyses-container">
-                  {currentFrameLeft &&
-                    Object.values(currentFrameLeft as any).map((model: any) => (
-                      <motion.img
-                        key={`${model.frame}-${model.model}`}
-                        className={`raster-analysis-scene ${model.model === selectedModelLeft ? "selected" : ""}`}
-                        src={model.data}
-                        alt={`${model.model} - Frame ${model.frame}`}
-                        title={model.model}
-                        whileHover={{ scale: 1.08, boxShadow: "0 15px 30px rgba(0,0,0,0.4)" }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setSelectedModelLeft(model.model)}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                      />
-                    ))}
-                </div>
-              )}
+              <motion.div style={{ flex: 1, minWidth: 0 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+                <RasterScene
+                  scene={currentSceneRight}
+                  trajectory={trajectory}
+                  disableAnimation={isPlaying}
+                  isPlaying={isPlaying}
+                  onPlayPause={handlePlayPause}
+                  onPrev={handlePrev}
+                  onNext={handleNext}
+                  analysesNames={analysesNames}
+                  selectedAnalysis={selectedAnalysisRight}
+                  setSelectedAnalysis={setSelectedAnalysisRight}
+                  modelsForCurrentFrame={currentFrameRight ? Object.values(currentFrameRight as any) : []}
+                  selectedModel={selectedModelRight}
+                  setSelectedModel={setSelectedModelRight}
+                />
+              </motion.div>
             </>
           )}
         </div>
-
-        {/* Thumbnails (comparten índice y controlan ambas) */}
+        {/* Thumbnails */}
         <div className="raster-thumbnails" ref={thumbnailsRef} style={{ paddingBlock: ".25rem" }}>
           {isLoading || !thumbnailsFrames.length
             ? Array.from({ length: 10 }).map((_, i) => (
@@ -458,11 +431,7 @@ const RasterView: React.FC = () => {
                     <div className="raster-thumbnail-timestep-container">
                       <p className="raster-thumbnail-timestep">{modelData.frame}</p>
                     </div>
-                    <img
-                      className="raster-thumbnail"
-                      src={modelData.data}
-                      alt={`${modelData.model} - Frame ${modelData.frame}`}
-                    />
+                    <img className="raster-thumbnail" src={modelData.data} alt={`${modelData.model} - Frame ${modelData.frame}`} />
                   </motion.div>
                 )
               })}
