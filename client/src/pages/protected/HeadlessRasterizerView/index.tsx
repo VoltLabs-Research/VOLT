@@ -3,12 +3,29 @@ import { TbCube3dSphere } from "react-icons/tb";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { IoPlayOutline, IoPauseOutline, IoSearchOutline, IoLogInOutline } from "react-icons/io5";
+import {
+  IoPlayOutline,
+  IoPauseOutline,
+  IoSearchOutline,
+  IoLogInOutline,
+  IoBarChartOutline,
+  IoCubeOutline,
+  IoGitNetworkOutline,
+  IoLayersOutline,
+  IoPulseOutline,
+  IoTimeOutline,
+  IoSpeedometerOutline,
+  IoDocumentTextOutline
+} from "react-icons/io5";
+import { GoPlus } from "react-icons/go";
+import type { IconType } from "react-icons";
 import Skeleton from "@mui/material/Skeleton";
 import useRasterStore from "@/stores/raster";
+import useTrajectoryStore from "@/stores/trajectories";
 import Select from "@/components/atoms/form/Select";
 import "./HeadlessRasterizerView.css";
 import { BsArrowLeft } from "react-icons/bs";
+import { RxEyeOpen } from "react-icons/rx";
 
 interface RasterSceneProps {
   scene: { frame: number; model: string; data: string } | null;
@@ -42,11 +59,10 @@ const RasterScene: React.FC<RasterSceneProps> = ({
 }) => {
   const pickerDockWidth = 132;
 
-  // ========= SKELETON ABSOLUTO (separado del loader del canvas) =========
+  // ========= SKELETON ABSOLUTO =========
   if (isLoading) {
     return (
       <figure className="raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
-        {/* Loader del canvas (rectangular, ocupa la zona de imagen) */}
         <div className="raster-scene-main">
           <Skeleton
             variant="rectangular"
@@ -57,7 +73,6 @@ const RasterScene: React.FC<RasterSceneProps> = ({
           />
         </div>
 
-        {/* Overlays absolutos */}
         <div className="raster-skel raster-skel-select">
           <Skeleton variant="rounded" animation="wave" height={40} sx={{ borderRadius: "0.75rem", bgcolor: "rgba(255,255,255,0.10)" }} />
         </div>
@@ -107,7 +122,6 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   );
 
   if (!scene) {
-    // Seguridad por si llega null fuera del loading
     return (
       <figure className="raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
         <div className="raster-scene-main">
@@ -125,7 +139,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
 
   return (
     <figure className="raster-scene-container" style={{ flex: 1, minWidth: 0, position: "relative" }}>
-      {/* TOPBAR: solo selector centrado */}
+      {/* TOPBAR */}
       <div className="raster-scene-topbar">
         <div className="raster-scene-topbar-center">
           <div className="raster-analysis-selection-container">
@@ -168,7 +182,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
         )}
       </div>
 
-      {/* BOTTOMBAR */}
+      {/* BOTTOMBAR (play/pause) */}
       <div className="raster-scene-bottombar">
         <div className="raster-view-trajectory-playback-container">
           {isPlaying ? (
@@ -179,7 +193,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
         </div>
       </div>
 
-      {/* RAIL (hover para expandir) */}
+      {/* RAIL */}
       {selectedThumb && (
         <motion.div
           className="raster-rail-container"
@@ -259,10 +273,63 @@ const smoothScrollIntoView = (container: HTMLElement, target: HTMLElement) => {
   requestAnimationFrame(step);
 };
 
+const formatBytes = (bytes?: number) => {
+  if (!bytes && bytes !== 0) return "-";
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let i = -1;
+  let v = bytes;
+  do { v = v / 1024; i++; } while (v >= 1024 && i < units.length - 1);
+  return `${v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2)} ${units[i]}`;
+};
+
+const nf = new Intl.NumberFormat();
+const formatNumber = (n?: number) => (typeof n === "number" ? nf.format(n) : "-");
+const formatPercent = (x?: number) => {
+  if (typeof x !== "number") return "-";
+  const val = x <= 1 ? x * 100 : x;
+  return `${val.toFixed(val >= 10 ? 0 : 1)}%`;
+};
+const formatMs = (ms?: number) => {
+  if (typeof ms !== "number") return "-";
+  if (ms < 1000) return `${ms} ms`;
+  const s = ms / 1000;
+  if (s < 60) return `${s.toFixed(s >= 10 ? 0 : 1)} s`;
+  const m = Math.floor(s / 60);
+  const rs = Math.round(s % 60);
+  return `${m}m ${rs}s`;
+};
+
+const toTitle = (key: string) =>
+  key
+    .replace(/[_-]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, (c) => c.toUpperCase());
+
+const iconForKey = (key: string): IconType => {
+  const k = key.toLowerCase();
+  if (k.includes("frame")) return IoTimeOutline;
+  if (k.includes("file")) return IoLayersOutline;
+  if (k.includes("size") || k.includes("bytes")) return IoLayersOutline;
+  if (k.includes("atom")) return IoCubeOutline;
+  if (k.includes("segment") || k.includes("dislocation") || k.includes("line")) return IoGitNetworkOutline;
+  if (k.includes("rate") || k.includes("percent") || k.includes("ratio")) return IoPulseOutline;
+  if (k.includes("time") || k.includes("duration") || k.includes("processing")) return IoSpeedometerOutline;
+  if (k.includes("preview") || k.includes("name")) return IoDocumentTextOutline;
+  return IoBarChartOutline;
+};
+
+type MetricEntry = { key: string; label: string; value: string | number; icon: IconType };
+
 const RasterView: React.FC = () => {
   const navigate = useNavigate();
   const { trajectoryId } = useParams<{ trajectoryId: string }>();
   const { trajectory, analyses, analysesNames, getRasterFrames, isLoading } = useRasterStore();
+
+  // Trajectory metrics del store
+  const { getMetrics, trajectoryMetrics, isMetricsLoading } = useTrajectoryStore();
 
   const [selectedAnalysisLeft, setSelectedAnalysisLeft] = useState<string | null>(null);
   const [selectedAnalysisRight, setSelectedAnalysisRight] = useState<string | null>(null);
@@ -279,6 +346,10 @@ const RasterView: React.FC = () => {
   useEffect(() => {
     if (trajectoryId) getRasterFrames(trajectoryId);
   }, [trajectoryId, getRasterFrames]);
+
+  useEffect(() => {
+    if (trajectoryId) getMetrics(trajectoryId);
+  }, [trajectoryId, getMetrics]);
 
   useEffect(() => {
     if (!analysesNames?.length) return;
@@ -352,14 +423,27 @@ const RasterView: React.FC = () => {
   const handleSignIn = () => console.log("Sign in clicked");
   const handleView3D = () => console.log("View in 3D clicked");
 
+  // === MÉTRICAS SELECCIONADAS (nombres cortos) ===
+  const metricEntries: MetricEntry[] = useMemo(() => {
+    const framesVal = trajectoryMetrics?.frames?.totalFrames;
+    const sizeVal = trajectoryMetrics?.files?.totalSizeBytes;
+    const analysesVal = trajectoryMetrics?.structureAnalysis?.totalDocs;
+    // (dejamos solo 3 métricas visibles; los "modifier-result" son opciones aparte)
+    return [
+      { key: "frames.totalFrames", label: "Frames", value: typeof framesVal === "number" ? formatNumber(framesVal) : "-", icon: IoTimeOutline },
+      { key: "files.totalSizeBytes", label: "Size", value: typeof sizeVal === "number" ? formatBytes(sizeVal) : "-", icon: IoLayersOutline },
+      { key: "structureAnalysis.totalDocs", label: "Analyses", value: typeof analysesVal === "number" ? formatNumber(analysesVal) : "-", icon: IoBarChartOutline },
+    ];
+  }, [trajectoryMetrics]);
+
   return (
     <main className="raster-view-container">
-      {/* HEADER con skeleton del bloque solicitado */}
+      {/* HEADER */}
       <div className="raster-scene-header-container">
         <div className="raster-scene-header-left-container">
-          <i 
+          <i
             className="raster-scene-header-go-back-icon-container"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate("/dashboard")}
           >
             <BsArrowLeft />
           </i>
@@ -367,7 +451,6 @@ const RasterView: React.FC = () => {
           <div className="raster-scene-header-team-container">
             {isLoading ? (
               <>
-                {/* Title skeleton */}
                 <Skeleton
                   variant="rounded"
                   animation="wave"
@@ -375,7 +458,6 @@ const RasterView: React.FC = () => {
                   height={22}
                   sx={{ borderRadius: "6px", bgcolor: "rgba(255,255,255,0.12)" }}
                 />
-                {/* Subtitle skeleton */}
                 <Skeleton
                   variant="rounded"
                   animation="wave"
@@ -401,6 +483,12 @@ const RasterView: React.FC = () => {
               </i>
               <input placeholder="Search uploaded team trajectories" className="search-input " />
             </div>
+          </div>
+                <div className="raster-scene-header-views-container">
+            <i className="raster-scene-header-views-icon-container">
+              <RxEyeOpen />
+            </i>
+            <p className="raster-scene-header-views">48 views</p>
           </div>
         </div>
 
@@ -525,6 +613,93 @@ const RasterView: React.FC = () => {
                   </motion.div>
                 );
               })}
+        </div>
+
+        {/* ===== METRICS BAR ===== */}
+        <div className="raster-metrics-bar">
+          <div className="raster-metrics-list">
+            {isMetricsLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton
+                    key={`metric-skel-${i}`}
+                    variant="rounded"
+                    animation="wave"
+                    width={120}
+                    height={32}
+                    sx={{ borderRadius: "9999px", bgcolor: "rgba(255,255,255,0.08)" }}
+                  />
+                ))
+              : metricEntries.map(({ key, label, value, icon: Icon }) => (
+                  <div className="raster-metric-item" key={`metric-${key}`}>
+                    <i className="raster-metric-icon"><Icon size={16} /></i>
+                    <span className="raster-metric-label">{label}:</span>
+                    <b className="raster-metric-value">{value}</b>
+                  </div>
+                ))}
+
+            {/* ==== OPCIONES MODIFIER (animadas) ==== */}
+            <motion.div
+              className="raster-metric-item modifier-result"
+              initial={{ backgroundColor: "#0d0d0d", boxShadow: "0 0 0 rgba(0,0,0,0)" }}
+              animate={{
+                backgroundColor: ["#0d0d0d", "#111111", "#0d0d0d"],
+                boxShadow: [
+                  "0 0 0 rgba(99,102,241,0)",
+                  "0 0 0 rgba(99,102,241,0.22)",
+                  "0 0 0 rgba(99,102,241,0)"
+                ]
+              }}
+              transition={{ duration: 3.6, ease: "easeInOut", repeat: Infinity }}
+              whileHover={{
+                scale: 1.02,
+                boxShadow: "0 0 0 1px rgba(99,102,241,.35), 0 10px 30px rgba(0,0,0,.35)"
+              }}
+            >
+              <motion.span
+                className="metric-aurora"
+                aria-hidden
+                animate={{ rotate: [0, 8, -6, 0], opacity: [0.14, 0.34, 0.2, 0.14], scale: [1, 1.05, 1.02, 1] }}
+                transition={{ duration: 6.5, ease: "easeInOut", repeat: Infinity }}
+              />
+              <span className="raster-metric-label">Dislocation Analysis</span>
+              <b className="raster-metric-value">
+                <i className="raster-metric-icon">
+                  <GoPlus size={18} />
+                </i>
+              </b>
+            </motion.div>
+
+            <motion.div
+              className="raster-metric-item modifier-result"
+              initial={{ backgroundColor: "#0d0d0d", boxShadow: "0 0 0 rgba(0,0,0,0)" }}
+              animate={{
+                backgroundColor: ["#0d0d0d", "#121212", "#0d0d0d"],
+                boxShadow: [
+                  "0 0 0 rgba(34,211,238,0)",
+                  "0 0 0 rgba(34,211,238,0.18)",
+                  "0 0 0 rgba(34,211,238,0)"
+                ]
+              }}
+              transition={{ duration: 4.2, ease: "easeInOut", repeat: Infinity }}
+              whileHover={{
+                scale: 1.02,
+                boxShadow: "0 0 0 1px rgba(34,211,238,.3), 0 10px 30px rgba(0,0,0,.35)"
+              }}
+            >
+              <motion.span
+                className="metric-aurora"
+                aria-hidden
+                animate={{ rotate: [0, -10, 6, 0], opacity: [0.16, 0.32, 0.22, 0.16], scale: [1, 1.04, 1.01, 1] }}
+                transition={{ duration: 7.2, ease: "easeInOut", repeat: Infinity }}
+              />
+              <span className="raster-metric-label">Structure Analysis</span>
+              <b className="raster-metric-value">
+                <i className="raster-metric-icon">
+                  <GoPlus size={18} />
+                </i>
+              </b>
+            </motion.div>
+          </div>
         </div>
       </div>
     </main>

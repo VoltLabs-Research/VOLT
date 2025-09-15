@@ -72,8 +72,13 @@ router.get(
 );
 
 router.get(
+    '/metrics/:id',
+    middleware.checkTeamMembershipForTrajectory, 
+    controller.getMetrics
+)
+
+router.get(
     '/metrics',
-    authMiddleware.protect,
     controller.getTrajectoryMetrics
 );
 

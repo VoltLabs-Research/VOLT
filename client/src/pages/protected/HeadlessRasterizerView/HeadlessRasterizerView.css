@@ -1,3 +1,4 @@
+/* HeadlessRasterizerView.css */
 /* ====== CONTENEDORES EXISTENTES ====== */
 .raster-view-container{
   height: 100%;
@@ -20,7 +21,7 @@
     background-color: #0d0d0d;
 }
 
-/* Botón Sign in – dark glass + glow morado */
+/* Botón Sign in */
 .btn-signin{
   position: relative;
   overflow: hidden;
@@ -77,12 +78,12 @@
 .btn-signin:hover .btn-signin-glow{ opacity: .9; filter: blur(14px); }
 .btn-signin:active{ transform: translateY(1px) scale(.99); }
 
-/* === NUEVO: Botón View in 3D – cyan/teal brillante === */
+/* Botón View in 3D */
 .btn-3d{
   position: relative;
   overflow: hidden;
   background: radial-gradient(130% 180% at 50% 0%, #062a2f 0%, #071c1e 65%);
-  color: #d2faff; /* texto ligeramente azulado */
+  color: #d2faff;
   border: 1px solid #0e3c44;
   border-radius: 9999px;
   padding: .55rem 1rem;
@@ -96,8 +97,6 @@
   box-shadow: 0 6px 18px rgba(0,0,0,.35);
 }
 .btn-3d svg{ flex: 0 0 auto; opacity: .98; }
-
-/* Glow cyan */
 .btn-3d .btn-3d-glow{
   content: "";
   position: absolute;
@@ -112,9 +111,6 @@
   filter: blur(10px);
   transition: opacity .25s ease, filter .25s ease;
 }
-.btn-3d > *{ position: relative; z-index: 1; }
-
-/* Shine */
 .btn-3d::after{
   content:"";
   position:absolute;
@@ -125,9 +121,6 @@
   transition: left .6s ease;
   pointer-events: none;
 }
-.btn-3d:hover::after{ left:120%; }
-
-/* Hover/active */
 .btn-3d:hover{
   border-color: #0f4e57;
   box-shadow:
@@ -136,10 +129,8 @@
     0 8px 20px rgba(0,0,0,.45);
   color: #e6fdff;
 }
-.btn-3d:hover .btn-3d-glow{ opacity: .95; filter: blur(14px); }
 .btn-3d:active{ transform: translateY(1px) scale(.99); }
 
-/* Responsivo: botones del header */
 @media (max-width: 560px){
   .raster-scene-header-nav-container{ padding-right: .5rem; gap: .5rem; }
   .btn-signin, .btn-3d{ padding: .5rem .9rem; font-weight: 700; }
@@ -155,6 +146,7 @@
 .raster-scene-header-container > div{ width: 33.3%; }
 .raster-scene-header-search-container{
   display: flex; justify-content: center; align-items: center;
+  gap: 1.5rem;
 }
 .raster-scene-header-search-container .search-input{ width: 100%; }
 .raster-scene-header-left-container{ display: flex; gap: 2rem; padding: 1rem; }
@@ -164,10 +156,7 @@
   transition: .2s;
   cursor: pointer;
 }
-
-.raster-scene-header-go-back-icon-container:hover{
-  opacity: .8;
-}
+.raster-scene-header-go-back-icon-container:hover{ opacity: .8; }
 
 .raster-scenes-container{
   height: 100%;
@@ -180,7 +169,7 @@
 }
 .raster-scenes-top-container{
   width: 100%;
-  height: calc(100% - 80px - 180px);
+  height: calc(100% - 80px - 170px - 66px);
   display: flex;
   gap: 1rem;
 }
@@ -196,7 +185,6 @@
 }
 .raster-scene{ height: clamp(360px, 52vh, 520px); }
 
-/* UI superpuesta en flujo normal */
 .raster-floating-container{ position: static; background-color: transparent; }
 .raster-view-trajectory-name-container,
 .raster-view-trajectory-frame-container,
@@ -294,16 +282,12 @@
   .btn-chip { width: 100%; justify-content: center; }
 }
 
-/* ====== SKELETON OVERLAYS (ABSOLUTOS) ======
-   Se muestran como capas aparte del loader del canvas.
-   NO cambian colores ni layout existente. */
+/* ====== SKELETON OVERLAYS ====== */
 .raster-skel{
   position: absolute;
-  z-index: 3;              /* sobre el rectángulo del canvas y bajo la UI real */
-  pointer-events: none;    /* no bloquea interacciones cuando haya UI real */
+  z-index: 3;
+  pointer-events: none;
 }
-
-/* Selector centrado arriba (mismo ancho aproximado del select real) */
 .raster-skel-select{
   top: .75rem;
   left: 50%;
@@ -311,23 +295,14 @@
   width: 40%;
   max-width: 520px;
   min-width: 200px;
-  padding: 0 .75rem;       /* separa visualmente del borde */
+  padding: 0 .75rem;
 }
-
-/* Chip/frame (esquina inferior izquierda) */
-.raster-skel-frame{
-  bottom: .9rem;
-  left: .9rem;
-}
-
-/* Playback centrado abajo */
+.raster-skel-frame{ bottom: .9rem; left: .9rem; }
 .raster-skel-playback{
   bottom: .75rem;
   left: 50%;
   transform: translateX(-50%);
 }
-
-/* Rail vertical a la derecha (mismo stack que el real) */
 .raster-skel-rail{
   bottom: 1rem;
   right: 1rem;
@@ -338,13 +313,105 @@
   overflow-y: auto;
   overflow-x: hidden;
 }
-
-/* Pequeño ajuste responsive para que no tape en móviles */
 @media (max-width: 1024px){
   .raster-skel-select{ width: 60%; }
   .raster-skel-rail{ top: auto; bottom: .5rem; transform: none; }
 }
-
 @media (max-width: 600px){
   .raster-skel-select{ width: 80%; }
+}
+
+/* ====== METRICS BOTTOM BAR ====== */
+.raster-metrics-bar{
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  border-top: 1px solid #161616;
+}
+
+.raster-metrics-title{
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  color: #d6d6d6;
+  font-weight: 700;
+  padding: .35rem .65rem;
+  border: 1px solid #1c1c1c;
+  border-radius: 9999px;
+  background: #111;
+}
+.raster-metrics-title svg{ opacity: .95; }
+
+.raster-metrics-list{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  height: 100%;
+  margin-left: .25rem;
+}
+
+.raster-metric-item{
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .55rem 1.5rem;
+  height: 100%;
+  border-right: 1px solid #262626;
+  background-color: transparent;
+  color: #dadada;
+  font-size: .9rem;
+}
+
+/* --- MODIFIER RESULT: estilo base + capa aurora --- */
+.raster-metric-item.modifier-result{
+  background-color: #0d0d0d;   /* color base (se sobreescribe por Motion) */
+  cursor: pointer;
+  transition: .2s;
+  position: relative;
+  overflow: hidden;
+}
+.raster-metric-item.modifier-result:hover{ opacity: .96; }
+
+/* Capa aurora respirando (el span interno animado) */
+.raster-metric-item.modifier-result .metric-aurora{
+  position: absolute;
+  inset: -40%;
+  border-radius: 9999px;
+  background:
+    radial-gradient(80% 90% at 20% 25%, rgba(99,102,241,.10), transparent 60%),
+    radial-gradient(90% 80% at 80% 75%, rgba(34,211,238,.08), transparent 55%);
+  filter: blur(18px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.raster-scene-header-views-container{
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Asegura que el contenido quede arriba de la aurora */
+.raster-metric-item > *{ position: relative; z-index: 1; }
+
+.raster-metric-icon{
+  display: inline-flex;
+  align-items: center;
+  opacity: .95;
+}
+.raster-metric-label{ opacity: .9; }
+.raster-metric-value{
+  font-weight: 800;
+  margin-left: .15rem;
+  color: #e8e8e8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (max-width: 768px){
+  .raster-metrics-bar{ padding: .55rem .6rem; }
+  .raster-metrics-title{ display: none; }
 }

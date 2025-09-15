@@ -18,8 +18,10 @@ export interface TrajectoryState {
     selectedTrajectories: string[];
     structureAnalysis: any;
     avgSegmentSeries: any[];
-    idRateSeries: [];
-    dislocationSeries: [];
+    idRateSeries: any[];
+    dislocationSeries: any[];
+    trajectoryMetrics: object;
+    isMetricsLoading: boolean;
     cache: Record<string, Trajectory[]>;
     analysisCache: Record<string, any>;
     differencesCache: Record<string, any>;

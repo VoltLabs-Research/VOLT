@@ -38,6 +38,8 @@ const initialState: TrajectoryState = {
     isSavingPreview: false,
     uploadingFileCount: 0,
     error: null,
+    isMetricsLoading: false,
+    trajectoryMetrics: {},
     structureAnalysis: null,
     selectedTrajectories: [],
     analysisStats: {},
@@ -301,6 +303,31 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 return { success: false, error: error?.message || 'Unknown error' };
             }
         },
+
+        getMetrics: (id: string, opts?: { force?: boolean }) => {
+  const force = !!opts?.force;
+  const current = get().trajectoryMetrics as any;
+
+  // Evita refetch si ya tenemos métricas de esa trayectoria (a menos que force)
+  if (current && current?.trajectory?._id === id && !force) {
+    return Promise.resolve();
+  }
+
+  return asyncAction(
+    () => api.get<ApiResponse<any>>(`/trajectories/metrics/${id}`),
+    {
+      loadingKey: 'isMetricsLoading',
+      onSuccess: (res) => ({
+        trajectoryMetrics: res.data.data,
+        error: null
+      }),
+      onError: (error) => ({
+        error: error?.response?.data?.message || 'Failed to load trajectory metrics'
+      })
+    }
+  );
+},
+
 
         getTrajectoryPreviewUrl: (id: string) => {
             const trajectory = get().trajectories.find(t => t._id === id)
