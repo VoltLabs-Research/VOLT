@@ -21,7 +21,8 @@
 **/
 
 import HandlerFactory from '@/controllers/handler-factory';
-import { AnalysisConfig } from "@/models";
+import { AnalysisConfig, Dislocations } from "@/models";
+import { Request, Response } from 'express';
 
 const factory = new HandlerFactory({
     model: AnalysisConfig,
@@ -29,3 +30,13 @@ const factory = new HandlerFactory({
 });
 
 export const getAnalysisConfigById = factory.getOne();
+
+export const getAnalysisDislocations = async (req: Request, res: Response) => {
+    const analysisConfigId = (req as any).params.id;
+    const dislocations = await Dislocations.find({ analysisConfig: analysisConfigId });
+
+    res.status(200).json({
+        status: 'success',
+        data: dislocations
+    });
+};

@@ -66,11 +66,6 @@ const useDislocationStore = create<DislocationStore>()((set, get) => {
             );
         },
 
-        setFilters: (filters) => set({ filters: { ...get().filters, ...filters } }),
-        setPage: (page) => set({ page }),
-        setLimit: (limit) => set({ limit }),
-        setSort: (sort) => set({ sort }),
-
         clearError: () => set({ error: null }),
 
         reset: () => set(initialState)

@@ -1,17 +1,10 @@
 import { useEffect, useState } from 'react'
+import { formatSize } from '@/utilities/scene-utils'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/DocumentListing'
 import useTrajectoryStore from '@/stores/trajectories'
 import useTeamStore from '@/stores/team/team'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
-
-const formatSize = (bytes: number): string => {
-    if (!bytes || bytes <= 0) return '0 B'
-    const units = ['B', 'KB', 'MB', 'GB', 'TB']
-    const i = Math.floor(Math.log(bytes) / Math.log(1024))
-    const value = bytes / Math.pow(1024, i)
-    return `${value.toFixed(2).replace(/\.?0+$/, '')} ${units[i]}`
-}
 
 const TrajectoriesListing = () => {
     const getTrajectories = useTrajectoryStore((s) => s.getTrajectories)

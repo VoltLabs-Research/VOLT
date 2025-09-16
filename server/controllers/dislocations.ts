@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { isValidObjectId } from 'mongoose';
-import { Team, Trajectory, Dislocations } from '@models/index';
+import { Team, Trajectory, Dislocations } from '@/models/index';
 
+// TODO: HandlerFactory
 export const getUserDislocations = async (req: Request, res: Response) => {
   try{
     const userId = (req as any).user?.id;

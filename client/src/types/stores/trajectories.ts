@@ -37,6 +37,7 @@ export interface TrajectoryActions {
     toggleTrajectorySelection: (id: string) => void;
     deleteSelectedTrajectories: () => Promise<void>;
     clearSelection: () => void;
+    getMetrics: (id: string, opts?: { force?: boolean }) => void;
     saveTrajectoryPreview: (id: string, dataURL: string) => Promise<{ success: boolean; error?: string }>;
     getTrajectoryPreviewUrl: (id: string) => string | null;
     loadAuthenticatedPreview: (id: string) => Promise<string | null>;

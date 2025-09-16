@@ -23,54 +23,91 @@
 import { create } from 'zustand';
 import type { AnalysisConfig } from '@/types/models';
 import type { AnalysisConfigStore } from '@/types/stores/analysis-config';
+import type { ApiResponse } from '@/types/api';
+import { api } from '@/services/api';
+import { createAsyncAction } from '@/utilities/asyncAction';
 
 const DEFAULT_ANALYSIS_CONFIG: AnalysisConfig = {
-    crystalStructure: 'BCC',
-    identificationMode: 'CNA',
-    maxTrialCircuitSize: 14.0,
-    circuitStretchability: 9.0,
-    RMSD: 0.10,
-    defectMeshSmoothingLevel: 8,
-    lineSmoothingLevel: 5,
-    linePointInterval: 2.5,
-    onlyPerfectDislocations: false,
-    markCoreAtoms: false,
-    structureIdentificationOnly: false
+  crystalStructure: 'BCC',
+  identificationMode: 'CNA',
+  maxTrialCircuitSize: 14.0,
+  circuitStretchability: 9.0,
+  RMSD: 0.10,
+  defectMeshSmoothingLevel: 8,
+  lineSmoothingLevel: 5,
+  linePointInterval: 2.5,
+  onlyPerfectDislocations: false,
+  markCoreAtoms: false,
+  structureIdentificationOnly: false
 };
 
 const initialState = {
-    analysisConfig: DEFAULT_ANALYSIS_CONFIG,
-    isLoading: true
+  analysisConfig: DEFAULT_ANALYSIS_CONFIG,
+  isLoading: true,
+  // Nuevo: mapa por análisis
+  analysisDislocationsById: {} as Record<string, any[]>,
+  // Opcional: loading por análisis
+  dislocationsLoadingById: {} as Record<string, boolean>
 };
 
-const useAnalysisConfigStore = create<AnalysisConfigStore>((set, get) => {
-    // const asyncAction = createAsyncAction(set, get);
+const useAnalysisConfigStore = create<AnalysisConfigStore & {
+  analysisDislocationsById: Record<string, any[]>;
+  dislocationsLoadingById: Record<string, boolean>;
+  getDislocationsByAnalysisId: (analysisId: string) => Promise<void>;
+}>((set, get) => {
+  const asyncAction = createAsyncAction(set, get);
 
-    return {
-        ...initialState,
+  return {
+    ...initialState,
 
-        setAnalysisConfig(key: string, value: any){
-            const currentConfig = get().analysisConfig;
-            set({
-                analysisConfig: { ...currentConfig, [key]: value },
-            });
+    async getDislocationsByAnalysisId(analysisId: string){
+      const req = api.get<ApiResponse<any>>(`/analysis-config/${analysisId}/dislocations`);
+
+      return asyncAction(() => req, {
+        loadingKey: 'dislocationsLoading', 
+        onSuccess: (res: any) => {
+          const current = get().analysisDislocationsById || {};
+          return {
+            analysisDislocationsById: {
+              ...current,
+              [analysisId]: res.data?.data ?? []
+            }
+          };
         },
+        onError: () => {
+          const current = get().analysisDislocationsById || {};
+          return {
+            analysisDislocationsById: {
+              ...current,
+              [analysisId]: []
+            }
+          };
+        }
+      });
+    },
 
-        updateAnalysisConfig(config: Partial<AnalysisConfig>){
-            const currentConfig = get().analysisConfig;
-            set({
-                analysisConfig: { ...currentConfig, ...config },
-            });
-        },
+    setAnalysisConfig(key: string, value: any){
+      const currentConfig = get().analysisConfig;
+      set({
+        analysisConfig: { ...currentConfig, [key]: value },
+      });
+    },
 
-        resetAnalysisConfig(){
-            set({ analysisConfig: DEFAULT_ANALYSIS_CONFIG });
-        },
+    updateAnalysisConfig(config: Partial<AnalysisConfig>){
+      const currentConfig = get().analysisConfig;
+      set({
+        analysisConfig: { ...currentConfig, ...config },
+      });
+    },
 
-        setIsLoading(loading: boolean){
-            set({ isLoading: loading });
-        },
-    }
+    resetAnalysisConfig(){
+      set({ analysisConfig: DEFAULT_ANALYSIS_CONFIG });
+    },
+
+    setIsLoading(loading: boolean){
+      set({ isLoading: loading });
+    },
+  }
 });
 
 export default useAnalysisConfigStore;

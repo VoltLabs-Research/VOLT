@@ -23,6 +23,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AnalysisConfig } from '@/models/index';
 
+// TODO:
 export const checkTeamMembershipForAnalysisTrajectory = async (
     req: Request, 
     res: Response, 
@@ -38,5 +39,5 @@ export const checkTeamMembershipForAnalysisTrajectory = async (
         });
     }
 
-    checkTeamMembershipForAnalysisTrajectory(req, res, next);
+    next();
 };

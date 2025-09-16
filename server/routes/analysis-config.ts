@@ -12,4 +12,11 @@ router.get(
     controller.getAnalysisConfigById
 );
 
+router.get(
+    '/:id/dislocations',
+    middleware.checkTeamMembershipForAnalysisTrajectory,
+    controller.getAnalysisDislocations
+
+)
+
 export default router;

@@ -51,10 +51,6 @@ export interface DislocationState {
 
 export interface DislocationActions {
     getUserDislocations: (overrides?: Partial<DislocationFilters> & { page?: number; limit?: number; sort?: string }) => Promise<void>;
-    setFilters: (filters: Partial<DislocationFilters>) => void;
-    setPage: (page: number) => void;
-    setLimit: (limit: number) => void;
-    setSort: (sort: string) => void;
     clearError: () => void;
     reset: () => void;
 }
