@@ -193,8 +193,27 @@ const HeadlessRasterizerView: React.FC = () => {
     const currentTimestep = selectedFrameIndex >= 0 ? timeline[selectedFrameIndex] : undefined;
 
     const getAvailableModelsForFrame = useCallback((analysisId: string | null, timestep: number | undefined) => {
-        if(!analysisId || !timestep || !analyses?.[analysisId]?.frames?.[timestep]) return [];
-        return analyses[analysisId].frames[timestep].availableModels || [];
+        // Si no tenemos un analysisId, no podemos obtener modelos
+        if(!analysisId || !analyses?.[analysisId]) return [];
+        
+        // Si timestep es undefined (cuando selectedFrameIndex = -1), intentamos obtener modelos del frame 0
+        // Si no hay timestep específico, buscar el primer frame disponible
+        if(timestep === undefined) {
+            const availableFrames = Object.keys(analyses[analysisId].frames || {})
+                .map(Number)
+                .sort((a, b) => a - b);
+                
+            // Si hay frames disponibles, usar el primero (generalmente 0)
+            if(availableFrames.length > 0) {
+                const firstFrame = availableFrames[0];
+                console.log(`[HeadlessRasterizerView] No timestep specified, using first available frame: ${firstFrame}`);
+                return analyses[analysisId].frames[firstFrame].availableModels || [];
+            }
+            return [];
+        }
+        
+        // Caso normal: tenemos un timestep específico
+        return analyses[analysisId].frames?.[timestep]?.availableModels || [];
     }, [analyses]);
 
     // Determinar si debemos mostrar las escenas o esperar a la restauración completa
@@ -529,25 +548,49 @@ const HeadlessRasterizerView: React.FC = () => {
         isLoading 
     }), [analysesNames, selectedAnalysisRight, isLoading]);
 
-    const modelRailLeftProps: ModelRailProps = useMemo(() => ({ 
-        modelsForCurrentFrame: availableModelsLeft.map((model: string) => ({
-            frame: currentTimestep,
-            model,
-            analysisId: selectedAnalysisLeft || undefined
-        })), 
-        selectedModel: selectedModelLeft, 
-        onModelChange: setSelectedModelLeft 
-    }), [availableModelsLeft, currentTimestep, selectedAnalysisLeft, selectedModelLeft]);
+    const modelRailLeftProps: ModelRailProps = useMemo(() => {
+        // Si no hay análisis o modelo seleccionado, o no hay modelos disponibles, devolvemos una configuración vacía
+        if (!selectedAnalysisLeft || !selectedModelLeft || availableModelsLeft.length === 0) {
+            console.log(`[HeadlessRasterizerView] No models available for left rail`);
+            return {
+                modelsForCurrentFrame: [],
+                selectedModel: "",
+                onModelChange: setSelectedModelLeft
+            };
+        }
 
-    const modelRailRightProps: ModelRailProps = useMemo(() => ({ 
-        modelsForCurrentFrame: availableModelsRight.map((model: string) => ({
-            frame: currentTimestep,
-            model,
-            analysisId: selectedAnalysisRight || undefined
-        })), 
-        selectedModel: selectedModelRight, 
-        onModelChange: setSelectedModelRight 
-    }), [availableModelsRight, currentTimestep, selectedAnalysisRight, selectedModelRight]);
+        return {
+            modelsForCurrentFrame: availableModelsLeft.map((model: string) => ({
+                frame: currentTimestep || 0, // Usar frame 0 como fallback
+                model,
+                analysisId: selectedAnalysisLeft
+            })), 
+            selectedModel: selectedModelLeft, 
+            onModelChange: setSelectedModelLeft 
+        };
+    }, [availableModelsLeft, currentTimestep, selectedAnalysisLeft, selectedModelLeft]);
+
+    const modelRailRightProps: ModelRailProps = useMemo(() => {
+        // Si no hay análisis o modelo seleccionado, o no hay modelos disponibles, devolvemos una configuración vacía
+        if (!selectedAnalysisRight || !selectedModelRight || availableModelsRight.length === 0) {
+            console.log(`[HeadlessRasterizerView] No models available for right rail`);
+            return {
+                modelsForCurrentFrame: [],
+                selectedModel: "",
+                onModelChange: setSelectedModelRight
+            };
+        }
+
+        return {
+            modelsForCurrentFrame: availableModelsRight.map((model: string) => ({
+                frame: currentTimestep || 0, // Usar frame 0 como fallback
+                model,
+                analysisId: selectedAnalysisRight
+            })), 
+            selectedModel: selectedModelRight, 
+            onModelChange: setSelectedModelRight 
+        };
+    }, [availableModelsRight, currentTimestep, selectedAnalysisRight, selectedModelRight]);
 
     return (
         <main className='raster-view-container'>
