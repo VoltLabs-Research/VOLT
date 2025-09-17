@@ -20,7 +20,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
     const { updateUrlParams, getUrlParam } = useUrlState();
 
-    const { trajectory, analyses, analysesNames, getRasterFrames, isLoading, preloadAllFrames, isPreloading, preloadProgress } = useRasterStore();
+    const { trajectory, analyses, analysesNames, getRasterFrames, isLoading, preloadAllFrames, preloadPriorizedFrames, isPreloading, preloadProgress } = useRasterStore();
     const { getMetrics, trajectoryMetrics, isMetricsLoading } = useTrajectoryStore();
     const { getDislocationsByAnalysisId, analysisDislocationsById } = useAnalysisConfigStore();
     
@@ -43,13 +43,15 @@ const HeadlessRasterizerView: React.FC = () => {
     const getRasterFramesRef = useRef(getRasterFrames);
     const getMetricsRef = useRef(getMetrics);
     const preloadAllFramesRef = useRef(preloadAllFrames);
+    const preloadPriorizedFramesRef = useRef(preloadPriorizedFrames);
     const urlUpdateTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
         getRasterFramesRef.current = getRasterFrames;
         getMetricsRef.current = getMetrics;
         preloadAllFramesRef.current = preloadAllFrames;
-    }, [getRasterFrames, getMetrics, preloadAllFrames]);
+        preloadPriorizedFramesRef.current = preloadPriorizedFrames;
+    }, [getRasterFrames, getMetrics, preloadAllFrames, preloadPriorizedFrames]);
 
     useEffect(() => {
         if(!trajectoryId) return;
@@ -67,10 +69,55 @@ const HeadlessRasterizerView: React.FC = () => {
 
         preloadInitiatedRef.current = trajectoryId;
         
+        // Obtener modelos prioritarios de los parámetros URL
+        const urlModelLeft = getUrlParam('ml');
+        const urlModelRight = getUrlParam('mr');
+        
+        const priorityModels: { ml?: string; mr?: string } = {};
+        if (urlModelLeft) priorityModels.ml = urlModelLeft;
+        if (urlModelRight) priorityModels.mr = urlModelRight;
+        
         setTimeout(() => {
-            preloadAllFramesRef.current(trajectoryId);
+            // Obtener timestep actual de la URL si existe
+            const urlTimestep = getUrlParam('ts');
+            const currentTimestep = urlTimestep ? parseInt(urlTimestep, 10) : undefined;
+            
+            // Si hay modelos específicos en la URL, usar precarga priorizada
+            if (urlModelLeft || urlModelRight) {
+                preloadPriorizedFramesRef.current(trajectoryId, priorityModels, currentTimestep);
+            } else {
+                // Fallback a precarga normal
+                preloadAllFramesRef.current(trajectoryId);
+            }
         }, 1000);
-    }, [trajectoryId, analyses, isLoading]);
+    }, [trajectoryId, analyses, isLoading, getUrlParam]);
+
+    // Efecto para repriorizar la precarga cuando cambian los modelos seleccionados
+    useEffect(() => {
+        if (!trajectoryId || !analyses || Object.keys(analyses).length === 0) return;
+        if (isLoading || isPreloading) return;
+        if (!isInitializedRef.current) return; // Esperar a que se inicialicen los modelos
+        
+        // Solo repriorizar si los modelos son diferentes a 'preview' (que es el default)
+        const hasSpecificModels = selectedModelLeft !== 'preview' || selectedModelRight !== 'preview';
+        if (!hasSpecificModels) return;
+
+        const priorityModels: { ml?: string; mr?: string } = {};
+        if (selectedModelLeft && selectedModelLeft !== 'preview') {
+            priorityModels.ml = selectedModelLeft;
+        }
+        if (selectedModelRight && selectedModelRight !== 'preview') {
+            priorityModels.mr = selectedModelRight;
+        }
+
+        // Pequeño delay para evitar múltiples llamadas
+        const timeoutId = setTimeout(() => {
+            const currentTimestep = timeline[selectedFrameIndex];
+            preloadPriorizedFramesRef.current(trajectoryId, priorityModels, currentTimestep);
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [trajectoryId, analyses, selectedModelLeft, selectedModelRight, isLoading, isPreloading]);
 
     const isValidNumber = (x: any): x is number => typeof x === "number" && Number.isFinite(x);
 
@@ -150,21 +197,46 @@ const HeadlessRasterizerView: React.FC = () => {
         return analyses[analysisId].frames[timestep].availableModels || [];
     }, [analyses]);
 
+    // Determinar si debemos mostrar las escenas o esperar a la restauración completa
+    const shouldWaitForTimestepRestore = useMemo(() => {
+        // Esperar a que se cargue el timeline
+        if (!timeline.length) return true;
+        
+        // Esperar a que se inicialicen los análisis
+        if (!isInitializedRef.current) return true;
+        
+        // Si hay timestep en URL, esperar a que se restaure
+        const urlTimestep = getUrlParam('ts');
+        if (urlTimestep && !timestepRestoredRef.current) {
+            return true;
+        }
+        
+        // Si hay análisis específicos en URL, esperar a que se configuren
+        const urlAnalysisLeft = getUrlParam('al');
+        const urlAnalysisRight = getUrlParam('ar');
+        if ((urlAnalysisLeft && !selectedAnalysisLeft) || (urlAnalysisRight && !selectedAnalysisRight)) {
+            return true;
+        }
+        
+        return false;
+    }, [timeline.length, getUrlParam, timestepRestoredRef.current, selectedAnalysisLeft, selectedAnalysisRight]);
+
     const availableModelsLeft = getAvailableModelsForFrame(selectedAnalysisLeft, currentTimestep);
     const availableModelsRight = getAvailableModelsForFrame(selectedAnalysisRight, currentTimestep);
 
+    // Solo crear las escenas si no estamos esperando la restauración del timestep
     const { scene: currentSceneLeft } = useRasterFrame(
         trajectoryId,
-        currentTimestep,
-        selectedAnalysisLeft || undefined,
-        selectedModelLeft
+        shouldWaitForTimestepRestore ? undefined : currentTimestep,
+        shouldWaitForTimestepRestore ? undefined : (selectedAnalysisLeft || undefined),
+        shouldWaitForTimestepRestore ? undefined : selectedModelLeft
     );
 
     const { scene: currentSceneRight } = useRasterFrame(
         trajectoryId,
-        currentTimestep,
-        selectedAnalysisRight || undefined,
-        selectedModelRight
+        shouldWaitForTimestepRestore ? undefined : currentTimestep,
+        shouldWaitForTimestepRestore ? undefined : (selectedAnalysisRight || undefined),
+        shouldWaitForTimestepRestore ? undefined : selectedModelRight
     );
 
     const dislocationsLeft = selectedAnalysisLeft ? analysisDislocationsById?.[selectedAnalysisLeft] : undefined;
@@ -230,6 +302,9 @@ const HeadlessRasterizerView: React.FC = () => {
         if(urlTimestep !== null){
             const targetIndex = findClosestTimestepIndex(urlTimestep, timeline);
             setSelectedFrameIndex(targetIndex);
+            timestepRestoredRef.current = true;
+        } else {
+            // Si no hay timestep en URL, marcar como restaurado para no esperar más
             timestepRestoredRef.current = true;
         }
     }, [timeline, getUrlParam]);
@@ -456,7 +531,7 @@ const HeadlessRasterizerView: React.FC = () => {
                             borderRadius: '50%',
                             animation: 'spin 1s linear infinite'
                         }} />
-                        Precargando frames: {preloadProgress}%
+                        Preloading frames: {preloadProgress}%
                     </div>
                 )}
                 
@@ -467,7 +542,7 @@ const HeadlessRasterizerView: React.FC = () => {
                         isDislocationsLoading={isDislocationsLoadingLeft}
                         showDislocations={showDislocations}
                         isPlaying={isPlaying}
-                        isLoading={isLoading}
+                        isLoading={isLoading || shouldWaitForTimestepRestore}
                         playbackControls={playbackControlsProps}
                         analysisSelect={analysisSelectLeftProps}
                         modelRail={modelRailLeftProps}
@@ -480,7 +555,7 @@ const HeadlessRasterizerView: React.FC = () => {
                         isDislocationsLoading={isDislocationsLoadingRight}
                         showDislocations={showDislocations}
                         isPlaying={isPlaying}
-                        isLoading={isLoading}
+                        isLoading={isLoading || shouldWaitForTimestepRestore}
                         playbackControls={playbackControlsProps}
                         analysisSelect={analysisSelectRightProps}
                         modelRail={modelRailRightProps}
@@ -492,7 +567,7 @@ const HeadlessRasterizerView: React.FC = () => {
                     timeline={timeline}
                     selectedFrameIndex={selectedFrameIndex}
                     isPlaying={isPlaying}
-                    isLoading={isLoading}
+                    isLoading={isLoading || shouldWaitForTimestepRestore}
                     onThumbnailClick={handleThumbnailClick}
                     getThumbnailScene={getThumbnailScene}
                 />

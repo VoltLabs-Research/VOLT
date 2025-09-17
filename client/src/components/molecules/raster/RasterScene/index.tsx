@@ -15,6 +15,25 @@ const RasterScene: React.FC<RasterSceneProps> = ({
     analysisSelect,
     modelRail
 }) => {
+    const [showUnavailable, setShowUnavailable] = React.useState(false);
+
+    // Resetear estado cuando cambia la escena
+    React.useEffect(() => {
+        setShowUnavailable(false);
+    }, [scene?.frame, scene?.model, scene?.analysisId]);
+
+    // Delay para mostrar "Model not found" - solo después de 1 segundo
+    React.useEffect(() => {
+        if (scene?.isUnavailable) {
+            const timeout = setTimeout(() => {
+                setShowUnavailable(true);
+            }, 1000);
+            return () => clearTimeout(timeout);
+        } else {
+            setShowUnavailable(false);
+        }
+    }, [scene?.isUnavailable]);
+
     if(isLoading) return <RasterSceneSkeleton />;
 
     if(!scene){
@@ -45,7 +64,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             </div>
 
             <div className='raster-scene-main'>
-                {scene.isUnavailable ? (
+                {showUnavailable ? (
                     <div style={{
                         width: '100%',
                         height: '100%',
@@ -64,7 +83,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
                             {scene.model.slice(0, 1).toUpperCase() + scene.model.slice(1)} - Frame {scene.frame}
                         </div>
                     </div>
-                ) : !scene.data || scene.isLoading ? (
+                ) : !scene.data || scene.isLoading || scene.isUnavailable ? (
                     <Skeleton
                         variant='rectangular'
                         animation='wave'

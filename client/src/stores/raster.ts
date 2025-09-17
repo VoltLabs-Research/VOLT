@@ -32,6 +32,7 @@ interface RasterState {
   getRasterFrames: (id: string) => Promise<void>;
   getRasterFrame: (trajectoryId: string, timestep: number, analysisId: string, model: string) => Promise<string | null>;
   preloadAllFrames: (trajectoryId: string) => Promise<void>;
+  preloadPriorizedFrames: (trajectoryId: string, priorityModels: { ml?: string; mr?: string }, currentTimestep?: number) => Promise<void>;
   clearRasterData: () => void;
   setSelectedAnalysis: (id: string | null) => void;
   clearFrameCache: () => void;
@@ -179,18 +180,27 @@ const useRasterStore = create<RasterState>((set, get) => {
       set({ selectedAnalysis: id });
     },
 
-    async preloadAllFrames(trajectoryId: string) {
+    async preloadPriorizedFrames(trajectoryId: string, priorityModels: { ml?: string; mr?: string }, currentTimestep?: number) {
       const { analyses } = get();
       if (!analyses || Object.keys(analyses).length === 0) return;
 
       set({ isPreloading: true, preloadProgress: 0 });
 
-      const framesToPreload: Array<{
+      const priorityFrames: Array<{
         timestep: number;
         analysisId: string;
         model: string;
+        priority: number; // 1 = highest, 2 = medium, 3 = lowest
+      }> = [];
+      
+      const otherFrames: Array<{
+        timestep: number;
+        analysisId: string;
+        model: string;
+        priority: number;
       }> = [];
 
+      // Primero recopilar todos los frames disponibles
       for (const analysisId of Object.keys(analyses)) {
         const analysis = analyses[analysisId];
         if (analysis.frames) {
@@ -198,67 +208,119 @@ const useRasterStore = create<RasterState>((set, get) => {
             const frameData = analysis.frames[timestep];
             if (frameData.availableModels) {
               for (const model of frameData.availableModels) {
-                framesToPreload.push({
+                const frame = {
                   timestep: parseInt(timestep, 10),
                   analysisId,
-                  model
-                });
+                  model,
+                  priority: 3 // default low priority
+                };
+
+                // Asignar prioridad alta a los modelos del usuario
+                const isPriorityModel = 
+                  (priorityModels.ml && model === priorityModels.ml) ||
+                  (priorityModels.mr && model === priorityModels.mr);
+
+                // Prioridad extra para timestep actual
+                const isCurrentTimestep = currentTimestep !== undefined && frame.timestep === currentTimestep;
+
+                if (isPriorityModel) {
+                  frame.priority = isCurrentTimestep ? 1 : 2; // Máxima prioridad para timestep actual
+                  priorityFrames.push(frame);
+                } else if (model === 'preview') {
+                  frame.priority = isCurrentTimestep ? 2 : 3; // Prioridad media para preview
+                  if (isCurrentTimestep) {
+                    priorityFrames.push(frame);
+                  } else {
+                    otherFrames.push(frame);
+                  }
+                } else {
+                  frame.priority = isCurrentTimestep ? 3 : 4; // Baja prioridad base
+                  otherFrames.push(frame);
+                }
               }
             }
           }
         }
       }
 
-      const totalFrames = framesToPreload.length;
+      // Ordenar por prioridad
+      priorityFrames.sort((a, b) => a.priority - b.priority || a.timestep - b.timestep);
+      otherFrames.sort((a, b) => a.priority - b.priority || a.timestep - b.timestep);
+
+      // Combinar: primero priority frames, luego otros
+      const allFrames = [...priorityFrames, ...otherFrames];
+      const totalFrames = allFrames.length;
       let completedFrames = 0;
 
-      const concurrencyLimit = 3; // Reducido para evitar lag
-      const chunks: Array<typeof framesToPreload> = [];
-      
-      for (let i = 0; i < framesToPreload.length; i += concurrencyLimit) {
-        chunks.push(framesToPreload.slice(i, i + concurrencyLimit));
-      }
+      // Procesar frames de alta prioridad primero con mayor concurrencia
+      const processFrames = async (frames: typeof allFrames, concurrency: number, isHighPriority = false) => {
+        const chunks: Array<typeof frames> = [];
+        
+        for (let i = 0; i < frames.length; i += concurrency) {
+          chunks.push(frames.slice(i, i + concurrency));
+        }
 
-      // Función para procesar con requestIdleCallback cuando esté disponible
-      const processChunk = (chunk: typeof framesToPreload) => {
-        return new Promise<void>((resolve) => {
-          const runChunk = async () => {
-            const promises = chunk.map(async ({ timestep, analysisId, model }) => {
-              try {
-                await get().getRasterFrame(trajectoryId, timestep, analysisId, model);
-              } catch (error) {
-                console.warn(`Failed to preload frame ${timestep}-${analysisId}-${model}:`, error);
-              } finally {
-                completedFrames++;
-                const progress = Math.round((completedFrames / totalFrames) * 100);
-                set({ preloadProgress: progress });
+        const processChunk = (chunk: typeof frames) => {
+          return new Promise<void>((resolve) => {
+            const runChunk = async () => {
+              const promises = chunk.map(async ({ timestep, analysisId, model }) => {
+                try {
+                  await get().getRasterFrame(trajectoryId, timestep, analysisId, model);
+                } catch (error) {
+                  console.warn(`Failed to preload frame ${timestep}-${analysisId}-${model}:`, error);
+                } finally {
+                  completedFrames++;
+                  const progress = Math.round((completedFrames / totalFrames) * 100);
+                  set({ preloadProgress: progress });
+                }
+              });
+
+              await Promise.all(promises);
+              resolve();
+            };
+
+            // Frames de alta prioridad se procesan inmediatamente
+            if (isHighPriority) {
+              runChunk();
+            } else {
+              // Otros frames usan requestIdleCallback
+              if (typeof requestIdleCallback !== 'undefined') {
+                requestIdleCallback(() => runChunk());
+              } else {
+                setTimeout(() => runChunk(), 0);
               }
-            });
+            }
+          });
+        };
 
-            await Promise.all(promises);
-            resolve();
-          };
-
-          // Usar requestIdleCallback si está disponible, sino setTimeout
-          if (typeof requestIdleCallback !== 'undefined') {
-            requestIdleCallback(() => runChunk());
-          } else {
-            setTimeout(() => runChunk(), 0);
+        // Procesar chunks
+        for (let i = 0; i < chunks.length; i++) {
+          await processChunk(chunks[i]);
+          
+          // Delay menor para frames de alta prioridad
+          const delay = isHighPriority ? 50 : 100;
+          if (i < chunks.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, delay));
           }
-        });
+        }
       };
 
-      // Procesar chunks con delay para no bloquear el main thread
-      for (let i = 0; i < chunks.length; i++) {
-        await processChunk(chunks[i]);
-        
-        // Pequeño delay entre chunks para dar espacio al main thread
-        if (i < chunks.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
+      // Procesar frames prioritarios primero con mayor concurrencia
+      if (priorityFrames.length > 0) {
+        await processFrames(priorityFrames, 5, true); // Mayor concurrencia para frames prioritarios
+      }
+
+      // Luego procesar otros frames con menor concurrencia
+      if (otherFrames.length > 0) {
+        await processFrames(otherFrames, 3, false);
       }
 
       set({ isPreloading: false, preloadProgress: 100 });
+    },
+
+    async preloadAllFrames(trajectoryId: string) {
+      // Mantener la función original como fallback
+      return this.preloadPriorizedFrames(trajectoryId, {});
     },
 
     clearRasterData() {
