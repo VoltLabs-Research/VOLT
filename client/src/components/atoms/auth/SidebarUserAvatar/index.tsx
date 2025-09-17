@@ -28,6 +28,11 @@ import './SidebarUserAvatar.css';
 // TODO: USER AVATAR SHOULD BE A NEW COMPONENT
 const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUsername = false, onClick = () => {} }) => {
     const { user, signOut } = useAuthStore();
+    
+    // Si no hay usuario autenticado, mostrar una interfaz genérica o nada
+    if (!user) {
+        return null;
+    }
 
     return (
         <ActionBasedFloatingContainer
@@ -41,12 +46,12 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
                     className='sidebar-user-avatar-container'
                     data-avatarrounded={avatarrounded}
                 >
-                    <span className='sidebar-user-avatar'>{user.firstName[0]}</span>
+                    <span className='sidebar-user-avatar'>{user.firstName?.[0] || '?'}</span>
                 </div>
 
                 <div className='sidebar-user-details-container'>
                     {!hideUsername && (
-                        <span className='sidebar-user-fullname'>{user.firstName} {user.lastName}</span>
+                        <span className='sidebar-user-fullname'>{user.firstName || ''} {user.lastName || ''}</span>
                     )}
                 </div>
             </div>

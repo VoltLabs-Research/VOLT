@@ -55,18 +55,23 @@ const previewUpload = multer({
     }
 });
 
-router.use(authMiddleware.protect);
-
+// Rutas que requieren autenticación completa
 router.route('/')
-    .get(controller.getUserTrajectories)
+    .get(
+        authMiddleware.protect,
+        controller.getUserTrajectories
+    )
     .post(
+        authMiddleware.protect,
         upload.array('trajectoryFiles'), 
         middleware.processAndValidateUpload,
         controller.createTrajectory
     );
 
+// Rutas que permiten acceso público si la trayectoria es pública
 router.get(
     '/:id/glb/:timestep/:analysisId', 
+    authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory, 
     controller.getTrajectoryGLB
 );
@@ -84,28 +89,33 @@ router.get(
 
 router.get(
     '/:id/preview',
+    authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory,
     controller.getTrajectoryPreview
 );
 
 router.get(
     '/:id/glb/',
+    authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory,
     controller.listTrajectoryGLBFiles
 );
 
 router.route('/:id')
     .get(
+        authMiddleware.optionalAuth,
         middleware.checkTeamMembershipForTrajectory, 
         controller.getTrajectoryById
     )
     .patch(
+        authMiddleware.protect,
         middleware.checkTeamMembershipForTrajectory,
         previewUpload.single('preview'),
         middleware.processPreviewUpload,
         controller.updateTrajectoryById
     )
     .delete(
+        authMiddleware.protect,
         middleware.checkTeamMembershipForTrajectory,
         controller.deleteTrajectoryById
     );

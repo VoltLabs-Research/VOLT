@@ -45,6 +45,7 @@ export interface ITimestepInfo{
 export interface ITrajectory extends Document {
     name: string;
     status: string;
+    isPublic: boolean;
     folderId: string;
     team: ITeam;
     rasterSceneViews: number;

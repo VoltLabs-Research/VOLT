@@ -7,7 +7,7 @@ export interface AuthState {
 }
 
 export interface AuthActions{
-    initializeAuth: () => Promise<void>;
+    initializeAuth: () => Promise<void | { user: null }>;
     signIn: (credentials: Record<string, string>) => Promise<void>;
     signUp: (details: Record<string, string>) => Promise<void>;
     signOut: () => void;

@@ -9,6 +9,7 @@ import CanvasSidebarTab from '@/components/atoms/CanvasSidebarTab';
 import CanvasSidebarScene from '@/components/molecules/CanvasSidebarScene';
 import CanvasSidebarModifiers from '@/components/molecules/CanvasSidebarModifiers';
 import useConfigurationStore from '@/stores/editor/configuration';
+import useAuthStore from '@/stores/authentication';
 import './EditorSidebar.css';
 
 const EditorSidebar = () => {
@@ -64,6 +65,7 @@ const EditorSidebar = () => {
 
             <div className='editor-sidebar-bottom-container'>
                 <div className='editor-sidebar-user-avatar-wrapper'>
+                    {/* SidebarUserAvatar ya comprueba internamente si hay usuario */}
                     <SidebarUserAvatar />
                 </div>
             </div>

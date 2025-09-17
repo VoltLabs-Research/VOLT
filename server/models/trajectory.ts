@@ -87,6 +87,10 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         enum: ['processing', 'ready'],
         default: 'processing'
     },
+    isPublic: {
+        type: Boolean,
+        default: true
+    },
     analysis: [{
         type: Schema.Types.ObjectId,
         ref: 'AnalysisConfig',

@@ -27,34 +27,39 @@ import * as authMiddleware from '@/middlewares/authentication';
 
 const router = Router();
 
-router.use(authMiddleware.protect);
-
+// Usar autenticación opcional para permitir acceso público a rutas GET
 router.get(
     '/:id/metadata',
+    authMiddleware.optionalAuth,
     trajectoryMiddleware.checkTeamMembershipForTrajectory,
     controller.getRasterFrameMetadata
 );
 
 router.get(
     '/:id/frame/:timestep/:analysisId/:model',
+    authMiddleware.optionalAuth,
     trajectoryMiddleware.checkTeamMembershipForTrajectory,
     controller.getRasterFrame
 );
 
 router.get(
     '/:id/frame-data/:timestep/:analysisId/:model',
+    authMiddleware.optionalAuth,
     trajectoryMiddleware.checkTeamMembershipForTrajectory,
     controller.getRasterFrameData
 );
 
 router.get(
     '/:id/glb/',
+    authMiddleware.optionalAuth,
     trajectoryMiddleware.checkTeamMembershipForTrajectory,
     controller.getRasterizedFrames
 );
 
+// Para rutas POST, seguir requiriendo autenticación completa
 router.post(
     '/:id/glb/',
+    authMiddleware.protect,
     trajectoryMiddleware.checkTeamMembershipForTrajectory,
     controller.rasterizeFrames
 );

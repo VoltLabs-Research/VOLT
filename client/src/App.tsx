@@ -109,25 +109,27 @@ const App = () => {
                 onExitComplete={handleExitComplete}
             >
                 <Routes location={location} key={location.pathname}>
+                    {/* Rutas públicas para visualizar trayectorias (accesibles sin autenticación) */}
+                    <Route
+                        path='/canvas/:trajectoryId/'
+                        element={
+                            <PageWrapper>
+                                <Canvas />
+                            </PageWrapper>
+                        }
+                    />
+
+                    <Route
+                        path='/raster/:trajectoryId'
+                        element={
+                            <PageWrapper>
+                                <HeadlessRasterizerView />
+                            </PageWrapper>
+                        }
+                    />
+                    
+                    {/* Rutas protegidas que requieren autenticación */}
                     <Route element={<ProtectedRoute mode='protect' />}>
-                        <Route
-                            path='/canvas/:trajectoryId/'
-                            element={
-                                <PageWrapper>
-                                    <Canvas />
-                                </PageWrapper>
-                            }
-                        />
-
-                        <Route
-                            path='/raster/:trajectoryId'
-                            element={
-                                <PageWrapper>
-                                    <HeadlessRasterizerView />
-                                </PageWrapper>
-                            }
-                        />
-
                         <Route element={<DashboardLayout />}>
                             <Route
                                 path='/dashboard'

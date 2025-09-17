@@ -52,7 +52,7 @@ export interface HeaderProps{
     isLoading: boolean;
     onGoBack: () => void;
     onView3D: () => void;
-    onSignIn: () => void;
+    onSignIn?: () => void;
 }
 
 export interface ThumbnailsProps{

@@ -72,6 +72,29 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 };
 
 /**
+ * Express middleware to intentar autenticar al usuario, pero continuar si no está autenticado.
+ * Útil para rutas que permiten acceso público pero tienen funcionalidades adicionales para usuarios autenticados.
+ *
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @param {NextFunction} next - Express next function to continue.
+*/
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
+    let token;
+    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
+        token = req.headers.authorization.split(' ')[1];
+        try {
+            const freshUser = await getUserByToken(token, next);
+            (req as any).user = freshUser;
+        } catch (error) {
+            // Si hay error en la autenticación, simplemente continuamos sin usuario
+            console.log('Optional authentication failed:', error);
+        }
+    }
+    next();
+};
+
+/**
  * Authorization middleware to restrict access based on user roles.
  *
  * @param {...string} roles - The allowed roles for the route.
@@ -80,7 +103,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 export const restrictTo = (...roles: string[]): RequestHandler => {
     return (req: Request, res: Response, next: NextFunction) => {
         // Check if the user role matches any allowed roles
-        if(!roles.includes(req.user.role)){
+        if(!roles.includes((req as any).user.role)){
             return next(new RuntimeError('Authentication::Unauthorized', 403));
         }
         next();

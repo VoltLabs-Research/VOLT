@@ -7,10 +7,11 @@ import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import CanvasWidgets from '@/components/atoms/CanvasWidgets';
 import TetrahedronLoader from '@/components/atoms/TetrahedronLoader';
 import useEditorUIStore from '@/stores/ui/editor';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion';
 import useModelStore from '@/stores/editor/model';
 import usePlaybackStore from '@/stores/editor/playback';
+import useAuthStore from '@/stores/authentication';
 import './Canvas.css';
 
 const CANVAS_CONFIG = {

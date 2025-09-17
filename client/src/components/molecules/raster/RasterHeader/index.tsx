@@ -70,17 +70,20 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                     <span>View in 3D</span>
                 </motion.button>
 
-                <motion.button
-                    className='btn-signin'
-                    aria-label='Sign in'
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={onSignIn}
-                >
-                    <span className='btn-signin-glow' />
-                    <IoLogInOutline size={18} />
-                    <span>Sign In</span>
-                </motion.button>
+                {/* Mostrar botón de inicio de sesión solo si no hay usuario autenticado */}
+                {onSignIn && (
+                    <motion.button
+                        className='btn-signin'
+                        aria-label='Sign in'
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={onSignIn}
+                    >
+                        <span className='btn-signin-glow' />
+                        <IoLogInOutline size={18} />
+                        <span>Sign In</span>
+                    </motion.button>
+                )}
             </div>
         </div>
     );

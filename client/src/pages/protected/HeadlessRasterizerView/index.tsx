@@ -5,6 +5,7 @@ import useRasterStore from '@/stores/raster';
 import useTrajectoryStore from '@/stores/trajectories';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import { useStructureAnalysisStore } from '@/stores/structure-analysis';
+import useAuthStore from '@/stores/authentication';
 import useRasterFrame from '@/hooks/raster/use-raster-frame';
 import useCacheCleanup from '@/hooks/raster/use-cache-cleanup';
 import type { AnalysisSelectProps, MetricEntry, ModelRailProps, PlaybackControlsProps, Scene } from '@/types/raster';
@@ -823,6 +824,10 @@ const HeadlessRasterizerView: React.FC = () => {
         navigate(`/canvas/${trajectory._id}/`);
     }, [trajectory, navigate]);
 
+    // Obtenemos el estado de autenticación
+    const user = useAuthStore((state) => state.user);
+    const isAuthenticated = !!user;
+
     const handleSignIn = useCallback(() => {
         navigate('/auth/sign-in');
     }, [navigate]);
@@ -938,15 +943,13 @@ const HeadlessRasterizerView: React.FC = () => {
 
     return (
         <main className='raster-view-container'>
-            <RasterHeader
-                trajectory={trajectory}
-                isLoading={isLoading}
-                onGoBack={handleGoBack}
-                onView3D={handleView3D}
-                onSignIn={handleSignIn}
-            />
-
-                        <div className='raster-scenes-container' style={{ position: 'relative' }}>
+                <RasterHeader
+                    trajectory={trajectory}
+                    isLoading={isLoading}
+                    onGoBack={handleGoBack}
+                    onView3D={handleView3D}
+                    onSignIn={!user ? handleSignIn : undefined}
+                />                        <div className='raster-scenes-container' style={{ position: 'relative' }}>
                 {isPreloading && (
                     <div style={{
                         position: 'absolute',

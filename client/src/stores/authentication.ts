@@ -48,12 +48,22 @@ const useAuthStore = create<AuthStore>()((set, get) => {
         ...initialState,
 
         initializeAuth(){
+            // Verificar primero si hay un token
+            const token = TokenStorage.getToken();
+            if (!token) {
+                return Promise.resolve({ user: null });
+            }
+            
             const req = api.get<ApiResponse<User>>('/auth/me');
 
             return asyncAction(() => req, {
                 loadingKey: 'isLoading',
                 onSuccess: (res) => ({ user: res.data.data }),
-                onError: () => ({ user: null })
+                onError: () => {
+                    // Si hay error, limpiar el token
+                    TokenStorage.removeToken();
+                    return { user: null };
+                }
             });
         },
 

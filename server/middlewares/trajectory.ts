@@ -106,12 +106,27 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
 
 export const checkTeamMembershipForTrajectory = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const userId = (req as any).user.id;
     const trajectory = await Trajectory.findById(id);
     if(!trajectory){
         return res.status(404).json({
             status: 'error',
             data: { error: 'Trajectory not found' }
+        });
+    }
+
+    // Si la trayectoria es pública, permitir acceso sin verificar membresía
+    if(trajectory.isPublic) {
+        res.locals.trajectory = trajectory;
+        res.locals.isPublicAccess = true;
+        return next();
+    }
+
+    // Para trayectorias privadas, verificar que el usuario está autenticado
+    const userId = (req as any).user?.id;
+    if(!userId) {
+        return res.status(401).json({
+            status: 'error',
+            data: { error: 'Authentication required to access private trajectory' }
         });
     }
 
