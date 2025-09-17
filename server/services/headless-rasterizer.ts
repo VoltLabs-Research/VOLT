@@ -124,7 +124,7 @@ const add3 = (a: [number, number, number], b: [number, number, number]) => {
 const aces = (x: number) => {
     const a = 2.51;
     const b = 0.03;
-    const c = 2.43;
+    const c = 2.33;
     const d = 0.59;
     const e = 0.14;
 
@@ -136,30 +136,32 @@ const toneMapACES = (c: [number, number, number]) => {
 };
 
 const colorToCSS = (rgb: [number, number, number], alpha = 1) => {
+    const boost = 1.15; 
     const [r, g, b] = rgb;
-    const R = Math.round(clamp01(lin2srgb(r)) * 255);
-    const G = Math.round(clamp01(lin2srgb(g)) * 255);
-    const B = Math.round(clamp01(lin2srgb(b)) * 255);
+    const R = Math.round(clamp01(lin2srgb(r * boost)) * 255);
+    const G = Math.round(clamp01(lin2srgb(g * boost)) * 255);
+    const B = Math.round(clamp01(lin2srgb(b * boost)) * 255);
     return `rgba(${R},${G},${B},${clamp01(alpha)})`;
 };
 
 const LIGHTS = {
-    ambient: 0.28,
+    ambient: 0.22, 
     key: {
         dir: vnorm([-0.6, -0.8, -0.2]),
-        intensity: 1.15
+        intensity: 1.25 
     },
     fill: {
         dir: vnorm([ 0.8,  0.2,  0.35]),
-        intensity: 0.45
+        intensity: 0.50
     },
     rim: {
-        intensity: 0.35,
-        power: 2.0
+        intensity: 0.45,
+        power: 2.25 
     },
     shadow: {
-        sizePx: 3,
-        alpha: 0.22
+        sizePx: 3.5,
+        alpha: 0.28,
+        softness: 0.5 
     }
 };
 
@@ -205,6 +207,18 @@ const collectPointsFromPrimitive = (prim: Primitive, world: mat4, into: Point[])
                 g /= 255;
                 b /= 255; 
             }
+            
+            // color saturation for atoms
+            const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+            const saturationBoost = 1.3; 
+            r = r + (r - luminance) * saturationBoost;
+            g = g + (g - luminance) * saturationBoost;
+            b = b + (b - luminance) * saturationBoost;
+            
+            // Ensure values are still valid
+            r = clamp(r, 0, 1);
+            g = clamp(g, 0, 1);
+            b = clamp(b, 0, 1);
         }
 
         into.push({ x: tmp[0], y: tmp[1], z: tmp[2], c: [r, g, b] });
@@ -236,6 +250,20 @@ const collectTrianglesFromPrimitive = (prim: Primitive, world: mat4, into: Trian
             g /= 255; 
             b /= 255; 
         }
+        
+        // color saturation for meshes
+        const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+        // Boost saturation by 30%
+        const saturationBoost = 1.3; 
+        r = r + (r - luminance) * saturationBoost;
+        g = g + (g - luminance) * saturationBoost;
+        b = b + (b - luminance) * saturationBoost;
+        
+        // Ensure values are still valid
+        r = clamp(r, 0, 1);
+        g = clamp(g, 0, 1);
+        b = clamp(b, 0, 1);
+        
         return [r, g, b];
     };
 
@@ -315,8 +343,8 @@ const shouldRenderAsMesh = (node: GNode): boolean => {
 };
 
 const adaptivePointSize = (particleCount: number) => {
-    // Base size that works well for reference point (36624 particles, 6.0 size)
-    const baseSize = 6.0;
+    // Base size that works well for reference point (36624 particles, 7.0 size)
+    const baseSize = 7.0;
     const referenceCount = 36624;
     
     // Scale inversely with square root of particle count ratio
@@ -358,6 +386,36 @@ const reservoirSample = <T>(arr: T[], k: number): T[] => {
     }
 
     return res;
+};
+
+// Calculate ambient occlusion for points
+const calculateAO = (points: Point[], maxDistance: number = 5) => {
+    const aoMap = new Map<Point, number>();
+    
+    // Simple AO calculation - more neighbors = more occlusion
+    for(const point of points){
+        let occlusionCount = 0;
+        for(const otherPoint of points){
+            if(point === otherPoint) continue;
+            
+            const dx = point.x - otherPoint.x;
+            const dy = point.y - otherPoint.y;
+            const dz = point.z - otherPoint.z;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            
+            if(dist < maxDistance){
+                // Closer points contribute more to occlusion
+                occlusionCount += 1 - (dist / maxDistance);
+            }
+        }
+        
+        // Normalize and store AO factor
+        // Cap at 0.7 to avoid total blackness
+        const aoFactor = clamp(occlusionCount / 20, 0, 0.7); 
+        aoMap.set(point, aoFactor);
+    }
+    
+    return aoMap;
 };
 
 class HeadlessRasterizer{
@@ -474,6 +532,9 @@ class HeadlessRasterizer{
             updR(t.c.x, t.c.y, t.c.z);
         }
 
+        // Calculate ambient occlusion if we have points
+        const aoMap = usePoints.length > 0 ? calculateAO(usePoints, r * 0.1) : new Map();
+
         const aspect = this.opts.width / this.opts.height;
         const fovRad = (this.opts.fov * Math.PI) / 180;
         const fovH = 2 * Math.atan(Math.tan(fovRad / 2) * aspect);
@@ -540,7 +601,16 @@ class HeadlessRasterizer{
             if(ndcX < -1 || ndcX > 1 || ndcY < -1 || ndcY > 1 || ndcZ < -1 || ndcZ > 1) continue;
             const sx = (ndcX * 0.5 + 0.5) * this.opts.width;
             const sy = (1 - (ndcY * 0.5 + 0.5)) * this.opts.height;
-            out2D.push({ sx, sy, z: ndcZ, c: point.c }); 
+            
+            // Apply ambient occlusion to color
+            const aoFactor = aoMap.get(point) || 0;
+            const aoAdjustedColor: [number, number, number] = [
+                point.c[0] * (1 - aoFactor),
+                point.c[1] * (1 - aoFactor),
+                point.c[2] * (1 - aoFactor)
+            ];
+            
+            out2D.push({ sx, sy, z: ndcZ, c: aoAdjustedColor }); 
         }
         out2D.sort((a, b) => b.z - a.z);
 
@@ -598,6 +668,7 @@ class HeadlessRasterizer{
             ctx.fillRect(0, 0, this.opts.width, this.opts.height);
         }
 
+        // triangle shading function with shadows and ambient occlusion
         const shadeTriangle = (t: Triangle3D, base: [number, number, number]) => {
             // normal face in WORLD
             const va: [number, number, number] = [t.a.x, t.a.y, t.a.z];
@@ -613,17 +684,19 @@ class HeadlessRasterizer{
             ];
             const vdir = vnorm(vsub(center, [eye[0], eye[1],eye[2]]));
 
-            // diffuse lighting
+            // Enhanced diffuse lighting
             // -dir
-            const ndl_key  = clamp(vdot(n, mul3(LIGHTS.key.dir as any, -1) as any));
-            const ndl_fill = clamp(vdot(n, mul3(LIGHTS.fill.dir as any, -1) as any));
+            const ndl_key  = Math.pow(clamp(vdot(n, mul3(LIGHTS.key.dir as any, -1) as any)), 0.8);
+            const ndl_fill = Math.pow(clamp(vdot(n, mul3(LIGHTS.fill.dir as any, -1) as any)), 0.8);
+            
             // ambient
             let col = mul3(base, LIGHTS.ambient); 
 
-            col = add3(col, mul3(base, LIGHTS.key.intensity  * ndl_key));
+            // Stronger key and fill light contribution
+            col = add3(col, mul3(base, LIGHTS.key.intensity * ndl_key));
             col = add3(col, mul3(base, LIGHTS.fill.intensity * ndl_fill));
 
-            // rim light (highlights silhouette in light tights)
+            // rim light (highlights silhouette in light tight)
             const rim = Math.pow(clamp(1 - Math.abs(vdot(n, vdir))), LIGHTS.rim.power) * LIGHTS.rim.intensity;
             col = add3(col, mul3([1, 1, 1], rim)); 
 
@@ -643,11 +716,26 @@ class HeadlessRasterizer{
             return [sx * LIGHTS.shadow.sizePx, sy * LIGHTS.shadow.sizePx] as [number, number];
         })();
 
+        // Render triangles 
         for(const t2 of outTris2D){
             const shaded = shadeTriangle(t2.tri3D, t2.cAvg);
             const [ox, oy] = screenShadowOffset;
             
-            ctx.fillStyle = colorToCSS([0, 0, 0], LIGHTS.shadow.alpha);
+            // Draw softer shadow with gradient
+            const shadowAlpha = LIGHTS.shadow.alpha;
+            if (LIGHTS.shadow.softness > 0) {
+                // Draw a blurred shadow for softer edges
+                ctx.fillStyle = colorToCSS([0, 0, 0], shadowAlpha * 0.7);
+                ctx.beginPath();
+                ctx.moveTo(t2.a.x + ox * 1.2, t2.a.y + oy * 1.2);
+                ctx.lineTo(t2.b.x + ox * 1.2, t2.b.y + oy * 1.2);
+                ctx.lineTo(t2.c.x + ox * 1.2, t2.c.y + oy * 1.2);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            // Main shadow
+            ctx.fillStyle = colorToCSS([0, 0, 0], shadowAlpha);
             ctx.beginPath();
             ctx.moveTo(t2.a.x + ox, t2.a.y + oy);
             ctx.lineTo(t2.b.x + ox, t2.b.y + oy);
@@ -655,6 +743,7 @@ class HeadlessRasterizer{
             ctx.closePath();
             ctx.fill();
 
+            // Main triangle
             ctx.fillStyle = colorToCSS(shaded, 1);
             ctx.beginPath();
             ctx.moveTo(t2.a.x, t2.a.y);
@@ -664,16 +753,37 @@ class HeadlessRasterizer{
             ctx.fill();            
         }
 
+        // Calculate radius for atoms
         const radius = adaptivePointSize(points.length);
+        
+        // Render points (atoms)
         for(const p of out2D){
-            ctx.fillStyle = colorToCSS([0,0,0], 0.12);
+            // Draw soft outer shadow
+            ctx.fillStyle = colorToCSS([0, 0, 0], 0.15);
+            ctx.beginPath();
+            ctx.arc(p.sx + 1.5, p.sy + 1.5, radius * 1.05, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Draw main shadow
+            ctx.fillStyle = colorToCSS([0, 0, 0], 0.25);
             ctx.beginPath();
             ctx.arc(p.sx + 1, p.sy + 1, radius, 0, Math.PI*2);
             ctx.fill();
-
+            
+            // Draw atom with more vibrant colors
             ctx.fillStyle = colorToCSS(p.c, 1);
             ctx.beginPath();
             ctx.arc(p.sx, p.sy, radius, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Add highlight on top-left of atom for 3D effect
+            const highlightRadius = radius * 0.4;
+            const highlightOffsetX = -radius * 0.3;
+            const highlightOffsetY = -radius * 0.3;
+            
+            ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+            ctx.beginPath();
+            ctx.arc(p.sx + highlightOffsetX, p.sy + highlightOffsetY, highlightRadius, 0, Math.PI*2);
             ctx.fill();
         }
 
