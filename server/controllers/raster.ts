@@ -52,6 +52,137 @@ export const readRasterModel = async (modelType: string,  analysisId: string, ra
     return buffer;
 };
 
+export const getRasterFrameMetadata = async (req: Request, res: Response) => {
+    let trajectory = res.locals.trajectory;
+    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+    const rasterDir = join(basePath, trajectory.folderId, 'raster');
+
+    trajectory = await Trajectory.findOneAndUpdate(
+        { _id: trajectory._id }, 
+        { $inc: { rasterSceneViews: 1 } },
+        { new: true }
+    );
+
+    const analyses = await AnalysisConfig
+        .find({ trajectory: trajectory._id })
+        .select('-createdAt -updatedAt -__v')
+        .lean();
+
+    const analysesMetadata: Record<string, any> = {};
+
+    for(const analysis of analyses){
+        const id = analysis._id.toString();
+        const frameMetadata: Record<string, any> = {};
+        
+        for(const { timestep } of trajectory.frames){
+            const availableModels = await listRasterModels(rasterDir, timestep, id);
+            frameMetadata[timestep] = {
+                timestep,
+                availableModels: ['preview', ...availableModels]
+            };
+        }
+
+        analysesMetadata[id] = {
+            ...analysis,
+            frames: frameMetadata
+        };
+    }
+
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.setHeader('ETag', `"raster-meta-${trajectory._id}"`);
+
+    return res.status(200).json({
+        status: 'success',
+        data: {
+            trajectory,
+            analyses: analysesMetadata
+        }
+    });
+};
+
+export const getRasterFrame = async (req: Request, res: Response) => {
+    const trajectory = res.locals.trajectory;
+    const { timestep, analysisId, model } = req.params;
+    const frameNumber = parseInt(timestep, 10);
+    
+    if(isNaN(frameNumber)){
+        return res.status(400).json({
+            status: 'error',
+            message: 'Invalid timestep parameter'
+        });
+    }
+
+    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+    const rasterDir = join(basePath, trajectory.folderId, 'raster');
+
+    try {
+        let buffer: Buffer;
+        
+        if(model === 'preview'){
+            buffer = await readFile(join(rasterDir, `${frameNumber}.png`));
+        } else {
+            buffer = await readRasterModel(model, analysisId, rasterDir, frameNumber);
+        }
+
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('ETag', `"frame-${trajectory._id}-${frameNumber}-${model}-${analysisId}"`);
+        
+        return res.send(buffer);
+    } catch (error) {
+        return res.status(404).json({
+            status: 'error',
+            message: 'Frame not found'
+        });
+    }
+};
+
+export const getRasterFrameData = async (req: Request, res: Response) => {
+    const trajectory = res.locals.trajectory;
+    const { timestep, analysisId, model } = req.params;
+    const frameNumber = parseInt(timestep, 10);
+    
+    if(isNaN(frameNumber)){
+        return res.status(400).json({
+            status: 'error',
+            message: 'Invalid timestep parameter'
+        });
+    }
+
+    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+    const rasterDir = join(basePath, trajectory.folderId, 'raster');
+
+    try {
+        let buffer: Buffer;
+        
+        if(model === 'preview'){
+            buffer = await readFile(join(rasterDir, `${frameNumber}.png`));
+        } else {
+            buffer = await readRasterModel(model, analysisId, rasterDir, frameNumber);
+        }
+
+        const base64Data = `data:image/png;base64,${buffer.toString('base64')}`;
+
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('ETag', `"frame-data-${trajectory._id}-${frameNumber}-${model}-${analysisId}"`);
+        
+        return res.status(200).json({
+            status: 'success',
+            data: {
+                model,
+                frame: frameNumber,
+                analysisId,
+                data: base64Data
+            }
+        });
+    } catch (error) {
+        return res.status(404).json({
+            status: 'error',
+            message: 'Frame not found'
+        });
+    }
+};
+
 export const getRasterizedFrames = async (req: Request, res: Response) => {
     let trajectory = res.locals.trajectory;
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
@@ -70,9 +201,6 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
 
     const analysesData: Record<string, any> = {};
 
-    // The raster frame is stored in the following format "<frame>.glb".
-    // Other models produced by modifiers, such as dislocations, are exported in 
-    // the following format: "frame-<frame>_<model>-analysis-<analysisId>".
     for(const analysis of analyses){
         const id = analysis._id.toString();
         const data: Record<string, any> = {
@@ -82,7 +210,6 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
 
         for(const { timestep } of trajectory.frames){
             const models: Record<string, any> = {};
-            // [ 'defect_mesh', 'dislocations', 'interface_mesh', ... ]
             const availableModels = await listRasterModels(rasterDir, timestep, id);
 
             for(const model of availableModels){

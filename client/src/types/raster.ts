@@ -3,7 +3,9 @@ import type { IconType } from 'react-icons/lib';
 export interface Scene{
     frame: number;
     model: string;
-    data: string;
+    data?: string;
+    analysisId?: string;
+    isLoading?: boolean;
 }
 
 export interface FrameObject{

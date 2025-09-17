@@ -45,7 +45,18 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             </div>
 
             <div className='raster-scene-main'>
-                {disableAnimation ? (
+                {!scene.data || scene.isLoading ? (
+                    <Skeleton
+                        variant='rectangular'
+                        animation='wave'
+                        width='100%'
+                        height='100%'
+                        sx={{
+                            borderRadius: '0.75rem',
+                            bgcolor: 'rgba(255, 255, 255, 0.06)'
+                        }}
+                    />
+                ) : disableAnimation ? (
                     <img 
                         key={`${scene.frame}-${scene.model}`}
                         className='raster-scene'

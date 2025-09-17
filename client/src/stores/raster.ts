@@ -8,22 +8,36 @@ interface AnalysisName {
   name: string;
 }
 
+interface FrameCache {
+  [key: string]: {
+    data: string;
+    timestamp: number;
+  };
+}
+
 interface RasterState {
   trajectory: any;
   isLoading: boolean;
   isAnalysisLoading: boolean;
-  analyses: Record<string, any>;       // objeto indexado por _id
-  analysesNames: AnalysisName[];       // lista ligera para selects
-  selectedAnalysis: string | null;     // id seleccionado
+  analyses: Record<string, any>;
+  analysesNames: AnalysisName[];
+  selectedAnalysis: string | null;
   error: string | null;
+  frameCache: FrameCache;
+  loadingFrames: Set<string>;
+  isPreloading: boolean;
+  preloadProgress: number;
 
-  // actions
   getRasterFrames: (id: string) => Promise<void>;
+  getRasterFrame: (trajectoryId: string, timestep: number, analysisId: string, model: string) => Promise<string | null>;
+  preloadAllFrames: (trajectoryId: string) => Promise<void>;
   clearRasterData: () => void;
   setSelectedAnalysis: (id: string | null) => void;
+  clearFrameCache: () => void;
+  getFrameCacheKey: (timestep: number, analysisId: string, model: string) => string;
 }
 
-const initialState: RasterState = {
+const initialState = {
   trajectory: null,
   isLoading: false,
   isAnalysisLoading: false,
@@ -31,6 +45,10 @@ const initialState: RasterState = {
   analysesNames: [],
   selectedAnalysis: null,
   error: null,
+  frameCache: {},
+  loadingFrames: new Set<string>(),
+  isPreloading: false,
+  preloadProgress: 0,
 };
 
 const useRasterStore = create<RasterState>((set, get) => {
@@ -51,7 +69,7 @@ const useRasterStore = create<RasterState>((set, get) => {
       set({ isLoading: true, error: null });
 
       try {
-        const res = await api.get(`/raster/${id}/glb`);
+        const res = await api.get(`/raster/${id}/metadata`);
         const { analyses, trajectory } = res.data.data;
 
         const analysesNames = Object.values(analyses).map((a: any) => ({
@@ -65,12 +83,12 @@ const useRasterStore = create<RasterState>((set, get) => {
           trajectory,
           analyses,
           analysesNames,
-          isLoading: false,
+          isLoading: false, 
           error: null,
           selectedAnalysis: analysesNames.length > 0 ? analysesNames[0]._id : null,
         });
       } catch (error) {
-        console.error("Error loading raster frames:", error);
+        console.error("Error loading raster metadata:", error);
         set({
           isLoading: false,
           error: error instanceof Error ? error.message : "Unknown error",
@@ -78,8 +96,127 @@ const useRasterStore = create<RasterState>((set, get) => {
       }
     },
 
+    async getRasterFrame(trajectoryId: string, timestep: number, analysisId: string, model: string) {
+      const cacheKey = get().getFrameCacheKey(timestep, analysisId, model);
+      const { frameCache, loadingFrames } = get();
+      
+      if (frameCache[cacheKey]) {
+        const cached = frameCache[cacheKey];
+        const isExpired = Date.now() - cached.timestamp > 300000;
+        if (!isExpired) {
+          return cached.data;
+        }
+      }
+
+      if (loadingFrames.has(cacheKey)) {
+        return null;
+      }
+
+      try {
+        set(state => ({
+          loadingFrames: new Set(state.loadingFrames).add(cacheKey)
+        }));
+
+        const res = await api.get(`/raster/${trajectoryId}/frame-data/${timestep}/${analysisId}/${model}`);
+        const imageData = res.data.data.data;
+
+        set(state => {
+          const newLoadingFrames = new Set(state.loadingFrames);
+          newLoadingFrames.delete(cacheKey);
+          
+          return {
+            frameCache: {
+              ...state.frameCache,
+              [cacheKey]: {
+                data: imageData,
+                timestamp: Date.now()
+              }
+            },
+            loadingFrames: newLoadingFrames
+          };
+        });
+
+        return imageData;
+      } catch (error) {
+        console.error("Error loading frame:", error);
+        set(state => {
+          const newLoadingFrames = new Set(state.loadingFrames);
+          newLoadingFrames.delete(cacheKey);
+          return { loadingFrames: newLoadingFrames };
+        });
+        return null;
+      }
+    },
+
+    getFrameCacheKey(timestep: number, analysisId: string, model: string) {
+      return `${timestep}-${analysisId}-${model}`;
+    },
+
+    clearFrameCache() {
+      set({ frameCache: {}, loadingFrames: new Set() });
+    },
+
     setSelectedAnalysis(id) {
       set({ selectedAnalysis: id });
+    },
+
+    async preloadAllFrames(trajectoryId: string) {
+      const { analyses } = get();
+      if (!analyses || Object.keys(analyses).length === 0) return;
+
+      set({ isPreloading: true, preloadProgress: 0 });
+
+      const framesToPreload: Array<{
+        timestep: number;
+        analysisId: string;
+        model: string;
+      }> = [];
+
+      for (const analysisId of Object.keys(analyses)) {
+        const analysis = analyses[analysisId];
+        if (analysis.frames) {
+          for (const timestep of Object.keys(analysis.frames)) {
+            const frameData = analysis.frames[timestep];
+            if (frameData.availableModels) {
+              for (const model of frameData.availableModels) {
+                framesToPreload.push({
+                  timestep: parseInt(timestep, 10),
+                  analysisId,
+                  model
+                });
+              }
+            }
+          }
+        }
+      }
+
+      const totalFrames = framesToPreload.length;
+      let completedFrames = 0;
+
+      const concurrencyLimit = 6;
+      const chunks: Array<typeof framesToPreload> = [];
+      
+      for (let i = 0; i < framesToPreload.length; i += concurrencyLimit) {
+        chunks.push(framesToPreload.slice(i, i + concurrencyLimit));
+      }
+
+      for (const chunk of chunks) {
+        const promises = chunk.map(async ({ timestep, analysisId, model }) => {
+          try {
+            await get().getRasterFrame(trajectoryId, timestep, analysisId, model);
+          } catch (error) {
+            console.warn(`Failed to preload frame ${timestep}-${analysisId}-${model}:`, error);
+          } finally {
+            completedFrames++;
+            const progress = Math.round((completedFrames / totalFrames) * 100);
+            set({ preloadProgress: progress });
+          }
+        });
+
+        await Promise.all(promises);
+      }
+
+      set({ isPreloading: false, preloadProgress: 100 });
     },
 
     clearRasterData() {
@@ -89,6 +226,10 @@ const useRasterStore = create<RasterState>((set, get) => {
         analysesNames: [],
         selectedAnalysis: null,
         error: null,
+        frameCache: {},
+        loadingFrames: new Set(),
+        isPreloading: false,
+        preloadProgress: 0,
       });
     },
   };

@@ -4,7 +4,9 @@ import useUrlState from '@/hooks/core/use-url-state';
 import useRasterStore from '@/stores/raster';
 import useTrajectoryStore from '@/stores/trajectories';
 import useAnalysisConfigStore from '@/stores/analysis-config';
-import type { AnalysisSelectProps, FrameObject, MetricEntry, ModelRailProps, PlaybackControlsProps, Scene } from '@/types/raster';
+import useRasterFrame from '@/hooks/raster/use-raster-frame';
+import useCacheCleanup from '@/hooks/raster/use-cache-cleanup';
+import type { AnalysisSelectProps, MetricEntry, ModelRailProps, PlaybackControlsProps, Scene } from '@/types/raster';
 import { formatSize } from '@/utilities/scene-utils';
 import { IoTimeOutline, IoLayersOutline, IoBarChartOutline } from 'react-icons/io5';
 import RasterHeader from '@/components/molecules/raster/RasterHeader';
@@ -18,9 +20,11 @@ const HeadlessRasterizerView: React.FC = () => {
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
     const { updateUrlParams, getUrlParam } = useUrlState();
 
-    const { trajectory, analyses, analysesNames, getRasterFrames, isLoading } = useRasterStore();
+    const { trajectory, analyses, analysesNames, getRasterFrames, isLoading, preloadAllFrames, isPreloading, preloadProgress } = useRasterStore();
     const { getMetrics, trajectoryMetrics, isMetricsLoading } = useTrajectoryStore();
     const { getDislocationsByAnalysisId, analysisDislocationsById } = useAnalysisConfigStore();
+    
+    useCacheCleanup();
 
     const [selectedAnalysisLeft, setSelectedAnalysisLeft] = useState<string | null>(null);
     const [selectedAnalysisRight, setSelectedAnalysisRight] = useState<string | null>(null);
@@ -35,13 +39,16 @@ const HeadlessRasterizerView: React.FC = () => {
     const modelsFromUrlRef = useRef({ left: false, right: false });
 
     const fetchedForIdRef = useRef<string | null>(null);
+    const preloadInitiatedRef = useRef<string | null>(null);
     const getRasterFramesRef = useRef(getRasterFrames);
     const getMetricsRef = useRef(getMetrics);
+    const preloadAllFramesRef = useRef(preloadAllFrames);
 
     useEffect(() => {
         getRasterFramesRef.current = getRasterFrames;
         getMetricsRef.current = getMetrics;
-    }, [getRasterFrames, getMetrics]);
+        preloadAllFramesRef.current = preloadAllFrames;
+    }, [getRasterFrames, getMetrics, preloadAllFrames]);
 
     useEffect(() => {
         if(!trajectoryId) return;
@@ -52,11 +59,19 @@ const HeadlessRasterizerView: React.FC = () => {
         getMetricsRef.current(trajectoryId);
     }, [trajectoryId]);
 
-    const isValidNumber = (x: any): x is number => typeof x === "number" && Number.isFinite(x);
+    useEffect(() => {
+        if(!trajectoryId || !analyses || Object.keys(analyses).length === 0) return;
+        if(preloadInitiatedRef.current === trajectoryId) return;
+        if(isLoading) return;
 
-    const findFrameByTimestep = (frames: FrameObject[], timestep: number): FrameObject | null => {
-        return frames.find((frame) => extractTimestepFromFrame(frame) === timestep) || null;
-    };
+        preloadInitiatedRef.current = trajectoryId;
+        
+        setTimeout(() => {
+            preloadAllFramesRef.current(trajectoryId);
+        }, 1000);
+    }, [trajectoryId, analyses, isLoading]);
+
+    const isValidNumber = (x: any): x is number => typeof x === "number" && Number.isFinite(x);
 
     const formatNumber = (n?: number): string => {
         if(!isValidNumber(n)) return '-';
@@ -76,35 +91,10 @@ const HeadlessRasterizerView: React.FC = () => {
         return Number.isFinite(parsed) ? parsed : null;
     };
 
-    const getSceneFromFrame = (frameObj: FrameObject | null, preferredModel: string): Scene | null => {
-        if(!frameObj) return null;
-        if(frameObj[preferredModel]){
-            return frameObj[preferredModel];
-        }
-        const availableScenes = Object.values(frameObj);
-        return availableScenes[0] || null;
-    };
-
-    const extractTimestepFromFrame = (frameObj: FrameObject | null): number | null => {
-        if(!frameObj) return null;
-        for(const scene of Object.values(frameObj)){
-            if(scene && isValidNumber(scene.frame)){
-                return scene.frame;
-            }
-        }
-
-        return null;
-    };
-
     const resolveModelName = (desired: string | null, availableModels: string[]): string => {
         if(!desired) return 'preview';
         if(availableModels.includes(desired)) return desired;
         return availableModels[0];
-    };
-
-    const getTimestepsFromFrames = (frames: FrameObject[]): number[] => {
-        const timesteps = frames.map(extractTimestepFromFrame).filter(isValidNumber);
-        return Array.from(new Set(timesteps)).sort((a, b) => a - b);
     };
 
     const findClosestTimestepIndex = (targetTimestep: number, timeline: number[]): number => {
@@ -125,31 +115,16 @@ const HeadlessRasterizerView: React.FC = () => {
         return closestIndex;
     };
 
-    const sortedFramesLeft = useMemo(() => {
-        if(!selectedAnalysisLeft || !analyses?.[selectedAnalysisLeft]?.frames) return [];
-
-        return Object.values(analyses[selectedAnalysisLeft].frames)
-            .sort((a: any, b: any) => {
-                const timestepA = extractTimestepFromFrame(a) ?? 0;
-                const timestepB = extractTimestepFromFrame(b) ?? 0;
-                return timestepA - timestepB;
-            });
-    }, [selectedAnalysisLeft, analyses]);
-
-    const sortedFramesRight = useMemo(() => {
-        if(!selectedAnalysisRight || !analyses?.[selectedAnalysisRight]?.frames) return [];
-
-        return Object.values(analyses[selectedAnalysisRight].frames)
-            .sort((a: any, b: any) => {
-                const timestepA = extractTimestepFromFrame(a) ?? 0;
-                const timestepB = extractTimestepFromFrame(b) ?? 0;
-                return timestepA - timestepB;
-            });
-    }, [selectedAnalysisRight, analyses]);
-
     const timeline = useMemo(() => {
-        const timestepsLeft = getTimestepsFromFrames(sortedFramesLeft as FrameObject[]);
-        const timestepsRight = getTimestepsFromFrames(sortedFramesRight as FrameObject[]);
+        if(!selectedAnalysisLeft && !selectedAnalysisRight) return [];
+        
+        const timestepsLeft = selectedAnalysisLeft && analyses?.[selectedAnalysisLeft]?.frames
+            ? Object.keys(analyses[selectedAnalysisLeft].frames).map(ts => parseInt(ts, 10)).filter(isValidNumber)
+            : [];
+            
+        const timestepsRight = selectedAnalysisRight && analyses?.[selectedAnalysisRight]?.frames
+            ? Object.keys(analyses[selectedAnalysisRight].frames).map(ts => parseInt(ts, 10)).filter(isValidNumber)
+            : [];
 
         if(timestepsLeft.length > 0 && timestepsRight.length > 0){
             const intersectionSet = new Set(timestepsLeft);
@@ -160,26 +135,32 @@ const HeadlessRasterizerView: React.FC = () => {
             return Array.from(unionSet).sort((a, b) => a - b);
         }
 
-        return timestepsLeft.length > 0 ? timestepsLeft : timestepsRight;
-    }, [sortedFramesLeft, sortedFramesRight]);
+        return timestepsLeft.length > 0 ? timestepsLeft.sort((a, b) => a - b) : timestepsRight.sort((a, b) => a - b);
+    }, [selectedAnalysisLeft, selectedAnalysisRight, analyses]);
 
     const currentTimestep = timeline[selectedFrameIndex];
 
-    const currentFrameLeft = useMemo(() => {
-        return findFrameByTimestep(sortedFramesLeft as FrameObject[], currentTimestep);
-    }, [sortedFramesLeft, currentTimestep]);
+    const getAvailableModelsForFrame = useCallback((analysisId: string | null, timestep: number | undefined) => {
+        if(!analysisId || !timestep || !analyses?.[analysisId]?.frames?.[timestep]) return [];
+        return analyses[analysisId].frames[timestep].availableModels || [];
+    }, [analyses]);
 
-    const currentFrameRight = useMemo(() => {
-        return findFrameByTimestep(sortedFramesRight as FrameObject[], currentTimestep);
-    }, [sortedFramesRight, currentTimestep]);
+    const availableModelsLeft = getAvailableModelsForFrame(selectedAnalysisLeft, currentTimestep);
+    const availableModelsRight = getAvailableModelsForFrame(selectedAnalysisRight, currentTimestep);
 
-    const currentSceneLeft = useMemo(() => {
-        return getSceneFromFrame(currentFrameLeft, selectedModelLeft);
-    }, [currentFrameLeft, selectedModelLeft]);
+    const { scene: currentSceneLeft } = useRasterFrame(
+        trajectoryId,
+        currentTimestep,
+        selectedAnalysisLeft || undefined,
+        selectedModelLeft
+    );
 
-    const currentSceneRight = useMemo(() => {
-        return getSceneFromFrame(currentFrameRight, selectedModelRight);
-    }, [currentFrameRight, selectedModelRight]);
+    const { scene: currentSceneRight } = useRasterFrame(
+        trajectoryId,
+        currentTimestep,
+        selectedAnalysisRight || undefined,
+        selectedModelRight
+    );
 
     const dislocationsLeft = selectedAnalysisLeft ? analysisDislocationsById?.[selectedAnalysisLeft] : undefined;
     const dislocationsRight = selectedAnalysisRight ? analysisDislocationsById?.[selectedAnalysisRight] : undefined;
@@ -190,9 +171,10 @@ const HeadlessRasterizerView: React.FC = () => {
     const isDislocationsLoadingRight = showDislocations && !!selectedAnalysisRight && dislocationsRight === undefined;
 
     const metricEntries: MetricEntry[] = useMemo(() => {
-        const framesCount = trajectoryMetrics?.frames?.totalFrames;
-        const totalSize = trajectoryMetrics?.files?.totalSizeBytes;
-        const analysesCount = trajectoryMetrics?.structureAnalysis?.totalDocs;
+        const metrics = trajectoryMetrics as any;
+        const framesCount = metrics?.frames?.totalFrames;
+        const totalSize = metrics?.files?.totalSizeBytes;
+        const analysesCount = metrics?.structureAnalysis?.totalDocs;
 
         return [
             { key: "frames.totalFrames", label: "Frames", value: formatNumber(framesCount), icon: IoTimeOutline },
@@ -249,24 +231,22 @@ const HeadlessRasterizerView: React.FC = () => {
 
     // Validate and correct model selections (skip if model came from URL)
     useEffect(() => {
-        if(!currentFrameLeft || !isInitializedRef.current || modelsFromUrlRef.current.left) return;
-        const availableModels = Object.keys(currentFrameLeft);
-        const resolvedModel = resolveModelName(selectedModelLeft, availableModels);
+        if(!isInitializedRef.current || modelsFromUrlRef.current.left) return;
+        const resolvedModel = resolveModelName(selectedModelLeft, availableModelsLeft);
         
         if(resolvedModel !== selectedModelLeft){
             setSelectedModelLeft(resolvedModel);
         }
-    }, [currentFrameLeft, selectedModelLeft]);
+    }, [availableModelsLeft, selectedModelLeft]);
 
     useEffect(() => {
-        if(!currentFrameRight || !isInitializedRef.current || modelsFromUrlRef.current.right) return;
-        const availableModels = Object.keys(currentFrameRight);
-        const resolvedModel = resolveModelName(selectedModelRight, availableModels);
+        if(!isInitializedRef.current || modelsFromUrlRef.current.right) return;
+        const resolvedModel = resolveModelName(selectedModelRight, availableModelsRight);
 
         if(resolvedModel !== selectedModelRight){
             setSelectedModelRight(resolvedModel);
         }
-    }, [currentFrameRight, selectedModelRight]);
+    }, [availableModelsRight, selectedModelRight]);
 
     // Update URL when state changes (but not during initial restoration)
     useEffect(() => {
@@ -363,14 +343,18 @@ const HeadlessRasterizerView: React.FC = () => {
 
     // Get thumbnail scene for a specific timestep
     const getThumbnailScene = useCallback((timestep: number): Scene | null => {
-        const leftFrame = findFrameByTimestep(sortedFramesLeft as FrameObject[], timestep);
-        const leftScene = getSceneFromFrame(leftFrame, selectedModelLeft);
-        if(leftScene?.data) return leftScene;
-
-        const rightFrame = findFrameByTimestep(sortedFramesRight as FrameObject[], timestep);
-        const rightScene = getSceneFromFrame(rightFrame, selectedModelRight);
-        return rightScene?.data ? rightScene : null;
-    }, [sortedFramesLeft, sortedFramesRight, selectedModelLeft, selectedModelRight]);
+        if (!selectedAnalysisLeft && !selectedAnalysisRight) return null;
+        
+        const analysisId = selectedAnalysisLeft || selectedAnalysisRight;
+        const model = selectedAnalysisLeft ? selectedModelLeft : selectedModelRight;
+        
+        return {
+            frame: timestep,
+            model,
+            analysisId: analysisId!,
+            isLoading: true
+        };
+    }, [selectedAnalysisLeft, selectedAnalysisRight, selectedModelLeft, selectedModelRight]);
 
     const playbackControlsProps: PlaybackControlsProps = { 
         isPlaying, 
@@ -392,13 +376,21 @@ const HeadlessRasterizerView: React.FC = () => {
     };
 
     const modelRailLeftProps: ModelRailProps = { 
-        modelsForCurrentFrame: currentFrameLeft ? Object.values(currentFrameLeft) : [], 
+        modelsForCurrentFrame: availableModelsLeft.map((model: string) => ({
+            frame: currentTimestep,
+            model,
+            analysisId: selectedAnalysisLeft || undefined
+        })), 
         selectedModel: selectedModelLeft, 
         onModelChange: setSelectedModelLeft 
     };
 
     const modelRailRightProps: ModelRailProps = { 
-        modelsForCurrentFrame: currentFrameRight ? Object.values(currentFrameRight) : [], 
+        modelsForCurrentFrame: availableModelsRight.map((model: string) => ({
+            frame: currentTimestep,
+            model,
+            analysisId: selectedAnalysisRight || undefined
+        })), 
         selectedModel: selectedModelRight, 
         onModelChange: setSelectedModelRight 
     };
@@ -413,7 +405,34 @@ const HeadlessRasterizerView: React.FC = () => {
                 onSignIn={handleSignIn}
             />
 
-            <div className='raster-scenes-container' style={{ position: 'relative' }}>
+                        <div className='raster-scenes-container' style={{ position: 'relative' }}>
+                {isPreloading && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '1rem',
+                        right: '1rem',
+                        zIndex: 10,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.8rem',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}>
+                        <div style={{
+                            width: '12px',
+                            height: '12px',
+                            border: '2px solid rgba(255, 255, 255, 0.3)',
+                            borderTop: '2px solid white',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite'
+                        }} />
+                        Precargando frames: {preloadProgress}%
+                    </div>
+                )}
+                
                 <div className='raster-scenes-top-container' style={{ alignItems: 'stretch', gap: '0.75rem' }}>
                     <SceneColumn
                         scene={currentSceneLeft}
@@ -438,7 +457,7 @@ const HeadlessRasterizerView: React.FC = () => {
                         playbackControls={playbackControlsProps}
                         analysisSelect={analysisSelectRightProps}
                         modelRail={modelRailRightProps}
-                        delay={0.05}
+                        delay={0.1}
                     />
                 </div>
 

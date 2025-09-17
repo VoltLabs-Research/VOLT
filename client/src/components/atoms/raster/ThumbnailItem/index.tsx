@@ -1,6 +1,9 @@
 import React from 'react';
 import type { ThumbnailItemProps } from '@/types/raster';
 import { motion } from 'framer-motion';
+import useRasterFrame from '@/hooks/raster/use-raster-frame';
+import { useParams } from 'react-router';
+import { Skeleton } from '@mui/material';
 
 const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
     scene,
@@ -11,6 +14,17 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
     selectedFrameIndex,
     onClick
 }) => {
+    const { trajectoryId } = useParams<{ trajectoryId: string }>();
+    const { scene: loadedScene } = useRasterFrame(
+        trajectoryId,
+        timestep,
+        scene.analysisId,
+        scene.model
+    );
+
+    const displayScene = loadedScene || scene;
+    const hasData = displayScene?.data && !displayScene.isLoading;
+
     return (
         <motion.div
             key={`thumb-${timestep}-${scene.model}`}
@@ -34,12 +48,27 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
                 <p className='raster-thumbnail-timestep'>{timestep}</p>
             </div>
 
-            <img
-                className='raster-thumbnail'
-                src={scene.data}
-                alt={`${scene.model} - Frame ${timestep}`}
-                loading='lazy'
-            />
+            {hasData ? (
+                <img
+                    className='raster-thumbnail'
+                    src={displayScene.data}
+                    alt={`${displayScene.model} - Frame ${timestep}`}
+                    loading='lazy'
+                />
+            ) : (
+                <Skeleton
+                    variant='rounded'
+                    animation='wave'
+                    width='100%'
+                    height='100%'
+                    className='raster-thumbnail'
+                    sx={{
+                        borderRadius: '0.5rem',
+                        bgcolor: 'rgba(255, 255, 255, 0.06)',
+                        aspectRatio: '1'
+                    }}
+                />
+            )}
         </motion.div>
     );
 };

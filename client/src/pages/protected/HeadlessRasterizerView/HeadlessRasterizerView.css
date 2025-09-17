@@ -1,5 +1,38 @@
 /* HeadlessRasterizerView.css */
 /* ====== CONTENEDORES EXISTENTES ====== */
+
+/* Progress Indicator Styles */
+.preload-progress-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+  font-size: 14px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preload-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #333;
+  border-top: 2px solid #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .raster-view-container{
   height: 100%;
   overflow: hidden;
@@ -270,6 +303,7 @@
   display: flex; height: 170px; gap: 1rem; overflow-x: auto; overflow-y: hidden; width: 100%;
 }
 .raster-thumbnail-container{
+  height: 100%;
   border: 1px solid #161616; border-radius: 1rem; background-color: #0d0d0d;
   width: 280px; position: relative; display: flex; cursor: pointer; justify-content: center; align-items: center;
   perspective: 1000px; transform-style: preserve-3d; transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1); flex-shrink: 0;

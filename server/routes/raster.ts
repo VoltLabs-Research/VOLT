@@ -30,6 +30,24 @@ const router = Router();
 router.use(authMiddleware.protect);
 
 router.get(
+    '/:id/metadata',
+    trajectoryMiddleware.checkTeamMembershipForTrajectory,
+    controller.getRasterFrameMetadata
+);
+
+router.get(
+    '/:id/frame/:timestep/:analysisId/:model',
+    trajectoryMiddleware.checkTeamMembershipForTrajectory,
+    controller.getRasterFrame
+);
+
+router.get(
+    '/:id/frame-data/:timestep/:analysisId/:model',
+    trajectoryMiddleware.checkTeamMembershipForTrajectory,
+    controller.getRasterFrameData
+);
+
+router.get(
     '/:id/glb/',
     trajectoryMiddleware.checkTeamMembershipForTrajectory,
     controller.getRasterizedFrames
