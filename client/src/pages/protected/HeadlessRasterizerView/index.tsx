@@ -34,6 +34,24 @@ const HeadlessRasterizerView: React.FC = () => {
     const timestepRestoredRef = useRef(false);
     const modelsFromUrlRef = useRef({ left: false, right: false });
 
+    const fetchedForIdRef = useRef<string | null>(null);
+    const getRasterFramesRef = useRef(getRasterFrames);
+    const getMetricsRef = useRef(getMetrics);
+
+    useEffect(() => {
+        getRasterFramesRef.current = getRasterFrames;
+        getMetricsRef.current = getMetrics;
+    }, [getRasterFrames, getMetrics]);
+
+    useEffect(() => {
+        if(!trajectoryId) return;
+        if(fetchedForIdRef.current === trajectoryId) return;
+        fetchedForIdRef.current = trajectoryId;
+
+        getRasterFramesRef.current(trajectoryId);
+        getMetricsRef.current(trajectoryId);
+    }, [trajectoryId]);
+
     const isValidNumber = (x: any): x is number => typeof x === "number" && Number.isFinite(x);
 
     const findFrameByTimestep = (frames: FrameObject[], timestep: number): FrameObject | null => {
@@ -106,13 +124,6 @@ const HeadlessRasterizerView: React.FC = () => {
 
         return closestIndex;
     };
-
-    useEffect(() => {
-        if(trajectoryId){
-            getRasterFrames(trajectoryId);
-            getMetrics(trajectoryId);
-        }
-    }, [trajectoryId, getRasterFrames, getMetrics]);
 
     const sortedFramesLeft = useMemo(() => {
         if(!selectedAnalysisLeft || !analyses?.[selectedAnalysisLeft]?.frames) return [];

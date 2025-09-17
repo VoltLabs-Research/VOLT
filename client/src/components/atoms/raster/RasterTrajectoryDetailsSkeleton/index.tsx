@@ -6,7 +6,6 @@ const RasterTrajectoryDetailsSkeleton: React.FC = () => {
         <>
             <Skeleton
                 variant='rounded'
-                animation='wave'
                 width={220}
                 height={22}
                 sx={{
@@ -17,7 +16,6 @@ const RasterTrajectoryDetailsSkeleton: React.FC = () => {
 
             <Skeleton
                 variant='rounded'
-                animation='wave'
                 width={180}
                 height={14}
                 sx={{

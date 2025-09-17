@@ -6,6 +6,7 @@ import { RxEyeOpen } from 'react-icons/rx';
 import { motion } from 'framer-motion';
 import { TbCube3dSphere } from 'react-icons/tb';
 import RasterTrajectoryDetailsSkeleton from '@/components/atoms/raster/RasterTrajectoryDetailsSkeleton';
+import RasterSceneViewsSkeleton from '@/components/atoms/raster/RasterSceneViewsSkeleton';
 
 const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView3D, onSignIn }) => {
     return (
@@ -43,13 +44,17 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                     </div>
                 </div>
 
-                <div className='raster-scene-header-views-container'>
-                    <i className='raster-scene-header-views-icon-container'>
-                        <RxEyeOpen />
-                    </i>
+                {isLoading ? (
+                    <RasterSceneViewsSkeleton />
+                ) : (
+                    <div className='raster-scene-header-views-container'>
+                        <i className='raster-scene-header-views-icon-container'>
+                            <RxEyeOpen />
+                        </i>
 
-                    <p className='raster-scene-header-views'>48 views</p>
-                </div>
+                        <p className='raster-scene-header-views'>{trajectory?.rasterSceneViews} views</p>
+                    </div>
+                )}
             </div>
 
             <div className='raster-scene-header-nav-container'>

@@ -95,6 +95,10 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         default: []
     }],
     frames: [TimestepInfoSchema],
+    rasterSceneViews: {
+        type: Number,
+        default: 0
+    },
     preview: {
         type: String,
         default: null

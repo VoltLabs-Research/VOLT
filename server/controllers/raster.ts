@@ -8,7 +8,7 @@ import { catchAsync } from '@/utilities/runtime';
 import { readFile } from 'fs/promises';;
 import { v4 } from 'uuid';
 import { listRasterModels } from '@/utilities/raster';
-import { AnalysisConfig } from '@/models';
+import { AnalysisConfig, Trajectory } from '@/models';
 
 export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
@@ -53,9 +53,15 @@ export const readRasterModel = async (modelType: string,  analysisId: string, ra
 };
 
 export const getRasterizedFrames = async (req: Request, res: Response) => {
-    const trajectory = res.locals.trajectory;
+    let trajectory = res.locals.trajectory;
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
     const rasterDir = join(basePath, trajectory.folderId, 'raster');
+
+    trajectory = await Trajectory.findOneAndUpdate(
+        { _id: trajectory._id }, 
+        { $inc: { rasterSceneViews: 1 } },
+        { new: true }
+    );
 
     const analyses = await AnalysisConfig
         .find({ trajectory: trajectory._id })

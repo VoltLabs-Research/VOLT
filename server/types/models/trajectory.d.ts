@@ -47,6 +47,7 @@ export interface ITrajectory extends Document {
     status: string;
     folderId: string;
     team: ITeam;
+    rasterSceneViews: number;
     simulationCell: ICellAnalysis,
     frames: ITimestepInfo[];
     analysis: IAnalysisConfig[];
