@@ -582,14 +582,16 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
   }, [activeModel, activeScene]);
 
   const updateScene = useCallback(() => {
-    // Solo obtener la URL pero no cargar automáticamente el modelo
-    // Esto evita la precarga automática de modelos 3D
     const targetUrl = getTargetUrl();
-    return targetUrl;
-  }, [getTargetUrl]);
-  
-  // No más ejecución automática del updateScene
-  // Esto impide que se carguen modelos automáticamente cuando cambia activeScene o activeModel
+    if (targetUrl && targetUrl !== stateRef.current.lastLoadedUrl && !loadingState.isLoading) {
+      loadAndSetupModel(targetUrl);
+    }
+  }, [getTargetUrl, loadingState.isLoading, loadAndSetupModel]);
+
+  const throttledUpdateScene2 = useThrottledCallback(updateScene, updateThrottle);
+  useEffect(() => {
+    throttledUpdateScene2();
+  }, [throttledUpdateScene2]);
 
   const resetModel = useCallback(() => {
     if (!stateRef.current.selected) return;
@@ -618,13 +620,6 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
     clearCache: useCallback(() => {
       cleanupResources();
     }, [cleanupResources]),
-    deselect,
-    // Exponer el método loadAndSetupModel para cargarlo bajo demanda
-    loadModel: useCallback(() => {
-      const targetUrl = getTargetUrl();
-      if (targetUrl && !loadingState.isLoading) {
-        loadAndSetupModel(targetUrl);
-      }
-    }, [getTargetUrl, loadingState.isLoading, loadAndSetupModel])
+    deselect
   };
 };

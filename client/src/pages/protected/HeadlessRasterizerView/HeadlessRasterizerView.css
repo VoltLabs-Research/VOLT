@@ -518,6 +518,9 @@
 }
 
 @media (max-width: 768px){
+  .raster-view-container{
+    overflow: scroll;
+  }
   .raster-metrics-bar{ padding: .55rem .6rem; }
   .raster-metrics-title{ display: none; }
 }
