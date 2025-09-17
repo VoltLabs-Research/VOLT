@@ -8,13 +8,6 @@ interface AnalysisName {
   name: string;
 }
 
-interface FrameCache {
-  [key: string]: {
-    data: string;
-    timestamp: number;
-  };
-}
-
 interface RasterState {
   trajectory: any;
   isLoading: boolean;
@@ -23,9 +16,7 @@ interface RasterState {
   analysesNames: AnalysisName[];
   selectedAnalysis: string | null;
   error: string | null;
-  frameCache: FrameCache;
   loadingFrames: Set<string>;
-  unavailableFrames: Set<string>; // Frames que no existen en el servidor
   isPreloading: boolean;
   preloadProgress: number;
 
@@ -35,7 +26,6 @@ interface RasterState {
   preloadPriorizedFrames: (trajectoryId: string, priorityModels: { ml?: string; mr?: string }, currentTimestep?: number) => Promise<void>;
   clearRasterData: () => void;
   setSelectedAnalysis: (id: string | null) => void;
-  clearFrameCache: () => void;
   getFrameCacheKey: (timestep: number, analysisId: string, model: string) => string;
 }
 
@@ -47,9 +37,7 @@ const initialState = {
   analysesNames: [],
   selectedAnalysis: null,
   error: null,
-  frameCache: {},
   loadingFrames: new Set<string>(),
-  unavailableFrames: new Set<string>(),
   isPreloading: false,
   preloadProgress: 0,
 };
@@ -69,7 +57,10 @@ const useRasterStore = create<RasterState>((set, get) => {
       }),
 
     async getRasterFrames(id: string) {
-      set({ isLoading: true, error: null });
+      set({ 
+        isLoading: true, 
+        error: null
+      });
 
       try {
         const res = await api.get(`/raster/${id}/metadata`);
@@ -101,69 +92,38 @@ const useRasterStore = create<RasterState>((set, get) => {
 
     async getRasterFrame(trajectoryId: string, timestep: number, analysisId: string, model: string) {
       const cacheKey = get().getFrameCacheKey(timestep, analysisId, model);
-      const { frameCache, loadingFrames, unavailableFrames } = get();
       
-      // Si ya sabemos que este frame no está disponible, retornar null inmediatamente
-      if (unavailableFrames.has(cacheKey)) {
-        return null;
-      }
+      // Marcar que está cargando este frame
+      set(state => ({ 
+        loadingFrames: new Set(state.loadingFrames).add(cacheKey) 
+      }));
       
-      if (frameCache[cacheKey]) {
-        const cached = frameCache[cacheKey];
-        const isExpired = Date.now() - cached.timestamp > 300000;
-        if (!isExpired) {
-          return cached.data;
-        }
-      }
-
-      if (loadingFrames.has(cacheKey)) {
-        return null;
-      }
-
       try {
-        set(state => {
-          const newLoadingFrames = new Set(state.loadingFrames);
-          newLoadingFrames.add(cacheKey);
-          return { loadingFrames: newLoadingFrames };
-        });
-
+        // Hacer la petición al servidor directamente sin cache
         const res = await api.get(`/raster/${trajectoryId}/frame-data/${timestep}/${analysisId}/${model}`);
         const imageData = res.data.data.data;
-
+        
+        // Eliminar el frame de los frames en carga
         set(state => {
           const newLoadingFrames = new Set(state.loadingFrames);
           newLoadingFrames.delete(cacheKey);
-          
-          return {
-            frameCache: {
-              ...state.frameCache,
-              [cacheKey]: {
-                data: imageData,
-                timestamp: Date.now()
-              }
-            },
-            loadingFrames: newLoadingFrames
-          };
+          return { loadingFrames: newLoadingFrames };
         });
-
+        
         return imageData;
       } catch (error) {
         console.error("Error loading frame:", error);
+        
+        // Eliminar el frame de los frames en carga incluso en error
         set(state => {
           const newLoadingFrames = new Set(state.loadingFrames);
           newLoadingFrames.delete(cacheKey);
-          const newUnavailableFrames = new Set(state.unavailableFrames);
-          
-          // Si es un error 404 o similar, marcar como no disponible
-          if (error instanceof Error && (error.message.includes('404') || error.message.includes('Not Found'))) {
-            newUnavailableFrames.add(cacheKey);
-          }
-          
           return { 
             loadingFrames: newLoadingFrames,
-            unavailableFrames: newUnavailableFrames
+            error: error instanceof Error ? error.message : "Error loading frame"
           };
         });
+        
         return null;
       }
     },
@@ -173,7 +133,7 @@ const useRasterStore = create<RasterState>((set, get) => {
     },
 
     clearFrameCache() {
-      set({ frameCache: {}, loadingFrames: new Set(), unavailableFrames: new Set() });
+      set({ loadingFrames: new Set() });
     },
 
     setSelectedAnalysis(id) {
@@ -186,6 +146,13 @@ const useRasterStore = create<RasterState>((set, get) => {
 
       set({ isPreloading: true, preloadProgress: 0 });
 
+      const currentTimestepFrames: Array<{
+        timestep: number;
+        analysisId: string;
+        model: string;
+        priority: number;
+      }> = [];
+      
       const priorityFrames: Array<{
         timestep: number;
         analysisId: string;
@@ -208,8 +175,33 @@ const useRasterStore = create<RasterState>((set, get) => {
             const frameData = analysis.frames[timestep];
             if (frameData.availableModels) {
               for (const model of frameData.availableModels) {
+                const frameTimestep = parseInt(timestep, 10);
+                const isCurrentTimestep = currentTimestep !== undefined && frameTimestep === currentTimestep;
+                
+                // Si es el timestep actual y es "dislocations", es la máxima prioridad
+                if (isCurrentTimestep && model === 'dislocations') {
+                  currentTimestepFrames.push({
+                    timestep: frameTimestep,
+                    analysisId,
+                    model,
+                    priority: 0 // Prioridad máxima
+                  });
+                  continue;
+                }
+                
+                // Si es el timestep actual con cualquier modelo, también es alta prioridad
+                if (isCurrentTimestep) {
+                  currentTimestepFrames.push({
+                    timestep: frameTimestep,
+                    analysisId,
+                    model,
+                    priority: 1 // Alta prioridad
+                  });
+                  continue;
+                }
+
                 const frame = {
-                  timestep: parseInt(timestep, 10),
+                  timestep: frameTimestep,
                   analysisId,
                   model,
                   priority: 3 // default low priority
@@ -220,21 +212,17 @@ const useRasterStore = create<RasterState>((set, get) => {
                   (priorityModels.ml && model === priorityModels.ml) ||
                   (priorityModels.mr && model === priorityModels.mr);
 
-                // Prioridad extra para timestep actual
-                const isCurrentTimestep = currentTimestep !== undefined && frame.timestep === currentTimestep;
-
                 if (isPriorityModel) {
-                  frame.priority = isCurrentTimestep ? 1 : 2; // Máxima prioridad para timestep actual
+                  frame.priority = 2; // Prioridad para modelos solicitados
+                  priorityFrames.push(frame);
+                } else if (model === 'dislocations') {
+                  frame.priority = 2; // Prioridad para dislocations
                   priorityFrames.push(frame);
                 } else if (model === 'preview') {
-                  frame.priority = isCurrentTimestep ? 2 : 3; // Prioridad media para preview
-                  if (isCurrentTimestep) {
-                    priorityFrames.push(frame);
-                  } else {
-                    otherFrames.push(frame);
-                  }
+                  frame.priority = 3; // Prioridad media para preview
+                  otherFrames.push(frame);
                 } else {
-                  frame.priority = isCurrentTimestep ? 3 : 4; // Baja prioridad base
+                  frame.priority = 4; // Baja prioridad base
                   otherFrames.push(frame);
                 }
               }
@@ -244,16 +232,32 @@ const useRasterStore = create<RasterState>((set, get) => {
       }
 
       // Ordenar por prioridad
+      currentTimestepFrames.sort((a, b) => a.priority - b.priority);
       priorityFrames.sort((a, b) => a.priority - b.priority || a.timestep - b.timestep);
       otherFrames.sort((a, b) => a.priority - b.priority || a.timestep - b.timestep);
 
-      // Combinar: primero priority frames, luego otros
-      const allFrames = [...priorityFrames, ...otherFrames];
+      // Combinar: primero el timestep actual, luego priority frames, luego otros
+      const allFrames = [...currentTimestepFrames, ...priorityFrames, ...otherFrames];
       const totalFrames = allFrames.length;
       let completedFrames = 0;
 
-      // Procesar frames de alta prioridad primero con mayor concurrencia
-      const processFrames = async (frames: typeof allFrames, concurrency: number, isHighPriority = false) => {
+      // Cargar inmediatamente el frame actual primero
+      if (currentTimestepFrames.length > 0) {
+        try {
+          // Cargar los frames del timestep actual de forma síncrona, uno por uno
+          for (const frame of currentTimestepFrames) {
+            await get().getRasterFrame(trajectoryId, frame.timestep, frame.analysisId, frame.model);
+            completedFrames++;
+            const progress = Math.round((completedFrames / totalFrames) * 100);
+            set({ preloadProgress: progress });
+          }
+        } catch (error) {
+          console.error("Error loading current timestep frame:", error);
+        }
+      }
+
+      // Procesar el resto de frames
+      const processFrames = async (frames: typeof priorityFrames, concurrency: number, isHighPriority = false) => {
         const chunks: Array<typeof frames> = [];
         
         for (let i = 0; i < frames.length; i += concurrency) {
@@ -298,7 +302,7 @@ const useRasterStore = create<RasterState>((set, get) => {
           await processChunk(chunks[i]);
           
           // Delay menor para frames de alta prioridad
-          const delay = isHighPriority ? 50 : 100;
+          const delay = isHighPriority ? 20 : 100;
           if (i < chunks.length - 1) {
             await new Promise(resolve => setTimeout(resolve, delay));
           }
@@ -330,9 +334,7 @@ const useRasterStore = create<RasterState>((set, get) => {
         analysesNames: [],
         selectedAnalysis: null,
         error: null,
-        frameCache: {},
         loadingFrames: new Set(),
-        unavailableFrames: new Set(),
         isPreloading: false,
         preloadProgress: 0,
       });

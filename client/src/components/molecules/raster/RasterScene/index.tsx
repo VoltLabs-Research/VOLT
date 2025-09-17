@@ -32,7 +32,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
         } else {
             setShowUnavailable(false);
         }
-    }, [scene?.isUnavailable]);
+    }, [scene?.isUnavailable, scene?.model]);
 
     if(isLoading) return <RasterSceneSkeleton />;
 
@@ -54,6 +54,10 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             </figure>
         );
     }
+
+    // Ensure we have a valid frame number to display
+    const frameNumber = scene.frame !== undefined && scene.frame !== null ? scene.frame : 'unknown';
+    const modelName = scene.model ? (scene.model.slice(0, 1).toUpperCase() + scene.model.slice(1)) : 'Unknown';
 
     return (
         <figure className='raster-scene-container' style={{ flex: 1, minWidth: 0, position: 'relative' }}>
@@ -80,10 +84,10 @@ const RasterScene: React.FC<RasterSceneProps> = ({
                     }}>
                         <div>Model not found</div>
                         <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>
-                            {scene.model.slice(0, 1).toUpperCase() + scene.model.slice(1)} - Frame {scene.frame}
+                            {modelName} - Frame {frameNumber}
                         </div>
                     </div>
-                ) : !scene.data || scene.isLoading || scene.isUnavailable ? (
+                ) : scene.isLoading || !scene.data || (scene.isUnavailable && !showUnavailable) ? (
                     <Skeleton
                         variant='rectangular'
                         animation='wave'

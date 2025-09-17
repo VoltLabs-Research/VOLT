@@ -88,7 +88,6 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
         };
     }
 
-    res.setHeader('Cache-Control', 'public, max-age=300');
     res.setHeader('ETag', `"raster-meta-${trajectory._id}"`);
 
     return res.status(200).json({

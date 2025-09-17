@@ -79,7 +79,7 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
                         backgroundColor: 'rgba(255, 255, 255, 0.02)',
                         borderRadius: '0.75rem'
                     }}>
-                        No disponible
+                        Not available
                     </div>
                 ) : (
                     <Skeleton
@@ -141,7 +141,7 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
                     backgroundColor: 'rgba(255, 255, 255, 0.02)',
                     borderRadius: '0.75rem'
                 }}>
-                    No disponible
+                    Not available
                 </div>
             ) : (
                 <Skeleton
