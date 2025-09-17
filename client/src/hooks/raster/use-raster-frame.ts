@@ -1,233 +1,323 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useRasterStore from '@/stores/raster';
-import type { Scene } from '@/types/raster';
 
-interface UseRasterFrameResult {
-  scene: Scene | null;
+export interface UseRasterFrameProps {
+  trajectoryId: string;
+  timestep: number;
+  analysisId: string;
+  model: string;
+  priority?: 'high' | 'low';
+  showInScene?: boolean;
+}
+
+interface InternalRasterFrameResult {
+  frameData: string | null;
+  isLoading: boolean;
+  isAvailable: boolean;
+  error: Error | null;
+}
+
+export interface UseRasterFrameResult {
+  scene: {
+    frame: number;
+    model: string;
+    analysisId: string;
+    data?: string;
+    isUnavailable?: boolean;
+  } | null;
   isLoading: boolean;
   error: string | null;
 }
 
-export const useRasterFrame = (
-  trajectoryId: string | undefined,
-  timestep: number | undefined,
-  analysisId: string | undefined,
-  model: string | undefined,
-  priority: 'high' | 'low' = 'high' // Alta prioridad para escenas principales, baja para model rail
-): UseRasterFrameResult => {
+// Internal implementation that doesn't use useThree
+const useRasterFrameInternal = ({
+  trajectoryId,
+  timestep,
+  analysisId,
+  model,
+  priority = 'high',
+  showInScene = true,
+}: UseRasterFrameProps): UseRasterFrameResult => {
   const { getRasterFrame, getFrameCacheKey, loadingFrames, cachedFrameExists } = useRasterStore();
-  const [error, setError] = useState<string | null>(null);
-  const [scene, setScene] = useState<Scene | null>(null);
-
-  // Añadir identificación para facilitar depuración
-  const hookId = useMemo(() => 
-    `${analysisId?.substring(0, 4) || 'none'}-${model || 'none'}-${priority}`,
-    [analysisId, model, priority]
-  );
-
-  const cacheKey = useMemo(() => 
-    trajectoryId && (timestep !== undefined && timestep !== null) && analysisId && model 
-      ? getFrameCacheKey(timestep, analysisId, model)
-      : null,
-    [trajectoryId, timestep, analysisId, model, getFrameCacheKey]
-  );
-
-  const isLoading = cacheKey ? loadingFrames.has(cacheKey) : false;
+  const [frameData, setFrameData] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isAvailable, setIsAvailable] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+  const loadPromiseRef = useRef<Promise<string | null> | null>(null);
   
-  // Verificar si ya tenemos este frame en caché
-  const isCached = useMemo(() => {
-    if (!cacheKey) return false;
-    return cachedFrameExists?.(cacheKey) || false;
-  }, [cacheKey, cachedFrameExists]);
+  // Flag to determine if showInScene functionality should be attempted
+  // We don't actually need to use the Three.js scene directly in this hook
+  const isInsideCanvas = showInScene && typeof window !== 'undefined';
 
-  // Log para depuración
+  // Create a unique ID for logs
+  const cacheKey = getFrameCacheKey(timestep, analysisId, model);
+  const hookId = `${trajectoryId.substring(0, 4)}-${model}-${priority}`;
+  
+  // Store attempted frames in localStorage to avoid repeated failed requests
+  const unavailableFramesKey = `${trajectoryId}-unavailable-frames`;
+
   useEffect(() => {
     console.log(`[use-raster-frame:${hookId}] Initial params:`, {
-      trajectoryId, timestep, analysisId, model, 
-      cacheKey, 
-      isLoading, 
-      isCached,
-      hasScene: !!scene
+      trajectoryId,
+      timestep,
+      analysisId,
+      model,
+      priority,
+      cacheKey,
+      showInScene
     });
-  }, [trajectoryId, timestep, analysisId, model, cacheKey, isLoading, isCached, scene, hookId]);
 
-  // Reset state when parameters change
-  useEffect(() => {
-    // Si el timestep es -1, significa que aún no se ha seleccionado un frame
-    if (timestep === -1) {
-      console.log(`[use-raster-frame:${hookId}] Timestep is -1, showing empty state`);
-      setScene(null);
-      setError(null);
-      return;
-    }
+    // Clean up state when parameters change
+    setFrameData(null);
+    setError(null);
+    setIsLoading(false);
+    setIsAvailable(true);
 
-    // Verificar si tenemos todos los parámetros necesarios
-    if (!trajectoryId || timestep === undefined || !analysisId || !model) {
-      console.log(`[use-raster-frame:${hookId}] Missing required parameters, resetting scene`);
-      setScene(null);
-      setError(null);
+    // Variable to prevent updating state if component unmounts
+    let mounted = true;
+
+    // Check if frame is already loading or cached
+    const frameAlreadyLoading = loadingFrames.has(cacheKey);
+    const frameExists = cachedFrameExists(cacheKey);
+    
+    // Check if we've previously marked this frame as unavailable
+    const unavailableFrames = JSON.parse(localStorage.getItem(unavailableFramesKey) || '{}');
+    const isFrameKnownUnavailable = unavailableFrames[cacheKey];
+    
+    // If we know it's unavailable, don't try loading it
+    if (isFrameKnownUnavailable) {
+      console.log(`[use-raster-frame:${hookId}] Frame ${cacheKey} known to be unavailable, skipping fetch`);
+      setIsAvailable(false);
+      setError(new Error(`Frame ${timestep} with model ${model} not available`));
       return;
     }
     
-    // Verificar si el frame ya está en caché para evitar mostrar el loading state
-    const isFrameInCache = !!(trajectoryId && timestep !== undefined && analysisId && model && 
-      (isCached || !loadingFrames.has(getFrameCacheKey(timestep, analysisId, model))));
-    
-    // No resetear completamente el estado al cambiar de frame, 
-    // sólo marcar que está cargando pero mantener los datos anteriores visibles
-    if (scene && timestep !== undefined && scene.frame !== timestep) {
-      // Si es de baja prioridad, no cambiar el estado de carga para evitar skeletons en model rail
-      if (priority === 'low' && scene.data) {
-        console.log(`[use-raster-frame:${hookId}] Low priority frame change from ${scene.frame} to ${timestep}, keeping current data visible`);
-        setScene({
-          ...scene,
-          frame: timestep,
-          isLoading: false, // No mostrar loading state para model rail
-          isUnavailable: false,
-        });
-      } else {
-        console.log(`[use-raster-frame:${hookId}] Frame changed from ${scene.frame} to ${timestep}, loading new data`);
-        // Si el frame ya está en caché, no marcarlo como loading
-        setScene({
-          ...scene,
-          frame: timestep,
-          isLoading: !isFrameInCache, // Solo marcar como loading si no está en caché
-          isUnavailable: false,
-        });
+    // If it's cached, we consider it available
+    if (frameExists) {
+      setIsAvailable(true);
+    }
+
+    const loadFrame = async () => {
+      // If already loading, don't start another load
+      if (frameAlreadyLoading) {
+        console.log(`[use-raster-frame:${hookId}] Frame ${cacheKey} already loading, waiting...`);
+        return;
       }
-    } else if (!scene && timestep !== undefined && analysisId && model) {
-      // Si no hay escena pero tenemos datos suficientes, crear una escena inicial en estado de carga
-      console.log(`[use-raster-frame:${hookId}] Creating initial loading scene for timestep ${timestep}, priority: ${priority}, cached: ${isFrameInCache}`);
-      
-      // Si es de baja prioridad (model rail), no mostrar el estado de carga inmediatamente
-      setScene({
-        frame: timestep,
-        model: model,
-        analysisId: analysisId,
-        data: undefined, 
-        isLoading: priority === 'high' ? !isFrameInCache : false, // No mostrar loading para model rail
-        isUnavailable: false
-      });
-    } else if (!scene) {
-      // Si no hay escena ni datos suficientes, resetear completamente
-      console.log(`[use-raster-frame:${hookId}] No scene and insufficient data, resetting`);
-      setScene(null);
-      setError(null);
-    }
-  }, [trajectoryId, timestep, analysisId, model, scene, loadingFrames, getFrameCacheKey, isCached, priority, hookId]);
 
-  useEffect(() => {
-    if (!trajectoryId || timestep === undefined || !analysisId || !model) {
-      console.log(`[use-raster-frame:${hookId}] Missing required parameters, not fetching data`);
-      return;
-    }
-
-    // Si el timestep es -1, significa que aún no se ha seleccionado un frame, no cargar nada
-    if (timestep === -1) {
-      console.log(`[use-raster-frame:${hookId}] Timestep is -1, not loading any frame`);
-      return;
-    }
-
-    // Si ya tenemos datos para este frame exacto, no necesitamos cargarlo nuevamente
-    if (scene && 
-        scene.frame === timestep && 
-        scene.analysisId === analysisId && 
-        scene.model === model && 
-        scene.data !== undefined && 
-        !scene.isLoading && 
-        !scene.isUnavailable) {
-      console.log(`[use-raster-frame:${hookId}] Frame ${timestep} already loaded with data, skipping fetch`);
-      return;
-    }
-
-    // Si el frame ya está cargando, no necesitamos iniciar otra carga
-    if (cacheKey && loadingFrames.has(cacheKey)) {
-      console.log(`[use-raster-frame:${hookId}] Frame ${timestep} is already loading, skipping duplicate fetch`);
-      return;
-    }
-
-    // Asegurarnos de que tenemos valores válidos
-    const frameNumber = timestep as number;
-    const frameModel = model as string;
-    const frameAnalysisId = analysisId as string;
-    const frameTrajectoryId = trajectoryId as string;
-
-    // Para elements de baja prioridad (model rail), retrasar la carga si aún no tenemos datos
-    if (priority === 'low' && !scene?.data) {
-      console.log(`[use-raster-frame:${hookId}] Low priority frame ${frameNumber}, delaying load`);
-      const timer = setTimeout(() => {
-        fetchRasterFrame();
-      }, 500); // Retrasar la carga 500ms para dar prioridad a la escena principal
-      return () => clearTimeout(timer);
-    }
-
-    // Cargar inmediatamente sin demora si es un frame de alta prioridad
-    console.log(`[use-raster-frame:${hookId}] Loading frame for analysis ${frameAnalysisId}, model ${frameModel}, timestep ${frameNumber}, priority: ${priority}`);
-    fetchRasterFrame();
-    
-    function fetchRasterFrame() {
-      // Marcar que está cargando sólo si es alta prioridad
-      if (priority === 'high' && scene) {
-        console.log(`[use-raster-frame:${hookId}] Setting loading state for high priority frame`);
-        setScene(prev => prev ? { ...prev, isLoading: true } : null);
+      // If we already have data for this frame, don't load it again
+      if (frameData) {
+        console.log(`[use-raster-frame:${hookId}] Frame ${timestep} already loaded with data, skipping fetch`);
+        return;
       }
-      
-      // Log para depuración antes de la petición
-      console.log(`[use-raster-frame:${hookId}] Calling getRasterFrame with:`, {
-        trajectoryId: frameTrajectoryId,
-        timestep: frameNumber,
-        analysisId: frameAnalysisId,
-        model: frameModel
-      });
-      
-      getRasterFrame(frameTrajectoryId, frameNumber, frameAnalysisId, frameModel)
-        .then(imageData => {
-          if (imageData) {
-            console.log(`[use-raster-frame:${hookId}] Frame data loaded for analysis ${frameAnalysisId}, model ${frameModel}, timestep ${frameNumber}`);
-            setScene({
-              frame: frameNumber,
-              model: frameModel,
-              analysisId: frameAnalysisId,
-              data: imageData,
-              isLoading: false,
-              isUnavailable: false
-            });
-          } else {
-            console.log(`[use-raster-frame:${hookId}] No data returned for frame ${frameNumber}, marking as unavailable`);
-            setScene({
-              frame: frameNumber,
-              model: frameModel,
-              analysisId: frameAnalysisId,
-              data: undefined,
-              isLoading: false,
-              isUnavailable: true
-            });
-          }
-        })
-        .catch(error => {
-          console.error(
-            `[use-raster-frame:${hookId}] Error fetching frame data for analysis ${frameAnalysisId}, model ${frameModel}, frame ${frameNumber}:`,
-            error
-          );
-          setScene({
-            frame: frameNumber,
-            model: frameModel,
-            analysisId: frameAnalysisId,
-            data: undefined,
-            isLoading: false,
-            isUnavailable: true
+
+      // If low priority, delay loading a bit
+      if (priority === 'low') {
+        console.log(`[use-raster-frame:${hookId}] Low priority frame ${timestep}, delaying load`);
+        
+        // Use requestIdleCallback if available, or setTimeout as fallback
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+          window.requestIdleCallback(() => {
+            if (mounted) fetchRasterFrame();
           });
-          setError(`Error fetching frame: ${error}`);
+        } else {
+          setTimeout(() => {
+            if (mounted) fetchRasterFrame();
+          }, 200);
+        }
+        return;
+      }
+
+      fetchRasterFrame();
+    };
+
+    const fetchRasterFrame = async () => {
+      if (!mounted) return;
+      
+      // If there's already a promise in progress for this frame, reuse it
+      if (loadPromiseRef.current) return loadPromiseRef.current;
+      
+      try {
+        setIsLoading(true);
+        
+        console.log(`[use-raster-frame:${hookId}] Calling getRasterFrame with:`, {
+          trajectoryId,
+          timestep,
+          analysisId,
+          model
         });
-    }
+        
+        // Create and save the promise
+        loadPromiseRef.current = getRasterFrame(trajectoryId, timestep, analysisId, model);
+        
+        // Wait for the result
+        const data = await loadPromiseRef.current;
+        
+        if (!mounted) return;
+        
+        if (!data) {
+          console.log(`[use-raster-frame:${hookId}] No data returned for frame ${timestep}, marking as unavailable`);
+          setIsAvailable(false);
+          setError(new Error(`Frame ${timestep} not available`));
+          
+          // Store this frame as unavailable to avoid future requests
+          const unavailableFrames = JSON.parse(localStorage.getItem(unavailableFramesKey) || '{}');
+          unavailableFrames[cacheKey] = true;
+          localStorage.setItem(unavailableFramesKey, JSON.stringify(unavailableFrames));
+        } else {
+          console.log(`[use-raster-frame:${hookId}] Frame data loaded for analysis ${analysisId}, model ${model}, timestep ${timestep}`);
+          setFrameData(data);
+        }
+      } catch (err) {
+        if (!mounted) return;
+        console.error(`[use-raster-frame:${hookId}] Error loading frame:`, err);
+        setError(err instanceof Error ? err : new Error('Unknown error loading frame'));
+        setIsAvailable(false);
+        
+        // Store this frame as unavailable to avoid future requests
+        const unavailableFrames = JSON.parse(localStorage.getItem(unavailableFramesKey) || '{}');
+        unavailableFrames[cacheKey] = true;
+        localStorage.setItem(unavailableFramesKey, JSON.stringify(unavailableFrames));
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+          loadPromiseRef.current = null; // Clean up the promise reference
+        }
+      }
+    };
+
+    loadFrame();
 
     return () => {
-      // No need to do anything on cleanup
-      console.log(`[use-raster-frame:${hookId}] Cleanup effect for frame ${timestep}`);
+      mounted = false;
     };
-  // Remover loadingFrames de las dependencias para evitar ciclos infinitos
-  // Esto evita que el effect se vuelva a ejecutar cuando cambia loadingFrames
-  }, [trajectoryId, analysisId, model, timestep, getRasterFrame, scene, cacheKey, priority, hookId]);
+  }, [trajectoryId, analysisId, model, timestep, getRasterFrame, isInsideCanvas, cacheKey, priority, hookId, unavailableFramesKey, cachedFrameExists, loadingFrames]);
+
+  return {
+    frameData,
+    isLoading,
+    isAvailable,
+    error,
+  };
+};
+
+// Keep the internal implementation for reference but don't export it
+// Not currently used by default export, but kept for documentation purposes
+
+// Default export with the interface expected by HeadlessRasterizerView
+export default function useRasterFrameWrapper(
+  trajectoryId?: string,
+  timestep?: number,
+  analysisId?: string,
+  model?: string
+): UseRasterFrameResult {
+  // Initialize with defaults
+  const [scene, setScene] = useState<UseRasterFrameResult['scene']>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Store attempted frames in localStorage to avoid repeated failed requests
+  const unavailableFramesKey = trajectoryId ? `${trajectoryId}-unavailable-frames` : null;
+
+  // Only call the internal hook if all required params are present
+  useEffect(() => {
+    if (!trajectoryId || !model || timestep === undefined || !analysisId) {
+      setScene(null);
+      setError("Missing required parameters");
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    // This is a side effect to simulate the frame loading
+    // without using useThree outside of a Canvas
+    const fetchFrame = async () => {
+      // Create a unique cache key for this frame
+      const cacheKey = `${timestep}-${analysisId}-${model}`;
+      
+      // Check if we've previously marked this frame as unavailable
+      if (unavailableFramesKey) {
+        try {
+          const unavailableFrames = JSON.parse(localStorage.getItem(unavailableFramesKey) || '{}');
+          const isFrameKnownUnavailable = unavailableFrames[cacheKey];
+          
+          if (isFrameKnownUnavailable) {
+            console.log(`[use-raster-frame] Frame ${cacheKey} known to be unavailable, skipping fetch`);
+            setScene({
+              frame: timestep,
+              model,
+              analysisId,
+              isUnavailable: true
+            });
+            setError(`Frame ${timestep} with model ${model} not available`);
+            setIsLoading(false);
+            return;
+          }
+        } catch (e) {
+          // If localStorage access fails, continue with the request
+          console.warn("Could not access localStorage for frame cache");
+        }
+      }
+    
+      try {
+        const { getRasterFrame } = useRasterStore.getState();
+        const frameData = await getRasterFrame(trajectoryId, timestep, analysisId, model);
+        
+        if (frameData) {
+          setScene({
+            frame: timestep,
+            model,
+            analysisId,
+            data: frameData,
+            isUnavailable: false
+          });
+          setError(null);
+        } else {
+          setScene({
+            frame: timestep,
+            model,
+            analysisId,
+            isUnavailable: true
+          });
+          setError(`Frame ${timestep} not available`);
+          
+          // Store this frame as unavailable to avoid future requests
+          if (unavailableFramesKey) {
+            try {
+              const unavailableFrames = JSON.parse(localStorage.getItem(unavailableFramesKey) || '{}');
+              unavailableFrames[cacheKey] = true;
+              localStorage.setItem(unavailableFramesKey, JSON.stringify(unavailableFrames));
+            } catch (e) {
+              console.warn("Could not store unavailable frame in localStorage");
+            }
+          }
+        }
+      } catch (err) {
+        setScene({
+          frame: timestep,
+          model,
+          analysisId,
+          isUnavailable: true
+        });
+        setError(err instanceof Error ? err.message : "Unknown error loading frame");
+        
+        // Store this frame as unavailable to avoid future requests
+        if (unavailableFramesKey) {
+          try {
+            const unavailableFrames = JSON.parse(localStorage.getItem(unavailableFramesKey) || '{}');
+            unavailableFrames[cacheKey] = true;
+            localStorage.setItem(unavailableFramesKey, JSON.stringify(unavailableFrames));
+          } catch (e) {
+            console.warn("Could not store unavailable frame in localStorage");
+          }
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFrame();
+  }, [trajectoryId, timestep, analysisId, model, unavailableFramesKey]);
 
   return {
     scene,
@@ -235,5 +325,3 @@ export const useRasterFrame = (
     error
   };
 };
-
-export default useRasterFrame;

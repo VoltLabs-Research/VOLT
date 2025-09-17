@@ -114,14 +114,12 @@ export const checkTeamMembershipForTrajectory = async (req: Request, res: Respon
         });
     }
 
-    // Si la trayectoria es pública, permitir acceso sin verificar membresía
     if(trajectory.isPublic) {
         res.locals.trajectory = trajectory;
         res.locals.isPublicAccess = true;
         return next();
     }
 
-    // Para trayectorias privadas, verificar que el usuario está autenticado
     const userId = (req as any).user?.id;
     if(!userId) {
         return res.status(401).json({
