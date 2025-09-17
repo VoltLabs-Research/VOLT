@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import useRasterStore from '@/stores/raster';
 import type { Scene } from '@/types/raster';
 
@@ -14,21 +14,38 @@ export const useRasterFrame = (
   analysisId: string | undefined,
   model: string | undefined
 ): UseRasterFrameResult => {
-  const { getRasterFrame, getFrameCacheKey, frameCache, loadingFrames } = useRasterStore();
+  const { getRasterFrame, getFrameCacheKey, frameCache, loadingFrames, unavailableFrames } = useRasterStore();
   const [error, setError] = useState<string | null>(null);
 
-  const cacheKey = trajectoryId && timestep && analysisId && model 
-    ? getFrameCacheKey(timestep, analysisId, model)
-    : null;
+  const cacheKey = useMemo(() => 
+    trajectoryId && (timestep !== undefined && timestep !== null) && analysisId && model 
+      ? getFrameCacheKey(timestep, analysisId, model)
+      : null,
+    [trajectoryId, timestep, analysisId, model, getFrameCacheKey]
+  );
 
   const cachedFrame = cacheKey ? frameCache[cacheKey] : null;
   const isLoading = cacheKey ? loadingFrames.has(cacheKey) : false;
+  const isUnavailable = cacheKey ? unavailableFrames.has(cacheKey) : false;
 
   const [scene, setScene] = useState<Scene | null>(null);
 
   useEffect(() => {
-    if (!trajectoryId || !timestep || !analysisId || !model || !cacheKey) {
+    if (!trajectoryId || (timestep === undefined || timestep === null) || !analysisId || !model || !cacheKey) {
       setScene(null);
+      return;
+    }
+
+    // Si sabemos que no está disponible, no mostrar como cargando
+    if (isUnavailable) {
+      setScene({
+        frame: timestep,
+        model,
+        analysisId,
+        isLoading: false,
+        isUnavailable: true
+      });
+      setError('Frame not available');
       return;
     }
 
@@ -68,18 +85,30 @@ export const useRasterFrame = (
             isLoading: false
           });
         } else {
-          setScene(null);
+          setScene({
+            frame: timestep,
+            model,
+            analysisId,
+            isLoading: false,
+            isUnavailable: true
+          });
           setError('Failed to load frame');
         }
       } catch (err) {
         console.error('Error loading frame:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
-        setScene(null);
+        setScene({
+          frame: timestep,
+          model,
+          analysisId,
+          isLoading: false,
+          isUnavailable: true
+        });
       }
     };
 
     loadFrame();
-  }, [trajectoryId, timestep, analysisId, model, cacheKey, cachedFrame, isLoading, getRasterFrame, getFrameCacheKey]);
+  }, [trajectoryId, timestep, analysisId, model, cacheKey, cachedFrame, isLoading, isUnavailable, getRasterFrame, getFrameCacheKey]);
 
   return {
     scene,

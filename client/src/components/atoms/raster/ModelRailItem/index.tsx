@@ -26,6 +26,7 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
 
     const displayScene = loadedScene || scene;
     const hasData = displayScene?.data && !displayScene.isLoading;
+    const isUnavailable = displayScene?.isUnavailable;
 
     if (isSelected) {
         return (
@@ -65,6 +66,21 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
                             objectFit: 'cover'
                         }}
                     />
+                ) : isUnavailable ? (
+                    <div style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.7rem',
+                        color: 'rgba(255, 255, 255, 0.4)',
+                        textAlign: 'center',
+                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                        borderRadius: '0.75rem'
+                    }}>
+                        No disponible
+                    </div>
                 ) : (
                     <Skeleton
                         variant='rounded'
@@ -112,6 +128,21 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
                         objectFit: 'cover'
                     }}
                 />
+            ) : isUnavailable ? (
+                <div style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.7rem',
+                    color: 'rgba(255, 255, 255, 0.4)',
+                    textAlign: 'center',
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                    borderRadius: '0.75rem'
+                }}>
+                    No disponible
+                </div>
             ) : (
                 <Skeleton
                     variant='rounded'

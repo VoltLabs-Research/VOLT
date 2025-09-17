@@ -24,6 +24,7 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
 
     const displayScene = loadedScene || scene;
     const hasData = displayScene?.data && !displayScene.isLoading;
+    const isUnavailable = displayScene?.isUnavailable;
 
     return (
         <motion.div
@@ -55,6 +56,21 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
                     alt={`${displayScene.model} - Frame ${timestep}`}
                     loading='lazy'
                 />
+            ) : isUnavailable ? (
+                <div 
+                    className='raster-thumbnail'
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.6rem',
+                        color: 'rgba(255, 255, 255, 0.4)',
+                        textAlign: 'center',
+                        borderRadius: '0.5rem'
+                    }}
+                >
+                    N/A
+                </div>
             ) : (
                 <Skeleton
                     variant='rounded'

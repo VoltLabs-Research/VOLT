@@ -42,4 +42,4 @@ const SceneColumn: React.FC<SceneColumnProps> = ({
     );
 };
 
-export default SceneColumn;
+export default React.memo(SceneColumn);

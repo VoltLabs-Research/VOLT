@@ -6,6 +6,7 @@ export interface Scene{
     data?: string;
     analysisId?: string;
     isLoading?: boolean;
+    isUnavailable?: boolean;
 }
 
 export interface FrameObject{

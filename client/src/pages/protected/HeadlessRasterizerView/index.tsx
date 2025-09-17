@@ -43,6 +43,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const getRasterFramesRef = useRef(getRasterFrames);
     const getMetricsRef = useRef(getMetrics);
     const preloadAllFramesRef = useRef(preloadAllFrames);
+    const urlUpdateTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
         getRasterFramesRef.current = getRasterFrames;
@@ -118,24 +119,28 @@ const HeadlessRasterizerView: React.FC = () => {
     const timeline = useMemo(() => {
         if(!selectedAnalysisLeft && !selectedAnalysisRight) return [];
         
-        const timestepsLeft = selectedAnalysisLeft && analyses?.[selectedAnalysisLeft]?.frames
-            ? Object.keys(analyses[selectedAnalysisLeft].frames).map(ts => parseInt(ts, 10)).filter(isValidNumber)
-            : [];
-            
-        const timestepsRight = selectedAnalysisRight && analyses?.[selectedAnalysisRight]?.frames
-            ? Object.keys(analyses[selectedAnalysisRight].frames).map(ts => parseInt(ts, 10)).filter(isValidNumber)
-            : [];
+        // Cache parsed timesteps to avoid re-parsing
+        const getTimesteps = (analysisId: string | null) => {
+            if (!analysisId || !analyses?.[analysisId]?.frames) return [];
+            return Object.keys(analyses[analysisId].frames)
+                .map(ts => parseInt(ts, 10))
+                .filter(isValidNumber)
+                .sort((a, b) => a - b); // Sort immediately to avoid multiple sorts
+        };
+        
+        const timestepsLeft = getTimesteps(selectedAnalysisLeft);
+        const timestepsRight = getTimesteps(selectedAnalysisRight);
 
         if(timestepsLeft.length > 0 && timestepsRight.length > 0){
             const intersectionSet = new Set(timestepsLeft);
             const intersection = timestepsRight.filter((ts) => intersectionSet.has(ts));
 
-            if(intersection.length > 0) return intersection.sort((a, b) => a - b);
-            const unionSet = new Set([ ...timestepsLeft, ...timestepsRight ]);
+            if(intersection.length > 0) return intersection; // Already sorted
+            const unionSet = new Set([...timestepsLeft, ...timestepsRight]);
             return Array.from(unionSet).sort((a, b) => a - b);
         }
 
-        return timestepsLeft.length > 0 ? timestepsLeft.sort((a, b) => a - b) : timestepsRight.sort((a, b) => a - b);
+        return timestepsLeft.length > 0 ? timestepsLeft : timestepsRight;
     }, [selectedAnalysisLeft, selectedAnalysisRight, analyses]);
 
     const currentTimestep = timeline[selectedFrameIndex];
@@ -248,18 +253,31 @@ const HeadlessRasterizerView: React.FC = () => {
         }
     }, [availableModelsRight, selectedModelRight]);
 
-    // Update URL when state changes (but not during initial restoration)
+    // Update URL when state changes (but not during initial restoration) - debounced
     useEffect(() => {
         if(!isInitializedRef.current) return;
-        const updates: Record<string, string | null> = {
-            al: selectedAnalysisLeft,
-            ar: selectedAnalysisRight,
-            ml: selectedModelLeft,
-            mr: selectedModelRight,
-            disl: showDislocations ? "1" : null,
-            ts: isValidNumber(currentTimestep) ? String(currentTimestep) : null
+        
+        if(urlUpdateTimeoutRef.current) {
+            clearTimeout(urlUpdateTimeoutRef.current);
+        }
+        
+        urlUpdateTimeoutRef.current = window.setTimeout(() => {
+            const updates: Record<string, string | null> = {
+                al: selectedAnalysisLeft,
+                ar: selectedAnalysisRight,
+                ml: selectedModelLeft,
+                mr: selectedModelRight,
+                disl: showDislocations ? "1" : null,
+                ts: isValidNumber(currentTimestep) ? String(currentTimestep) : null
+            };
+            updateUrlParams(updates);
+        }, isPlaying ? 500 : 100); // Longer debounce during autoplay
+        
+        return () => {
+            if(urlUpdateTimeoutRef.current) {
+                clearTimeout(urlUpdateTimeoutRef.current);
+            }
         };
-        updateUrlParams(updates);
     }, [
         selectedAnalysisLeft,
         selectedAnalysisRight, 
@@ -267,7 +285,8 @@ const HeadlessRasterizerView: React.FC = () => {
         selectedModelRight,
         showDislocations,
         currentTimestep,
-        updateUrlParams
+        updateUrlParams,
+        isPlaying
     ]);
 
     // Constrain frame index
@@ -303,17 +322,25 @@ const HeadlessRasterizerView: React.FC = () => {
         };
     }, []);
 
-    // Load dislocation data when needed
+    // Load dislocation data when needed - with debounce to avoid rapid requests
     useEffect(() => {
-        if(selectedAnalysisLeft && showDislocations){
+        if(!selectedAnalysisLeft || !showDislocations) return;
+        
+        const timeoutId = setTimeout(() => {
             getDislocationsByAnalysisId(selectedAnalysisLeft);
-        }
+        }, 200);
+        
+        return () => clearTimeout(timeoutId);
     }, [selectedAnalysisLeft, showDislocations, getDislocationsByAnalysisId]);
 
     useEffect(() => {
-        if(selectedAnalysisRight && showDislocations){
+        if(!selectedAnalysisRight || !showDislocations) return;
+        
+        const timeoutId = setTimeout(() => {
             getDislocationsByAnalysisId(selectedAnalysisRight);
-        }
+        }, 200);
+        
+        return () => clearTimeout(timeoutId);
     }, [selectedAnalysisRight, showDislocations, getDislocationsByAnalysisId]);
 
     // Event handlers
@@ -356,26 +383,26 @@ const HeadlessRasterizerView: React.FC = () => {
         };
     }, [selectedAnalysisLeft, selectedAnalysisRight, selectedModelLeft, selectedModelRight]);
 
-    const playbackControlsProps: PlaybackControlsProps = { 
+    const playbackControlsProps: PlaybackControlsProps = useMemo(() => ({ 
         isPlaying, 
         onPlayPause: handlePlayPause 
-    };
+    }), [isPlaying, handlePlayPause]);
 
-    const analysisSelectLeftProps: AnalysisSelectProps = { 
+    const analysisSelectLeftProps: AnalysisSelectProps = useMemo(() => ({ 
         analysesNames: analysesNames || [], 
         selectedAnalysis: selectedAnalysisLeft, 
         onAnalysisChange: setSelectedAnalysisLeft, 
         isLoading 
-    };
+    }), [analysesNames, selectedAnalysisLeft, isLoading]);
 
-    const analysisSelectRightProps: AnalysisSelectProps = { 
+    const analysisSelectRightProps: AnalysisSelectProps = useMemo(() => ({ 
         analysesNames: analysesNames || [],
         selectedAnalysis: selectedAnalysisRight, 
         onAnalysisChange: setSelectedAnalysisRight, 
         isLoading 
-    };
+    }), [analysesNames, selectedAnalysisRight, isLoading]);
 
-    const modelRailLeftProps: ModelRailProps = { 
+    const modelRailLeftProps: ModelRailProps = useMemo(() => ({ 
         modelsForCurrentFrame: availableModelsLeft.map((model: string) => ({
             frame: currentTimestep,
             model,
@@ -383,9 +410,9 @@ const HeadlessRasterizerView: React.FC = () => {
         })), 
         selectedModel: selectedModelLeft, 
         onModelChange: setSelectedModelLeft 
-    };
+    }), [availableModelsLeft, currentTimestep, selectedAnalysisLeft, selectedModelLeft]);
 
-    const modelRailRightProps: ModelRailProps = { 
+    const modelRailRightProps: ModelRailProps = useMemo(() => ({ 
         modelsForCurrentFrame: availableModelsRight.map((model: string) => ({
             frame: currentTimestep,
             model,
@@ -393,7 +420,7 @@ const HeadlessRasterizerView: React.FC = () => {
         })), 
         selectedModel: selectedModelRight, 
         onModelChange: setSelectedModelRight 
-    };
+    }), [availableModelsRight, currentTimestep, selectedAnalysisRight, selectedModelRight]);
 
     return (
         <main className='raster-view-container'>

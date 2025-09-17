@@ -45,7 +45,26 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             </div>
 
             <div className='raster-scene-main'>
-                {!scene.data || scene.isLoading ? (
+                {scene.isUnavailable ? (
+                    <div style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1rem',
+                        color: 'rgba(255, 255, 255, 0.5)',
+                        textAlign: 'center',
+                        borderRadius: '0.75rem',
+                        flexDirection: 'column',
+                        gap: '0.5rem'
+                    }}>
+                        <div>Model not found</div>
+                        <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>
+                            {scene.model.slice(0, 1).toUpperCase() + scene.model.slice(1)} - Frame {scene.frame}
+                        </div>
+                    </div>
+                ) : !scene.data || scene.isLoading ? (
                     <Skeleton
                         variant='rectangular'
                         animation='wave'

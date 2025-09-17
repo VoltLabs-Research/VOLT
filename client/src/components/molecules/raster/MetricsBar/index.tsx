@@ -32,4 +32,4 @@ const MetricsBar: React.FC<MetricsBarProps> = ({ items, isLoading, showDislocati
     );
 };
 
-export default MetricsBar;
+export default React.memo(MetricsBar);

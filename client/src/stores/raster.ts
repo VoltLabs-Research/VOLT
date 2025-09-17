@@ -25,6 +25,7 @@ interface RasterState {
   error: string | null;
   frameCache: FrameCache;
   loadingFrames: Set<string>;
+  unavailableFrames: Set<string>; // Frames que no existen en el servidor
   isPreloading: boolean;
   preloadProgress: number;
 
@@ -47,6 +48,7 @@ const initialState = {
   error: null,
   frameCache: {},
   loadingFrames: new Set<string>(),
+  unavailableFrames: new Set<string>(),
   isPreloading: false,
   preloadProgress: 0,
 };
@@ -98,7 +100,12 @@ const useRasterStore = create<RasterState>((set, get) => {
 
     async getRasterFrame(trajectoryId: string, timestep: number, analysisId: string, model: string) {
       const cacheKey = get().getFrameCacheKey(timestep, analysisId, model);
-      const { frameCache, loadingFrames } = get();
+      const { frameCache, loadingFrames, unavailableFrames } = get();
+      
+      // Si ya sabemos que este frame no está disponible, retornar null inmediatamente
+      if (unavailableFrames.has(cacheKey)) {
+        return null;
+      }
       
       if (frameCache[cacheKey]) {
         const cached = frameCache[cacheKey];
@@ -113,9 +120,11 @@ const useRasterStore = create<RasterState>((set, get) => {
       }
 
       try {
-        set(state => ({
-          loadingFrames: new Set(state.loadingFrames).add(cacheKey)
-        }));
+        set(state => {
+          const newLoadingFrames = new Set(state.loadingFrames);
+          newLoadingFrames.add(cacheKey);
+          return { loadingFrames: newLoadingFrames };
+        });
 
         const res = await api.get(`/raster/${trajectoryId}/frame-data/${timestep}/${analysisId}/${model}`);
         const imageData = res.data.data.data;
@@ -142,7 +151,17 @@ const useRasterStore = create<RasterState>((set, get) => {
         set(state => {
           const newLoadingFrames = new Set(state.loadingFrames);
           newLoadingFrames.delete(cacheKey);
-          return { loadingFrames: newLoadingFrames };
+          const newUnavailableFrames = new Set(state.unavailableFrames);
+          
+          // Si es un error 404 o similar, marcar como no disponible
+          if (error instanceof Error && (error.message.includes('404') || error.message.includes('Not Found'))) {
+            newUnavailableFrames.add(cacheKey);
+          }
+          
+          return { 
+            loadingFrames: newLoadingFrames,
+            unavailableFrames: newUnavailableFrames
+          };
         });
         return null;
       }
@@ -153,7 +172,7 @@ const useRasterStore = create<RasterState>((set, get) => {
     },
 
     clearFrameCache() {
-      set({ frameCache: {}, loadingFrames: new Set() });
+      set({ frameCache: {}, loadingFrames: new Set(), unavailableFrames: new Set() });
     },
 
     setSelectedAnalysis(id) {
@@ -193,27 +212,50 @@ const useRasterStore = create<RasterState>((set, get) => {
       const totalFrames = framesToPreload.length;
       let completedFrames = 0;
 
-      const concurrencyLimit = 6;
+      const concurrencyLimit = 3; // Reducido para evitar lag
       const chunks: Array<typeof framesToPreload> = [];
       
       for (let i = 0; i < framesToPreload.length; i += concurrencyLimit) {
         chunks.push(framesToPreload.slice(i, i + concurrencyLimit));
       }
 
-      for (const chunk of chunks) {
-        const promises = chunk.map(async ({ timestep, analysisId, model }) => {
-          try {
-            await get().getRasterFrame(trajectoryId, timestep, analysisId, model);
-          } catch (error) {
-            console.warn(`Failed to preload frame ${timestep}-${analysisId}-${model}:`, error);
-          } finally {
-            completedFrames++;
-            const progress = Math.round((completedFrames / totalFrames) * 100);
-            set({ preloadProgress: progress });
+      // Función para procesar con requestIdleCallback cuando esté disponible
+      const processChunk = (chunk: typeof framesToPreload) => {
+        return new Promise<void>((resolve) => {
+          const runChunk = async () => {
+            const promises = chunk.map(async ({ timestep, analysisId, model }) => {
+              try {
+                await get().getRasterFrame(trajectoryId, timestep, analysisId, model);
+              } catch (error) {
+                console.warn(`Failed to preload frame ${timestep}-${analysisId}-${model}:`, error);
+              } finally {
+                completedFrames++;
+                const progress = Math.round((completedFrames / totalFrames) * 100);
+                set({ preloadProgress: progress });
+              }
+            });
+
+            await Promise.all(promises);
+            resolve();
+          };
+
+          // Usar requestIdleCallback si está disponible, sino setTimeout
+          if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(() => runChunk());
+          } else {
+            setTimeout(() => runChunk(), 0);
           }
         });
+      };
 
-        await Promise.all(promises);
+      // Procesar chunks con delay para no bloquear el main thread
+      for (let i = 0; i < chunks.length; i++) {
+        await processChunk(chunks[i]);
+        
+        // Pequeño delay entre chunks para dar espacio al main thread
+        if (i < chunks.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       }
 
       set({ isPreloading: false, preloadProgress: 100 });
@@ -228,6 +270,7 @@ const useRasterStore = create<RasterState>((set, get) => {
         error: null,
         frameCache: {},
         loadingFrames: new Set(),
+        unavailableFrames: new Set(),
         isPreloading: false,
         preloadProgress: 0,
       });
