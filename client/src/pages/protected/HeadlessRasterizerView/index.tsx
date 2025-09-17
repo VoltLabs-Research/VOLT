@@ -341,16 +341,6 @@ const HeadlessRasterizerView: React.FC = () => {
         setIsPlaying((prev) => !prev);
     }, []);
 
-    const handlePrev = useCallback(() => {
-        if(timeline.length === 0) return;
-        setSelectedFrameIndex((prev) => (prev === 0 ? timeline.length - 1 : prev - 1));
-    }, [timeline.length]);
-
-    const handleNext = useCallback(() => {
-        if(timeline.length === 0) return;
-        setSelectedFrameIndex((prev) => (prev + 1) % timeline.length);
-    }, [timeline.length]);
-
     const handleGoBack = useCallback(() => {
         navigate('/dashboard');
     }, [navigate]);

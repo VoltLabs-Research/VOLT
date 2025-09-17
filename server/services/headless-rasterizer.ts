@@ -71,7 +71,6 @@ export interface HeadlessRasterizerOptions{
     height: number;
     background: string;
     fov: number;
-    pointSize: number;
     maxPoints: number;
     up: string;
     az: number;
@@ -315,6 +314,16 @@ const shouldRenderAsMesh = (node: GNode): boolean => {
     return false;
 };
 
+const adaptivePointSize = (particleCount: number) => {
+    // Base size that works well for reference point (36624 particles, 6.0 size)
+    const baseSize = 6.0;
+    const referenceCount = 36624;
+    
+    // Scale inversely with square root of particle count ratio
+    // This gives a gentler scaling than direct proportion
+    return baseSize * Math.sqrt(referenceCount / particleCount);
+};
+
 const traverseCollectPoints = (node: GNode, parentWorld: mat4, pointsOut: Point[], trisOut: Triangle3D[]) => {
     const local = nodeLocalMatrix(node);
     const world = mat4.create();
@@ -362,7 +371,6 @@ class HeadlessRasterizer{
             height: opts?.height ?? 900,
             background: opts.background ?? 'transparent',
             fov: opts.fov ?? 45,
-            pointSize: opts.pointSize ?? 2.0,
             maxPoints: opts.maxPoints ?? 0,
             up: opts.up ?? 'z',
             az: opts.az ?? 45,
@@ -656,7 +664,7 @@ class HeadlessRasterizer{
             ctx.fill();            
         }
 
-        const radius = Math.max(0.5, this.opts.pointSize);
+        const radius = adaptivePointSize(points.length);
         for(const p of out2D){
             ctx.fillStyle = colorToCSS([0,0,0], 0.12);
             ctx.beginPath();
