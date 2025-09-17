@@ -15,7 +15,7 @@ const DislocationPanel: React.FC<DislocationPanelProps> = ({ dislocationData, sh
                     animate={{ opacity: 1, y: 0, height: "auto" }}
                     exit={{ opacity: 0, y: -10, height: 0 }}
                     transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ overflow: 'hidden', marginBottom: '.5rem' }}
+                    style={{ overflow: 'hidden' }}
                 >
                     {isLoading ? (
                         <DislocationResultsSkeleton />
