@@ -17,16 +17,19 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
     onClick
 }) => {
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
-    const { scene: loadedScene } = useRasterFrame(
+    const { scene: loadedScene, isLoading } = useRasterFrame(
         trajectoryId,
         scene.frame,
         scene.analysisId,
-        scene.model
+        scene.model,
+        'high' 
     );
 
     const displayScene = loadedScene || scene;
-    const hasData = displayScene?.data && !displayScene.isLoading;
+    const hasData = (displayScene?.data !== undefined) || (scene.data !== undefined);
     const isUnavailable = displayScene?.isUnavailable;
+    
+    const showSkeleton = isLoading && !hasData;
 
     if (isSelected) {
         return (
@@ -81,7 +84,7 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
                     }}>
                         Not available
                     </div>
-                ) : (
+                ) : showSkeleton ? (
                     <Skeleton
                         variant='rounded'
                         animation='wave'
@@ -92,6 +95,13 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
                             bgcolor: 'rgba(255, 255, 255, 0.12)'
                         }}
                     />
+                ) : (
+                    <div style={{
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                        borderRadius: '0.75rem'
+                    }} />
                 )}
             </motion.div>
         );
@@ -143,7 +153,7 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
                 }}>
                     Not available
                 </div>
-            ) : (
+            ) : showSkeleton ? (
                 <Skeleton
                     variant='rounded'
                     animation='wave'
@@ -154,6 +164,13 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
                         bgcolor: 'rgba(255, 255, 255, 0.08)'
                     }}
                 />
+            ) : (
+                <div style={{
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                    borderRadius: '0.75rem'
+                }} />
             )}
         </motion.div>
     );

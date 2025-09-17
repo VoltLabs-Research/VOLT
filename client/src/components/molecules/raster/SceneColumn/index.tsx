@@ -16,6 +16,10 @@ const SceneColumn: React.FC<SceneColumnProps> = ({
     modelRail,
     delay = 0
 }) => {
+    // Solo mostrar el skeleton de carga cuando no hay escena o cuando estamos en la carga inicial
+    // Si ya tenemos un scene con datos, no mostrar el skeleton aunque isLoading sea true
+    const shouldShowSkeleton = isLoading && (!scene || !scene.data);
+    
     return (
         <motion.div
             className='raster-scene-column-container'
@@ -33,7 +37,7 @@ const SceneColumn: React.FC<SceneColumnProps> = ({
             <RasterScene
                 scene={scene}
                 disableAnimation={isPlaying}
-                isLoading={isLoading}
+                isLoading={shouldShowSkeleton}
                 playbackControls={playbackControls}
                 analysisSelect={analysisSelect}
                 modelRail={modelRail}

@@ -27,6 +27,7 @@ interface RasterState {
   clearRasterData: () => void;
   setSelectedAnalysis: (id: string | null) => void;
   getFrameCacheKey: (timestep: number, analysisId: string, model: string) => string;
+  cachedFrameExists: (cacheKey: string) => boolean;
 }
 
 const initialState = {
@@ -130,6 +131,27 @@ const useRasterStore = create<RasterState>((set, get) => {
 
     getFrameCacheKey(timestep: number, analysisId: string, model: string) {
       return `${timestep}-${analysisId}-${model}`;
+    },
+
+    cachedFrameExists(cacheKey: string) {
+      const { analyses } = get();
+      if (!cacheKey || !analyses) return false;
+      
+      // El cacheKey es de la forma 'timestep-analysisId-model'
+      const parts = cacheKey.split('-');
+      if (parts.length !== 3) return false;
+      
+      const [timestep, analysisId, model] = parts;
+      
+      // Verificar si tenemos el análisis
+      if (!analyses[analysisId]) return false;
+      
+      // Verificar si tenemos el frame para ese timestep
+      if (!analyses[analysisId].frames || !analyses[analysisId].frames[timestep]) return false;
+      
+      // Verificar si el modelo está disponible para ese frame
+      const availableModels = analyses[analysisId].frames[timestep].availableModels || [];
+      return availableModels.includes(model);
     },
 
     clearFrameCache() {

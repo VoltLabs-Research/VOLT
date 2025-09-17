@@ -34,7 +34,8 @@ const RasterScene: React.FC<RasterSceneProps> = ({
         }
     }, [scene?.isUnavailable, scene?.model]);
 
-    if(isLoading) return <RasterSceneSkeleton />;
+    // Si está cargando y no hay escena, mostrar el skeleton completo
+    if(isLoading && !scene?.data) return <RasterSceneSkeleton />;
 
     if(!scene){
         return (
@@ -87,39 +88,45 @@ const RasterScene: React.FC<RasterSceneProps> = ({
                             {modelName} - Frame {frameNumber}
                         </div>
                     </div>
-                ) : scene.isLoading || !scene.data || (scene.isUnavailable && !showUnavailable) ? (
-                    <Skeleton
-                        variant='rectangular'
-                        animation='wave'
-                        width='100%'
-                        height='100%'
-                        sx={{
-                            borderRadius: '0.75rem',
-                            bgcolor: 'rgba(255, 255, 255, 0.06)'
-                        }}
-                    />
-                ) : disableAnimation ? (
-                    <img 
-                        key={`${scene.frame}-${scene.model}`}
-                        className='raster-scene'
-                        src={scene.data}
-                        alt={`${scene.model} - Frame ${scene.frame}`}
-                        style={{ objectFit: 'contain', width: '100%' }}
-                    />
                 ) : (
-                    <AnimatePresence mode='wait'>
-                        <motion.img
-                            key={`${scene.frame}-${scene.model}`}
-                            className="raster-scene"
-                            src={scene.data}
-                            alt={`${scene.model} - Frame ${scene.frame}`}
-                            initial={{ opacity: 0, scale: 0.95, filter: "blur(12px)" }}
-                            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                            exit={{ opacity: 0, scale: 0.95, filter: "blur(12px)" }}
-                            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                            style={{ objectFit: "contain", width: "100%" }}
+                    // Si tenemos data, mostrarla inmediatamente incluso si isLoading=true o scene.isLoading=true
+                    scene.data ? (
+                        disableAnimation ? (
+                            <img 
+                                key={`${scene.frame}-${scene.model}`}
+                                className='raster-scene'
+                                src={scene.data}
+                                alt={`${scene.model} - Frame ${scene.frame}`}
+                                style={{ objectFit: 'contain', width: '100%' }}
+                            />
+                        ) : (
+                            <AnimatePresence mode='wait'>
+                                <motion.img
+                                    key={`${scene.frame}-${scene.model}`}
+                                    className="raster-scene"
+                                    src={scene.data}
+                                    alt={`${scene.model} - Frame ${scene.frame}`}
+                                    initial={{ opacity: 0, scale: 0.95, filter: "blur(12px)" }}
+                                    animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                                    exit={{ opacity: 0, scale: 0.95, filter: "blur(12px)" }}
+                                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                                    style={{ objectFit: "contain", width: "100%" }}
+                                />
+                            </AnimatePresence>
+                        )
+                    ) : (
+                        // Solo mostrar skeleton si no tenemos datos
+                        <Skeleton
+                            variant='rectangular'
+                            animation='wave'
+                            width='100%'
+                            height='100%'
+                            sx={{
+                                borderRadius: '0.75rem',
+                                bgcolor: 'rgba(255, 255, 255, 0.06)'
+                            }}
                         />
-                    </AnimatePresence>
+                    )
                 )}
             </div>
 

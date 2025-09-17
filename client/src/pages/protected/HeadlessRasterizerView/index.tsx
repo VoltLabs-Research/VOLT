@@ -594,7 +594,7 @@ const HeadlessRasterizerView: React.FC = () => {
                         isDislocationsLoading={isDislocationsLoadingLeft}
                         showDislocations={showDislocations}
                         isPlaying={isPlaying}
-                        isLoading={false} 
+                        isLoading={isLoading && (!currentSceneLeft || !currentSceneLeft.data)} 
                         playbackControls={playbackControlsProps}
                         analysisSelect={analysisSelectLeftProps}
                         modelRail={modelRailLeftProps}
@@ -607,7 +607,7 @@ const HeadlessRasterizerView: React.FC = () => {
                         isDislocationsLoading={isDislocationsLoadingRight}
                         showDislocations={showDislocations}
                         isPlaying={isPlaying}
-                        isLoading={false}
+                        isLoading={isLoading && (!currentSceneRight || !currentSceneRight.data)}
                         playbackControls={playbackControlsProps}
                         analysisSelect={analysisSelectRightProps}
                         modelRail={modelRailRightProps}
