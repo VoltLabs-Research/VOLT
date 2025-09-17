@@ -138,12 +138,15 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
             return 'transparent';
         }
 
+        /*
         if(animatedCompletionRate === 100) return '#22c55e';
         if(animatedCompletionRate >= 75) return '#3b82f6';
         if(animatedCompletionRate >= 50) return '#f59e0b';
         if(animatedCompletionRate >= 25) return '#f97316';
 
         return '#dc2626';
+        */
+        return '#3b82f6';
     }, [hasJobs, shouldHideBorder, animatedCompletionRate]);
 
     const getWaitingBorder = useCallback((): string => {

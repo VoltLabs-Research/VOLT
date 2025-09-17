@@ -91,6 +91,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
         isCompleted,
         shouldHideBorder,
         getBorderColor,
+        // TODO: PROGRESS BORDE UNUSED
         getAnimatedProgressBorder,
         cleanup: cleanupJobs,
         isAnimating
@@ -141,7 +142,6 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
             onClick={(e) => handleClick(e, trajectory._id)}
         >
             <ProgressBorderContainer
-                progressBorder={getAnimatedProgressBorder()}
                 isAnimating={isAnimating}
                 hasJobs={hasJobs}
                 shouldHideBorder={shouldHideBorder}

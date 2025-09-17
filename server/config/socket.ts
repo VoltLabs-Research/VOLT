@@ -171,7 +171,7 @@ export const initializeSocketIO = (server: http.Server): Server => {
 
             console.log(`[Socket] Starting init for ${socket.id} (team ${teamId})`);
             socket.join(`team-${teamId}`);
-            setImmediate(() => cleanupOldJobs(teamId));
+            //setImmediate(() => cleanupOldJobs(teamId));
 
             const initialJobs = await getJobsForTeam(teamId);
             socket.emit('team_jobs', initialJobs);

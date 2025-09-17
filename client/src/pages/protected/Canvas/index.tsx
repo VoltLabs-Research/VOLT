@@ -60,9 +60,6 @@ const EditorPage: React.FC = () => {
         ['--stroke' as any]: '1px'
     };
 
-    const pct = Math.round((preloadProgress || 0) * 100);
-    const speedLabel = `${Math.max(0, displaySpeed).toFixed(1)} Mbps`;
-
     return (
         <div className="editor-container">
             <AnimatePresence>
@@ -75,9 +72,6 @@ const EditorPage: React.FC = () => {
                         transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
                     >
                         <div className="editor-model-loading-container" style={ringVars}>
-                            <div className="editor-loading-indicator">
-                                {pct}% • {speedLabel}
-                            </div>
                             <Canvas>
                                 <TetrahedronLoader />
                             </Canvas>

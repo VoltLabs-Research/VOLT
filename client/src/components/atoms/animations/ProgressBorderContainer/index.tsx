@@ -1,10 +1,9 @@
 import React, { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import './ProgressBorderContainer.css';
 
 interface ProgressBorderContainerProps {
   children: React.ReactNode;
-  progressBorder: string;
-  animatedProgressBorder?: string;
   hasJobs: boolean;
   shouldHideBorder: boolean;
   isAnimating?: boolean;
@@ -13,33 +12,36 @@ interface ProgressBorderContainerProps {
 
 const ProgressBorderContainer: React.FC<ProgressBorderContainerProps> = ({
     children,
-    progressBorder,
-    animatedProgressBorder,
     hasJobs,
     shouldHideBorder,
     isAnimating = false,
     className = ''
 }) => {
-    const containerClasses = useMemo(() => {
-        return [
-            'progress-border-container',
-            hasJobs && !shouldHideBorder ? 'progress-border-container--active' : '',
-            isAnimating ? 'progress-border-container--animating' : '',
-            className
-            ].filter(Boolean).join(' ');
-    }, [hasJobs, shouldHideBorder, isAnimating, className]);
-
-    const containerStyle = useMemo(() =>
-        ({
-            '--progress-border-static': progressBorder,
-            '--progress-border-animated': animatedProgressBorder || progressBorder
-        }) as React.CSSProperties,
-        [progressBorder, animatedProgressBorder]
-    );
+    const showBorder = hasJobs && !shouldHideBorder;
 
     return (
-        <div className={containerClasses} style={containerStyle}>
-            {children}
+        <div className='progress-border-container'>
+            {showBorder && (
+                <motion.div 
+                    className="border-animation"
+                    initial={{ opacity: 0 }}
+                    animate={{ 
+                        opacity: 1,
+                        rotate: 360
+                    }}
+                    transition={{ 
+                        opacity: { duration: 0.3 },
+                        rotate: { 
+                            repeat: Infinity, 
+                            duration: 4, 
+                            ease: "linear" 
+                        }
+                    }}
+                />
+            )}
+            <div className="container-content">
+                {children}
+            </div>
         </div>
     );
 };
