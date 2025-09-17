@@ -25,6 +25,8 @@
     "@gltf-transform/functions": "^4.2.1",
     "@mongodb-js/zstd": "^2.0.1",
     "@msgpack/msgpack": "^3.1.2",
+    "@tensorflow/tfjs-node": "^4.22.0",
+    "@tensorflow/tfjs-node-gpu": "^4.22.0",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "bull": "^4.16.5",
@@ -45,6 +47,7 @@
     "meshoptimizer": "^0.24.0",
     "mongoose": "^8.16.3",
     "multer": "^2.0.1",
+    "onnxruntime-node": "^1.22.0-rev",
     "pm2": "^6.0.8",
     "pngjs": "^7.0.0",
     "puppeteer": "^24.17.0",
@@ -56,7 +59,8 @@
     "three-mesh-bvh": "^0.1.1",
     "tsconfig-paths": "^4.2.0",
     "uuid": "^11.1.0",
-    "validator": "^13.15.15"
+    "validator": "^13.15.15",
+    "workerpool": "^9.3.4"
   },
   "name": "server",
   "version": "1.0.0",
