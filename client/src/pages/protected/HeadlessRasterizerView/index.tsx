@@ -356,12 +356,12 @@ const HeadlessRasterizerView: React.FC = () => {
     }, [navigate]);
 
     const handleView3D = useCallback(() => {
-
-    }, []);
+        navigate(`/canvas/${trajectory._id}/`);
+    }, [trajectory, navigate]);
 
     const handleSignIn = useCallback(() => {
-
-    }, []);
+        navigate('/auth/sign-in');
+    }, [navigate]);
 
     const handleThumbnailClick = useCallback((index: number) => {
         setSelectedFrameIndex(index);
