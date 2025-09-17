@@ -12,6 +12,7 @@ const SceneColumn: React.FC<SceneColumnProps> = ({
     showDislocations,
     isPlaying,
     isLoading,
+    trajectoryId,
     playbackControls,
     analysisSelect,
     modelRail,
@@ -50,6 +51,7 @@ const SceneColumn: React.FC<SceneColumnProps> = ({
 
             <RasterScene
                 scene={scene}
+                trajectoryId={trajectoryId}
                 disableAnimation={isPlaying}
                 isLoading={shouldShowSkeleton}
                 playbackControls={playbackControls}

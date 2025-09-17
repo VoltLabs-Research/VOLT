@@ -15,16 +15,20 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
     onClick
 }) => {
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
-    const { scene: loadedScene } = useRasterFrame(
+    
+    const { scene: loadedScene, isLoading: isFrameLoading } = useRasterFrame(
         trajectoryId,
         timestep,
         scene.analysisId,
-        scene.model
+        scene.model,
+        isActive ? 'high' : 'low' 
     );
 
     const displayScene = loadedScene || scene;
-    const hasData = displayScene?.data && !displayScene.isLoading;
+    const hasData = displayScene?.data;
     const isUnavailable = displayScene?.isUnavailable;
+    
+    const isLoading = isActive ? false : (isFrameLoading || (scene.isLoading && !hasData));
 
     return (
         <motion.div
@@ -32,18 +36,21 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
             className={`raster-thumbnail-container ${isActive ? "active" : ""}`}
             animate={
                 isPlaying ? {
-                    scale: isActive ? 1 : 0.98,
-                    opacity: isActive ? 1 : 0.5,
-                    rotateY: isActive ? 0 : index < selectedFrameIndex ? -20 : 20
+                    scale: isActive ? 1.03 : 0.98,
+                    opacity: isActive ? 1 : 0.7,
+                    rotateY: isActive ? 0 : index < selectedFrameIndex ? -15 : 15
                 } : {
-                    scale: 1,
+                    scale: isActive ? 1.03 : 1,
                     opacity: 1,
                     rotateY: 0
                 }
             }
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             onClick={() => onClick(index)}
-            style={{ flexShrink: 0, cursor: 'pointer' }}
+            style={{ 
+                flexShrink: 0, 
+                cursor: 'pointer'
+            }}
         >
             <div className='raster-thumbnail-timestep-container'>
                 <p className='raster-thumbnail-timestep'>{timestep}</p>
@@ -54,7 +61,7 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
                     className='raster-thumbnail'
                     src={displayScene.data}
                     alt={`${displayScene.model} - Frame ${timestep}`}
-                    loading='lazy'
+                    loading={isActive ? 'eager' : 'lazy'} 
                 />
             ) : isUnavailable ? (
                 <div 
@@ -74,13 +81,13 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
             ) : (
                 <Skeleton
                     variant='rounded'
-                    animation='wave'
+                    animation={isLoading ? 'wave' : false}
                     width='100%'
                     height='100%'
                     className='raster-thumbnail'
                     sx={{
                         borderRadius: '0.5rem',
-                        bgcolor: 'rgba(255, 255, 255, 0.06)',
+                        bgcolor: 'rgba(255, 255, 255, 0.05)',
                         aspectRatio: '1'
                     }}
                 />
@@ -89,4 +96,4 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
     );
 };
 
-export default ThumbnailItem;
+export default React.memo(ThumbnailItem);

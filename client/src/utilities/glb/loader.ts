@@ -189,9 +189,10 @@ export const loadGLB = (url: string, onProgress?: (progress: number) => void): P
 };
 
 export const preloadGLBs = (urls: string[]): void => {
-    if(urls.length === 0) return;
-    const endpoints = urls.map(url => `${import.meta.env.VITE_API_URL}/api${url}`);
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    // No hacer nada - deshabilitar precarga
+    console.log('Precarga de GLBs deshabilitada:', urls.length, 'modelos');
+    return;
+    
     /*workerLoader.preloadGLBs(endpoints, token || undefined).catch(error => {
         console.warn('Preload failed:', error);
     });*/

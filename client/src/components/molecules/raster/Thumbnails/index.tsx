@@ -36,6 +36,20 @@ const Thumbnails: React.FC<ThumbnailsProps> = ({
         requestAnimationFrame(animateScroll);
     };
 
+    // Efecto para asegurar que el frame seleccionado se cargue primero
+    useEffect(() => {
+        if (selectedFrameIndex >= 0 && selectedFrameIndex < timeline.length) {
+            // Intentar precargar el frame seleccionado inmediatamente
+            const timestep = timeline[selectedFrameIndex];
+            const scene = getThumbnailScene(timestep);
+            
+            if (scene) {
+                console.log(`[Thumbnails] Selected frame changed to index ${selectedFrameIndex}, timestep ${timestep}`);
+            }
+        }
+    }, [selectedFrameIndex, timeline, getThumbnailScene]);
+
+    // Efecto para hacer scroll al frame seleccionado
     useEffect(() => {
         const container = thumbnailsRef.current;
         const target = thumbnailItemsRef.current[selectedFrameIndex];
@@ -45,9 +59,13 @@ const Thumbnails: React.FC<ThumbnailsProps> = ({
         }
     }, [selectedFrameIndex]);
 
+    // Mostrar esqueletos solo si no hay timeline o estamos en la carga inicial
+    const shouldShowSkeletons = isLoading && (timeline.length === 0);
+
     return (
         <div className='raster-thumbnails' ref={thumbnailsRef} style={{ paddingBlock: '.25rem' }}>
-            {isLoading || timeline.length === 0 ? (
+            {shouldShowSkeletons ? (
+                // Solo mostrar esqueletos cuando estamos cargando inicialmente y no hay timeline
                 Array.from({ length: 8 }, (_, i) => <ThumbnailSkeleton key={`thumb-skel-${i}`} />)
             ) : (
                 timeline.map((timestep, index) => {
@@ -56,10 +74,14 @@ const Thumbnails: React.FC<ThumbnailsProps> = ({
 
                     const isActive = index === selectedFrameIndex;
 
+                    // Renderizar el thumbnail activo primero para darle prioridad
                     return (
                         <div 
                             key={`thumb-${timestep}-${scene.model}`} 
-                            ref={el => thumbnailItemsRef.current[index] = el}
+                            ref={el => {
+                                thumbnailItemsRef.current[index] = el;
+                                return undefined;
+                            }}
                         >
                             <ThumbnailItem
                                 scene={scene}

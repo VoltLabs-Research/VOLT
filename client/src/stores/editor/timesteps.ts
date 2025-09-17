@@ -67,14 +67,26 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
         const timesteps = extractTimesteps(trajectory);
         const timestepData = createTimestepData(timesteps);
 
+        // No seleccionamos el modelo automáticamente - esto evita la precarga de GLBs
+        // Nota: Solo generamos las URLs pero no las cargamos
+        // La carga se hará explícitamente cuando el usuario haga doble clic en RasterScene
         if(trajectory._id && currentTimestep !== undefined && timesteps.length > 0){
-            const analysis = useAnalysisConfigStore.getState().analysisConfig;
-            const glbs = createTrajectoryGLBs(
-                trajectory._id,
-                currentTimestep,
-                analysis._id
-            );
-            useModelStore.getState().selectModel(glbs);
+            // Obtener el ID del análisis del trayecto, si existe
+            const analysisId = trajectory.analysis && trajectory.analysis.length > 0 
+                ? (trajectory.analysis[0]._id || '') 
+                : '';
+                
+            if (analysisId) {
+                const glbs = createTrajectoryGLBs(
+                    trajectory._id,
+                    currentTimestep,
+                    analysisId
+                );
+                
+                // En lugar de selectModel, que causa precarga, guardamos las URLs
+                // pero no activamos la carga del modelo
+                useModelStore.getState().setGlbsWithoutLoading(glbs);
+            }
         }
 
         set({ timestepData });

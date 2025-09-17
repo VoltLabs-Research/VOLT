@@ -90,6 +90,7 @@ export interface ThumbnailItemProps{
 }
 
 export interface SceneColumnProps{
+    trajectoryId?: string;
     scene: Scene | null;
     dislocationData: any;
     isDislocationsLoading: boolean;

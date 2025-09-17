@@ -28,6 +28,7 @@ export interface ModelState{
 
 export interface ModelActions{
     selectModel: (glbs: any) => void;
+    setGlbsWithoutLoading: (glbs: any) => void; // Nuevo método
     reset: () => void;
     setIsModelLoading: (loading: boolean) => void;
     setModelBounds: (modelBounds: any) => void;

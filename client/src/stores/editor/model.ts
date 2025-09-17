@@ -31,6 +31,11 @@ const useModelStore = create<ModelStore>()((set, get) => ({
         set({ activeModel: { glbs } });
     },
 
+    // Nuevo método para establecer GLBs sin provocar la carga automática
+    setGlbsWithoutLoading(glbs: any){
+        set({ activeModel: { glbs } });
+    },
+
     reset(){
         set({
             activeModel: null,

@@ -19,6 +19,7 @@ interface RasterState {
   loadingFrames: Set<string>;
   isPreloading: boolean;
   preloadProgress: number;
+  preloadedTrajectoriesMap: Record<string, boolean>; // Map para almacenar qué trayectorias ya se han precargado
 
   getRasterFrames: (id: string) => Promise<void>;
   getRasterFrame: (trajectoryId: string, timestep: number, analysisId: string, model: string) => Promise<string | null>;
@@ -28,6 +29,7 @@ interface RasterState {
   setSelectedAnalysis: (id: string | null) => void;
   getFrameCacheKey: (timestep: number, analysisId: string, model: string) => string;
   cachedFrameExists: (cacheKey: string) => boolean;
+  resetPreloadState: (trajectoryId: string) => void; // Nueva función para resetear el estado de precarga
 }
 
 const initialState = {
@@ -41,6 +43,7 @@ const initialState = {
   loadingFrames: new Set<string>(),
   isPreloading: false,
   preloadProgress: 0,
+  preloadedTrajectoriesMap: {} as Record<string, boolean>, // Inicializamos como un objeto vacío
 };
 
 const useRasterStore = create<RasterState>((set, get) => {
@@ -163,11 +166,36 @@ const useRasterStore = create<RasterState>((set, get) => {
     },
 
     async preloadPriorizedFrames(trajectoryId: string, priorityModels: { ml?: string; mr?: string }, currentTimestep?: number) {
-      const { analyses } = get();
-      if (!analyses || Object.keys(analyses).length === 0) return;
+      const { analyses, preloadedTrajectoriesMap, isPreloading } = get();
+      if (!analyses || Object.keys(analyses).length === 0) {
+        console.log(`[useRasterStore] No analyses available for trajectory ${trajectoryId}, skipping preload`);
+        return;
+      }
+      
+      // Si ya hay una precarga en curso, no iniciar otra
+      if (isPreloading) {
+        console.log(`[useRasterStore] Another preload is already in progress, skipping new request for ${trajectoryId}`);
+        return;
+      }
+      
+      // Generar una clave única para esta combinación de trayectoria y modelos prioritarios
+      const priorityKey = JSON.stringify({
+        ml: priorityModels.ml || 'default',
+        mr: priorityModels.mr || 'default',
+        ts: currentTimestep || 'all'
+      });
+      const cacheKey = `${trajectoryId}-${priorityKey}`;
+      
+      // Verificar si ya hemos precargado esta combinación específica
+      if (preloadedTrajectoriesMap[cacheKey]) {
+        console.log(`[useRasterStore] Trajectory ${trajectoryId} with models ${priorityKey} already preloaded, skipping`);
+        return;
+      }
 
+      console.log(`[useRasterStore] Starting preload for trajectory ${trajectoryId} with priority models: ${priorityKey}`);
       set({ isPreloading: true, preloadProgress: 0 });
 
+      // Organizar frames por prioridad
       const currentTimestepFrames: Array<{
         timestep: number;
         analysisId: string;
@@ -189,159 +217,223 @@ const useRasterStore = create<RasterState>((set, get) => {
         priority: number;
       }> = [];
 
-      // Primero recopilar todos los frames disponibles
-      for (const analysisId of Object.keys(analyses)) {
-        const analysis = analyses[analysisId];
-        if (analysis.frames) {
+      try {
+        // Primero recopilar todos los frames disponibles
+        for (const analysisId of Object.keys(analyses)) {
+          const analysis = analyses[analysisId];
+          if (!analysis.frames) continue;
+          
           for (const timestep of Object.keys(analysis.frames)) {
             const frameData = analysis.frames[timestep];
-            if (frameData.availableModels) {
-              for (const model of frameData.availableModels) {
-                const frameTimestep = parseInt(timestep, 10);
-                const isCurrentTimestep = currentTimestep !== undefined && frameTimestep === currentTimestep;
-                
-                // Si es el timestep actual y es "dislocations", es la máxima prioridad
-                if (isCurrentTimestep && model === 'dislocations') {
-                  currentTimestepFrames.push({
-                    timestep: frameTimestep,
-                    analysisId,
-                    model,
-                    priority: 0 // Prioridad máxima
-                  });
-                  continue;
-                }
-                
-                // Si es el timestep actual con cualquier modelo, también es alta prioridad
-                if (isCurrentTimestep) {
-                  currentTimestepFrames.push({
-                    timestep: frameTimestep,
-                    analysisId,
-                    model,
-                    priority: 1 // Alta prioridad
-                  });
-                  continue;
-                }
-
-                const frame = {
+            if (!frameData.availableModels) continue;
+            
+            for (const model of frameData.availableModels) {
+              const frameTimestep = parseInt(timestep, 10);
+              if (isNaN(frameTimestep)) continue; // Saltear timesteps inválidos
+              
+              const isCurrentTimestep = currentTimestep !== undefined && frameTimestep === currentTimestep;
+              
+              // Verificar si este frame ya está cargando o cargado
+              const frameCacheKey = get().getFrameCacheKey(frameTimestep, analysisId, model);
+              const isLoading = get().loadingFrames.has(frameCacheKey);
+              
+              if (isLoading) {
+                console.log(`[useRasterStore] Frame ${frameCacheKey} is already loading, skipping in preload`);
+                continue;
+              }
+              
+              // Si es el timestep actual y es "dislocations", es la máxima prioridad
+              if (isCurrentTimestep && model === 'dislocations') {
+                currentTimestepFrames.push({
                   timestep: frameTimestep,
                   analysisId,
                   model,
-                  priority: 3 // default low priority
-                };
-
-                // Asignar prioridad alta a los modelos del usuario
-                const isPriorityModel = 
-                  (priorityModels.ml && model === priorityModels.ml) ||
-                  (priorityModels.mr && model === priorityModels.mr);
-
-                if (isPriorityModel) {
-                  frame.priority = 2; // Prioridad para modelos solicitados
-                  priorityFrames.push(frame);
-                } else if (model === 'dislocations') {
-                  frame.priority = 2; // Prioridad para dislocations
-                  priorityFrames.push(frame);
-                } else if (model === 'preview') {
-                  frame.priority = 3; // Prioridad media para preview
-                  otherFrames.push(frame);
-                } else {
-                  frame.priority = 4; // Baja prioridad base
-                  otherFrames.push(frame);
-                }
+                  priority: 0 // Prioridad máxima
+                });
+                continue;
               }
-            }
-          }
-        }
-      }
+              
+              // Si es el timestep actual con cualquier modelo, también es alta prioridad
+              if (isCurrentTimestep) {
+                currentTimestepFrames.push({
+                  timestep: frameTimestep,
+                  analysisId,
+                  model,
+                  priority: 1 // Alta prioridad
+                });
+                continue;
+              }
 
-      // Ordenar por prioridad
-      currentTimestepFrames.sort((a, b) => a.priority - b.priority);
-      priorityFrames.sort((a, b) => a.priority - b.priority || a.timestep - b.timestep);
-      otherFrames.sort((a, b) => a.priority - b.priority || a.timestep - b.timestep);
+              const frame = {
+                timestep: frameTimestep,
+                analysisId,
+                model,
+                priority: 3 // default low priority
+              };
 
-      // Combinar: primero el timestep actual, luego priority frames, luego otros
-      const allFrames = [...currentTimestepFrames, ...priorityFrames, ...otherFrames];
-      const totalFrames = allFrames.length;
-      let completedFrames = 0;
+              // Asignar prioridad alta a los modelos del usuario
+              const isPriorityModel = 
+                (priorityModels.ml && model === priorityModels.ml) ||
+                (priorityModels.mr && model === priorityModels.mr);
 
-      // Cargar inmediatamente el frame actual primero
-      if (currentTimestepFrames.length > 0) {
-        try {
-          // Cargar los frames del timestep actual de forma síncrona, uno por uno
-          for (const frame of currentTimestepFrames) {
-            await get().getRasterFrame(trajectoryId, frame.timestep, frame.analysisId, frame.model);
-            completedFrames++;
-            const progress = Math.round((completedFrames / totalFrames) * 100);
-            set({ preloadProgress: progress });
-          }
-        } catch (error) {
-          console.error("Error loading current timestep frame:", error);
-        }
-      }
-
-      // Procesar el resto de frames
-      const processFrames = async (frames: typeof priorityFrames, concurrency: number, isHighPriority = false) => {
-        const chunks: Array<typeof frames> = [];
-        
-        for (let i = 0; i < frames.length; i += concurrency) {
-          chunks.push(frames.slice(i, i + concurrency));
-        }
-
-        const processChunk = (chunk: typeof frames) => {
-          return new Promise<void>((resolve) => {
-            const runChunk = async () => {
-              const promises = chunk.map(async ({ timestep, analysisId, model }) => {
-                try {
-                  await get().getRasterFrame(trajectoryId, timestep, analysisId, model);
-                } catch (error) {
-                  console.warn(`Failed to preload frame ${timestep}-${analysisId}-${model}:`, error);
-                } finally {
-                  completedFrames++;
-                  const progress = Math.round((completedFrames / totalFrames) * 100);
-                  set({ preloadProgress: progress });
-                }
-              });
-
-              await Promise.all(promises);
-              resolve();
-            };
-
-            // Frames de alta prioridad se procesan inmediatamente
-            if (isHighPriority) {
-              runChunk();
-            } else {
-              // Otros frames usan requestIdleCallback
-              if (typeof requestIdleCallback !== 'undefined') {
-                requestIdleCallback(() => runChunk());
+              if (isPriorityModel) {
+                frame.priority = 2; // Prioridad para modelos solicitados
+                priorityFrames.push(frame);
+              } else if (model === 'dislocations') {
+                frame.priority = 2; // Prioridad para dislocations
+                priorityFrames.push(frame);
+              } else if (model === 'preview') {
+                frame.priority = 3; // Prioridad media para preview
+                otherFrames.push(frame);
               } else {
-                setTimeout(() => runChunk(), 0);
+                frame.priority = 4; // Baja prioridad base
+                otherFrames.push(frame);
               }
             }
-          });
+          }
+        }
+
+        // Ordenar por prioridad
+        currentTimestepFrames.sort((a, b) => a.priority - b.priority);
+        priorityFrames.sort((a, b) => a.priority - b.priority || a.timestep - b.timestep);
+        otherFrames.sort((a, b) => a.priority - b.priority || a.timestep - b.timestep);
+
+        // Combinar: primero el timestep actual, luego priority frames, luego otros
+        const allFrames = [...currentTimestepFrames, ...priorityFrames, ...otherFrames];
+        const totalFrames = allFrames.length;
+        
+        if (totalFrames === 0) {
+          console.log(`[useRasterStore] No frames to preload for trajectory ${trajectoryId}`);
+          set({ isPreloading: false, preloadProgress: 100 });
+          return;
+        }
+        
+        console.log(`[useRasterStore] Found ${totalFrames} frames to preload (${currentTimestepFrames.length} current, ${priorityFrames.length} priority, ${otherFrames.length} other)`);
+        
+        let completedFrames = 0;
+
+        // Cargar inmediatamente el frame actual primero
+        if (currentTimestepFrames.length > 0) {
+          try {
+            // Cargar los frames del timestep actual de forma síncrona, uno por uno
+            for (const frame of currentTimestepFrames) {
+              // Verificar si el store todavía existe (por si el componente se desmontó)
+              if (!get) {
+                console.log(`[useRasterStore] Store no longer exists, aborting preload`);
+                return;
+              }
+              
+              await get().getRasterFrame(trajectoryId, frame.timestep, frame.analysisId, frame.model);
+              completedFrames++;
+              const progress = Math.round((completedFrames / totalFrames) * 100);
+              set({ preloadProgress: progress });
+            }
+          } catch (error) {
+            console.error(`[useRasterStore] Error loading current timestep frame:`, error);
+          }
+        }
+
+        // Procesar el resto de frames
+        const processFrames = async (frames: typeof priorityFrames, concurrency: number, isHighPriority = false) => {
+          const chunks: Array<typeof frames> = [];
+          
+          for (let i = 0; i < frames.length; i += concurrency) {
+            chunks.push(frames.slice(i, i + concurrency));
+          }
+
+          const processChunk = (chunk: typeof frames) => {
+            return new Promise<void>((resolve) => {
+              const runChunk = async () => {
+                const promises = chunk.map(async ({ timestep, analysisId, model }) => {
+                  try {
+                    // Verificar si el store todavía existe (por si el componente se desmontó)
+                    if (!get) {
+                      console.log(`[useRasterStore] Store no longer exists, aborting preload`);
+                      return;
+                    }
+                    
+                    // Verificar si este frame ya está cargando o cargado antes de intentar cargarlo
+                    const frameCacheKey = get().getFrameCacheKey(timestep, analysisId, model);
+                    const isLoading = get().loadingFrames.has(frameCacheKey);
+                    
+                    if (isLoading) {
+                      console.log(`[useRasterStore] Frame ${frameCacheKey} is already loading, skipping in chunk processing`);
+                      completedFrames++;
+                      return;
+                    }
+                    
+                    await get().getRasterFrame(trajectoryId, timestep, analysisId, model);
+                  } catch (error) {
+                    console.warn(`[useRasterStore] Failed to preload frame ${timestep}-${analysisId}-${model}:`, error);
+                  } finally {
+                    completedFrames++;
+                    const progress = Math.round((completedFrames / totalFrames) * 100);
+                    set({ preloadProgress: progress });
+                  }
+                });
+
+                await Promise.all(promises);
+                resolve();
+              };
+
+              // Frames de alta prioridad se procesan inmediatamente
+              if (isHighPriority) {
+                runChunk();
+              } else {
+                // Otros frames usan requestIdleCallback o setTimeout como fallback
+                if (typeof requestIdleCallback !== 'undefined') {
+                  requestIdleCallback(() => runChunk());
+                } else {
+                  setTimeout(() => runChunk(), 0);
+                }
+              }
+            });
+          };
+
+          // Procesar chunks
+          for (let i = 0; i < chunks.length; i++) {
+            // Verificar si el store todavía existe antes de procesar cada chunk
+            if (!get) {
+              console.log(`[useRasterStore] Store no longer exists, aborting chunk processing`);
+              return;
+            }
+            
+            await processChunk(chunks[i]);
+            
+            // Delay menor para frames de alta prioridad
+            const delay = isHighPriority ? 20 : 100;
+            if (i < chunks.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+          }
         };
 
-        // Procesar chunks
-        for (let i = 0; i < chunks.length; i++) {
-          await processChunk(chunks[i]);
-          
-          // Delay menor para frames de alta prioridad
-          const delay = isHighPriority ? 20 : 100;
-          if (i < chunks.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
+        // Procesar frames prioritarios primero con mayor concurrencia
+        if (priorityFrames.length > 0) {
+          await processFrames(priorityFrames, 3, true); // Mayor concurrencia para frames prioritarios
         }
-      };
 
-      // Procesar frames prioritarios primero con mayor concurrencia
-      if (priorityFrames.length > 0) {
-        await processFrames(priorityFrames, 5, true); // Mayor concurrencia para frames prioritarios
+        // Luego procesar otros frames con menor concurrencia
+        if (otherFrames.length > 0) {
+          await processFrames(otherFrames, 2, false);
+        }
+
+        // Marcar esta trayectoria como precargada para evitar futuras precargas innecesarias
+        set((state) => ({ 
+          isPreloading: false, 
+          preloadProgress: 100,
+          preloadedTrajectoriesMap: {
+            ...state.preloadedTrajectoriesMap,
+            [cacheKey]: true
+          }
+        }));
+        
+        console.log(`[useRasterStore] Completed preload for trajectory ${trajectoryId} with models ${priorityKey}`);
+      } catch (error) {
+        console.error(`[useRasterStore] Error during preload:`, error);
+        // Asegurarse de resetear el estado de precarga incluso en caso de error
+        set({ isPreloading: false });
       }
-
-      // Luego procesar otros frames con menor concurrencia
-      if (otherFrames.length > 0) {
-        await processFrames(otherFrames, 3, false);
-      }
-
-      set({ isPreloading: false, preloadProgress: 100 });
     },
 
     async preloadAllFrames(trajectoryId: string) {
@@ -359,6 +451,23 @@ const useRasterStore = create<RasterState>((set, get) => {
         loadingFrames: new Set(),
         isPreloading: false,
         preloadProgress: 0,
+        // Mantenemos el mapa de trayectorias precargadas
+      });
+    },
+    
+    resetPreloadState(trajectoryId: string) {
+      set(state => {
+        // Filtrar todas las entradas que pertenecen a esta trayectoria
+        const newPreloadedTrajectoriesMap = { ...state.preloadedTrajectoriesMap };
+        const keysToRemove = Object.keys(newPreloadedTrajectoriesMap).filter(key => key.startsWith(`${trajectoryId}-`));
+        
+        keysToRemove.forEach(key => {
+          delete newPreloadedTrajectoriesMap[key];
+        });
+        
+        return {
+          preloadedTrajectoriesMap: newPreloadedTrajectoriesMap
+        };
       });
     },
   };

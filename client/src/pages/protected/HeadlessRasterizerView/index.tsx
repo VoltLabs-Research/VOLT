@@ -21,7 +21,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
     const { updateUrlParams, getUrlParam } = useUrlState();
 
-    const { trajectory, analyses, analysesNames, getRasterFrames, isLoading, preloadAllFrames, preloadPriorizedFrames, isPreloading, preloadProgress } = useRasterStore();
+    const { trajectory, analyses, analysesNames, getRasterFrames, isLoading, preloadAllFrames, preloadPriorizedFrames, isPreloading, preloadProgress, resetPreloadState } = useRasterStore();
     const { getMetrics, trajectoryMetrics, isMetricsLoading } = useTrajectoryStore();
     const { getDislocationsByAnalysisId, analysisDislocationsById } = useAnalysisConfigStore();
     const { fetchStructureAnalysesByConfig } = useStructureAnalysisStore();
@@ -40,6 +40,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const isInitializedRef = useRef(false);
     const timestepRestoredRef = useRef(false);
     const modelsFromUrlRef = useRef({ left: false, right: false });
+    const lastPriorizedModelsRef = useRef<string | null>(null);
 
     const fetchedForIdRef = useRef<string | null>(null);
     const preloadInitiatedRef = useRef<string | null>(null);
@@ -56,6 +57,17 @@ const HeadlessRasterizerView: React.FC = () => {
         preloadPriorizedFramesRef.current = preloadPriorizedFrames;
     }, [getRasterFrames, getMetrics, preloadAllFrames, preloadPriorizedFrames]);
 
+    // Efecto para limpiar el estado cuando se desmonta el componente
+    useEffect(() => {
+        return () => {
+            if (trajectoryId) {
+                resetPreloadState(trajectoryId);
+                // Reiniciar el estado local de modelos priorizados
+                lastPriorizedModelsRef.current = null;
+            }
+        };
+    }, [trajectoryId, resetPreloadState]);
+
     useEffect(() => {
         if(!trajectoryId) return;
         if(fetchedForIdRef.current === trajectoryId) return;
@@ -65,11 +77,15 @@ const HeadlessRasterizerView: React.FC = () => {
         getMetricsRef.current(trajectoryId);
     }, [trajectoryId]);
 
+    // Efecto para manejar la precarga inicial
     useEffect(() => {
         if(!trajectoryId || !analyses || Object.keys(analyses).length === 0) return;
         if(preloadInitiatedRef.current === trajectoryId) return;
         if(isLoading) return;
 
+        console.log(`[HeadlessRasterizerView] Starting initial preload for trajectory ${trajectoryId}`);
+        
+        // Marcar que ya iniciamos la precarga para esta trayectoria
         preloadInitiatedRef.current = trajectoryId;
         
         // Obtener modelos prioritarios de los parámetros URL
@@ -80,47 +96,30 @@ const HeadlessRasterizerView: React.FC = () => {
         if (urlModelLeft) priorityModels.ml = urlModelLeft;
         if (urlModelRight) priorityModels.mr = urlModelRight;
         
-        // Obtener timestep actual de la URL si existe - eliminar el timeout
+        // Obtener timestep actual de la URL si existe
         const urlTimestep = getUrlParam('ts');
         const currentTimestep = urlTimestep ? parseInt(urlTimestep, 10) : undefined;
         
+        // Registrar esta combinación de modelos como la precargada inicialmente
+        // para evitar duplicación en el efecto de repriorización
+        if (urlModelLeft || urlModelRight) {
+            const initialModelKey = `${urlModelLeft || ''}-${urlModelRight || ''}`;
+            lastPriorizedModelsRef.current = initialModelKey;
+            console.log(`[HeadlessRasterizerView] Setting initial prioritized models: ${initialModelKey}`);
+        }
+        
         // Si hay modelos específicos en la URL, usar precarga priorizada
         if (urlModelLeft || urlModelRight) {
-            // Cargar inmediatamente, sin timeout
+            console.log(`[HeadlessRasterizerView] Prioritizing URL models: ${JSON.stringify(priorityModels)}, timestep: ${currentTimestep}`);
             preloadPriorizedFramesRef.current(trajectoryId, priorityModels, currentTimestep);
         } else {
-            // Fallback a precarga normal
+            console.log(`[HeadlessRasterizerView] No specific models in URL, using default preload`);
             preloadAllFramesRef.current(trajectoryId);
         }
         
     }, [trajectoryId, analyses, isLoading, getUrlParam]);
 
-    // Efecto para repriorizar la precarga cuando cambian los modelos seleccionados
-    useEffect(() => {
-        if (!trajectoryId || !analyses || Object.keys(analyses).length === 0) return;
-        if (isLoading || isPreloading) return;
-        if (!isInitializedRef.current) return; // Esperar a que se inicialicen los modelos
-        
-        // Solo repriorizar si los modelos son diferentes a 'preview' (que es el default)
-        const hasSpecificModels = selectedModelLeft !== 'preview' || selectedModelRight !== 'preview';
-        if (!hasSpecificModels) return;
 
-        const priorityModels: { ml?: string; mr?: string } = {};
-        if (selectedModelLeft && selectedModelLeft !== 'preview') {
-            priorityModels.ml = selectedModelLeft;
-        }
-        if (selectedModelRight && selectedModelRight !== 'preview') {
-            priorityModels.mr = selectedModelRight;
-        }
-
-        // Pequeño delay para evitar múltiples llamadas
-        const timeoutId = setTimeout(() => {
-            const currentTimestep = timeline[selectedFrameIndex];
-            preloadPriorizedFramesRef.current(trajectoryId, priorityModels, currentTimestep);
-        }, 500);
-
-        return () => clearTimeout(timeoutId);
-    }, [trajectoryId, analyses, selectedModelLeft, selectedModelRight, isLoading, isPreloading]);
 
     const isValidNumber = (x: any): x is number => typeof x === "number" && Number.isFinite(x);
 
@@ -195,28 +194,179 @@ const HeadlessRasterizerView: React.FC = () => {
 
     const currentTimestep = selectedFrameIndex >= 0 ? timeline[selectedFrameIndex] : undefined;
 
+    // Efecto para repriorizar la precarga cuando cambian los modelos seleccionados
+    useEffect(() => {
+        if (!trajectoryId || !analyses || Object.keys(analyses).length === 0) return;
+        if (isLoading || isPreloading) return;
+        if (!isInitializedRef.current) return; // Esperar a que se inicialicen los modelos
+        
+        // Solo repriorizar si los modelos son diferentes a 'preview' (que es el default)
+        const hasSpecificModels = selectedModelLeft !== 'preview' || selectedModelRight !== 'preview';
+        if (!hasSpecificModels) return;
+
+        const priorityModels: { ml?: string; mr?: string } = {};
+        if (selectedModelLeft && selectedModelLeft !== 'preview') {
+            priorityModels.ml = selectedModelLeft;
+        }
+        if (selectedModelRight && selectedModelRight !== 'preview') {
+            priorityModels.mr = selectedModelRight;
+        }
+
+        // Verificar si estos modelos coinciden con los que ya se precargaron desde la URL
+        const urlModelLeft = getUrlParam('ml');
+        const urlModelRight = getUrlParam('mr');
+        
+        const selectedModelsMatchUrl = 
+            (urlModelLeft === selectedModelLeft || (!urlModelLeft && !selectedModelLeft)) && 
+            (urlModelRight === selectedModelRight || (!urlModelRight && !selectedModelRight));
+            
+        if (selectedModelsMatchUrl) {
+            console.log(`[HeadlessRasterizerView] Selected models match URL parameters, skipping repriorization`);
+            return;
+        }
+
+        // En lugar de establecer un timeout, usamos un flag local para evitar repriorizaciones repetidas
+        const modelKey = `${selectedModelLeft}-${selectedModelRight}`;
+        if (lastPriorizedModelsRef.current === modelKey) {
+            console.log(`[HeadlessRasterizerView] Models ${modelKey} already prioritized, skipping`);
+            return; // Ya se priorizó esta combinación de modelos
+        }
+        
+        // Registrar esta combinación de modelos como la última priorizada
+        lastPriorizedModelsRef.current = modelKey;
+        
+        const tsForPreload = timeline[selectedFrameIndex];
+        console.log(`[HeadlessRasterizerView] Prioritizing models: ${JSON.stringify(priorityModels)}, timestep: ${tsForPreload}`);
+        preloadPriorizedFramesRef.current(trajectoryId, priorityModels, tsForPreload);
+        
+    }, [trajectoryId, analyses, selectedModelLeft, selectedModelRight, isLoading, isPreloading, timeline, selectedFrameIndex, getUrlParam]);
+
     const getAvailableModelsForFrame = useCallback((analysisId: string | null, timestep: number | undefined) => {
         // Si no tenemos un analysisId, no podemos obtener modelos
-        if(!analysisId || !analyses?.[analysisId]) return [];
+        if (!analysisId) {
+            console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: No analysis ID provided`);
+            return [];
+        }
         
-        // Si timestep es undefined (cuando selectedFrameIndex = -1), intentamos obtener modelos del frame 0
-        // Si no hay timestep específico, buscar el primer frame disponible
-        if(timestep === undefined) {
+        if (!analyses || !analyses[analysisId]) {
+            console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: Analysis not found for ID: ${analysisId}`);
+            return [];
+        }
+        
+        // Verificar si el análisis tiene la estructura de frames esperada
+        if (!analyses[analysisId].frames) {
+            console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: Analysis ${analysisId} has no frames property`);
+            return [];
+        }
+        
+        // Logging para depuración
+        console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: Getting models for analysis: ${analysisId}, timestep: ${timestep}`);
+        
+        // Si timestep es undefined (cuando selectedFrameIndex = -1), intentamos obtener modelos del primer frame disponible
+        if (timestep === undefined) {
             const availableFrames = Object.keys(analyses[analysisId].frames || {})
                 .map(Number)
+                .filter(isValidNumber)
                 .sort((a, b) => a - b);
                 
-            // Si hay frames disponibles, usar el primero (generalmente 0)
-            if(availableFrames.length > 0) {
+            // Si hay frames disponibles, usar el primero
+            if (availableFrames.length > 0) {
                 const firstFrame = availableFrames[0];
-                console.log(`[HeadlessRasterizerView] No timestep specified, using first available frame: ${firstFrame}`);
-                return analyses[analysisId].frames[firstFrame].availableModels || [];
+                console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: No timestep specified, using first available frame: ${firstFrame}`);
+                
+                // Asegurémonos de que el frame tiene la propiedad availableModels
+                const models = analyses[analysisId].frames[firstFrame]?.availableModels || [];
+                console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: Models for frame ${firstFrame}: ${JSON.stringify(models)}`);
+                
+                // Si no hay modelos disponibles para el primer frame, intentar buscar en todos los frames
+                    if (models.length === 0) {
+                        console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: No models for first frame, looking in all frames`);
+                        const allModels = new Set<string>();
+                        
+                        for (const frame of availableFrames) {
+                            const frameModels = analyses[analysisId].frames[frame]?.availableModels || [];
+                            frameModels.forEach((model: string) => allModels.add(model));
+                        }                    if (allModels.size > 0) {
+                        const uniqueModels = Array.from(allModels);
+                        console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: Found models across all frames: ${JSON.stringify(uniqueModels)}`);
+                        return uniqueModels;
+                    }
+                }
+                
+                return models;
             }
+            
+            console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: No frames available for analysis ${analysisId}`);
+            return [];
+        }
+        
+        // Asegurémonos de que el timestep existe en este análisis
+        if (!analyses[analysisId].frames[timestep]) {
+            console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: Timestep ${timestep} not found in analysis ${analysisId}`);
+            
+            // Intentar encontrar el frame más cercano
+            const availableFrames = Object.keys(analyses[analysisId].frames || {})
+                .map(Number)
+                .filter(isValidNumber)
+                .sort((a, b) => a - b);
+                
+            if (availableFrames.length > 0) {
+                // Encontrar el frame más cercano
+                const closestFrame = availableFrames.reduce((prev, curr) => 
+                    Math.abs(curr - (timestep || 0)) < Math.abs(prev - (timestep || 0)) ? curr : prev
+                );
+                
+                console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: Using closest frame ${closestFrame} instead`);
+                const models = analyses[analysisId].frames[closestFrame]?.availableModels || [];
+                console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: Models for frame ${closestFrame}: ${JSON.stringify(models)}`);
+                
+                // Si no hay modelos disponibles para el frame más cercano, intentar buscar en todos los frames
+                    if (models.length === 0) {
+                        console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: No models for closest frame, looking in all frames`);
+                        const allModels = new Set<string>();
+                        
+                        for (const frame of availableFrames) {
+                            const frameModels = analyses[analysisId].frames[frame]?.availableModels || [];
+                            frameModels.forEach((model: string) => allModels.add(model));
+                        }                    if (allModels.size > 0) {
+                        const uniqueModels = Array.from(allModels);
+                        console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: Found models across all frames: ${JSON.stringify(uniqueModels)}`);
+                        return uniqueModels;
+                    }
+                }
+                
+                return models;
+            }
+            
             return [];
         }
         
         // Caso normal: tenemos un timestep específico
-        return analyses[analysisId].frames?.[timestep]?.availableModels || [];
+        const models = analyses[analysisId].frames[timestep]?.availableModels || [];
+        console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: Models for frame ${timestep}: ${JSON.stringify(models)}`);
+        
+        // Si no hay modelos disponibles para este frame específico, buscar en todos los frames
+        if (models.length === 0) {
+            console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: No models for timestep ${timestep}, looking in all frames`);
+            const availableFrames = Object.keys(analyses[analysisId].frames || {})
+                .map(Number)
+                .filter(isValidNumber);
+                
+            const allModels = new Set<string>();
+            
+            for (const frame of availableFrames) {
+                const frameModels = analyses[analysisId].frames[frame]?.availableModels || [];
+                frameModels.forEach((model: string) => allModels.add(model));
+            }
+            
+            if (allModels.size > 0) {
+                const uniqueModels = Array.from(allModels);
+                console.log(`[HeadlessRasterizerView] getAvailableModelsForFrame: Found models across all frames: ${JSON.stringify(uniqueModels)}`);
+                return uniqueModels;
+            }
+        }
+        
+        return models;
     }, [analyses]);
 
     // Determinar si debemos mostrar las escenas o esperar a la restauración completa
@@ -240,20 +390,49 @@ const HeadlessRasterizerView: React.FC = () => {
     const availableModelsLeft = getAvailableModelsForFrame(selectedAnalysisLeft, currentTimestep);
     const availableModelsRight = getAvailableModelsForFrame(selectedAnalysisRight, currentTimestep);
 
+    // Log para depuración de la escena izquierda
+    useEffect(() => {
+        console.log(`[HeadlessRasterizerView] DEBUG LEFT SCENE - Parameters for useRasterFrame:`, {
+            trajectoryId,
+            currentTimestep,
+            selectedAnalysisLeft,
+            selectedModelLeft,
+            availableModelsLeft
+        });
+    }, [trajectoryId, currentTimestep, selectedAnalysisLeft, selectedModelLeft, availableModelsLeft]);
+
     // Solo crear las escenas si no estamos esperando la restauración del timestep
-    const { scene: currentSceneLeft } = useRasterFrame(
+    const { scene: currentSceneLeft, isLoading: isLeftSceneLoading } = useRasterFrame(
         trajectoryId,
         currentTimestep,  // Siempre usar el currentTimestep actual
         selectedAnalysisLeft || undefined,
         selectedModelLeft
     );
 
-    const { scene: currentSceneRight } = useRasterFrame(
+    const { scene: currentSceneRight, isLoading: isRightSceneLoading } = useRasterFrame(
         trajectoryId,
         currentTimestep,  // Siempre usar el currentTimestep actual
         selectedAnalysisRight || undefined,
         selectedModelRight
     );
+
+    // Log para depuración del estado de las escenas
+    useEffect(() => {
+        console.log(`[HeadlessRasterizerView] Scene States:`, {
+            leftScene: {
+                hasData: !!currentSceneLeft?.data,
+                isLoading: isLeftSceneLoading,
+                model: currentSceneLeft?.model,
+                isUnavailable: currentSceneLeft?.isUnavailable
+            },
+            rightScene: {
+                hasData: !!currentSceneRight?.data,
+                isLoading: isRightSceneLoading,
+                model: currentSceneRight?.model,
+                isUnavailable: currentSceneRight?.isUnavailable
+            }
+        });
+    }, [currentSceneLeft, currentSceneRight, isLeftSceneLoading, isRightSceneLoading]);
 
     const dislocationsLeft = selectedAnalysisLeft ? analysisDislocationsById?.[selectedAnalysisLeft] : undefined;
     const dislocationsRight = selectedAnalysisRight ? analysisDislocationsById?.[selectedAnalysisRight] : undefined;
@@ -297,76 +476,191 @@ const HeadlessRasterizerView: React.FC = () => {
     useEffect(() => {
         if(isInitializedRef.current || !analysesNames?.length) return;
         
+        // Obtener los parámetros URL para configuración inicial
         const urlAnalysisLeft = getUrlParam('al');
         const urlAnalysisRight = getUrlParam('ar');
-
-        const urlModelleft = getUrlParam('ml');
+        const urlModelLeft = getUrlParam('ml');
         const urlModelRight = getUrlParam('mr');
-
         const urlDislocations = getUrlParam('disl');
+        const urlTimestep = getUrlParam('ts');
+        const initialTimestep = urlTimestep ? parseInt(urlTimestep, 10) : undefined;
 
+        console.log(`[HeadlessRasterizerView] Initializing from URL params:`, {
+            urlAnalysisLeft,
+            urlAnalysisRight,
+            urlModelLeft,
+            urlModelRight,
+            urlTimestep: initialTimestep
+        });
+        
+        // Crear un conjunto de IDs de análisis válidos
         const analysisIDs = new Set(analysesNames.map((a) => a._id));
-        const leftAnalysis = urlAnalysisLeft && analysisIDs.has(urlAnalysisLeft) ? urlAnalysisLeft : analysesNames[0]?._id || null;
-        const rightAnalysis = urlAnalysisRight && analysisIDs.has(urlAnalysisRight) ? urlAnalysisRight : (analysesNames.length >= 2 ? analysesNames[1]._id : leftAnalysis);
-        setSelectedAnalysisLeft(leftAnalysis);
-        setSelectedAnalysisRight(rightAnalysis);
         
-        if(urlModelleft){
-            setSelectedModelLeft(urlModelleft);
-            modelsFromUrlRef.current.left = true;
-        }
-
-        if(urlModelRight){
-            setSelectedModelRight(urlModelRight);
-            modelsFromUrlRef.current.right = true;
-        }
-
-        if(urlDislocations === '1'){
-            setShowDislocations(true);
-        }
+        // Determinar análisis válidos: usar los de la URL si existen, sino usar los primeros disponibles
+        const leftAnalysis = urlAnalysisLeft && analysisIDs.has(urlAnalysisLeft) 
+            ? urlAnalysisLeft 
+            : analysesNames[0]?._id || null;
+            
+        const rightAnalysis = urlAnalysisRight && analysisIDs.has(urlAnalysisRight) 
+            ? urlAnalysisRight 
+            : (analysesNames.length >= 2 ? analysesNames[1]._id : leftAnalysis);
         
-        const urlStructureAnalysis = getUrlParam('sa');
-        if(urlStructureAnalysis === '1'){
-            setShowStructureAnalysis(true);
+        console.log(`[HeadlessRasterizerView] Selected analyses: leftAnalysis: ${leftAnalysis}, rightAnalysis: ${rightAnalysis}`);
+        
+        // IMPORTANTE: Establecer los análisis seleccionados primero, para que se actualicen antes de intentar
+        // seleccionar modelos (que dependen de los análisis)
+        if (leftAnalysis) {
+            console.log(`[HeadlessRasterizerView] Setting left analysis: ${leftAnalysis}`);
+            setSelectedAnalysisLeft(leftAnalysis);
         }
         
-        // Cargar las dislocaciones inmediatamente si están en la URL
-        if (urlDislocations === '1' && leftAnalysis) {
-            getDislocationsByAnalysisId(leftAnalysis);
+        if (rightAnalysis) {
+            console.log(`[HeadlessRasterizerView] Setting right analysis: ${rightAnalysis}`);
+            setSelectedAnalysisRight(rightAnalysis);
         }
         
-        if (urlDislocations === '1' && rightAnalysis && rightAnalysis !== leftAnalysis) {
-            getDislocationsByAnalysisId(rightAnalysis);
-        }
-
-        isInitializedRef.current = true;
-    }, [analysesNames, getUrlParam, getDislocationsByAnalysisId]);
+        // En lugar de obtener los modelos inmediatamente, usamos un timeout
+        // para asegurarnos de que los estados de análisis se hayan actualizado
+        setTimeout(() => {
+            // Obtener modelos disponibles para el timestep específico o el frame 0
+            console.log(`[HeadlessRasterizerView] Getting available models for timestep: ${initialTimestep}`);
+            
+            const availableModelsForLeftAnalysis = leftAnalysis ? 
+                getAvailableModelsForFrame(leftAnalysis, initialTimestep) : [];
+            const availableModelsForRightAnalysis = rightAnalysis ? 
+                getAvailableModelsForFrame(rightAnalysis, initialTimestep) : [];
+                
+            console.log(`[HeadlessRasterizerView] Available models - Left: ${JSON.stringify(availableModelsForLeftAnalysis)}, Right: ${JSON.stringify(availableModelsForRightAnalysis)}`);
+            
+            // Para el modelo izquierdo
+            if (urlModelLeft) {
+                if (availableModelsForLeftAnalysis.includes(urlModelLeft)) {
+                    console.log(`[HeadlessRasterizerView] Setting left model from URL: ${urlModelLeft}`);
+                    setSelectedModelLeft(urlModelLeft);
+                    modelsFromUrlRef.current.left = true;
+                } else {
+                    const defaultModel = availableModelsForLeftAnalysis.length > 0 ? 
+                        availableModelsForLeftAnalysis[0] : 'preview';
+                    console.log(`[HeadlessRasterizerView] Model ${urlModelLeft} not available for left analysis, using ${defaultModel}`);
+                    setSelectedModelLeft(defaultModel);
+                }
+            } else if (availableModelsForLeftAnalysis.length > 0) {
+                console.log(`[HeadlessRasterizerView] No URL model for left, using first available: ${availableModelsForLeftAnalysis[0]}`);
+                setSelectedModelLeft(availableModelsForLeftAnalysis[0]);
+            } else {
+                console.log(`[HeadlessRasterizerView] No models available for left analysis, using preview`);
+                setSelectedModelLeft('preview');
+            }
+    
+            // Para el modelo derecho
+            if (urlModelRight) {
+                if (availableModelsForRightAnalysis.includes(urlModelRight)) {
+                    console.log(`[HeadlessRasterizerView] Setting right model from URL: ${urlModelRight}`);
+                    setSelectedModelRight(urlModelRight);
+                    modelsFromUrlRef.current.right = true;
+                } else {
+                    const defaultModel = availableModelsForRightAnalysis.length > 0 ? 
+                        availableModelsForRightAnalysis[0] : 'preview';
+                    console.log(`[HeadlessRasterizerView] Model ${urlModelRight} not available for right analysis, using ${defaultModel}`);
+                    setSelectedModelRight(defaultModel);
+                }
+            } else if (availableModelsForRightAnalysis.length > 0) {
+                console.log(`[HeadlessRasterizerView] No URL model for right, using first available: ${availableModelsForRightAnalysis[0]}`);
+                setSelectedModelRight(availableModelsForRightAnalysis[0]);
+            } else {
+                console.log(`[HeadlessRasterizerView] No models available for right analysis, using preview`);
+                setSelectedModelRight('preview');
+            }
+            
+            // Configurar opciones adicionales
+            if (urlDislocations === '1') {
+                console.log(`[HeadlessRasterizerView] Enabling dislocations from URL`);
+                setShowDislocations(true);
+                
+                // Cargar las dislocaciones inmediatamente 
+                if (leftAnalysis) {
+                    getDislocationsByAnalysisId(leftAnalysis);
+                }
+                if (rightAnalysis && rightAnalysis !== leftAnalysis) {
+                    getDislocationsByAnalysisId(rightAnalysis);
+                }
+            }
+            
+            const urlStructureAnalysis = getUrlParam('sa');
+            if (urlStructureAnalysis === '1') {
+                console.log(`[HeadlessRasterizerView] Enabling structure analysis from URL`);
+                setShowStructureAnalysis(true);
+                
+                // Precargar análisis de estructura
+                if (leftAnalysis) {
+                    fetchStructureAnalysesByConfig(leftAnalysis);
+                }
+                if (rightAnalysis && rightAnalysis !== leftAnalysis) {
+                    fetchStructureAnalysesByConfig(rightAnalysis);
+                }
+            }
+            
+            // Marcar como inicializado solo después de establecer todo
+            isInitializedRef.current = true;
+            console.log(`[HeadlessRasterizerView] Initialization complete, isInitialized set to true`);
+        }, 50); // Pequeño timeout para asegurar que los estados se actualicen correctamente
+    }, [analysesNames, getUrlParam, getDislocationsByAnalysisId, getAvailableModelsForFrame, fetchStructureAnalysesByConfig]);
 
     // Handle timestep restoration separately when timeline is ready
     useEffect(() => {
-        if(!isInitializedRef.current || timeline.length === 0) return;
-        if(timestepRestoredRef.current) return; // Solo procesar una vez
+        if (!isInitializedRef.current || timeline.length === 0) return;
+        if (timestepRestoredRef.current) return; // Solo procesar una vez
+        
+        console.log(`[HeadlessRasterizerView] Timeline ready, restoring timestep. Timeline length: ${timeline.length}`);
         
         const urlTimestep = safeParseInt(getUrlParam('ts'));
         
-        if(urlTimestep !== null){
-            console.log("[HeadlessRasterizerView] Setting frame index for timestep:", urlTimestep);
+        if (urlTimestep !== null) {
+            console.log(`[HeadlessRasterizerView] Setting frame index for timestep from URL: ${urlTimestep}`);
             const targetIndex = findClosestTimestepIndex(urlTimestep, timeline);
-            console.log("[HeadlessRasterizerView] Target index:", targetIndex, "Timeline length:", timeline.length, "Target timestep:", timeline[targetIndex]);
+            console.log(`[HeadlessRasterizerView] Target index: ${targetIndex}, Timeline length: ${timeline.length}, Target timestep: ${timeline[targetIndex]}`);
             
             // Marcar que estamos restaurando un timestep específico desde la URL
             setSelectedFrameIndex(targetIndex);
-        } else if(selectedFrameIndex === -1 && timeline.length > 0) {
+        } else if (selectedFrameIndex === -1 && timeline.length > 0) {
             // Si no hay timestep en URL y aún no se ha configurado un frame, seleccionar el primer frame
-            // pero no el frame 0 por defecto
-            console.log("[HeadlessRasterizerView] No timestep in URL, setting to first frame in timeline");
+            console.log(`[HeadlessRasterizerView] No timestep in URL, setting to first frame in timeline: ${timeline[0]}`);
             setSelectedFrameIndex(0);
         }
         
-        // Marcar como restaurado inmediatamente para no bloquear la carga
+        // Marcar como restaurado para evitar procesamiento múltiple
         timestepRestoredRef.current = true;
         
-    }, [timeline, getUrlParam, selectedFrameIndex]);
+        // Esperar a que se seleccione el frame y luego validar que los modelos son correctos
+        setTimeout(() => {
+            console.log(`[HeadlessRasterizerView] After timestep selection, validating models`);
+            // Obtener los modelos disponibles para el frame actual
+            const urlTimestep = safeParseInt(getUrlParam('ts')) || timeline[0];
+            
+            // Validar modelo izquierdo
+            if (selectedAnalysisLeft) {
+                const leftModels = getAvailableModelsForFrame(selectedAnalysisLeft, urlTimestep);
+                console.log(`[HeadlessRasterizerView] Available models for left (timestep ${urlTimestep}): ${JSON.stringify(leftModels)}`);
+                
+                if (!leftModels.includes(selectedModelLeft) && leftModels.length > 0) {
+                    console.log(`[HeadlessRasterizerView] Selected left model ${selectedModelLeft} not valid for timestep ${urlTimestep}, using ${leftModels[0]}`);
+                    setSelectedModelLeft(leftModels[0]);
+                }
+            }
+            
+            // Validar modelo derecho
+            if (selectedAnalysisRight) {
+                const rightModels = getAvailableModelsForFrame(selectedAnalysisRight, urlTimestep);
+                console.log(`[HeadlessRasterizerView] Available models for right (timestep ${urlTimestep}): ${JSON.stringify(rightModels)}`);
+                
+                if (!rightModels.includes(selectedModelRight) && rightModels.length > 0) {
+                    console.log(`[HeadlessRasterizerView] Selected right model ${selectedModelRight} not valid for timestep ${urlTimestep}, using ${rightModels[0]}`);
+                    setSelectedModelRight(rightModels[0]);
+                }
+            }
+        }, 100); // Pequeño timeout para asegurarnos de que el estado del frame se ha actualizado
+        
+    }, [timeline, getUrlParam, selectedFrameIndex, getAvailableModelsForFrame, selectedAnalysisLeft, selectedAnalysisRight, selectedModelLeft, selectedModelRight]);
 
     // Validate and correct model selections (skip if model came from URL)
     useEffect(() => {
@@ -552,13 +846,32 @@ const HeadlessRasterizerView: React.FC = () => {
         const analysisId = selectedAnalysisLeft || selectedAnalysisRight;
         const model = selectedAnalysisLeft ? selectedModelLeft : selectedModelRight;
         
+        // Verificar si este es el frame actualmente seleccionado
+        const isSelectedFrame = timestep === currentTimestep;
+        
+        // Comprobamos si este frame ya está precargado en el análisis
+        let isFrameLoading = true;
+        if (analyses && analysisId && analyses[analysisId]?.frames?.[timestep]) {
+            // Verificar si tenemos información sobre este frame
+            const frameModels = analyses[analysisId].frames[timestep]?.availableModels || [];
+            // Si el modelo actual está disponible para este frame, lo consideramos listo
+            if (frameModels.includes(model)) {
+                isFrameLoading = false;
+            }
+        }
+        
+        // Siempre forzar la carga del frame seleccionado
+        if (isSelectedFrame) {
+            console.log(`[HeadlessRasterizerView] Getting scene for selected frame ${timestep}`);
+        }
+        
         return {
             frame: timestep,
             model,
             analysisId: analysisId!,
-            isLoading: true
+            isLoading: isFrameLoading && !isSelectedFrame // No mostrar loading para el frame seleccionado
         };
-    }, [selectedAnalysisLeft, selectedAnalysisRight, selectedModelLeft, selectedModelRight]);
+    }, [selectedAnalysisLeft, selectedAnalysisRight, selectedModelLeft, selectedModelRight, analyses, currentTimestep]);
 
     const playbackControlsProps: PlaybackControlsProps = useMemo(() => ({ 
         isPlaying, 
@@ -663,12 +976,13 @@ const HeadlessRasterizerView: React.FC = () => {
                 
                 <div className='raster-scenes-top-container' style={{ alignItems: 'stretch', gap: '0.75rem' }}>
                     <SceneColumn
+                        trajectoryId={trajectory?._id}
                         scene={currentSceneLeft}
                         dislocationData={dislocationDataLeft}
                         isDislocationsLoading={isDislocationsLoadingLeft}
                         showDislocations={showDislocations}
                         isPlaying={isPlaying}
-                        isLoading={isLoading && (!currentSceneLeft || !currentSceneLeft.data)} 
+                        isLoading={isLoading || isLeftSceneLoading || (shouldWaitForTimestepRestore && !currentSceneLeft?.data)} 
                         playbackControls={playbackControlsProps}
                         analysisSelect={analysisSelectLeftProps}
                         modelRail={modelRailLeftProps}
@@ -679,12 +993,13 @@ const HeadlessRasterizerView: React.FC = () => {
                     />
 
                     <SceneColumn
+                        trajectoryId={trajectory?._id}
                         scene={currentSceneRight}
                         dislocationData={dislocationDataRight}
                         isDislocationsLoading={isDislocationsLoadingRight}
                         showDislocations={showDislocations}
                         isPlaying={isPlaying}
-                        isLoading={isLoading && (!currentSceneRight || !currentSceneRight.data)}
+                        isLoading={isLoading || isRightSceneLoading || (shouldWaitForTimestepRestore && !currentSceneRight?.data)}
                         playbackControls={playbackControlsProps}
                         analysisSelect={analysisSelectRightProps}
                         modelRail={modelRailRightProps}

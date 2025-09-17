@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, forwardRef, useImperativeHandle } from 'react';
 import CameraManager from '@/components/atoms/scene/CameraManager';
 import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
 import { useGlbScene } from '@/hooks/canvas/use-glb-scene';
@@ -18,31 +18,49 @@ interface TimestepViewerProps {
     centerModelToCamera?: boolean;
 }
 
-const TimestepViewer: React.FC<TimestepViewerProps> = ({
+export interface TimestepViewerRef {
+    loadModel: () => void;
+}
+
+const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     rotation = {},
     position = { x: 0, y: 0, z: 0 },
     scale = 1,
     autoFit = true,
     orbitControlsRef,
-    centerCamera = true,
     enableSlice = true,
     enableInstancing = true,
     updateThrottle = 16,
-}) => {
+    centerModelToCamera = true,
+}, ref) => {
     const sliceClippingPlanes = useSlicingPlanes(enableSlice);
     const activeScene = useModelStore((state) => state.activeScene);
 
     const sceneProps = useMemo(() => ({
         activeScene,
         sliceClippingPlanes,
-        position,
-        rotation,
+        position: {
+            x: position.x || 0,
+            y: position.y || 0,
+            z: position.z || 0
+        },
+        rotation: {
+            x: rotation.x || 0,
+            y: rotation.y || 0,
+            z: rotation.z || 0
+        },
         scale,
         enableInstancing,
         updateThrottle,
     }), [sliceClippingPlanes, position, rotation, scale, enableInstancing, updateThrottle]);
 
-    const { modelBounds } = useGlbScene(sceneProps);
+    const { modelBounds, loadModel } = useGlbScene(sceneProps);
+
+    useImperativeHandle(ref, () => ({
+        loadModel: () => {
+            loadModel();
+        }
+    }), [loadModel]);
 
     const shouldRenderCamera = useMemo(() => 
         autoFit && modelBounds, 
@@ -53,14 +71,15 @@ const TimestepViewer: React.FC<TimestepViewerProps> = ({
         <>
             {shouldRenderCamera && (
                 <CameraManager 
-                    centerCamera={centerCamera}
-                    modelBounds={modelBounds} 
+                    modelBounds={modelBounds || undefined} 
                     orbitControlsRef={orbitControlsRef} 
                     face='ny'
                 />
             )}
         </>
     );
-};
+});
+
+TimestepViewer.displayName = 'TimestepViewer';
 
 export default TimestepViewer;
