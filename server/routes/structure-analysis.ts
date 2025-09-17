@@ -28,9 +28,28 @@ const router = Router();
 
 router.use(authMiddleware.protect);
 
+// Get all structure analyses for a team
 router.get(
-    '/:teamId',
+    '/team/:teamId',
     controller.getStructureAnalysesByTeam
-);;
+);
+
+// Get all structure analyses for a specific trajectory
+router.get(
+    '/trajectory/:trajectoryId',
+    controller.getStructureAnalysesByTrajectory
+);
+
+// Get all structure analyses for a specific analysis config
+router.get(
+    '/config/:configId',
+    controller.getStructureAnalysesByConfig
+);
+
+// Get a specific structure analysis by ID
+router.get(
+    '/:analysisId',
+    controller.getStructureAnalysisById
+);
 
 export default router;

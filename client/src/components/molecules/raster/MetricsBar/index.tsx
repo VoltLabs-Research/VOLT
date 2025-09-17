@@ -4,7 +4,14 @@ import MetricsBarSkeleton from '@/components/atoms/raster/MetricsBarSkeleton';
 import MetricItem from '@/components/atoms/raster/MetricItem';
 import ToggleOption from '@/components/atoms/ToggleOption';
 
-const MetricsBar: React.FC<MetricsBarProps> = ({ items, isLoading, showDislocations, onToggleDislocations }) => {
+const MetricsBar: React.FC<MetricsBarProps> = ({ 
+    items, 
+    isLoading, 
+    showDislocations, 
+    onToggleDislocations,
+    showStructureAnalysis = false,
+    onToggleStructureAnalysis 
+}) => {
     if(isLoading) return <MetricsBarSkeleton count={4} />;
 
     return (
@@ -22,9 +29,9 @@ const MetricsBar: React.FC<MetricsBarProps> = ({ items, isLoading, showDislocati
                 />
 
                 <ToggleOption
-                    isVisible={false}
-                    className="raster-metric-item modifier-result"
-                    onToggle={() => {}}
+                    isVisible={showStructureAnalysis}
+                    className={`raster-metric-item modifier-result ${showStructureAnalysis ? "active" : ""}`}
+                    onToggle={onToggleStructureAnalysis || (() => {})}
                     label='Structure Analysis'
                 />
             </div>

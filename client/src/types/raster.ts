@@ -69,6 +69,8 @@ export interface MetricsBarProps{
     isLoading: boolean;
     showDislocations: boolean;
     onToggleDislocations: () => void;
+    showStructureAnalysis?: boolean;
+    onToggleStructureAnalysis?: () => void;
 }
 
 export interface DislocationPanelProps{
@@ -97,5 +99,8 @@ export interface SceneColumnProps{
     playbackControls: PlaybackControlsProps;
     analysisSelect: AnalysisSelectProps;
     modelRail: ModelRailProps;
+    showStructureAnalysis?: boolean;
+    configId?: string;
+    timestep?: number;
     delay?: number;
 }

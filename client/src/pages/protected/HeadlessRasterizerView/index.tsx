@@ -4,11 +4,12 @@ import useUrlState from '@/hooks/core/use-url-state';
 import useRasterStore from '@/stores/raster';
 import useTrajectoryStore from '@/stores/trajectories';
 import useAnalysisConfigStore from '@/stores/analysis-config';
+import { useStructureAnalysisStore } from '@/stores/structure-analysis';
 import useRasterFrame from '@/hooks/raster/use-raster-frame';
 import useCacheCleanup from '@/hooks/raster/use-cache-cleanup';
 import type { AnalysisSelectProps, MetricEntry, ModelRailProps, PlaybackControlsProps, Scene } from '@/types/raster';
 import { formatSize } from '@/utilities/scene-utils';
-import { IoTimeOutline, IoLayersOutline, IoBarChartOutline } from 'react-icons/io5';
+import { IoTimeOutline, IoLayersOutline, IoBarChartOutline, IoAnalyticsOutline } from 'react-icons/io5';
 import RasterHeader from '@/components/molecules/raster/RasterHeader';
 import SceneColumn from '@/components/molecules/raster/SceneColumn';
 import Thumbnails from '@/components/molecules/raster/Thumbnails';
@@ -23,6 +24,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const { trajectory, analyses, analysesNames, getRasterFrames, isLoading, preloadAllFrames, preloadPriorizedFrames, isPreloading, preloadProgress } = useRasterStore();
     const { getMetrics, trajectoryMetrics, isMetricsLoading } = useTrajectoryStore();
     const { getDislocationsByAnalysisId, analysisDislocationsById } = useAnalysisConfigStore();
+    const { fetchStructureAnalysesByConfig } = useStructureAnalysisStore();
     
     useCacheCleanup();
 
@@ -33,6 +35,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const [selectedFrameIndex, setSelectedFrameIndex] = useState(-1); // Inicialmente -1 para indicar que no se ha seleccionado frame
     const [isPlaying, setIsPlaying] = useState(false);
     const [showDislocations, setShowDislocations] = useState(false);
+    const [showStructureAnalysis, setShowStructureAnalysis] = useState(false);
 
     const isInitializedRef = useRef(false);
     const timestepRestoredRef = useRef(false);
@@ -322,6 +325,11 @@ const HeadlessRasterizerView: React.FC = () => {
             setShowDislocations(true);
         }
         
+        const urlStructureAnalysis = getUrlParam('sa');
+        if(urlStructureAnalysis === '1'){
+            setShowStructureAnalysis(true);
+        }
+        
         // Cargar las dislocaciones inmediatamente si están en la URL
         if (urlDislocations === '1' && leftAnalysis) {
             getDislocationsByAnalysisId(leftAnalysis);
@@ -410,6 +418,7 @@ const HeadlessRasterizerView: React.FC = () => {
                 ml: selectedModelLeft,
                 mr: selectedModelRight,
                 disl: showDislocations ? "1" : null,
+                sa: showStructureAnalysis ? "1" : null,
                 ts: isValidNumber(currentTimestep) ? String(currentTimestep) : null
             };
             updateUrlParams(updates);
@@ -426,6 +435,7 @@ const HeadlessRasterizerView: React.FC = () => {
         selectedModelLeft,
         selectedModelRight,
         showDislocations,
+        showStructureAnalysis,
         currentTimestep,
         updateUrlParams,
         isPlaying
@@ -488,6 +498,23 @@ const HeadlessRasterizerView: React.FC = () => {
         getDislocationsByAnalysisId(selectedAnalysisRight);
         
     }, [selectedAnalysisRight, showDislocations, getDislocationsByAnalysisId]);
+    
+    // Efectos para cargar los datos de estructura cuando se selecciona un análisis
+    useEffect(() => {
+        if (!selectedAnalysisLeft || !showStructureAnalysis) return;
+        
+        // Cargar análisis estructurales inmediatamente usando el ID del análisis
+        fetchStructureAnalysesByConfig(selectedAnalysisLeft);
+        
+    }, [selectedAnalysisLeft, showStructureAnalysis, fetchStructureAnalysesByConfig]);
+    
+    useEffect(() => {
+        if (!selectedAnalysisRight || !showStructureAnalysis) return;
+        
+        // Cargar análisis estructurales inmediatamente usando el ID del análisis
+        fetchStructureAnalysesByConfig(selectedAnalysisRight);
+        
+    }, [selectedAnalysisRight, showStructureAnalysis, fetchStructureAnalysesByConfig]);
 
     // Event handlers
     const handlePlayPause = useCallback(() => {
@@ -512,6 +539,10 @@ const HeadlessRasterizerView: React.FC = () => {
 
     const handleToggleDislocations = useCallback(() => {
         setShowDislocations((prev) => !prev)
+    }, []);
+    
+    const handleToggleStructureAnalysis = useCallback(() => {
+        setShowStructureAnalysis((prev) => !prev)
     }, []);
 
     // Get thumbnail scene for a specific timestep
@@ -641,6 +672,9 @@ const HeadlessRasterizerView: React.FC = () => {
                         playbackControls={playbackControlsProps}
                         analysisSelect={analysisSelectLeftProps}
                         modelRail={modelRailLeftProps}
+                        showStructureAnalysis={showStructureAnalysis}
+                        configId={selectedAnalysisLeft || undefined}
+                        timestep={currentTimestep}
                         delay={0}
                     />
 
@@ -654,6 +688,9 @@ const HeadlessRasterizerView: React.FC = () => {
                         playbackControls={playbackControlsProps}
                         analysisSelect={analysisSelectRightProps}
                         modelRail={modelRailRightProps}
+                        showStructureAnalysis={showStructureAnalysis}
+                        configId={selectedAnalysisRight || undefined}
+                        timestep={currentTimestep}
                         delay={0.1}
                     />
                 </div>
@@ -672,6 +709,8 @@ const HeadlessRasterizerView: React.FC = () => {
                     isLoading={isMetricsLoading}
                     showDislocations={showDislocations}
                     onToggleDislocations={handleToggleDislocations}
+                    showStructureAnalysis={showStructureAnalysis}
+                    onToggleStructureAnalysis={handleToggleStructureAnalysis}
                 />
             </div>
         </main>

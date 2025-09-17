@@ -166,30 +166,6 @@
     overflow: hidden;
 }
 
-.dislocation-type-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 8px;
-}
-
-.type-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-}
-
-.type-legend-color {
-    width: 12px;
-    height: 12px;
-    border-radius: 2px;
-}
-
-.type-legend-text {
-    color: var(--text-secondary);
-}
-
 .no-dislocations-message {
     padding: 20px;
     text-align: center;
