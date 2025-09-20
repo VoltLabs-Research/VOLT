@@ -32,8 +32,7 @@ const CanvasGrid = () => (
         sectionThickness={1}
         fadeDistance={100}
         fadeStrength={2}
-        color="#444444"
-        sectionColor="#666666"
+        sectionColor="#636363"
         position={[0, 0, 0]}
         rotation={[Math.PI / 2, 0, 0]} 
     />

@@ -14,3 +14,11 @@ export const formatSize = (bytes: number): string => {
     const value = bytes / Math.pow(1024, i)
     return `${value.toFixed(2).replace(/\.?0+$/, '')} ${units[i]}`
 }
+
+export const formatNumber = (n?: number) => {
+    if(Number.isFinite(n)){
+        return new Intl.NumberFormat().format(n as number);
+    }
+
+    return '-';
+};

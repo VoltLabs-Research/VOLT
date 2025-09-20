@@ -220,13 +220,13 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
                 debounce: 50,
             }}
               onCreated={({ gl, scene }) => {
-    gl.outputColorSpace = SRGBColorSpace;
-    gl.toneMapping = ACESFilmicToneMapping;
-    gl.toneMappingExposure =5;   // <- más “punch”
-    gl.physicallyCorrectLights = true;
-    gl.shadowMap.enabled = true;
-    gl.shadowMap.type = PCFSoftShadowMap;
-  }}
+                gl.outputColorSpace = SRGBColorSpace;
+                gl.toneMapping = ACESFilmicToneMapping;
+                gl.toneMappingExposure = 5; 
+                gl.physicallyCorrectLights = true;
+                gl.shadowMap.enabled = true;
+                gl.shadowMap.type = PCFSoftShadowMap;
+            }}
         >
             <ScreenshotHandler 
                 onToolsReady={handleToolsReady} 
