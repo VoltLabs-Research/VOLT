@@ -1,10 +1,6 @@
-import { Document, NodeIO, Accessor } from '@gltf-transform/core';
-import { EXTMeshoptCompression } from '@gltf-transform/extensions';
-import { quantize as gtQuantize, meshopt as gtMeshopt } from '@gltf-transform/functions';
-import { MeshoptEncoder } from 'meshoptimizer';
+import { Document, Accessor } from '@gltf-transform/core';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { readLargeFile } from '@/utilities/fs';
-import { assembleAndWriteGLB } from '@/utilities/export/utils';
 import { applyQuantizeAndMeshopt, writeGLB } from '@/utilities/export/gltf-pipeline';
 import { computeBoundsFromFlat } from '@/utilities/export/bounds';
 import encodeMorton from '@/utilities/export/morton';
@@ -48,26 +44,19 @@ class AtomisticExporter{
         filePath: string,
         extractTimestepInfo: Function
     ): Promise<{ timestepInfo: any; positions: Float32Array; types: Uint16Array }>{
-        let inAtoms = false; 
-        let count = 0; 
-        let gotTimestep = false; 
-        let header = '';
-    
+        let inAtoms = false;
+        let count = 0;
+        let headerCols: string[] = [];
+
         const headLines: string[] = [];
 
         await readLargeFile(filePath, {
-            maxLines: 1000,
             onLine: (line: string) => {
                 const t = line.trim();
-                
-                if(!gotTimestep && t.includes('TIMESTEP')){
-                    gotTimestep = true;
-                }
-                
                 if(t.startsWith('ITEM: ATOMS')){
-                    header = t; 
-                    inAtoms = true; 
-                    return; 
+                    headerCols = t.replace(/^ITEM:\s*ATOMS\s*/,'').trim().split(/\s+/);
+                    inAtoms = true;
+                    return;
                 }
 
                 if(t.startsWith('ITEM:') && inAtoms){
@@ -77,14 +66,10 @@ class AtomisticExporter{
 
                 if(inAtoms && t){
                     const parts = t.split(/\s+/);
-                    if(parts.length >= 5){
-                        count++;
-                    }
+                    if(parts.length >= headerCols.length) count++;
                 }
 
-                if(headLines.length < 1000){
-                    headLines.push(line);
-                }
+                if(headLines.length < 1000) headLines.push(line);
             }
         });
 
@@ -92,42 +77,48 @@ class AtomisticExporter{
         if(!timestepInfo) throw new Error('Can not extract TIMESTEP');
         if(count === 0) throw new Error('No atoms found');
 
+        const colIndex = (name: string) => headerCols.findIndex((c) => c.toLowerCase() === name);
+        const idxType = ['type'].map(colIndex).find(i => i >= 0) ?? -1;
+        const idxX = ['x','xu','xs','xsu'].map(colIndex).find(i => i >= 0) ?? -1;
+        const idxY = ['y','yu','ys','ysu'].map(colIndex).find(i => i >= 0) ?? -1;
+        const idxZ = ['z','zu','zs','zsu'].map(colIndex).find(i => i >= 0) ?? -1;
+        if(idxType < 0 || idxX < 0 || idxY < 0 || idxZ < 0){
+            throw new Error(`Unsupported ATOMS columns: ${headerCols.join(' ')}`);
+        }
+
         const positions = new Float32Array(count * 3);
         const types = new Uint16Array(count);
-        
+
         let inAtoms2 = false;
         let i = 0;
-
         await readLargeFile(filePath, {
             onLine: (line: string) => {
                 const t = line.trim();
                 if(t.startsWith('ITEM: ATOMS')){
-                    inAtoms2 = true; 
-                    return; 
+                    inAtoms2 = true;
+                    return;
                 }
-
                 if(t.startsWith('ITEM:') && inAtoms2){
-                    inAtoms2 = false; 
-                    return; 
+                    inAtoms2 = false;
+                    return;
                 }
-
-                if(inAtoms2 && t) {
+                if(inAtoms2 && t){
                     const p = t.split(/\s+/);
-                    if(p.length >= 5){
-                        const type = parseInt(p[1]);
-                        types[i] = type;
+                    if(p.length >= headerCols.length){
                         const base = i * 3;
-                        positions[base]   = parseFloat(p[2]);
-                        positions[base+1] = parseFloat(p[3]);
-                        positions[base+2] = parseFloat(p[4]);
+                        types[i] = p[idxType] ? parseInt(p[idxType], 10) : 0;
+                        positions[base] = parseFloat(p[idxX]);
+                        positions[base+1] = parseFloat(p[idxY]);
+                        positions[base+2] = parseFloat(p[idxZ]);
                         i++;
+                        if(i >= count) inAtoms2 = false;
                     }
                 }
             }
         });
 
-        return { timestepInfo, positions, types }
-    }
+        return { timestepInfo, positions, types };
+    };
 
     private static reorderByOrder(order: Uint32Array, positions: Float32Array, types?: Uint16Array, colors?: Float32Array){
         const n = order.length;
@@ -192,7 +183,7 @@ class AtomisticExporter{
         }
 
         const primitive = doc.createPrimitive()
-            .setAttribute('POSITIONS', positionAcc)
+            .setAttribute('POSITION', positionAcc)
             // POINTS
             .setMode(0);
         
@@ -209,7 +200,7 @@ class AtomisticExporter{
         await applyQuantizeAndMeshopt(doc, {
             quantization: {
                 positionBits: opts.quantization?.positionBits ?? 15,
-                colorBits: opts.quantization?.colorBits ?? 8, 
+                colorBits: opts.quantization?.colorBits ?? 8,
             },
             epsilon: opts.epsilon,
             requireExtensions: true
