@@ -89,9 +89,9 @@ export interface Notification{
 }
 
 export interface AnalysisConfig {
-    _id?: string;  // Añadimos el ID como opcional
-    crystalStructure: 'FCC' | 'BCC' | 'HCP' | 'CUBIC_DIAMOND' | 'HEX_DIAMOND';
-    identificationMode: 'PTM' | 'CNA';
+    _id?: string; 
+    crystalStructure: 'FCC' | 'BCC' | 'HCP' | 'CUBIC_DIAMOND' | 'HEX_DIAMOND' | 'SC';
+    identificationMode: 'PTM' | 'CNA' | 'DIAMOND';
     maxTrialCircuitSize: number;
     circuitStretchability: number;
     defectMeshSmoothingLevel: number;

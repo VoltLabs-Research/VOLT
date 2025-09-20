@@ -31,6 +31,7 @@ class AtomisticExporter{
         'FCC': [102, 255, 102],
         'HCP': [255, 102, 102],
         'BCC': [102, 102, 255],
+        'SC': [160, 20, 254],
         'CUBIC_DIAMOND': [19, 160, 254],
         'CUBIC_DIAMOND_FIRST_NEIGH': [0, 254, 245],
         'CUBIC_DIAMOND_SECOND_NEIGH': [126, 254, 181],
