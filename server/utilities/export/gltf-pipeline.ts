@@ -25,16 +25,36 @@ import { EXTMeshoptCompression } from '@gltf-transform/extensions';
 import { quantize, meshopt } from '@gltf-transform/functions'
 import { MeshoptEncoder } from 'meshoptimizer';
 
+/**
+ * Options for combined mesh **quantization** and **Meshopt** compression.
+ */
 export type QuantizeMeshoptOptions = {
     quantization?: {
+        /** Bit depth for POSITION attributes (default: 15). */
         positionBits?: number;
+        /** Bit depth for COLOR_0 attributes (default: 8). */
         colorBits?: number;
     };
+    /** 
+     * Maximum allowable spatial error (in model units) used to infer `positionBits`
+     * when `extent` is provided to {@link applyQuantizeAndMeshopt}.
+     */
     epsilon?: number;
+    /**
+     * Whether to mark the `EXT_meshopt_compression` extension as **required** in the output.
+     * Useful for pipelines that mandate Meshopt support.
+     */
     requireExtensions?: boolean;
 };
 
-// Given an allowable spatial error (epsilon), calculate the bits required.
+/**
+ * Computes the number of quantization bits for positions given a bounding box
+ * extent and an error tolerance.
+ * 
+ * @param extent - Axis-aligned extent of the mesh `{ x, y, z }`.
+ * @param epsilon - Maximum tolerated spatial error (model units).
+ * @returns The position bit depth clamped to **[8..16]**.
+ */
 const bitsFromEpsilon = (extent: { x: number, y: number, z: number }, epsilon: number): number => {
     const e = Math.max(1e-20, epsilon);
     const fx = Math.ceil(Math.log2(extent.x / (2 * e) + 1));
@@ -43,6 +63,13 @@ const bitsFromEpsilon = (extent: { x: number, y: number, z: number }, epsilon: n
     return Math.max(8, Math.min(16, Math.max(fx, fy, fz)));
 };
 
+/**
+ * Applies **KHR-style attribute quantization** and **EXT_meshopt_compression** to a glTF document.
+ * 
+ * @param doc - The glTF-Transform {@link Document} to transform.
+ * @param opts - {@link QuantizeMeshoptOptions} controlling precision and extension requirements.
+ * @param extent - Optional axis-aligned extent `{ x, y, z }` of the model, needed for epsilon-based bit inference.
+ */
 export const applyQuantizeAndMeshopt = async (
     doc: Document, 
     opts: QuantizeMeshoptOptions, 
@@ -62,6 +89,12 @@ export const applyQuantizeAndMeshopt = async (
     await doc.transform(meshopt({ encoder: MeshoptEncoder }));
 };
 
+/**
+ * Writes a glTF {@link Document} to a **.glb** file, registering Meshopt support.
+ *
+ * @param doc - The glTF-Transform {@link Document} to serialize.
+ * @param outputFilePath - Filesystem path for the output `.glb`.
+ */
 export const writeGLB = async (doc: Document, outputFilePath: string): Promise<void> => {
     const io = new NodeIO() 
         .registerExtensions([EXTMeshoptCompression])

@@ -20,6 +20,13 @@
 * SOFTWARE.
 **/
 
+/**
+ * Expands a 10-bit integer so that its bits are separated by two zeros,
+ * preparing it for 3D morton (Z-order) interleaving.
+ * 
+ * @param v - Integer to expand (only the lower `bits` are considered, tipically <= 10).
+ * @returns The integer with its bits laid out as `00b9 00b8 ... 00b1 00b0` pattern.
+ */
 const splitBy3 = (v: number) => {
     v = (v | (v << 16)) & 0x030000FF;
     v = (v | (v << 8))  & 0x0300F00F;
@@ -28,12 +35,24 @@ const splitBy3 = (v: number) => {
     return v >>> 0;
 };
 
+/**
+ * Encodes normalized 3D coordinates into a Morton (Z-order) code.
+ * 
+ * @param nx - Normalized x in `[0, 1]`.
+ * @param ny - Normalized y in `[0, 1]`.
+ * @param nz - Normalized z in `[0, 1]`.
+ * @param bits - Bit depth per axis (default: `10`). Must satisfy `3 * bits ≤ 32` for 32-bit outputs.
+ * @returns Unsigned 32-bit Morton code with interleaved x/y/z bits.
+ */
 const encodeMorton = (nx: number, ny: number, nz: number, bits = 10): number => {
     const maxv = (1 << bits) - 1;
+    
+    // Quantize and clamp to integer grid
     let xi = Math.max(0, Math.min(maxv, (nx * maxv) | 0));
     let yi = Math.max(0, Math.min(maxv, (ny * maxv) | 0));
     let zi = Math.max(0, Math.min(maxv, (nz * maxv) | 0));
 
+    // Spread bits are interleave as x|y|z
     const xx = splitBy3(xi);
     const yy = splitBy3(yi);
     const zz = splitBy3(zi);

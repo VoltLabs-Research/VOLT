@@ -85,7 +85,6 @@ const asIdArray = (val: any, isArray: boolean): Types.ObjectId[] => {
     return val ? [val] : [];
 }
 
-
 const useInverseRelations = (schema: Schema) => {
     schema.pre('save', async function (next) {
         const doc: any = this;
@@ -113,15 +112,14 @@ schema.post('save', async function (doc: any, next) {
     const ops: Promise<any>[] = [];
 
     for (const m of metas) {
-const RefModel = doc.model(m.refModel);
-if (!RefModel) {
-  console.warn(`[useInverseRelations] Modelo ${m.refModel} no encontrado`);
-  continue;
-}
+        const RefModel = doc.model(m.refModel);
+        if (!RefModel) {
+            console.warn(`[useInverseRelations] Modelo ${m.refModel} no encontrado`);
+            continue;
+        }
       const nowIds = asIdArray(doc[m.path], m.isArray).map((x: any) => x.toString());
       const prevIds = asIdArray(prevRefs[m.path], m.isArray).map((x: any) => x.toString());
 
-      // 1) Siempre garantizar presencia (idempotente)
       if (m.behavior === 'addToSet' && nowIds.length) {
         ops.push(
           RefModel.updateMany(
@@ -131,7 +129,6 @@ if (!RefModel) {
           )
         );
       } else if (m.behavior === 'set' && nowIds.length) {
-        // Para relaciones 1:1
         ops.push(
           RefModel.updateMany(
             { _id: { $in: nowIds } },
@@ -141,7 +138,6 @@ if (!RefModel) {
         );
       }
 
-      // 2) Limpiar los que ya no están (solo si tenemos prev)
       const toRemove = prevIds.filter(id => !nowIds.includes(id));
       if (toRemove.length) {
         ops.push(

@@ -20,15 +20,26 @@
 * SOFTWARE.
 **/
 
-import path from 'path';
+import DislocationExporter from '@/utilities/export/dislocations';
+import { readMsgpackFile } from '@/utilities/msgpack';
 
-export const getGLBPath = async (timestep: string, type: string, analysisId: string, folderId: string): Promise<null | string> => {
-    const basePath = path.resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-    const fileName = type
-        ? `frame-${timestep}_${type}_analysis-${analysisId}.glb`
-        : `${timestep}.glb`;
-    
-    const glbFilePath = path.join(basePath, folderId.toString(), 'glb', fileName);
+const main = async () => {
+    const msgpackPath = process.argv[2];
+    const glbPath = process.argv[3];
 
-    return glbFilePath;
+    const dislocationData = await readMsgpackFile(msgpackPath);
+
+    const exporter = new DislocationExporter();
+    exporter.toGLB(dislocationData, glbPath, {
+        lineWidth: 0.8,
+        colorByType: true,
+        material: {
+            baseColor: [1.0, 0.5, 0.0, 1.0],
+            metallic: 0.0,
+            roughness: 0.8,
+            emissive: [0.0, 0.0, 0.0]
+        }
+    });
 };
+
+main();

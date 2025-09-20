@@ -15,7 +15,7 @@ const AnalysisSelect: React.FC<AnalysisSelectProps> = ({
                 value={selectedAnalysis ?? ''}
                 className='raster-analysis-select'
                 onChange={onAnalysisChange}
-                options={analysesNames.map((a) => ({ value: a._id, title: a.name }))}
+                options={analysesNames.map((a) => ({ value: a._id, title: a.name, description: a.description }))}
                 disabled={!analysesNames.length || isLoading}
             />
         </div>

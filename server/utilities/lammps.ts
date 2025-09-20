@@ -23,6 +23,18 @@
 import { TimestepInfo } from '@/types/utilities/lammps';
 import { readLargeFile, copyFile } from '@/utilities/fs';
 
+/**
+ * Reads a (potentially large) LAMMPS dump file, performs a lightweight
+ * validation pass, extracts basic timestep metadata, and copies the file
+ * to a target path.
+ * 
+ * The read uses a bounded scan (`maxLines: 10000`) to avoid excessive
+ * memory usage while checking for the presence of required LAMMPS items.
+ * 
+ * @param trajectoryPath - Absolute or relative path to the input LAMMPS dump.
+ * @param outputPath - Destination path where the file will be copied.
+ * @returns A promise resolving to anobject.
+ */
 export const processTrajectoryFile = async (
     trajectoryPath: string,
     outputPath: string
@@ -56,6 +68,12 @@ export const processTrajectoryFile = async (
     }
 };
 
+/**
+ * Parse a small set of LAMMPS: "ITEM:" sections from an array of lines.
+ * 
+ * @param lines - A slice of the input file lines (not necessarily complete).
+ * @returns A {@link TimestepInfo} object when all core values are found; otherwise `null`.
+ */
 export const extractTimestepInfo = (lines: string[]): TimestepInfo | null => {
     let timestep: number | null = null;
     let natoms: number | null = null;
@@ -106,6 +124,13 @@ export const extractTimestepInfo = (lines: string[]): TimestepInfo | null => {
     return null;
 };
 
+/**
+ * Performs a minimal structural validation of a LAMMPS dump by checking for 
+ * the presence of required header markers.
+ * 
+ * @param lines - A slice or the entirety of the input file lines.
+ * @returns `true` if all required section headers are present, otherwise `false`.
+ */
 export const isValidLammpsFile = (lines: string[]): boolean => {
     const requiredItems = [
         'ITEM: TIMESTEP',

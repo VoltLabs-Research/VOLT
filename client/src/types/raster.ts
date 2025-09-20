@@ -26,7 +26,7 @@ export interface PlaybackControlsProps{
 }
 
 export interface AnalysisSelectProps{
-    analysesNames: { _id: string; name: string; }[];
+    analysesNames: { _id: string; name: string; description: string; }[];
     selectedAnalysis: string | null;
     onAnalysisChange: (id: string | null) => void;
     isLoading?: boolean;

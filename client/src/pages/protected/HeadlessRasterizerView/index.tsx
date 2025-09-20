@@ -38,8 +38,6 @@ import Thumbnails from '@/components/molecules/raster/Thumbnails';
 import MetricsBar from '@/components/molecules/raster/MetricsBar';
 import './HeadlessRasterizerView.css';
 
-const DEFAULT_MODEL = 'preview';
-
 const HeadlessRasterizerView: React.FC = () => {
     const navigate = useNavigate();
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
@@ -65,8 +63,8 @@ const HeadlessRasterizerView: React.FC = () => {
     // Selection state
     const [leftAnalysis, setLeftAnalysis] = useState<string | null>(null);
     const [rightAnalysis, setRightAnalysis] = useState<string | null>(null);
-    const [leftModel, setLeftModel] = useState<string>(DEFAULT_MODEL);
-    const [rightModel, setRightModel] = useState<string>(DEFAULT_MODEL);
+    const [leftModel, setLeftModel] = useState<string>('preview');
+    const [rightModel, setRightModel] = useState<string>('preview');
     const [frameIndex, setFrameIndex] = useState<number>(-1);
 
     // UI toggles / playback

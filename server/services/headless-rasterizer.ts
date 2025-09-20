@@ -29,13 +29,19 @@ import { createWriteStream } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import path from 'path';
 
+/**
+ * World-space point with linear RGB color.
+ */
 type Point = { 
-    x: number; 
+    x: number;
     y: number; 
     z: number; 
     c: [number, number, number] 
 };
 
+/**
+ * Screen-space point (after projection) with linear RGB color.
+ */
 type P2D = {
     sx: number;
     sy: number;
@@ -43,6 +49,9 @@ type P2D = {
     c: [number, number, number]
 };
 
+/**
+ * 3D vertex with color.
+ */
 type Vertex3D = {
     x: number;
     y: number;
@@ -50,12 +59,18 @@ type Vertex3D = {
     c: [number, number, number];
 };
 
+/**
+ * 3D triangle with three vertices.
+ */
 type Triangle3D = {
     a: Vertex3D;
     b: Vertex3D;
     c: Vertex3D;
 };
 
+/**
+ * 2D triangle (screen space) with average color and depth.
+ */
 type Tri2D = {
     a: { x: number, y: number },
     b: { x: number, y: number },
@@ -64,37 +79,67 @@ type Tri2D = {
     cAvg: [number, number, number]
 };
 
+/**
+ * Options to configure the headless rasterizer.
+ */
 export interface HeadlessRasterizerOptions{
+    /** Path to input GLTB/GLTF. */
     inputPath: string;
+    /** Output PNG path. */
     outputPath: string;
+    /** Canvas width in pixels. */
     width: number;
+    /** Canvas height in pixels. */
     height: number;
+    /** Canvas background as CSS color or 'transparent'. */
     background: string;
+    /** Vertical field of view (degress).  */
     fov: number;
+    /** Maximum number of points to draw (point clouds). If '0' or less, all points are used. */
     maxPoints: number;
+    /** Up axis, 'z' or anything else (defaults to a Y-up like behavior). */
     up: string;
+    /** Azimuth angle in degress. */
     az: number;
+    /** Elevation angle in degress. */
     el: number;
+    /** Camera distance scaling factor. Useful to zoom out/in without changing FOV. */
     distScale: number;
 }
 
-// Pre-allocate temporary arrays and vectors
+/** Shared temporary 4x4 matrix. */
 const TMP_MAT4 = mat4.create();
 
-// Math function optimizations
+/**
+ * Convert linear to sRGB. Clamps are applied elsewhere.
+ * @param x - Linear color component.
+ * @returns sRGB component.
+ */
 const lin2srgb = (x: number) => {
     return x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
 };
 
+/**
+ * Clamp into [0, 1].
+ * @param x - Input value.
+ */
 const clamp01 = (x: number) => {
     return x < 0 ? 0 : x > 1 ? 1 : x;
 };
 
+/**
+ * Clamp into [lo, hi]
+ * @param x - Input value.
+ * @param lo - Lower bound.
+ * @param hi - Upper bound.
+ */
 const clamp = (x: number, lo = 0, hi = 1) => {
     return x < lo ? lo : x > hi ? hi : x;
 }
 
-// vector operations with preallocated arrays
+/**
+ * Vector subtraction: out = a - b.
+ */
 const vsub = (a: [number, number, number], b: [number, number, number], out = [0, 0, 0] as [number, number, number]) => {
     out[0] = a[0] - b[0];
     out[1] = a[1] - b[1];
@@ -102,15 +147,24 @@ const vsub = (a: [number, number, number], b: [number, number, number], out = [0
     return out;
 };
 
+/**
+ * Dot product.
+ */
 const vdot = (a: [number, number, number], b: [number, number, number]) => {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 };
 
+/**
+ * Vector length.
+ */
 const vlen = (a: [number, number, number]) => {
     const x = a[0], y = a[1], z = a[2];
     return Math.sqrt(x * x + y * y + z * z) || 1;
 };
 
+/**
+ * Normalize vector: out = a / |a|.
+ */
 const vnorm = (a: [number, number, number], out = [0, 0, 0] as [number, number, number]) => {
     const L = vlen(a);
     const invL = 1 / L;
@@ -120,6 +174,9 @@ const vnorm = (a: [number, number, number], out = [0, 0, 0] as [number, number, 
     return out;
 };
 
+/**
+ * Cross product: out = a x b.
+ */
 const vcross = (a: [number, number, number], b: [number, number, number], out = [0, 0, 0] as [number, number, number]) => {
     const a0 = a[0], a1 = a[1], a2 = a[2];
     const b0 = b[0], b1 = b[1], b2 = b[2];
@@ -129,6 +186,9 @@ const vcross = (a: [number, number, number], b: [number, number, number], out = 
     return out;
 };
 
+/**
+ * Multiply vector by scalar: out = c * s.
+ */
 const mul3 = (c: [number, number, number], s: number, out = [0, 0, 0] as [number, number, number]) => {
     out[0] = c[0] * s;
     out[1] = c[1] * s;
@@ -136,6 +196,9 @@ const mul3 = (c: [number, number, number], s: number, out = [0, 0, 0] as [number
     return out;
 };
 
+/**
+ * Add vectors: out = a + b.
+ */
 const add3 = (a: [number, number, number], b: [number, number, number], out = [0, 0, 0] as [number, number, number]) => {
     out[0] = a[0] + b[0];
     out[1] = a[1] + b[1];
@@ -143,12 +206,19 @@ const add3 = (a: [number, number, number], b: [number, number, number], out = [0
     return out;
 };
 
-// Efficient tone mapping
+/**
+ * ACES filmic tone mapping scalar.
+ */
 const aces = (x: number) => {
     const a = 2.51, b = 0.03, c = 2.33, d = 0.59, e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e));
 };
 
+/**
+ * ACES tone mapping for RGB triplet.
+ * @param c - Linear RGB in [0...inf)
+ * @param out - Optional output vector.
+ */
 const toneMapACES = (c: [number, number, number], out = [0, 0, 0] as [number, number, number]) => {
     out[0] = aces(c[0]);
     out[1] = aces(c[1]);
@@ -156,7 +226,11 @@ const toneMapACES = (c: [number, number, number], out = [0, 0, 0] as [number, nu
     return out;
 };
 
-// Pre-compute color values for better performance
+/**
+ * Convert linear RGB to CSS rgba string with small brightness boost.
+ * @param rgb - Linear RGB [0...1].
+ * @param alpha - Alpha [0...1].
+ */
 const colorToCSS = (rgb: [number, number, number], alpha = 1) => {
     const boost = 1.15;
     const r = Math.round(clamp01(lin2srgb(rgb[0] * boost)) * 255);
@@ -187,7 +261,10 @@ const LIGHTS = {
     }
 };
 
-// Reusable matrices and vectors for transformation operations
+/**
+ * Builds a local transform matrix for a node, honoring either its baked matrix or TRS.
+ * @param node - glTF node.
+ */
 const nodeLocalMatrix = (node: GNode): mat4 => {
     const matrix = node.getMatrix();
     if(matrix){
@@ -202,7 +279,10 @@ const nodeLocalMatrix = (node: GNode): mat4 => {
     return mat4.clone(TMP_MAT4);
 };
 
-// point collection
+/**
+ * Pushes transformed POINTS from a primitive into "into".
+ * Honors optional "COLOR_0" with normalization if in 0...255.
+ */
 const collectPointsFromPrimitive = (prim: Primitive, world: mat4, into: Point[]) => {
     const posAcc = prim.getAttribute('POSITION'); 
     if (!posAcc) return;
@@ -268,7 +348,10 @@ const collectPointsFromPrimitive = (prim: Primitive, world: mat4, into: Point[])
     }
 };
 
-// triangle collection with batched processing
+/**
+ * Pushes transformed TRIANGLES from a primitive into `into`.
+ * Handles TRIANGLES, STRIP and FAN with or without indices.
+ */
 const collectTrianglesFromPrimitive = (prim: Primitive, world: mat4, into: Triangle3D[]) => {
     // 4 = TRIANGLES, 5 = TRIANGLE_STRIP, 6 = TRIANGLE_FAN
     const mode = prim.getMode();
@@ -395,6 +478,10 @@ const collectTrianglesFromPrimitive = (prim: Primitive, world: mat4, into: Trian
     }
 };
 
+/**
+ * Heuristic to decide if a node should be drawn as mesh (triangles) instead of points.
+ * @param node - glTF node.
+ */
 const shouldRenderAsMesh = (node: GNode): boolean => {
     const names = new Set(['meshgeometry', 'dislocations']);
     const name = (node.getName() || '').toLowerCase();
@@ -407,13 +494,24 @@ const shouldRenderAsMesh = (node: GNode): boolean => {
     return false;
 };
 
+/**
+ * Adaptive point size based on number of particles.
+ * @param particleCount - Number of points.
+ */
 const adaptivePointSize = (particleCount: number) => {
     const baseSize = 7.0;
     const referenceCount = 36624;
     return baseSize * Math.sqrt(referenceCount / particleCount);
 };
 
-// scene traversal using a stack instead of recursion
+
+/**
+ * Iterative DFS traversal that collects either points or triangles from a scene graph.
+ * @param rootNode - Root node to start from.
+ * @param parentWorld - Parent world matrix.
+ * @param pointsOut - Output points array (mutated).
+ * @param trisOut - Output triangles array (mutated).
+ */
 const traverseCollectPoints = (rootNode: GNode, parentWorld: mat4, pointsOut: Point[], trisOut: Triangle3D[]) => {
     interface StackItem { node: GNode, worldMatrix: mat4 }
     const stack: StackItem[] = [{ node: rootNode, worldMatrix: mat4.clone(parentWorld) }];
@@ -450,7 +548,11 @@ const traverseCollectPoints = (rootNode: GNode, parentWorld: mat4, pointsOut: Po
     }
 };
 
-// reservoir sampling for large point clouds
+/**
+ * Reservoir sampling that keeps k items with uniform probability.
+ * @param arr - Source array.
+ * @param k - Sample size.
+ */
 const reservoirSample = <T>(arr: T[], k: number): T[] => {
     if (k <= 0 || k >= arr.length) {
         return arr.slice();
@@ -465,7 +567,12 @@ const reservoirSample = <T>(arr: T[], k: number): T[] => {
     return res;
 };
 
-// AO calculation with spatial partitioning
+/**
+ * Simple ambient occlusion estimation using a uniform grid to limit neighbor checks.
+ * Returns a map with AO factor `[0..0.7]` per point.
+ * @param points - Input points.
+ * @param maxDistance - Influence radius.
+ */
 const calculateAO = (points: Point[], maxDistance: number = 5) => {
     const aoMap = new Map<Point, number>();
     
@@ -531,9 +638,19 @@ const calculateAO = (points: Point[], maxDistance: number = 5) => {
     return aoMap;
 };
 
+/**
+ * Headless GLB/GLTF rasterizer that renders points and selected meshes into a PNG.
+ * Points are drawn with AO and simple lighting hints. Triangles are drawn with a tri-light rig 
+ * (ambient, key, fill, rim) and screen-projected shadows and traverses all scenes in the document.
+ * @public
+ */
 class HeadlessRasterizer {
     private opts: HeadlessRasterizerOptions;
 
+    /**
+     * Create a new rasterizer instance.
+     * @param opts - Configuration options.
+     */
     constructor(opts: HeadlessRasterizerOptions) {
         this.opts = {
             inputPath: opts?.inputPath,
@@ -550,6 +667,9 @@ class HeadlessRasterizer {
         };
     }
 
+    /**
+     * Create a NodeIO and register meshopt decoder/extension when available.
+     */
     private async makeIOWithCodecs(): Promise<NodeIO> {
         const io = new NodeIO();
 
@@ -562,6 +682,10 @@ class HeadlessRasterizer {
         return io;
     }
 
+    /**
+     * Load a glTF document from disk.
+     * @throws If the GLTF/GLB cannot be read.
+     */
     private async loadDocument(): Promise<Document> {
         const io = await this.makeIOWithCodecs();
         try {
@@ -572,6 +696,10 @@ class HeadlessRasterizer {
         }
     }
 
+    /**
+     * Render the input GLB/GLTF into a PNG at `opts.outputPath`.
+     * @throws If no scenes/geometry found, or bounds/projection fails.
+     */
     public async render() {
         const document = await this.loadDocument();
         const root = document.getRoot();

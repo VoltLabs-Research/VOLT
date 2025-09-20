@@ -27,7 +27,6 @@ import { Mesh } from '@/types/utilities/export/mesh';
 import { Dislocation } from '@/types/utilities/export/dislocations';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { readMsgpackFile } from '@/utilities/msgpack';
-import { writeGroupedJsonStreaming } from '@/utilities/fs';
 import { StructureAnalysis, SimulationCell, Dislocations } from '@/models/index';
 import { upsert } from '@/utilities/mongo/mongo-utils';
 import path from 'path';
@@ -36,8 +35,18 @@ import MeshExporter from '@utilities/export/mesh';
 import DislocationExporter from '@utilities/export/dislocations';
 import AtomisticExporter from '@utilities/export/atoms';
 
+/**
+ * Absolute path to the compiled OpenDXA CLI executable.
+ * TODO: add debug path.
+ * @internal
+ */
 const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build/opendxa');
 
+/**
+ * Mapping of logical output groups to their msgpack file suffixes
+ * emitted by the OpenDXA CLI.
+ * @internal
+ */
 const MSGPACK_OUTPUT_MAP = {
     defect_mesh: '_defect_mesh.msgpack',
     atoms: '_atoms.msgpack',
@@ -47,6 +56,16 @@ const MSGPACK_OUTPUT_MAP = {
     simulation_cell: '_simulation_cell.msgpack',
 };
 
+/**
+ * Extract the timestep number from a filename.
+ * 
+ * It searches for all digit groups and returns the last one as an integer,
+ * e.g. `"frame_000123.dump"` -> `123`.
+ * 
+ * @param filename - Source filename that includes a timestep number.
+ * @returns Parsed timestep as a number.
+ * @throws If a numeric group cannot be found in the filename.
+ */
 function parseTimestepFromFilename(filename: string): number {
     const match = filename.match(/\d+/g);
     if(match){
@@ -56,6 +75,15 @@ function parseTimestepFromFilename(filename: string): number {
     throw new Error(`Could not extract timestep from filename: ${filename}`);
 }
 
+/**
+ * Builds a list of CLI flags and argument values for the OpenDXA binary
+ * from a strongly-typed {@link ConfigParameters} object.
+ * 
+ * Only defined (non-null/undefined) parameters are included.
+ * 
+ * @param options - Configuration parameters for structure analysis.
+ * @returns Array of CLI arguments, e.g. `["--rmsd","0.1","--crystalStructure","BCC"]`.
+ */
 function buildCliArgs(options: ConfigParameters): string[] {
     const args: string[] = [];
     const optionMap: { [key in keyof ConfigParameters]: string } = {
@@ -86,12 +114,30 @@ function buildCliArgs(options: ConfigParameters): string[] {
     return args;
 }
 
+/**
+ * Service that orchestrates execution of the OpenDXA CLI for a trajectory frame,
+ * parses its msgpack outputs, saves structured results to the database,
+ * and exports GLB visualizations (meshes, dislocations, atomistic models).
+ * 
+ * Typical flow:
+ * 1. {@link OpenDXAService.processSingleFile}: runs CLI for a specific input file.
+ * 2. Reads msgpack artifacts via {@link readMsgpackFile}.
+ * 3. Persists analysis results via Mongo upserts.
+ * 4. Exports GLB files for frontend visualization.
+ */
 class OpenDXAService{
     private trajectoryId: string;
     private exportDirectory: string;
     private trajectoryFolderPath: string;
     private analysisConfigId: string;
 
+    /**
+     * Creates a new service instance bound to a trajectory and analysis config.
+     * 
+     * @param trajectoryId - Trajectory document id.
+     * @param trajectoryFolderPath - Base folder containing trajectory artifacts.
+     * @param analysisConfigId - Identifier of the analysis configuration used.
+     */
     constructor(trajectoryId: string, trajectoryFolderPath: string, analysisConfigId: string){
         this.exportDirectory = path.join(trajectoryFolderPath, 'glb');
         this.trajectoryId = trajectoryId;
@@ -99,6 +145,15 @@ class OpenDXAService{
         this.analysisConfigId = analysisConfigId;
     }
 
+    /**
+     * Runs the OpenDXA CLI on a single input file (frame), ingests the produced 
+     * msgpack outputs, persists them, exports GLB fies, and cleans temp files.
+     * 
+     * @param inputFile - Absolute path to the input frame file.
+     * @param options - CLI config parameters for this analysis.
+     * @returns A promise that resolves when processing is complete.
+     * @throws Propagates any CLI, I/O, or decoding errors.
+     */
     public async processSingleFile(inputFile: string, options: ConfigParameters): Promise<any> {
         const baseFilename = path.basename(inputFile);
         console.log(`[OpenDXAService] Starting processing for: ${baseFilename}`);
@@ -131,6 +186,16 @@ class OpenDXAService{
         }
     }
 
+    /**
+     * Spawns the OpenDXA CLI process for an input frame.
+     * 
+     * @param inputFile - Path to the input file to analyze.
+     * @param outputBase - Base path prefix for msgpack outputs.
+     * @param optionsArgs - CLI flag/value pairs built by {@link buildCliArgs}.
+     * @returns Resolves when the CLI exists successfully (exit code 0).
+     * @throws If the process exits with a non-zero code or fails to start.
+     * @internal
+     */
     private runCliProcess(inputFile: string, outputBase: string, optionsArgs: string[]): Promise<void> {
         return new Promise((resolve, reject) => {
             const args = [inputFile, outputBase, ...optionsArgs];
@@ -165,6 +230,14 @@ class OpenDXAService{
         });
     }
 
+    /**
+     * Reads and decodes all expected msgpack outputs produced by the CLI.
+     * 
+     * @param outputBase - Base path used by the CLI for output file names.
+     * @returns An object with the decoded frame result and a list of file paths read.
+     * @throws If any required output file is missing or cannot be decoded.
+     * @internal
+     */
     private async readOutputFiles(outputBase: string): Promise<{ frameResult: any, generatedFiles: string[] }> {
         const frameResult: any = {};
         const generatedFiles: string[] = [];
@@ -193,6 +266,17 @@ class OpenDXAService{
         return { frameResult, generatedFiles };
     }
   
+    /**
+     * Persists decoded data and triggers GLB exports for a single frame.
+     * 
+     * If `structureIdentificationOnly` is enabled in {@link ConfigParameters},
+     * only atom-coloring export is performed and persistence of other entities is skipped.
+     * 
+     * @param frameResult - Decoded msgpack payloads keyed by output name.
+     * @param timestep - Frame timestep extracted from filename.
+     * @param options - Analysis configuration used for this run.
+     * @internal
+     */
     private async processFrameData(frameResult: any, timestep: number, options: ConfigParameters): Promise<void> {
         const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
 
@@ -216,6 +300,13 @@ class OpenDXAService{
         ]);
     }
 
+    /**
+     * Upserts dislocations analytics into the database for a frame.
+     * 
+     * @param data - Dislocation dataset decoded from msgpack.
+     * @param internal - Frame timestep.
+     * @internal
+     */
     private async handleDislocationData(data: Dislocation, timestep: number): Promise<void>{
         const filter = {
             trajectory: this.trajectoryId,
@@ -255,18 +346,40 @@ class OpenDXAService{
         }
     }
 
+    /**
+     * Computes the canonical GLB output path for a given frame and export group.
+     * 
+     * @param frame - Timestep/frame number.
+	 * @param exportName - Short export label (e.g., `'defect'`, `'atoms_colored_by_type'`).
+	 * @returns Absolute GLB path.
+	 * @internal
+    */
     private getOutputPath(frame: number, exportName: string): string {
         // TODO: mongoose document type
         // @ts-ignore
         return path.join(this.exportDirectory, `frame-${frame}_${exportName}_analysis-${this.analysisConfigId}.glb`)
     }
 
+    /**
+	 * Exports atom groups to a GLB with per-type coloring.
+	 *
+	 * @param groupedAtoms - Atoms grouped by type.
+	 * @param frame - Timestep/frame number.
+	 * @internal
+	 */
     private exportAtomsColoredByType(groupedAtoms: AtomsGroupedByType, frame: number): void {
         const exporter = new AtomisticExporter();
         const outputPath = this.getOutputPath(frame, 'atoms_colored_by_type');
         exporter.exportAtomsTypeToGLB(groupedAtoms, outputPath);
     }
 
+    /**
+	 * Exports dislocation lines as a GLB, color-coded by type and with basic PBR material.
+     * 
+     * @param dislocation - Dislocation dataset.
+     * @param frame - Timestep/frame number.
+     * @internal
+     */
     private exportDislocations(dislocation: Dislocation, frame: number): void {
         const exporter = new DislocationExporter();
         const outputPath = this.getOutputPath(frame, 'dislocations');
@@ -282,6 +395,13 @@ class OpenDXAService{
         });
     }
 
+    /**
+     * Exports a defect/interface mesh as GLB.
+     * 
+     * @param mesh - Mesh payload.
+     * @param frame - Timestep/frame number.
+     * @param meshType - Label, defaults to `'defect'`.
+     */
     private exportMesh(mesh: Mesh, frame: number, meshType: 'defect' | 'interface' = 'defect'): void {
         const exporter = new MeshExporter();
         const outputPath = this.getOutputPath(frame, `${meshType}_mesh`);
@@ -299,6 +419,12 @@ class OpenDXAService{
         });
     }
 
+    /**
+     * Upserts structure-identification statistics for a frame.
+     * 
+     * @param data - Structure analysis dataset (counts, rates, per-type stats).
+     * @param frame - Timestep/frame number.
+     */
     private async handleStructuralData(data: StructureAnalysisData, frame: number): Promise<void> {
         const structureNames: string[] = Object.keys(data.structure_types);
         const stats = [];
@@ -335,6 +461,12 @@ class OpenDXAService{
         await upsert(StructureAnalysis, filter, { $set: updateData });
     }
 
+    /**
+     * Upserts simulation cell information for a frame.
+     * @param data - Simulation cell payload decoded from msgpack.
+     * @param frame - Timestep/frame number.
+     * @internal
+     */
     private async handleSimulationCellData(data: any, frame: number): Promise<void> {
         const filter = {
             trajectory: this.trajectoryId,

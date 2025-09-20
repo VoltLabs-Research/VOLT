@@ -23,7 +23,6 @@
 import { Mesh, DefectMeshExportOptions, ProcessedMesh } from '@/types/utilities/export/mesh';
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
 import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
-import { computeBoundsFromFlat } from '@utilities/export/bounds';
 import taubinSmoothing from '@/utilities/export/taubin-smoothing';
 
 class MeshExporter{

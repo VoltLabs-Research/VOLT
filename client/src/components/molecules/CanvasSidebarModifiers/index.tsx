@@ -6,6 +6,8 @@ import { TfiSlice } from 'react-icons/tfi';
 import { RiVipDiamondLine } from "react-icons/ri";
 import { HiCubeTransparent } from "react-icons/hi2";
 import { PiCirclesThreeLight } from "react-icons/pi";
+import { CiImageOn } from 'react-icons/ci';
+import { useNavigate } from 'react-router';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
@@ -25,6 +27,7 @@ const CanvasSidebarModifiers = () => {
 
     const idRateSeries = useTrajectoryStore((state) => state.idRateSeries);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
+    const navigate = useNavigate();
 
     // We save the previous state to detect which modifiers have just been activated
     const prevActiveRef = useRef<string[]>(activeModifiers);
@@ -46,6 +49,8 @@ const CanvasSidebarModifiers = () => {
                 structureIdentification(trajectory?._id, analysisConfig, modifier);
             }else if(modifier === 'compute-analysis-differences'){
                 computeAnalyses(trajectory?._id);
+            }else if(modifier === 'raster'){
+                navigate('/raster/' + trajectory._id);
             }
         }
 
@@ -91,6 +96,10 @@ const CanvasSidebarModifiers = () => {
             Icon: GrFormViewHide,
             title: 'Render Options',
             modifierId: 'render-options'
+        }, {
+            Icon: CiImageOn,
+            title: 'Raster Frames',
+            modifierId: 'raster'
         }
     ];
 
