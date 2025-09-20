@@ -6,60 +6,50 @@ import RasterScene from '../RasterScene';
 import StructureAnalysisPanel from '../StructureAnalysisPanel';
 
 const SceneColumn: React.FC<SceneColumnProps> = ({
-    scene,
-    dislocationData,
-    isDislocationsLoading,
-    showDislocations,
-    isPlaying,
-    isLoading,
-    trajectoryId,
-    playbackControls,
-    analysisSelect,
-    modelRail,
-    showStructureAnalysis,
-    configId,
-    timestep,
-    delay = 0
+  scene,
+  dislocationData,
+  isDislocationsLoading,
+  showDislocations,
+  isPlaying,
+  isLoading,
+  trajectoryId,
+  playbackControls,
+  analysisSelect,
+  modelRail,
+  showStructureAnalysis,
+  configId,
+  timestep,
+  delay = 0,
 }) => {
-    // Solo mostrar el skeleton de carga cuando no hay escena o cuando estamos en la carga inicial
-    // Si ya tenemos un scene con datos, no mostrar el skeleton aunque isLoading sea true
-    const shouldShowSkeleton = isLoading && (!scene || !scene.data);
-    
-    return (
-        <motion.div
-            className='raster-scene-column-container'
-            style={{ flex: 1, minWidth: 0 }}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay }}
-        >
-            {showDislocations && (!!dislocationData || isDislocationsLoading) && (
-                <DislocationPanel
-                    dislocationData={dislocationData}
-                    isLoading={isDislocationsLoading}
-                    show={true}
-                />
-            )}
+  const shouldShowSkeleton = isLoading && (!scene || !scene.data);
 
-            {showStructureAnalysis && timestep !== undefined && configId && (
-                <StructureAnalysisPanel
-                    configId={configId}
-                    timestep={timestep}
-                    show={true}
-                />
-            )}
+  return (
+    <motion.div
+      className="raster-scene-column-container"
+      style={{ flex: 1, minWidth: 0 }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+    >
+      {showDislocations && (!!dislocationData || isDislocationsLoading) && (
+        <DislocationPanel dislocationData={dislocationData} isLoading={isDislocationsLoading} show />
+      )}
 
-            <RasterScene
-                scene={scene}
-                trajectoryId={trajectoryId}
-                disableAnimation={isPlaying}
-                isLoading={shouldShowSkeleton}
-                playbackControls={playbackControls}
-                analysisSelect={analysisSelect}
-                modelRail={modelRail}
-            />
-        </motion.div>
-    );
+      {showStructureAnalysis && timestep !== undefined && configId && (
+        <StructureAnalysisPanel configId={configId} timestep={timestep} show />
+      )}
+
+      <RasterScene
+        scene={scene}
+        trajectoryId={trajectoryId}
+        disableAnimation={isPlaying}
+        isLoading={shouldShowSkeleton}
+        playbackControls={playbackControls}
+        analysisSelect={analysisSelect}
+        modelRail={modelRail}
+      />
+    </motion.div>
+  );
 };
 
 export default React.memo(SceneColumn);

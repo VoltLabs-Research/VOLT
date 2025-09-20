@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import usePlaybackStore from '@/stores/editor/playback';
 import useTimestepStore from '@/stores/editor/timesteps';
 import useTrajectoryStore from '@/stores/trajectories';
@@ -30,6 +30,8 @@ import useModelStore from '@/stores/editor/model';
 
 const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
     const logger = useLogger('use-canvas-coordinator');
+    // Create a ref for throttling logs
+    const lastLogTimeRef = useRef(0);
 
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
@@ -60,10 +62,23 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
 
     // Handle automatically the selection for the first timestep when trajectory is loaded
     useEffect(() => {
-        if(trajectory && trajectory.frames?.length > 0 && currentTimestep === undefined){
-            const firstTimestep = trajectory.frames
-                ?.map((frame: any) => frame.timestep)
-                .sort((a: number, b: number) => a - b)[0];
+        // Only run this effect if we have a trajectory but no current timestep
+        if(!trajectory || currentTimestep !== undefined) return;
+        
+        // Make sure we have frames to work with
+        if(!trajectory.frames || trajectory.frames.length === 0) return;
+        
+        // Find the first timestep by sorting all available timesteps
+        const frames = trajectory.frames || [];
+        const timesteps = frames
+            .map((frame: any) => frame.timestep)
+            .filter((ts: any) => ts !== undefined && ts !== null);
+            
+        // Sort numerically to ensure we get the lowest value
+        const sortedTimesteps = [...timesteps].sort((a: number, b: number) => a - b);
+        
+        if(sortedTimesteps.length > 0) {
+            const firstTimestep = sortedTimesteps[0];
             logger.log(`Setting initial timestep: ${firstTimestep}`);
             setCurrentTimestep(firstTimestep);
             
@@ -73,24 +88,32 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
                 updateAnalysisConfig(config);
             }
         }
-    }, [trajectory, currentTimestep]);
+    }, [trajectory, currentTimestep, setCurrentTimestep, updateAnalysisConfig, logger]);
 
     useEffect(() => {
-        console.log('------- canvas coordinator');
-        console.log('trajectory:', trajectory);
-        console.log('current timestep:', currentTimestep);
-        console.log('analysis config:', analysisConfig)
-        console.log('------- canvas coordinator');
+        // Throttle console logging to avoid excessive rendering and console spam
+        const now = Date.now();
+        
+        // Only log every 1000ms to avoid flooding the console
+        if (now - lastLogTimeRef.current > 1000) {
+            console.log('------- canvas coordinator');
+            console.log('trajectory:', trajectory);
+            console.log('current timestep:', currentTimestep);
+            console.log('analysis config:', analysisConfig);
+            console.log('------- canvas coordinator');
+            lastLogTimeRef.current = now;
+        }
+        
         if(trajectory?._id && currentTimestep !== undefined){
-            console.log('Compute Timestep Data ')
+            // Only log when computing, which is less frequent than render cycles
+            console.log('Compute Timestep Data');
             computeTimestepData(trajectory, currentTimestep);
 
             return () => {
                 resetModel();
             }
         }
-
-    }, [analysisConfig, trajectory, currentTimestep]);
+    }, [analysisConfig, trajectory, currentTimestep, computeTimestepData, resetModel]);
 
     useEffect(() => {
         return () => {

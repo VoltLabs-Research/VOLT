@@ -1,85 +1,101 @@
 /**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
-import React from 'react';
+ * Unified StructureAnalysisPanel that supports BOTH previous prop shapes:
+ * 1) { configId, timestep, show? }  -> fetches from store by configId+timestep
+ * 2) { structureAnalysisData, show, isLoading } -> purely presentational
+ */
+import React, { useEffect, useMemo } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import StructureAnalysisResultsSkeleton from '@/components/atoms/StructureAnalysisResultsSkeleton';
 import StructureAnalysisResults from '@/components/atoms/StructureAnalysisResults';
+import type { StructureAnalysis } from '@/services/structure-analysis';
 import { useStructureAnalysisStore } from '@/stores/structure-analysis';
-import { useEffect, useMemo } from 'react';
 
-interface StructureAnalysisPanelProps {
-    configId?: string;
-    timestep: number;
-    show?: boolean;
-}
+type PropsVariantFetch = {
+  configId?: string;
+  timestep: number;
+  show?: boolean;
+  structureAnalysisData?: never;
+  isLoading?: never;
+};
 
-const StructureAnalysisPanel: React.FC<StructureAnalysisPanelProps> = ({ 
-    configId,
-    timestep, 
-    show = true 
-}) => {
-    const { 
-        structureAnalysesByConfig,
-        loading,
-        fetchStructureAnalysesByConfig
-    } = useStructureAnalysisStore();
-    
-    // Cargamos los datos solo si no los tenemos ya
-    useEffect(() => {
-        if (!show || !configId || structureAnalysesByConfig[configId]) return;
-        
-        // Cargar todos los análisis para este configId
-        fetchStructureAnalysesByConfig(configId);
-    }, [
-        configId, 
-        fetchStructureAnalysesByConfig, 
-        show,
-        structureAnalysesByConfig
-    ]);
-    
-    const currentAnalysis = useMemo(() => {
-        if (!configId || !structureAnalysesByConfig[configId]) return null;
-        
-        return structureAnalysesByConfig[configId].find(
-            analysis => analysis.timestep === timestep
-        );
-    }, [structureAnalysesByConfig, configId, timestep]);
+type PropsVariantPresent = {
+  structureAnalysisData: StructureAnalysis | null;
+  show: boolean;
+  isLoading: boolean;
+  configId?: never;
+  timestep?: never;
+};
 
-    // Solo mostrar el esqueleto de carga si no tenemos análisis y estamos cargando
-    const isLoading = loading && !currentAnalysis;
+type StructureAnalysisPanelProps = PropsVariantFetch | PropsVariantPresent;
 
-    if (!show) return null;
+const StructureAnalysisPanel: React.FC<StructureAnalysisPanelProps> = (props) => {
+  // Variant detection
+  const isPresentational = 'structureAnalysisData' in props;
 
+  // Presentational path
+  if (isPresentational) {
+    const { structureAnalysisData, show, isLoading } = props;
     return (
-        <>
+      <AnimatePresence initial={false} mode="popLayout">
+        {show && (
+          <motion.div
+            key="structure-analysis-panel"
+            layout
+            initial={{ opacity: 0, y: -10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            style={{ overflow: 'hidden', marginBottom: '.5rem' }}
+          >
             {isLoading ? (
-                <StructureAnalysisResultsSkeleton />
+              <StructureAnalysisResultsSkeleton />
             ) : (
-                currentAnalysis && <StructureAnalysisResults 
-                    structureAnalysis={currentAnalysis} 
-                />
+              structureAnalysisData && <StructureAnalysisResults title="Structure Analysis" structureAnalysis={structureAnalysisData} />
             )}
-        </>
+          </motion.div>
+        )}
+      </AnimatePresence>
     );
+  }
+
+  // Fetching path
+  const { configId, timestep, show = true } = props;
+  const { structureAnalysesByConfig, loading, fetchStructureAnalysesByConfig } = useStructureAnalysisStore();
+
+  useEffect(() => {
+    if (!show || !configId) return;
+    if (!structureAnalysesByConfig[configId]) fetchStructureAnalysesByConfig(configId);
+  }, [show, configId, structureAnalysesByConfig, fetchStructureAnalysesByConfig]);
+
+  const currentAnalysis = useMemo(() => {
+    if (!configId || !structureAnalysesByConfig[configId]) return null;
+    return structureAnalysesByConfig[configId].find((a) => a.timestep === timestep) ?? null;
+  }, [structureAnalysesByConfig, configId, timestep]);
+
+  const isLoading = loading && !currentAnalysis;
+  if (!show) return null;
+
+  return (
+    <AnimatePresence initial={false} mode="popLayout">
+      {show && (
+        <motion.div
+          key="structure-analysis-panel"
+          layout
+          initial={{ opacity: 0, y: -10, height: 0 }}
+          animate={{ opacity: 1, y: 0, height: 'auto' }}
+          exit={{ opacity: 0, y: -10, height: 0 }}
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          style={{ overflow: 'hidden', marginBottom: '.5rem' }}
+        >
+          {isLoading ? (
+            <StructureAnalysisResultsSkeleton />
+          ) : (
+            currentAnalysis && <StructureAnalysisResults structureAnalysis={currentAnalysis} />
+          )}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 };
 
 export default StructureAnalysisPanel;
