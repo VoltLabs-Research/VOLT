@@ -105,7 +105,6 @@ const HeadlessRasterizerView: React.FC = () => {
 
   // Pick closest index helper
   const closestIndex = (ts: number, list: number[]) => {
-    console.log('closest index - list:', list)
     if (!list.length) return 0;
     let best = 0;
     let bestD = Math.abs(list[0] - ts);
@@ -117,14 +116,24 @@ const HeadlessRasterizerView: React.FC = () => {
       }
     }
 
-    console.log('best:', best);
     return best;
   };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        setIsPlaying((isPlaying) => !isPlaying); 
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
 
   // Initial selection + URL restore (run exactly once after analyses arrive)
   useEffect(() => {
     if(!trajectory?._id || initializedRef.current) return;
-    console.log('X');
 
     const urlAl = getUrlParam('al');
     const urlAr = getUrlParam('ar');
@@ -134,7 +143,6 @@ const HeadlessRasterizerView: React.FC = () => {
     const urlDisl = getUrlParam('disl') === '1';
     const urlSa = getUrlParam('sa') === '1';
 
-    console.log('URL TS:', urlTs);
 
     const validIds = new Set(analysesNames.map((a) => a._id));
     const left = urlAl && validIds.has(urlAl) ? urlAl : analysesNames[0]?._id ?? null;
@@ -176,7 +184,6 @@ const HeadlessRasterizerView: React.FC = () => {
           ? closestIndex(urlTs as number, tsList)
           : 0;
 
-        console.log('initial index:', initialIndex);
       setFrameIndex(initialIndex);
 
       // Set initial models if available for selected timestep; fall back to DEFAULT_MODEL
