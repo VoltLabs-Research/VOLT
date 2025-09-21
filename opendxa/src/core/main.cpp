@@ -1,5 +1,6 @@
 #include <opendxa/core/dislocation_analysis.h>
 #include <opendxa/analysis/structure_analysis.h>
+#include <opendxa/analysis/grain_segmentation.h>
 #include <iostream>
 #include <string>
 #include <filesystem>

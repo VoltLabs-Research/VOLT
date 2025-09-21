@@ -568,7 +568,7 @@ const reservoirSample = <T>(arr: T[], k: number): T[] => {
 };
 
 /**
- * Simple ambient occlusion estimation using a uniform grid to limit neighbor checks.
+ * Ambient occlusion estimation using a uniform grid to limit neighbor checks.
  * Returns a map with AO factor `[0..0.7]` per point.
  * @param points - Input points.
  * @param maxDistance - Influence radius.
@@ -581,7 +581,7 @@ const calculateAO = (points: Point[], maxDistance: number = 5) => {
         return aoMap;
     }
     
-    // Simple spatial partitioning using grid
+    // Spatial partitioning using grid
     const gridSize = maxDistance;
     const grid = new Map<string, Point[]>();
     
