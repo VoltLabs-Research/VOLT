@@ -70,7 +70,7 @@ const SimulationCellSchema: Schema<ICellAnalysis> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'AnalysisConfig',
         inverse: { path: 'simulationCell', behavior: 'set' },
-        cascade: 'unset'
+    cascade: 'delete'
     },
     reciprocalLattice: {
         type: ReciprocalLatticeSchema,

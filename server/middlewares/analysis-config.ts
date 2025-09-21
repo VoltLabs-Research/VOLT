@@ -21,7 +21,7 @@
 **/
 
 import { Request, Response, NextFunction } from 'express';
-import { AnalysisConfig } from '@/models/index';
+import { AnalysisConfig, Team, Trajectory } from '@/models/index';
 
 // TODO:
 export const checkTeamMembershipForAnalysisTrajectory = async (
@@ -30,13 +30,29 @@ export const checkTeamMembershipForAnalysisTrajectory = async (
     next: NextFunction
 ) => {
     const { id } = req.params;
-    const analysisConfig = await AnalysisConfig.findById(id);
+    const analysisConfig = await AnalysisConfig.findById(id).select('trajectory');
 
     if(!analysisConfig){
         return res.status(404).json({
             status: 'error',
             data: { error: 'Analysis config not found' }
         });
+    }
+
+    // Ensure the user belongs to the team that owns the trajectory
+    const userId = (req as any).user?.id;
+    if(!userId){
+        return res.status(401).json({ status: 'error', data: { error: 'Unauthorized' } });
+    }
+
+    const trajectory = await Trajectory.findById(analysisConfig.trajectory).select('team');
+    if(!trajectory){
+        return res.status(404).json({ status: 'error', data: { error: 'Trajectory not found' } });
+    }
+
+    const team = await Team.findOne({ _id: trajectory.team, members: userId }).select('_id');
+    if(!team){
+        return res.status(403).json({ status: 'error', data: { error: 'Forbidden' } });
     }
 
     next();

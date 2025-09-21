@@ -98,7 +98,7 @@ const DislocationSchema: Schema<any> = new Schema({
     analysisConfig: {
         type: Schema.Types.ObjectId,
         ref: 'AnalysisConfig',
-        cascade: 'unset',
+    cascade: 'delete',
         inverse: { path: 'dislocations', behavior: 'addToSet' }
     },
     dislocations: [DislocationDataSchema],

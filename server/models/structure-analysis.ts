@@ -80,7 +80,7 @@ const StructureAnalysisSchema: Schema<IStructureAnalysis> = new Schema({
     analysisConfig: {
         type: Schema.Types.ObjectId,
         ref: 'AnalysisConfig',
-        cascade: 'unset',
+    cascade: 'delete',
         inverse: { path: 'structureAnalysis', behavior: 'set' },
     },
     trajectory: {

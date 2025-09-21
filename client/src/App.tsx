@@ -35,6 +35,7 @@ import HeadlessRasterizerView from './pages/protected/HeadlessRasterizerView';
 import Messages from './pages/protected/Messages';
 import StructureAnalysisListing from './pages/protected/StructureAnalysisListing';
 import DislocationsListing from './pages/protected/DislocationsListing';
+import AnalysisConfigsListing from './pages/protected/AnalysisConfigsListing';
 import PageWrapper from '@/components/atoms/animations/PageWrapper';
 import GlobalTransitionOverlay from '@/components/atoms/animations/GlobalTransitionOverlay';
 import Loader from '@/components/atoms/Loader';
@@ -154,6 +155,15 @@ const App = () => {
                                 element={
                                     <PageWrapper>
                                         <StructureAnalysisListing />
+                                    </PageWrapper>
+                                }
+                            />
+
+                            <Route
+                                path='/dashboard/analysis-configs/list'
+                                element={
+                                    <PageWrapper>
+                                        <AnalysisConfigsListing />
                                     </PageWrapper>
                                 }
                             />

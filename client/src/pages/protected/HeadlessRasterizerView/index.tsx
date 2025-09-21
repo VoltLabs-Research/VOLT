@@ -473,13 +473,15 @@ const HeadlessRasterizerView: React.FC = () => {
                 onSignIn={!user ? handleSignIn : undefined}
             />
 
-            {showParticles && currentTimestep && (
+            {showParticles && (
                 <FrameAtomsTable
                     trajectoryId={trajectory?._id}
-                    timestep={currentTimestep}
+                    timestep={currentTimestep as number}
                     pageSize={1000}
                     initialPage={1}
                     decimals={3}
+                    title={`Particles · ${trajectory?.name ?? 'Trajectory'}`}
+                    onClose={() => setShowParticles(false)}
                 />
             )}
 

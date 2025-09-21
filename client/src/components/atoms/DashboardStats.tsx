@@ -16,6 +16,7 @@ const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
     const icons: Record<string, React.ComponentType<any>> = {
         StructureAnalysis: RiVipDiamondLine,
         Trajectories: HiOutlineServerStack,
+        AnalysisConfigs: RiVipDiamondLine,
         Dislocations: PiLineSegments
     };
 
@@ -33,8 +34,11 @@ const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
 
     return (
         <div className='dashboard-stats-container'>
-            {cards.map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain }, index) => {
-                const Icon = icons[name.replace(' ', '')];
+            {cards
+                .filter(({ key }) => key !== 'dislocations')
+                .map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain }, index) => {
+                const iconKey = name.replace(/\s+/g, '');
+                const Icon = icons[iconKey] || HiOutlineServerStack;
                 const up = (lastMonthStatus ?? 0) >= 0;
                 return (
                     <div 

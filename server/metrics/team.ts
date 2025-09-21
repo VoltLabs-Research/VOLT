@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import { Trajectory, StructureAnalysis, Dislocations } from '@models/index';
+import { Trajectory, StructureAnalysis, Dislocations, AnalysisConfig } from '@models/index';
 
 export const getMetricsByTeamId = async (teamId: string) => {
     const now = new Date();
@@ -36,6 +36,7 @@ export const getMetricsByTeamId = async (teamId: string) => {
     const totals = await Promise.all([
         Trajectory.countDocuments({ team: { $in: [teamId] } }),
         StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds } }),
+        AnalysisConfig.countDocuments({ trajectory: { $in: trajectoryIds } }),
         Dislocations.aggregate([
             { $match: { trajectory: { $in: trajectoryIds } } },
             { $group: { _id: null, total: { $sum: '$totalSegments' } } }
@@ -44,7 +45,8 @@ export const getMetricsByTeamId = async (teamId: string) => {
 
     const totalTrajectories = totals[0] || 0;
     const totalStructAnalyses = totals[1] || 0;
-    const totalDislocations = (totals[2][0]?.total as number) || 0;
+    const totalAnalysisConfigs = totals[2] || 0;
+    const totalDislocations = (totals[3][0]?.total as number) || 0;
 
     const [currTrajectory, prevTrajectory] = await Promise.all([
         Trajectory.countDocuments({ team: { $in: [teamId] }, createdAt: { $gte: monthStart, $lt: now } }),
@@ -54,6 +56,11 @@ export const getMetricsByTeamId = async (teamId: string) => {
     const [currStruct, prevStruct] = await Promise.all([
         StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds }, createdAt: { $gte: monthStart, $lt: now } }),
         StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } })
+    ]);
+
+    const [currConfigs, prevConfigs] = await Promise.all([
+        AnalysisConfig.countDocuments({ trajectory: { $in: trajectoryIds }, createdAt: { $gte: monthStart, $lt: now } }),
+        AnalysisConfig.countDocuments({ trajectory: { $in: trajectoryIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } })
     ]);
 
     const currDislocationsAgg = await Dislocations.aggregate([
@@ -73,6 +80,7 @@ export const getMetricsByTeamId = async (teamId: string) => {
     const lastMonth = {
         trajectories: pct(currTrajectory, prevTrajectory),
         structureAnalysis: pct(currStruct, prevStruct),
+        analysisConfigs: pct(currConfigs, prevConfigs),
         dislocations: pct(dislCurr, dislPrev)
     };
 
@@ -98,11 +106,18 @@ export const getMetricsByTeamId = async (teamId: string) => {
         { $sort: { _id: 1 } }
     ]);
 
+    const cfgWeekly = await AnalysisConfig.aggregate([
+        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: sinceDate } } },
+        { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: 'week', timezone: tz } }, value: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+    ]);
+
     const key = (d: any) => new Date(d).toISOString().slice(0, 10);
     const allKeys = new Set<string>();
     
     for(const r of trajWeekly) allKeys.add(key(r._id));
     for(const r of structWeekly) allKeys.add(key(r._id));
+    for(const r of cfgWeekly) allKeys.add(key(r._id));
     for(const r of dislWeekly) allKeys.add(key(r._id));
 
     const sorted = Array.from(allKeys).sort();
@@ -117,15 +132,18 @@ export const getMetricsByTeamId = async (teamId: string) => {
     const dTraj = toDict(trajWeekly as any);
     const dStruct = toDict(structWeekly as any);
     const dDisl = toDict(dislWeekly as any);
+    const dCfg = toDict(cfgWeekly as any);
 
     const seriesTraj = clampLastN.map((k) => dTraj.get(k) ?? 0);
     const seriesStruct = clampLastN.map((k) => dStruct.get(k) ?? 0);
+    const seriesCfg = clampLastN.map((k) => dCfg.get(k) ?? 0);
     const seriesDisl = clampLastN.map((k) => dDisl.get(k) ?? 0);
 
     return {
         totals: {
             structureAnalysis: totalStructAnalyses,
             trajectories: totalTrajectories,
+            analysisConfigs: totalAnalysisConfigs,
             dislocations: totalDislocations
         },
         lastMonth,
@@ -133,6 +151,7 @@ export const getMetricsByTeamId = async (teamId: string) => {
             labels: clampLastN,      
             trajectories: seriesTraj,
             structureAnalysis: seriesStruct,
+            analysisConfigs: seriesCfg,
             dislocations: seriesDisl
         }
     };

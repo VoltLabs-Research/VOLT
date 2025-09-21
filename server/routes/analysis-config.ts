@@ -19,4 +19,16 @@ router.get(
 
 )
 
+router.get(
+    '/team/:teamId',
+    authMiddleware.protect,
+    controller.listAnalysisConfigsByTeam
+)
+
+router.delete(
+    '/:id',
+    middleware.checkTeamMembershipForAnalysisTrajectory,
+    controller.deleteAnalysisConfigById
+)
+
 export default router;

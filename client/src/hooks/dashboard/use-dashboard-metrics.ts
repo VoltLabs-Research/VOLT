@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/services/api';
 import type { ApiResponse } from '@/types/api';
-import useTrajectoryStore from '@/stores/trajectories';
 
-type MetricKey = 'structureAnalysis' | 'trajectories' | 'dislocations';
+type MetricKey = 'structureAnalysis' | 'trajectories' | 'analysisConfigs' | 'dislocations';
 
 interface TrajectoryMetrics{
     totals: Record<MetricKey, number>;
@@ -12,6 +11,7 @@ interface TrajectoryMetrics{
         labels: string[];
         structureAnalysis: number[];
         trajectories: number[];
+    analysisConfigs?: number[];
         dislocations: number[];
     };
 }
@@ -86,10 +86,7 @@ export const useDashboardMetrics = (
 ) => {
     const key = keyOf(teamId);
     const ttlMs = opts?.ttlMs ?? 5 * 60 * 1000;
-
-    const data = useTrajectoryStore((s) => s.metrics);
-    const setData = useTrajectoryStore((s) => s.setMetrics);
-
+    const [data, setData] = useState<TrajectoryMetrics | null>(() => cache.get(key)?.data ?? null);
     const [loading, setLoading] = useState<boolean>(() => !cache.has(key));
     const [error, setError] = useState<string | null>(null);
 
@@ -141,18 +138,20 @@ export const useDashboardMetrics = (
         return () => {
             controller.abort();
         };
-    }, [key, teamId, ttlMs, opts?.force, setData]);
+    }, [key, teamId, ttlMs, opts?.force]);
 
     const cards = useMemo(() => {
-        if(!data) return [];
-        const base = data.weekly.labels || [];
-        const sStruct = toNumericArray(data.weekly.structureAnalysis as any);
-        const sTraj = toNumericArray(data.weekly.trajectories as any);
-        const sDisl = toNumericArray(data.weekly.dislocations as any);
+    if(!data) return [] as any[];
+    const base = data.weekly.labels || [];
+    const sStruct = toNumericArray((data.weekly as any).structureAnalysis || []);
+    const sTraj = toNumericArray((data.weekly as any).trajectories || []);
+    const sCfg = toNumericArray((data.weekly as any).analysisConfigs || []);
+    const sDisl = toNumericArray((data.weekly as any).dislocations || []);
 
         const ps = padSeries(base, sStruct, 12);
         const pt = padSeries(base, sTraj, 12);
-        const pd = padSeries(base, sDisl, 12);
+    const pc = padSeries(base, sCfg, 12);
+    const pd = padSeries(base, sDisl, 12);
 
         return [
             {
@@ -174,6 +173,16 @@ export const useDashboardMetrics = (
                 series: pt.series,
                 labels: pt.labels,
                 yDomain: withPaddingDomain(pt.series)
+            },
+            {
+                key: 'analysisConfigs' as MetricKey,
+                name: 'Analysis Configs',
+                listingUrl: '/dashboard/analysis-configs/list',
+                count: abbreviate(Number((data.totals as any).analysisConfigs) || 0),
+                lastMonthStatus: Number((data.lastMonth as any).analysisConfigs) || 0,
+                series: pc.series,
+                labels: pc.labels,
+                yDomain: withPaddingDomain(pc.series)
             },
             {
                 key: 'dislocations' as MetricKey,
