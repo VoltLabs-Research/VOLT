@@ -263,7 +263,7 @@
         border-radius: 1rem;
         padding: 0;
         cursor: default;
-    width: 450px;
+    width: 420px;
     height: clamp(280px, 36vh, 420px);
     }
     /* No interaction/editing modes */

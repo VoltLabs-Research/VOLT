@@ -37,7 +37,9 @@ const DashboardPage: React.FC = memo(() => {
                                 </div>
                                 
                                 <div className='badge-container scene-preview-natoms-badge primary-surface'>
-                                    <p className='badge-text'>{formatNumber(trajectory.frames[currentTimestep]?.natoms ?? 0)} atoms</p>
+                                    <p className='badge-text'>
+                                        {formatNumber((trajectory.frames || []).find((f: any) => f.timestep === currentTimestep)?.natoms ?? 0)} atoms
+                                    </p>
                                 </div>
 
                                 <div className='badge-container scene-preview-navigate-icon primary-surface'>
