@@ -1,17 +1,16 @@
-import React, { use, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/Scene3D';
 import { Canvas } from '@react-three/fiber';
-import AutoPreviewSaver from '@/components/atoms/scene/AutoPreviewSaver';
 import TimestepViewer from '@/components/organisms/TimestepViewer';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import CanvasWidgets from '@/components/atoms/CanvasWidgets';
 import TetrahedronLoader from '@/components/atoms/TetrahedronLoader';
 import useEditorUIStore from '@/stores/ui/editor';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion';
+import { useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import useModelStore from '@/stores/editor/model';
 import usePlaybackStore from '@/stores/editor/playback';
-import useAuthStore from '@/stores/authentication';
+// import useAuthStore from '@/stores/authentication';
 import './Canvas.css';
 
 const CANVAS_CONFIG = {
@@ -24,15 +23,15 @@ const CANVAS_CONFIG = {
 } as const;
 
 const EditorPage: React.FC = () => {
-    const { trajectoryId } = useParams<{ trajectoryId: string }>();
+    const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
     const scene3DRef = useRef<Scene3DRef>(null);
+    const trajectoryId = rawTrajectoryId ?? '';
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId });
     const isModelLoading = useModelStore((state) => state.isModelLoading);
-    const isPreloading = usePlaybackStore((state) => state.isPreloading);
-    const preloadProgress = usePlaybackStore((state) => state.preloadProgress || 0);
-    const downlinkMbps = usePlaybackStore((state) => state.downlinkMbps ?? 0);
+    const isPreloading = usePlaybackStore((state) => state.isPreloading ?? false);
+    const preloadProgress = usePlaybackStore((state) => state.preloadProgress ?? 0);
     const showCanvasGrid = useEditorUIStore((state) => state.showCanvasGrid);
-    const didPreload = usePlaybackStore((state) => state.didPreload);
+    const didPreload = usePlaybackStore((state) => state.didPreload ?? false);
     const reset = useModelStore((state) => state.reset);
 
     useEffect(() => {
@@ -41,20 +40,7 @@ const EditorPage: React.FC = () => {
         };
     }, []);
 
-    const speedMV = useMotionValue(0);
-    const [displaySpeed, setDisplaySpeed] = useState(0);
-
-    useEffect(() => {
-        const controls = animate(speedMV, Number.isFinite(downlinkMbps) ? downlinkMbps : 0, {
-            duration: 0.6,
-            ease: [0.22, 1, 0.36, 1]
-        });
-        const unsub = speedMV.on('change', (v) => setDisplaySpeed(v));
-        return () => {
-            controls.stop();
-            unsub();
-        };
-    }, [downlinkMbps, speedMV]);
+    // Removed animated speed indicator (unused in UI)
 
     const ringVars = {
         ['--p' as any]: isPreloading ? preloadProgress : 0,
@@ -89,13 +75,7 @@ const EditorPage: React.FC = () => {
 
             <CanvasWidgets trajectory={trajectory} currentTimestep={currentTimestep} />
             <Scene3D ref={scene3DRef} showCanvasGrid={showCanvasGrid}>
-                <AutoPreviewSaver
-                    scene3DRef={scene3DRef}
-                    delay={CANVAS_CONFIG.autoSaveDelay}
-                    trajectoryId={trajectoryId}
-                />
                 <TimestepViewer
-                    centerCamera={false}
                     scale={CANVAS_CONFIG.timestepViewerDefaults.scale}
                     rotation={CANVAS_CONFIG.timestepViewerDefaults.rotation}
                     position={CANVAS_CONFIG.timestepViewerDefaults.position}

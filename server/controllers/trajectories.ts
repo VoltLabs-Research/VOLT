@@ -34,9 +34,10 @@ import HandlerFactory from '@/controllers/handler-factory';
 import RuntimeError from '@/utilities/runtime-error';
 import { getMetricsByTeamId } from '@/metrics/team';
 import { getTrajectoryMetricsById } from '@/metrics/trajectory';
+import HeadlessRasterizer from '@/services/headless-rasterizer';
 
-const factory = new HandlerFactory({
-    model: Trajectory,
+const factory = new HandlerFactory<any>({
+    model: Trajectory as any,
     fields: ['name', 'preview'],
     errorMessages: {
         default: {
@@ -333,7 +334,8 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             name: 'Upload Trajectory',
             message: trajectoryName,
             folderPath,
-            glbFolderPath
+            glbFolderPath,
+            tempFolderPath: folderPath
         };
         jobs.push(job);
     }
@@ -347,4 +349,58 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         status: 'success',
         data: newTrajectory,
     });
+
+    // Fire-and-forget: generate a server-side PNG preview from the first frame GLB
+    (async () => {
+        try{
+            const firstFrame = frames.reduce((min, f) => f.timestep < min.timestep ? f : min, frames[0]);
+            const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+            const glbPath = join(glbFolderPath, `${firstFrame.timestep}.glb`);
+            const previewPath = join(folderPath, 'preview.png');
+
+            const waitForFile = async (file: string, timeoutMs = 120000, intervalMs = 1000) => {
+                const start = Date.now();
+                while(Date.now() - start < timeoutMs){
+                    try{
+                        await access(file, constants.F_OK);
+                        // optional: small delay to ensure file is flushed
+                        await new Promise(r => setTimeout(r, 250));
+                        return true;
+                    }catch{
+                        await new Promise(r => setTimeout(r, intervalMs));
+                    }
+                }
+                return false;
+            };
+
+            const ready = await waitForFile(glbPath);
+            if(!ready){
+                console.warn(`[Preview] GLB not found in time for trajectory ${newTrajectory._id} at ${glbPath}`);
+                return;
+            }
+
+            const raster = new HeadlessRasterizer({
+                inputPath: glbPath,
+                outputPath: previewPath,
+                width: 1280,
+                height: 720,
+                background: 'transparent',
+                fov: 45,
+                up: 'z',
+                az: 35,
+                el: 20,
+                distScale: 1.05,
+                maxPoints: 0
+            } as any);
+            await raster.render();
+
+            await Trajectory.findByIdAndUpdate(newTrajectory._id, {
+                $set: { preview: 'preview' }
+            });
+
+            console.log(`[Preview] Generated preview for trajectory ${newTrajectory._id}`);
+        }catch(err){
+            console.error(`[Preview] Failed to generate preview for trajectory ${newTrajectory?._id}:`, err);
+        }
+    })();
 };
