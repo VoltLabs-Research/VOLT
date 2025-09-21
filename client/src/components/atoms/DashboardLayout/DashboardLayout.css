@@ -25,12 +25,14 @@
     width: 360px;
     max-height: 420px;
     overflow: auto;
-    background: #1d1d1d;
-    border: 1px solid #2a2a2a;
+    background: rgb(18 18 18 / 80%);
+    backdrop-filter: blur(7px);
+    border: 1px solid #222222;
     border-radius: 12px;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
     z-index: 50;
 }
+
 .dashboard-notifications-header{
     display: flex;
     align-items: center;
@@ -55,7 +57,7 @@
     cursor: pointer;
     transition: background .15s;
 }
-.dashboard-notification-item:hover{ background: #232323; }
+.dashboard-notification-item:hover{ background: rgb(46 46 46 / 24%); }
 .dashboard-notification-item.is-read{ opacity: .8; }
 .dashboard-notification-title{ color: #eaeaea; font-weight: 600; font-size: .95rem; }
 .dashboard-notification-content{ color: #bdbdbd; font-size: .85rem; margin-top: 2px; }

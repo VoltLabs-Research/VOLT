@@ -2,67 +2,38 @@ import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { MdOutlineSchedule } from "react-icons/md";
 import { RiCloseLargeFill } from 'react-icons/ri';
 import JobsHistory from '@/components/molecules/JobsHistory';
-import useResizable from '@/hooks/ui/use-resizable';
-import useDraggable from '@/hooks/ui/drag-drop/use-draggable';
-import useDoubleTap from '@/hooks/ui/interaction/use-double-tap';
-
-type EditMode = 'inactive' | 'resize' | 'move';
+// Double-tap / resize / move removed for a simpler, minimal experience
 
 const JobsHistoryViewer: React.FC = memo(() => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
-    const [editMode, setEditMode] = useState<EditMode>('inactive');
 
     const containerRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const bodyRef = useRef<HTMLDivElement>(null);
-
-    const { size, isResizing, resetSize } = useResizable({
-        elementRef: containerRef,
-        handleRef: headerRef,
-        initialSize: { width: 25, height: 50 },
-        isEnabled: editMode === 'resize'
-    });
-
-    const { position, isDragging, resetPosition } = useDraggable({
-        elementRef: containerRef,
-        handleRef: headerRef,
-        isEnabled: editMode === 'move'
-    });
-
-    const headerDoubleTap = useDoubleTap({ onDoubleTap: () => setEditMode('resize') });
-    const bodyDoubleTap = useDoubleTap({ onDoubleTap: () => setEditMode('move') });
-
-    const isInteracting = isResizing || isDragging;
 
     const toggleBodyScroll = useCallback((lock: boolean) => {
         document.body.classList.toggle('jobs-history-expanded', lock);
     }, []);
 
     const handleToggle = useCallback(() => {
-        if(isAnimating || isInteracting) return;
+        if(isAnimating) return;
         const nextIsExpanded = !isExpanded;
         setIsAnimating(true);
         toggleBodyScroll(nextIsExpanded);
         setIsExpanded(nextIsExpanded);
 
-        if(!nextIsExpanded){
-            setEditMode('inactive');
-            resetSize();
-            resetPosition();
-        }
-
         setTimeout(() => {
             setIsAnimating(false);
         }, 500);
-    }, [isAnimating, isInteracting, isExpanded, resetSize, resetPosition, toggleBodyScroll]);
+    }, [isAnimating, isExpanded, toggleBodyScroll]);
 
     useEffect(() => {
-        if(!isExpanded || editMode === 'inactive') return;
+        if(!isExpanded) return;
 
         const handleClickOutside = (event: MouseEvent) => {
             if(containerRef.current && !containerRef.current.contains(event.target as Node)){
-                setEditMode('inactive');
+                // no-op, just keep panel expanded until user closes
             }
         };
 
@@ -70,31 +41,18 @@ const JobsHistoryViewer: React.FC = memo(() => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [isExpanded, editMode]);
+    }, [isExpanded]);
 
     const containerClasses = [
         'jobs-history-viewer-enhanced',
         isExpanded && 'expanded',
-        isInteracting && 'is-interacting',
     ].filter(Boolean).join(' ');
 
-    const headerClasses = [
-        'jobs-history-viewer-header-enhanced',
-        editMode === 'resize' && 'edit-mode-resize',
-        editMode === 'move' && 'edit-mode-move',
-    ].filter(Boolean).join(' ');
+    const headerClasses = 'jobs-history-viewer-header-enhanced';
 
-    const getSubtitle = () => {
-        if(editMode === 'resize') return 'Drag the header to resize';
-        if(editMode === 'move') return 'Drag the header to move';
-        return 'Double-tap on header (resize) or body (move)';
-    };
+    const getSubtitle = () => 'Recent team activity';
     
-    const dynamicStyles: React.CSSProperties = isExpanded ? { 
-        width: `${size.width}vw`, 
-        height: `${size.height}vh`,
-        transform: `translate(${position.x}px, ${position.y}px)`,
-    } : {};
+    const dynamicStyles: React.CSSProperties = {};
 
     return (
         <>
@@ -110,14 +68,12 @@ const JobsHistoryViewer: React.FC = memo(() => {
                         <h3 className='jobs-history-dispatch-title-enhanced'>Team Activity</h3>
                         <span className='jobs-dispatch-subtitle'>Tap to view</span>
                     </div>
-                    <div className="glow-effect"></div>
                 </div>
                 <div className='jobs-history-expanded-content'>
                     <div 
                         ref={headerRef} 
                         className={headerClasses}
                         style={{ touchAction: 'none' }}
-                        onMouseDown={headerDoubleTap.onMouseDown}
                     >
                         <div className='header-content'>
                             <h3 className='jobs-history-title-enhanced'>Jobs History</h3>
@@ -126,14 +82,13 @@ const JobsHistoryViewer: React.FC = memo(() => {
                         <button 
                             className='close-button-enhanced' 
                             onClick={(e) => { e.stopPropagation(); handleToggle(); }} 
-                            disabled={isAnimating || isInteracting}>
+                            disabled={isAnimating}>
                                 <RiCloseLargeFill />
                         </button>
                     </div>
                     <div 
                         ref={bodyRef}
                         className='jobs-history-viewer-body-enhanced'
-                        onMouseDown={bodyDoubleTap.onMouseDown}
                     >
                         <JobsHistory />
                     </div>

@@ -4,6 +4,7 @@
     justify-content: space-between;
     align-items: center;
     font-size: .9rem;
+    color: #e9e9e9;
 }
 
 .job-left-container{
@@ -15,7 +16,11 @@
 .job-icon-container{
     min-width: 1.8rem;
     min-height: 1.8rem;
-    border-radius: 50%;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .job-status-info{
@@ -26,13 +31,15 @@
 }
 
 .job-status-badge{
-    padding: .5rem 1rem;
-    border-radius: 5rem;
-    font-size: 13px;
+    padding: .45rem .9rem;
+    border-radius: 999px;
+    font-size: 12px;
     font-weight: 600;
-    width: 100px;
+    min-width: 92px;
     text-align: center;
     text-transform: capitalize;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .job-info-container{
@@ -42,152 +49,99 @@
 }
 
 .job-name{
-    font-size: .85rem;
-    font-weight: 400;
-    color: #dadada;
+    font-size: .9rem;
+    font-weight: 600;
+    letter-spacing: .15px;
+    color: #f1f1f1;
 }
 
 .job-message{
     font-weight: 500;
-    font-size: .95rem;
+    font-size: .85rem;
+    color: #bdbdbd;
 }
 
 /* Completed */
-.job-container.completed path{
-    stroke: rgb(24, 165, 24);
-}
+/* Softer, pastel-ish accents with subtle tints */
+.job-container.completed path{ stroke: #2ecc71; }
 
-.job-container.completed .job-icon-container{
-    border: 1px solid rgb(24, 165, 24);
-}
+.job-container.completed .job-icon-container{ border-color: rgba(46, 204, 113, .35); }
 
 .job-container.completed .job-status-badge,
 .job-container.completed .job-icon-container,
-.job-container.completed .job-message{
-    color: #22c55e;
-}
+.job-container.completed .job-message{ color: #9ae6b4; }
 
 .job-container.completed .job-status-badge, 
-.job-container.completed .job-icon-container{
-    background-color: #dcfce7; 
-}
+.job-container.completed .job-icon-container{ background-color: rgba(46, 204, 113, .08); }
 
 /* Running */
-.job-container.running path{
-    stroke: #3b82f6;
-}
+.job-container.running path{ stroke: #60a5fa; }
 
-.job-container.running .job-icon-container{
-    border: 1px solid #3b82f6;
-}
+.job-container.running .job-icon-container{ border-color: rgba(96, 165, 250, .35); }
 
 .job-container.running .job-status-badge,
 .job-container.running .job-icon-container,
-.job-container.running .job-message{
-    color: #3b82f6;
-}
+.job-container.running .job-message{ color: #bfdbfe; }
 
 .job-container.running .job-status-badge, 
-.job-container.running .job-icon-container{
-    background-color: #dbeafe; 
-}
+.job-container.running .job-icon-container{ background-color: rgba(96, 165, 250, .08); }
 
 /* Queued */
-.job-container.queued path{
-    stroke: #f59e0b;
-}
+.job-container.queued path{ stroke: #fbbf24; }
 
-.job-container.queued .job-icon-container{
-    border: 1px solid #f59e0b;
-}
+.job-container.queued .job-icon-container{ border-color: rgba(251, 191, 36, .35); }
 
 .job-container.queued .job-status-badge,
 .job-container.queued .job-icon-container,
-.job-container.queued .job-message{
-    color: #f59e0b;
-}
+.job-container.queued .job-message{ color: #fde68a; }
 
 .job-container.queued .job-status-badge, 
-.job-container.queued .job-icon-container{
-    background-color: #fef3c7; 
-}
+.job-container.queued .job-icon-container{ background-color: rgba(251, 191, 36, .08); }
 
 /* Retrying */
-.job-container.retrying path{
-    stroke: #f97316;
-}
+.job-container.retrying path{ stroke: #fb923c; }
 
-.job-container.retrying .job-icon-container{
-    border: 1px solid #f97316;
-}
+.job-container.retrying .job-icon-container{ border-color: rgba(251, 146, 60, .35); }
 
 .job-container.retrying .job-status-badge,
 .job-container.retrying .job-icon-container,
-.job-container.retrying .job-message{
-    color: #f97316;
-}
+.job-container.retrying .job-message{ color: #fed7aa; }
 
 .job-container.retrying .job-status-badge, 
-.job-container.retrying .job-icon-container{
-    background-color: #fed7aa; 
-}
+.job-container.retrying .job-icon-container{ background-color: rgba(251, 146, 60, .08); }
 
 /* Queued After Failure */
-.job-container.queued_after_failure path{
-    stroke: #ef4444;
-}
+.job-container.queued_after_failure path{ stroke: #ef4444; }
 
-.job-container.queued_after_failure .job-icon-container{
-    border: 1px solid #ef4444;
-}
+.job-container.queued_after_failure .job-icon-container{ border-color: rgba(239, 68, 68, .35); }
 
 .job-container.queued_after_failure .job-status-badge,
 .job-container.queued_after_failure .job-icon-container,
-.job-container.queued_after_failure .job-message{
-    color: #ef4444;
-}
+.job-container.queued_after_failure .job-message{ color: #fecaca; }
 
 .job-container.queued_after_failure .job-status-badge, 
-.job-container.queued_after_failure .job-icon-container{
-    background-color: #fee2e2; 
-}
+.job-container.queued_after_failure .job-icon-container{ background-color: rgba(239, 68, 68, .08); }
 
 /* Failed */
-.job-container.failed path{
-    stroke: #dc2626;
-}
+.job-container.failed path{ stroke: #f87171; }
 
-.job-container.failed .job-icon-container{
-    border: 1px solid #dc2626;
-}
+.job-container.failed .job-icon-container{ border-color: rgba(248, 113, 113, .35); }
 
 .job-container.failed .job-status-badge,
 .job-container.failed .job-icon-container,
-.job-container.failed .job-message{
-    color: #dc2626;
-}
+.job-container.failed .job-message{ color: #fecaca; }
 
 .job-container.failed .job-status-badge, 
-.job-container.failed .job-icon-container{
-    background-color: #fecaca; 
-}
+.job-container.failed .job-icon-container{ background-color: rgba(248, 113, 113, .08); }
 
 /* Unknown */
-.job-container.unknown path{
-    stroke: #6b7280;
-}
+.job-container.unknown path{ stroke: #9ca3af; }
 
-.job-container.unknown .job-icon-container{
-    border: 1px solid #6b7280;
-}
+.job-container.unknown .job-icon-container{ border-color: rgba(156, 163, 175, .35); }
 
 .job-container.unknown .job-status-badge,
 .job-container.unknown .job-icon-container,
-.job-container.unknown .job-message{
-    color: #6b7280;
-}
+.job-container.unknown .job-message{ color: #e5e7eb; }
 
 .job-container.unknown .job-status-badge, 
-.job-container.unknown .job-icon-container{
-    background-color: #f3f4f6; 
-}
+.job-container.unknown .job-icon-container{ background-color: rgba(156, 163, 175, .08); }
