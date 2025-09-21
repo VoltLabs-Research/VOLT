@@ -83,6 +83,7 @@ configureApp({
         'trajectories',
         'structure-analysis',
     'dislocations',
+    'simulation-cell',
     'notifications',
         'auth'
     ],
