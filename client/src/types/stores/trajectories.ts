@@ -25,6 +25,7 @@ export interface TrajectoryState {
     cache: Record<string, Trajectory[]>;
     analysisCache: Record<string, any>;
     differencesCache: Record<string, any>;
+    atomsCache?: Record<string, { timestep: number; natoms?: number; total?: number; page?: number; pageSize?: number; positions: number[][] }>;
 }
 
 export interface TrajectoryActions {
@@ -45,6 +46,11 @@ export interface TrajectoryActions {
     getRasterizedFrames: (id: string, query?: RasterQuery & { force?: boolean }) => Promise<RasterPage | null>;
     clearRasterCache: (id?: string) => void;
     clearPreviewCache: (id?: string) => void;
+    getFrameAtoms: (
+        trajectoryId: string,
+        timestep: number,
+        opts?: { force?: boolean; page?: number; pageSize?: number }
+    ) => Promise<{ timestep: number; natoms?: number; total?: number; page?: number; pageSize?: number; positions: number[][] } | null>;
     getStructureAnalysis: (teamId: string, opts?: { force?: boolean }) => Promise<void>;
     setTrajectory: (trajectory: Trajectory | null) => void;
     clearError: () => void;

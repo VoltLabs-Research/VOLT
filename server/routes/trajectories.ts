@@ -55,7 +55,6 @@ const previewUpload = multer({
     }
 });
 
-// Rutas que requieren autenticación completa
 router.route('/')
     .get(
         authMiddleware.protect,
@@ -68,12 +67,18 @@ router.route('/')
         controller.createTrajectory
     );
 
-// Rutas que permiten acceso público si la trayectoria es pública
 router.get(
     '/:id/glb/:timestep/:analysisId', 
     authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory, 
     controller.getTrajectoryGLB
+);
+
+router.get(
+    '/:id/atoms/:timestep',
+    authMiddleware.optionalAuth,
+    middleware.checkTeamMembershipForTrajectory,
+    controller.getTrajectoryAtoms
 );
 
 router.get(

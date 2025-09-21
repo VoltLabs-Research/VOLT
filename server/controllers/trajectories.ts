@@ -63,14 +63,11 @@ export const getTrajectoryMetrics = async (req: Request, res: Response) => {
 };
 
 export const deleteTrajectoryById = factory.deleteOne({
-    beforeDelete: async (doc: any, req: Request) => {
+    beforeDelete: async (doc: any) => {
         console.log(`Preparing to delete trajectory: ${doc.name} (ID: ${doc._id})`);
-        
         const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
         const trajectoryPath = join(basePath, doc.folderId);
-        
         try{
-            // Clean up trajectory files
             await rm(trajectoryPath, { recursive: true, force: true });
             console.log(`Cleaned up trajectory files at: ${trajectoryPath}`);
         }catch(error){
@@ -83,7 +80,7 @@ export const getUserTrajectories = factory.getAll({
     customFilter: async (req: Request) => {
         const userId = (req as any).user.id;
         const { teamId } = req.query;
-        
+
         let teamQuery: any = { members: userId };
         if(teamId && typeof teamId === 'string'){
             if(!isValidObjectId(teamId)){
@@ -93,18 +90,16 @@ export const getUserTrajectories = factory.getAll({
         }
 
         const userTeams = await Team.find(teamQuery).select('_id');
-        
+
         if(teamId && userTeams.length === 0){
-            // Return empty filter that matches nothing
             return { _id: { $in: [] } };
         }
-        
+
         const teamIds = userTeams.map(team => team._id);
         return { team: { $in: teamIds } };
     }
 });
 
-// TODO: change controller name
 export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
 
@@ -143,7 +138,7 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
     })
 };
 
-export const getMetrics = async (req: Request, res: Response, next: NextFunction) => {
+export const getMetrics = async (req: Request, res: Response) => {
     const id = (req.params as any).id || (req.params as any).trajectoryId;
     if (!id) {
       return res.status(400).json({ status: 'error', message: 'Trajectory id is required' });
@@ -153,7 +148,6 @@ export const getMetrics = async (req: Request, res: Response, next: NextFunction
     return res.status(200).json({ status: 'success', data });
 };
 
-// TODO: public folder maybe?
 export const getTrajectoryPreview = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
 
@@ -177,7 +171,7 @@ export const getTrajectoryPreview = async (req: Request, res: Response) => {
     }
 
     const fileStats = await stat(previewPath);
-    
+
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Length', fileStats.size);
     res.setHeader('Content-Disposition', `inline; filename="${trajectory.name}_preview.png"`);
@@ -187,6 +181,123 @@ export const getTrajectoryPreview = async (req: Request, res: Response) => {
     res.setHeader('ETag', `"${trajectory.preview}-${fileStats.mtime.getTime()}"`);
 
     res.sendFile(previewPath);
+};
+
+// Stream atom positions [x,y,z] for a given timestep by parsing the stored LAMMPS dump file (paginated)
+export const getTrajectoryAtoms = async (req: Request, res: Response) => {
+    const { timestep } = req.params as any;
+    const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
+    const pageSize = Math.max(1, Math.min(200000, parseInt((req.query.pageSize as string) || '100000', 10)));
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize; // exclusive
+    const trajectory = (res as any).locals.trajectory;
+    if (!trajectory) {
+        return res.status(400).json({ status: 'error', data: { error: 'Trajectory not found in context' } });
+    }
+
+    try{
+        const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
+        const frameFilePath = join(basePath, trajectory.folderId, `${timestep}`);
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Transfer-Encoding', 'chunked');
+
+        const { createReadStream } = await import('fs');
+        const { createInterface } = await import('readline');
+
+        const stream = createReadStream(frameFilePath, { encoding: 'utf8' });
+        const rl = createInterface({ input: stream, crlfDelay: Infinity });
+
+        let natoms: number | null = null;
+        let headerCols: string[] = [];
+        let inAtoms = false;
+        let wroteAny = false;
+        let positionsOpened = false;
+        let globalIndex = 0;
+
+        const write = (chunk: string) => {
+            if (!res.write(chunk)) return new Promise((r) => res.once('drain', r));
+            return Promise.resolve();
+        };
+
+        // Start JSON
+        await write('{');
+        await write(`"timestep": ${Number(timestep) || 0},`);
+        await write(`"page": ${page},`);
+        await write(`"pageSize": ${pageSize},`);
+
+        const colIndex = (name: string) => headerCols.findIndex((c) => c.toLowerCase() === name);
+        const findIndexFrom = (cands: string[]) => cands.map(colIndex).find((i) => i !== -1) ?? -1;
+
+        let idxX = -1, idxY = -1, idxZ = -1;
+
+        for await (const line of rl){
+            const t = line.trim();
+            if(!t) continue;
+
+            if(t === 'ITEM: NUMBER OF ATOMS'){
+                const { value: next } = await rl[Symbol.asyncIterator]().next();
+                if(typeof next === 'string'){
+                    const v = parseInt(next.trim(), 10);
+                    if(Number.isFinite(v)) natoms = v;
+                }
+                continue;
+            }
+
+            if(t.startsWith('ITEM: ATOMS')){
+                headerCols = t.replace(/^ITEM:\s*ATOMS\s*/, '').trim().split(/\s+/);
+                idxX = findIndexFrom(['x','xu','xs','xsu']);
+                idxY = findIndexFrom(['y','yu','ys','ysu']);
+                idxZ = findIndexFrom(['z','zu','zs','zsu']);
+                inAtoms = true;
+                // Write natoms (if known) and open positions array
+                if(natoms != null){
+                    await write(`"natoms": ${natoms},`);
+                }
+                await write('"positions":[');
+                positionsOpened = true;
+                continue;
+            }
+
+            if(t.startsWith('ITEM:') && inAtoms){
+                // ATOMS section ended
+                inAtoms = false;
+                break;
+            }
+
+            if(inAtoms){
+                const parts = t.split(/\s+/);
+                if(parts.length < headerCols.length) continue;
+                if(idxX < 0 || idxY < 0 || idxZ < 0) continue;
+                const x = Number(parts[idxX]);
+                const y = Number(parts[idxY]);
+                const z = Number(parts[idxZ]);
+                if(!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
+                if(globalIndex >= startIndex && globalIndex < endIndex){
+                    await write((wroteAny ? ',' : '') + `[${x},${y},${z}]`);
+                    wroteAny = true;
+                }
+                globalIndex++;
+            }
+        }
+
+        if(!positionsOpened){
+            // No ATOMS parsed; still emit positions array key
+            await write('"positions":[');
+            positionsOpened = true;
+        }
+
+        await write(']');
+        await write(`, "total": ${globalIndex}`);
+        await write('}');
+        res.end();
+    }catch(err: any){
+        console.error('getTrajectoryAtoms failed:', err);
+        if(!res.headersSent){
+            return res.status(500).json({ status: 'error', data: { error: err?.message || 'Failed to parse atoms' } });
+        }
+        try{ res.end(); }catch{}
+    }
 };
 
 export const getTrajectoryGLB = async (req: Request, res: Response) => {
@@ -214,7 +325,6 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
     res.setHeader('Content-Type', 'model/gltf+json');
     res.setHeader('Content-Length', fileStats.size);
     res.setHeader('Content-Disposition', `inline; filename="${trajectory.name}_${timestep}.glb"`);
-    // res.setHeader('Cache-Control', 'public, max-age=86400'); 
 
     res.sendFile(glbFilePath);
 };
@@ -317,7 +427,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const trajectoryProcessingQueue = getTrajectoryProcessingQueue();
 
     const CHUNK_SIZE = 20;
-    const jobs = [];
+    const jobs = [] as any[];
 
     for(let i = 0; i < validFiles.length; i += CHUNK_SIZE){
         const chunk = validFiles.slice(i, i + CHUNK_SIZE);
@@ -336,7 +446,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             folderPath,
             glbFolderPath,
             tempFolderPath: folderPath
-        };
+        } as any;
         jobs.push(job);
     }
 

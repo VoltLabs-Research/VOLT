@@ -1,13 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/Scene3D';
 import { Canvas } from '@react-three/fiber';
+import { useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import TimestepViewer from '@/components/organisms/TimestepViewer';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import CanvasWidgets from '@/components/atoms/CanvasWidgets';
 import TetrahedronLoader from '@/components/atoms/TetrahedronLoader';
 import useEditorUIStore from '@/stores/ui/editor';
-import { useParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import useModelStore from '@/stores/editor/model';
 import usePlaybackStore from '@/stores/editor/playback';
 // import useAuthStore from '@/stores/authentication';

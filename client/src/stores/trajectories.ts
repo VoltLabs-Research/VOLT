@@ -47,10 +47,15 @@ const initialState: TrajectoryState = {
     idRateSeries: [],
     isLoadingTrajectories: true,
     dislocationSeries: [],
-    metrics: {},
     cache: {},
     analysisCache: {},
-    differencesCache: {}
+    differencesCache: {},
+    atomsCache: {},
+    // Raster-related state (kept minimal here; raster logic lives in raster store)
+    rasterData: {},
+    rasterObjectUrlCache: {} as any,
+    rasterCache: {} as any,
+    isRasterLoading: false
 };
 
 export function dataURLToBlob(dataURL: string): Blob {
@@ -109,8 +114,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
     return {
         ...initialState,
         
-        metrics: null,
-        setMetrics: (data) => set({ metrics: data }),
+    // (Deprecated) metrics helpers were removed; using trajectoryMetrics instead.
 
         getTrajectories: (teamId?: string, opts?: { force?: boolean }) => {
             const key = keyForTeam(teamId);
@@ -266,6 +270,52 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 )
             );
             await Promise.allSettled(deletePromises);
+        },
+
+        // Raster helpers (stubs to satisfy interface; raster logic lives in raster store)
+        async rasterize(id: string){
+            try{ await api.post(`/raster/${id}/glb/`); } catch { /* noop */ }
+        },
+        async getRasterizedFrames(_id: string, _query?: any){
+            return null; // Not implemented here
+        },
+        clearRasterCache(_id?: string){ /* not implemented in this store */ },
+
+        // Fetch atoms positions for a given trajectory/timestep with simple cache.
+        async getFrameAtoms(trajectoryId, timestep, opts){
+            const force = !!opts?.force;
+            const page = opts?.page ?? 1;
+            const pageSize = opts?.pageSize ?? 100000;
+            const cacheKey = `${trajectoryId}:${timestep}:${page}:${pageSize}`;
+            const cached = get().atomsCache?.[cacheKey];
+            if(cached && !force){
+                return cached;
+            }
+
+            try{
+                const res = await api.get(`/trajectories/${trajectoryId}/atoms/${timestep}`, {
+                    responseType: 'json',
+                    params: { page, pageSize }
+                });
+                const data = res.data?.data || res.data; // controller might send { data } or raw
+                if(!data || !Array.isArray(data.positions)){
+                    return null;
+                }
+                const payload = {
+                    timestep: Number(data.timestep ?? timestep),
+                    natoms: typeof data.natoms === 'number' ? data.natoms : undefined,
+                    total: typeof data.total === 'number' ? data.total : undefined,
+                    page: typeof data.page === 'number' ? data.page : page,
+                    pageSize: typeof data.pageSize === 'number' ? data.pageSize : pageSize,
+                    positions: data.positions as number[][]
+                };
+                set((state) => ({
+                    atomsCache: { ...(state.atomsCache || {}), [cacheKey]: payload }
+                }));
+                return payload;
+            }catch(e){
+                return null;
+            }
         },
 
         saveTrajectoryPreview: async (id: string, dataURL: string) => {

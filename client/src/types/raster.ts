@@ -105,3 +105,21 @@ export interface SceneColumnProps{
     timestep?: number;
     delay?: number;
 }
+
+// Minimal types to satisfy imports from trajectory store types.
+// These can be expanded later if raster pagination/querying is implemented.
+export interface RasterQuery {
+    page?: number;
+    pageSize?: number;
+    analysisId?: string;
+    model?: string;
+    frames?: number[];
+}
+
+export interface RasterPage {
+    page: number;
+    pageSize: number;
+    total: number;
+    // Map of timestep -> metadata (e.g., available models)
+    frames: Record<string, any>;
+}
