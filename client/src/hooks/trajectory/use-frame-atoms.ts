@@ -30,6 +30,7 @@ export type FrameAtoms = {
     page?: number;
     pageSize?: number;
     positions: number[][];
+    types?: number[];
 };
 
 export interface UseFrameAtomsResult{

@@ -209,11 +209,12 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
         const rl = createInterface({ input: stream, crlfDelay: Infinity });
 
         let natoms: number | null = null;
-        let headerCols: string[] = [];
+    let headerCols: string[] = [];
         let inAtoms = false;
         let wroteAny = false;
         let positionsOpened = false;
         let globalIndex = 0;
+    let typesPage: number[] = [];
 
         const write = (chunk: string) => {
             if (!res.write(chunk)) return new Promise((r) => res.once('drain', r));
@@ -229,7 +230,7 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
         const colIndex = (name: string) => headerCols.findIndex((c) => c.toLowerCase() === name);
         const findIndexFrom = (cands: string[]) => cands.map(colIndex).find((i) => i !== -1) ?? -1;
 
-        let idxX = -1, idxY = -1, idxZ = -1;
+    let idxX = -1, idxY = -1, idxZ = -1, idxType = -1;
 
         for await (const line of rl){
             const t = line.trim();
@@ -249,6 +250,7 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
                 idxX = findIndexFrom(['x','xu','xs','xsu']);
                 idxY = findIndexFrom(['y','yu','ys','ysu']);
                 idxZ = findIndexFrom(['z','zu','zs','zsu']);
+                idxType = findIndexFrom(['type','atom_type','atype']);
                 inAtoms = true;
                 // Write natoms (if known) and open positions array
                 if(natoms != null){
@@ -276,6 +278,10 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
                 if(globalIndex >= startIndex && globalIndex < endIndex){
                     await write((wroteAny ? ',' : '') + `[${x},${y},${z}]`);
                     wroteAny = true;
+                    if(idxType !== -1){
+                        const t = Number(parts[idxType]);
+                        typesPage.push(Number.isFinite(t) ? t : NaN);
+                    }
                 }
                 globalIndex++;
             }
@@ -288,6 +294,9 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
         }
 
         await write(']');
+        if(typesPage.length){
+            await write(`, "types": [` + typesPage.map((v) => Number.isFinite(v) ? v : 'null').join(',') + `]`);
+        }
         await write(`, "total": ${globalIndex}`);
         await write('}');
         res.end();

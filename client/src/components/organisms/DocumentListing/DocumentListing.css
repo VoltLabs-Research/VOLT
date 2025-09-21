@@ -129,6 +129,7 @@
 
 .document-listing-cell{
     flex: 1;
+    color: #FFF;
     min-width: 120px;
     text-decoration: none;
     text-overflow: ellipsis;

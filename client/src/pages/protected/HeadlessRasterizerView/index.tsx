@@ -36,6 +36,7 @@ import RasterHeader from '@/components/molecules/raster/RasterHeader';
 import SceneColumn from '@/components/molecules/raster/SceneColumn';
 import Thumbnails from '@/components/molecules/raster/Thumbnails';
 import MetricsBar from '@/components/molecules/raster/MetricsBar';
+import FrameAtomsTable from '@/components/organisms/FrameAtomsTable';
 import './HeadlessRasterizerView.css';
 
 const HeadlessRasterizerView: React.FC = () => {
@@ -71,6 +72,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [showDislocations, setShowDislocations] = useState(false);
     const [showStructureAnalysis, setShowStructureAnalysis] = useState(false);
+    const [showParticles, setShowParticles] = useState(false);
 
     // One-time and dedupe guards
     const initializedRef = useRef(false);
@@ -385,6 +387,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const handleThumbClick = useCallback((i: number) => setFrameIndex(i), []);
     const toggleDisl = useCallback(() => setShowDislocations((v) => !v), []);
     const toggleStruct = useCallback(() => setShowStructureAnalysis((v) => !v), []);
+    const toggleParticles = useCallback(() => setShowParticles((v) => !v), []);
 
     // Derived props for children
     const playbackControlsProps: PlaybackControlsProps = useMemo(() => {
@@ -469,6 +472,16 @@ const HeadlessRasterizerView: React.FC = () => {
                 onView3D={handleView3D}
                 onSignIn={!user ? handleSignIn : undefined}
             />
+
+            {showParticles && currentTimestep && (
+                <FrameAtomsTable
+                    trajectoryId={trajectory?._id}
+                    timestep={currentTimestep}
+                    pageSize={1000}
+                    initialPage={1}
+                    decimals={3}
+                />
+            )}
 
             <div className='raster-scenes-container' style={{ position: 'relative' }}>
                 {isPreloading && (
@@ -555,6 +568,8 @@ const HeadlessRasterizerView: React.FC = () => {
                     onToggleDislocations={toggleDisl}
                     showStructureAnalysis={showStructureAnalysis}
                     onToggleStructureAnalysis={toggleStruct}
+                    showParticles={showParticles}
+                    onToggleParticles={toggleParticles}
                 />
             </div>
         </main>

@@ -25,7 +25,7 @@ export interface TrajectoryState {
     cache: Record<string, Trajectory[]>;
     analysisCache: Record<string, any>;
     differencesCache: Record<string, any>;
-    atomsCache?: Record<string, { timestep: number; natoms?: number; total?: number; page?: number; pageSize?: number; positions: number[][] }>;
+    atomsCache?: Record<string, { timestep: number; natoms?: number; total?: number; page?: number; pageSize?: number; positions: number[][]; types?: number[] }>;
 }
 
 export interface TrajectoryActions {
@@ -50,7 +50,7 @@ export interface TrajectoryActions {
         trajectoryId: string,
         timestep: number,
         opts?: { force?: boolean; page?: number; pageSize?: number }
-    ) => Promise<{ timestep: number; natoms?: number; total?: number; page?: number; pageSize?: number; positions: number[][] } | null>;
+    ) => Promise<{ timestep: number; natoms?: number; total?: number; page?: number; pageSize?: number; positions: number[][]; types?: number[] } | null>;
     getStructureAnalysis: (teamId: string, opts?: { force?: boolean }) => Promise<void>;
     setTrajectory: (trajectory: Trajectory | null) => void;
     clearError: () => void;

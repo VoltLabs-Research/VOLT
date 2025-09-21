@@ -10,7 +10,9 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
     showDislocations, 
     onToggleDislocations,
     showStructureAnalysis = false,
-    onToggleStructureAnalysis 
+    onToggleStructureAnalysis,
+    showParticles = false,
+    onToggleParticles,
 }) => {
     if(isLoading) return <MetricsBarSkeleton count={4} />;
 
@@ -33,6 +35,13 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                     className={`raster-metric-item modifier-result ${showStructureAnalysis ? "active" : ""}`}
                     onToggle={onToggleStructureAnalysis || (() => {})}
                     label='Structure Analysis'
+                />
+
+                <ToggleOption
+                    isVisible={showParticles}
+                    className={`raster-metric-item modifier-result ${showParticles ? "active" : ""}`}
+                    onToggle={onToggleParticles || (() => {})}
+                    label='Frame Particles'
                 />
             </div>
         </div>

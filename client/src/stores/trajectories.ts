@@ -225,7 +225,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 throw error;
             }
         },
-
+        setMetrics: (data) => set({ metrics: data }),
         deleteTrajectoryById: async (id: string, teamId?: string) => {
             const originalState = {
                 trajectories: get().trajectories,
@@ -307,7 +307,8 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     total: typeof data.total === 'number' ? data.total : undefined,
                     page: typeof data.page === 'number' ? data.page : page,
                     pageSize: typeof data.pageSize === 'number' ? data.pageSize : pageSize,
-                    positions: data.positions as number[][]
+                    positions: data.positions as number[][],
+                    types: Array.isArray(data.types) ? data.types as number[] : undefined
                 };
                 set((state) => ({
                     atomsCache: { ...(state.atomsCache || {}), [cacheKey]: payload }
