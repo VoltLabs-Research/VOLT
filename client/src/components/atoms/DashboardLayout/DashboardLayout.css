@@ -17,6 +17,49 @@
     gap: 1.5rem;
 }
 
+.dashboard-bell-wrapper{ position: relative; }
+.dashboard-notifications-dropdown{
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 360px;
+    max-height: 420px;
+    overflow: auto;
+    background: #1d1d1d;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+    z-index: 50;
+}
+.dashboard-notifications-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid #2a2a2a;
+    color: #ededed;
+    font-weight: 600;
+}
+.dashboard-notifications-close{
+    background: transparent;
+    color: #bdbdbd;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+}
+.dashboard-notifications-body{ padding: 6px; }
+.dashboard-notifications-empty{ color: #bdbdbd; font-size: .9rem; padding: 14px; text-align: center; }
+.dashboard-notification-item{
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s;
+}
+.dashboard-notification-item:hover{ background: #232323; }
+.dashboard-notification-item.is-read{ opacity: .8; }
+.dashboard-notification-title{ color: #eaeaea; font-weight: 600; font-size: .95rem; }
+.dashboard-notification-content{ color: #bdbdbd; font-size: .85rem; margin-top: 2px; }
+
 .badge-container.as-icon-container{
     position: unset;
     padding: .5rem;

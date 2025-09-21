@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { TbCube3dSphere } from "react-icons/tb";
 import { IoSearchOutline, IoSettingsOutline } from "react-icons/io5";
@@ -32,7 +32,9 @@ import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import useTeamStore from '@/stores/team/team';
 import useTrajectoryStore from '@/stores/trajectories';
 import ShortcutsModal from '@/components/organisms/ShortcutsModal';
+import useNotificationStore from '@/stores/notifications';
 import './DashboardLayout.css';
+import type { IconType } from 'react-icons';
 
 const DashboardLayout = () => {
     const teams = useTeamStore((state) => state.teams);
@@ -42,6 +44,9 @@ const DashboardLayout = () => {
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
+    const { notifications, fetch, markAsRead } = useNotificationStore();
+    const [notifOpen, setNotifOpen] = useState(false);
+    const bellWrapperRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if(selectedTeam === null || trajectories.length) return;
@@ -53,16 +58,36 @@ const DashboardLayout = () => {
         getUserTeams();
     }, []);
 
+    useEffect(() => {
+        if(!notifOpen) return;
+        fetch({ force: true });
+    }, [notifOpen]);
+
+    useEffect(() => {
+        if(!notifOpen) return;
+        const onDoc = (e: MouseEvent) => {
+            if(!bellWrapperRef.current) return;
+            if(!bellWrapperRef.current.contains(e.target as Node)){
+                setNotifOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', onDoc);
+        return () => document.removeEventListener('mousedown', onDoc);
+    }, [notifOpen]);
+
+    const notificationList = useMemo(() => notifications, [notifications]);
+    const navItems: Array<[string, IconType, string]> = useMemo(() => ([
+        ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
+        ['Messages', CiChat1, '/dashboard/messages'],
+        ['Studio', TbCube3dSphere, ''],
+        ['Tutorials', TbBook, '/dashboard/tutorials']
+    ]), []);
+
     return (
         <main className='dashboard-main'>
             <section className='dashboard-layout-header-container'>
                 <nav className='navigation-container'>
-                    {[
-                        ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
-                        ['Messages', CiChat1, '/dashboard/messages'],
-                        ['Studio', TbCube3dSphere, ''],
-                        ['Tutorials', TbBook, '/dashboard/tutorials'],
-                    ].map(([ name, Icon, to ], index) => (
+                    {navItems.map(([ name, Icon, to ], index) => (
                         <div 
                             className={`navigation-item-container ${(index === 0) ? 'is-selected' : ''}`}
                             key={index}
@@ -90,8 +115,29 @@ const DashboardLayout = () => {
                         <IoSettingsOutline />
                     </div>
 
-                    <div className='badge-container as-icon-container over-light-bg'>
-                        <IoNotificationsOutline />
+                    <div ref={bellWrapperRef} className='dashboard-bell-wrapper'>
+                        <div onClick={() => setNotifOpen((v) => !v)} className='badge-container as-icon-container over-light-bg dashboard-bell-trigger'>
+                            <IoNotificationsOutline />
+                        </div>
+                        {notifOpen && (
+                            <div className='dashboard-notifications-dropdown'>
+                                <div className='dashboard-notifications-header'>
+                                    <span>Notifications</span>
+                                    <button className='dashboard-notifications-close' onClick={(e) => { e.stopPropagation(); setNotifOpen(false); }}>×</button>
+                                </div>
+                                <div className='dashboard-notifications-body'>
+                                    {notificationList.length === 0 && (
+                                        <div className='dashboard-notifications-empty'>No notifications</div>
+                                    )}
+                                    {notificationList.map((n) => (
+                                        <div key={n._id} className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`} onClick={() => { if(!n.read) markAsRead(n._id); if(n.link) navigate(n.link); setNotifOpen(false); }}>
+                                            <div className='dashboard-notification-title'>{n.title}</div>
+                                            <div className='dashboard-notification-content'>{n.content}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <SidebarUserAvatar avatarrounded />

@@ -82,7 +82,8 @@ configureApp({
         'raster',
         'trajectories',
         'structure-analysis',
-        'dislocations',
+    'dislocations',
+    'notifications',
         'auth'
     ],
     middlewares: [

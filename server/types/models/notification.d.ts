@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import { Document } from 'mongoose';
+import { Document, Schema } from 'mongoose';
 
 export interface INotification extends Document{
     recipient: Schema.Types.ObjectId,

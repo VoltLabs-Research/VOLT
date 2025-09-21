@@ -3,7 +3,7 @@ import { api } from '@/services/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import type { Team } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
-import type { TeamState, UpdateTeamData } from '@/types/stores/team/team';
+import type { TeamState, TeamStore, UpdateTeamData } from '@/types/stores/team/team';
 
 const initialState: TeamState = {
     teams: [],
@@ -12,7 +12,7 @@ const initialState: TeamState = {
     error: null,
 };
 
-const useTeamStore = create<TeamState>((set, get) => {
+const useTeamStore = create<TeamStore>((set, get) => {
     const asyncAction = createAsyncAction(set, get);
 
     return {
