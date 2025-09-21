@@ -24,8 +24,6 @@
 
 .badge-container{
     position: absolute;
-    background-color: rgb(46 46 46 / 50%);
-    backdrop-filter: blur(5px);
     z-index: 300;
     padding: .5rem 1.2rem;
     border-radius: 5rem;
@@ -243,15 +241,15 @@
         display: block;
     }
     .jobs-history-viewer-enhanced {
-        position: fixed;
-        z-index: 800;
+        position: absolute;
+        z-index: 10;
         overflow: hidden;
         transition: .5s;
         cursor: pointer;
         width: 18rem;
         height: 4rem;
-        right: 2rem;
-        bottom: 2rem;
+        left: 1rem;
+        bottom: 1rem;
         border-radius: 2.25rem;
         padding: 0.875rem 1.75rem;
         background: rgba(18, 18, 18, 0.45);
@@ -260,13 +258,13 @@
         transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1), height 0.5s cubic-bezier(0.65, 0, 0.35, 1), left 0.5s cubic-bezier(0.65, 0, 0.35, 1), bottom 0.5s cubic-bezier(0.65, 0, 0.35, 1), border-radius 0.5s cubic-bezier(0.65, 0, 0.35, 1);
     }
     .jobs-history-viewer-enhanced.expanded {
-        right: 2rem;
+        left: 1rem;
         bottom: 1rem;
         border-radius: 1rem;
         padding: 0;
         cursor: default;
-    width: min(40vw, 640px);
-    height: min(44vh, 420px);
+    width: 450px;
+    height: clamp(280px, 36vh, 420px);
     }
     /* No interaction/editing modes */
     .jobs-history-dispatch-container-enhanced {
@@ -296,7 +294,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 1.5rem;
+        padding: 1rem 1.25rem;
         border-bottom: 1px solid rgba(255,255,255,0.06);
         flex-shrink: 0;
     }
@@ -304,9 +302,12 @@
     .header-content {
         flex: 1;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: .2rem;
     }
     .jobs-history-title-enhanced {
-        font-size: 1.25rem;
+        font-size: 1.2rem;
         font-weight: 800;
         color: #dadada;
         margin: 0;
@@ -343,7 +344,6 @@
     .jobs-history-viewer-body-enhanced {
         flex: 1;
         overflow-y: auto;
-        padding: 1.25rem;
     }
     /* Remove glow effect for a calmer look */
     .jobs-history-dispatch-icon-container-enhanced {
@@ -385,7 +385,8 @@
 
     /* Smaller expansion on mobile */
     .jobs-history-viewer-enhanced.expanded{
-    width: calc(100vw - 2rem);
-    height: 52vh;
+        left: 1rem;
+        width: calc(100vw - 2rem);
+        height: 52vh;
     }
 }

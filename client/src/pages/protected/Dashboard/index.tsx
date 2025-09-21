@@ -32,15 +32,15 @@ const DashboardPage: React.FC = memo(() => {
                     <div className='scene-preview-container'>
                         {(trajectory?._id && currentTimestep !== undefined) && (
                             <>
-                                <div className='badge-container scene-preview-name-badge'>
+                                <div className='badge-container scene-preview-name-badge primary-surface'>
                                     <p className='badge-text'>{trajectory.name}</p>
                                 </div>
                                 
-                                <div className='badge-container scene-preview-natoms-badge'>
+                                <div className='badge-container scene-preview-natoms-badge primary-surface'>
                                     <p className='badge-text'>{formatNumber(trajectory.frames[currentTimestep]?.natoms ?? 0)} atoms</p>
                                 </div>
 
-                                <div className='badge-container scene-preview-navigate-icon'>
+                                <div className='badge-container scene-preview-navigate-icon primary-surface'>
                                     <GoArrowRight />
                                 </div>
                             </>
@@ -57,10 +57,11 @@ const DashboardPage: React.FC = memo(() => {
                         >
                             <TimestepViewer />
                         </Scene3D>
+
+                        {/* JobsHistory pinned inside the 3D scene */}
+                        <JobsHistoryViewer />
                     </div>
                 </div>
-
-                <JobsHistoryViewer />
 
                 <div className='dashboard-body-right-container'>
                     <DashboardStats teamId={selectedTeam?._id} />

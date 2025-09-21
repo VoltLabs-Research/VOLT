@@ -1,13 +1,12 @@
 .jobs-history-container{
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 12px 8px;
     border-radius: 12px;
-    background: transparent; /* inherit glass from parent */
+    background: transparent;
 }
 
-/* Subtle separators between items without being harsh */
-.jobs-history-container > .job-container{ padding: 8px 0; }
+.jobs-history-container .MuiStack-root{
+    padding: .5rem 1rem;
+}
 
 .jobs-history-container > .job-container + .job-container{ border-top: 1px solid rgba(255, 255, 255, 0.06); }

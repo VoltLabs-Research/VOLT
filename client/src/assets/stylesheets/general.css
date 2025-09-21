@@ -67,3 +67,9 @@ input:-webkit-autofill:hover{
 .MuiSkeleton-root{
     background-color: rgb(82 82 82 / 11%) !important;
 }
+
+.primary-surface{
+    background: rgba(18, 18, 18, 0.45);
+    backdrop-filter: blur(18px) saturate(160%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
