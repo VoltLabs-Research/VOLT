@@ -34,6 +34,7 @@ import useTrajectoryStore from '@/stores/trajectories';
 import ShortcutsModal from '@/components/organisms/ShortcutsModal';
 import useNotificationStore from '@/stores/notifications';
 import './DashboardLayout.css';
+import { Skeleton } from '@mui/material';
 import type { IconType } from 'react-icons';
 
 const DashboardLayout = () => {
@@ -44,7 +45,7 @@ const DashboardLayout = () => {
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
-    const { notifications, fetch, markAsRead } = useNotificationStore();
+    const { notifications, loading, fetch, markAsRead } = useNotificationStore();
     const [notifOpen, setNotifOpen] = useState(false);
     const bellWrapperRef = useRef<HTMLDivElement | null>(null);
 
@@ -126,15 +127,26 @@ const DashboardLayout = () => {
                                     <button className='dashboard-notifications-close' onClick={(e) => { e.stopPropagation(); setNotifOpen(false); }}>×</button>
                                 </div>
                                 <div className='dashboard-notifications-body'>
-                                    {notificationList.length === 0 && (
-                                        <div className='dashboard-notifications-empty'>No notifications</div>
+                                    {loading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <div key={`notif-skel-${i}`} className='dashboard-notification-item'>
+                                                <Skeleton variant='text' width='60%' height={20} />
+                                                <Skeleton variant='text' width='90%' height={16} />
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <>
+                                            {notificationList.length === 0 && (
+                                                <div className='dashboard-notifications-empty'>No notifications</div>
+                                            )}
+                                            {notificationList.map((n) => (
+                                                <div key={n._id} className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`} onClick={() => { if(!n.read) markAsRead(n._id); if(n.link) navigate(n.link); setNotifOpen(false); }}>
+                                                    <div className='dashboard-notification-title'>{n.title}</div>
+                                                    <div className='dashboard-notification-content'>{n.content}</div>
+                                                </div>
+                                            ))}
+                                        </>
                                     )}
-                                    {notificationList.map((n) => (
-                                        <div key={n._id} className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`} onClick={() => { if(!n.read) markAsRead(n._id); if(n.link) navigate(n.link); setNotifOpen(false); }}>
-                                            <div className='dashboard-notification-title'>{n.title}</div>
-                                            <div className='dashboard-notification-content'>{n.content}</div>
-                                        </div>
-                                    ))}
                                 </div>
                             </div>
                         )}

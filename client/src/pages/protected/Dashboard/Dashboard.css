@@ -183,11 +183,11 @@
 }
 
 .dashboard-stat-icon-container{
-    background-color: #ddffdf;
+    background-image: linear-gradient(to top, #5602b6 0%, #9472cdf5 100%);
     width: 32px;
     height: 32px;
     border-radius: .5rem;
-    color: #0f7515;
+    color: #ffffff;
     font-size: 1.2rem;
 }
 
