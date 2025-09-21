@@ -122,6 +122,7 @@ set(LIBRARY_SOURCES
     src/geometry/delaunay_tessellation.cpp
     src/math/affine_decomposition.cpp
     src/utilities/json_exporter.cpp
+    src/utilities/msgpack_writer.cpp
 )
 
 add_library(opendxa_lib STATIC ${LIBRARY_SOURCES})

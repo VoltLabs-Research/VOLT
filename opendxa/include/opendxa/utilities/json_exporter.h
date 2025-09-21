@@ -29,11 +29,39 @@ public:
         const BurgersLoopBuilder* tracer,
         const std::vector<int>* structureTypes = nullptr,
         bool includeDetailedNetworkInfo = true,
-        bool includeTopologyInfo = true
+    bool includeTopologyInfo = true,
+    bool includeDislocationsInMemory = true,
+    bool includeAtomsInMemory = true
     );
 
     json exportClusterGraphToJson(const ClusterGraph* graph);
     json exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo = false, const SimulationCell* simulationCell = nullptr);
+    // Streaming writers: write directly to MessagePack to avoid large in-memory JSON
+    bool writeAtomsMsgpack(const LammpsParser::Frame& frame,
+                           const BurgersLoopBuilder* tracer,
+                           const std::vector<int>* structureTypes,
+                           const std::string& filepath,
+                           int threadCount = 1);
+
+    bool writeDislocationsMsgpack(const DislocationNetwork* network,
+                                  const SimulationCell* simulationCell,
+                                  const std::string& filepath,
+                                  bool includeDetailedInfo = false,
+                                  int threadCount = 1);
+
+    bool writeInterfaceMeshMsgpack(const InterfaceMesh* interfaceMesh,
+                                   const std::string& filepath,
+                                   bool includeTopologyInfo = true);
+
+    bool writeDefectMeshMsgpack(const HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& defectMesh,
+                                const StructureAnalysis& structureAnalysis,
+                                const std::string& filepath);
+
+    bool writeStructureStatsMsgpack(const StructureAnalysis& structureAnalysis,
+                                    const std::string& filepath);
+
+    bool writeSimulationCellMsgpack(const SimulationCell& cell,
+                                    const std::string& filepath);
     json getInterfaceMeshData(
         const InterfaceMesh* interfaceMesh,
         const StructureAnalysis& structureAnalysis,

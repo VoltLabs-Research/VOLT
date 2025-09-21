@@ -320,18 +320,20 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     // Any exception here is considered a fatal error in the exporter.
     {
         try{
-            PROFILE("JSON Exporter - Export Analysis Data");
+            PROFILE("JSON Exporter - Export Analysis Data (lightweight)");
+            // Build only lightweight parts in-memory to reduce peak RAM.
             result = _jsonExporter.exportAnalysisData(
-                networkUptr.get(), 
+                networkUptr.get(),
                 defectMesh,
-                &interfaceMesh, 
-                frame, 
-                &tracer, 
-                &extractedStructureTypes
+                &interfaceMesh,
+                frame,
+                &tracer,
+                &extractedStructureTypes,
+                /*includeDetailedNetworkInfo*/ true,
+                /*includeTopologyInfo*/ true,
+                /*includeDislocationsInMemory*/ false,
+                /*includeAtomsInMemory*/ false
             );
-            /*const int* intData = structureTypes->constDataInt();
-            size_t dataSize = structureTypes->size();
-            std::vector<int> tempVector(intData, intData + dataSize);*/
         }catch(const std::exception& e){
             result["is_failed"] = true;
             result["error"] = e.what();
@@ -346,35 +348,34 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     spdlog::debug("Json output file: {}", outputFile);
 
     if(!outputFile.empty()){
-        std::ofstream defectMeshOf(outputFile + "_defect_mesh.msgpack", std::ios::binary);
-        std::vector<std::uint8_t> defectMeshMsgPack = nlohmann::json::to_msgpack(result["defect_mesh"]);
-        defectMeshOf.write(reinterpret_cast<const char*>(defectMeshMsgPack.data()), defectMeshMsgPack.size());
-        defectMeshOf.close();
+        {
+            PROFILE("Streaming Defect Mesh MsgPack");
+            _jsonExporter.writeDefectMeshMsgpack(defectMesh, interfaceMesh.structureAnalysis(), outputFile + "_defect_mesh.msgpack");
+        }
 
-        std::ofstream atomsOf(outputFile + "_atoms.msgpack", std::ios::binary);
-        std::vector<std::uint8_t> atomsMsgPack = nlohmann::json::to_msgpack(result["atoms"]);
-        atomsOf.write(reinterpret_cast<const char*>(atomsMsgPack.data()), atomsMsgPack.size());
-        atomsOf.close();
+        {
+            PROFILE("Streaming Atoms MsgPack");
+            _jsonExporter.writeAtomsMsgpack(frame, &tracer, &extractedStructureTypes, outputFile + "_atoms.msgpack");
+        }
+        {
+            PROFILE("Streaming Dislocations MsgPack");
+            _jsonExporter.writeDislocationsMsgpack(networkUptr.get(), &frame.simulationCell, outputFile + "_dislocations.msgpack");
+        }
 
-        std::ofstream dislocationsOf(outputFile + "_dislocations.msgpack", std::ios::binary);
-        std::vector<std::uint8_t> dislocationsMsgPack = nlohmann::json::to_msgpack(result["dislocations"]);
-        dislocationsOf.write(reinterpret_cast<const char*>(dislocationsMsgPack.data()), dislocationsMsgPack.size());
-        dislocationsOf.close();
+        {
+            PROFILE("Streaming Interface Mesh MsgPack");
+            _jsonExporter.writeInterfaceMeshMsgpack(&interfaceMesh, outputFile + "_interface_mesh.msgpack", /*includeTopologyInfo*/ true);
+        }
 
-        std::ofstream interfaceMeshOf(outputFile + "_interface_mesh.msgpack", std::ios::binary);
-        std::vector<std::uint8_t> interfaceMeshMsgPack = nlohmann::json::to_msgpack(result["interface_mesh"]);
-        interfaceMeshOf.write(reinterpret_cast<const char*>(interfaceMeshMsgPack.data()), interfaceMeshMsgPack.size());
-        interfaceMeshOf.close();
+        {
+            PROFILE("Streaming Structure Stats MsgPack");
+            _jsonExporter.writeStructureStatsMsgpack(interfaceMesh.structureAnalysis(), outputFile + "_structures_stats.msgpack");
+        }
 
-        std::ofstream structuresOf(outputFile + "_structures_stats.msgpack", std::ios::binary);
-        std::vector<std::uint8_t> structuresMsgPack = nlohmann::json::to_msgpack(result["structures"]);
-        structuresOf.write(reinterpret_cast<const char*>(structuresMsgPack.data()), structuresMsgPack.size());
-        structuresOf.close();
-
-        std::ofstream simulationCellOf(outputFile + "_simulation_cell.msgpack", std::ios::binary);
-        std::vector<std::uint8_t> simulationCellMsgPack = nlohmann::json::to_msgpack(result["simulation_cell"]);
-        simulationCellOf.write(reinterpret_cast<const char*>(simulationCellMsgPack.data()), simulationCellMsgPack.size());
-        simulationCellOf.close();
+        {
+            PROFILE("Streaming Simulation Cell MsgPack");
+            _jsonExporter.writeSimulationCellMsgpack(frame.simulationCell, outputFile + "_simulation_cell.msgpack");
+        }
     }
 
     // Clean up all intermediate data to free memory before returning.
