@@ -61,6 +61,96 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         return item;
     };
 
+    private async requeueStaleRunningJobs(): Promise<void> {
+        let cursor = '0';
+        const match = `${this.statusKeyPrefix}*`;
+
+        do{
+            const resp = await this.redis.scan(cursor, 'MATCH', match, 'COUNT', 500);
+            cursor = resp[0];
+            const keys: string[] = resp[1];
+            if(keys.length === 0) continue;
+
+            const pipeline = this.redis.pipeline();
+            keys.forEach(k => pipeline.get(k));
+            const results: any = await pipeline.exec();
+
+            for(const [, raw] of results){
+                if (!raw) continue;
+                try {
+                    const data = JSON.parse(raw);
+                    if (data?.status !== 'running') continue;
+                    // reconstruimos el job a partir del status guardado
+                    const jobObj = this.deserializeJob(JSON.stringify(data)); // por si quieres validar la forma
+                    const rawData = JSON.stringify(jobObj);
+
+                    const [inQueue, inProc] = await Promise.all([
+                        this.redis.lpos(this.queueKey, rawData),
+                        this.redis.lpos(this.processingKey, rawData)
+                    ]);
+                    if(inQueue === null && inProc === null){
+                        await this.redis.lpush(this.queueKey, rawData);
+                    }
+
+                    await this.setJobStatus(data.jobId, 'requeued_after_restart', {
+                        ...jobObj,
+                        note: 'Job was running during a server restart and has been requeued safely.'
+                    });
+                }catch(_e){
+                }
+            }
+        }while(cursor !== '0');
+    }
+
+    private async withStartupLock<T>(fn: () => Promise<T>): Promise<T | undefined> {
+        const lockKey = `${this.queueKey}:startup_lock`;
+        const ttlMs = 60_000;
+        const lockVal = `${process.pid}:${Date.now()}`;
+
+        const lua = `
+            local ok = redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2], 'NX')
+            if ok then return 1 else return 0 end
+        `;
+
+        const acquired = await this.redis.eval(lua, 1, lockKey, lockVal, String(ttlMs)) as number;
+        if(acquired !== 1){
+            console.log(`[${this.queueName}] Startup recovery already running elsewhere, skipping.`);
+            return;
+        }
+
+        try{
+            return await fn();
+        }finally{
+            await this.redis.del(lockKey).catch(() => {});
+        }
+    }
+
+    private async recoverOnStartup(): Promise<void> {
+        await this.withStartupLock(async () => {
+            await this.drainProcessingIntoQueue();
+            await this.requeueStaleRunningJobs();
+        });
+    }
+
+    private async drainProcessingIntoQueue(): Promise<number>{
+        const lua = `
+            local src = KEYS[1]
+            local dst = KEYS[2]
+            local moved = 0
+            while true do
+            local v = redis.call('RPOPLPUSH', src, dst)
+            if not v then break end
+            moved = moved + 1
+            end
+            return moved
+        `;
+        const moved = await this.redis.eval(lua, 2, this.processingKey, this.queueKey) as number;
+        if(moved && moved > 0){
+            console.log(`[${this.queueName}] Recovered \${moved} jobs from processing.`);
+        }
+        return moved || 0;
+    }
+
     private scheduleScaleDown(item: WorkerPoolItem){
         const timeout = setTimeout(() => {
             if(!item.isIdle) return;
@@ -529,6 +619,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     private async initializeQueue(): Promise<void>{
         await this.scaleUp(this.minWorkers);
+        await this.recoverOnStartup(); 
         await this.startDispatchLoop();
     }
 
