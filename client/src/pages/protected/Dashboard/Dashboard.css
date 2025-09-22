@@ -374,6 +374,12 @@
         margin-top: 0.25rem;
     }
 
+
+/* TODO: */
+.trajectories-container:has(.progress-border-container) .simulation-container:has(.MuiSkeleton-root){
+    display: none;
+}
+
 @media screen and (max-width: 768px){
     .dashboard-body-left-container{
         width: 100%;
@@ -381,12 +387,67 @@
 
     .dashboard-wrapper-container{
         flex-direction: column;
+        height: unset;
     }
 
     /* Smaller expansion on mobile */
     .jobs-history-viewer-enhanced.expanded{
-        left: 1rem;
-        width: calc(100vw - 2rem);
-        height: 52vh;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 30vh;
+    }
+
+    .header-content{
+        gap: 0;
+    }
+
+    .jobs-history-title-enhanced{
+        font-size: .9rem;
+    }
+
+    .jobs-history-subtitle{
+        font-size: .8rem;
+    }
+
+    .job-name{
+        font-size: .7rem;
+    }
+
+    .job-message{
+        font-size: .75rem;
+    }
+
+    .job-status-badge{
+        font-size: .7rem;
+    }
+
+    .scene-preview-navigate-icon{
+        font-size: 1.2rem;
+        top: 0.8rem;
+    }
+
+    .scene-preview-container{
+        height: 80vh;
+    }
+
+    .badge-text{
+        font-size: .8rem;
+    }
+
+    .dashboard-body-left-header-title{
+        font-size: 2rem;
+    }
+
+    .dashboard-body-right-container{
+        width: 100%;
+    }
+
+    .dashboard-stats-container{
+        flex-direction: column;
+    }
+
+    .dashboard-stat-container{
+        width: 100%;
     }
 }

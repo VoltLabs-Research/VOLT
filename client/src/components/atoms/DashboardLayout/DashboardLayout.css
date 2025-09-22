@@ -127,4 +127,31 @@
 }
 
 @media screen and (max-width: 768px){
+    .navigation-container{
+        display: none;
+    }
+
+    .dashboard-layout-header-container{
+        padding: 1rem;
+    }
+
+    .dashboard-search-container{
+        width: 60%;
+    }
+
+    .dashboard-search-container .search-container{
+        width: 100%;
+    }
+
+    .dashboard-user-container{
+        gap: 0.5rem;
+    }
+
+    .dashboard-notifications-dropdown{
+        right: -50px;
+    }
+    
+    .dashboard-user-container .sidebar-user-details-container{
+        display: none;
+    }
 }
