@@ -9,11 +9,13 @@
 html, body{
     height: 100%;
     width: 100%;
+    background-color: #000; /* Ensure base background is black to avoid white flashes */
 }
 
 #root{
     width: 100%;
     height: 100vh;
+    background-color: transparent; /* Inherit black from body; avoid overriding with white */
 }
 
 body{
@@ -53,6 +55,7 @@ input[type=number]::-webkit-inner-spin-button {
 }
 
 input[type=number] {
+    appearance: textfield;
     -moz-appearance: textfield;
 }
 

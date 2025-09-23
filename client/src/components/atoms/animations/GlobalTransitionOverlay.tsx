@@ -16,16 +16,15 @@ const GlobalTransitionOverlay = () => {
 
     return (
         <motion.div
-            initial={{ opacity: 0.6 }}
-            animate={{ opacity: 0, transition: { duration: 0.28, ease: BALANCED_EASING } }}
-            exit={{ opacity: 0.5, transition: { duration: 0.2, ease: BALANCED_EASING } }}
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 0, transition: { duration: 0.22, ease: BALANCED_EASING } }}
+            exit={{ opacity: 0.4, transition: { duration: 0.18, ease: BALANCED_EASING } }}
             style={{
                 position: 'fixed',
                 inset: 0,
-                backdropFilter: 'blur(12px) saturate(1.1)',
+                backgroundColor: '#000',
                 pointerEvents: 'none',
                 zIndex: 1000,
-                mixBlendMode: 'overlay',
             }}
         />
     );
