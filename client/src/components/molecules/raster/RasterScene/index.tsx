@@ -73,7 +73,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
       </div>
 
       <div className="raster-scene-main">
-        {scene.data && !showModel3D && (
+        {/*scene.data && !showModel3D && (
           <div
             style={{
               position: 'absolute',
@@ -94,7 +94,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 11V13C20 17.4183 16.4183 21 12 21C7.58172 21 4 17.4183 4 13V11"></path><path d="M12 3C12 3 14.121 3 16 3C17.879 3 19.501 3 20 3C21.001 3 21 4 21 4C21 4 21 7.764 21 9.5"></path><path d="M4.5 9.5C4.5 7.764 4.5 4 4.5 4C4.5 4 4.499 3 5.5 3C5.999 3 7.621 3 9.5 3C11.379 3 13.5 3 13.5 3"></path><path d="M12 12V21"></path><path d="M12 12L16 8"></path><path d="M12 12L8 8"></path></svg>
             Double-click to view in 3D
           </div>
-        )}
+        )*/}
 
         <AnimatePresence mode="wait">
           {showUnavailable ? (

@@ -374,16 +374,8 @@
   .raster-analyses-container .raster-analysis-scene { width: 160px; height: auto; flex-shrink: 0; }
 }
 
-@media (max-width: 768px) {
-  .raster-thumbnails { gap: .5rem; }
-  .raster-thumbnail-container { width: 180px; }
-  .raster-thumbnail { width: 180px; }
-  .raster-thumbnail-timestep-container { padding: .25rem .6rem; }
-  .raster-thumbnail-timestep { font-size: .7rem; }
-}
-
 @media (max-width: 600px) {
-  .raster-scene-topbar { flex-direction: column; align-items: flex-start; gap: .5rem; }
+  .raster-scene-topbar { flex-direction: column; gap: .5rem; }
   .raster-scene-topbar-center { min-width: unset; max-width: 100%; flex: 1; }
   .btn-chip { width: 100%; justify-content: center; }
 }
@@ -520,7 +512,140 @@
 @media (max-width: 768px){
   .raster-view-container{
     overflow: scroll;
+    height: unset;
+    padding: 0;
   }
   .raster-metrics-bar{ padding: .55rem .6rem; }
   .raster-metrics-title{ display: none; }
+}
+
+.preloading-container{
+    position: 'absolute';
+    top: '1rem';
+    right: '1rem';
+    z-index: 10;
+    background: 'rgba(0, 0, 0, 0.8)';
+    padding: '0.5rem 1rem';
+    border-radius: '0.5rem';
+    font-size: '0.8rem';
+    color: 'white';
+    display: 'flex';
+    align-items: 'center';
+    gap: '0.5rem';
+}
+
+.preloading-anim{
+  width: '12px';
+  height: '12px';
+  border: '2px solid rgba(255, 255, 255, 0.3)';
+  border-top: '2px solid white';
+  border-radius: '50%';
+  animation: 'spin 1s linear infinite';
+}
+
+@media (max-width: 768px) {
+  .raster-thumbnails { gap: .5rem; overflow-y: unset; height: auto; padding: 1rem; }
+  .raster-thumbnail-container { width: 180px; height: 100px; }
+  .raster-thumbnail { width: 180px; }
+  .raster-thumbnail-timestep-container { padding: .25rem .6rem; }
+  .raster-thumbnail-timestep { font-size: .7rem; }
+  .raster-rail-container{
+    right: -1rem;
+  }
+
+  .raster-analysis-scene{
+    border: unset;
+  }
+
+  .raster-scene-header-container > div{
+    width: unset;
+  }
+
+  .raster-scene-header-container{
+    padding: 1rem 1rem 0;
+  }
+
+  .raster-scenes-top-container{
+    padding: 0 1rem;
+  }
+
+.preloading-container{
+  top: 0.5rem;
+  font-size: 0.5rem;
+}
+
+.type-legend-item{
+  font-size: .4rem;
+}
+.structure-type-legend{
+  gap: .5rem;
+}
+.type-legend-color{
+  width: 8px;
+  height: 8px;
+}
+  .raster-scene-header-title{
+    font-size: .9rem;
+  }
+
+  .raster-scene-header-last-edited{
+    font-size: .85rem;
+  }
+
+  .raster-scene-header-team-container{
+    gap: .3rem;
+  }
+
+  .raster-scene-header-go-back-icon-container{
+    width: unset;
+    padding: 0;
+  }
+
+  .raster-metric-label{
+    font-size: .8rem;
+  }
+
+  .raster-metric-icon{
+    font-size: .8rem;
+  }
+
+  .raster-metric-value{
+    font-size: .8rem;
+  }
+
+  .raster-metrics-list{
+    overflow-x: scroll;
+    flex-wrap: unset !important;
+  }
+
+  .raster-scene-header-left-container{
+    gap: 1.5rem;
+    padding: 0;
+    /* TODO: SET THIS IN DESKTOP TOO */
+    align-items: center;
+  }
+
+  .raster-scene-header-.raster-metric-item.modifier-resultlast-edited{
+    font-size: .85rem;
+  }
+
+  .raster-metrics-bar{
+    padding: 0;
+  }
+
+  .raster-scene{
+    height: unset;
+  }
+
+  .raster-metric-value{
+    width: max-content;
+  }
+  
+  .raster-metric-item.modifier-result{
+    min-width: max-content;
+  }
+
+  .raster-scene-header-search-container{
+    display: none;
+  }
 }

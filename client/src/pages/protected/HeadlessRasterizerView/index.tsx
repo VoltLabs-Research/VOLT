@@ -393,7 +393,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const playbackControlsProps: PlaybackControlsProps = useMemo(() => {
         return {
             isPlaying,
-            onPlayPause: handleGoBack
+            onPlayPause: handlePlayPause
         };
     }, [isPlaying, handlePlayPause]);
 
@@ -488,30 +488,10 @@ const HeadlessRasterizerView: React.FC = () => {
             <div className='raster-scenes-container' style={{ position: 'relative' }}>
                 {isPreloading && (
                     <div 
-                        style={{
-                            position: 'absolute',
-                            top: '1rem',
-                            right: '1rem',
-                            zIndex: 10,
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.5rem',
-                            fontSize: '0.8rem',
-                            color: 'white',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',  
-                        }}
+                        className='preloading-container'
                     >
                         <div
-                            style={{
-                                width: '12px',
-                                height: '12px',
-                                border: '2px solid rgba(255, 255, 255, 0.3)',
-                                borderTop: '2px solid white',
-                                borderRadius: '50%',
-                                animation: 'spin 1s linear infinite',
-                            }}
+                            className='preloading-anim'
                         />
 
                         Preloading frames: {preloadProgress}%
