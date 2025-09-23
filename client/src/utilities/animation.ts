@@ -73,16 +73,10 @@ export const createOverlayVariants = (isSameLayout: boolean): Variants => {
     return {
         initial: {
             opacity: 0,
-            background: isSameLayout 
-                ? 'rgba(255,255,255,0.7)' 
-                : 'radial-gradient(circle at center, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%)',
             backdropFilter: isSameLayout ? 'blur(3px)' : 'blur(10px) saturate(1.2)',
         },
         animate: {
             opacity: isSameLayout ? 0.6 : 1,
-            background: isSameLayout 
-                ? 'rgba(255,255,255,0.15)' 
-                : 'radial-gradient(circle at center, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%)',
             backdropFilter: 'blur(0px) saturate(1)',
             transition: {
                 duration: timings.enter * 0.8,
@@ -93,9 +87,6 @@ export const createOverlayVariants = (isSameLayout: boolean): Variants => {
         },
         exit: {
             opacity: 0,
-            background: isSameLayout 
-                ? 'rgba(255,255,255,0.5)' 
-                : 'radial-gradient(circle at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)',
             backdropFilter: isSameLayout ? 'blur(2px)' : 'blur(5px) saturate(1.1)',
             transition: {
                 duration: timings.exit * 0.8,

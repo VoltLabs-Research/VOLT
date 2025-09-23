@@ -22,10 +22,6 @@ const GlobalTransitionOverlay = () => {
             style={{
                 position: 'fixed',
                 inset: 0,
-                background: `
-                    radial-gradient(ellipse at top, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,1) 100%),
-                    linear-gradient(135deg, rgba(240,240,255,0.1) 0%, rgba(255,240,240,0.1) 100%)
-                `,
                 backdropFilter: 'blur(12px) saturate(1.1)',
                 pointerEvents: 'none',
                 zIndex: 1000,

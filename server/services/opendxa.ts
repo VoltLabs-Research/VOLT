@@ -56,6 +56,29 @@ const MSGPACK_OUTPUT_MAP = {
     simulation_cell: '_simulation_cell.msgpack',
 };
 
+// helper: ¿existe el archivo?
+async function fileExists(p: string): Promise<boolean> {
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// helper: lee msgpack si existe; si no, devuelve null
+async function readMsgpackOptional(p: string): Promise<any | null> {
+  if (!(await fileExists(p))) return null;
+  try {
+    return await readMsgpackFile(p);
+  } catch (err: any) {
+    // si existe pero está corrupto, loguea y devuelve null en vez de reventar todo
+    console.error(`[OpenDXAService] No se pudo decodificar ${path.basename(p)}: ${err.message}`);
+    return null;
+  }
+}
+
+
 /**
  * Extract the timestep number from a filename.
  * 
@@ -238,33 +261,40 @@ class OpenDXAService{
      * @throws If any required output file is missing or cannot be decoded.
      * @internal
      */
-    private async readOutputFiles(outputBase: string): Promise<{ frameResult: any, generatedFiles: string[] }> {
-        const frameResult: any = {};
-        const generatedFiles: string[] = [];
+   private async readOutputFiles(outputBase: string): Promise<{ frameResult: Record<string, any>, generatedFiles: string[] }> {
+  const frameResult: Record<string, any> = {};
+  const generatedFiles: string[] = [];
 
-        for(const [key, suffix] of Object.entries(MSGPACK_OUTPUT_MAP)){
-            const filePath = outputBase + suffix;
+  // Si quieres marcar algunos como realmente requeridos, ponlos aquí:
+  const REQUIRED_KEYS = new Set<string>([
+  ]);
 
-            try{
-                frameResult[key] = await readMsgpackFile(filePath);
-                generatedFiles.push(filePath);
+  for (const [key, suffix] of Object.entries(MSGPACK_OUTPUT_MAP)) {
+    const filePath = outputBase + suffix;
 
-                console.log(`[OpenDXAService] Successfully read ${key} from ${path.basename(filePath)}`);
-            }catch(readError: any){
-                console.error(`Failed to read or decode ${filePath}:`, readError.message);
-                try{
-                    const stats = await fs.stat(filePath);
-                    console.error(`File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
-                }catch(statError){
-                    // @ts-ignore
-                    console.error(`Could not get file stats: ${statError.message}`);
-                }
+    const data = await readMsgpackOptional(filePath);
+    if (data === null) {
+      const msg = (await fileExists(filePath))
+        ? 'Archivo existe pero no se pudo leer/decodificar'
+        : 'Archivo no encontrado (CLI no lo generó)';
+      console.warn(`[OpenDXAService] ${msg}: ${path.basename(filePath)} (clave: ${key})`);
 
-                throw new Error(`Could not process output file ${filePath}: ${readError.message}`);
-            }
-        }
-        return { frameResult, generatedFiles };
+      if (REQUIRED_KEYS.has(key)) {
+        // si de verdad es indispensable, ahí sí aborta con un mensaje claro
+        throw new Error(`Falta salida requerida "${key}" (${filePath}).`);
+      }
+      // si no es requerido, continúa sin agregarlo
+      continue;
     }
+
+    frameResult[key] = data;
+    generatedFiles.push(filePath);
+    console.log(`[OpenDXAService] Leído ${key} desde ${path.basename(filePath)}`);
+  }
+
+  return { frameResult, generatedFiles };
+}
+
   
     /**
      * Persists decoded data and triggers GLB exports for a single frame.
@@ -277,28 +307,51 @@ class OpenDXAService{
      * @param options - Analysis configuration used for this run.
      * @internal
      */
-    private async processFrameData(frameResult: any, timestep: number, options: ConfigParameters): Promise<void> {
-        const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
+private async processFrameData(frameResult: any, timestep: number, options: ConfigParameters): Promise<void> {
+  const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
 
-        // @ts-ignore
-        const atomsFilePath = path.join(this.trajectoryFolderPath, `grouped_atoms_${timestep}-${this.analysisConfigId}.json`);
-        //await writeGroupedJsonStreaming(atomsFilePath, atoms);
-
-        if(options?.structureIdentificationOnly){
-            this.exportAtomsColoredByType(atoms, timestep);
-            return;
-        }
-
-        await Promise.all([
-            this.exportMesh(defect_mesh, timestep, 'defect'),
-            this.exportMesh(interface_mesh, timestep, 'interface'),
-            this.exportDislocations(dislocations, timestep),
-            this.exportAtomsColoredByType(atoms, timestep),
-            this.handleSimulationCellData(simulation_cell, timestep),
-            this.handleStructuralData(structures, timestep),
-            this.handleDislocationData(dislocations, timestep)
-        ]);
+  // Si solo hay identificación de estructura, normalmente basta con los átomos
+  if (options?.structureIdentificationOnly) {
+    if (atoms) {
+      this.exportAtomsColoredByType(atoms, timestep);
+    } else {
+      console.warn(`[OpenDXAService] No hay "atoms" para exportar en timestep ${timestep}.`);
     }
+    return;
+  }
+
+  const tasks: Promise<any>[] = [];
+
+  if (defect_mesh) tasks.push(Promise.resolve(this.exportMesh(defect_mesh, timestep, 'defect')));
+  else console.warn(`[OpenDXAService] No hay defect_mesh en ${timestep}.`);
+
+  if (interface_mesh) tasks.push(Promise.resolve(this.exportMesh(interface_mesh, timestep, 'interface')));
+  else console.warn(`[OpenDXAService] No hay interface_mesh en ${timestep}.`);
+
+  if (dislocations) {
+    tasks.push(Promise.resolve(this.exportDislocations(dislocations, timestep)));
+    tasks.push(this.handleDislocationData(dislocations, timestep));
+  } else {
+    console.warn(`[OpenDXAService] No hay dislocations en ${timestep}.`);
+  }
+
+  if (atoms) tasks.push(Promise.resolve(this.exportAtomsColoredByType(atoms, timestep)));
+  else console.warn(`[OpenDXAService] No hay atoms en ${timestep}.`);
+
+  if (simulation_cell) tasks.push(this.handleSimulationCellData(simulation_cell, timestep));
+  else console.warn(`[OpenDXAService] No hay simulation_cell en ${timestep}.`);
+
+  if (structures) tasks.push(this.handleStructuralData(structures, timestep));
+  else console.warn(`[OpenDXAService] No hay structures en ${timestep}.`);
+
+  // Ejecuta lo que haya, y si algo individual falla, no tumba todo
+  const results = await Promise.allSettled(tasks);
+  for (const r of results) {
+    if (r.status === 'rejected') {
+      console.error('[OpenDXAService] Tarea individual falló:', r.reason);
+    }
+  }
+}
 
     /**
      * Upserts dislocations analytics into the database for a frame.

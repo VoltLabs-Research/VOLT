@@ -146,7 +146,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         `;
         const moved = await this.redis.eval(lua, 2, this.processingKey, this.queueKey) as number;
         if(moved && moved > 0){
-            console.log(`[${this.queueName}] Recovered \${moved} jobs from processing.`);
+            console.log(`[${this.queueName}] Recovered ${moved} jobs from processing.`);
         }
         return moved || 0;
     }

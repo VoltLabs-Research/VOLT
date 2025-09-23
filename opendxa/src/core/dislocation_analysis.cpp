@@ -332,7 +332,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
                 /*includeDetailedNetworkInfo*/ true,
                 /*includeTopologyInfo*/ true,
                 /*includeDislocationsInMemory*/ false,
-                /*includeAtomsInMemory*/ false
+                /*includeAtomsInMemory*/ true
             );
         }catch(const std::exception& e){
             result["is_failed"] = true;
@@ -349,27 +349,8 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     if(!outputFile.empty()){
         {
-            PROFILE("Streaming Defect Mesh MsgPack");
-            _jsonExporter.writeDefectMeshMsgpack(defectMesh, interfaceMesh.structureAnalysis(), outputFile + "_defect_mesh.msgpack");
-        }
-
-        {
-            PROFILE("Streaming Atoms MsgPack");
-            _jsonExporter.writeAtomsMsgpack(frame, &tracer, &extractedStructureTypes, outputFile + "_atoms.msgpack");
-        }
-        {
             PROFILE("Streaming Dislocations MsgPack");
             _jsonExporter.writeDislocationsMsgpack(networkUptr.get(), &frame.simulationCell, outputFile + "_dislocations.msgpack");
-        }
-
-        {
-            PROFILE("Streaming Interface Mesh MsgPack");
-            _jsonExporter.writeInterfaceMeshMsgpack(&interfaceMesh, outputFile + "_interface_mesh.msgpack", /*includeTopologyInfo*/ true);
-        }
-
-        {
-            PROFILE("Streaming Structure Stats MsgPack");
-            _jsonExporter.writeStructureStatsMsgpack(interfaceMesh.structureAnalysis(), outputFile + "_structures_stats.msgpack");
         }
 
         {

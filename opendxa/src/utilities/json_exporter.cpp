@@ -33,11 +33,8 @@ json DXAJsonExporter::exportAnalysisData(
     if(includeDislocationsInMemory){
         data["dislocations"] = exportDislocationsToJson(network, includeDetailedNetworkInfo, &frame.simulationCell);
     }
-    data["defect_mesh"] = getMeshData(defectMesh, interfaceMesh->structureAnalysis(), false, nullptr);
-    data["interface_mesh"] = getMeshData(*interfaceMesh, interfaceMesh->structureAnalysis(), true, interfaceMesh);
-    if(includeAtomsInMemory){
-        data["atoms"] = getAtomsData(frame, tracer, structureTypes);
-    }
+
+   
     //data["cluster_graph"] = exportClusterGraphToJson(&network->clusterGraph());
     data["simulation_cell"] = getExtendedSimulationCellInfo(frame.simulationCell);
     data["structures"] = interfaceMesh->structureAnalysis().getStructureStatisticsJson();
