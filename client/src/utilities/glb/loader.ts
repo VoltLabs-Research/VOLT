@@ -190,7 +190,7 @@ export const loadGLB = (url: string, onProgress?: (progress: number) => void): P
 
 export const preloadGLBs = (urls: string[]): void => {
     // No hacer nada - deshabilitar precarga
-    console.log('Precarga de GLBs deshabilitada:', urls.length, 'modelos');
+    //console.log('Precarga de GLBs deshabilitada:', urls.length, 'modelos');
     return;
     
     /*workerLoader.preloadGLBs(endpoints, token || undefined).catch(error => {

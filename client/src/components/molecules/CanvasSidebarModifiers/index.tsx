@@ -43,9 +43,8 @@ const CanvasSidebarModifiers = () => {
 
         // Only for those who matter
         for(const modifier of justActivated){
-            console.log('modifier', modifier);
+            logger.log('Modifier:', modifier);
             if(modifier === 'PTM' || modifier === 'CNA' || modifier === 'DIAMOND'){
-                logger.log('Activating structure identification:', modifier);
                 structureIdentification(trajectory?._id, analysisConfig, modifier);
             }else if(modifier === 'compute-analysis-differences'){
                 computeAnalyses(trajectory?._id);

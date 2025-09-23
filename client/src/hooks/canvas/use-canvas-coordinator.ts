@@ -96,17 +96,11 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
         
         // Only log every 1000ms to avoid flooding the console
         if (now - lastLogTimeRef.current > 1000) {
-            console.log('------- canvas coordinator');
-            console.log('trajectory:', trajectory);
-            console.log('current timestep:', currentTimestep);
-            console.log('analysis config:', analysisConfig);
-            console.log('------- canvas coordinator');
             lastLogTimeRef.current = now;
         }
         
         if(trajectory?._id && currentTimestep !== undefined){
             // Only log when computing, which is less frequent than render cycles
-            console.log('Compute Timestep Data');
             computeTimestepData(trajectory, currentTimestep);
 
             return () => {

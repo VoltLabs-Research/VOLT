@@ -85,12 +85,8 @@ const useModifiersStore = create<ModifiersStore>()((set, get) => {
             set({ isRenderOptionsLoading: true });
             
             try {
-                console.log(`Applying render options for trajectory ${trajectoryId}, timestep ${timestep}, analysis ${analysisId}`);
-                
                 const url = `/modifiers/render-options/dislocations/${trajectoryId}/${timestep}/${analysisId}`;
                 await api.post(url, options);
-                
-                console.log('Render options applied successfully');
                 
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 

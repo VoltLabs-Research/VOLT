@@ -108,7 +108,6 @@ class GLBWorkerLoader{
         }
 
         const response = await fetch(url, { headers });
-        console.log(response)
         if(!response.ok){
             throw new Error(`Failed to fetch GLB: ${response.status} ${response.statusText}`);
         }

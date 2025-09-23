@@ -160,15 +160,12 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     useEffect(() => {
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            console.log('x', e.altKey, e.ctrlKey, e.key);
-
             if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b'){
                 e.preventDefault();
                 toggleCanvasGrid();
             }
 
             if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'n'){
-                console.log('here');
                 e.preventDefault();
                 toggleEditorWidgets();
             }

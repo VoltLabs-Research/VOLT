@@ -23,7 +23,7 @@ const TrajectoriesListing = () => {
     }, [isLoading, trajectories])
 
     const handleMenuAction = async (action: string, item: any) => {
-        if (action === 'view') console.log('view', item)
+        //if (action === 'view')
         if (action === 'delete') await deleteTrajectoryById(item._id)
     }
 
