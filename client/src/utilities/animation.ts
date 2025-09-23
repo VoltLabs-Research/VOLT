@@ -73,11 +73,9 @@ export const createOverlayVariants = (isSameLayout: boolean): Variants => {
     return {
         initial: {
             opacity: 0,
-            backdropFilter: isSameLayout ? 'blur(3px)' : 'blur(10px) saturate(1.2)',
         },
         animate: {
             opacity: isSameLayout ? 0.6 : 1,
-            backdropFilter: 'blur(0px) saturate(1)',
             transition: {
                 duration: timings.enter * 0.8,
                 ease: BALANCED_EASING,
@@ -87,7 +85,6 @@ export const createOverlayVariants = (isSameLayout: boolean): Variants => {
         },
         exit: {
             opacity: 0,
-            backdropFilter: isSameLayout ? 'blur(2px)' : 'blur(5px) saturate(1.1)',
             transition: {
                 duration: timings.exit * 0.8,
                 ease: SMOOTH_EASING,
