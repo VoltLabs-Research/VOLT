@@ -39,15 +39,20 @@ export const checkTeamMembershipForAnalysisTrajectory = async (
         });
     }
 
+    // If the trajectory is public, allow access without auth/membership
+    const trajectory = await Trajectory.findById(analysisConfig.trajectory).select('team isPublic');
+    if(!trajectory){
+        return res.status(404).json({ status: 'error', data: { error: 'Trajectory not found' } });
+    }
+
+    if((trajectory as any).isPublic){
+        return next();
+    }
+
     // Ensure the user belongs to the team that owns the trajectory
     const userId = (req as any).user?.id;
     if(!userId){
         return res.status(401).json({ status: 'error', data: { error: 'Unauthorized' } });
-    }
-
-    const trajectory = await Trajectory.findById(analysisConfig.trajectory).select('team');
-    if(!trajectory){
-        return res.status(404).json({ status: 'error', data: { error: 'Trajectory not found' } });
     }
 
     const team = await Team.findOne({ _id: trajectory.team, members: userId }).select('_id');

@@ -5,7 +5,8 @@ import * as authMiddleware from '@/middlewares/authentication';
 
 const router = Router();
 
-router.use(authMiddleware.protect);
+// Allow public access for public trajectories while supporting authenticated users
+router.use(authMiddleware.optionalAuth);
 router.get(
     '/:id',
     middleware.checkTeamMembershipForAnalysisTrajectory,

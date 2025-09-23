@@ -26,29 +26,34 @@ import * as authMiddleware from '@middlewares/authentication';
 
 const router = Router();
 
-router.use(authMiddleware.protect);
+// For most routes we want to allow public access when the trajectory is public,
+// so we use optional authentication. Team-scoped listing remains protected.
 
 // Get all structure analyses for a team
 router.get(
     '/team/:teamId',
+    authMiddleware.protect,
     controller.getStructureAnalysesByTeam
 );
 
 // Get all structure analyses for a specific trajectory
 router.get(
     '/trajectory/:trajectoryId',
+    authMiddleware.optionalAuth,
     controller.getStructureAnalysesByTrajectory
 );
 
 // Get all structure analyses for a specific analysis config
 router.get(
     '/config/:configId',
+    authMiddleware.optionalAuth,
     controller.getStructureAnalysesByConfig
 );
 
 // Get a specific structure analysis by ID
 router.get(
     '/:analysisId',
+    authMiddleware.optionalAuth,
     controller.getStructureAnalysisById
 );
 

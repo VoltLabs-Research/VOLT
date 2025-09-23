@@ -17,7 +17,7 @@ export const getStructureAnalysisById = async (req: Request, res: Response) => {
         const analysis = await StructureAnalysis.findById(analysisId)
             .populate({
                 path: 'trajectory',
-                select: 'team name _id'
+                select: 'team name _id isPublic'
             })
             .lean();
 
@@ -28,9 +28,17 @@ export const getStructureAnalysisById = async (req: Request, res: Response) => {
             });
         }
 
-        const team = await Team.findOne({ 
-            _id: analysis.trajectory.team, 
-            members: userId 
+        // Si la trayectoria es pública, permitir acceso sin membresía
+        if ((analysis.trajectory as any)?.isPublic) {
+            return res.status(200).json({
+                status: 'success',
+                data: analysis
+            });
+        }
+
+        const team = await Team.findOne({
+            _id: (analysis.trajectory as any).team,
+            members: userId
         }).select('_id');
 
         if (!team) {
@@ -70,7 +78,7 @@ export const getStructureAnalysesByConfig = async (req: Request, res: Response) 
             .select('totalAtoms timestep analysisMethod types identifiedStructures unidentifiedStructures identificationRate createdAt trajectory')
             .populate({
                 path: 'trajectory',
-                select: 'team name _id'
+                select: 'team name _id isPublic'
             })
             .lean();
 
@@ -81,10 +89,18 @@ export const getStructureAnalysesByConfig = async (req: Request, res: Response) 
             });
         }
 
+        // Si la trayectoria es pública, permitir acceso sin membresía
+        if ((analyses[0].trajectory as any)?.isPublic) {
+            return res.status(200).json({
+                status: 'success',
+                data: { analyses }
+            });
+        }
+
         // Verificar que el usuario tenga acceso al equipo de la trayectoria del primer análisis
-        const team = await Team.findOne({ 
-            _id: analyses[0].trajectory.team, 
-            members: userId 
+        const team = await Team.findOne({
+            _id: (analyses[0].trajectory as any).team,
+            members: userId
         }).select('_id');
 
         if (!team) {
@@ -128,7 +144,7 @@ export const getStructureAnalysesByTrajectory = async (req: Request, res: Respon
         }
 
         const trajectory = await Trajectory.findById(trajectoryId)
-            .select('team')
+            .select('team isPublic')
             .lean();
 
         if (!trajectory) {
@@ -138,16 +154,19 @@ export const getStructureAnalysesByTrajectory = async (req: Request, res: Respon
             });
         }
 
-        const team = await Team.findOne({ 
-            _id: trajectory.team, 
-            members: userId 
-        }).select('_id');
+        // Si la trayectoria es pública, saltar verificación de membresía
+        if (!(trajectory as any).isPublic) {
+            const team = await Team.findOne({
+                _id: trajectory.team,
+                members: userId
+            }).select('_id');
 
-        if (!team) {
-            return res.status(403).json({
-                status: 'error',
-                data: { error: 'Forbidden. No tienes acceso a esta trayectoria.' }
-            });
+            if (!team) {
+                return res.status(403).json({
+                    status: 'error',
+                    data: { error: 'Forbidden. No tienes acceso a esta trayectoria.' }
+                });
+            }
         }
 
         const saMatch: any = { trajectory: trajectoryId };
