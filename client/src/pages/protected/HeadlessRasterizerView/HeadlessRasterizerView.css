@@ -90,13 +90,30 @@
   font-size: .9rem;
 }
 
+.dislocation-type-legend{
+  margin-top: 0;
+}
+
+.dislocation-summary-value,
+.dislocation-summary-label{
+  font-size: .5rem;
+}
+
+.dislocation-results-summary-container{
+  height: 2rem;
+  /* TODO: ADD IN DESKTOP */
+  align-items: center;
+}
+
 .raster-view-container .dislocation-results-container{
   top: unset;
   left: unset;
+  gap: 0;
   right: unset;
   bottom: 0;
   background-color: rgb(30 30 30 / 0%);
-  height: 350px;
+  height: clamp(260px, 32vh, 420px);
+  width: min(960px, 100%);
 }
 
 .raster-view-container .dislocation-results-summary-container{
@@ -288,7 +305,9 @@
   flex-direction: column;
   background: #0d0d0d;
 }
-.raster-scene{ height: clamp(360px, 52vh, 520px); }
+/* Unify raster scene height via CSS variable for easy responsive control */
+.raster-scenes-container{ --raster-scene-height: clamp(360px, 52vh, 520px); }
+.raster-scene{ height: var(--raster-scene-height); }
 
 .raster-floating-container{ position: static; background-color: transparent; }
 .raster-view-trajectory-name-container,
@@ -372,12 +391,20 @@
   .raster-analyses-container { flex-direction: row; width: 100%; overflow-x: auto; gap: .75rem; }
   .raster-analyses-container img,
   .raster-analyses-container .raster-analysis-scene { width: 160px; height: auto; flex-shrink: 0; }
+  .raster-view-container .dislocation-results-container{ width: calc(100% - 1rem); margin: 0 .5rem; }
+  /* Slightly reduce scene height on tablets */
+  .raster-scenes-container{ --raster-scene-height: clamp(300px, 46vh, 460px); }
 }
 
 @media (max-width: 600px) {
   .raster-scene-topbar { flex-direction: column; gap: .5rem; }
   .raster-scene-topbar-center { min-width: unset; max-width: 100%; flex: 1; }
   .btn-chip { width: 100%; justify-content: center; }
+  .raster-view-container .dislocation-results-container{
+    width: calc(100% - 1rem);
+    margin: 0 .5rem;
+    height: clamp(220px, 30vh, 360px);
+  }
 }
 
 /* ====== SKELETON OVERLAYS ====== */
@@ -416,7 +443,8 @@
   .raster-skel-rail{ top: auto; bottom: .5rem; transform: none; }
 }
 @media (max-width: 600px){
-  .raster-skel-select{ width: 80%; }
+  .raster-skel-select{ width: 88%; }
+  .raster-skel-rail{ right: .5rem; gap: .4rem; }
 }
 
 /* ====== METRICS BOTTOM BAR ====== */
@@ -552,6 +580,8 @@
   .raster-rail-container{
     right: -1rem;
   }
+  /* Smaller scene height on small phones */
+  .raster-scenes-container{ --raster-scene-height: clamp(220px, 40vh, 340px); }
 
   .raster-analysis-scene{
     border: unset;
@@ -563,6 +593,12 @@
 
   .raster-scene-header-container{
     padding: 1rem 1rem 0;
+  }
+
+  .raster-view-container .dislocation-results-container{
+    max-width: 300px;
+    height: 80%;
+    z-index: 999999999;
   }
 
   .raster-scenes-top-container{
@@ -584,12 +620,21 @@
   width: 8px;
   height: 8px;
 }
+
+.raster-view-container .dislocation-result-item-title,
+.dislocation-result-data{
+  font-size: .7rem;
+}
   .raster-scene-header-title{
     font-size: .9rem;
   }
 
   .raster-scene-header-last-edited{
     font-size: .85rem;
+  }
+
+  .dislocation-results-header-title{
+    font-size: .9rem;
   }
 
   .raster-scene-header-team-container{

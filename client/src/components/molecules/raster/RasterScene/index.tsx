@@ -49,11 +49,11 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             variant="rectangular"
             animation="wave"
             width="100%"
-            height="100%"
+            height="var(--raster-scene-height)"
             sx={{ borderRadius: '0.75rem', bgcolor: 'rgba(255,255,255,0.06)' }}
           />
         </div>
-        <div className="raster-scene-bottombar">
+  <div className="raster-scene-bottombar">
           <PlaybackControls {...playbackControls} />
         </div>
         <ModelRail {...modelRail} />

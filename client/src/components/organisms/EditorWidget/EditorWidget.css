@@ -21,9 +21,7 @@
     opacity: 0.5;
 }
 
-.editor-floating-container:active {
-    /*cursor: grabbing;*/
-}
+
 
 .editor-floating-header-container {
     display: flex;
@@ -48,9 +46,14 @@
 
 @media screen and (max-width: 768px) {
     .editor-floating-container {
-        left: 0;
-        width: calc(100vw - 2rem);
-        margin: 0 1rem;
-        display: none !important;
+    left: 0;
+    right: 0;
+    width: auto;
+    margin: 0 1rem 1rem;
+    padding: 1rem;
+    max-width: none;
+    transform: none !important;
+    /* keep it visible on mobile */
+    display: flex !important;
     }
 }
