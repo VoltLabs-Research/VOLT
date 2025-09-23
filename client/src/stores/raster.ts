@@ -24,19 +24,20 @@ import { create } from 'zustand';
 import { api } from '@/services/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import type { ApiResponse } from '@/types/api';
-import type { PreloadTask, RasterStore } from '@/types/stores/raster';
+import type { PreloadTask, RasterStore, RasterState } from '@/types/stores/raster';
 
-const initialState: Partial<RasterStore> = {
-	trajectory: null,
-	isLoading: false,
-	isAnalysisLoading: false,
-	analyses: {},
-	analysesNames: [],
-	selectedAnalysis: null,
-	error: null,
-	loadingFrames: new Set<string>(),
-	isPreloading: false,
-	preloadProgress: 0
+const initialState: RasterState = {
+    trajectory: null,
+    isLoading: false,
+    isAnalysisLoading: false,
+    analyses: {},
+    analysesNames: [],
+    selectedAnalysis: null,
+    error: null,
+    loadingFrames: new Set<string>(),
+    isPreloading: false,
+    preloadProgress: 0,
+    frameCache: {}
 };
 
 const useRasterStore = create<RasterStore>((set, get) => {
@@ -85,6 +86,12 @@ const useRasterStore = create<RasterStore>((set, get) => {
 
         async getRasterFrame(trajectoryId, timestep, analysisId, model){
             const cacheKey = get().getFrameCacheKey(timestep, analysisId, model);
+
+            // Serve from cache if available
+            const cached = get().frameCache?.[cacheKey];
+            if(cached){
+                return cached;
+            }
             set((state) => ({
                 loadingFrames: new Set(state.loadingFrames).add(cacheKey)
             }));
@@ -96,7 +103,11 @@ const useRasterStore = create<RasterStore>((set, get) => {
                 set((state) => {
                     const loadingFrames = new Set(state.loadingFrames);
                     loadingFrames.delete(cacheKey);
-                    return { loadingFrames }
+                    const frameCache = { ...(state.frameCache || {}) } as Record<string, string>;
+                    if(imageData){
+                        frameCache[cacheKey] = imageData;
+                    }
+                    return { loadingFrames, frameCache }
                 });
 
                 return imageData ?? null;
@@ -120,15 +131,15 @@ const useRasterStore = create<RasterStore>((set, get) => {
         },
 
         clearFrameCache(){
-            // Not caching responses. This only clears in-flight makers.
-			set({ loadingFrames: new Set() });
+            // Clear in-flight markers and memory cache
+			set({ loadingFrames: new Set(), frameCache: {} });
         },
 
         setSelectedAnalysis(id){
             set({ selectedAnalysis: id });
         },
 
-        async preloadPriorizedFrames(trajectoryId, priorityModels, currentTimestep){
+    async preloadPriorizedFrames(trajectoryId, priorityModels, currentTimestep){
             const { analyses, getFrameCacheKey, loadingFrames, isPreloading } = get();
             
             if(!analyses || !Object.keys(analyses).length || isPreloading) return;
@@ -148,12 +159,22 @@ const useRasterStore = create<RasterStore>((set, get) => {
                         // but do NOT cache results between runs.
                         if(loadingFrames.has(key)) continue;
 
+                        // skip if we already have it cached
+                        if(get().frameCache?.[key]) continue;
+
                         let score = 100;
-						if(currentTimestep !== undefined && timestep === currentTimestep) score -= 80;
-						if(priorityModels.ml && model === priorityModels.ml) score -= 30;
-						if(priorityModels.mr && model === priorityModels.mr) score -= 30;
-						if(model === 'dislocations') score -= 20;
-						if(model === 'preview') score -= 5;
+                        // strongly prefer current and nearby frames, preview models, and priority models
+                        if(currentTimestep !== undefined){
+                            const d = Math.abs(timestep - currentTimestep);
+                            if(d === 0) score -= 90;
+                            else if(d <= 1) score -= 70;
+                            else if(d <= 3) score -= 50;
+                            else if(d <= 5) score -= 30;
+                        }
+                        if(priorityModels.ml && model === priorityModels.ml) score -= 40;
+                        if(priorityModels.mr && model === priorityModels.mr) score -= 40;
+                        if(model === 'preview') score -= 25;
+                        if(model === 'dislocations') score -= 10;
 
                         tasks.push({ timestep, analysisId, model, score });
                     }
@@ -182,7 +203,9 @@ const useRasterStore = create<RasterStore>((set, get) => {
                 }));
             };
 
-            const chunk = 4;
+            // Increase concurrency dynamically based on hardware threads (fallback 8)
+            const hw = (typeof navigator !== 'undefined' && (navigator as any).hardwareConcurrency) || 8;
+            const chunk = Math.max(6, Math.min(16, hw));
             for(let i = 0; i < tasks.length; i += chunk){
                 await runBatch(tasks.slice(i, i + chunk));
             }

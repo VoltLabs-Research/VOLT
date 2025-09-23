@@ -44,6 +44,7 @@ export interface RasterState {
     loadingFrames: Set<string>;
     isPreloading: boolean;
     preloadProgress: number;
+    frameCache?: Record<string, string>;
 }
 
 export interface RasterActions{
