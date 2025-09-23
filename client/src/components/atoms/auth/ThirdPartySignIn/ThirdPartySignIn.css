@@ -4,11 +4,13 @@
     justify-content: center;
     gap: .8rem;
     width: 48%;
-    border: 1px solid #c0c0c0;
+    border: 1px solid #2a2a2a;
     border-radius: 2rem;
     cursor: pointer;
     transition: all 0.2s;
     padding: 1rem;
+    background: rgba(26,26,26,0.6);
+    color: #eaeaea;
 }
 
 .auth-third-party-account-icon{
@@ -21,8 +23,8 @@
 }
 
 .auth-third-party-account-container:hover{
-    opacity: .9;
-    border-color: rgb(31, 124, 231);
+    opacity: .95;
+    border-color: #3a3a3a;
 }
 
 @media screen and (max-width: 768px){
