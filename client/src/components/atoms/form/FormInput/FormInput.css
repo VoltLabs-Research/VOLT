@@ -8,23 +8,23 @@
 .form-input-container{
     width: 100%;
     height: 45px;
-    border: 1px solid hsl(0deg 0% 17.21%);
+    border: 1px solid var(--input-border);
     border-radius: .5rem;
     transition: all 0.2s;
 }
 
 .form-input-container:has(.form-input:focus){
-    border-color: rgb(31, 124, 231);
+    border-color: var(--input-focus-ring);
 }
 
 .form-input-container:hover{
-    border-color: rgba(31, 124, 231, 0.2);
+    border-color: color-mix(in srgb, var(--input-focus-ring) 20%, transparent);
 }
 
 .form-input-label{
     font-weight: 400;
     font-size: 13px;
-    color: hsl(0,0%,40%);
+    color: var(--color-text-secondary);
 }
 
 .form-input{
@@ -37,11 +37,11 @@
 .auth-agree-text{
     font-size: 0.85rem;
     font-weight: 400;
-    color: hsl(0,0%,40%);
+    color: var(--color-text-secondary);
 }
 
 .auth-agree-text span{
-    color: #000;
+    color: var(--accent-indigo);
     cursor: pointer;
 }
 

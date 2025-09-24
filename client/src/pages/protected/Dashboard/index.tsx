@@ -1,4 +1,4 @@
-import React, { memo, useRef } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import DashboardContainer from '@/components/atoms/DashboardContainer';
 import FileUpload from '@/components/molecules/FileUpload';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
@@ -20,6 +20,19 @@ const DashboardPage: React.FC = memo(() => {
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId: trajectories?.[0]?._id });
     const scene3DRef = useRef<Scene3DRef>(null)
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
+
+    const [isLight, setIsLight] = useState(() =>
+        typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light'
+    );
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        const root = document.documentElement;
+        const update = () => setIsLight(root.getAttribute('data-theme') === 'light');
+        update();
+        const observer = new MutationObserver(update);
+        observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+        return () => observer.disconnect();
+    }, []);
 
     return (
         <FileUpload>            
@@ -51,6 +64,7 @@ const DashboardPage: React.FC = memo(() => {
                         <Scene3D 
                             showGizmo={false}
                             ref={scene3DRef}
+                            {...(isLight ? { background: '#f8f8f8ff' } : {})}
                             showCanvasGrid={false}
                             orbitControlsConfig={{
                                 enablePan: false,

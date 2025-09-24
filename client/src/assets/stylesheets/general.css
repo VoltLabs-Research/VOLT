@@ -9,18 +9,19 @@
 html, body{
     height: 100%;
     width: 100%;
-    background-color: #000; /* Ensure base background is black to avoid white flashes */
+    background-color: var(--color-bg); /* Themed base background */
 }
 
 #root{
     width: 100%;
     height: 100vh;
-    background-color: transparent; /* Inherit black from body; avoid overriding with white */
+    background-color: transparent; /* Inherit themed bg */
 }
 
 body{
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     overflow: hidden;
+    color: var(--color-text-primary);
 }
 
 ::-webkit-scrollbar-track {
@@ -35,11 +36,11 @@ body{
 
 ::-webkit-scrollbar-thumb {
     border-radius: 0.5rem;
-    background-color: #2b2b2b;
+    background-color: var(--color-scrollbar);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background-color: #2b2b2b;
+    background-color: var(--color-scrollbar);
 }
 
 i{
@@ -62,17 +63,17 @@ input[type=number] {
 input:-webkit-autofill,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:hover{
-    -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
-    box-shadow: 0 0 0 1000px #fff inset !important;
-    -webkit-text-fill-color: #000 !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--color-autofill-bg) inset !important;
+    box-shadow: 0 0 0 1000px var(--color-autofill-bg) inset !important;
+    -webkit-text-fill-color: var(--color-autofill-text) !important;
 }
 
 .MuiSkeleton-root{
-    background-color: rgb(82 82 82 / 11%) !important;
+    background-color: color-mix(in srgb, var(--color-text-muted) 11%, transparent) !important;
 }
 
 .primary-surface{
-    background: rgba(18, 18, 18, 0.45);
+    background: var(--glass-bg);
     backdrop-filter: blur(18px) saturate(160%);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-glass);
 }

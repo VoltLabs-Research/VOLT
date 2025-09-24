@@ -32,6 +32,7 @@ import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import App from './App.tsx'
+import './assets/stylesheets/theme.css';
 import './assets/stylesheets/general.css';
 
 self.MonacoEnvironment = {
@@ -53,6 +54,17 @@ self.MonacoEnvironment = {
 };
 
 loader.config({ monaco });
+
+// Theme bootstrap: set data-theme attribute based on system preference
+(() => {
+    const root = document.documentElement;
+    const apply = (mode: 'light' | 'dark') => root.setAttribute('data-theme', mode);
+    const mq = window.matchMedia('(prefers-color-scheme: light)');
+    apply(mq.matches ? 'light' : 'dark');
+    mq.addEventListener?.('change', (e) => apply(e.matches ? 'light' : 'dark'));
+    // Optional: expose quick toggle for future settings panel
+    (window as any).__setTheme = (mode: 'light' | 'dark') => apply(mode);
+})();
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>

@@ -22,7 +22,7 @@ const PageOverlay = ({ isSameLayout }: PageOverlayProps) => {
                 pointerEvents: 'none',
                 zIndex: 0,
                 borderRadius: 'inherit',
-                background: '#000',
+                background: 'var(--color-bg)',
             }}
         />
     );

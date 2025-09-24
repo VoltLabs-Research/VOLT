@@ -1,16 +1,16 @@
 .button{
     padding: 1rem 2.5rem;
     border-radius: 2rem;
-    background-color: #212121;
-    color: #f1f1f1;
+    background-color: var(--button-bg);
+    color: var(--button-fg);
     cursor: pointer;
     transition: all 0.2s;
     position: relative;
-    border: 1px solid #2a2a2a;
+    border: 1px solid var(--button-border);
 }
 
 .button.smooth{
-    background-color: rgba(35, 35, 35, 0.7);
+    background-color: var(--button-bg-smooth);
 }
 
 .button.click-scale:active{

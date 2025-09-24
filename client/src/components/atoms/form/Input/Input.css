@@ -2,8 +2,8 @@
     width: 160px;
     height: 2rem;
     padding: 0 1rem;
-    background-color: #252525;
-    color: #dadada;
+    background-color: var(--input-bg);
+    color: var(--input-fg);
     border-radius: .5rem;
 }
 
@@ -12,7 +12,7 @@
 }
 
 .labeled-input:focus{
-    outline: 2px solid #fd5b01;
+    outline: 2px solid var(--input-focus-ring);
     outline-offset: 2px;
 }
 

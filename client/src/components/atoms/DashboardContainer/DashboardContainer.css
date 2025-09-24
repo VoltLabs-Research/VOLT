@@ -7,9 +7,10 @@
 .search-container{
     display: flex;
     gap: 1rem;
-    background-color: #212121;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface-2);
     height: 2.7rem;
-    color: #FFF;
+    color: var(--color-text-primary);
     padding: 0 1.5rem;
     border-radius: 5rem;
     width: 500px;

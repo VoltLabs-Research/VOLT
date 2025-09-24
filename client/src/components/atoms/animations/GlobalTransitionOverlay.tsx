@@ -22,7 +22,7 @@ const GlobalTransitionOverlay = () => {
             style={{
                 position: 'fixed',
                 inset: 0,
-                backgroundColor: '#000',
+                backgroundColor: 'var(--color-bg)',
                 pointerEvents: 'none',
                 zIndex: 1000,
             }}

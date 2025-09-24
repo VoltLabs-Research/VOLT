@@ -133,6 +133,12 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
         setIsAnimating(false);
     }, []);
 
+    const getCssVar = (name: string, fallback: string): string => {
+        if (typeof document === 'undefined') return fallback;
+        const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return v || fallback;
+    };
+
     const getBorderColor = useCallback((): string => {
         if(!hasJobs || shouldHideBorder){
             return 'transparent';
@@ -146,7 +152,7 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
 
         return '#dc2626';
         */
-        return '#3b82f6';
+        return getCssVar('--accent-blue', '#3b82f6');
     }, [hasJobs, shouldHideBorder, animatedCompletionRate]);
 
     const getWaitingBorder = useCallback((): string => {
@@ -163,10 +169,10 @@ const useJobProgress = (jobs: Jobs, itemId: string): JobProgressResult => {
         if(completionRate === 0) return 'none';
 
         const borderColor = hasJobs && !shouldHideBorder ? (
-            completionRate === 100 ? '#22c55e' :
-            completionRate >= 75 ? '#3b82f6' :
-            completionRate >= 50 ? '#f59e0b' :
-            completionRate >= 25 ? '#f97316' : '#dc2626'
+            completionRate === 100 ? getCssVar('--accent-green', '#22c55e') :
+            completionRate >= 75 ? getCssVar('--accent-blue', '#3b82f6') :
+            completionRate >= 50 ? getCssVar('--accent-yellow', '#f59e0b') :
+            completionRate >= 25 ? getCssVar('--accent-orange', '#f97316') : getCssVar('--accent-red', '#dc2626')
         ) : 'transparent';
         
         const degrees = (completionRate / 100) * 360;

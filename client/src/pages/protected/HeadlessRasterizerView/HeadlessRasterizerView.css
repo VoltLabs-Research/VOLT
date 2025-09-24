@@ -34,17 +34,15 @@
     border-radius: 2px;
 }
 
-.type-legend-text {
-    color: #dadada;
-}
+.type-legend-text { color: var(--color-text-primary); }
 
 /* Progress Indicator Styles */
 .preload-progress-indicator {
   position: fixed;
   top: 20px;
   right: 20px;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
+  background: var(--glass-bg);
+  color: var(--color-text-primary);
   padding: 12px 16px;
   border-radius: 8px;
   display: flex;
@@ -53,14 +51,14 @@
   z-index: 1000;
   font-size: 14px;
   backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-soft);
 }
 
 .preload-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #333;
-  border-top: 2px solid #fff;
+  border: 2px solid var(--color-border);
+  border-top: 2px solid var(--color-text-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -74,7 +72,7 @@
   height: 100%;
   overflow: hidden;
   padding: .5rem 2rem;
-  background-color: #000;
+  background-color: var(--color-bg);
 }
 
 .raster-view-container .dislocation-result-data-container{
@@ -111,14 +109,12 @@
   gap: 0;
   right: unset;
   bottom: 0;
-  background-color: rgb(30 30 30 / 0%);
+  background-color: transparent;
   height: clamp(260px, 32vh, 420px);
   width: min(960px, 100%);
 }
 
-.raster-view-container .dislocation-results-summary-container{
-  background-color: rgb(21 21 21 / 82%);
-}
+.raster-view-container .dislocation-results-summary-container{ background-color: var(--glass-bg); }
 
 .raster-scene-left-container,
 .raster-scene-right-container{
@@ -134,18 +130,15 @@
   gap: .75rem;
 }
 
-.raster-scene-header-container .search-container{
-    border: 1px solid #161616;
-    background-color: #0d0d0d;
-}
+.raster-scene-header-container .search-container{ border: 1px solid var(--color-border); background-color: var(--color-surface-2); }
 
 /* Botón Sign in */
 .btn-signin{
   position: relative;
   overflow: hidden;
-  background: radial-gradient(120% 160% at 50% 0%, #1a1a1a 0%, #0d0d0d 60%);
-  color: #dadada;
-  border: 1px solid #2a2a2a;
+  background: radial-gradient(120% 160% at 50% 0%, var(--color-surface-2) 0%, var(--color-surface-1) 60%);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
   border-radius: 9999px;
   padding: .55rem 1rem;
   display: inline-flex;
@@ -155,7 +148,7 @@
   letter-spacing: .1px;
   cursor: pointer;
   transition: transform .16s ease, box-shadow .25s ease, border-color .25s ease, background .25s ease;
-  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  box-shadow: var(--shadow-elevated);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
@@ -186,13 +179,7 @@
   pointer-events: none;
 }
 .btn-signin:hover::after{ left:120%; }
-.btn-signin:hover{
-  border-color: #3a3a3a;
-  box-shadow:
-    0 0 0 2px rgba(99,102,241,0.28),
-    0 10px 30px rgba(99,102,241,0.28),
-    0 8px 20px rgba(0,0,0,.45);
-}
+.btn-signin:hover{ border-color: var(--color-border); box-shadow: var(--shadow-elevated); }
 .btn-signin:hover .btn-signin-glow{ opacity: .9; filter: blur(14px); }
 .btn-signin:active{ transform: translateY(1px) scale(.99); }
 
@@ -256,7 +243,7 @@
 
 /* ====== Header y layout ====== */
 .raster-scene-header-container{
-  color: #dadada;
+  color: var(--color-text-primary);
   height: 80px;
   display: flex;
   justify-content: space-between;
@@ -300,10 +287,10 @@
   height: 100%;
   position: relative;
   display: flex;
-  border: 1px solid #161616;
+  border: 1px solid var(--color-border);
   border-radius: 1rem;
   flex-direction: column;
-  background: #0d0d0d;
+  background: var(--color-surface-1);
 }
 /* Unify raster scene height via CSS variable for easy responsive control */
 .raster-scenes-container{ --raster-scene-height: clamp(360px, 52vh, 520px); }
@@ -319,9 +306,9 @@
   inset: auto !important;
 }
 
-.raster-chip{ background-color: #161616; color: #dadada; padding: .5rem 1rem; border-radius: 5rem; border: 1px solid #262626; }
-.btn-chip{ background-color: #161616; color: #dadada; border: 1px solid #262626; padding: .5rem 1rem; border-radius: 5rem; display: inline-flex; align-items: center; gap: .5rem; font-size: 1rem; cursor: pointer; }
-.btn-chip:hover{ background-color: #191919; }
+.raster-chip{ background-color: var(--color-surface-2); color: var(--color-text-primary); padding: .5rem 1rem; border-radius: 5rem; border: 1px solid var(--color-border); }
+.btn-chip{ background-color: var(--color-surface-2); color: var(--color-text-primary); border: 1px solid var(--color-border); padding: .5rem 1rem; border-radius: 5rem; display: inline-flex; align-items: center; gap: .5rem; font-size: 1rem; cursor: pointer; }
+.btn-chip:hover{ background-color: var(--color-surface-3); }
 
 .raster-view-trajectory-name{ text-transform: capitalize; font-size: .95rem; }
 .raster-floating-helper-text{ font-size: .95rem; font-weight: 500; }
@@ -351,7 +338,7 @@
   display: inline-flex; gap: .5rem; align-items: center;
 }
 .raster-view-trajectory-play-icon{
-  font-size: 1.8rem; color: #dadada; cursor: pointer; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; color: var(--color-text-primary); cursor: pointer; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
 }
 
 /* Thumbnails */
@@ -360,7 +347,7 @@
 }
 .raster-thumbnail-container{
   height: 100%;
-  border: 1px solid #161616; border-radius: 1rem; background-color: #0d0d0d;
+  border: 1px solid var(--color-border); border-radius: 1rem; background-color: var(--color-surface-1);
   width: 280px; position: relative; display: flex; cursor: pointer; justify-content: center; align-items: center;
   perspective: 1000px; transform-style: preserve-3d; transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1); flex-shrink: 0;
 }
@@ -369,8 +356,8 @@
 .raster-thumbnail{ width: 280px; border-radius: 0.75rem; transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
 .raster-thumbnail-container:not(.active) .raster-thumbnail{ filter: grayscale(40%) brightness(0.8); }
 .raster-thumbnail-container:hover{ opacity: .9; }
-.raster-thumbnail-timestep-container{ position: absolute; top: .5rem; right: .5rem; background-color: #323232; padding: .5rem 1rem; border-radius: 5rem; }
-.raster-thumbnail-timestep{ color: #dadada; font-size: .8rem; }
+.raster-thumbnail-timestep-container{ position: absolute; top: .5rem; right: .5rem; background-color: var(--color-surface-2); padding: .5rem 1rem; border-radius: 5rem; }
+.raster-thumbnail-timestep{ color: var(--color-text-primary); font-size: .8rem; }
 
 /* Rail */
 .raster-rail-container{
@@ -454,19 +441,19 @@
   display: flex;
   align-items: center;
   gap: .75rem;
-  border-top: 1px solid #161616;
+  border-top: 1px solid var(--color-border);
 }
 
 .raster-metrics-title{
   display: inline-flex;
   align-items: center;
   gap: .5rem;
-  color: #d6d6d6;
+  color: var(--color-text-primary);
   font-weight: 700;
   padding: .35rem .65rem;
-  border: 1px solid #1c1c1c;
+  border: 1px solid var(--color-border);
   border-radius: 9999px;
-  background: #111;
+  background: var(--color-surface-2);
 }
 .raster-metrics-title svg{ opacity: .95; }
 
@@ -484,21 +471,29 @@
   gap: .35rem;
   padding: .55rem 1.5rem;
   height: 100%;
-  border-right: 1px solid #262626;
+  border-right: 1px solid var(--color-border);
   background-color: transparent;
-  color: #dadada;
+  color: var(--color-text-primary);
   font-size: .9rem;
 }
 
 /* --- MODIFIER RESULT: estilo base + capa aurora --- */
 .raster-metric-item.modifier-result{
-  background-color: #0d0d0d;   /* color base (se sobreescribe por Motion) */
+  background-color: var(--color-surface-1);   /* color base (se sobreescribe por Motion) */
   cursor: pointer;
   transition: .2s;
   position: relative;
   overflow: hidden;
 }
 .raster-metric-item.modifier-result:hover{ opacity: .96; }
+
+/* active state for toggle option to be theme-aware */
+.raster-metric-item.modifier-result.active{
+  background-color: var(--color-surface-2);
+  box-shadow: var(--shadow-elevated);
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+}
 
 /* Capa aurora respirando (el span interno animado) */
 .raster-metric-item.modifier-result .metric-aurora{
@@ -531,7 +526,7 @@
 .raster-metric-value{
   font-weight: 800;
   margin-left: .15rem;
-  color: #e8e8e8;
+  color: var(--color-text-primary);
   display: flex;
   justify-content: center;
   align-items: center;

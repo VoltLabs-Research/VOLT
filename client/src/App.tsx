@@ -67,7 +67,7 @@ const AuthLoadingOverlay = () => (
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(0,0,0,0.8)',
+            backgroundColor: 'var(--glass-bg)',
         }}
     >
         <Loader scale={0.7} />
@@ -86,7 +86,7 @@ const App = () => {
         minHeight: isDesktop ? undefined : '100svh',
         overflowX: 'hidden' as const,
         overflowY: isDesktop ? 'hidden' as const : 'auto' as const,
-        backgroundColor: '#000',
+    backgroundColor: 'var(--color-bg)',
         scrollBehavior: 'smooth' as const,
         isolation: 'isolate' as const,
     }), [isDesktop]);

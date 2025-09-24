@@ -29,10 +29,10 @@
     height: 6px;
     background: linear-gradient(
         to right,
-        #fff 0%,
-        #fff var(--progress),
-        #555 var(--progress),
-        #555 100%
+    #fff 0%,
+    #fff var(--progress),
+    #555 var(--progress),
+    #555 100%
     );
     border-radius: 3px;
 }
@@ -51,10 +51,10 @@
     height: 6px;
     background: linear-gradient(
         to right,
-        #fff 0%,
-        #fff var(--progress),
-        #555 var(--progress),
-        #555 100%
+    #fff 0%,
+    #fff var(--progress),
+    #555 var(--progress),
+    #555 100%
     );
     border-radius: 3px;
 }

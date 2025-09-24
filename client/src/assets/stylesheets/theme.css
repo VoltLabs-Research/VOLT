@@ -1,0 +1,107 @@
+/* Dark (default) */
+:root {
+    color-scheme: dark;
+
+    /* Core surfaces */
+    --color-bg: #000000;
+    --color-surface-1: #181818;
+    --color-surface-2: #212121;
+    --color-surface-3: #252525;
+
+    /* Text */
+    --color-text-primary: #e5e5e5;
+    --color-text-secondary: #bdbdbd;
+    --color-text-muted: #818181;
+
+    /* Borders & lines */
+    --color-border-strong: #191919;
+    --color-border: #2a2a2a;
+    --color-border-soft: rgba(255, 255, 255, 0.12);
+
+    /* Overlays / elevation */
+    --color-overlay: rgba(18, 18, 18, 0.45);
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08);
+    --shadow-elevated: 0 10px 30px rgba(0,0,0,.08), 0 6px 12px rgba(0,0,0,.06);
+
+    /* Scrollbar */
+    --color-scrollbar: #2b2b2b;
+
+    /* Autofill hack colors (keep current dark behavior) */
+    --color-autofill-bg: #ffffff;
+    --color-autofill-text: #000000;
+
+    /* Accents */
+    --accent-blue: #3b82f6;
+    --accent-indigo: #6366f1;
+    --accent-purple: #8b5cf6;
+    --accent-green: #22c55e;
+    --accent-teal: #10b981;
+    --accent-yellow: #f59e0b;
+    --accent-orange: #f97316;
+    --accent-red: #ef4444;
+    --accent-gray: #6b7280;
+
+    /* Contrasts */
+    /* for knobs/indicators on dark */
+    --color-contrast-high: #ffffff; 
+    --color-contrast-low: #555555;
+
+    /* Component tokens (map to core) */
+    --button-bg: var(--color-surface-2);
+    --button-bg-smooth: rgba(35, 35, 35, 0.7);
+    --button-fg: #f1f1f1;
+    --button-border: var(--color-border);
+
+    --input-bg: var(--color-surface-3);
+    --input-fg: var(--color-text-primary);
+    --input-border: hsl(0deg 0% 17.21%);
+    --input-focus-ring: #fd5b01; 
+
+    --badge-fg: var(--color-text-secondary);
+    --card-bg: var(--color-surface-1);
+    --glass-bg: var(--color-overlay);
+}
+
+/* Light mode */
+:root[data-theme='light'] {
+    color-scheme: light;
+
+    --color-bg: #f5f5f7; 
+    --color-surface-1: #ffffff;
+    --color-surface-2: #fafafa;
+    --color-surface-3: #f2f2f7;
+
+    --color-text-primary: #1c1c1e;
+    --color-text-secondary: #3a3a3c;
+    --color-text-muted: #6b7280;
+
+    --color-border-strong: #e5e7eb;
+    --color-border: #e5e7eb;
+    --color-border-soft: rgba(0, 0, 0, 0.06);
+
+    --color-overlay: rgba(255, 255, 255, 0.72);
+    --shadow-glass: 0 12px 40px rgba(0, 0, 0, 0.10);
+    --shadow-elevated: 0 12px 32px rgba(0,0,0,.10), 0 6px 14px rgba(0,0,0,.06);
+
+    --color-scrollbar: #c7c7cc;
+
+    --color-contrast-high: #111111;
+    --color-contrast-low: #d1d5db;
+
+    --color-autofill-bg: #ffffff;
+    --color-autofill-text: #111111;
+
+    --button-bg: var(--color-surface-1);
+    --button-bg-smooth: rgba(255, 255, 255, 0.7);
+    --button-fg: var(--color-text-primary);
+    --button-border: var(--color-border);
+
+    --input-bg: #ffffff;
+    --input-fg: var(--color-text-primary);
+    --input-border: var(--color-border);
+    --input-focus-ring: #0a84ff; 
+
+    --badge-fg: var(--color-text-secondary);
+    --card-bg: var(--color-surface-1);
+    --glass-bg: rgba(255, 255, 255, 0.6);
+}

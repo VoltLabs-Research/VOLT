@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background-color: #0c0c0c;
+    background-color: var(--color-bg);
 }
 
 .dashboard-layout-header-container{
@@ -25,11 +25,11 @@
     width: 360px;
     max-height: 420px;
     overflow: auto;
-    background: rgb(18 18 18 / 80%);
+    background: var(--glass-bg);
     backdrop-filter: blur(7px);
-    border: 1px solid #222222;
+    border: 1px solid var(--color-border);
     border-radius: 12px;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+    box-shadow: var(--shadow-elevated);
     z-index: 50;
 }
 
@@ -38,29 +38,29 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 12px;
-    border-bottom: 1px solid #2a2a2a;
-    color: #ededed;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-primary);
     font-weight: 600;
 }
 .dashboard-notifications-close{
     background: transparent;
-    color: #bdbdbd;
+    color: var(--color-text-secondary);
     border: none;
     font-size: 18px;
     cursor: pointer;
 }
 .dashboard-notifications-body{ padding: 6px; }
-.dashboard-notifications-empty{ color: #bdbdbd; font-size: .9rem; padding: 14px; text-align: center; }
+.dashboard-notifications-empty{ color: var(--color-text-secondary); font-size: .9rem; padding: 14px; text-align: center; }
 .dashboard-notification-item{
     padding: 10px 12px;
     border-radius: 10px;
     cursor: pointer;
     transition: background .15s;
 }
-.dashboard-notification-item:hover{ background: rgb(46 46 46 / 24%); }
+.dashboard-notification-item:hover{ background: color-mix(in srgb, var(--color-text-primary) 12%, transparent); }
 .dashboard-notification-item.is-read{ opacity: .8; }
-.dashboard-notification-title{ color: #eaeaea; font-weight: 600; font-size: .95rem; }
-.dashboard-notification-content{ color: #bdbdbd; font-size: .85rem; margin-top: 2px; }
+.dashboard-notification-title{ color: var(--color-text-primary); font-weight: 600; font-size: .95rem; }
+.dashboard-notification-content{ color: var(--color-text-secondary); font-size: .85rem; margin-top: 2px; }
 
 .badge-container.as-icon-container{
     position: unset;
@@ -68,22 +68,23 @@
     width: 2.5rem;
     height: 2.5rem;
     display: flex;
-    background-color: rgb(46 46 46 / 50%);
+    background-color: var(--glass-bg);
     backdrop-filter: blur(5px);
     justify-content: center;
     align-items: center;
 }
 
 .badge-container.as-icon-container.over-light-bg{
-    color: rgb(225 225 225);
-    border-color: #212121;
+    color: var(--color-text-primary);
+    border-color: var(--color-border);
 }
 
 .navigation-container{
     display: flex;
     align-items: center;
     gap: .5rem;
-    background-color: #212121;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface-2);
     width: fit-content;
     border-radius: 5rem;
     padding: 5px;
@@ -109,7 +110,7 @@
 }
 
 .navigation-item-container.is-selected{
-    background-color: #FFF;
+    background-color: var(--color-surface-1);
 }
 
 .navigation-item-container.is-selected .navigation-item-icon{
@@ -119,11 +120,11 @@
 .navigation-item-name{
     font-size: .95rem;
     font-weight: 500;
-    color: #5e5e5e;
+    color: var(--color-text-secondary);
 }
 
 .navigation-item-container.is-selected .navigation-item-name{
-    color: #212121;
+    color: var(--color-text-primary);
 }
 
 @media screen and (max-width: 768px){

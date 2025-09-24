@@ -35,3 +35,8 @@
     height: 100%;
     width: 100%;
 }
+
+/* Light mode override: make simulation container content white */
+:root[data-theme='light'] .container-content{
+    background: #ffffff;
+}

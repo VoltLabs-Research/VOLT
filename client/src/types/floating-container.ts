@@ -24,11 +24,22 @@ import type { ReactNode, MouseEvent, CSSProperties } from 'react';
 
 export interface FloatingMenuOption {
     name: string;
-    Icon: React.ComponentType;
+    Icon: React.ComponentType<any>;
     onClick: () => void;
 }
 
-export type FloatingMenuOptions = [string, React.ComponentType, () => void][];
+export type FloatingMenuTuple = [string, React.ComponentType<any>, () => void];
+
+export interface FloatingMenuItemConfig {
+    id?: string | number;
+    label: string;
+    icon: React.ComponentType<any>;
+    onClick?: () => void;
+    className?: string;
+    danger?: boolean;
+}
+
+export type FloatingMenuOptions = Array<FloatingMenuTuple | FloatingMenuItemConfig>;
 
 export interface ViewportDimensions {
     width: number;
@@ -72,9 +83,11 @@ export interface FloatingMenuProps {
 
 export interface FloatingMenuItemProps {
     name: string;
-    Icon: React.ComponentType;
+    Icon: React.ComponentType<any>;
     onClick: () => void;
     onItemClick: (originalOnClick: () => void, event: MouseEvent) => void;
+    className?: string;
+    danger?: boolean;
 }
 
 export enum PositioningStrategy {

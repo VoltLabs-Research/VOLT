@@ -2,9 +2,9 @@
     display: flex;
     width: 100%;
     border-radius: .5rem;
-    border: 1px solid #191919;
-    box-shadow: -1px 1px 3px 0 #0f0f0f;
-    background-color: #00000000;
+    border: 1px solid var(--color-border-strong);
+    box-shadow: var(--shadow-elevated);
+    background-color: transparent;
 }
 
 .dashboard-body-left-container{
@@ -27,7 +27,7 @@
     z-index: 300;
     padding: .5rem 1.2rem;
     border-radius: 5rem;
-    color: #dadada;
+    color: var(--badge-fg);
     display: flex;
     align-items: center;
     gap: .5rem;
@@ -58,7 +58,7 @@
 .scene-preview-container{
     position: relative;
     height: 100vh;
-    box-shadow: 0 0 3px 0 #4f4f4f;
+    box-shadow: var(--shadow-elevated);
     width: 100%;
     border-radius: 1rem;
     overflow: hidden;
@@ -66,12 +66,12 @@
 
 .dashboard-body-left-header-title{
     font-size: 2rem;
-    color: #dadada;
+    color: var(--color-text-primary);
     font-weight: 550;
 }
 
 .dashboard-stat-title{
-    color: #dadada;
+    color: var(--color-text-primary);
 }
 
 .dashboard-stat-arrow-icon-container{
@@ -81,7 +81,7 @@
     font-size: 1.5rem;
     opacity: 0;
     transition: 0.15s;
-    color: #bebebe;
+    color: var(--color-text-secondary);
 }
 
 .dashboard-stat-container:hover .dashboard-stat-arrow-icon-container{
@@ -102,12 +102,12 @@
 }
 
 .dashboard-stat-container:not(:last-child){
-    border-right: 1px solid #191919;
+    border-right: 1px solid var(--color-border-strong);
 }
 
 .dashboard-stat-count{
     font-size: 1.6rem;
-    color: #dadada;
+    color: var(--color-text-primary);
 }
 
 .raster-frame-container{
@@ -116,7 +116,7 @@
 }
 
 .raster-frame-caption-container{
-    background-color: #1b1b1b;
+    background-color: var(--color-surface-1);
     border-radius: 2rem;
     padding: .2rem;
     font-size: .9rem;
@@ -167,7 +167,7 @@
 
 .dashboard-stat-last-month-title{
     font-size: .9rem;
-    color: #dadada;
+    color: var(--color-text-primary);
 }
 
 .dashboard-stat-last-month-container{
@@ -252,9 +252,9 @@
         bottom: 1rem;
         border-radius: 2.25rem;
         padding: 0.875rem 1.75rem;
-        background: rgba(18, 18, 18, 0.45);
-        backdrop-filter: blur(18px) saturate(160%);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px) saturate(160%);
+    box-shadow: var(--shadow-glass);
         transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1), height 0.5s cubic-bezier(0.65, 0, 0.35, 1), left 0.5s cubic-bezier(0.65, 0, 0.35, 1), bottom 0.5s cubic-bezier(0.65, 0, 0.35, 1), border-radius 0.5s cubic-bezier(0.65, 0, 0.35, 1);
     }
     .jobs-history-viewer-enhanced.expanded {
@@ -295,7 +295,7 @@
         align-items: center;
         justify-content: space-between;
         padding: 1rem 1.25rem;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid var(--color-border-soft);
         flex-shrink: 0;
     }
     /* Remove edit-mode backgrounds */
@@ -309,12 +309,12 @@
     .jobs-history-title-enhanced {
         font-size: 1.2rem;
         font-weight: 800;
-        color: #dadada;
+    color: var(--color-text-primary);
         margin: 0;
     }
     .jobs-history-subtitle {
         font-size: 0.8rem;
-        color: #c2c2c2;
+    color: var(--color-text-secondary);
         margin-top: 0.25rem;
         white-space: nowrap;
         overflow: hidden;
@@ -328,9 +328,9 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255,255,255,0.12);
-        color: #d1d5db;
+    background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+    border: 1px solid var(--color-border-soft);
+    color: var(--color-text-secondary);
         cursor: pointer;
         font-size: 1.125rem;
         transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -338,7 +338,7 @@
     }
     .close-button-enhanced:hover {
         transform: scale(1.08);
-        color: #fff;
+    color: var(--color-text-primary);
         background: rgba(239, 68, 68, 0.85);
     }
     .jobs-history-viewer-body-enhanced {
@@ -348,8 +348,8 @@
     /* Remove glow effect for a calmer look */
     .jobs-history-dispatch-icon-container-enhanced {
     align-items: center;
-    background: rgba(255,255,255,0.08);
-    color: #eaeaea;
+    background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+    color: var(--color-text-primary);
     border-radius: 12px;
     font-size: 1.5rem;
     display: flex;
@@ -365,12 +365,12 @@
     .jobs-history-dispatch-title-enhanced {
         font-size: 1rem;
         font-weight: 700;
-        color: #e9e9e9;
+    color: var(--color-text-primary);
         margin: 0;
     }
     .jobs-dispatch-subtitle {
         font-size: 0.8rem;
-        color: #bdbdbd;
+    color: var(--color-text-secondary);
         margin-top: 0.25rem;
     }
 

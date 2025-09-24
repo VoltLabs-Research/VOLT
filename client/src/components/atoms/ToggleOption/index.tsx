@@ -13,19 +13,18 @@ const ToggleOption: React.FC<any> = ({ className, label, isVisible, onToggle }) 
             aria-pressed={isVisible}
             initial={false}
             animate={{
-                backgroundColor: isVisible ? "#161616" : "#0d0d0d",
+                backgroundColor: isVisible ? "var(--color-surface-2)" : "var(--color-surface-1)",
                 boxShadow: isVisible
-                    ? "0 0 0 1px rgba(99,102,241,.45), 0 10px 30px rgba(0,0,0,.35)"
+                    ? "var(--shadow-elevated)"
                     : "0 0 0 rgba(0,0,0,0)"
             }}
             transition={{
-                duration: 4.2,
-                ease: 'easeInOut',
-                repeat: Infinity
+                duration: 0.25,
+                ease: 'easeInOut'
             }}
             whileHover={{
                 scale: 1.02,
-                boxShadow: "0 0 0 1px rgba(99,102,241,.35), 0 10px 30px rgba(0,0,0,.35)"
+                boxShadow: "0 0 0 1px var(--color-border), var(--shadow-elevated)"
             }}
         >
             <motion.span

@@ -109,6 +109,7 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
                             key={option.id || index}
                             name={option.label}
                             Icon={option.icon}
+                            onClick={option.onClick || (() => {})}
                             onItemClick={onItemClick}
                             className={option.className}
                             danger={option.danger}
