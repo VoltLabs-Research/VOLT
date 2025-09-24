@@ -1,0 +1,33 @@
+.raster-scene-topbar-right{
+    position: relative;
+    margin-left: auto;
+}
+
+.raster-scene-download-menu{
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background: var(--glass-bg, rgba(0,0,0,0.5));
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-soft, rgba(255,255,255,0.12));
+    border-radius: 12px;
+    padding: 6px;
+    z-index: 50;
+    min-width: 220px;
+}
+
+.raster-scene-download-menu button{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    width: 100%;
+    background: transparent;
+    color: var(--color-text-primary, #fff);
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+}
+.raster-scene-download-menu button[disabled]{ cursor: not-allowed; opacity: .6; }
+.raster-scene-download-menu button:hover{ background: var(--color-surface-2, rgba(255,255,255,.06)); }

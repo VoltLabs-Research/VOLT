@@ -27,6 +27,7 @@
     "@msgpack/msgpack": "^3.1.2",
     "@tensorflow/tfjs-node": "^4.22.0",
     "@tensorflow/tfjs-node-gpu": "^4.22.0",
+    "adm-zip": "^0.5.16",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "bull": "^4.16.5",

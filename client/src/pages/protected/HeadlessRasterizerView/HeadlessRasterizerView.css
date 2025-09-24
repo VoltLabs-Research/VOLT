@@ -315,11 +315,17 @@
 
 /* Barras internas */
 .raster-scene-topbar{
-  display: flex; align-items: center; justify-content: center;
-  gap: .75rem; padding: .5rem .75rem; width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: .75rem;
+  padding: .5rem .75rem;
+  width: 100%;
 }
 .raster-scene-topbar-center{
-  min-width: 200px; display: flex; justify-content: center; align-items: center; max-width: 520px; flex: 0 1 40%;
+  grid-column: 2;
+  justify-self: center;
+  min-width: 200px; display: flex; justify-content: center; align-items: center; max-width: 520px;
 }
 .raster-analysis-selection-container .rh-select-value{ font-size: .9rem; font-weight: 500; }
 .raster-analysis-selection-container .rh-select-trigger{ padding: .6rem 1.25rem; }
@@ -384,7 +390,7 @@
 }
 
 @media (max-width: 600px) {
-  .raster-scene-topbar { flex-direction: column; gap: .5rem; }
+  .raster-scene-topbar { display: flex; flex-direction: column; gap: .5rem; }
   .raster-scene-topbar-center { min-width: unset; max-width: 100%; flex: 1; }
   .btn-chip { width: 100%; justify-content: center; }
   .raster-view-container .dislocation-results-container{

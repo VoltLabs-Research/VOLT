@@ -21,7 +21,7 @@
 **/
 
 import { Router } from 'express';
-import multer from 'multer';
+import multer, { FileFilterCallback } from 'multer';
 import * as controller from '@controllers/trajectories';
 import * as middleware from '@middlewares/trajectory';
 import * as authMiddleware from '@middlewares/authentication';
@@ -32,10 +32,10 @@ const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
         // TODO: from env?
-        fileSize: process.env.MAX_FILE_SIZE,
-        files: process.env.MAX_FILES
+        fileSize: process.env.MAX_FILE_SIZE ? Number(process.env.MAX_FILE_SIZE) : undefined,
+        files: process.env.MAX_FILES ? Number(process.env.MAX_FILES) : undefined
     },
-    fileFilter: (req, file, cb) => {
+    fileFilter: (req, file, cb: FileFilterCallback) => {
         cb(null, true);
     }
 });
@@ -46,11 +46,11 @@ const previewUpload = multer({
         fileSize: 10 * 1024 * 1024,
         files: 1
     },
-    fileFilter: (req, file, cb) => {
+    fileFilter: (req, file, cb: FileFilterCallback) => {
         if(file.mimetype.startsWith('image/')){
             cb(null, true);
         }else{
-            cb(new Error('Only image files are allowed'), false);
+            cb(new Error('Only image files are allowed') as any, false);
         }
     }
 });
@@ -104,6 +104,13 @@ router.get(
     authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory,
     controller.listTrajectoryGLBFiles
+);
+
+router.get(
+    '/:id/glb-archive',
+    authMiddleware.optionalAuth,
+    middleware.checkTeamMembershipForTrajectory,
+    controller.downloadTrajectoryGLBArchive
 );
 
 router.route('/:id')

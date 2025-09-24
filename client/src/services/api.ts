@@ -47,3 +47,39 @@ api.interceptors.request.use((config) => {
 },(error) => {
     return Promise.reject(error);
 });
+
+export async function downloadBlob(url: string, filename: string){
+    const token = localStorage.getItem('authToken');
+    const res = await axios.get(url, {
+        baseURL: API_BASE_URL,
+        responseType: 'blob',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    const blob = res.data as Blob;
+    const a = document.createElement('a');
+    const objectUrl = URL.createObjectURL(blob);
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objectUrl);
+}
+
+export async function downloadJson(url: string, filename: string){
+    const token = localStorage.getItem('authToken');
+    const res = await axios.get(url, {
+        baseURL: API_BASE_URL,
+        responseType: 'json',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    const blob = new Blob([JSON.stringify(res.data?.data ?? res.data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    const objectUrl = URL.createObjectURL(blob);
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objectUrl);
+}

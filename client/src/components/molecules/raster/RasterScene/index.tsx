@@ -6,9 +6,12 @@ import { Skeleton } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlaybackControls from '@/components/atoms/raster/PlaybackControls';
 import ModelRail from '@/components/atoms/raster/ModelRail';
+import { downloadBlob, downloadJson } from '@/services/api';
+import './RasterScene.css';
 
 const RasterScene: React.FC<RasterSceneProps> = ({
   scene,
+  trajectoryId,
   disableAnimation,
   isLoading,
   playbackControls,
@@ -16,7 +19,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   modelRail,
 }) => {
   const [showUnavailable, setShowUnavailable] = React.useState(false);
-  const [showModel3D, setShowModel3D] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
     setShowUnavailable(false);
@@ -30,8 +33,18 @@ const RasterScene: React.FC<RasterSceneProps> = ({
     setShowUnavailable(false);
   }, [scene?.isUnavailable]);
 
-  const handleDoubleClick = () => {
-    if (scene?.analysisId) setShowModel3D(true);
+  const handleDoubleClick = () => {};
+
+  const canDownload = !!trajectoryId;
+  const handleDownloadDislocations = async () => {
+    if(!scene?.analysisId) return;
+    await downloadJson(`/analysis-config/${scene.analysisId}/dislocations`, `dislocations_${scene.analysisId}.json`);
+    setIsMenuOpen(false);
+  };
+  const handleDownloadGLBZip = async () => {
+    if(!trajectoryId) return;
+    await downloadBlob(`/trajectories/${trajectoryId}/glb-archive`, `trajectory_${trajectoryId}_glbs.zip`);
+    setIsMenuOpen(false);
   };
 
   if (isLoading && !scene?.data) return <RasterSceneSkeleton />;
@@ -69,6 +82,34 @@ const RasterScene: React.FC<RasterSceneProps> = ({
       <div className="raster-scene-topbar">
         <div className="raster-scene-topbar-center">
           <AnalysisSelect {...analysisSelect} />
+        </div>
+        <div className="raster-scene-topbar-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            aria-label="Download"
+            title="Download"
+            onClick={() => setIsMenuOpen(v => !v)}
+            disabled={!canDownload}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--color-text-primary, #fff)',
+              cursor: canDownload ? 'pointer' : 'not-allowed',
+              padding: 6,
+              borderRadius: 8,
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          {isMenuOpen && (
+            <div className="raster-scene-download-menu">
+              <button onClick={handleDownloadDislocations} disabled={!scene?.analysisId}>
+                <span>Dislocations data (JSON)</span>
+              </button>
+              <button onClick={handleDownloadGLBZip} disabled={!canDownload}>
+                <span>Frames GLBs (zip)</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
