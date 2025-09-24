@@ -64,14 +64,13 @@ const padSeries = (baseLabels: string[], series: number[], desired = 12) => {
     return { labels, series: full };
 };
 
-const fetchOnce = (teamId?: string, signal?: AbortSignal) => {
+const fetchOnce = (teamId?: string) => {
     const key = keyOf(teamId);
     if(inFlight.has(key)) return inFlight.get(key)!;
 
     const p = api
         .get<ApiResponse<TrajectoryMetrics>>('/trajectories/metrics', {
-            params: teamId ? { teamId } : undefined,
-            signal
+            params: teamId ? { teamId } : undefined
         })
         .then((res) => res.data.data)
         .finally(() => { inFlight.delete(key); });
@@ -111,16 +110,18 @@ export const useDashboardMetrics = (
         setLoading(true);
         setError(null);
 
-        (async () => {
+    (async () => {
             try{
-                const payload = await fetchOnce(teamId, controller.signal);
+        const payload = await fetchOnce(teamId);
                 if(controller.signal.aborted) return;
 
                 cache.set(key, { data: payload, fetchedAt: Date.now() });
                 setData(payload);
                 setError(null);
             }catch(err: any){
-                if(controller.signal.aborted){
+        // Treat both local aborts and axios cancel-like errors as non-fatal
+        const isCanceled = controller.signal.aborted || err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError' || String(err?.message || '').toLowerCase() === 'canceled';
+        if(isCanceled){
                     // Avoid a stuck spinner on aborts.
                     setLoading(false);
                     return;
