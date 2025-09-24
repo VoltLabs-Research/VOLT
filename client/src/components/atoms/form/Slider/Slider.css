@@ -67,3 +67,12 @@
     width: 80px;
     height: 4px;
 }
+
+@media screen and (max-width: 768px){
+    .editor-timestep-controls{
+        position: absolute;
+        width: fit-content !important       ;
+        left: 50%;
+        transform: translateX(-50%) !important;
+    }
+}

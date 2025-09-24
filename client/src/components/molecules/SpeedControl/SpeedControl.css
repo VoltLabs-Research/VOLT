@@ -13,7 +13,10 @@
 @media screen and (max-width: 768px) {
     .editor-timesteps-controls-speed {
         min-width: 80px;
-        flex: 1;
+    }
+
+    .editor-timesteps-controls-speed input[type='range']{
+        width: 2.5rem;
     }
     
     .editor-timesteps-controls-speed label {
