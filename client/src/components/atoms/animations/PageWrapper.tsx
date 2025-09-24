@@ -44,17 +44,17 @@ const PageWrapper = ({ children }: PageWrapperProps) => {
         >
             <PageOverlay isSameLayout={isSameLayout} />
 
-            <motion.div
+        <motion.div
                 variants={contentVariants}
                 initial="initial"
                 animate="animate"
                 style={{
                     position: 'relative',
                     width: '100%',
-                    height: '100%',
+            height: '100%',
                     zIndex: 1,
                     borderRadius: 'inherit',
-                    overflow: 'auto',
+            overflow: typeof window !== 'undefined' && window.innerWidth > 768 ? 'auto' : 'visible',
                 }}
             >
                 {children}

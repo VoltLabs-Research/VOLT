@@ -114,7 +114,6 @@ const AnalysisConfigsListing = () => {
       isLoading={isLoading}
       onMenuAction={handleMenuAction}
       getMenuOptions={getMenuOptions}
-      showSearch={true}
       emptyMessage='No analysis configs found'
     />
   )

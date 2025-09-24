@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RiEyeLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig, formatNumber, MethodBadge } from '@/components/organisms/DocumentListing';
 import useTeamStore from '@/stores/team/team';
@@ -29,7 +29,7 @@ const DislocationsListing = () => {
     if (!isLoading) setData(rows || []);
   }, [isLoading, rows]);
 
-  const handleMenuAction = async (action: string, item: any) => {
+  const handleMenuAction = async (action: string, _item: any) => {
     if (action === 'view') {
     }
   };
@@ -116,7 +116,6 @@ const DislocationsListing = () => {
       isLoading={isLoading}
       onMenuAction={handleMenuAction}
       getMenuOptions={getMenuOptions}
-      showSearch
       emptyMessage='No dislocations found'
     />
   );

@@ -96,7 +96,6 @@ const SimulationCellsListing = () => {
       isLoading={isLoading}
       onMenuAction={handleMenuAction}
       getMenuOptions={getMenuOptions}
-      showSearch
       emptyMessage='No simulation cells found'
     />
   );

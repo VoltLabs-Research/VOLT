@@ -23,7 +23,7 @@ const StructureAnalysisListing = () => {
         setData(flat)
     }, [isLoading, structureAnalysis])
 
-    const handleMenuAction = (action: string, item: any) => {
+    const handleMenuAction = (action: string, _item: any) => {
         switch (action) {
             case 'view':
                 break
@@ -105,7 +105,6 @@ const StructureAnalysisListing = () => {
             isLoading={isLoading}
             onMenuAction={handleMenuAction}
             getMenuOptions={getMenuOptions}
-            showSearch={true}
             emptyMessage='No structure analyses found'
         />
     )

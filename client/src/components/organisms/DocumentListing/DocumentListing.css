@@ -69,7 +69,13 @@
     border-top: 1px solid #1c1c1c;
     padding: 0 2rem 0;
     flex: 1;
-    overflow: auto;
+        overflow: auto;
+}
+
+@media screen and (max-width: 768px){
+    .document-listing-body-container{
+        overflow: visible;
+    }
 }
 
 .document-listing-header-top-container{

@@ -78,16 +78,18 @@ const App = () => {
     const location = useLocation();
     const isLoading = useAuthStore((state) => state.isLoading);
 
+    const isDesktop = typeof window !== 'undefined' ? window.innerWidth > 768 : true;
     const containerStyle = useMemo(() => ({
-        // TODO: CSS
         position: 'relative' as const,
         width: '100%',
-        height: '100dvh',
-        overflow: window.innerWidth > 768 ? 'hidden' : 'auto',
+        height: isDesktop ? '100dvh' : undefined,
+        minHeight: isDesktop ? undefined : '100svh',
+        overflowX: 'hidden' as const,
+        overflowY: isDesktop ? 'hidden' as const : 'auto' as const,
         backgroundColor: '#000',
         scrollBehavior: 'smooth' as const,
         isolation: 'isolate' as const,
-    }), []);
+    }), [isDesktop]);
 
     const handleExitComplete = () => {
         if(typeof window !== 'undefined'){

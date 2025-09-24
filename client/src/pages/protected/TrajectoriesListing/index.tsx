@@ -92,7 +92,6 @@ const TrajectoriesListing = () => {
             isLoading={isLoading}
             onMenuAction={handleMenuAction}
             getMenuOptions={getMenuOptions}
-            showSearch
             emptyMessage='No trajectories found'
         />
     )

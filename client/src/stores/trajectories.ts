@@ -151,7 +151,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 set({ structureAnalysis: cached, isLoading: false, error: null });
                 return Promise.resolve();
             }
-            const url = `/structure-analysis/${teamId}`;
+            const url = `/structure-analysis/team/${teamId}`;
             return asyncAction(() => api.get<ApiResponse<any>>(url), {
                 loadingKey: 'isLoading',
                 onSuccess: (res) => {
@@ -225,7 +225,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 throw error;
             }
         },
-        setMetrics: (data) => set({ metrics: data }),
         deleteTrajectoryById: async (id: string, teamId?: string) => {
             const originalState = {
                 trajectories: get().trajectories,

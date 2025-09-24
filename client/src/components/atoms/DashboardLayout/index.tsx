@@ -36,6 +36,7 @@ import useNotificationStore from '@/stores/notifications';
 import './DashboardLayout.css';
 import { Skeleton } from '@mui/material';
 import type { IconType } from 'react-icons';
+import useDashboardSearchStore from '@/stores/ui/dashboard-search';
 
 const DashboardLayout = () => {
     const teams = useTeamStore((state) => state.teams);
@@ -84,6 +85,9 @@ const DashboardLayout = () => {
         ['Tutorials', TbBook, '/dashboard/tutorials']
     ]), []);
 
+    const searchQuery = useDashboardSearchStore((s) => s.query);
+    const setSearchQuery = useDashboardSearchStore((s) => s.setQuery);
+
     return (
         <main className='dashboard-main'>
             <section className='dashboard-layout-header-container'>
@@ -107,7 +111,12 @@ const DashboardLayout = () => {
                         <i className='search-icon-container'>
                             <IoSearchOutline />
                         </i>
-                        <input placeholder='Search' className='search-input '/>
+                        <input
+                            placeholder='Search'
+                            className='search-input '
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
                 </div>
 

@@ -3,6 +3,7 @@ import { RxDotsHorizontal } from 'react-icons/rx'
 import { RiListUnordered } from 'react-icons/ri'
 import DocumentListingTable from '@/components/molecules/DocumentListingTable'
 import './DocumentListing.css'
+import useDashboardSearchStore from '@/stores/ui/dashboard-search'
 
 export type ColumnConfig = {
     key: string
@@ -71,11 +72,11 @@ const DocumentListing = ({
     columns = [],
     data = [],
     isLoading = false,
-    onMenuAction,
+    onMenuAction: _onMenuAction,
     getMenuOptions,
-    showSearch = false,
+    // search is now global via header input
     emptyMessage = 'No data available',
-    keyExtractor = (item, index) => item?._id ?? item?.id ?? index
+    keyExtractor: _keyExtractor = (item, index) => item?._id ?? item?.id ?? index
 }: {
     title: string
     breadcrumbs?: string[]
@@ -84,18 +85,18 @@ const DocumentListing = ({
     isLoading?: boolean
     onMenuAction?: (action: string, item: any) => void
     getMenuOptions?: (item: any) => any[]
-    showSearch?: boolean
+    // showSearch?: boolean (deprecated)
     emptyMessage?: string
     keyExtractor?: (item: any, index: number) => string | number
 }) => {
-    const [searchQuery, setSearchQuery] = useState('')
+    const searchQuery = useDashboardSearchStore((s) => s.query)
     const [filteredData, setFilteredData] = useState(data)
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
 
     useEffect(() => {
         let workingData = [...data]
 
-        if (showSearch && searchQuery.trim()) {
+    if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase()
             workingData = workingData.filter((item) =>
                 columns.some((col) =>
@@ -124,7 +125,7 @@ const DocumentListing = ({
         }
 
         setFilteredData(workingData)
-    }, [data, searchQuery, showSearch, sortConfig, columns])
+    }, [data, searchQuery, sortConfig, columns])
 
     const handleSort = (col: ColumnConfig) => {
         if (!col.sortable) return
@@ -173,7 +174,7 @@ const DocumentListing = ({
                             <p className='document-listing-header-tab-name'>List</p>
                         </div>
                     </div>
-                    <div className='document-listing-header-filters-container'></div>
+                    <div className='document-listing-header-filters-container' />
                 </div>
             </div>
             <div className='document-listing-body-container'>
@@ -184,6 +185,7 @@ const DocumentListing = ({
                     getCellTitle={(col: any) => <>{col.title} {getSortIndicator(col)}</>}
                     isLoading={isLoading}
                     getMenuOptions={getMenuOptions}
+                    emptyMessage={emptyMessage}
                 />
             </div>
         </div>

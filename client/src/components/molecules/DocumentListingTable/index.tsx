@@ -24,10 +24,11 @@ const SkeletonRow = ({ columns }: { columns: ColumnConfig[] }) => {
 const DocumentListingTable = ({
     columns, 
     data,
-    onCellClick = (col: any) => {},
+    onCellClick = (_col: any) => {},
     getCellTitle = (col: any) => col.title,
     isLoading = false,
-    getMenuOptions = undefined
+    getMenuOptions = undefined,
+    emptyMessage = 'No documents to show.'
 }: any) => {
     return (
         <div className='document-listing-table-container'>
@@ -54,7 +55,7 @@ const DocumentListingTable = ({
                     )) 
                 ) : data.length === 0 ? (
                     <div className='document-listing-empty'>
-                        <p>No documents to show.</p>
+                        <p>{emptyMessage}</p>
                     </div>
                 ) : (
                     data.map((item: any, idx: number) => (
