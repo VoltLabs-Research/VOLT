@@ -101,9 +101,9 @@ const EditorSidebar = () => {
         <div className='editor-sidebar-bottom-container'>
           <div className='editor-sidebar-user-avatar-wrapper'>
             <SidebarUserAvatar
-              avatarrounded={true}
+              avatarrounded={false}
               hideEmail={true}
-              hideUsername={true}
+              hideUsername={collapsed}
             />
           </div>
         </div>
