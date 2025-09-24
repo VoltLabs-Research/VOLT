@@ -1,8 +1,8 @@
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { useMemo } from 'react';
 import { getLayoutKey, detectSameLayout } from '@/utilities/layout';
-import { PREMIUM_EASING, BALANCED_EASING } from '@/utilities/animation';
+import { BALANCED_EASING } from '@/utilities/animation';
 
 const GlobalTransitionOverlay = () => {
     const location = useLocation();
@@ -16,9 +16,9 @@ const GlobalTransitionOverlay = () => {
 
     return (
         <motion.div
+            key={location.key}
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 0, transition: { duration: 0.22, ease: BALANCED_EASING } }}
-            exit={{ opacity: 0.4, transition: { duration: 0.18, ease: BALANCED_EASING } }}
             style={{
                 position: 'fixed',
                 inset: 0,

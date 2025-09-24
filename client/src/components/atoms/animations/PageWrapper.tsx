@@ -5,8 +5,6 @@ import useLayoutDetection from '@/hooks/ui/use-layout-detection';
 import PageOverlay from '@/components/atoms/animations/PageOverlay';
 import ShineEffect from '@/components/atoms/animations/ShineEffect';
 
-const EASING = [0.22, 1, 0.36, 1] as const;
-
 interface PageWrapperProps {
     children: React.ReactNode;
 }
@@ -48,8 +46,8 @@ const PageWrapper = ({ children }: PageWrapperProps) => {
 
             <motion.div
                 variants={contentVariants}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1, transition: { duration: 0.28, ease: EASING, delay: 0.05 } }}
+                initial="initial"
+                animate="animate"
                 style={{
                     position: 'relative',
                     width: '100%',

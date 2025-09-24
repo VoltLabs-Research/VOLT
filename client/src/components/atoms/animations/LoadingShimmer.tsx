@@ -42,7 +42,8 @@ const LoadingShimmer = () => {
                 right: 0,
                 height: isSameLayout ? '1px' : '2px',
                 background: `linear-gradient(90deg, transparent, rgba(59, 130, 246, ${isSameLayout ? '0.25' : '0.45'}), transparent)`,
-                zIndex: 1001,
+                pointerEvents: 'none',
+                zIndex: 999,
             }}
         />
     );

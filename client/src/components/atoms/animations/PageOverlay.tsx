@@ -20,7 +20,7 @@ const PageOverlay = ({ isSameLayout }: PageOverlayProps) => {
                 position: 'absolute',
                 inset: 0,
                 pointerEvents: 'none',
-                zIndex: -1,
+                zIndex: 0,
                 borderRadius: 'inherit',
                 background: '#000',
             }}
