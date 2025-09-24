@@ -122,7 +122,7 @@ const DocumentListingTable = ({
                                 ))}
                             </ActionBasedFloatingContainer>
                         ))}
-                        {(isFetchingMore || (isLoading && data.length > 0)) && (
+                        {enableInfinite && hasMore && (isFetchingMore || (isLoading && data.length > 0)) && (
                             Array.from({ length: skeletonRowsCount }).map((_, index) => (
                                 <SkeletonRow key={`append-skeleton-${index}`} columns={columns} />
                             ))
