@@ -135,6 +135,11 @@
     user-select: none;
 }
 
+.editor-container canvas{
+    height: 100%;
+    width: 100%;
+}
+
 .editor-analyzing-container{
     position: absolute;
     backdrop-filter: blur(1px);

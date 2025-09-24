@@ -107,7 +107,7 @@
     position: sticky;
     top: 0;
     z-index: 200000;
-    background: var(--glass-bg);
+    background: var(--color-bg);
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
 }
