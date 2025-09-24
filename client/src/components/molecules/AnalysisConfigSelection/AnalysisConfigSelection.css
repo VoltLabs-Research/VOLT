@@ -10,3 +10,8 @@
 .analysis-config-select-container option{
     color: #000;
 }
+
+/* Canvas override: make the Select trigger text color #dadada */
+.analysis-config-selection-container .rh-select-trigger{
+    color: #dadada !important;
+}
