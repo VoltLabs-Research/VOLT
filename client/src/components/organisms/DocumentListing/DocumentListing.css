@@ -3,7 +3,7 @@
     flex-direction: column;
     height: 100%;
     border-top: unset;
-    color: #FFF;
+    color: var(--color-text-primary);
     border-bottom: unset;
     border-right: unset;
 }
@@ -23,7 +23,7 @@
 }
 
 .breadcrumb-item-container:not(:last-child) .breadcrumb-item-name{
-    color: #656565;
+    color: var(--color-text-muted);
 }
 
 .breadcrumb-item-container{
@@ -60,13 +60,13 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    color: #dadada;
+    color: var(--color-text-secondary);
     padding-bottom: 1rem;
-    border-bottom: 2px solid rgb(39 55 255);
+    border-bottom: 2px solid var(--accent-indigo);
 }
 
 .document-listing-body-container{
-    border-top: 1px solid #1c1c1c;
+    border-top: 1px solid var(--color-border);
     padding: 0 2rem 0;
     flex: 1;
         overflow: auto;
@@ -102,12 +102,12 @@
     display: flex;
     justify-content: space-between;
     gap: 1rem;
-    border-bottom: 1px solid #1c1c1c;
+    border-bottom: 1px solid var(--color-border);
     padding: 2rem 0 1rem;
     position: sticky;
     top: 0;
     z-index: 200000;
-    background-color: #0c0c0c;
+    background-color: var(--color-surface-1);
     backdrop-filter: blur(5px);
 }
 
@@ -121,12 +121,12 @@
     justify-content: space-between;
     gap: 1rem;
     padding: 1rem 0;
-    border-bottom: 1px solid #1c1c1c;
+    border-bottom: 1px solid var(--color-border);
     transition: background-color 0.2s ease;
 }
 
 .document-listing-table-row-container:hover{
-    background-color: #131313;
+    background-color: var(--color-surface-2);
 }
 
 .document-listing-table-row-container:last-child{
@@ -135,7 +135,7 @@
 
 .document-listing-cell{
     flex: 1;
-    color: #FFF;
+    color: var(--color-text-primary);
     min-width: 120px;
     text-decoration: none;
     text-overflow: ellipsis;
@@ -150,7 +150,7 @@
 }
 
 .document-listing-cell-title{
-    color: #dadada;
+    color: var(--color-text-secondary);
     font-weight: 500;
     font-size: .95rem;
     margin: 0;
