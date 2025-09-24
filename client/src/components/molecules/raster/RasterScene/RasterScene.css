@@ -15,6 +15,20 @@
     margin-left: auto;
 }
 
+/* Ensure topbar is an anchor for absolute children */
+.raster-scene-topbar{ position: relative; }
+
+/* Mobile: pin the download icon to the very top-right */
+@media (max-width: 768px){
+    .raster-scene-topbar-right{
+        position: absolute;
+        top: .7rem;
+        right: .5rem;
+        margin-left: 0;
+        z-index: 20;
+    }
+}
+
 .raster-scene-download-menu{
     position: absolute;
     top: 40px;

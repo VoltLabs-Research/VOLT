@@ -380,7 +380,7 @@
 
 @media (max-width: 1024px) {
   .raster-scenes-top-container { flex-direction: column; height: auto; }
-  .raster-scene-container { height: auto; min-height: 260px; }
+  .raster-scene-container { height: auto; min-height: 70vh; }
   .raster-analyses-container { flex-direction: row; width: 100%; overflow-x: auto; gap: .75rem; }
   .raster-analyses-container img,
   .raster-analyses-container .raster-analysis-scene { width: 160px; height: auto; flex-shrink: 0; }
