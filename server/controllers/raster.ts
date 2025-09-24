@@ -88,7 +88,14 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
         };
     }
 
-    res.setHeader('ETag', `"raster-meta-${trajectory._id}"`);
+    // Prevent caching so the view counter and metadata are always fresh
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    // Ensure caches consider auth state and changing state; include views in ETag
+    res.setHeader('Vary', 'Authorization');
+    res.setHeader('ETag', `"raster-meta-${trajectory._id}-${trajectory.rasterSceneViews}"`);
 
     return res.status(200).json({
         status: 'success',
@@ -235,10 +242,14 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
         analysesData[id] = data;
     }
 
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    res.setHeader('ETag', `"raster-${trajectory._id}"`);
+    res.setHeader('Surrogate-Control', 'no-store');
+    res.setHeader('Vary', 'Authorization');
+    // Compose a basic ETag that changes with views and frames count
+    const etagBase = `raster-${trajectory._id}-${trajectory.rasterSceneViews}-${trajectory.frames?.length ?? 0}`;
+    res.setHeader('ETag', `"${etagBase}"`);
 
     return res.status(200).json({
         status: 'success',

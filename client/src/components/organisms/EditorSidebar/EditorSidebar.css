@@ -79,6 +79,10 @@
     padding: 1.5rem;
 }
 
+.editor-sidebar-user-avatar-wrapper .sidebar-user-fullname{
+    color: #dadada;
+}
+
 .editor-sidebar-top-container > div:not(:last-child){
     border-bottom: 1px solid #212121;
 }
