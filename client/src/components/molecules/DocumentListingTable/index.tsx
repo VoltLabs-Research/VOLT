@@ -7,15 +7,17 @@ const SkeletonRow = ({ columns }: { columns: ColumnConfig[] }) => {
     return (
         <div className='document-listing-table-row-container skeleton-row'>
             {columns.map((col) => (
-                <div className='document-listing-cell' key={col.key}>
-                    <Skeleton
-                        {...(col.skeleton ?? { variant: 'text', width: 100 })}
-                        animation='wave'
-                        sx={{
-                            bgcolor: 'rgba(0, 0, 0, 0.06)',
-                            borderRadius: col.skeleton?.variant === 'rounded' ? '12px' : '4px'
-                        }}
-                    />
+                <div className='document-listing-cell' data-label={col.title} key={col.key}>
+                    <span className='document-listing-cell-value'>
+                        <Skeleton
+                            {...(col.skeleton ?? { variant: 'text', width: 100 })}
+                            animation='wave'
+                            sx={{
+                                bgcolor: 'rgba(0, 0, 0, 0.06)',
+                                borderRadius: col.skeleton?.variant === 'rounded' ? '12px' : '4px'
+                            }}
+                        />
+                    </span>
                 </div>
             ))}
         </div>
@@ -112,13 +114,16 @@ const DocumentListingTable = ({
                                 {columns.map((col: any, colIdx: number) => (
                                     <div
                                         className='document-listing-cell'
+                                        data-label={col.title}
                                         key={`cell-${col.title}-${colIdx}`}
                                         title={String(item?.[col.key] ?? '')}
                                     >
-                                        {col.render
-                                            ? col.render(item[col.key], item)
-                                            : String(item[col.key] ?? '—')}
-                                    </div>    
+                                        <span className='document-listing-cell-value'>
+                                            {col.render
+                                                ? col.render(item[col.key], item)
+                                                : String(item[col.key] ?? '—')}
+                                        </span>
+                                    </div>
                                 ))}
                             </ActionBasedFloatingContainer>
                         ))}

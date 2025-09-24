@@ -161,6 +161,149 @@
     padding: 1rem 0;
 }
 
+/* Responsive stacked layout for small screens */
+@media screen and (max-width: 768px){
+    /* compact header spacing */
+    .document-listing-header-top-container{
+        padding: 1.25rem 1rem 0;
+        gap: .75rem;
+    }
+    .document-listing-header-title{
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: -0.2px;
+    }
+    .document-listing-header-tabs-container{
+        padding: 0 1rem;
+    }
+
+    /* allow outer container to handle scroll for observers if provided */
+    .document-listing-body-container{
+        overflow: visible;
+        padding: .5rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* hide sticky header; titles will be shown via data-label */
+    .document-listing-table-header-container{
+        display: none;
+    }
+
+    .document-listing-table-body-container{
+        display: flex;
+        flex-direction: column;
+        gap: .8rem;
+    }
+
+    .document-listing-table-row-container{
+        display: block;
+        position: relative;
+        background: linear-gradient(180deg, var(--color-surface-1), rgba(0,0,0,0) 120%);
+        border: 1px solid var(--color-border);
+        border-radius: 1rem;
+        padding: .9rem 2.25rem .9rem .95rem; /* extra right padding for chevron */
+        box-shadow:
+            0 0.5px 0 rgba(0,0,0,0.12),
+            0 8px 18px rgba(0,0,0,0.06);
+        transition: transform .18s ease, box-shadow .18s ease, background-color .2s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .document-listing-table-row-container:hover{
+        transform: translateY(-1px);
+        box-shadow:
+            0 0.5px 0 rgba(0,0,0,0.12),
+            0 12px 26px rgba(0,0,0,0.08);
+        background: linear-gradient(180deg, var(--color-surface-1), rgba(0,0,0,0) 120%);
+    }
+
+    .document-listing-table-row-container:active{
+        transform: translateY(0);
+    }
+
+    /* subtle chevron indicator */
+    .document-listing-table-row-container::after{
+        content: '›';
+        position: absolute;
+        right: .7rem;
+        top: .6rem;
+        color: var(--color-text-muted);
+        font-size: 1.15rem;
+        line-height: 1;
+        pointer-events: none;
+    }
+
+    .document-listing-cell{
+        display: block; /* stacked */
+        padding: .55rem 0;
+        white-space: normal;
+        overflow: visible;
+        min-width: 0;
+    }
+
+    .document-listing-cell + .document-listing-cell{
+        border-top: 1px dashed var(--color-border);
+    }
+
+    .document-listing-cell::before{
+        content: attr(data-label);
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        font-size: .8rem;
+        letter-spacing: .15px;
+        display: block;
+        margin-bottom: .25rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .document-listing-cell-value{
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
+        font-size: clamp(.95rem, .92rem + .2vw, 1rem);
+        line-height: 1.35;
+    }
+
+    /* Emphasize the first field as a title */
+    .document-listing-table-row-container .document-listing-cell:first-child .document-listing-cell-value{
+        font-weight: 600;
+        letter-spacing: -0.1px;
+    }
+
+    /* badges and chips should not wrap */
+    .method-badge,
+    .rate-badge,
+    .status-badge{
+    white-space: nowrap;
+    display: inline-flex;
+    transform: translateZ(0); /* crisper on mobile */
+    }
+
+    /* Skeleton rows shaped like cards */
+    .skeleton-row{
+        background: linear-gradient(180deg, var(--color-surface-1), rgba(0,0,0,0) 120%);
+        border: 1px solid var(--color-border);
+        border-radius: 1rem;
+        padding: .9rem 2.25rem .9rem .95rem;
+        box-shadow:
+            0 0.5px 0 rgba(0,0,0,0.12),
+            0 8px 18px rgba(0,0,0,0.06);
+    }
+
+    /* ultra-small screens tweaks */
+    @media screen and (max-width: 380px){
+        .document-listing-table-row-container{ padding: .75rem 2rem .75rem .8rem; }
+        .document-listing-cell{ padding: .45rem 0; }
+        .document-listing-cell::before{ font-size: .78rem; }
+    .document-listing-cell-value{ -webkit-line-clamp: 3; line-clamp: 3; }
+    }
+}
+
 .method-badge,
 .rate-badge,
 .status-badge{
