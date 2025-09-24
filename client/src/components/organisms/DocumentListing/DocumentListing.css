@@ -107,8 +107,9 @@
     position: sticky;
     top: 0;
     z-index: 200000;
-    background-color: var(--color-surface-1);
+    background: var(--glass-bg);
     backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 }
 
 .document-listing-table-body-container{

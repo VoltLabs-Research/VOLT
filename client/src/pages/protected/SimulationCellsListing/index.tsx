@@ -9,6 +9,9 @@ const SimulationCellsListing = () => {
   const team = useTeamStore((s) => s.selectedTeam);
   const [isLoading, setIsLoading] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
+  const [limit] = useState<number>(100);
 
   useEffect(() => {
     if(!team?._id) return;
@@ -16,11 +19,13 @@ const SimulationCellsListing = () => {
     setIsLoading(true);
     (async () => {
       try{
-        const res = await api.get<{ status: string; data: { cells: any[] } }>(`/simulation-cell`, {
-          params: { teamId: team._id, limit: 200 },
+        const res = await api.get<{ status: string; data: { cells: any[]; total: number; page: number; limit: number } }>(`/simulation-cell`, {
+          params: { teamId: team._id, page: 1, limit },
           signal: controller.signal
         });
         setRows(res.data?.data?.cells ?? []);
+        setTotal(res.data?.data?.total ?? 0);
+        setPage(1);
       }catch(_e){} finally{ setIsLoading(false); }
     })();
     return () => controller.abort();
@@ -97,6 +102,23 @@ const SimulationCellsListing = () => {
       onMenuAction={handleMenuAction}
       getMenuOptions={getMenuOptions}
       emptyMessage='No simulation cells found'
+      enableInfinite
+      hasMore={rows.length < total}
+      isFetchingMore={isLoading && rows.length > 0}
+      onLoadMore={async () => {
+        if(!team?._id) return;
+        if(rows.length >= total) return;
+        const next = page + 1;
+        setIsLoading(true);
+        try{
+          const res = await api.get<{ status: string; data: { cells: any[]; total: number; page: number; limit: number } }>(`/simulation-cell`, {
+            params: { teamId: team._id, page: next, limit }
+          });
+          setRows((prev) => [...prev, ...(res.data?.data?.cells ?? [])]);
+          setTotal(res.data?.data?.total ?? total);
+          setPage(next);
+        }catch(_e){} finally{ setIsLoading(false); }
+      }}
     />
   );
 };

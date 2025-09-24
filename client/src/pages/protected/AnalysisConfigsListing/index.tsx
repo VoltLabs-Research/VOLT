@@ -9,6 +9,9 @@ const AnalysisConfigsListing = () => {
   const team = useTeamStore((state) => state.selectedTeam)
   const [data, setData] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [page, setPage] = useState<number>(1)
+  const [total, setTotal] = useState<number>(0)
+  const [limit] = useState<number>(20)
 
   useEffect(() => {
     if(!team?._id) return
@@ -16,14 +19,18 @@ const AnalysisConfigsListing = () => {
     setIsLoading(true)
     ;(async () => {
       try{
-        const res = await api.get<{ status: string; data: { configs: any[] } }>(`/analysis-config/team/${team._id}`,
-          { params: { page: 1, limit: 100 }, signal: controller.signal })
+        const res = await api.get<{ status: string; data: { configs: any[]; total: number; page: number; limit: number } }>(
+          `/analysis-config/team/${team._id}`,
+          { params: { page: 1, limit }, signal: controller.signal }
+        )
         setData(res.data?.data?.configs ?? [])
+        setTotal(res.data?.data?.total ?? 0)
+        setPage(1)
       }catch(e){/* noop */}
       finally{ setIsLoading(false) }
     })()
     return () => controller.abort()
-  }, [team?._id])
+  }, [team?._id, limit])
 
   const handleMenuAction = async (action: string, item: any) => {
     switch(action){
@@ -115,6 +122,26 @@ const AnalysisConfigsListing = () => {
       onMenuAction={handleMenuAction}
       getMenuOptions={getMenuOptions}
       emptyMessage='No analysis configs found'
+      enableInfinite
+      hasMore={data.length < total}
+      isFetchingMore={isLoading && data.length > 0}
+      onLoadMore={async () => {
+        if(!team?._id) return
+        if(data.length >= total) return
+        const next = page + 1
+        setIsLoading(true)
+        try{
+          const res = await api.get<{ status: string; data: { configs: any[]; total: number; page: number; limit: number } }>(
+            `/analysis-config/team/${team._id}`,
+            { params: { page: next, limit } }
+          )
+          const nextRows = res.data?.data?.configs ?? []
+          setData((prev) => [...prev, ...nextRows])
+          setTotal(res.data?.data?.total ?? total)
+          setPage(next)
+        }catch(_e){/* noop */}
+        finally{ setIsLoading(false) }
+      }}
     />
   )
 }

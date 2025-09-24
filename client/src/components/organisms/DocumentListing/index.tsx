@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { RxDotsHorizontal } from 'react-icons/rx'
 import { RiListUnordered } from 'react-icons/ri'
 import DocumentListingTable from '@/components/molecules/DocumentListingTable'
@@ -66,6 +66,23 @@ export const StatusBadge = ({ status }: { status: string }) => {
     return <span className={className}>{status}</span>
 }
 
+type DocumentListingProps = {
+    title: string
+    breadcrumbs?: string[]
+    columns: ColumnConfig[]
+    data: any[]
+    isLoading?: boolean
+    onMenuAction?: (action: string, item: any) => void
+    getMenuOptions?: (item: any) => any[]
+    emptyMessage?: string
+    keyExtractor?: (item: any, index: number) => string | number
+    // Infinite scroll (optional)
+    enableInfinite?: boolean
+    hasMore?: boolean
+    isFetchingMore?: boolean
+    onLoadMore?: () => void
+}
+
 const DocumentListing = ({
     title,
     breadcrumbs = ['Dashboard'],
@@ -76,19 +93,12 @@ const DocumentListing = ({
     getMenuOptions,
     // search is now global via header input
     emptyMessage = 'No data available',
-    keyExtractor: _keyExtractor = (item, index) => item?._id ?? item?.id ?? index
-}: {
-    title: string
-    breadcrumbs?: string[]
-    columns: ColumnConfig[]
-    data: any[]
-    isLoading?: boolean
-    onMenuAction?: (action: string, item: any) => void
-    getMenuOptions?: (item: any) => any[]
-    // showSearch?: boolean (deprecated)
-    emptyMessage?: string
-    keyExtractor?: (item: any, index: number) => string | number
-}) => {
+    keyExtractor: _keyExtractor = (item, index) => item?._id ?? item?.id ?? index,
+    enableInfinite,
+    hasMore,
+    isFetchingMore,
+    onLoadMore
+}: DocumentListingProps) => {
     const searchQuery = useDashboardSearchStore((s) => s.query)
     const [filteredData, setFilteredData] = useState(data)
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
@@ -147,6 +157,9 @@ const DocumentListing = ({
         )
     }
 
+    // Provide a ref to the scrollable body for infinite scroll consumers
+    const bodyRef = useRef<HTMLDivElement | null>(null);
+
     return (
         <div className='document-listing-container'>
             <div className='document-listing-header-container'>
@@ -177,7 +190,7 @@ const DocumentListing = ({
                     <div className='document-listing-header-filters-container' />
                 </div>
             </div>
-            <div className='document-listing-body-container'>
+        <div className='document-listing-body-container' ref={bodyRef}>
                 <DocumentListingTable
                     columns={columns}
                     data={filteredData}
@@ -186,6 +199,12 @@ const DocumentListing = ({
                     isLoading={isLoading}
                     getMenuOptions={getMenuOptions}
                     emptyMessage={emptyMessage}
+                    // Infinite scroll passthrough props (optional by caller)
+                    enableInfinite={enableInfinite}
+                    hasMore={hasMore}
+                    isFetchingMore={isFetchingMore}
+                    onLoadMore={onLoadMore}
+                    scrollContainerRef={bodyRef}
                 />
             </div>
         </div>

@@ -48,10 +48,13 @@ const useDislocationStore = create<DislocationStore>()((set, get) => {
                 }
             }), {
                 loadingKey: 'isLoading',
-                onSuccess: (res) => {
+                onSuccess: (res, state) => {
                     const payload = res.data.data;
+                    const isNextPage = (payload.page ?? nextPage) > 1;
+                    const prev = state.dislocations || [];
+                    const merged = isNextPage ? [...prev, ...payload.dislocations] : payload.dislocations;
                     return {
-                        dislocations: payload.dislocations,
+                        dislocations: merged,
                         total: payload.total,
                         totals: payload.totals,
                         page: payload.page,

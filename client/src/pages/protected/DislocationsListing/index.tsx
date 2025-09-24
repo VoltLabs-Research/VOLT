@@ -15,6 +15,9 @@ const DislocationsListing = () => {
   const isLoading = useDislocationStore((s) => s.isLoading);
   const rows = useDislocationStore((s) => s.dislocations);
   const totals = useDislocationStore((s) => s.totals);
+  const page = useDislocationStore((s) => s.page);
+  const limit = useDislocationStore((s) => s.limit);
+  const hasMore = useDislocationStore((s) => s.dislocations.length < s.total);
 
   const [data, setData] = useState<any[]>([]);
 
@@ -117,6 +120,14 @@ const DislocationsListing = () => {
       onMenuAction={handleMenuAction}
       getMenuOptions={getMenuOptions}
       emptyMessage='No dislocations found'
+      enableInfinite
+      hasMore={hasMore}
+      isFetchingMore={isLoading && data.length > 0}
+      onLoadMore={() => {
+        if (!team?._id) return;
+        if (!hasMore) return;
+        getUserDislocations({ teamId: team._id, page: page + 1, limit });
+      }}
     />
   );
 };

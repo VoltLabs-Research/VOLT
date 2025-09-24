@@ -1,6 +1,7 @@
 import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer';
 import type { ColumnConfig } from '@/components/organisms/DocumentListing';
 import { Skeleton } from '@mui/material';
+import { useEffect, useRef } from 'react';
 
 const SkeletonRow = ({ columns }: { columns: ColumnConfig[] }) => {
     return (
@@ -21,6 +22,16 @@ const SkeletonRow = ({ columns }: { columns: ColumnConfig[] }) => {
     )
 };
 
+type InfiniteProps = {
+  enableInfinite?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  isFetchingMore?: boolean;
+    // How many skeleton rows to show when fetching more
+    skeletonRowsCount?: number;
+  scrollContainerRef?: React.RefObject<HTMLElement> | null;
+}
+
 const DocumentListingTable = ({
     columns, 
     data,
@@ -28,8 +39,39 @@ const DocumentListingTable = ({
     getCellTitle = (col: any) => col.title,
     isLoading = false,
     getMenuOptions = undefined,
-    emptyMessage = 'No documents to show.'
-}: any) => {
+    emptyMessage = 'No documents to show.',
+    enableInfinite = false,
+    hasMore = false,
+    onLoadMore,
+    isFetchingMore = false,
+    skeletonRowsCount = 8,
+    scrollContainerRef = null
+}: any & InfiniteProps) => {
+    const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+    // Observe intersection of the sentinel within the provided scroll container
+    useEffect(() => {
+        if (!enableInfinite) return;
+        const root = scrollContainerRef && 'current' in scrollContainerRef ? (scrollContainerRef.current as any) : null;
+        const sentinel = sentinelRef.current;
+        if (!sentinel) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const entry = entries[0];
+                if (entry.isIntersecting && hasMore && !isFetchingMore) {
+                    onLoadMore && onLoadMore();
+                }
+            },
+            { root: root ?? null, rootMargin: '0px 0px 200px 0px', threshold: 0 }
+        );
+
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [enableInfinite, hasMore, isFetchingMore, onLoadMore, scrollContainerRef]);
+
+    const isInitialLoading = !!isLoading && (Array.isArray(data) ? data.length === 0 : true);
+
     return (
         <div className='document-listing-table-container'>
             {columns.length > 0 && (
@@ -49,7 +91,7 @@ const DocumentListingTable = ({
             )}
 
             <div className='document-listing-table-body-container'>
-                {isLoading ? (
+                {isInitialLoading ? (
                     Array.from({ length: 16 }).map((_, index) => (
                         <SkeletonRow key={`skeleton-${index}`} columns={columns} />
                     )) 
@@ -58,28 +100,37 @@ const DocumentListingTable = ({
                         <p>{emptyMessage}</p>
                     </div>
                 ) : (
-                    data.map((item: any, idx: number) => (
-                        <ActionBasedFloatingContainer
-                            key={'item-' + idx}
-                            options={getMenuOptions ? getMenuOptions(item) : []}
-                            className='document-listing-table-row-container'
-                            useCursorPosition={true}
-                            deleteMenuStyle={true}
-                        >
-                            {columns.map((col: any, colIdx: number) => (
-                                <div
-                                    className='document-listing-cell'
-                                    key={`cell-${col.title}-${colIdx}`}
-                                    title={String(item?.[col.key] ?? '')}
-                                >
-                                    {col.render
-                                        ? col.render(item[col.key], item)
-                                        : String(item[col.key] ?? '—')}
-                                </div>    
-                            ))}
-                        </ActionBasedFloatingContainer>
-                    ))
+                    <>
+                        {data.map((item: any, idx: number) => (
+                            <ActionBasedFloatingContainer
+                                key={'item-' + idx}
+                                options={getMenuOptions ? getMenuOptions(item) : []}
+                                className='document-listing-table-row-container'
+                                useCursorPosition={true}
+                                deleteMenuStyle={true}
+                            >
+                                {columns.map((col: any, colIdx: number) => (
+                                    <div
+                                        className='document-listing-cell'
+                                        key={`cell-${col.title}-${colIdx}`}
+                                        title={String(item?.[col.key] ?? '')}
+                                    >
+                                        {col.render
+                                            ? col.render(item[col.key], item)
+                                            : String(item[col.key] ?? '—')}
+                                    </div>    
+                                ))}
+                            </ActionBasedFloatingContainer>
+                        ))}
+                        {(isFetchingMore || (isLoading && data.length > 0)) && (
+                            Array.from({ length: skeletonRowsCount }).map((_, index) => (
+                                <SkeletonRow key={`append-skeleton-${index}`} columns={columns} />
+                            ))
+                        )}
+                    </>
                 )}
+                {/* Infinite scroll sentinel */}
+                {enableInfinite && <div ref={sentinelRef} style={{ height: 1 }} />}
             </div>
 
             <div className='document-listing-table-footer-container' />

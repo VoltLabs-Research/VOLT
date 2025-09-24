@@ -1,27 +1,47 @@
 import { useEffect, useState } from 'react'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, MethodBadge, RateBadge, formatNumber } from '@/components/organisms/DocumentListing'
-import useTrajectoryStore from '@/stores/trajectories'
 import useTeamStore from '@/stores/team/team'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
+import { api } from '@/services/api'
 
 const StructureAnalysisListing = () => {
-    const getStructuresAnalysis = useTrajectoryStore((state) => state.getStructureAnalysis)
     const team = useTeamStore((state) => state.selectedTeam)
-    const isLoading = useTrajectoryStore((state) => state.isLoading)
-    const structureAnalysis = useTrajectoryStore((state) => state.structureAnalysis)
     const [data, setData] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState<boolean>(false)
+    const [page, setPage] = useState<number>(1)
+    const [total, setTotal] = useState<number>(0)
+    const [limit] = useState<number>(100)
 
     useEffect(() => {
         if (!team?._id) return
-        getStructuresAnalysis(team._id)
-    }, [team])
-
-    useEffect(() => {
-        if (isLoading) return
-        const flat = Object.values(structureAnalysis?.analysesByTrajectory || {}).flat()
-        setData(flat)
-    }, [isLoading, structureAnalysis])
+        let canceled = false
+        setIsLoading(true)
+        ;(async () => {
+            try {
+                const res = await api.get(`/structure-analysis/team/${team._id}`, {
+                    params: { page: 1, limit, sort: '-createdAt' }
+                })
+                if (canceled) return
+                const payload: any = (res as any)?.data?.data || {}
+                const map = payload?.analysesByTrajectory || {}
+                const flat = Object.values(map).flat()
+                setData(flat)
+                setTotal(Number(payload?.totalAnalyses ?? flat.length) || 0)
+                setPage(1)
+            } catch (_e) {
+                if (!canceled) {
+                    setData([])
+                    setTotal(0)
+                }
+            } finally {
+                if (!canceled) setIsLoading(false)
+            }
+        })()
+        return () => {
+            canceled = true
+        }
+    }, [team, limit])
 
     const handleMenuAction = (action: string, _item: any) => {
         switch (action) {
@@ -106,6 +126,30 @@ const StructureAnalysisListing = () => {
             onMenuAction={handleMenuAction}
             getMenuOptions={getMenuOptions}
             emptyMessage='No structure analyses found'
+            enableInfinite
+            hasMore={data.length < total}
+            isFetchingMore={isLoading && data.length > 0}
+            onLoadMore={async () => {
+                if (!team?._id) return
+                if (data.length >= total) return
+                const next = page + 1
+                setIsLoading(true)
+                try {
+                    const res = await api.get(`/structure-analysis/team/${team._id}`, {
+                        params: { page: next, limit, sort: '-createdAt' }
+                    })
+                    const payload: any = (res as any)?.data?.data || {}
+                    const map = payload?.analysesByTrajectory || {}
+                    const flat = Object.values(map).flat()
+                    setData((prev) => [...prev, ...flat])
+                    setPage(next)
+                    setTotal(Number(payload?.totalAnalyses ?? total) || total)
+                } catch (_e) {
+                    /* noop */
+                } finally {
+                    setIsLoading(false)
+                }
+            }}
         />
     )
 }
