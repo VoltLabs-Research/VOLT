@@ -121,14 +121,14 @@ router.route('/:id')
     )
     .patch(
         authMiddleware.protect,
-        middleware.checkTeamMembershipForTrajectory,
+        middleware.requireTeamMembershipForTrajectory,
         previewUpload.single('preview'),
         middleware.processPreviewUpload,
         controller.updateTrajectoryById
     )
     .delete(
         authMiddleware.protect,
-        middleware.checkTeamMembershipForTrajectory,
+        middleware.requireTeamMembershipForTrajectory,
         controller.deleteTrajectoryById
     );
 

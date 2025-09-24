@@ -1,5 +1,14 @@
 .trajectory-share-status-icon-container{
     font-size: 1.6rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    cursor: pointer;
 }
 
 .trajectory-share-status-container{
@@ -11,4 +20,8 @@
     overflow: hidden;
     top: 2rem;
     z-index: 200;
+}
+
+.trajectory-share-status-container.is-disabled{
+    opacity: 0.6;
 }

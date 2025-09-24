@@ -72,6 +72,7 @@ export interface Trajectory{
     frames: TimestepInfo[];
     stats: TrajectoryStats;
     preview?: any;
+    isPublic?: boolean;
     createdAt: string;
     updatedAt: string;
     users: (User | string)[];

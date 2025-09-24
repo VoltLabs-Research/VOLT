@@ -32,7 +32,7 @@ export interface TrajectoryActions {
     getTrajectories: (teamId?: string, opts?: { force?: boolean }) => Promise<void>;
     getTrajectoryById: (id: string) => Promise<void>;
     createTrajectory: (formData: FormData, teamId?: string) => Promise<void>;
-    updateTrajectoryById: (id: string, data: Partial<Pick<Trajectory, 'name'>>) => Promise<void>;
+    updateTrajectoryById: (id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => Promise<void>;
     deleteTrajectoryById: (id: string, teamId?: string) => Promise<void>;
     rasterize: (id: string) => Promise<void>;
     toggleTrajectorySelection: (id: string) => void;

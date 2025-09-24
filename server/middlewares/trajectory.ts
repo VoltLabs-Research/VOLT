@@ -79,6 +79,26 @@ export const processPreviewUpload = async (req: Request, res: Response, next: Ne
     }
 };
 
+// Strict variant for write operations: always require team membership, regardless of public status
+export const requireTeamMembershipForTrajectory = async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params as any;
+    const userId = (req as any).user?.id;
+    const trajectory = await Trajectory.findById(id);
+    if(!trajectory){
+        return res.status(404).json({ status: 'error', data: { error: 'Trajectory not found' } });
+    }
+    if(!userId){
+        return res.status(401).json({ status: 'error', data: { error: 'Authentication required' } });
+    }
+    const team = await Team.findOne({ _id: trajectory.team, members: userId });
+    if(!team){
+        return res.status(403).json({ status: 'error', data: { error: 'Forbidden. You do not have access to modify this trajectory.' } });
+    }
+    res.locals.trajectory = trajectory;
+    res.locals.team = team;
+    next();
+};
+
 export const processAndValidateUpload = async (req: Request, res: Response, next: NextFunction) => {
     const files = req.files as Express.Multer.File[];
     if(!files || files.length === 0) {

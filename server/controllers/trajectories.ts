@@ -39,7 +39,7 @@ import AdmZip from 'adm-zip';
 
 const factory = new HandlerFactory<any>({
     model: Trajectory as any,
-    fields: ['name', 'preview'],
+    fields: ['name', 'preview', 'isPublic'],
     errorMessages: {
         default: {
             notFound: 'Trajectory::NotFound',

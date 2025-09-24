@@ -205,7 +205,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             }
         },
 
-        updateTrajectoryById: async (id: string, data: Partial<Pick<Trajectory, 'name'>>) => {
+        updateTrajectoryById: async (id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => {
             const originalState = {
                 trajectories: get().trajectories,
                 trajectory: get().trajectory,
