@@ -10,8 +10,9 @@ import CanvasSidebarTab from '@/components/atoms/CanvasSidebarTab';
 import CanvasSidebarScene from '@/components/molecules/CanvasSidebarScene';
 import CanvasSidebarModifiers from '@/components/molecules/CanvasSidebarModifiers';
 import useConfigurationStore from '@/stores/editor/configuration';
-import useAuthStore from '@/stores/authentication';
 import './EditorSidebar.css';
+
+const MOBILE_BREAKPOINT = 768;
 
 const EditorSidebar = () => {
   const trajectory = useTrajectoryStore((state) => state.trajectory);
@@ -20,10 +21,16 @@ const EditorSidebar = () => {
 
   const [collapsed, setCollapsed] = useState(false);
 
+  // Al montar, detectar si está en mobile y colapsar por defecto
+  useEffect(() => {
+    if (window.innerWidth <= MOBILE_BREAKPOINT) {
+      setCollapsed(true);
+    }
+  }, []);
+
   useEffect(() => {
     return () => {
       setActiveSidebarTag('Scene');
-      // setActiveSidebarModifier('trajectory');
     };
   }, []);
 
@@ -40,12 +47,10 @@ const EditorSidebar = () => {
       aria-expanded={!collapsed}
     >
       <EditorWidget className='editor-sidebar-container' draggable={false}>
-        {/* TOP */}
         <div className='editor-sidebar-top-container'>
           <div className='editor-sidebar-header-container'>
             <div className='editor-sidebar-trajectory-info-container'>
               <div className='editor-sidebar-trajectory-info-header-container'>
-                {/* Bloque título+chevron -> se oculta en colapsado via CSS */}
                 <div
                   className='editor-sidebar-trajectory-drop-container'
                   data-collapsible="true"
@@ -59,7 +64,6 @@ const EditorSidebar = () => {
                   </i>
                 </div>
 
-                {/* Botón de contraer/expandir (siempre visible) */}
                 <button
                   type="button"
                   className='editor-sidebar-toggle-btn'
@@ -73,14 +77,12 @@ const EditorSidebar = () => {
                 </button>
               </div>
 
-              {/* Team name -> se oculta en colapsado via CSS */}
               <p className='editor-sidebar-header-team-name' data-collapsible="true">
                 {trajectory?.team?.name}
               </p>
             </div>
           </div>
 
-          {/* Tabs: se ocultan completos al colapsar */}
           <div className='editor-sidebar-options-wrapper-container' data-collapsible="true">
             <div className='editor-sidebar-options-container'>
               {['Scene', 'Modifiers'].map((option, index) => (
@@ -89,8 +91,6 @@ const EditorSidebar = () => {
             </div>
           </div>
 
-          {/* Contenido según tab: SIEMPRE renderizado.
-              En colapsado, CSS fuerza "icon-only" (oculta títulos). */}
           {activeSidebarTab === 'Scene' ? (
             <CanvasSidebarScene />
           ) : (
@@ -98,13 +98,12 @@ const EditorSidebar = () => {
           )}
         </div>
 
-        {/* BOTTOM: avatar siempre renderizado; en colapsado se muestra solo el icono */}
         <div className='editor-sidebar-bottom-container'>
           <div className='editor-sidebar-user-avatar-wrapper'>
             <SidebarUserAvatar
               avatarrounded={true}
               hideEmail={true}
-              hideUsername={true}  /* forzamos ocultar texto */
+              hideUsername={true}
             />
           </div>
         </div>
