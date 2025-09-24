@@ -168,6 +168,9 @@
     gap: .5rem;
 }
 
+.dislocation-results-header-title{
+    color: var(--color-text-primary);
+}
 
 .dislocation-results-container{
     top: 7rem;
@@ -190,7 +193,6 @@
     display: flex;
     backdrop-filter: blur(5px);
     background-color: rgb(30 30 30 / 91%);
-    border: 1px solid #212121;
     left: 0;
     bottom: -11px;
     border-radius: 2rem;
@@ -223,7 +225,7 @@
 }
 
 .dislocation-result-data .data-value{
-    color: #b3b3b3;
+    color: var(--color-text-secondary);
 }
 
 .dislocation-summary-item{
@@ -233,10 +235,12 @@
 
 .dislocation-summary-value{
     font-size: .8rem;
+    color: var(--color-text-secondary); 
 }
 
 .dislocation-summary-label{
     font-size: .8rem;
+    color: var(--color-text-secondary); 
 }
 
 .dislocation-results-body-container{

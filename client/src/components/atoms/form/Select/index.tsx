@@ -208,7 +208,7 @@ const Select: React.FC<SelectProps> = ({
 									{opt.title}
                                     {opt.description && (
                                         <span className="select-option-description">
-                                            Circuit Size: 14 - Stretchability: 9
+											{opt.description}
                                         </span>
                                     )}
 								</span>

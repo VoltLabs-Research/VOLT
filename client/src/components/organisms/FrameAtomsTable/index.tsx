@@ -141,7 +141,7 @@ const FrameAtomsTable = ({
         isLoading={isInitialLoading} />
       {/* Loading more indicator and intersection sentinel */}
       <div style={{ padding: '0.5rem 1rem', opacity: 0.8 }}>
-        {!isInitialLoading && loading ? 'Cargando más…' : ''}
+        {!isInitialLoading && loading ? 'Loading more...' : ''}
       </div>
       <div ref={sentinelRef} style={{ height: 1 }} />
     </div>
