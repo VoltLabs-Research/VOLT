@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { formatSize } from '@/utilities/scene-utils'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/DocumentListing'
@@ -23,8 +23,10 @@ const TrajectoriesListing = () => {
 
     useEffect(() => {
         if (!team?._id) return;
-        // Keep store fetch for cache/other UI, but load paginated locally for infinite scroll
-        getTrajectories(team._id);
+        // Keep store fetch for cache/other UI only when not searching
+        if(!searchQuery.trim()){
+            getTrajectories(team._id);
+        }
         let canceled = false;
         (async () => {
             try{
@@ -47,17 +49,16 @@ const TrajectoriesListing = () => {
         if (!isLoading && !searchQuery.trim()) setData(trajectories || [])
     }, [isLoading, trajectories, searchQuery])
 
-    const handleMenuAction = async (action: string, item: any) => {
-        //if (action === 'view')
+    const handleMenuAction = useCallback(async (action: string, item: any) => {
         if (action === 'delete') await deleteTrajectoryById(item._id)
-    }
+    }, [deleteTrajectoryById]);
 
-    const getMenuOptions = (item: any) => [
+    const getMenuOptions = useCallback((item: any) => ([
         ['View', RiEyeLine, () => handleMenuAction('view', item)],
         ['Delete', RiDeleteBin6Line, () => handleMenuAction('delete', item)]
-    ]
+    ]), [handleMenuAction]);
 
-    const columns: ColumnConfig[] = [
+    const columns: ColumnConfig[] = useMemo(() => [
         {
             title: 'Name',
             key: 'name',
@@ -106,7 +107,7 @@ const TrajectoriesListing = () => {
             render: (v) => formatTimeAgo(v),
             skeleton: { variant: 'text', width: 90 }
         }
-    ]
+    ], [])
 
     return (
         <DocumentListing
@@ -121,7 +122,7 @@ const TrajectoriesListing = () => {
             enableInfinite
             hasMore={data.length < total}
             isFetchingMore={isLoading && data.length > 0}
-            onLoadMore={async () => {
+            onLoadMore={useCallback(async () => {
                 if(!team?._id) return;
                 if(data.length >= total) return;
                 const next = page + 1;
@@ -135,7 +136,7 @@ const TrajectoriesListing = () => {
                     setTotal(payload?.results?.total ?? total);
                     setPage(next);
                 }catch(_e){ /* noop */ }
-            }}
+            }, [team?._id, data.length, total, page, limit, searchQuery])}
         />
     )
 }

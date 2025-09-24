@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { RxDotsHorizontal } from 'react-icons/rx'
 import { RiListUnordered } from 'react-icons/ri'
 import DocumentListingTable from '@/components/molecules/DocumentListingTable'
@@ -127,12 +127,10 @@ const DocumentListing = ({
     isFetchingMore,
     onLoadMore
 }: DocumentListingProps) => {
-    const [filteredData, setFilteredData] = useState(data)
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
 
-    useEffect(() => {
-        let workingData = [...data]
-
+    const sortedData = useMemo(() => {
+        const workingData = [...data]
         if (sortConfig) {
             workingData.sort((a, b) => {
                 const aVal = getValueByPath(a, sortConfig.key)
@@ -158,9 +156,8 @@ const DocumentListing = ({
                     : bStr.localeCompare(aStr)
             })
         }
-
-        setFilteredData(workingData)
-    }, [data, sortConfig, columns])
+        return workingData
+    }, [data, sortConfig])
 
     const handleSort = (col: ColumnConfig) => {
         if (!col.sortable) return
@@ -218,7 +215,7 @@ const DocumentListing = ({
         <div className='document-listing-body-container' ref={bodyRef}>
                 <DocumentListingTable
                     columns={columns}
-                    data={filteredData}
+                    data={sortedData}
                     onCellClick={handleSort}
                     getCellTitle={(col: any) => <>{col.title} {getSortIndicator(col)}</>}
                     isLoading={isLoading}
@@ -229,6 +226,7 @@ const DocumentListing = ({
                     hasMore={hasMore}
                     isFetchingMore={isFetchingMore}
                     onLoadMore={onLoadMore}
+                    keyExtractor={_keyExtractor}
                     scrollContainerRef={bodyRef}
                 />
             </div>

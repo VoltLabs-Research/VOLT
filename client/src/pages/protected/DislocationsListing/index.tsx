@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RiEyeLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig, formatNumber, MethodBadge } from '@/components/organisms/DocumentListing';
 import useTeamStore from '@/stores/team/team';
@@ -34,15 +34,15 @@ const DislocationsListing = () => {
     if (!isLoading) setData(rows || []);
   }, [isLoading, rows]);
 
-  const handleMenuAction = async (action: string, _item: any) => {
+  const handleMenuAction = useCallback(async (action: string, _item: any) => {
     if (action === 'view') {
     }
-  };
+  }, []);
 
-  const getMenuOptions = (item: any) => [
+  const getMenuOptions = useCallback((item: any) => [
     ['View', RiEyeLine, () => handleMenuAction('view', item)]
     // Ignoramos delete por ahora
-  ];
+  ], [handleMenuAction]);
 
   const columns: ColumnConfig[] = useMemo(
     () => [
@@ -125,11 +125,11 @@ const DislocationsListing = () => {
       enableInfinite
       hasMore={hasMore}
       isFetchingMore={isLoading && data.length > 0}
-      onLoadMore={() => {
+      onLoadMore={useCallback(() => {
         if (!team?._id) return;
         if (!hasMore) return;
         getUserDislocations({ teamId: team._id, page: page + 1, limit, q: searchQuery });
-      }}
+      }, [team?._id, hasMore, page, limit, searchQuery, getUserDislocations])}
     />
   );
 };

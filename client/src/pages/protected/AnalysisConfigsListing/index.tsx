@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/DocumentListing'
 import useTeamStore from '@/stores/team/team'
@@ -35,7 +35,7 @@ const AnalysisConfigsListing = () => {
     return () => controller.abort()
   }, [team?._id, limit, searchQuery])
 
-  const handleMenuAction = async (action: string, item: any) => {
+  const handleMenuAction = useCallback(async (action: string, item: any) => {
     switch(action){
       case 'view':
         break
@@ -53,15 +53,15 @@ const AnalysisConfigsListing = () => {
         }
         break
     }
-  }
+  }, [])
 
-  const getMenuOptions = (item: any) => [
+  const getMenuOptions = useCallback((item: any) => ([
     ['View', RiEyeLine, () => handleMenuAction('view', item)],
     ['Delete', RiDeleteBin6Line, () => handleMenuAction('delete', item)]
-  ]
+  ]), [handleMenuAction])
 
   // Columns: only the requested fields
-  const columns: ColumnConfig[] = [
+  const columns: ColumnConfig[] = useMemo(() => [
     {
       title: 'Trajectory',
       sortable: true,
@@ -113,7 +113,7 @@ const AnalysisConfigsListing = () => {
       render: (v) => formatTimeAgo(v),
       skeleton: { variant: 'text', width: 90 }
     }
-  ]
+  ], [])
 
   return (
     <DocumentListing
@@ -128,7 +128,7 @@ const AnalysisConfigsListing = () => {
       enableInfinite
       hasMore={data.length < total}
       isFetchingMore={isLoading && data.length > 0}
-      onLoadMore={async () => {
+      onLoadMore={useCallback(async () => {
         if(!team?._id) return
         if(data.length >= total) return
         const next = page + 1
@@ -144,7 +144,7 @@ const AnalysisConfigsListing = () => {
           setPage(next)
         }catch(_e){/* noop */}
         finally{ setIsLoading(false) }
-      }}
+      }, [team?._id, data.length, total, page, limit, searchQuery])}
     />
   )
 }

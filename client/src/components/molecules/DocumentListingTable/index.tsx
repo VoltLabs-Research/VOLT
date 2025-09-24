@@ -32,6 +32,7 @@ type InfiniteProps = {
     // How many skeleton rows to show when fetching more
     skeletonRowsCount?: number;
   scrollContainerRef?: React.RefObject<HTMLElement> | null;
+  keyExtractor?: (item: any, index: number) => string | number;
 }
 
 const DocumentListingTable = ({
@@ -47,7 +48,8 @@ const DocumentListingTable = ({
     onLoadMore,
     isFetchingMore = false,
     skeletonRowsCount = 8,
-    scrollContainerRef = null
+    scrollContainerRef = null,
+    keyExtractor
 }: any & InfiniteProps) => {
     const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -103,9 +105,11 @@ const DocumentListingTable = ({
                     </div>
                 ) : (
                     <>
-                        {data.map((item: any, idx: number) => (
+                        {data.map((item: any, idx: number) => {
+                            const rowKey = keyExtractor ? keyExtractor(item, idx) : `item-${idx}`;
+                            return (
                             <ActionBasedFloatingContainer
-                                key={'item-' + idx}
+                                key={rowKey}
                                 options={getMenuOptions ? getMenuOptions(item) : []}
                                 className='document-listing-table-row-container'
                                 useCursorPosition={true}
@@ -126,7 +130,8 @@ const DocumentListingTable = ({
                                     </div>
                                 ))}
                             </ActionBasedFloatingContainer>
-                        ))}
+                            );
+                        })}
                         {enableInfinite && hasMore && (isFetchingMore || (isLoading && data.length > 0)) && (
                             Array.from({ length: skeletonRowsCount }).map((_, index) => (
                                 <SkeletonRow key={`append-skeleton-${index}`} columns={columns} />

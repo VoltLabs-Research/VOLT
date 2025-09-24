@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, MethodBadge, RateBadge, formatNumber } from '@/components/organisms/DocumentListing'
 import useTeamStore from '@/stores/team/team'
@@ -46,21 +46,21 @@ const StructureAnalysisListing = () => {
         }
     }, [team, limit, searchQuery])
 
-    const handleMenuAction = (action: string, _item: any) => {
+    const handleMenuAction = useCallback((action: string, _item: any) => {
         switch (action) {
             case 'view':
                 break
             case 'delete':
                 break
         }
-    }
+    }, [])
 
-    const getMenuOptions = (item: any) => [
+    const getMenuOptions = useCallback((item: any) => ([
         ['View', RiEyeLine, () => handleMenuAction('view', item)],
         ['Delete', RiDeleteBin6Line, () => handleMenuAction('delete', item)]
-    ]
+    ]), [handleMenuAction])
 
-    const columns: ColumnConfig[] = [
+    const columns: ColumnConfig[] = useMemo(() => [
         {
             title: 'Trajectory',
             sortable: true,
@@ -117,7 +117,7 @@ const StructureAnalysisListing = () => {
             render: (v) => formatTimeAgo(v),
             skeleton: { variant: 'text', width: 90 }
         }
-    ]
+    ], [])
 
     return (
         <DocumentListing
@@ -132,7 +132,7 @@ const StructureAnalysisListing = () => {
             enableInfinite
             hasMore={data.length < total}
             isFetchingMore={isLoading && data.length > 0}
-            onLoadMore={async () => {
+            onLoadMore={useCallback(async () => {
                 if (!team?._id) return
                 if (data.length >= total) return
                 const next = page + 1
@@ -152,7 +152,7 @@ const StructureAnalysisListing = () => {
                 } finally {
                     setIsLoading(false)
                 }
-            }}
+            }, [team?._id, data.length, total, page, limit, searchQuery])}
         />
     )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RiEyeLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig, MethodBadge } from '@/components/organisms/DocumentListing';
 import useTeamStore from '@/stores/team/team';
@@ -34,13 +34,13 @@ const SimulationCellsListing = () => {
     return () => controller.abort();
   }, [team?._id, searchQuery]);
 
-  const handleMenuAction = async (action: string, _item: any) => {
+  const handleMenuAction = useCallback(async (action: string, _item: any) => {
     if(action === 'view'){}
-  };
+  }, []);
 
-  const getMenuOptions = (item: any) => [
+  const getMenuOptions = useCallback((item: any) => [
     ['View', RiEyeLine, () => handleMenuAction('view', item)]
-  ];
+  ], [handleMenuAction]);
 
   const columns: ColumnConfig[] = useMemo(() => ([
     {
@@ -108,7 +108,7 @@ const SimulationCellsListing = () => {
       enableInfinite
       hasMore={rows.length < total}
       isFetchingMore={isLoading && rows.length > 0}
-      onLoadMore={async () => {
+      onLoadMore={useCallback(async () => {
         if(!team?._id) return;
         if(rows.length >= total) return;
         const next = page + 1;
@@ -121,7 +121,7 @@ const SimulationCellsListing = () => {
           setTotal(res.data?.data?.total ?? total);
           setPage(next);
         }catch(_e){} finally{ setIsLoading(false); }
-      }}
+      }, [team?._id, rows.length, total, page, limit, searchQuery])}
     />
   );
 };

@@ -87,6 +87,16 @@ const DashboardLayout = () => {
 
     const searchQuery = useDashboardSearchStore((s) => s.query);
     const setSearchQuery = useDashboardSearchStore((s) => s.setQuery);
+    const [localQuery, setLocalQuery] = useState(searchQuery);
+
+    // Keep local input in sync if query changes externally
+    useEffect(() => { setLocalQuery(searchQuery); }, [searchQuery]);
+
+    // Debounce updates to global query to reduce re-renders/network chatter
+    useEffect(() => {
+        const id = setTimeout(() => setSearchQuery(localQuery), 300);
+        return () => clearTimeout(id);
+    }, [localQuery, setSearchQuery]);
 
     return (
         <main className='dashboard-main'>
@@ -114,8 +124,8 @@ const DashboardLayout = () => {
                         <input
                             placeholder='Search'
                             className='search-input '
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            value={localQuery}
+                            onChange={(e) => setLocalQuery(e.target.value)}
                         />
                     </div>
                 </div>
