@@ -67,7 +67,8 @@ const corsOptions = {
         'Pragma',
         'Expires',
         'ETag',
-        'Last-Modified'
+    'Last-Modified',
+    'Content-Length'
     ],
     optionsSuccessStatus: 200
 };
@@ -90,7 +91,25 @@ configureApp({
     middlewares: [
         cors(corsOptions),
         helmet(),
-        compression(),
+        compression({
+            filter: (req, res) => {
+                const url = req.url || '';
+                // Skip compression for binary downloads so Content-Length is preserved
+                if (
+                    url.includes('/images-archive') ||
+                    url.includes('/glb-archive') ||
+                    url.includes('/frame/') ||
+                    url.endsWith('.png') ||
+                    url.endsWith('.glb') ||
+                    url.endsWith('.zip')
+                ){
+                    return false;
+                }
+                // Default filter
+                // @ts-ignore - types accept (req,res) => boolean
+                return compression.filter(req as any, res as any);
+            }
+        }),
         bodyParser.json(),
         bodyParser.urlencoded({ extended: true })
     ]

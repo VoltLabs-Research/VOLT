@@ -20,6 +20,8 @@ const RasterScene: React.FC<RasterSceneProps> = ({
 }) => {
   const [showUnavailable, setShowUnavailable] = React.useState(false);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [downloadProgress, setDownloadProgress] = React.useState<number | null>(null);
+  const [downloadDone, setDownloadDone] = React.useState(false);
 
   React.useEffect(() => {
     setShowUnavailable(false);
@@ -38,12 +40,38 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   const canDownload = !!trajectoryId;
   const handleDownloadDislocations = async () => {
     if(!scene?.analysisId) return;
-    await downloadJson(`/analysis-config/${scene.analysisId}/dislocations`, `dislocations_${scene.analysisId}.json`);
+  setDownloadProgress(0);
+    await downloadJson(`/analysis-config/${scene.analysisId}/dislocations`, `dislocations_${scene.analysisId}.json`, {
+      onProgress: (p) => setDownloadProgress(p)
+    });
+  setDownloadDone(true);
+  setTimeout(() => { setDownloadProgress(null); setDownloadDone(false); }, 700);
     setIsMenuOpen(false);
   };
   const handleDownloadGLBZip = async () => {
     if(!trajectoryId) return;
-    await downloadBlob(`/trajectories/${trajectoryId}/glb-archive`, `trajectory_${trajectoryId}_glbs.zip`);
+  setDownloadProgress(0);
+    await downloadBlob(`/trajectories/${trajectoryId}/glb-archive`, `trajectory_${trajectoryId}_glbs.zip`, {
+      onProgress: (p) => setDownloadProgress(p)
+    });
+  setDownloadDone(true);
+  setTimeout(() => { setDownloadProgress(null); setDownloadDone(false); }, 700);
+    setIsMenuOpen(false);
+  };
+  const handleDownloadRasterImagesZip = async () => {
+    if(!trajectoryId) return;
+    const q: string[] = [];
+    if(scene?.analysisId) q.push(`analysisId=${encodeURIComponent(scene.analysisId)}`);
+    if(scene?.model) q.push(`model=${encodeURIComponent(scene.model)}`);
+    // include preview alongside model frames if desired; set to 0 to skip
+    q.push('includePreview=0');
+    const qs = q.length ? `?${q.join('&')}` : '';
+  setDownloadProgress(0);
+    await downloadBlob(`/raster/${trajectoryId}/images-archive${qs}`, `trajectory_${trajectoryId}_raster_images.zip`, {
+      onProgress: (p) => setDownloadProgress(p)
+    });
+  setDownloadDone(true);
+  setTimeout(() => { setDownloadProgress(null); setDownloadDone(false); }, 700);
     setIsMenuOpen(false);
   };
 
@@ -96,9 +124,35 @@ const RasterScene: React.FC<RasterSceneProps> = ({
               cursor: canDownload ? 'pointer' : 'not-allowed',
               padding: 6,
               borderRadius: 8,
+              position: 'relative'
             }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <svg
+              style={{ position: 'relative', zIndex: 5, opacity: typeof downloadProgress === 'number' ? 0 : 1, transition: 'opacity .2s ease' }}
+              xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            {typeof downloadProgress === 'number' && (
+              <>
+                <div className="download-progress-track" />
+                <svg className="download-progress-svg" viewBox="0 0 40 40" width="40" height="40" aria-hidden>
+                  <circle className="download-progress-bg" cx="20" cy="20" r="17" />
+                  <circle
+                    className="download-progress-circle"
+                    cx="20"
+                    cy="20"
+                    r="17"
+                    style={{ ['--p' as any]: Math.min(downloadProgress, 1) * 100 }}
+                  />
+                </svg>
+                <div className="download-progress-label" style={{ zIndex: 1 }}>
+                  {Math.round(downloadProgress * 100)}%
+                </div>
+              </>
+            )}
           </button>
           {isMenuOpen && (
             <div className="raster-scene-download-menu">
@@ -107,6 +161,9 @@ const RasterScene: React.FC<RasterSceneProps> = ({
               </button>
               <button onClick={handleDownloadGLBZip} disabled={!canDownload}>
                 <span>Frames GLBs (zip)</span>
+              </button>
+              <button onClick={handleDownloadRasterImagesZip} disabled={!canDownload}>
+                <span>Raster images (zip)</span>
               </button>
             </div>
           )}

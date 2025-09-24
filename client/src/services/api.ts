@@ -48,12 +48,22 @@ api.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
-export async function downloadBlob(url: string, filename: string){
+export async function downloadBlob(
+    url: string,
+    filename: string,
+    opts?: { onProgress?: (progress: number) => void }
+){
     const token = localStorage.getItem('authToken');
     const res = await axios.get(url, {
         baseURL: API_BASE_URL,
         responseType: 'blob',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        onDownloadProgress: (evt) => {
+            const total = (evt.total ?? 0);
+            if(total > 0 && opts?.onProgress){
+                opts.onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
+            }
+        }
     });
     const blob = res.data as Blob;
     const a = document.createElement('a');
@@ -66,12 +76,22 @@ export async function downloadBlob(url: string, filename: string){
     URL.revokeObjectURL(objectUrl);
 }
 
-export async function downloadJson(url: string, filename: string){
+export async function downloadJson(
+    url: string,
+    filename: string,
+    opts?: { onProgress?: (progress: number) => void }
+){
     const token = localStorage.getItem('authToken');
     const res = await axios.get(url, {
         baseURL: API_BASE_URL,
         responseType: 'json',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        onDownloadProgress: (evt) => {
+            const total = (evt.total ?? 0);
+            if(total > 0 && opts?.onProgress){
+                opts.onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
+            }
+        }
     });
     const blob = new Blob([JSON.stringify(res.data?.data ?? res.data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');

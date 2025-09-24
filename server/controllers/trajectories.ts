@@ -363,9 +363,9 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
         const zipBuffer = zip.toBuffer();
         const filenameSafe = String(trajectory.name || trajectory._id).replace(/[^a-z0-9_\-]+/gi, '_');
 
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="${filenameSafe}_glbs.zip"`);
-        res.setHeader('Content-Length', zipBuffer.length);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filenameSafe}_glbs.zip"`);
+    res.setHeader('Content-Length', String(zipBuffer.length));
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');

@@ -56,6 +56,13 @@ router.get(
     controller.getRasterizedFrames
 );
 
+router.get(
+    '/:id/images-archive',
+    authMiddleware.optionalAuth,
+    trajectoryMiddleware.checkTeamMembershipForTrajectory,
+    controller.downloadRasterImagesArchive
+);
+
 // Para rutas POST, seguir requiriendo autenticación completa
 router.post(
     '/:id/glb/',
