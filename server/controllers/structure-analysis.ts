@@ -133,7 +133,8 @@ export const getStructureAnalysesByTrajectory = async (req: Request, res: Respon
             timestepTo,
             page = '1',
             limit = '100',
-            sort = '-createdAt'
+            sort = '-createdAt',
+            q = ''
         } = req.query as Record<string, string>;
 
         if (!trajectoryId || !isValidObjectId(trajectoryId)) {
@@ -198,15 +199,59 @@ export const getStructureAnalysesByTrajectory = async (req: Request, res: Respon
             sortObj.createdAt = -1;
         }
 
-        const [analyses, totalAnalyses] = await Promise.all([
-            StructureAnalysis.find(saMatch)
-                .select('totalAtoms timestep analysisMethod types identifiedStructures unidentifiedStructures identificationRate createdAt')
-                .sort(sortObj)
-                .skip(skip)
-                .limit(limitNum)
-                .lean(),
-            StructureAnalysis.countDocuments(saMatch)
-        ]);
+        const query = typeof q === 'string' ? q.trim() : '';
+        const regex = query ? { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } : null;
+
+        let analyses: any[] = [];
+        let totalAnalyses = 0;
+
+        if (regex) {
+            const pipeline: any[] = [
+                { $match: saMatch },
+                { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
+                { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
+                { $match: { $or: [ { 'trajectoryDoc.name': regex }, { analysisMethod: regex } ] } },
+                { $sort: sortObj },
+                { $skip: skip },
+                { $limit: limitNum },
+                { $project: {
+                    totalAtoms: 1,
+                    timestep: 1,
+                    analysisMethod: 1,
+                    types: 1,
+                    identifiedStructures: 1,
+                    unidentifiedStructures: 1,
+                    identificationRate: 1,
+                    createdAt: 1,
+                    trajectory: { _id: '$trajectoryDoc._id', name: '$trajectoryDoc.name' }
+                } }
+            ];
+            const countPipeline: any[] = [
+                { $match: saMatch },
+                { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
+                { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
+                { $match: { $or: [ { 'trajectoryDoc.name': regex }, { analysisMethod: regex } ] } },
+                { $count: 'total' }
+            ];
+            const [aggRows, aggCount] = await Promise.all([
+                StructureAnalysis.aggregate(pipeline),
+                StructureAnalysis.aggregate(countPipeline)
+            ]);
+            analyses = aggRows as any[];
+            totalAnalyses = (aggCount?.[0]?.total as number) ?? 0;
+        } else {
+            const [rows, total] = await Promise.all([
+                StructureAnalysis.find(saMatch)
+                    .select('totalAtoms timestep analysisMethod types identifiedStructures unidentifiedStructures identificationRate createdAt')
+                    .sort(sortObj)
+                    .skip(skip)
+                    .limit(limitNum)
+                    .lean(),
+                StructureAnalysis.countDocuments(saMatch)
+            ]);
+            analyses = rows as any[];
+            totalAnalyses = total as number;
+        }
 
         return res.status(200).json({
             status: 'success',
@@ -236,7 +281,8 @@ export const getStructureAnalysesByTeam = async (req: Request, res: Response) =>
             timestepTo,
             page = '1',
             limit = '100', 
-            sort = '-createdAt' 
+            sort = '-createdAt',
+            q = '' 
         } = req.query as Record<string, string>;
 
         if(!teamId || !isValidObjectId(teamId)){
@@ -300,23 +346,67 @@ export const getStructureAnalysesByTeam = async (req: Request, res: Response) =>
             sortObj.createdAt = -1;
         }
 
-        const [analyses, totalAnalyses] = await Promise.all([
-            StructureAnalysis.find(saMatch)
-                .select('trajectory totalAtoms timestep analysisMethod types identifiedStructures unidentifiedStructures identificationRate createdAt')
-                .sort(sortObj)
-                .skip(skip)
-                .populate({
-                    path: 'trajectory',
-                    select: 'name _id'
-                })
-                .limit(limitNum)
-                .lean(),
-            StructureAnalysis.countDocuments(saMatch)
-        ]);
+        const query = typeof q === 'string' ? q.trim() : '';
+        const regex = query ? { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } : null;
+
+        let analyses: any[] = [];
+        let totalAnalyses = 0;
+
+        if (regex) {
+            const pipeline: any[] = [
+                { $match: saMatch },
+                { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
+                { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
+                { $match: { $or: [ { 'trajectoryDoc.name': regex }, { analysisMethod: regex } ] } },
+                { $sort: sortObj },
+                { $skip: skip },
+                { $limit: limitNum },
+                { $project: {
+                    trajectory: { _id: '$trajectoryDoc._id', name: '$trajectoryDoc.name' },
+                    totalAtoms: 1,
+                    timestep: 1,
+                    analysisMethod: 1,
+                    types: 1,
+                    identifiedStructures: 1,
+                    unidentifiedStructures: 1,
+                    identificationRate: 1,
+                    createdAt: 1
+                } }
+            ];
+            const countPipeline: any[] = [
+                { $match: saMatch },
+                { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
+                { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
+                { $match: { $or: [ { 'trajectoryDoc.name': regex }, { analysisMethod: regex } ] } },
+                { $count: 'total' }
+            ];
+            const [aggRows, aggCount] = await Promise.all([
+                StructureAnalysis.aggregate(pipeline),
+                StructureAnalysis.aggregate(countPipeline)
+            ]);
+            analyses = aggRows as any[];
+            totalAnalyses = (aggCount?.[0]?.total as number) ?? 0;
+        } else {
+            const [rows, total] = await Promise.all([
+                StructureAnalysis.find(saMatch)
+                    .select('trajectory totalAtoms timestep analysisMethod types identifiedStructures unidentifiedStructures identificationRate createdAt')
+                    .sort(sortObj)
+                    .skip(skip)
+                    .populate({
+                        path: 'trajectory',
+                        select: 'name _id'
+                    })
+                    .limit(limitNum)
+                    .lean(),
+                StructureAnalysis.countDocuments(saMatch)
+            ]);
+            analyses = rows as any[];
+            totalAnalyses = total as number;
+        }
 
         const analysesByTrajectory: Record<string, any[]> = {};
         for(const sa of analyses){
-            const key = sa.trajectory.toString();
+            const key = (typeof sa.trajectory === 'object' && sa.trajectory?._id) ? String(sa.trajectory._id) : String(sa.trajectory);
             if(!analysesByTrajectory[key]) analysesByTrajectory[key] = [];
             analysesByTrajectory[key].push(sa);
         }

@@ -14,7 +14,8 @@ export const getUserDislocations = async (req: Request, res: Response) => {
       timestepTo,
       page = '1',
       limit = '100',
-      sort = '-createdAt'
+      sort = '-createdAt',
+      q = ''
     } = req.query as Record<string, string>;
     let teamIds: string[] = [];
     if(teamId){
@@ -25,10 +26,10 @@ export const getUserDislocations = async (req: Request, res: Response) => {
       if(!team){
         return res.status(403).json({ status: 'error', data: { error: 'Forbidden. No perteneces a este equipo.' } });
       }
-      teamIds = [team._id.toString()];
+      teamIds = [(team as any)._id.toString()];
     }else{
       const teams = await Team.find({ members: userId }).select('_id');
-      teamIds = teams.map(t => t._id.toString());
+      teamIds = (teams as any[]).map((t: any) => t._id.toString());
     }
 
     if(teamIds.length === 0){
@@ -53,7 +54,7 @@ export const getUserDislocations = async (req: Request, res: Response) => {
       trajectoryIds = [traj._id.toString()];
     }else{
       const trajectories = await Trajectory.find({ team: { $in: teamIds } }).select('_id');
-      trajectoryIds = trajectories.map(t => t._id.toString());
+      trajectoryIds = (trajectories as any[]).map((t: any) => t._id.toString());
     }
 
     if(trajectoryIds.length === 0){
@@ -96,28 +97,87 @@ export const getUserDislocations = async (req: Request, res: Response) => {
         sortObj.createdAt = -1;
     }
 
-    const [rows, totalDocs, totalsAgg] = await Promise.all([
-        Dislocation.find(match)
-            .select('trajectory timestep totalSegments totalPoints totalLength averageSegmentLength maxSegmentLength minSegmentLength analysisConfig createdAt updatedAt')
-            .sort(sortObj)
-            .skip(skip)
-            .limit(limitNum)
-            .populate({ path: 'trajectory', select: 'name _id team' })
-            .populate({ path: 'analysisConfig', select: '_id crystalStructure RMSD identificationMode' })
-            .lean(),
-            Dislocation.countDocuments(match),
-            Dislocation.aggregate([
-                { $match: match },
-                {
-                $group: {
-                    _id: null,
-                    segments: { $sum: '$totalSegments' },
-                    points:   { $sum: '$totalPoints' },
-                length:   { $sum: '$totalLength' }
-            }
-            }
+    const query = typeof q === 'string' ? q.trim() : '';
+    const regex = query ? { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } : null;
+
+    let rows: any[] = [];
+    let totalDocs = 0;
+    let totalsAgg: any[] = [];
+
+    if (regex) {
+      // Aggregation pipeline to filter by trajectory name or analysisConfig.identificationMode
+      const basePipeline: any[] = [
+        { $match: match },
+        { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
+        { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
+        { $lookup: { from: 'analysisconfigs', localField: 'analysisConfig', foreignField: '_id', as: 'analysisConfigDoc' } },
+        { $addFields: { analysisConfigDoc: { $arrayElemAt: ['$analysisConfigDoc', 0] } } },
+        { $match: { $or: [ { 'trajectoryDoc.name': regex }, { 'analysisConfigDoc.identificationMode': regex } ] } }
+      ];
+
+      const dataPipeline: any[] = [
+        ...basePipeline,
+        { $sort: sortObj },
+        { $skip: skip },
+        { $limit: limitNum },
+        { $project: {
+          trajectory: { _id: '$trajectoryDoc._id', name: '$trajectoryDoc.name', team: '$trajectoryDoc.team' },
+          analysisConfig: { _id: '$analysisConfigDoc._id', crystalStructure: '$analysisConfigDoc.crystalStructure', RMSD: '$analysisConfigDoc.RMSD', identificationMode: '$analysisConfigDoc.identificationMode' },
+          timestep: 1,
+          totalSegments: 1,
+          totalPoints: 1,
+          averageSegmentLength: 1,
+          maxSegmentLength: 1,
+          minSegmentLength: 1,
+          totalLength: 1,
+          createdAt: 1,
+          updatedAt: 1
+        } }
+      ];
+
+      const countPipeline: any[] = [
+        ...basePipeline,
+        { $count: 'total' }
+      ];
+
+      const totalsPipeline: any[] = [
+        ...basePipeline,
+        { $group: {
+          _id: null,
+          segments: { $sum: '$totalSegments' },
+          points:   { $sum: '$totalPoints' },
+          length:   { $sum: '$totalLength' }
+        } }
+      ];
+
+      const [aggRows, aggCount, aggTotals] = await Promise.all([
+        Dislocations.aggregate(dataPipeline),
+        Dislocations.aggregate(countPipeline),
+        Dislocations.aggregate(totalsPipeline)
+      ]);
+      rows = aggRows as any[];
+      totalDocs = (aggCount?.[0]?.total as number) ?? 0;
+      totalsAgg = aggTotals as any[];
+    } else {
+      const [found, total, totals] = await Promise.all([
+        Dislocations.find(match)
+          .select('trajectory timestep totalSegments totalPoints totalLength averageSegmentLength maxSegmentLength minSegmentLength analysisConfig createdAt updatedAt')
+          .sort(sortObj)
+          .skip(skip)
+          .limit(limitNum)
+          .populate({ path: 'trajectory', select: 'name _id team' })
+          .populate({ path: 'analysisConfig', select: '_id crystalStructure RMSD identificationMode' })
+          .lean(),
+        Dislocations.countDocuments(match),
+        Dislocations.aggregate([
+          { $match: match },
+          { $group: { _id: null, segments: { $sum: '$totalSegments' }, points: { $sum: '$totalPoints' }, length: { $sum: '$totalLength' } } }
         ])
-    ]);
+      ]);
+      rows = found as any[];
+      totalDocs = total as number;
+      totalsAgg = totals as any[];
+    }
 
     const totals = {
         segments: totalsAgg?.[0]?.segments ?? 0,

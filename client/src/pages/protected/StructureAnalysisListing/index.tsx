@@ -4,6 +4,7 @@ import DocumentListing, { type ColumnConfig, MethodBadge, RateBadge, formatNumbe
 import useTeamStore from '@/stores/team/team'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
 import { api } from '@/services/api'
+import useDashboardSearchStore from '@/stores/ui/dashboard-search'
 
 const StructureAnalysisListing = () => {
     const team = useTeamStore((state) => state.selectedTeam)
@@ -13,6 +14,8 @@ const StructureAnalysisListing = () => {
     const [total, setTotal] = useState<number>(0)
     const [limit] = useState<number>(100)
 
+    const searchQuery = useDashboardSearchStore((s) => s.query)
+
     useEffect(() => {
         if (!team?._id) return
         let canceled = false
@@ -20,7 +23,7 @@ const StructureAnalysisListing = () => {
         ;(async () => {
             try {
                 const res = await api.get(`/structure-analysis/team/${team._id}`, {
-                    params: { page: 1, limit, sort: '-createdAt' }
+                    params: { page: 1, limit, sort: '-createdAt', q: searchQuery }
                 })
                 if (canceled) return
                 const payload: any = (res as any)?.data?.data || {}
@@ -41,7 +44,7 @@ const StructureAnalysisListing = () => {
         return () => {
             canceled = true
         }
-    }, [team, limit])
+    }, [team, limit, searchQuery])
 
     const handleMenuAction = (action: string, _item: any) => {
         switch (action) {
@@ -136,7 +139,7 @@ const StructureAnalysisListing = () => {
                 setIsLoading(true)
                 try {
                     const res = await api.get(`/structure-analysis/team/${team._id}`, {
-                        params: { page: next, limit, sort: '-createdAt' }
+                        params: { page: next, limit, sort: '-createdAt', q: searchQuery }
                     })
                     const payload: any = (res as any)?.data?.data || {}
                     const map = payload?.analysesByTrajectory || {}

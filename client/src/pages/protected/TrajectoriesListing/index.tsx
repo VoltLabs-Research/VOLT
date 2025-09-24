@@ -6,6 +6,7 @@ import useTrajectoryStore from '@/stores/trajectories'
 import useTeamStore from '@/stores/team/team'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
 import { api } from '@/services/api'
+import useDashboardSearchStore from '@/stores/ui/dashboard-search'
 
 const TrajectoriesListing = () => {
     const getTrajectories = useTrajectoryStore((s) => s.getTrajectories)
@@ -18,6 +19,8 @@ const TrajectoriesListing = () => {
     const [total, setTotal] = useState<number>(0)
     const [limit] = useState<number>(50)
 
+    const searchQuery = useDashboardSearchStore((s) => s.query);
+
     useEffect(() => {
         if (!team?._id) return;
         // Keep store fetch for cache/other UI, but load paginated locally for infinite scroll
@@ -26,7 +29,7 @@ const TrajectoriesListing = () => {
         (async () => {
             try{
                 const res = await api.get(`/trajectories`, {
-                    params: { teamId: team._id, page: 1, limit, sort: '-createdAt', populate: 'analysis' }
+                    params: { teamId: team._id, page: 1, limit, sort: '-createdAt', populate: 'analysis', q: searchQuery }
                 });
                 if(canceled) return;
                 const payload: any = res.data;
@@ -38,11 +41,11 @@ const TrajectoriesListing = () => {
             }catch(_e){ /* noop */ }
         })();
         return () => { canceled = true; };
-    }, [team?._id, limit])
+    }, [team?._id, limit, searchQuery])
 
     useEffect(() => {
-        if (!isLoading) setData(trajectories || [])
-    }, [isLoading, trajectories])
+        if (!isLoading && !searchQuery.trim()) setData(trajectories || [])
+    }, [isLoading, trajectories, searchQuery])
 
     const handleMenuAction = async (action: string, item: any) => {
         //if (action === 'view')
@@ -124,7 +127,7 @@ const TrajectoriesListing = () => {
                 const next = page + 1;
                 try{
                     const res = await api.get(`/trajectories`, {
-                        params: { teamId: team._id, page: next, limit, sort: '-createdAt', populate: 'analysis' }
+                        params: { teamId: team._id, page: next, limit, sort: '-createdAt', populate: 'analysis', q: searchQuery }
                     });
                     const payload: any = res.data;
                     const rows = payload?.data || payload?.data?.data || [];

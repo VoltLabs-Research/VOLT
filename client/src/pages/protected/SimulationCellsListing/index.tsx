@@ -4,6 +4,7 @@ import DocumentListing, { type ColumnConfig, MethodBadge } from '@/components/or
 import useTeamStore from '@/stores/team/team';
 import { api } from '@/services/api';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
+import useDashboardSearchStore from '@/stores/ui/dashboard-search'
 
 const SimulationCellsListing = () => {
   const team = useTeamStore((s) => s.selectedTeam);
@@ -13,6 +14,8 @@ const SimulationCellsListing = () => {
   const [total, setTotal] = useState<number>(0);
   const [limit] = useState<number>(100);
 
+  const searchQuery = useDashboardSearchStore((s) => s.query);
+
   useEffect(() => {
     if(!team?._id) return;
     const controller = new AbortController();
@@ -20,7 +23,7 @@ const SimulationCellsListing = () => {
     (async () => {
       try{
         const res = await api.get<{ status: string; data: { cells: any[]; total: number; page: number; limit: number } }>(`/simulation-cell`, {
-          params: { teamId: team._id, page: 1, limit },
+          params: { teamId: team._id, page: 1, limit, q: searchQuery },
           signal: controller.signal
         });
         setRows(res.data?.data?.cells ?? []);
@@ -29,7 +32,7 @@ const SimulationCellsListing = () => {
       }catch(_e){} finally{ setIsLoading(false); }
     })();
     return () => controller.abort();
-  }, [team?._id]);
+  }, [team?._id, searchQuery]);
 
   const handleMenuAction = async (action: string, _item: any) => {
     if(action === 'view'){}
@@ -112,7 +115,7 @@ const SimulationCellsListing = () => {
         setIsLoading(true);
         try{
           const res = await api.get<{ status: string; data: { cells: any[]; total: number; page: number; limit: number } }>(`/simulation-cell`, {
-            params: { teamId: team._id, page: next, limit }
+            params: { teamId: team._id, page: next, limit, q: searchQuery }
           });
           setRows((prev) => [...prev, ...(res.data?.data?.cells ?? [])]);
           setTotal(res.data?.data?.total ?? total);

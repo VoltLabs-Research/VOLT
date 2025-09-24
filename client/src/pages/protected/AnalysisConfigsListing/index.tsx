@@ -4,6 +4,7 @@ import DocumentListing, { type ColumnConfig } from '@/components/organisms/Docum
 import useTeamStore from '@/stores/team/team'
 import { api } from '@/services/api'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
+import useDashboardSearchStore from '@/stores/ui/dashboard-search'
 
 const AnalysisConfigsListing = () => {
   const team = useTeamStore((state) => state.selectedTeam)
@@ -13,6 +14,8 @@ const AnalysisConfigsListing = () => {
   const [total, setTotal] = useState<number>(0)
   const [limit] = useState<number>(20)
 
+  const searchQuery = useDashboardSearchStore((s) => s.query);
+
   useEffect(() => {
     if(!team?._id) return
     const controller = new AbortController()
@@ -21,7 +24,7 @@ const AnalysisConfigsListing = () => {
       try{
         const res = await api.get<{ status: string; data: { configs: any[]; total: number; page: number; limit: number } }>(
           `/analysis-config/team/${team._id}`,
-          { params: { page: 1, limit }, signal: controller.signal }
+          { params: { page: 1, limit, q: searchQuery }, signal: controller.signal }
         )
         setData(res.data?.data?.configs ?? [])
         setTotal(res.data?.data?.total ?? 0)
@@ -30,7 +33,7 @@ const AnalysisConfigsListing = () => {
       finally{ setIsLoading(false) }
     })()
     return () => controller.abort()
-  }, [team?._id, limit])
+  }, [team?._id, limit, searchQuery])
 
   const handleMenuAction = async (action: string, item: any) => {
     switch(action){
@@ -133,7 +136,7 @@ const AnalysisConfigsListing = () => {
         try{
           const res = await api.get<{ status: string; data: { configs: any[]; total: number; page: number; limit: number } }>(
             `/analysis-config/team/${team._id}`,
-            { params: { page: next, limit } }
+            { params: { page: next, limit, q: searchQuery } }
           )
           const nextRows = res.data?.data?.configs ?? []
           setData((prev) => [...prev, ...nextRows])

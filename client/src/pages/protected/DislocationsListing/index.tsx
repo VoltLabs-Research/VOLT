@@ -4,6 +4,7 @@ import DocumentListing, { type ColumnConfig, formatNumber, MethodBadge } from '@
 import useTeamStore from '@/stores/team/team';
 import useDislocationStore from '@/stores/dislocations';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
+import useDashboardSearchStore from '@/stores/ui/dashboard-search';
 
 const formatFloat = (v: number, digits = 2) =>
   typeof v === 'number' ? Number(v).toFixed(digits).replace(/\.?0+$/, '') : '—';
@@ -20,12 +21,13 @@ const DislocationsListing = () => {
   const hasMore = useDislocationStore((s) => s.dislocations.length < s.total);
 
   const [data, setData] = useState<any[]>([]);
+  const searchQuery = useDashboardSearchStore((s) => s.query);
 
   // Cargar al cambiar el equipo
   useEffect(() => {
     if (!team?._id) return;
-    getUserDislocations({ teamId: team._id, page: 1 });
-  }, [team]);
+    getUserDislocations({ teamId: team._id, page: 1, q: searchQuery });
+  }, [team, searchQuery]);
 
   // Reflejar cambios del store en la tabla
   useEffect(() => {
@@ -126,7 +128,7 @@ const DislocationsListing = () => {
       onLoadMore={() => {
         if (!team?._id) return;
         if (!hasMore) return;
-        getUserDislocations({ teamId: team._id, page: page + 1, limit });
+        getUserDislocations({ teamId: team._id, page: page + 1, limit, q: searchQuery });
       }}
     />
   );

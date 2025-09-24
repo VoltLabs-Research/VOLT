@@ -3,7 +3,35 @@ import { RxDotsHorizontal } from 'react-icons/rx'
 import { RiListUnordered } from 'react-icons/ri'
 import DocumentListingTable from '@/components/molecules/DocumentListingTable'
 import './DocumentListing.css'
-import useDashboardSearchStore from '@/stores/ui/dashboard-search'
+
+// Helpers to support deep key access and robust search/sort across nested values
+const getValueByPath = (obj: any, path: string) => {
+    if (!obj || !path) return undefined
+    if (path.indexOf('.') === -1) return obj?.[path]
+    return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj)
+}
+
+const toSearchString = (val: any): string => {
+    if (val == null) return ''
+    const t = typeof val
+    if (t === 'string' || t === 'number' || t === 'boolean') return String(val)
+    if (Array.isArray(val)) return val.map((v) => toSearchString(v)).join(' ')
+    if (t === 'object') {
+        // Prefer well-known display fields first, then fallback to shallow values
+        const preferredKeys = ['name', 'title', 'identificationMode', 'crystalStructure', 'method', '_id', 'id']
+        const parts: string[] = []
+        try {
+            for (const k of preferredKeys) {
+                if (k in val && val[k] != null) parts.push(String(val[k]))
+            }
+            if (parts.length) return parts.join(' ')
+            return Object.values(val).map((v) => toSearchString(v)).join(' ')
+        } catch (_e) {
+            return ''
+        }
+    }
+    return ''
+}
 
 export type ColumnConfig = {
     key: string
@@ -99,43 +127,40 @@ const DocumentListing = ({
     isFetchingMore,
     onLoadMore
 }: DocumentListingProps) => {
-    const searchQuery = useDashboardSearchStore((s) => s.query)
     const [filteredData, setFilteredData] = useState(data)
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
 
     useEffect(() => {
         let workingData = [...data]
 
-    if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase()
-            workingData = workingData.filter((item) =>
-                columns.some((col) =>
-                    String(item[col.key] ?? '').toLowerCase().includes(query)
-                )
-            )
-        }
-
         if (sortConfig) {
             workingData.sort((a, b) => {
-                const aVal = a[sortConfig.key]
-                const bVal = b[sortConfig.key]
+                const aVal = getValueByPath(a, sortConfig.key)
+                const bVal = getValueByPath(b, sortConfig.key)
 
                 if (aVal == null && bVal == null) return 0
                 if (aVal == null) return sortConfig.direction === 'asc' ? -1 : 1
                 if (bVal == null) return sortConfig.direction === 'asc' ? 1 : -1
 
-                if (typeof aVal === 'number' && typeof bVal === 'number') {
-                    return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal
+                const aStr = toSearchString(aVal)
+                const bStr = toSearchString(bVal)
+
+                const aNum = Number(aStr)
+                const bNum = Number(bStr)
+                const bothNumeric = !Number.isNaN(aNum) && !Number.isNaN(bNum)
+
+                if (bothNumeric) {
+                    return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum
                 }
 
                 return sortConfig.direction === 'asc'
-                    ? String(aVal).localeCompare(String(bVal))
-                    : String(bVal).localeCompare(String(aVal))
+                    ? aStr.localeCompare(bStr)
+                    : bStr.localeCompare(aStr)
             })
         }
 
         setFilteredData(workingData)
-    }, [data, searchQuery, sortConfig, columns])
+    }, [data, sortConfig, columns])
 
     const handleSort = (col: ColumnConfig) => {
         if (!col.sortable) return

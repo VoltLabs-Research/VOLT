@@ -118,6 +118,10 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
 TrajectorySchema.plugin(useInverseRelations);
 TrajectorySchema.plugin(useCascadeDelete);
 
+// Text index to enable full-text search (used by APIFeatures.search via HandlerFactory)
+// Include name (primary) and status for flexible queries
+TrajectorySchema.index({ name: 'text', status: 'text' });
+
 TrajectorySchema.pre('findOneAndDelete', async function(next){
     const trajectoryToDelete = await this.model.findOne(this.getFilter());
     if(!trajectoryToDelete){

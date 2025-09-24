@@ -14,7 +14,8 @@ export const getUserSimulationCells = async (req: Request, res: Response) => {
       timestepTo,
       page = '1',
       limit = '100',
-      sort = '-createdAt'
+      sort = '-createdAt',
+      q = ''
     } = req.query as Record<string, string>;
 
     // Resolve team membership
@@ -93,17 +94,68 @@ export const getUserSimulationCells = async (req: Request, res: Response) => {
       sortObj.createdAt = -1;
     }
 
-    const [rows, totalDocs] = await Promise.all([
-      SimulationCell.find(match)
-        .select('trajectory analysisConfig timestep volume dimensionality angles periodicBoundaryConditions createdAt updatedAt')
-        .sort(sortObj)
-        .skip(skip)
-        .limit(limitNum)
-        .populate({ path: 'trajectory', select: 'name _id team' })
-        .populate({ path: 'analysisConfig', select: '_id identificationMode RMSD crystalStructure' })
-        .lean(),
-      SimulationCell.countDocuments(match)
-    ]);
+    const query = typeof q === 'string' ? q.trim() : '';
+    const regex = query ? { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } : null;
+
+    let rows: any[] = [];
+    let totalDocs = 0;
+
+    if (regex) {
+      // Use aggregation to filter by trajectory.name or analysisConfig.identificationMode
+      const pipeline: any[] = [
+        { $match: match },
+        { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
+        { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
+        { $lookup: { from: 'analysisconfigs', localField: 'analysisConfig', foreignField: '_id', as: 'analysisConfigDoc' } },
+        { $addFields: { analysisConfigDoc: { $arrayElemAt: ['$analysisConfigDoc', 0] } } },
+        { $match: { $or: [ { 'trajectoryDoc.name': regex }, { 'analysisConfigDoc.identificationMode': regex } ] } },
+        { $sort: sortObj },
+        { $skip: skip },
+        { $limit: limitNum },
+        { $project: {
+          trajectory: { _id: '$trajectoryDoc._id', name: '$trajectoryDoc.name', team: '$trajectoryDoc.team' },
+          analysisConfig: { _id: '$analysisConfigDoc._id', identificationMode: '$analysisConfigDoc.identificationMode', RMSD: '$analysisConfigDoc.RMSD', crystalStructure: '$analysisConfigDoc.crystalStructure' },
+          timestep: 1,
+          volume: 1,
+          dimensionality: 1,
+          angles: 1,
+          periodicBoundaryConditions: 1,
+          createdAt: 1,
+          updatedAt: 1
+        } }
+      ];
+
+      const countPipeline: any[] = [
+        { $match: match },
+        { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
+        { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
+        { $lookup: { from: 'analysisconfigs', localField: 'analysisConfig', foreignField: '_id', as: 'analysisConfigDoc' } },
+        { $addFields: { analysisConfigDoc: { $arrayElemAt: ['$analysisConfigDoc', 0] } } },
+        { $match: { $or: [ { 'trajectoryDoc.name': regex }, { 'analysisConfigDoc.identificationMode': regex } ] } },
+        { $count: 'total' }
+      ];
+
+      const [aggRows, aggCount] = await Promise.all([
+        SimulationCell.aggregate(pipeline),
+        SimulationCell.aggregate(countPipeline)
+      ]);
+      rows = aggRows as any[];
+      totalDocs = (aggCount?.[0]?.total as number) ?? 0;
+    } else {
+      const [found, total] = await Promise.all([
+        SimulationCell.find(match)
+          .select('trajectory analysisConfig timestep volume dimensionality angles periodicBoundaryConditions createdAt updatedAt')
+          .sort(sortObj)
+          .skip(skip)
+          .limit(limitNum)
+          .populate({ path: 'trajectory', select: 'name _id team' })
+          .populate({ path: 'analysisConfig', select: '_id identificationMode RMSD crystalStructure' })
+          .lean(),
+        SimulationCell.countDocuments(match)
+      ]);
+      rows = found as any[];
+      totalDocs = total as number;
+    }
 
     return res.status(200).json({
       status: 'success',

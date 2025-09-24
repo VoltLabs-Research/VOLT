@@ -33,6 +33,7 @@ export type DislocationFilters = {
     analysisConfigId?: string;
     timestepFrom?: number;
     timestepTo?: number;
+    q?: string;
 };
 
 export interface DislocationState {
