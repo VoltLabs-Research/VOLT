@@ -35,19 +35,47 @@ type QueueName = 'trajectory' | 'analysis';
 
 const JOB_UPDATES_CHANNEL = 'job_updates';
 
+/**
+ * Singleton service that encapsulates SocketIO initialization and operation
+ * with Redis adapter and Pub/Sub support for multi-process/multi-pod deployments.
+ */
 class JobsSocketService{
+    /**
+     * SocketIO instance bound to the provided HTTP server.
+     * Set after `initialize()`.
+     */
     private io?: Server;
+
+    /**
+     * Idempotence guard for initialization.
+     */
     private initialized = false;
 
-    // Local clients buffer
+    /**
+     * Per-process buffer of clients that are currently performing their initial load.
+     * While a socket is initializing (fetching initial jobs), updates for that team
+     * are temporarily buffered and flushed once the init finishes.
+     */
     private initializingClients = new Map<string, ClientData>();
 
-    // Redis adapter for SocketIO
+    /**
+     * Redis connections used by the SocketIO adapter (fanout across pods).
+     * @see {@link createAdapter}
+     */
     private adapterPub?: Redis;
     private adapterSub?: Redis;
 
+    /**
+     * Redis subscriber used to receive domain events (Pub/Sub).
+     * Workers publish to `job_updates`, and this service re-emits locally.
+     */
     private domainSub?: Redis;
 
+    /**
+     * @param corsOrigins Allowed origins for SocketIO CORS.
+     * @param pingTimeout Time (ms) before a client is considered disconnected.
+     * @param pingInterval Interval (ms) between keep-alive pings.
+     */
     constructor(
         private corsOrigins: string[] = [
         process.env.CLIENT_DEV_HOST as string,
@@ -57,6 +85,13 @@ class JobsSocketService{
         private pingInterval = 25_000
     ){}  
 
+    /**
+     * Initializes SocketIO on the provided HTTP server, attaches the Redis adapter
+     * for multi-node support, and subscribes to the domain Pub/Sub channel.
+     * 
+     * @param server HTTP server to attach SocketIO to.
+     * @returns The `Server` (SocketIO) instance.
+     */
     async initialize(server: http.Server): Promise<Server>{
         if(this.initialized && this.io){
             return this.io;
@@ -94,11 +129,26 @@ class JobsSocketService{
         return this.io;
     }
 
+    /**
+     * Publishes a job update onto the domain bus so that ALL instances
+     * receive it and re-emit to their local clients.
+     * 
+     * @param teamId Team identifier (mapped to room `team-<id>`).
+     * @param jobData Arbitrary update payload for the job.
+     * 
+     * @remarks
+     * - Delegates to the shared publisher `publishJobUpdate` to avoid duplicate connections.
+     * - No-op if `teamId` or `jobData` are falsy.
+     */
     async emitJobUpdate(teamId: string, jobData: any): Promise<void>{
         if(!teamId || !jobData) return;
         await publishJobUpdate(teamId, jobData);
     }
 
+    /**
+     * Closes SocketIO and the Redis connections associated with this service.
+     * Use for graceful shutdown (SIGTERM/SIGNINT). 
+     */
     async close(): Promise<void>{
         try{
             await new Promise<void>((res) => {
@@ -133,6 +183,10 @@ class JobsSocketService{
         this.domainSub = undefined;
     }
 
+    /**
+     * Returns the initialized SocketIO server.
+     * @throws If SocketIO has not been initialized yet.
+     */
     getIO(): Server{
         if(!this.io){
             throw new Error('Socket.io not initialized!');
@@ -140,6 +194,11 @@ class JobsSocketService{
         return this.io;
     }
 
+    /**
+     * Socket connection handler.
+     * 
+     * @param socket The connected socket.
+     */
     private onConnection(socket: Socket){
         console.log(`[Socket] User connected: ${socket.id}`);
 
@@ -181,6 +240,16 @@ class JobsSocketService{
         });
     }
 
+    /**
+     * Handles a job update received via Redis Pub/Sub and re-emits to local sockets.
+     * 
+     * @param teamId Team identifier for routing to the correct room.
+     * @param jobData Update payload as published by workers/queues.
+     * 
+     * @remarks
+     * - If there are sockets for the same currently initializing in THIS process,
+     * the update is buffered and sent after their snapshopt completes.
+     */
     private async handleExternalJobUpdate(teamId: string, jobData: any){
         if(!this.io){
             return;
@@ -203,6 +272,12 @@ class JobsSocketService{
         ready.forEach((socket) => socket.emit('job_update', update));
     }
 
+    /**
+     * Checks if any socket for the given team is currently initializing on this instance.
+     * 
+     * @param teamId Team identifier.
+     * @returns `true` if at least one socket is initializing; otherwise `false`.
+     */
     private hasAnyInitializingForTeam(teamId: string): boolean{
         for(const client of this.initializingClients.values()){
             if(client.teamId === teamId){
@@ -213,6 +288,15 @@ class JobsSocketService{
         return false;
     }
 
+    /**
+     * Adds an update to the pending buffer for all sockets initializing for the given team.
+     * 
+     * @param teamId Team identifier.
+     * @param jobData Update payload to buffer.
+     * 
+     * @remarks
+     * - Caps buffer per socket at 1000 entries, trimming to the last 50 if exceeded.
+     */
     private addPendingUpdate(teamId: string, jobData: any): void{
         for(const client of this.initializingClients.values()){
             if(client.teamId !== teamId) continue;
@@ -224,6 +308,11 @@ class JobsSocketService{
         }
     }
 
+    /**
+     * Sends buffered updates for a given socket and clears its buffer.
+     * 
+     * @param socketId Socket identifier
+     */
     private async sendPendingUpdates(socketId: string): Promise<void>{
         if(!this.io) return;
 
@@ -244,6 +333,10 @@ class JobsSocketService{
         client.pendingUpdates.length = 0;
     }
 
+    /**
+     * Returns all processing queues that should contribute to the initial snapshopt.
+     * TODO: ADD HEADLESS RASTERIZER QUEUE!
+     */
     private getAllProcessingQueues(): ProcessingQueue[] {
         return [
             { name: 'trajectory', queue: getTrajectoryProcessingQueue() },
@@ -251,6 +344,13 @@ class JobsSocketService{
         ];
     }
 
+    /**
+     * Fetches the latest job states for the given team from Redis, merging across queues.
+     * Uses pipelining to minimize round-trips.
+     * 
+     * @param teamId Team identifier.
+     * @returns Array of unique jobs (deduplicated by `jobId`, newest timestamp wins).
+     */
     private async getJobsForTeam(teamId: string): Promise<BaseJob[]>{
         if(!teamId) return [];
         const startTime = Date.now();
@@ -316,7 +416,13 @@ class JobsSocketService{
         return uniqueJobs;
     }
 
-      private normalizeUpdate(jobData: any) {
+    /**
+     * Normalizes arbitrary job update paylaods to a stable shape for the client.
+     * 
+     * @param jobData Raw job data as received from workers/queues.
+     * @returns Normalized job update object.
+     */
+    private normalizeUpdate(jobData: any) {
         return {
             jobId: jobData.jobId,
             status: jobData.status,
