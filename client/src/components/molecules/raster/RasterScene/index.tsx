@@ -3,6 +3,7 @@ import type { RasterSceneProps } from '@/types/raster';
 import AnalysisSelect from '@/components/atoms/raster/AnalysisSelect';
 import Loader from '@/components/atoms/Loader';
 import { Skeleton } from '@mui/material';
+import RasterSceneSkeleton from '@/components/atoms/raster/RasterSceneSkeleton';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlaybackControls from '@/components/atoms/raster/PlaybackControls';
 import ModelRail from '@/components/atoms/raster/ModelRail';
