@@ -20,20 +20,30 @@
 * SOFTWARE.
 **/
 
-import http from 'http';
-import app from '@config/express';
-import mongoConnector from '@/utilities/mongo/mongo-connector';
-import { initializeRedis } from '@config/redis';
-import jobsSockets from '@/services/jobs-socket';
+import Redis from 'ioredis';
+import { createRedisClient } from '@/config/redis';
 
-const SERVER_PORT = process.env.SERVER_PORT || 8000;
-const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
+const CHANNEL = 'job_updates';
+let pub: Redis | null = null;
 
-const server = http.createServer(app);
-jobsSockets.initialize(server);
+export const initJobUpdatesPublisher = async () => {
+    if(pub){
+        return pub;
+    }
 
-server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
-    initializeRedis();
-    await mongoConnector();
-    console.log(`Server running at http://${SERVER_HOST}:${SERVER_PORT}/`);
-});
+    pub = createRedisClient();
+    pub.on('error', (e) => {
+        console.error('[pub] redis error:', e);
+    });
+
+    await pub.connect?.();
+    return pub;
+};
+
+export const publishJobUpdate = async (teamId: string, payload: any) => {
+    if(!pub){
+        await initJobUpdatesPublisher();
+    }
+
+    await pub!.publish(CHANNEL, JSON.stringify({ teamId, payload }));
+};

@@ -1,10 +1,32 @@
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
 import os from 'os';
 import IORedis from 'ioredis';
 import { BaseJob, QueueOptions, WorkerPoolItem } from '@/types/queues/base-processing-queue';
 import { createRedisClient } from '@config/redis';
 import { Worker } from 'worker_threads';
 import { EventEmitter } from 'events';
-import { emitJobUpdate } from '@/config/socket';
+import { publishJobUpdate } from '@/events/job-updates';
 
 export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitter{
     protected readonly queueName: string;
@@ -209,7 +231,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         ) as [number, number, string];
     }
 
-    private emitSessionExpired(teamId: string, sessionId: string, trajectoryId: string): void {
+    private async emitSessionExpired(teamId: string, sessionId: string, trajectoryId: string): Promise<void> {
         const expiredEvent = {
             type: 'session_expired',
             sessionId,
@@ -217,7 +239,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             timestamp: new Date().toISOString()
         };
         
-        emitJobUpdate(teamId, expiredEvent);
+        await publishJobUpdate(teamId, expiredEvent); 
         console.log(`Session expired event emitted to team ${teamId}`);
     }
 
@@ -233,7 +255,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
             if(shouldClean === 1){
                 this.sessionsBeingCleaned.add(sessionId);
-                this.emitSessionExpired(job.teamId, sessionId, trajectoryId);
+                await this.emitSessionExpired(job.teamId, sessionId, trajectoryId);
                 
                 setTimeout(() => {
                     this.sessionsBeingCleaned.delete(sessionId);
@@ -502,7 +524,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             await this.redis.sadd(teamJobsKey, jobId);
         }
 
-        await emitJobUpdate(teamId, statusData);
+await publishJobUpdate(teamId, statusData);   // en setJobStatus(...)
     }
 
     async getJobStatus(jobId: string): Promise<any | null>{
