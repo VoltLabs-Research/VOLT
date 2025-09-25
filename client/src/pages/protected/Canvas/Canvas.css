@@ -309,6 +309,17 @@
     font-weight: 500;
 }
 
+.model-loading-container{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    background-color: rgba(0, 0, 0, .2);
+    z-index: 9999999999999;
+}
+
 @media screen and (max-width: 768px){
     .editor-scene-zoom-container{
         padding: 0 .8rem;

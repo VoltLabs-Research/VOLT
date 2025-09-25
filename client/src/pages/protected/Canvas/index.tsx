@@ -12,6 +12,7 @@ import useModelStore from '@/stores/editor/model';
 import usePlaybackStore from '@/stores/editor/playback';
 // import useAuthStore from '@/stores/authentication';
 import './Canvas.css';
+import Loader from '@/components/atoms/Loader';
 
 const CANVAS_CONFIG = {
     autoSaveDelay: 2000,
@@ -50,7 +51,7 @@ const EditorPage: React.FC = () => {
     return (
         <div className="editor-container">
             <AnimatePresence>
-                {((isModelLoading && !didPreload) || isPreloading || (!trajectory || currentTimestep === undefined)) && (
+                {isPreloading && (
                     <motion.div
                         className="editor-model-loading-wrapper"
                         initial={{ opacity: 0, scale: 1 }}
@@ -70,6 +71,12 @@ const EditorPage: React.FC = () => {
                             </div>
                         </div>
                     </motion.div>
+                )}
+
+                {((isModelLoading) || (!trajectory || currentTimestep === undefined)) && (
+                    <div className='model-loading-container'>
+                        <Loader scale={0.7} />
+                    </div>
                 )}
             </AnimatePresence>
 
