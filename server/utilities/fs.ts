@@ -21,7 +21,7 @@
 **/
 
 import { createReadStream, createWriteStream } from 'fs';
-import { stat, copyFile as fsCopyFile, rm, readdir } from 'fs/promises';
+import { access, stat, copyFile as fsCopyFile, rm, readdir, constants } from 'fs/promises';
 import { createInterface } from 'readline';
 import { once } from 'events';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
@@ -99,6 +99,19 @@ export const readBinaryFile = async (
         
         stream.on('error', reject);
     });
+};
+
+export const fileExists = async (filePath: string): Promise<boolean> => {
+    try{
+        await access(filePath, constants.F_OK);
+        return true;
+    }catch(err: any){
+        if(err?.code === 'ENOENT'){
+            return false;
+        }
+
+        throw err;
+    }
 };
 
 export const copyFile = async (source: string, destination: string): Promise<void> => {

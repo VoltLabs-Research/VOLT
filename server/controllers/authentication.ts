@@ -39,6 +39,18 @@ const userFactory = new HandlerFactory({
     defaultErrorConfig: 'default'
 });
 
+/**
+ * Augments handler options to constrain actions to the currently authenticated user.
+ * 
+ * @param options - Optional handler configuration (e.g. `beforeUpdate`, `beforeDelete`).
+ * @returns A new options object that injects a `customFilter` binding the action to `req.user.id`.
+ * 
+ * @remarks
+ * - Requires an upstream authentication middleware that sets `req.user` with an `id` property.
+ * - Sets `req.params.id` so downstream factory handlers act on the authenticated user's document.
+ * 
+ * @public
+ */
 const withAuthenticatedUser = (options: any = {}) => ({
     ...options,
     customFilter: async (req: Request) => {
@@ -48,8 +60,25 @@ const withAuthenticatedUser = (options: any = {}) => ({
     }
 });
 
+/**
+ * Get the authenticated user's account (profile) document.
+ * 
+ * @remarks
+ * Delegates to `HandlerFactory#getOne`, automatically scoping to `req.user.id`.
+ * 
+ * @public
+ */
 export const getMyAccount = userFactory.getOne(withAuthenticatedUser());
 
+/**
+ * Update the authenticated user's account with allowed fields.
+ * 
+ * @remarks
+ * Allowed fields are defined in the factory: `firstName`, `lastName`, `email`.
+ * Includes a `beforeUpdate` hook example that logs the target user's email.
+ * 
+ * @public
+ */
 export const updateMyAccount = userFactory.updateOne(
     withAuthenticatedUser({
         beforeUpdate: async (data: any, req: Request, doc: IUser) => {
@@ -59,6 +88,11 @@ export const updateMyAccount = userFactory.updateOne(
     })
 );
 
+/**
+ * Delete the authenticated user's account.
+ * 
+ * @public
+ */
 export const deleteMyAccount = userFactory.deleteOne(
     withAuthenticatedUser({
         beforeDelete: async (doc: IUser, req: Request) => {
@@ -67,12 +101,41 @@ export const deleteMyAccount = userFactory.deleteOne(
     })
 );
 
+/**
+ * Sign a JWT for a given user identifier.
+ * 
+ * @param id - The user's unique identifier (MongoDB ObjectId as string).
+ * @returns A signed JSON Web Token.
+ * 
+ * @throws If `process.env.SECRET_KEY` or `process.env.JWT_EXPIRATION_DAYS` is not defined.
+ * 
+ * @remarks
+ * - Uses `SECRET_KEY` to sign and `JWT_EXPIRATION_DAYS` for expiration (e.g, `"7d"`).
+ * - The token payload is `{ id }`.
+ * 
+ * @see {@link createAndSendToken} for emitting the token in a standard HTTP response.
+ * 
+ * @public
+ */
 const signToken = (id: string): string => {
     return jwt.sign({ id }, process.env.SECRET_KEY!, {
         expiresIn: process.env.JWT_EXPIRATION_DAYS!
     });
 };
 
+/**
+ * Create a JWT for the provided user and send the canonical success response.
+ * 
+ * @param res - Express response object.
+ * @param statusCode - HTTP status code to use (e.g., 200, 201).
+ * @param user - The authenticated or newly created user document.
+ * @returns `void`
+ * 
+ * @remarks
+ * - Removes sensitive properties (`password`, `__v`) from the serialized user
+ * 
+ * @public
+ */
 const createAndSendToken = (res: Response, statusCode: number, user: IUser): void => {
     const token = signToken(user._id as string);
     (user as any).password = undefined;
@@ -83,6 +146,23 @@ const createAndSendToken = (res: Response, statusCode: number, user: IUser): voi
     });
 };
 
+/**
+ * Sign in a user with email and password.
+ * 
+ * @param req - Express request containing `email` and `password` in the body.
+ * @param res  - Express response used to send the signed JWT and user data.
+ * @param next - Express next function to propagate errors.
+ * @returns A Promise that resolves when the response has been sent.
+ * 
+ * @throws Propagates errors via `next()` in the following cases:
+ * - Missing credentials (`email` or `password` not provided).
+ * - User not found or password mismatch.
+ * 
+ * @remarks
+ * - On success, responds with a `200` status and a `{ token, user }` payload via {@link createAndSendToken}.
+ * 
+ * @public
+ */
 export const signIn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { email, password } = req.body;
     if(!email || !password){
@@ -95,14 +175,49 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
     createAndSendToken(res, 200, requestedUser);
 };
 
+/**
+ * Register a new user account and return a signed JWT.
+ * 
+ * @param req - Express request containing `email`, `firstName`, `lastName`, and `password` in the body.
+ * @param res - Express response used to send the signed JWT and user data.
+ * @returns A Promise that resolves when the response has been sent.
+ * 
+ * @throws Propagates validation or persistence errors thrown by the `User` model.
+ * 
+ * @remarks
+ * - On success, responds with a `201` status and a `{ token, user }` payload via {@link createAndSendToken}.
+ */
 export const signUp = async (req: Request, res: Response): Promise<void> => {
     const { email, firstName, lastName, password } = req.body;
     const newUser = await User.create({ email, firstName, lastName, password });
     createAndSendToken(res, 201, newUser);
 };
 
+/**
+ * Update the authenticated user's password after validating the current password.
+ * 
+ * @param req - Express request containing:
+ * - `req.user` (populated by auth middleware)
+ * - `body.passwordCurrent` (current password)
+ * - `body.password` (new password)
+ * - `body.passwordConfirm` (confirmation of new pasword)
+ * @param res - Express response used to send the signed JWT and user data.
+ * @param next - Express next function to propagate errors.
+ * @returns A Promise that resolves when the response has been sent.
+ * 
+ * @throws Propagates errors via `next()` in the following cases:
+ * - User document not found for `req.user.id`.
+ * - `passwordCurrent` is incorrect.
+ * - New password matches the existing password (`passwordConfirm` equals current hashed password).
+ * 
+ * @remarks
+ * - Loads the user with `+password`, verifies the current password via `isCorrectPassword`, and saves the new password.
+ * - On success, responds with a `200` status and a new `{ token, user }` via {@link createAndSendToken}.
+ * 
+ * @public
+ */
 export const updateMyPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const user = req.user as IUser;
+    const user = (req as any).user as IUser;
     const requestedUser = await User.findById(user.id).select('+password');
     if(!requestedUser){
         return next(new Error('Authentication::Update::UserNotFound'));

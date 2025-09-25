@@ -28,7 +28,7 @@ import path from 'path';
 export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
     constructor(){
         const options: QueueOptions = {
-            queueName: 'rasterizer-queue',
+            queueName: 'rasterizer-queue-d',
             workerPath: path.resolve(__dirname, '../workers/headless-rasterizer.ts'),
             maxConcurrentJobs: 10
         };
