@@ -67,7 +67,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
     q.push('includePreview=0');
     const qs = q.length ? `?${q.join('&')}` : '';
   setDownloadProgress(0);
-    await downloadBlob(`/raster/${trajectoryId}/images-archive${qs}`, `trajectory_${trajectoryId}_raster_images.zip`, {
+    await downloadBlob(`/raster/${tra jectoryId}/images-archive${qs}`, `trajectory_${trajectoryId}_raster_images.zip`, {
       onProgress: (p) => setDownloadProgress(p)
     });
   setDownloadDone(true);
