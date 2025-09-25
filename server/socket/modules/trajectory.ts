@@ -37,30 +37,24 @@ class TrajectoryModule extends BaseSocketModule{
     onConnection(socket: Socket): void{
         socket.on('subscribe_to_trajectory', async ({ trajectoryId, user, previousTrajectoryId }) => {
             if(previousTrajectoryId){
-                const oldRoom = `${previousTrajectoryId}`;
-                this.leaveRoom(socket, oldRoom);
-                await this.broadcastUsers(oldRoom);
+                this.leaveRoom(socket, previousTrajectoryId);
+                await this.broadcastUsers(previousTrajectoryId);
             }
 
             if(trajectoryId){
-                const room = `${trajectoryId}`;
                 socket.data.trajectoryId = trajectoryId;
                 socket.data.user = user;
+                this.joinRoom(socket, trajectoryId);
 
-                this.joinRoom(socket, room);
-
-                const usersList = await this.collectUsers(room);
-                await this.emitUsers(room, usersList);
+                await this.broadcastUsers(trajectoryId);
             }
+        });
 
-            socket.on('disconnect', async () => {
-                const { trajectory } = socket.data || {};
-
-                if(trajectory){
-                    const room = `${trajectoryId}`;
-                    await this.broadcastUsers(room);
-                }
-            });
+        socket.on('disconnect', async () => {
+            const trajectoryId: string | undefined = socket?.data?.trajectoryId;
+            if(trajectoryId){
+                await this.broadcastUsers(trajectoryId);
+            }
         });
     }
 

@@ -32,17 +32,46 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
             </div>
 
             <div className='raster-scene-header-search-container'>
-                <div className='raster-scene-header-users-container'>
-                    {connectedUsers?.map((user) => (
-                        <div 
-                            key={user._id} 
-                            title={`${user.firstName} ${user.lastName}`} 
-                            className='connected-user-container'
-                        >
-                            {user.firstName?.charAt(0)}
-                            {user.lastName?.charAt(0)}
-                        </div>
-                    ))}
+                <div className="raster-scene-header-users-container">
+                    {(() => {
+                        const users = connectedUsers ?? [];
+                        const shown = users.slice(0, 2);
+                        const extra = users.length - shown.length;
+
+                        const getInitials = (u: any) => {
+                        const f = u.firstName?.[0] ?? '';
+                        const l = u.lastName?.[0] ?? '';
+                        if (f || l) return `${f}${l}`.toUpperCase();
+                            const name = u.name ?? u.email ?? '';
+                            const parts = String(name).trim().split(/\s+/);
+                            return (parts[0]?.[0] ?? '?').toUpperCase();
+                        };
+
+                        return (
+                        <>
+                            {shown.map((u) => (
+                            <div
+                                key={u.id ?? u._id} 
+                                title={[u.firstName, u.lastName].filter(Boolean).join(' ') || u.name || u.email}
+                                className="connected-user-container"
+                                aria-label={`Usuario conectado: ${u.firstName ?? ''} ${u.lastName ?? ''}`.trim()}
+                            >
+                                {getInitials(u)}
+                            </div>
+                            ))}
+
+                            {extra > 0 && (
+                            <div
+                                className="connected-user-container connected-user-extra"
+                                title={`${extra} más`}
+                                aria-label={`${extra} usuarios más`}
+                            >
+                                +{extra}
+                            </div>
+                            )}
+                        </>
+                        );
+                    })()}
                 </div>
 
                 <div className='dashboard-search-container'>
