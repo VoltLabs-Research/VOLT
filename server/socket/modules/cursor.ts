@@ -41,7 +41,7 @@ class CursorModule extends BaseSocketModule{
             socket.data.cursorRoom = room;
             if (user) socket.data.user = user;
             this.joinRoom(socket, room);
-            this.io?.to(room).emit('cursor:user-joined', { id: socket.id, user: socket.data.user });
+            socket.to(room).emit('cursor:user-joined', { id: socket.id, user: socket.data.user });
         });
 
         /**
@@ -54,7 +54,7 @@ class CursorModule extends BaseSocketModule{
 
             const when = typeof ts === 'number' ? ts : Date.now();
 
-            this.io?.to(room).emit('cursor:move', {
+            socket.to(room).emit('cursor:move', {
                 id: socket.id,
                 nx,
                 ny,
@@ -65,7 +65,13 @@ class CursorModule extends BaseSocketModule{
 
         socket.on('cursor:click', ({ room, nx, ny, ts }) => {
             if(!room) return;
-            this.io?.to(room).emit('cursor:click', { id: socket.id, nx, ny, ts: ts ?? Date.now(), user: socket.data.user });
+            socket.to(room).emit('cursor:click', {
+                id: socket.id, 
+                nx, 
+                ny, 
+                ts: ts ?? Date.now(), 
+                user: socket.data.user
+            });
         });
 
         /**
