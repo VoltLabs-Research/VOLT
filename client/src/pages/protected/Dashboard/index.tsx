@@ -84,6 +84,8 @@ const DashboardPage: React.FC = memo(() => {
 
                     <SimulationGrid />
                 </div>
+
+
             </DashboardContainer>
 
             {/* <AIPromptBox /> */}
