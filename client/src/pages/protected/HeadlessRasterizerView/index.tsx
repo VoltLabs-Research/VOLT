@@ -37,6 +37,7 @@ import SceneColumn from '@/components/molecules/raster/SceneColumn';
 import Thumbnails from '@/components/molecules/raster/Thumbnails';
 import MetricsBar from '@/components/molecules/raster/MetricsBar';
 import FrameAtomsTable from '@/components/organisms/FrameAtomsTable';
+import { socketService } from '@/services/socketio';
 import './HeadlessRasterizerView.css';
 
 const HeadlessRasterizerView: React.FC = () => {
@@ -343,6 +344,28 @@ const HeadlessRasterizerView: React.FC = () => {
         if(leftAnalysis) fetchStructureAnalysesByConfig(leftAnalysis);
         if(rightAnalysis && rightAnalysis !== leftAnalysis) fetchStructureAnalysesByConfig(rightAnalysis);
     }, [showStructureAnalysis, leftAnalysis, rightAnalysis, fetchStructureAnalysesByConfig]);
+
+    const subscribedTrajectoryIdRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!trajectory?._id || !trajectory?.team || !trajectoryId) {
+            return;
+        }
+    
+        const teamId = typeof trajectory.team === 'string' ? trajectory.team : (trajectory.team as any)._id;
+        if (!teamId) {
+            return;
+        }
+    
+        const previousTrajectoryId = subscribedTrajectoryIdRef.current;
+        if (previousTrajectoryId === trajectory._id) {
+            return; // Already subscribed
+        }
+    
+        const userData = user ? user : { name: `Anonymous-${Math.random().toString(36).substring(7)}` };
+        socketService.subscribeToTrajectory(teamId, trajectory._id, userData, previousTrajectoryId ?? undefined);
+        subscribedTrajectoryIdRef.current = trajectory._id;
+    }, [trajectory, user, trajectoryId]);
 
     // Scenes
     const leftScene = useRasterFrame(

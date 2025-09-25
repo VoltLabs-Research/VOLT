@@ -30,6 +30,7 @@ import { BaseJob } from '@/types/queues/base-processing-queue';
 import { ClientData, ProcessingQueue } from '@/types/config/socket';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { publishJobUpdate } from '@/events/job-updates';
+import trajectorySocketService from './trajectory-socket';
 
 type QueueName = 'trajectory' | 'analysis';
 
@@ -125,6 +126,7 @@ class JobsSocketService{
         await this.domainSub.subscribe(JOB_UPDATES_CHANNEL);
 
         this.io.on('connection', (socket) => this.onConnection(socket));
+        trajectorySocketService.initialize(this.io);
         this.initialized = true;
         return this.io;
     }

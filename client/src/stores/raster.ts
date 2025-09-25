@@ -62,7 +62,7 @@ const useRasterStore = create<RasterStore>((set, get) => {
                 const res = await api.get(`/raster/${id}/metadata`);
                 const { analyses, trajectory } = res.data.data;
 
-                console.log(analyses);
+                console.log(analyses    );
                 const analysesNames = Object.values(analyses).map((a: any) => ({
                     _id: a._id,
 					name: `${a.identificationMode}${a.identificationMode === 'PTM' ? ` - RMSD: ${a.RMSD}` : ''}`,

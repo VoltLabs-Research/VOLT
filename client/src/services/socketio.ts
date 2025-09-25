@@ -1,4 +1,4 @@
-    /**
+/**
 * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -204,6 +204,16 @@ class SocketIOService{
 
         this.logger.log(`Subscribing to team ${teamId}${previousTeamId ? ` (leaving ${previousTeamId})` : ''}`);
         this.socket.emit('subscribe_to_team', { teamId, previousTeamId });
+    }
+
+    public subscribeToTrajectory(teamId: string, trajectoryId: string, user: any, previousTrajectoryId?: string): void {
+        if (!this.socket?.connected) {
+            this.logger.error('Cannot subscribe to trajectory: Socket not connected');
+            return;
+        }
+    
+        this.logger.log(`Subscribing to trajectory ${trajectoryId} in team ${teamId}`);
+        this.socket.emit('subscribe_to_trajectory', { teamId, trajectoryId, user, previousTrajectoryId });
     }
 
     public updateAuth(auth: Record<string, any>): void{
