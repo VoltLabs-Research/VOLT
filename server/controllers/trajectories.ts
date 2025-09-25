@@ -35,7 +35,7 @@ import RuntimeError from '@/utilities/runtime-error';
 import { getMetricsByTeamId } from '@/metrics/team';
 import { getTrajectoryMetricsById } from '@/metrics/trajectory';
 import HeadlessRasterizer from '@/services/headless-rasterizer';
-import AdmZip from 'adm-zip';
+import archiver from 'archiver';
 
 const factory = new HandlerFactory<any>({
     model: Trajectory as any,
@@ -339,10 +339,20 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
     res.sendFile(glbFilePath);
 };
 
+import { resolve, join } from 'path';
+import fs from 'fs';
+import archiver from 'archiver';
+import type { Request, Response } from 'express';
+
+// asume que ya tienes listGlbFiles(dir): Promise<string[]>
+
 export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     if(!trajectory){
-        return res.status(400).json({ status: 'error', data: { error: 'Trajectory not found' } });
+        return res.status(400).json({
+            status: 'error',
+            data: { error: 'Trajectory not found' }
+        });
     }
 
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
@@ -351,29 +361,53 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
     try{
         const files = await listGlbFiles(glbDir);
         if(!files.length){
-            return res.status(404).json({ status: 'error', data: { error: 'No GLB files found for this trajectory' } });
+            return res.status(404).json({
+                status: 'error',
+                data: { error: 'No GLB files found for this trajectory' }
+            });
         }
 
-        const zip = new AdmZip();
-        for(const absPath of files){
-            const name = absPath.split('/').pop() || 'frame.glb';
-            zip.addLocalFile(absPath, 'glb', name);
-        }
-
-        const zipBuffer = zip.toBuffer();
         const filenameSafe = String(trajectory.name || trajectory._id).replace(/[^a-z0-9_\-]+/gi, '_');
-
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${filenameSafe}_glbs.zip"`);
-    res.setHeader('Content-Length', String(zipBuffer.length));
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${filenameSafe}_glbs.zip"`);
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
 
-        return res.end(zipBuffer);
+        const archive = archiver('zip', { zlib: { level: 0 } });
+
+        archive.on('error', (err: any) => {
+            console.error('archiver error:', err);
+            if(!res.headersSent){
+                res.status(500).json({
+                    status: 'error',
+                    data: { error: 'Failed to build GLB archive' }
+                });
+            }else{
+                res.end();
+            }
+        });
+
+        archive.pipe(res);
+
+        for(const absPath of files){
+            const name = absPath.split('/').pop() || 'frame.glb';
+            archive.file(absPath, { name: `glb/${name}`, store: true });
+        }
+
+        await archive.finalize();
     }catch(err){
         console.error('downloadTrajectoryGLBArchive error:', err);
-        return res.status(500).json({ status: 'error', data: { error: 'Failed to build GLB archive' } });
+        if(!res.headersSent){
+            return res.status(500).json({
+                status: 'error',
+                data: { error: 'Failed to build GLB archive' }
+            });
+        }
+
+        try{
+            res.end();
+        }catch{}
     }
 };
 

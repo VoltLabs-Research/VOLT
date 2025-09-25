@@ -563,7 +563,7 @@
   max-height: 75%;
   overflow-y: auto;
   overflow-x: hidden;
-}
+} 
 @media (max-width: 1024px){
   .raster-skel-select{ width: 60%; }
   .raster-skel-rail{ top: auto; bottom: .5rem; transform: none; }
@@ -725,7 +725,7 @@
   }
 
   .raster-scene-header-container > div{
-    width: unset;
+    width: unset !important;
   }
 
   .raster-scene-header-container{
