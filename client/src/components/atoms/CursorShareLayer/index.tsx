@@ -22,6 +22,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { socketService } from '@/services/socketio';
+import { getOrCreateGuestUser } from '@/utilities/guest';
 
 interface Cursor{
     id: string;
@@ -213,10 +214,12 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
     }, []);
 
     useEffect(() => {
-        if(!roomName || !user) return;
+        if(!roomName) return;
+
+        const joinUser = user ?? getOrCreateGuestUser();
 
         socketService
-            .emit('cursor:join', { room: roomName, user })
+            .emit('cursor:join', { room: roomName, user: joinUser })
             .catch(err => console.error('Failed to join cursor room:', err));
 
         const offMove = socketService.on('cursor:move', (data: any) => {
