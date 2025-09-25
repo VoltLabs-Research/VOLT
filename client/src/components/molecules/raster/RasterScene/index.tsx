@@ -1,7 +1,7 @@
 import React from 'react';
 import type { RasterSceneProps } from '@/types/raster';
-import RasterSceneSkeleton from '@/components/atoms/raster/RasterSceneSkeleton';
 import AnalysisSelect from '@/components/atoms/raster/AnalysisSelect';
+import Loader from '@/components/atoms/Loader';
 import { Skeleton } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlaybackControls from '@/components/atoms/raster/PlaybackControls';
@@ -67,7 +67,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
     q.push('includePreview=0');
     const qs = q.length ? `?${q.join('&')}` : '';
   setDownloadProgress(0);
-    await downloadBlob(`/raster/${tra jectoryId}/images-archive${qs}`, `trajectory_${trajectoryId}_raster_images.zip`, {
+    await downloadBlob(`/raster/${trajectoryId}/images-archive${qs}`, `trajectory_${trajectoryId}_raster_images.zip`, {
       onProgress: (p) => setDownloadProgress(p)
     });
   setDownloadDone(true);
@@ -136,24 +136,11 @@ const RasterScene: React.FC<RasterSceneProps> = ({
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
             {typeof downloadProgress === 'number' && (
-              <>
-                <div className="download-progress-track" />
-                <svg className="download-progress-svg" viewBox="0 0 40 40" width="40" height="40" aria-hidden>
-                  <circle className="download-progress-bg" cx="20" cy="20" r="17" />
-                  <circle
-                    className="download-progress-circle"
-                    cx="20"
-                    cy="20"
-                    r="17"
-                    style={{ ['--p' as any]: Math.min(downloadProgress, 1) * 100 }}
-                  />
-                </svg>
-                <div className="download-progress-label" style={{ zIndex: 1 }}>
-                  {Math.round(downloadProgress * 100)}%
-                </div>
-              </>
+              <div className='download-loader-container'>
+                <Loader scale={0.5} />
+              </div>
             )}
-          </button>
+          </button> 
           {isMenuOpen && (
             <div className="raster-scene-download-menu">
               <button onClick={handleDownloadDislocations} disabled={!scene?.analysisId}>

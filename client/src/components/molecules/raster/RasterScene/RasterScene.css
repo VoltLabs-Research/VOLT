@@ -10,6 +10,12 @@
     }
 }
 
+.download-loader-container{
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
 .raster-scene-topbar-right{
     position: relative;
     margin-left: auto;
