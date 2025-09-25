@@ -75,7 +75,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
         const enabled = import.meta.env.VITE_CPU_INTENSIVE_TASKS === 'true';
         // For testing: always show notification
         setShowNotification(true);
-        setTimeout(() => setShowNotification(false), 5000);
+        setTimeout(() => setShowNotification(false), 5000); 
         return enabled;
     };
 

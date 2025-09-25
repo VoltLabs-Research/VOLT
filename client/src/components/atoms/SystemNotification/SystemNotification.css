@@ -42,6 +42,20 @@
     line-height: 1.3rem;
 }
 
+@media (max-width: 768px) {
+    .system-notification-content {
+        font-size: .8rem;
+        line-height: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .system-notification-content {
+        font-size: .75rem;
+        line-height: 1.1rem;
+    }
+}
+
 .system-notification-footer-container{
     display: flex;
     justify-content: flex-end;
@@ -57,6 +71,17 @@
     transition: 0.1s;
 }
 
-.system-notification-btn:hover{
-    filter: brightness(1.1);
+@media (max-width: 768px) {
+    .system-notification-btn {
+        padding: .4rem 1.2rem;
+        font-size: .9rem;
+    }
 }
+
+@media (max-width: 480px) {
+    .system-notification-btn {
+        padding: .3rem 1rem;
+        font-size: .8rem;
+    }
+}
+
