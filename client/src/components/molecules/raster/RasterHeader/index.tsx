@@ -8,7 +8,7 @@ import { TbCube3dSphere } from 'react-icons/tb';
 import RasterTrajectoryDetailsSkeleton from '@/components/atoms/raster/RasterTrajectoryDetailsSkeleton';
 import RasterSceneViewsSkeleton from '@/components/atoms/raster/RasterSceneViewsSkeleton';
 
-const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView3D, onSignIn }) => {
+const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView3D, onSignIn, connectedUsers }) => {
     return (
         <div className='raster-scene-header-container'>
             <div className='raster-scene-header-left-container'>
@@ -55,6 +55,29 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                         <p className='raster-scene-header-views'>{trajectory?.rasterSceneViews} views</p>
                     </div>
                 )}
+            </div>
+
+            <div className='raster-scene-header-users-container'>
+                {connectedUsers?.map(user => (
+                    <div key={user._id} title={`${user.firstName} ${user.lastName}`} style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: '#333',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginLeft: '-8px',
+                        border: '2px solid #1a1a1a',
+                        textTransform: 'uppercase',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                    }}>
+                        {user.firstName?.charAt(0)}
+                        {user.lastName?.charAt(0)}
+                    </div>
+                ))}
             </div>
 
             <div className='raster-scene-header-nav-container'>

@@ -103,7 +103,7 @@ class SocketIOService{
                     this.handleConnectError(error, reject);
                 });
 
-                this.socket.on('disconnect', this.handleDisconnect);
+                this.socket.on('disconnect', (reason) => this.handleDisconnect(reason));
             }catch(error){
                 this.connecting = false;
                 reject(error);
@@ -182,6 +182,16 @@ class SocketIOService{
         });
     }
 
+    public subscribeToTrajectory(trajectoryId: string, user: any, previousTrajectoryId?: string){
+        if(!this.socket?.connected){
+            this.logger.error('Cannot subscribe to trajectory: Socket not connected');
+            return Promise.reject(new Error('not connected'));
+        }
+
+        this.logger.log(`Subscribing to trajectory ${trajectoryId}`);
+        return this.emit('subscribe_to_trajectory', { trajectoryId, user, previousTrajectoryId });
+    }
+
     public onConnectionChange(listener: (connected: boolean) => void): () => void{
         this.connectionListeners.push(listener);
 
@@ -206,15 +216,7 @@ class SocketIOService{
         this.socket.emit('subscribe_to_team', { teamId, previousTeamId });
     }
 
-    public subscribeToTrajectory(teamId: string, trajectoryId: string, user: any, previousTrajectoryId?: string): void {
-        if (!this.socket?.connected) {
-            this.logger.error('Cannot subscribe to trajectory: Socket not connected');
-            return;
-        }
-    
-        this.logger.log(`Subscribing to trajectory ${trajectoryId} in team ${teamId}`);
-        this.socket.emit('subscribe_to_trajectory', { teamId, trajectoryId, user, previousTrajectoryId });
-    }
+
 
     public updateAuth(auth: Record<string, any>): void{
         this.options.auth = { ...this.options.auth, ...auth };
@@ -263,9 +265,9 @@ class SocketIOService{
 
         // Add back the internal listeners
         // TODO:
-        this.socket.on('connect', this.handleConnect);
-        this.socket.on('disconnect', this.handleDisconnect);
-        this.socket.on('connect_error', this.handleConnectError);
+        this.socket.on('connect', () => this.handleConnect());
+        this.socket.on('disconnect', (reason) => this.handleDisconnect(reason));
+        this.socket.on('connect_error', (err) => this.handleConnectError(err));
 
         // Re-add all user subscriptions
         this.subscriptions.forEach((sub) => {

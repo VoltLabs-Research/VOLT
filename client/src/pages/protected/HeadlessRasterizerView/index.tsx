@@ -36,6 +36,7 @@ import RasterHeader from '@/components/molecules/raster/RasterHeader';
 import SceneColumn from '@/components/molecules/raster/SceneColumn';
 import Thumbnails from '@/components/molecules/raster/Thumbnails';
 import MetricsBar from '@/components/molecules/raster/MetricsBar';
+import useRasterConnectedUsers from '@/hooks/raster/useRasterConnectedUsers';
 import FrameAtomsTable from '@/components/organisms/FrameAtomsTable';
 import { socketService } from '@/services/socketio';
 import './HeadlessRasterizerView.css';
@@ -61,6 +62,11 @@ const HeadlessRasterizerView: React.FC = () => {
     const { getDislocationsByAnalysisId, analysisDislocationsById } = useAnalysisConfigStore();
     const { fetchStructureAnalysesByConfig } = useStructureAnalysisStore();
     const user = useAuthStore((state) => state.user);
+    const connectedUsers = useRasterConnectedUsers(trajectoryId);
+
+    useEffect(() => {
+        console.log('connectedUsers', connectedUsers)
+    }, [connectedUsers]);
 
     // Selection state
     const [leftAnalysis, setLeftAnalysis] = useState<string | null>(null);
@@ -345,27 +351,19 @@ const HeadlessRasterizerView: React.FC = () => {
         if(rightAnalysis && rightAnalysis !== leftAnalysis) fetchStructureAnalysesByConfig(rightAnalysis);
     }, [showStructureAnalysis, leftAnalysis, rightAnalysis, fetchStructureAnalysesByConfig]);
 
-    const subscribedTrajectoryIdRef = useRef<string | null>(null);
+const subscribedTrajectoryIdRef = useRef<string | null>(null);
 
-    useEffect(() => {
-        if (!trajectory?._id || !trajectory?.team || !trajectoryId) {
-            return;
-        }
-    
-        const teamId = typeof trajectory.team === 'string' ? trajectory.team : (trajectory.team as any)._id;
-        if (!teamId) {
-            return;
-        }
-    
-        const previousTrajectoryId = subscribedTrajectoryIdRef.current;
-        if (previousTrajectoryId === trajectory._id) {
-            return; // Already subscribed
-        }
-    
-        const userData = user ? user : { name: `Anonymous-${Math.random().toString(36).substring(7)}` };
-        socketService.subscribeToTrajectory(teamId, trajectory._id, userData, previousTrajectoryId ?? undefined);
-        subscribedTrajectoryIdRef.current = trajectory._id;
-    }, [trajectory, user, trajectoryId]);
+useEffect(() => {
+  if (!trajectory?._id || !trajectoryId) return;
+
+  const previousTrajectoryId = subscribedTrajectoryIdRef.current;
+  if (previousTrajectoryId === trajectory._id) return; // ya suscrito
+
+  const userData = user ?? { name: `Anonymous-${Math.random().toString(36).substring(7)}` };
+
+  socketService.subscribeToTrajectory(trajectory._id, userData, previousTrajectoryId || undefined);
+  subscribedTrajectoryIdRef.current = trajectory._id;
+}, [trajectory, user, trajectoryId]);
 
     // Scenes
     const leftScene = useRasterFrame(
@@ -494,6 +492,7 @@ const HeadlessRasterizerView: React.FC = () => {
                 onGoBack={handleGoBack}
                 onView3D={handleView3D}
                 onSignIn={!user ? handleSignIn : undefined}
+                connectedUsers={connectedUsers}
             />
 
             {showParticles && (

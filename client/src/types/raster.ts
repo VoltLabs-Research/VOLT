@@ -1,4 +1,5 @@
 import type { IconType } from 'react-icons/lib';
+import { type User } from '@/types/models';
 
 export interface Scene{
     frame: number;
@@ -54,6 +55,7 @@ export interface HeaderProps{
     onGoBack: () => void;
     onView3D: () => void;
     onSignIn?: () => void;
+    connectedUsers?: User[];
 }
 
 export interface ThumbnailsProps{

@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { publishJobUpdate } from '@/events/job-updates';
 import { redis } from '@config/redis';
-import { getTrajectoryProcessingQueue, getAnalysisQueue } from '@/queues';
+import { getTrajectoryProcessingQueue, getAnalysisQueue, getRasterizerQueue } from '@/queues';
 import { BaseJob } from '@/types/queues/base-processing-queue';
 import { ClientData, ProcessingQueue } from '@/types/config/socket';
 import BaseSocketModule from '@/socket/base-socket-module';
@@ -151,12 +151,12 @@ class JobsModule extends BaseSocketModule{
 
     /**
      * Returns all processing queues that should contribute to the initial snapshopt.
-     * TODO: ADD HEADLESS RASTERIZER QUEUE!
      */
     private getAllProcessingQueues(): ProcessingQueue[] {
         return [
             { name: 'trajectory', queue: getTrajectoryProcessingQueue() },
-            { name: 'analysis', queue: getAnalysisQueue() }
+            { name: 'analysis', queue: getAnalysisQueue() },
+            { name: 'raster', queue: getRasterizerQueue() }
         ];
     }
 
