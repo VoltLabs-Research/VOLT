@@ -846,6 +846,10 @@
     display: none;
   }
 
+  .btn-signin{
+    display: none;
+  }
+
   .raster-scene-header-users-container{
     display: none;
   }

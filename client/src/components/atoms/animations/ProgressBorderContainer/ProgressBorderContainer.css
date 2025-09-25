@@ -30,13 +30,13 @@
 .container-content {
     position: relative;
     z-index: 1;
-    background: #121212; 
     border-radius: 11px;
     height: 100%;
     width: 100%;
 }
 
-/* Light mode override: make simulation container content white */
+/* Light mode override: make simulation container content white 
 :root[data-theme='light'] .container-content{
     background: #0e0e0e;
 }
+*/
