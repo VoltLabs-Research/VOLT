@@ -182,7 +182,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
           </div>
         )*/}
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           {showUnavailable ? (
             <div
               style={{
@@ -204,21 +204,18 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             </div>
           ) : !disableAnimation ? (
             <motion.img
-              key={`2d-${scene.frame}-${scene.model}`}
               className="raster-scene"
               src={scene.data}
               alt={`${scene.model} - Frame ${scene.frame}`}
-              initial={{ opacity: 0, scale: 0.95, filter: 'blur(12px)' }}
+              initial={false}
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, scale: 0.95, filter: 'blur(12px)' }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               style={{ objectFit: 'contain', width: '100%', cursor: 'pointer' }}
               onDoubleClick={handleDoubleClick}
               title="Double-click to view in 3D"
             />
           ) : (
             <img
-              key={`2d-${scene.frame}-${scene.model}`}
               className="raster-scene"
               src={scene.data}
               alt={`${scene.model} - Frame ${scene.frame}`}

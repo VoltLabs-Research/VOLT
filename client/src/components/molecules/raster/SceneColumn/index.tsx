@@ -27,7 +27,7 @@ const SceneColumn: React.FC<SceneColumnProps> = ({
     <motion.div
       className={`raster-scene-column-container ${scene?.model === 'dislocations' && 'theme-dark'}`}
       style={{ flex: 1, minWidth: 0 }}
-      initial={{ opacity: 0, y: 8 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
     >
