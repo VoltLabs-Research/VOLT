@@ -25,6 +25,7 @@ import app from '@config/express';
 import mongoConnector from '@/utilities/mongo/mongo-connector';
 import SocketGateway from '@/socket/socket-gateway';
 import JobsModule from '@/socket/modules/jobs';
+import CursorModule from '@/socket/modules/cursor';
 import TrajectoryModule from '@/socket/modules/trajectory';
 import { initializeRedis } from '@config/redis';
 
@@ -34,6 +35,7 @@ const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
 const server = http.createServer(app);
 const gateway = new SocketGateway()
     .register(new JobsModule())
+    .register(new CursorModule())
     .register(new TrajectoryModule());
 
 const shutodwn = async () => {
