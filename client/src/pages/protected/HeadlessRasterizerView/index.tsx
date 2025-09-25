@@ -31,6 +31,7 @@ import useAuthStore from '@/stores/authentication';
 import useRasterFrame from '@/hooks/raster/use-raster-frame';
 import type { AnalysisSelectProps, MetricEntry, ModelRailProps, PlaybackControlsProps, Scene } from '@/types/raster';
 import { formatNumber, formatSize } from '@/utilities/scene-utils';
+import { getOrCreateGuestUser } from '@/utilities/guest';
 import { IoTimeOutline, IoLayersOutline, IoBarChartOutline } from 'react-icons/io5';
 import RasterHeader from '@/components/molecules/raster/RasterHeader';
 import SceneColumn from '@/components/molecules/raster/SceneColumn';
@@ -71,7 +72,7 @@ const HeadlessRasterizerView: React.FC = () => {
         if (user.firstName) u.firstName = user.firstName;
         if (user.lastName) u.lastName = user.lastName;
         if (user.email) u.email = user.email;
-        return u;
+        return getOrCreateGuestUser();
     }, [user?._id, user?.firstName, user?.lastName, user?.email]);
 
     const [leftAnalysis, setLeftAnalysis] = useState<string | null>(null);
@@ -341,19 +342,21 @@ const HeadlessRasterizerView: React.FC = () => {
     const subscribedKeyRef = useRef<string | null>(null);
 
     useEffect(() => {
-        if (!trajectory?._id || !trajectoryId) return;
-        if (!user || !user._id) return;
-        const key = `${trajectory._id}:${user._id}`;
-        if (subscribedKeyRef.current === key) return;
-        const userData = {
-            id: String(user._id),
+    if (!trajectory?._id || !trajectoryId) return;
+
+    const presenceUser = user && user._id
+        ? { id: String(user._id),
             ...(user.firstName ? { firstName: user.firstName } : {}),
-            ...(user.lastName ? { lastName: user.lastName } : {}),
-            ...(user.email ? { email: user.email } : {}),
-        };
-        const prevTrajectory = subscribedKeyRef.current?.split(':')[0];
-        socketService.subscribeToTrajectory(trajectory._id, userData, prevTrajectory);
-        subscribedKeyRef.current = key;
+            ...(user.lastName  ? { lastName:  user.lastName  } : {}),
+            ...(user.email     ? { email:     user.email     } : {}) }
+        : getOrCreateGuestUser();
+
+    const key = `${trajectory._id}:${presenceUser.id}`;
+    if (subscribedKeyRef.current === key) return;
+
+    const prevTrajectory = subscribedKeyRef.current?.split(':')[0];
+    socketService.subscribeToTrajectory(trajectory._id, presenceUser, prevTrajectory);
+    subscribedKeyRef.current = key;
     }, [trajectory?._id, trajectoryId, user?._id, user?.firstName, user?.lastName, user?.email]);
 
     const leftScene = useRasterFrame(
