@@ -20,22 +20,32 @@
 * SOFTWARE.
 **/
 
+import React, { useState } from 'react';
 import { IoIosArrowDown } from 'react-icons/io';
 import { useNavigate } from 'react-router';
 import FormField from '@/components/molecules/FormField';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import Button from '@/components/atoms/Button';
+import SystemNotification from '@/components/atoms/SystemNotification';
 import useModifiersStore from '@/stores/modifiers';
 import useTrajectoryStore from '@/stores/trajectories';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import './AnalysisConfiguration.css';
 
 const AnalysisConfiguration = () => {
+    const [showNotification, setShowNotification] = useState(false);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const setAnalysisConfig = useAnalysisConfigStore((state) => state.setAnalysisConfig);
     const dislocationAnalysis = useModifiersStore((state) => state.dislocationAnalysis);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const navigate = useNavigate();
+
+    const canPerformCpuIntensiveTask = (): boolean => {
+        // For testing: always return false to prevent the analysis
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 5000);
+        return false;
+    };
 
     const configFields = [
         { 
@@ -71,7 +81,12 @@ const AnalysisConfiguration = () => {
     ];
 
     const startAnalysis = () => {
-        dislocationAnalysis(trajectory?._id, analysisConfig);
+        if (!canPerformCpuIntensiveTask()) {
+            return;
+        }
+        if (trajectory?._id) {
+            dislocationAnalysis(trajectory._id, analysisConfig);
+        }
         //navigate('/dashboard');
     };
 
@@ -107,6 +122,7 @@ const AnalysisConfiguration = () => {
                     onClick={startAnalysis}
                 />
             </div>
+            {showNotification && <SystemNotification />}
         </EditorWidget>
     );
 };

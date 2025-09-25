@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PiAtomThin, PiLineSegmentsLight, PiDotsThreeVerticalBold, PiImagesSquareThin } from 'react-icons/pi';
 import { RxTrash } from "react-icons/rx";
@@ -28,6 +28,7 @@ import { CiShare1 } from "react-icons/ci";
 import { HiOutlineViewfinderCircle } from "react-icons/hi2";
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
+import SystemNotification from '@/components/atoms/SystemNotification';
 import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer';
 import ProgressBadge from '@/components/atoms/animations/ProgressBadge';
 import ProgressBorderContainer from '@/components/atoms/animations/ProgressBorderContainer';
@@ -62,12 +63,21 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     jobs = {} 
 }) => {
     const navigate = useNavigate();
+    const [showNotification, setShowNotification] = useState(false);
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const dislocationAnalysis = useModifiersStore((state) => state.dislocationAnalysis);
     const toggleTrajectorySelection = useTrajectoryStore((state) => state.toggleTrajectorySelection);
     const rasterize = useRasterStore((state) => state.rasterize);
 
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
+
+    const canPerformCpuIntensiveTask = (): boolean => {
+        const enabled = import.meta.env.VITE_CPU_INTENSIVE_TASKS === 'true';
+        // For testing: always show notification
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 5000);
+        return enabled;
+    };
 
     const {
         previewBlobUrl,
@@ -120,10 +130,16 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     };
 
     const handleDislocationAnalysis = (): void => {
+        if (!canPerformCpuIntensiveTask()) {
+            return;
+        }
         dislocationAnalysis(trajectory._id, analysisConfig);
     };
 
     const handleRasterize = useCallback(() => {
+        if (!canPerformCpuIntensiveTask()) {
+            return;
+        }
         rasterize(trajectory._id);
     }, [trajectory._id]);
 
@@ -137,6 +153,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     const shouldShowPlaceholder = !shouldShowPreview || previewLoading;
 
     return (
+        <>
         <figure 
             className={containerClasses} 
             onClick={(e) => handleClick(e, trajectory._id)}
@@ -173,46 +190,48 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
                         shouldShow={hasJobs && !shouldHideBorder}
                     />
                 </div>
-            </ProgressBorderContainer>
+                </ProgressBorderContainer>
 
-            <figcaption className='simulation-caption-container'>
-                <div className='simulation-caption-left-container'>
-                    <EditableTrajectoryName
-                        trajectory={trajectory} 
-                        className='simulation-caption-title' 
-                    />
-                    
-                    <div className='simulation-caption-left-bottom-container'>
-                        <p className='simulation-last-edited'>
-                            Edited {formatTimeAgo(trajectory.updatedAt)}
-                        </p>
+                <figcaption className='simulation-caption-container'>
+                    <div className='simulation-caption-left-container'>
+                        <EditableTrajectoryName
+                            trajectory={trajectory} 
+                            className='simulation-caption-title' 
+                        />
                         
-                        {hasJobs && !shouldHideBorder && (
-                            <>
-                                <span>•</span>
-                                <p className='simulation-running-jobs'>
-                                    {totalJobs} jobs {getJobStatusText()}
-                                </p>
-                            </>
-                        )}
+                        <div className='simulation-caption-left-bottom-container'>
+                            <p className='simulation-last-edited'>
+                                Edited {formatTimeAgo(trajectory.updatedAt)}
+                            </p>
+                            
+                            {hasJobs && !shouldHideBorder && (
+                                <>
+                                    <span>•</span>
+                                    <p className='simulation-running-jobs'>
+                                        {totalJobs} jobs {getJobStatusText()}
+                                    </p>
+                                </>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                <ActionBasedFloatingContainer
-                    options={[
-                        ['View Scene', HiOutlineViewfinderCircle, handleViewScene],
-                        ['Rasterize', PiImagesSquareThin, handleRasterize],
-                        ['Share with Team', CiShare1, handleShare],
-                        ['Dislocation Analysis', PiLineSegmentsLight, handleDislocationAnalysis],
-                        ['Delete', RxTrash, onDelete],
-                    ]}
-                >
-                    <i className='simulation-options-icon-container'>
-                        <PiDotsThreeVerticalBold />
-                    </i>
-                </ActionBasedFloatingContainer>
-            </figcaption>
-        </figure>
+                    <ActionBasedFloatingContainer
+                        options={[
+                            ['View Scene', HiOutlineViewfinderCircle, handleViewScene],
+                            ['Rasterize', PiImagesSquareThin, handleRasterize],
+                            ['Share with Team', CiShare1, handleShare],
+                            ['Dislocation Analysis', PiLineSegmentsLight, handleDislocationAnalysis],
+                            ['Delete', RxTrash, onDelete],
+                        ]}
+                    >
+                        <i className='simulation-options-icon-container'>
+                            <PiDotsThreeVerticalBold />
+                        </i>
+                    </ActionBasedFloatingContainer>
+                </figcaption>
+            </figure>
+            {showNotification && <SystemNotification />}
+        </>
     );
 };
 

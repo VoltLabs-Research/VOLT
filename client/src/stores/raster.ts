@@ -47,6 +47,11 @@ const useRasterStore = create<RasterStore>((set, get) => {
 		...initialState,
 
         rasterize(id: string){
+            const cpuIntensiveTasksEnabled = import.meta.env.VITE_CPU_INTENSIVE_TASKS === 'true';
+            if (!cpuIntensiveTasksEnabled) {
+                return Promise.reject(new Error('CPU-intensive tasks are disabled'));
+            }
+            
             const req = api.post<ApiResponse<any>>(`/raster/${id}/glb/`);
 
             return asyncAction(() => req, {

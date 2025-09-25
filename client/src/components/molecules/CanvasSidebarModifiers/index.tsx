@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { PiLineSegmentThin } from 'react-icons/pi';
 import { GrFormViewHide } from "react-icons/gr";
 import { IoIosStats } from "react-icons/io";
@@ -9,6 +9,7 @@ import { PiCirclesThreeLight } from "react-icons/pi";
 import { CiImageOn } from 'react-icons/ci';
 import { useNavigate } from 'react-router';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
+import SystemNotification from '@/components/atoms/SystemNotification';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
 import useAnalysisConfigStore from '@/stores/analysis-config';
@@ -18,6 +19,7 @@ import './CanvasSidebarModifiers.css';
 
 const CanvasSidebarModifiers = () => {
     const logger = useLogger('canvas-sidebar-modifiers');
+    const [showNotification, setShowNotification] = useState(false);
     const activeModifiers = useEditorUIStore((state) => state.activeModifiers);
     const toggleModifiers = useEditorUIStore((state) => state.toggleModifier);
 
@@ -28,6 +30,13 @@ const CanvasSidebarModifiers = () => {
     const idRateSeries = useTrajectoryStore((state) => state.idRateSeries);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const navigate = useNavigate();
+
+    const canPerformCpuIntensiveTask = (): boolean => {
+        // For testing: always return false to prevent the analysis
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 5000);
+        return false;
+    };
 
     // We save the previous state to detect which modifiers have just been activated
     const prevActiveRef = useRef<string[]>(activeModifiers);
@@ -45,6 +54,9 @@ const CanvasSidebarModifiers = () => {
         for(const modifier of justActivated){
             logger.log('Modifier:', modifier);
             if(modifier === 'PTM' || modifier === 'CNA' || modifier === 'DIAMOND'){
+                if (!canPerformCpuIntensiveTask()) {
+                    continue;
+                }
                 structureIdentification(trajectory?._id, analysisConfig, modifier);
             }else if(modifier === 'compute-analysis-differences'){
                 computeAnalyses(trajectory?._id);
@@ -103,18 +115,21 @@ const CanvasSidebarModifiers = () => {
     ];
 
     return (
-        <div className='editor-sidebar-scene-container'>
-            <div className='editor-sidebar-scene-options-container'>
-                {modifiers.map((option, index) => (
-                    <CanvasSidebarOption
-                        key={index}
-                        option={option}
-                        isLoading={option.isLoading}
-                        activeOption={activeModifiers.includes(option.modifierId ? option.modifierId : '')}
-                        onSelect={(option) => toggleModifiers(option.modifierId)} />
-                ))}
+        <>
+            <div className='editor-sidebar-scene-container'>
+                <div className='editor-sidebar-scene-options-container'>
+                    {modifiers.map((option, index) => (
+                        <CanvasSidebarOption
+                            key={index}
+                            option={option}
+                            isLoading={option.isLoading}
+                            activeOption={activeModifiers.includes(option.modifierId ? option.modifierId : '')}
+                            onSelect={(option) => toggleModifiers(option.modifierId)} />
+                    ))}
+                </div>
             </div>
-        </div>
+            {showNotification && <SystemNotification />}
+        </>
     );
 };
 
