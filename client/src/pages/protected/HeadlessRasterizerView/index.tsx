@@ -36,6 +36,8 @@ import RasterHeader from '@/components/molecules/raster/RasterHeader';
 import SceneColumn from '@/components/molecules/raster/SceneColumn';
 import Thumbnails from '@/components/molecules/raster/Thumbnails';
 import MetricsBar from '@/components/molecules/raster/MetricsBar';
+import { type CursorUser } from '@/hooks/realtime/useCursorShare';
+import CursorShareLayer from '@/components/atoms/CursorShareLayer';
 import useRasterConnectedUsers from '@/hooks/raster/useRasterConnectedUsers';
 import FrameAtomsTable from '@/components/organisms/FrameAtomsTable';
 import { socketService } from '@/services/socketio';
@@ -64,28 +66,29 @@ const HeadlessRasterizerView: React.FC = () => {
     const user = useAuthStore((state) => state.user);
     const connectedUsers = useRasterConnectedUsers(trajectoryId);
 
-    useEffect(() => {
-        console.log('connectedUsers', connectedUsers)
-    }, [connectedUsers]);
+    const cursorUser: CursorUser | undefined = useMemo(() => {
+        if (!user) return undefined;
+        const u: CursorUser = { id: String(user._id ?? 'anon'), color: '#8A63D2' };
+        if (user.firstName) u.firstName = user.firstName;
+        if (user.lastName) u.lastName = user.lastName;
+        if (user.email) u.email = user.email;
+        return u;
+    }, [user?._id, user?.firstName, user?.lastName, user?.email]);
 
-    // Selection state
     const [leftAnalysis, setLeftAnalysis] = useState<string | null>(null);
     const [rightAnalysis, setRightAnalysis] = useState<string | null>(null);
     const [leftModel, setLeftModel] = useState<string>('preview');
     const [rightModel, setRightModel] = useState<string>('preview');
     const [frameIndex, setFrameIndex] = useState<number>(-1);
 
-    // UI toggles / playback
     const [isPlaying, setIsPlaying] = useState(false);
     const [showDislocations, setShowDislocations] = useState(false);
     const [showStructureAnalysis, setShowStructureAnalysis] = useState(false);
     const [showParticles, setShowParticles] = useState(false);
 
-    // One-time and dedupe guards
     const initializedRef = useRef(false);
     const preloadKeyRef = useRef<string | null>(null);
 
-    // Fetch metadata/metrics on mount or id change
     useEffect(() => {
         if(!trajectoryId) return;
         getRasterFrames(trajectoryId);
@@ -105,7 +108,6 @@ const HeadlessRasterizerView: React.FC = () => {
             .sort((a, b) => a - b);
     };
 
-    // Compute timeline from selected analyses
     const timeline = useMemo<number[]>(() => {
         const L = framesFor(leftAnalysis);
         const R = framesFor(rightAnalysis);
@@ -114,7 +116,6 @@ const HeadlessRasterizerView: React.FC = () => {
         if(!L.length) return R;
         if(!R.length) return L;
 
-        // Prefer intersection; fallback to union
         const setL = new Set(L);
         const intersection = R.filter((timestep) => setL.has(timestep));
         if(intersection.length){
@@ -127,7 +128,6 @@ const HeadlessRasterizerView: React.FC = () => {
 
     const currentTimestep = frameIndex >= 0 && frameIndex < timeline.length ? timeline[frameIndex] : undefined;
 
-    // Pick closest index helper
     const closestIndex = (timestep: number, list: number[]) => {
         if(!list.length) return 0;
 
@@ -145,7 +145,6 @@ const HeadlessRasterizerView: React.FC = () => {
         return best;
     };
 
-    // CTRL + Enter
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
             if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
@@ -160,7 +159,6 @@ const HeadlessRasterizerView: React.FC = () => {
         };
     }, []);
 
-    // Initial selection + URL restore
     useEffect(() => {
         if(!trajectory?._id || initializedRef.current) return;
 
@@ -181,10 +179,7 @@ const HeadlessRasterizerView: React.FC = () => {
         setShowDislocations(disl);
         setShowStructureAnalysis(sa);
 
-        // Select initial frame (after we have a timeline)
-        // Do in the next tick so timeline can compute once analyses state settles
         setTimeout(() => {
-            // TODO: duplicated
             const tsList = (() => {
                 const L = framesFor(left);
                 const R = framesFor(right);
@@ -208,7 +203,6 @@ const HeadlessRasterizerView: React.FC = () => {
             
             setFrameIndex(initialIndex);
             
-            // Set initial models if available for selected timestep, fallback to 'preview'.
             const modelsFor = (analysisId: string | null, timestep?: number) => {
                 if(!analysisId || !timestep || !analyses?.[analysisId]?.frames?.[timestep]) return [];
                 return (analyses[analysisId].frames[timestep].availableModels) ?? [];
@@ -224,7 +218,6 @@ const HeadlessRasterizerView: React.FC = () => {
         }, 0);
     }, [trajectory]);
 
-    // Available models for current timestep
     const modelsLeft = useMemo(() => {
         if(!leftAnalysis || currentTimestep === undefined) return [];
         const frame = analyses?.[leftAnalysis]?.frames?.[currentTimestep];
@@ -237,7 +230,6 @@ const HeadlessRasterizerView: React.FC = () => {
         return (frame?.availableModels) ?? [];
     }, [analyses, rightAnalysis, currentTimestep]);
 
-    // Validate selected model against available models
     useEffect(() => {
         if(!initializedRef.current) return;
         if(modelsLeft.length && !modelsLeft.includes(leftModel)){
@@ -252,7 +244,6 @@ const HeadlessRasterizerView: React.FC = () => {
         }
     }, [modelsRight, rightModel]);
 
-    // Preload
     useEffect(() => {
         if(!initializedRef.current || !trajectoryId || !analyses || isLoading) return;
         if(!timeline.length || currentTimestep === undefined) return;
@@ -289,7 +280,6 @@ const HeadlessRasterizerView: React.FC = () => {
         preloadAllFrames
     ]);
 
-    // URL syncing
     useEffect(() => {
         if(!initializedRef.current) return;
 
@@ -320,7 +310,6 @@ const HeadlessRasterizerView: React.FC = () => {
         updateUrlParams,
     ]);
 
-    // Playback loop
     useEffect(() => {
         if(!isPlaying || !timeline.length) return;
         const id = setInterval(() => {
@@ -338,7 +327,6 @@ const HeadlessRasterizerView: React.FC = () => {
         return () => clearInterval(id);
     }, [isPlaying, timeline.length]);
 
-    // side-data loading (dislocations / structure analysis)
     useEffect(() => {
         if(!showDislocations) return;
         if(leftAnalysis) getDislocationsByAnalysisId(leftAnalysis);
@@ -351,21 +339,24 @@ const HeadlessRasterizerView: React.FC = () => {
         if(rightAnalysis && rightAnalysis !== leftAnalysis) fetchStructureAnalysesByConfig(rightAnalysis);
     }, [showStructureAnalysis, leftAnalysis, rightAnalysis, fetchStructureAnalysesByConfig]);
 
-const subscribedTrajectoryIdRef = useRef<string | null>(null);
+    const subscribedKeyRef = useRef<string | null>(null);
 
-useEffect(() => {
-  if (!trajectory?._id || !trajectoryId) return;
+    useEffect(() => {
+        if (!trajectory?._id || !trajectoryId) return;
+        if (!user || !user._id) return;
+        const key = `${trajectory._id}:${user._id}`;
+        if (subscribedKeyRef.current === key) return;
+        const userData = {
+            id: String(user._id),
+            ...(user.firstName ? { firstName: user.firstName } : {}),
+            ...(user.lastName ? { lastName: user.lastName } : {}),
+            ...(user.email ? { email: user.email } : {}),
+        };
+        const prevTrajectory = subscribedKeyRef.current?.split(':')[0];
+        socketService.subscribeToTrajectory(trajectory._id, userData, prevTrajectory);
+        subscribedKeyRef.current = key;
+    }, [trajectory?._id, trajectoryId, user?._id, user?.firstName, user?.lastName, user?.email]);
 
-  const previousTrajectoryId = subscribedTrajectoryIdRef.current;
-  if (previousTrajectoryId === trajectory._id) return; // ya suscrito
-
-  const userData = user ?? { name: `Anonymous-${Math.random().toString(36).substring(7)}` };
-
-  socketService.subscribeToTrajectory(trajectory._id, userData, previousTrajectoryId || undefined);
-  subscribedTrajectoryIdRef.current = trajectory._id;
-}, [trajectory, user, trajectoryId]);
-
-    // Scenes
     const leftScene = useRasterFrame(
         trajectoryId,
         currentTimestep,
@@ -390,7 +381,6 @@ useEffect(() => {
     const dislDataLeft = findDisl(dislLeft, currentTimestep);
     const dislDataRight = findDisl(dislRight, currentTimestep);
 
-    // Metrics
     const metricEntries: MetricEntry[] = useMemo(() => {
         const m = trajectoryMetrics as any;
         return [
@@ -400,7 +390,6 @@ useEffect(() => {
         ];
     }, [trajectoryMetrics]);
 
-    // Handlers
     const handlePlayPause = useCallback(() => setIsPlaying((p) => !p), []);
     const handleGoBack = useCallback(() => navigate('/dashboard'), [navigate]);
     const handleView3D = useCallback(() => trajectory?._id && navigate(`/canvas/${trajectory._id}/`), [trajectory, navigate]);
@@ -410,7 +399,6 @@ useEffect(() => {
     const toggleStruct = useCallback(() => setShowStructureAnalysis((v) => !v), []);
     const toggleParticles = useCallback(() => setShowParticles((v) => !v), []);
 
-    // Derived props for children
     const playbackControlsProps: PlaybackControlsProps = useMemo(() => {
         return {
             isPlaying,
@@ -464,8 +452,6 @@ useEffect(() => {
         const analysisId = leftAnalysis || rightAnalysis;
         const model = leftAnalysis ? leftModel : rightModel;
         if(!analysisId) return null;
-
-        // If the analysis metadata says model is avaialble for timestep, mark not loading; else show skeleton.
         const available = analyses?.[analysisId]?.frames?.[timestep]?.availableModels as string[] | undefined;
         const isReady = !!available?.includes(model);
         return {
@@ -485,7 +471,7 @@ useEffect(() => {
     );
 
     return (
-        <main className='raster-view-container'>
+        <CursorShareLayer roomName={trajectoryId} user={cursorUser} minIntervalMs={0} className='raster-view-container' style={{ position: 'relative' }}>
             <RasterHeader
                 trajectory={trajectory}
                 isLoading={isLoading}
@@ -576,7 +562,7 @@ useEffect(() => {
                     onToggleParticles={toggleParticles}
                 />
             </div>
-        </main>
+        </CursorShareLayer>
     );
 };
 

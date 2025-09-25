@@ -35,22 +35,13 @@ class CursorModule extends BaseSocketModule{
         /**
          * Join a cursor room and announce presence.
          */
-        socket.on('cursor:join', async ({ room, user }: { room?: string; user?: any }) => {
-            if(!room){
-                return;
-            }
-
-            // cache minimal context to re-emit on disconnect
+        socket.on('cursor:join', ({ room, user }: { room?: string; user?: any }) => {
+            if (!room) return;
+            if (socket.data.cursorRoom === room && socket.data.user) return;
             socket.data.cursorRoom = room;
-            socket.data.user = user;
-
+            if (user) socket.data.user = user;
             this.joinRoom(socket, room);
-
-            // Announce to others
-            this.io?.to(room).emit('cursor:user-joined', {
-                id: socket.id,
-                user
-            });
+            this.io?.to(room).emit('cursor:user-joined', { id: socket.id, user: socket.data.user });
         });
 
         /**
@@ -63,12 +54,12 @@ class CursorModule extends BaseSocketModule{
 
             const when = typeof ts === 'number' ? ts : Date.now();
 
-            // Broadcast to room (including sender is useful for "authoritative echo").
             this.io?.to(room).emit('cursor:move', {
                 id: socket.id,
                 x,
                 y,
-                ts: when
+                ts: when,
+                user: socket.data.user
             });
         });
 

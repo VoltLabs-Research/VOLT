@@ -120,11 +120,9 @@ abstract class BaseSocketModule{
             const room = cfg.roomOf(payload);
             if(!room) return;
 
-            // persist context into the socket
             cfg.setContext(socket, payload);
             this.joinRoom(socket, room);
 
-            // broadcast fresh snapshopt for the new room
             await this.broadcastPresence(room, cfg.updateEvent, cfg.userFromSocket);
         });
     }
@@ -180,7 +178,7 @@ abstract class BaseSocketModule{
      * 
      * @param room Room name to inspect.
      * @param userFromSocket Optional mapper to extract; defaults to `socket.data.user`.
-     * @returns The list of connected users for the room.
+     * @returns The list of connected users for a room.
      */
     protected async collectPresence(
         room: string,

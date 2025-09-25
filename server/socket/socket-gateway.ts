@@ -55,12 +55,10 @@ class SocketGateway{
         this.adapterSub = createRedisClient();
         this.io.adapter(createAdapter(this.adapterPub, this.adapterSub));
 
-        // Let modules perform their one-time init
         for(const module of this.modules){
             module.onInit(this.io);
         }
 
-        // Fan out connection to all modules
         this.io.on('connection', (socket: Socket) => {
             console.log(`[Socket Gateway] Connected ${socket.id}`);
             for(const module of this.modules){

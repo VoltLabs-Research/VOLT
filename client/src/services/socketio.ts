@@ -194,13 +194,6 @@ class SocketIOService{
 
     public onConnectionChange(listener: (connected: boolean) => void): () => void{
         this.connectionListeners.push(listener);
-
-        // Immediately call with current state if socket exists
-        if(this.socket){
-            listener(this.socket.connected);
-        }
-
-        // Unsubscribe function
         return () => {
             this.connectionListeners = this.connectionListeners.filter((l) => l !== listener);
         };
