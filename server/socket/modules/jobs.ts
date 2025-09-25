@@ -1,220 +1,38 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
-import http from 'http';
 import { Server, Socket } from 'socket.io';
-
-import Redis from 'ioredis';
-import { createRedisClient, redis } from '@config/redis';
+import { publishJobUpdate } from '@/events/job-updates';
+import { redis } from '@config/redis';
 import { getTrajectoryProcessingQueue, getAnalysisQueue } from '@/queues';
 import { BaseJob } from '@/types/queues/base-processing-queue';
 import { ClientData, ProcessingQueue } from '@/types/config/socket';
-import { createAdapter } from '@socket.io/redis-adapter';
-import { publishJobUpdate } from '@/events/job-updates';
-import trajectorySocketService from './trajectory-socket';
-
-type QueueName = 'trajectory' | 'analysis';
-
-const JOB_UPDATES_CHANNEL = 'job_updates';
+import BaseSocketModule from '@/socket/base-socket-module';
 
 /**
- * Singleton service that encapsulates SocketIO initialization and operation
- * with Redis adapter and Pub/Sub support for multi-process/multi-pod deployments.
+ * Jobs feature module:
+ *  - Handles team subscription flow with initial snapshot + buffered updates.
+ *  - Provides a public API to emit job updates onto the domain bus.
  */
-class JobsSocketService{
-    /**
-     * SocketIO instance bound to the provided HTTP server.
-     * Set after `initialize()`.
-     */
+class JobsModule extends BaseSocketModule{
     private io?: Server;
 
-    /**
-     * Idempotence guard for initialization.
-     */
-    private initialized = false;
-
-    /**
-     * Per-process buffer of clients that are currently performing their initial load.
-     * While a socket is initializing (fetching initial jobs), updates for that team
-     * are temporarily buffered and flushed once the init finishes.
-     */
+    // Local buffer while a client is doing initial fetch
     private initializingClients = new Map<string, ClientData>();
 
-    /**
-     * Redis connections used by the SocketIO adapter (fanout across pods).
-     * @see {@link createAdapter}
-     */
-    private adapterPub?: Redis;
-    private adapterSub?: Redis;
-
-    /**
-     * Redis subscriber used to receive domain events (Pub/Sub).
-     * Workers publish to `job_updates`, and this service re-emits locally.
-     */
-    private domainSub?: Redis;
-
-    /**
-     * @param corsOrigins Allowed origins for SocketIO CORS.
-     * @param pingTimeout Time (ms) before a client is considered disconnected.
-     * @param pingInterval Interval (ms) between keep-alive pings.
-     */
-    constructor(
-        private corsOrigins: string[] = [
-        process.env.CLIENT_DEV_HOST as string,
-        process.env.CLIENT_HOST as string
-        ],
-        private pingTimeout = 60_000,
-        private pingInterval = 25_000
-    ){}  
-
-    /**
-     * Initializes SocketIO on the provided HTTP server, attaches the Redis adapter
-     * for multi-node support, and subscribes to the domain Pub/Sub channel.
-     * 
-     * @param server HTTP server to attach SocketIO to.
-     * @returns The `Server` (SocketIO) instance.
-     */
-    async initialize(server: http.Server): Promise<Server>{
-        if(this.initialized && this.io){
-            return this.io;
-        }
-
-        this.io = new Server(server, {
-            cors: {
-                origin: this.corsOrigins.filter(Boolean),
-                methods: ['GET', 'POST']
-            },
-            transports: ['websocket', 'polling'],
-            pingTimeout: this.pingTimeout,
-            pingInterval: this.pingInterval
-        });
-
-        this.adapterPub = createRedisClient();
-        this.adapterSub = createRedisClient();
-        this.io.adapter(createAdapter(this.adapterPub, this.adapterSub));
-
-        this.domainSub = createRedisClient();
-        this.domainSub.on('message', async (channel, raw) => {
-            if(channel !== JOB_UPDATES_CHANNEL) return;
-            try{
-                const { teamId, payload } = JSON.parse(raw);
-                await this.handleExternalJobUpdate(teamId, payload);
-            }catch(err: any){
-                console.error('[JobSocketService] Invalid pub/sub message:', err);
-            }
-        });
-
-        await this.domainSub.subscribe(JOB_UPDATES_CHANNEL);
-
-        this.io.on('connection', (socket) => this.onConnection(socket));
-        trajectorySocketService.initialize(this.io);
-        this.initialized = true;
-        return this.io;
+    constructor(){
+        super('JobsModule');
     }
 
-    /**
-     * Publishes a job update onto the domain bus so that ALL instances
-     * receive it and re-emit to their local clients.
-     * 
-     * @param teamId Team identifier (mapped to room `team-<id>`).
-     * @param jobData Arbitrary update payload for the job.
-     * 
-     * @remarks
-     * - Delegates to the shared publisher `publishJobUpdate` to avoid duplicate connections.
-     * - No-op if `teamId` or `jobData` are falsy.
-     */
-    async emitJobUpdate(teamId: string, jobData: any): Promise<void>{
-        if(!teamId || !jobData) return;
-        await publishJobUpdate(teamId, jobData);
+    onInit(io: Server): void{
+        this.io = io;
     }
 
-    /**
-     * Closes SocketIO and the Redis connections associated with this service.
-     * Use for graceful shutdown (SIGTERM/SIGNINT). 
-     */
-    async close(): Promise<void>{
-        try{
-            await new Promise<void>((res) => {
-                if(this.io){
-                    this.io.close(() => res());
-                }else{
-                    res();
-                }
-            });
-        }catch{}
-
-        try{
-            await this.adapterPub?.quit();
-        }catch{}
-
-        try{
-            await this.adapterSub?.quit();
-        }catch{}
-
-        try{
-            if(this.domainSub){
-                await this.domainSub.unsubscribe(JOB_UPDATES_CHANNEL).catch(() => {});
-                await this.domainSub.quit();
-            }
-        }catch{}
-
-        this.initialized = false;
-        this.initializingClients.clear();
-        this.io = undefined;
-        this.adapterPub = undefined;
-        this.adapterSub = undefined;
-        this.domainSub = undefined;
-    }
-
-    /**
-     * Returns the initialized SocketIO server.
-     * @throws If SocketIO has not been initialized yet.
-     */
-    getIO(): Server{
-        if(!this.io){
-            throw new Error('Socket.io not initialized!');
-        }
-        return this.io;
-    }
-
-    /**
-     * Socket connection handler.
-     * 
-     * @param socket The connected socket.
-     */
-    private onConnection(socket: Socket){
-        console.log(`[Socket] User connected: ${socket.id}`);
-
+    onConnection(socket: Socket): void{
         socket.on('subscribe_to_team', async ({ teamId, previousTeamId }) => {
-            // TODO: AUTH!!!!!
             if(previousTeamId){
-                socket.leave(`team-${previousTeamId}`);
-                console.log(`[Socket] Socket ${socket.id} left room: team-${previousTeamId}`);
+                this.leaveRoom(socket, `team-${previousTeamId}`);
             }
 
             this.initializingClients.delete(socket.id);
-            if(!teamId){
-                return;
-            }
+            if(!teamId) return;
 
             this.initializingClients.set(socket.id, {
                 teamId,
@@ -222,43 +40,39 @@ class JobsSocketService{
                 pendingUpdates: []
             });
 
-            console.log(`[Socket] Starting init for ${socket.id} (team ${teamId})`);
-            socket.join(`team-${teamId}`);
-            
-            const initialJobs = await this.getJobsForTeam(teamId);
-            socket.emit('team_jobs', initialJobs);
-            console.log(`[Socket] Init completed for ${socket.id}: ${initialJobs.length} jobs`);
+            this.joinRoom(socket, `team-${teamId}`);
+
+            const jobs = await this.getJobsForTeam(teamId);
+            socket.emit('team_jobs', jobs);
 
             setImmediate(async () => {
                 await this.sendPendingUpdates(socket.id);
                 this.initializingClients.delete(socket.id);
-                console.log(`[Socket] Background updates completed for ${socket.id}`);
             });
         });
 
         socket.on('disconnect', () => {
-            console.log(`[Socket] User disconnected: ${socket.id}`);
             this.initializingClients.delete(socket.id);
         });
     }
 
     /**
-     * Handles a job update received via Redis Pub/Sub and re-emits to local sockets.
-     * 
-     * @param teamId Team identifier for routing to the correct room.
-     * @param jobData Update payload as published by workers/queues.
-     * 
-     * @remarks
-     * - If there are sockets for the same currently initializing in THIS process,
-     * the update is buffered and sent after their snapshopt completes.
+     * Publish a job update to the domain bus (all pods receive it).
      */
-    private async handleExternalJobUpdate(teamId: string, jobData: any){
+    async emitJobUpdate(teamId: string, payload: any): Promise<void>{
+        if(!teamId || !payload) return;
+        await publishJobUpdate(teamId, payload);
+    }
+
+    /**
+     * Re-emit a job update to local sockets (called by whoever listens to Pub/Sub).
+     */
+    async reemitLocal(teamId: string, jobData: any): Promise<void>{
         if(!this.io){
             return;
         }
 
         const update = this.normalizeUpdate(jobData);
-
         if(this.hasAnyInitializingForTeam(teamId)){
             this.addPendingUpdate(teamId, update);
             return;
@@ -444,8 +258,6 @@ class JobsSocketService{
             ...(jobData.processingTimeMs && { processingTimeMs: jobData.processingTimeMs })
         };
     }
-};
+}
 
-const jobsSockets = new JobsSocketService();
-
-export default jobsSockets;
+export default JobsModule;

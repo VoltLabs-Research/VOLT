@@ -23,17 +23,31 @@
 import http from 'http';
 import app from '@config/express';
 import mongoConnector from '@/utilities/mongo/mongo-connector';
+import SocketGateway from '@/socket/socket-gateway';
+import JobsModule from '@/socket/modules/jobs';
+import TrajectoryModule from '@/socket/modules/trajectory';
 import { initializeRedis } from '@config/redis';
-import jobsSockets from '@/services/jobs-socket';
 
 const SERVER_PORT = process.env.SERVER_PORT || 8000;
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
 
 const server = http.createServer(app);
-jobsSockets.initialize(server);
+const gateway = new SocketGateway()
+    .register(new JobsModule())
+    .register(new TrajectoryModule());
+
+const shutodwn = async () => {
+    await gateway.close();
+    process.exit(0);
+};
 
 server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
+    await gateway.initialize(server);
+
     initializeRedis();
     await mongoConnector();
     console.log(`Server running at http://${SERVER_HOST}:${SERVER_PORT}/`);
+
+    process.on('SIGTERM', shutodwn);
+    process.on('SIGINT', shutodwn);
 });
