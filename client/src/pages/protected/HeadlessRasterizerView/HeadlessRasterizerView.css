@@ -838,7 +838,15 @@
     min-width: max-content;
   }
 
-  .raster-scene-header-search-container{
+  .raster-scene-header-search-container .dashboard-search-container{
+    display: none;
+  }
+  
+  .raster-scene-header-views-container{
+    display: none;
+  }
+
+  .raster-scene-header-users-container{
     display: none;
   }
 }
