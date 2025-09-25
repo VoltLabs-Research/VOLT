@@ -73,10 +73,10 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
 
     const canPerformCpuIntensiveTask = (): boolean => {
         const enabled = import.meta.env.VITE_CPU_INTENSIVE_TASKS === 'true';
-        // For testing: always show notification
+        // For testing: always show notification and return false
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 5000); 
-        return enabled;
+        return false;
     };
 
     const {
@@ -129,19 +129,29 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     const handleShare = (): void => {
     };
 
-    const handleDislocationAnalysis = (): void => {
+    const handleDislocationAnalysis = async (): Promise<void> => {
         if (!canPerformCpuIntensiveTask()) {
             return;
         }
-        dislocationAnalysis(trajectory._id, analysisConfig);
+        try {
+            await dislocationAnalysis(trajectory._id, analysisConfig);
+        } catch (error) {
+            console.error('Dislocation analysis failed:', error);
+            // El error ya fue manejado por el store, solo lo registramos
+        }
     };
 
-    const handleRasterize = useCallback(() => {
+    const handleRasterize = useCallback(async () => {
         if (!canPerformCpuIntensiveTask()) {
             return;
         }
-        rasterize(trajectory._id);
-    }, [trajectory._id]);
+        try {
+            await rasterize(trajectory._id);
+        } catch (error) {
+            console.error('Rasterize failed:', error);
+            // El error ya fue manejado por el store, solo lo registramos
+        }
+    }, [trajectory._id, rasterize]);
 
     const getJobStatusText = (): string => {
         if(isCompleted) return 'completed';

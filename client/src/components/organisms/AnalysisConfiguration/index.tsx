@@ -80,12 +80,17 @@ const AnalysisConfiguration = () => {
         { key: 'markCoreAtoms', label: 'Mark Core Atoms', type: 'checkbox' },
     ];
 
-    const startAnalysis = () => {
+    const startAnalysis = async () => {
         if (!canPerformCpuIntensiveTask()) {
             return;
         }
         if (trajectory?._id) {
-            dislocationAnalysis(trajectory._id, analysisConfig);
+            try {
+                await dislocationAnalysis(trajectory._id, analysisConfig);
+            } catch (error) {
+                console.error('Dislocation analysis failed:', error);
+                // El error ya fue manejado por el store, solo lo registramos
+            }
         }
         //navigate('/dashboard');
     };
