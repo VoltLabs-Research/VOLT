@@ -36,7 +36,6 @@ import RasterHeader from '@/components/molecules/raster/RasterHeader';
 import SceneColumn from '@/components/molecules/raster/SceneColumn';
 import Thumbnails from '@/components/molecules/raster/Thumbnails';
 import MetricsBar from '@/components/molecules/raster/MetricsBar';
-import { type CursorUser } from '@/hooks/realtime/useCursorShare';
 import CursorShareLayer from '@/components/atoms/CursorShareLayer';
 import useRasterConnectedUsers from '@/hooks/raster/useRasterConnectedUsers';
 import FrameAtomsTable from '@/components/organisms/FrameAtomsTable';
@@ -66,9 +65,9 @@ const HeadlessRasterizerView: React.FC = () => {
     const user = useAuthStore((state) => state.user);
     const connectedUsers = useRasterConnectedUsers(trajectoryId);
 
-    const cursorUser: CursorUser | undefined = useMemo(() => {
+    const cursorUser: any = useMemo(() => {
         if (!user) return undefined;
-        const u: CursorUser = { id: String(user._id ?? 'anon'), color: '#8A63D2' };
+        const u: any = { id: String(user._id ?? 'anon'), color: '#8A63D2' };
         if (user.firstName) u.firstName = user.firstName;
         if (user.lastName) u.lastName = user.lastName;
         if (user.email) u.email = user.email;

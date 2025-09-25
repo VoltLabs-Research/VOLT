@@ -47,7 +47,7 @@ class CursorModule extends BaseSocketModule{
         /**
          * Relay cursor movement to the whole room
          */
-        socket.on('cursor:move', ({ room, x, y, ts }: { room?: string, x: Number, y: number, ts?: number }) => {
+        socket.on('cursor:move', ({ room, nx, ny, ts }: { room?: string, nx: Number, ny: number, ts?: number }) => {
             if(!room){
                 return;
             }
@@ -56,11 +56,16 @@ class CursorModule extends BaseSocketModule{
 
             this.io?.to(room).emit('cursor:move', {
                 id: socket.id,
-                x,
-                y,
+                nx,
+                ny,
                 ts: when,
                 user: socket.data.user
             });
+        });
+
+        socket.on('cursor:click', ({ room, nx, ny, ts }) => {
+            if(!room) return;
+            this.io?.to(room).emit('cursor:click', { id: socket.id, nx, ny, ts: ts ?? Date.now(), user: socket.data.user });
         });
 
         /**

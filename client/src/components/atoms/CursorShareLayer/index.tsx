@@ -58,7 +58,7 @@ interface CursorShareLayerProps{
     size?: number;
 }
 
-const clamp = (n: number, min: number, max: number) => {
+    const clamp = (n: number, min: number, max: number) => {
     return Math.min(max, Math.max(min, n));
 };
 
@@ -72,7 +72,7 @@ const cssHsl = (h: number, s: number, l: number, a = 1) => {
 const hasH = (seed: string) => {
     let h = 0;
     for(let i = 0; i < seed.length; i++){
-        h = (h * 31 + seed.charCodeAt(1)) >>> 0;
+        h = (h * 31 + seed.charCodeAt(i )) >>> 0;
     }
 
     return h % 360;
@@ -188,6 +188,31 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
     }, [animate]);
 
     useEffect(() => {
+        const recompute = () => {
+            const rect = containerRef.current?.getBoundingClientRect();
+            if(!rect) return;
+            setCursors((prev) => {
+                const next = new Map(prev);
+                return next;
+            });
+        };
+
+        window.addEventListener('resize', recompute);
+        if(window.visualViewport){
+            window.visualViewport.addEventListener('resize', recompute);
+            window.visualViewport.addEventListener('scroll', recompute);     
+        }
+
+        return () => {
+            window.removeEventListener('resize', recompute);
+            if(window.visualViewport){
+                window.visualViewport.removeEventListener('resize', recompute);
+                window.visualViewport.removeEventListener('scroll', recompute);  
+            }
+        };
+    }, []);
+
+    useEffect(() => {
         if(!roomName || !user) return;
 
         socketService
@@ -200,13 +225,16 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
                 const existing = next.get(data.id);
                 const hue = hasH(data.id);
                 const { base, halo, line } = parseToHsl(data.user?.color, hue, vividness);
+                const rect = containerRef.current?.getBoundingClientRect();
+                const x = rect ? clamp(data.nx, 0, 1) * rect.width : 0;
+                const y = rect ? clamp(data.ny, 0, 1) * rect.height : 0;
 
                 next.set(data.id, {
                   id: data.id,
-                    x: existing?.x ?? data.x,
-                    y: existing?.y ?? data.y,
-                    targetX: data.x,
-                    targetY: data.y,
+                    x: existing?.x ?? x,
+                    y: existing?.y ?? y,
+                    targetX: x,
+                    targetY: y,
                     velocity: data.velocity ?? 0,
                     angle: data.angle ?? 0,
                     user: { ...data.user, color: base } as any,
@@ -225,11 +253,14 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
                 const next = new Map(prev);
                 const existing = next.get(data.id);
                 if(existing){
+                    const rect = containerRef.current?.getBoundingClientRect();
+                    const x = rect ? clamp(data.nx, 0, 1) * rect.width : 0;
+                    const y = rect ? clamp(data.ny, 0, 1) * rect.height : 0;
                     next.set(data.id, {
                         ...existing,
                         clickRipples: [
                             ...existing.clickRipples,
-                            { x: data.x, y: data.y, timestamp: performance.now(), id: Math.random().toString(36) }
+                            { x, y, timestamp: performance.now(), id: Math.random().toString(36) }
                         ]
                     });
                 }
@@ -256,22 +287,22 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
     const handleMouseMove = (e: React.MouseEvent) => {
         if(!roomName || !containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const nx = clamp((e.clientX - rect.left) / (rect.width || 1), 0, 1);
+        const ny = clamp((e.clientY - rect.top) / (rect.height || 1), 0, 1);
         socketService
-            .emit('cursor:move', { room: roomName, x, y, ts: Date.now(), velocity: 0, angle: 0 })
-            .catch(err => console.error('Failed to send cursor move:', err));
+                .emit('cursor:move', { room: roomName, nx, ny, ts: Date.now(), velocity: 0, angle: 0 })
+                .catch((err) => console.error('Failed to send cursor move:', err));
     };
 
     const handleClick = (e: React.MouseEvent) => {
         if(!roomName || !containerRef.current) return;
         if(!enableRipples) return;
         const rect = containerRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const nx = clamp((e.clientX - rect.left) / (rect.width || 1), 0, 1);
+        const ny = clamp((e.clientY - rect.top) / (rect.height || 1), 0, 1);
         socketService
-            .emit('cursor:click', { room: roomName, x, y, ts: Date.now() })
-            .catch(err => console.error('Failed to send cursor click:', err));
+            .emit('cursor:click', { room: roomName, nx, ny, ts: Date.now() })
+            .catch((err) => console.error('Failed to send cursor click:', err));    
     };
 
     const cursorsArray = Array.from(cursors.values());
@@ -376,13 +407,16 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
                             const age = (performance.now() - r.timestamp) / 1000;
                             const o = clamp(1 - age, 0, 1) * 0.6;
                             const sc = 1 + age * 2.2;
+                            const rect = containerRef.current?.getBoundingClientRect();
+                            const rx = rect ? r.x * rect.width : 0;
+                            const ry = rect ? r.y * rect.height : 0;
                             return (
                                 <div
                                     key={r.id}
                                     style={{
                                         position: 'absolute',
-                                        left: r.x - 14 * baseScale,
-                                        top: r.y - 14 * baseScale,
+                                        left: (rect ? rx : r.x) - 14 * baseScale,
+                                        top: (rect ? ry : r.y) - 14 * baseScale,
                                         width: 28 * baseScale,
                                         height: 28 * baseScale,
                                         borderRadius: '50%',
