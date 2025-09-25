@@ -38,5 +38,5 @@
 
 /* Light mode override: make simulation container content white */
 :root[data-theme='light'] .container-content{
-    background: #ffffff;
+    background: #0e0e0e;
 }
