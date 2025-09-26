@@ -12,6 +12,7 @@ import SimulationGrid from '@/components/molecules/SimulationGrid';
 import DashboardStats from '@/components/atoms/DashboardStats';
 import useTeamStore from '@/stores/team/team';
 import JobsHistoryViewer from '@/components/organisms/JobsHistoryViewer';
+import WindowIcons from '@/components/molecules/WindowIcons';
 import './Dashboard.css';
 
 const DashboardPage: React.FC = memo(() => {
@@ -24,6 +25,7 @@ const DashboardPage: React.FC = memo(() => {
     const [isLight, setIsLight] = useState(() =>
         typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light'
     );
+
     useEffect(() => {
         if (typeof document === 'undefined') return;
         const root = document.documentElement;
