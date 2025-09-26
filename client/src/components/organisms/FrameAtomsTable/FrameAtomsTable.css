@@ -2,10 +2,31 @@
     position: absolute;
     z-index: 999999;
     height: 500px;
-    overflow: scroll;
+    overflow: hidden;
     bottom: 0;
     right: 0;
     border-radius: .5rem;
+    background-color: var(--color-bg);
+}
+
+.frame-atoms-table-container .document-listing-table-header-container{
+    border-radius: 5rem;
+}
+
+.frame-atoms-table-body-container{
+    padding: 1rem;
+}
+
+.frame-atoms-table-header-container{
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.frame-atoms-table-header-title{
+    font-size: 1.7rem;
+    font-weight: 300;
 }
 
 .frame-atoms-table-container .document-listing-table-row-container,

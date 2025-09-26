@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import DocumentListingTable from '@/components/molecules/DocumentListingTable';
 import type { ColumnConfig } from '@/components/organisms/DocumentListing';
 import useFrameAtoms from '@/hooks/trajectory/use-frame-atoms';
+import WindowIcons from '@/components/molecules/WindowIcons';
 import './FrameAtomsTable.css';
 
 export type FrameAtomsTableProps = {
@@ -135,15 +136,22 @@ const FrameAtomsTable = ({
 
   return (
     <div className='frame-atoms-table-container primary-surface' ref={containerRef}>
-      <DocumentListingTable 
-        columns={columns} 
-        data={rows} 
-        isLoading={isInitialLoading} />
-      {/* Loading more indicator and intersection sentinel */}
-      <div style={{ padding: '0.5rem 1rem', opacity: 0.8 }}>
-        {!isInitialLoading && loading ? 'Loading more...' : ''}
+      <div className='frame-atoms-table-header-container'>
+        <WindowIcons />
+        <h3 className='frame-atoms-table-header-title'>Particles</h3>
       </div>
-      <div ref={sentinelRef} style={{ height: 1 }} />
+
+      <div className='frame-atoms-table-body-container'>
+        <DocumentListingTable 
+          columns={columns} 
+          data={rows} 
+          isLoading={isInitialLoading} />
+        {/* Loading more indicator and intersection sentinel */}
+        <div style={{ padding: '0.5rem 1rem', opacity: 0.8 }}>
+          {!isInitialLoading && loading ? 'Loading more...' : ''}
+        </div>
+        <div ref={sentinelRef} style={{ height: 1 }} />
+      </div>
     </div>
   );
 };
