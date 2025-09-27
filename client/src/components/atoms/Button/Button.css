@@ -44,3 +44,37 @@
     height: 3rem;
     opacity: .8;
 }
+
+:root[data-theme='light'] .button.black-on-light{
+  --button-bg: #000000;
+  --button-fg: #ffffff;
+  --button-border: #000000;
+}
+
+:root[data-theme='light'] .button.black-on-light:hover{
+    opacity: .92;
+}
+
+:root[data-theme='light'] .button.black-on-light:active{
+    transform: scale(.97);
+}
+
+:root[data-theme='light'] .button.black-on-light:focus-visible{
+    outline: none;
+    box-shadow:
+        0 0 0 2px #ffffff,
+        0 0 0 4px rgba(0,0,0,.9);
+}
+
+.button.sm{
+    padding: 0.65rem 1.25rem;
+    border-radius: 1.25rem;
+}
+
+.button.sm .button-text{
+    font-size: 0.9rem;   
+}
+
+.button.sm.is-loading{
+    height: 2.4rem;
+}

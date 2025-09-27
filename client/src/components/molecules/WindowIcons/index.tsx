@@ -53,11 +53,11 @@ const IconCircle = ({ variant, title }: IconDef) => {
     );
 };
 
-const WindowIcons: React.FC = () => {
+const WindowIcons: React.FC = ({ withBackground = false }) => {
 
     return (
         <div
-            className='window-icons-container'
+            className={`window-icons-container ${withBackground ? 'with-background' : ''}`}
             role='toolbar'
             aria-label='Window controls'
         >

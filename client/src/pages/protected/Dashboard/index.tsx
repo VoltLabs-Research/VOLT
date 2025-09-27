@@ -12,7 +12,7 @@ import SimulationGrid from '@/components/molecules/SimulationGrid';
 import DashboardStats from '@/components/atoms/DashboardStats';
 import useTeamStore from '@/stores/team/team';
 import JobsHistoryViewer from '@/components/organisms/JobsHistoryViewer';
-import WindowIcons from '@/components/molecules/WindowIcons';
+import TeamCreator from '@/components/organisms/TeamCreator';
 import './Dashboard.css';
 
 const DashboardPage: React.FC = memo(() => {
@@ -37,7 +37,9 @@ const DashboardPage: React.FC = memo(() => {
     }, []);
 
     return (
-        <FileUpload>            
+        <FileUpload>
+            <TeamCreator />
+
             <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
                 <div className='dashboard-body-left-container'>
                     <div className='dashboard-body-left-header-container'>
