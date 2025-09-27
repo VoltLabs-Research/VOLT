@@ -15,7 +15,11 @@ const initialState: RenderConfigState = {
 };
 
 const useRenderConfigStore = create<RenderConfigStore>()((set, get) => ({
-    ...initialState
+    ...initialState,
+
+    reset() {
+        set(initialState);
+    },
 }));
 
 export default useRenderConfigStore;

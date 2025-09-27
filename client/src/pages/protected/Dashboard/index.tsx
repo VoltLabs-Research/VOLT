@@ -64,6 +64,7 @@ const DashboardPage: React.FC = memo(() => {
                         )}
 
                         <Scene3D 
+                            key={selectedTeam?._id || 'no-team'}
                             showGizmo={false}
                             ref={scene3DRef}
                             {...(isLight ? { background: '#f8f8f8ff' } : {})}

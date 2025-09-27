@@ -58,7 +58,11 @@ export interface RenderConfigState{
     gl: GLConfig;
 }
 
-export type RenderConfigStore = RenderConfigState;
+export interface RenderConfigActions {
+    reset: () => void;
+}
+
+export type RenderConfigStore = RenderConfigState & RenderConfigActions;
 
 export const CAMERA_DEFAULT_CONFIG = {
     position: [8, 8, 6] as [number, number, number],

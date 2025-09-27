@@ -31,6 +31,14 @@ import { CiChat1 } from 'react-icons/ci';
 import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import useTeamStore from '@/stores/team/team';
 import useTrajectoryStore from '@/stores/trajectories';
+import useRasterStore from '@/stores/raster';
+import useAnalysisConfigStore from '@/stores/analysis-config';
+import { useStructureAnalysisStore } from '@/stores/structure-analysis';
+import useModelStore from '@/stores/editor/model';
+import useTimestepStore from '@/stores/editor/timesteps';
+import usePlaybackStore from '@/stores/editor/playback';
+import useEditorUIStore from '@/stores/ui/editor';
+import useRenderConfigStore from '@/stores/editor/render-config';
 import ShortcutsModal from '@/components/organisms/ShortcutsModal';
 import useNotificationStore from '@/stores/notifications';
 import Select from '@/components/atoms/form/Select';
@@ -111,6 +119,32 @@ const DashboardLayout = () => {
 
     // Handle team selection change
     const handleTeamChange = (teamId: string) => {
+        // Only proceed if it's actually a different team
+        if (selectedTeam?._id === teamId) return;
+        
+        // Clean up team-dependent states
+        const { reset: resetTrajectories } = useTrajectoryStore.getState();
+        const { clearFrameCache } = useRasterStore.getState();
+        const { resetAnalysisConfig } = useAnalysisConfigStore.getState();
+        const { reset: resetStructureAnalysis } = useStructureAnalysisStore.getState();
+        const { reset: resetModel } = useModelStore.getState();
+        const { reset: resetTimesteps } = useTimestepStore.getState();
+        const { reset: resetPlayback } = usePlaybackStore.getState();
+        const { reset: resetEditorUI } = useEditorUIStore.getState();
+        const { reset: resetRenderConfig } = useRenderConfigStore.getState();
+        
+        // Clear all team-dependent data
+        resetTrajectories();
+        clearFrameCache();
+        resetAnalysisConfig();
+        resetStructureAnalysis();
+        resetModel();
+        resetTimesteps();
+        resetPlayback();
+        resetEditorUI();
+        resetRenderConfig();
+        
+        // Set the new selected team
         setSelectedTeam(teamId);
     };
 

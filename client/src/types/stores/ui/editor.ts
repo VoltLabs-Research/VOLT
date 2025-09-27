@@ -10,6 +10,7 @@ export interface EditorUIActions{
     toggleModifier: (modifier: string) => void;
     toggleEditorWidgets: () => void;
     setSceneInteracting: (isInteracting: boolean) => void;
+    reset: () => void;
 }
 
 export type EditorUIStore = EditorUIState & EditorUIActions;

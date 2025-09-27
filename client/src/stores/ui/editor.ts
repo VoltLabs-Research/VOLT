@@ -30,6 +30,10 @@ const useEditorUIStore = create<EditorUIStore>((set, get) => {
         setSceneInteracting(isInteracting: boolean) { 
             set({ isSceneInteracting: isInteracting });
         },
+
+        reset() {
+            set(initialState);
+        },
     };
 });
 
