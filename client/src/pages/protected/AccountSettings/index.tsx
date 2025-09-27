@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbCode, TbTrash } from 'react-icons/tb';
+import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbCode, TbTrash, TbPlus } from 'react-icons/tb';
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
 import { api } from '@/services/api';
 import RecentActivity from '@/components/molecules/RecentActivity';
 import LoginActivityModal from '@/components/molecules/LoginActivityModal';
+import ApiTokenModal from '@/components/molecules/ApiTokenModal';
+import ApiTokenList from '@/components/molecules/ApiTokenList';
 import useSessions from '@/hooks/auth/use-sessions';
 import useLoginActivity from '@/hooks/auth/use-login-activity';
+import useApiTokens from '@/hooks/api/use-api-tokens';
 import { formatDistanceToNow, isValid } from 'date-fns';
+import type { ApiToken, CreateTokenData, UpdateTokenData } from '@/types/models/api-token';
 import './AccountSettings.css';
 
 const AccountSettings: React.FC = () => {
@@ -19,6 +23,15 @@ const AccountSettings: React.FC = () => {
         changePassword, 
         getPasswordInfo 
     } = useAuthStore();
+    const { 
+        tokens, 
+        loading: tokensLoading, 
+        error: tokensError,
+        createToken,
+        updateToken,
+        deleteToken,
+        regenerateToken
+    } = useApiTokens();
     const [activeSection, setActiveSection] = useState('General');
     const [userData, setUserData] = useState({
         firstName: user?.firstName || '',
@@ -35,6 +48,9 @@ const AccountSettings: React.FC = () => {
         newPassword: '',
         confirmPassword: ''
     });
+    const [showApiTokenModal, setShowApiTokenModal] = useState(false);
+    const [apiTokenModalMode, setApiTokenModalMode] = useState<'create' | 'edit'>('create');
+    const [selectedToken, setSelectedToken] = useState<ApiToken | null>(null);
     const { sessions, loading: sessionsLoading, revokeSession, revokeAllOtherSessions } = useSessions();
     const { activities: loginActivities, loading: loginActivityLoading } = useLoginActivity(10);
 
@@ -131,6 +147,51 @@ const AccountSettings: React.FC = () => {
         } catch (error) {
             // Error is handled by the auth store
             console.error('Password change failed:', error);
+        }
+    };
+
+    const handleCreateToken = () => {
+        setApiTokenModalMode('create');
+        setSelectedToken(null);
+        setShowApiTokenModal(true);
+    };
+
+    const handleEditToken = (token: ApiToken) => {
+        setApiTokenModalMode('edit');
+        setSelectedToken(token);
+        setShowApiTokenModal(true);
+    };
+
+    const handleDeleteToken = async (token: ApiToken) => {
+        if (window.confirm(`Are you sure you want to delete the token "${token.name}"? This action cannot be undone.`)) {
+            try {
+                await deleteToken(token._id);
+            } catch (error: any) {
+                console.error('Failed to delete token:', error);
+            }
+        }
+    };
+
+    const handleRegenerateToken = async (token: ApiToken) => {
+        if (window.confirm(`Are you sure you want to regenerate the token "${token.name}"? The old token will be invalidated.`)) {
+            try {
+                await regenerateToken(token._id);
+            } catch (error: any) {
+                console.error('Failed to regenerate token:', error);
+            }
+        }
+    };
+
+    const handleApiTokenSave = async (data: CreateTokenData | UpdateTokenData) => {
+        try {
+            if (apiTokenModalMode === 'create') {
+                await createToken(data as CreateTokenData);
+            } else {
+                await updateToken(selectedToken!._id, data as UpdateTokenData);
+            }
+            setShowApiTokenModal(false);
+        } catch (error: any) {
+            throw error;
         }
     };
 
@@ -941,55 +1002,34 @@ const AccountSettings: React.FC = () => {
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <div className='section-header'>
-                                <h3 className='section-title'>API Tokens</h3>
-                                <p className='section-description'>Manage your API tokens for programmatic access</p>
+                                <div className='section-header-content'>
+                                    <h3 className='section-title'>API Tokens</h3>
+                                    <p className='section-description'>Manage your API tokens for programmatic access</p>
+                                </div>
+                                <div className='section-header-actions'>
+                                    <button 
+                                        className='action-button primary'
+                                        onClick={handleCreateToken}
+                                    >
+                                        <TbPlus size={16} />
+                                        Create Token
+                                    </button>
+                                </div>
                             </div>
                             
-                            <div className='tokens-list'>
-                                <div className='token-item'>
-                                    <div className='token-info'>
-                                        <div className='token-icon'>
-                                            <TbKey size={20} />
-                                        </div>
-                                        <div className='token-details'>
-                                            <span className='token-name'>Production API</span>
-                                            <span className='token-key'>••••••••••••••••</span>
-                                        </div>
-                                    </div>
-                                    <div className='token-actions'>
-                                        <button className='action-button'>
-                                            <TbEdit size={16} />
-                                            Regenerate
-                                        </button>
-                                        <button className='action-button danger'>
-                                            <TbX size={16} />
-                                            Revoke
-                                        </button>
-                                    </div>
+                            {tokensError && (
+                                <div className='error-message'>
+                                    {tokensError}
                                 </div>
-                                
-                                <div className='token-item'>
-                                    <div className='token-info'>
-                                        <div className='token-icon'>
-                                            <TbKey size={20} />
-                                        </div>
-                                        <div className='token-details'>
-                                            <span className='token-name'>Development API</span>
-                                            <span className='token-key'>••••••••••••••••</span>
-                                        </div>
-                                    </div>
-                                    <div className='token-actions'>
-                                        <button className='action-button'>
-                                            <TbEdit size={16} />
-                                            Regenerate
-                                        </button>
-                                        <button className='action-button danger'>
-                                            <TbX size={16} />
-                                            Revoke
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                            )}
+                            
+                            <ApiTokenList
+                                tokens={tokens}
+                                loading={tokensLoading}
+                                onEdit={handleEditToken}
+                                onDelete={handleDeleteToken}
+                                onRegenerate={handleRegenerateToken}
+                            />
                         </div>
                     </div>
                 );
@@ -1054,6 +1094,14 @@ const AccountSettings: React.FC = () => {
             <LoginActivityModal 
                 isOpen={showLoginActivityModal}
                 onClose={() => setShowLoginActivityModal(false)}
+            />
+            
+            <ApiTokenModal
+                isOpen={showApiTokenModal}
+                onClose={() => setShowApiTokenModal(false)}
+                onSave={handleApiTokenSave}
+                token={selectedToken}
+                mode={apiTokenModalMode}
             />
         </>
     );

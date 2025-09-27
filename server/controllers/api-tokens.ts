@@ -33,6 +33,7 @@ export const getMyApiTokens = catchAsync(async (req: Request, res: Response, nex
     const user = (req as any).user;
     
     const tokens = await ApiToken.findByUser(user.id);
+    console.log('🔍 API Tokens found:', tokens.map(t => ({ id: t._id, name: t.name, hasToken: !!t.token })));
     
     const response = {
         status: 'success',
@@ -67,10 +68,16 @@ export const createApiToken = catchAsync(async (req: Request, res: Response, nex
         return next(new RuntimeError('Invalid permissions provided', 400));
     }
     
+    // Generate token
+    const tokenValue = `opendxa_${crypto.randomBytes(32).toString('hex')}`;
+    const tokenHash = crypto.createHash('sha256').update(tokenValue).digest('hex');
+    
     // Create token data
     const tokenData = {
         name,
         description,
+        token: tokenValue,
+        tokenHash,
         permissions: permissions || ['read:trajectories'],
         expiresAt: expiresAt ? new Date(expiresAt) : undefined,
         createdBy: user.id
@@ -194,7 +201,7 @@ export const regenerateApiToken = catchAsync(async (req: Request, res: Response,
     }
     
     // Generate new token
-    const newToken = token.generateToken();
+    const newToken = `opendxa_${crypto.randomBytes(32).toString('hex')}`;
     token.token = newToken;
     token.tokenHash = crypto.createHash('sha256').update(newToken).digest('hex');
     

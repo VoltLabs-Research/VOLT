@@ -95,13 +95,12 @@ configureApp({
         'password'
     ],
     middlewares: [
-        apiTracker, // API tracking middleware - should be early in the stack
+        apiTracker,
         cors(corsOptions),
         helmet(),
         compression({
             filter: (req, res) => {
                 const url = req.url || '';
-                // Skip compression for binary downloads so Content-Length is preserved
                 if (
                     url.includes('/images-archive') ||
                     url.includes('/glb-archive') ||

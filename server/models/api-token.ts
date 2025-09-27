@@ -122,17 +122,6 @@ apiTokenSchema.virtual('status').get(function() {
     return 'active';
 });
 
-apiTokenSchema.pre('save', async function(next) {
-    if (this.isNew) {
-        this.token = this.generateToken();
-        
-        this.tokenHash = crypto
-            .createHash('sha256')
-            .update(this.token)
-            .digest('hex');
-    }
-    next();
-});
 
 apiTokenSchema.methods.generateToken = function(): string {
     return `opendxa_${crypto.randomBytes(32).toString('hex')}`;
@@ -154,11 +143,11 @@ apiTokenSchema.methods.updateLastUsed = async function(): Promise<void> {
 
 apiTokenSchema.statics.findByToken = function(token: string) {
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    return this.findOne({ tokenHash, isActive: true });
+    return this.findOne({ tokenHash, isActive: true }).select('+token');
 };
 
 apiTokenSchema.statics.findByUser = function(userId: string) {
-    return this.find({ createdBy: userId, isActive: true }).sort({ createdAt: -1 });
+    return this.find({ createdBy: userId, isActive: true }).select('+token').sort({ createdAt: -1 });
 };
 
 apiTokenSchema.post('save', function() {
