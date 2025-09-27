@@ -40,21 +40,6 @@ const upload = multer({
     }
 });
 
-const previewUpload = multer({
-    storage: multer.memoryStorage(),
-    limits: {
-        fileSize: 10 * 1024 * 1024,
-        files: 1
-    },
-    fileFilter: (req, file, cb: FileFilterCallback) => {
-        if(file.mimetype.startsWith('image/')){
-            cb(null, true);
-        }else{
-            cb(new Error('Only image files are allowed') as any, false);
-        }
-    }
-});
-
 router.route('/')
     .get(
         authMiddleware.protect,
@@ -122,8 +107,6 @@ router.route('/:id')
     .patch(
         authMiddleware.protect,
         middleware.requireTeamMembershipForTrajectory,
-        previewUpload.single('preview'),
-        middleware.processPreviewUpload,
         controller.updateTrajectoryById
     )
     .delete(

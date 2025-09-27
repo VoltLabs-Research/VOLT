@@ -89,6 +89,12 @@ class TrajectoryFS{
         return a.localeCompare(b);
     };
 
+    async getDump(frame: string | number): Promise<string | null>{
+        const p = path.join(this.dumpsDir(), String(frame));
+        const isFile = await this.isFile(p);
+        return isFile ? p : null;
+    }
+
     private previewsDir(media?: Exclude<Media, 'both'>): string{
         return media 
             ? path.join(this.root, 'previews', media)
@@ -126,6 +132,10 @@ class TrajectoryFS{
         return out;
     }
 
+    private async ensureDir(p: string): Promise<void>{
+        await fs.mkdir(p, { recursive: true });
+    }
+    
     private async collectFramesForType(
         analysisId: string,
         media: Exclude<Media, 'both'>,
@@ -198,6 +208,13 @@ class TrajectoryFS{
         return result;
     }
 
+    async ensureStructure(): Promise<void>{
+        await this.ensureDir(this.root);
+        await this.ensureDir(this.dumpsDir());
+        await this.ensureDir(this.previewsDir('raster'));
+        await this.ensureDir(this.previewsDir('glb'));
+    }
+
     async getDumps(): Promise<Record<string, string>>{
         const dir = this.dumpsDir();
         const out: Record<string, string> = {};
@@ -220,9 +237,27 @@ class TrajectoryFS{
         return ordered;
     }
 
+    async saveDump(frame: string | number, bufferOrSrc: Buffer | string, overwrite = true): Promise<string>{
+        const destDir = this.dumpsDir();
+        await this.ensureDir(destDir);
+        const dest = path.join(destDir, String(frame));
+        const isFile = await this.isFile(dest);
+        if(!overwrite && isFile){
+            return dest;
+        }
+        if(typeof bufferOrSrc === 'string'){
+            const data = await fs.readFile(bufferOrSrc);
+            await fs.writeFile(dest, data);
+        }else{
+            await fs.writeFile(dest, bufferOrSrc);
+        }
+        return dest;
+    }
+
     async getAnalysis(analysisId: string, analysisType: string, options?: GetOptions): Promise<MediaMaps>{
         const { raster, glb } = this.want(options?.media);
         const result: MediaMaps = {};
+
         if(raster){
             result.raster = await this.collectFramesForType(analysisId, 'raster', analysisType, '.png');
         }

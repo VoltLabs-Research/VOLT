@@ -140,10 +140,11 @@ class OpenDXAService{
      * @param analysisConfigId - Identifier of the analysis configuration used.
      */
     constructor(trajectoryId: string, trajectoryFolderPath: string, analysisConfigId: string){
-        this.exportDirectory = path.join(trajectoryFolderPath, 'glb');
         this.trajectoryId = trajectoryId;
         this.trajectoryFolderPath = trajectoryFolderPath;
         this.analysisConfigId = analysisConfigId;
+        // <root>/<analysisId>/glb
+        this.exportDirectory = path.join(trajectoryFolderPath, analysisConfigId, 'glb');
     }
 
     /**
@@ -352,18 +353,23 @@ class OpenDXAService{
         }
     }
 
+    private async ensureDir(dir: string): Promise<void>{
+        await fs.mkdir(dir, { recursive: true });
+    }
+
     /**
      * Computes the canonical GLB output path for a given frame and export group.
+     * <root>/<analysisId>/glb/<frame>/<exportName>.glb
      * 
      * @param frame - Timestep/frame number.
 	 * @param exportName - Short export label (e.g., `'defect'`, `'atoms_colored_by_type'`).
 	 * @returns Absolute GLB path.
 	 * @internal
     */
-    private getOutputPath(frame: number, exportName: string): string {
-        // TODO: mongoose document type
-        // @ts-ignore
-        return path.join(this.exportDirectory, `frame-${frame}_${exportName}_analysis-${this.analysisConfigId}.glb`)
+    private async getOutputPath(frame: number, exportName: string): Promise<string>{
+        const frameDir = path.join(this.exportDirectory, String(frame));
+        await this.ensureDir(frameDir);
+        return path.join(frameDir, `${exportName}.glb`);
     }
 
     /**
@@ -373,9 +379,9 @@ class OpenDXAService{
 	 * @param frame - Timestep/frame number.
 	 * @internal
 	 */
-    private exportAtomsColoredByType(groupedAtoms: AtomsGroupedByType, frame: number): void {
+    private async exportAtomsColoredByType(groupedAtoms: AtomsGroupedByType, frame: number): Promise<void> {
         const exporter = new AtomisticExporter();
-        const outputPath = this.getOutputPath(frame, 'atoms_colored_by_type');
+        const outputPath = await this.getOutputPath(frame, 'atoms_colored_by_type');
         exporter.exportAtomsTypeToGLB(groupedAtoms, outputPath);
     }
 
@@ -386,9 +392,9 @@ class OpenDXAService{
      * @param frame - Timestep/frame number.
      * @internal
      */
-    private exportDislocations(dislocation: Dislocation, frame: number): void {
+    private async exportDislocations(dislocation: Dislocation, frame: number): Promise<void> {
         const exporter = new DislocationExporter();
-        const outputPath = this.getOutputPath(frame, 'dislocations');
+        const outputPath = await this.getOutputPath(frame, 'dislocations');
         exporter.toGLB(dislocation, outputPath, {
             lineWidth: 0.8,
             colorByType: true,
@@ -408,9 +414,9 @@ class OpenDXAService{
      * @param frame - Timestep/frame number.
      * @param meshType - Label, defaults to `'defect'`.
      */
-    private exportMesh(mesh: Mesh, frame: number, meshType: 'defect' | 'interface' = 'defect'): void {
+    private async exportMesh(mesh: Mesh, frame: number, meshType: 'defect' | 'interface' = 'defect'): Promise<void> {
         const exporter = new MeshExporter();
-        const outputPath = this.getOutputPath(frame, `${meshType}_mesh`);
+        const outputPath = await this.getOutputPath(frame, `${meshType}_mesh`);
         exporter.toGLB(mesh, outputPath, {
             material: {
                 baseColor: [1.0, 1.0, 1.0, 1.0],

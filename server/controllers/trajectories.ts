@@ -21,20 +21,19 @@
 **/
 
 import { NextFunction, Request, Response } from 'express';
-import { join, resolve } from 'path';
-import { access, stat, mkdir, rm, writeFile, constants } from 'fs/promises';
-import { copyFile, listGlbFiles } from '@/utilities/fs';
+import { join, relative, resolve } from 'path';
+import { stat, mkdir, rm, writeFile, constants } from 'fs/promises';
 import { isValidObjectId } from 'mongoose';
 import { getTrajectoryProcessingQueue } from '@/queues';
 import { processTrajectoryFile } from '@/utilities/lammps';
 import { v4 } from 'uuid';
-import { getGLBPath } from '@/utilities/trajectory-glbs';
 import { Trajectory, Team } from '@models/index';
-import HandlerFactory from '@/controllers/handler-factory';
-import RuntimeError from '@/utilities/runtime-error';
 import { getMetricsByTeamId } from '@/metrics/team';
 import { getTrajectoryMetricsById } from '@/metrics/trajectory';
-import HeadlessRasterizer from '@/services/headless-rasterizer';
+
+import TrajectoryFS from '@/services/trajectory-fs';
+import RuntimeError from '@/utilities/runtime-error';
+import HandlerFactory from '@/controllers/handler-factory';
 import archiver from 'archiver';
 
 const factory = new HandlerFactory<any>({
@@ -49,6 +48,24 @@ const factory = new HandlerFactory<any>({
     },
     defaultErrorConfig: 'default'
 });
+
+const sendFileInline = async (
+    res: Response,
+    absPath: string,
+    contentType: string,
+    filename?: string
+) => {
+    const st = await stat(absPath);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', st.size);
+    if(filename){
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    }else{
+        res.setHeader('Content-Disposition', 'inline');
+    }
+    res.sendFile(absPath);
+};
+
 
 export const getTrajectoryById = factory.getOne();
 export const updateTrajectoryById = factory.updateOne();
@@ -65,7 +82,6 @@ export const getTrajectoryMetrics = async (req: Request, res: Response) => {
 
 export const deleteTrajectoryById = factory.deleteOne({
     beforeDelete: async (doc: any) => {
-        console.log(`Preparing to delete trajectory: ${doc.name} (ID: ${doc._id})`);
         const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
         const trajectoryPath = join(basePath, doc.folderId);
         try{
@@ -103,6 +119,7 @@ export const getUserTrajectories = factory.getAll({
 
 export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
+    const analysisId = req.params.analysisId;
 
     if(!trajectory){
         return res.status(400).json({
@@ -111,36 +128,41 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
         });  
     }
 
-    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-    const glbDir = join(basePath, trajectory.folderId, 'glb');
+    const trajFS = new TrajectoryFS(trajectory.folderId);
 
-    let files: string[] = await listGlbFiles(glbDir);
+     const TYPES = [
+        'atoms_colored_by_type', 
+        'dislocations',
+        'defect_mesh',
+        'interface_mesh'
+    ] as const;
 
-    const typeMap: Record<string, string | null> = {
-        atoms_colored_by_type: null,
-        dislocations: null,
-        defect_mesh: null,
-        interface_mesh: null
+    const toRel = (abs: string) => relative(trajFS.root, abs);
+
+    const typeMap: Record<string, Record<string, string>> = {
+        atoms_colored_by_type: {},
+        dislocations: {},
+        defect_mesh: {},
+        interface_mesh: {}
     };
 
-    for(const file of files){
-        const match = file.match(/^frame_\d+_([a-zA-Z0-9_]+)\.glb$/);
-        if(match){
-            const type= match[1];
-            if(type in typeMap){
-                typeMap[type] = join('glb', file);
-            }
+    for (const type of TYPES) {
+        const maps = await trajFS.getAnalysis(analysisId, type, { media: 'glb' });
+        const glbByFrame = maps.glb || {};
+        for(const frame of Object.keys(glbByFrame).sort((a, b) => Number(a) - Number(b))){
+            // e.g. "<analysisId>/glb/36000/<type>.glb"
+            typeMap[type][frame] = toRel(glbByFrame[frame]);
         }
     }
 
     return res.status(200).json({
         status: 'success',
         data: typeMap
-    })
+    });
 };
 
 export const getMetrics = async (req: Request, res: Response) => {
-    const id = (req.params as any).id || (req.params as any).trajectoryId;
+    const id = (req.params as any).id || (req.params as  any).trajectoryId;
     if (!id) {
       return res.status(400).json({ status: 'error', message: 'Trajectory id is required' });
     }
@@ -151,37 +173,18 @@ export const getMetrics = async (req: Request, res: Response) => {
 
 export const getTrajectoryPreview = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
-
-    if(!trajectory || !trajectory.preview){
+    const trajFS = new TrajectoryFS(trajectory.folderId);
+    const previews = await trajFS.getPreviews({ media: 'raster' });
+    const previewPng = previews.previewPng;
+    if(!previewPng){
         return res.status(404).json({
             status: 'error',
             data: { error: 'Preview not found' }
         });
     }
 
-    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-    const previewPath = join(basePath, trajectory.folderId, `${trajectory.preview}.png`);
-
-    try{
-        await access(previewPath, constants.F_OK);
-    }catch(error){
-        return res.status(404).json({
-            status: 'error',
-            data: { error: 'Preview file not found' }
-        });
-    }
-
-    const fileStats = await stat(previewPath);
-
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Content-Length', fileStats.size);
-    res.setHeader('Content-Disposition', `inline; filename="${trajectory.name}_preview.png"`);
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.setHeader('ETag', `"${trajectory.preview}-${fileStats.mtime.getTime()}"`);
-
-    res.sendFile(previewPath);
+    const filename = `${trajectory.name || trajectory._id}_preview.png`;
+    await sendFileInline(res, previewPng, 'image/png', filename);
 };
 
 // Stream atom positions [x,y,z] for a given timestep by parsing the stored LAMMPS dump file (paginated)
@@ -190,15 +193,22 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
     const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
     const pageSize = Math.max(1, Math.min(200000, parseInt((req.query.pageSize as string) || '100000', 10)));
     const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize; // exclusive
+    const endIndex = startIndex + pageSize;
     const trajectory = (res as any).locals.trajectory;
     if (!trajectory) {
         return res.status(400).json({ status: 'error', data: { error: 'Trajectory not found in context' } });
     }
 
     try{
-        const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-        const frameFilePath = join(basePath, trajectory.folderId, `${timestep}`);
+        const trajFS = new TrajectoryFS(trajectory.folderId);
+        const frameFilePath = await trajFS.getDump(timestep);
+
+        if(!frameFilePath){
+            return res.status(404).json({
+                status: 'error',
+                data: { error: 'Dump not found' }
+            });
+        }
 
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Transfer-Encoding', 'chunked');
@@ -310,105 +320,87 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
     }
 };
 
+
 export const getTrajectoryGLB = async (req: Request, res: Response) => {
+  try{
     const { timestep, analysisId } = req.params;
-    const { type } = req.query;
-    const trajectory = res.locals.trajectory;
+    const { type } = req.query as { type?: string };
+    const trajectory = res.locals.trajectory as { name: string; folderId: string; frames: Array<{ timestep: number | string }> };
 
-    const frame = trajectory.frames.find((frame: any) => frame.timestep.toString() === timestep);
-    if(!frame){
+    const trajFS = new TrajectoryFS(trajectory.folderId);
+
+    let result = await trajFS.getAnalysis(analysisId, type ?? '', { media: 'glb' });
+
+    const glbPath = result.glb?.[String(timestep)];
+    if(!glbPath){
         return res.status(404).json({
-            status: 'error',
-            data: { error: `Timestep ${timestep} not found in trajectory` }
+            status: 'error',    
+            data: { error: `GLB file for timestep ${timestep} not found (analysisId=${analysisId}, type=${type})` }
         });
     }
 
-    const glbFilePath = await getGLBPath(timestep, type as string, analysisId, trajectory.folderId);
-    if(!glbFilePath){
-        return res.status(404).json({
-            status: 'error',
-            data: { error: `GLB file for timestep ${timestep} not found` }
-        });
-    }
+    const st = await stat(glbPath);
 
-    const fileStats = await stat(glbFilePath);
-    res.setHeader('Content-Type', 'model/gltf+json');
-    res.setHeader('Content-Length', fileStats.size);
+    res.setHeader('Content-Type', 'model/gltf-binary');
+    res.setHeader('Content-Length', st.size);
     res.setHeader('Content-Disposition', `inline; filename="${trajectory.name}_${timestep}.glb"`);
 
-    res.sendFile(glbFilePath);
+    if(type === undefined){
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+
+    return res.sendFile(glbPath);
+  }catch(err){
+    console.error(err);
+    return res.status(500).json({ status: 'error', data: { error: 'Internal server error' }});
+  }
 };
-
-import { resolve, join } from 'path';
-import fs from 'fs';
-import archiver from 'archiver';
-import type { Request, Response } from 'express';
-
-// asume que ya tienes listGlbFiles(dir): Promise<string[]>
 
 export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
-    if(!trajectory){
-        return res.status(400).json({
+    const { analysisId, type } = req.params;
+    const trajFS = new TrajectoryFS(trajectory.folderId);
+    const maps = await trajFS.getAnalysis(analysisId, type, { media: 'glb' });
+    const glbMap = maps.glb || {};
+    const frameFilter = req.query.frame ? String(req.query.frame): null;
+
+    const files = Object.entries(glbMap)
+        .filter(([frame]) => !frameFilter || frameFilter === frame)
+        .map(([, abs]) => abs);
+
+    if(!files.length){
+        return res.status(404).json({
             status: 'error',
-            data: { error: 'Trajectory not found' }
+            data: { error: 'No GLB files found' }
         });
     }
 
-    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-    const glbDir = join(basePath, trajectory.folderId, 'glb');
+    const filename = String(trajectory.anme || trajectory._id).replace(/[^a-z0-9_\-]+/gi, '_');
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}_${analysisId}_${type}.zip"`);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
-    try{
-        const files = await listGlbFiles(glbDir);
-        if(!files.length){
-            return res.status(404).json({
-                status: 'error',
-                data: { error: 'No GLB files found for this trajectory' }
-            });
-        }
-
-        const filenameSafe = String(trajectory.name || trajectory._id).replace(/[^a-z0-9_\-]+/gi, '_');
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="${filenameSafe}_glbs.zip"`);
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-
-        const archive = archiver('zip', { zlib: { level: 0 } });
-
-        archive.on('error', (err: any) => {
-            console.error('archiver error:', err);
-            if(!res.headersSent){
-                res.status(500).json({
-                    status: 'error',
-                    data: { error: 'Failed to build GLB archive' }
-                });
-            }else{
-                res.end();
-            }
-        });
-
-        archive.pipe(res);
-
-        for(const absPath of files){
-            const name = absPath.split('/').pop() || 'frame.glb';
-            archive.file(absPath, { name: `glb/${name}`, store: true });
-        }
-
-        await archive.finalize();
-    }catch(err){
-        console.error('downloadTrajectoryGLBArchive error:', err);
+    const archive = archiver('zip', { zlib: { level: 0 } });
+    archive.on('error', (err: any) => {
         if(!res.headersSent){
-            return res.status(500).json({
+            res.status(500).json({
                 status: 'error',
                 data: { error: 'Failed to build GLB archive' }
             });
-        }
-
-        try{
+        }else{
             res.end();
-        }catch{}
+        }
+    });
+
+    archive.pipe(res);
+    for(const absPath of files){
+        const name = absPath.split('/').pop() || 'frame.glb';
+        archive.file(absPath, { name: `glb/${name}` });
     }
+
+    await archive.finalize();
 };
 
 export const createTrajectory = async (req: Request, res: Response, next: NextFunction) => {
@@ -416,81 +408,55 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
 
     const folderId = v4();
     const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
-    const glbFolderPath = join(folderPath, 'glb');
-
     await mkdir(folderPath, { recursive: true });
-    await mkdir(glbFolderPath, { recursive: true });
 
-    const startTime = performance.now();
+    const trajFS = new TrajectoryFS(folderId, process.env.TRAJECTORY_DIR);
+    await trajFS.ensureStructure();
 
     const filePromises = files.map(async (file: any, i: number) => {
-        try {
-            console.log(`Processing file ${i + 1}/${files.length}: ${file.originalname || 'unnamed'} (${file.size} bytes)`);
-
-            const tempFilePath = join(folderPath, `temp_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-            await writeFile(tempFilePath, file.buffer);
-
-            const tempStats = await stat(tempFilePath);
-            console.log(`Temp file written: ${tempStats.size} bytes`);
-
-            if(tempStats.size !== file.size){
-                console.error(`Temp file size mismatch: expected ${file.size}, got ${tempStats.size}`);
-                await rm(tempFilePath).catch(console.error);
-                return null;
-            }
-
-            try{
-                const { frameInfo, isValid } = await processTrajectoryFile(tempFilePath, tempFilePath);
-                if(!frameInfo || !isValid){
-                    console.log(`File ${i} is not valid, skipping...`);
-                    await rm(tempFilePath).catch(console.error);
+        try{
+            const tempPath = join(folderPath, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+            await writeFile(tempPath, file.buffer);
+              try {
+                const { frameInfo, isValid } = await processTrajectoryFile(tempPath, tempPath);
+                if (!frameInfo || !isValid) {
+                    await rm(tempPath).catch(() => {});
                     return null;
                 }
 
-                const frameFilePath = join(folderPath, `${frameInfo.timestep}`);
-                await rm(frameFilePath).catch(() => {});
-                await copyFile(tempFilePath, frameFilePath);
-                await rm(tempFilePath).catch(console.error);
+                await trajFS.saveDump(frameInfo.timestep, file.buffer, true);
+                await rm(tempPath).catch(() => {});
 
                 const frameData = {
                     ...frameInfo,
                     glbPath: `glb/${frameInfo.timestep}.glb`
                 };
 
-                console.log(`File ${i} processed successfully (timestep: ${frameInfo.timestep})`);
-
                 return {
                     frameData,
-                    frameFilePath,
                     originalSize: file.size
                 };
-
-            }catch(processError){
-                console.error(`Error processing file ${i}:`, processError);
-                await rm(tempFilePath).catch(console.error);
+            } catch (e) {
+                await rm(tempPath).catch(() => {});
                 return null;
             }
-        }catch(err){
-            console.error(`Error processing file ${i}:`, err);
+        }catch{
             return null;
-        } finally {
-            // Clean up references for GC
+        }finally{
             file.buffer = null;
-            files[i] = null;
         }
     });
 
     const results = await Promise.all(filePromises);
-    const validFiles = results.filter(result => result !== null);
-    const processingTime = performance.now() - startTime;
+    const validFiles = results.filter(Boolean) as any[];
 
     if(validFiles.length === 0){
-        await rm(folderPath, { recursive: true });
+        await rm(folderPath, { recursive: true, force: true });
         return next(new RuntimeError('No valid files for trajectory', 400));
     }
 
-    const totalSize = validFiles.reduce((acc, file) => acc + file.originalSize, 0);
-    const frames = validFiles.map(file => file.frameData);
+    const totalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
+    const frames = validFiles.map(f => f.frameData);
 
     const trajectoryName = req.body.originalFolderName || 'Untitled Trajectory';
     const newTrajectory = await Trajectory.create({
@@ -501,42 +467,37 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         status: 'processing',
         stats: {
             totalFiles: validFiles.length,
-            totalSize,
-            processingTime: Math.round(processingTime)
-        } 
+            totalSize
+        }
     });
 
     const trajectoryProcessingQueue = getTrajectoryProcessingQueue();
-
     const CHUNK_SIZE = 20;
-    const jobs = [] as any[];
+    const jobs: any[] = [];
 
-    for(let i = 0; i < validFiles.length; i += CHUNK_SIZE){
+    for (let i = 0; i < validFiles.length; i += CHUNK_SIZE) {
         const chunk = validFiles.slice(i, i + CHUNK_SIZE);
         const job = {
             jobId: v4(),
             trajectoryId: newTrajectory._id.toString(),
             chunkIndex: Math.floor(i / CHUNK_SIZE),
             totalChunks: Math.ceil(validFiles.length / CHUNK_SIZE),
-            files: chunk.map(({ frameData, frameFilePath }) => ({
-                frameData,
-                frameFilePath
-            })),
+            files: chunk.map(({ frameData }) => ({ frameData })), 
             teamId,
             name: 'Upload Trajectory',
             message: trajectoryName,
             folderPath,
-            glbFolderPath,
+            glbFolderPath: join(folderPath, 'glb'),
             tempFolderPath: folderPath
         } as any;
         jobs.push(job);
     }
 
-    for(const job of jobs){
+    for (const job of jobs) {
         await trajectoryProcessingQueue.addJobs([job]);
-        // Short pause to avoid overloading
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((r) => setTimeout(r, 100));
     }
+
     res.status(201).json({
         status: 'success',
         data: newTrajectory,
