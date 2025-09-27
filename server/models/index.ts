@@ -1,4 +1,5 @@
 export { default as AnalysisConfig } from '@/models/analysis-config';
+export { default as ApiTracker } from '@/models/api-tracker';
 export { default as Dislocations } from '@/models/dislocations';
 export { default as Notification } from '@/models/notification';
 export { default as SimulationCell } from '@/models/simulation-cell';

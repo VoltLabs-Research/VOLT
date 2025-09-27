@@ -1,0 +1,42 @@
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
+import { ApiTracker } from '@/models/index';
+import HandlerFactory from '@/controllers/handler-factory';
+
+const apiTrackerHandler = new HandlerFactory({
+    model: ApiTracker,
+    fields: ['method', 'url', 'ip', 'userAgent', 'statusCode', 'responseTime', 'createdAt'],
+    errorMessages: {
+        default: {
+            notFound: 'ApiTracker::NotFound',
+            unauthorized: 'ApiTracker::Unauthorized'
+        }
+    }
+});
+
+// Export the getAll method with custom filter for user's own data
+export const getMyApiStats = apiTrackerHandler.getAll({
+    customFilter: (req) => {
+        return { user: (req as any).user._id };
+    }
+});

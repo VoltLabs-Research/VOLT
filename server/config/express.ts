@@ -28,6 +28,7 @@ import cors from 'cors';
 import '@config/env';
 
 import { configureApp } from '@utilities/bootstrap';
+import { apiTracker } from '@/middlewares/api-tracker';
 
 const app = express();
 
@@ -88,9 +89,11 @@ configureApp({
         'notifications',
         'trajectory-fs',
         'auth',
-        'api-tokens'
+        'api-tokens',
+        'api-tracker'
     ],
     middlewares: [
+        apiTracker, // API tracking middleware - should be early in the stack
         cors(corsOptions),
         helmet(),
         compression({
