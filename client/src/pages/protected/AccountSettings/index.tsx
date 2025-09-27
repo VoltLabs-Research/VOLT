@@ -1,12 +1,104 @@
-import React, { useState } from 'react';
-import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbCalendar, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings } from 'react-icons/tb';
+import React, { useState, useEffect } from 'react';
+import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbCalendar, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbCode, TbTrash } from 'react-icons/tb';
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
+import { api } from '@/services/api';
 import './AccountSettings.css';
 
 const AccountSettings: React.FC = () => {
     const user = useAuthStore((state) => state.user);
     const [activeSection, setActiveSection] = useState('General');
+    const [userData, setUserData] = useState({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        email: user?.email || ''
+    });
+    const [currentTheme, setCurrentTheme] = useState('dark');
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [updateError, setUpdateError] = useState<string | null>(null);
+
+    // Initialize user data when user changes
+    useEffect(() => {
+        if (user) {
+            setUserData({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                email: user.email || ''
+            });
+        }
+    }, [user]);
+
+    // Initialize theme from localStorage or system preference
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('theme');
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const theme = savedTheme || systemTheme;
+        setCurrentTheme(theme);
+        document.documentElement.setAttribute('data-theme', theme);
+    }, []);
+
+    // Update user data on server
+    const updateUserOnServer = async (field: string, value: string) => {
+        try {
+            setIsUpdating(true);
+            setUpdateError(null);
+            
+            const response = await api.patch('/auth/me', {
+                [field]: value
+            });
+            
+            // Update local state with server response
+            if (response.data?.data) {
+                setUserData(prev => ({ ...prev, [field]: value }));
+                console.log(`Successfully updated ${field} on server:`, value);
+            }
+        } catch (error: any) {
+            console.error('Error updating user data:', error);
+            setUpdateError(`Failed to update ${field}. Please try again.`);
+            
+            // Revert local state on error
+            if (user) {
+                setUserData({
+                    firstName: user.firstName || '',
+                    lastName: user.lastName || '',
+                    email: user.email || ''
+                });
+            }
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    // Handle user data changes with debouncing
+    const handleUserDataChange = (field: string, value: string) => {
+        setUserData(prev => ({ ...prev, [field]: value }));
+        setUpdateError(null);
+        
+        // Debounce the server update
+        const timeoutId = setTimeout(() => {
+            updateUserOnServer(field, value);
+        }, 1000);
+        
+        // Clear previous timeout
+        return () => clearTimeout(timeoutId);
+    };
+
+    // Handle theme toggle
+    const handleThemeToggle = (theme: string) => {
+        setCurrentTheme(theme);
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    };
+
+    // Handle account deletion
+    const handleDeleteAccount = () => {
+        if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+            // Here you would typically call an API to delete the account
+            console.log('Account deletion requested');
+            // For now, just show an alert
+            alert('Account deletion functionality would be implemented here');
+        }
+    };
 
     const navOptions = [
         { title: 'General', icon: TbUser },
@@ -14,6 +106,7 @@ const AccountSettings: React.FC = () => {
         { title: 'Theme', icon: TbPalette },
         { title: 'Notifications', icon: TbBell },
         { title: 'Sessions', icon: TbDeviceDesktop },
+        { title: 'Integrations', icon: TbPlug },
         { title: 'Billing Information', icon: TbCreditCard },
         { title: 'Invoices', icon: TbFileText },
         { title: 'Privacy', icon: TbLock },
@@ -56,21 +149,57 @@ const AccountSettings: React.FC = () => {
                             </div>
                             
                             <div className='settings-form'>
+                                {updateError && (
+                                    <div className='update-error'>
+                                        <TbX size={16} />
+                                        {updateError}
+                                    </div>
+                                )}
+                                
                                 <div className='form-row'>
-                                    <FormInput 
-                                        value={user?.firstName || ''}
-                                        label='First name'
-                                    />
-                                    <FormInput
-                                        value={user?.lastName || ''}
-                                        label='Last name'
-                                    />
+                                    <div className='form-field-container'>
+                                        <FormInput 
+                                            value={userData.firstName}
+                                            label='First name'
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUserDataChange('firstName', e.target.value)}
+                                            disabled={isUpdating}
+                                        />
+                                        {isUpdating && (
+                                            <div className='update-indicator'>
+                                                <TbActivity size={16} />
+                                                Updating...
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className='form-field-container'>
+                                        <FormInput
+                                            value={userData.lastName}
+                                            label='Last name'
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUserDataChange('lastName', e.target.value)}
+                                            disabled={isUpdating}
+                                        />
+                                        {isUpdating && (
+                                            <div className='update-indicator'>
+                                                <TbActivity size={16} />
+                                                Updating...
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <FormInput 
-                                    value={user?.email || ''}
-                                    label='Email address'
-                                    disabled
-                                />
+                                <div className='form-field-container'>
+                                    <FormInput 
+                                        value={userData.email}
+                                        label='Email address'
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUserDataChange('email', e.target.value)}
+                                        disabled={isUpdating}
+                                    />
+                                    {isUpdating && (
+                                        <div className='update-indicator'>
+                                            <TbActivity size={16} />
+                                            Updating...
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -99,6 +228,27 @@ const AccountSettings: React.FC = () => {
                                         <span className='activity-label'>Last active</span>
                                         <span className='activity-value'>2 hours ago</span>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Account Deletion */}
+                        <div className='settings-section danger-section'>
+                            <div className='section-header'>
+                                <h3 className='section-title'>Danger Zone</h3>
+                                <p className='section-description'>Irreversible and destructive actions</p>
+                            </div>
+                            
+                            <div className='danger-actions'>
+                                <div className='danger-item'>
+                                    <div className='danger-info'>
+                                        <h4>Delete Account</h4>
+                                        <p>Permanently delete your account and all associated data. This action cannot be undone.</p>
+                                    </div>
+                                    <button className='action-button danger' onClick={handleDeleteAccount}>
+                                        <TbTrash size={16} />
+                                        Delete Account
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -188,13 +338,15 @@ const AccountSettings: React.FC = () => {
                                     </div>
                                     <div className='theme-info'>
                                         <h4>Dark Mode</h4>
-                                        <p>Currently active</p>
+                                        <p>{currentTheme === 'dark' ? 'Currently active' : 'Switch to dark theme'}</p>
                                     </div>
-                                    <div className='theme-status'>
-                                        <span className='status-badge active'>
-                                            <TbCheck size={14} />
-                                            Active
-                                        </span>
+                                    <div className='theme-actions'>
+                                        <button 
+                                            className='action-button'
+                                            onClick={() => handleThemeToggle('dark')}
+                                        >
+                                            {currentTheme === 'dark' ? 'Active' : 'Switch'}
+                                        </button>
                                     </div>
                                 </div>
                                 
@@ -208,8 +360,11 @@ const AccountSettings: React.FC = () => {
                                         <p>Switch to light theme</p>
                                     </div>
                                     <div className='theme-actions'>
-                                        <button className='action-button'>
-                                            Switch
+                                        <button 
+                                            className='action-button'
+                                            onClick={() => handleThemeToggle('light')}
+                                        >
+                                            {currentTheme === 'light' ? 'Active' : 'Switch'}
                                         </button>
                                     </div>
                                 </div>
@@ -412,6 +567,119 @@ const AccountSettings: React.FC = () => {
                                             Enabled
                                         </span>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'Integrations':
+                return (
+                    <div className='settings-content'>
+                        <div className='settings-section'>
+                            <div className='section-header'>
+                                <h3 className='section-title'>Third-party Integrations</h3>
+                                <p className='section-description'>Connect your account with external services and platforms</p>
+                            </div>
+                            
+                            <div className='integrations-grid'>
+                                <div className='integration-item'>
+                                    <div className='integration-header'>
+                                        <div className='integration-icon'>
+                                            <TbBrandGithub size={24} />
+                                        </div>
+                                        <div className='integration-info'>
+                                            <h4>GitHub</h4>
+                                            <p>Sync repositories and manage code</p>
+                                        </div>
+                                    </div>
+                                    <div className='integration-actions'>
+                                        <button className='action-button'>
+                                            Connect
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className='integration-item'>
+                                    <div className='integration-header'>
+                                        <div className='integration-icon'>
+                                            <TbBrandGoogle size={24} />
+                                        </div>
+                                        <div className='integration-info'>
+                                            <h4>Google Drive</h4>
+                                            <p>Access and sync your files</p>
+                                        </div>
+                                    </div>
+                                    <div className='integration-actions'>
+                                        <button className='action-button'>
+                                            Connect
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className='integration-item'>
+                                    <div className='integration-header'>
+                                        <div className='integration-icon'>
+                                            <TbCode size={24} />
+                                        </div>
+                                        <div className='integration-info'>
+                                            <h4>Webhook</h4>
+                                            <p>Custom webhook endpoints</p>
+                                        </div>
+                                    </div>
+                                    <div className='integration-actions'>
+                                        <button className='action-button'>
+                                            Configure
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className='integration-item'>
+                                    <div className='integration-header'>
+                                        <div className='integration-icon'>
+                                            <TbBrain size={24} />
+                                        </div>
+                                        <div className='integration-info'>
+                                            <h4>Gemini</h4>
+                                            <p>AI-powered assistance and analysis</p>
+                                        </div>
+                                    </div>
+                                    <div className='integration-actions'>
+                                        <button className='action-button'>
+                                            Connect
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className='integration-item'>
+                                    <div className='integration-header'>
+                                        <div className='integration-icon'>
+                                            <TbBrandOpenai size={24} />
+                                        </div>
+                                        <div className='integration-info'>
+                                            <h4>OpenAI</h4>
+                                            <p>Advanced AI models and capabilities</p>
+                                        </div>
+                                    </div>
+                                    <div className='integration-actions'>
+                                        <button className='action-button'>
+                                            Connect
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className='integration-help'>
+                                <h4>Need help with integrations?</h4>
+                                <p>Check our documentation or contact support for assistance with setting up third-party connections.</p>
+                                <div className='help-actions'>
+                                    <button className='action-button'>
+                                        <TbFileText size={16} />
+                                        Documentation
+                                    </button>
+                                    <button className='action-button'>
+                                        <TbActivity size={16} />
+                                        Contact Support
+                                    </button>
                                 </div>
                             </div>
                         </div>
