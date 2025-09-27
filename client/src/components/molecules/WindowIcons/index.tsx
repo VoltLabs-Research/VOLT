@@ -5,20 +5,10 @@ import './WindowIcons.css';
 type IconDef = {
     variant: 'close' | 'minimize' | 'expand';
     title: string;
+    onClick: () => void;
 };
 
-const ICONS: IconDef[] = [{
-    variant: 'close',
-    title: 'Close'
-}, {
-    variant: 'minimize',
-    title: 'Minimize'
-}, {
-    variant: 'expand',
-    title: 'Expand'
-}];
-
-const IconCircle = ({ variant, title }: IconDef) => {
+const IconCircle = ({ variant, title, onClick }: IconDef) => {
     const originX = useMotionValue(0.5);
     const originY = useMotionValue(0.5);
     const scaleMv = useMotionValue(1);
@@ -43,6 +33,7 @@ const IconCircle = ({ variant, title }: IconDef) => {
             className={`window-icon-circle ${variant}`}
             title={title}
             role="button"
+            onClick={onClick}
             tabIndex={0}
             onMouseMove={onMove}
             onHoverStart={() => scaleMv.set(1.35)}
@@ -53,7 +44,20 @@ const IconCircle = ({ variant, title }: IconDef) => {
     );
 };
 
-const WindowIcons: React.FC = ({ withBackground = false }) => {
+const WindowIcons: React.FC = ({ withBackground = false, onClose = () => {} }) => {
+    const ICONS: IconDef[] = [{
+        variant: 'close',
+        title: 'Close',
+        onClick: onClose
+    }, {
+        variant: 'minimize',
+        title: 'Minimize',
+        onClick: () => {}
+    }, {
+        variant: 'expand',
+        title: 'Expand',
+        onClick: () => {}
+    }];
 
     return (
         <div
@@ -62,7 +66,8 @@ const WindowIcons: React.FC = ({ withBackground = false }) => {
             aria-label='Window controls'
         >
             {ICONS.map((icon) => (
-                <IconCircle key={icon.variant} {...icon} />
+                <IconCircle 
+                    key={icon.variant} {...icon} />
             ))}
         </div>
     );

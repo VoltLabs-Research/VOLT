@@ -41,10 +41,13 @@ import useEditorUIStore from '@/stores/ui/editor';
 import useRenderConfigStore from '@/stores/editor/render-config';
 import ShortcutsModal from '@/components/organisms/ShortcutsModal';
 import useNotificationStore from '@/stores/notifications';
+import useWindowsStore from '@/stores/ui/windows';
 import Select from '@/components/atoms/form/Select';
 import { Skeleton } from '@mui/material';
 import type { IconType } from 'react-icons';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';
+import TeamCreator from '@/components/organisms/TeamCreator';
+import { IoIosAdd } from 'react-icons/io';
 import './DashboardLayout.css';
 
 const DashboardLayout = () => {
@@ -53,6 +56,8 @@ const DashboardLayout = () => {
     const getUserTeams = useTeamStore((state) => state.getUserTeams);
     const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
     const navigate = useNavigate();
+    const toggleTeamCreator = useWindowsStore((state) => state.toggleTeamCreator);
+    const showTeamCreator = useWindowsStore((state) => state.showTeamCreator);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
@@ -184,6 +189,10 @@ const DashboardLayout = () => {
 
     return (
         <main className='dashboard-main'>
+            {showTeamCreator && (
+                <TeamCreator />
+            )}
+
             <section className='dashboard-layout-header-container'>
                 <nav className='navigation-container'>
                     {navItems.map(([ name, Icon, to ], index) => (
@@ -222,6 +231,13 @@ const DashboardLayout = () => {
                             className="team-select"
                             maxListWidth={300}
                         />
+                    </div>
+
+                    <div 
+                        onClick={toggleTeamCreator}
+                        className='badge-container as-icon-container over-light-bg'
+                    >
+                        <IoIosAdd size={25} />
                     </div>
                 </div>
 

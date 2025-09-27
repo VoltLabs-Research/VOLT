@@ -3,9 +3,11 @@ import Draggable from '@/components/atoms/Draggable';
 import WindowIcons from '@/components/molecules/WindowIcons';
 import FormInput from '@/components/atoms/form/FormInput';
 import TeamCreatorBg from '@/assets/images/create-new-team.webp';
-import './TeamCreator.css';
 import Button from '@/components/atoms/Button';
 import useTeamStore from '@/stores/team/team';
+import Loader from '@/components/atoms/Loader';
+import useWindowsStore from '@/stores/ui/windows';
+import './TeamCreator.css';
 
 interface TeamCreatorProps {
     onClose?: () => void;
@@ -15,6 +17,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose }) => {
     const [teamName, setTeamName] = useState('');
     const [teamDescription, setTeamDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const toggleTeamCreator = useWindowsStore((state) => state.toggleTeamCreator);
     
     const { createTeam, isLoading, error, clearError } = useTeamStore();
 
@@ -44,6 +47,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose }) => {
             console.error('Failed to create team:', err);
         } finally {
             setIsSubmitting(false);
+            toggleTeamCreator();
         }
     };
 
@@ -58,7 +62,9 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose }) => {
 
     return (
         <Draggable className='team-creator-container primary-surface'>
-            <WindowIcons withBackground />
+            <WindowIcons 
+                onClose={toggleTeamCreator}
+                withBackground />
 
             <div className='team-creator-left-container'>
                 <img src={TeamCreatorBg} className='team-creator-background' />
@@ -94,12 +100,18 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose }) => {
                         </div>
                     )}
 
-                    <Button
-                        type='submit'
-                        className='black-on-light sm'
-                        title={isLoading || isSubmitting ? 'Creating...' : 'Continue'}
-                        disabled={!teamName.trim() || isLoading || isSubmitting}
-                    />
+                    {(isLoading || isSubmitting) ? (
+                        <div className='team-creator-loader-container'>
+                            <Loader scale={0.6} />
+                        </div>
+                    ) : (
+                        <Button
+                            type='submit'
+                            className='black-on-light sm'
+                            title={'Continue'}
+                            disabled={!teamName.trim() || isLoading || isSubmitting}
+                        />
+                    )}
                 </form>
             </div>
         </Draggable>

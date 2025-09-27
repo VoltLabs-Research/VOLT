@@ -12,7 +12,6 @@ import SimulationGrid from '@/components/molecules/SimulationGrid';
 import DashboardStats from '@/components/atoms/DashboardStats';
 import useTeamStore from '@/stores/team/team';
 import JobsHistoryViewer from '@/components/organisms/JobsHistoryViewer';
-import TeamCreator from '@/components/organisms/TeamCreator';
 import './Dashboard.css';
 
 const DashboardPage: React.FC = memo(() => {

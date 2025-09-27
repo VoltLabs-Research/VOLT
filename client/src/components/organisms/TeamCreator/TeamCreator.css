@@ -25,6 +25,10 @@
     gap: 2rem;
 }
 
+.team-creator-loader-container{
+    margin-top: 1rem;
+}
+
 .team-creator-background{
     width: 100%;
     height: 100%;
