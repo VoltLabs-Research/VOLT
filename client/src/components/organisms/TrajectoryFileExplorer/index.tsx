@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import useTrajectoryFS, { type FsEntry } from '@/stores/trajectory-fs';
 import WindowIcons from '@/components/molecules/WindowIcons';
 import Draggable from '@/components/atoms/Draggable';

@@ -13,6 +13,8 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
     onToggleStructureAnalysis,
     showParticles = false,
     onToggleParticles,
+    showFileExplorer = false,
+    onToggleFileExplorer
 }) => {
     if(isLoading) return <MetricsBarSkeleton count={4} />;
 
@@ -43,6 +45,13 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                     onToggle={onToggleParticles || (() => {})}
                     label='Frame Particles'
                 />
+
+                <ToggleOption
+                    isVisible={showFileExplorer}
+                    className={`raster-metric-item modifier-result ${showFileExplorer ? "active" : ""}`}
+                    onToggle={onToggleFileExplorer}
+                    label='File Explorer'
+                /> 
             </div>
         </div>
     );

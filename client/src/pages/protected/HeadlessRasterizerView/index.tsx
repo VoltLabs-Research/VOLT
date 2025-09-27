@@ -84,6 +84,7 @@ const HeadlessRasterizerView: React.FC = () => {
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [showDislocations, setShowDislocations] = useState(false);
+    const [showFileExplorer, setShowFileExplorer] = useState(false);
     const [showStructureAnalysis, setShowStructureAnalysis] = useState(false);
     const [showParticles, setShowParticles] = useState(false);
 
@@ -399,6 +400,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const handleSignIn = useCallback(() => navigate('/auth/sign-in'), [navigate]);
     const handleThumbClick = useCallback((i: number) => setFrameIndex(i), []);
     const toggleDisl = useCallback(() => setShowDislocations((v) => !v), []);
+    const toggleFileExplorer = useCallback(() => setShowFileExplorer((v) => !v), []);
     const toggleStruct = useCallback(() => setShowStructureAnalysis((v) => !v), []);
     const toggleParticles = useCallback(() => setShowParticles((v) => !v), []);
 
@@ -484,7 +486,7 @@ const HeadlessRasterizerView: React.FC = () => {
                 connectedUsers={connectedUsers}
             />
 
-            {trajectory?._id && <TrajectoryFileExplorer trajectoryId={trajectory._id} />}
+            {showFileExplorer && <TrajectoryFileExplorer trajectoryId={trajectory._id} />}
 
             {showParticles && (
                 <FrameAtomsTable
@@ -559,6 +561,8 @@ const HeadlessRasterizerView: React.FC = () => {
                 <MetricsBar
                     items={metricEntries}
                     isLoading={isMetricsLoading}
+                    onToggleFileExplorer={toggleFileExplorer}
+                    showFileExplorer={showFileExplorer}
                     showDislocations={showDislocations}
                     onToggleDislocations={toggleDisl}
                     showStructureAnalysis={showStructureAnalysis}

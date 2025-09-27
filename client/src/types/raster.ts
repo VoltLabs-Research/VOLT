@@ -76,6 +76,8 @@ export interface MetricsBarProps{
     onToggleStructureAnalysis?: () => void;
     showParticles?: boolean;
     onToggleParticles?: () => void;
+    showFileExplorer?: boolean;
+    onToggleFileExplorer?: () => void;
 }
 
 export interface DislocationPanelProps{
