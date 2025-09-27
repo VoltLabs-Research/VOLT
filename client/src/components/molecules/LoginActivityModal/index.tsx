@@ -22,7 +22,7 @@
 
 import React from 'react';
 import { TbX, TbCheck, TbActivity, TbRefresh } from 'react-icons/tb';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, isValid } from 'date-fns';
 import useLoginActivity from '@/hooks/auth/use-login-activity';
 import './LoginActivityModal.css';
 
@@ -102,7 +102,16 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose
                                                  'Logout'}
                                             </span>
                                             <span className="activity-time">
-                                                {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                                                {(() => {
+                                                    try {
+                                                        const date = new Date(activity.createdAt);
+                                                        return isValid(date) ? 
+                                                            formatDistanceToNow(date, { addSuffix: true }) : 
+                                                            'Unknown time';
+                                                    } catch {
+                                                        return 'Unknown time';
+                                                    }
+                                                })()}
                                             </span>
                                         </div>
                                         <div className="activity-details">

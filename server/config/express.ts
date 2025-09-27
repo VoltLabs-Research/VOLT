@@ -50,7 +50,7 @@ const corsOptions = {
         }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
         'Origin',
         'X-Requested-With',
@@ -91,7 +91,8 @@ configureApp({
         'auth',
         'api-tokens',
         'api-tracker',
-        'sessions'
+        'sessions',
+        'password'
     ],
     middlewares: [
         apiTracker, // API tracking middleware - should be early in the stack

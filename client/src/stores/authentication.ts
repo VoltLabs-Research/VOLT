@@ -32,6 +32,9 @@ const initialState: AuthState = {
     user: null,
     isLoading: false,
     error: null,
+    passwordInfo: undefined,
+    isChangingPassword: false,
+    isLoadingPasswordInfo: false,
 };
 
 const useAuthStore = create<AuthStore>()((set, get) => {
@@ -92,6 +95,30 @@ const useAuthStore = create<AuthStore>()((set, get) => {
 
         clearError(){
             set({ error: null });
+        },
+
+        async changePassword(passwordData: { currentPassword: string; newPassword: string; confirmPassword: string }) {
+            const req = api.put('/password/change', passwordData);
+            
+            return asyncAction(() => req, {
+                loadingKey: 'isChangingPassword',
+                onSuccess: () => {
+                    // Password changed successfully, no need to update user state
+                    return {};
+                }
+            });
+        },
+
+        async getPasswordInfo() {
+            const req = api.get('/password/info');
+            
+            return asyncAction(() => req, {
+                loadingKey: 'isLoadingPasswordInfo',
+                onSuccess: (res) => {
+                    // Return password info without updating user state
+                    return { passwordInfo: res.data.data };
+                }
+            });
         }
     };
 });

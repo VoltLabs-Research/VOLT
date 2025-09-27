@@ -7,11 +7,18 @@ import RecentActivity from '@/components/molecules/RecentActivity';
 import LoginActivityModal from '@/components/molecules/LoginActivityModal';
 import useSessions from '@/hooks/auth/use-sessions';
 import useLoginActivity from '@/hooks/auth/use-login-activity';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, isValid } from 'date-fns';
 import './AccountSettings.css';
 
 const AccountSettings: React.FC = () => {
-    const user = useAuthStore((state) => state.user);
+    const { 
+        user, 
+        passwordInfo, 
+        isChangingPassword, 
+        isLoadingPasswordInfo,
+        changePassword, 
+        getPasswordInfo 
+    } = useAuthStore();
     const [activeSection, setActiveSection] = useState('General');
     const [userData, setUserData] = useState({
         firstName: user?.firstName || '',
@@ -22,6 +29,12 @@ const AccountSettings: React.FC = () => {
     const [isUpdating, setIsUpdating] = useState(false);
     const [updateError, setUpdateError] = useState<string | null>(null);
     const [showLoginActivityModal, setShowLoginActivityModal] = useState(false);
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
     const { sessions, loading: sessionsLoading, revokeSession, revokeAllOtherSessions } = useSessions();
     const { activities: loginActivities, loading: loginActivityLoading } = useLoginActivity(10);
 
@@ -35,6 +48,11 @@ const AccountSettings: React.FC = () => {
             });
         }
     }, [user]);
+
+    // Load password info when component mounts
+    useEffect(() => {
+        getPasswordInfo();
+    }, [getPasswordInfo]);
 
     // Initialize theme from localStorage or system preference
     useEffect(() => {
@@ -96,6 +114,24 @@ const AccountSettings: React.FC = () => {
         setCurrentTheme(theme);
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
+    };
+
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await changePassword(passwordForm);
+            setShowPasswordForm(false);
+            setPasswordForm({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+            });
+            // Refresh password info after successful change
+            await getPasswordInfo();
+        } catch (error) {
+            // Error is handled by the auth store
+            console.error('Password change failed:', error);
+        }
     };
 
     // Handle account deletion
@@ -282,15 +318,86 @@ const AccountSettings: React.FC = () => {
                                         </div>
                                         <div className='security-info'>
                                             <h4>Password</h4>
-                                            <p>Last changed 3 months ago</p>
+                                            <p>
+                                                {isLoadingPasswordInfo ? 'Loading...' : 
+                                                 passwordInfo && passwordInfo.lastChanged ? 
+                                                    (() => {
+                                                        try {
+                                                            const date = new Date(passwordInfo.lastChanged);
+                                                            return isValid(date) ? 
+                                                                `Last changed ${formatDistanceToNow(date, { addSuffix: true })}` : 
+                                                                'Password information unavailable';
+                                                        } catch {
+                                                            return 'Password information unavailable';
+                                                        }
+                                                    })() : 
+                                                 'Password information unavailable'}
+                                            </p>
                                         </div>
                                         <div className='security-actions'>
-                                            <button className='action-button'>
+                                            <button 
+                                                className='action-button'
+                                                onClick={() => setShowPasswordForm(!showPasswordForm)}
+                                            >
                                                 <TbEdit size={16} />
-                                                Change
+                                                {showPasswordForm ? 'Cancel' : 'Change'}
                                             </button>
                                         </div>
                                     </div>
+                                    
+                                    {showPasswordForm && (
+                                        <div className='password-form'>
+                                            <form onSubmit={handlePasswordChange}>
+                                                <div className='form-group'>
+                                                    <FormInput
+                                                        type='password'
+                                                        label='Current Password'
+                                                        value={passwordForm.currentPassword}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                                                        required
+                                                    />
+                                                </div>
+                                                
+                                                <div className='form-group'>
+                                                    <FormInput
+                                                        type='password'
+                                                        label='New Password'
+                                                        value={passwordForm.newPassword}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                                                        required
+                                                        minLength={8}
+                                                    />
+                                                </div>
+                                                
+                                                <div className='form-group'>
+                                                    <FormInput
+                                                        type='password'
+                                                        label='Confirm New Password'
+                                                        value={passwordForm.confirmPassword}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                                                        required
+                                                    />
+                                                </div>
+                                                
+                                                <div className='form-actions'>
+                                                    <button 
+                                                        type='button' 
+                                                        className='action-button secondary'
+                                                        onClick={() => setShowPasswordForm(false)}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button 
+                                                        type='submit' 
+                                                        className='action-button primary'
+                                                        disabled={isChangingPassword}
+                                                    >
+                                                        {isChangingPassword ? 'Changing...' : 'Change Password'}
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className='security-item'>
@@ -340,7 +447,16 @@ const AccountSettings: React.FC = () => {
                                                                  'Logout'}
                                                             </span>
                                                             <span className='activity-time'>
-                                                                {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                                                                {(() => {
+                                                                    try {
+                                                                        const date = new Date(activity.createdAt);
+                                                                        return isValid(date) ? 
+                                                                            formatDistanceToNow(date, { addSuffix: true }) : 
+                                                                            'Unknown time';
+                                                                    } catch {
+                                                                        return 'Unknown time';
+                                                                    }
+                                                                })()}
                                                             </span>
                                                         </div>
                                                         <p className='activity-description'>

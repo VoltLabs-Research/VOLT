@@ -232,6 +232,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
 /**
  * Update the authenticated user's password after validating the current password.
  * 
+ * @deprecated Use the dedicated password controller instead
  * @param req - Express request containing:
  * - `req.user` (populated by auth middleware)
  * - `body.passwordCurrent` (current password)
