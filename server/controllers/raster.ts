@@ -7,9 +7,9 @@ import { listGlbFiles } from '@/utilities/fs';
 import { catchAsync } from '@/utilities/runtime';
 import { readFile } from 'fs/promises';;
 import { v4 } from 'uuid';
-import { listRasterModels } from '@/utilities/raster';
 import { readdir } from 'fs/promises';
 import { AnalysisConfig, Trajectory } from '@/models';
+import TrajectoryFS from '@/services/trajectory-fs';
 import archiver from 'archiver';
 
 export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
@@ -47,17 +47,19 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
     res.status(200).json({ status: 'success' });
 });
 
-export const readRasterModel = async (modelType: string,  analysisId: string, rasterDir: string, frame: number): Promise<Buffer> => {
-    const filename = `frame-${frame}_${modelType}_analysis-${analysisId}.png`;
-    const absPath = join(rasterDir, filename);
-    const buffer = await readFile(absPath);
-    return buffer;
+export const readRasterModel = async (
+    modelType: string,
+    analysisId: string,
+    trajectoryId: string,
+    frame: number
+): Promise<Buffer> => {
+    const trajFS = new TrajectoryFS(trajectoryId);
+    const absPath = join(trajFS.root, analysisId, 'raster', String(frame), `${modelType}.png`);
+    return readFile(absPath);
 };
 
 export const getRasterFrameMetadata = async (req: Request, res: Response) => {
     let trajectory = res.locals.trajectory;
-    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-    const rasterDir = join(basePath, trajectory.folderId, 'raster');
 
     trajectory = await Trajectory.findOneAndUpdate(
         { _id: trajectory._id }, 
@@ -71,13 +73,14 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
         .lean();
 
     const analysesMetadata: Record<string, any> = {};
+    const trajFS = new TrajectoryFS(trajectory.folderId);
 
     for(const analysis of analyses){
         const id = analysis._id.toString();
         const frameMetadata: Record<string, any> = {};
         
         for(const { timestep } of trajectory.frames){
-            const availableModels = await listRasterModels(rasterDir, timestep, id);
+            const availableModels = await trajFS.listRasterAnalyses(timestep, id);
             frameMetadata[timestep] = {
                 timestep,
                 availableModels: ['preview', ...availableModels]
@@ -120,23 +123,21 @@ export const getRasterFrame = async (req: Request, res: Response) => {
         });
     }
 
-    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-    const rasterDir = join(basePath, trajectory.folderId, 'raster');
+    try{
+        const trajFS = new TrajectoryFS(trajectory.folderId);
 
-    try {
         let buffer: Buffer;
-        
-        if(model === 'preview'){
-            buffer = await readFile(join(rasterDir, `${frameNumber}.png`));
+        if (model === 'preview') {
+            buffer = await readFile(join(trajFS.root, 'raster', `${frameNumber}.png`));
         } else {
-            buffer = await readRasterModel(model, analysisId, rasterDir, frameNumber);
+            buffer = await readRasterModel(model, analysisId, trajectory.folderId, frameNumber);
         }
 
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Content-Length', String(buffer.length));
-    res.setHeader('ETag', `"frame-${trajectory._id}-${frameNumber}-${model}-${analysisId}"`);
-        
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Length', String(buffer.length));
+        res.setHeader('ETag', `"frame-${trajectory._id}-${frameNumber}-${model}-${analysisId}"`);
+            
         return res.send(buffer);
     } catch (error) {
         return res.status(404).json({
@@ -209,6 +210,7 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
         .lean();
 
     const analysesData: Record<string, any> = {};
+    const trajFS = new TrajectoryFS(trajectory.folderId);
 
     for(const analysis of analyses){
         const id = analysis._id.toString();
@@ -219,7 +221,7 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
 
         for(const { timestep } of trajectory.frames){
             const models: Record<string, any> = {};
-            const availableModels = await listRasterModels(rasterDir, timestep, id);
+            const availableModels = await trajFS.listRasterAnalyses(timestep, id);
 
             for(const model of availableModels){
                 const buffer = await readRasterModel(model, id, rasterDir, timestep);
@@ -348,7 +350,7 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
 
             files.sort((a, b) => a.localeCompare(b));
             for(const abs of files){
-                archive.file(abs, { name: `raster/${basename(abs)}`, store: true });
+                archive.file(abs, { name: `raster/${basename(abs)}` });
             }
 
             await archive.finalize();

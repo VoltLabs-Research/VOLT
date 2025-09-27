@@ -254,6 +254,32 @@ class TrajectoryFS{
         return dest;
     }
 
+    async listRasterAnalyses(
+        frame: number | string,
+        analysisId: string
+    ): Promise<string[]>{
+        // <trajectory_dir>/<trajectory_id>/<analysis_id>/raster/<frame>
+        const frameDir = path.join(this.root, analysisId, 'raster', String(frame));
+        const isDir = await this.isDir(frameDir);
+        if(!isDir) return [];
+
+        const entries = await this.readDir(frameDir);
+        const types = new Set<string>();
+
+        for(const name of entries){
+            const abs = path.join(frameDir, name);
+            const isFile = await this.isFile(abs);
+            if(!isFile) continue;
+
+            const analysisType = path.basename(name, '.png');
+            // TODO: add external exclude list
+            if(analysisType === 'interface_mesh') continue;
+            types.add(analysisType);
+        }
+
+        return Array.from(types);
+    }
+
     async getAnalysis(analysisId: string, analysisType: string, options?: GetOptions): Promise<MediaMaps>{
         const { raster, glb } = this.want(options?.media);
         const result: MediaMaps = {};
