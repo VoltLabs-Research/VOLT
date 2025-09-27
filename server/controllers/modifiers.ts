@@ -77,9 +77,6 @@ export const crystalAnalysis = async (req: Request, res: Response) => {
 
             case DislocationAnalysisModifierError.TrajectoryFolderIsEmpty:
                 return res.status(400).json({ error: 'No trajectory files found' });
-
-            case DislocationAnalysisModifierError.MetadataParseError:
-                return res.status(400).json({ error: 'Failed to read or parse metadata.json' });
         }
 
         return res.status(202).json({

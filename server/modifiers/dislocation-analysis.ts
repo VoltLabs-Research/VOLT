@@ -41,30 +41,6 @@ export const dislocationAnalysis = async (config: DislocationAnalysisModifierCon
         return DislocationAnalysisModifierError.TrajectoryFolderIsEmpty;
     }
 
-    const metadataPath = join(folderPath, 'metadata.json');
-
-    let metadata: any = {};
-
-    if(existsSync(metadataPath)){
-        try{
-            const content = await fs.readFile(metadataPath, 'utf-8');
-            metadata = JSON.parse(content);
-        }catch(error){
-            return DislocationAnalysisModifierError.MetadataParseError;
-        }
-    }else{
-        metadata = {};
-    }
-
-    metadata.lastAnalysis = {
-        jobId: `queue-${Date.now()}`,
-        config: config.analysisConfig,
-        status: 'queued',
-        updatedAt: new Date().toISOString()
-    };
-
-    await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 4), 'utf-8');
-
     const queueService = getAnalysisQueue();
     const jobsToEnqueue = trajectoryFiles.map((inputFile) => {
         const jobId = v4();
