@@ -220,6 +220,10 @@ class SocketIOService{
         }
     }
 
+    public getCurrentToken(): string | null {
+        return this.options.auth?.token || null;
+    }
+
     private handleConnect(){
         this.connectionAttempts = 0;
         this.connecting = false;
@@ -281,6 +285,18 @@ class SocketIOService{
     }
 }
 
-export const socketService = new SocketIOService(import.meta.env.VITE_API_URL);
+// Initialize socket service with token if available
+const getInitialAuth = () => {
+    try {
+        const token = localStorage.getItem('authToken');
+        return token ? { token } : {};
+    } catch {
+        return {};
+    }
+};
+
+export const socketService = new SocketIOService(import.meta.env.VITE_API_URL, {
+    auth: getInitialAuth()
+});
 
 export default SocketIOService;

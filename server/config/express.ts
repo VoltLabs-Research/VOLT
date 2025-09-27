@@ -93,7 +93,8 @@ configureApp({
         'api-tracker',
         'sessions',
         'password',
-        'webhooks'
+        'webhooks',
+        'chat'
     ],
     middlewares: [
         apiTracker,

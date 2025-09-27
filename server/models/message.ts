@@ -1,0 +1,78 @@
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
+import mongoose, { Schema, Model } from 'mongoose';
+// @ts-ignore
+import { IMessage } from '@types/models/chat';
+import { Chat, User } from '@/models/index';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+
+const MessageSchema: Schema<IMessage> = new Schema({
+    chat: {
+        type: Schema.Types.ObjectId,
+        ref: 'Chat',
+        required: true,
+        cascade: 'delete'
+    },
+    sender: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    content: {
+        type: String,
+        required: [true, 'Message::Content::Required'],
+        trim: true,
+        maxlength: [2000, 'Message::Content::MaxLength']
+    },
+    messageType: {
+        type: String,
+        enum: ['text', 'file', 'system'],
+        default: 'text'
+    },
+    isRead: {
+        type: Boolean,
+        default: false
+    },
+    readBy: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    metadata: {
+        fileName: String,
+        fileSize: Number,
+        fileType: String
+    }
+}, {
+    timestamps: true
+});
+
+// Index for efficient querying
+MessageSchema.index({ chat: 1, createdAt: -1 });
+MessageSchema.index({ sender: 1 });
+MessageSchema.index({ readBy: 1 });
+
+MessageSchema.plugin(useCascadeDelete);
+
+const Message: Model<IMessage> = mongoose.model<IMessage>('Message', MessageSchema);
+
+export default Message;

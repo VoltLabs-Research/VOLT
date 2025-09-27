@@ -20,6 +20,7 @@
 * SOFTWARE.
 **/
 
+import React, { useState, useRef, useEffect } from 'react';
 import DashboardContainer from '@/components/atoms/DashboardContainer';
 import { 
     IoSearchOutline, 
@@ -30,82 +31,77 @@ import {
     IoPaperPlaneOutline,
     IoAttachOutline,
     IoHappyOutline,
-    IoEllipsisHorizontalOutline
+    IoPersonAddOutline
 } from 'react-icons/io5';
+import { useChat } from '@/hooks/chat/useChat';
+import useAuthStore from '@/stores/authentication';
+import { formatDistanceToNow } from 'date-fns';
 import './Messages.css';
 
 const MessagesPage = () => {
-    // Sample conversations data
-    const conversations = [
-        {
-            id: 1,
-            name: 'Dr. Sarah Chen',
-            avatar: 'SC',
-            lastMessage: 'The simulation results look promising. We should discuss the next steps.',
-            time: '2m ago',
-            unread: 2,
-            isOnline: true
-        },
-        {
-            id: 2,
-            name: 'Research Team',
-            avatar: 'RT',
-            lastMessage: 'Meeting scheduled for tomorrow at 2 PM',
-            time: '1h ago',
-            unread: 0,
-            isOnline: false
-        },
-        {
-            id: 3,
-            name: 'Prof. Michael Rodriguez',
-            avatar: 'MR',
-            lastMessage: 'Thanks for sharing the analysis. Very insightful!',
-            time: '3h ago',
-            unread: 0,
-            isOnline: true
-        },
-        {
-            id: 4,
-            name: 'Lab Assistant',
-            avatar: 'LA',
-            lastMessage: 'The new dataset is ready for processing',
-            time: '5h ago',
-            unread: 1,
-            isOnline: false
-        }
-    ];
+    const {
+        chats,
+        currentChat,
+        messages,
+        teamMembers,
+        typingUsers,
+        isLoading,
+        isConnected,
+        selectChat,
+        startChatWithMember,
+        handleSendMessage,
+        handleTyping,
+    } = useChat();
 
-    // Sample messages data
-    const messages = [
-        {
-            id: 1,
-            text: 'Hi Sarah! I wanted to discuss the simulation results from yesterday.',
-            time: '10:30 AM',
-            isSent: false,
-            avatar: 'SC'
-        },
-        {
-            id: 2,
-            text: 'Hello! Yes, I\'ve been reviewing them. The dislocation analysis shows some interesting patterns.',
-            time: '10:32 AM',
-            isSent: true,
-            avatar: 'You'
-        },
-        {
-            id: 3,
-            text: 'Absolutely! The grain boundary interactions are particularly fascinating. We should run additional simulations to confirm our hypothesis.',
-            time: '10:35 AM',
-            isSent: false,
-            avatar: 'SC'
-        },
-        {
-            id: 4,
-            text: 'I agree. I can prepare the input files for the extended simulation. Should we schedule a meeting to discuss the parameters?',
-            time: '10:37 AM',
-            isSent: true,
-            avatar: 'You'
+    const { user } = useAuthStore();
+    const [messageInput, setMessageInput] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showTeamMembers, setShowTeamMembers] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll to bottom when new messages arrive
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    // Filter chats based on search query
+    const filteredChats = chats.filter(chat => {
+        if (!searchQuery) return true;
+        const participant = chat.participants.find(p => p._id !== user?._id);
+        if (!participant) return false;
+        const name = `${participant.firstName} ${participant.lastName}`.toLowerCase();
+        return name.includes(searchQuery.toLowerCase());
+    });
+
+    // Get the other participant in the current chat
+    const currentParticipant = currentChat?.participants.find(p => p._id !== user?._id);
+
+    // Handle sending a message
+    const handleSend = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!messageInput.trim()) return;
+
+        await handleSendMessage(messageInput);
+        setMessageInput('');
+    };
+
+    // Handle typing
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setMessageInput(e.target.value);
+        if (currentChat) {
+            handleTyping(currentChat._id);
         }
-    ];
+    };
+
+    // Format time for display
+    const formatTime = (dateString: string) => {
+        return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    };
+
+    // Get initials for avatar
+    const getInitials = (firstName: string, lastName: string) => {
+        return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    };
 
     return (
         <DashboardContainer pageName='Messages' className='chat-main-container'>
@@ -119,105 +115,207 @@ const MessagesPage = () => {
                         </i>
                         <input 
                             placeholder='Search people or messages...'
-                            className='chat-sidebar-search-input' />
+                            className='chat-sidebar-search-input'
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
+                    <button 
+                        className='chat-new-chat-button'
+                        onClick={() => setShowTeamMembers(!showTeamMembers)}
+                        title='Start new chat'
+                    >
+                        <IoPersonAddOutline />
+                    </button>
                 </div>
 
+                {/* Team Members for New Chat */}
+                {showTeamMembers && (
+                    <div className='chat-team-members-container'>
+                        <h4 className='chat-team-members-title'>Team Members</h4>
+                        {teamMembers.map((member) => (
+                            <div 
+                                key={member._id} 
+                                className='chat-team-member-item'
+                                onClick={() => {
+                                    startChatWithMember(member);
+                                    setShowTeamMembers(false);
+                                }}
+                            >
+                                <div className='chat-team-member-avatar'>
+                                    {getInitials(member.firstName, member.lastName)}
+                                </div>
+                                <div className='chat-team-member-info'>
+                                    <h5 className='chat-team-member-name'>
+                                        {member.firstName} {member.lastName}
+                                    </h5>
+                                    <p className='chat-team-member-email'>{member.email}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 <div className='chat-conversations-container'>
-                    {conversations.map((conversation) => (
-                        <div key={conversation.id} className={`chat-conversation-item ${conversation.id === 1 ? 'active' : ''}`}>
-                            <div className='chat-conversation-avatar'>
-                                {conversation.avatar}
-                            </div>
-                            <div className='chat-conversation-content'>
-                                <div className='chat-conversation-header'>
-                                    <h4 className='chat-conversation-name'>{conversation.name}</h4>
-                                    <span className='chat-conversation-time'>{conversation.time}</span>
-                                </div>
-                                <p className='chat-conversation-preview'>{conversation.lastMessage}</p>
-                            </div>
-                            {conversation.unread > 0 && (
-                                <div className='chat-conversation-badge'>
-                                    {conversation.unread}
-                                </div>
-                            )}
+                    {isLoading ? (
+                        <div className='chat-loading'>Loading chats...</div>
+                    ) : filteredChats.length === 0 ? (
+                        <div className='chat-empty-state'>
+                            <p>No conversations yet</p>
+                            <p>Start a chat with a team member!</p>
                         </div>
-                    ))}
+                    ) : (
+                        filteredChats.map((chat) => {
+                            const participant = chat.participants.find(p => p._id !== user?._id);
+                            if (!participant) return null;
+
+                            return (
+                                <div 
+                                    key={chat._id} 
+                                    className={`chat-conversation-item ${currentChat?._id === chat._id ? 'active' : ''}`}
+                                    onClick={() => selectChat(chat)}
+                                >
+                                    <div className='chat-conversation-avatar'>
+                                        {getInitials(participant.firstName, participant.lastName)}
+                                    </div>
+                                    <div className='chat-conversation-content'>
+                                        <div className='chat-conversation-header'>
+                                            <h4 className='chat-conversation-name'>
+                                                {participant.firstName} {participant.lastName}
+                                            </h4>
+                                            {chat.lastMessageAt && (
+                                                <span className='chat-conversation-time'>
+                                                    {formatTime(chat.lastMessageAt)}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {chat.lastMessage && (
+                                            <p className='chat-conversation-preview'>
+                                                {chat.lastMessage.content}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
             </div>
 
             {/* Main Chat Area */}
             <div className='chat-messages-container'>
-                <div className='chat-box-container'>
-                    {/* Chat Header */}
-                    <div className='chat-box-header-container'>
-                        <div className='chat-header-user'>
-                            <div className='chat-header-avatar'>SC</div>
-                            <div className='chat-header-info'>
-                                <h3 className='chat-header-name'>Dr. Sarah Chen</h3>
-                                <div className='chat-header-status'>Online</div>
+                {currentChat ? (
+                    <div className='chat-box-container'>
+                        {/* Chat Header */}
+                        <div className='chat-box-header-container'>
+                            <div className='chat-header-user'>
+                                <div className='chat-header-avatar'>
+                                    {currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
+                                </div>
+                                <div className='chat-header-info'>
+                                    <h3 className='chat-header-name'>
+                                        {currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
+                                    </h3>
+                                    <div className='chat-header-status'>
+                                        {isConnected ? 'Online' : 'Connecting...'}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className='chat-header-actions'>
+                                <button className='chat-header-action' title='Call'>
+                                    <IoCallOutline />
+                                </button>
+                                <button className='chat-header-action' title='Video Call'>
+                                    <IoVideocamOutline />
+                                </button>
+                                <button className='chat-header-action' title='More Options'>
+                                    <IoEllipsisVerticalOutline />
+                                </button>
                             </div>
                         </div>
-                        <div className='chat-header-actions'>
-                            <button className='chat-header-action' title='Call'>
-                                <IoCallOutline />
-                            </button>
-                            <button className='chat-header-action' title='Video Call'>
-                                <IoVideocamOutline />
-                            </button>
-                            <button className='chat-header-action' title='More Options'>
-                                <IoEllipsisVerticalOutline />
-                            </button>
-                        </div>
-                    </div>
 
-                    {/* Messages Area */}
-                    <div className='chat-box-messages-container'>
-                        {messages.map((message) => (
-                            <div key={message.id} className={`chat-message ${message.isSent ? 'sent' : 'received'}`}>
-                                <div className='chat-message-avatar'>
-                                    {message.avatar}
+                        {/* Messages Area */}
+                        <div className='chat-box-messages-container'>
+                            {isLoading ? (
+                                <div className='chat-loading'>Loading messages...</div>
+                            ) : messages.length === 0 ? (
+                                <div className='chat-empty-messages'>
+                                    <p>No messages yet</p>
+                                    <p>Start the conversation!</p>
                                 </div>
-                                <div className='chat-message-content'>
-                                    <p className='chat-message-text'>{message.text}</p>
-                                    <div className='chat-message-time'>{message.time}</div>
+                            ) : (
+                                messages.map((message) => {
+                                    const isSent = message.sender._id === user?._id;
+                                    return (
+                                        <div key={message._id} className={`chat-message ${isSent ? 'sent' : 'received'}`}>
+                                            <div className='chat-message-avatar'>
+                                                {isSent ? 'You' : getInitials(message.sender.firstName, message.sender.lastName)}
+                                            </div>
+                                            <div className='chat-message-content'>
+                                                <p className='chat-message-text'>{message.content}</p>
+                                                <div className='chat-message-time'>
+                                                    {formatTime(message.createdAt)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                            
+                            {/* Typing Indicator */}
+                            {typingUsers.length > 0 && (
+                                <div className='chat-message received'>
+                                    <div className='chat-message-avatar'>?</div>
+                                    <div className='chat-typing-indicator'>
+                                        <div className='chat-typing-dots'>
+                                            <div className='chat-typing-dot'></div>
+                                            <div className='chat-typing-dot'></div>
+                                            <div className='chat-typing-dot'></div>
+                                        </div>
+                                        <span className='chat-typing-text'>
+                                            {typingUsers.map(u => u.userName).join(', ')} typing...
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                        
-                        {/* Typing Indicator */}
-                        <div className='chat-message received'>
-                            <div className='chat-message-avatar'>SC</div>
-                            <div className='chat-typing-indicator'>
-                                <div className='chat-typing-dots'>
-                                    <div className='chat-typing-dot'></div>
-                                    <div className='chat-typing-dot'></div>
-                                    <div className='chat-typing-dot'></div>
-                                </div>
-                            </div>
+                            )}
+                            <div ref={messagesEndRef} />
                         </div>
-                    </div>
 
-                    {/* Message Input */}
-                    <div className='chat-input-container'>
-                        <div className='chat-input-wrapper'>
-                            <button className='chat-header-action' title='Attach File'>
-                                <IoAttachOutline />
-                            </button>
-                            <textarea 
-                                className='chat-input'
-                                placeholder='Type a message...'
-                                rows={1}
-                            />
-                            <button className='chat-header-action' title='Emoji'>
-                                <IoHappyOutline />
-                            </button>
-                            <button className='chat-send-button' title='Send Message'>
-                                <IoPaperPlaneOutline />
-                            </button>
+                        {/* Message Input */}
+                        <form onSubmit={handleSend} className='chat-input-container'>
+                            <div className='chat-input-wrapper'>
+                                <button type='button' className='chat-header-action' title='Attach File'>
+                                    <IoAttachOutline />
+                                </button>
+                                <textarea 
+                                    className='chat-input'
+                                    placeholder='Type a message...'
+                                    rows={1}
+                                    value={messageInput}
+                                    onChange={handleInputChange}
+                                />
+                                <button type='button' className='chat-header-action' title='Emoji'>
+                                    <IoHappyOutline />
+                                </button>
+                                <button type='submit' className='chat-send-button' title='Send Message' disabled={!messageInput.trim()}>
+                                    <IoPaperPlaneOutline />
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                ) : (
+                    <div className='chat-welcome-container'>
+                        <div className='chat-welcome-content'>
+                            <h2>Welcome to Chat</h2>
+                            <p>Select a conversation or start a new chat with a team member</p>
+                            {!isConnected && (
+                                <div className='chat-connection-status'>
+                                    <p>Connecting to chat service...</p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* Details Panel */}
                 <div className='chat-details-container'>

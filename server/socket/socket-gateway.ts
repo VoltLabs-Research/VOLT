@@ -1,9 +1,11 @@
 import http from 'http';
 import Redis from 'ioredis';
+import jwt from 'jsonwebtoken';
 import BaseSocketModule from '@/socket/base-socket-module';
 import { Server, Socket } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { createRedisClient } from '@/config/redis';
+import { User } from '@/models/index';
 
 /**
  * Central gateway that:
@@ -54,6 +56,29 @@ class SocketGateway{
         this.adapterPub = createRedisClient();
         this.adapterSub = createRedisClient();
         this.io.adapter(createAdapter(this.adapterPub, this.adapterSub));
+
+        // Add authentication middleware
+        this.io.use(async (socket, next) => {
+            try {
+                const token = socket.handshake.auth?.token;
+                if (!token) {
+                    return next(new Error('Authentication token required'));
+                }
+
+                const secret = process.env.SECRET_KEY as string;
+                const decoded = jwt.verify(token, secret) as any;
+                
+                const user = await User.findById(decoded.id).select('-password');
+                if (!user) {
+                    return next(new Error('User not found'));
+                }
+
+                (socket as any).user = user;
+                next();
+            } catch (error) {
+                next(new Error('Invalid token'));
+            }
+        });
 
         for(const module of this.modules){
             module.onInit(this.io);
