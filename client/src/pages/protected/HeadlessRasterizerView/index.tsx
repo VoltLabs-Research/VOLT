@@ -487,7 +487,7 @@ const HeadlessRasterizerView: React.FC = () => {
                 <FrameAtomsTable
                     trajectoryId={trajectory?._id}
                     timestep={currentTimestep as number}
-                    pageSize={1000}
+                    pageSize={100}
                     initialPage={1}
                     decimals={3}
                     title={`Particles · ${trajectory?.name ?? 'Trajectory'}`}
