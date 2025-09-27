@@ -127,16 +127,6 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
     const requests = Array.isArray(data?.data) ? data.data : [];
     const summary = data?.data?.summary;
 
-    console.log('🔍 RecentActivity Debug:', {
-        loading,
-        error,
-        data,
-        requests: requests.length,
-        summary,
-        isArray: Array.isArray(data?.data),
-        dataKeys: data?.data ? Object.keys(data.data) : []
-    });
-
     if (requests.length === 0) {
         return (
             <div className={`recent-activity-container ${className}`}>

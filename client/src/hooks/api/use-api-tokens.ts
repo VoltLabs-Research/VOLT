@@ -48,7 +48,6 @@ export const useApiTokens = () => {
             setLoading(true);
             setError(null);
             const response = await api.get('/api-tokens');
-            console.log('🔍 API Tokens Response:', response.data);
             setTokens(response.data.data);
         } catch (err: any) {
             console.error('❌ Failed to fetch API tokens:', err);

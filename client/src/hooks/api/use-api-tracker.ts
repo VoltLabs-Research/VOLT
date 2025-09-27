@@ -82,10 +82,8 @@ export const useApiTracker = (options: UseApiTrackerOptions = {}) => {
             if (options.statusCode) params.append('statusCode', options.statusCode.toString());
 
             const url = `/api-tracker/my-stats?${params.toString()}`;
-            console.log('🔍 Fetching API tracker data from:', url);
             
             const response = await api.get(url);
-            console.log('✅ API tracker response:', response.data);
             setData(response.data);
         } catch (err: any) {
             console.error('❌ API tracker error:', err);

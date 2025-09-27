@@ -103,8 +103,6 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
         );
     }
 
-    console.log('🔍 ApiTokenList tokens:', tokens);
-
     return (
         <div className="api-token-list">
             {tokens.map((token) => (
