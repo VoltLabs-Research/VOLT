@@ -33,15 +33,17 @@ import useTeamStore from '@/stores/team/team';
 import useTrajectoryStore from '@/stores/trajectories';
 import ShortcutsModal from '@/components/organisms/ShortcutsModal';
 import useNotificationStore from '@/stores/notifications';
-import './DashboardLayout.css';
+import Select from '@/components/atoms/form/Select';
 import { Skeleton } from '@mui/material';
 import type { IconType } from 'react-icons';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';
+import './DashboardLayout.css';
 
 const DashboardLayout = () => {
     const teams = useTeamStore((state) => state.teams);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const getUserTeams = useTeamStore((state) => state.getUserTeams);
+    const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
     const navigate = useNavigate();
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
@@ -98,6 +100,20 @@ const DashboardLayout = () => {
         return () => clearTimeout(id);
     }, [localQuery, setSearchQuery]);
 
+    // Convert teams to Select options
+    const teamOptions = useMemo(() => 
+        teams.map(team => ({
+            value: team._id,
+            title: team.name,
+            description: team.description || undefined
+        })), [teams]
+    );
+
+    // Handle team selection change
+    const handleTeamChange = (teamId: string) => {
+        setSelectedTeam(teamId);
+    };
+
     return (
         <main className='dashboard-main'>
             <section className='dashboard-layout-header-container'>
@@ -126,6 +142,17 @@ const DashboardLayout = () => {
                             className='search-input '
                             value={localQuery}
                             onChange={(e) => setLocalQuery(e.target.value)}
+                        />
+                    </div>
+                    
+                    <div className='team-selector-container'>
+                        <Select
+                            options={teamOptions}
+                            value={selectedTeam?._id || null}
+                            onChange={handleTeamChange}
+                            placeholder="Select team"
+                            className="team-select"
+                            maxListWidth={300}
                         />
                     </div>
                 </div>

@@ -38,8 +38,6 @@ const DashboardPage: React.FC = memo(() => {
 
     return (
         <FileUpload>
-            <TeamCreator />
-
             <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
                 <div className='dashboard-body-left-container'>
                     <div className='dashboard-body-left-header-container'>
