@@ -151,7 +151,9 @@ const createAndSendToken = async (res: Response, statusCode: number, user: IUser
         userAgent,
         ip,
         isActive: true,
-        lastActivity: new Date()
+        lastActivity: new Date(),
+        action: 'login',
+        success: true
     });
     
     (user as any).password = undefined;
@@ -181,13 +183,31 @@ const createAndSendToken = async (res: Response, statusCode: number, user: IUser
  */
 export const signIn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { email, password } = req.body;
+    const userAgent = req.get('User-Agent') || 'Unknown';
+    const ip = req.ip || req.connection.remoteAddress || 'Unknown';
+    
     if(!email || !password){
         return next(new Error('Missing email or password'));
     }
+    
     const requestedUser = await User.findOne({ email }).select('+password');
     if(!requestedUser || !(await requestedUser.isCorrectPassword(password, requestedUser.password))){
+        // Track failed login attempt
+        await Session.create({
+            user: requestedUser?._id || null,
+            token: null, // No token for failed logins
+            userAgent,
+            ip,
+            isActive: false,
+            lastActivity: new Date(),
+            action: 'failed_login',
+            success: false,
+            failureReason: !requestedUser ? 'User not found' : 'Invalid password'
+        });
+        
         return next(new Error('Email or password are incorrect'));
     }
+    
     await createAndSendToken(res, 200, requestedUser, req);
 };
 

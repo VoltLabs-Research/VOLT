@@ -47,6 +47,28 @@ export const getMySessions = async (req: Request, res: Response, next: NextFunct
 };
 
 /**
+ * Get login activity for the authenticated user
+ */
+export const getMyLoginActivity = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = (req as any).user._id;
+        const limit = parseInt(req.query.limit as string) || 20;
+        
+        const activities = await Session.find({ user: userId })
+            .sort({ createdAt: -1 })
+            .limit(limit);
+
+        res.status(200).json({
+            status: 'success',
+            results: activities.length,
+            data: activities
+        });
+    } catch (error) {
+        next(new RuntimeError('Session::GetLoginActivity::Failed', 500));
+    }
+};
+
+/**
  * Revoke a specific session
  */
 export const revokeSession = async (req: Request, res: Response, next: NextFunction) => {

@@ -22,13 +22,14 @@
 
 import { Router } from 'express';
 import { protect } from '@/middlewares/authentication';
-import { getMySessions, revokeSession, revokeAllOtherSessions } from '@/controllers/session';
+import { getMySessions, getMyLoginActivity, revokeSession, revokeAllOtherSessions } from '@/controllers/session';
 
 const router = Router();
 
 router.use(protect);
 
 router.get('/', getMySessions);
+router.get('/activity', getMyLoginActivity);
 router.delete('/:id', revokeSession);
 router.delete('/all/others', revokeAllOtherSessions);
 

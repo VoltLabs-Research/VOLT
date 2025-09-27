@@ -30,6 +30,10 @@ export interface ISession {
     ip: string;
     isActive: boolean;
     lastActivity: Date;
+    // Login activity fields
+    action: 'login' | 'logout' | 'failed_login';
+    success: boolean;
+    failureReason?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -62,6 +66,22 @@ const SessionSchema: Schema<ISession> = new Schema({
     lastActivity: {
         type: Date,
         default: Date.now
+    },
+    // Login activity fields
+    action: {
+        type: String,
+        required: [true, 'Session::Action::Required'],
+        enum: ['login', 'logout', 'failed_login'],
+        default: 'login'
+    },
+    success: {
+        type: Boolean,
+        required: [true, 'Session::Success::Required'],
+        default: true
+    },
+    failureReason: {
+        type: String,
+        trim: true
     }
 }, {
     timestamps: true
@@ -70,6 +90,8 @@ const SessionSchema: Schema<ISession> = new Schema({
 SessionSchema.index({ user: 1, isActive: 1 });
 SessionSchema.index({ token: 1 });
 SessionSchema.index({ lastActivity: -1 });
+SessionSchema.index({ action: 1, createdAt: -1 });
+SessionSchema.index({ success: 1, createdAt: -1 });
 
 const Session: Model<ISession> = mongoose.model<ISession>('Session', SessionSchema);
 

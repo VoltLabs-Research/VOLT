@@ -4,7 +4,9 @@ import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
 import { api } from '@/services/api';
 import RecentActivity from '@/components/molecules/RecentActivity';
+import LoginActivityModal from '@/components/molecules/LoginActivityModal';
 import useSessions from '@/hooks/auth/use-sessions';
+import useLoginActivity from '@/hooks/auth/use-login-activity';
 import { formatDistanceToNow } from 'date-fns';
 import './AccountSettings.css';
 
@@ -19,7 +21,9 @@ const AccountSettings: React.FC = () => {
     const [currentTheme, setCurrentTheme] = useState('dark');
     const [isUpdating, setIsUpdating] = useState(false);
     const [updateError, setUpdateError] = useState<string | null>(null);
+    const [showLoginActivityModal, setShowLoginActivityModal] = useState(false);
     const { sessions, loading: sessionsLoading, revokeSession, revokeAllOtherSessions } = useSessions();
+    const { activities: loginActivities, loading: loginActivityLoading } = useLoginActivity(10);
 
     // Initialize user data when user changes
     useEffect(() => {
@@ -299,12 +303,55 @@ const AccountSettings: React.FC = () => {
                                             <p>Monitor your account access and sessions</p>
                                         </div>
                                         <div className='security-actions'>
-                                            <button className='action-button'>
+                                            <button 
+                                                className='action-button'
+                                                onClick={() => setShowLoginActivityModal(true)}
+                                            >
                                                 <TbDots size={16} />
                                                 View
                                             </button>
                                         </div>
                                     </div>
+                                    
+                                    {loginActivityLoading ? (
+                                        <div className='activity-loading'>
+                                            {Array.from({ length: 2 }).map((_, index) => (
+                                                <div key={index} className='activity-skeleton'>
+                                                    <div className='activity-skeleton-icon'></div>
+                                                    <div className='activity-skeleton-content'>
+                                                        <div className='activity-skeleton-line'></div>
+                                                        <div className='activity-skeleton-line short'></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className='activity-list'>
+                                            {loginActivities.slice(0, 3).map((activity) => (
+                                                <div key={activity._id} className={`activity-item ${activity.success ? 'success' : 'failed'}`}>
+                                                    <div className='activity-icon'>
+                                                        {activity.success ? <TbCheck size={16} /> : <TbX size={16} />}
+                                                    </div>
+                                                    <div className='activity-content'>
+                                                        <div className='activity-header'>
+                                                            <span className='activity-title'>
+                                                                {activity.action === 'login' ? 'Login' : 
+                                                                 activity.action === 'failed_login' ? 'Failed Login' : 
+                                                                 'Logout'}
+                                                            </span>
+                                                            <span className='activity-time'>
+                                                                {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                                                            </span>
+                                                        </div>
+                                                        <p className='activity-description'>
+                                                            {activity.userAgent} • {activity.ip}
+                                                            {activity.failureReason && ` • ${activity.failureReason}`}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -848,44 +895,51 @@ const AccountSettings: React.FC = () => {
     };
 
     return (
-        <div className='account-settings-container'>
-            <div className='account-settings-layout'>
-                {/* Sidebar */}
-                <aside className='settings-sidebar'>
-                    <div className='sidebar-header'>
-                        <button className='back-button'>
-                            <TbArrowLeft size={20} />
-                        </button>
-                        <h1 className='sidebar-title'>Settings</h1>
-                    </div>
-                    
-                    <nav className='sidebar-nav'>
-                        {navOptions.map((option) => {
-                            const Icon = option.icon;
-                            const isActive = activeSection === option.title;
-                            
-                            return (
-                                <button
-                                    key={option.title}
-                                    className={`nav-item ${isActive ? 'active' : ''}`}
-                                    onClick={() => setActiveSection(option.title)}
-                                >
-                                    <Icon size={20} />
-                                    <span>{option.title}</span>
-                                </button>
-                            );
-                        })}
-                    </nav>
-                </aside>
+        <>
+            <div className='account-settings-container'>
+                <div className='account-settings-layout'>
+                    {/* Sidebar */}
+                    <aside className='settings-sidebar'>
+                        <div className='sidebar-header'>
+                            <button className='back-button'>
+                                <TbArrowLeft size={20} />
+                            </button>
+                            <h1 className='sidebar-title'>Settings</h1>
+                        </div>
+                        
+                        <nav className='sidebar-nav'>
+                            {navOptions.map((option) => {
+                                const Icon = option.icon;
+                                const isActive = activeSection === option.title;
+                                
+                                return (
+                                    <button
+                                        key={option.title}
+                                        className={`nav-item ${isActive ? 'active' : ''}`}
+                                        onClick={() => setActiveSection(option.title)}
+                                    >
+                                        <Icon size={20} />
+                                        <span>{option.title}</span>
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                    </aside>
 
-                {/* Main Content */}
-                <main className='settings-main'>
-                    <div className='settings-content-wrapper'>
-                        {renderContent()}
-                    </div>
-                </main>
+                    {/* Main Content */}
+                    <main className='settings-main'>
+                        <div className='settings-content-wrapper'>
+                            {renderContent()}
+                        </div>
+                    </main>
+                </div>
             </div>
-        </div>
+            
+            <LoginActivityModal 
+                isOpen={showLoginActivityModal}
+                onClose={() => setShowLoginActivityModal(false)}
+            />
+        </>
     );
 };
 
