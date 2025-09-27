@@ -6,3 +6,4 @@ export { default as StructureAnalysis } from '@/models/structure-analysis';
 export { default as Team } from '@/models/team';
 export { default as Trajectory } from '@/models/trajectory';
 export { default as User } from '@/models/user';
+export { default as ApiToken } from '@/models/api-token';

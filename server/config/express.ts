@@ -87,7 +87,8 @@ configureApp({
         'simulation-cell',
         'notifications',
         'trajectory-fs',
-        'auth'
+        'auth',
+        'api-tokens'
     ],
     middlewares: [
         cors(corsOptions),
