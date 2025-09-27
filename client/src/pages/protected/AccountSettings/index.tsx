@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbCode, TbTrash, TbPlus, TbWebhook } from 'react-icons/tb';
+import { TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbX, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbTrash, TbPlus, TbWebhook } from 'react-icons/tb';
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
 import { api } from '@/services/api';
-import RecentActivity from '@/components/molecules/RecentActivity';
 import LoginActivityModal from '@/components/molecules/LoginActivityModal';
 import ApiTokenModal from '@/components/molecules/ApiTokenModal';
 import ApiTokenList from '@/components/molecules/ApiTokenList';
 import WebhookModal from '@/components/molecules/WebhookModal';
 import WebhookList from '@/components/molecules/WebhookList';
+import SettingsSidebar from '@/components/molecules/settings/SettingsSidebar';
+import GeneralSettings from '@/components/molecules/settings/GeneralSettings';
+import AuthenticationSettings from '@/components/molecules/settings/AuthenticationSettings';
+import SessionsSettings from '@/components/molecules/settings/SessionsSettings';
 import useSessions from '@/hooks/auth/use-sessions';
 import useLoginActivity from '@/hooks/auth/use-login-activity';
 import useApiTokens from '@/hooks/api/use-api-tokens';
@@ -285,315 +288,30 @@ const AccountSettings: React.FC = () => {
         switch (activeSection) {
             case 'General':
                 return (
-                    <div className='settings-content'>
-                        {/* User Profile Section */}
-                        <div className='settings-section profile-section'>
-                            <div className='profile-header'>
-                                <div className='profile-avatar'>
-                                    <div className='avatar-circle'>
-                                        {user?.firstName?.[0]}{user?.lastName?.[0]}
-                                    </div>
-                                </div>
-                                <div className='profile-info'>
-                                    <h2 className='profile-name'>{user?.firstName} {user?.lastName}</h2>
-                                    <p className='profile-email'>{user?.email}</p>
-                                    <div className='profile-status'>
-                                        <span className='status-badge active'>
-                                            <TbCheck size={14} />
-                                            Active Account
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Personal Information */}
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Personal Information</h3>
-                                <p className='section-description'>Update your personal details and contact information</p>
-                            </div>
-                            
-                            <div className='settings-form'>
-                                {updateError && (
-                                    <div className='update-error'>
-                                        <TbX size={16} />
-                                        {updateError}
-                                    </div>
-                                )}
-                                
-                                <div className='form-row'>
-                                    <div className='form-field-container'>
-                                        <FormInput 
-                                            value={userData.firstName}
-                                            label='First name'
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUserDataChange('firstName', e.target.value)}
-                                            disabled={isUpdating}
-                                        />
-                                        {isUpdating && (
-                                            <div className='update-indicator'>
-                                                <TbActivity size={16} />
-                                                Updating...
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className='form-field-container'>
-                                        <FormInput
-                                            value={userData.lastName}
-                                            label='Last name'
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUserDataChange('lastName', e.target.value)}
-                                            disabled={isUpdating}
-                                        />
-                                        {isUpdating && (
-                                            <div className='update-indicator'>
-                                                <TbActivity size={16} />
-                                                Updating...
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className='form-field-container'>
-                                    <FormInput 
-                                        value={userData.email}
-                                        label='Email address'
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUserDataChange('email', e.target.value)}
-                                        disabled={isUpdating}
-                                    />
-                                    {isUpdating && (
-                                        <div className='update-indicator'>
-                                            <TbActivity size={16} />
-                                            Updating...
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Account Activity */}
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Account Activity</h3>
-                                <p className='section-description'>Recent activity and account statistics</p>
-                            </div>
-                            
-                            <RecentActivity 
-                                limit={15} 
-                                showStats={true}
-                                className="account-activity-section"
-                            />
-                        </div>
-
-                        {/* Account Deletion */}
-                        <div className='settings-section danger-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Danger Zone</h3>
-                                <p className='section-description'>Irreversible and destructive actions</p>
-                            </div>
-                            
-                            <div className='danger-actions'>
-                                <div className='danger-item'>
-                                    <div className='danger-info'>
-                                        <h4>Delete Account</h4>
-                                        <p>Permanently delete your account and all associated data. This action cannot be undone.</p>
-                                    </div>
-                                    <button className='action-button danger' onClick={handleDeleteAccount}>
-                                        <TbTrash size={16} />
-                                        Delete Account
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <GeneralSettings
+                        user={user}
+                        userData={userData}
+                        isUpdating={isUpdating}
+                        updateError={updateError}
+                        onFieldChange={handleUserDataChange}
+                        onDeleteAccount={handleDeleteAccount}
+                    />
                 );
             case 'Authentication':
                 return (
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Security Settings</h3>
-                                <p className='section-description'>Manage your account security and authentication methods</p>
-                            </div>
-                            
-                            <div className='security-grid'>
-                                <div className='security-item'>
-                                    <div className='security-header'>
-                                        <div className='security-icon'>
-                                            <TbShield size={24} />
-                                        </div>
-                                        <div className='security-info'>
-                                            <h4>Two-Factor Authentication</h4>
-                                            <p>Add an extra layer of security to your account</p>
-                                        </div>
-                                        <div className='security-status'>
-                                            <span className='status-badge inactive'>
-                                                <TbX size={14} />
-                                                Disabled
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div className='security-item'>
-                                    <div className='security-header'>
-                                        <div className='security-icon'>
-                                            <TbKey size={24} />
-                                        </div>
-                                        <div className='security-info'>
-                                            <h4>Password</h4>
-                                            <p>
-                                                {isLoadingPasswordInfo ? 'Loading...' : 
-                                                 passwordInfo && passwordInfo.lastChanged ? 
-                                                    (() => {
-                                                        try {
-                                                            const date = new Date(passwordInfo.lastChanged);
-                                                            return isValid(date) ? 
-                                                                `Last changed ${formatDistanceToNow(date, { addSuffix: true })}` : 
-                                                                'Password information unavailable';
-                                                        } catch {
-                                                            return 'Password information unavailable';
-                                                        }
-                                                    })() : 
-                                                 'Password information unavailable'}
-                                            </p>
-                                        </div>
-                                        <div className='security-actions'>
-                                            <button 
-                                                className='action-button'
-                                                onClick={() => setShowPasswordForm(!showPasswordForm)}
-                                            >
-                                                <TbEdit size={16} />
-                                                {showPasswordForm ? 'Cancel' : 'Change'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    {showPasswordForm && (
-                                        <div className='password-form'>
-                                            <form onSubmit={handlePasswordChange}>
-                                                <div className='form-group'>
-                                                    <FormInput
-                                                        type='password'
-                                                        label='Current Password'
-                                                        value={passwordForm.currentPassword}
-                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                                                        required
-                                                    />
-                                                </div>
-                                                
-                                                <div className='form-group'>
-                                                    <FormInput
-                                                        type='password'
-                                                        label='New Password'
-                                                        value={passwordForm.newPassword}
-                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                                                        required
-                                                        minLength={8}
-                                                    />
-                                                </div>
-                                                
-                                                <div className='form-group'>
-                                                    <FormInput
-                                                        type='password'
-                                                        label='Confirm New Password'
-                                                        value={passwordForm.confirmPassword}
-                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                                                        required
-                                                    />
-                                                </div>
-                                                
-                                                <div className='form-actions'>
-                                                    <button 
-                                                        type='button' 
-                                                        className='action-button secondary'
-                                                        onClick={() => setShowPasswordForm(false)}
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button 
-                                                        type='submit' 
-                                                        className='action-button primary'
-                                                        disabled={isChangingPassword}
-                                                    >
-                                                        {isChangingPassword ? 'Changing...' : 'Change Password'}
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className='security-item'>
-                                    <div className='security-header'>
-                                        <div className='security-icon'>
-                                            <TbActivity size={24} />
-                                        </div>
-                                        <div className='security-info'>
-                                            <h4>Login Activity</h4>
-                                            <p>Monitor your account access and sessions</p>
-                                        </div>
-                                        <div className='security-actions'>
-                                            <button 
-                                                className='action-button'
-                                                onClick={() => setShowLoginActivityModal(true)}
-                                            >
-                                                <TbDots size={16} />
-                                                View
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    {loginActivityLoading ? (
-                                        <div className='activity-loading'>
-                                            {Array.from({ length: 2 }).map((_, index) => (
-                                                <div key={index} className='activity-skeleton'>
-                                                    <div className='activity-skeleton-icon'></div>
-                                                    <div className='activity-skeleton-content'>
-                                                        <div className='activity-skeleton-line'></div>
-                                                        <div className='activity-skeleton-line short'></div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className='activity-list'>
-                                            {loginActivities.slice(0, 3).map((activity) => (
-                                                <div key={activity._id} className={`activity-item ${activity.success ? 'success' : 'failed'}`}>
-                                                    <div className='activity-icon'>
-                                                        {activity.success ? <TbCheck size={16} /> : <TbX size={16} />}
-                                                    </div>
-                                                    <div className='activity-content'>
-                                                        <div className='activity-header'>
-                                                            <span className='activity-title'>
-                                                                {activity.action === 'login' ? 'Login' : 
-                                                                 activity.action === 'failed_login' ? 'Failed Login' : 
-                                                                 'Logout'}
-                                                            </span>
-                                                            <span className='activity-time'>
-                                                                {(() => {
-                                                                    try {
-                                                                        const date = new Date(activity.createdAt);
-                                                                        return isValid(date) ? 
-                                                                            formatDistanceToNow(date, { addSuffix: true }) : 
-                                                                            'Unknown time';
-                                                                    } catch {
-                                                                        return 'Unknown time';
-                                                                    }
-                                                                })()}
-                                                            </span>
-                                                        </div>
-                                                        <p className='activity-description'>
-                                                            {activity.userAgent} • {activity.ip}
-                                                            {activity.failureReason && ` • ${activity.failureReason}`}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <AuthenticationSettings
+                        isLoadingPasswordInfo={isLoadingPasswordInfo}
+                        passwordInfo={passwordInfo}
+                        showPasswordForm={showPasswordForm}
+                        setShowPasswordForm={setShowPasswordForm}
+                        passwordForm={passwordForm}
+                        setPasswordForm={setPasswordForm}
+                        isChangingPassword={isChangingPassword}
+                        onSubmitPassword={handlePasswordChange}
+                        loginActivities={loginActivities}
+                        loginActivityLoading={loginActivityLoading}
+                        onOpenLoginActivity={() => setShowLoginActivityModal(true)}
+                    />
                 );
             case 'Theme':
                 return (
@@ -709,74 +427,12 @@ const AccountSettings: React.FC = () => {
                 );
             case 'Sessions':
                 return (
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Active Sessions</h3>
-                                <p className='section-description'>Manage your active login sessions across devices</p>
-                            </div>
-                            
-                            {sessionsLoading ? (
-                                <div className='sessions-loading'>
-                                    <div className='session-skeleton'>
-                                        <div className='session-skeleton-icon'></div>
-                                        <div className='session-skeleton-content'>
-                                            <div className='session-skeleton-line'></div>
-                                            <div className='session-skeleton-line short'></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className='sessions-list'>
-                                    {sessions.map((session, index) => (
-                                        <div key={session._id} className={`session-item ${index === 0 ? 'current' : ''}`}>
-                                            <div className='session-info'>
-                                                <div className='session-icon'>
-                                                    <TbDeviceDesktop size={20} />
-                                                </div>
-                                                <div className='session-details'>
-                                                    <span className='session-device'>
-                                                        {index === 0 ? 'Current Session' : 'Active Session'}
-                                                    </span>
-                                                    <span className='session-location'>
-                                                        {session.userAgent} • {session.ip} • Last active {formatDistanceToNow(new Date(session.lastActivity), { addSuffix: true })}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className='session-actions'>
-                                                {index === 0 ? (
-                                                    <span className='status-badge active'>
-                                                        <TbCheck size={14} />
-                                                        Current
-                                                    </span>
-                                                ) : (
-                                                    <button 
-                                                        className='action-button danger'
-                                                        onClick={() => revokeSession(session._id)}
-                                                    >
-                                                        <TbX size={16} />
-                                                        Revoke
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    
-                                    {sessions.length > 1 && (
-                                        <div className='session-actions-bulk'>
-                                            <button 
-                                                className='action-button danger'
-                                                onClick={revokeAllOtherSessions}
-                                            >
-                                                <TbX size={16} />
-                                                Revoke All Other Sessions
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <SessionsSettings
+                        sessions={sessions}
+                        loading={sessionsLoading}
+                        revokeSession={revokeSession}
+                        revokeAllOtherSessions={revokeAllOtherSessions}
+                    />
                 );
             case 'Data & Export':
                 return (
@@ -1134,33 +790,11 @@ const AccountSettings: React.FC = () => {
         <>
             <div className='account-settings-container'>
                 <div className='account-settings-layout'>
-                    {/* Sidebar */}
-                    <aside className='settings-sidebar'>
-                        <div className='sidebar-header'>
-                            <button className='back-button'>
-                                <TbArrowLeft size={20} />
-                            </button>
-                            <h1 className='sidebar-title'>Settings</h1>
-                        </div>
-                        
-                        <nav className='sidebar-nav'>
-                            {navOptions.map((option) => {
-                                const Icon = option.icon;
-                                const isActive = activeSection === option.title;
-                                
-                                return (
-                                    <button
-                                        key={option.title}
-                                        className={`nav-item ${isActive ? 'active' : ''}`}
-                                        onClick={() => setActiveSection(option.title)}
-                                    >
-                                        <Icon size={20} />
-                                        <span>{option.title}</span>
-                                    </button>
-                                );
-                            })}
-                        </nav>
-                    </aside>
+                    <SettingsSidebar
+                        activeSection={activeSection}
+                        navOptions={navOptions}
+                        onChange={setActiveSection}
+                    />
 
                     {/* Main Content */}
                     <main className='settings-main'>
