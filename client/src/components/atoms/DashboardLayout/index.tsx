@@ -213,7 +213,7 @@ const DashboardLayout = () => {
                         <IoMenuOutline />
                     </div>
                     {mobileMenuOpen && (
-                        <div className='mobile-dropdown'>
+                        <div className='mobile-dropdown' onMouseDown={(e) => e.stopPropagation()}>
                             <div className='mobile-dropdown-section'>
                                 <div className='search-container'>
                                     <i className='search-icon-container'>

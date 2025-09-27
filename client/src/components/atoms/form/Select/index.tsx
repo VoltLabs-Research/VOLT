@@ -214,6 +214,7 @@ const Select: React.FC<SelectProps> = ({
                     className="rh-select-list"
                     tabIndex={-1}
                     onKeyDown={onKeyDown}
+                    onMouseDown={(e) => { e.stopPropagation(); }}
                     style={{ ['--select-list-max-width' as any]: `${maxListWidth}px` }}
                 >
                     {options.map((opt, i) => {
@@ -259,6 +260,7 @@ const Select: React.FC<SelectProps> = ({
                     className="rh-select-list"
                     tabIndex={-1}
                     onKeyDown={onKeyDown}
+                    onMouseDown={(e) => { e.stopPropagation(); }}
                     style={{ ['--select-list-max-width' as any]: `${maxListWidth}px`, ...(portalStyle || {}) }}
                 >
                     {options.map((opt, i) => {
