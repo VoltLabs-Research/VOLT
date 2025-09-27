@@ -1,12 +1,60 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Draggable from '@/components/atoms/Draggable';
 import WindowIcons from '@/components/molecules/WindowIcons';
 import FormInput from '@/components/atoms/form/FormInput';
 import TeamCreatorBg from '@/assets/images/create-new-team.webp';
 import './TeamCreator.css';
 import Button from '@/components/atoms/Button';
+import useTeamStore from '@/stores/team/team';
 
-const TeamCreator = () => {
+interface TeamCreatorProps {
+    onClose?: () => void;
+}
+
+const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose }) => {
+    const [teamName, setTeamName] = useState('');
+    const [teamDescription, setTeamDescription] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const { createTeam, isLoading, error, clearError } = useTeamStore();
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!teamName.trim()) {
+            return;
+        }
+
+        setIsSubmitting(true);
+        clearError();
+
+        try {
+            await createTeam({
+                name: teamName.trim(),
+                description: teamDescription.trim() || undefined
+            });
+            
+            // Reset form
+            setTeamName('');
+            setTeamDescription('');
+            
+            // Close modal if onClose is provided
+            onClose?.();
+        } catch (err) {
+            console.error('Failed to create team:', err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setTeamName(e.target.value);
+        if (error) clearError();
+    };
+
+    const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setTeamDescription(e.target.value);
+    };
 
     return (
         <Draggable className='team-creator-container primary-surface'>
@@ -21,14 +69,38 @@ const TeamCreator = () => {
                     <h3 className='team-creator-title'>Create a new team</h3>
                     <p className='team-creator-description'>When you create an account, you're assigned a personal team. You can create new teams to manage your trajectories and work with others.</p>
                 </div>
-                <div className='team-creator-body-container'>
+                
+                <form onSubmit={handleSubmit} className='team-creator-body-container'>
                     <FormInput
-                        label='Enter a name for your team' />
+                        label='Enter a name for your team'
+                        value={teamName}
+                        onChange={handleNameChange}
+                        placeholder='Team name'
+                        required
+                        disabled={isLoading || isSubmitting}
+                    />
+                    
+                    <FormInput
+                        label='Description (optional)'
+                        value={teamDescription}
+                        onChange={handleDescriptionChange}
+                        placeholder='Team description'
+                        disabled={isLoading || isSubmitting}
+                    />
+
+                    {error && (
+                        <div className='team-creator-error'>
+                            {error}
+                        </div>
+                    )}
 
                     <Button
+                        type='submit'
                         className='black-on-light sm'
-                        title='Continue' />
-                </div>
+                        title={isLoading || isSubmitting ? 'Creating...' : 'Continue'}
+                        disabled={!teamName.trim() || isLoading || isSubmitting}
+                    />
+                </form>
             </div>
         </Draggable>
     );
