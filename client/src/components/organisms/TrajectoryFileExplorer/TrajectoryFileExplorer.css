@@ -1,0 +1,86 @@
+.trajectory-fs-container{
+    height: 600px;
+    width: 1000px;
+    position: absolute;
+    z-index: 99999999;
+    display: flex;
+    overflow: hidden;
+}
+
+.trajectory-fs-left-container{
+    padding: 1rem;
+    display: flex;
+    min-width: 220px;
+    flex-direction: column;
+    width: 20%;
+    gap: 3rem;
+}
+
+.trajectory-fs-right-container{
+    height: 100%;
+    width: 80%;
+    padding: 1rem;
+}
+
+.trajectory-fs-nav{
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.trajectory-fs-nav-items{
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+}
+
+.trajectory-fs-nav-title{
+    font-size: .9rem;
+    font-weight: 500;
+}
+
+.trajectory-fs-nav-item-title{
+    font-size: .8rem;
+    font-weight: 400;
+}
+
+.trajectory-fs-list-headrow{
+    display: grid;
+    grid-template-columns: 6fr 2fr 2fr 2fr;
+    gap: 8px;
+    padding: 8px 10px;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+}
+
+.trajectory-fs-list-row{
+    display: grid;
+    grid-template-columns: 6fr 2fr 2fr 2fr;
+    gap: 8px;
+    padding: 8px 10px;
+    align-items: center;
+    cursor: default;
+}
+
+.trajectory-fs-list-body{
+    height: 100%;
+    overflow-y: scroll;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.trajectory-fs-list-name-container{
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.trajectory-fs-list-headrow .trajectory-fs-list-column{
+    text-transform: capitalize;
+}
+
+
+.trajectory-fs-list-body .trajectory-fs-list-row:hover{
+    cursor: pointer;
+    opacity: .8;
+}

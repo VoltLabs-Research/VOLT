@@ -33,6 +33,7 @@ import type { AnalysisSelectProps, MetricEntry, ModelRailProps, PlaybackControls
 import { formatNumber, formatSize } from '@/utilities/scene-utils';
 import { getOrCreateGuestUser } from '@/utilities/guest';
 import { IoTimeOutline, IoLayersOutline, IoBarChartOutline } from 'react-icons/io5';
+import { socketService } from '@/services/socketio';
 import RasterHeader from '@/components/molecules/raster/RasterHeader';
 import SceneColumn from '@/components/molecules/raster/SceneColumn';
 import Thumbnails from '@/components/molecules/raster/Thumbnails';
@@ -40,7 +41,7 @@ import MetricsBar from '@/components/molecules/raster/MetricsBar';
 import CursorShareLayer from '@/components/atoms/CursorShareLayer';
 import useRasterConnectedUsers from '@/hooks/raster/useRasterConnectedUsers';
 import FrameAtomsTable from '@/components/organisms/FrameAtomsTable';
-import { socketService } from '@/services/socketio';
+import TrajectoryFileExplorer from '@/components/organisms/TrajectoryFileExplorer';
 import './HeadlessRasterizerView.css';
 
 const HeadlessRasterizerView: React.FC = () => {
@@ -482,6 +483,8 @@ const HeadlessRasterizerView: React.FC = () => {
                 onSignIn={!user ? handleSignIn : undefined}
                 connectedUsers={connectedUsers}
             />
+
+            {trajectory?._id && <TrajectoryFileExplorer trajectoryId={trajectory._id} />}
 
             {showParticles && (
                 <FrameAtomsTable
