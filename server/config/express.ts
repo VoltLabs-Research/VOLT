@@ -83,9 +83,10 @@ configureApp({
         'raster',
         'trajectories',
         'structure-analysis',
-    'dislocations',
-    'simulation-cell',
-    'notifications',
+        'dislocations',
+        'simulation-cell',
+        'notifications',
+        'trajectory-fs',
         'auth'
     ],
     middlewares: [
