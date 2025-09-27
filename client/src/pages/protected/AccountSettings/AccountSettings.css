@@ -1196,6 +1196,111 @@
     }
 }
 
+/* Account Activity Section */
+.account-activity-section {
+    margin-top: 1rem;
+}
+
+.account-activity-section .recent-activity-container {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.8rem;
+    box-shadow: none;
+}
+
+.account-activity-section .recent-activity-container:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.account-activity-section .recent-activity-header {
+    border-bottom: 1px solid var(--color-border-soft);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.account-activity-section .recent-activity-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.account-activity-section .recent-activity-stats {
+    gap: 1.5rem;
+}
+
+.account-activity-section .recent-activity-stat {
+    text-align: center;
+}
+
+.account-activity-section .recent-activity-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.account-activity-section .recent-activity-stat-label {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.account-activity-section .recent-activity-item {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.account-activity-section .recent-activity-item:hover {
+    background: var(--color-surface-3);
+    border-color: var(--color-border);
+    transform: translateX(4px);
+}
+
+.account-activity-section .recent-activity-method-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.account-activity-section .recent-activity-url {
+    font-size: 0.8rem;
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+.account-activity-section .recent-activity-item-meta {
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+}
+
+.account-activity-section .recent-activity-status-code {
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+.account-activity-section .recent-activity-status-code.success {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--accent-green);
+}
+
+.account-activity-section .recent-activity-status-code.client-error {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--accent-yellow);
+}
+
+.account-activity-section .recent-activity-status-code.server-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--accent-red);
+}
+
 /* Responsive Design for New Sections */
 @media (max-width: 768px) {
     .theme-options {

@@ -60,6 +60,13 @@
     --badge-fg: var(--color-text-secondary);
     --card-bg: var(--color-surface-1);
     --glass-bg: var(--color-overlay);
+    
+    /* API Tracker specific colors */
+    --api-tracker-success: var(--accent-green);
+    --api-tracker-warning: var(--accent-yellow);
+    --api-tracker-error: var(--accent-red);
+    --api-tracker-info: var(--accent-blue);
+    --api-tracker-muted: var(--accent-gray);
 }
 
 /* Light mode */
@@ -104,4 +111,11 @@
     --badge-fg: var(--color-text-secondary);
     --card-bg: var(--color-surface-1);
     --glass-bg: rgba(255, 255, 255, 0.6);
+    
+    /* API Tracker specific colors */
+    --api-tracker-success: var(--accent-green);
+    --api-tracker-warning: var(--accent-yellow);
+    --api-tracker-error: var(--accent-red);
+    --api-tracker-info: var(--accent-blue);
+    --api-tracker-muted: var(--accent-gray);
 }

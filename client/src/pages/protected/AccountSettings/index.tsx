@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbCalendar, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbCode, TbTrash } from 'react-icons/tb';
+import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbCalendar, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbCode, TbTrash, TbChartBar } from 'react-icons/tb';
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
 import { api } from '@/services/api';
+import RecentActivity from '@/components/molecules/RecentActivity';
 import './AccountSettings.css';
 
 const AccountSettings: React.FC = () => {
@@ -210,26 +211,11 @@ const AccountSettings: React.FC = () => {
                                 <p className='section-description'>Recent activity and account statistics</p>
                             </div>
                             
-                            <div className='activity-grid'>
-                                <div className='activity-item'>
-                                    <div className='activity-icon'>
-                                        <TbCalendar size={20} />
-                                    </div>
-                                    <div className='activity-content'>
-                                        <span className='activity-label'>Member since</span>
-                                        <span className='activity-value'>January 2024</span>
-                                    </div>
-                                </div>
-                                <div className='activity-item'>
-                                    <div className='activity-icon'>
-                                        <TbActivity size={20} />
-                                    </div>
-                                    <div className='activity-content'>
-                                        <span className='activity-label'>Last active</span>
-                                        <span className='activity-value'>2 hours ago</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <RecentActivity 
+                                limit={15} 
+                                showStats={true}
+                                className="account-activity-section"
+                            />
                         </div>
 
                         {/* Account Deletion */}
