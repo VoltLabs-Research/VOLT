@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbCalendar, TbActivity } from 'react-icons/tb';
+import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbCalendar, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings } from 'react-icons/tb';
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
 import './AccountSettings.css';
@@ -11,10 +11,15 @@ const AccountSettings: React.FC = () => {
     const navOptions = [
         { title: 'General', icon: TbUser },
         { title: 'Authentication', icon: TbShield },
+        { title: 'Theme', icon: TbPalette },
+        { title: 'Notifications', icon: TbBell },
+        { title: 'Sessions', icon: TbDeviceDesktop },
         { title: 'Billing Information', icon: TbCreditCard },
         { title: 'Invoices', icon: TbFileText },
         { title: 'Privacy', icon: TbLock },
-        { title: 'Tokens', icon: TbKey }
+        { title: 'Data & Export', icon: TbDownload },
+        { title: 'Tokens', icon: TbKey },
+        { title: 'Advanced', icon: TbSettings }
     ];
 
     const renderContent = () => {
@@ -160,6 +165,252 @@ const AccountSettings: React.FC = () => {
                                                 View
                                             </button>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'Theme':
+                return (
+                    <div className='settings-content'>
+                        <div className='settings-section'>
+                            <div className='section-header'>
+                                <h3 className='section-title'>Theme & Appearance</h3>
+                                <p className='section-description'>Customize your interface appearance and preferences</p>
+                            </div>
+                            
+                            <div className='theme-options'>
+                                <div className='theme-option'>
+                                    <div className='theme-preview dark'>
+                                        <div className='preview-header'></div>
+                                        <div className='preview-content'></div>
+                                    </div>
+                                    <div className='theme-info'>
+                                        <h4>Dark Mode</h4>
+                                        <p>Currently active</p>
+                                    </div>
+                                    <div className='theme-status'>
+                                        <span className='status-badge active'>
+                                            <TbCheck size={14} />
+                                            Active
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div className='theme-option'>
+                                    <div className='theme-preview light'>
+                                        <div className='preview-header'></div>
+                                        <div className='preview-content'></div>
+                                    </div>
+                                    <div className='theme-info'>
+                                        <h4>Light Mode</h4>
+                                        <p>Switch to light theme</p>
+                                    </div>
+                                    <div className='theme-actions'>
+                                        <button className='action-button'>
+                                            Switch
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'Notifications':
+                return (
+                    <div className='settings-content'>
+                        <div className='settings-section'>
+                            <div className='section-header'>
+                                <h3 className='section-title'>Notification Preferences</h3>
+                                <p className='section-description'>Manage how and when you receive notifications</p>
+                            </div>
+                            
+                            <div className='notification-settings'>
+                                <div className='notification-item'>
+                                    <div className='notification-header'>
+                                        <TbBell size={24} />
+                                        <div className='notification-info'>
+                                            <h4>Email Notifications</h4>
+                                            <p>Receive updates via email</p>
+                                        </div>
+                                    </div>
+                                    <div className='notification-toggle'>
+                                        <span className='status-badge active'>
+                                            <TbCheck size={14} />
+                                            Enabled
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div className='notification-item'>
+                                    <div className='notification-header'>
+                                        <TbActivity size={24} />
+                                        <div className='notification-info'>
+                                            <h4>Security Alerts</h4>
+                                            <p>Get notified about security events</p>
+                                        </div>
+                                    </div>
+                                    <div className='notification-toggle'>
+                                        <span className='status-badge active'>
+                                            <TbCheck size={14} />
+                                            Enabled
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div className='notification-item'>
+                                    <div className='notification-header'>
+                                        <TbBell size={24} />
+                                        <div className='notification-info'>
+                                            <h4>Team Updates</h4>
+                                            <p>Notifications about team activities</p>
+                                        </div>
+                                    </div>
+                                    <div className='notification-toggle'>
+                                        <span className='status-badge inactive'>
+                                            <TbX size={14} />
+                                            Disabled
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'Sessions':
+                return (
+                    <div className='settings-content'>
+                        <div className='settings-section'>
+                            <div className='section-header'>
+                                <h3 className='section-title'>Active Sessions</h3>
+                                <p className='section-description'>Manage your active login sessions across devices</p>
+                            </div>
+                            
+                            <div className='sessions-list'>
+                                <div className='session-item current'>
+                                    <div className='session-info'>
+                                        <div className='session-icon'>
+                                            <TbDeviceDesktop size={20} />
+                                        </div>
+                                        <div className='session-details'>
+                                            <span className='session-device'>Current Session</span>
+                                            <span className='session-location'>Chrome on macOS • San Francisco, CA</span>
+                                        </div>
+                                    </div>
+                                    <div className='session-status'>
+                                        <span className='status-badge active'>
+                                            <TbCheck size={14} />
+                                            Current
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div className='session-item'>
+                                    <div className='session-info'>
+                                        <div className='session-icon'>
+                                            <TbDeviceDesktop size={20} />
+                                        </div>
+                                        <div className='session-details'>
+                                            <span className='session-device'>Mobile App</span>
+                                            <span className='session-location'>iOS App • Last active 2 hours ago</span>
+                                        </div>
+                                    </div>
+                                    <div className='session-actions'>
+                                        <button className='action-button danger'>
+                                            <TbX size={16} />
+                                            Revoke
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'Data & Export':
+                return (
+                    <div className='settings-content'>
+                        <div className='settings-section'>
+                            <div className='section-header'>
+                                <h3 className='section-title'>Data & Privacy</h3>
+                                <p className='section-description'>Manage your data and privacy settings</p>
+                            </div>
+                            
+                            <div className='data-options'>
+                                <div className='data-item'>
+                                    <div className='data-header'>
+                                        <TbDownload size={24} />
+                                        <div className='data-info'>
+                                            <h4>Export Data</h4>
+                                            <p>Download all your data in JSON format</p>
+                                        </div>
+                                    </div>
+                                    <div className='data-actions'>
+                                        <button className='action-button'>
+                                            <TbDownload size={16} />
+                                            Export
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className='data-item'>
+                                    <div className='data-header'>
+                                        <TbX size={24} />
+                                        <div className='data-info'>
+                                            <h4>Delete Account</h4>
+                                            <p>Permanently delete your account and all data</p>
+                                        </div>
+                                    </div>
+                                    <div className='data-actions'>
+                                        <button className='action-button danger'>
+                                            <TbX size={16} />
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'Advanced':
+                return (
+                    <div className='settings-content'>
+                        <div className='settings-section'>
+                            <div className='section-header'>
+                                <h3 className='section-title'>Advanced Settings</h3>
+                                <p className='section-description'>Developer and advanced configuration options</p>
+                            </div>
+                            
+                            <div className='advanced-settings'>
+                                <div className='advanced-item'>
+                                    <div className='advanced-header'>
+                                        <TbSettings size={24} />
+                                        <div className='advanced-info'>
+                                            <h4>Debug Mode</h4>
+                                            <p>Enable detailed logging and debugging information</p>
+                                        </div>
+                                    </div>
+                                    <div className='advanced-toggle'>
+                                        <span className='status-badge inactive'>
+                                            <TbX size={14} />
+                                            Disabled
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div className='advanced-item'>
+                                    <div className='advanced-header'>
+                                        <TbActivity size={24} />
+                                        <div className='advanced-info'>
+                                            <h4>Analytics</h4>
+                                            <p>Share usage data to improve the service</p>
+                                        </div>
+                                    </div>
+                                    <div className='advanced-toggle'>
+                                        <span className='status-badge active'>
+                                            <TbCheck size={14} />
+                                            Enabled
+                                        </span>
                                     </div>
                                 </div>
                             </div>
