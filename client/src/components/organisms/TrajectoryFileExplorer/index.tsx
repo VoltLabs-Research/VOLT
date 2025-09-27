@@ -14,6 +14,7 @@ import {
     LuFolderPlus,
     LuSettings,
     LuArrowUp } from 'react-icons/lu';
+import { Skeleton, Box } from '@mui/material';
 import { formatSize } from '@/utilities/scene-utils';
 import { IoSearchOutline } from 'react-icons/io5';
 import './TrajectoryFileExplorer.css';
@@ -24,7 +25,7 @@ type TrajectoryFileExplorerProps = {
     onFileOpen?: (entry: FsEntry) => void;
 };
 
-const TrajectoryFileExplorer = ({ trajectoryId, height = 520, onFileOpen }: TrajectoryFileExplorerProps) => {
+const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen }: TrajectoryFileExplorerProps) => {
     const {
         cwd,
         entries,
@@ -49,7 +50,6 @@ const TrajectoryFileExplorer = ({ trajectoryId, height = 520, onFileOpen }: Traj
 
     const canBack = historyIndex > 0;
     const canForward = historyIndex < history.length - 1;
-    const containerStyle = useMemo(() => ({ height: typeof height === 'number' ? `${height}px` : height }), [height]);
 
     const headerIcons = [{
         Icon: LuArrowLeft,
@@ -105,6 +105,40 @@ const TrajectoryFileExplorer = ({ trajectoryId, height = 520, onFileOpen }: Traj
         }
     };
 
+    const BreadcrumbsSkeleton = () => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: .8 }}>
+            {Array.from({ length: 3 }).map((_, i) => (
+                <Box key={i} sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Skeleton variant="text" width={60 + i * 20} height={18} />
+                    {i < 2 && <Box component="span" sx={{ mx: .6, fontSize: 12 }}>/</Box>}
+                </Box>
+            ))}
+        </Box>
+    );
+
+    const HeaderIconSkeleton = () => (
+        <Skeleton variant="circular" width={24} height={24} />
+    );
+
+    const FileRowSkeleton = () => (
+        <div className='trajectory-fs-list-row'>
+            <div className='trajectory-fs-list-column trajectory-fs-list-name-container'>
+                <Skeleton variant="circular" width={18} height={18} />
+                <Skeleton variant="text" width="60%" height={18} />
+            </div>
+            <div className='trajectory-fs-list-column'>
+                <Skeleton variant="text" width="70%" height={18} />
+            </div>
+            <div className='trajectory-fs-list-column'>
+                <Skeleton variant="text" width="50%" height={18} />
+            </div>
+            <div className='trajectory-fs-list-column'>
+                <Skeleton variant="text" width="80%" height={18} />
+            </div>
+        </div>
+        );
+
+
     return (
         <Draggable className='trajectory-fs-container primary-surface'>
             <div className='trajectory-fs-left-container'>
@@ -147,7 +181,7 @@ const TrajectoryFileExplorer = ({ trajectoryId, height = 520, onFileOpen }: Traj
                             onClick={onClick}
                             key={index}
                         >
-                            <Icon size={20} />
+                            {loading ? <HeaderIconSkeleton /> : <Icon size={20} />}
                         </i>
                     ))}
 
@@ -157,11 +191,15 @@ const TrajectoryFileExplorer = ({ trajectoryId, height = 520, onFileOpen }: Traj
                         </i>
 
                         <div className='search-breadcrumbs-container'>
-                            {breadcrumbs.map(({ name }) => (
-                                <div className='search-breadcrumb-container'>
-                                    <p className='search-breadcrumb-name' key={name}>{name}</p>
-                                </div>
-                            ))}
+                            {loading ? (
+                                <BreadcrumbsSkeleton />
+                            ) : (
+                                breadcrumbs.map(({ name }, i) => (
+                                    <div className='search-breadcrumb-container' key={`${name}-${i}`}>
+                                        <p className='search-breadcrumb-name'>{name}</p>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
 
@@ -171,7 +209,7 @@ const TrajectoryFileExplorer = ({ trajectoryId, height = 520, onFileOpen }: Traj
                             onClick={onClick}
                             key={index + '-right'}
                         >
-                            <Icon size={20} />
+                            {loading ? <HeaderIconSkeleton /> : <Icon size={20} />}
                         </i>
                     ))}
                 </div>
@@ -182,7 +220,9 @@ const TrajectoryFileExplorer = ({ trajectoryId, height = 520, onFileOpen }: Traj
                 </div>
                 
                 <div className='trajectory-fs-list-body'>
-                    {entries.map((e) => (
+                    {loading ? (
+                        Array.from({ length: 30 }).map((_, i) => <FileRowSkeleton key={`s-${i}`} />)
+                    ) : entries.map((e) => (
                         <div
                             key={e.relPath}
                             className={`trajectory-fs-list-row ${selected === e.relPath ? 'selected' : ''}`}
