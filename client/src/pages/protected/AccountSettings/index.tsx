@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbCode, TbTrash, TbPlus } from 'react-icons/tb';
+import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbCode, TbTrash, TbPlus, TbWebhook } from 'react-icons/tb';
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
 import { api } from '@/services/api';
@@ -7,11 +7,15 @@ import RecentActivity from '@/components/molecules/RecentActivity';
 import LoginActivityModal from '@/components/molecules/LoginActivityModal';
 import ApiTokenModal from '@/components/molecules/ApiTokenModal';
 import ApiTokenList from '@/components/molecules/ApiTokenList';
+import WebhookModal from '@/components/molecules/WebhookModal';
+import WebhookList from '@/components/molecules/WebhookList';
 import useSessions from '@/hooks/auth/use-sessions';
 import useLoginActivity from '@/hooks/auth/use-login-activity';
 import useApiTokens from '@/hooks/api/use-api-tokens';
+import useWebhooks from '@/hooks/api/use-webhooks';
 import { formatDistanceToNow, isValid } from 'date-fns';
 import type { ApiToken, CreateTokenData, UpdateTokenData } from '@/types/models/api-token';
+import type { Webhook, CreateWebhookData, UpdateWebhookData } from '@/types/models/webhook';
 import './AccountSettings.css';
 
 const AccountSettings: React.FC = () => {
@@ -32,6 +36,15 @@ const AccountSettings: React.FC = () => {
         deleteToken,
         regenerateToken
     } = useApiTokens();
+    const { 
+        webhooks, 
+        loading: webhooksLoading, 
+        error: webhooksError,
+        createWebhook,
+        updateWebhook,
+        deleteWebhook,
+        testWebhook
+    } = useWebhooks();
     const [activeSection, setActiveSection] = useState('General');
     const [userData, setUserData] = useState({
         firstName: user?.firstName || '',
@@ -51,6 +64,9 @@ const AccountSettings: React.FC = () => {
     const [showApiTokenModal, setShowApiTokenModal] = useState(false);
     const [apiTokenModalMode, setApiTokenModalMode] = useState<'create' | 'edit'>('create');
     const [selectedToken, setSelectedToken] = useState<ApiToken | null>(null);
+    const [showWebhookModal, setShowWebhookModal] = useState(false);
+    const [webhookModalMode, setWebhookModalMode] = useState<'create' | 'edit'>('create');
+    const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
     const { sessions, loading: sessionsLoading, revokeSession, revokeAllOtherSessions } = useSessions();
     const { activities: loginActivities, loading: loginActivityLoading } = useLoginActivity(10);
 
@@ -195,6 +211,50 @@ const AccountSettings: React.FC = () => {
         }
     };
 
+    const handleCreateWebhook = () => {
+        setWebhookModalMode('create');
+        setSelectedWebhook(null);
+        setShowWebhookModal(true);
+    };
+
+    const handleEditWebhook = (webhook: Webhook) => {
+        setWebhookModalMode('edit');
+        setSelectedWebhook(webhook);
+        setShowWebhookModal(true);
+    };
+
+    const handleDeleteWebhook = async (webhook: Webhook) => {
+        if (window.confirm(`Are you sure you want to delete the webhook "${webhook.name}"? This action cannot be undone.`)) {
+            try {
+                await deleteWebhook(webhook._id);
+            } catch (error: any) {
+                console.error('Failed to delete webhook:', error);
+            }
+        }
+    };
+
+    const handleTestWebhook = async (webhook: Webhook) => {
+        try {
+            await testWebhook(webhook._id);
+            alert('Webhook test sent successfully!');
+        } catch (error: any) {
+            alert(`Webhook test failed: ${error.message}`);
+        }
+    };
+
+    const handleWebhookSave = async (data: CreateWebhookData | UpdateWebhookData) => {
+        try {
+            if (webhookModalMode === 'create') {
+                await createWebhook(data as CreateWebhookData);
+            } else {
+                await updateWebhook(selectedWebhook!._id, data as UpdateWebhookData);
+            }
+            setShowWebhookModal(false);
+        } catch (error: any) {
+            throw error;
+        }
+    };
+
     // Handle account deletion
     const handleDeleteAccount = () => {
         if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
@@ -217,6 +277,7 @@ const AccountSettings: React.FC = () => {
         { title: 'Privacy', icon: TbLock },
         { title: 'Data & Export', icon: TbDownload },
         { title: 'Tokens', icon: TbKey },
+        { title: 'Webhooks', icon: TbWebhook },
         { title: 'Advanced', icon: TbSettings }
     ];
 
@@ -1033,6 +1094,42 @@ const AccountSettings: React.FC = () => {
                         </div>
                     </div>
                 );
+            case 'Webhooks':
+                return (
+                    <div className='settings-content'>
+                        <div className='settings-section'>
+                            <div className='section-header'>
+                                <div className='section-header-content'>
+                                    <h3 className='section-title'>Webhooks</h3>
+                                    <p className='section-description'>Configure webhooks to receive real-time notifications</p>
+                                </div>
+                                <div className='section-header-actions'>
+                                    <button 
+                                        className='action-button primary'
+                                        onClick={handleCreateWebhook}
+                                    >
+                                        <TbPlus size={16} />
+                                        Create Webhook
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {webhooksError && (
+                                <div className='error-message'>
+                                    {webhooksError}
+                                </div>
+                            )}
+                            
+                            <WebhookList
+                                webhooks={webhooks}
+                                loading={webhooksLoading}
+                                onEdit={handleEditWebhook}
+                                onDelete={handleDeleteWebhook}
+                                onTest={handleTestWebhook}
+                            />
+                        </div>
+                    </div>
+                );
             default:
                 return (
                     <div className='settings-content'>
@@ -1102,6 +1199,14 @@ const AccountSettings: React.FC = () => {
                 onSave={handleApiTokenSave}
                 token={selectedToken}
                 mode={apiTokenModalMode}
+            />
+            
+            <WebhookModal
+                isOpen={showWebhookModal}
+                onClose={() => setShowWebhookModal(false)}
+                onSave={handleWebhookSave}
+                webhook={selectedWebhook}
+                mode={webhookModalMode}
             />
         </>
     );

@@ -1,0 +1,261 @@
+.webhook-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.webhook-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.webhook-item:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.webhook-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.webhook-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--color-primary-alpha);
+    color: var(--color-primary);
+    border-radius: 8px;
+}
+
+.webhook-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.webhook-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.webhook-name {
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: 16px;
+}
+
+.webhook-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.webhook-meta {
+    margin-bottom: 8px;
+}
+
+.webhook-url {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    background: var(--color-background-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-flex;
+    margin-bottom: 4px;
+}
+
+.webhook-events {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    background: var(--color-background-secondary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.webhook-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.webhook-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.webhook-stat.error {
+    color: var(--color-error);
+}
+
+.webhook-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.webhook-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    background: var(--color-background);
+    color: var(--color-text);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.webhook-action-btn:hover {
+    background: var(--color-background-secondary);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.webhook-action-btn.test {
+    background: var(--color-primary-alpha);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.webhook-action-btn.test:hover {
+    background: var(--color-primary);
+    color: white;
+}
+
+.webhook-action-btn.danger {
+    color: var(--color-error);
+    border-color: var(--color-error);
+}
+
+.webhook-action-btn.danger:hover {
+    background: var(--color-error);
+    color: white;
+}
+
+.webhook-list-loading {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.webhook-skeleton {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+}
+
+.skeleton-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--color-background-secondary);
+    border-radius: 8px;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.skeleton-line {
+    height: 16px;
+    background: var(--color-background-secondary);
+    border-radius: 4px;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-line.short {
+    width: 60%;
+}
+
+.skeleton-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.skeleton-button {
+    width: 40px;
+    height: 32px;
+    background: var(--color-background-secondary);
+    border-radius: 6px;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.webhook-list-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--color-text-secondary);
+}
+
+.empty-icon {
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.webhook-list-empty h3 {
+    margin: 0 0 8px 0;
+    color: var(--color-text);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.webhook-list-empty p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .webhook-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+    
+    .webhook-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .webhook-stats {
+        flex-direction: column;
+        gap: 8px;
+    }
+}

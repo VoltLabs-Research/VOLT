@@ -1,0 +1,131 @@
+import mongoose, { Schema, Document } from 'mongoose';
+
+export interface IWebhook extends Document {
+    name: string;
+    url: string;
+    events: string[];
+    secret: string;
+    isActive: boolean;
+    lastTriggered?: Date;
+    failureCount: number;
+    createdBy: mongoose.Types.ObjectId;
+    createdAt: Date;
+    updatedAt: Date;
+    
+    trigger(payload: any): Promise<void>;
+    isHealthy(): boolean;
+}
+
+const webhookSchema = new Schema<IWebhook>({
+    name: {
+        type: String,
+        required: [true, 'Webhook name is required'],
+        trim: true,
+        maxlength: [100, 'Webhook name cannot exceed 100 characters']
+    },
+    url: {
+        type: String,
+        required: [true, 'Webhook URL is required'],
+        trim: true,
+        validate: {
+            validator: function(v: string) {
+                return /^https?:\/\/.+/.test(v);
+            },
+            message: 'Webhook URL must be a valid HTTP/HTTPS URL'
+        }
+    },
+    events: [{
+        type: String,
+        enum: [
+            'trajectory.created',
+            'trajectory.updated',
+            'trajectory.deleted',
+            'analysis.completed',
+            'analysis.failed',
+            'user.login',
+            'user.logout'
+        ],
+        required: true
+    }],
+    secret: {
+        type: String,
+        required: true,
+        select: false
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+    lastTriggered: {
+        type: Date,
+        default: null
+    },
+    failureCount: {
+        type: Number,
+        default: 0
+    },
+    createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    }
+}, {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+webhookSchema.index({ createdBy: 1, isActive: 1 });
+webhookSchema.index({ events: 1 });
+webhookSchema.index({ lastTriggered: -1 });
+
+webhookSchema.virtual('status').get(function() {
+    if (!this.isActive) return 'inactive';
+    if (this.failureCount >= 5) return 'failed';
+    return 'active';
+});
+
+
+webhookSchema.methods.trigger = async function(payload: any): Promise<void> {
+    const crypto = require('crypto');
+    const axios = require('axios');
+    
+    const signature = crypto
+        .createHmac('sha256', this.secret)
+        .update(JSON.stringify(payload))
+        .digest('hex');
+    
+    try {
+        await axios.post(this.url, payload, {
+            headers: {
+                'X-Webhook-Signature': `sha256=${signature}`,
+                'Content-Type': 'application/json'
+            },
+            timeout: 10000
+        });
+        
+        this.lastTriggered = new Date();
+        this.failureCount = 0;
+        await this.save();
+    } catch (error) {
+        this.failureCount += 1;
+        await this.save();
+        throw error;
+    }
+};
+
+webhookSchema.methods.isHealthy = function(): boolean {
+    return this.failureCount < 5;
+};
+
+webhookSchema.statics.findByUser = function(userId: string) {
+    return this.find({ createdBy: userId }).sort({ createdAt: -1 });
+};
+
+webhookSchema.statics.findByEvent = function(event: string) {
+    return this.find({ events: event, isActive: true });
+};
+
+const Webhook = mongoose.model<IWebhook>('Webhook', webhookSchema);
+
+export default Webhook;

@@ -92,7 +92,8 @@ configureApp({
         'api-tokens',
         'api-tracker',
         'sessions',
-        'password'
+        'password',
+        'webhooks'
     ],
     middlewares: [
         apiTracker,
