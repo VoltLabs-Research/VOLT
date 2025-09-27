@@ -20,9 +20,9 @@
 * SOFTWARE.
 **/
 
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, Document } from 'mongoose';
 
-export interface IApiTracker {
+export interface IApiTracker extends Document {
     _id: string;
     method: string;
     url: string;

@@ -47,7 +47,7 @@ export const dislocationAnalysis = async (config: DislocationAnalysisModifierCon
         return {
             jobId,
             trajectoryId: config.trajectoryId,
-            analysisConfigId: analysisConfig._id,
+            analysisConfigId: String(analysisConfig._id),
             folderPath,
             inputFile,
             teamId: config.team,
@@ -61,7 +61,7 @@ export const dislocationAnalysis = async (config: DislocationAnalysisModifierCon
         await queueService.addJobs(jobsToEnqueue);
     }
 
-    const queueStatus = await queueService.getStatus();
+    const queueStatus = null;
 
     return {
         queueStatus,

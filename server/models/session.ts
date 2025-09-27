@@ -42,12 +42,12 @@ const SessionSchema: Schema<ISession> = new Schema({
     user: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: [true, 'Session::User::Required']
+        required: [function(this: any){ return this.action !== 'failed_login'; }, 'Session::User::Required']
     },
     token: {
         type: String,
-        required: [true, 'Session::Token::Required'],
-        unique: true
+        // Allow missing token on failed logins
+        required: [function(this: any){ return this.action !== 'failed_login'; }, 'Session::Token::Required']
     },
     userAgent: {
         type: String,
@@ -88,7 +88,8 @@ const SessionSchema: Schema<ISession> = new Schema({
 });
 
 SessionSchema.index({ user: 1, isActive: 1 });
-SessionSchema.index({ token: 1 });
+// Unique token only when token is a string (skip null/undefined for failed logins)
+SessionSchema.index({ token: 1 }, { unique: true, partialFilterExpression: { token: { $type: 'string' } } });
 SessionSchema.index({ lastActivity: -1 });
 SessionSchema.index({ action: 1, createdAt: -1 });
 SessionSchema.index({ success: 1, createdAt: -1 });

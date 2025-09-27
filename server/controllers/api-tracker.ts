@@ -21,9 +21,10 @@
 **/
 
 import { ApiTracker } from '@/models/index';
+import type { IApiTracker } from '@/models/api-tracker';
 import HandlerFactory from '@/controllers/handler-factory';
 
-const apiTrackerHandler = new HandlerFactory({
+const apiTrackerHandler = new HandlerFactory<IApiTracker>({
     model: ApiTracker,
     fields: ['method', 'url', 'ip', 'userAgent', 'statusCode', 'responseTime', 'createdAt'],
     errorMessages: {

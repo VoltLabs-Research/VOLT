@@ -35,8 +35,9 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
  * @throws {RuntimeError} - If the user is not found or password has changed after 
  *                          the token was issued.
 */
-export const getUserByToken = async (token: string, next: NextFunction): Promise<object | undefined> => {
-    const decodedToken = await promisify(jwt.verify)(token, process.env.SECRET_KEY as string);
+export const getUserByToken = async (token: string, next: NextFunction): Promise<any | undefined> => {
+    const secret = process.env.SECRET_KEY as string;
+    const decodedToken = jwt.verify(token, secret) as any;
     // Retrieve the user from the database
     const freshUser = await User.findById(decodedToken.id).select('-devices -__v');
     if(!freshUser){
@@ -74,7 +75,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     }
     
     const freshUser = await getUserByToken(token, next);
-    req.user = freshUser;
+    (req as any).user = freshUser;
     
     // Update last activity
     await Session.findByIdAndUpdate(session._id, { lastActivity: new Date() });

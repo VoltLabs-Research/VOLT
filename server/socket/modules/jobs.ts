@@ -216,14 +216,14 @@ class JobsModule extends BaseSocketModule{
                 for(const [_, value] of results){
                     if(!value) continue;
 
-                    const data = JSON.parse(value);
+                    const data = JSON.parse(value as string);
                     if(data.teamId !== teamId) continue;
 
                     jobs.push({
                         jobId: data.jobId,
                         status: data.status,
                         progress: data.progress || 0,
-                        queueType: name as QueueName,
+                        queueType: name as any,
                         timestamp: data.timestamp,
                         ...data
                     });
@@ -237,14 +237,14 @@ class JobsModule extends BaseSocketModule{
         const jobMap = new Map<string, BaseJob>();
         for(const job of queueResults.flat()){
             const prev = jobMap.get(job.jobId);
-            const tNew = job.timestamp ? new Date(job.timestamp).getTime() : 0;
-            const tPrev = prev?.timestamp ? new Date(prev.timestamp).getTime() : 0;
+            const tNew = (job as any).timestamp ? new Date((job as any).timestamp).getTime() : 0;
+            const tPrev = (prev as any)?.timestamp ? new Date((prev as any).timestamp).getTime() : 0;
             if(!prev || tNew > tPrev) jobMap.set(job.jobId, job);
         }
 
         const uniqueJobs = Array.from(jobMap.values()).sort((a, b) => {
-            const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-            const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+            const ta = (a as any).timestamp ? new Date((a as any).timestamp).getTime() : 0;
+            const tb = (b as any).timestamp ? new Date((b as any).timestamp).getTime() : 0;
             return tb - ta;  
         });
 

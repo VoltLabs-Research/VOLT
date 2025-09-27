@@ -33,7 +33,7 @@ export const dislocationRenderOptions = async (req: Request, res: Response) => {
 
     const options = req.body;
     const exporter = new DislocationExporter();
-    const glbFilePath = await getGLBPath(timestep, 'dislocations', analysisConfigId, folderId);
+    const glbFilePath = await getGLBPath(Number(timestep), 'dislocations', analysisConfigId, folderId);
     if(!glbFilePath){
         return res.status(404).json({
             status: 'error',
@@ -41,7 +41,7 @@ export const dislocationRenderOptions = async (req: Request, res: Response) => {
         });
     }
     console.log('glb file path:', glbFilePath)
-    await exporter.rebuildGLBFromDB(analysisConfigId, timestep, _id, glbFilePath, options)
+    await exporter.rebuildGLBFromDB(String(analysisConfigId), Number(timestep), String(_id), glbFilePath, options)
     res.status(200).json({
         status: 'success',
         data: {}

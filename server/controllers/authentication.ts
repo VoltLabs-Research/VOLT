@@ -24,7 +24,7 @@ import { Request, Response, NextFunction } from 'express';
 import { IUser } from '@/types/models/user';
 import HandlerFactory from '@/controllers/handler-factory';
 import { User, Session } from '@models/index';
-import jwt from 'jsonwebtoken';
+import jwt, { type Secret, type SignOptions } from 'jsonwebtoken';
 
 const userFactory = new HandlerFactory({
     model: User,
@@ -118,9 +118,10 @@ export const deleteMyAccount = userFactory.deleteOne(
  * @public
  */
 const signToken = (id: string): string => {
-    return jwt.sign({ id }, process.env.SECRET_KEY!, {
-        expiresIn: process.env.JWT_EXPIRATION_DAYS!
-    });
+    const secret: Secret = process.env.SECRET_KEY as Secret;
+    const raw = process.env.JWT_EXPIRATION_DAYS;
+    const expiresIn = raw && /^\d+$/.test(raw) ? Number(raw) : (raw || '7d');
+    return jwt.sign({ id }, secret, { expiresIn: expiresIn as any });
 };
 
 /**

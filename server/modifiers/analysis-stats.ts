@@ -1,4 +1,4 @@
-import { AnalysisConfig, Dislocation, StructureAnalysis, Trajectory, SimulationCell } from '@/models/index';
+import { AnalysisConfig, Dislocations as Dislocation, StructureAnalysis, Trajectory, SimulationCell } from '@/models/index';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -77,7 +77,7 @@ export const computeAnalysisStats = async (trajectoryId: string): Promise<any> =
 
         const identificationMode = analysis.identificationMode.toUpperCase();
 
-        const dislocationsDensity = await computeDislocationsDensity(dislocations, trajectory._id);
+        const dislocationsDensity = await computeDislocationsDensity(dislocations, String(trajectory._id));
         console.log(identificationMode, dislocations.length, analysis.RMSD)
         stats.push({
             dislocations,

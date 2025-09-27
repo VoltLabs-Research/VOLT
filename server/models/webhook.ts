@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IWebhook extends Document {
     name: string;
@@ -14,6 +14,11 @@ export interface IWebhook extends Document {
     
     trigger(payload: any): Promise<void>;
     isHealthy(): boolean;
+}
+
+export interface IWebhookModel extends Model<IWebhook> {
+    findByUser(userId: string): Promise<IWebhook[]>;
+    findByEvent(event: string): Promise<IWebhook[]>;
 }
 
 const webhookSchema = new Schema<IWebhook>({
@@ -118,14 +123,14 @@ webhookSchema.methods.isHealthy = function(): boolean {
     return this.failureCount < 5;
 };
 
-webhookSchema.statics.findByUser = function(userId: string) {
+webhookSchema.statics.findByUser = function(this: mongoose.Model<IWebhook>, userId: string) {
     return this.find({ createdBy: userId }).sort({ createdAt: -1 });
 };
 
-webhookSchema.statics.findByEvent = function(event: string) {
+webhookSchema.statics.findByEvent = function(this: mongoose.Model<IWebhook>, event: string) {
     return this.find({ events: event, isActive: true });
 };
 
-const Webhook = mongoose.model<IWebhook>('Webhook', webhookSchema);
+const Webhook = mongoose.model<IWebhook, IWebhookModel>('Webhook', webhookSchema);
 
 export default Webhook;

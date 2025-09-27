@@ -63,7 +63,7 @@ interface APIFeaturesOptions<T extends Document = Document> {
     readonly requestQueryString: RequestQueryString;
     readonly model: Model<T>;
     readonly fields: readonly string[];
-    readonly populate?: string | PopulateOptions | readonly (string | PopulateOptions)[] | null;
+    readonly populate?: string | PopulateOptions | (string | PopulateOptions)[] | null;
     readonly baseFilter?: FilterQuery<T>;
 }
 
@@ -99,7 +99,7 @@ const DEFAULT_CONFIG = {
 class APIFeatures<T extends Document = Document>{
     private readonly model: Model<T>;
     private readonly requestQueryString: RequestQueryString;
-    private readonly populate: string | PopulateOptions | readonly (string | PopulateOptions)[] | null;
+    private readonly populate: string | PopulateOptions | (string | PopulateOptions)[] | null;
     private readonly fields: readonly string[];
     private readonly buffer: QueryBuffer;
     private readonly baseFilter: FilterQuery<T>;
@@ -184,9 +184,8 @@ class APIFeatures<T extends Document = Document>{
         }
 
         if(Array.isArray(this.populate)){
-            return this.populate.reduce((q, popOption) => {
-                return q.populate(popOption);
-            }, query);
+            const arr = [...this.populate] as (string | PopulateOptions)[];
+            return arr.reduce((q, popOption) => q.populate(popOption as any), query);
         }
 
         return query.populate(this.populate);
@@ -209,7 +208,7 @@ class APIFeatures<T extends Document = Document>{
                     ...this.buffer.find,
                     $text: { $search: escapedTerm }
                 };
-                this.buffer.sort = { score: { $meta: 'textScore' } };
+                this.buffer.sort = { score: { $meta: 'textScore' } } as any;
             }
         }catch(error){
             console.warn('APIFeatures: Text search failed, continuing without search');

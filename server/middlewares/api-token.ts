@@ -21,8 +21,8 @@
 **/
 
 import { Request, Response, NextFunction } from 'express';
-import { ApiToken } from '@/models/api-token';
-import { RuntimeError } from '@/utilities/runtime-error';
+import ApiToken from '@/models/api-token';
+import RuntimeError from '@/utilities/runtime-error';
 import crypto from 'crypto';
 
 /**

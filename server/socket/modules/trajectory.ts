@@ -32,7 +32,7 @@ class TrajectoryModule extends BaseSocketModule{
         this.wirePresenceSubscription(socket, {
             event: 'subscribe_to_trajectory',
             roomOf: (payload: { trajectoryId?: string }) => payload.trajectoryId,
-            previousOf: (payload: { previousTrajectoryId?: string }) => payload.previousTrajectoryId,
+            previousOf: (payload: { trajectoryId?: string }) => payload.trajectoryId,
             setContext: (socket, payload: { trajectoryId?: string, user?: any }) => {
                 socket.data.trajectoryId = payload.trajectoryId;
                 socket.data.user = payload.user;

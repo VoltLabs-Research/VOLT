@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Model } from 'mongoose';
 import crypto from 'crypto';
 
 export interface IApiToken extends Document {
@@ -40,6 +40,11 @@ export interface IApiToken extends Document {
     isExpired(): boolean;
     hasPermission(permission: string): boolean;
     updateLastUsed(): Promise<void>;
+}
+
+export interface IApiTokenModel extends Model<IApiToken> {
+    findByToken(token: string): Promise<IApiToken | null>;
+    findByUser(userId: string): Promise<IApiToken[]>;
 }
 
 const apiTokenSchema = new Schema<IApiToken>({
@@ -141,12 +146,12 @@ apiTokenSchema.methods.updateLastUsed = async function(): Promise<void> {
     await this.save();
 };
 
-apiTokenSchema.statics.findByToken = function(token: string) {
+apiTokenSchema.statics.findByToken = function(this: mongoose.Model<IApiToken>, token: string) {
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     return this.findOne({ tokenHash, isActive: true }).select('+token');
 };
 
-apiTokenSchema.statics.findByUser = function(userId: string) {
+apiTokenSchema.statics.findByUser = function(this: mongoose.Model<IApiToken>, userId: string) {
     return this.find({ createdBy: userId, isActive: true }).select('+token').sort({ createdAt: -1 });
 };
 
@@ -158,6 +163,6 @@ apiTokenSchema.post('save', function() {
     }).exec();
 });
 
-const ApiToken = mongoose.model<IApiToken>('ApiToken', apiTokenSchema);
+const ApiToken = mongoose.model<IApiToken, IApiTokenModel>('ApiToken', apiTokenSchema);
 
 export default ApiToken;
