@@ -21,7 +21,7 @@
 **/
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { TbCube3dSphere } from "react-icons/tb";
 import { IoSearchOutline, IoSettingsOutline } from "react-icons/io5";
 import { TbBook } from 'react-icons/tb';
@@ -53,6 +53,7 @@ const DashboardLayout = () => {
     const getUserTeams = useTeamStore((state) => state.getUserTeams);
     const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
@@ -69,6 +70,36 @@ const DashboardLayout = () => {
         if(teams.length) return;
         getUserTeams();
     }, []);
+
+    // Handle team query param and localStorage synchronization
+    useEffect(() => {
+        if (!teams.length) return;
+
+        const urlTeamId = searchParams.get('team');
+        const storedTeamId = localStorage.getItem('selectedTeamId');
+
+        // If URL has team param and it's different from localStorage, update localStorage
+        if (urlTeamId && urlTeamId !== storedTeamId) {
+            const team = teams.find(t => t._id === urlTeamId);
+            if (team) {
+                localStorage.setItem('selectedTeamId', urlTeamId);
+                setSelectedTeam(urlTeamId);
+            }
+        }
+        // If no URL param but localStorage exists, update URL
+        else if (!urlTeamId && storedTeamId) {
+            const team = teams.find(t => t._id === storedTeamId);
+            if (team) {
+                setSearchParams({ team: storedTeamId });
+            }
+        }
+        // If no URL param and no localStorage, set first team
+        else if (!urlTeamId && !storedTeamId && teams.length > 0) {
+            const firstTeam = teams[0];
+            setSearchParams({ team: firstTeam._id });
+            localStorage.setItem('selectedTeamId', firstTeam._id);
+        }
+    }, [teams, searchParams, setSearchParams, setSelectedTeam]);
 
     useEffect(() => {
         if(!notifOpen) return;
@@ -146,6 +177,9 @@ const DashboardLayout = () => {
         
         // Set the new selected team
         setSelectedTeam(teamId);
+        
+        // Update URL with new team
+        setSearchParams({ team: teamId });
     };
 
     return (

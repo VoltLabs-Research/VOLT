@@ -15,6 +15,22 @@ const initialState: TeamState = {
 const useTeamStore = create<TeamStore>((set, get) => {
     const asyncAction = createAsyncAction(set, get);
 
+    // Load selected team from localStorage on initialization
+    const loadSelectedTeamFromStorage = () => {
+        if (typeof window !== 'undefined') {
+            const storedTeamId = localStorage.getItem('selectedTeamId');
+            if (storedTeamId) {
+                const teams = get().teams;
+                const team = teams.find(t => t._id === storedTeamId);
+                if (team) {
+                    set({ selectedTeam: team });
+                    return team;
+                }
+            }
+        }
+        return null;
+    };
+
     return {
         ...initialState,
 
@@ -25,10 +41,23 @@ const useTeamStore = create<TeamStore>((set, get) => {
                     const teams = res.data.data;
                     const currentSelected = get().selectedTeam;
 
-                    // Maintain selection if team still exists
-                    const selectedTeam = currentSelected && teams.find((t) => t._id === currentSelected._id)
-                        ? teams.find((t) => t._id === currentSelected._id)!
-                        : teams[0] || null;
+                    // Try to load from localStorage first
+                    const storedTeamId = typeof window !== 'undefined' ? localStorage.getItem('selectedTeamId') : null;
+                    let selectedTeam = null;
+
+                    if (storedTeamId) {
+                        const storedTeam = teams.find((t) => t._id === storedTeamId);
+                        if (storedTeam) {
+                            selectedTeam = storedTeam;
+                        }
+                    }
+
+                    // Fallback to current selection or first team
+                    if (!selectedTeam) {
+                        selectedTeam = currentSelected && teams.find((t) => t._id === currentSelected._id)
+                            ? teams.find((t) => t._id === currentSelected._id)!
+                            : teams[0] || null;
+                    }
 
                     return {
                         teams,
@@ -46,6 +75,10 @@ const useTeamStore = create<TeamStore>((set, get) => {
             const team = get().teams.find((t) => t._id === teamId);
             if(team){
                 set({ selectedTeam: team });
+                // Save to localStorage
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('selectedTeamId', teamId);
+                }
             }
         },
 
