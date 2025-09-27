@@ -23,11 +23,13 @@
 import useAuthStore from '@/stores/authentication';
 import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer';
 import { CiLogout, CiSettings } from 'react-icons/ci';
+import { useNavigate } from 'react-router';
 import './SidebarUserAvatar.css';
 
 // TODO: USER AVATAR SHOULD BE A NEW COMPONENT
 const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUsername = false, onClick = () => {} }) => {
     const { user, signOut } = useAuthStore();
+    const navigate = useNavigate();
     
     // Si no hay usuario autenticado, mostrar una interfaz genérica o nada
     if (!user) {
@@ -37,7 +39,7 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
     return (
         <ActionBasedFloatingContainer
             options={[
-                ['Account Settings', CiSettings, () => {}],
+                ['Account Settings', CiSettings, () => navigate('/account/settings/')],
                 ['Sign Out', CiLogout, signOut]
             ]}
         >

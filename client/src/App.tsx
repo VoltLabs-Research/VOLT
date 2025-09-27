@@ -43,6 +43,7 @@ import Loader from '@/components/atoms/Loader';
 import LoadingShimmer from '@/components/atoms/animations/LoadingShimmer';
 import useAuthStore from '@/stores/authentication';
 import TrajectoriesListing from './pages/protected/TrajectoriesListing';
+import AccountSettings from './pages/protected/AccountSettings';
 
 const AuthLoadingOverlay = () => (
     <motion.div
@@ -209,6 +210,15 @@ const App = () => {
                                 element={
                                     <PageWrapper>
                                         <Tutorials />
+                                    </PageWrapper>
+                                }
+                            />
+
+                            <Route
+                                path='/account/settings'
+                                element={
+                                    <PageWrapper>
+                                        <AccountSettings />
                                     </PageWrapper>
                                 }
                             />
