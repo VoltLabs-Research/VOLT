@@ -39,6 +39,33 @@ interface FsEntry{
     mime?: string | false;
 }
 
+const getDirSize= async (
+    dirAbs: string,
+    opts: { includeHidden: boolean; mode: 'shallow' | 'recursive'; maxDepth?: number },
+    depth = 0
+): Promise<number> => {
+    const { includeHidden, mode } = opts;
+    const maxDepth = typeof opts.maxDepth === 'number' ? opts.maxDepth : Infinity;
+
+    let total = 0;
+    const entries = await fs.readdir(dirAbs, { withFileTypes: true });
+    for(const entry of entries){
+        if(!includeHidden && entry.name.startsWith('.')) continue;
+        
+        const p = join(dirAbs, entry.name);
+        const st = await fs.lstat(p);
+        if(st.isSymbolicLink()) continue;
+
+        if(st.isFile()){
+            total += st.size;
+        }else if(st.isDirectory() && mode === 'recursive' && depth < maxDepth){
+            total += await getDirSize(p, opts, depth + 1);
+        }
+    }
+
+    return total;
+};
+
 const safeResolve = (root: string, userRelPath?: string) => {
     const rel = (userRelPath || '').replace(/^\/*/, '');
     const abs = resolve(root, rel);
@@ -96,11 +123,17 @@ export const listTrajectoryFs = async (req: Request, res: Response) => {
         if(entryStat.isSymbolicLink()) continue;
 
         if(entryStat.isDirectory()){
+            const size = await getDirSize(entryAbs, {
+                includeHidden,
+                mode: 'recursive'
+            });
+
             entries.push({
                 type: 'dir',
                 name: entry.name,
                 relPath: entryRel,
-                mtime: entryStat.mtime.toISOString()
+                mtime: entryStat.mtime.toISOString(),
+                size
             });
         }else if(entryStat.isFile()){
             const ext = entry.name.includes('.') ? entry.name.slice(entry.name.lastIndexOf('.')) : null;
