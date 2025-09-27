@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbCalendar, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbCode, TbTrash, TbChartBar } from 'react-icons/tb';
+import { TbArrowLeft, TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbCheck, TbX, TbEdit, TbDots, TbActivity, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbCode, TbTrash } from 'react-icons/tb';
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
 import { api } from '@/services/api';
 import RecentActivity from '@/components/molecules/RecentActivity';
+import useSessions from '@/hooks/auth/use-sessions';
+import { formatDistanceToNow } from 'date-fns';
 import './AccountSettings.css';
 
 const AccountSettings: React.FC = () => {
@@ -17,6 +19,7 @@ const AccountSettings: React.FC = () => {
     const [currentTheme, setCurrentTheme] = useState('dark');
     const [isUpdating, setIsUpdating] = useState(false);
     const [updateError, setUpdateError] = useState<string | null>(null);
+    const { sessions, loading: sessionsLoading, revokeSession, revokeAllOtherSessions } = useSessions();
 
     // Initialize user data when user changes
     useEffect(() => {
@@ -428,43 +431,65 @@ const AccountSettings: React.FC = () => {
                                 <p className='section-description'>Manage your active login sessions across devices</p>
                             </div>
                             
-                            <div className='sessions-list'>
-                                <div className='session-item current'>
-                                    <div className='session-info'>
-                                        <div className='session-icon'>
-                                            <TbDeviceDesktop size={20} />
+                            {sessionsLoading ? (
+                                <div className='sessions-loading'>
+                                    <div className='session-skeleton'>
+                                        <div className='session-skeleton-icon'></div>
+                                        <div className='session-skeleton-content'>
+                                            <div className='session-skeleton-line'></div>
+                                            <div className='session-skeleton-line short'></div>
                                         </div>
-                                        <div className='session-details'>
-                                            <span className='session-device'>Current Session</span>
-                                            <span className='session-location'>Chrome on macOS • San Francisco, CA</span>
-                                        </div>
-                                    </div>
-                                    <div className='session-status'>
-                                        <span className='status-badge active'>
-                                            <TbCheck size={14} />
-                                            Current
-                                        </span>
                                     </div>
                                 </div>
-                                
-                                <div className='session-item'>
-                                    <div className='session-info'>
-                                        <div className='session-icon'>
-                                            <TbDeviceDesktop size={20} />
+                            ) : (
+                                <div className='sessions-list'>
+                                    {sessions.map((session, index) => (
+                                        <div key={session._id} className={`session-item ${index === 0 ? 'current' : ''}`}>
+                                            <div className='session-info'>
+                                                <div className='session-icon'>
+                                                    <TbDeviceDesktop size={20} />
+                                                </div>
+                                                <div className='session-details'>
+                                                    <span className='session-device'>
+                                                        {index === 0 ? 'Current Session' : 'Active Session'}
+                                                    </span>
+                                                    <span className='session-location'>
+                                                        {session.userAgent} • {session.ip} • Last active {formatDistanceToNow(new Date(session.lastActivity), { addSuffix: true })}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className='session-actions'>
+                                                {index === 0 ? (
+                                                    <span className='status-badge active'>
+                                                        <TbCheck size={14} />
+                                                        Current
+                                                    </span>
+                                                ) : (
+                                                    <button 
+                                                        className='action-button danger'
+                                                        onClick={() => revokeSession(session._id)}
+                                                    >
+                                                        <TbX size={16} />
+                                                        Revoke
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className='session-details'>
-                                            <span className='session-device'>Mobile App</span>
-                                            <span className='session-location'>iOS App • Last active 2 hours ago</span>
+                                    ))}
+                                    
+                                    {sessions.length > 1 && (
+                                        <div className='session-actions-bulk'>
+                                            <button 
+                                                className='action-button danger'
+                                                onClick={revokeAllOtherSessions}
+                                            >
+                                                <TbX size={16} />
+                                                Revoke All Other Sessions
+                                            </button>
                                         </div>
-                                    </div>
-                                    <div className='session-actions'>
-                                        <button className='action-button danger'>
-                                            <TbX size={16} />
-                                            Revoke
-                                        </button>
-                                    </div>
+                                    )}
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 );

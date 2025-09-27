@@ -23,7 +23,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { IUser } from '@/types/models/user';
 import HandlerFactory from '@/controllers/handler-factory';
-import { User } from '@models/index';
+import { User, Session } from '@models/index';
 import jwt from 'jsonwebtoken';
 
 const userFactory = new HandlerFactory({
@@ -129,15 +129,31 @@ const signToken = (id: string): string => {
  * @param res - Express response object.
  * @param statusCode - HTTP status code to use (e.g., 200, 201).
  * @param user - The authenticated or newly created user document.
+ * @param req - Express request object for session tracking.
  * @returns `void`
  * 
  * @remarks
  * - Removes sensitive properties (`password`, `__v`) from the serialized user
+ * - Creates a session record for the user
  * 
  * @public
  */
-const createAndSendToken = (res: Response, statusCode: number, user: IUser): void => {
+const createAndSendToken = async (res: Response, statusCode: number, user: IUser, req: Request): Promise<void> => {
     const token = signToken(user._id as string);
+    
+    // Create session record
+    const userAgent = req.get('User-Agent') || 'Unknown';
+    const ip = req.ip || req.connection.remoteAddress || 'Unknown';
+    
+    await Session.create({
+        user: user._id,
+        token,
+        userAgent,
+        ip,
+        isActive: true,
+        lastActivity: new Date()
+    });
+    
     (user as any).password = undefined;
     (user as any).__v = undefined;
     res.status(statusCode).json({
@@ -172,7 +188,7 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
     if(!requestedUser || !(await requestedUser.isCorrectPassword(password, requestedUser.password))){
         return next(new Error('Email or password are incorrect'));
     }
-    createAndSendToken(res, 200, requestedUser);
+    await createAndSendToken(res, 200, requestedUser, req);
 };
 
 /**
@@ -190,7 +206,7 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
 export const signUp = async (req: Request, res: Response): Promise<void> => {
     const { email, firstName, lastName, password } = req.body;
     const newUser = await User.create({ email, firstName, lastName, password });
-    createAndSendToken(res, 201, newUser);
+    await createAndSendToken(res, 201, newUser, req);
 };
 
 /**
@@ -230,5 +246,5 @@ export const updateMyPassword = async (req: Request, res: Response, next: NextFu
     }
     requestedUser.password = req.body.password;
     await requestedUser.save();
-    createAndSendToken(res, 200, requestedUser);
+    await createAndSendToken(res, 200, requestedUser, req);
 };

@@ -90,7 +90,8 @@ configureApp({
         'trajectory-fs',
         'auth',
         'api-tokens',
-        'api-tracker'
+        'api-tracker',
+        'sessions'
     ],
     middlewares: [
         apiTracker, // API tracking middleware - should be early in the stack

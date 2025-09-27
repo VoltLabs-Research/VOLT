@@ -21,7 +21,7 @@
 **/
 
 import jwt from 'jsonwebtoken';
-import { User } from '@/models/index';
+import { User, Session } from '@/models/index';
 import RuntimeError from '@/utilities/runtime-error';
 import { promisify } from 'util';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
@@ -66,8 +66,19 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     }else{
         return next(new RuntimeError('Authentication::Required', 401));
     }
+    
+    // Check if session is active
+    const session = await Session.findOne({ token, isActive: true });
+    if (!session) {
+        return next(new RuntimeError('Authentication::Session::Invalid', 401));
+    }
+    
     const freshUser = await getUserByToken(token, next);
     req.user = freshUser;
+    
+    // Update last activity
+    await Session.findByIdAndUpdate(session._id, { lastActivity: new Date() });
+    
     next();
 };
 
