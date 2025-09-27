@@ -915,23 +915,6 @@ const AccountSettings: React.FC = () => {
                                 <div className='integration-item'>
                                     <div className='integration-header'>
                                         <div className='integration-icon'>
-                                            <TbCode size={24} />
-                                        </div>
-                                        <div className='integration-info'>
-                                            <h4>Webhook</h4>
-                                            <p>Custom webhook endpoints</p>
-                                        </div>
-                                    </div>
-                                    <div className='integration-actions'>
-                                        <button className='action-button'>
-                                            Configure
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <div className='integration-item'>
-                                    <div className='integration-header'>
-                                        <div className='integration-icon'>
                                             <TbBrain size={24} />
                                         </div>
                                         <div className='integration-info'>

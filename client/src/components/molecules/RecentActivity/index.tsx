@@ -80,7 +80,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
     };
 
     if (loading && !data) {
-        return (
+        return (    
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header">
                     <h3 className="recent-activity-title">

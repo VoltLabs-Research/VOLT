@@ -93,6 +93,14 @@
     border-color: var(--color-border);
 }
 
+.mobile-menu-trigger{ display: none; position: relative; }
+.mobile-menu-wrapper{ position: relative; display: none; }
+
+/* Hide burger on desktop */
+@media screen and (min-width: 769px){
+    .mobile-menu-trigger{ display: none !important; }
+}
+
 .navigation-container{
     display: flex;
     align-items: center;
@@ -148,10 +156,21 @@
 
     .dashboard-layout-header-container{
         padding: 1rem;
+        gap: .75rem;
+        flex-wrap: wrap;
     }
+    .mobile-menu-wrapper{ display: block; }
+
+    .mobile-menu-trigger{ display: flex; }
+
+    /* Hide only the middle (search) container on mobile */
+    .dashboard-layout-header-container .dashboard-search-container{ display: none !important; }
+    /* Ensure user container remains visible on mobile */
+    .dashboard-user-container{ display: flex; }
 
 .dashboard-search-container{
-    width: 60%;
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -159,6 +178,8 @@
 
 .dashboard-search-container .search-container{
     flex: 1;
+    width: 100%;
+    min-width: 0;
 }
 
 .team-selector-container{
@@ -181,4 +202,102 @@
     .dashboard-user-container .sidebar-user-details-container{
         display: none;
     }
+}
+
+@media screen and (max-width: 480px){
+    .dashboard-layout-header-container{
+        gap: .75rem;
+    }
+
+    .dashboard-search-container{
+        width: 100%;
+    }
+
+    .team-selector-container{ display: none; }
+
+    .dashboard-search-container .badge-container.as-icon-container{ display: none; }
+
+    .dashboard-user-container > .badge-container.as-icon-container{ display: none; }
+
+    .dashboard-notifications-dropdown{
+        right: 0;
+        width: 92vw;
+        max-height: 60vh;
+    }
+
+    .mobile-menu-trigger{ align-self: flex-start; }
+}
+
+/* Floating dropdown */
+.mobile-dropdown{
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    min-width: 280px;
+    max-width: 92vw;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-2) 86%, transparent) 0%, color-mix(in srgb, var(--color-surface-1) 96%, transparent) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.12);
+    z-index: 70;
+    overflow: hidden;
+    animation: dropdownIn .16s ease-out both;
+}
+
+.mobile-dropdown::before{
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 16px;
+    width: 16px;
+    height: 16px;
+    background: inherit;
+    border-left: 1px solid var(--color-border);
+    border-top: 1px solid var(--color-border);
+    transform: rotate(45deg);
+    z-index: -1;
+}
+
+.mobile-dropdown-section{ padding: 12px; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; gap: 10px; }
+.mobile-nav-list{ display: flex; flex-direction: column; gap: 8px;  width: 100%;}
+.mobile-nav-item{ display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--color-surface-2) 92%, transparent); color: var(--color-text-primary); border: 1px solid var(--color-border); transition: transform .12s ease, background .2s ease, border-color .2s ease; }
+.mobile-nav-item:hover{ transform: translateY(-1px); background: color-mix(in srgb, var(--color-surface-1) 96%, transparent); }
+.mobile-nav-item.is-selected{ background: color-mix(in srgb, var(--color-surface-1) 98%, transparent); border-color: color-mix(in srgb, var(--color-border) 70%, var(--color-text-primary) 30%); }
+.mobile-nav-icon{ font-size: 1.1rem; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 999px; background: radial-gradient(120% 120% at 10% 10%, color-mix(in srgb, var(--color-text-primary) 18%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--color-surface-1) 92%, transparent), transparent); color: var(--color-text-primary); border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent); }
+.mobile-nav-name{ font-size: .95rem; }
+.mobile-menu-row{ display: flex; gap: 10px; }
+.mobile-notifications-list{ max-height: 40vh; overflow: auto; padding-top: 8px; }
+
+/* Refine elements inside panel */
+.mobile-dropdown .search-container{
+    width: 100%;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.02), 0 6px 20px rgba(0,0,0,.12);
+    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+.mobile-dropdown .team-selector-container{ display: block; flex: 1 1 auto; min-width: 0; }
+.mobile-dropdown .team-select{ width: 100%; }
+.mobile-dropdown-section .badge-container.as-icon-container{ flex: 0 0 auto; }
+.mobile-dropdown .badge-container.as-icon-container{
+    border-radius: 12px;
+    transition: transform .12s ease, background .2s ease;
+}
+.mobile-dropdown .badge-container.as-icon-container:hover{ transform: translateY(-1px); }
+
+/* Fancy trigger */
+.mobile-menu-trigger{
+    border-radius: 12px;
+    transition: transform .12s ease, background .2s ease;
+}
+.mobile-menu-trigger:hover{ transform: translateY(-1px); }
+
+/* Animations */
+@keyframes dropdownIn{
+    from{ transform: translateY(8px); opacity: 0; }
+    to{ transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce){
+    .mobile-dropdown{ animation: none; }
+    .mobile-nav-item, .mobile-menu-close, .mobile-dropdown .badge-container.as-icon-container, .mobile-menu-trigger{ transition: none; }
 }

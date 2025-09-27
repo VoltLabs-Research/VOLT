@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { TbCube3dSphere } from "react-icons/tb";
-import { IoSearchOutline, IoSettingsOutline } from "react-icons/io5";
+import { IoSearchOutline, IoSettingsOutline, IoMenuOutline, IoCloseOutline } from "react-icons/io5";
 import { TbBook } from 'react-icons/tb';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { IoNotificationsOutline } from "react-icons/io5";
@@ -64,6 +64,8 @@ const DashboardLayout = () => {
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
     const { notifications, loading, fetch, markAsRead } = useNotificationStore();
     const [notifOpen, setNotifOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const mobileMenuWrapperRef = useRef<HTMLDivElement | null>(null);
     const bellWrapperRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -122,6 +124,18 @@ const DashboardLayout = () => {
         document.addEventListener('mousedown', onDoc);
         return () => document.removeEventListener('mousedown', onDoc);
     }, [notifOpen]);
+
+    useEffect(() => {
+        if(!mobileMenuOpen) return;
+        const onDoc = (e: MouseEvent) => {
+            if(!mobileMenuWrapperRef.current) return;
+            if(!mobileMenuWrapperRef.current.contains(e.target as Node)){
+                setMobileMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', onDoc);
+        return () => document.removeEventListener('mousedown', onDoc);
+    }, [mobileMenuOpen]);
 
     const notificationList = useMemo(() => notifications, [notifications]);
     const navItems: Array<[string, IconType, string]> = useMemo(() => ([
@@ -194,6 +208,54 @@ const DashboardLayout = () => {
             )}
 
             <section className='dashboard-layout-header-container'>
+                <div ref={mobileMenuWrapperRef} className='mobile-menu-wrapper'>
+                    <div className='mobile-menu-trigger badge-container as-icon-container over-light-bg' onClick={() => setMobileMenuOpen((v) => !v)}>
+                        <IoMenuOutline />
+                    </div>
+                    {mobileMenuOpen && (
+                        <div className='mobile-dropdown'>
+                            <div className='mobile-dropdown-section'>
+                                <div className='search-container'>
+                                    <i className='search-icon-container'>
+                                        <IoSearchOutline />
+                                    </i>
+                                    <input
+                                        placeholder='Search'
+                                        className='search-input '
+                                        value={localQuery}
+                                        onChange={(e) => setLocalQuery(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className='mobile-dropdown-section'>
+                                <nav className='mobile-nav-list'>
+                                    {navItems.map(([ name, Icon, to ], index) => (
+                                        <button key={`mdrop-${index}`} className={`mobile-nav-item ${(index === 0) ? 'is-selected' : ''}`} onClick={() => { navigate(to); setMobileMenuOpen(false); }}>
+                                            <i className='mobile-nav-icon'><Icon /></i>
+                                            <span className='mobile-nav-name'>{name}</span>
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
+                            <div className='mobile-dropdown-section'>
+                                <div className='team-selector-container'>
+                                    <Select
+                                        options={teamOptions}
+                                        value={selectedTeam?._id || null}
+                                onChange={(v) => { handleTeamChange(v); setMobileMenuOpen(false); }}
+                                        placeholder="Select team"
+                                        className="team-select"
+                                maxListWidth={300}
+                                renderInPortal
+                                    />
+                                </div>
+                                <div onClick={() => { toggleTeamCreator(); setMobileMenuOpen(false); }} className='badge-container as-icon-container over-light-bg'>
+                                    <IoIosAdd size={25} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
                 <nav className='navigation-container'>
                     {navItems.map(([ name, Icon, to ], index) => (
                         <div 
@@ -285,6 +347,8 @@ const DashboardLayout = () => {
                     <SidebarUserAvatar avatarrounded />
                 </div>
             </section>
+
+            {/* Floating dropdown replaces side panel */}
                 
             <Outlet />
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import './Select.css';
 
 export interface SelectOption{
@@ -17,6 +18,7 @@ export interface SelectProps{
 	className?: string;
 	optionClassName?: string;
 	maxListWidth?: number;
+    renderInPortal?: boolean;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -28,7 +30,8 @@ const Select: React.FC<SelectProps> = ({
 	placeholder = 'Select...',
 	className = '',
 	optionClassName = '',
-	maxListWidth = 480
+    maxListWidth = 480,
+    renderInPortal = false
 }) => {
 	const [open, setOpen] = useState(false);
 	const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -36,6 +39,7 @@ const Select: React.FC<SelectProps> = ({
 	const triggerRef = useRef<HTMLButtonElement | null>(null);
 	const listRef = useRef<HTMLDivElement | null>(null);
 	const rootRef = useRef<HTMLDivElement | null>(null);
+    const [portalStyle, setPortalStyle] = useState<React.CSSProperties | null>(null);
 	const typeaheadBuffer = useRef<string>('');
 	const typeaheadTimer = useRef<number | null>(null);
 
@@ -48,11 +52,14 @@ const Select: React.FC<SelectProps> = ({
 		setOpen((v) => !v);
 	};
 
-	useEffect(() => {
-		const onDocumentMouseDown = (e: MouseEvent) => {
-			if(!rootRef.current) return;
-			if(!rootRef.current.contains(e.target as Node)) setOpen(false);
-		};
+    useEffect(() => {
+        const onDocumentMouseDown = (e: MouseEvent) => {
+            const target = e.target as Node;
+            if(!rootRef.current) return;
+            const clickedInsideRoot = rootRef.current.contains(target);
+            const clickedInsideList = !!(listRef.current && listRef.current.contains(target));
+            if(!(clickedInsideRoot || clickedInsideList)) setOpen(false);
+        };
 		document.addEventListener('mousedown', onDocumentMouseDown);
 		return () => {
 			document.removeEventListener('mousedown', onDocumentMouseDown);
@@ -67,6 +74,28 @@ const Select: React.FC<SelectProps> = ({
 			}, 0);
 		}
 	}, [open, selectedIndex]);
+    // Compute portal position when open
+    useEffect(() => {
+        if(!open || !renderInPortal) return;
+        const updatePosition = () => {
+            const trigger = triggerRef.current;
+            if(!trigger) return;
+            const rect = trigger.getBoundingClientRect();
+            const left = Math.max(8, rect.left);
+            const top = rect.bottom + 6;
+            const availableRight = window.innerWidth - left - 8;
+            const computedMaxWidth = Math.max(180, Math.min(maxListWidth, availableRight));
+            const minWidth = Math.max(180, Math.floor(rect.width));
+            setPortalStyle({ position: 'fixed', top, left, minWidth: `${minWidth}px`, maxWidth: `${computedMaxWidth}px`, zIndex: 2147483647 });
+        };
+        updatePosition();
+        window.addEventListener('resize', updatePosition);
+        window.addEventListener('scroll', updatePosition, true);
+        return () => {
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition, true);
+        };
+    }, [open, renderInPortal, maxListWidth]);
 
 	useEffect(() => {
 		if(!open) return;
@@ -176,52 +205,96 @@ const Select: React.FC<SelectProps> = ({
 				</svg>
 			</button>
 
-			{open && (
-				<div
-					ref={listRef}
-					id={listboxId}
-					role="listbox"
-					aria-activedescendant={activeId}
-					className="rh-select-list"
-					tabIndex={-1}
-					onKeyDown={onKeyDown}
-					style={{ ['--select-list-max-width' as any]: `${maxListWidth}px` }}
-				>
-					{options.map((opt, i) => {
-						const isSelected = i === selectedIndex;
-						const isActive = i === highlightedIndex;
-						return (
-							<div
-								id={`${uid}-opt-${i}`}
-								key={opt.value}
-								role="option"
-								aria-selected={isSelected}
-								className={`select-option-container ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-active' : ''} ${optionClassName}`}
-								onMouseEnter={() => setHighlightedIndex(i)}
-								onMouseDown={(e) => e.preventDefault()}
-								onClick={() => {
-									onChange(opt.value);
-									setOpen(false);
-								}}
-							>
-								<span className="select-option-title" title={opt.title}>
-									{opt.title}
+            {open && (!renderInPortal ? (
+                <div
+                    ref={listRef}
+                    id={listboxId}
+                    role="listbox"
+                    aria-activedescendant={activeId}
+                    className="rh-select-list"
+                    tabIndex={-1}
+                    onKeyDown={onKeyDown}
+                    style={{ ['--select-list-max-width' as any]: `${maxListWidth}px` }}
+                >
+                    {options.map((opt, i) => {
+                        const isSelected = i === selectedIndex;
+                        const isActive = i === highlightedIndex;
+                        return (
+                            <div
+                                id={`${uid}-opt-${i}`}
+                                key={opt.value}
+                                role="option"
+                                aria-selected={isSelected}
+                                className={`select-option-container ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-active' : ''} ${optionClassName}`}
+                                onMouseEnter={() => setHighlightedIndex(i)}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                    onChange(opt.value);
+                                    setOpen(false);
+                                }}
+                            >
+                                <span className="select-option-title" title={opt.title}>
+                                    {opt.title}
                                     {opt.description && (
                                         <span className="select-option-description">
-											{opt.description}
+                                            {opt.description}
                                         </span>
                                     )}
-								</span>
-								{isSelected && (
-									<svg className="select-option-check" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-										<path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" strokeWidth="2" />
-									</svg>
-								)}
-							</div>
-						);
-					})}
-				</div>
-			)}
+                                </span>
+                                {isSelected && (
+                                    <svg className="select-option-check" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" strokeWidth="2" />
+                                    </svg>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : createPortal(
+                <div
+                    ref={listRef}
+                    id={listboxId}
+                    role="listbox"
+                    aria-activedescendant={activeId}
+                    className="rh-select-list"
+                    tabIndex={-1}
+                    onKeyDown={onKeyDown}
+                    style={{ ['--select-list-max-width' as any]: `${maxListWidth}px`, ...(portalStyle || {}) }}
+                >
+                    {options.map((opt, i) => {
+                        const isSelected = i === selectedIndex;
+                        const isActive = i === highlightedIndex;
+                        return (
+                            <div
+                                id={`${uid}-opt-${i}`}
+                                key={opt.value}
+                                role="option"
+                                aria-selected={isSelected}
+                                className={`select-option-container ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-active' : ''} ${optionClassName}`}
+                                onMouseEnter={() => setHighlightedIndex(i)}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                    onChange(opt.value);
+                                    setOpen(false);
+                                }}
+                            >
+                                <span className="select-option-title" title={opt.title}>
+                                    {opt.title}
+                                    {opt.description && (
+                                        <span className="select-option-description">
+                                            {opt.description}
+                                        </span>
+                                    )}
+                                </span>
+                                {isSelected && (
+                                    <svg className="select-option-check" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" strokeWidth="2" />
+                                    </svg>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>, document.body))}
 		</div>
 	);
 };
