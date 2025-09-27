@@ -28,7 +28,7 @@ import path from 'path';
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
     constructor(){
         const options: QueueOptions = {
-            queueName: 'trajectory-processing-queue-d',
+            queueName: 'trajectory-processing-queue',
             workerPath: path.resolve(__dirname, '../workers/trajectory-processing.ts'),
             maxConcurrentJobs: 20,
             cpuLoadThreshold: 60,

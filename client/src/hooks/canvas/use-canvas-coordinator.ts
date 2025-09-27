@@ -62,11 +62,16 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
 
     // Handle automatically the selection for the first timestep when trajectory is loaded
     useEffect(() => {
+        logger.log(`Canvas coordinator effect: trajectory=${!!trajectory}, currentTimestep=${currentTimestep}, frames=${trajectory?.frames?.length || 0}`);
+        
         // Only run this effect if we have a trajectory but no current timestep
         if(!trajectory || currentTimestep !== undefined) return;
         
         // Make sure we have frames to work with
-        if(!trajectory.frames || trajectory.frames.length === 0) return;
+        if(!trajectory.frames || trajectory.frames.length === 0) {
+            logger.log('No frames available in trajectory');
+            return;
+        }
         
         // Find the first timestep by sorting all available timesteps
         const frames = trajectory.frames || [];

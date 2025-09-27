@@ -76,17 +76,18 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
                 ? (trajectory.analysis[0]._id || '') 
                 : '';
                 
-            if (analysisId) {
-                const glbs = createTrajectoryGLBs(
-                    trajectory._id,
-                    currentTimestep,
-                    analysisId
-                );
-                
-                // En lugar de selectModel, que causa precarga, guardamos las URLs
-                // pero no activamos la carga del modelo
-                useModelStore.getState().setGlbsWithoutLoading(glbs);
-            }
+            // Si no hay análisis, usar un ID por defecto para permitir la carga del GLB
+            const finalAnalysisId = analysisId || 'default';
+            
+            const glbs = createTrajectoryGLBs(
+                trajectory._id,
+                currentTimestep,
+                finalAnalysisId
+            );
+            
+            // En lugar de selectModel, que causa precarga, guardamos las URLs
+            // pero no activamos la carga del modelo
+            useModelStore.getState().setGlbsWithoutLoading(glbs);
         }
 
         set({ timestepData });

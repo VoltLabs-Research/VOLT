@@ -28,7 +28,7 @@ import path from 'path';
 export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob>{
     constructor(){
         const options: QueueOptions = {
-            queueName: 'analysis-processing-queue-D',
+            queueName: 'analysis-processing-queue',
             workerPath: path.resolve(__dirname, '../workers/analysis.ts'),
             maxConcurrentJobs: 1,
             cpuLoadThreshold: 80,

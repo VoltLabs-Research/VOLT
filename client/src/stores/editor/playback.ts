@@ -33,7 +33,6 @@ const usePlaybackStore = create<PlaybackStore>()((set, get) => ({
         }else{
             const { timesteps } = useTimestepStore.getState().timestepData;
             if(!timesteps.length) return;
-
             (async () => {
                 if(!didPreload){
                     set({ isPreloading: true, preloadProgress: 0 });
