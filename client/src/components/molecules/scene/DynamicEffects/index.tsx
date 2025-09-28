@@ -76,7 +76,7 @@ const DynamicEffects = () => {
                         <DepthOfField
                             key={`dof-${depthOfField.focusDistance}-${depthOfField.focalLength}`}
                             blendFunction={depthOfField.blendFunction}
-                            focusDistance={depthOfField.focusDistance}
+                            foc usDistance={depthOfField.focusDistance}
                             focalLength={depthOfField.focalLength}
                             bokehScale={depthOfField.bokehScale}
                             height={depthOfField.height}

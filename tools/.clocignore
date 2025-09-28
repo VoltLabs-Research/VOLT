@@ -1,4 +1,4 @@
-// cloc --exclude-list=./tools/clocignore .
+// cloc --exclude-list=./tools/.clocignore .
 ./client/node_modules/
 ./client/package-lock.json
 

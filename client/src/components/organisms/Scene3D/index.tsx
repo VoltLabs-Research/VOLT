@@ -1,20 +1,31 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, {
+    useEffect,
+    useMemo,
+    useState,
+    useRef,
+    useCallback,
+    forwardRef,
+    useImperativeHandle
+} from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei';
+import { OrbitControls, GizmoHelper, GizmoViewport, AdaptiveDpr, AdaptiveEvents, Bvh, Preload } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
-import { AdaptiveDpr, Bvh, Preload } from '@react-three/drei';
-import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
 import { ACESFilmicToneMapping, PCFSoftShadowMap, SRGBColorSpace } from 'three';
+
 import ScreenshotHandler from '@/components/atoms/scene/ScreenshotHandler';
 import TrajectoryLighting from '@/components/atoms/scene/TrajectoryLighting';
 import DefectLighting from '@/components/atoms/scene/DefectLighting';
 import CanvasGrid from '@/components/atoms/scene/CanvasGrid';
-import useEditorUIStore from '@/stores/ui/editor';
-import useModelStore from '@/stores/editor/model';
 import DynamicEffects from '@/components/molecules/scene/DynamicEffects';
-import useRenderConfigStore from '@/stores/editor/render-config';
 import DynamicEnvironment from '@/components/molecules/scene/DynamicEnvironment';
 import DynamicBackground from '@/components/molecules/scene/DynamicBackground';
+
+import useEditorUIStore from '@/stores/ui/editor';
+import useModelStore from '@/stores/editor/model';
+import useRenderConfigStore from '@/stores/editor/render-config';
+import usePerformanceSettingsStore from '@/stores/editor/perfomance-settings';
+
+import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
 import './Scene3D.css';
 
 interface Scene3DProps {
@@ -54,30 +65,57 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     const orbitControlsRef = useRef<any>(null);
     const interactionTimeoutRef = useRef<number | null>(null);
 
-    const [tools, setTools] = useState<{ captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> } | null>(null);
-    const activeScene = useModelStore(state => state.activeScene);
-    const toggleCanvasGrid = useEditorUIStore((state) => state.toggleCanvasGrid);
-    const toggleEditorWidgets = useEditorUIStore((state) => state.toggleEditorWidgets);
-    const showEditorWidgets = useEditorUIStore((state) => state.showEditorWidgets);
-    const activeModel = useModelStore((state) => state.activeModel);
-    const cameraConfig = useRenderConfigStore((state) => state.camera);
-    const glConfig = useRenderConfigStore((state) => state.gl);
-    const orbitConfig = useRenderConfigStore((state) => state.orbitControls);
-    const ssaoConfig = useRenderConfigStore((state) => state.SSAO);
-    const setSceneInteracting = useEditorUIStore((state) => state.setSceneInteracting);
+    const [tools, setTools] = useState<{
+        captureScreenshot: (options?: any) => Promise<string>;
+        waitForVisibleFrame: () => Promise<void>;
+        markContentReady: () => void;
+        waitForContentFrame: () => Promise<void>;
+    } | null>(null);
 
-    const maxDpr = useMemo(() => (window.devicePixelRatio > 1 ? 2 : 1), []);
+    const activeScene = useModelStore((s) => s.activeScene);
+    const activeModel = useModelStore((s) => s.activeModel);
 
-    const markInteractingNow = useCallback(() => {
-        setSceneInteracting(true);
-    }, [setSceneInteracting]);
+    const toggleCanvasGrid = useEditorUIStore((s) => s.toggleCanvasGrid);
+    const toggleEditorWidgets = useEditorUIStore((s) => s.toggleEditorWidgets);
+    const showEditorWidgets = useEditorUIStore((s) => s.showEditorWidgets);
+    const setSceneInteracting = useEditorUIStore((s) => s.setSceneInteracting);
+    const isInteracting = useEditorUIStore((s) => s.sceneInteracting);
+
+    const cameraConfig = useRenderConfigStore((s) => s.camera);
+    const glConfig = useRenderConfigStore((s) => s.gl);
+    const orbitConfig = useRenderConfigStore((s) => s.orbitControls);
+    const ssaoConfig = useRenderConfigStore((s) => s.SSAO);
+
+    const dprCfg = usePerformanceSettingsStore((s) => s.dpr);
+    const perf = usePerformanceSettingsStore((s) => s.performance);
+    const interactionDegradeEnabled = usePerformanceSettingsStore((s) => s.interactionDegrade.enabled);
+    const powerPreference = usePerformanceSettingsStore((s) => s.canvas.powerPreference);
+    const adaptiveEventsEnabled = usePerformanceSettingsStore((s) => s.adaptiveEvents.enabled);
+
+    const dpr = useMemo(() => {
+        if (dprCfg.mode === 'fixed') return dprCfg.fixed;
+        const min = (isInteracting && interactionDegradeEnabled)
+            ? Math.min(dprCfg.interactionMin, dprCfg.min)
+            : dprCfg.min;
+        return [min, dprCfg.max] as [number, number];
+    }, [
+        dprCfg.mode,
+        dprCfg.fixed,
+        dprCfg.min,
+        dprCfg.max,
+        dprCfg.interactionMin,
+        interactionDegradeEnabled,
+        isInteracting
+    ]);
+
+    const adaptiveEnabled = dprCfg.mode === 'adaptive';
+    const pixelated = dprCfg.pixelated;
+
+    const markInteractingNow = useCallback(() => { setSceneInteracting(true); }, [setSceneInteracting]);
 
     const markInteractingDebounced = useCallback(() => {
         setSceneInteracting(true);
-        if(interactionTimeoutRef.current){
-            window.clearTimeout(interactionTimeoutRef.current);
-        }
-
+        if (interactionTimeoutRef.current) window.clearTimeout(interactionTimeoutRef.current);
         interactionTimeoutRef.current = window.setTimeout(() => {
             setSceneInteracting(false);
             interactionTimeoutRef.current = null;
@@ -85,68 +123,42 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     }, [setSceneInteracting]);
 
     const endInteracting = useCallback(() => {
-        if(interactionTimeoutRef.current){
+        if (interactionTimeoutRef.current) {
             window.clearTimeout(interactionTimeoutRef.current);
             interactionTimeoutRef.current = null;
         }
-
         setSceneInteracting(false);
     }, [setSceneInteracting]);
 
     const backgroundColor = useMemo(() => {
-        if(background !== null){
-            return background;
-        }   
-
-        // 1E1E1E
-        return !showEditorWidgets ? '#FFF' : '#1E1E1E'
+        if (background !== null) return background;
+        return !showEditorWidgets ? '#FFF' : '#1E1E1E';
     }, [showEditorWidgets, background]);
 
-    const handleToolsReady = useCallback((t: { captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> }) => {
-        setTools(() => t);
-    }, []);
+    const handleToolsReady = useCallback((t: {
+        captureScreenshot: (options?: any) => Promise<string>;
+        waitForVisibleFrame: () => Promise<void>;
+        markContentReady: () => void;
+        waitForContentFrame: () => Promise<void>;
+    }) => { setTools(() => t); }, []);
 
-    
     useImperativeHandle(ref, () => ({
         captureScreenshot: (options) => {
-            if(tools && typeof tools.captureScreenshot === 'function'){
-                return tools.captureScreenshot(options);
-            }
+            if (tools && typeof tools.captureScreenshot === 'function') return tools.captureScreenshot(options);
             return Promise.reject(new Error('Screenshot not available yet.'));
         },
-        waitForVisibleFrame: () => {
-            if(tools && typeof tools.waitForVisibleFrame === 'function'){
-                return tools.waitForVisibleFrame();
-            }
-            return Promise.resolve();
-        },
-        markContentReady: () => {
-            if(tools && typeof tools.markContentReady === 'function'){
-                return tools.markContentReady();
-            }
-        },
-        waitForContentFrame: () => {
-            if(tools && typeof tools.waitForContentFrame === 'function'){
-                return tools.waitForContentFrame();
-            }
-            return Promise.resolve();
-        }
+        waitForVisibleFrame: () => tools?.waitForVisibleFrame?.() ?? Promise.resolve(),
+        markContentReady: () => tools?.markContentReady?.(),
+        waitForContentFrame: () => tools?.waitForContentFrame?.() ?? Promise.resolve()
     }), [tools]);
 
-    const handleControlsRef = useCallback((ref: any) => {
-        orbitControlsRef.current = ref;
-        onCameraControlsRef?.(ref);
+    const handleControlsRef = useCallback((r: any) => {
+        orbitControlsRef.current = r;
+        onCameraControlsRef?.(r);
     }, [onCameraControlsRef]);
 
-    const isDefectScene = useMemo(() => 
-        ['defect_mesh', 'interface_mesh'].includes(activeScene), 
-        [activeScene]
-    );
-
-    const isTrajectoryScene = useMemo(() => 
-        ['trajectory', 'atoms_colored_by_type', 'dislocations'].includes(activeScene), 
-        [activeScene]
-    );
+    const isDefectScene = useMemo(() => ['defect_mesh', 'interface_mesh'].includes(activeScene), [activeScene]);
+    const isTrajectoryScene = useMemo(() => ['trajectory', 'atoms_colored_by_type', 'dislocations'].includes(activeScene), [activeScene]);
 
     const canvasStyle = useMemo(() => ({
         backgroundColor,
@@ -158,29 +170,18 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     const orbitControlsProps = useMemo(() => ({
         ...orbitConfig,
         enabled: cameraControlsEnabled
-    }), [cameraControlsEnabled]);
+    }), [cameraControlsEnabled, orbitConfig]);
+
+    const glMerged = useMemo(() => ({ ...glConfig, powerPreference }), [glConfig, powerPreference]);
 
     useEffect(() => {
-
         const handleKeyDown = (e: KeyboardEvent) => {
-            if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b'){
-                e.preventDefault();
-                toggleCanvasGrid();
-            }
-
-            if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'n'){
-                e.preventDefault();
-                toggleEditorWidgets();
-            }
-
+            if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b') { e.preventDefault(); toggleCanvasGrid(); }
+            if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'n') { e.preventDefault(); toggleEditorWidgets(); }
             if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'z') {
                 e.preventDefault();
                 if (orbitControlsRef.current) {
-                    const optimal = calculateClosestCameraPositionZY(
-                        activeModel?.modelBounds.box,
-                        orbitControlsRef.current.object
-                    );
-
+                    const optimal = calculateClosestCameraPositionZY(activeModel?.modelBounds.box, orbitControlsRef.current.object);
                     orbitControlsRef.current.object.position.copy(optimal.position);
                     orbitControlsRef.current.target.copy(optimal.target);
                     orbitControlsRef.current.object.up.copy(optimal.up);
@@ -188,18 +189,14 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
                     orbitControlsRef.current.update();
                 }
             }
-
         };
-
         window.addEventListener('keydown', handleKeyDown);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
+        return () => { window.removeEventListener('keydown', handleKeyDown); };
     }, [tools, toggleCanvasGrid, toggleEditorWidgets, activeModel]);
 
     useEffect(() => {
         return () => {
-            if(interactionTimeoutRef.current){
+            if (interactionTimeoutRef.current) {
                 window.clearTimeout(interactionTimeoutRef.current);
             }
         };
@@ -207,57 +204,46 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 
     return (
         <Canvas
-            gl={glConfig}
-            shadows='basic'
+            gl={glMerged}
+            shadows="basic"
             camera={cameraConfig}
             style={canvasStyle}
-            dpr={[maxDpr, maxDpr]}
-            frameloop='always'
-            performance={{
-                current: 1,
-                min: 0.1,
-                max: 1,
-                debounce: 50,
-            }}
-              onCreated={({ gl, scene }) => {
+            dpr={dpr}
+            frameloop="always"
+            performance={perf}
+            onCreated={({ gl }) => {
                 gl.outputColorSpace = SRGBColorSpace;
                 gl.toneMapping = ACESFilmicToneMapping;
-                gl.toneMappingExposure = 5; 
+                gl.toneMappingExposure = 5;
                 gl.physicallyCorrectLights = true;
                 gl.shadowMap.enabled = true;
                 gl.shadowMap.type = PCFSoftShadowMap;
             }}
         >
-            <ScreenshotHandler 
-                onToolsReady={handleToolsReady} 
-                backgroundColor={backgroundColor}
-            />
-            
+            <ScreenshotHandler onToolsReady={handleToolsReady} backgroundColor={backgroundColor} />
             <color attach="background" args={[backgroundColor]} />
-            
             <Preload all />
-            <AdaptiveDpr pixelated />
+
+            {adaptiveEnabled && <AdaptiveDpr pixelated={pixelated} />}
+            {adaptiveEventsEnabled && <AdaptiveEvents />}
+
             {showGizmo && (
-                <GizmoHelper
-                    alignment='top-left'
-                    renderPriority={2}
-                    margin={[450, 70]} 
-                >
+                <GizmoHelper alignment="top-left" renderPriority={2} margin={[450, 70]}>
                     <directionalLight position={[5, 5, 5]} intensity={1} />
                     <ambientLight intensity={2} />
-
-                    <GizmoViewport 
+                    <GizmoViewport
                         scale={30}
-                        hideNegativeAxes={true}
-                        axisColors={['#404040', '#404040', '#404040']} 
-                        labelColor="#a2a2a2" />
+                        hideNegativeAxes
+                        axisColors={['#404040', '#404040', '#404040']}
+                        labelColor="#a2a2a2"
+                    />
                 </GizmoHelper>
             )}
 
             <DynamicBackground />
             <DynamicEffects />
             <DynamicEnvironment />
-            
+
             {isDefectScene && <DefectLighting />}
             {isTrajectoryScene && <TrajectoryLighting />}
 
@@ -269,9 +255,9 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
                 onChange={markInteractingDebounced}
                 onEnd={endInteracting}
             />
-            
+
             {showCanvasGrid && <CanvasGrid />}
-            
+
             <Bvh firstHitOnly>
                 {children}
             </Bvh>
@@ -284,5 +270,4 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 });
 
 Scene3D.displayName = 'Scene3D';
-
 export default React.memo(Scene3D);
