@@ -786,10 +786,6 @@
     margin: 0;
 }
 
-.chat-header-status-modern {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-}
 
 .chat-status-indicator {
     display: flex;

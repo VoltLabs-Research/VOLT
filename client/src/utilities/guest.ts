@@ -68,3 +68,9 @@ export const getOrCreateGuestUser = (): GuestUser => {
         color: hslFromUid(uid)
     }
 };
+
+export const getInitials = (firstName?: string, lastName?: string) => {
+    const first = firstName?.charAt(0) || '';
+    const last = lastName?.charAt(0) || '';
+    return `${first}${last}`.toUpperCase() || '?';
+};

@@ -21,7 +21,6 @@
 **/
 
 import mongoose, { Schema, Model } from 'mongoose';
-import { Trajectory, AnalysisConfig } from '@/models/index';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 

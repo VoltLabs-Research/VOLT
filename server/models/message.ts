@@ -21,9 +21,7 @@
 **/
 
 import mongoose, { Schema, Model } from 'mongoose';
-// @ts-ignore
-import { IMessage } from '@types/models/chat';
-import { Chat, User } from '@/models/index';
+import { IMessage } from '@/types/models/chat';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 const MessageSchema: Schema<IMessage> = new Schema({
@@ -64,12 +62,10 @@ const MessageSchema: Schema<IMessage> = new Schema({
         fileUrl: String,
         filePath: String
     },
-    // Message edition
     editedAt: {
         type: Date,
         default: null
     },
-    // Soft delete flags
     deleted: {
         type: Boolean,
         default: false
@@ -83,7 +79,6 @@ const MessageSchema: Schema<IMessage> = new Schema({
         ref: 'User',
         default: null
     },
-    // Reactions: list of emojis with users who reacted
     reactions: [
         new Schema({
             emoji: { type: String, required: true },
@@ -94,7 +89,6 @@ const MessageSchema: Schema<IMessage> = new Schema({
     timestamps: true
 });
 
-// Index for efficient querying
 MessageSchema.index({ chat: 1, createdAt: -1 });
 MessageSchema.index({ sender: 1 });
 MessageSchema.index({ readBy: 1 });

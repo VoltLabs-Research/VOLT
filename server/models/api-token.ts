@@ -109,18 +109,15 @@ const apiTokenSchema = new Schema<IApiToken>({
     toObject: { virtuals: true }
 });
 
-// Indexes
 apiTokenSchema.index({ createdBy: 1, isActive: 1 });
 apiTokenSchema.index({ tokenHash: 1 });
 apiTokenSchema.index({ expiresAt: 1 });
 
-// Virtual for masked token (show only first 8 and last 4 characters)
 apiTokenSchema.virtual('maskedToken').get(function() {
     if (!this.token) return '';
     return `${this.token.substring(0, 8)}...${this.token.substring(this.token.length - 4)}`;
 });
 
-// for token status
 apiTokenSchema.virtual('status').get(function() {
     if (!this.isActive) return 'inactive';
     if (this.isExpired()) return 'expired';

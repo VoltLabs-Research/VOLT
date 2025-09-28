@@ -21,9 +21,7 @@
 **/
 
 import mongoose, { Schema, Model } from 'mongoose';
-// @ts-ignore
-import { IChat } from '@types/models/chat';
-import { User, Team } from '@/models/index';
+import { IChat } from '@/types/models/chat';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 const ChatSchema: Schema<IChat> = new Schema({
@@ -80,7 +78,6 @@ const ChatSchema: Schema<IChat> = new Schema({
     timestamps: true
 });
 
-// Index for efficient queries (non-unique to allow group chats)
 ChatSchema.index({ participants: 1, team: 1 }, { unique: false });
 ChatSchema.index({ isGroup: 1 });
 ChatSchema.index({ team: 1, isActive: 1 });
