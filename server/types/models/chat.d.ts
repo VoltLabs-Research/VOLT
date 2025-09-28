@@ -41,6 +41,8 @@ export interface IMessage extends Document {
         fileName?: string;
         fileSize?: number;
         fileType?: string;
+        fileUrl?: string;
+        filePath?: string;
     };
     editedAt?: Date | null;
     deleted?: boolean;

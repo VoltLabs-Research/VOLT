@@ -24,6 +24,9 @@ import { Request, Response, NextFunction } from 'express';
 import { Chat, Message, User, Team } from '@/models/index';
 import RuntimeError from '@/utilities/runtime-error';
 import { catchAsync } from '@/utilities/runtime';
+import { uploadSingleFile, getFileUrl } from '@/middlewares/file-upload';
+import path from 'path';
+import fs from 'fs';
 
 /**
  * Get all chats for the current user's teams
@@ -340,5 +343,123 @@ export const getTeamMembers = catchAsync(async (req: Request, res: Response, nex
     res.status(200).json({
         status: 'success',
         data: allMembers
+    });
+});
+
+/**
+ * Upload a file for a chat message
+ */
+export const uploadFile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    const { chatId } = req.params;
+
+    // Verify user has access to this chat
+    const chat = await Chat.findOne({
+        _id: chatId,
+        participants: user._id,
+        isActive: true
+    });
+
+    if (!chat) {
+        throw new RuntimeError('Chat::NotFound', 404);
+    }
+
+    // Handle file upload
+    uploadSingleFile(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({
+                status: 'error',
+                message: err.message
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'No file uploaded'
+            });
+        }
+
+        const fileUrl = getFileUrl(req.file.filename);
+        
+        res.status(200).json({
+            status: 'success',
+            data: {
+                filename: req.file.filename,
+                originalName: req.file.originalname,
+                size: req.file.size,
+                mimetype: req.file.mimetype,
+                url: fileUrl
+            }
+        });
+    });
+});
+
+/**
+ * Serve uploaded files
+ */
+export const serveFile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const { filename } = req.params;
+    const filePath = path.join(process.cwd(), 'storage', 'uploads', 'chat-files', filename);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+        throw new RuntimeError('File::NotFound', 404);
+    }
+
+    // Set appropriate headers
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    
+    // Send file
+    res.sendFile(filePath);
+});
+
+/**
+ * Send a file message to a chat
+ */
+export const sendFileMessage = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    const { chatId } = req.params;
+    const { filename, originalName, size, mimetype, url } = req.body;
+
+    // Verify user has access to this chat
+    const chat = await Chat.findOne({
+        _id: chatId,
+        participants: user._id,
+        isActive: true
+    });
+
+    if (!chat) {
+        throw new RuntimeError('Chat::NotFound', 404);
+    }
+
+    // Create the file message
+    const message = await Message.create({
+        chat: chatId,
+        sender: user._id,
+        content: originalName, // Use original filename as content
+        messageType: 'file',
+        metadata: {
+            fileName: originalName,
+            fileSize: size,
+            fileType: mimetype,
+            fileUrl: url,
+            filePath: filename
+        },
+        readBy: [user._id] // Sender has read their own message
+    });
+
+    await message.populate('sender', 'firstName lastName email');
+
+    // Update chat's last message
+    await Chat.findByIdAndUpdate(chatId, {
+        lastMessage: message._id,
+        lastMessageAt: new Date()
+    });
+
+    res.status(201).json({
+        status: 'success',
+        data: message
     });
 });

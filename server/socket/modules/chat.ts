@@ -140,6 +140,64 @@ class ChatModule extends BaseSocketModule {
             }
         });
 
+        // Send a file message
+        socket.on('send_file_message', async (data: { chatId: string; filename: string; originalName: string; size: number; mimetype: string; url: string }) => {
+            if (!socket.user) {
+                socket.emit('error', 'Not authenticated');
+                return;
+            }
+
+            try {
+                const { chatId, filename, originalName, size, mimetype, url } = data;
+
+                // Verify user has access to this chat
+                const chat = await Chat.findOne({
+                    _id: chatId,
+                    participants: socket.user._id,
+                    isActive: true
+                });
+
+                if (!chat) {
+                    socket.emit('error', 'Chat not found or access denied');
+                    return;
+                }
+
+                // Create the file message
+                const message = await Message.create({
+                    chat: chatId,
+                    sender: socket.user._id,
+                    content: originalName, // Use original filename as content
+                    messageType: 'file',
+                    metadata: {
+                        fileName: originalName,
+                        fileSize: size,
+                        fileType: mimetype,
+                        fileUrl: url,
+                        filePath: filename
+                    },
+                    readBy: [socket.user._id] // Sender has read their own message
+                });
+
+                await message.populate('sender', 'firstName lastName email');
+
+                // Update chat's last message
+                await Chat.findByIdAndUpdate(chatId, {
+                    lastMessage: message._id,
+                    lastMessageAt: new Date()
+                });
+
+                // Broadcast message to all users in the chat room
+                this.io?.to(`chat-${chatId}`).emit('new_message', {
+                    message,
+                    chatId
+                });
+
+                console.log(`[ChatModule] File message sent in chat ${chatId} by ${socket.user.firstName}`);
+            } catch (error) {
+                socket.emit('error', 'Failed to send file message');
+            }
+        });
+
         // Edit a message (only sender)
         socket.on('edit_message', async (data: { chatId: string; messageId: string; content: string }) => {
             if (!socket.user) return;

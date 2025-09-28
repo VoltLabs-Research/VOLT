@@ -101,5 +101,24 @@ export const chatApi = {
     toggleReaction: async (chatId: string, messageId: string, emoji: string): Promise<Message> => {
         const response = await api.post<{ status: string; data: Message }>(`/chat/${chatId}/messages/${messageId}/reactions`, { emoji });
         return response.data.data;
+    },
+
+    // Upload file
+    uploadFile: async (chatId: string, file: File): Promise<{ filename: string; originalName: string; size: number; mimetype: string; url: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await api.post<{ status: string; data: any }>(`/chat/${chatId}/upload`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data.data;
+    },
+
+    // Send file message
+    sendFileMessage: async (chatId: string, fileData: { filename: string; originalName: string; size: number; mimetype: string; url: string }): Promise<Message> => {
+        const response = await api.post<{ status: string; data: Message }>(`/chat/${chatId}/send-file`, fileData);
+        return response.data.data;
     }
 };

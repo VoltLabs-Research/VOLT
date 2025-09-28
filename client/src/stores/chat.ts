@@ -50,6 +50,7 @@ interface ChatStore {
     loadTeamMembers: (teamId: string) => Promise<void>;
     loadMessages: (chatId: string) => Promise<void>;
     sendMessage: (content: string, messageType?: string, metadata?: any) => Promise<void>;
+    sendFileMessage: (file: File) => Promise<void>;
     editMessage: (messageId: string, content: string) => Promise<void>;
     deleteMessage: (messageId: string) => Promise<void>;
     toggleReaction: (messageId: string, emoji: string) => Promise<void>;
@@ -141,6 +142,31 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             }
         } catch (error) {
             console.error('Failed to send message:', error);
+        }
+    },
+
+    sendFileMessage: async (file) => {
+        const { currentChat } = get();
+        if (!currentChat) return;
+
+        try {
+            // Upload file first
+            const fileData = await chatApi.uploadFile(currentChat._id, file);
+            
+            // Use socket to send file message for real-time communication
+            const { socketService } = await import('@/services/socketio');
+            if (socketService.isConnected()) {
+                socketService.emit('send_file_message', {
+                    chatId: currentChat._id,
+                    ...fileData
+                }).catch((error) => {
+                    console.error('Failed to send file message:', error);
+                });
+            } else {
+                console.error('Socket not connected');
+            }
+        } catch (error) {
+            console.error('Failed to send file message:', error);
         }
     },
 

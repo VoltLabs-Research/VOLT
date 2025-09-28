@@ -48,6 +48,8 @@ export interface Message {
         fileName?: string;
         fileSize?: number;
         fileType?: string;
+        fileUrl?: string;
+        filePath?: string;
     };
     editedAt?: string | null;
     deleted?: boolean;

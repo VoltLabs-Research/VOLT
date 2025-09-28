@@ -60,7 +60,9 @@ const MessageSchema: Schema<IMessage> = new Schema({
     metadata: {
         fileName: String,
         fileSize: Number,
-        fileType: String
+        fileType: String,
+        fileUrl: String,
+        filePath: String
     },
     // Message edition
     editedAt: {

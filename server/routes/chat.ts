@@ -31,7 +31,10 @@ import {
     getTeamMembers,
     editMessage,
     deleteMessage,
-    toggleReaction
+    toggleReaction,
+    uploadFile,
+    serveFile,
+    sendFileMessage
 } from '@/controllers/chat';
 
 const router = Router();
@@ -61,5 +64,10 @@ router.post('/:chatId/messages/:messageId/reactions', toggleReaction);
 
 // Mark messages as read
 router.patch('/:chatId/read', markMessagesAsRead);
+
+// File upload and serving
+router.post('/:chatId/upload', uploadFile);
+router.post('/:chatId/send-file', sendFileMessage);
+router.get('/files/:filename', serveFile);
 
 export default router;

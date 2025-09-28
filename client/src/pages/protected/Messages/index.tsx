@@ -31,7 +31,10 @@ import {
     IoPaperPlaneOutline,
     IoAttachOutline,
     IoHappyOutline,
-    IoPersonAddOutline
+    IoPersonAddOutline,
+    IoDocumentOutline,
+    IoImageOutline,
+    IoDownloadOutline
 } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
 import useAuthStore from '@/stores/authentication';
@@ -50,10 +53,11 @@ const MessagesPage = () => {
         selectChat,
         startChatWithMember,
         handleSendMessage,
+        sendFileMessage,
         handleTyping,
-		editMessage,
-		deleteMessage,
-		toggleReaction,
+        editMessage,
+        deleteMessage,
+        toggleReaction,
     } = useChat();
 
     const { user } = useAuthStore();
@@ -64,6 +68,8 @@ const MessagesPage = () => {
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 	const [editingText, setEditingText] = useState('');
+	const [uploadingFile, setUploadingFile] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 	const REACTIONS = ['👍','❤️','😂','😮','😢','🎉'];
 
     // Auto-scroll to bottom when new messages arrive
@@ -154,6 +160,38 @@ const MessagesPage = () => {
 	const cancelEditing = () => {
 		setEditingMessageId(null);
 		setEditingText('');
+	};
+
+	const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (!file) return;
+
+		setUploadingFile(true);
+		try {
+			await sendFileMessage(file);
+		} catch (error) {
+			console.error('Failed to upload file:', error);
+		} finally {
+			setUploadingFile(false);
+			if (fileInputRef.current) {
+				fileInputRef.current.value = '';
+			}
+		}
+	};
+
+	const formatFileSize = (bytes: number) => {
+		if (bytes === 0) return '0 Bytes';
+		const k = 1024;
+		const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+	};
+
+	const getFileIcon = (mimetype: string) => {
+		if (mimetype.startsWith('image/')) return <IoImageOutline />;
+		if (mimetype.startsWith('video/')) return <IoVideocamOutline />;
+		if (mimetype.startsWith('audio/')) return <IoCallOutline />;
+		return <IoDocumentOutline />;
 	};
 
     return (
@@ -346,6 +384,37 @@ const MessagesPage = () => {
 																<button type='submit' className='chat-edit-save'>Save</button>
 															</div>
 														</form>
+													) : message.messageType === 'file' ? (
+														<div className='chat-file-message'>
+															<div className='chat-file-info'>
+																<div className='chat-file-icon'>
+																	{getFileIcon(message.metadata?.fileType || '')}
+																</div>
+																<div className='chat-file-details'>
+																	<p className='chat-file-name'>{message.metadata?.fileName}</p>
+																	<p className='chat-file-size'>{formatFileSize(message.metadata?.fileSize || 0)}</p>
+																</div>
+																<a 
+																	href={message.metadata?.fileUrl} 
+																	target='_blank' 
+																	rel='noopener noreferrer'
+																	className='chat-file-download'
+																	title='Download file'
+																>
+																	<IoDownloadOutline />
+																</a>
+															</div>
+															{message.metadata?.fileType?.startsWith('image/') && (
+																<img 
+																	src={message.metadata?.fileUrl} 
+																	alt={message.metadata?.fileName}
+																	className='chat-file-preview'
+																/>
+															)}
+															<div className='chat-message-time'>
+																{formatTime(message.createdAt)}
+															</div>
+														</div>
 													) : (
 														<>
 															<p className='chat-message-text'>
@@ -406,7 +475,22 @@ const MessagesPage = () => {
                         {/* Message Input */}
 						<form onSubmit={handleSend} className='chat-input-container'>
                             <div className='chat-input-wrapper'>
-								<button type='button' className='chat-header-action' title='Attach File' aria-label='Attach file'>
+								<input
+									type='file'
+									ref={fileInputRef}
+									onChange={handleFileUpload}
+									className='chat-file-input'
+									accept='image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar'
+									disabled={uploadingFile}
+								/>
+								<button 
+									type='button' 
+									className='chat-header-action' 
+									title='Attach File' 
+									aria-label='Attach file'
+									onClick={() => fileInputRef.current?.click()}
+									disabled={uploadingFile}
+								>
                                     <IoAttachOutline />
                                 </button>
 								<textarea 
@@ -429,8 +513,8 @@ const MessagesPage = () => {
 								<button type='button' className='chat-header-action' title='Emoji' aria-label='Open emoji picker'>
                                     <IoHappyOutline />
                                 </button>
-								<button type='submit' className='chat-send-button' title='Send Message' aria-label='Send message' disabled={!messageInput.trim()}>
-                                    <IoPaperPlaneOutline />
+								<button type='submit' className='chat-send-button' title='Send Message' aria-label='Send message' disabled={!messageInput.trim() || uploadingFile}>
+                                    {uploadingFile ? '...' : <IoPaperPlaneOutline />}
                                 </button>
                             </div>
                         </form>
