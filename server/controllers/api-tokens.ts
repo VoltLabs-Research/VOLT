@@ -33,7 +33,6 @@ export const getMyApiTokens = catchAsync(async (req: Request, res: Response, nex
     const user = (req as any).user;
     
     const tokens = await ApiToken.findByUser(user.id);
-    console.log('🔍 API Tokens found:', tokens.map(t => ({ id: t._id, name: t.name, hasToken: !!t.token })));
     
     const response = {
         status: 'success',

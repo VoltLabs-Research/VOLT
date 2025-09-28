@@ -12,6 +12,7 @@ import CanvasSidebarScene from '@/components/molecules/CanvasSidebarScene';
 import CanvasSidebarModifiers from '@/components/molecules/CanvasSidebarModifiers';
 import useConfigurationStore from '@/stores/editor/configuration';
 import useEditorUIStore from '@/stores/ui/editor';
+import LightsControls from '@/components/molecules/scene/LightsControls';
 import EffectsControls from '@/components/molecules/scene/EffectsControls';
 import EnvironmentControls from '@/components/molecules/scene/EnvironmentControls';
 import PerformanceSettingsControls from '@/components/molecules/scene/PerfomanceSettingsControls';
@@ -120,6 +121,7 @@ const EditorSidebar = () => {
 
             {showRenderConfig ? (
                 <div className='editor-sidebar-scene-container editor-render-options-container'>
+                    <LightsControls />
                     <EffectsControls />
                     <PerformanceSettingsControls />
                     <EnvironmentControls />

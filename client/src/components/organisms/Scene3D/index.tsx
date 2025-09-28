@@ -16,6 +16,7 @@ import DefectLighting from '@/components/atoms/scene/DefectLighting';
 import CanvasGrid from '@/components/atoms/scene/CanvasGrid';
 import DynamicEffects from '@/components/molecules/scene/DynamicEffects';
 import DynamicEnvironment from '@/components/molecules/scene/DynamicEnvironment';
+import DynamicLights from '@/components/molecules/scene/DynamicLights';
 import DynamicBackground from '@/components/molecules/scene/DynamicBackground';
 import DynamicRenderer from '@/components/molecules/scene/DynamicRenderer';
 import CameraRig from '@/components/atoms/scene/CameraRig';
@@ -250,6 +251,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 
 			<DynamicBackground />
 			<DynamicEffects />
+			<DynamicLights />		
 			<DynamicEnvironment />
 
 			{isDefectScene && <DefectLighting />}
