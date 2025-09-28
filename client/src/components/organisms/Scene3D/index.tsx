@@ -13,6 +13,8 @@ import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
 import DynamicEffects from '@/components/molecules/scene/DynamicEffects';
 import useRenderConfigStore from '@/stores/editor/render-config';
+import DynamicEnvironment from '@/components/molecules/scene/DynamicEnvironment';
+import DynamicBackground from '@/components/molecules/scene/DynamicBackground';
 import './Scene3D.css';
 
 interface Scene3DProps {
@@ -252,7 +254,9 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
                 </GizmoHelper>
             )}
 
+            <DynamicBackground />
             <DynamicEffects />
+            <DynamicEnvironment />
             
             {isDefectScene && <DefectLighting />}
             {isTrajectoryScene && <TrajectoryLighting />}

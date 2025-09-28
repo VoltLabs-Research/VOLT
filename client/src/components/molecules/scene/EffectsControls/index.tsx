@@ -3,6 +3,7 @@ import useEffectsConfigStore from '@/stores/editor/effects-config';
 import Select from '@/components/atoms/form/Select';
 import FormRow from '@/components/atoms/form/FormRow';
 import FormSection from '@/components/atoms/form/FormSection';
+import FormSchema from '@/components/atoms/form/FormSchema';
 import './EffectsControls.css';
 
 const EffectsControls = () => {
@@ -22,6 +23,203 @@ const EffectsControls = () => {
         setNoise,
         setSepia
     } = useEffectsConfigStore();
+    const sections = [
+        {
+            key: 'ssao',
+            title: 'SSAO (Screen Space Ambient Occlusion)',
+            enabled: ssao.enabled,
+            onToggle: (enabled: boolean) => setSSAOEffect({ enabled }),
+            rows: [
+                {
+                    label: 'Intensity', 
+                    min: 0, 
+                    max: 20, 
+                    step: 0.5,
+                    value: ssao.intensity,
+                    onChange: (intensity: number) => setSSAOEffect({ intensity }),
+                    format: (v: number) => v.toFixed(2)
+                },
+                {
+                    label: 'Luminance', min: 0, max: 1, step: 0.01,
+                    value: ssao.luminanceInfluence,
+                    onChange: (luminanceInfluence: number) => setSSAOEffect({ luminanceInfluence }),
+                    format: (v: number) => v.toFixed(2)
+                }
+            ]
+        },
+        {
+            key: 'bloom',
+            title: 'Bloom',
+            enabled: bloom.enabled,
+            onToggle: (enabled: boolean) => setBloomEffect({ enabled }),
+            rows: [
+                {
+                    label: 'Intensity',
+                    min: 0, 
+                    max: 3, 
+                    step: 0.1,
+                    value: bloom.intensity,
+                    onChange: (intensity: number) => setBloomEffect({ intensity }),
+                    format: (v: number) => v.toFixed(1)
+                },
+                {
+                    label: 'Threshold', 
+                    min: 0, 
+                    max: 2, 
+                    step: 0.01,
+                    value: bloom.luminanceThreshold,
+                    onChange: (luminanceThreshold: number) => setBloomEffect({ luminanceThreshold }),
+                    format: (v: number) => v.toFixed(2)
+                },
+                {
+                    label: 'Smoothing', 
+                    min: 0, 
+                    max: 0.1, 
+                    step: 0.001,
+                    value: bloom.luminanceSmoothing,
+                    onChange: (luminanceSmoothing: number) => setBloomEffect({ luminanceSmoothing }),
+                    format: (v: number) => v.toFixed(3)
+                }
+            ],
+            extras: (
+                <Select
+                    value={bloom.kernelSize}
+                    onChange={(value) => setBloomEffect({ kernelSize: Number(value) })}
+                    placeholder="Kernel size"
+                    options={Array.from({ length: 6 }, (_, i) => ({ title: `${i}`, value: `${i}` }))}
+                />
+            )
+        },
+        {
+            key: 'chromaticAberration',
+            title: 'Chromatic Aberration',
+            enabled: chromaticAberration.enabled,
+            onToggle: (enabled: boolean) => setChromaticAberration({ enabled }),
+            rows: [
+                {
+                    label: 'Offset X', 
+                    min: -0.01, 
+                    max: 0.01, 
+                    step: 0.001,
+                    value: chromaticAberration.offset[0],
+                    onChange: (x: number) => setChromaticAberration({ offset: [x, chromaticAberration.offset[1]] }),
+                    format: (v: number) => v.toFixed(3)
+                },
+                {
+                    label: 'Offset Y', 
+                    min: -0.01, 
+                    max: 0.01, 
+                    step: 0.001,
+                    value: chromaticAberration.offset[1],
+                    onChange: (y: number) => setChromaticAberration({ offset: [chromaticAberration.offset[0], y] }),
+                    format: (v: number) => v.toFixed(3)
+                }
+            ]
+        },
+        {
+            key: 'vignette',
+            title: 'Vignette',
+            enabled: vignette.enabled,
+            onToggle: (enabled: boolean) => setVignette({ enabled }),
+            rows: [
+                {
+                    label: 'Offset', 
+                    min: 0, 
+                    max: 1, 
+                    step: 0.01,
+                    value: vignette.offset,
+                    onChange: (offset: number) => setVignette({ offset }),
+                    format: (v: number) => v.toFixed(2)
+                },
+                {
+                    label: 'Darkness', 
+                    min: 0, 
+                    max: 1, 
+                    step: 0.01,
+                    value: vignette.darkness,
+                    onChange: (darkness: number) => setVignette({ darkness }),
+                    format: (v: number) => v.toFixed(2)
+                }
+            ],
+            extras: (
+                <FormField
+                    fieldValue={vignette.eskil}
+                    fieldKey="eskil"
+                    fieldType="checkbox"
+                    label="Eskil Mode"
+                    onFieldChange={(_, eskil) => setVignette({ eskil })}
+                />
+            )
+        },
+        {
+            key: 'depthOfField',
+            title: 'Depth of Field',
+            enabled: depthOfField.enabled,
+            onToggle: (enabled: boolean) => setDepthOfField({ enabled }),
+            rows: [
+                {
+                    label: 'Focus Distance', 
+                    min: 0.001, 
+                    max: 1, 
+                    step: 0.001,
+                    value: depthOfField.focusDistance,
+                    onChange: (focusDistance: number) => setDepthOfField({ focusDistance }),
+                    format: (v: number) => v.toFixed(3)
+                },
+                {
+                    label: 'Focal Length', 
+                    min: 0.1, 
+                    max: 2, 
+                    step: 0.01,
+                    value: depthOfField.focalLength,
+                    onChange: (focalLength: number) => setDepthOfField({ focalLength }),
+                    format: (v: number) => v.toFixed(2)
+                },
+                {
+                    label: 'Bokeh Scale', 
+                    min: 0.1, 
+                    max: 5, 
+                    step: 0.1,
+                    value: depthOfField.bokehScale,
+                    onChange: (bokehScale: number) => setDepthOfField({ bokehScale }),
+                    format: (v: number) => v.toFixed(1)
+                }
+            ]
+        },
+        {
+            key: 'sepia',
+            title: 'Sepia',
+            enabled: sepia.enabled,
+            onToggle: (enabled: boolean) => setSepia({ enabled }),
+            rows: [
+                {
+                    label: 'Intensity', 
+                    min: 0, 
+                    max: 2,
+                    step: 0.01,
+                    value: sepia.intensity,
+                    onChange: (intensity: number) => setSepia({ intensity }),
+                    format: (v: number) => v.toFixed(2)
+                }
+            ]
+        },
+        {
+            key: 'noise',
+            title: 'Noise',
+            enabled: noise.enabled,
+            onToggle: (enabled: boolean) => setNoise({ enabled }),
+            rows: [],
+            extras: (
+                <FormField
+                    fieldValue={noise.premultiply}
+                    fieldKey="premultiply"
+                    fieldType="checkbox"
+                    label="Premultiply"
+                    onFieldChange={(_, premultiply) => setNoise({ premultiply })}
+                />
+            )
+        }
+    ];
 
     return (
         <div className='editor-sidebar-item-container'>
@@ -29,203 +227,7 @@ const EffectsControls = () => {
                 <h3 className='editor-sidebar-item-header-title'>Post-Processing Effects</h3>
             </div>
 
-            <div className='editor-sidebar-item-body-container'>
-                <FormSection
-                    title='SSAO (Screen Space Ambient Occlusion)'
-                    enabled={ssao.enabled}
-                    onToggle={(enabled) => setSSAOEffect({ enabled })}
-                >
-                    <FormRow
-                        label='Intensity'
-                        min={0}
-                        max={20}
-                        step={0.5}
-                        value={ssao.intensity}
-                        onChange={(intensity) => setSSAOEffect({ intensity })}
-                        format={(v) => v.toFixed(2)}
-                    />
-                    <FormRow
-                        label='Luminance'
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={ssao.luminanceInfluence}
-                        onChange={(luminanceInfluence) => setSSAOEffect({ luminanceInfluence })}
-                        format={(v) => v.toFixed(2)}
-                    />
-                </FormSection>
-
-                <FormSection
-                    title='Bloom'
-                    enabled={bloom.enabled}
-                    onToggle={(enabled) => setBloomEffect({ enabled })}
-                >
-                    <FormRow
-                        label='Intensity'
-                        min={0}
-                        max={3}
-                        step={0.1}
-                        value={bloom.intensity}
-                        onChange={(intensity) => setBloomEffect({ intensity })}
-                        format={(v) => v.toFixed(1)}
-                    />
-
-                    <FormRow
-                        label='Threshold'
-                        min={0}
-                        max={2}
-                        step={0.01}
-                        value={bloom.luminanceThreshold}
-                        onChange={(luminanceThreshold) => setBloomEffect({ luminanceThreshold })}
-                        format={(v) => v.toFixed(2)}
-                    />
-
-                    <FormRow
-                        label='Smoothing'
-                        min={0}
-                        max={0.1}
-                        step={0.001}
-                        value={bloom.luminanceSmoothing}
-                        onChange={(luminanceSmoothing) => setBloomEffect({ luminanceSmoothing })}
-                        format={(v) => v.toFixed(3)}
-                    />
-
-                    <Select
-                        value={bloom.kernelSize}
-                        onChange={(value) => setBloomEffect({ kernelSize: Number(value) })}
-                        placeholder='Kernel size'
-                        options={Array.from({ length: 6 }, (_, i) => ({ title: `${i}`, value: `${i}` }))}
-                    />
-                </FormSection>
-
-                <FormSection
-                    title='Chromatic Aberration'
-                    enabled={chromaticAberration.enabled}
-                    onToggle={(enabled) => setChromaticAberration({ enabled })}
-                >
-                    <FormRow
-                        label='Offset X'
-                        min={-0.01}
-                        max={0.01}
-                        step={0.001}
-                        value={chromaticAberration.offset[0]}
-                        onChange={(x) => setChromaticAberration({ offset: [x, chromaticAberration.offset[1]] })}
-                        format={(v) => v.toFixed(3)}
-                    />
-                    <FormRow
-                        label='Offset Y'
-                        min={-0.01}
-                        max={0.01}
-                        step={0.001}
-                        value={chromaticAberration.offset[1]}
-                        onChange={(y) => setChromaticAberration({ offset: [chromaticAberration.offset[0], y] })}
-                        format={(v) => v.toFixed(3)}
-                    />
-                </FormSection>
-
-                <FormSection
-                    title='Vignette'
-                    enabled={vignette.enabled}
-                    onToggle={(enabled) => setVignette({ enabled })}
-                >
-                    <FormRow
-                        label='Offset'
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={vignette.offset}
-                        onChange={(offset) => setVignette({ offset })}
-                        format={(v) => v.toFixed(2)}
-                        className='effects-slider'
-                    />
-
-                    <FormRow
-                        label='Darkness'
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={vignette.darkness}
-                        onChange={(darkness) => setVignette({ darkness })}
-                        format={(v) => v.toFixed(2)}
-                        className='effects-slider'
-                    />
-                    <FormField
-                        fieldValue={vignette.eskil}
-                        fieldKey='eskil'
-                        fieldType='checkbox'
-                        label='Eskil Mode'
-                        onFieldChange={(_, eskil) => setVignette({ eskil })}
-                    />
-                </FormSection>
-
-                <FormSection
-                    title='Depth of Field'
-                    enabled={depthOfField.enabled}
-                    onToggle={(enabled) => setDepthOfField({ enabled })}
-                >
-                    <FormRow
-                        label='Focus Distance'
-                        min={0.001}
-                        max={1}
-                        step={0.001}
-                        value={depthOfField.focusDistance}
-                        onChange={(focusDistance) => setDepthOfField({ focusDistance })}
-                        format={(v) => v.toFixed(3)}
-                        className='effects-slider'
-                    />
-                    <FormRow
-                        label='Focal Length'
-                        min={0.1}
-                        max={2}
-                        step={0.01}
-                        value={depthOfField.focalLength}
-                        onChange={(focalLength) => setDepthOfField({ focalLength })}
-                        format={(v) => v.toFixed(2)}
-                        className='effects-slider'
-                    />
-                    <FormRow
-                        label='Bokeh Scale'
-                        min={0.1}
-                        max={5}
-                        step={0.1}
-                        value={depthOfField.bokehScale}
-                        onChange={(bokehScale) => setDepthOfField({ bokehScale })}
-                        format={(v) => v.toFixed(1)}
-                        className='effects-slider'
-                    />
-                </FormSection>
-
-                <FormSection
-                    title='Sepia'
-                    enabled={sepia.enabled}
-                    onToggle={(enabled) => setSepia({ enabled })}
-                >
-                    <FormRow
-                        label='Intensity'
-                        min={0}
-                        max={2}
-                        step={0.01}
-                        value={sepia.intensity}
-                        onChange={(intensity) => setSepia({ intensity })}
-                        format={(v) => v.toFixed(2)}
-                        className='effects-slider'
-                    />
-                </FormSection>
-
-                <FormSection
-                    title='Noise'
-                    enabled={noise.enabled}
-                    onToggle={(enabled) => setNoise({ enabled })}
-                >
-                    <FormField
-                        fieldValue={noise.premultiply}
-                        fieldKey='premultiply'
-                        fieldType='checkbox'
-                        label='Premultiply'
-                        onFieldChange={(_, premultiply) => setNoise({ premultiply })}
-                    />
-                </FormSection>
-            </div>
+            <FormSchema sections={sections} className='editor-sidebar-item-body-container' />
         </div>
     );
 };

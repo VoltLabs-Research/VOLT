@@ -13,6 +13,7 @@ import CanvasSidebarModifiers from '@/components/molecules/CanvasSidebarModifier
 import useConfigurationStore from '@/stores/editor/configuration';
 import useEditorUIStore from '@/stores/ui/editor';
 import EffectsControls from '@/components/molecules/scene/EffectsControls';
+import EnvironmentControls from '@/components/molecules/scene/EnvironmentControls';
 import './EditorSidebar.css';
 
 const MOBILE_BREAKPOINT = 768;
@@ -116,6 +117,7 @@ const EditorSidebar = () => {
             {showRenderConfig ? (
                 <div className='editor-sidebar-scene-container'>
                     <EffectsControls />
+                    <EnvironmentControls />
                 </div>
             ) : (
                 activeSidebarTab === 'Scene' ? (
