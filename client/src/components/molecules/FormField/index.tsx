@@ -1,6 +1,7 @@
 import React from 'react';
 import Input from '@/components/atoms/form/Input';
 import Select from '@/components/atoms/form/Select';
+import LiquidToggle from '@/components/atoms/form/LiquidToggle';
 import './FormField.css';
 
 interface FormFieldProps {
@@ -42,16 +43,10 @@ const FormField: React.FC<FormFieldProps> = ({
                 );
 
             case 'checkbox':
-                const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                    onFieldChange(fieldKey, e.target.checked);
-                };
-
                 return (
-                    <input
-                        type="checkbox"
-                        checked={Boolean(fieldValue)}
-                        onChange={handleCheckboxChange}
-                        className='labeled-input-checkbox'
+                    <LiquidToggle
+                        pressed={Boolean(fieldValue)}
+                        onChange={(next) => onFieldChange(fieldKey, next)}
                     />
                 );
 
