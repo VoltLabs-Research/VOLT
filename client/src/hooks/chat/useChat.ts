@@ -171,6 +171,19 @@ export const useChat = () => {
             const { currentChat } = useChatStore.getState();
             if (currentChat && currentChat._id === payload.chatId) {
                 const updated = payload.message;
+                
+                // Deduplicate reactions to prevent duplicate emojis
+                if (updated.reactions && Array.isArray(updated.reactions)) {
+                    const seen = new Set();
+                    updated.reactions = updated.reactions.filter((reaction: any) => {
+                        if (seen.has(reaction.emoji)) {
+                            return false;
+                        }
+                        seen.add(reaction.emoji);
+                        return true;
+                    });
+                }
+                
                 setMessages(useChatStore.getState().messages.map(m => m._id === updated._id ? updated : m));
             }
         };

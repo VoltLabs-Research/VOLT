@@ -181,7 +181,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     editMessage: async (messageId, content) => {
         const { currentChat } = get();
-        if (!currentChat) return;
+        if (!currentChat) {
+            return;
+        }
         try {
             const updated = await chatApi.editMessage(currentChat._id, messageId, content);
             set((state) => ({
@@ -196,34 +198,141 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
 
     deleteMessage: async (messageId) => {
-        const { currentChat } = get();
-        if (!currentChat) return;
+        const { currentChat, messages } = get();
+        if (!currentChat) {
+            return;
+        }
+        
+        // Find the message to delete for optimistic update
+        const messageToDelete = messages.find(m => m._id === messageId);
+        if (!messageToDelete) {
+            console.error('Message not found for deletion');
+            return;
+        }
+        
+        // Apply optimistic update immediately
+        set((state) => ({
+            messages: state.messages.map(m => m._id === messageId ? { ...m, deleted: true } : m)
+        }));
+        
         try {
             await chatApi.deleteMessage(currentChat._id, messageId);
-            set((state) => ({
-                messages: state.messages.map(m => m._id === messageId ? { ...m, deleted: true } : m)
-            }));
             if (socketService.isConnected()) {
                 socketService.emit('delete_message', { chatId: currentChat._id, messageId }).catch(() => {});
             }
         } catch (error) {
             console.error('Failed to delete message:', error);
+            // Revert optimistic update on error
+            set((state) => ({
+                messages: state.messages.map(m => m._id === messageId ? messageToDelete : m)
+            }));
         }
     },
 
     toggleReaction: async (messageId, emoji) => {
-        const { currentChat } = get();
-        if (!currentChat) return;
+        const { currentChat, messages } = get();
+        if (!currentChat) {
+            console.error('No current chat found');
+            return;
+        }
+        console.log('Store toggleReaction called:', messageId, emoji, currentChat._id);
+        
+        // Optimistic update
+        const currentMessage = messages.find(m => m._id === messageId);
+        if (!currentMessage) {
+            console.error('Message not found for optimistic update');
+            return;
+        }
+
+        const currentReactions = currentMessage.reactions || [];
+        // Get user from auth store
+        const authStore = useAuthStore.getState();
+        const currentUser = authStore.user;
+        if (!currentUser) {
+            console.error('User not found');
+            return;
+        }
+        const userId = currentUser._id;
+
+        // Remove user from all existing reactions first
+        const filteredReactions = currentReactions.map(reaction => ({
+            ...reaction,
+            users: reaction.users.filter(u => {
+                const uId = typeof u === 'string' ? u : u._id;
+                return uId !== userId;
+            })
+        })).filter(reaction => reaction.users.length > 0);
+
+        // Check if user is removing their current reaction
+        const currentUserReaction = currentReactions.find(reaction => 
+            reaction.users.some(u => {
+                const uId = typeof u === 'string' ? u : u._id;
+                return uId === userId;
+            })
+        );
+
+        let newReactions;
+        if (currentUserReaction && currentUserReaction.emoji === emoji) {
+            // User is removing their current reaction
+            newReactions = filteredReactions;
+            console.log('Optimistic: User removing their current reaction');
+        } else {
+            // User is adding a new reaction (or changing their reaction)
+            const existingEmojiIndex = filteredReactions.findIndex(r => r.emoji === emoji);
+            
+            if (existingEmojiIndex !== -1) {
+                // Add user to existing emoji reaction (only if not already there)
+                const existingUsers = filteredReactions[existingEmojiIndex].users;
+                const userAlreadyExists = existingUsers.some(u => {
+                    const uId = typeof u === 'string' ? u : u._id;
+                    return uId === userId;
+                });
+                
+                if (!userAlreadyExists) {
+                    filteredReactions[existingEmojiIndex].users.push(userId);
+                }
+                newReactions = filteredReactions;
+                console.log('Optimistic: Added user to existing emoji reaction');
+            } else {
+                // Create new emoji reaction - ensure no duplicates by checking if emoji already exists
+                const emojiAlreadyExists = filteredReactions.some(r => r.emoji === emoji);
+                if (!emojiAlreadyExists) {
+                    newReactions = [...filteredReactions, { emoji, users: [userId] }];
+                    console.log('Optimistic: Created new emoji reaction');
+                } else {
+                    // This shouldn't happen, but fallback to filtered reactions
+                    newReactions = filteredReactions;
+                    console.log('Optimistic: Emoji already exists, using filtered reactions');
+                }
+            }
+        }
+
+        // Apply optimistic update immediately
+        set((state) => ({
+            messages: state.messages.map(m => 
+                m._id === messageId 
+                    ? { ...m, reactions: newReactions }
+                    : m
+            )
+        }));
+
         try {
-            const updated = await chatApi.toggleReaction(currentChat._id, messageId, emoji);
-            set((state) => ({
-                messages: state.messages.map(m => m._id === messageId ? updated : m)
-            }));
+            // Use only socket for real-time reactions
             if (socketService.isConnected()) {
                 socketService.emit('toggle_reaction', { chatId: currentChat._id, messageId, emoji }).catch(() => {});
+            } else {
+                console.error('Socket not connected');
+                // Revert optimistic update if socket is not connected
+                set((state) => ({
+                    messages: state.messages.map(m => m._id === messageId ? currentMessage : m)
+                }));
             }
         } catch (error) {
             console.error('Failed to toggle reaction:', error);
+            // Revert optimistic update on error
+            set((state) => ({
+                messages: state.messages.map(m => m._id === messageId ? currentMessage : m)
+            }));
         }
     },
 

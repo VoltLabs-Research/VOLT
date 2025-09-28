@@ -21,7 +21,6 @@
 **/
 
 import { Server, Socket } from 'socket.io';
-import jwt from 'jsonwebtoken';
 import { User, Chat, Message } from '@/models/index';
 import BaseSocketModule from '@/socket/base-socket-module';
 
@@ -237,25 +236,54 @@ class ChatModule extends BaseSocketModule {
                 const { chatId, messageId, emoji } = data;
                 const message: any = await Message.findOne({ _id: messageId, chat: chatId });
                 if (!message) return;
+                
                 const reactions = message.reactions || [];
-                const idx = reactions.findIndex((r: any) => r.emoji === emoji);
                 const userIdStr = socket.user._id.toString();
-                if (idx === -1) {
-                    reactions.push({ emoji, users: [socket.user._id] });
+
+                // Remove user from all existing reactions first (user can only have one reaction)
+                const filteredReactions = reactions.map((reaction: any) => ({
+                    ...reaction,
+                    users: reaction.users.filter((u: any) => u.toString() !== userIdStr)
+                })).filter((reaction: any) => reaction.users.length > 0);
+
+                // Check if user is trying to remove their current reaction
+                const currentUserReaction = reactions.find((reaction: any) => 
+                    reaction.users.some((u: any) => u.toString() === userIdStr)
+                );
+
+                if (currentUserReaction && currentUserReaction.emoji === emoji) {
+                    // User is removing their current reaction
+                    message.reactions = filteredReactions;
                 } else {
-                    const users = reactions[idx].users.map((u: any) => u.toString());
-                    if (users.includes(userIdStr)) {
-                        reactions[idx].users = reactions[idx].users.filter((u: any) => u.toString() !== userIdStr);
-                        if (reactions[idx].users.length === 0) reactions.splice(idx, 1);
+                    // User is adding a new reaction (or changing their reaction)
+                    const existingEmojiIndex = filteredReactions.findIndex((r: any) => r.emoji === emoji);
+                    
+                    if (existingEmojiIndex !== -1) {
+                        // Add user to existing emoji reaction (only if not already there)
+                        const existingUsers = filteredReactions[existingEmojiIndex].users;
+                        const userAlreadyExists = existingUsers.some((u: any) => u.toString() === socket.user._id.toString());
+                        
+                        if (!userAlreadyExists) {
+                            filteredReactions[existingEmojiIndex].users.push(socket.user._id);
+                        }
                     } else {
-                        reactions[idx].users.push(socket.user._id);
+                        // Create new emoji reaction
+                        filteredReactions.push({ emoji, users: [socket.user._id] });
                     }
+                    
+                    message.reactions = filteredReactions;
                 }
-                message.reactions = reactions;
+
+                // Mark the reactions field as modified
+                message.markModified('reactions');
                 await message.save();
                 await message.populate('sender', 'firstName lastName email');
+                
+                // Emit to all users in the chat to keep everyone in sync
                 this.io?.to(`chat-${chatId}`).emit('reaction_updated', { chatId, message });
-            } catch {}
+            } catch (error) {
+                console.error('Socket toggle_reaction error:', error);
+            }
         });
 
         // Mark messages as read

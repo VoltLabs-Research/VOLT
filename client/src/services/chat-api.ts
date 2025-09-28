@@ -97,9 +97,14 @@ export const chatApi = {
         await api.delete(`/chat/${chatId}/messages/${messageId}`);
     },
 
-    // Toggle reaction
+    // Toggle reaction - DEPRECATED: Use socket instead
     toggleReaction: async (chatId: string, messageId: string, emoji: string): Promise<Message> => {
-        const response = await api.post<{ status: string; data: Message }>(`/chat/${chatId}/messages/${messageId}/reactions`, { emoji });
+        throw new Error('toggleReaction API is deprecated. Use socket events for real-time reactions.');
+    },
+
+    // Get file as base64 for preview
+    getFilePreview: async (chatId: string, messageId: string): Promise<{ dataUrl: string; fileName: string; fileType: string; fileSize: number }> => {
+        const response = await api.get<{ status: string; data: any }>(`/chat/${chatId}/messages/${messageId}/preview`);
         return response.data.data;
     },
 

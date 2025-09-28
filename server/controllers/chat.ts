@@ -50,6 +50,8 @@ export const getChats = catchAsync(async (req: Request, res: Response, next: Nex
         isActive: true
     })
     .populate('participants', 'firstName lastName email')
+    .populate('admins', 'firstName lastName email')
+    .populate('createdBy', 'firstName lastName email')
     .populate('lastMessage')
     .populate('team', 'name')
     .sort({ lastMessageAt: -1 });
@@ -99,6 +101,8 @@ export const getOrCreateChat = catchAsync(async (req: Request, res: Response, ne
         team: teamId
     })
     .populate('participants', 'firstName lastName email')
+    .populate('admins', 'firstName lastName email')
+    .populate('createdBy', 'firstName lastName email')
     .populate('lastMessage')
     .populate('team', 'name');
 
@@ -110,6 +114,8 @@ export const getOrCreateChat = catchAsync(async (req: Request, res: Response, ne
         });
 
         await chat.populate('participants', 'firstName lastName email');
+        await chat.populate('admins', 'firstName lastName email');
+        await chat.populate('createdBy', 'firstName lastName email');
         await chat.populate('team', 'name');
     }
 
@@ -244,39 +250,15 @@ export const deleteMessage = catchAsync(async (req: Request, res: Response, next
 });
 
 /**
- * Toggle reaction on a message
+ * Toggle reaction on a message - DEPRECATED: Use socket instead
+ * This endpoint is kept for backward compatibility but reactions should use sockets
  */
 export const toggleReaction = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user;
-    const { chatId, messageId } = req.params as any;
-    const { emoji } = req.body as any;
-
-    const message = await Message.findOne({ _id: messageId, chat: chatId });
-    if (!message) {
-        throw new RuntimeError('Message::NotFound', 404);
-    }
-
-    const reactions = message.reactions || [] as any[];
-    const idx = reactions.findIndex(r => r.emoji === emoji);
-    const userIdStr = user._id.toString();
-
-    if (idx === -1) {
-        reactions.push({ emoji, users: [user._id] });
-    } else {
-        const users = reactions[idx].users.map((u: any) => u.toString());
-        if (users.includes(userIdStr)) {
-            reactions[idx].users = reactions[idx].users.filter((u: any) => u.toString() !== userIdStr);
-            if (reactions[idx].users.length === 0) reactions.splice(idx, 1);
-        } else {
-            reactions[idx].users.push(user._id);
-        }
-    }
-
-    (message as any).reactions = reactions;
-    await message.save();
-    await message.populate('sender', 'firstName lastName email');
-
-    res.status(200).json({ status: 'success', data: message });
+    // Redirect to socket-based reaction handling
+    res.status(410).json({ 
+        status: 'error', 
+        message: 'This endpoint is deprecated. Use socket events for real-time reactions.' 
+    });
 });
 /**
  * Mark messages as read
@@ -393,26 +375,6 @@ export const uploadFile = catchAsync(async (req: Request, res: Response, next: N
             }
         });
     });
-});
-
-/**
- * Serve uploaded files
- */
-export const serveFile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const { filename } = req.params;
-    const filePath = path.join(process.cwd(), 'storage', 'uploads', 'chat-files', filename);
-
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-        throw new RuntimeError('File::NotFound', 404);
-    }
-
-    // Set appropriate headers
-    res.setHeader('Content-Disposition', 'inline');
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-    
-    // Send file
-    res.sendFile(filePath);
 });
 
 /**

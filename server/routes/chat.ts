@@ -33,9 +33,9 @@ import {
     deleteMessage,
     toggleReaction,
     uploadFile,
-    serveFile,
     sendFileMessage
 } from '@/controllers/chat';
+import { getFileBase64 } from '@/controllers/file-preview';
 import {
     createGroupChat,
     addUsersToGroup,
@@ -76,7 +76,7 @@ router.patch('/:chatId/read', markMessagesAsRead);
 // File upload and serving
 router.post('/:chatId/upload', uploadFile);
 router.post('/:chatId/send-file', sendFileMessage);
-router.get('/files/:filename', serveFile);
+router.get('/:chatId/messages/:messageId/preview', getFileBase64);
 
 // Group chat management
 router.post('/groups', createGroupChat);

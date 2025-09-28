@@ -42,12 +42,234 @@ import {
     IoImageOutline,
     IoDocumentOutline,
     IoDownloadOutline,
-    IoCloseCircleOutline
+    IoCloseCircleOutline,
+    IoShieldOutline,
+    IoChatbubblesOutline
 } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
 import useAuthStore from '@/stores/authentication';
 import { formatDistanceToNow } from 'date-fns';
+import { chatApi } from '@/services/chat-api';
+import { Skeleton } from '@mui/material';
 import './Messages.css';
+
+// Skeleton components
+const MessageSkeleton = ({ isSent }: { isSent: boolean }) => (
+    <div className={`chat-message ${isSent ? 'sent' : 'received'}`}>
+        <div className='chat-message-content'>
+            <Skeleton 
+                variant="rectangular" 
+                width={Math.random() * 200 + 100} 
+                height={20} 
+                sx={{ 
+                    borderRadius: 2, 
+                    mb: 1,
+                    backgroundColor: 'var(--color-surface-3)',
+                    '&::after': {
+                        background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                    }
+                }}
+            />
+            <div className='chat-message-controls'>
+                <Skeleton 
+                    variant="circular" 
+                    width={24} 
+                    height={24}
+                    sx={{ 
+                        backgroundColor: 'var(--color-surface-3)',
+                        '&::after': {
+                            background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                        }
+                    }}
+                />
+                {isSent && (
+                    <Skeleton 
+                        variant="circular" 
+                        width={24} 
+                        height={24}
+                        sx={{ 
+                            backgroundColor: 'var(--color-surface-3)',
+                            '&::after': {
+                                background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                            }
+                        }}
+                    />
+                )}
+            </div>
+        </div>
+    </div>
+);
+
+const FilePreviewSkeleton = () => (
+    <div className='chat-shared-file-item'>
+        <Skeleton 
+            variant="rectangular" 
+            width={56} 
+            height={56} 
+            sx={{ 
+                borderRadius: 1,
+                backgroundColor: 'var(--color-surface-3)',
+                '&::after': {
+                    background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                }
+            }}
+        />
+        <div className='chat-shared-file-info'>
+            <Skeleton 
+                variant="text" 
+                width={120} 
+                height={16}
+                sx={{ 
+                    backgroundColor: 'var(--color-surface-3)',
+                    '&::after': {
+                        background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                    }
+                }}
+            />
+            <Skeleton 
+                variant="text" 
+                width={80} 
+                height={12}
+                sx={{ 
+                    backgroundColor: 'var(--color-surface-3)',
+                    '&::after': {
+                        background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                    }
+                }}
+            />
+        </div>
+        <Skeleton 
+            variant="circular" 
+            width={24} 
+            height={24}
+            sx={{ 
+                backgroundColor: 'var(--color-surface-3)',
+                '&::after': {
+                    background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                }
+            }}
+        />
+    </div>
+);
+
+const ChatListSkeleton = () => (
+    <div className='chat-skeleton-list-item'>
+        <Skeleton 
+            variant="circular" 
+            width={40} 
+            height={40}
+            sx={{ 
+                backgroundColor: 'var(--color-surface-3)',
+                '&::after': {
+                    background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                }
+            }}
+        />
+        <div className='chat-skeleton-list-info'>
+            <Skeleton 
+                variant="text" 
+                width={120} 
+                height={16}
+                sx={{ 
+                    backgroundColor: 'var(--color-surface-3)',
+                    '&::after': {
+                        background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                    }
+                }}
+            />
+            <Skeleton 
+                variant="text" 
+                width={80} 
+                height={12}
+                sx={{ 
+                    backgroundColor: 'var(--color-surface-3)',
+                    '&::after': {
+                        background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                    }
+                }}
+            />
+        </div>
+        <Skeleton 
+            variant="circular" 
+            width={8} 
+            height={8}
+            sx={{ 
+                backgroundColor: 'var(--color-surface-3)',
+                '&::after': {
+                    background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                }
+            }}
+        />
+    </div>
+);
+
+const ContactInfoSkeleton = () => (
+    <div className='chat-contact-info'>
+        <div className='chat-contact-header'>
+            <Skeleton 
+                variant="circular" 
+                width={48} 
+                height={48}
+                sx={{ 
+                    backgroundColor: 'var(--color-surface-3)',
+                    '&::after': {
+                        background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                    }
+                }}
+            />
+            <div className='chat-contact-details'>
+                <Skeleton 
+                    variant="text" 
+                    width={150} 
+                    height={20}
+                    sx={{ 
+                        backgroundColor: 'var(--color-surface-3)',
+                        '&::after': {
+                            background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                        }
+                    }}
+                />
+                <Skeleton 
+                    variant="text" 
+                    width={100} 
+                    height={14}
+                    sx={{ 
+                        backgroundColor: 'var(--color-surface-3)',
+                        '&::after': {
+                            background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                        }
+                    }}
+                />
+            </div>
+        </div>
+        <div className='chat-contact-actions'>
+            <Skeleton 
+                variant="rectangular" 
+                width={32} 
+                height={32}
+                sx={{ 
+                    borderRadius: 1,
+                    backgroundColor: 'var(--color-surface-3)',
+                    '&::after': {
+                        background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                    }
+                }}
+            />
+            <Skeleton 
+                variant="rectangular" 
+                width={32} 
+                height={32}
+                sx={{ 
+                    borderRadius: 1,
+                    backgroundColor: 'var(--color-surface-3)',
+                    '&::after': {
+                        background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
+                    }
+                }}
+            />
+        </div>
+    </div>
+);
 
 const MessagesPage = () => {
     const {
@@ -66,8 +288,12 @@ const MessagesPage = () => {
         addUsersToGroup,
         removeUsersFromGroup,
         updateGroupInfo,
+        updateGroupAdmins,
         leaveGroup,
-        sendFileMessage
+        sendFileMessage,
+        editMessage,
+        deleteMessage,
+        toggleReaction
     } = useChat();
 
     const { user } = useAuthStore();
@@ -78,7 +304,9 @@ const MessagesPage = () => {
     const [showGroupManagement, setShowGroupManagement] = useState(false);
     const [showEditGroup, setShowEditGroup] = useState(false);
     const [showAddMembers, setShowAddMembers] = useState(false);
+    const [showManageAdmins, setShowManageAdmins] = useState(false);
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+    const [selectedAdmins, setSelectedAdmins] = useState<string[]>([]);
     const [groupName, setGroupName] = useState('');
     const [groupDescription, setGroupDescription] = useState('');
     const [editGroupName, setEditGroupName] = useState('');
@@ -87,9 +315,15 @@ const MessagesPage = () => {
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [filePreviews, setFilePreviews] = useState<{file: File, preview: string}[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [editingMessage, setEditingMessage] = useState<string | null>(null);
+    const [editMessageContent, setEditMessageContent] = useState('');
+    const [showReactions, setShowReactions] = useState<string | null>(null);
+    const [showMessageOptions, setShowMessageOptions] = useState<string | null>(null);
+    const [sharedFilePreviews, setSharedFilePreviews] = useState<{[key: string]: string}>({});
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
+    const messageOptionsRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
@@ -137,8 +371,10 @@ const MessagesPage = () => {
     };
 
     // Get initials for avatar
-    const getInitials = (firstName: string, lastName: string) => {
-        return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    const getInitials = (firstName?: string, lastName?: string) => {
+        const first = firstName?.charAt(0) || '';
+        const last = lastName?.charAt(0) || '';
+        return `${first}${last}`.toUpperCase() || '?';
     };
 
     // Format file size
@@ -218,6 +454,81 @@ const MessagesPage = () => {
         }
     };
 
+    const handleManageAdmins = () => {
+        setShowManageAdmins(true);
+        setSelectedAdmins([]);
+    };
+
+    const handleAddAdmins = async () => {
+        if (!currentChat || selectedAdmins.length === 0) return;
+        try {
+            await updateGroupAdmins(currentChat._id, selectedAdmins, 'add');
+            setShowManageAdmins(false);
+            setSelectedAdmins([]);
+        } catch (error) {
+            console.error('Failed to add admins:', error);
+        }
+    };
+
+    const handleRemoveAdmin = async (adminId: string) => {
+        if (!currentChat) return;
+        try {
+            await updateGroupAdmins(currentChat._id, [adminId], 'remove');
+        } catch (error) {
+            console.error('Failed to remove admin:', error);
+        }
+    };
+
+    const toggleAdminSelection = (userId: string) => {
+        setSelectedAdmins(prev => 
+            prev.includes(userId) 
+                ? prev.filter(id => id !== userId)
+                : [...prev, userId]
+        );
+    };
+
+    const handleEditMessage = (messageId: string, content: string) => {
+        setEditingMessage(messageId);
+        setEditMessageContent(content);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingMessage || !editMessageContent.trim()) return;
+        try {
+            await editMessage(editingMessage, editMessageContent);
+            setEditingMessage(null);
+            setEditMessageContent('');
+        } catch (error) {
+            console.error('Failed to edit message:', error);
+        }
+    };
+
+    const handleDeleteMessage = async (messageId: string) => {
+        if (!confirm('Are you sure you want to delete this message?')) return;
+        try {
+            await deleteMessage(messageId);
+        } catch (error) {
+            console.error('Failed to delete message:', error);
+        }
+    };
+
+    const handleToggleReaction = async (messageId: string, emoji: string) => {
+        try {
+            await toggleReaction(messageId, emoji);
+        } catch (error) {
+            console.error('Failed to toggle reaction:', error);
+        }
+    };
+
+    const handleShowReactions = (messageId: string) => {
+        setShowReactions(showReactions === messageId ? null : messageId);
+    };
+
+    const handleShowMessageOptions = (messageId: string) => {
+        setShowMessageOptions(showMessageOptions === messageId ? null : messageId);
+    };
+
+
     const toggleMemberSelection = (memberId: string) => {
         setSelectedMembers(prev => 
             prev.includes(memberId) 
@@ -290,11 +601,34 @@ const MessagesPage = () => {
         setShowEmojiPicker(false);
     };
 
-    // Close emoji picker when clicking outside
+    // Load file preview for shared files
+    const loadFilePreview = async (messageId: string) => {
+        if (!currentChat || sharedFilePreviews[messageId]) return;
+        
+        try {
+            const preview = await chatApi.getFilePreview(currentChat._id, messageId);
+            setSharedFilePreviews(prev => ({
+                ...prev,
+                [messageId]: preview.dataUrl
+            }));
+        } catch (error) {
+            console.error('Failed to load file preview:', error);
+        }
+    };
+
+    // Close emoji picker and message options when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+            const target = event.target as Node;
+            
+            // Close emoji picker if clicking outside
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(target)) {
                 setShowEmojiPicker(false);
+            }
+            
+            // Close message options menu if clicking outside
+            if (messageOptionsRef.current && !messageOptionsRef.current.contains(target)) {
+                setShowMessageOptions(null);
             }
         };
 
@@ -341,7 +675,11 @@ const MessagesPage = () => {
                 {showTeamMembers && (
                     <div className='chat-team-members-container'>
                         <h4 className='chat-team-members-title'>Team Members</h4>
-                        {teamMembers.map((member) => (
+                        {teamMembers
+                            .filter((member, index, self) => 
+                                self.findIndex(m => m._id === member._id) === index
+                            )
+                            .map((member) => (
                             <div 
                                 key={member._id} 
                                 className='chat-team-member-item'
@@ -366,7 +704,10 @@ const MessagesPage = () => {
 
                 <div className='chat-conversations-container'>
                     {isLoading ? (
-                        <div className='chat-loading'>Loading chats...</div>
+                        // Show skeleton while loading chats
+                        Array.from({ length: 3 }).map((_, index) => (
+                            <ChatListSkeleton key={`chat-skeleton-${index}`} />
+                        ))
                     ) : filteredChats.length === 0 ? (
                         <div className='chat-empty-state'>
                             <p>No conversations yet</p>
@@ -482,7 +823,13 @@ const MessagesPage = () => {
                         {/* Messages Area */}
                         <div className='chat-box-messages-container'>
                             {isLoading ? (
-                                <div className='chat-loading'>Loading messages...</div>
+                                // Show skeleton while loading messages
+                                Array.from({ length: 5 }).map((_, index) => (
+                                    <MessageSkeleton 
+                                        key={`message-skeleton-${index}`} 
+                                        isSent={index % 3 === 0} 
+                                    />
+                                ))
                             ) : messages.length === 0 ? (
                                 <div className='chat-empty-messages'>
                                     <p>No messages yet</p>
@@ -491,21 +838,33 @@ const MessagesPage = () => {
                             ) : (
                                 messages.map((message) => {
                                     const isSent = message.sender._id === user?._id;
+                                    const isDeleted = message.deleted;
+                                    
                                     return (
-                                        <div key={message._id} className={`chat-message ${isSent ? 'sent' : 'received'}`}>
-                                            <div className='chat-message-avatar'>
-                                                {isSent ? 'You' : getInitials(message.sender.firstName, message.sender.lastName)}
-                                            </div>
+                                        <div key={message._id} className={`chat-message ${isSent ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''}`}>
                                             <div className='chat-message-content'>
                                                 {message.messageType === 'file' && message.metadata ? (
                                                     <div className='chat-file-message'>
                                                         {message.metadata.fileType?.startsWith('image/') ? (
                                                             <div className='chat-image-message'>
-                                                                <img 
-                                                                    src={message.metadata.fileUrl} 
-                                                                    alt={message.metadata.fileName}
-                                                                    className='chat-image-preview'
-                                                                />
+                                                                {(() => {
+                                                                    // Load preview for images in chat messages
+                                                                    if (message.metadata?.fileType?.startsWith('image/')) {
+                                                                        loadFilePreview(message._id);
+                                                                    }
+                                                                    
+                                                                    return sharedFilePreviews[message._id] ? (
+                                                                        <img 
+                                                                            src={sharedFilePreviews[message._id]} 
+                                                                            alt={message.metadata.fileName}
+                                                                            className='chat-image-preview'
+                                                                        />
+                                                                    ) : (
+                                                                        <div className='chat-image-loading'>
+                                                                            <IoImageOutline />
+                                                                        </div>
+                                                                    );
+                                                                })()}
                                                                 <div className='chat-file-info'>
                                                                     <div className='chat-file-icon'>
                                                                         <IoImageOutline />
@@ -543,8 +902,153 @@ const MessagesPage = () => {
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <p className='chat-message-text'>{message.content}</p>
+                                                    isDeleted ? (
+                                                        <p className='chat-message-text deleted-message'>
+                                                            This message was deleted
+                                                        </p>
+                                                    ) : editingMessage === message._id ? (
+                                                        <div className='chat-message-edit'>
+                                                            <textarea
+                                                                value={editMessageContent}
+                                                                onChange={(e) => setEditMessageContent(e.target.value)}
+                                                                className='chat-message-edit-input'
+                                                                autoFocus
+                                                            />
+                                                            <div className='chat-message-edit-actions'>
+                                                                <button 
+                                                                    className='chat-message-edit-save'
+                                                                    onClick={handleSaveEdit}
+                                                                >
+                                                                    <IoCheckmarkOutline />
+                                                                </button>
+                                                                <button 
+                                                                    className='chat-message-edit-cancel'
+                                                                    onClick={() => {
+                                                                        setEditingMessage(null);
+                                                                        setEditMessageContent('');
+                                                                    }}
+                                                                >
+                                                                    <IoCloseOutline />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <p className='chat-message-text'>{message.content}</p>
+                                                    )
                                                 )}
+                                                
+                                                {/* Message options and reactions buttons - hide for deleted messages */}
+                                                {!isDeleted && (
+                                                    <div className='chat-message-controls'>
+                                                    {/* Reaction button - available for all users */}
+                                                    <button 
+                                                        className='chat-message-reaction-btn'
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleShowReactions(message._id);
+                                                        }}
+                                                    >
+                                                        <IoHappyOutline />
+                                                    </button>
+                                                    {/* Options button - only for current user's messages */}
+                                                    {isSent && (
+                                                        <button 
+                                                            className='chat-message-options'
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleShowMessageOptions(message._id);
+                                                            }}
+                                                        >
+                                                            <IoEllipsisVerticalOutline />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                )}
+                                                
+                                                {/* Floating options menu - only show for non-deleted messages */}
+                                                {!isDeleted && showMessageOptions === message._id && (
+                                                    <div 
+                                                        ref={messageOptionsRef}
+                                                        className='chat-message-options-menu'
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        {message.sender._id === user?._id && (
+                                                            <>
+                                                                {/* Only show Edit option for text messages */}
+                                                                {message.messageType === 'text' && (
+                                                                    <button 
+                                                                        className='chat-message-option'
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            handleEditMessage(message._id, message.content);
+                                                                            setShowMessageOptions(null);
+                                                                        }}
+                                                                    >
+                                                                        <IoCreateOutline />
+                                                                        Edit
+                                                                    </button>
+                                                                )}
+                                                                <button 
+                                                                    className='chat-message-option danger'
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        handleDeleteMessage(message._id);
+                                                                        setShowMessageOptions(null);
+                                                                    }}
+                                                                >
+                                                                    <IoTrashOutline />
+                                                                    Delete
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* Reactions menu - positioned at bottom */}
+                                                {showReactions === message._id && (
+                                                    <div className='chat-message-reactions-menu'>
+                                                        {['👍', '❤️', '😂', '😮', '😢', '😡'].map(emoji => (
+                                                            <button
+                                                                key={emoji}
+                                                                className='chat-reaction-btn'
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    console.log('Reaction button clicked:', emoji, message._id);
+                                                                    handleToggleReaction(message._id, emoji);
+                                                                    setShowReactions(null); 
+                                                                }}
+                                                            >
+                                                                {emoji}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {/* Always show reactions display */}
+                                                <div className='chat-message-reactions-display'>
+                                                    {message.reactions && message.reactions.length > 0 ? (
+                                                        message.reactions
+                                                            .filter(reaction => reaction.users && reaction.users.length > 0) // Only show reactions with users
+                                                            .map((reaction) => {
+                                                                const userReacted = reaction.users?.some(u => {
+                                                                    const uId = typeof u === 'string' ? u : u._id;
+                                                                    return uId === user?._id;
+                                                                });
+                                                                return (
+                                                                    <span 
+                                                                        key={`${reaction.emoji}-${message._id}`} // Use emoji + messageId as unique key
+                                                                        className={`chat-reaction ${userReacted ? 'user-reacted' : ''}`}
+                                                                        onClick={() => handleToggleReaction(message._id, reaction.emoji)}
+                                                                    >
+                                                                        {reaction.emoji} {reaction.users?.length || 0}
+                                                                    </span>
+                                                                );
+                                                            })
+                                                    ) : null}
+                                                </div>
                                                 <div className='chat-message-time'>
                                                     {formatTime(message.createdAt)}
                                                 </div>
@@ -557,7 +1061,6 @@ const MessagesPage = () => {
                             {/* Typing Indicator */}
                             {typingUsers.length > 0 && (
                                 <div className='chat-message received'>
-                                    <div className='chat-message-avatar'>?</div>
                                     <div className='chat-typing-indicator'>
                                         <div className='chat-typing-dots'>
                                             <div className='chat-typing-dot'></div>
@@ -713,7 +1216,21 @@ const MessagesPage = () => {
                     </div>
                     
                     <div className='chat-details-content'>
-                        {currentChat?.isGroup ? (
+                        {!currentChat ? (
+                            // No chat selected state
+                            <div className='chat-no-selection'>
+                                <div className='chat-no-selection-icon'>
+                                    <IoChatbubblesOutline />
+                                </div>
+                                <h4 className='chat-no-selection-title'>No chat selected</h4>
+                                <p className='chat-no-selection-description'>
+                                    Select a conversation to view details
+                                </p>
+                            </div>
+                        ) : isLoading ? (
+                            // Show skeleton while loading contact info
+                            <ContactInfoSkeleton />
+                        ) : currentChat?.isGroup ? (
                             <div className='chat-details-section'>
                                 <div className='chat-group-info'>
                                     <div className='chat-group-avatar'>
@@ -744,47 +1261,54 @@ const MessagesPage = () => {
                             </div>
                         )}
 
-                        <div className='chat-details-section'>
-                            <h4 className='chat-details-section-title'>Actions</h4>
-                            <div className='chat-details-actions'>
-                                <button className='chat-details-action'>
-                                    <i className='chat-details-action-icon'>
-                                        <IoCallOutline />
-                                    </i>
-                                    <span className='chat-details-action-text'>Voice Call</span>
-                                </button>
-                                <button className='chat-details-action'>
-                                    <i className='chat-details-action-icon'>
-                                        <IoVideocamOutline />
-                                    </i>
-                                    <span className='chat-details-action-text'>Video Call</span>
-                                </button>
-                                {currentChat?.isGroup ? (
-                                    <button 
-                                        className='chat-details-action'
-                                        onClick={() => setShowGroupManagement(true)}
-                                    >
-                                        <i className='chat-details-action-icon'>
-                                            <IoEllipsisVerticalOutline />
-                                        </i>
-                                        <span className='chat-details-action-text'>Manage Group</span>
-                                    </button>
-                                ) : (
+                        {/* Actions - only show when chat is selected and not loading */}
+                        {currentChat && !isLoading && (
+                            <div className='chat-details-section'>
+                                <h4 className='chat-details-section-title'>Actions</h4>
+                                <div className='chat-details-actions'>
                                     <button className='chat-details-action'>
                                         <i className='chat-details-action-icon'>
-                                            <IoInformationCircleOutline />
+                                            <IoCallOutline />
                                         </i>
-                                        <span className='chat-details-action-text'>View Profile</span>
+                                        <span className='chat-details-action-text'>Voice Call</span>
                                     </button>
-                                )}
+                                    <button className='chat-details-action'>
+                                        <i className='chat-details-action-icon'>
+                                            <IoVideocamOutline />
+                                        </i>
+                                        <span className='chat-details-action-text'>Video Call</span>
+                                    </button>
+                                    {currentChat?.isGroup ? (
+                                        <button 
+                                            className='chat-details-action'
+                                            onClick={() => setShowGroupManagement(true)}
+                                        >
+                                            <i className='chat-details-action-icon'>
+                                                <IoEllipsisVerticalOutline />
+                                            </i>
+                                            <span className='chat-details-action-text'>Manage Group</span>
+                                        </button>
+                                    ) : (
+                                        <button className='chat-details-action'>
+                                            <i className='chat-details-action-icon'>
+                                                <IoInformationCircleOutline />
+                                            </i>
+                                            <span className='chat-details-action-text'>View Profile</span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {currentChat?.isGroup && (
                             <div className='chat-details-section'>
                                 <h4 className='chat-details-section-title'>Group Members</h4>
                                 <div className='chat-group-members'>
-                                    {currentChat.participants.map((member) => (
+                                    {currentChat.participants
+                                        .filter((member, index, self) => 
+                                            self.findIndex(m => m._id === member._id) === index
+                                        )
+                                        .map((member) => (
                                         <div key={member._id} className='chat-group-member'>
                                             <div className='chat-group-member-avatar'>
                                                 {getInitials(member.firstName, member.lastName)}
@@ -803,14 +1327,89 @@ const MessagesPage = () => {
                             </div>
                         )}
 
-                        <div className='chat-details-section'>
-                            <h4 className='chat-details-section-title'>Shared Files</h4>
-                            <div className='chat-empty-state'>
-                                <div className='chat-empty-description'>
-                                    No shared files yet
-                                </div>
+                        {/* Shared Files - only show when chat is selected and not loading */}
+                        {currentChat && !isLoading && (
+                            <div className='chat-details-section'>
+                                <h4 className='chat-details-section-title'>Shared Files</h4>
+                                {(() => {
+                                // Filter messages that are files
+                                const fileMessages = messages.filter(msg => 
+                                    msg.messageType === 'file' && msg.metadata && !msg.deleted
+                                );
+                                
+                                if (fileMessages.length === 0) {
+                                    return (
+                                        <div className='chat-empty-state'>
+                                            <div className='chat-empty-description'>
+                                                No shared files yet
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                
+                                return (
+                                    <div className='chat-shared-files'>
+                                        {isLoading ? (
+                                            // Show skeleton while loading files
+                                            Array.from({ length: 2 }).map((_, index) => (
+                                                <FilePreviewSkeleton key={`file-skeleton-${index}`} />
+                                            ))
+                                        ) : fileMessages.map((message) => {
+                                            // Load preview for images
+                                            if (message.metadata?.fileType?.startsWith('image/')) {
+                                                loadFilePreview(message._id);
+                                            }
+                                            
+                                            return (
+                                                <div key={message._id} className='chat-shared-file-item'>
+                                                    {message.metadata?.fileType?.startsWith('image/') ? (
+                                                        <div className='chat-shared-file-preview'>
+                                                            {sharedFilePreviews[message._id] ? (
+                                                                <img 
+                                                                    src={sharedFilePreviews[message._id]} 
+                                                                    alt={message.metadata?.fileName}
+                                                                    className='chat-shared-file-image'
+                                                                />
+                                                            ) : (
+                                                                <div className='chat-shared-file-loading'>
+                                                                    <IoImageOutline />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className='chat-shared-file-icon'>
+                                                            <IoDocumentOutline />
+                                                        </div>
+                                                    )}
+                                                <div className='chat-shared-file-info'>
+                                                    <div className='chat-shared-file-name'>
+                                                        {message.metadata?.fileName || message.content}
+                                                    </div>
+                                                    <div className='chat-shared-file-meta'>
+                                                        <span className='chat-shared-file-size'>
+                                                            {formatFileSize(message.metadata?.fileSize)}
+                                                        </span>
+                                                        <span className='chat-shared-file-date'>
+                                                            {formatTime(message.createdAt)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <a 
+                                                    href={message.metadata?.fileUrl} 
+                                                    download={message.metadata?.fileName}
+                                                    className='chat-shared-file-download'
+                                                    title='Download file'
+                                                >
+                                                    <IoDownloadOutline />
+                                                </a>
+                                            </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -848,7 +1447,10 @@ const MessagesPage = () => {
                                 <div className='chat-create-group-members'>
                                     <h5>Select Members</h5>
                                     {teamMembers
-                                        .filter(member => member._id !== user?._id)
+                                        .filter((member, index, self) => 
+                                            member._id !== user?._id && 
+                                            self.findIndex(m => m._id === member._id) === index
+                                        )
                                         .map((member) => (
                                             <div 
                                                 key={member._id}
@@ -906,7 +1508,11 @@ const MessagesPage = () => {
                         <div className='chat-group-management-body'>
                             <div className='chat-group-management-members'>
                                 <h5>Group Members</h5>
-                                {currentChat.participants.map((member) => (
+                                {currentChat.participants
+                                    .filter((member, index, self) => 
+                                        self.findIndex(m => m._id === member._id) === index
+                                    )
+                                    .map((member) => (
                                     <div key={member._id} className='chat-group-management-member'>
                                         <div className='chat-group-member-avatar'>
                                             {getInitials(member.firstName, member.lastName)}
@@ -943,12 +1549,22 @@ const MessagesPage = () => {
                                 >
                                     <IoAddOutline /> Add Members
                                 </button>
-                                <button 
-                                    className='chat-group-management-add'
-                                    onClick={openEditGroup}
-                                >
-                                    <IoCreateOutline /> Edit Group
-                                </button>
+                                {currentChat.admins?.some(admin => admin._id === user?._id) && (
+                                    <button 
+                                        className='chat-group-management-add'
+                                        onClick={handleManageAdmins}
+                                    >
+                                        <IoShieldOutline /> Manage Admins
+                                    </button>
+                                )}
+                                {currentChat.admins?.some(admin => admin._id === user?._id) && (
+                                    <button 
+                                        className='chat-group-management-add'
+                                        onClick={openEditGroup}
+                                    >
+                                        <IoCreateOutline /> Edit Group
+                                    </button>
+                                )}
                                 <button 
                                     className='chat-leave-group'
                                     onClick={handleLeaveGroup}
@@ -1009,6 +1625,103 @@ const MessagesPage = () => {
                 </div>
             )}
 
+            {/* Manage Admins Modal */}
+            {showManageAdmins && currentChat?.isGroup && (
+                <div className='chat-group-management-modal'>
+                    <div className='chat-group-management-content'>
+                        <div className='chat-group-management-header'>
+                            <h3>Manage Admins</h3>
+                            <button 
+                                className='chat-close-modal'
+                                onClick={() => setShowManageAdmins(false)}
+                            >
+                                <IoCloseOutline />
+                            </button>
+                        </div>
+                        <div className='chat-group-management-body'>
+                            <div className='chat-create-group-members'>
+                                <h5>Current Admins</h5>
+                                {currentChat.admins?.length > 0 ? (
+                                    currentChat.admins.map((admin) => (
+                                        <div key={admin._id} className='chat-group-member-item'>
+                                            <div className='chat-group-member-avatar'>
+                                                {getInitials(admin.firstName, admin.lastName)}
+                                            </div>
+                                            <div className='chat-group-member-info'>
+                                                <div className='chat-group-member-name'>
+                                                    {admin.firstName || 'Unknown'} {admin.lastName || ''}
+                                                </div>
+                                                <div className='chat-group-member-role'>Admin</div>
+                                            </div>
+                                            {currentChat.admins?.length > 1 && (
+                                                <button 
+                                                    className='chat-group-member-remove'
+                                                    onClick={() => handleRemoveAdmin(admin._id)}
+                                                >
+                                                    <IoTrashOutline />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className='chat-no-admins'>
+                                        <p>No admins found</p>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {currentChat.admins?.some(admin => admin._id === user?._id) && (
+                                <div className='chat-create-group-members'>
+                                    <h5>Add New Admins</h5>
+                                    {currentChat.participants
+                                        .filter(member => 
+                                            member._id !== user?._id && 
+                                            !currentChat.admins?.some(admin => admin._id === member._id)
+                                        )
+                                        .map((member) => (
+                                            <div 
+                                                key={member._id}
+                                                className={`chat-create-group-member ${selectedAdmins.includes(member._id) ? 'selected' : ''}`}
+                                                onClick={() => toggleAdminSelection(member._id)}
+                                            >
+                                                <div className='chat-group-member-avatar'>
+                                                    {getInitials(member.firstName, member.lastName)}
+                                                </div>
+                                                <div className='chat-group-member-info'>
+                                                    <div className='chat-group-member-name'>
+                                                        {member.firstName} {member.lastName}
+                                                    </div>
+                                                </div>
+                                                {selectedAdmins.includes(member._id) && (
+                                                    <IoCheckmarkOutline className='chat-group-member-check' />
+                                                )}
+                                            </div>
+                                        ))}
+                                </div>
+                            )}
+                            
+                            <div className='chat-group-management-actions'>
+                                <button 
+                                    className='chat-group-management-cancel'
+                                    onClick={() => setShowManageAdmins(false)}
+                                >
+                                    Cancel
+                                </button>
+                                {currentChat.admins?.some(admin => admin._id === user?._id) && (
+                                    <button 
+                                        className='chat-group-management-add'
+                                        onClick={handleAddAdmins}
+                                        disabled={selectedAdmins.length === 0}
+                                    >
+                                        Add Admins
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Add Members Modal */}
             {showAddMembers && currentChat?.isGroup && (
                 <div className='chat-group-management-modal'>
@@ -1026,9 +1739,10 @@ const MessagesPage = () => {
                             <div className='chat-create-group-members'>
                                 <h5>Select Members to Add</h5>
                                 {teamMembers
-                                    .filter(member => 
+                                    .filter((member, index, self) => 
                                         member._id !== user?._id && 
-                                        !currentChat.participants.some(p => p._id === member._id)
+                                        !currentChat.participants.some(p => p._id === member._id) &&
+                                        self.findIndex(m => m._id === member._id) === index
                                     )
                                     .map((member) => (
                                         <div 
