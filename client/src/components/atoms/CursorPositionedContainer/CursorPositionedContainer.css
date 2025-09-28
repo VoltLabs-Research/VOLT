@@ -1,0 +1,25 @@
+/* CursorPositionedContainer base styles */
+.cursor-positioned-container {
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Optional: Add backdrop blur effect */
+.cursor-positioned-container.with-backdrop {
+    backdrop-filter: blur(8px);
+}
+
+/* Optional: Add shadow for better visibility */
+.cursor-positioned-container.with-shadow {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
