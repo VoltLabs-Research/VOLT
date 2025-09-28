@@ -208,16 +208,4 @@ const LiquidToggle = ({
     );
 };
 
-export default function App() {
-    const [isPressed, setIsPressed] = useState(false);
-
-    return (
-        <LiquidToggle
-            pressed={isPressed}
-            onChange={setIsPressed}
-            bounce={true}
-            deviation={2}
-            alpha={16}
-        />
-    );
-}
+export default LiquidToggle;

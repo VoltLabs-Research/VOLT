@@ -15,13 +15,16 @@ const FormRow = ({
     return (
         <div className={`form-control-row ${className ?? ''}`}>
             <label className='form-control-label'>{label}</label>
-            <Slider
-                min={min}
-                max={max}
-                step={step}
-                value={value}
-                onChange={onChange} />
-            <span className='form-control-value'>{format(value)}</span>
+
+            <div className='form-control-row-slider-container'>
+                <Slider
+                    min={min}
+                    max={max}
+                    step={step}
+                    value={value}
+                    onChange={onChange} />
+                <span className='form-control-value'>{format(value)}</span>
+            </div>
         </div>
     );
 };
