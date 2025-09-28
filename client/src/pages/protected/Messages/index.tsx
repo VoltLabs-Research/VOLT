@@ -108,7 +108,7 @@ const MessagesPage = () => {
             {/* Sidebar */}
             <div className='chat-sidebar-container'>
                 <div className='chat-sidebar-header-container'>
-                    <h3 className='chat-sidebar-header-title'>Chat</h3>
+                    <h3 className='chat-sidebar-header-title'>Messages</h3>
                     <div className='chat-sidebar-search-container'>
                         <i className='chat-sidebar-search-icon-container'>
                             <IoSearchOutline />

@@ -4,6 +4,10 @@
     height: 100%;
 }
 
+.dashboard-container:has(.chat-main-container){
+    padding: 0;
+}
+
 .search-container{
     display: flex;
     gap: 1rem;
