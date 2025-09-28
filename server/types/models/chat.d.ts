@@ -28,6 +28,12 @@ export interface IChat extends Document {
     lastMessage?: mongoose.Types.ObjectId;
     lastMessageAt?: Date;
     isActive: boolean;
+    isGroup: boolean;
+    groupName?: string;
+    groupDescription?: string;
+    groupAvatar?: string;
+    admins: mongoose.Types.ObjectId[];
+    createdBy?: mongoose.Types.ObjectId;
 }
 
 export interface IMessage extends Document {

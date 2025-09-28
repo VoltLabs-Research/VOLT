@@ -49,13 +49,41 @@ const ChatSchema: Schema<IChat> = new Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    // Group chat fields
+    isGroup: {
+        type: Boolean,
+        default: false
+    },
+    groupName: {
+        type: String,
+        required: function() { return this.isGroup; }
+    },
+    groupDescription: {
+        type: String,
+        default: ''
+    },
+    groupAvatar: {
+        type: String,
+        default: ''
+    },
+    admins: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: function() { return this.isGroup; }
     }
 }, {
     timestamps: true
 });
 
-// Ensure unique combination of participants and team
-ChatSchema.index({ participants: 1, team: 1 }, { unique: true });
+// Index for efficient queries (non-unique to allow group chats)
+ChatSchema.index({ participants: 1, team: 1 }, { unique: false });
+ChatSchema.index({ isGroup: 1 });
+ChatSchema.index({ team: 1, isActive: 1 });
 
 ChatSchema.plugin(useCascadeDelete);
 

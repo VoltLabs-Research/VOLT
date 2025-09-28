@@ -328,6 +328,53 @@ class ChatModule extends BaseSocketModule {
             });
         });
 
+        // Group management events
+        socket.on('group_created', (data: { chatId: string }) => {
+            if (!socket.user) return;
+            // Notify all participants about the new group
+            this.io?.to(`chat-${data.chatId}`).emit('group_created', { chatId: data.chatId });
+        });
+
+        socket.on('users_added_to_group', (data: { chatId: string; userIds: string[] }) => {
+            if (!socket.user) return;
+            // Notify all participants about new members
+            this.io?.to(`chat-${data.chatId}`).emit('users_added_to_group', { 
+                chatId: data.chatId, 
+                userIds: data.userIds,
+                addedBy: socket.user._id
+            });
+        });
+
+        socket.on('users_removed_from_group', (data: { chatId: string; userIds: string[] }) => {
+            if (!socket.user) return;
+            // Notify all participants about removed members
+            this.io?.to(`chat-${data.chatId}`).emit('users_removed_from_group', { 
+                chatId: data.chatId, 
+                userIds: data.userIds,
+                removedBy: socket.user._id
+            });
+        });
+
+        socket.on('group_info_updated', (data: { chatId: string; groupName?: string; groupDescription?: string }) => {
+            if (!socket.user) return;
+            // Notify all participants about group info changes
+            this.io?.to(`chat-${data.chatId}`).emit('group_info_updated', { 
+                chatId: data.chatId, 
+                groupName: data.groupName,
+                groupDescription: data.groupDescription,
+                updatedBy: socket.user._id
+            });
+        });
+
+        socket.on('user_left_group', (data: { chatId: string; userId: string }) => {
+            if (!socket.user) return;
+            // Notify all participants about user leaving
+            this.io?.to(`chat-${data.chatId}`).emit('user_left_group', { 
+                chatId: data.chatId, 
+                userId: data.userId
+            });
+        });
+
         // Handle disconnect
         socket.on('disconnect', () => {
             if (socket.user) {

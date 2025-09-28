@@ -120,5 +120,46 @@ export const chatApi = {
     sendFileMessage: async (chatId: string, fileData: { filename: string; originalName: string; size: number; mimetype: string; url: string }): Promise<Message> => {
         const response = await api.post<{ status: string; data: Message }>(`/chat/${chatId}/send-file`, fileData);
         return response.data.data;
+    },
+
+    // Group chat management
+    createGroupChat: async (teamId: string, groupName: string, groupDescription: string, participantIds: string[]): Promise<Chat> => {
+        const response = await api.post<{ status: string; data: Chat }>('/chat/groups', {
+            teamId,
+            groupName,
+            groupDescription,
+            participantIds
+        });
+        return response.data.data;
+    },
+
+    addUsersToGroup: async (chatId: string, userIds: string[]): Promise<Chat> => {
+        const response = await api.post<{ status: string; data: Chat }>(`/chat/${chatId}/groups/add-users`, { userIds });
+        return response.data.data;
+    },
+
+    removeUsersFromGroup: async (chatId: string, userIds: string[]): Promise<Chat> => {
+        const response = await api.post<{ status: string; data: Chat }>(`/chat/${chatId}/groups/remove-users`, { userIds });
+        return response.data.data;
+    },
+
+    updateGroupInfo: async (chatId: string, groupName?: string, groupDescription?: string): Promise<Chat> => {
+        const response = await api.patch<{ status: string; data: Chat }>(`/chat/${chatId}/groups/info`, {
+            groupName,
+            groupDescription
+        });
+        return response.data.data;
+    },
+
+    updateGroupAdmins: async (chatId: string, userIds: string[], action: 'add' | 'remove'): Promise<Chat> => {
+        const response = await api.patch<{ status: string; data: Chat }>(`/chat/${chatId}/groups/admins`, {
+            userIds,
+            action
+        });
+        return response.data.data;
+    },
+
+    leaveGroup: async (chatId: string): Promise<void> => {
+        await api.post(`/chat/${chatId}/groups/leave`);
     }
 };

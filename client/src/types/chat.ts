@@ -32,6 +32,12 @@ export interface Chat {
     lastMessage?: Message;
     lastMessageAt?: string;
     isActive: boolean;
+    isGroup: boolean;
+    groupName?: string;
+    groupDescription?: string;
+    groupAvatar?: string;
+    admins: User[];
+    createdBy?: User;
     createdAt: string;
     updatedAt: string;
 }

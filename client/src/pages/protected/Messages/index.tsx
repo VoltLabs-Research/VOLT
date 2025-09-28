@@ -34,10 +34,17 @@ import {
     IoPersonAddOutline,
     IoDocumentOutline,
     IoImageOutline,
-    IoDownloadOutline
+    IoDownloadOutline,
+    IoPeopleOutline,
+    IoCheckmarkOutline,
+    IoCloseOutline,
+    IoAddOutline,
+    IoCreateOutline,
+    IoExitOutline
 } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
 import useAuthStore from '@/stores/authentication';
+import useTeamStore from '@/stores/team/team';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import './Messages.css';
 
@@ -58,9 +65,15 @@ const MessagesPage = () => {
         editMessage,
         deleteMessage,
         toggleReaction,
+        createGroupChat,
+        addUsersToGroup,
+        removeUsersFromGroup,
+        updateGroupInfo,
+        leaveGroup,
     } = useChat();
 
     const { user } = useAuthStore();
+    const { selectedTeam } = useTeamStore();
     const [messageInput, setMessageInput] = useState('');
 	const [searchQuery, setSearchQuery] = useState('');
     const [showTeamMembers, setShowTeamMembers] = useState(false);
@@ -70,6 +83,14 @@ const MessagesPage = () => {
 	const [editingText, setEditingText] = useState('');
 	const [uploadingFile, setUploadingFile] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [showCreateGroup, setShowCreateGroup] = useState(false);
+	const [showGroupManagement, setShowGroupManagement] = useState(false);
+	const [groupName, setGroupName] = useState('');
+	const [groupDescription, setGroupDescription] = useState('');
+	const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+	const [editingGroupInfo, setEditingGroupInfo] = useState(false);
+	const [editGroupName, setEditGroupName] = useState('');
+	const [editGroupDescription, setEditGroupDescription] = useState('');
 	const REACTIONS = ['👍','❤️','😂','😮','😢','🎉'];
 
     // Auto-scroll to bottom when new messages arrive
@@ -194,6 +215,75 @@ const MessagesPage = () => {
 		return <IoDocumentOutline />;
 	};
 
+	const handleCreateGroup = async () => {
+		if (!groupName.trim() || selectedUsers.length === 0 || !selectedTeam) return;
+		
+		try {
+			await createGroupChat(selectedTeam._id, groupName, groupDescription, selectedUsers);
+			setShowCreateGroup(false);
+			setGroupName('');
+			setGroupDescription('');
+			setSelectedUsers([]);
+		} catch (error) {
+			console.error('Failed to create group:', error);
+		}
+	};
+
+	const handleAddUsersToGroup = async () => {
+		if (!currentChat || selectedUsers.length === 0) return;
+		
+		try {
+			await addUsersToGroup(currentChat._id, selectedUsers);
+			setSelectedUsers([]);
+		} catch (error) {
+			console.error('Failed to add users to group:', error);
+		}
+	};
+
+	const handleRemoveUserFromGroup = async (userId: string) => {
+		if (!currentChat) return;
+		
+		try {
+			await removeUsersFromGroup(currentChat._id, [userId]);
+		} catch (error) {
+			console.error('Failed to remove user from group:', error);
+		}
+	};
+
+	const handleUpdateGroupInfo = async () => {
+		if (!currentChat) return;
+		
+		try {
+			await updateGroupInfo(currentChat._id, editGroupName, editGroupDescription);
+			setEditingGroupInfo(false);
+		} catch (error) {
+			console.error('Failed to update group info:', error);
+		}
+	};
+
+	const handleLeaveGroup = async () => {
+		if (!currentChat) return;
+		
+		try {
+			await leaveGroup(currentChat._id);
+		} catch (error) {
+			console.error('Failed to leave group:', error);
+		}
+	};
+
+	const isUserAdmin = () => {
+		if (!currentChat || !user) return false;
+		return currentChat.admins.some(admin => admin._id === user._id);
+	};
+
+	const toggleUserSelection = (userId: string) => {
+		setSelectedUsers(prev => 
+			prev.includes(userId) 
+				? prev.filter(id => id !== userId)
+				: [...prev, userId]
+		);
+	};
+
     return (
         <DashboardContainer pageName='Messages' className='chat-main-container'>
             {/* Sidebar */}
@@ -218,6 +308,14 @@ const MessagesPage = () => {
 						title='Start new chat'
 					>
 						<IoPersonAddOutline />
+					</button>
+					<button 
+						className='chat-new-group-button'
+						onClick={() => setShowCreateGroup(!showCreateGroup)}
+						title='Create group chat'
+						disabled={!selectedTeam}
+					>
+						<IoPeopleOutline />
 					</button>
 				</div>
                 </div>
@@ -249,6 +347,72 @@ const MessagesPage = () => {
                     </div>
                 )}
 
+                {/* Create Group Chat */}
+                {showCreateGroup && selectedTeam && (
+                    <div className='chat-create-group-container'>
+                        <h4 className='chat-create-group-title'>Create Group Chat</h4>
+                        <div className='chat-create-group-form'>
+                            <input
+                                type='text'
+                                placeholder='Group name'
+                                value={groupName}
+                                onChange={(e) => setGroupName(e.target.value)}
+                                className='chat-create-group-input'
+                            />
+                            <textarea
+                                placeholder='Group description (optional)'
+                                value={groupDescription}
+                                onChange={(e) => setGroupDescription(e.target.value)}
+                                className='chat-create-group-textarea'
+                                rows={3}
+                            />
+                            <div className='chat-create-group-members'>
+                                <h5>Select Members</h5>
+                                {teamMembers.map((member) => (
+                                    <div 
+                                        key={member._id} 
+                                        className={`chat-create-group-member ${selectedUsers.includes(member._id) ? 'selected' : ''}`}
+                                        onClick={() => toggleUserSelection(member._id)}
+                                    >
+                                        <div className='chat-team-member-avatar'>
+                                            {getInitials(member.firstName, member.lastName)}
+                                        </div>
+                                        <div className='chat-team-member-info'>
+                                            <h5 className='chat-team-member-name'>
+                                                {member.firstName} {member.lastName}
+                                            </h5>
+                                            <p className='chat-team-member-email'>{member.email}</p>
+                                        </div>
+                                        {selectedUsers.includes(member._id) && (
+                                            <IoCheckmarkOutline className='chat-member-selected-icon' />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <div className='chat-create-group-actions'>
+                                <button 
+                                    className='chat-create-group-cancel'
+                                    onClick={() => {
+                                        setShowCreateGroup(false);
+                                        setGroupName('');
+                                        setGroupDescription('');
+                                        setSelectedUsers([]);
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    className='chat-create-group-create'
+                                    onClick={handleCreateGroup}
+                                    disabled={!groupName.trim() || selectedUsers.length === 0}
+                                >
+                                    Create Group
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className='chat-conversations-container'>
 						{isLoading ? (
 							<div className='chat-loading' aria-busy='true' aria-live='polite'>
@@ -262,25 +426,37 @@ const MessagesPage = () => {
                         </div>
                     ) : (
                         filteredChats.map((chat) => {
-                            const participant = chat.participants.find(p => p._id !== user?._id);
-                            if (!participant) return null;
-
-								const typingInChat = typingUsers.filter(u => u.chatId === chat._id && u.userId !== user?._id);
+                            const typingInChat = typingUsers.filter(u => u.chatId === chat._id && u.userId !== user?._id);
+                            
+                            // Handle group chats vs one-on-one chats
+                            const isGroup = chat.isGroup === true; // Explicitly check for true
+                            let displayName = '';
+                            let avatarContent = '';
+                            
+                            if (isGroup) {
+                                displayName = chat.groupName || 'Group Chat';
+                                avatarContent = '👥'; // Group icon
+                            } else {
+                                const participant = chat.participants.find(p => p._id !== user?._id);
+                                if (!participant) return null;
+                                displayName = `${participant.firstName} ${participant.lastName}`;
+                                avatarContent = getInitials(participant.firstName, participant.lastName);
+                            }
 
                             return (
                                 <div 
                                     key={chat._id} 
-										className={`chat-conversation-item ${currentChat?._id === chat._id ? 'active' : ''}`}
+									className={`chat-conversation-item ${currentChat?._id === chat._id ? 'active' : ''}`}
                                     onClick={() => selectChat(chat)}
-										aria-current={currentChat?._id === chat._id ? 'true' : 'false'}
+									aria-current={currentChat?._id === chat._id ? 'true' : 'false'}
                                 >
                                     <div className='chat-conversation-avatar'>
-                                        {getInitials(participant.firstName, participant.lastName)}
+                                        {avatarContent}
                                     </div>
                                     <div className='chat-conversation-content'>
                                         <div className='chat-conversation-header'>
                                             <h4 className='chat-conversation-name'>
-                                                {participant.firstName} {participant.lastName}
+                                                {displayName}
                                             </h4>
                                             {chat.lastMessageAt && (
                                                 <span className='chat-conversation-time'>
@@ -288,15 +464,15 @@ const MessagesPage = () => {
                                                 </span>
                                             )}
                                         </div>
-											{typingInChat.length > 0 ? (
-												<p className='chat-conversation-preview typing' aria-live='polite'>
-													Typing...
-												</p>
-											) : chat.lastMessage ? (
-												<p className='chat-conversation-preview'>
-													{chat.lastMessage.content}
-												</p>
-											) : null}
+										{typingInChat.length > 0 ? (
+											<p className='chat-conversation-preview typing' aria-live='polite'>
+												Typing...
+											</p>
+										) : chat.lastMessage ? (
+											<p className='chat-conversation-preview'>
+												{chat.lastMessage.content}
+											</p>
+										) : null}
                                     </div>
                                 </div>
                             );
@@ -313,18 +489,40 @@ const MessagesPage = () => {
                         <div className='chat-box-header-container'>
                             <div className='chat-header-user'>
                                 <div className='chat-header-avatar'>
-                                    {currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
+                                    {currentChat?.isGroup === true ? (
+                                        '👥'
+                                    ) : currentParticipant ? (
+                                        getInitials(currentParticipant.firstName, currentParticipant.lastName)
+                                    ) : '?'}
                                 </div>
                                 <div className='chat-header-info'>
                                     <h3 className='chat-header-name'>
-                                        {currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
+                                        {currentChat?.isGroup === true ? (
+                                            currentChat.groupName || 'Group Chat'
+                                        ) : currentParticipant ? (
+                                            `${currentParticipant.firstName} ${currentParticipant.lastName}`
+                                        ) : 'Unknown'}
                                     </h3>
                                     <div className='chat-header-status'>
-                                        {isConnected ? 'Online' : 'Connecting...'}
+                                        {currentChat?.isGroup === true ? (
+                                            `${currentChat.participants.length} members`
+                                        ) : (
+                                            isConnected ? 'Online' : 'Connecting...'
+                                        )}
                                     </div>
                                 </div>
                             </div>
                             <div className='chat-header-actions'>
+                                {currentChat?.isGroup === true && (
+                                    <button 
+                                        className='chat-header-action' 
+                                        title='Group Management' 
+                                        aria-label='Manage group'
+                                        onClick={() => setShowGroupManagement(!showGroupManagement)}
+                                    >
+                                        <IoPeopleOutline />
+                                    </button>
+                                )}
                                 <button className='chat-header-action' title='Call'>
                                     <IoCallOutline />
                                 </button>
@@ -536,11 +734,88 @@ const MessagesPage = () => {
 				{/* Details Panel */}
 				<div className='chat-details-container'>
 					<div className='chat-details-header'>
-						<h3 className='chat-details-title'>Contact Info</h3>
+						<h3 className='chat-details-title'>
+							{currentChat?.isGroup === true ? 'Group Info' : 'Contact Info'}
+						</h3>
 					</div>
 					
 					<div className='chat-details-content'>
-						{currentParticipant ? (
+						{currentChat?.isGroup === true ? (
+							<>
+								<div className='chat-details-section'>
+									<div className='chat-group-info'>
+										<div className='chat-group-avatar'>
+											👥
+										</div>
+										<h4 className='chat-group-name'>{currentChat?.groupName}</h4>
+										{currentChat?.groupDescription && (
+											<p className='chat-group-description'>{currentChat.groupDescription}</p>
+										)}
+										<div className='chat-group-members-count'>
+											{currentChat?.participants.length} members
+										</div>
+									</div>
+								</div>
+
+								<div className='chat-details-section'>
+									<h4 className='chat-details-section-title'>Members</h4>
+									<div className='chat-group-members'>
+										{currentChat?.participants.map((participant) => (
+											<div key={participant._id} className='chat-group-member'>
+												<div className='chat-team-member-avatar'>
+													{getInitials(participant.firstName, participant.lastName)}
+												</div>
+												<div className='chat-team-member-info'>
+													<h6 className='chat-team-member-name'>
+														{participant.firstName} {participant.lastName}
+														{currentChat?.admins.some(admin => admin._id === participant._id) && (
+															<span className='chat-admin-badge'>Admin</span>
+														)}
+													</h6>
+													<p className='chat-team-member-email'>{participant.email}</p>
+												</div>
+											</div>
+										))}
+									</div>
+								</div>
+
+								{isUserAdmin() && (
+									<div className='chat-details-section'>
+										<h4 className='chat-details-section-title'>Group Management</h4>
+										<div className='chat-details-actions'>
+											<button 
+												className='chat-details-action'
+												onClick={() => {
+													setEditGroupName(currentChat?.groupName || '');
+													setEditGroupDescription(currentChat?.groupDescription || '');
+													setEditingGroupInfo(true);
+												}}
+											>
+												<IoCreateOutline />
+												<span>Edit Group Info</span>
+											</button>
+											<button 
+												className='chat-details-action'
+												onClick={() => setShowGroupManagement(true)}
+											>
+												<IoAddOutline />
+												<span>Add Members</span>
+											</button>
+										</div>
+									</div>
+								)}
+
+								<div className='chat-details-section'>
+									<button 
+										className='chat-leave-group'
+										onClick={handleLeaveGroup}
+									>
+										<IoExitOutline />
+										Leave Group
+									</button>
+								</div>
+							</>
+						) : currentParticipant ? (
 							<>
 								<div className='chat-details-section'>
 									<div className='chat-details-user-info'>
@@ -597,6 +872,125 @@ const MessagesPage = () => {
 					</div>
 				</div>
             </div>
+
+            {/* Group Management Modal */}
+            {showGroupManagement && currentChat && (
+                <div className='chat-group-management-modal'>
+                    <div className='chat-group-management-content'>
+                        <div className='chat-group-management-header'>
+                            <h3>Add Members to Group</h3>
+                            <button 
+                                className='chat-close-modal'
+                                onClick={() => setShowGroupManagement(false)}
+                            >
+                                <IoCloseOutline />
+                            </button>
+                        </div>
+                        <div className='chat-group-management-body'>
+                            <div className='chat-group-management-members'>
+                                {teamMembers
+                                    .filter(member => !currentChat.participants.some(p => p._id === member._id))
+                                    .map((member) => (
+                                        <div 
+                                            key={member._id} 
+                                            className={`chat-group-management-member ${selectedUsers.includes(member._id) ? 'selected' : ''}`}
+                                            onClick={() => toggleUserSelection(member._id)}
+                                        >
+                                            <div className='chat-team-member-avatar'>
+                                                {getInitials(member.firstName, member.lastName)}
+                                            </div>
+                                            <div className='chat-team-member-info'>
+                                                <h5 className='chat-team-member-name'>
+                                                    {member.firstName} {member.lastName}
+                                                </h5>
+                                                <p className='chat-team-member-email'>{member.email}</p>
+                                            </div>
+                                            {selectedUsers.includes(member._id) && (
+                                                <IoCheckmarkOutline className='chat-member-selected-icon' />
+                                            )}
+                                        </div>
+                                    ))}
+                            </div>
+                            <div className='chat-group-management-actions'>
+                                <button 
+                                    className='chat-group-management-cancel'
+                                    onClick={() => {
+                                        setShowGroupManagement(false);
+                                        setSelectedUsers([]);
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    className='chat-group-management-add'
+                                    onClick={handleAddUsersToGroup}
+                                    disabled={selectedUsers.length === 0}
+                                >
+                                    Add Members
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Group Info Modal */}
+            {editingGroupInfo && currentChat && (
+                <div className='chat-edit-group-modal'>
+                    <div className='chat-edit-group-content'>
+                        <div className='chat-edit-group-header'>
+                            <h3>Edit Group Info</h3>
+                            <button 
+                                className='chat-close-modal'
+                                onClick={() => {
+                                    setEditingGroupInfo(false);
+                                    setEditGroupName('');
+                                    setEditGroupDescription('');
+                                }}
+                            >
+                                <IoCloseOutline />
+                            </button>
+                        </div>
+                        <div className='chat-edit-group-body'>
+                            <div className='chat-edit-group-form'>
+                                <input
+                                    type='text'
+                                    placeholder='Group name'
+                                    value={editGroupName}
+                                    onChange={(e) => setEditGroupName(e.target.value)}
+                                    className='chat-edit-group-input'
+                                />
+                                <textarea
+                                    placeholder='Group description'
+                                    value={editGroupDescription}
+                                    onChange={(e) => setEditGroupDescription(e.target.value)}
+                                    className='chat-edit-group-textarea'
+                                    rows={3}
+                                />
+                            </div>
+                            <div className='chat-edit-group-actions'>
+                                <button 
+                                    className='chat-edit-group-cancel'
+                                    onClick={() => {
+                                        setEditingGroupInfo(false);
+                                        setEditGroupName('');
+                                        setEditGroupDescription('');
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    className='chat-edit-group-save'
+                                    onClick={handleUpdateGroupInfo}
+                                    disabled={!editGroupName.trim()}
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </DashboardContainer>
     )
 };

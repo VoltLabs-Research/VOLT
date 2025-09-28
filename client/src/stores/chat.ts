@@ -24,6 +24,7 @@ import { create } from 'zustand';
 import type { Chat, Message, TypingUser } from '@/types/chat';
 import type { User } from '@/types/models';
 import { chatApi } from '@/services/chat-api';
+import useAuthStore from '@/stores/authentication';
 import { socketService } from '@/services/socketio';
 
 interface ChatStore {
@@ -54,6 +55,14 @@ interface ChatStore {
     editMessage: (messageId: string, content: string) => Promise<void>;
     deleteMessage: (messageId: string) => Promise<void>;
     toggleReaction: (messageId: string, emoji: string) => Promise<void>;
+    
+    // Group management
+    createGroupChat: (teamId: string, groupName: string, groupDescription: string, participantIds: string[]) => Promise<void>;
+    addUsersToGroup: (chatId: string, userIds: string[]) => Promise<void>;
+    removeUsersFromGroup: (chatId: string, userIds: string[]) => Promise<void>;
+    updateGroupInfo: (chatId: string, groupName?: string, groupDescription?: string) => Promise<void>;
+    updateGroupAdmins: (chatId: string, userIds: string[], action: 'add' | 'remove') => Promise<void>;
+    leaveGroup: (chatId: string) => Promise<void>;
     markAsRead: (chatId: string) => Promise<void>;
     getOrCreateChat: (teamId: string, participantId: string) => Promise<Chat>;
 
@@ -215,6 +224,94 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             }
         } catch (error) {
             console.error('Failed to toggle reaction:', error);
+        }
+    },
+
+    // Group management
+    createGroupChat: async (teamId, groupName, groupDescription, participantIds) => {
+        try {
+            const groupChat = await chatApi.createGroupChat(teamId, groupName, groupDescription, participantIds);
+            set((state) => ({
+                chats: [...state.chats, groupChat]
+            }));
+            if (socketService.isConnected()) {
+                socketService.emit('group_created', { chatId: groupChat._id }).catch(() => {});
+            }
+        } catch (error) {
+            console.error('Failed to create group chat:', error);
+        }
+    },
+
+    addUsersToGroup: async (chatId, userIds) => {
+        try {
+            const updatedChat = await chatApi.addUsersToGroup(chatId, userIds);
+            set((state) => ({
+                chats: state.chats.map(c => c._id === chatId ? updatedChat : c),
+                currentChat: state.currentChat?._id === chatId ? updatedChat : state.currentChat
+            }));
+            if (socketService.isConnected()) {
+                socketService.emit('users_added_to_group', { chatId, userIds }).catch(() => {});
+            }
+        } catch (error) {
+            console.error('Failed to add users to group:', error);
+        }
+    },
+
+    removeUsersFromGroup: async (chatId, userIds) => {
+        try {
+            const updatedChat = await chatApi.removeUsersFromGroup(chatId, userIds);
+            set((state) => ({
+                chats: state.chats.map(c => c._id === chatId ? updatedChat : c),
+                currentChat: state.currentChat?._id === chatId ? updatedChat : state.currentChat
+            }));
+            if (socketService.isConnected()) {
+                socketService.emit('users_removed_from_group', { chatId, userIds }).catch(() => {});
+            }
+        } catch (error) {
+            console.error('Failed to remove users from group:', error);
+        }
+    },
+
+    updateGroupInfo: async (chatId, groupName, groupDescription) => {
+        try {
+            const updatedChat = await chatApi.updateGroupInfo(chatId, groupName, groupDescription);
+            set((state) => ({
+                chats: state.chats.map(c => c._id === chatId ? updatedChat : c),
+                currentChat: state.currentChat?._id === chatId ? updatedChat : state.currentChat
+            }));
+            if (socketService.isConnected()) {
+                socketService.emit('group_info_updated', { chatId, groupName, groupDescription }).catch(() => {});
+            }
+        } catch (error) {
+            console.error('Failed to update group info:', error);
+        }
+    },
+
+    updateGroupAdmins: async (chatId, userIds, action) => {
+        try {
+            const updatedChat = await chatApi.updateGroupAdmins(chatId, userIds, action);
+            set((state) => ({
+                chats: state.chats.map(c => c._id === chatId ? updatedChat : c),
+                currentChat: state.currentChat?._id === chatId ? updatedChat : state.currentChat
+            }));
+        } catch (error) {
+            console.error('Failed to update group admins:', error);
+        }
+    },
+
+    leaveGroup: async (chatId) => {
+        try {
+            await chatApi.leaveGroup(chatId);
+            set((state) => ({
+                chats: state.chats.filter(c => c._id !== chatId),
+                currentChat: state.currentChat?._id === chatId ? null : state.currentChat
+            }));
+            if (socketService.isConnected()) {
+                const { user } = useAuthStore.getState();
+                socketService.emit('user_left_group', { chatId, userId: user?._id }).catch(() => {});
+            }
+        } catch (error) {
+            console.error('Failed to leave group:', error);
         }
     },
 

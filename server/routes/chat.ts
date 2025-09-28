@@ -36,6 +36,14 @@ import {
     serveFile,
     sendFileMessage
 } from '@/controllers/chat';
+import {
+    createGroupChat,
+    addUsersToGroup,
+    removeUsersFromGroup,
+    updateGroupInfo,
+    updateGroupAdmins,
+    leaveGroup
+} from '@/controllers/group-chat';
 
 const router = Router();
 
@@ -69,5 +77,13 @@ router.patch('/:chatId/read', markMessagesAsRead);
 router.post('/:chatId/upload', uploadFile);
 router.post('/:chatId/send-file', sendFileMessage);
 router.get('/files/:filename', serveFile);
+
+// Group chat management
+router.post('/groups', createGroupChat);
+router.post('/:chatId/groups/add-users', addUsersToGroup);
+router.post('/:chatId/groups/remove-users', removeUsersFromGroup);
+router.patch('/:chatId/groups/info', updateGroupInfo);
+router.patch('/:chatId/groups/admins', updateGroupAdmins);
+router.post('/:chatId/groups/leave', leaveGroup);
 
 export default router;

@@ -50,6 +50,12 @@ export const useChat = () => {
         editMessage: editMessageStore,
         deleteMessage: deleteMessageStore,
         toggleReaction: toggleReactionStore,
+        createGroupChat,
+        addUsersToGroup,
+        removeUsersFromGroup,
+        updateGroupInfo,
+        updateGroupAdmins,
+        leaveGroup,
         markAsRead,
         getOrCreateChat,
         joinChat,
@@ -283,6 +289,12 @@ export const useChat = () => {
         loadChats,
         editMessage: editMessageStore,
         deleteMessage: deleteMessageStore,
-        toggleReaction: toggleReactionStore
+        toggleReaction: toggleReactionStore,
+        createGroupChat,
+        addUsersToGroup,
+        removeUsersFromGroup,
+        updateGroupInfo,
+        updateGroupAdmins,
+        leaveGroup
     };
 };
