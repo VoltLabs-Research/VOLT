@@ -194,6 +194,88 @@ export const sendMessage = catchAsync(async (req: Request, res: Response, next: 
 });
 
 /**
+ * Edit a message
+ */
+export const editMessage = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    const { chatId, messageId } = req.params as any;
+    const { content } = req.body as any;
+
+    const message = await Message.findOne({ _id: messageId, chat: chatId });
+    if (!message) {
+        throw new RuntimeError('Message::NotFound', 404);
+    }
+    if (message.sender.toString() !== user._id.toString()) {
+        throw new RuntimeError('Message::Forbidden', 403);
+    }
+
+    message.content = content;
+    message.editedAt = new Date();
+    await message.save();
+    await message.populate('sender', 'firstName lastName email');
+
+    res.status(200).json({ status: 'success', data: message });
+});
+
+/**
+ * Soft delete a message
+ */
+export const deleteMessage = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    const { chatId, messageId } = req.params as any;
+
+    const message = await Message.findOne({ _id: messageId, chat: chatId });
+    if (!message) {
+        throw new RuntimeError('Message::NotFound', 404);
+    }
+    if (message.sender.toString() !== user._id.toString()) {
+        throw new RuntimeError('Message::Forbidden', 403);
+    }
+
+    message.deleted = true;
+    message.deletedAt = new Date();
+    message.deletedBy = user._id;
+    await message.save();
+
+    res.status(200).json({ status: 'success', data: { _id: message._id, deleted: true } });
+});
+
+/**
+ * Toggle reaction on a message
+ */
+export const toggleReaction = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    const { chatId, messageId } = req.params as any;
+    const { emoji } = req.body as any;
+
+    const message = await Message.findOne({ _id: messageId, chat: chatId });
+    if (!message) {
+        throw new RuntimeError('Message::NotFound', 404);
+    }
+
+    const reactions = message.reactions || [] as any[];
+    const idx = reactions.findIndex(r => r.emoji === emoji);
+    const userIdStr = user._id.toString();
+
+    if (idx === -1) {
+        reactions.push({ emoji, users: [user._id] });
+    } else {
+        const users = reactions[idx].users.map((u: any) => u.toString());
+        if (users.includes(userIdStr)) {
+            reactions[idx].users = reactions[idx].users.filter((u: any) => u.toString() !== userIdStr);
+            if (reactions[idx].users.length === 0) reactions.splice(idx, 1);
+        } else {
+            reactions[idx].users.push(user._id);
+        }
+    }
+
+    (message as any).reactions = reactions;
+    await message.save();
+    await message.populate('sender', 'firstName lastName email');
+
+    res.status(200).json({ status: 'success', data: message });
+});
+/**
  * Mark messages as read
  */
 export const markMessagesAsRead = catchAsync(async (req: Request, res: Response, next: NextFunction) => {

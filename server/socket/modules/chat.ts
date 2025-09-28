@@ -140,6 +140,66 @@ class ChatModule extends BaseSocketModule {
             }
         });
 
+        // Edit a message (only sender)
+        socket.on('edit_message', async (data: { chatId: string; messageId: string; content: string }) => {
+            if (!socket.user) return;
+            try {
+                const { chatId, messageId, content } = data;
+                const message = await Message.findOne({ _id: messageId, chat: chatId });
+                if (!message) return;
+                if (message.sender.toString() !== socket.user._id.toString()) return;
+                message.content = content;
+                (message as any).editedAt = new Date();
+                await message.save();
+                await message.populate('sender', 'firstName lastName email');
+                this.io?.to(`chat-${chatId}`).emit('message_edited', { chatId, message });
+            } catch {}
+        });
+
+        // Delete a message (soft delete)
+        socket.on('delete_message', async (data: { chatId: string; messageId: string }) => {
+            if (!socket.user) return;
+            try {
+                const { chatId, messageId } = data;
+                const message = await Message.findOne({ _id: messageId, chat: chatId });
+                if (!message) return;
+                if (message.sender.toString() !== socket.user._id.toString()) return;
+                (message as any).deleted = true;
+                (message as any).deletedAt = new Date();
+                (message as any).deletedBy = socket.user._id;
+                await message.save();
+                this.io?.to(`chat-${chatId}`).emit('message_deleted', { chatId, messageId });
+            } catch {}
+        });
+
+        // Toggle reaction
+        socket.on('toggle_reaction', async (data: { chatId: string; messageId: string; emoji: string }) => {
+            if (!socket.user) return;
+            try {
+                const { chatId, messageId, emoji } = data;
+                const message: any = await Message.findOne({ _id: messageId, chat: chatId });
+                if (!message) return;
+                const reactions = message.reactions || [];
+                const idx = reactions.findIndex((r: any) => r.emoji === emoji);
+                const userIdStr = socket.user._id.toString();
+                if (idx === -1) {
+                    reactions.push({ emoji, users: [socket.user._id] });
+                } else {
+                    const users = reactions[idx].users.map((u: any) => u.toString());
+                    if (users.includes(userIdStr)) {
+                        reactions[idx].users = reactions[idx].users.filter((u: any) => u.toString() !== userIdStr);
+                        if (reactions[idx].users.length === 0) reactions.splice(idx, 1);
+                    } else {
+                        reactions[idx].users.push(socket.user._id);
+                    }
+                }
+                message.reactions = reactions;
+                await message.save();
+                await message.populate('sender', 'firstName lastName email');
+                this.io?.to(`chat-${chatId}`).emit('reaction_updated', { chatId, message });
+            } catch {}
+        });
+
         // Mark messages as read
         socket.on('mark_read', async (data: { chatId: string }) => {
             if (!socket.user) {

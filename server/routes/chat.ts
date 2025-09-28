@@ -28,7 +28,10 @@ import {
     getChatMessages,
     sendMessage,
     markMessagesAsRead,
-    getTeamMembers
+    getTeamMembers,
+    editMessage,
+    deleteMessage,
+    toggleReaction
 } from '@/controllers/chat';
 
 const router = Router();
@@ -50,6 +53,11 @@ router.get('/:chatId/messages', getChatMessages);
 
 // Send a message to a chat
 router.post('/:chatId/messages', sendMessage);
+
+// Edit, delete and react to messages
+router.patch('/:chatId/messages/:messageId', editMessage);
+router.delete('/:chatId/messages/:messageId', deleteMessage);
+router.post('/:chatId/messages/:messageId/reactions', toggleReaction);
 
 // Mark messages as read
 router.patch('/:chatId/read', markMessagesAsRead);

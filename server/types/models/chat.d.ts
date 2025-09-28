@@ -42,4 +42,9 @@ export interface IMessage extends Document {
         fileSize?: number;
         fileType?: string;
     };
+    editedAt?: Date | null;
+    deleted?: boolean;
+    deletedAt?: Date | null;
+    deletedBy?: mongoose.Types.ObjectId | null;
+    reactions?: { emoji: string; users: mongoose.Types.ObjectId[] }[];
 }

@@ -84,5 +84,22 @@ export const chatApi = {
     // Mark messages as read
     markMessagesAsRead: async (chatId: string): Promise<void> => {
         await api.patch(`/chat/${chatId}/read`);
+    },
+
+    // Edit a message
+    editMessage: async (chatId: string, messageId: string, content: string): Promise<Message> => {
+        const response = await api.patch<{ status: string; data: Message }>(`/chat/${chatId}/messages/${messageId}`, { content });
+        return response.data.data;
+    },
+
+    // Delete a message
+    deleteMessage: async (chatId: string, messageId: string): Promise<void> => {
+        await api.delete(`/chat/${chatId}/messages/${messageId}`);
+    },
+
+    // Toggle reaction
+    toggleReaction: async (chatId: string, messageId: string, emoji: string): Promise<Message> => {
+        const response = await api.post<{ status: string; data: Message }>(`/chat/${chatId}/messages/${messageId}/reactions`, { emoji });
+        return response.data.data;
     }
 };

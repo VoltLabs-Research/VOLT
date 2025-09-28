@@ -49,6 +49,11 @@ export interface Message {
         fileSize?: number;
         fileType?: string;
     };
+    editedAt?: string | null;
+    deleted?: boolean;
+    deletedAt?: string | null;
+    deletedBy?: User | string | null;
+    reactions?: { emoji: string; users: (User | string)[] }[];
     createdAt: string;
     updatedAt: string;
 }

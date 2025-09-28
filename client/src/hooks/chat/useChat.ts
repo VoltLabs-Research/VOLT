@@ -46,6 +46,9 @@ export const useChat = () => {
         loadTeamMembers,
         loadMessages,
         sendMessage,
+        editMessage: editMessageStore,
+        deleteMessage: deleteMessageStore,
+        toggleReaction: toggleReactionStore,
         markAsRead,
         getOrCreateChat,
         joinChat,
@@ -90,6 +93,9 @@ export const useChat = () => {
         let userTypingUnsubscribe: (() => void) | null = null;
         let messagesReadUnsubscribe: (() => void) | null = null;
         let errorUnsubscribe: (() => void) | null = null;
+        let editedMessageUnsubscribe: (() => void) | null = null;
+        let deletedMessageUnsubscribe: (() => void) | null = null;
+        let reactionUpdatedUnsubscribe: (() => void) | null = null;
 
         const handleConnect = (connected: boolean) => {
             setConnected(connected);
@@ -139,6 +145,29 @@ export const useChat = () => {
             console.error('Chat socket error:', error);
         };
 
+        const handleMessageEdited = (payload: { chatId: string; message: any }) => {
+            const { currentChat } = useChatStore.getState();
+            if (currentChat && currentChat._id === payload.chatId) {
+                const updated = payload.message;
+                setMessages(useChatStore.getState().messages.map(m => m._id === updated._id ? updated : m));
+            }
+        };
+
+        const handleMessageDeleted = (payload: { chatId: string; messageId: string }) => {
+            const { currentChat } = useChatStore.getState();
+            if (currentChat && currentChat._id === payload.chatId) {
+                setMessages(useChatStore.getState().messages.map(m => m._id === payload.messageId ? { ...m, deleted: true } as any : m));
+            }
+        };
+
+        const handleReactionUpdated = (payload: { chatId: string; message: any }) => {
+            const { currentChat } = useChatStore.getState();
+            if (currentChat && currentChat._id === payload.chatId) {
+                const updated = payload.message;
+                setMessages(useChatStore.getState().messages.map(m => m._id === updated._id ? updated : m));
+            }
+        };
+
         // Register event listeners
         connectionUnsubscribe = socketService.onConnectionChange(handleConnect);
         joinedChatUnsubscribe = socketService.on('joined_chat', handleJoinedChat);
@@ -147,6 +176,9 @@ export const useChat = () => {
         userTypingUnsubscribe = socketService.on('user_typing', handleUserTyping);
         messagesReadUnsubscribe = socketService.on('messages_read', handleMessagesRead);
         errorUnsubscribe = socketService.on('error', handleError);
+        editedMessageUnsubscribe = socketService.on('message_edited', handleMessageEdited);
+        deletedMessageUnsubscribe = socketService.on('message_deleted', handleMessageDeleted);
+        reactionUpdatedUnsubscribe = socketService.on('reaction_updated', handleReactionUpdated);
 
         // Initialize connection if not connected
         if (!socketService.isConnected()) {
@@ -167,6 +199,9 @@ export const useChat = () => {
             if (userTypingUnsubscribe) userTypingUnsubscribe();
             if (messagesReadUnsubscribe) messagesReadUnsubscribe();
             if (errorUnsubscribe) errorUnsubscribe();
+            if (editedMessageUnsubscribe) editedMessageUnsubscribe();
+            if (deletedMessageUnsubscribe) deletedMessageUnsubscribe();
+            if (reactionUpdatedUnsubscribe) reactionUpdatedUnsubscribe();
         };
     }, [addMessage, setMessages, setTypingUsers, setConnected]);
 
@@ -243,6 +278,9 @@ export const useChat = () => {
         startChatWithMember,
         handleSendMessage,
         handleTyping,
-        loadChats
+        loadChats,
+        editMessage: editMessageStore,
+        deleteMessage: deleteMessageStore,
+        toggleReaction: toggleReactionStore
     };
 };

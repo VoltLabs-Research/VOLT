@@ -51,14 +51,20 @@ const MessagesPage = () => {
         startChatWithMember,
         handleSendMessage,
         handleTyping,
+		editMessage,
+		deleteMessage,
+		toggleReaction,
     } = useChat();
 
     const { user } = useAuthStore();
     const [messageInput, setMessageInput] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
+	const [searchQuery, setSearchQuery] = useState('');
     const [showTeamMembers, setShowTeamMembers] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLTextAreaElement>(null);
+	const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+	const [editingText, setEditingText] = useState('');
+	const REACTIONS = ['👍','❤️','😂','😮','😢','🎉'];
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
@@ -130,6 +136,25 @@ const MessagesPage = () => {
     const getInitials = (firstName: string, lastName: string) => {
         return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
     };
+
+	const startEditing = (messageId: string, current: string) => {
+		setEditingMessageId(messageId);
+		setEditingText(current);
+	};
+
+	const saveEditing = async () => {
+		if (!editingMessageId) return;
+		const trimmed = editingText.trim();
+		if (!trimmed) return;
+		await editMessage(editingMessageId, trimmed);
+		setEditingMessageId(null);
+		setEditingText('');
+	};
+
+	const cancelEditing = () => {
+		setEditingMessageId(null);
+		setEditingText('');
+	};
 
     return (
         <DashboardContainer pageName='Messages' className='chat-main-container'>
@@ -307,10 +332,50 @@ const MessagesPage = () => {
 													{isSent ? 'You' : getInitials(message.sender.firstName, message.sender.lastName)}
 												</div>
 												<div className='chat-message-content'>
-													<p className='chat-message-text'>{message.content}</p>
-													<div className='chat-message-time'>
-														{formatTime(message.createdAt)}
-													</div>
+													{message.deleted ? (
+														<p className='chat-message-text deleted'>Message deleted</p>
+													) : editingMessageId === message._id ? (
+														<form onSubmit={(e) => { e.preventDefault(); void saveEditing(); }} className='chat-edit-form'>
+															<input
+																className='chat-edit-input'
+																value={editingText}
+																onChange={(e) => setEditingText(e.target.value)}
+															/>
+															<div className='chat-edit-actions'>
+																<button type='button' className='chat-edit-cancel' onClick={cancelEditing}>Cancel</button>
+																<button type='submit' className='chat-edit-save'>Save</button>
+															</div>
+														</form>
+													) : (
+														<>
+															<p className='chat-message-text'>
+																{message.content}
+																{message.editedAt ? <span className='chat-message-edited'>(edited)</span> : null}
+															</p>
+															<div className='chat-message-time'>
+																{formatTime(message.createdAt)}
+															</div>
+															<div className='chat-message-reactions'>
+																{(message.reactions || []).map(r => (
+																	<button key={r.emoji} className='chat-reaction-chip' onClick={() => toggleReaction(message._id, r.emoji)} title={`${r.users.length} reactions`}>
+																		<span>{r.emoji}</span>
+																		<span className='chat-reaction-count'>{r.users.length}</span>
+																	</button>
+																))}
+																<div className='chat-reaction-palette'>
+																	{REACTIONS.map(emoji => (
+																		<button key={emoji} className='chat-reaction-btn' onClick={() => toggleReaction(message._id, emoji)} title={`React with ${emoji}`}>{emoji}</button>
+																	))}
+																</div>
+															</div>
+															{isSent && (
+																<div className='chat-message-menu'>
+																	<button className='chat-message-menu-btn' onClick={() => startEditing(message._id, message.content)}>Edit</button>
+																	<button className='chat-message-menu-btn danger' onClick={() => void deleteMessage(message._id)}>Delete</button>
+																</div>
+															)}
+														</>
+													)}
 												</div>
 											</div>
 										</React.Fragment>

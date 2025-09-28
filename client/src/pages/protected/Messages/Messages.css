@@ -337,6 +337,126 @@
     word-wrap: break-word;
 }
 
+.chat-message-text.deleted {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.chat-message-edited {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.chat-message-reactions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.chat-reaction-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-3);
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.chat-reaction-chip:hover {
+    background: var(--color-surface-2);
+}
+
+.chat-reaction-count {
+    color: var(--color-text-muted);
+}
+
+.chat-reaction-palette {
+    display: inline-flex;
+    gap: 0.25rem;
+    margin-left: 0.25rem;
+}
+
+.chat-reaction-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-reaction-btn:hover {
+    background: var(--color-surface-2);
+}
+
+.chat-message-menu {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
+
+.chat-message-menu-btn {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-1);
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.chat-message-menu-btn:hover {
+    background: var(--color-surface-2);
+}
+
+.chat-message-menu-btn.danger {
+    color: var(--accent-red);
+}
+
+.chat-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.chat-edit-input {
+    width: 100%;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+}
+
+.chat-edit-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.chat-edit-cancel,
+.chat-edit-save {
+    padding: 0.3rem 0.6rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-1);
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.chat-edit-save {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+}
+
 .chat-message.sent .chat-message-content {
     background: var(--accent-blue);
     color: white;

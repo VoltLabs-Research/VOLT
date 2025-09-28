@@ -61,7 +61,33 @@ const MessageSchema: Schema<IMessage> = new Schema({
         fileName: String,
         fileSize: Number,
         fileType: String
-    }
+    },
+    // Message edition
+    editedAt: {
+        type: Date,
+        default: null
+    },
+    // Soft delete flags
+    deleted: {
+        type: Boolean,
+        default: false
+    },
+    deletedAt: {
+        type: Date,
+        default: null
+    },
+    deletedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    // Reactions: list of emojis with users who reacted
+    reactions: [
+        new Schema({
+            emoji: { type: String, required: true },
+            users: [{ type: Schema.Types.ObjectId, ref: 'User' }]
+        }, { _id: false })
+    ]
 }, {
     timestamps: true
 });
@@ -70,6 +96,7 @@ const MessageSchema: Schema<IMessage> = new Schema({
 MessageSchema.index({ chat: 1, createdAt: -1 });
 MessageSchema.index({ sender: 1 });
 MessageSchema.index({ readBy: 1 });
+MessageSchema.index({ 'reactions.emoji': 1 });
 
 MessageSchema.plugin(useCascadeDelete);
 
