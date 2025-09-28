@@ -38,6 +38,33 @@ interface ChatStore {
     isLoading: boolean;
     isConnected: boolean;
 
+    // Modal states
+    showTeamMembers: boolean;
+    showCreateGroup: boolean;
+    showGroupManagement: boolean;
+    showEditGroup: boolean;
+    showAddMembers: boolean;
+    showManageAdmins: boolean;
+    showEmojiPicker: boolean;
+    showMessageOptions: string | null;
+    showReactions: string | null;
+    editingMessage: string | null;
+    editMessageContent: string;
+    selectedMembers: string[];
+    selectedAdmins: string[];
+    groupName: string;
+    groupDescription: string;
+    editGroupName: string;
+    editGroupDescription: string;
+
+    // Call states
+    callState: 'idle' | 'calling' | 'ringing' | 'connected' | 'ended';
+    callType: 'voice' | 'video' | null;
+    callParticipants: string[];
+    isInCall: boolean;
+    callStartTime: Date | null;
+    callDuration: number;
+
     // Actions
     setCurrentChat: (chat: Chat | null) => void;
     setMessages: (messages: Message[]) => void;
@@ -48,6 +75,36 @@ interface ChatStore {
     getUserPresence: (userId: string) => 'online' | 'offline' | undefined;
     setLoading: (loading: boolean) => void;
     setConnected: (connected: boolean) => void;
+
+    // Modal actions
+    setShowTeamMembers: (show: boolean) => void;
+    setShowCreateGroup: (show: boolean) => void;
+    setShowGroupManagement: (show: boolean) => void;
+    setShowEditGroup: (show: boolean) => void;
+    setShowAddMembers: (show: boolean) => void;
+    setShowManageAdmins: (show: boolean) => void;
+    setShowEmojiPicker: (show: boolean) => void;
+    setShowMessageOptions: (messageId: string | null) => void;
+    setShowReactions: (messageId: string | null) => void;
+    setEditingMessage: (messageId: string | null) => void;
+    setEditMessageContent: (content: string) => void;
+    setSelectedMembers: (members: string[]) => void;
+    setSelectedAdmins: (admins: string[]) => void;
+    setGroupName: (name: string) => void;
+    setGroupDescription: (description: string) => void;
+    setEditGroupName: (name: string) => void;
+    setEditGroupDescription: (description: string) => void;
+    toggleMemberSelection: (memberId: string) => void;
+    toggleAdminSelection: (adminId: string) => void;
+    resetModalStates: () => void;
+
+    // Call actions
+    startCall: (type: 'voice' | 'video', participants: string[]) => void;
+    answerCall: () => void;
+    endCall: () => void;
+    rejectCall: () => void;
+    setCallState: (state: 'idle' | 'calling' | 'ringing' | 'connected' | 'ended') => void;
+    updateCallDuration: () => void;
 
     // API Actions
     loadChats: () => Promise<void>;
@@ -86,6 +143,33 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     userPresence: {},
     isLoading: false,
     isConnected: false,
+
+    // Modal states
+    showTeamMembers: false,
+    showCreateGroup: false,
+    showGroupManagement: false,
+    showEditGroup: false,
+    showAddMembers: false,
+    showManageAdmins: false,
+    showEmojiPicker: false,
+    showMessageOptions: null,
+    showReactions: null,
+    editingMessage: null,
+    editMessageContent: '',
+    selectedMembers: [],
+    selectedAdmins: [],
+    groupName: '',
+    groupDescription: '',
+    editGroupName: '',
+    editGroupDescription: '',
+
+    // Call states
+    callState: 'idle',
+    callType: null,
+    callParticipants: [],
+    isInCall: false,
+    callStartTime: null,
+    callDuration: 0,
 
     // Basic setters
     setCurrentChat: (chat) => set({ currentChat: chat }),
@@ -483,6 +567,101 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             socketService.emit('typing_stop', { chatId }).catch((error) => {
                 console.error('Failed to stop typing:', error);
             });
+        }
+    },
+
+    // Modal actions
+    setShowTeamMembers: (show) => set({ showTeamMembers: show }),
+    setShowCreateGroup: (show) => set({ showCreateGroup: show }),
+    setShowGroupManagement: (show) => set({ showGroupManagement: show }),
+    setShowEditGroup: (show) => set({ showEditGroup: show }),
+    setShowAddMembers: (show) => set({ showAddMembers: show }),
+    setShowManageAdmins: (show) => set({ showManageAdmins: show }),
+    setShowEmojiPicker: (show) => set({ showEmojiPicker: show }),
+    setShowMessageOptions: (messageId) => set({ showMessageOptions: messageId }),
+    setShowReactions: (messageId) => set({ showReactions: messageId }),
+    setEditingMessage: (messageId) => set({ editingMessage: messageId }),
+    setEditMessageContent: (content) => set({ editMessageContent: content }),
+    setSelectedMembers: (members) => set({ selectedMembers: members }),
+    setSelectedAdmins: (admins) => set({ selectedAdmins: admins }),
+    setGroupName: (name) => set({ groupName: name }),
+    setGroupDescription: (description) => set({ groupDescription: description }),
+    setEditGroupName: (name) => set({ editGroupName: name }),
+    setEditGroupDescription: (description) => set({ editGroupDescription: description }),
+    
+    toggleMemberSelection: (memberId) => set((state) => ({
+        selectedMembers: state.selectedMembers.includes(memberId)
+            ? state.selectedMembers.filter(id => id !== memberId)
+            : [...state.selectedMembers, memberId]
+    })),
+    
+    toggleAdminSelection: (adminId) => set((state) => ({
+        selectedAdmins: state.selectedAdmins.includes(adminId)
+            ? state.selectedAdmins.filter(id => id !== adminId)
+            : [...state.selectedAdmins, adminId]
+    })),
+    
+    resetModalStates: () => set({
+        showTeamMembers: false,
+        showCreateGroup: false,
+        showGroupManagement: false,
+        showEditGroup: false,
+        showAddMembers: false,
+        showManageAdmins: false,
+        showEmojiPicker: false,
+        showMessageOptions: null,
+        showReactions: null,
+        editingMessage: null,
+        editMessageContent: '',
+        selectedMembers: [],
+        selectedAdmins: [],
+        groupName: '',
+        groupDescription: '',
+        editGroupName: '',
+        editGroupDescription: ''
+    }),
+
+    // Call actions
+    startCall: (type, participants) => set({
+        callState: 'calling',
+        callType: type,
+        callParticipants: participants,
+        isInCall: true,
+        callStartTime: new Date(),
+        callDuration: 0
+    }),
+
+    answerCall: () => set({
+        callState: 'connected',
+        isInCall: true,
+        callStartTime: new Date()
+    }),
+
+    endCall: () => set({
+        callState: 'ended',
+        callType: null,
+        callParticipants: [],
+        isInCall: false,
+        callStartTime: null,
+        callDuration: 0
+    }),
+
+    rejectCall: () => set({
+        callState: 'idle',
+        callType: null,
+        callParticipants: [],
+        isInCall: false,
+        callStartTime: null,
+        callDuration: 0
+    }),
+
+    setCallState: (state) => set({ callState: state }),
+
+    updateCallDuration: () => {
+        const { callStartTime } = get();
+        if (callStartTime) {
+            const duration = Math.floor((Date.now() - callStartTime.getTime()) / 1000);
+            set({ callDuration: duration });
         }
     }
 }));

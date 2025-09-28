@@ -1,20 +1,23 @@
 import { useChat } from '@/hooks/chat/useChat';
-import { useState } from 'react';
+import { useChatStore } from '@/stores/chat';
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
 
-const CreateGroupModal = ({
-    setShowCreateGroup,
-    toggleMemberSelection,
-    selectedMembers,
-    setSelectedMembers
-}) => {
+const CreateGroupModal = () => {
     const { teamMembers, createGroupChat, currentChat } = useChat();
     const user = useAuthStore((store) => store.user);
-
-    const [groupName, setGroupName] = useState('');
-    const [groupDescription, setGroupDescription] = useState('');
+    
+    const {
+        selectedMembers,
+        groupName,
+        groupDescription,
+        setShowCreateGroup,
+        setSelectedMembers,
+        setGroupName,
+        setGroupDescription,
+        toggleMemberSelection
+    } = useChatStore();
 
     const handleCreateGroup = async () => {
         if (!groupName.trim() || selectedMembers.length === 0) return;

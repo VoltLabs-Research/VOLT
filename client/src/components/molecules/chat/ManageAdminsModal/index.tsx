@@ -1,17 +1,39 @@
 import { useChat } from '@/hooks/chat/useChat';
+import { useChatStore } from '@/stores/chat';
 import { IoCheckmarkOutline, IoCloseOutline, IoTrashOutline } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
 
-const ManageAdminsModal = ({
-    handleRemoveAdmin,
-    toggleAdminSelection,
-    selectedAdmins,
-    handleAddAdmins,
-    toggle
-}) => {
-    const { currentChat } = useChat();
+const ManageAdminsModal = () => {
+    const { currentChat, updateGroupAdmins } = useChat();
     const user = useAuthStore((store) => store.user);
+    
+    const {
+        selectedAdmins,
+        setShowManageAdmins,
+        setSelectedAdmins,
+        toggleAdminSelection
+    } = useChatStore();
+
+    const handleAddAdmins = async () => {
+        if (!currentChat || selectedAdmins.length === 0) return;
+        try {
+            await updateGroupAdmins(currentChat._id, selectedAdmins, 'add');
+            setShowManageAdmins(false);
+            setSelectedAdmins([]);
+        } catch (error) {
+            console.error('Failed to add admins:', error);
+        }
+    };
+
+    const handleRemoveAdmin = async (adminId: string) => {
+        if (!currentChat) return;
+        try {
+            await updateGroupAdmins(currentChat._id, [adminId], 'remove');
+        } catch (error) {
+            console.error('Failed to remove admin:', error);
+        }
+    };
 
     return currentChat && (
         <div className='chat-group-management-modal'>
@@ -20,7 +42,7 @@ const ManageAdminsModal = ({
                     <h3>Manage Admins</h3>
                     <button 
                         className='chat-close-modal'
-                        onClick={() => toggle(false)}
+                        onClick={() => setShowManageAdmins(false)}
                     >
                         <IoCloseOutline />
                     </button>
@@ -90,7 +112,7 @@ const ManageAdminsModal = ({
                     <div className='chat-group-management-actions'>
                         <button 
                             className='chat-group-management-cancel'
-                            onClick={() => toggle(false)}
+                            onClick={() => setShowManageAdmins(false)}
                         >
                             Cancel
                         </button>

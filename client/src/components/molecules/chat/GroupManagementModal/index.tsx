@@ -1,16 +1,41 @@
 import { IoAddOutline, IoCloseOutline, IoCreateOutline, IoPersonRemoveOutline, IoShieldOutline, IoTrashOutline } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
+import { useChatStore } from '@/stores/chat';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
 
-const GroupManagementModal = ({
-    setShowGroupManagement,
-    handleManageAdmins,
-    openAddMembers,
-    openEditGroup
-}) => {
+const GroupManagementModal = () => {
     const { currentChat, removeUsersFromGroup, leaveGroup } = useChat();
     const user = useAuthStore((store) => store.user);
+    
+    const {
+        setShowGroupManagement,
+        setShowManageAdmins,
+        setShowAddMembers,
+        setShowEditGroup,
+        setSelectedAdmins,
+        setSelectedMembers,
+        setEditGroupName,
+        setEditGroupDescription
+    } = useChatStore();
+
+    const handleManageAdmins = () => {
+        setShowManageAdmins(true);
+        setSelectedAdmins([]);
+    };
+
+    const openAddMembers = () => {
+        setSelectedMembers([]);
+        setShowAddMembers(true);
+    };
+
+    const openEditGroup = () => {
+        if (currentChat) {
+            setEditGroupName(currentChat.groupName || '');
+            setEditGroupDescription(currentChat.groupDescription || '');
+            setShowEditGroup(true);
+        }
+    };
 
     const handleRemoveMember = async (memberId: string) => {
         if (!currentChat) return;

@@ -1,13 +1,17 @@
-import { useState } from 'react';
 import { IoCloseOutline } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
+import { useChatStore } from '@/stores/chat';
 
-const EditGroupModal = ({
-    setShowEditGroup
-}) => {
-    const [editGroupName, setEditGroupName] = useState('');
-    const [editGroupDescription, setEditGroupDescription] = useState('');
+const EditGroupModal = () => {
     const { currentChat, updateGroupInfo } = useChat();
+    
+    const {
+        editGroupName,
+        editGroupDescription,
+        setShowEditGroup,
+        setEditGroupName,
+        setEditGroupDescription
+    } = useChatStore();
 
     const handleUpdateGroupInfo = async () => {
         if (!currentChat) return;

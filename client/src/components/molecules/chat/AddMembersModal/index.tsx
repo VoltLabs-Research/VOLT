@@ -1,16 +1,31 @@
 import { useChat } from '@/hooks/chat/useChat';
+import { useChatStore } from '@/stores/chat';
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
 
-const AddMembersModal = ({ 
-    toggle,
-    toggleMemberSelection,
-    selectedMembers,
-    handleAddMembers
-}) => {
-    const { teamMembers, currentChat } = useChat();
+const AddMembersModal = () => {
+    const { teamMembers, currentChat, addUsersToGroup } = useChat();
     const user = useAuthStore((store) => store.user);
+    
+    const {
+        selectedMembers,
+        setShowAddMembers,
+        setSelectedMembers,
+        toggleMemberSelection
+    } = useChatStore();
+
+    const handleAddMembers = async () => {
+        if (selectedMembers.length === 0 || !currentChat) return;
+        
+        try {
+            await addUsersToGroup(currentChat._id, selectedMembers);
+            setShowAddMembers(false);
+            setSelectedMembers([]);
+        } catch (error) {
+            console.error('Failed to add members:', error);
+        }
+    };  
 
     return (
         <div className='chat-group-management-modal'>
@@ -19,7 +34,7 @@ const AddMembersModal = ({
                     <h3>Add Members</h3>
                     <button 
                         className='chat-close-modal'
-                        onClick={() => toggle(false)}
+                        onClick={() => setShowAddMembers(false)}
                     >
                         <IoCloseOutline />
                     </button>
@@ -56,7 +71,7 @@ const AddMembersModal = ({
                     <div className='chat-group-management-actions'>
                         <button 
                             className='chat-group-management-cancel'
-                            onClick={() => toggle(false)}
+                            onClick={() => setShowAddMembers(false)}
                         >
                             Cancel
                         </button>

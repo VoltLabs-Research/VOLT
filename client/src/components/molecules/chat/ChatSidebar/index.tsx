@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { IoSearchOutline, IoPersonAddOutline, IoPeopleOutline } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
+import { useChatStore } from '@/stores/chat';
 import { getInitials } from '@/utilities/guest';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import ChatListSkeleton from '@/components/atoms/messages/ChatListSkeleton';
@@ -9,10 +10,10 @@ import useAuthStore from '@/stores/authentication';
 const ChatSidebar: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showTeamMembers, setShowTeamMembers] = useState(false);
-    const [showCreateGroup, setShowCreateGroup] = useState(false);
 
     const user = useAuthStore((store) => store.user);
     const { teamMembers, startChatWithMember, chats, isLoading, selectChat, currentChat } = useChat();
+    const { setShowCreateGroup } = useChatStore();
     
     // Filter chats based on search query
     const filteredChats = chats.filter(chat => {
