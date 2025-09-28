@@ -38,7 +38,11 @@ import {
     IoCheckmarkOutline,
     IoTrashOutline,
     IoCreateOutline,
-    IoPersonRemoveOutline
+    IoPersonRemoveOutline,
+    IoImageOutline,
+    IoDocumentOutline,
+    IoDownloadOutline,
+    IoCloseCircleOutline
 } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
 import useAuthStore from '@/stores/authentication';
@@ -62,7 +66,8 @@ const MessagesPage = () => {
         addUsersToGroup,
         removeUsersFromGroup,
         updateGroupInfo,
-        leaveGroup
+        leaveGroup,
+        sendFileMessage
     } = useChat();
 
     const { user } = useAuthStore();
@@ -78,7 +83,13 @@ const MessagesPage = () => {
     const [groupDescription, setGroupDescription] = useState('');
     const [editGroupName, setEditGroupName] = useState('');
     const [editGroupDescription, setEditGroupDescription] = useState('');
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [filePreviews, setFilePreviews] = useState<{file: File, preview: string}[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const emojiPickerRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
@@ -100,10 +111,16 @@ const MessagesPage = () => {
     // Handle sending a message
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!messageInput.trim()) return;
+        if (!messageInput.trim() && selectedFiles.length === 0) return;
 
-        await handleSendMessage(messageInput);
-        setMessageInput('');
+        if (selectedFiles.length > 0) {
+            await handleFileUpload();
+        }
+        
+        if (messageInput.trim()) {
+            await handleSendMessage(messageInput);
+            setMessageInput('');
+        }
     };
 
     // Handle typing
@@ -122,6 +139,15 @@ const MessagesPage = () => {
     // Get initials for avatar
     const getInitials = (firstName: string, lastName: string) => {
         return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    };
+
+    // Format file size
+    const formatFileSize = (bytes: number | undefined) => {
+        if (!bytes || bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
     // Group management functions
@@ -212,6 +238,69 @@ const MessagesPage = () => {
         setSelectedMembers([]);
         setShowAddMembers(true);
     };
+
+    // File handling functions
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(event.target.files || []);
+        if (files.length === 0) return;
+
+        const newFiles = [...selectedFiles, ...files];
+        setSelectedFiles(newFiles);
+
+        // Generate previews for images
+        const imageFiles = files.filter(file => file.type.startsWith('image/'));
+        imageFiles.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = e.target?.result as string;
+                setFilePreviews(prev => [...prev, { file, preview }]);
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const removeFile = (index: number) => {
+        const fileToRemove = selectedFiles[index];
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+        setFilePreviews(prev => prev.filter(item => item.file !== fileToRemove));
+    };
+
+    const handleFileUpload = async () => {
+        if (selectedFiles.length === 0 || !currentChat) return;
+
+        setIsUploading(true);
+        try {
+            for (const file of selectedFiles) {
+                await sendFileMessage(file);
+            }
+            setSelectedFiles([]);
+            setFilePreviews([]);
+        } catch (error) {
+            console.error('Failed to upload files:', error);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    // Emoji handling functions
+    const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
+
+    const insertEmoji = (emoji: string) => {
+        setMessageInput(prev => prev + emoji);
+        setShowEmojiPicker(false);
+    };
+
+    // Close emoji picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+                setShowEmojiPicker(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     return (
         <DashboardContainer pageName='Messages' className='chat-main-container'>
@@ -408,7 +497,54 @@ const MessagesPage = () => {
                                                 {isSent ? 'You' : getInitials(message.sender.firstName, message.sender.lastName)}
                                             </div>
                                             <div className='chat-message-content'>
-                                                <p className='chat-message-text'>{message.content}</p>
+                                                {message.messageType === 'file' && message.metadata ? (
+                                                    <div className='chat-file-message'>
+                                                        {message.metadata.fileType?.startsWith('image/') ? (
+                                                            <div className='chat-image-message'>
+                                                                <img 
+                                                                    src={message.metadata.fileUrl} 
+                                                                    alt={message.metadata.fileName}
+                                                                    className='chat-image-preview'
+                                                                />
+                                                                <div className='chat-file-info'>
+                                                                    <div className='chat-file-icon'>
+                                                                        <IoImageOutline />
+                                                                    </div>
+                                                                    <div className='chat-file-details'>
+                                                                        <p className='chat-file-name'>{message.metadata.fileName}</p>
+                                                                        <p className='chat-file-size'>{formatFileSize(message.metadata.fileSize)}</p>
+                                                                    </div>
+                                                                    <a 
+                                                                        href={message.metadata.fileUrl} 
+                                                                        download={message.metadata.fileName}
+                                                                        className='chat-file-download'
+                                                                    >
+                                                                        <IoDownloadOutline />
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className='chat-file-info'>
+                                                                <div className='chat-file-icon'>
+                                                                    <IoDocumentOutline />
+                                                                </div>
+                                                                <div className='chat-file-details'>
+                                                                    <p className='chat-file-name'>{message.metadata.fileName}</p>
+                                                                    <p className='chat-file-size'>{formatFileSize(message.metadata.fileSize)}</p>
+                                                                </div>
+                                                                <a 
+                                                                    href={message.metadata.fileUrl} 
+                                                                    download={message.metadata.fileName}
+                                                                    className='chat-file-download'
+                                                                >
+                                                                    <IoDownloadOutline />
+                                                                </a>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <p className='chat-message-text'>{message.content}</p>
+                                                )}
                                                 <div className='chat-message-time'>
                                                     {formatTime(message.createdAt)}
                                                 </div>
@@ -437,10 +573,63 @@ const MessagesPage = () => {
                             <div ref={messagesEndRef} />
                         </div>
 
+                        {/* File Previews */}
+                        {filePreviews.length > 0 && (
+                            <div className='chat-file-previews-container'>
+                                <div className='chat-file-previews-header'>
+                                    <span>Archivos seleccionados ({filePreviews.length})</span>
+                                    <button 
+                                        type='button' 
+                                        className='chat-clear-files'
+                                        onClick={() => {
+                                            setSelectedFiles([]);
+                                            setFilePreviews([]);
+                                        }}
+                                    >
+                                        <IoCloseOutline />
+                                    </button>
+                                </div>
+                                <div className='chat-file-previews-grid'>
+                                    {filePreviews.map((item, index) => (
+                                        <div key={index} className='chat-file-preview-item'>
+                                            <img 
+                                                src={item.preview} 
+                                                alt={item.file.name}
+                                                className='chat-file-preview-image'
+                                            />
+                                            <div className='chat-file-preview-info'>
+                                                <span className='chat-file-preview-name'>{item.file.name}</span>
+                                                <span className='chat-file-preview-size'>{formatFileSize(item.file.size)}</span>
+                                            </div>
+                                            <button 
+                                                type='button'
+                                                className='chat-file-preview-remove'
+                                                onClick={() => removeFile(index)}
+                                            >
+                                                <IoCloseCircleOutline />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Message Input */}
                         <form onSubmit={handleSend} className='chat-input-container'>
                             <div className='chat-input-wrapper'>
-                                <button type='button' className='chat-header-action' title='Attach File'>
+                                <input
+                                    type='file'
+                                    ref={fileInputRef}
+                                    onChange={handleFileSelect}
+                                    multiple
+                                    style={{ display: 'none' }}
+                                />
+                                <button 
+                                    type='button' 
+                                    className='chat-header-action' 
+                                    title='Attach File'
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
                                     <IoAttachOutline />
                                 </button>
                                 <textarea 
@@ -450,14 +639,56 @@ const MessagesPage = () => {
                                     value={messageInput}
                                     onChange={handleInputChange}
                                 />
-                                <button type='button' className='chat-header-action' title='Emoji'>
+                                <button 
+                                    type='button' 
+                                    className='chat-header-action' 
+                                    title='Emoji'
+                                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                >
                                     <IoHappyOutline />
                                 </button>
-                                <button type='submit' className='chat-send-button' title='Send Message' disabled={!messageInput.trim()}>
-                                    <IoPaperPlaneOutline />
+                                <button 
+                                    type='submit' 
+                                    className='chat-send-button' 
+                                    title='Send Message' 
+                                    disabled={!messageInput.trim() && selectedFiles.length === 0}
+                                >
+                                    {isUploading ? (
+                                        <div className='chat-send-loading' />
+                                    ) : (
+                                        <IoPaperPlaneOutline />
+                                    )}
                                 </button>
                             </div>
                         </form>
+
+                        {/* Emoji Picker */}
+                        {showEmojiPicker && (
+                            <div ref={emojiPickerRef} className='chat-emoji-picker'>
+                                <div className='chat-emoji-picker-header'>
+                                    <span>Seleccionar emoji</span>
+                                    <button 
+                                        type='button'
+                                        className='chat-emoji-picker-close'
+                                        onClick={() => setShowEmojiPicker(false)}
+                                    >
+                                        <IoCloseOutline />
+                                    </button>
+                                </div>
+                                <div className='chat-emoji-picker-grid'>
+                                    {emojis.map((emoji, index) => (
+                                        <button
+                                            key={index}
+                                            type='button'
+                                            className='chat-emoji-picker-item'
+                                            onClick={() => insertEmoji(emoji)}
+                                        >
+                                            {emoji}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className='chat-welcome-container'>

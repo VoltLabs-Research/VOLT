@@ -2301,3 +2301,305 @@
     background: var(--accent-indigo);
     transform: translateY(-1px);
 }
+
+/* File Upload Styles */
+.chat-file-previews-container {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.8rem;
+    margin: 0.5rem 1rem;
+    padding: 1rem;
+    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chat-file-previews-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.chat-clear-files {
+    background: var(--color-surface-3);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.4rem;
+    padding: 0.25rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-clear-files:hover {
+    background: var(--color-error);
+    color: white;
+    border-color: var(--color-error);
+}
+
+.chat-file-previews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.75rem;
+}
+
+.chat-file-preview-item {
+    position: relative;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.6rem;
+    padding: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.chat-file-preview-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.chat-file-preview-image {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 0.4rem;
+    margin-bottom: 0.5rem;
+}
+
+.chat-file-preview-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.chat-file-preview-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-file-preview-size {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+.chat-file-preview-remove {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    background: var(--color-error);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+}
+
+.chat-file-preview-remove:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+/* File Message Styles */
+.chat-file-message {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.chat-image-message {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.chat-image-preview {
+    max-width: 300px;
+    max-height: 300px;
+    border-radius: 0.8rem;
+    object-fit: cover;
+    border: 1px solid var(--color-border-soft);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chat-image-preview:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.chat-file-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--color-surface-3);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.8rem;
+}
+
+.chat-file-icon {
+    font-size: 1.5rem;
+    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-file-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-file-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 0.25rem 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-file-size {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+.chat-file-download {
+    color: var(--accent-blue);
+    font-size: 1.2rem;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.chat-file-download:hover {
+    background: var(--color-surface-2);
+    color: var(--accent-indigo);
+    transform: scale(1.1);
+}
+
+/* Emoji Picker Styles */
+.chat-emoji-picker {
+    position: absolute;
+    bottom: 100%;
+    right: 1rem;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    animation: emojiPickerSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 300px;
+    max-height: 250px;
+    overflow: hidden;
+}
+
+@keyframes emojiPickerSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.chat-emoji-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-surface-2);
+}
+
+.chat-emoji-picker-header span {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.chat-emoji-picker-close {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.4rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-emoji-picker-close:hover {
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+}
+
+.chat-emoji-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0.25rem;
+    padding: 0.75rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.chat-emoji-picker-item {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 0.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-emoji-picker-item:hover {
+    background: var(--color-surface-2);
+    transform: scale(1.2);
+}
+
+/* Loading Animation for Send Button */
+.chat-send-loading {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
