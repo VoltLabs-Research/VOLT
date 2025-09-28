@@ -35,7 +35,7 @@ import {
 } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
 import useAuthStore from '@/stores/authentication';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import './Messages.css';
 
 const MessagesPage = () => {
@@ -58,6 +58,7 @@ const MessagesPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showTeamMembers, setShowTeamMembers] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+	const inputRef = useRef<HTMLTextAreaElement>(null);
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
@@ -76,6 +77,18 @@ const MessagesPage = () => {
     // Get the other participant in the current chat
     const currentParticipant = currentChat?.participants.find(p => p._id !== user?._id);
 
+	// Focus input when switching chats
+	useEffect(() => {
+		if (currentChat) {
+			requestAnimationFrame(() => {
+				if (inputRef.current) {
+					inputRef.current.focus();
+					inputRef.current.style.height = 'auto';
+				}
+			});
+		}
+	}, [currentChat]);
+
     // Handle sending a message
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -83,11 +96,19 @@ const MessagesPage = () => {
 
         await handleSendMessage(messageInput);
         setMessageInput('');
+		if (inputRef.current) {
+			inputRef.current.style.height = 'auto';
+		}
     };
 
     // Handle typing
-    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setMessageInput(e.target.value);
+	const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+		setMessageInput(e.target.value);
+		if (inputRef.current) {
+			inputRef.current.style.height = 'auto';
+			const nextHeight = Math.min(inputRef.current.scrollHeight, 120);
+			inputRef.current.style.height = `${nextHeight}px`;
+		}
         if (currentChat) {
             handleTyping(currentChat._id);
         }
@@ -97,6 +118,13 @@ const MessagesPage = () => {
     const formatTime = (dateString: string) => {
         return formatDistanceToNow(new Date(dateString), { addSuffix: true });
     };
+
+	// Date label for separators
+	const getDateLabel = (date: Date) => {
+		if (isToday(date)) return 'Today';
+		if (isYesterday(date)) return 'Yesterday';
+		return format(date, 'PP');
+	};
 
     // Get initials for avatar
     const getInitials = (firstName: string, lastName: string) => {
@@ -109,24 +137,26 @@ const MessagesPage = () => {
             <div className='chat-sidebar-container'>
                 <div className='chat-sidebar-header-container'>
                     <h3 className='chat-sidebar-header-title'>Messages</h3>
-                    <div className='chat-sidebar-search-container'>
-                        <i className='chat-sidebar-search-icon-container'>
-                            <IoSearchOutline />
-                        </i>
-                        <input 
-                            placeholder='Search people or messages...'
-                            className='chat-sidebar-search-input'
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <button 
-                        className='chat-new-chat-button'
-                        onClick={() => setShowTeamMembers(!showTeamMembers)}
-                        title='Start new chat'
-                    >
-                        <IoPersonAddOutline />
-                    </button>
+				<div className='chat-sidebar-actions-row'>
+					<div className='chat-sidebar-search-container'>
+						<i className='chat-sidebar-search-icon-container'>
+							<IoSearchOutline />
+						</i>
+						<input 
+							placeholder='Search people or messages...'
+							className='chat-sidebar-search-input'
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+						/>
+					</div>
+					<button 
+						className='chat-new-chat-button'
+						onClick={() => setShowTeamMembers(!showTeamMembers)}
+						title='Start new chat'
+					>
+						<IoPersonAddOutline />
+					</button>
+				</div>
                 </div>
 
                 {/* Team Members for New Chat */}
@@ -157,9 +187,12 @@ const MessagesPage = () => {
                 )}
 
                 <div className='chat-conversations-container'>
-                    {isLoading ? (
-                        <div className='chat-loading'>Loading chats...</div>
-                    ) : filteredChats.length === 0 ? (
+						{isLoading ? (
+							<div className='chat-loading' aria-busy='true' aria-live='polite'>
+								<div className='chat-loading-spinner' />
+								Loading chats...
+							</div>
+						) : filteredChats.length === 0 ? (
                         <div className='chat-empty-state'>
                             <p>No conversations yet</p>
                             <p>Start a chat with a team member!</p>
@@ -169,11 +202,14 @@ const MessagesPage = () => {
                             const participant = chat.participants.find(p => p._id !== user?._id);
                             if (!participant) return null;
 
+								const typingInChat = typingUsers.filter(u => u.chatId === chat._id && u.userId !== user?._id);
+
                             return (
                                 <div 
                                     key={chat._id} 
-                                    className={`chat-conversation-item ${currentChat?._id === chat._id ? 'active' : ''}`}
+										className={`chat-conversation-item ${currentChat?._id === chat._id ? 'active' : ''}`}
                                     onClick={() => selectChat(chat)}
+										aria-current={currentChat?._id === chat._id ? 'true' : 'false'}
                                 >
                                     <div className='chat-conversation-avatar'>
                                         {getInitials(participant.firstName, participant.lastName)}
@@ -189,11 +225,15 @@ const MessagesPage = () => {
                                                 </span>
                                             )}
                                         </div>
-                                        {chat.lastMessage && (
-                                            <p className='chat-conversation-preview'>
-                                                {chat.lastMessage.content}
-                                            </p>
-                                        )}
+											{typingInChat.length > 0 ? (
+												<p className='chat-conversation-preview typing' aria-live='polite'>
+													Typing...
+												</p>
+											) : chat.lastMessage ? (
+												<p className='chat-conversation-preview'>
+													{chat.lastMessage.content}
+												</p>
+											) : null}
                                     </div>
                                 </div>
                             );
@@ -236,37 +276,54 @@ const MessagesPage = () => {
 
                         {/* Messages Area */}
                         <div className='chat-box-messages-container'>
-                            {isLoading ? (
-                                <div className='chat-loading'>Loading messages...</div>
-                            ) : messages.length === 0 ? (
+						{isLoading ? (
+							<div className='chat-loading' aria-busy='true' aria-live='polite'>
+								<div className='chat-loading-spinner' />
+								Loading messages...
+							</div>
+						) : messages.length === 0 ? (
                                 <div className='chat-empty-messages'>
                                     <p>No messages yet</p>
                                     <p>Start the conversation!</p>
                                 </div>
                             ) : (
-                                messages.map((message) => {
+							(() => {
+								let lastLabel = '';
+								return messages.map((message) => {
                                     const isSent = message.sender._id === user?._id;
+									const date = new Date(message.createdAt);
+									const label = getDateLabel(date);
+									const showSeparator = label !== lastLabel;
+									lastLabel = label;
                                     return (
-                                        <div key={message._id} className={`chat-message ${isSent ? 'sent' : 'received'}`}>
-                                            <div className='chat-message-avatar'>
-                                                {isSent ? 'You' : getInitials(message.sender.firstName, message.sender.lastName)}
-                                            </div>
-                                            <div className='chat-message-content'>
-                                                <p className='chat-message-text'>{message.content}</p>
-                                                <div className='chat-message-time'>
-                                                    {formatTime(message.createdAt)}
-                                                </div>
-                                            </div>
-                                        </div>
+										<React.Fragment key={message._id}>
+											{showSeparator && (
+												<div className='chat-date-separator' role='separator' aria-label={label}>
+													<span>{label}</span>
+												</div>
+											)}
+											<div className={`chat-message ${isSent ? 'sent' : 'received'}`} role='listitem'>
+												<div className='chat-message-avatar'>
+													{isSent ? 'You' : getInitials(message.sender.firstName, message.sender.lastName)}
+												</div>
+												<div className='chat-message-content'>
+													<p className='chat-message-text'>{message.content}</p>
+													<div className='chat-message-time'>
+														{formatTime(message.createdAt)}
+													</div>
+												</div>
+											</div>
+										</React.Fragment>
                                     );
-                                })
+								});
+							})()
                             )}
                             
                             {/* Typing Indicator */}
-                            {typingUsers.length > 0 && (
+						{typingUsers.length > 0 && (
                                 <div className='chat-message received'>
                                     <div className='chat-message-avatar'>?</div>
-                                    <div className='chat-typing-indicator'>
+								<div className='chat-typing-indicator' aria-live='polite'>
                                         <div className='chat-typing-dots'>
                                             <div className='chat-typing-dot'></div>
                                             <div className='chat-typing-dot'></div>
@@ -282,22 +339,32 @@ const MessagesPage = () => {
                         </div>
 
                         {/* Message Input */}
-                        <form onSubmit={handleSend} className='chat-input-container'>
+						<form onSubmit={handleSend} className='chat-input-container'>
                             <div className='chat-input-wrapper'>
-                                <button type='button' className='chat-header-action' title='Attach File'>
+								<button type='button' className='chat-header-action' title='Attach File' aria-label='Attach file'>
                                     <IoAttachOutline />
                                 </button>
-                                <textarea 
+								<textarea 
                                     className='chat-input'
-                                    placeholder='Type a message...'
+									placeholder='Type a message...'
                                     rows={1}
                                     value={messageInput}
                                     onChange={handleInputChange}
+									ref={inputRef}
+									aria-label='Message input'
+									onKeyDown={(e) => {
+										if (e.key === 'Enter' && !e.shiftKey) {
+											e.preventDefault();
+											if (messageInput.trim()) {
+												void handleSend(e as unknown as React.FormEvent);
+											}
+										}
+									}}
                                 />
-                                <button type='button' className='chat-header-action' title='Emoji'>
+								<button type='button' className='chat-header-action' title='Emoji' aria-label='Open emoji picker'>
                                     <IoHappyOutline />
                                 </button>
-                                <button type='submit' className='chat-send-button' title='Send Message' disabled={!messageInput.trim()}>
+								<button type='submit' className='chat-send-button' title='Send Message' aria-label='Send message' disabled={!messageInput.trim()}>
                                     <IoPaperPlaneOutline />
                                 </button>
                             </div>
@@ -317,55 +384,69 @@ const MessagesPage = () => {
                     </div>
                 )}
 
-                {/* Details Panel */}
-                <div className='chat-details-container'>
-                    <div className='chat-details-header'>
-                        <h3 className='chat-details-title'>Contact Info</h3>
-                    </div>
-                    
-                    <div className='chat-details-content'>
-                        <div className='chat-details-section'>
-                            <div className='chat-details-user-info'>
-                                <div className='chat-details-avatar'>SC</div>
-                                <h4 className='chat-details-name'>Dr. Sarah Chen</h4>
-                                <div className='chat-details-status'>Online</div>
-                            </div>
-                        </div>
+				{/* Details Panel */}
+				<div className='chat-details-container'>
+					<div className='chat-details-header'>
+						<h3 className='chat-details-title'>Contact Info</h3>
+					</div>
+					
+					<div className='chat-details-content'>
+						{currentParticipant ? (
+							<>
+								<div className='chat-details-section'>
+									<div className='chat-details-user-info'>
+										<div className='chat-details-avatar'>
+											{getInitials(currentParticipant.firstName, currentParticipant.lastName)}
+										</div>
+										<h4 className='chat-details-name'>
+											{currentParticipant.firstName} {currentParticipant.lastName}
+										</h4>
+										<div className='chat-details-status'>
+											{isConnected ? 'Online' : 'Offline'}
+										</div>
+									</div>
+								</div>
 
-                        <div className='chat-details-section'>
-                            <h4 className='chat-details-section-title'>Actions</h4>
-                            <div className='chat-details-actions'>
-                                <button className='chat-details-action'>
-                                    <i className='chat-details-action-icon'>
-                                        <IoCallOutline />
-                                    </i>
-                                    <span className='chat-details-action-text'>Voice Call</span>
-                                </button>
-                                <button className='chat-details-action'>
-                                    <i className='chat-details-action-icon'>
-                                        <IoVideocamOutline />
-                                    </i>
-                                    <span className='chat-details-action-text'>Video Call</span>
-                                </button>
-                                <button className='chat-details-action'>
-                                    <i className='chat-details-action-icon'>
-                                        <IoInformationCircleOutline />
-                                    </i>
-                                    <span className='chat-details-action-text'>View Profile</span>
-                                </button>
-                            </div>
-                        </div>
+								<div className='chat-details-section'>
+									<h4 className='chat-details-section-title'>Actions</h4>
+									<div className='chat-details-actions'>
+										<button className='chat-details-action'>
+											<i className='chat-details-action-icon'>
+												<IoCallOutline />
+											</i>
+											<span className='chat-details-action-text'>Voice Call</span>
+										</button>
+										<button className='chat-details-action'>
+											<i className='chat-details-action-icon'>
+												<IoVideocamOutline />
+											</i>
+											<span className='chat-details-action-text'>Video Call</span>
+										</button>
+										<button className='chat-details-action'>
+											<i className='chat-details-action-icon'>
+												<IoInformationCircleOutline />
+											</i>
+											<span className='chat-details-action-text'>View Profile</span>
+										</button>
+									</div>
+								</div>
 
-                        <div className='chat-details-section'>
-                            <h4 className='chat-details-section-title'>Shared Files</h4>
-                            <div className='chat-empty-state'>
-                                <div className='chat-empty-description'>
-                                    No shared files yet
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+								<div className='chat-details-section'>
+									<h4 className='chat-details-section-title'>Shared Files</h4>
+									<div className='chat-empty-state'>
+										<div className='chat-empty-description'>
+											No shared files yet
+										</div>
+									</div>
+								</div>
+							</>
+						) : (
+							<div className='chat-empty-state'>
+								<p>Select a conversation to view details</p>
+							</div>
+						)}
+					</div>
+				</div>
             </div>
         </DashboardContainer>
     )

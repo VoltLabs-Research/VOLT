@@ -5,7 +5,7 @@
 }
 
 .dashboard-container:has(.chat-main-container){
-    padding: 0;
+    padding: .5rem;
 }
 
 .search-container{
