@@ -1,18 +1,19 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, GizmoHelper, GizmoViewport, Environment } from '@react-three/drei';
+import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { AdaptiveDpr, Bvh, Preload } from '@react-three/drei';
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
+import { ACESFilmicToneMapping, PCFSoftShadowMap, SRGBColorSpace } from 'three';
 import ScreenshotHandler from '@/components/atoms/scene/ScreenshotHandler';
 import TrajectoryLighting from '@/components/atoms/scene/TrajectoryLighting';
 import DefectLighting from '@/components/atoms/scene/DefectLighting';
 import CanvasGrid from '@/components/atoms/scene/CanvasGrid';
 import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
+import DynamicEffects from '@/components/molecules/scene/DynamicEffects';
 import useRenderConfigStore from '@/stores/editor/render-config';
 import './Scene3D.css';
-import { ACESFilmicToneMapping, PCFSoftShadowMap, SRGBColorSpace } from 'three';
 
 interface Scene3DProps {
     children?: React.ReactNode;
@@ -251,6 +252,8 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
                 </GizmoHelper>
             )}
 
+            <DynamicEffects />
+            
             {isDefectScene && <DefectLighting />}
             {isTrajectoryScene && <TrajectoryLighting />}
 

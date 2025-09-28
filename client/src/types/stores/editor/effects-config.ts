@@ -141,7 +141,7 @@ export type EffectsConfigStore = EffectsConfigState & EffectsConfigActions;
 
 
 export const SSAO_EFFECT_DEFAULT: SSAOEffectConfig = {
-    enabled: true,
+    enabled: false,
     blendFunction: BlendFunction.MULTIPLY,
     intensity: 5,
     radius: 0.1,
