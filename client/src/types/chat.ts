@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import { User } from './models';
+import type { User } from '@/types/models';
 
 export interface Chat {
     _id: string;
@@ -41,6 +41,11 @@ export interface Chat {
     createdAt: string;
     updatedAt: string;
 }
+
+export type Reaction = {
+    emoji: string;
+    users: Array<string | { _id: string; userName?: string }>;
+};
 
 export interface Message {
     _id: string;
@@ -83,3 +88,11 @@ export interface MessagesRead {
     readBy: string;
     readAt: string;
 }
+
+export type Participant = {
+    _id: string;
+    firstName: string;
+    lastName: string;
+};
+
+export type Presence = 'online' | 'offline' | 'connecting';

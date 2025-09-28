@@ -23,7 +23,7 @@
 import { useChatStore } from '@/stores/chat';
 import DashboardContainer from '@/components/atoms/DashboardContainer';
 import ChatSidebar from '@/components/molecules/chat/ChatSidebar';
-import ChatArea from '@/components/molecules/chat/ChatArea';
+import ChatArea from '@/components/organisms/ChatArea';
 import CreateGroupModal from '@/components/molecules/chat/CreateGroupModal';
 import GroupManagementModal from '@/components/molecules/chat/GroupManagementModal';
 import AddMembersModal from '@/components/molecules/chat/AddMembersModal';
