@@ -34,6 +34,7 @@ interface ChatStore {
     messages: Message[];
     teamMembers: User[];
     typingUsers: TypingUser[];
+    userPresence: { [userId: string]: 'online' | 'offline' };
     isLoading: boolean;
     isConnected: boolean;
 
@@ -43,6 +44,8 @@ interface ChatStore {
     addMessage: (message: Message) => void;
     updateMessage: (messageId: string, updates: Partial<Message>) => void;
     setTypingUsers: (users: TypingUser[]) => void;
+    setUserPresence: (userId: string, status: 'online' | 'offline') => void;
+    getUserPresence: (userId: string) => 'online' | 'offline' | undefined;
     setLoading: (loading: boolean) => void;
     setConnected: (connected: boolean) => void;
 
@@ -80,6 +83,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     messages: [],
     teamMembers: [],
     typingUsers: [],
+    userPresence: {},
     isLoading: false,
     isConnected: false,
 
@@ -95,6 +99,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         )
     })),
     setTypingUsers: (users) => set({ typingUsers: users }),
+    setUserPresence: (userId, status) => set((state) => ({
+        userPresence: { ...state.userPresence, [userId]: status }
+    })),
+    getUserPresence: (userId) => {
+        const { userPresence } = get();
+        return userPresence[userId] || 'offline';
+    },
     setLoading: (loading) => set({ isLoading: loading }),
     setConnected: (connected) => set({ isConnected: connected }),
 

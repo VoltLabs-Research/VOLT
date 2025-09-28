@@ -47,6 +47,9 @@ class ChatModule extends BaseSocketModule {
 
         socket.user = user;
         
+        // Handle user presence
+        this.handleUserPresence(socket, 'online');
+        
         // Join user to their personal room for notifications
         this.joinRoom(socket, `user-${user._id}`);
         
@@ -406,9 +409,37 @@ class ChatModule extends BaseSocketModule {
         // Handle disconnect
         socket.on('disconnect', () => {
             if (socket.user) {
+                this.handleUserPresence(socket, 'offline');
                 console.log(`[ChatModule] User ${socket.user.firstName} disconnected`);
             }
         });
+    }
+
+    private async handleUserPresence(socket: AuthenticatedSocket, status: 'online' | 'offline'): Promise<void> {
+        if (!socket.user) return;
+
+        const userId = socket.user._id.toString();
+        
+        try {
+            // Find all chats where this user participates
+            const userChats = await Chat.find({
+                participants: userId,
+                isActive: true
+            });
+
+            // Emit presence update to all users in those chats
+            for (const chat of userChats) {
+                this.io?.to(`chat-${chat._id}`).emit('user_presence_update', {
+                    userId,
+                    status,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            console.log(`[ChatModule] User ${socket.user.firstName} is now ${status} - notified ${userChats.length} chats`);
+        } catch (error) {
+            console.error('Error handling user presence:', error);
+        }
     }
 }
 

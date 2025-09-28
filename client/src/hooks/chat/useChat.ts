@@ -41,6 +41,7 @@ export const useChat = () => {
         setMessages,
         addMessage,
         setTypingUsers,
+        getUserPresence,
         setConnected,
         loadChats,
         loadTeamMembers,
@@ -103,6 +104,7 @@ export const useChat = () => {
         let editedMessageUnsubscribe: (() => void) | null = null;
         let deletedMessageUnsubscribe: (() => void) | null = null;
         let reactionUpdatedUnsubscribe: (() => void) | null = null;
+        let userPresenceUnsubscribe: (() => void) | null = null;
 
         const handleConnect = (connected: boolean) => {
             setConnected(connected);
@@ -188,6 +190,11 @@ export const useChat = () => {
             }
         };
 
+        const handleUserPresenceUpdate = (payload: { userId: string; status: 'online' | 'offline'; timestamp: string }) => {
+            const { setUserPresence } = useChatStore.getState();
+            setUserPresence(payload.userId, payload.status);
+        };
+
         // Register event listeners
         connectionUnsubscribe = socketService.onConnectionChange(handleConnect);
         joinedChatUnsubscribe = socketService.on('joined_chat', handleJoinedChat);
@@ -199,6 +206,7 @@ export const useChat = () => {
         editedMessageUnsubscribe = socketService.on('message_edited', handleMessageEdited);
         deletedMessageUnsubscribe = socketService.on('message_deleted', handleMessageDeleted);
         reactionUpdatedUnsubscribe = socketService.on('reaction_updated', handleReactionUpdated);
+        userPresenceUnsubscribe = socketService.on('user_presence_update', handleUserPresenceUpdate);
 
         // Initialize connection if not connected
         if (!socketService.isConnected()) {
@@ -222,6 +230,7 @@ export const useChat = () => {
             if (editedMessageUnsubscribe) editedMessageUnsubscribe();
             if (deletedMessageUnsubscribe) deletedMessageUnsubscribe();
             if (reactionUpdatedUnsubscribe) reactionUpdatedUnsubscribe();
+            if (userPresenceUnsubscribe) userPresenceUnsubscribe();
         };
     }, [addMessage, setMessages, setTypingUsers, setConnected]);
 
@@ -308,6 +317,7 @@ export const useChat = () => {
         removeUsersFromGroup,
         updateGroupInfo,
         updateGroupAdmins,
-        leaveGroup
+        leaveGroup,
+        getUserPresence
     };
 };

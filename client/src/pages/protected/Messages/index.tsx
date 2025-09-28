@@ -48,6 +48,7 @@ import {
 } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
 import useAuthStore from '@/stores/authentication';
+import { useChatStore } from '@/stores/chat';
 import { formatDistanceToNow } from 'date-fns';
 import { chatApi } from '@/services/chat-api';
 import { Skeleton } from '@mui/material';
@@ -293,7 +294,8 @@ const MessagesPage = () => {
         sendFileMessage,
         editMessage,
         deleteMessage,
-        toggleReaction
+        toggleReaction,
+        getUserPresence
     } = useChat();
 
     const { user } = useAuthStore();
@@ -793,7 +795,11 @@ const MessagesPage = () => {
                                     <div className='chat-header-status'>
                                         {currentChat?.isGroup 
                                             ? `${currentChat.participants.length} members`
-                                            : isConnected ? 'Online' : 'Connecting...'
+                                            : currentParticipant ? (
+                                                getUserPresence(currentParticipant._id) === 'online' ? 'Online' : 'Offline'
+                                            ) : (
+                                                isConnected ? 'Online' : 'Connecting...'
+                                            )
                                         }
                                     </div>
                                 </div>
@@ -1255,7 +1261,11 @@ const MessagesPage = () => {
                                         {currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
                                     </h4>
                                     <div className='chat-details-status'>
-                                        {isConnected ? 'Online' : 'Connecting...'}
+                                        {currentParticipant ? (
+                                            getUserPresence(currentParticipant._id) === 'online' ? 'Online' : 'Offline'
+                                        ) : (
+                                            isConnected ? 'Online' : 'Connecting...'
+                                        )}
                                     </div>
                                 </div>
                             </div>
