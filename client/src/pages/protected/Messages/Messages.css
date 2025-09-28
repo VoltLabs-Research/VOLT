@@ -2251,44 +2251,415 @@
 
 /* Light Mode Adjustments */
 :root[data-theme='light'] {
+    /* Main container glassmorphism for light mode */
     .chat-main-container {
-        border: 1px solid rgba(0, 0, 0, 0.08);
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(20px) saturate(180%);
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.1),
+            0 2px 8px rgba(0, 0, 0, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
     }
     
+    .chat-main-container::before {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.4) 0%, 
+            rgba(255, 255, 255, 0.2) 50%, 
+            rgba(255, 255, 255, 0.1) 100%);
+    }
+    
+    /* Sidebar glassmorphism for light mode */
     .chat-sidebar-container {
-        border-right: 1px solid rgba(0, 0, 0, 0.08);
+        background: rgba(255, 255, 255, 0.6);
+        border-right: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(25px) saturate(180%);
+        box-shadow: 
+            inset -1px 0 0 rgba(255, 255, 255, 0.5),
+            0 4px 20px rgba(0, 0, 0, 0.05),
+            0 2px 8px rgba(0, 0, 0, 0.03);
     }
     
+    .chat-sidebar-container::before {
+        background: linear-gradient(180deg, 
+            rgba(255, 255, 255, 0.3) 0%, 
+            rgba(255, 255, 255, 0.15) 50%, 
+            rgba(255, 255, 255, 0.05) 100%);
+    }
+    
+    /* Sidebar header for light mode */
+    .chat-sidebar-header-container {
+        background: rgba(255, 255, 255, 0.8);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(15px);
+    }
+    
+    /* Search container for light mode */
+    .chat-sidebar-search-container {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 
+            0 2px 8px rgba(0, 0, 0, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+    
+    .chat-sidebar-search-container:focus-within {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: var(--accent-blue);
+        box-shadow: 
+            0 0 0 3px rgba(59, 130, 246, 0.15),
+            0 4px 16px rgba(0, 0, 0, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+    
+    /* Conversation items for light mode */
     .chat-conversation-item {
-        border: 1px solid rgba(0, 0, 0, 0.05);
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
     }
     
     .chat-conversation-item:hover {
-        border-color: rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.8);
+        border-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 
+            0 4px 16px rgba(0, 0, 0, 0.08),
+            0 2px 8px rgba(0, 0, 0, 0.04),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
     
     .chat-conversation-item.active {
+        background: linear-gradient(135deg, 
+            rgba(59, 130, 246, 0.1), 
+            rgba(255, 255, 255, 0.7));
         border: 1px solid var(--accent-blue);
+        box-shadow: 
+            0 4px 20px rgba(59, 130, 246, 0.15),
+            0 2px 8px rgba(59, 130, 246, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
     
+    /* Chat box container for light mode */
+    .chat-box-container {
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(15px);
+    }
+    
+    .chat-box-header-container {
+        background: rgba(255, 255, 255, 0.8);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(25px) saturate(180%);
+        box-shadow: 
+            0 2px 8px rgba(0, 0, 0, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+    
+    /* Messages area for light mode */
+    .chat-box-messages-container {
+        background: rgba(248, 250, 252, 0.5);
+    }
+    
+    /* Message content for light mode */
     .chat-message-content {
-        border: 1px solid rgba(0, 0, 0, 0.08);
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 
+            0 2px 8px rgba(0, 0, 0, 0.05),
+            0 1px 3px rgba(0, 0, 0, 0.03),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+    
+    .chat-message.sent .chat-message-content {
+        background: linear-gradient(135deg, 
+            rgba(59, 130, 246, 0.9), 
+            rgba(99, 102, 241, 0.8));
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        box-shadow: 
+            0 4px 16px rgba(59, 130, 246, 0.2),
+            0 2px 8px rgba(59, 130, 246, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Input container for light mode */
+    .chat-input-container {
+        background: rgba(255, 255, 255, 0.8);
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(25px) saturate(180%);
+        box-shadow: 
+            0 -2px 8px rgba(0, 0, 0, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
     
     .chat-input-wrapper {
-        border: 1px solid rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 
+            0 4px 16px rgba(0, 0, 0, 0.05),
+            0 2px 8px rgba(0, 0, 0, 0.03),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
     
     .chat-input-wrapper:focus-within {
+        background: rgba(255, 255, 255, 0.95);
+        border-color: var(--accent-blue);
+        box-shadow: 
+            0 0 0 3px rgba(59, 130, 246, 0.15),
+            0 6px 24px rgba(0, 0, 0, 0.08),
+            0 2px 8px rgba(0, 0, 0, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+    
+    /* Send button for light mode */
+    .chat-send-button {
+        background: linear-gradient(135deg, 
+            rgba(59, 130, 246, 0.9), 
+            rgba(99, 102, 241, 0.8));
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        box-shadow: 
+            0 4px 16px rgba(59, 130, 246, 0.2),
+            0 2px 8px rgba(59, 130, 246, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    
+    .chat-send-button:hover:not(:disabled) {
+        background: linear-gradient(135deg, 
+            rgba(99, 102, 241, 0.9), 
+            rgba(139, 92, 246, 0.8));
+        box-shadow: 
+            0 6px 20px rgba(59, 130, 246, 0.3),
+            0 2px 8px rgba(59, 130, 246, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+    
+    /* Details panel for light mode */
+    .chat-details-container {
+        background: rgba(255, 255, 255, 0.6);
+        border-left: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(25px) saturate(180%);
+        box-shadow: 
+            inset 1px 0 0 rgba(255, 255, 255, 0.5),
+            0 4px 16px rgba(0, 0, 0, 0.05);
+    }
+    
+    .chat-details-header {
+        background: rgba(255, 255, 255, 0.8);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(15px);
+    }
+    
+    /* Group management modal for light mode */
+    .chat-group-management-content {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(20px) saturate(180%);
+        box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.1),
+            0 8px 16px rgba(0, 0, 0, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+    
+    .chat-group-management-header {
+        background: rgba(255, 255, 255, 0.95);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    /* Date separator for light mode */
+    .chat-date-separator span {
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        color: var(--color-text-secondary);
+    }
+    
+    /* File previews for light mode */
+    .chat-file-previews-container {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .chat-file-preview-item {
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .chat-file-preview-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    /* Emoji picker for light mode */
+    .chat-emoji-picker {
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    }
+    
+    .chat-emoji-picker-header {
+        background: rgba(255, 255, 255, 0.9);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    /* Reaction chips for light mode */
+    .chat-reaction {
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    .chat-reaction:hover {
+        background: rgba(255, 255, 255, 0.9);
+    }
+    
+    .chat-reaction.user-reacted {
+        background: var(--accent-blue);
+        color: white;
+        border: 1px solid var(--accent-blue);
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Message options menu for light mode */
+    .chat-message-options-menu {
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    .chat-message-options-menu .chat-message-option:hover {
+        background: rgba(255, 255, 255, 0.7);
+    }
+    
+    /* Shared files for light mode */
+    .chat-shared-file-item {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .chat-shared-file-item:hover {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(255, 255, 255, 0.6);
+    }
+    
+    /* Empty state for light mode */
+    .chat-empty-state {
+        background: rgba(248, 250, 252, 0.5);
+    }
+    
+    .chat-no-selection {
+        background: rgba(248, 250, 252, 0.5);
+    }
+    
+    .chat-no-selection-icon {
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    /* Welcome container for light mode */
+    .chat-welcome-container {
+        background: rgba(248, 250, 252, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .chat-connection-status {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    /* Team members for light mode */
+    .chat-team-members-container {
+        background: rgba(255, 255, 255, 0.6);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .chat-team-member-item {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .chat-team-member-item:hover {
+        background: rgba(255, 255, 255, 0.8);
+    }
+    
+    /* Floating menu for light mode */
+    .chat-group-management-floating {
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    .chat-group-management-floating .chat-group-management-header {
+        background: rgba(255, 255, 255, 0.9);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .chat-group-management-floating .chat-group-management-member {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .chat-group-management-floating .chat-group-management-member:hover {
+        background: rgba(255, 255, 255, 0.9);
+    }
+    
+    /* Side modal for light mode */
+    .side-modal-content {
+        background: rgba(255, 255, 255, 0.95);
+    }
+    
+    .side-modal-header {
+        background: rgba(255, 255, 255, 0.9);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .side-modal-actions {
+        background: rgba(255, 255, 255, 0.9);
+        border-top: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .member-item {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .member-item:hover {
+        background: rgba(255, 255, 255, 0.9);
+    }
+    
+    .member-item.selected {
+        background: var(--accent-blue);
+        color: white;
         border-color: var(--accent-blue);
     }
     
-    .chat-details-container {
-        border-left: 1px solid rgba(0, 0, 0, 0.08);
+    /* Form elements for light mode */
+    .form-input,
+    .form-textarea {
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.4);
     }
     
-    .chat-group-management-content {
-        border: 1px solid rgba(0, 0, 0, 0.08);
+    .form-input:focus,
+    .form-textarea:focus {
+        background: rgba(255, 255, 255, 0.95);
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Action buttons for light mode */
+    .action-button {
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .action-button:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.9);
+    }
+    
+    .action-button.primary {
+        background: var(--accent-blue);
+        color: white;
+        border-color: var(--accent-blue);
+    }
+    
+    .action-button.primary:hover:not(:disabled) {
+        background: var(--accent-indigo);
+        border-color: var(--accent-indigo);
     }
 }
 
