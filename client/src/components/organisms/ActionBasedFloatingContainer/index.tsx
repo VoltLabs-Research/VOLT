@@ -39,7 +39,7 @@ const ActionBasedFloatingContainer: React.FC<ExtendedFloatingContainerProps> = (
     menuClassName,
     portalTarget,
     useCursorPosition = false,
-    deleteMenuStyle = false
+    deleteMenuStyle = false,
 }) => {
     const {
         triggerRef,
@@ -63,7 +63,7 @@ const ActionBasedFloatingContainer: React.FC<ExtendedFloatingContainerProps> = (
             >
                 {children}
             </div>
-            
+        
             <FloatingMenu
                 isVisible={isVisible}
                 menuRef={menuRef}

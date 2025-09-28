@@ -12,7 +12,7 @@ const ChatSidebar: React.FC = () => {
     const [showTeamMembers, setShowTeamMembers] = useState(false);
 
     const user = useAuthStore((store) => store.user);
-    const { teamMembers, startChatWithMember, chats, isLoading, selectChat, currentChat } = useChat();
+    const { teamMembers, startChatWithMember, chats, isLoadingChats, selectChat, currentChat } = useChat();
     const { setShowCreateGroup } = useChatStore();
     
     // Filter chats based on search query
@@ -89,7 +89,7 @@ const ChatSidebar: React.FC = () => {
             )}
 
             <div className='chat-conversations-container'>
-                {isLoading ? (
+                {isLoadingChats ? (
                     // Show skeleton while loading chats
                     Array.from({ length: 3 }).map((_, index) => (
                         <ChatListSkeleton key={`chat-skeleton-${index}`} />

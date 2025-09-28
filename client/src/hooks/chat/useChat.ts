@@ -36,6 +36,8 @@ export const useChat = () => {
         teamMembers,
         typingUsers,
         isLoading,
+        isLoadingMessages,
+        isLoadingChats,
         isConnected,
         setCurrentChat,
         setMessages,
@@ -300,6 +302,8 @@ export const useChat = () => {
         teamMembers,
         typingUsers,
         isLoading,
+        isLoadingMessages,
+        isLoadingChats,
         isConnected,
 
         // Actions

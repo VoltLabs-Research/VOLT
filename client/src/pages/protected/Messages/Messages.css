@@ -1373,13 +1373,9 @@
     }
 }
 
-.chat-group-management-content,
 .chat-edit-group-content {
-    background: var(--color-surface-1);
     border-radius: 1rem;
-    width: 90%;
-    max-width: 500px;
-    max-height: 80vh;
+    width: 100%;
     overflow: hidden;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
     animation: modalSlideIn 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -1397,16 +1393,13 @@
     }
 }
 
-.chat-group-management-header,
 .chat-edit-group-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--color-border-soft);
 }
 
-.chat-group-management-header h3,
 .chat-edit-group-header h3 {
     margin: 0;
     color: var(--color-text-primary);
@@ -1469,32 +1462,6 @@
     display: flex;
     gap: 0.5rem;
     justify-content: flex-end;
-}
-
-.chat-group-management-cancel,
-.chat-group-management-add,
-.chat-edit-group-cancel,
-.chat-edit-group-save {
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    border: none;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.chat-group-management-cancel,
-.chat-edit-group-cancel {
-    background: var(--color-surface-2);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border-soft);
-}
-
-.chat-group-management-add,
-.chat-edit-group-save {
-    background: var(--accent-blue);
-    color: white;
 }
 
 .chat-group-management-add:hover:not(:disabled),
@@ -3236,4 +3203,221 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+}
+
+
+/* Group Management Floating Container */
+.chat-group-management-floating {
+    position: fixed;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 320px;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow: hidden;
+    animation: dropdownIn 0.16s ease-out both;
+    z-index: 9999;
+}
+
+.chat-group-management-floating .chat-group-management-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+}
+
+.chat-group-management-floating .chat-group-management-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-group-management-floating .chat-group-management-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.chat-group-management-close {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-group-management-close:hover {
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+}
+
+.chat-group-management-floating .chat-group-management-body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.chat-group-management-floating .chat-group-management-members {
+    margin-bottom: 20px;
+}
+
+.chat-group-management-floating .chat-group-management-members h5 {
+    margin: 0 0 12px 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.chat-group-management-floating .chat-group-management-member {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.chat-group-management-floating .chat-group-management-member:hover {
+    background: var(--color-surface-1);
+    transform: translateY(-1px);
+}
+
+.chat-group-management-floating .chat-group-management-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.chat-group-management-floating .chat-group-management-add,
+.chat-group-management-floating .chat-leave-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.chat-group-management-floating .chat-group-management-add:hover {
+    background: var(--color-surface-1);
+    transform: translateY(-1px);
+}
+
+.chat-group-management-floating .chat-leave-group {
+    background: var(--color-error);
+    border-color: var(--color-error);
+    color: white;
+}
+
+.chat-group-management-floating .chat-leave-group:hover {
+    background: color-mix(in srgb, var(--color-error) 80%, black);
+    transform: translateY(-1px);
+}
+
+/* New trigger button for FloatingMenu */
+.chat-group-management-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    width: 100%;
+}
+
+.chat-group-management-trigger:hover {
+    background: var(--color-surface-1);
+    transform: translateY(-1px);
+}
+
+/* FloatingMenu styles for group management */
+.chat-group-management-floating-menu {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    padding: 8px;
+    z-index: 9999;
+    position: fixed !important;
+}
+
+/* Trigger wrapper for group management */
+.chat-group-management-trigger-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.chat-group-management-floating-menu .action-based-floating-option-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.chat-group-management-floating-menu .action-based-floating-option-container:hover {
+    background: var(--color-surface-2);
+}
+
+.chat-group-management-floating-menu .action-based-floating-option-container[data-danger="true"] {
+    color: var(--color-error);
+}
+
+.chat-group-management-floating-menu .action-based-floating-option-container[data-danger="true"]:hover {
+    background: color-mix(in srgb, var(--color-error) 10%, transparent);
+}
+
+/* Animations */
+@keyframes overlayIn {
+    from { 
+        opacity: 0; 
+    }
+    to { 
+        opacity: 1; 
+    }
+}
+
+@keyframes dropdownIn {
+    from { 
+        transform: translateY(8px); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateY(0); 
+        opacity: 1; 
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chat-group-management-floating {
+        animation: none;
+    }
 }

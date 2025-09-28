@@ -25,7 +25,6 @@ import { useChatStore } from '@/stores/chat';
 import DashboardContainer from '@/components/atoms/DashboardContainer';
 import ChatSidebar from '@/components/molecules/chat/ChatSidebar';
 import ChatArea from '@/components/molecules/chat/ChatArea';
-import GroupManagementModal from '@/components/molecules/chat/GroupManagementModal';
 import EditGroupModal from '@/components/molecules/chat/EditGroupModal';
 import ManageAdminsModal from '@/components/molecules/chat/ManageAdminsModal';
 import AddMembersModal from '@/components/molecules/chat/AddMembersModal';
@@ -37,7 +36,6 @@ const MessagesPage = () => {
 
     const {
         showCreateGroup,
-        showGroupManagement,
         showAddMembers,
         showManageAdmins,
         showEditGroup
@@ -51,10 +49,6 @@ const MessagesPage = () => {
             
             {showCreateGroup && (
                 <CreateGroupModal />
-            )}
-
-            {showGroupManagement && currentChat?.isGroup && (
-                <GroupManagementModal />
             )}
 
             {showEditGroup && currentChat?.isGroup && (

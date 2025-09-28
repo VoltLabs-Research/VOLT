@@ -1,6 +1,7 @@
-import { IoCloseOutline } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/chat';
+import DraggableBinaryContainer from '@/components/organisms/DraggableBinaryContainer';
+import TeamCreatorBg from '@/assets/images/create-new-team.webp';
 
 const EditGroupModal = () => {
     const { currentChat, updateGroupInfo } = useChat();
@@ -29,17 +30,13 @@ const EditGroupModal = () => {
     };
 
     return (
-        <div className='chat-edit-group-modal'>
+        <DraggableBinaryContainer
+            title='Edit Group'
+            description="Update your group name and description."
+            bg={TeamCreatorBg}
+            onClose={() => setShowEditGroup(false)}
+        >
             <div className='chat-edit-group-content'>
-                <div className='chat-edit-group-header'>
-                    <h3>Edit Group</h3>
-                    <button 
-                        className='chat-close-modal'
-                        onClick={() => setShowEditGroup(false)}
-                    >
-                        <IoCloseOutline />
-                    </button>
-                </div>
                 <div className='chat-edit-group-body'>
                     <div className='chat-edit-group-form'>
                         <input
@@ -72,7 +69,7 @@ const EditGroupModal = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </DraggableBinaryContainer>
     );
 };
 

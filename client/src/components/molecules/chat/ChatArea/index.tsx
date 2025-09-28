@@ -19,6 +19,7 @@ import {
     IoTrashOutline
 } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
+import { useChatStore } from '@/stores/chat';
 import { getInitials } from '@/utilities/guest';
 import { chatApi } from '@/services/chat-api';
 import FilePreviewSkeleton from '@/components/atoms/messages/FilePreviewSkeleton';
@@ -27,9 +28,9 @@ import ContactInfoSkeleton from '@/components/atoms/messages/ContactInfoSkeleton
 import { formatSize } from '@/utilities/scene-utils';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import useAuthStore from '@/stores/authentication';
+import GroupManagementModal from '@/components/molecules/chat/GroupManagementModal';
 
 const ChatArea = () => {
-    const [showGroupManagement, setShowGroupManagement] = useState(false);
     const [filePreviews, setFilePreviews] = useState<{file: File, preview: string}[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [editingMessage, setEditingMessage] = useState<string | null>(null);
@@ -46,6 +47,7 @@ const ChatArea = () => {
     const messageOptionsRef = useRef<HTMLDivElement>(null);
 
     const user = useAuthStore((store) => store.user);
+    const { showGroupManagement, setShowGroupManagement } = useChatStore();
 
     const { 
         handleTyping,
@@ -58,7 +60,7 @@ const ChatArea = () => {
         toggleReaction,
         getUserPresence,
         typingUsers, 
-        isLoading, 
+        isLoadingMessages, 
         isConnected } = useChat();
     
     // Get the other participant in the current chat
@@ -258,7 +260,10 @@ const ChatArea = () => {
                                 <button 
                                     className='chat-header-action' 
                                     title='Group Management'
-                                    onClick={() => setShowGroupManagement(true)}
+                                    onClick={(e) => {
+                                        (window as any).lastMouseEvent = e.nativeEvent;
+                                        setShowGroupManagement(true);
+                                    }}
                                 >
                                     <IoEllipsisVerticalOutline />
                                 </button>
@@ -277,7 +282,7 @@ const ChatArea = () => {
 
                     {/* Messages Area */}
                     <div className='chat-box-messages-container'>
-                        {isLoading ? (
+                        {isLoadingMessages ? (
                             // Show skeleton while loading messages
                             Array.from({ length: 5 }).map((_, index) => (
                                 <MessageSkeleton 
@@ -682,7 +687,7 @@ const ChatArea = () => {
                                 Select a conversation to view details
                             </p>
                         </div>
-                    ) : isLoading ? (
+                    ) : isLoadingMessages ? (
                         // Show skeleton while loading contact info
                         <ContactInfoSkeleton />
                     ) : currentChat?.isGroup ? (
@@ -721,7 +726,7 @@ const ChatArea = () => {
                     )}
 
                     {/* Actions - only show when chat is selected and not loading */}
-                    {currentChat && !isLoading && (
+                    {currentChat && !isLoadingMessages && (
                         <div className='chat-details-section'>
                             <h4 className='chat-details-section-title'>Actions</h4>
                             <div className='chat-details-actions'>
@@ -740,7 +745,10 @@ const ChatArea = () => {
                                 {currentChat?.isGroup ? (
                                     <button 
                                         className='chat-details-action'
-                                        onClick={() => setShowGroupManagement(true)}
+                                        onClick={(e) => {
+                                            (window as any).lastMouseEvent = e.nativeEvent;
+                                            setShowGroupManagement(true);
+                                        }}
                                     >
                                         <i className='chat-details-action-icon'>
                                             <IoEllipsisVerticalOutline />
@@ -787,7 +795,7 @@ const ChatArea = () => {
                     )}
 
                     {/* Shared Files - only show when chat is selected and not loading */}
-                    {currentChat && !isLoading && (
+                    {currentChat && !isLoadingMessages && (
                         <div className='chat-details-section'>
                             <h4 className='chat-details-section-title'>Shared Files</h4>
                             {(() => {
@@ -808,7 +816,7 @@ const ChatArea = () => {
                             
                             return (
                                 <div className='chat-shared-files'>
-                                    {isLoading ? (
+                                    {isLoadingMessages ? (
                                         // Show skeleton while loading files
                                         Array.from({ length: 2 }).map((_, index) => (
                                             <FilePreviewSkeleton key={`file-skeleton-${index}`} />
@@ -871,6 +879,11 @@ const ChatArea = () => {
                     )}
                 </div>
             </div>
+            
+            {/* Group Management Modal */}
+            {currentChat?.isGroup && showGroupManagement && (
+                <GroupManagementModal />
+            )}
         </div>
     );
 };

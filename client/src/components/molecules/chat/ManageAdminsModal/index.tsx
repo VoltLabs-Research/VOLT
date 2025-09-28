@@ -1,8 +1,10 @@
 import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/chat';
-import { IoCheckmarkOutline, IoCloseOutline, IoTrashOutline } from 'react-icons/io5';
+import { IoCheckmarkOutline, IoTrashOutline } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
+import DraggableBinaryContainer from '@/components/organisms/DraggableBinaryContainer';
+import TeamCreatorBg from '@/assets/images/create-new-team.webp';
 
 const ManageAdminsModal = () => {
     const { currentChat, updateGroupAdmins } = useChat();
@@ -36,17 +38,13 @@ const ManageAdminsModal = () => {
     };
 
     return currentChat && (
-        <div className='chat-group-management-modal'>
+        <DraggableBinaryContainer
+            title='Manage Admins'
+            description="Add or remove administrators for your group."
+            bg={TeamCreatorBg}
+            onClose={() => setShowManageAdmins(false)}
+        >
             <div className='chat-group-management-content'>
-                <div className='chat-group-management-header'>
-                    <h3>Manage Admins</h3>
-                    <button 
-                        className='chat-close-modal'
-                        onClick={() => setShowManageAdmins(false)}
-                    >
-                        <IoCloseOutline />
-                    </button>
-                </div>
                 <div className='chat-group-management-body'>
                     <div className='chat-create-group-members'>
                         <h5>Current Admins</h5>
@@ -128,7 +126,7 @@ const ManageAdminsModal = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </DraggableBinaryContainer>
     );
 };
 

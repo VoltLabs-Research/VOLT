@@ -1,14 +1,17 @@
-import { IoAddOutline, IoCloseOutline, IoCreateOutline, IoPersonRemoveOutline, IoShieldOutline, IoTrashOutline } from 'react-icons/io5';
+import { IoAddOutline, IoCreateOutline, IoPersonRemoveOutline, IoShieldOutline, IoTrashOutline } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/chat';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
+import { createPortal } from 'react-dom';
+import { useEffect, useRef, useState } from 'react';
 
 const GroupManagementModal = () => {
     const { currentChat, removeUsersFromGroup, leaveGroup } = useChat();
     const user = useAuthStore((store) => store.user);
     
     const {
+        showGroupManagement,
         setShowGroupManagement,
         setShowManageAdmins,
         setShowAddMembers,
@@ -19,14 +22,54 @@ const GroupManagementModal = () => {
         setEditGroupDescription
     } = useChatStore();
 
+    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+    const modalRef = useRef<HTMLDivElement>(null);
+
+    // Capture cursor position when modal becomes visible
+    useEffect(() => {
+        if (showGroupManagement) {
+            const lastMouseEvent = (window as any).lastMouseEvent;
+            if (lastMouseEvent) {
+                // Simple positioning: modal appears near cursor with small offset
+                setModalPosition({ 
+                    x: lastMouseEvent.clientX + 10, 
+                    y: lastMouseEvent.clientY + 10 
+                });
+            }
+        }
+    }, [showGroupManagement]);
+
+    // Handle clicks outside the modal to close it
+    useEffect(() => {
+        if (!showGroupManagement) return;
+
+        const handleClickOutside = (e: MouseEvent) => {
+            if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+                setShowGroupManagement(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showGroupManagement, setShowGroupManagement]);
+
+    const styles = {
+        position: 'fixed' as const,
+        top: `${modalPosition.y}px`,
+        left: `${modalPosition.x}px`,
+        zIndex: 9999,
+    };
+
     const handleManageAdmins = () => {
         setShowManageAdmins(true);
         setSelectedAdmins([]);
+        setShowGroupManagement(false);
     };
 
     const openAddMembers = () => {
         setSelectedMembers([]);
         setShowAddMembers(true);
+        setShowGroupManagement(false);
     };
 
     const openEditGroup = () => {
@@ -34,6 +77,7 @@ const GroupManagementModal = () => {
             setEditGroupName(currentChat.groupName || '');
             setEditGroupDescription(currentChat.groupDescription || '');
             setShowEditGroup(true);
+            setShowGroupManagement(false);
         }
     };
 
@@ -58,18 +102,15 @@ const GroupManagementModal = () => {
         }
     };
 
-    return currentChat && (
-        <div className='chat-group-management-modal'>
+    if (!currentChat || !showGroupManagement) return null;
+
+    return createPortal(
+        <div 
+            ref={modalRef}
+            className='chat-group-management-floating'
+            style={styles}
+        >
             <div className='chat-group-management-content'>
-                <div className='chat-group-management-header'>
-                    <h3>Group Management</h3>
-                    <button 
-                        className='chat-close-modal'
-                        onClick={() => setShowGroupManagement(false)}
-                    >
-                        <IoCloseOutline />
-                    </button>
-                </div>
                 <div className='chat-group-management-body'>
                     <div className='chat-group-management-members'>
                         <h5>Group Members</h5>
@@ -103,12 +144,6 @@ const GroupManagementModal = () => {
                     </div>
                     <div className='chat-group-management-actions'>
                         <button 
-                            className='chat-group-management-cancel'
-                            onClick={() => setShowGroupManagement(false)}
-                        >
-                            Cancel
-                        </button>
-                        <button 
                             className='chat-group-management-add'
                             onClick={openAddMembers}
                         >
@@ -139,7 +174,8 @@ const GroupManagementModal = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

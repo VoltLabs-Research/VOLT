@@ -1,8 +1,10 @@
 import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/chat';
-import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
+import { IoCheckmarkOutline } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
+import DraggableBinaryContainer from '@/components/organisms/DraggableBinaryContainer';
+import TeamCreatorBg from '@/assets/images/create-new-team.webp';
 
 const CreateGroupModal = () => {
     const { teamMembers, createGroupChat, currentChat } = useChat();
@@ -39,17 +41,13 @@ const CreateGroupModal = () => {
     };
 
     return (
-        <div className='chat-group-management-modal'>
+        <DraggableBinaryContainer
+            title='Create New Group'
+            description="Create a new group chat with your team members."
+            bg={TeamCreatorBg}
+            onClose={() => setShowCreateGroup(false)}
+        >
             <div className='chat-group-management-content'>
-                <div className='chat-group-management-header'>
-                    <h3>Create New Group</h3>
-                    <button 
-                        className='chat-close-modal'
-                        onClick={() => setShowCreateGroup(false)}
-                    >
-                        <IoCloseOutline />
-                    </button>
-                </div>
                 <div className='chat-group-management-body'>
                     <div className='chat-create-group-container'>
                         <div className='chat-create-group-form'>
@@ -112,7 +110,7 @@ const CreateGroupModal = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </DraggableBinaryContainer>
     );
 };
 

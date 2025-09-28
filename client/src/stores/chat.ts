@@ -36,6 +36,8 @@ interface ChatStore {
     typingUsers: TypingUser[];
     userPresence: { [userId: string]: 'online' | 'offline' };
     isLoading: boolean;
+    isLoadingMessages: boolean;
+    isLoadingChats: boolean;
     isConnected: boolean;
 
     // Modal states
@@ -74,6 +76,8 @@ interface ChatStore {
     setUserPresence: (userId: string, status: 'online' | 'offline') => void;
     getUserPresence: (userId: string) => 'online' | 'offline' | undefined;
     setLoading: (loading: boolean) => void;
+    setLoadingMessages: (loading: boolean) => void;
+    setLoadingChats: (loading: boolean) => void;
     setConnected: (connected: boolean) => void;
 
     // Modal actions
@@ -142,6 +146,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     typingUsers: [],
     userPresence: {},
     isLoading: false,
+    isLoadingMessages: false,
+    isLoadingChats: false,
     isConnected: false,
 
     // Modal states
@@ -191,17 +197,19 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         return userPresence[userId] || 'offline';
     },
     setLoading: (loading) => set({ isLoading: loading }),
+    setLoadingMessages: (loading) => set({ isLoadingMessages: loading }),
+    setLoadingChats: (loading) => set({ isLoadingChats: loading }),
     setConnected: (connected) => set({ isConnected: connected }),
 
     // API Actions
     loadChats: async () => {
-        set({ isLoading: true });
+        set({ isLoadingChats: true });
         try {
             const chats = await chatApi.getChats();
-            set({ chats, isLoading: false });
+            set({ chats, isLoadingChats: false });
         } catch (error) {
             console.error('Failed to load chats:', error);
-            set({ isLoading: false });
+            set({ isLoadingChats: false });
         }
     },
 
@@ -215,13 +223,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
 
     loadMessages: async (chatId) => {
-        set({ isLoading: true });
+        set({ isLoadingMessages: true });
         try {
             const messages = await chatApi.getChatMessages(chatId);
-            set({ messages, isLoading: false });
+            set({ messages, isLoadingMessages: false });
         } catch (error) {
             console.error('Failed to load messages:', error);
-            set({ isLoading: false });
+            set({ isLoadingMessages: false });
         }
     },
 
