@@ -102,14 +102,6 @@ interface ChatStore {
     toggleAdminSelection: (adminId: string) => void;
     resetModalStates: () => void;
 
-    // Call actions
-    startCall: (type: 'voice' | 'video', participants: string[]) => void;
-    answerCall: () => void;
-    endCall: () => void;
-    rejectCall: () => void;
-    setCallState: (state: 'idle' | 'calling' | 'ringing' | 'connected' | 'ended') => void;
-    updateCallDuration: () => void;
-
     // API Actions
     loadChats: () => Promise<void>;
     loadTeamMembers: (teamId: string) => Promise<void>;
@@ -628,48 +620,4 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         editGroupName: '',
         editGroupDescription: ''
     }),
-
-    // Call actions
-    startCall: (type, participants) => set({
-        callState: 'calling',
-        callType: type,
-        callParticipants: participants,
-        isInCall: true,
-        callStartTime: new Date(),
-        callDuration: 0
-    }),
-
-    answerCall: () => set({
-        callState: 'connected',
-        isInCall: true,
-        callStartTime: new Date()
-    }),
-
-    endCall: () => set({
-        callState: 'ended',
-        callType: null,
-        callParticipants: [],
-        isInCall: false,
-        callStartTime: null,
-        callDuration: 0
-    }),
-
-    rejectCall: () => set({
-        callState: 'idle',
-        callType: null,
-        callParticipants: [],
-        isInCall: false,
-        callStartTime: null,
-        callDuration: 0
-    }),
-
-    setCallState: (state) => set({ callState: state }),
-
-    updateCallDuration: () => {
-        const { callStartTime } = get();
-        if (callStartTime) {
-            const duration = Math.floor((Date.now() - callStartTime.getTime()) / 1000);
-            set({ callDuration: duration });
-        }
-    }
 }));
