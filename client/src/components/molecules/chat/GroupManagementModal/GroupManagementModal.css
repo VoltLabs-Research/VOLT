@@ -1,0 +1,1422 @@
+/* Group Management Modal Styles - Enhanced Modern Design */
+.group-management-container {
+    height: 650px;
+    width: 1050px;
+    position: absolute;
+    z-index: 99999999;
+    display: flex;
+    overflow: hidden;
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(16px);
+    background: linear-gradient(135deg, var(--background-primary) 0%, var(--background-secondary) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.group-management-left-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 25%;
+    min-width: 220px;
+    background: linear-gradient(180deg, var(--background-primary) 0%, var(--background-secondary) 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+.group-management-left-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%, rgba(0, 0, 0, 0.05) 100%);
+    pointer-events: none;
+}
+
+.group-management-left-top-container {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.group-management-left-bottom-container {
+    padding: 1rem;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.group-management-right-container {
+    height: 100%;
+    width: 75%;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+}
+
+/* Navigation Styles */
+.group-management-nav-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.group-management-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.group-management-nav-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.group-management-nav-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.group-management-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid transparent;
+}
+
+.group-management-nav-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.group-management-nav-item:hover::before {
+    left: 100%;
+}
+
+.group-management-nav-item:hover {
+    background: var(--color-surface-2);
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.group-management-nav-item.active {
+    background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-indigo) 100%);
+    color: white;
+    transform: translateX(4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.group-management-nav-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+}
+
+.group-management-nav-item-title {
+    font-size: 0.85rem;
+    font-weight: 400;
+}
+
+/* Group Info in Bottom Left */
+.group-management-group-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--color-surface-2) 0%, var(--color-surface-3) 100%);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.group-management-group-info::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%, rgba(0, 0, 0, 0.05) 100%);
+    pointer-events: none;
+}
+
+.group-management-group-avatar {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.group-management-group-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.group-management-group-details {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.group-management-group-name {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.group-management-group-members-count {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+/* Content Styles */
+.group-management-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    height: 100%;
+    padding: 0.5rem;
+    animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.group-management-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.group-management-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.group-management-section-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--accent-blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.group-management-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Actions */
+.group-management-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.group-management-actions .button {
+    width: fit-content;
+    justify-content: flex-start;
+    gap: 0.5rem;
+}
+
+/* Members List */
+.group-management-members-list,
+.group-management-admins-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.group-management-member,
+.group-management-admin {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, var(--color-surface-2) 0%, var(--color-surface-3) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.group-management-member::before,
+.group-management-admin::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.group-management-member:hover::before,
+.group-management-admin:hover::before {
+    left: 100%;
+}
+
+.group-management-member:hover,
+.group-management-admin:hover {
+    background: linear-gradient(135deg, var(--color-surface-3) 0%, var(--color-surface-4) 100%);
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.group-management-member-avatar,
+.group-management-admin-avatar {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.group-management-member:hover .group-management-member-avatar,
+.group-management-admin:hover .group-management-admin-avatar {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.group-management-member-info,
+.group-management-admin-info {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.group-management-member-name,
+.group-management-admin-name {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 0.125rem;
+}
+
+.group-management-member-role,
+.group-management-admin-role {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.group-management-member-badge,
+.group-management-admin-badge {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--accent-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+}
+
+.group-management-member-badge.owner,
+.group-management-admin-badge.owner {
+    background: var(--accent-gold);
+}
+
+.group-management-admin.owner {
+    background: var(--color-surface-3);
+    border: 1px solid var(--accent-gold);
+}
+
+/* Danger Zone */
+.group-management-danger-zone {
+    border-top: 2px solid rgba(239, 68, 68, 0.2);
+    padding-top: 1.5rem;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.group-management-danger-zone::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, transparent 50%, rgba(239, 68, 68, 0.05) 100%);
+    pointer-events: none;
+}
+
+.group-management-danger-zone .button {
+    width: fit-content;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.group-management-danger-zone .button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .group-management-container {
+        width: 95%;
+        height: 80vh;
+    }
+    
+    .group-management-left-container {
+        width: 30%;
+        min-width: 180px;
+    }
+    
+    .group-management-right-container {
+        width: 70%;
+    }
+    
+    .group-management-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .group-management-actions .button,
+    .group-management-form-actions .button {
+        width: 100%;
+    }
+}
+
+/* Add Members Interface */
+.group-management-add-members {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    animation: slideInFromRight 0.3s ease-out;
+}
+
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.group-management-add-members-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, var(--primary-color-light) 0%, var(--primary-color) 100%);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.group-management-add-members-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.group-management-back-button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    margin: -0.5rem;
+}
+
+.group-management-back-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(-2px);
+}
+
+.group-management-back-button svg {
+    font-size: 1.25rem;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.group-management-back-button:hover svg {
+    transform: translateX(-2px);
+}
+
+.group-management-back-button h4 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: white;
+}
+
+.group-management-add-members-search {
+    margin-bottom: 0.75rem;
+    position: relative;
+}
+
+.group-management-search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--background-primary);
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.group-management-search-container:focus-within {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.group-management-search-icon {
+    position: absolute;
+    left: 1rem;
+    color: var(--primary-color);
+    font-size: 1.125rem;
+    z-index: 1;
+    transition: color 0.3s ease;
+}
+
+.group-management-search-container:focus-within .group-management-search-icon {
+    color: var(--primary-color);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.group-management-search-input {
+    width: 100%;
+    padding: 0.875rem 1rem 0.875rem 3rem;
+    border: 2px solid transparent;
+    border-radius: 0.75rem;
+    background: var(--background-primary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.group-management-search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: var(--background-secondary);
+}
+
+.group-management-search-input::placeholder {
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.group-management-available-members {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 2px solid var(--border-color);
+    border-radius: 0.75rem;
+    background: var(--background-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    position: relative;
+}
+
+.group-management-available-members::-webkit-scrollbar {
+    width: 6px;
+}
+
+.group-management-available-members::-webkit-scrollbar-track {
+    background: var(--background-secondary);
+    border-radius: 3px;
+}
+
+.group-management-available-members::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 3px;
+}
+
+.group-management-available-members::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color-dark);
+}
+
+.group-management-member {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.group-management-member::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.group-management-member:hover::before {
+    left: 100%;
+}
+
+.group-management-member:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.group-management-member.selected {
+    background: linear-gradient(135deg, var(--primary-color-light) 0%, var(--primary-color) 100%);
+    border-color: var(--primary-color);
+    transform: translateX(4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.group-management-member.selected .group-management-member-name {
+    color: white;
+    font-weight: 700;
+}
+
+.group-management-member.selected .group-management-member-role {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.group-management-member-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: linear-gradient(135deg, var(--success-color) 0%, var(--success-color-dark) 100%);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.875rem;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: checkmarkPop 0.3s ease-out;
+}
+
+@keyframes checkmarkPop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.group-management-selected-summary {
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, var(--success-color-light) 0%, var(--success-color) 100%);
+    border-radius: 0.75rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    animation: slideInFromBottom 0.3s ease-out;
+}
+
+@keyframes slideInFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.group-management-selected-summary p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: white;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.group-management-selected-summary p::before {
+    content: '';
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.group-management-selected-summary .check-icon {
+    font-size: 1rem;
+    margin-right: 0.5rem;
+}
+
+.group-management-add-members-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1.25rem;
+    background: var(--background-secondary);
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Manage Admins Interface */
+.group-management-manage-admins {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    animation: slideInFromRight 0.3s ease-out;
+}
+
+.group-management-manage-admins-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, var(--warning-color-light) 0%, var(--warning-color) 100%);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.group-management-manage-admins-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+    animation: shimmer 2s infinite;
+}
+
+.group-management-available-admins {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 2px solid var(--border-color);
+    border-radius: 0.75rem;
+    background: var(--background-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    position: relative;
+}
+
+.group-management-available-admins::-webkit-scrollbar {
+    width: 6px;
+}
+
+.group-management-available-admins::-webkit-scrollbar-track {
+    background: var(--background-secondary);
+    border-radius: 3px;
+}
+
+.group-management-available-admins::-webkit-scrollbar-thumb {
+    background: var(--warning-color);
+    border-radius: 3px;
+}
+
+.group-management-available-admins::-webkit-scrollbar-thumb:hover {
+    background: var(--warning-color-dark);
+}
+
+.group-management-admin {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.group-management-admin::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.group-management-admin:hover::before {
+    left: 100%;
+}
+
+.group-management-admin:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.group-management-admin.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-tertiary) 100%);
+    position: relative;
+}
+
+.group-management-admin.disabled::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    opacity: 0.7;
+}
+
+.group-management-admin.disabled .lock-icon {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    opacity: 0.7;
+    color: var(--text-secondary);
+}
+
+.group-management-admin.disabled:hover {
+    background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-tertiary) 100%);
+    transform: none;
+    box-shadow: none;
+}
+
+.group-management-admin.disabled:hover::before {
+    left: -100%;
+}
+
+.group-management-admin.selected {
+    background: linear-gradient(135deg, var(--primary-color-light) 0%, var(--primary-color) 100%);
+    border-color: var(--primary-color);
+    transform: translateX(4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.group-management-admin.selected .group-management-admin-name {
+    color: white;
+    font-weight: 700;
+}
+
+.group-management-admin.selected .group-management-admin-role {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.group-management-admin.current-admin {
+    background: linear-gradient(135deg, var(--success-color-light) 0%, var(--success-color) 100%);
+    border-color: var(--success-color);
+    position: relative;
+}
+
+.group-management-admin.current-admin::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    animation: starTwinkle 2s infinite;
+}
+
+.group-management-admin.current-admin .star-icon {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    color: var(--accent-gold);
+    animation: starTwinkle 2s infinite;
+}
+
+@keyframes starTwinkle {
+    0%, 100% { opacity: 1; transform: translateY(-50%) scale(1); }
+    50% { opacity: 0.7; transform: translateY(-50%) scale(1.1); }
+}
+
+.group-management-admin.current-admin .group-management-admin-name {
+    color: white;
+    font-weight: 700;
+}
+
+.group-management-admin.current-admin .group-management-admin-role {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.group-management-admin-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: linear-gradient(135deg, var(--success-color) 0%, var(--success-color-dark) 100%);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.875rem;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: checkmarkPop 0.3s ease-out;
+}
+
+.group-management-manage-admins-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1.25rem;
+    background: var(--background-secondary);
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Enhanced Button Styles for Management Actions */
+.group-management-add-members-actions .button,
+.group-management-manage-admins-actions .button {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.group-management-add-members-actions .button::before,
+.group-management-manage-admins-actions .button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.group-management-add-members-actions .button:hover::before,
+.group-management-manage-admins-actions .button:hover::before {
+    left: 100%;
+}
+
+.group-management-add-members-actions .button:hover,
+.group-management-manage-admins-actions .button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.group-management-add-members-actions .button:active,
+.group-management-manage-admins-actions .button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Back Button Styles */
+.group-management-back-button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    margin: -0.5rem;
+}
+
+.group-management-back-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(-2px);
+}
+
+.group-management-back-button svg {
+    font-size: 1.25rem;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.group-management-back-button:hover svg {
+    transform: translateX(-2px);
+}
+
+.group-management-back-button h4 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: white;
+}
+
+/* Loading States */
+.group-management-add-members-actions .button:disabled,
+.group-management-manage-admins-actions .button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.group-management-add-members-actions .button:disabled::before,
+.group-management-manage-admins-actions .button:disabled::before {
+    left: -100%;
+}
+
+/* Empty State Styling */
+.group-management-available-members:empty::after,
+.group-management-available-admins:empty::after {
+    content: 'No members available';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 120px;
+    color: var(--text-secondary);
+    font-style: italic;
+    font-size: 0.875rem;
+}
+
+/* Search Input Enhanced Focus */
+.group-management-search-input:focus {
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+}
+
+/* Member/Admin Item Enhanced Hover Effects */
+.group-management-member:hover .group-management-member-avatar,
+.group-management-admin:hover .group-management-admin-avatar {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.group-management-member-avatar,
+.group-management-admin-avatar {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Responsive Enhancements */
+@media (max-width: 768px) {
+    .group-management-back-button {
+        gap: 0.5rem;
+    }
+    
+    .group-management-back-button h4 {
+        font-size: 1rem;
+    }
+    
+    .group-management-back-button svg {
+        font-size: 1.125rem;
+    }
+    
+    .group-management-add-members-actions,
+    .group-management-manage-admins-actions {
+        justify-content: center;
+    }
+    
+    .group-management-search-container {
+        margin: 0 0.5rem;
+    }
+}
+
+:root[data-theme='light'] .group-management-left-container {
+    border-right: 1px solid #e5e7eb;
+}
+
+:root[data-theme='light'] .group-management-left-container::before {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.03) 0%, transparent 50%, rgba(99, 102, 241, 0.02) 100%);
+}
+
+:root[data-theme='light'] .group-management-nav-item {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #6b7280;
+    transition: all 0.2s ease;
+}
+
+:root[data-theme='light'] .group-management-nav-item:hover {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #374151;
+    transform: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme='light'] .group-management-nav-item.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+    transform: none;
+}
+
+:root[data-theme='light'] .group-management-group-info {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme='light'] .group-management-group-info::before {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, transparent 50%, rgba(99, 102, 241, 0.01) 100%);
+}
+
+:root[data-theme='light'] .group-management-group-avatar {
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+}
+
+:root[data-theme='light'] .group-management-group-name {
+    color: #111827;
+    font-weight: 600;
+}
+
+:root[data-theme='light'] .group-management-group-members-count {
+    color: #6b7280;
+}
+
+:root[data-theme='light'] .group-management-section-title {
+    color: #111827;
+    background: none;
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: unset;
+    background-clip: unset;
+    font-weight: 700;
+}
+
+:root[data-theme='light'] .group-management-member,
+:root[data-theme='light'] .group-management-admin {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme='light'] .group-management-member:hover,
+:root[data-theme='light'] .group-management-admin:hover {
+    background: #f8fafc;
+    border-color: #d1d5db;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+:root[data-theme='light'] .group-management-member-name,
+:root[data-theme='light'] .group-management-admin-name {
+    color: #111827;
+    font-weight: 500;
+}
+
+:root[data-theme='light'] .group-management-member-role,
+:root[data-theme='light'] .group-management-admin-role {
+    color: #6b7280;
+}
+
+:root[data-theme='light'] .group-management-admin.owner {
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+:root[data-theme='light'] .group-management-search-container {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme='light'] .group-management-search-container:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+:root[data-theme='light'] .group-management-search-input {
+    background: transparent;
+    color: #111827;
+    border: none;
+}
+
+:root[data-theme='light'] .group-management-search-input:focus {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+:root[data-theme='light'] .group-management-search-input::placeholder {
+    color: #9ca3af;
+}
+
+:root[data-theme='light'] .group-management-available-members,
+:root[data-theme='light'] .group-management-available-admins {
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme='light'] .group-management-available-members::-webkit-scrollbar-track,
+:root[data-theme='light'] .group-management-available-admins::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+:root[data-theme='light'] .group-management-available-members::-webkit-scrollbar-thumb,
+:root[data-theme='light'] .group-management-available-admins::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+}
+
+:root[data-theme='light'] .group-management-add-members-actions,
+:root[data-theme='light'] .group-management-manage-admins-actions {
+    background: unset;
+    border-top: unset;
+}
+
+:root[data-theme='light'] .group-management-admin.disabled {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+    opacity: 0.6;
+}
+
+:root[data-theme='light'] .group-management-admin.disabled:hover {
+    background: #f9fafb;
+    transform: none;
+    box-shadow: none;
+}
+
+:root[data-theme='light'] .group-management-admin.disabled .lock-icon {
+    color: #9ca3af;
+}
+
+:root[data-theme='light'] .group-management-form-note {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+/* Light Mode Button Styles */
+:root[data-theme='light'] .group-management-container .button.black-on-light {
+    background: #ffffff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    font-weight: 500;
+}
+
+:root[data-theme='light'] .group-management-container .button.black-on-light:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+:root[data-theme='light'] .group-management-container .button.red-on-light {
+    background: #ef4444;
+    color: white;
+    border: 1px solid #dc2626;
+    box-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
+    font-weight: 500;
+}
+
+:root[data-theme='light'] .group-management-container .button.red-on-light:hover {
+    background: #dc2626;
+    box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Light Mode Navigation Hover States */
+:root[data-theme='light'] .group-management-nav-item:hover {
+    background: var(--color-surface-2);
+    border-color: var(--color-border-soft);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme='light'] .group-management-nav-item.active {
+    background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-indigo) 100%);
+    color: white;
+    border-color: var(--accent-blue);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Light Mode Member/Admin Selection States */
+:root[data-theme='light'] .group-management-member.selected {
+    background: #dbeafe;
+    border-color: #3b82f6;
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.15);
+}
+
+:root[data-theme='light'] .group-management-member.selected .group-management-member-name {
+    color: #1e40af;
+    font-weight: 600;
+}
+
+:root[data-theme='light'] .group-management-member.selected .group-management-member-role {
+    color: #3730a3;
+}
+
+:root[data-theme='light'] .group-management-admin.selected {
+    background: #dbeafe;
+    border-color: #3b82f6;
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.15);
+}
+
+:root[data-theme='light'] .group-management-admin.selected .group-management-admin-name {
+    color: #1e40af;
+    font-weight: 600;
+}
+
+:root[data-theme='light'] .group-management-admin.selected .group-management-admin-role {
+    color: #3730a3;
+}
+
+/* Light Mode Current Admin State */
+:root[data-theme='light'] .group-management-admin.current-admin {
+    background: #dcfce7;
+    border-color: #22c55e;
+    box-shadow: 0 2px 4px rgba(34, 197, 94, 0.15);
+}
+
+:root[data-theme='light'] .group-management-admin.current-admin .group-management-admin-name {
+    color: #166534;
+    font-weight: 600;
+}
+
+:root[data-theme='light'] .group-management-admin.current-admin .group-management-admin-role {
+    color: #15803d;
+}
+
+/* Light Mode Back Button */
+:root[data-theme='light'] .group-management-back-button {
+    color: #374151;
+}
+
+:root[data-theme='light'] .group-management-back-button:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme='light'] .group-management-back-button svg {
+    color: #374151;
+}
+
+:root[data-theme='light'] .group-management-back-button h4 {
+    color: #374151;
+}
+
+/* Light Mode Add Members Header */
+:root[data-theme='light'] .group-management-add-members-header {
+    background:unset;
+    box-shadow: unset;
+}
+
+:root[data-theme='light'] .group-management-add-members-header::before {
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+}
+
+/* Light Mode Manage Admins Header */
+:root[data-theme='light'] .group-management-manage-admins-header {
+    box-shadow: unset;
+}
+
+:root[data-theme='light'] .group-management-manage-admins-header::before {
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+}
+
+/* Light Mode Selected Summary */
+:root[data-theme='light'] .group-management-selected-summary {
+    background: transparent;
+    box-shadow: unset;
+}
+
+:root[data-theme='light'] .group-management-selected-summary p {
+    color: var(--accent-blue);
+}
+
+/* Light Mode Check Icons */
+:root[data-theme='light'] .group-management-member-check,
+:root[data-theme='light'] .group-management-admin-check {
+    background: #22c55e;
+    box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);
+}
+
+/* Light Mode Badges */
+:root[data-theme='light'] .group-management-member-badge,
+:root[data-theme='light'] .group-management-admin-badge {
+    background: #22c55e;
+    box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);
+}
+
+:root[data-theme='light'] .group-management-member-badge.owner,
+:root[data-theme='light'] .group-management-admin-badge.owner {
+    background: var(--accent-indigo);
+}

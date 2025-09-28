@@ -682,7 +682,7 @@
 
 .chat-details-action:hover {
     background: var(--color-surface-3);
-    border-color: var(--color-border);
+    border-color: var(--color-border-soft);
 }
 
 .chat-details-action svg {
@@ -1737,7 +1737,7 @@
 .chat-input {
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: var(--color-border) transparent;
+    scrollbar-color: var(--color-border-soft) transparent;
 }
 
 /* Enhanced focus states for better UX */
@@ -1760,7 +1760,7 @@
 }
 
 .chat-input::-webkit-scrollbar-thumb {
-    background: var(--color-border);
+    background: var(--color-border-soft);
     border-radius: 2px;
 }
 
@@ -2027,7 +2027,7 @@
 .chat-loading-spinner {
     width: 20px;
     height: 20px;
-    border: 2px solid var(--color-border);
+    border: 2px solid var(--color-border-soft);
     border-top: 2px solid var(--accent-blue);
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -2995,7 +2995,7 @@
 
 .chat-shared-file-item:hover {
     background: var(--color-surface-3);
-    border-color: var(--color-border);
+    border-color: var(--color-border-soft);
     transform: translateY(-1px);
 }
 
@@ -3210,7 +3210,7 @@
 .chat-group-management-floating {
     position: fixed;
     background: var(--color-surface-1);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-soft);
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 320px;
@@ -3223,7 +3223,7 @@
 
 .chat-group-management-floating .chat-group-management-header {
     padding: 16px 20px;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border-soft);
     background: var(--color-surface-2);
 }
 
@@ -3284,7 +3284,7 @@
     padding: 12px;
     border-radius: 8px;
     background: var(--color-surface-2);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-soft);
     margin-bottom: 8px;
     transition: all 0.2s ease;
 }
@@ -3307,7 +3307,7 @@
     gap: 8px;
     padding: 12px 16px;
     border-radius: 8px;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-soft);
     background: var(--color-surface-2);
     color: var(--color-text-primary);
     font-size: 0.9rem;
@@ -3340,7 +3340,7 @@
     gap: 8px;
     padding: 12px 16px;
     border-radius: 8px;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-soft);
     background: var(--color-surface-2);
     color: var(--color-text-primary);
     font-size: 0.9rem;
@@ -3358,7 +3358,7 @@
 /* FloatingMenu styles for group management */
 .chat-group-management-floating-menu {
     background: var(--color-surface-1);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-soft);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 180px;
@@ -3420,4 +3420,759 @@
     .chat-group-management-floating {
         animation: none;
     }
+}
+
+/* Group Management Modal Styles */
+.chat-group-management-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(8px);
+}
+
+.chat-group-management-content {
+    background: var(--color-surface-1);
+    border-radius: 1rem;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    animation: modalSlideIn 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform: translateY(0);
+}
+
+.chat-group-management-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-surface-2);
+}
+
+.chat-group-management-header h3 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.chat-group-management-body {
+    padding: 1.5rem;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* Group Info Styles */
+.chat-group-management-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--color-surface-2);
+    border-radius: 0.75rem;
+}
+
+.chat-group-management-avatar {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.chat-group-management-details {
+    flex: 1;
+}
+
+.chat-group-management-name {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.chat-group-management-description {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.chat-group-management-members-count {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+/* Members List Styles */
+.chat-group-management-members h5,
+.chat-add-members-list h5,
+.chat-manage-admins-list h5,
+.chat-manage-admins-owner h5 {
+    margin: 0 0 1rem 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.chat-group-management-members-list,
+.chat-add-members-members,
+.chat-manage-admins-members {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.chat-group-management-member,
+.chat-add-members-member,
+.chat-manage-admins-member {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.chat-group-management-member:hover,
+.chat-add-members-member:hover,
+.chat-manage-admins-member:hover {
+    background: var(--color-surface-2);
+}
+
+.chat-add-members-member.selected,
+.chat-manage-admins-member.selected {
+    background: var(--accent-blue);
+    color: white;
+}
+
+.chat-manage-admins-member.current-admin {
+    background: var(--color-surface-2);
+    border: 1px solid var(--accent-blue);
+}
+
+.chat-group-management-member-avatar,
+.chat-add-members-member-avatar,
+.chat-manage-admins-member-avatar,
+.chat-manage-admins-owner-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.chat-group-management-member-info,
+.chat-add-members-member-info,
+.chat-manage-admins-member-info,
+.chat-manage-admins-owner-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-group-management-member-name,
+.chat-add-members-member-name,
+.chat-manage-admins-member-name,
+.chat-manage-admins-owner-name {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 0.125rem;
+}
+
+.chat-group-management-member-role,
+.chat-add-members-member-email,
+.chat-manage-admins-member-role,
+.chat-manage-admins-owner-role {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.chat-group-management-member-badge,
+.chat-add-members-member-check,
+.chat-manage-admins-member-check,
+.chat-manage-admins-owner-badge {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--accent-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+}
+
+.chat-group-management-member-badge.owner,
+.chat-manage-admins-owner-badge {
+    background: var(--accent-gold);
+}
+
+/* Owner Section */
+.chat-manage-admins-owner {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--color-surface-2);
+    border-radius: 0.75rem;
+}
+
+.chat-manage-admins-owner-member {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Search Styles */
+.chat-add-members-search {
+    margin-bottom: 1.5rem;
+}
+
+.chat-add-members-search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.chat-add-members-search-icon {
+    position: absolute;
+    left: 0.75rem;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    z-index: 1;
+}
+
+.chat-add-members-search-input {
+    width: 100%;
+    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.5rem;
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.chat-add-members-search-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Empty States */
+.chat-add-members-empty,
+.chat-manage-admins-empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--color-text-muted);
+}
+
+.chat-add-members-empty p,
+.chat-manage-admins-empty p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Selected Members Summary */
+.chat-add-members-selected,
+.chat-manage-admins-selected {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--color-surface-2);
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.chat-add-members-selected p,
+.chat-manage-admins-selected p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+/* Actions */
+.chat-group-management-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.chat-group-management-action,
+.chat-group-management-cancel,
+.chat-group-management-add,
+.chat-group-management-save {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chat-group-management-cancel {
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-soft);
+}
+
+.chat-group-management-cancel:hover {
+    background: var(--color-surface-3);
+}
+
+.chat-group-management-action {
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-soft);
+    flex: 1;
+    justify-content: center;
+}
+
+.chat-group-management-action:hover {
+    background: var(--color-surface-3);
+}
+
+.chat-group-management-action.danger {
+    background: var(--color-error);
+    color: white;
+    border-color: var(--color-error);
+}
+
+.chat-group-management-action.danger:hover {
+    background: #dc2626;
+}
+
+.chat-group-management-add,
+.chat-group-management-save {
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.chat-group-management-add::before,
+.chat-group-management-save::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.chat-group-management-add:hover:not(:disabled),
+.chat-group-management-save:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.chat-group-management-add:hover:not(:disabled)::before,
+.chat-group-management-save:hover:not(:disabled)::before {
+    left: 100%;
+}
+
+.chat-group-management-add:disabled,
+.chat-group-management-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Edit Group Form Styles */
+.chat-edit-group-form {
+    margin-bottom: 1.5rem;
+}
+
+.chat-edit-group-field {
+    margin-bottom: 1rem;
+}
+
+.chat-edit-group-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.chat-edit-group-input,
+.chat-edit-group-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.5rem;
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.chat-edit-group-input:focus,
+.chat-edit-group-textarea:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.chat-edit-group-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.chat-edit-group-char-count {
+    display: block;
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+}
+
+/* Edit Group Preview */
+.chat-edit-group-preview {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--color-surface-2);
+    border-radius: 0.75rem;
+}
+
+.chat-edit-group-preview h5 {
+    margin: 0 0 1rem 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.chat-edit-group-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.chat-edit-group-preview-avatar {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.chat-edit-group-preview-details {
+    flex: 1;
+}
+
+.chat-edit-group-preview-name {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.chat-edit-group-preview-description {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.chat-edit-group-preview-members {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+/* Animations */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(8px);
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(8px) scale(0.98);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .chat-group-management-content {
+        width: 95%;
+        margin: 1rem;
+    }
+    
+    .chat-group-management-actions {
+        flex-direction: column;
+    }
+    
+    .chat-group-management-action,
+    .chat-group-management-cancel,
+    .chat-group-management-add,
+    .chat-group-management-save {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Side Modal Styles */
+.side-modal-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--color-surface-1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.side-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-surface-2);
+}
+
+.side-modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.side-modal-close {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.side-modal-close:hover {
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+}
+
+.side-modal-body {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-soft);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.member-item:hover {
+    background: var(--color-surface-1);
+    transform: translateY(-1px);
+}
+
+.member-item.selected {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+}
+
+.member-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.member-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.member-name {
+    display: block;
+    font-weight: 600;
+    color: inherit;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+.member-email {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    opacity: 0.8;
+}
+
+.member-item.selected .member-email {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.check-icon {
+    color: var(--accent-blue);
+    font-size: 1.2rem;
+    margin-left: auto;
+}
+
+.member-item.selected .check-icon {
+    color: white;
+}
+
+.side-modal-actions {
+    padding: 16px 20px;
+    border-top: 1px solid var(--color-border-soft);
+    background: var(--color-surface-2);
+}
+
+.action-button {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-button:hover:not(:disabled) {
+    background: var(--color-surface-3);
+    transform: translateY(-1px);
+}
+
+.action-button.primary {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+}
+
+.action-button.primary:hover:not(:disabled) {
+    background: var(--accent-indigo);
+    border-color: var(--accent-indigo);
+}
+
+.action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Form styles for Edit Group */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 6px;
+}
+
+.form-input,
+.form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 6px;
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Side container specific styles */
+.chat-add-members-side,
+.chat-manage-admins-side,
+.chat-edit-group-side {
+    min-width: 320px;
+    max-width: 400px;
 }

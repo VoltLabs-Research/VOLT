@@ -20,27 +20,25 @@
 * SOFTWARE.
 **/
 
-import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/chat';
 import DashboardContainer from '@/components/atoms/DashboardContainer';
 import ChatSidebar from '@/components/molecules/chat/ChatSidebar';
 import ChatArea from '@/components/molecules/chat/ChatArea';
-import EditGroupModal from '@/components/molecules/chat/EditGroupModal';
-import ManageAdminsModal from '@/components/molecules/chat/ManageAdminsModal';
-import AddMembersModal from '@/components/molecules/chat/AddMembersModal';
 import CreateGroupModal from '@/components/molecules/chat/CreateGroupModal';
+import GroupManagementModal from '@/components/molecules/chat/GroupManagementModal';
+import AddMembersModal from '@/components/molecules/chat/AddMembersModal';
+import ManageAdminsModal from '@/components/molecules/chat/ManageAdminsModal';
+import EditGroupModal from '@/components/molecules/chat/EditGroupModal';
 import './Messages.css';
 
 const MessagesPage = () => {
-    const { currentChat } = useChat();
-
     const {
         showCreateGroup,
+        showGroupManagement,
         showAddMembers,
         showManageAdmins,
         showEditGroup
     } = useChatStore();
-
 
     return (
         <DashboardContainer pageName='Messages' className='chat-main-container'>
@@ -50,17 +48,21 @@ const MessagesPage = () => {
             {showCreateGroup && (
                 <CreateGroupModal />
             )}
-
-            {showEditGroup && currentChat?.isGroup && (
-                <EditGroupModal />
+            
+            {showGroupManagement && (
+                <GroupManagementModal />
             )}
-
-            {showManageAdmins && currentChat?.isGroup && (
+            
+            {showAddMembers && (
+                <AddMembersModal />
+            )}
+            
+            {showManageAdmins && (
                 <ManageAdminsModal />
             )}
-
-            {showAddMembers && currentChat?.isGroup && (
-                <AddMembersModal />
+            
+            {showEditGroup && (
+                <EditGroupModal />
             )}
 
         </DashboardContainer>

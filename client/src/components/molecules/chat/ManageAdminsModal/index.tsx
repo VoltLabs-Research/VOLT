@@ -1,132 +1,215 @@
-import { useChat } from '@/hooks/chat/useChat';
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
+import { useState } from 'react';
 import { useChatStore } from '@/stores/chat';
-import { IoCheckmarkOutline, IoTrashOutline } from 'react-icons/io5';
+import { useChat } from '@/hooks/chat/useChat';
+import { 
+    IoCloseOutline, 
+    IoCheckmarkOutline,
+    IoShieldOutline,
+    IoShieldCheckmarkOutline
+} from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
-import DraggableBinaryContainer from '@/components/organisms/DraggableBinaryContainer';
-import TeamCreatorBg from '@/assets/images/create-new-team.webp';
 
 const ManageAdminsModal = () => {
-    const { currentChat, updateGroupAdmins } = useChat();
-    const user = useAuthStore((store) => store.user);
-    
-    const {
+    const { 
+        currentChat, 
         selectedAdmins,
-        setShowManageAdmins,
+        setShowManageAdmins, 
         setSelectedAdmins,
-        toggleAdminSelection
+        toggleAdminSelection,
+        updateGroupAdmins
     } = useChatStore();
+    const user = useAuthStore((store) => store.user);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleAddAdmins = async () => {
-        if (!currentChat || selectedAdmins.length === 0) return;
+    if (!currentChat || !currentChat.isGroup) return null;
+
+    const isOwner = currentChat.createdBy?._id === user?._id;
+    
+    // Only show if user is the owner
+    if (!isOwner) return null;
+
+    // Get current admins (excluding the owner)
+    const currentAdmins = currentChat.admins?.filter(admin => admin._id !== currentChat.createdBy?._id) || [];
+    
+    // Get all members who can be made admins (excluding the owner)
+    const availableMembers = currentChat.participants.filter(participant => 
+        participant._id !== currentChat.createdBy?._id
+    );
+
+    const handleSaveAdmins = async () => {
+        setIsLoading(true);
         try {
-            await updateGroupAdmins(currentChat._id, selectedAdmins, 'add');
-            setShowManageAdmins(false);
+            // Get current admin IDs
+            const currentAdminIds = currentAdmins.map(admin => admin._id);
+            
+            // Find members to add as admins
+            const membersToAdd = selectedAdmins.filter(adminId => 
+                !currentAdminIds.includes(adminId)
+            );
+            
+            // Find members to remove from admins
+            const membersToRemove = currentAdminIds.filter(adminId => 
+                !selectedAdmins.includes(adminId)
+            );
+
+            // Add new admins
+            if (membersToAdd.length > 0) {
+                await updateGroupAdmins(currentChat._id, membersToAdd, 'add');
+            }
+
+            // Remove admins
+            if (membersToRemove.length > 0) {
+                await updateGroupAdmins(currentChat._id, membersToRemove, 'remove');
+            }
+
             setSelectedAdmins([]);
+            setShowManageAdmins(false);
         } catch (error) {
-            console.error('Failed to add admins:', error);
+            console.error('Failed to update admins:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleRemoveAdmin = async (adminId: string) => {
-        if (!currentChat) return;
-        try {
-            await updateGroupAdmins(currentChat._id, [adminId], 'remove');
-        } catch (error) {
-            console.error('Failed to remove admin:', error);
-        }
+    const handleClose = () => {
+        setSelectedAdmins([]);
+        setShowManageAdmins(false);
     };
 
-    return currentChat && (
-        <DraggableBinaryContainer
-            title='Manage Admins'
-            description="Add or remove administrators for your group."
-            bg={TeamCreatorBg}
-            onClose={() => setShowManageAdmins(false)}
-        >
+    // Initialize selected admins with current admins
+    React.useEffect(() => {
+        if (currentAdmins.length > 0 && selectedAdmins.length === 0) {
+            setSelectedAdmins(currentAdmins.map(admin => admin._id));
+        }
+    }, [currentAdmins, selectedAdmins.length, setSelectedAdmins]);
+
+    return (
+        <div className='chat-group-management-modal'>
             <div className='chat-group-management-content'>
+                <div className='chat-group-management-header'>
+                    <h3>Manage Admins</h3>
+                    <button 
+                        className='chat-close-modal'
+                        onClick={handleClose}
+                    >
+                        <IoCloseOutline />
+                    </button>
+                </div>
+                
                 <div className='chat-group-management-body'>
-                    <div className='chat-create-group-members'>
-                        <h5>Current Admins</h5>
-                        {currentChat.admins?.length > 0 ? (
-                            currentChat.admins.map((admin) => (
-                                <div key={admin._id} className='chat-group-member-item'>
-                                    <div className='chat-group-member-avatar'>
-                                        {getInitials(admin.firstName, admin.lastName)}
-                                    </div>
-                                    <div className='chat-group-member-info'>
-                                        <div className='chat-group-member-name'>
-                                            {admin.firstName || 'Unknown'} {admin.lastName || ''}
-                                        </div>
-                                        <div className='chat-group-member-role'>Admin</div>
-                                    </div>
-                                    {currentChat.admins?.length > 1 && (
-                                        <button 
-                                            className='chat-group-member-remove'
-                                            onClick={() => handleRemoveAdmin(admin._id)}
-                                        >
-                                            <IoTrashOutline />
-                                        </button>
-                                    )}
-                                </div>
-                            ))
+                    {/* Owner Info */}
+                    <div className='chat-manage-admins-owner'>
+                        <h5>Group Owner</h5>
+                        <div className='chat-manage-admins-owner-member'>
+                            <div className='chat-manage-admins-owner-avatar'>
+                                {getInitials(
+                                    currentChat.createdBy?.firstName || '',
+                                    currentChat.createdBy?.lastName || ''
+                                )}
+                            </div>
+                            <div className='chat-manage-admins-owner-info'>
+                                <span className='chat-manage-admins-owner-name'>
+                                    {currentChat.createdBy?.firstName} {currentChat.createdBy?.lastName}
+                                </span>
+                                <span className='chat-manage-admins-owner-role'>Owner</span>
+                            </div>
+                            <div className='chat-manage-admins-owner-badge'>
+                                <IoShieldCheckmarkOutline />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Available Members for Admin */}
+                    <div className='chat-manage-admins-list'>
+                        <h5>Make Admins</h5>
+                        {availableMembers.length === 0 ? (
+                            <div className='chat-manage-admins-empty'>
+                                <p>No members available to make admins</p>
+                            </div>
                         ) : (
-                            <div className='chat-no-admins'>
-                                <p>No admins found</p>
+                            <div className='chat-manage-admins-members'>
+                                {availableMembers.map((member) => {
+                                    const isSelected = selectedAdmins.includes(member._id);
+                                    const isCurrentAdmin = currentAdmins.some(admin => admin._id === member._id);
+                                    
+                                    return (
+                                        <div 
+                                            key={member._id} 
+                                            className={`chat-manage-admins-member ${isSelected ? 'selected' : ''} ${isCurrentAdmin ? 'current-admin' : ''}`}
+                                            onClick={() => toggleAdminSelection(member._id)}
+                                        >
+                                            <div className='chat-manage-admins-member-avatar'>
+                                                {getInitials(member.firstName, member.lastName)}
+                                            </div>
+                                            <div className='chat-manage-admins-member-info'>
+                                                <span className='chat-manage-admins-member-name'>
+                                                    {member.firstName} {member.lastName}
+                                                </span>
+                                                <span className='chat-manage-admins-member-role'>
+                                                    {isCurrentAdmin ? 'Current Admin' : 'Member'}
+                                                </span>
+                                            </div>
+                                            {isSelected && (
+                                                <div className='chat-manage-admins-member-check'>
+                                                    <IoCheckmarkOutline />
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
-                    
-                    {currentChat.admins?.some(admin => admin._id === user?._id) && (
-                        <div className='chat-create-group-members'>
-                            <h5>Add New Admins</h5>
-                            {currentChat.participants
-                                .filter(member => 
-                                    member._id !== user?._id && 
-                                    !currentChat.admins?.some(admin => admin._id === member._id)
-                                )
-                                .map((member) => (
-                                    <div 
-                                        key={member._id}
-                                        className={`chat-create-group-member ${selectedAdmins.includes(member._id) ? 'selected' : ''}`}
-                                        onClick={() => toggleAdminSelection(member._id)}
-                                    >
-                                        <div className='chat-group-member-avatar'>
-                                            {getInitials(member.firstName, member.lastName)}
-                                        </div>
-                                        <div className='chat-group-member-info'>
-                                            <div className='chat-group-member-name'>
-                                                {member.firstName} {member.lastName}
-                                            </div>
-                                        </div>
-                                        {selectedAdmins.includes(member._id) && (
-                                            <IoCheckmarkOutline className='chat-group-member-check' />
-                                        )}
-                                    </div>
-                                ))}
+
+                    {/* Selected Admins Summary */}
+                    {selectedAdmins.length > 0 && (
+                        <div className='chat-manage-admins-selected'>
+                            <p>{selectedAdmins.length} admin{selectedAdmins.length !== 1 ? 's' : ''} selected</p>
                         </div>
                     )}
-                    
+
+                    {/* Actions */}
                     <div className='chat-group-management-actions'>
                         <button 
                             className='chat-group-management-cancel'
-                            onClick={() => setShowManageAdmins(false)}
+                            onClick={handleClose}
                         >
                             Cancel
                         </button>
-                        {currentChat.admins?.some(admin => admin._id === user?._id) && (
-                            <button 
-                                className='chat-group-management-add'
-                                onClick={handleAddAdmins}
-                                disabled={selectedAdmins.length === 0}
-                            >
-                                Add Admins
-                            </button>
-                        )}
+                        <button 
+                            className='chat-group-management-save'
+                            onClick={handleSaveAdmins}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Saving...' : 'Save Changes'}
+                        </button>
                     </div>
                 </div>
             </div>
-        </DraggableBinaryContainer>
+        </div>
     );
 };
 

@@ -44,7 +44,12 @@ const IconCircle = ({ variant, title, onClick }: IconDef) => {
     );
 };
 
-const WindowIcons: React.FC = ({ withBackground = false, onClose = () => {} }) => {
+interface WindowIconsProps {
+    withBackground?: boolean;
+    onClose?: () => void;
+}
+
+const WindowIcons: React.FC<WindowIconsProps> = ({ withBackground = false, onClose = () => {} }) => {
     const ICONS: IconDef[] = [{
         variant: 'close',
         title: 'Close',

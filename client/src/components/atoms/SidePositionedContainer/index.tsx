@@ -23,96 +23,95 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-interface CursorPositionedContainerProps {
+interface SidePositionedContainerProps {
     isVisible: boolean;
     onClose: () => void;
     children: React.ReactNode;
     className?: string;
-    offsetX?: number;
-    offsetY?: number;
+    referenceElement?: HTMLElement | null;
+    preferredSide?: 'left' | 'right' | 'auto';
+    offset?: number;
     zIndex?: number;
-    preventOverflow?: boolean;
-    fallbackPosition?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    maxWidth?: number;
+    maxHeight?: number;
 }
 
-const CursorPositionedContainer: React.FC<CursorPositionedContainerProps> = ({
+const SidePositionedContainer: React.FC<SidePositionedContainerProps> = ({
     isVisible,
     onClose,
     children,
     className = '',
-    offsetX = 10,
-    offsetY = 10,
-    zIndex = 9999,
-    preventOverflow = true,
-    fallbackPosition = 'center'
+    referenceElement,
+    preferredSide = 'auto',
+    offset = 10,
+    zIndex = 10000,
+    maxWidth = 400,
+    maxHeight = 600
 }) => {
-    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [position, setPosition] = useState({ x: 0, y: 0, side: 'right' as 'left' | 'right' });
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Calculate position with overflow prevention
-    const calculatePosition = (cursorX: number, cursorY: number) => {
-        let x = cursorX + offsetX;
-        let y = cursorY + offsetY;
+    // Calculate position relative to reference element
+    const calculatePosition = () => {
+        if (!referenceElement || !containerRef.current) return;
 
-        if (preventOverflow && containerRef.current) {
-            const rect = containerRef.current.getBoundingClientRect();
-            const padding = 16;
+        const referenceRect = referenceElement.getBoundingClientRect();
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const padding = 16;
 
-            // Adjust horizontal position
-            if (x + rect.width > window.innerWidth - padding) {
-                x = window.innerWidth - rect.width - padding;
-            }
-            if (x < padding) {
-                x = padding;
-            }
+        let x: number;
+        let y = referenceRect.top;
+        let side: 'left' | 'right' = 'right';
 
-            // Adjust vertical position
-            if (y + rect.height > window.innerHeight - padding) {
-                y = window.innerHeight - rect.height - padding;
-            }
-            if (y < padding) {
-                y = padding;
-            }
-        }
-
-        return { x, y };
-    };
-
-    // Get fallback position based on preference
-    const getFallbackPosition = () => {
-        const modalWidth = containerRef.current?.offsetWidth || 320;
-        const modalHeight = containerRef.current?.offsetHeight || 400;
-
-        switch (fallbackPosition) {
-            case 'top-left':
-                return { x: 16, y: 16 };
-            case 'top-right':
-                return { x: window.innerWidth - modalWidth - 16, y: 16 };
-            case 'bottom-left':
-                return { x: 16, y: window.innerHeight - modalHeight - 16 };
-            case 'bottom-right':
-                return { x: window.innerWidth - modalWidth - 16, y: window.innerHeight - modalHeight - 16 };
-            case 'center':
-            default:
-                return { 
-                    x: (window.innerWidth - modalWidth) / 2, 
-                    y: (window.innerHeight - modalHeight) / 2 
-                };
-        }
-    };
-
-    // Update position when container becomes visible
-    useEffect(() => {
-        if (isVisible) {
-            const lastMouseEvent = (window as any).lastMouseEvent;
-            if (lastMouseEvent) {
-                const newPosition = calculatePosition(lastMouseEvent.clientX, lastMouseEvent.clientY);
-                setPosition(newPosition);
+        // Determine which side to show based on available space
+        if (preferredSide === 'auto') {
+            const spaceRight = window.innerWidth - referenceRect.right - padding;
+            const spaceLeft = referenceRect.left - padding;
+            
+            if (spaceRight >= maxWidth || spaceRight > spaceLeft) {
+                // Show on the right
+                x = referenceRect.right + offset;
+                side = 'right';
             } else {
-                setPosition(getFallbackPosition());
+                // Show on the left
+                x = referenceRect.left - maxWidth - offset;
+                side = 'left';
             }
+        } else if (preferredSide === 'right') {
+            x = referenceRect.right + offset;
+            side = 'right';
+        } else {
+            x = referenceRect.left - maxWidth - offset;
+            side = 'left';
         }
-    }, [isVisible, offsetX, offsetY, preventOverflow, fallbackPosition]);
+
+        // Adjust horizontal position to prevent overflow
+        if (x < padding) {
+            x = padding;
+        }
+        if (x + maxWidth > window.innerWidth - padding) {
+            x = window.innerWidth - maxWidth - padding;
+        }
+
+        // Adjust vertical position to prevent overflow
+        if (y < padding) {
+            y = padding;
+        }
+        if (y + maxHeight > window.innerHeight - padding) {
+            y = window.innerHeight - maxHeight - padding;
+        }
+
+        setPosition({ x, y, side });
+    };
+
+    // Update position when container becomes visible or reference changes
+    useEffect(() => {
+        if (isVisible && referenceElement) {
+            // Small delay to ensure container is rendered
+            const timer = setTimeout(calculatePosition, 10);
+            return () => clearTimeout(timer);
+        }
+    }, [isVisible, referenceElement, preferredSide, offset, maxWidth, maxHeight]);
 
     // Handle clicks outside the container
     useEffect(() => {
@@ -161,13 +160,18 @@ const CursorPositionedContainer: React.FC<CursorPositionedContainerProps> = ({
         top: `${position.y}px`,
         left: `${position.x}px`,
         zIndex,
+        maxWidth: `${maxWidth}px`,
+        maxHeight: `${maxHeight}px`,
+        width: 'auto',
+        height: 'auto',
     };
 
     return createPortal(
         <div 
             ref={containerRef}
-            className={className}
+            className={`side-positioned-container ${className}`}
             style={styles}
+            data-side={position.side}
         >
             {children}
         </div>,
@@ -175,4 +179,4 @@ const CursorPositionedContainer: React.FC<CursorPositionedContainerProps> = ({
     );
 };
 
-export default CursorPositionedContainer;
+export default SidePositionedContainer;

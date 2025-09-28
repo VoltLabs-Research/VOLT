@@ -28,7 +28,6 @@ import ContactInfoSkeleton from '@/components/atoms/messages/ContactInfoSkeleton
 import { formatSize } from '@/utilities/scene-utils';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import useAuthStore from '@/stores/authentication';
-import GroupManagementModal from '@/components/molecules/chat/GroupManagementModal';
 
 const ChatArea = () => {
     const [filePreviews, setFilePreviews] = useState<{file: File, preview: string}[]>([]);
@@ -47,7 +46,7 @@ const ChatArea = () => {
     const messageOptionsRef = useRef<HTMLDivElement>(null);
 
     const user = useAuthStore((store) => store.user);
-    const { showGroupManagement, setShowGroupManagement } = useChatStore();
+    const { setShowGroupManagement } = useChatStore();
 
     const { 
         handleTyping,
@@ -256,18 +255,7 @@ const ChatArea = () => {
                             </div>
                         </div>
                         <div className='chat-header-actions'>
-                            {currentChat?.isGroup && (
-                                <button 
-                                    className='chat-header-action' 
-                                    title='Group Management'
-                                    onClick={(e) => {
-                                        (window as any).lastMouseEvent = e.nativeEvent;
-                                        setShowGroupManagement(true);
-                                    }}
-                                >
-                                    <IoEllipsisVerticalOutline />
-                                </button>
-                            )}
+                            {/* Removed group management trigger from header */}
                             <button className='chat-header-action' title='Call'>
                                 <IoCallOutline />
                             </button>
@@ -745,13 +733,10 @@ const ChatArea = () => {
                                 {currentChat?.isGroup ? (
                                     <button 
                                         className='chat-details-action'
-                                        onClick={(e) => {
-                                            (window as any).lastMouseEvent = e.nativeEvent;
-                                            setShowGroupManagement(true);
-                                        }}
+                                        onClick={() => setShowGroupManagement(true)}
                                     >
                                         <i className='chat-details-action-icon'>
-                                            <IoEllipsisVerticalOutline />
+                                            <IoPeopleOutline />
                                         </i>
                                         <span className='chat-details-action-text'>Manage Group</span>
                                     </button>
@@ -763,33 +748,6 @@ const ChatArea = () => {
                                         <span className='chat-details-action-text'>View Profile</span>
                                     </button>
                                 )}
-                            </div>
-                        </div>
-                    )}
-
-                    {currentChat?.isGroup && (
-                        <div className='chat-details-section'>
-                            <h4 className='chat-details-section-title'>Group Members</h4>
-                            <div className='chat-group-members'>
-                                {currentChat.participants
-                                    .filter((member, index, self) => 
-                                        self.findIndex(m => m._id === member._id) === index
-                                    )
-                                    .map((member) => (
-                                    <div key={member._id} className='chat-group-member'>
-                                        <div className='chat-group-member-avatar'>
-                                            {getInitials(member.firstName, member.lastName)}
-                                        </div>
-                                        <div className='chat-group-member-info'>
-                                            <span className='chat-group-member-name'>
-                                                {member.firstName} {member.lastName}
-                                            </span>
-                                            {currentChat.admins.some(admin => admin._id === member._id) && (
-                                                <span className='chat-admin-badge'>Admin</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
                             </div>
                         </div>
                     )}
@@ -880,10 +838,7 @@ const ChatArea = () => {
                 </div>
             </div>
             
-            {/* Group Management Modal */}
-            {currentChat?.isGroup && showGroupManagement && (
-                <GroupManagementModal />
-            )}
+            {/* Group management inline is rendered within details panel for group chats */}
         </div>
     );
 };

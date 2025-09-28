@@ -4,7 +4,10 @@ import { IoCheckmarkOutline } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
 import DraggableBinaryContainer from '@/components/organisms/DraggableBinaryContainer';
-import TeamCreatorBg from '@/assets/images/create-new-team.webp';
+import Button from '@/components/atoms/Button';
+import FormInput from '@/components/atoms/form/FormInput';
+import CreateGroupBg from '@/assets/images/create-new-group.webp';
+import './CreateGroupModal.css';
 
 const CreateGroupModal = () => {
     const { teamMembers, createGroupChat, currentChat } = useChat();
@@ -21,7 +24,8 @@ const CreateGroupModal = () => {
         toggleMemberSelection
     } = useChatStore();
 
-    const handleCreateGroup = async () => {
+    const handleCreateGroup = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (!groupName.trim() || selectedMembers.length === 0) return;
         
         try {
@@ -44,72 +48,63 @@ const CreateGroupModal = () => {
         <DraggableBinaryContainer
             title='Create New Group'
             description="Create a new group chat with your team members."
-            bg={TeamCreatorBg}
+            bg={CreateGroupBg}
+            handleSubmit={handleCreateGroup}
             onClose={() => setShowCreateGroup(false)}
         >
-            <div className='chat-group-management-content'>
-                <div className='chat-group-management-body'>
-                    <div className='chat-create-group-container'>
-                        <div className='chat-create-group-form'>
-                            <input
-                                type='text'
-                                className='chat-create-group-input'
-                                placeholder='Group name'
-                                value={groupName}
-                                onChange={(e) => setGroupName(e.target.value)}
-                            />
-                            <textarea
-                                className='chat-create-group-textarea'
-                                placeholder='Group description (optional)'
-                                value={groupDescription}
-                                onChange={(e) => setGroupDescription(e.target.value)}
-                            />
-                        </div>
-                        <div className='chat-create-group-members'>
-                            <h5>Select Members</h5>
-                            {teamMembers
-                                .filter((member, index, self) => 
-                                    member._id !== user?._id && 
-                                    self.findIndex(m => m._id === member._id) === index
-                                )
-                                .map((member) => (
-                                    <div 
-                                        key={member._id}
-                                        className={`chat-create-group-member ${selectedMembers.includes(member._id) ? 'selected' : ''}`}
-                                        onClick={() => toggleMemberSelection(member._id)}
-                                    >
-                                        <div className='chat-group-member-avatar'>
-                                            {getInitials(member.firstName, member.lastName)}
-                                        </div>
-                                        <div className='chat-group-member-info'>
-                                            <span className='chat-group-member-name'>
-                                                {member.firstName} {member.lastName}
-                                            </span>
-                                        </div>
-                                        {selectedMembers.includes(member._id) && (
-                                            <IoCheckmarkOutline className='chat-member-selected-icon' />
-                                        )}
-                                    </div>
-                                ))}
-                        </div>
-                        <div className='chat-create-group-actions'>
-                            <button 
-                                className='chat-create-group-cancel'
-                                onClick={() => setShowCreateGroup(false)}
+            <FormInput
+                label='Group Name'
+                value={groupName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
+                placeholder='Enter group name'
+                required
+            />
+            
+            <FormInput
+                label='Group Description'
+                value={groupDescription}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupDescription(e.target.value)}
+                placeholder='Enter group description (optional)'
+            />
+
+            <div className='create-group-members-section'>
+                <h5>Select Members</h5>
+                <div className='create-group-members-list'>
+                    {teamMembers
+                        .filter((member, index, self) => 
+                            member._id !== user?._id && 
+                            self.findIndex(m => m._id === member._id) === index
+                        )
+                        .map((member) => (
+                            <div 
+                                key={member._id}
+                                className={`create-group-member ${selectedMembers.includes(member._id) ? 'selected' : ''}`}
+                                onClick={() => toggleMemberSelection(member._id)}
                             >
-                                Cancel
-                            </button>
-                            <button 
-                                className='chat-create-group-create'
-                                onClick={handleCreateGroup}
-                                disabled={!groupName.trim() || selectedMembers.length === 0}
-                            >
-                                Create Group
-                            </button>
-                        </div>
-                    </div>
+                                <div className='create-group-member-avatar'>
+                                    {getInitials(member.firstName, member.lastName)}
+                                </div>
+                                <div className='create-group-member-info'>
+                                    <span className='create-group-member-name'>
+                                        {member.firstName} {member.lastName}
+                                    </span>
+                                </div>
+                                {selectedMembers.includes(member._id) && (
+                                    <IoCheckmarkOutline className='create-group-member-check' />
+                                )}
+                            </div>
+                        ))}
                 </div>
             </div>
+
+            <Button
+                type='submit'
+                className='black-on-light sm'
+                title='Create Group'
+                disabled={!groupName.trim() || selectedMembers.length === 0}
+            >
+                Create Group
+            </Button>
         </DraggableBinaryContainer>
     );
 };
