@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import { LuPanelRight } from "react-icons/lu";
+import { BsArrowLeftShort } from 'react-icons/bs';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import EditorWidget from '@/components/organisms/EditorWidget';
+import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import useTrajectoryStore from '@/stores/trajectories';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
 import CanvasSidebarTab from '@/components/atoms/CanvasSidebarTab';
 import CanvasSidebarScene from '@/components/molecules/CanvasSidebarScene';
 import CanvasSidebarModifiers from '@/components/molecules/CanvasSidebarModifiers';
 import useConfigurationStore from '@/stores/editor/configuration';
+import useEditorUIStore from '@/stores/ui/editor';
+import EffectsControls from '@/components/molecules/scene/EffectsControls';
 import './EditorSidebar.css';
 
 const MOBILE_BREAKPOINT = 768;
@@ -18,6 +21,8 @@ const EditorSidebar = () => {
   const trajectory = useTrajectoryStore((state) => state.trajectory);
   const activeSidebarTab = useConfigurationStore((state) => state.activeSidebarTab);
   const setActiveSidebarTag = useConfigurationStore((state) => state.setActiveSidebarTag);
+  const showRenderConfig = useEditorUIStore((state) => state.showRenderConfig);
+  const setShowRenderConfig = useEditorUIStore((state) => state.setShowRenderConfig);
 
   const [collapsed, setCollapsed] = useState(false);
 
@@ -55,13 +60,26 @@ const EditorSidebar = () => {
                   className='editor-sidebar-trajectory-drop-container'
                   data-collapsible="true"
                 >
-                  <EditableTrajectoryName
-                    trajectory={trajectory}
-                    className='editor-sidebar-trajectory-name'
-                  />
-                  <i className='editor-sidebar-trajectory-drop-icon-container'>
-                    <MdKeyboardArrowDown />
-                  </i>
+                    {showRenderConfig ? (
+                        <div className='editor-sidebar-render-title-container'>
+                            <i className='editor-sidebar-render-title-icon-container' onClick={() => setShowRenderConfig(false)}>
+                                <BsArrowLeftShort size={30} />
+                            </i>
+
+                            <h3 className='editor-sidebar-render-title'>Render Settings</h3>
+                        </div>
+                    ) : (
+                        <>
+                            <EditableTrajectoryName
+                                trajectory={trajectory}
+                                className='editor-sidebar-trajectory-name'
+                            />
+
+                            <i className='editor-sidebar-trajectory-drop-icon-container'>
+                                <MdKeyboardArrowDown />
+                            </i>
+                        </>
+                    )}
                 </div>
 
                 <button
@@ -76,26 +94,36 @@ const EditorSidebar = () => {
                   />
                 </button>
               </div>
-
-              <p className='editor-sidebar-header-team-name' data-collapsible="true">
-                {trajectory?.team?.name}
-              </p>
+                
+                {!showRenderConfig && (
+                    <p className='editor-sidebar-header-team-name' data-collapsible="true">
+                        {trajectory?.team?.name}
+                    </p>
+                )}
             </div>
           </div>
+            
+            {!showRenderConfig && (
+                <div className='editor-sidebar-options-wrapper-container' data-collapsible="true">
+                    <div className='editor-sidebar-options-container'>
+                        {['Scene', 'Modifiers'].map((option, index) => (
+                            <CanvasSidebarTab option={option} key={index} />
+                        ))}
+                    </div>
+                </div>
+            )}
 
-          <div className='editor-sidebar-options-wrapper-container' data-collapsible="true">
-            <div className='editor-sidebar-options-container'>
-              {['Scene', 'Modifiers'].map((option, index) => (
-                <CanvasSidebarTab option={option} key={index} />
-              ))}
-            </div>
-          </div>
-
-          {activeSidebarTab === 'Scene' ? (
-            <CanvasSidebarScene />
-          ) : (
-            <CanvasSidebarModifiers />
-          )}
+            {showRenderConfig ? (
+                <div className='editor-sidebar-scene-container'>
+                    <EffectsControls />
+                </div>
+            ) : (
+                activeSidebarTab === 'Scene' ? (
+                    <CanvasSidebarScene />
+                ) : (
+                    <CanvasSidebarModifiers />
+                )
+            )}
         </div>
 
         <div className='editor-sidebar-bottom-container'>

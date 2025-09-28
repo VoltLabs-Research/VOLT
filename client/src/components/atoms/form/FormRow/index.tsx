@@ -1,6 +1,7 @@
 import Slider from '@/components/atoms/form/Slider';
+import './FormRow.css';
 
-const SliderRow = ({
+const FormRow = ({
     label,
     value,
     onChange,
@@ -25,4 +26,4 @@ const SliderRow = ({
     );
 };
 
-export default SliderRow;
+export default FormRow;

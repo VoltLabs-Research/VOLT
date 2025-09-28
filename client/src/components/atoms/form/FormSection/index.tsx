@@ -1,4 +1,5 @@
 import FormField from '@/components/molecules/FormField';
+import './FormSection.css';
 
 const FormSection = ({
     title,

@@ -1,7 +1,7 @@
 import FormField from '@/components/molecules/FormField';
 import useEffectsConfigStore from '@/stores/editor/effects-config';
 import Select from '@/components/atoms/form/Select';
-import SliderRow from '@/components/atoms/form/SliderRow';
+import FormRow from '@/components/atoms/form/FormRow';
 import FormSection from '@/components/atoms/form/FormSection';
 import './EffectsControls.css';
 
@@ -34,7 +34,7 @@ const EffectsControls = () => {
                 enabled={ssao.enabled}
                 onToggle={(enabled) => setSSAOEffect({ enabled })}
             >
-                <SliderRow
+                <FormRow
                     label='Intensity'
                     min={0}
                     max={20}
@@ -43,7 +43,7 @@ const EffectsControls = () => {
                     onChange={(intensity) => setSSAOEffect({ intensity })}
                     format={(v) => v.toFixed(2)}
                 />
-                <SliderRow
+                <FormRow
                     label='Luminance'
                     min={0}
                     max={1}
@@ -59,7 +59,7 @@ const EffectsControls = () => {
                 enabled={bloom.enabled}
                 onToggle={(enabled) => setBloomEffect({ enabled })}
             >
-                <SliderRow
+                <FormRow
                     label='Intensity'
                     min={0}
                     max={3}
@@ -69,7 +69,7 @@ const EffectsControls = () => {
                     format={(v) => v.toFixed(1)}
                 />
 
-                <SliderRow
+                <FormRow
                     label='Threshold'
                     min={0}
                     max={2}
@@ -79,7 +79,7 @@ const EffectsControls = () => {
                     format={(v) => v.toFixed(2)}
                 />
 
-                <SliderRow
+                <FormRow
                     label='Smoothing'
                     min={0}
                     max={0.1}
@@ -102,7 +102,7 @@ const EffectsControls = () => {
                 enabled={chromaticAberration.enabled}
                 onToggle={(enabled) => setChromaticAberration({ enabled })}
             >
-                <SliderRow
+                <FormRow
                     label='Offset X'
                     min={-0.01}
                     max={0.01}
@@ -111,7 +111,7 @@ const EffectsControls = () => {
                     onChange={(x) => setChromaticAberration({ offset: [x, chromaticAberration.offset[1]] })}
                     format={(v) => v.toFixed(3)}
                 />
-                <SliderRow
+                <FormRow
                     label='Offset Y'
                     min={-0.01}
                     max={0.01}
@@ -127,7 +127,7 @@ const EffectsControls = () => {
                 enabled={vignette.enabled}
                 onToggle={(enabled) => setVignette({ enabled })}
             >
-                <SliderRow
+                <FormRow
                     label='Offset'
                     min={0}
                     max={1}
@@ -138,7 +138,7 @@ const EffectsControls = () => {
                     className='effects-slider'
                 />
 
-                <SliderRow
+                <FormRow
                     label='Darkness'
                     min={0}
                     max={1}
@@ -162,7 +162,7 @@ const EffectsControls = () => {
                 enabled={depthOfField.enabled}
                 onToggle={(enabled) => setDepthOfField({ enabled })}
             >
-                <SliderRow
+                <FormRow
                     label='Focus Distance'
                     min={0.001}
                     max={1}
@@ -172,7 +172,7 @@ const EffectsControls = () => {
                     format={(v) => v.toFixed(3)}
                     className='effects-slider'
                 />
-                <SliderRow
+                <FormRow
                     label='Focal Length'
                     min={0.1}
                     max={2}
@@ -182,7 +182,7 @@ const EffectsControls = () => {
                     format={(v) => v.toFixed(2)}
                     className='effects-slider'
                 />
-                <SliderRow
+                <FormRow
                     label='Bokeh Scale'
                     min={0.1}
                     max={5}
@@ -199,7 +199,7 @@ const EffectsControls = () => {
                 enabled={sepia.enabled}
                 onToggle={(enabled) => setSepia({ enabled })}
             >
-                <SliderRow
+                <FormRow
                     label='Intensity'
                     min={0}
                     max={2}

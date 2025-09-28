@@ -12,6 +12,12 @@
   border-radius: 1rem;
 }
 
+.editor-sidebar-render-title-container{
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
 /* ===== Contenedor principal ===== */
 .editor-sidebar-container{
   background-color: rgba(29, 29, 29, 0.1) !important;
@@ -76,7 +82,8 @@
 }
 
 /* Contenido (Scene/Modifiers) */
-.editor-sidebar-scene-container{ padding: 1.5rem; }
+/* TODO: height dynamic */
+.editor-sidebar-scene-container{ padding: 1.5rem; height: 64vh; overflow: scroll;}
 .editor-sidebar-scene-options-container{ display: flex; flex-direction: column; gap: .5rem; }
 
 .editor-sidebar-user-avatar-wrapper{ padding: 1.5rem; }

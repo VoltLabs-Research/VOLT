@@ -4,6 +4,7 @@ import type { EditorUIStore } from '@/types/stores/ui/editor';
 const initialState = {
     showCanvasGrid: true,
     showEditorWidgets: true,
+    showRenderConfig: false,
     activeModifiers: [],
     isSceneInteracting: false,
 };
@@ -11,6 +12,10 @@ const initialState = {
 const useEditorUIStore = create<EditorUIStore>((set, get) => {
     return {
         ...initialState,
+
+        setShowRenderConfig(enabled: boolean){
+            set({ showRenderConfig: enabled });
+        },
 
         toggleModifier(modifier: string) {
             const modifiers = new Set(get().activeModifiers);

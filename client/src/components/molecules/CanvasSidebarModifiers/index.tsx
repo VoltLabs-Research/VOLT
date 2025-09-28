@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { PiLineSegmentThin } from 'react-icons/pi';
+import { useEffect, useRef, useState } from 'react';
+import { PiLineSegmentThin, PiEngine } from 'react-icons/pi';
 import { GrFormViewHide } from "react-icons/gr";
 import { IoIosStats } from "react-icons/io";
 import { TfiSlice } from 'react-icons/tfi';
@@ -27,12 +27,13 @@ const CanvasSidebarModifiers = () => {
     const computeAnalyses = useModifiersStore((state) => state.computeAnalyses);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
 
+    const setShowRenderConfig = useEditorUIStore((state) => state.setShowRenderConfig);
+
     const idRateSeries = useTrajectoryStore((state) => state.idRateSeries);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const navigate = useNavigate();
 
     const canPerformCpuIntensiveTask = (): boolean => {
-        // For testing: always return false to prevent the analysis
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 5000);
         return false;
@@ -62,6 +63,8 @@ const CanvasSidebarModifiers = () => {
                 computeAnalyses(trajectory?._id);
             }else if(modifier === 'raster'){
                 navigate('/raster/' + trajectory._id);
+            }else if(modifier === 'render-settings'){
+                setShowRenderConfig(true);
             }
         }
 
@@ -69,6 +72,10 @@ const CanvasSidebarModifiers = () => {
     }, [activeModifiers, analysisConfig, structureIdentification, trajectory, logger]);
 
     const modifiers = [{
+            Icon: PiEngine,
+            title: 'Render Settings',
+            modifierId: 'render-settings'
+        }, {
             Icon: PiLineSegmentThin,
             title: 'Dislocation Analysis', 
             modifierId: 'dislocation-analysis-config' 
@@ -105,7 +112,7 @@ const CanvasSidebarModifiers = () => {
             }]
         }, {
             Icon: GrFormViewHide,
-            title: 'Render Options',
+            title: 'Dislocations Render Options',
             modifierId: 'render-options'
         }, {
             Icon: CiImageOn,
