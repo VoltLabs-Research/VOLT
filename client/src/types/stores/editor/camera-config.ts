@@ -1,37 +1,45 @@
-export interface CameraConfigState{
+export type CameraType = 'perspective' | 'orthographic';
+
+export interface PerspectiveSettings{
     fov: number;
     near: number;
     far: number;
     zoom: number;
+    focus: number;
     filmGauge: number;
     filmOffset: number;
-    focus: number;
-    aspect: number;
-    enableAutoFocus: boolean;
-    autoFocusSpeed: number;
-    bokehScale: number;
-    maxBlur: number;
 }
 
-export interface CameraConfigActions {
-    setFov: (value: number) => void;
-    setNear: (value: number) => void;
-    setFar: (value: number) => void;
-    setZoom: (value: number) => void;
-    setFilmGauge: (value: number) => void;
-    setFilmOffset: (value: number) => void;
-    setFocus: (value: number) => void;
-    setAspect: (value: number) => void;
-    setEnableAutoFocus: (value: boolean) => void;
-    setAutoFocusSpeed: (value: number) => void;
-    setBokehScale: (value: number) => void;
-    setMaxBlur: (value: number) => void;
+export interface OrthographicSettings{
+    near: number;
+    far: number;
+    zoom: number;
+}
+
+export interface CameraSettingsState{
+    type: CameraType;
+    position: [number, number, number];
+    up: [number, number, number];
+    perspective: PerspectiveSettings;
+    orthographic: OrthographicSettings;
+}
+
+export interface CameraSettingsActions{
+    setType: (type: CameraType) => void;
+    setPosition: (position: [number, number, number]) => void;
+    setUp: (up: [number, number, number]) => void;
+    setPerspective: (partial: Partial<PerspectiveSettings>) => void;
+    setOrthographic: (partial: Partial<OrthographicSettings>) => void;
+    setCamera: (partial: Partial<CameraSettingsState> & {
+        perspective?: Partial<PerspectiveSettings>;
+        orthographic?: Partial<OrthographicSettings>;
+    }) => void;
     reset: () => void;
 }
 
-export type CameraConfigStore = CameraConfigState & CameraConfigActions;
+export type CameraSettingsStore = CameraSettingsState & CameraSettingsActions;
 
-export const CAMERA_ADVANCED_DEFAULT: CameraConfigState = {
+export const PERSPECTIVE_DEFAULT: PerspectiveSettings = {
     fov: 50,
     near: 0.01,
     far: 200,
@@ -44,4 +52,10 @@ export const CAMERA_ADVANCED_DEFAULT: CameraConfigState = {
     autoFocusSpeed: 0.1,
     bokehScale: 1,
     maxBlur: 0.01
+};
+
+export const ORTHOGRAPHIC_DEFAULT: OrthographicSettings = {
+    near: 0.1,
+    far: 1000,
+    zoom: 1
 };

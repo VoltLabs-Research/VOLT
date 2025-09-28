@@ -64,14 +64,6 @@ export interface RenderConfigActions {
 
 export type RenderConfigStore = RenderConfigState & RenderConfigActions;
 
-export const CAMERA_DEFAULT_CONFIG = {
-    position: [8, 8, 6] as [number, number, number],
-    fov: 50,
-    near: 0.01,
-    far: 200,
-    up: [0, 0, 1] as [number, number, number],
-};
-
 export const GL_DEFAULT_CONFIG = {
     localClippingEnabled: true,
     alpha: false,

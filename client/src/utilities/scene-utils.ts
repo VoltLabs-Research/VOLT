@@ -1,10 +1,18 @@
-export const downloadFromDataURL = (dataURL: string, filename: string) => {
-    const link = document.createElement('a');
-    link.download = filename || `screenshot-${new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')}.png`;
-    link.href = dataURL;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+export const deepMerge = <T extends object>(base: T, patch: Partial<T>): T => {
+    const out: any = Array.isArray(base) ? [...base] : { ...base };
+    for(const key in patch){
+        const value: any = patch[key];
+        if(value === undefined) continue;
+        if(Array.isArray(value)){
+            out[key] = [...value];
+        }else if(value && typeof value === 'object' && !Array.isArray(value)){
+            out[key] = deepMerge((out[key] ?? {}) as any, value);
+        }else{
+            out[key] = value;
+        }
+    }
+
+    return out;
 };
 
 export const formatSize = (bytes: number): string => {

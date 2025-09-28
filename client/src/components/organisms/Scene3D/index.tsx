@@ -8,7 +8,7 @@ import React, {
     useImperativeHandle
 } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, GizmoHelper, GizmoViewport, AdaptiveDpr, AdaptiveEvents, Bvh, Preload } from '@react-three/drei';
+import { OrbitControls, GizmoHelper, GizmoViewport, AdaptiveDpr, AdaptiveEvents, Bvh, Preload, useCamera } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { ACESFilmicToneMapping, PCFSoftShadowMap, SRGBColorSpace } from 'three';
 
@@ -24,6 +24,7 @@ import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
 import useRenderConfigStore from '@/stores/editor/render-config';
 import usePerformanceSettingsStore from '@/stores/editor/perfomance-settings';
+import useCameraSettings, { buildR3FCameraProps } from '@/stores/editor/camera-config';
 
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
 import './Scene3D.css';
@@ -81,7 +82,9 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
     const setSceneInteracting = useEditorUIStore((s) => s.setSceneInteracting);
     const isInteracting = useEditorUIStore((s) => s.sceneInteracting);
 
-    const cameraConfig = useRenderConfigStore((s) => s.camera);
+    const cameraState = useCameraSettings((s) => s);
+    const cameraConfig = useMemo(() => buildR3FCameraProps(cameraState), [cameraState]);
+    
     const glConfig = useRenderConfigStore((s) => s.gl);
     const orbitConfig = useRenderConfigStore((s) => s.orbitControls);
     const ssaoConfig = useRenderConfigStore((s) => s.SSAO);

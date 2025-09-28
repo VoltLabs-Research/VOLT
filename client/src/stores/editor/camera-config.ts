@@ -1,61 +1,77 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { type CameraConfigStore, CAMERA_ADVANCED_DEFAULT } from '@/types/stores/editor/camera-config';
+import { ORTHOGRAPHIC_DEFAULT, PERSPECTIVE_DEFAULT } from '@/types/stores/editor/camera-config';
+import { deepMerge } from '@/utilities/scene-utils';
+import type { CameraSettingsState, CameraSettingsStore } from '@/types/stores/editor/camera-config';
 
-const useCameraConfigStore = create<CameraConfigStore>()(persist((set) => ({
-    ...CAMERA_ADVANCED_DEFAULT,
-
-    setFov: (value: number) => {
-        set({ fov: value });
-    },
-
-    setNear: (value: number) => {
-        set({ near: value });
-    },
-
-    setFar: (value: number) => {
-        set({ far: value });
-    },
-
-    setZoom: (value: number) => {
-        set({ zoom: value });
-    },
-
-    setFilmGauge: (value: number) => {
-        set({ filmGauge: value });
-    },
-
-    setFilmOffset: (value: number) => {
-        set({ filmOffset: value });
-    },
-
-    setFocus: (value: number) => {
-        set({ focus: value });
-    },
-
-    setAspect: (value: number) => {
-        set({ aspect: value });
-    },
-
-    setEnableAutoFocus: (value: boolean) => {
-        set({ enableAutoFocus: value });
-    },
-
-    setAutoFocusSpeed: (value: number) => {
-        set({ autoFocusSpeed: value });
-    },
-
-    setBokehScale: (value: number) => {
-        set({ bokehScale: value });
-    },
-
-    setMaxBlur: (value: number) => {
-        set({ maxBlur: value });
-    },
-
-    reset: () => {
-        set(CAMERA_ADVANCED_DEFAULT);
+export const buildR3FCameraProps = (s: CameraSettingsState) => {
+    if(s.type === 'orthographic'){
+        return {
+            orthographic: true,
+            position: s.position,
+            up: s.up,
+            zoom: s.orthographic.zoom,
+            near: s.orthographic.near,
+            far: s.orthographic.far
+        };
     }
-}), { name: 'camera-config-state' }));
 
-export default useCameraConfigStore;
+    return {
+        position: s.position,
+        up: s.up,
+        fov: s.perspective.fov,
+        near: s.perspective.near,
+        far: s.perspective.far,
+        zoom: s.perspective.zoom,
+        focus: s.perspective.focus
+    };
+};
+
+const INITIAL_STATE: CameraSettingsState = {
+    type: 'perspective',
+    position: [8, 8, 6],
+    up: [0, 0, 1],
+    perspective: PERSPECTIVE_DEFAULT,
+    orthographic: ORTHOGRAPHIC_DEFAULT
+};
+
+const useCameraSettings = create<CameraSettingsStore>()(persist((set) => ({
+    ...INITIAL_STATE,
+    setType: (type) => set({ type }),
+    setPosition: (position) => set({ position }),
+    setUp: (up) => set({ up }),
+
+    setPerspective: (partial) =>
+        set((state) => ({ perspective: { ...state.perspective, ...partial } })),
+
+    setOrthographic: (partial) =>
+        set((state) => ({ orthographic: { ...state.orthographic, ...partial } })),
+
+    setCamera: (partial) =>
+        set((state) => {
+            const next = deepMerge(state, partial as any);
+            if (next.type !== 'perspective' && next.type !== 'orthographic') {
+                next.type = 'perspective';
+            }
+            return {
+                type: next.type,
+                position: next.position,
+                up: next.up,
+                perspective: next.perspective,
+                orthographic: next.orthographic
+            };
+        }),
+
+    reset: () => set(() => INITIAL_STATE)
+}), {
+    name: 'camera-settings-storage',
+    partialize: (s) => ({
+        type: s.type,
+        position: s.position,
+        up: s.up,
+        perspective: s.perspective,
+        orthographic: s.orthographic
+    })
+}));
+
+export default useCameraSettings;
