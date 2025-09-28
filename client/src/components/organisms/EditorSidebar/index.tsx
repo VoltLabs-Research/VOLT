@@ -16,6 +16,7 @@ import EffectsControls from '@/components/molecules/scene/EffectsControls';
 import EnvironmentControls from '@/components/molecules/scene/EnvironmentControls';
 import PerformanceSettingsControls from '@/components/molecules/scene/PerfomanceSettingsControls';
 import './EditorSidebar.css';
+import CameraSettingsControls from '@/components/molecules/scene/CameraSettingsControls';
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -120,6 +121,7 @@ const EditorSidebar = () => {
                     <EffectsControls />
                     <PerformanceSettingsControls />
                     <EnvironmentControls />
+                    <CameraSettingsControls />
                 </div>
             ) : (
                 activeSidebarTab === 'Scene' ? (

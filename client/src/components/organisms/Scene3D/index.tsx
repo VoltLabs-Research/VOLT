@@ -8,7 +8,7 @@ import React, {
     useImperativeHandle
 } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, GizmoHelper, GizmoViewport, AdaptiveDpr, AdaptiveEvents, Bvh, Preload, useCamera } from '@react-three/drei';
+import { OrbitControls, GizmoHelper, GizmoViewport, AdaptiveDpr, AdaptiveEvents, Bvh, Preload } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { ACESFilmicToneMapping, PCFSoftShadowMap, SRGBColorSpace } from 'three';
 
@@ -19,6 +19,7 @@ import CanvasGrid from '@/components/atoms/scene/CanvasGrid';
 import DynamicEffects from '@/components/molecules/scene/DynamicEffects';
 import DynamicEnvironment from '@/components/molecules/scene/DynamicEnvironment';
 import DynamicBackground from '@/components/molecules/scene/DynamicBackground';
+import CameraRig from '@/components/atoms/scene/CameraRig';
 
 import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
@@ -223,6 +224,8 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
                 gl.shadowMap.type = PCFSoftShadowMap;
             }}
         >
+            <CameraRig orbitRef={orbitControlsRef} /> 
+
             <ScreenshotHandler onToolsReady={handleToolsReady} backgroundColor={backgroundColor} />
             <color attach="background" args={[backgroundColor]} />
             <Preload all />
