@@ -14,7 +14,7 @@ const FormRow = ({
 
     return (
         <div className={`form-control-row ${className ?? ''}`}>
-            <label className='form-control-label'>{label}</label>
+            <label className='labeled-input-label'>{label}</label>
 
             <div className='form-control-row-slider-container'>
                 <Slider

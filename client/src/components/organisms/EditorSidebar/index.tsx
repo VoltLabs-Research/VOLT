@@ -116,7 +116,7 @@ const EditorSidebar = () => {
             )}
 
             {showRenderConfig ? (
-                <div className='editor-sidebar-scene-container'>
+                <div className='editor-sidebar-scene-container editor-render-options-container'>
                     <EffectsControls />
                     <PerformanceSettingsControls />
                     <EnvironmentControls />

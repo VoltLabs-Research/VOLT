@@ -133,7 +133,7 @@
     --control: hsl(300, 100%, 100%);
     --border: 3px;
     --width: 80;
-    --height: 36;
+    --height: 30;
     height: calc(var(--height) * 1px);
     width: calc(var(--width) * 1px);
     border-radius: 100px;
