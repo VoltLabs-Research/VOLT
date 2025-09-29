@@ -13,7 +13,7 @@ const SceneTopCenteredOptions = () => {
     const navigate = useNavigate();
 
     return (
-        <EditorWidget className='editor-top-centered-options-container'>
+        <EditorWidget className='editor-top-centered-options-container' draggable={false}>
             {[
                 [GrHomeRounded, () => navigate('/dashboard')],
                 [MdOutlineLightMode, () => {}],
