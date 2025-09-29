@@ -29,6 +29,8 @@ const useRendererSettings = create<RendererSettingsStore>()(
 			...INITIAL,
 			setCreate: (partial) => set((s) => ({ create: { ...s.create, ...partial } })),
 			setRuntime: (partial) => set((s) => ({ runtime: { ...s.runtime, ...partial } })),
+			resetCreate: () => set((s) => ({ create: { ...INITIAL.create } })),
+			resetRuntime: () => set((s) => ({ runtime: { ...INITIAL.runtime } })),
 			reset: () => set(() => INITIAL)
 		}),
 		{
