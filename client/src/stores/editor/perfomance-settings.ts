@@ -29,7 +29,7 @@ const presets: Record<PerformancePreset, PerformanceSettingsState> = {
         canvas: { powerPreference: 'default' },
         performance: { current: 0.9, min: 0.4, max: 1, debounce: 60 },
         adaptiveEvents: { enabled: true },
-        interactionDegrade: { enabled: true, debounceMs: 120 }
+        interactionDegrade: { enabled: true, debounce   Ms: 120 }
     },
     perfomance: {
         preset: 'perfomance',
@@ -52,7 +52,7 @@ const presets: Record<PerformancePreset, PerformanceSettingsState> = {
 
 
 const initial = presets.battery;
-    
+
 // Clean up any incorrect powerPreference values from localStorage
 const cleanPowerPreference = (state: PerformanceSettingsState): PerformanceSettingsState => {
     if (state.canvas.powerPreference === 'high-perfomance') {

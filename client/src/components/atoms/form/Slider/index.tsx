@@ -72,9 +72,19 @@ const Slider: React.FC<SliderProps> = ({
     useEffect(() => {
         const r = ratioFromValue(value);
         if (!isDragging) {
-            qToScaleRef.current?.(r);
-            qToSheenRef.current?.(r * 100);
+            // Faster animation when not dragging
+            gsap.to(progressRef.current, {
+                scaleX: r,
+                duration: 0.08,
+                ease: "power2.out"
+            });
+            gsap.to(sheenRef.current, {
+                xPercent: r * 100,
+                duration: 0.08,
+                ease: "power2.out"
+            });
         } else {
+            // Instant update during drag
             setScaleXRef.current?.(r);
             setSheenXRef.current?.(r * 100);
         }
@@ -82,36 +92,84 @@ const Slider: React.FC<SliderProps> = ({
 
     const pressOn = useCallback(() => {
         if (!trackRef.current) return;
-        gsap.to(trackRef.current, { scale: 1.02, duration: 0.08, ease: "power2.out" });
-        gsap.to(trackRef.current, { "--ringA": 1, duration: 0.12, ease: "power2.out" });
-        gsap.to(trackRef.current, { "--ringB": 1, duration: 0.18, ease: "power2.out" });
-        gsap.to(trackRef.current, { "--elev": 1, duration: 0.14, ease: "power2.out" });
-        gsap.to(auraRef.current, { opacity: 1, duration: 0.12, ease: "power2.out" });
+        gsap.to(trackRef.current, { 
+            scale: 1.05, 
+            duration: 0.15, 
+            ease: "back.out(1.7)" 
+        });
+        gsap.to(trackRef.current, { 
+            "--ringA": 1, 
+            duration: 0.2, 
+            ease: "power3.out" 
+        });
+        gsap.to(trackRef.current, { 
+            "--ringB": 1, 
+            duration: 0.25, 
+            ease: "power3.out" 
+        });
+        gsap.to(trackRef.current, { 
+            "--elev": 1, 
+            duration: 0.18, 
+            ease: "power3.out" 
+        });
+        gsap.to(auraRef.current, { 
+            opacity: 1, 
+            scale: 1.1,
+            duration: 0.2, 
+            ease: "power3.out" 
+        });
     }, []);
     const pressOff = useCallback(() => {
         if (!trackRef.current) return;
-        gsap.to(trackRef.current, { scale: 1, duration: 0.12, ease: "power2.out" });
-        gsap.to(trackRef.current, { "--ringA": 0, duration: 0.16, ease: "power2.out" });
-        gsap.to(trackRef.current, { "--ringB": 0, duration: 0.22, ease: "power2.out" });
-        gsap.to(trackRef.current, { "--elev": 0, duration: 0.16, ease: "power2.out" });
-        gsap.to(auraRef.current, { opacity: 0, duration: 0.14, ease: "power2.out" });
+        gsap.to(trackRef.current, { 
+            scale: 1, 
+            duration: 0.2, 
+            ease: "back.out(1.7)" 
+        });
+        gsap.to(trackRef.current, { 
+            "--ringA": 0, 
+            duration: 0.25, 
+            ease: "power3.out" 
+        });
+        gsap.to(trackRef.current, { 
+            "--ringB": 0, 
+            duration: 0.3, 
+            ease: "power3.out" 
+        });
+        gsap.to(trackRef.current, { 
+            "--elev": 0, 
+            duration: 0.25, 
+            ease: "power3.out" 
+        });
+        gsap.to(auraRef.current, { 
+            opacity: 0, 
+            scale: 1,
+            duration: 0.2, 
+            ease: "power3.out" 
+        });
     }, []);
 
     const startSheen = useCallback(() => {
         if (!sheenRef.current) return;
         gsap.to(sheenRef.current, {
             keyframes: [
-                { xPercent: "-40", opacity: 0 },
-                { xPercent: "10", opacity: 0.35, duration: 0.08, ease: "power1.out" },
-                { xPercent: "120", opacity: 0, duration: 0.28, ease: "power2.out" }
+                { xPercent: "-40", opacity: 0, scale: 0.8 },
+                { xPercent: "10", opacity: 0.6, scale: 1.1, duration: 0.1, ease: "power2.out" },
+                { xPercent: "120", opacity: 0, scale: 0.9, duration: 0.35, ease: "power3.out" }
             ],
-            repeat: -1
+            repeat: -1,
+            repeatDelay: 0.1
         });
     }, []);
     const stopSheen = useCallback(() => {
         if (!sheenRef.current) return;
         gsap.killTweensOf(sheenRef.current);
-        gsap.to(sheenRef.current, { opacity: 0, duration: 0.08, ease: "power2.out" });
+        gsap.to(sheenRef.current, { 
+            opacity: 0, 
+            scale: 1,
+            duration: 0.15, 
+            ease: "power3.out" 
+        });
     }, []);
 
     const updateFromClientX = useCallback((clientX: number) => {
@@ -121,9 +179,25 @@ const Slider: React.FC<SliderProps> = ({
         const raw = min + ratio * (max - min);
         const next = clamp(snapToStep(raw, min, step, decimals), min, max);
         const r = ratioFromValue(next);
-        setScaleXRef.current?.(r);
-        setSheenXRef.current?.(r * 100);
-        setAuraVarRef.current?.(Math.min(1, Math.abs(ratio - r) * 8 + 0.25));
+        
+        // Instant update during drag with minimal animation
+        gsap.to(progressRef.current, {
+            scaleX: r,
+            duration: 0.03,
+            ease: "none"
+        });
+        
+        // Instant sheen update
+        gsap.to(sheenRef.current, {
+            xPercent: r * 100,
+            duration: 0.03,
+            ease: "none"
+        });
+        
+        // Dynamic aura effect - more subtle
+        const auraIntensity = Math.min(0.6, Math.abs(ratio - r) * 8 + 0.2);
+        setAuraVarRef.current?.(auraIntensity);
+        
         onChange(next);
     }, [disabled, min, max, step, decimals, ratioFromValue, onChange]);
 
@@ -172,6 +246,34 @@ const Slider: React.FC<SliderProps> = ({
         setAuraVarRef.current?.(0);
     }, [isDragging, pressOff, stopSheen, ratioFromValue, value]);
 
+    const onMouseEnter = useCallback(() => {
+        if (disabled || isDragging) return;
+        gsap.to(trackRef.current, { 
+            scale: 1.02, 
+            duration: 0.12, 
+            ease: "power2.out" 
+        });
+        gsap.to(trackRef.current, { 
+            "--ringA": 0.5, 
+            duration: 0.12, 
+            ease: "power2.out" 
+        });
+    }, [disabled, isDragging]);
+
+    const onMouseLeave = useCallback(() => {
+        if (disabled || isDragging) return;
+        gsap.to(trackRef.current, { 
+            scale: 1, 
+            duration: 0.12, 
+            ease: "power2.out" 
+        });
+        gsap.to(trackRef.current, { 
+            "--ringA": 0, 
+            duration: 0.12, 
+            ease: "power2.out" 
+        });
+    }, [disabled, isDragging]);
+
     const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
         if (disabled) return;
         let next = value;
@@ -208,9 +310,31 @@ const Slider: React.FC<SliderProps> = ({
         }
         next = snapToStep(next, min, step, decimals);
         const r = ratioFromValue(next);
-        qToScaleRef.current?.(r);
-        qToSheenRef.current?.(r * 100);
-        setAuraVarRef.current?.(0);
+        
+        // Fast keyboard animations
+        gsap.to(progressRef.current, {
+            scaleX: r,
+            duration: 0.1,
+            ease: "power2.out"
+        });
+        
+        gsap.to(sheenRef.current, {
+            xPercent: r * 100,
+            duration: 0.1,
+            ease: "power2.out"
+        });
+        
+        // Brief aura pulse for keyboard interaction
+        gsap.fromTo(auraRef.current, 
+            { opacity: 0.6, scale: 1.1 },
+            { 
+                opacity: 0, 
+                scale: 1,
+                duration: 0.2, 
+                ease: "power2.out" 
+            }
+        );
+        
         onChange(next);
     }, [disabled, value, step, min, max, decimals, ratioFromValue, onChange]);
 
@@ -231,6 +355,8 @@ const Slider: React.FC<SliderProps> = ({
                 onPointerCancel={onPointerCancel}
                 onLostPointerCapture={onLostCapture}
                 onKeyDown={onKeyDown}
+                onMouseEnter={onMouseEnter}
+                onMouseLeave={onMouseLeave}
             >
                 <div ref={progressRef} className="slider__progress">
                     <div className="slider__gloss" />
