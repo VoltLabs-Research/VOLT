@@ -1,5 +1,5 @@
 export type PerformancePreset = 'ultra' | 'high' | 'balanced' | 'perfomance' | 'battery';
-export type PowerPreference = 'default' | 'high-perfomance' | 'low-power';
+export type PowerPreference = 'default' | 'high-performance' | 'low-power';
 
 export interface DprSettings {
     mode: 'fixed' | 'adaptive';

@@ -8,6 +8,8 @@ import {
     Noise,
     Sepia
 } from '@react-three/postprocessing';
+import { useMemo } from 'react';
+import { Vector2 } from 'three';
 import useEffectsConfigStore from '@/stores/editor/effects-config';
 
 const DynamicEffects = () => {
@@ -24,12 +26,17 @@ const DynamicEffects = () => {
     const hasAnyEffect = ssao.enabled || bloom.enabled || chromaticAberration.enabled || vignette.enabled || 
                     depthOfField.enabled || sepia.enabled || noise.enabled;
 
+    const caOffsetVec = useMemo(() => new Vector2(
+        chromaticAberration.offset[0],
+        chromaticAberration.offset[1]
+    ), [chromaticAberration.offset[0], chromaticAberration.offset[1]]);
+
     return (
         <>
             {hasAnyEffect && (
                 <EffectComposer
                     key={`effects-${hasAnyEffect}`}
-                    enableNormalPass
+                    enableNormalPass={ssao.enabled}
                     multisampling={0}
                     renderPriority={1}
                 >
@@ -60,7 +67,7 @@ const DynamicEffects = () => {
                         <ChromaticAberration
                             key={`chromatic-${chromaticAberration.offset.join(',')}`}
                             blendFunction={chromaticAberration.blendFunction}
-                            offset={chromaticAberration.offset}
+                            offset={caOffsetVec}
                         />
                     )}
                     {vignette.enabled && (
@@ -76,7 +83,7 @@ const DynamicEffects = () => {
                         <DepthOfField
                             key={`dof-${depthOfField.focusDistance}-${depthOfField.focalLength}`}
                             blendFunction={depthOfField.blendFunction}
-                            foc usDistance={depthOfField.focusDistance}
+                            focusDistance={depthOfField.focusDistance}
                             focalLength={depthOfField.focalLength}
                             bokehScale={depthOfField.bokehScale}
                             height={depthOfField.height}

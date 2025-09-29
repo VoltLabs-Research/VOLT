@@ -3,24 +3,24 @@ import { persist } from 'zustand/middleware';
 import type { RendererSettingsStore, RendererSettingsState } from '@/types/stores/editor/renderer-settings';
 
 const INITIAL: RendererSettingsState = {
-	create: {
-		antialias: true,
-		alpha: true,
-		depth: true,
-		stencil: false,
-		logarithmicDepthBuffer: false,
-		preserveDrawingBuffer: false
-	},
-	runtime: {
-		toneMapping: 'ACESFilmic',
-		toneMappingExposure: 5,
-		outputColorSpace: 'SRGB',
-		physicallyCorrectLights: true,
-		localClippingEnabled: false,
-		autoClear: true,
-		shadowEnabled: true,
-		shadowType: 'PCFSoft'
-	}
+    create: {
+        antialias: false,
+        alpha: false,
+        depth: true,
+        stencil: false,
+        logarithmicDepthBuffer: false,
+        preserveDrawingBuffer: false
+    },
+    runtime: {
+        toneMapping: 'None',
+        toneMappingExposure: 1,
+        outputColorSpace: 'SRGB',
+        physicallyCorrectLights: false,
+        localClippingEnabled: false,
+        autoClear: true,
+        shadowEnabled: false,
+        shadowType: 'Basic'
+    }
 };
 
 const useRendererSettings = create<RendererSettingsStore>()(
@@ -41,4 +41,7 @@ const useRendererSettings = create<RendererSettingsStore>()(
 	)
 );
 
+// Provide both named and default exports for compatibility
+export { useRendererSettings };
 export default useRendererSettings;
+

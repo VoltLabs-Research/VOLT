@@ -10,7 +10,7 @@ const presets: Record<PerformancePreset, PerformanceSettingsState> = {
     ultra: {
         preset: 'ultra',
         dpr: { mode: 'adaptive', fixed: 2, min: 1.5, max: 2, pixelated: false, snap: true, interactionMin: 1.25 },
-        canvas: { powerPreference: 'high-perfomance' },
+        canvas: { powerPreference: 'high-performance' },
         performance: { current: 1, min: 0.7, max: 1, debounce: 30 },
         adaptiveEvents: { enabled: false },
         interactionDegrade: { enabled: true, debounceMs: 100 }
@@ -18,7 +18,7 @@ const presets: Record<PerformancePreset, PerformanceSettingsState> = {
     high: {
         preset: 'high',
         dpr: { mode: 'adaptive', fixed: 1.5, min: 1.25, max: 1.75, pixelated: false, snap: true, interactionMin: 1.0 },
-        canvas: { powerPreference: 'high-perfomance' },
+        canvas: { powerPreference: 'high-performance' },
         performance: { current: 1, min: 0.5, max: 1, debounce: 50 },
         adaptiveEvents: { enabled: false },
         interactionDegrade: { enabled: true, debounceMs: 120 }

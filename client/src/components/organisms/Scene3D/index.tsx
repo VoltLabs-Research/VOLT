@@ -24,7 +24,7 @@ import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
 import usePerformanceSettingsStore from '@/stores/editor/perfomance-settings';
 import useCameraSettings from '@/stores/editor/camera-config';
-import useRendererSettings from '@/stores/editor/renderer-settings';
+import { useRendererSettings } from '@/stores/editor/renderer-settings';
 import useOrbitControlsSettings from '@/stores/editor/orbit-controls';
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
 import './Scene3D.css';
@@ -226,7 +226,6 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	return (
 		<Canvas
 			gl={glProps}
-			shadows="basic"
 			style={canvasStyle}
 			dpr={dpr}
 			frameloop="always"

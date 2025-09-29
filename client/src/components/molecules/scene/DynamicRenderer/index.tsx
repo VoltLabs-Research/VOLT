@@ -12,7 +12,7 @@ import {
     SRGBColorSpace, 
     VSMShadowMap, 
     BasicShadowMap } from 'three';
-import useRendererSettings from '@/stores/editor/renderer-settings';
+import { useRendererSettings } from '@/stores/editor/renderer-settings';
 
 const DynamicRenderer = () => {
 	const { gl } = useThree();

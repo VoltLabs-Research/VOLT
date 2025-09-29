@@ -5,13 +5,13 @@ import type { OrbitControlsState, OrbitControlsStore } from '@/types/stores/edit
 const INITIAL: OrbitControlsState = {
 	enabled: true,
 	enableDamping: true,
-	dampingFactor: 0.08,
+	dampingFactor: 0.12,
 	enableZoom: true,
-	zoomSpeed: 1.0,
+	zoomSpeed: 1.1,
 	enableRotate: true,
-	rotateSpeed: 1.0,
+	rotateSpeed: 0.9,
 	enablePan: true,
-	panSpeed: 1.0,
+	panSpeed: 0.9,
 	screenSpacePanning: true,
 	autoRotate: false,
 	autoRotateSpeed: 2.0,
@@ -19,8 +19,8 @@ const INITIAL: OrbitControlsState = {
 	maxDistance: 10000,
 	minPolarAngle: 0,
 	maxPolarAngle: Math.PI,
-	minAzimuthAngle: -Math.PI,
-	maxAzimuthAngle: Math.PI,
+	minAzimuthAngle: -Infinity,
+	maxAzimuthAngle: Infinity,
 	target: [0, 2, 0]
 };
 
