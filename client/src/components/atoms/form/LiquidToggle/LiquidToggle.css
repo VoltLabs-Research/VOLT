@@ -9,36 +9,13 @@
 
 @layer transitions {
   :root {
-    --transition: 0.2s;
-    --ease: ease-out;
+    --transition: 0.15s;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   [data-bounce='true']:has(button:active, [data-active='true']) {
-    --transition: 0.6s;
-    --ease: linear(
-      0 0%,
-      0.6091 3.69%,
-      1.0259 7.24%,
-      1.1733 9.05%,
-      1.283 10.92%,
-      1.3562 12.87%,
-      1.3948 14.95%,
-      1.4014 16.03%,
-      1.3999 17.16%,
-      1.3731 19.64%,
-      1.3202 22.27%,
-      1.1394 29.39%,
-      1.0582 33.17%,
-      0.9943 37.45%,
-      0.9734 39.64%,
-      0.9593 41.92%,
-      0.9505 45.08%,
-      0.9517 48.7%,
-      0.9924 63.02%,
-      1.0046 71.2%,
-      1.0061 78.24%,
-      1 100%
-    );
+    --transition: 0.4s;
+    --ease: cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
   
   .indicator--masked .mask {
@@ -48,7 +25,8 @@
     transition-property: height, width, margin, scale;
     transition-duration: var(--transition);
     transition-timing-function: var(--ease);
-    will-change: height, width, margin;
+    will-change: transform, height, width, margin;
+    transform: translate3d(0, 0, 0);
   }
   
   .wrapper {
@@ -69,6 +47,8 @@
     translate: calc(
         (var(--complete) / 100) * (100cqi - 100% - (6 * var(--border)))
       ) -50%;
+    will-change: transform, height, width, filter, left;
+    transform: translate3d(0, 0, 0);
   }
   
   .indicator__liquid {
@@ -78,10 +58,13 @@
     transition-property: scale;
     transition-duration: var(--transition);
     transition-timing-function: var(--ease);
+    will-change: transform, scale;
+    transform: translate3d(0, 0, 0);
   }
   
   .indicator__liquid :is(.cover, .shadow) {
     transition: opacity var(--transition) var(--ease);
+    will-change: opacity;
   }
   
   /* Active states - these are the actual changes when we scale up */

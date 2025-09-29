@@ -252,7 +252,7 @@
     left: 16px;
     width: 16px;
     height: 16px;
-    background: inherit;
+    background: inherit;        
     border-left: 1px solid var(--color-border);
     border-top: 1px solid var(--color-border);
     transform: rotate(45deg);

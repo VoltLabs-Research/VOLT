@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { gsap } from 'gsap';
 import './LiquidToggle.css';
 
 const LiquidToggle = ({
@@ -26,6 +27,10 @@ const LiquidToggle = ({
     const [dragStart, setDragStart] = useState(null);
     const [dragBounds, setDragBounds] = useState(0);
     const pressTimeRef = useRef(0);
+    
+    // GSAP refs for smooth animations
+    const completeRef = useRef(effectivePressed ? 100 : 0);
+    const activeRef = useRef(false);
 
     // Update SVG filters
     useEffect(() => {
@@ -43,13 +48,18 @@ const LiquidToggle = ({
         }
     }, [deviation, alpha]);
 
-    // Update CSS custom properties
+    // Update CSS custom properties - optimized
     useEffect(() => {
         document.documentElement.dataset.bounce = String(bounce);
+    }, [bounce]);
+
+    // Update complete value with GSAP for smooth animation
+    useEffect(() => {
         if (btnRef.current) {
             btnRef.current.style.setProperty('--complete', String(complete));
+            completeRef.current = complete;
         }
-    }, [bounce, complete]);
+    }, [complete]);
 
     // Sync with controlled prop
     useEffect(() => {
@@ -68,21 +78,30 @@ const LiquidToggle = ({
         const wasPressed = el.getAttribute('aria-pressed') === 'true';
         
         setActive(true);
+        activeRef.current = true;
         
         const nextPressed = !wasPressed;
         const toValue = nextPressed ? 100 : 0;
         
-        // Simulate GSAP timeline with delays
-        setTimeout(() => {
-            setComplete(toValue);
-            setTimeout(() => {
+        // Small, quick animation for click - subtle but not instant
+        gsap.to({}, {
+            duration: 0.15,
+            ease: "power2.out",
+            onUpdate: function() {
+                const progress = this.progress();
+                const currentValue = gsap.utils.interpolate(completeRef.current, toValue, progress);
+                setComplete(currentValue);
+                completeRef.current = currentValue;
+            },
+            onComplete: () => {
                 setActive(false);
+                activeRef.current = false;
                 el.setAttribute('aria-pressed', String(nextPressed));
                 if (onChange) onChange(nextPressed);
                 if (!isControlled) setInternalPressed(nextPressed);
-            }, 50);
-        }, bounce ? 200 : 0);
-    }, [bounce, isControlled, onChange]);
+            }
+        });
+    }, [isControlled, onChange]);
 
     // Drag handlers
     const handlePointerDown = useCallback((e) => {
@@ -121,7 +140,17 @@ const LiquidToggle = ({
             }
             
             const clampedComplete = Math.max(0, Math.min(100, rawComplete));
-            setComplete(clampedComplete);
+            
+            // Smooth drag animation with GSAP
+            gsap.to({}, {
+                duration: 0.1,
+                ease: "power2.out",
+                onUpdate: function() {
+                    const progress = this.progress();
+                    const currentValue = gsap.utils.interpolate(completeRef.current, clampedComplete, progress);
+                    setComplete(currentValue);
+                }
+            });
         }
     }, [isDragging, dragStart, dragBounds]);
 
@@ -131,21 +160,34 @@ const LiquidToggle = ({
         
         if (isDragging) {
             const targetComplete = complete >= 50 ? 100 : 0;
-            setComplete(targetComplete);
             
-            setTimeout(() => {
-                setActive(false);
-                const nextPressed = targetComplete >= 50;
-                if (btnRef.current) {
-                    btnRef.current.setAttribute('aria-pressed', String(nextPressed));
+            // Smooth completion animation for drag
+            gsap.to({}, {
+                duration: 0.2,
+                ease: "power3.out",
+                onUpdate: function() {
+                    const progress = this.progress();
+                    const currentValue = gsap.utils.interpolate(complete, targetComplete, progress);
+                    setComplete(currentValue);
+                    completeRef.current = currentValue;
+                },
+                onComplete: () => {
+                    setActive(false);
+                    activeRef.current = false;
+                    const nextPressed = targetComplete >= 50;
+                    if (btnRef.current) {
+                        btnRef.current.setAttribute('aria-pressed', String(nextPressed));
+                    }
+                    if (onChange) onChange(nextPressed);
+                    if (!isControlled) setInternalPressed(nextPressed);
                 }
-                if (onChange) onChange(nextPressed);
-                if (!isControlled) setInternalPressed(nextPressed);
-            }, 150);
+            });
         } else if (pressDuration <= 150) {
+            // Click - instant change
             toggleTimeline();
         } else {
             setActive(false);
+            activeRef.current = false;
         }
         
         setIsDragging(false);

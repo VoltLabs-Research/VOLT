@@ -72,21 +72,28 @@ const Slider: React.FC<SliderProps> = ({
     useEffect(() => {
         const r = ratioFromValue(value);
         if (!isDragging) {
-            // Faster animation when not dragging
+            // Kill any existing animations first
+            gsap.killTweensOf([progressRef.current, sheenRef.current]);
+            
+            // Smooth animation when not dragging
             gsap.to(progressRef.current, {
                 scaleX: r,
-                duration: 0.08,
+                duration: 0.1,
                 ease: "power2.out"
             });
             gsap.to(sheenRef.current, {
                 xPercent: r * 100,
-                duration: 0.08,
+                duration: 0.1,
                 ease: "power2.out"
             });
         } else {
-            // Instant update during drag
-            setScaleXRef.current?.(r);
-            setSheenXRef.current?.(r * 100);
+            // Direct update during drag for 60fps
+            if (progressRef.current) {
+                gsap.set(progressRef.current, { scaleX: r });
+            }
+            if (sheenRef.current) {
+                gsap.set(sheenRef.current, { xPercent: r * 100 });
+            }
         }
     }, [value, ratioFromValue, isDragging]);
 
@@ -180,19 +187,17 @@ const Slider: React.FC<SliderProps> = ({
         const next = clamp(snapToStep(raw, min, step, decimals), min, max);
         const r = ratioFromValue(next);
         
-        // Instant update during drag with minimal animation
-        gsap.to(progressRef.current, {
-            scaleX: r,
-            duration: 0.03,
-            ease: "none"
-        });
+        // Kill any existing animations to prevent conflicts
+        gsap.killTweensOf([progressRef.current, sheenRef.current]);
         
-        // Instant sheen update
-        gsap.to(sheenRef.current, {
-            xPercent: r * 100,
-            duration: 0.03,
-            ease: "none"
-        });
+        // Direct property updates for 60fps - no GSAP during drag
+        if (progressRef.current) {
+            gsap.set(progressRef.current, { scaleX: r });
+        }
+        
+        if (sheenRef.current) {
+            gsap.set(sheenRef.current, { xPercent: r * 100 });
+        }
         
         // Dynamic aura effect - more subtle
         const auraIntensity = Math.min(0.6, Math.abs(ratio - r) * 8 + 0.2);
@@ -248,28 +253,30 @@ const Slider: React.FC<SliderProps> = ({
 
     const onMouseEnter = useCallback(() => {
         if (disabled || isDragging) return;
+        gsap.killTweensOf(trackRef.current);
         gsap.to(trackRef.current, { 
             scale: 1.02, 
-            duration: 0.12, 
+            duration: 0.15, 
             ease: "power2.out" 
         });
         gsap.to(trackRef.current, { 
             "--ringA": 0.5, 
-            duration: 0.12, 
+            duration: 0.15, 
             ease: "power2.out" 
         });
     }, [disabled, isDragging]);
 
     const onMouseLeave = useCallback(() => {
         if (disabled || isDragging) return;
+        gsap.killTweensOf(trackRef.current);
         gsap.to(trackRef.current, { 
             scale: 1, 
-            duration: 0.12, 
+            duration: 0.15, 
             ease: "power2.out" 
         });
         gsap.to(trackRef.current, { 
             "--ringA": 0, 
-            duration: 0.12, 
+            duration: 0.15, 
             ease: "power2.out" 
         });
     }, [disabled, isDragging]);
@@ -311,16 +318,19 @@ const Slider: React.FC<SliderProps> = ({
         next = snapToStep(next, min, step, decimals);
         const r = ratioFromValue(next);
         
-        // Fast keyboard animations
+        // Kill existing animations first
+        gsap.killTweensOf([progressRef.current, sheenRef.current, auraRef.current]);
+        
+        // Smooth keyboard animations
         gsap.to(progressRef.current, {
             scaleX: r,
-            duration: 0.1,
+            duration: 0.12,
             ease: "power2.out"
         });
         
         gsap.to(sheenRef.current, {
             xPercent: r * 100,
-            duration: 0.1,
+            duration: 0.12,
             ease: "power2.out"
         });
         
@@ -330,7 +340,7 @@ const Slider: React.FC<SliderProps> = ({
             { 
                 opacity: 0, 
                 scale: 1,
-                duration: 0.2, 
+                duration: 0.25, 
                 ease: "power2.out" 
             }
         );
