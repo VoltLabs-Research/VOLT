@@ -4,6 +4,8 @@ import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
 import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 import useCameraSettings from '@/stores/editor/camera-config';
+import { MdCameraAlt, MdViewInAr, MdTransform } from 'react-icons/md';
+import { IoCameraOutline } from 'react-icons/io5';
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -273,26 +275,41 @@ const CameraSettingsControls: React.FC = () => {
     ];
 
     return (
-        <CollapsibleSection title="Camera Settings">
+        <CollapsibleSection 
+            title="Camera Settings" 
+            icon={<MdCameraAlt size={16} />}
+        >
             <div style={{ display: 'grid', gap: 12 }}>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Projection Settings</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MdCameraAlt size={14} />
+                        Projection Settings
+                    </div>
                     <FormSchema sections={[projectionSection]} />
                 </div>
                 {type === 'perspective' && (
                     <div>
-                        <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Perspective Camera</div>
+                        <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <IoCameraOutline size={14} />
+                            Perspective Camera
+                        </div>
                         <FormSchema sections={[perspectiveSection]} />
                     </div>
                 )}
                 {type === 'orthographic' && (
                     <div>
-                        <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Orthographic Camera</div>
+                        <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <MdViewInAr size={14} />
+                            Orthographic Camera
+                        </div>
                         <FormSchema sections={[orthographicSection]} />
                     </div>
                 )}
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Transform & Position</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MdTransform size={14} />
+                        Transform & Position
+                    </div>
                     <FormSchema sections={[transformSection]} />
                 </div>
             </div>

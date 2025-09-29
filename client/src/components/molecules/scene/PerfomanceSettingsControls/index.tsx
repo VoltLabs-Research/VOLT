@@ -4,6 +4,8 @@ import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
 import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 import usePerformanceSettingsStore from '@/stores/editor/perfomance-settings';
+import { MdSpeed, MdHighQuality, MdTouchApp, MdTune } from 'react-icons/md';
+import { IoHardwareChipOutline } from 'react-icons/io5';
 
 const PerformanceSettingsControls: React.FC = () => {
     const preset = usePerformanceSettingsStore(s => s.preset);
@@ -210,22 +212,37 @@ const PerformanceSettingsControls: React.FC = () => {
     };
 
     return (
-        <CollapsibleSection title="Performance Settings">
+        <CollapsibleSection 
+            title="Performance Settings" 
+            icon={<MdSpeed size={16} />}
+        >
             <div style={{ display: 'grid', gap: 12 }}>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Performance Presets</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MdTune size={14} />
+                        Performance Presets
+                    </div>
                     <FormSchema sections={[presetSection]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Device Pixel Ratio (DPR)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <IoHardwareChipOutline size={14} />
+                        Device Pixel Ratio (DPR)
+                    </div>
                     <FormSchema sections={[dprSection]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Canvas & Performance</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MdHighQuality size={14} />
+                        Canvas & Performance
+                    </div>
                     <FormSchema sections={[canvasPerfSection]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Adaptive & Interaction</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MdTouchApp size={14} />
+                        Adaptive & Interaction
+                    </div>
                     <FormSchema sections={[adaptiveSection]} />
                 </div>
             </div>

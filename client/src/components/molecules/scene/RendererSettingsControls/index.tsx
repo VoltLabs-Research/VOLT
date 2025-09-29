@@ -5,6 +5,7 @@ import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
 import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 import useRendererSettings from '@/stores/editor/renderer-settings';
+import { MdTune } from 'react-icons/md';
 
 const RendererSettingsControls: React.FC = () => {
 	const create = useRendererSettings((s) => s.create);
@@ -162,7 +163,10 @@ const RendererSettingsControls: React.FC = () => {
 	};
 
 	return (
-		<CollapsibleSection title="Renderer Settings">
+		<CollapsibleSection 
+			title="Renderer Settings" 
+			icon={<MdTune size={16} />}
+		>
 			<FormSchema sections={[contextSection, toneSection, lightingSection, shadowSection]} />
 		</CollapsibleSection>
 	);

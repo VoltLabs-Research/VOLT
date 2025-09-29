@@ -5,6 +5,7 @@ import FormRow from '@/components/atoms/form/FormRow';
 import FormSection from '@/components/atoms/form/FormSection';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import CollapsibleSection from '@/components/atoms/CollapsibleSection';
+import { MdAutoFixHigh } from 'react-icons/md';
 import './EffectsControls.css';
 
 const EffectsControls = () => {
@@ -223,7 +224,10 @@ const EffectsControls = () => {
     ];
 
     return (
-        <CollapsibleSection title="Post-Processing Effects">
+        <CollapsibleSection 
+            title="Post-Processing Effects" 
+            icon={<MdAutoFixHigh size={16} />}
+        >
             <div style={{ display: 'grid', gap: 12 }}>
                 <div>
                     <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>SSAO (Screen Space Ambient Occlusion)</div>

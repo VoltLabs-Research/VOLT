@@ -8,13 +8,15 @@ interface CollapsibleSectionProps {
   children: React.ReactNode;
   defaultExpanded?: boolean;
   className?: string;
+  icon?: React.ReactNode;
 }
 
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   title,
   children,
   defaultExpanded = false,
-  className = ''
+  className = '',
+  icon
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -83,7 +85,10 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         onClick={handleToggle}
         style={{ cursor: 'pointer' }}
       >
-        <h3 className="editor-sidebar-item-header-title">{title}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {icon && <div style={{ display: 'flex', alignItems: 'center' }}>{icon}</div>}
+          <h3 className="editor-sidebar-item-header-title">{title}</h3>
+        </div>
         <div 
           ref={arrowRef}
           className="editor-sidebar-item-arrow"

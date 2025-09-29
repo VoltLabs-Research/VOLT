@@ -4,6 +4,7 @@ import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
 import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 import useLightsStore from '@/stores/editor/lights-config';
+import { MdLightbulb } from 'react-icons/md';
 
 const LightsControls: React.FC = () => {
     const st = useLightsStore();
@@ -149,7 +150,10 @@ const LightsControls: React.FC = () => {
     };
 
     return (
-        <CollapsibleSection title="Lights">
+        <CollapsibleSection 
+            title="Lights" 
+            icon={<MdLightbulb size={16} />}
+        >
             <div style={{ display: 'grid', gap: 12 }}>
                 <div>
                     <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Global IBL (Image Based Lighting)</div>

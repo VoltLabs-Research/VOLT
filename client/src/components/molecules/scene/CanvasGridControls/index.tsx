@@ -3,6 +3,8 @@ import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
 import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 import useCanvasGridSettings from '@/stores/editor/canvas-grid-settings';
+import { MdSettings, MdStraighten, MdOpacity, MdColorLens, MdTransform } from 'react-icons/md';
+import { IoGridOutline } from 'react-icons/io5';
 
 const CanvasGridControls: React.FC = () => {
     const settings = useCanvasGridSettings();
@@ -234,30 +236,51 @@ const CanvasGridControls: React.FC = () => {
     };
 
     return (
-        <CollapsibleSection title="Canvas Grid">
+        <CollapsibleSection 
+            title="Canvas Grid" 
+            icon={<IoGridOutline size={16} />}
+        >
             <div style={{ display: 'grid', gap: 12 }}>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>General Settings</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MdSettings size={14} />
+                        General Settings
+                    </div>
                     <FormSchema sections={[generalSection]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Size & Spacing</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <IoGridOutline size={14} />
+                        Size & Spacing
+                    </div>
                     <FormSchema sections={[sizeSection]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Line Thickness</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MdStraighten size={14} />
+                        Line Thickness
+                    </div>
                     <FormSchema sections={[thicknessSection]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Fade Settings</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MdOpacity size={14} />
+                        Fade Settings
+                    </div>
                     <FormSchema sections={[fadeSection]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Colors</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MdColorLens size={14} />
+                        Colors
+                    </div>
                     <FormSchema sections={[colorSection]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Transform</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MdTransform size={14} />
+                        Transform
+                    </div>
                     <FormSchema sections={[transformSection]} />
                 </div>
             </div>

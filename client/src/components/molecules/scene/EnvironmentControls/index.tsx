@@ -4,6 +4,7 @@ import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
 import Select from '@/components/atoms/form/Select';
 import CollapsibleSection from '@/components/atoms/CollapsibleSection';
+import { MdEnvironment } from 'react-icons/md';
 
 const EnvironmentControls: React.FC = () => {
     const {
@@ -109,7 +110,10 @@ const EnvironmentControls: React.FC = () => {
     };
 
     return (
-        <CollapsibleSection title="Environment">
+        <CollapsibleSection 
+            title="Environment" 
+            icon={<MdEnvironment size={16} />}
+        >
             <div style={{ display: 'grid', gap: 12 }}>
                 <div>
                     <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Background & Environment</div>
