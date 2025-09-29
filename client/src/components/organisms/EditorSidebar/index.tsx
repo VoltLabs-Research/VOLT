@@ -19,6 +19,7 @@ import PerformanceSettingsControls from '@/components/molecules/scene/Perfomance
 import CameraSettingsControls from '@/components/molecules/scene/CameraSettingsControls';
 import RendererSettingsControls from '@/components/molecules/scene/RendererSettingsControls';
 import OrbitControls from '@/components/molecules/scene/OrbitControls';
+import CanvasGridControls from '@/components/molecules/scene/CanvasGridControls';
 import './EditorSidebar.css';
 
 const MOBILE_BREAKPOINT = 768;
@@ -128,6 +129,7 @@ const EditorSidebar = () => {
                     <CameraSettingsControls />
                     <OrbitControls />
                     <RendererSettingsControls />
+                    <CanvasGridControls />
                 </div>
             ) : (
                 activeSidebarTab === 'Scene' ? (

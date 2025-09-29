@@ -2,6 +2,7 @@ import React from 'react';
 import Select from '@/components/atoms/form/Select';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
+import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 import useCameraSettings from '@/stores/editor/camera-config';
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -272,12 +273,30 @@ const CameraSettingsControls: React.FC = () => {
     ];
 
     return (
-        <div className="editor-sidebar-item-container">
-            <div className="editor-sidebar-item-header-container">
-                <h3 className="editor-sidebar-item-header-title">Camera Settings</h3>
+        <CollapsibleSection title="Camera Settings">
+            <div style={{ display: 'grid', gap: 12 }}>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Projection Settings</div>
+                    <FormSchema sections={[projectionSection]} />
+                </div>
+                {type === 'perspective' && (
+                    <div>
+                        <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Perspective Camera</div>
+                        <FormSchema sections={[perspectiveSection]} />
+                    </div>
+                )}
+                {type === 'orthographic' && (
+                    <div>
+                        <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Orthographic Camera</div>
+                        <FormSchema sections={[orthographicSection]} />
+                    </div>
+                )}
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Transform & Position</div>
+                    <FormSchema sections={[transformSection]} />
+                </div>
             </div>
-            <FormSchema sections={sections} className="editor-sidebar-item-body-container" />
-        </div>
+        </CollapsibleSection>
     );
 };
 

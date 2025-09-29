@@ -34,7 +34,7 @@ const presets: Record<PerformancePreset, PerformanceSettingsState> = {
     perfomance: {
         preset: 'perfomance',
         dpr: { mode: 'adaptive', fixed: 1.0, min: 0.75, max: 1.25, pixelated: true, snap: true, interactionMin: 0.75 },
-        canvas: { powerPreference: 'low-power' },
+        canvas: { powerPreference: 'high-performance' },
         performance: { current: 0.8, min: 0.3, max: 1, debounce: 80 },
         adaptiveEvents: { enabled: true },
         interactionDegrade: { enabled: true, debounceMs: 120 }
@@ -42,7 +42,8 @@ const presets: Record<PerformancePreset, PerformanceSettingsState> = {
     battery: {
         preset: 'battery',
         dpr: { mode: 'fixed', fixed: 1.0, min: 0.75, max: 1.0, pixelated: true, snap: true, interactionMin: 0.75 },
-        canvas: { powerPreference: 'low-power' },
+        //canvas: { powerPreference: 'low-power' },
+        canvas: { powerPreference: 'high-performance' },
         performance: { current: 0.7, min: 0.25, max: 1, debounce: 120 },
         adaptiveEvents: { enabled: true },
         interactionDegrade: { enabled: true, debounceMs: 150 }
@@ -50,7 +51,21 @@ const presets: Record<PerformancePreset, PerformanceSettingsState> = {
 };
 
 
-const initial = presets.balanced;
+const initial = presets.battery;
+    
+// Clean up any incorrect powerPreference values from localStorage
+const cleanPowerPreference = (state: PerformanceSettingsState): PerformanceSettingsState => {
+    if (state.canvas.powerPreference === 'high-perfomance') {
+        return {
+            ...state,
+            canvas: {
+                ...state.canvas,
+                powerPreference: 'high-performance'
+            }
+        };
+    }
+    return state;
+};
 
 const pickDpr = (
     s: PerformanceSettingsState,
@@ -70,15 +85,15 @@ const pickDpr = (
 const usePerformanceSettingsStore = create<PerformanceSettingsStore>()(
     persist(
         (set, get) => ({
-            ...initial,
+            ...cleanPowerPreference(initial),
 
-            setPreset: (preset) => set(() => presets[preset]),
+            setPreset: (preset) => set(() => cleanPowerPreference(presets[preset])),
             setDpr: (partial) => set((state) => ({ dpr: { ...state.dpr, ...partial } })),
             setCanvas: (partial) => set((state) => ({ canvas: { ...state.canvas, ...partial } })),
             setPerformance: (partial) => set((state) => ({ performance: { ...state.performance, ...partial } })),
             setAdaptiveEvents: (partial) => set((state) => ({ adaptiveEvents: { ...state.adaptiveEvents, ...partial } })),
             setInteractionDegrade: (partial) => set((state) => ({ interactionDegrade: { ...state.interactionDegrade, ...partial } })),
-            reset: () => set(() => initial),
+            reset: () => set(() => cleanPowerPreference(initial)),
 
             selectCanvasDpr: (opts) => pickDpr(get(), opts),
             selectCanvasProps: (opts) => {
@@ -105,7 +120,15 @@ const usePerformanceSettingsStore = create<PerformanceSettingsStore>()(
                 performance: s.performance,
                 adaptiveEvents: s.adaptiveEvents,
                 interactionDegrade: s.interactionDegrade
-            })
+            }),
+            onRehydrateStorage: () => (state) => {
+                if (state) {
+                    const cleanedState = cleanPowerPreference(state);
+                    if (cleanedState !== state) {
+                        set(() => cleanedState);
+                    }
+                }
+            }
         }
     )
 );

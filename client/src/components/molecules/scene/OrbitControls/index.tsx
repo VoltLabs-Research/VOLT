@@ -1,6 +1,7 @@
 import React from 'react';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
+import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 import useOrbitControlsSettings from '@/stores/editor/orbit-controls';
 
 const OrbitControls: React.FC = () => {
@@ -93,12 +94,26 @@ const OrbitControls: React.FC = () => {
 	};
 
 	return (
-		<div className="editor-sidebar-item-container">
-			<div className="editor-sidebar-item-header-container">
-				<h3 className="editor-sidebar-item-header-title">Orbit Controls</h3>
+		<CollapsibleSection title="Orbit Controls">
+			<div style={{ display: 'grid', gap: 12 }}>
+				<div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>General Settings</div>
+					<FormSchema sections={[general]} />
+				</div>
+				<div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Movement Speeds</div>
+					<FormSchema sections={[speeds]} />
+				</div>
+				<div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Distance & Angle Limits</div>
+					<FormSchema sections={[limits]} />
+				</div>
+				<div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Target Position</div>
+					<FormSchema sections={[targetSection]} />
+				</div>
 			</div>
-			<FormSchema sections={[general, speeds, limits, targetSection]} className="editor-sidebar-item-body-container" />
-		</div>
+		</CollapsibleSection>
 	);
 };
 

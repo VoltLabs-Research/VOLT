@@ -22,20 +22,30 @@
 
 import React from 'react';
 import { Grid } from '@react-three/drei';
+import useCanvasGridSettings from '@/stores/editor/canvas-grid-settings';
 
-const CanvasGrid = () => (
-    <Grid
-        infiniteGrid
-        cellSize={0.75}
-        sectionSize={3}
-        cellThickness={0.5}
-        sectionThickness={1}
-        fadeDistance={100}
-        fadeStrength={2}
-        sectionColor="#636363"
-        position={[0, 0, 0]}
-        rotation={[Math.PI / 2, 0, 0]} 
-    />
-);
+const CanvasGrid = () => {
+    const settings = useCanvasGridSettings();
+    
+    if (!settings.enabled) {
+        return null;
+    }
+
+    return (
+        <Grid
+            infiniteGrid={settings.infiniteGrid}
+            cellSize={settings.cellSize}
+            sectionSize={settings.sectionSize}
+            cellThickness={settings.cellThickness}
+            sectionThickness={settings.sectionThickness}
+            fadeDistance={settings.fadeDistance}
+            fadeStrength={settings.fadeStrength}
+            sectionColor={settings.sectionColor}
+            cellColor={settings.cellColor}
+            position={settings.position}
+            rotation={settings.rotation}
+        />
+    );
+};
 
 export default CanvasGrid;

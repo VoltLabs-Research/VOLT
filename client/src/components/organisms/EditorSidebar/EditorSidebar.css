@@ -89,11 +89,23 @@
 
 /* Contenido (Scene/Modifiers) */
 /* TODO: height dynamic */
-.editor-sidebar-scene-container{ padding: 1.5rem; height: 64vh; overflow: scroll;}
+.editor-sidebar-scene-container{ 
+  padding: 1.5rem; 
+  height: 64vh; 
+  overflow: scroll;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
 .editor-sidebar-scene-options-container{ display: flex; flex-direction: column; gap: .5rem; }
 
 .editor-render-options-container{
   height: 79vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 1.5rem;
+  overflow-y: auto;
 }
 
 .editor-sidebar-user-avatar-wrapper{ padding: 1.5rem; }

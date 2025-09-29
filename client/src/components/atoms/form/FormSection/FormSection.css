@@ -1,7 +1,7 @@
 .form-control-group{
     display: flex;
     flex-direction: column;
-    gap: .5rem;
+    gap: 2rem;
 }
 
 .form-control-row{

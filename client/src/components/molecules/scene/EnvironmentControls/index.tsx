@@ -3,6 +3,7 @@ import useEnvironmentConfigStore from '@/stores/editor/environment-config';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
 import Select from '@/components/atoms/form/Select';
+import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 
 const EnvironmentControls: React.FC = () => {
     const {
@@ -108,13 +109,18 @@ const EnvironmentControls: React.FC = () => {
     };
 
     return (
-        <div className='editor-sidebar-item-container'>
-            <div className='editor-sidebar-item-header-container'>
-                <h3 className='editor-sidebar-item-header-title'>Environment</h3>
+        <CollapsibleSection title="Environment">
+            <div style={{ display: 'grid', gap: 12 }}>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Background & Environment</div>
+                    <FormSchema sections={[backgroundSection]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Fog Settings</div>
+                    <FormSchema sections={[fogSection]} />
+                </div>
             </div>
-
-            <FormSchema sections={[backgroundSection, fogSection]} className='editor-sidebar-item-body-container' />
-        </div>
+        </CollapsibleSection>
     );
 };
 

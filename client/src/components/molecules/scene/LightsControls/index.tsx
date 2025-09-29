@@ -2,6 +2,7 @@
 import React from 'react';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
+import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 import useLightsStore from '@/stores/editor/lights-config';
 
 const LightsControls: React.FC = () => {
@@ -148,12 +149,34 @@ const LightsControls: React.FC = () => {
     };
 
     return (
-        <div className="editor-sidebar-item-container">
-            <div className="editor-sidebar-item-header-container">
-                <h3 className="editor-sidebar-item-header-title">Lights</h3>
+        <CollapsibleSection title="Lights">
+            <div style={{ display: 'grid', gap: 12 }}>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Global IBL (Image Based Lighting)</div>
+                    <FormSchema sections={[global]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Directional Light (Sun-like)</div>
+                    <FormSchema sections={[dir]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Point Light (Omnidirectional)</div>
+                    <FormSchema sections={[point]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Spot Light (Cone-shaped)</div>
+                    <FormSchema sections={[spot]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Hemisphere Light (Sky + Ground)</div>
+                    <FormSchema sections={[hemi]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Rect Area Light (Rectangular)</div>
+                    <FormSchema sections={[rect]} />
+                </div>
             </div>
-            <FormSchema sections={[global, dir, point, spot, hemi, rect]} className="editor-sidebar-item-body-container" />
-        </div>
+        </CollapsibleSection>
     );
 };
 

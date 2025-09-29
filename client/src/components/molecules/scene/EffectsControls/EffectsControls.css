@@ -1,5 +1,1 @@
-.editor-sidebar-item-container{
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
+/* Styles moved to CollapsibleSection component */

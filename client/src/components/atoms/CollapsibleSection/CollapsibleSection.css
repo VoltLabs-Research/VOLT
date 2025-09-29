@@ -1,0 +1,55 @@
+.editor-sidebar-item-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 1.5rem;
+}
+
+.editor-sidebar-item-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease;
+  cursor: pointer;
+}
+
+.editor-sidebar-item-header-container:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.editor-sidebar-item-header-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin: 0;
+  user-select: none;
+}
+
+.editor-sidebar-item-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a0a0a0;
+  transition: color 0.2s ease;
+  transform: rotate(-90deg);
+}
+
+.editor-sidebar-item-header-container:hover .editor-sidebar-item-arrow {
+  color: #e0e0e0;
+}
+
+.editor-sidebar-item-body-container {
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.editor-sidebar-item-body-container > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}

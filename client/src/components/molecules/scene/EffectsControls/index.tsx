@@ -4,6 +4,7 @@ import Select from '@/components/atoms/form/Select';
 import FormRow from '@/components/atoms/form/FormRow';
 import FormSection from '@/components/atoms/form/FormSection';
 import FormSchema from '@/components/atoms/form/FormSchema';
+import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 import './EffectsControls.css';
 
 const EffectsControls = () => {
@@ -222,13 +223,38 @@ const EffectsControls = () => {
     ];
 
     return (
-        <div className='editor-sidebar-item-container'>
-            <div className='editor-sidebar-item-header-container'>
-                <h3 className='editor-sidebar-item-header-title'>Post-Processing Effects</h3>
+        <CollapsibleSection title="Post-Processing Effects">
+            <div style={{ display: 'grid', gap: 12 }}>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>SSAO (Screen Space Ambient Occlusion)</div>
+                    <FormSchema sections={[sections[0]]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Bloom Effect</div>
+                    <FormSchema sections={[sections[1]]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Chromatic Aberration</div>
+                    <FormSchema sections={[sections[2]]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Vignette Effect</div>
+                    <FormSchema sections={[sections[3]]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Depth of Field</div>
+                    <FormSchema sections={[sections[4]]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Sepia Filter</div>
+                    <FormSchema sections={[sections[5]]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Noise Effect</div>
+                    <FormSchema sections={[sections[6]]} />
+                </div>
             </div>
-
-            <FormSchema sections={sections} className='editor-sidebar-item-body-container' />
-        </div>
+        </CollapsibleSection>
     );
 };
 

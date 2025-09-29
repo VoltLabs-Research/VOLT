@@ -2,6 +2,7 @@ import React from 'react';
 import Select from '@/components/atoms/form/Select';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
+import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 import usePerformanceSettingsStore from '@/stores/editor/perfomance-settings';
 
 const PerformanceSettingsControls: React.FC = () => {
@@ -161,11 +162,11 @@ const PerformanceSettingsControls: React.FC = () => {
         extras: (
             <Select
                 value={canvas.powerPreference}
-                onChange={(value) => setCanvas({ powerPreference: value as 'default' | 'high-perfomance' | 'low-power' })}
+                onChange={(value) => setCanvas({ powerPreference: value as 'default' | 'high-performance' | 'low-power' })}
                 placeholder="Power Preference"
                 options={[
                     { title: 'Default', value: 'default' },
-                    { title: 'High Perfomance', value: 'high-perfomance' },
+                    { title: 'High Performance', value: 'high-performance' },
                     { title: 'Low Power', value: 'low-power' },
                 ]}
             />
@@ -209,16 +210,26 @@ const PerformanceSettingsControls: React.FC = () => {
     };
 
     return (
-        <div className="editor-sidebar-item-container">
-            <div className="editor-sidebar-item-header-container">
-                <h3 className="editor-sidebar-item-header-title">Performance Settings</h3>
+        <CollapsibleSection title="Performance Settings">
+            <div style={{ display: 'grid', gap: 12 }}>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Performance Presets</div>
+                    <FormSchema sections={[presetSection]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Device Pixel Ratio (DPR)</div>
+                    <FormSchema sections={[dprSection]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Canvas & Performance</div>
+                    <FormSchema sections={[canvasPerfSection]} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Adaptive & Interaction</div>
+                    <FormSchema sections={[adaptiveSection]} />
+                </div>
             </div>
-
-            <FormSchema
-                sections={[presetSection, dprSection, canvasPerfSection, adaptiveSection]}
-                className="editor-sidebar-item-body-container"
-            />
-        </div>
+        </CollapsibleSection>
     );
 };
 
