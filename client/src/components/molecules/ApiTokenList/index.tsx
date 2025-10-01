@@ -98,7 +98,7 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
                     <TbKey size={48} />
                 </div>
                 <h3>No API Tokens</h3>
-                <p>Create your first API token to start using the OpenDXA API programmatically.</p>
+                <p>Create your first API token to start using the API programmatically.</p>
             </div>
         );
     }

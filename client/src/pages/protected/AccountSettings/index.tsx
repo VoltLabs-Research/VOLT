@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbX, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbTrash, TbPlus, TbWebhook } from 'react-icons/tb';
+import { TbUser, TbShield, TbCreditCard, TbFileText, TbActivity, TbLock, TbKey, TbX, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbTrash, TbPlus, TbWebhook } from 'react-icons/tb';
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
 import { api } from '@/services/api';
@@ -610,10 +610,6 @@ const AccountSettings: React.FC = () => {
                                     <button className='action-button'>
                                         <TbFileText size={16} />
                                         Documentation
-                                    </button>
-                                    <button className='action-button'>
-                                        <TbActivity size={16} />
-                                        Contact Support
                                     </button>
                                 </div>
                             </div>

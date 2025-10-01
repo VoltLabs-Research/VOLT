@@ -82,7 +82,7 @@ const WebhookList: React.FC<WebhookListProps> = ({
                     <TbWebhook size={48} />
                 </div>
                 <h3>No Webhooks</h3>
-                <p>Create your first webhook to receive real-time notifications from OpenDXA.</p>
+                <p>Create your first webhook to receive real-time notifications from the app.</p>
             </div>
         );
     }
