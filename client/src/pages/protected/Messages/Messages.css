@@ -2108,7 +2108,7 @@
     }
     
     .chat-message-content {
-        background: rgba(0, 0, 0, 0.4);
+        background: rgb(49 49 49 / 40%);
         border: 1px solid rgba(255, 255, 255, 0.03);
     }
     

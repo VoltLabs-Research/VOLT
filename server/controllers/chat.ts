@@ -134,10 +134,15 @@ export const getChatMessages = catchAsync(async (req: Request, res: Response, ne
     const { page = 1, limit = 50 } = req.query;
 
     // Verify user has access to this chat
+    // For direct chats, allow access even if not active
+    // For group chats, only allow if active
     const chat = await Chat.findOne({
         _id: chatId,
         participants: user._id,
-        isActive: true
+        $or: [
+            { isGroup: false }, // Allow all direct chats
+            { isGroup: true, isActive: true } // Only active group chats
+        ]
     });
 
     if (!chat) {
@@ -168,10 +173,15 @@ export const sendMessage = catchAsync(async (req: Request, res: Response, next: 
     const { content, messageType = 'text', metadata } = req.body;
 
     // Verify user has access to this chat
+    // For direct chats, allow access even if not active
+    // For group chats, only allow if active
     const chat = await Chat.findOne({
         _id: chatId,
         participants: user._id,
-        isActive: true
+        $or: [
+            { isGroup: false }, // Allow all direct chats
+            { isGroup: true, isActive: true } // Only active group chats
+        ]
     });
 
     if (!chat) {
@@ -268,10 +278,15 @@ export const markMessagesAsRead = catchAsync(async (req: Request, res: Response,
     const { chatId } = req.params;
 
     // Verify user has access to this chat
+    // For direct chats, allow access even if not active
+    // For group chats, only allow if active
     const chat = await Chat.findOne({
         _id: chatId,
         participants: user._id,
-        isActive: true
+        $or: [
+            { isGroup: false }, // Allow all direct chats
+            { isGroup: true, isActive: true } // Only active group chats
+        ]
     });
 
     if (!chat) {

@@ -64,10 +64,15 @@ class ChatModule extends BaseSocketModule {
 
             try {
                 // Verify user has access to this chat
+                // For direct chats, allow access even if not active
+                // For group chats, only allow if active
                 const chat = await Chat.findOne({
                     _id: chatId,
                     participants: socket.user._id,
-                    isActive: true
+                    $or: [
+                        { isGroup: false }, // Allow all direct chats
+                        { isGroup: true, isActive: true } // Only active group chats
+                    ]
                 });
 
                 if (!chat) {
@@ -101,10 +106,15 @@ class ChatModule extends BaseSocketModule {
                 const { chatId, content, messageType = 'text', metadata } = data;
 
                 // Verify user has access to this chat
+                // For direct chats, allow access even if not active
+                // For group chats, only allow if active
                 const chat = await Chat.findOne({
                     _id: chatId,
                     participants: socket.user._id,
-                    isActive: true
+                    $or: [
+                        { isGroup: false }, // Allow all direct chats
+                        { isGroup: true, isActive: true } // Only active group chats
+                    ]
                 });
 
                 if (!chat) {
@@ -153,10 +163,15 @@ class ChatModule extends BaseSocketModule {
                 const { chatId, filename, originalName, size, mimetype, url } = data;
 
                 // Verify user has access to this chat
+                // For direct chats, allow access even if not active
+                // For group chats, only allow if active
                 const chat = await Chat.findOne({
                     _id: chatId,
                     participants: socket.user._id,
-                    isActive: true
+                    $or: [
+                        { isGroup: false }, // Allow all direct chats
+                        { isGroup: true, isActive: true } // Only active group chats
+                    ]
                 });
 
                 if (!chat) {
@@ -300,10 +315,15 @@ class ChatModule extends BaseSocketModule {
                 const { chatId } = data;
 
                 // Verify user has access to this chat
+                // For direct chats, allow access even if not active
+                // For group chats, only allow if active
                 const chat = await Chat.findOne({
                     _id: chatId,
                     participants: socket.user._id,
-                    isActive: true
+                    $or: [
+                        { isGroup: false }, // Allow all direct chats
+                        { isGroup: true, isActive: true } // Only active group chats
+                    ]
                 });
 
                 if (!chat) {

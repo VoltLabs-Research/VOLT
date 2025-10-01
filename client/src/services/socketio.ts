@@ -128,6 +128,18 @@ class SocketIOService{
             throw new Error('Event name and callback function are required');
         }
 
+        // Check if this exact subscription already exists
+        const existingSubscription = this.subscriptions.find(
+            (sub) => sub.event === event && sub.callback === callback
+        );
+
+        if(existingSubscription){
+            // Already subscribed, don't add duplicate
+            return () => {
+                this.off(event, callback);
+            };
+        }
+
         const subscription: EventSubscription = { event, callback };
         this.subscriptions.push(subscription);
 
@@ -228,8 +240,8 @@ class SocketIOService{
         this.connectionAttempts = 0;
         this.connecting = false;
         this.notifyConnectionListeners(true);
-        this.resubscribeToEvents();
         this.logger.log('Socket connected successfully with ID:', this.socket?.id);
+        this.resubscribeToEvents();
     }
 
     private handleDisconnect(reason: string){
@@ -257,16 +269,13 @@ class SocketIOService{
     private resubscribeToEvents(): void{
         if(!this.socket) return;
 
-        // Clear all existing listeners first to avoid duplicates
-        this.socket.removeAllListeners();
-
-        // Add back the internal listeners
-        // TODO:
-        this.socket.on('connect', () => this.handleConnect());
-        this.socket.on('disconnect', (reason) => this.handleDisconnect(reason));
-        this.socket.on('connect_error', (err) => this.handleConnectError(err));
-
-        // Re-add all user subscriptions
+        // When reconnecting, the socket.io client creates a new connection
+        // so we need to re-register all listeners. However, we should NOT
+        // call socket.on() if the listeners were already set up by the initial
+        // connect() call. We only need this for reconnections.
+        
+        // Socket.io automatically clears listeners on disconnect, so we can
+        // safely re-add all subscriptions from our subscription list
         this.subscriptions.forEach((sub) => {
             if(this.socket){
                 this.socket.on(sub.event, sub.callback);

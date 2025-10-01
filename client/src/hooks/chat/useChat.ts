@@ -28,6 +28,9 @@ import useTeamStore from '@/stores/team/team';
 import { TokenStorage } from '@/utilities/storage';
 import type { TypingUser, MessagesRead } from '@/types/chat';
 
+// Flag to ensure socket listeners are only registered once globally
+let socketListenersRegistered = false;
+
 export const useChat = () => {
     const {
         chats,
@@ -40,11 +43,7 @@ export const useChat = () => {
         isLoadingChats,
         isConnected,
         setCurrentChat,
-        setMessages,
-        addMessage,
-        setTypingUsers,
         getUserPresence,
-        setConnected,
         loadChats,
         loadTeamMembers,
         loadMessages,
@@ -96,19 +95,17 @@ export const useChat = () => {
 
     // Socket event listeners
     useEffect(() => {
-        let connectionUnsubscribe: (() => void) | null = null;
-        let joinedChatUnsubscribe: (() => void) | null = null;
-        let leftChatUnsubscribe: (() => void) | null = null;
-        let newMessageUnsubscribe: (() => void) | null = null;
-        let userTypingUnsubscribe: (() => void) | null = null;
-        let messagesReadUnsubscribe: (() => void) | null = null;
-        let errorUnsubscribe: (() => void) | null = null;
-        let editedMessageUnsubscribe: (() => void) | null = null;
-        let deletedMessageUnsubscribe: (() => void) | null = null;
-        let reactionUpdatedUnsubscribe: (() => void) | null = null;
-        let userPresenceUnsubscribe: (() => void) | null = null;
+        // Skip if listeners are already registered
+        if (socketListenersRegistered) {
+            console.log('[Chat] Socket listeners already registered, skipping');
+            return;
+        }
+
+        console.log('[Chat] Registering socket listeners');
+        socketListenersRegistered = true;
 
         const handleConnect = (connected: boolean) => {
+            const { setConnected } = useChatStore.getState();
             setConnected(connected);
             if (connected) {
                 console.log('[Chat] Socket connected');
@@ -128,15 +125,15 @@ export const useChat = () => {
         const handleNewMessage = (data: { message: any; chatId: string }) => {
             console.log('[Chat] New message received:', data);
             // Only add message if it's for the current chat
-            const { currentChat } = useChatStore.getState();
+            const { currentChat, addMessage } = useChatStore.getState();
             if (currentChat && currentChat._id === data.chatId) {
                 addMessage(data.message);
             }
         };
 
         const handleUserTyping = (data: TypingUser) => {
-            const currentTypingUsers = useChatStore.getState().typingUsers;
-            const filtered = currentTypingUsers.filter((u: TypingUser) => u.userId !== data.userId);
+            const { typingUsers, setTypingUsers } = useChatStore.getState();
+            const filtered = typingUsers.filter((u: TypingUser) => u.userId !== data.userId);
             if (data.isTyping) {
                 setTypingUsers([...filtered, data]);
             } else {
@@ -145,6 +142,7 @@ export const useChat = () => {
         };
 
         const handleMessagesRead = (data: MessagesRead) => {
+            const { messages, setMessages } = useChatStore.getState();
             // Update message read status
             setMessages(messages.map(msg => ({
                 ...msg,
@@ -157,22 +155,22 @@ export const useChat = () => {
         };
 
         const handleMessageEdited = (payload: { chatId: string; message: any }) => {
-            const { currentChat } = useChatStore.getState();
+            const { currentChat, messages, setMessages } = useChatStore.getState();
             if (currentChat && currentChat._id === payload.chatId) {
                 const updated = payload.message;
-                setMessages(useChatStore.getState().messages.map(m => m._id === updated._id ? updated : m));
+                setMessages(messages.map(m => m._id === updated._id ? updated : m));
             }
         };
 
         const handleMessageDeleted = (payload: { chatId: string; messageId: string }) => {
-            const { currentChat } = useChatStore.getState();
+            const { currentChat, messages, setMessages } = useChatStore.getState();
             if (currentChat && currentChat._id === payload.chatId) {
-                setMessages(useChatStore.getState().messages.map(m => m._id === payload.messageId ? { ...m, deleted: true } as any : m));
+                setMessages(messages.map(m => m._id === payload.messageId ? { ...m, deleted: true } as any : m));
             }
         };
 
         const handleReactionUpdated = (payload: { chatId: string; message: any }) => {
-            const { currentChat } = useChatStore.getState();
+            const { currentChat, messages, setMessages } = useChatStore.getState();
             if (currentChat && currentChat._id === payload.chatId) {
                 const updated = payload.message;
                 
@@ -188,7 +186,7 @@ export const useChat = () => {
                     });
                 }
                 
-                setMessages(useChatStore.getState().messages.map(m => m._id === updated._id ? updated : m));
+                setMessages(messages.map(m => m._id === updated._id ? updated : m));
             }
         };
 
@@ -198,17 +196,17 @@ export const useChat = () => {
         };
 
         // Register event listeners
-        connectionUnsubscribe = socketService.onConnectionChange(handleConnect);
-        joinedChatUnsubscribe = socketService.on('joined_chat', handleJoinedChat);
-        leftChatUnsubscribe = socketService.on('left_chat', handleLeftChat);
-        newMessageUnsubscribe = socketService.on('new_message', handleNewMessage);
-        userTypingUnsubscribe = socketService.on('user_typing', handleUserTyping);
-        messagesReadUnsubscribe = socketService.on('messages_read', handleMessagesRead);
-        errorUnsubscribe = socketService.on('error', handleError);
-        editedMessageUnsubscribe = socketService.on('message_edited', handleMessageEdited);
-        deletedMessageUnsubscribe = socketService.on('message_deleted', handleMessageDeleted);
-        reactionUpdatedUnsubscribe = socketService.on('reaction_updated', handleReactionUpdated);
-        userPresenceUnsubscribe = socketService.on('user_presence_update', handleUserPresenceUpdate);
+        socketService.onConnectionChange(handleConnect);
+        socketService.on('joined_chat', handleJoinedChat);
+        socketService.on('left_chat', handleLeftChat);
+        socketService.on('new_message', handleNewMessage);
+        socketService.on('user_typing', handleUserTyping);
+        socketService.on('messages_read', handleMessagesRead);
+        socketService.on('error', handleError);
+        socketService.on('message_edited', handleMessageEdited);
+        socketService.on('message_deleted', handleMessageDeleted);
+        socketService.on('reaction_updated', handleReactionUpdated);
+        socketService.on('user_presence_update', handleUserPresenceUpdate);
 
         // Initialize connection if not connected
         if (!socketService.isConnected()) {
@@ -217,24 +215,12 @@ export const useChat = () => {
                     console.error('Failed to connect socket:', error);
                 });
         } else {
+            const { setConnected } = useChatStore.getState();
             setConnected(true);
         }
 
-        return () => {
-            // Cleanup event listeners
-            if (connectionUnsubscribe) connectionUnsubscribe();
-            if (joinedChatUnsubscribe) joinedChatUnsubscribe();
-            if (leftChatUnsubscribe) leftChatUnsubscribe();
-            if (newMessageUnsubscribe) newMessageUnsubscribe();
-            if (userTypingUnsubscribe) userTypingUnsubscribe();
-            if (messagesReadUnsubscribe) messagesReadUnsubscribe();
-            if (errorUnsubscribe) errorUnsubscribe();
-            if (editedMessageUnsubscribe) editedMessageUnsubscribe();
-            if (deletedMessageUnsubscribe) deletedMessageUnsubscribe();
-            if (reactionUpdatedUnsubscribe) reactionUpdatedUnsubscribe();
-            if (userPresenceUnsubscribe) userPresenceUnsubscribe();
-        };
-    }, [addMessage, setMessages, setTypingUsers, setConnected]);
+        // Don't return cleanup here - listeners should persist across all component instances
+    }, []); // ✅ Empty dependencies - only run once on mount
 
     // Select a chat and load its messages
     const selectChat = useCallback(async (chat: any) => {
