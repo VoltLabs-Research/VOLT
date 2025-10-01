@@ -3,7 +3,7 @@ import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/FormField';
 import CollapsibleSection from '@/components/atoms/CollapsibleSection';
 import useOrbitControlsSettings from '@/stores/editor/orbit-controls';
-import { Md3DRotation } from 'react-icons/md';
+import { MdRotateLeft } from 'react-icons/md';
 
 const OrbitControls: React.FC = () => {
 	const enabled = useOrbitControlsSettings((s) => s.enabled);
@@ -97,7 +97,7 @@ const OrbitControls: React.FC = () => {
 	return (
 		<CollapsibleSection 
 			title="Orbit Controls" 
-			icon={<Md3DRotation size={16} />}
+			icon={<MdRotateLeft size={16} />}
 		>
 			<div style={{ display: 'grid', gap: 12 }}>
 				<div>

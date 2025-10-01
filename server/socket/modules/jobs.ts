@@ -98,14 +98,20 @@ class JobsModule extends BaseSocketModule{
             return;
         }
 
-        const sockets = await this.io.in(`team-${teamId}`).fetchSockets();
-        const ready = sockets.filter((socket) => !this.initializingClients.has(socket.id));
-        if(ready.length === 0){
-            this.addPendingUpdate(teamId, update);
-            return;
-        }
+        try {
+            const sockets = await this.io.in(`team-${teamId}`).fetchSockets();
+            const ready = sockets.filter((socket) => !this.initializingClients.has(socket.id));
+            if(ready.length === 0){
+                this.addPendingUpdate(teamId, update);
+                return;
+            }
 
-        ready.forEach((socket) => socket.emit('job_update', update));
+            ready.forEach((socket) => socket.emit('job_update', update));
+        } catch (error) {
+            console.error(`[${this.name}] Error fetching sockets for team ${teamId}:`, error);
+            // Fallback: emit to room directly without filtering
+            this.io.to(`team-${teamId}`).emit('job_update', update);
+        }
     }
 
     /**

@@ -71,7 +71,10 @@ const useRasterStore = create<RasterStore>((set, get) => {
                 const analysesNames = Object.values(analyses).map((a: any) => ({
                     _id: a._id,
 					name: `${a.identificationMode}${a.identificationMode === 'PTM' ? ` - RMSD: ${a.RMSD}` : ''}`,
-                    description: `Circuit Size: ${a.maxTrialCircuitSize} - Stretchability: ${a.circuitStretchability}`
+                    description: `Circuit Size: ${a.maxTrialCircuitSize} - Stretchability: ${a.circuitStretchability}`,
+                    RMSD: a.RMSD,
+                    maxTrialCircuitSize: a.maxTrialCircuitSize,
+                    circuitStretchability: a.circuitStretchability
                 }));
 
                 set({

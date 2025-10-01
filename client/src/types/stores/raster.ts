@@ -23,6 +23,10 @@
 interface AnalysisName {
     _id: string;
     name: string;
+    description?: string;
+    RMSD?: number;
+    maxTrialCircuitSize?: number;
+    circuitStretchability?: number;
 }
 
 export type PreloadTask = {

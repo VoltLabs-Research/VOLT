@@ -48,10 +48,12 @@ const shutodwn = async () => {
 };
 
 server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
-    await gateway.initialize(server);
-
-    initializeRedis();
+    // Initialize Redis BEFORE the Socket Gateway and wait for it to be ready
+    await initializeRedis();
     await mongoConnector();
+    
+    // Now initialize the Socket Gateway with Redis already running
+    await gateway.initialize(server);
     
     // Fix chat indexes and update existing chats
     await fixChatIndex();

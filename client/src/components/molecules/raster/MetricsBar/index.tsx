@@ -14,7 +14,9 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
     showParticles = false,
     onToggleParticles,
     showFileExplorer = false,
-    onToggleFileExplorer
+    onToggleFileExplorer,
+    showDislocationsComparison = false,
+    onToggleDislocationsComparison
 }) => {
     if(isLoading) return <MetricsBarSkeleton count={4} />;
 
@@ -51,7 +53,14 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                     className={`raster-metric-item modifier-result ${showFileExplorer ? "active" : ""}`}
                     onToggle={onToggleFileExplorer}
                     label='File Explorer'
-                /> 
+                />
+
+                <ToggleOption
+                    isVisible={showDislocationsComparison}
+                    className={`raster-metric-item modifier-result ${showDislocationsComparison ? "active" : ""}`}
+                    onToggle={onToggleDislocationsComparison || (() => {})}
+                    label='Dislocations Comparison'
+                />
             </div>
         </div>
     );

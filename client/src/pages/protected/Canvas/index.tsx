@@ -32,7 +32,6 @@ const EditorPage: React.FC = () => {
     const isPreloading = usePlaybackStore((state) => state.isPreloading ?? false);
     const preloadProgress = usePlaybackStore((state) => state.preloadProgress ?? 0);
     const showCanvasGrid = useEditorUIStore((state) => state.showCanvasGrid);
-    const didPreload = usePlaybackStore((state) => state.didPreload ?? false);
     const reset = useModelStore((state) => state.reset);
 
     useEffect(() => {

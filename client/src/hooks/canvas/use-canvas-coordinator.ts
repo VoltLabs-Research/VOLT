@@ -95,6 +95,14 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
         }
     }, [trajectory, currentTimestep, setCurrentTimestep, updateAnalysisConfig, logger]);
 
+    // Separate effect for analysis config changes to avoid unnecessary re-renders
+    useEffect(() => {
+        if(trajectory?._id && currentTimestep !== undefined){
+            // Reset model when analysis config changes to force reload
+            resetModel();
+        }
+    }, [analysisConfig?._id, trajectory?._id, currentTimestep, resetModel]);
+
     useEffect(() => {
         // Throttle console logging to avoid excessive rendering and console spam
         const now = Date.now();
@@ -112,7 +120,7 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
                 resetModel();
             }
         }
-    }, [analysisConfig, trajectory, currentTimestep, computeTimestepData, resetModel]);
+    }, [trajectory, currentTimestep, computeTimestepData, resetModel]);
 
     useEffect(() => {
         return () => {

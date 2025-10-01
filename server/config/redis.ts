@@ -42,22 +42,37 @@ export const createRedisConnection = () => {
 
 export let redis: Redis | null = null;
 
-export const initializeRedis = () => {
-    if(redis) return;
-    redis = new Redis(getRedisConfig());
+export const initializeRedis = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        if(redis) {
+            resolve();
+            return;
+        }
 
-    redis.on('connect', () => {
-        console.log('Redis connected successfully');
-    });
+        redis = new Redis(getRedisConfig());
 
-    redis.on('error', (err) => {
-        console.error('Redis connection error:', err);
-    });
+        redis.on('connect', () => {
+            console.log('Redis connected successfully');
+        });
 
-    redis.on('ready', () => {
-        console.log('Redis is ready to accept commands');
+        redis.on('error', (err) => {
+            console.error('Redis connection error:', err);
+        });
+
+        redis.on('ready', () => {
+            console.log('Redis is ready to accept commands');
+            resolve();
+        });
+
+        // Add a timeout in case Redis never becomes ready
+        setTimeout(() => {
+            if (redis?.status !== 'ready') {
+                console.warn('Redis initialization timeout - continuing anyway');
+                resolve();
+            }
+        }, 5000);
     });
-}
+};
 
 export const createRedisClient = () => {
     return new Redis(getRedisConfig());

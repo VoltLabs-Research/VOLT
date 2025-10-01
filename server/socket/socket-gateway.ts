@@ -55,7 +55,11 @@ class SocketGateway{
 
         this.adapterPub = createRedisClient();
         this.adapterSub = createRedisClient();
-        this.io.adapter(createAdapter(this.adapterPub, this.adapterSub));
+        
+        // Configure Redis adapter with extended timeout for fetchSockets
+        this.io.adapter(createAdapter(this.adapterPub, this.adapterSub, {
+            requestsTimeout: 10000, // 10 seconds timeout for fetchSockets operations
+        }));
 
         // Add authentication middleware
         this.io.use(async (socket, next) => {

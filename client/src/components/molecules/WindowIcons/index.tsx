@@ -28,12 +28,23 @@ const IconCircle = ({ variant, title, onClick }: IconDef) => {
         originY.set(1 - ry);
     };
 
+    const handleClick = (e: React.MouseEvent) => {
+        console.log('CLICK en', variant);
+        e.stopPropagation();
+        e.preventDefault();
+        onClick();
+    };
+
     return (
         <motion.div
             className={`window-icon-circle ${variant}`}
             title={title}
             role="button"
-            onClick={onClick}
+            onClick={handleClick}
+            onPointerDown={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+            }}
             tabIndex={0}
             onMouseMove={onMove}
             onHoverStart={() => scaleMv.set(1.35)}
@@ -47,9 +58,16 @@ const IconCircle = ({ variant, title, onClick }: IconDef) => {
 interface WindowIconsProps {
     withBackground?: boolean;
     onClose?: () => void;
+    onExpand?: () => void;
+    onMinimize?: () => void;
 }
 
-const WindowIcons: React.FC<WindowIconsProps> = ({ withBackground = false, onClose = () => {} }) => {
+const WindowIcons: React.FC<WindowIconsProps> = ({ 
+    withBackground = false, 
+    onClose = () => {}, 
+    onExpand,
+    onMinimize 
+}) => {
     const ICONS: IconDef[] = [{
         variant: 'close',
         title: 'Close',
@@ -57,11 +75,11 @@ const WindowIcons: React.FC<WindowIconsProps> = ({ withBackground = false, onClo
     }, {
         variant: 'minimize',
         title: 'Minimize',
-        onClick: () => {}
+        onClick: onMinimize || (() => {})
     }, {
         variant: 'expand',
         title: 'Expand',
-        onClick: () => {}
+        onClick: onExpand || (() => {})
     }];
 
     return (

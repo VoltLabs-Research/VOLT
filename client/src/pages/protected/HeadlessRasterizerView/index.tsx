@@ -42,6 +42,7 @@ import CursorShareLayer from '@/components/atoms/CursorShareLayer';
 import useRasterConnectedUsers from '@/hooks/raster/useRasterConnectedUsers';
 import FrameAtomsTable from '@/components/organisms/FrameAtomsTable';
 import TrajectoryFileExplorer from '@/components/organisms/TrajectoryFileExplorer';
+import DislocationsComparisonTable from '@/components/organisms/DislocationsComparisonTable';
 import './HeadlessRasterizerView.css';
 
 const HeadlessRasterizerView: React.FC = () => {
@@ -87,6 +88,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const [showFileExplorer, setShowFileExplorer] = useState(false);
     const [showStructureAnalysis, setShowStructureAnalysis] = useState(false);
     const [showParticles, setShowParticles] = useState(false);
+    const [showDislocationsComparison, setShowDislocationsComparison] = useState(false);
 
     const initializedRef = useRef(false);
     const preloadKeyRef = useRef<string | null>(null);
@@ -341,6 +343,14 @@ const HeadlessRasterizerView: React.FC = () => {
         if(rightAnalysis && rightAnalysis !== leftAnalysis) fetchStructureAnalysesByConfig(rightAnalysis);
     }, [showStructureAnalysis, leftAnalysis, rightAnalysis, fetchStructureAnalysesByConfig]);
 
+    useEffect(() => {
+        if(!showDislocationsComparison) return;
+        // Load dislocation data for all analyses
+        analysesNames.forEach((analysis) => {
+            getDislocationsByAnalysisId(analysis._id);
+        });
+    }, [showDislocationsComparison, analysesNames, getDislocationsByAnalysisId]);
+
     const subscribedKeyRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -403,6 +413,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const toggleFileExplorer = useCallback(() => setShowFileExplorer((v) => !v), []);
     const toggleStruct = useCallback(() => setShowStructureAnalysis((v) => !v), []);
     const toggleParticles = useCallback(() => setShowParticles((v) => !v), []);
+    const toggleDislocationsComparison = useCallback(() => setShowDislocationsComparison((v) => !v), []);
 
     const playbackControlsProps: PlaybackControlsProps = useMemo(() => {
         return {
@@ -500,6 +511,18 @@ const HeadlessRasterizerView: React.FC = () => {
                 />
             )}
 
+            {showDislocationsComparison && (
+                <DislocationsComparisonTable
+                    trajectoryId={trajectory?._id}
+                    timestep={currentTimestep}
+                    title={`Dislocations Comparison · ${trajectory?.name ?? 'Trajectory'}`}
+                    onClose={() => setShowDislocationsComparison(false)}
+                    decimals={3}
+                    analysesNames={analysesNames}
+                    analysisDislocationsById={analysisDislocationsById}
+                />
+            )}
+
             <div className='raster-scenes-container' style={{ position: 'relative' }}>
                 {isPreloading && (
                     <div 
@@ -569,6 +592,8 @@ const HeadlessRasterizerView: React.FC = () => {
                     onToggleStructureAnalysis={toggleStruct}
                     showParticles={showParticles}
                     onToggleParticles={toggleParticles}
+                    showDislocationsComparison={showDislocationsComparison}
+                    onToggleDislocationsComparison={toggleDislocationsComparison}
                 />
             </div>
         </CursorShareLayer>

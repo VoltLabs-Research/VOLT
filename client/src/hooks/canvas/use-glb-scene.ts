@@ -593,6 +593,13 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
     throttledUpdateScene2();
   }, [throttledUpdateScene2]);
 
+  // Reset lastLoadedUrl when activeModel changes to force reload
+  useEffect(() => {
+    if (activeModel?.glbs) {
+      stateRef.current.lastLoadedUrl = null;
+    }
+  }, [activeModel]);
+
   const resetModel = useCallback(() => {
     if (!stateRef.current.selected) return;
     stateRef.current.targetRotation = new Euler(0, 0, 0);

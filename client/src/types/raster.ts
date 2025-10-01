@@ -27,7 +27,14 @@ export interface PlaybackControlsProps{
 }
 
 export interface AnalysisSelectProps{
-    analysesNames: { _id: string; name: string; description: string; }[];
+    analysesNames: { 
+        _id: string; 
+        name: string; 
+        description?: string;
+        RMSD?: number;
+        maxTrialCircuitSize?: number;
+        circuitStretchability?: number;
+    }[];
     selectedAnalysis: string | null;
     onAnalysisChange: (id: string | null) => void;
     isLoading?: boolean;
@@ -78,6 +85,8 @@ export interface MetricsBarProps{
     onToggleParticles?: () => void;
     showFileExplorer?: boolean;
     onToggleFileExplorer?: () => void;
+    showDislocationsComparison?: boolean;
+    onToggleDislocationsComparison?: () => void;
 }
 
 export interface DislocationPanelProps{

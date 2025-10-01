@@ -186,25 +186,30 @@ abstract class BaseSocketModule{
     ): Promise<any[]>{
         if(!this.io) return [];
 
-        const sockets = await this.io.in(room).fetchSockets();
-        const byId = new Map<string, any>();
+        try {
+            const sockets = await this.io.in(room).fetchSockets();
+            const byId = new Map<string, any>();
 
-        for(const socket of sockets){
-            const user: any = socket.data?.user || {};
-            const uid = (user.id as string) || socket.id;
-            if(!uid) continue;
+            for(const socket of sockets){
+                const user: any = socket.data?.user || {};
+                const uid = (user.id as string) || socket.id;
+                if(!uid) continue;
 
-            if(!byId.has(uid)){
-                byId.set(uid, {
-                    id: uid,
-                    email: user.email,
-                    firstName: user.firstName,
-                    lastName: user.lastName
-                });
+                if(!byId.has(uid)){
+                    byId.set(uid, {
+                        id: uid,
+                        email: user.email,
+                        firstName: user.firstName,
+                        lastName: user.lastName
+                    });
+                }
             }
-        }
 
-        return Array.from(byId.values());
+            return Array.from(byId.values());
+        } catch (error) {
+            console.error(`[${this.name}] Error fetching sockets for room ${room}:`, error);
+            return [];
+        }
     }
 }
 
