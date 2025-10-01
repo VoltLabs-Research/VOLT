@@ -24,7 +24,7 @@ export type DislocationsComparisonTableProps = {
 
 const DislocationsComparisonTable = ({
     timestep,
-    title = 'Dislocations Comparison',
+    title = 'Compare Dislocations',
     onClose,
     decimals = 3,
     analysesNames = [],

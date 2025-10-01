@@ -59,7 +59,7 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                     isVisible={showDislocationsComparison}
                     className={`raster-metric-item modifier-result ${showDislocationsComparison ? "active" : ""}`}
                     onToggle={onToggleDislocationsComparison || (() => {})}
-                    label='Dislocations Comparison'
+                    label='Compare Dislocations'
                 />
             </div>
         </div>
