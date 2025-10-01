@@ -38,7 +38,7 @@ router.get(
     '/:id/download',
     authMiddleware.optionalAuth,
     trajectoryMiddleware.checkTeamMembershipForTrajectory,
-    controller.listTrajectoryFs
+    controller.downloadTrajectoryFs
 );
 
 export default router;

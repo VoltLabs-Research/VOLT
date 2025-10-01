@@ -13,8 +13,9 @@ import {
     LuTrash,
     LuFolderPlus,
     LuSettings,
-    LuArrowUp } from 'react-icons/lu';
-import { Skeleton, Box } from '@mui/material';
+    LuArrowUp,
+    LuDownload } from 'react-icons/lu';
+import { Skeleton, Box, CircularProgress } from '@mui/material';
 import { formatSize } from '@/utilities/scene-utils';
 import { IoSearchOutline } from 'react-icons/io5';
 import './TrajectoryFileExplorer.css';
@@ -29,6 +30,11 @@ type TrajectoryFileExplorerProps = {
 const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: TrajectoryFileExplorerProps) => {
     const [isMaximized, setIsMaximized] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [previewFileName, setPreviewFileName] = useState<string>('');
+    const [previewMaximized, setPreviewMaximized] = useState(false);
+    const [previewMinimized, setPreviewMinimized] = useState(false);
     
     const {
         cwd,
@@ -97,11 +103,78 @@ const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: Trajector
         }
     }, [trajectoryId]);
 
+    const loadImagePreview = async (entry: FsEntry) => {
+        if(!trajectoryId) return;
+        
+        setPreviewLoading(true);
+        setPreviewFileName(entry.name);
+        
+        try {
+            // Usar fetch directamente con la configuración correcta
+            const token = localStorage.getItem('authToken');
+            const API_BASE_URL = import.meta.env.VITE_API_URL + '/api';
+            
+            const response = await fetch(`${API_BASE_URL}/trajectory-fs/${trajectoryId}/download?path=${encodeURIComponent(entry.relPath)}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            
+            // Convert blob to base64
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                setPreviewImage(base64String);
+                setPreviewLoading(false);
+            };
+            reader.onerror = (error) => {
+                console.error('Error reading image as base64:', error);
+                setPreviewImage(null);
+                setPreviewLoading(false);
+            };
+            reader.readAsDataURL(blob);
+        } catch (error) {
+            console.error('Error loading image preview:', error);
+            setPreviewImage(null);
+            setPreviewLoading(false);
+        }
+    };
+
+    const closePreview = () => {
+        setPreviewImage(null);
+        setPreviewFileName('');
+        setPreviewMaximized(false);
+        setPreviewMinimized(false);
+    };
+
+    const handleDownloadPreview = () => {
+        if (!previewImage || !previewFileName) return;
+        
+        const a = document.createElement('a');
+        a.href = previewImage;
+        a.download = previewFileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    };
+
     const handleDoubleClick = (e: FsEntry) => {
         if(e.type === 'dir'){
             enter(e.name);
         }else{
-            if(onFileOpen){
+            // Check if file is a PNG image
+            const isPNG = e.ext?.toLowerCase() === 'png' || e.name.toLowerCase().endsWith('.png');
+            
+            if (isPNG) {
+                loadImagePreview(e);
+            } else if(onFileOpen){
                 onFileOpen(e);
             }else{
                 download(e.relPath);
@@ -145,6 +218,7 @@ const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: Trajector
     if(isMinimized) return null;
 
     return (
+        <>
         <Draggable 
             className='trajectory-fs-container primary-surface'
             enabled
@@ -275,6 +349,109 @@ const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: Trajector
             </div>
             </div>
         </Draggable>
+
+        {(previewImage || previewLoading) && !previewMinimized && (
+            <Draggable
+                className='trajectory-fs-image-preview primary-surface'
+                enabled
+                bounds='viewport'
+                axis='both'
+                doubleClickToDrag={true}
+                handle='.trajectory-fs-preview-header'
+                scaleWhileDragging={0.98}
+                resizable={true}
+                minWidth={400}
+                minHeight={400}
+            >
+                <div className={`trajectory-fs-preview-wrapper ${previewMaximized ? 'maximized' : ''}`} style={{
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem',
+                }}>
+                    {/* Header con Window Icons */}
+                    <div 
+                        className='trajectory-fs-preview-header'
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.5rem',
+                            cursor: 'grab',
+                            userSelect: 'none',
+                        }}
+                    >
+                        {/* Window Icons */}
+                        <WindowIcons 
+                            onClose={closePreview}
+                            onExpand={() => setPreviewMaximized(!previewMaximized)}
+                            onMinimize={() => setPreviewMinimized(true)}
+                        />
+
+                        {/* File Info */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                            paddingBottom: '0.75rem',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <LuFile size={20} />
+                                <span style={{ fontSize: '14px', fontWeight: 500 }}>
+                                    {previewFileName}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <i 
+                                    onClick={handleDownloadPreview}
+                                    style={{
+                                        cursor: 'pointer',
+                                        padding: '0.5rem',
+                                        borderRadius: '4px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                    className='trajectory-fs-preview-icon'
+                                >
+                                    <LuDownload size={20} />
+                                </i>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Image Content */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: '400px',
+                        minHeight: '400px',
+                        maxWidth: '80vw',
+                        maxHeight: '70vh',
+                    }}>
+                        {previewLoading ? (
+                            <CircularProgress />
+                        ) : previewImage ? (
+                            <img
+                                src={previewImage}
+                                alt={previewFileName}
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '100%',
+                                    objectFit: 'contain',
+                                    borderRadius: '4px',
+                                }}
+                            />
+                        ) : (
+                            <span>No image to display</span>
+                        )}
+                    </div>
+                </div>
+            </Draggable>
+        )}
+        </>
     );
 };
 

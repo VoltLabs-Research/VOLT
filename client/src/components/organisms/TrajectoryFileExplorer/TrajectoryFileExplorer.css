@@ -5,6 +5,43 @@
     left: calc(50% - 500px);
 }
 
+.trajectory-fs-image-preview{
+    position: fixed !important;
+    z-index: 99999999999;
+}
+
+.trajectory-fs-image-preview:has(.maximized){
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+}
+
+.trajectory-fs-preview-wrapper{
+    width: auto;
+    height: auto;
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.trajectory-fs-preview-wrapper.maximized{
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+}
+
+.trajectory-fs-preview-header:active{
+    cursor: grabbing !important;
+}
+
+.trajectory-fs-preview-icon{
+    transition: opacity 0.2s ease;
+}
+
+.trajectory-fs-preview-icon:hover{
+    opacity: 0.7;
+}
+
 .trajectory-fs-container:has(.maximized){
     top: 0 !important;
     left: 0 !important;
