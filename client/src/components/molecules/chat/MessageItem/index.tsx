@@ -9,6 +9,7 @@ import ReactionsBar from '@/components/atoms/chat/ReactionsBar';
 type MessageItemProps = {
     msg: Message;
     isOwn: boolean;
+    isGroupChat?: boolean;
     onEdit: (id: string, content: string) => void;
     onDelete: (id: string) => void;
     onToggleReaction: (id: string, emoji: string) => void;
@@ -22,6 +23,7 @@ type MessageItemProps = {
 const MessageItem: React.FC<MessageItemProps> = ({
     msg,
     isOwn,
+    isGroupChat = false,
     onEdit,
     onDelete,
     onToggleReaction,
@@ -33,10 +35,25 @@ const MessageItem: React.FC<MessageItemProps> = ({
 }: MessageItemProps) => {
     const isDeleted = msg.deleted;
     const isFile = msg.messageType === 'file';
+    const showAvatar = isGroupChat && !isOwn;
+    const sender = msg.sender;
 
     return (
-        <div className={`chat-message ${isOwn ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''}`}>
-            <div className='chat-message-content'>
+        <div className={`chat-message ${isOwn ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''} ${showAvatar ? 'with-avatar' : ''}`}>
+            {showAvatar && (
+                <div className='chat-message-avatar'>
+                    <span className='chat-avatar-initial'>
+                        {sender?.firstName?.[0]?.toUpperCase() || '?'}
+                    </span>
+                </div>
+            )}
+            <div className='chat-message-wrapper'>
+                {showAvatar && (
+                    <div className='chat-message-sender-name'>
+                        {sender?.firstName} {sender?.lastName}
+                    </div>
+                )}
+                <div className='chat-message-content'>
                 {isDeleted ? (
                     <p className='chat-message-text deleted-message'>This message was deleted</p>
                 ) : isFile ? (
@@ -70,6 +87,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                 )}
 
                 <div className='chat-message-time'>{formatTimeAgo(msg.createdAt)}</div>
+            </div>
             </div>
         </div>
     )

@@ -67,6 +67,8 @@ const ChatArea = () => {
                                 key={m._id}
                                 msg={m}
                                 isOwn={isOwn}
+                                isGroupChat={currentChat?.isGroup}
+                                currentChatId={currentChat?._id || ''}
                                 onEdit={async (id, content) => { await editMessage(id, content); }}
                                 onDelete={async (id) => { if (confirm('Are you sure you want to delete this message?')) await deleteMessage(id); }}
                                 onToggleReaction={async (id, e) => { await toggleReaction(id, e); }}

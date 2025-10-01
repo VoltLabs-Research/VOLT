@@ -12,7 +12,7 @@ const EmojiPicker = ({ onSelect, onClose, emojis = DEFAULT_EMOJIS }: EmojiPicker
     return (
         <div className='chat-emoji-picker'>
             <div className='chat-emoji-picker-header'>
-                <span>Seleccionar emoji</span>
+                <span>Select an emoji</span>
                 <button type='button' className='chat-emoji-picker-close' onClick={onClose}><IoCloseOutline/></button>
             </div>
             <div className='chat-emoji-picker-grid'>
