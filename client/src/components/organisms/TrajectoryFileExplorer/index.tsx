@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import useTrajectoryFS, { type FsEntry } from '@/stores/trajectory-fs';
 import WindowIcons from '@/components/molecules/WindowIcons';
 import Draggable from '@/components/atoms/Draggable';
@@ -23,9 +23,13 @@ type TrajectoryFileExplorerProps = {
     trajectoryId: string;
     height?: number | string;
     onFileOpen?: (entry: FsEntry) => void;
+    onClose?: () => void;
 };
 
-const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen }: TrajectoryFileExplorerProps) => {
+const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: TrajectoryFileExplorerProps) => {
+    const [isMaximized, setIsMaximized] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(false);
+    
     const {
         cwd,
         entries,
@@ -138,12 +142,29 @@ const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen }: TrajectoryFileExpl
         </div>
         );
 
+    if(isMinimized) return null;
 
     return (
-        <Draggable className='trajectory-fs-container primary-surface'>
+        <Draggable 
+            className='trajectory-fs-container primary-surface'
+            enabled
+            bounds='viewport'
+            axis='both'
+            doubleClickToDrag={true}
+            handle='.trajectory-fs-nav-title'
+            scaleWhileDragging={0.95}
+            resizable={true}
+            minWidth={800}
+            minHeight={500}
+        >
+            <div className={`trajectory-fs-wrapper ${isMaximized ? 'maximized' : ''}`}>
             <div className='trajectory-fs-left-container'>
                 <div className='trajectory-fs-left-top-container'>
-                    <WindowIcons />
+                    <WindowIcons 
+                        onClose={onClose}
+                        onExpand={() => setIsMaximized(!isMaximized)}
+                        onMinimize={() => setIsMinimized(true)}
+                    />
 
                     <div className='trajectory-fs-nav-container'>
                         <div className='trajectory-fs-nav'>
@@ -251,6 +272,7 @@ const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen }: TrajectoryFileExpl
                         </div>
                     ))}
                 </div>
+            </div>
             </div>
         </Draggable>
     );

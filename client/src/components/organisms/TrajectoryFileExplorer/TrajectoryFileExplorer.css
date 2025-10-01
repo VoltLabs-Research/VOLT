@@ -1,11 +1,31 @@
 .trajectory-fs-container{
+    position: fixed !important;
+    z-index: 9999999999;
+    top: 10%;
+    left: calc(50% - 500px);
+}
+
+.trajectory-fs-container:has(.maximized){
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+}
+
+.trajectory-fs-wrapper{
     height: 600px;
     width: 1000px;
-    position: absolute;
-    z-index: 99999999;
     display: flex;
     overflow: hidden;
     border-radius: .5rem;
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.trajectory-fs-wrapper.maximized{
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0;
 }
 
 .search-breadcrumbs-container{
@@ -90,6 +110,12 @@
 .trajectory-fs-nav-title{
     font-size: .9rem;
     font-weight: 500;
+    cursor: grab;
+    user-select: none;
+}
+
+.trajectory-fs-nav-title:active{
+    cursor: grabbing;
 }
 
 .trajectory-fs-nav-item-title{

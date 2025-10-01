@@ -12,6 +12,7 @@ export type FrameAtomsTableProps = {
     pageSize?: number;
     initialPage?: number;
     decimals?: number;
+    onClose?: () => void;
 };
 
 const FrameAtomsTable = ({
@@ -19,11 +20,14 @@ const FrameAtomsTable = ({
     timestep,
     pageSize = 1000,
     initialPage = 1,
-    decimals = 3
+    decimals = 3,
+    onClose
 }: FrameAtomsTableProps) => {
     const [page, setPage] = useState<number>(initialPage);
     const [accRows, setAccRows] = useState<Array<{ idx: number; type?: number; x: number; y: number; z: number }>>([]);
     const [lastAppendedPage, setLastAppendedPage] = useState<number>(0);
+    const [isMaximized, setIsMaximized] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
     const sentinelRef = useRef<HTMLDivElement | null>(null); 
 
@@ -138,19 +142,28 @@ const FrameAtomsTable = ({
 
     const isInitialLoading = loading && rows.length === 0;
 
+    if(isMinimized) return null;
+
     return (
         <Draggable
             enabled
             bounds='viewport'
             axis='both'
-            doubleClickToDrag={false}
-            handle='.frame-atoms-table-header-container'
+            doubleClickToDrag={true}
+            handle='.frame-atoms-table-header-title'
             scaleWhileDragging={0.95}
             className='frame-atoms-table-draggable'
+            resizable={true}
+            minWidth={600}
+            minHeight={400}
         >
-            <div className='frame-atoms-table-container primary-surface'>
+            <div className={`frame-atoms-table-container primary-surface ${isMaximized ? 'maximized' : ''}`}>
                 <div className='frame-atoms-table-header-container'>
-                    <WindowIcons />
+                    <WindowIcons 
+                        onClose={onClose}
+                        onExpand={() => setIsMaximized(!isMaximized)}
+                        onMinimize={() => setIsMinimized(true)}
+                    />
                     <h3 className='frame-atoms-table-header-title'>Particles</h3>
                 </div>
 

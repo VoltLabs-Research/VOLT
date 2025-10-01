@@ -497,7 +497,7 @@ const HeadlessRasterizerView: React.FC = () => {
                 connectedUsers={connectedUsers}
             />
 
-            {showFileExplorer && <TrajectoryFileExplorer trajectoryId={trajectory._id} />}
+            {showFileExplorer && <TrajectoryFileExplorer trajectoryId={trajectory._id} onClose={() => setShowFileExplorer(false)} />}
 
             {showParticles && (
                 <FrameAtomsTable
@@ -506,7 +506,6 @@ const HeadlessRasterizerView: React.FC = () => {
                     pageSize={100}
                     initialPage={1}
                     decimals={3}
-                    title={`Particles · ${trajectory?.name ?? 'Trajectory'}`}
                     onClose={() => setShowParticles(false)}
                 />
             )}
