@@ -74,7 +74,8 @@ const useRasterStore = create<RasterStore>((set, get) => {
                     description: `Circuit Size: ${a.maxTrialCircuitSize} - Stretchability: ${a.circuitStretchability}`,
                     RMSD: a.RMSD,
                     maxTrialCircuitSize: a.maxTrialCircuitSize,
-                    circuitStretchability: a.circuitStretchability
+                    circuitStretchability: a.circuitStretchability,
+                    identificationMode: a.identificationMode
                 }));
 
                 set({

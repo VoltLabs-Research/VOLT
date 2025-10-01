@@ -27,6 +27,7 @@ interface AnalysisName {
     RMSD?: number;
     maxTrialCircuitSize?: number;
     circuitStretchability?: number;
+    identificationMode?: string;
 }
 
 export type PreloadTask = {

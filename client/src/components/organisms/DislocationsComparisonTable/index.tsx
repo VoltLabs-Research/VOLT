@@ -17,6 +17,7 @@ export type DislocationsComparisonTableProps = {
         RMSD?: number;
         maxTrialCircuitSize?: number;
         circuitStretchability?: number;
+        identificationMode?: string;
     }>;
     analysisDislocationsById?: Record<string, any[]>;
 };
@@ -61,7 +62,13 @@ const DislocationsComparisonTable = ({
                 key: 'rmsd', 
                 title: `RMSD${getSortIcon('rmsd')}`, 
                 skeleton: { variant: 'text', width: 90 },
-                render: (v: number) => v !== undefined ? v.toFixed(decimals) : 'N/A',
+                render: (v: number, row: any) => {
+                    // Show N/A if identificationMode is CNA
+                    if (row?.identificationMode === 'CNA') {
+                        return 'N/A';
+                    }
+                    return v !== undefined ? v.toFixed(decimals) : 'N/A';
+                },
                 sortable: true
             },
             { 
@@ -115,6 +122,7 @@ const DislocationsComparisonTable = ({
             return {
                 analysisName: analysis.name || analysis._id,
                 rmsd: analysis.RMSD,
+                identificationMode: analysis.identificationMode,
                 segments: dislocationData?.totalSegments,
                 length: dislocationData?.totalLength,
                 averageLength: dislocationData?.averageSegmentLength,
