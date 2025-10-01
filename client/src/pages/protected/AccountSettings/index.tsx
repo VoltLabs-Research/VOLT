@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TbUser, TbShield, TbCreditCard, TbFileText, TbActivity, TbLock, TbKey, TbX, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbTrash, TbPlus, TbWebhook } from 'react-icons/tb';
+import { TbUser, TbShield, TbCreditCard, TbFileText, TbActivity, TbLock, TbKey, TbX, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbTrash, TbPlus, TbWebhook, TbCheck } from 'react-icons/tb';
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
 import { api } from '@/services/api';
