@@ -298,8 +298,6 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         spdlog::debug("Defect mesh facets: {} ", defectMesh.faces().size());
     }
 
-    std::cout << defectMesh.faces().size() << std::endl;
-
     double totalLineLength = 0.0;
     const auto& segments = networkUptr->segments();
     
@@ -347,10 +345,29 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     spdlog::debug("Json output file: {}", outputFile);
 
-    if(!outputFile.empty()){
+   if(!outputFile.empty()){
+        {
+            PROFILE("Streaming Defect Mesh MsgPack");
+            _jsonExporter.writeDefectMeshMsgpack(defectMesh, interfaceMesh.structureAnalysis(), outputFile + "_defect_mesh.msgpack");
+        }
+
+        {
+            PROFILE("Streaming Atoms MsgPack");
+            _jsonExporter.writeAtomsMsgpack(frame, &tracer, &extractedStructureTypes, outputFile + "_atoms.msgpack");
+        }
         {
             PROFILE("Streaming Dislocations MsgPack");
             _jsonExporter.writeDislocationsMsgpack(networkUptr.get(), &frame.simulationCell, outputFile + "_dislocations.msgpack");
+        }
+
+        {
+            PROFILE("Streaming Interface Mesh MsgPack");
+            _jsonExporter.writeInterfaceMeshMsgpack(&interfaceMesh, outputFile + "_interface_mesh.msgpack", /*includeTopologyInfo*/ true);
+        }
+
+        {
+            PROFILE("Streaming Structure Stats MsgPack");
+            _jsonExporter.writeStructureStatsMsgpack(interfaceMesh.structureAnalysis(), outputFile + "_structures_stats.msgpack");
         }
 
         {
@@ -358,7 +375,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
             _jsonExporter.writeSimulationCellMsgpack(frame.simulationCell, outputFile + "_simulation_cell.msgpack");
         }
     }
-
+    
     // Clean up all intermediate data to free memory before returning.
     networkUptr.reset();
     structureAnalysis.reset();

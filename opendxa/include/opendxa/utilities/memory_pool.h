@@ -8,58 +8,61 @@
 #include <type_traits>
 #include <expected>
 #include <optional>
+#if __has_include(<stacktrace>)
 #include <stacktrace>
+#endif
 
-namespace OpenDXA{
+namespace OpenDXA {
 
-enum class PoolError : std::uint8_t{
-	OutOfMemory,
+enum class PoolError : std::uint8_t {
+    OutOfMemory,
     InvalidPageSize,
     ResourceUnavailable
 };
 
 template <typename T>
-class MemoryPool{
+class MemoryPool {
 public:
-	template <typename Self>
-	[[nodiscard]] constexpr auto &&pages(this Self&& self) noexcept{
-		return std::forward<Self>(self)._pages;
-	}
-
-    template <typename Self>
-    [[nodiscard]] constexpr size_t size(this Self&& self) noexcept{
-        return self._pages.size();
+    [[nodiscard]] constexpr auto& pages() noexcept {
+        return _pages;
+    }
+    [[nodiscard]] constexpr const auto& pages() const noexcept {
+        return _pages;
     }
 
-    explicit MemoryPool(size_t pageSize = 1024, 
-                       std::pmr::memory_resource* resource = std::pmr::get_default_resource())
+    [[nodiscard]] constexpr size_t size() const noexcept {
+        return _pages.size();
+    }
+
+    explicit MemoryPool(size_t pageSize = 1024,
+                        std::pmr::memory_resource* resource = std::pmr::get_default_resource())
         : _pageSize(pageSize)
         , _lastPageSize(pageSize)
         , _resource(resource)
         , _pages(resource)
         , _allocator(resource) {
-        
-        if(pageSize == 0) [[unlikely]]{
+
+        if (pageSize == 0) [[unlikely]] {
             throw std::invalid_argument("Page size cannot be zero");
         }
     }
 
-    ~MemoryPool(){
+    ~MemoryPool() {
         clear();
     }
 
     MemoryPool(const MemoryPool&) = delete;
     MemoryPool& operator=(const MemoryPool&) = delete;
 
-    MemoryPool(MemoryPool&& other) noexcept 
+    MemoryPool(MemoryPool&& other) noexcept
         : _pageSize(std::exchange(other._pageSize, 1024))
         , _lastPageSize(std::exchange(other._lastPageSize, 1024))
         , _resource(std::exchange(other._resource, nullptr))
         , _pages(std::move(other._pages))
         , _allocator(std::move(other._allocator)) {}
 
-    MemoryPool& operator=(MemoryPool&& other) noexcept{
-        if(this != &other){
+    MemoryPool& operator=(MemoryPool&& other) noexcept {
+        if (this != &other) {
             clear();
             _pageSize = std::exchange(other._pageSize, 1024);
             _lastPageSize = std::exchange(other._lastPageSize, 1024);
@@ -72,18 +75,18 @@ public:
 
     template <typename... Args>
     [[nodiscard]] std::expected<T*, PoolError> try_construct(Args&&... args) noexcept {
-        try{
+        try {
             auto slot_result = try_allocate_slot();
-            if(!slot_result){
+            if (!slot_result) {
                 return std::unexpected(slot_result.error());
             }
-            
+
             T* ptr = *slot_result;
             std::construct_at(ptr, std::forward<Args>(args)...);
             return ptr;
-        }catch(const std::bad_alloc&){
+        } catch (const std::bad_alloc&) {
             return std::unexpected(PoolError::OutOfMemory);
-        }catch(...){
+        } catch (...) {
             return std::unexpected(PoolError::ResourceUnavailable);
         }
     }
@@ -91,8 +94,8 @@ public:
     template <typename... Args>
     [[nodiscard]] T* construct(Args&&... args) {
         auto result = try_construct(std::forward<Args>(args)...);
-        if(!result)[[unlikely]]{
-            switch (result.error()){
+        if (!result) [[unlikely]] {
+            switch (result.error()) {
                 case PoolError::OutOfMemory:
                     throw std::bad_alloc{};
                 case PoolError::InvalidPageSize:
@@ -104,30 +107,33 @@ public:
         return *result;
     }
 
-    void clear(bool keepFirstPage = false) noexcept{
-        for(auto&& [i, page] : std::views::enumerate(_pages)){
-            T* base = page;
+    void clear(bool keepFirstPage = false) noexcept {
+        for (size_t i = 0; i < _pages.size(); ++i) {
+            T* base = _pages[i];
             size_t count = (i + 1 == _pages.size()) ? _lastPageSize : _pageSize;
-            auto objects = std::views::iota(0uz, count) 
+
+            auto objects = std::views::iota(size_t{0}, count)
                          | std::views::transform([base](size_t j) { return base + j; });
+
             std::ranges::for_each(objects, [](T* ptr) { std::destroy_at(ptr); });
-            if(!keepFirstPage || i != 0){
+
+            if (!keepFirstPage || i != 0) {
                 _allocator.deallocate(base, _pageSize);
             }
         }
 
-        if(keepFirstPage && !_pages.empty()){
+        if (keepFirstPage && !_pages.empty()) {
             _pages.resize(1);
             _lastPageSize = 0;
-        }else{
+        } else {
             _pages.clear();
             _lastPageSize = _pageSize;
         }
     }
 
-    void swap(MemoryPool& other) noexcept 
+    void swap(MemoryPool& other) noexcept
         requires std::swappable<std::pmr::vector<T*>> &&
-                std::swappable<std::pmr::polymorphic_allocator<T>> {
+                 std::swappable<std::pmr::polymorphic_allocator<T>> {
         std::ranges::swap(_pages, other._pages);
         std::swap(_lastPageSize, other._lastPageSize);
         std::swap(_pageSize, other._pageSize);
@@ -136,32 +142,32 @@ public:
     }
 
 private:
-    [[nodiscard]] std::expected<T*, PoolError> try_allocate_slot() noexcept{
-        try{
-            if(_lastPageSize == _pageSize){
+    [[nodiscard]] std::expected<T*, PoolError> try_allocate_slot() noexcept {
+        try {
+            if (_lastPageSize == _pageSize) {
                 T* newPage = _allocator.allocate(_pageSize);
-                if(!newPage) [[unlikely]]{
+                if (!newPage) [[unlikely]] {
                     return std::unexpected(PoolError::OutOfMemory);
                 }
-                
+
                 _pages.push_back(newPage);
                 _lastPageSize = 1;
                 return newPage;
             }
 
             return _pages.back() + _lastPageSize++;
-        }catch(const std::bad_alloc&){
+        } catch (const std::bad_alloc&) {
             return std::unexpected(PoolError::OutOfMemory);
-        }catch (...){
+        } catch (...) {
             return std::unexpected(PoolError::ResourceUnavailable);
         }
     }
-	
-	std::size_t _pageSize;
+
+    std::size_t _pageSize;
     std::size_t _lastPageSize;
     std::pmr::memory_resource* _resource;
     std::pmr::vector<T*> _pages;
     std::pmr::polymorphic_allocator<T> _allocator;
 };
 
-}
+} 
