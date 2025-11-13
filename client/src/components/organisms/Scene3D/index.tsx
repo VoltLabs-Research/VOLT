@@ -52,6 +52,7 @@ export interface Scene3DRef {
 	waitForVisibleFrame: () => Promise<void>;
 	markContentReady: () => void;
 	waitForContentFrame: () => Promise<void>;
+	zoomTo: (zoomFactor: number) => void;
 }
 
 const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
@@ -65,6 +66,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 }, ref) => {
 	const orbitControlsRef = useRef<any>(null);
 	const interactionTimeoutRef = useRef<number | null>(null);
+	const initialDistanceRef = useRef<number | null>(null);
 
 	const [tools, setTools] = useState<{
 		captureScreenshot: (options?: any) => Promise<string>;
@@ -161,7 +163,40 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 		},
 		waitForVisibleFrame: () => tools?.waitForVisibleFrame?.() ?? Promise.resolve(),
 		markContentReady: () => tools?.markContentReady?.(),
-		waitForContentFrame: () => tools?.waitForContentFrame?.() ?? Promise.resolve()
+		waitForContentFrame: () => tools?.waitForContentFrame?.() ?? Promise.resolve(),
+		zoomTo: (zoomPercent: number) => {
+			if (!orbitControlsRef.current) return;
+			const controls = orbitControlsRef.current;
+			const camera = controls.object as THREE.PerspectiveCamera;
+			
+			// Initialize the reference distance on first call
+			if (!initialDistanceRef.current) {
+				initialDistanceRef.current = camera.position.distanceTo(controls.target);
+			}
+			
+			// Calculate target distance based on zoom percentage
+			// 100% = initial distance
+			// 50% = 2x farther away
+			// 200% = 0.5x distance (2x closer)
+			const targetDistance = initialDistanceRef.current * (100 / zoomPercent);
+			const currentPosition = camera.position.clone();
+			const direction = currentPosition.clone().sub(controls.target).normalize();
+			
+			// Calculate new camera position
+			const newPosition = controls.target.clone().addScaledVector(direction, targetDistance);
+			
+			// Apply distance constraints from OrbitControls
+			const clampedDistance = Math.max(
+				controls.minDistance,
+				Math.min(controls.maxDistance, targetDistance)
+			);
+			const clampedPosition = controls.target.clone().addScaledVector(direction, clampedDistance);
+			
+			// Set camera position directly
+			camera.position.copy(clampedPosition);
+			
+			controls.update();
+		}
 	}), [tools]);
 
 	const handleControlsRef = useCallback((r: any) => {

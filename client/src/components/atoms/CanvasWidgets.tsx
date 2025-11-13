@@ -472,7 +472,7 @@ const TotalDislocationSegmentsPlot = () => {
     );
 };
 
-const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimestep }) => {
+const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimestep, scene3DRef }) => {
     const showWidgets = useEditorUIStore((store) => store.showEditorWidgets);
     const activeModifiers = useEditorUIStore((store) => store.activeModifiers);
 
@@ -497,7 +497,7 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
         <>
             <EditorSidebar />
             <TrajectoryVisibilityStatusFloatIcon />
-            <SceneTopCenteredOptions />
+            <SceneTopCenteredOptions scene3DRef={scene3DRef} />
             <AnalysisConfigSelection />
             {(trajectory && currentTimestep !== undefined) && <TimestepControls />}
             {modifierComponents.map(([key, Comp]) => (

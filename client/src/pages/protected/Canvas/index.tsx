@@ -79,7 +79,7 @@ const EditorPage: React.FC = () => {
                 )}
             </AnimatePresence>
 
-            <CanvasWidgets trajectory={trajectory} currentTimestep={currentTimestep} />
+            <CanvasWidgets trajectory={trajectory} currentTimestep={currentTimestep} scene3DRef={scene3DRef} />
             <Scene3D ref={scene3DRef} showCanvasGrid={showCanvasGrid}>
                 <TimestepViewer
                     scale={CANVAS_CONFIG.timestepViewerDefaults.scale}

@@ -15,6 +15,7 @@ export interface DislocationData {
 export interface EditorWidgetsProps {
     trajectory: TrajectoryData | null;
     currentTimestep: number | undefined;
+    scene3DRef?: React.RefObject<any>;
 }
 
 export interface Scene3DContainerProps {
