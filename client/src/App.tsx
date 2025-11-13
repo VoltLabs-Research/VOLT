@@ -41,7 +41,10 @@ import PageWrapper from '@/components/atoms/animations/PageWrapper';
 import GlobalTransitionOverlay from '@/components/atoms/animations/GlobalTransitionOverlay';
 import Loader from '@/components/atoms/Loader';
 import LoadingShimmer from '@/components/atoms/animations/LoadingShimmer';
+import ToastContainer from '@/components/atoms/ToastContainer';
 import useAuthStore from '@/stores/authentication';
+import useToast from '@/hooks/ui/use-toast';
+import { setErrorNotificationHandler } from '@/api/error-notification';
 import TrajectoriesListing from './pages/protected/TrajectoriesListing';
 import AccountSettings from './pages/protected/AccountSettings';
 
@@ -78,6 +81,14 @@ const AuthLoadingOverlay = () => (
 const App = () => {
     const location = useLocation();
     const isLoading = useAuthStore((state) => state.isLoading);
+    const { showError } = useToast();
+
+    // Setup error notification handler for API errors
+    useMemo(() => {
+        setErrorNotificationHandler((message: string) => {
+            showError(message);
+        });
+    }, [showError]);
 
     const isDesktop = typeof window !== 'undefined' ? window.innerWidth > 768 : true;
     const containerStyle = useMemo(() => ({
@@ -107,6 +118,7 @@ const App = () => {
             
             <GlobalTransitionOverlay />
             <LoadingShimmer />
+            <ToastContainer />
             
             <AnimatePresence
                 mode='wait'

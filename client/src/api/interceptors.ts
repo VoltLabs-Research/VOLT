@@ -1,6 +1,7 @@
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import { generateDeduplicationKey } from '@/api/request-deduplicator';
 import { classifyError } from '@/api/error';
+import { notifyApiError } from '@/api/error-notification';
 
 export interface RequestMetadata{
     startTime: number;
@@ -36,6 +37,8 @@ export const setupInterceptors = (axiosInstance: AxiosInstance): void => {
         // const config = error.config as InternalAxiosRequestConfig & { metadata?: RequestMetadata };
         // const duration = Date.now() - config?.metadata?.startTime;
 
-        return Promise.reject(classifyError(error));
+        const classifiedError = classifyError(error);
+        notifyApiError(classifiedError);
+        return Promise.reject(classifiedError);
     });
 };

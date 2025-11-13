@@ -10,6 +10,7 @@ import { configurePointCloudMaterial, configureGeometry, isPointCloudObject } fr
 import { attachPointerEvents, attachKeyboard } from '@/utilities/glb/interaction';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 import useLogger from '@/hooks/core/use-logger';
+import useToast from '@/hooks/ui/use-toast';
 import {
   Group,
   Box3,
@@ -43,6 +44,7 @@ export const useGlbScene = ({
 }: UseGlbSceneParams) => {
   const { scene, camera, gl, invalidate } = useThree();
   const logger = useLogger('use-glb-scene');
+  const { showError } = useToast();
 
   const activeModel = useModelStore((s) => s.activeModel);
   const setModelBounds = useModelStore((s) => s.setModelBounds);
@@ -318,29 +320,19 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
 
   const loadAndSetupModel = useCallback(
     async (url: string) => {
-      console.log(`[loadAndSetupModel] START: ${url}`);
-      if (stateRef.current.lastLoadedUrl === url) {
-        console.log(`[loadAndSetupModel] Already loaded, returning`);
-        return;
-      }
+      if (stateRef.current.lastLoadedUrl === url) return;
       
       // Use stateRef to mark as loading to prevent concurrent loads
-      if (stateRef.current.isLoadingUrl) {
-        console.log(`[loadAndSetupModel] Already loading, returning`);
-        return;
-      }
+      if (stateRef.current.isLoadingUrl) return;
       stateRef.current.isLoadingUrl = true;
-      console.log(`[loadAndSetupModel] Set isLoadingUrl=true`);
       
       setIsModelLoading(true);
       setLoadingState({ isLoading: true, progress: 0, error: null });
 
       try {
-        console.log(`[loadAndSetupModel] Calling loadGLB for: ${url}`);
         const loadedModel = await loadGLB(url, (progress) => {
           setLoadingState((prev) => ({ ...prev, progress: Math.round(progress * 100) }));
         });
-        console.log(`[loadAndSetupModel] loadGLB completed, setting up model`);
 
         cleanupResources();
         const newModel = setupModel(loadedModel);
@@ -351,24 +343,22 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
         // Remove from failed URLs on successful load (allows retry if user changes trajectory)
         stateRef.current.failedUrls.delete(url);
         setLoadingState({ isLoading: false, progress: 100, error: null });
-        console.log(`[loadAndSetupModel] SUCCESS: ${url}`);
       } catch (error: any) {
         const message = error instanceof Error ? error.message : String(error);
         // Mark this URL as permanently failed to prevent infinite retry loops
         stateRef.current.failedUrls.add(url);
-        console.log(`[loadAndSetupModel] ERROR: Added to failedUrls: ${url}`, Array.from(stateRef.current.failedUrls));
         // Also mark as loaded to prevent retries
         stateRef.current.lastLoadedUrl = url;
         setLoadingState({ isLoading: false, progress: 0, error: message });
+        showError(`Failed to load model: ${message}`);
         logger.error('Model loading failed:', message);
       } finally {
         stateRef.current.isLoadingUrl = false;
-        console.log(`[loadAndSetupModel] Set isLoadingUrl=false (finally)`);
         setIsModelLoading(false);
         invalidate();
       }
     },
-    [scene, activeScene, cleanupResources, setupModel, invalidate, logger, setIsModelLoading]
+    [scene, activeScene, cleanupResources, setupModel, invalidate, logger, setIsModelLoading, showError]
   );
 
   useEffect(() => {
