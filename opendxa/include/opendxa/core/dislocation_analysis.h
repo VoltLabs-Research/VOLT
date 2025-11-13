@@ -39,11 +39,13 @@ public:
         _linePointInterval(2.5),
         _defectMeshSmoothingLevel(8),
         _structureIdentificationOnly(false),
+        _grainSegmentationOnly(false),
         _identificationMode(StructureAnalysis::Mode::CNA),
         _markCoreAtoms(false),
         _onlyPerfectDislocations(false){}
 
     void setStructureIdentificationOnly(bool structureIdentificationOnly);
+    void setGrainSegmentationOnly(bool grainSegmentationOnly);
     void setInputCrystalStructure(LatticeStructureType structure);
     void setMaxTrialCircuitSize(double size);
     void setCircuitStretchability(double stretch);
@@ -72,6 +74,7 @@ private:
 
     bool _markCoreAtoms;
     bool _structureIdentificationOnly;
+    bool _grainSegmentationOnly;
     bool _onlyPerfectDislocations;
     
     mutable json _lastJsonData;
@@ -80,6 +83,10 @@ private:
 
     std::shared_ptr<ParticleProperty> createPositionProperty(const LammpsParser::Frame &frame);
     bool validateSimulationCell(const SimulationCell &cell);
+    json performGrainSegmentation(const LammpsParser::Frame &frame, const StructureAnalysis& structureAnalysis, 
+                                  const std::vector<int>& structureTypes, const std::string& outputFile);
+    void exportGrainModelAsGLB(const LammpsParser::Frame &frame, const std::vector<int>& grainIds, 
+                               const std::string& outputPath);
 };
 
 }

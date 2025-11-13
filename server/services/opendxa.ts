@@ -41,7 +41,7 @@ import { fileExists } from '@/utilities/fs';
  * TODO: add debug path.
  * @internal
  */
-const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build-debug/opendxa');
+const CLI_EXECUTABLE_PATH = path.resolve(__dirname, '../../opendxa/build/opendxa');
 
 /**
  * Mapping of logical output groups to their msgpack file suffixes

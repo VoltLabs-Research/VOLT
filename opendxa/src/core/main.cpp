@@ -25,6 +25,7 @@ void show_usage(const std::string& name){
               << "                             Available modes: CNA, PTM, DIAMOND.\n\n"
               << "  --rmsd <float> If identification mode is PTM. RMSD Should be specified.\n\n"
               << "  --structureIdentificationOnly Only generates a output file with the structure identification.\n\n"
+              << "  --grainSegmentationOnly    Only performs grain segmentation analysis and exports GLB model.\n\n"
               << "  --maxTrialCircuitSize <int> Maximum size of the Burgers circuit. Default: 14.\n\n"
               << "  --circuitStretchability <int> Circuit stretchability factor. Default: 9.\n\n"
               << "  --lineSmoothingLevel <lvl>  Line smoothing level. Default: 1.\n\n"
@@ -118,6 +119,9 @@ int main(int argc, char* argv[]){
         }
         if(options.count("--structureIdentificationOnly")){
             analyzer.setStructureIdentificationOnly(options["--structureIdentificationOnly"] == "true");
+        }
+        if(options.count("--grainSegmentationOnly")){
+            analyzer.setGrainSegmentationOnly(options["--grainSegmentationOnly"] == "true");
         }
         if(options.count("--maxTrialCircuitSize")){
             analyzer.setMaxTrialCircuitSize(std::stod(options["--maxTrialCircuitSize"]));

@@ -3,49 +3,83 @@ import { join, resolve, basename } from 'path';
 import { getRasterizerQueue } from '@/queues';
 import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
-import { listGlbFiles } from '@/utilities/fs';
 import { catchAsync } from '@/utilities/runtime';
 import { readFile } from 'fs/promises';;
-import { v4 } from 'uuid';
 import { readdir } from 'fs/promises';
 import { AnalysisConfig, Trajectory } from '@/models';  
+import { v4 } from 'uuid';
 import path from 'path';
 import TrajectoryFS from '@/services/trajectory-fs';
 import archiver from 'archiver';
 
 export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
-    const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-    const glbDir = join(basePath, trajectory.folderId, 'glb');
-    const outputDir = join(basePath, trajectory.folderId, 'raster');
-    const glbs = listGlbFiles(glbDir);
-    const customOpts: Partial<HeadlessRasterizerOptions> = req.body;
+    const tfs = new TrajectoryFS(trajectory.folderId);
+    await tfs.ensureStructure();
 
-    const jobs: RasterizerJob[] = (await glbs).map((glbPath) => {
-        const frame = basename(glbPath).replace(/\.[^.]+$/i, '');
-        const outPath = join(outputDir, `${frame}.png`);
-        const opts: Partial<HeadlessRasterizerOptions> = {
-            inputPath: glbPath,
-            outputPath: outPath,
-            ...customOpts
-        };
+    const customOpts: Partial<HeadlessRasterizerOptions> = req.body ?? {};
+    const jobs: RasterizerJob[] = [];
 
-        const job = {
-            opts,
+    const previews = await tfs.getPreviews({ media: 'glb' });
+    const glbPreviews = previews.glb ?? {};
+    for (const [frame, glbPath] of Object.entries(glbPreviews)) {
+        const outPath = join(tfs.root, 'previews', 'raster', `${frame}.png`);
+        jobs.push({
             jobId: v4(),
             trajectoryId: trajectory._id,
             teamId: trajectory.team._id,
-            name: 'Headless Rasterizer',
-            message: `${trajectory.name} - Frame ${frame}`
-        };
+            name: 'Headless Rasterizer (Preview)',
+            message: `${trajectory.name} - Preview frame ${frame}`,
+            opts: {
+                inputPath: glbPath,
+                outputPath: outPath,
+                ...customOpts,
+            },
+        });
+    }
 
-        return job;
-    });
+    const analyses = await AnalysisConfig.find({ trajectory: trajectory._id }).lean();
 
-    const queueService= getRasterizerQueue();
+    for (const analysis of analyses) {
+        const analysisId = String(analysis._id);
+        const analysisTypes = await tfs.getAnalysis(analysisId, '', { media: 'glb' });
+
+        if (!analysisTypes.glb) continue;
+
+        for (const [frame, glbPath] of Object.entries(analysisTypes.glb)) {
+            const frameNum = basename(glbPath).replace(/\.[^.]+$/, '');
+            const outPath = join(tfs.root, analysisId, 'raster', frameNum, 'preview.png');
+
+            jobs.push({
+                jobId: v4(),
+                trajectoryId: trajectory._id,
+                teamId: trajectory.team._id,
+                name: 'Headless Rasterizer (Analysis)',
+                message: `${trajectory.name} - ${analysisId} - Frame ${frameNum}`,
+                opts: {
+                    inputPath: glbPath,
+                    outputPath: outPath,
+                    ...customOpts,
+                },
+            });
+        }
+    }
+
+    if (!jobs.length) {
+        return res.status(404).json({
+            status: 'error',
+            message: 'No GLB files were found in the path or its analysis.',
+        });
+    }
+
+    const queueService = getRasterizerQueue();
     queueService.addJobs(jobs);
-    
-    res.status(200).json({ status: 'success' });
+
+    return res.status(200).json({
+        status: 'success',
+        message: `${jobs.length} rasterization jobs (previews and analysis) were added.`,
+        data: { jobCount: jobs.length },
+    });
 });
 
 export const readRasterModel = async (
@@ -103,6 +137,7 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
         data: { trajectory, analyses: analysesMetadata }
     });
 };
+
 export const getRasterFrame = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     const { timestep, analysisId, model } = req.params;

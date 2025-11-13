@@ -1,9 +1,8 @@
-import { join, basename } from 'path';
-import { existsSync } from 'fs';
+import { basename } from 'path';
 import { getAnalysisQueue } from '@/queues';
 import { v4 } from 'uuid';
-import fs from 'fs/promises';
 import { AnalysisConfig } from '@/models/index';
+import TrajectoryFS from '@/services/trajectory-fs';
 
 export interface DislocationAnalysisModifierConfig{
     folderId: string;
@@ -22,20 +21,16 @@ export enum DislocationAnalysisModifierError{
 
 // TODO: I think that it's better create a BaseModifier class.
 export const dislocationAnalysis = async (config: DislocationAnalysisModifierConfig) => {
-    const folderPath = join(process.env.TRAJECTORY_DIR as string, config.folderId);
-    if(!existsSync(folderPath)){
-        return DislocationAnalysisModifierError.TrajectoryFolderNotFound;
-    }
+    const trajFS = new TrajectoryFS(config.folderId);
+    
     const analysisConfig = await AnalysisConfig.create({
         trajectory: config.trajectoryId,
         ...config.analysisConfig
     });
 
-    const files = await fs.readdir(folderPath);
-    const trajectoryFiles = files
-        .filter((file) => /^\d+$/.test(file))
-        .sort((a, b) => parseInt(a) - parseInt(b))
-        .map((file) => join(folderPath, file));
+    // Get all dumps using TrajectoryFS
+    const dumps = await trajFS.getDumps();
+    const trajectoryFiles = Object.values(dumps);
 
     if(trajectoryFiles.length === 0){
         return DislocationAnalysisModifierError.TrajectoryFolderIsEmpty;
@@ -44,14 +39,15 @@ export const dislocationAnalysis = async (config: DislocationAnalysisModifierCon
     const queueService = getAnalysisQueue();
     const jobsToEnqueue = trajectoryFiles.map((inputFile) => {
         const jobId = v4();
+        const frameNumber = basename(inputFile);
         return {
             jobId,
             trajectoryId: config.trajectoryId,
             analysisConfigId: String(analysisConfig._id),
-            folderPath,
+            folderPath: trajFS.root,
             inputFile,
             teamId: config.team,
-            name: `Dislocation Analysis - Frame ${basename(inputFile)}/${config.frames[trajectoryFiles.length - 1].timestep}`,
+            name: `Dislocation Analysis - Frame ${frameNumber}/${config.frames[trajectoryFiles.length - 1].timestep}`,
             message: config.name,
             config: config.analysisConfig
         };
