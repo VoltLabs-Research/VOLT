@@ -81,6 +81,7 @@ const DocumentListingTable = ({
 
     const isInitialLoading = isLoading && data.length === 0;
     const hasNoData = data.length === 0;
+    const shouldShowEmptyState = hasNoData && !isLoading;
 
     return (
         <div className='document-listing-table-container'>
@@ -138,16 +139,8 @@ const DocumentListingTable = ({
                 {/* Infinite scroll sentinel */}
                 {enableInfinite && <div ref={sentinelRef} style={{ height: 1 }} />}
 
-                {hasNoData && (
+                {shouldShowEmptyState && (
                     <div className='document-listing-overlay-blur'>
-                        {/* Infinite skeleton loader background */}
-                        <div className='document-listing-infinite-skeleton-loader'>
-                            {Array.from({ length: 20 }).map((_, index) => (
-                                <SkeletonRow key={`infinite-skeleton-${index}`} columns={columns} />
-                            ))}
-                        </div>
-
-                        {/* Empty state with EmptyState component */}
                         <div className='document-listing-empty-content'>
                             <EmptyState
                                 title="No Documents"
@@ -156,6 +149,17 @@ const DocumentListingTable = ({
                                 buttonOnClick={onEmptyButtonClick}
                                 className="document-listing-empty-message"
                             />
+                        </div>
+                    </div>
+                )}
+
+                {isInitialLoading && (
+                    <div className='document-listing-overlay-blur'>
+                        {/* Show loading skeleton rows during initial load */}
+                        <div className='document-listing-infinite-skeleton-loader'>
+                            {Array.from({ length: 20 }).map((_, index) => (
+                                <SkeletonRow key={`loading-skeleton-${index}`} columns={columns} />
+                            ))}
                         </div>
                     </div>
                 )}
