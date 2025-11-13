@@ -179,6 +179,8 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	const isTrajectoryScene = useMemo(() => ['trajectory', 'atoms_colored_by_type', 'dislocations'].includes(activeScene), [activeScene]);
 
 	const canvasStyle = useMemo(() => ({
+		width: '100%',
+		height: '100%',
 		backgroundColor,
 		touchAction: 'none',
 		willChange: 'transform',
@@ -224,74 +226,76 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	}), [rCreate.antialias, rCreate.alpha, rCreate.depth, rCreate.stencil, rCreate.logarithmicDepthBuffer, rCreate.preserveDrawingBuffer, powerPreference]);
 
 	return (
-		<Canvas
-			gl={glProps}
-			style={canvasStyle}
-			dpr={dpr}
-			frameloop="always"
-			performance={perf}
-			onCreated={() => {}}
-		>
-			<DynamicRenderer />
-			<CameraRig orbitRef={orbitControlsRef} />
-			<ScreenshotHandler onToolsReady={handleToolsReady} backgroundColor={backgroundColor} />
-			<color attach="background" args={[backgroundColor]} />
-			<Preload all />
-			{adaptiveEnabled && <AdaptiveDpr pixelated={pixelated} />}
-			{adaptiveEventsEnabled && <AdaptiveEvents />}
+		<div style={{ width: '100%', height: '100%' }}>
+			<Canvas
+				gl={glProps}
+				style={canvasStyle}
+				dpr={dpr}
+				frameloop="always"
+				performance={perf}
+				onCreated={() => {}}
+			>
+				<DynamicRenderer />
+				<CameraRig orbitRef={orbitControlsRef} />
+				<ScreenshotHandler onToolsReady={handleToolsReady} backgroundColor={backgroundColor} />
+				<color attach="background" args={[backgroundColor]} />
+				<Preload all />
+				{adaptiveEnabled && <AdaptiveDpr pixelated={pixelated} />}
+				{adaptiveEventsEnabled && <AdaptiveEvents />}
 
-			{showGizmo && (
-				<GizmoHelper alignment="top-left" renderPriority={2} margin={[450, 70]}>
-					<directionalLight position={[5, 5, 5]} intensity={1} />
-					<ambientLight intensity={0.7} />
-					<GizmoViewport scale={30} hideNegativeAxes axisColors={['#404040', '#404040', '#404040']} labelColor="#a2a2a2" />
-				</GizmoHelper>
-			)}
+				{showGizmo && (
+					<GizmoHelper alignment="top-left" renderPriority={2} margin={[450, 70]}>
+						<directionalLight position={[5, 5, 5]} intensity={1} />
+						<ambientLight intensity={0.7} />
+						<GizmoViewport scale={30} hideNegativeAxes axisColors={['#404040', '#404040', '#404040']} labelColor="#a2a2a2" />
+					</GizmoHelper>
+				)}
 
-			<DynamicBackground />
-			<DynamicEffects />
-			<DynamicLights />		
-			<DynamicEnvironment />
+				<DynamicBackground />
+				<DynamicEffects />
+				<DynamicLights />		
+				<DynamicEnvironment />
 
-			{isDefectScene && <DefectLighting />}
-			{isTrajectoryScene && <TrajectoryLighting />}
+				{isDefectScene && <DefectLighting />}
+				{isTrajectoryScene && <TrajectoryLighting />}
 
-			<OrbitControls
-				ref={handleControlsRef}
-				enabled={ocEnabled && cameraControlsEnabled}
-				enableDamping={ocEnableDamping}
-				dampingFactor={ocDampingFactor}
-				enableZoom={ocEnableZoom}
-				zoomSpeed={ocZoomSpeed}
-				enableRotate={ocEnableRotate}
-				rotateSpeed={ocRotateSpeed}
-				enablePan={ocEnablePan}
-				panSpeed={ocPanSpeed}
-				screenSpacePanning={ocScreenSpacePanning}
-				autoRotate={ocAutoRotate}
-				autoRotateSpeed={ocAutoRotateSpeed}
-				minDistance={ocMinDistance}
-				maxDistance={ocMaxDistance}
-				minPolarAngle={ocMinPolar}
-				maxPolarAngle={ocMaxPolar}
-				minAzimuthAngle={ocMinAzimuth}
-				maxAzimuthAngle={ocMaxAzimuth}
-				onStart={markInteractingNow}
-				onChange={markInteractingDebounced}
-				onEnd={endInteracting}
-				{...orbitControlsConfig}
-			/>
+				<OrbitControls
+					ref={handleControlsRef}
+					enabled={ocEnabled && cameraControlsEnabled}
+					enableDamping={ocEnableDamping}
+					dampingFactor={ocDampingFactor}
+					enableZoom={ocEnableZoom}
+					zoomSpeed={ocZoomSpeed}
+					enableRotate={ocEnableRotate}
+					rotateSpeed={ocRotateSpeed}
+					enablePan={ocEnablePan}
+					panSpeed={ocPanSpeed}
+					screenSpacePanning={ocScreenSpacePanning}
+					autoRotate={ocAutoRotate}
+					autoRotateSpeed={ocAutoRotateSpeed}
+					minDistance={ocMinDistance}
+					maxDistance={ocMaxDistance}
+					minPolarAngle={ocMinPolar}
+					maxPolarAngle={ocMaxPolar}
+					minAzimuthAngle={ocMinAzimuth}
+					maxAzimuthAngle={ocMaxAzimuth}
+					onStart={markInteractingNow}
+					onChange={markInteractingDebounced}
+					onEnd={endInteracting}
+					{...orbitControlsConfig}
+				/>
 
-			{showCanvasGrid && <CanvasGrid />}
+				{showCanvasGrid && <CanvasGrid />}
 
-			<Bvh firstHitOnly>
-				{children}
-			</Bvh>
+				<Bvh firstHitOnly>
+					{children}
+				</Bvh>
 
-			<EffectComposer enableNormalPass={isDefectScene} multisampling={0} renderPriority={1}>
-				{isDefectScene && <SSAO {...useRenderConfigStoreShim().SSAO} />}
-			</EffectComposer>
-		</Canvas>
+				<EffectComposer enableNormalPass={isDefectScene} multisampling={0} renderPriority={1}>
+					{isDefectScene && <SSAO {...useRenderConfigStoreShim().SSAO} />}
+				</EffectComposer>
+			</Canvas>
+		</div>
 	);
 });
 
