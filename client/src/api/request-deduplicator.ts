@@ -16,14 +16,6 @@ export class RequestDeduplicator{
         this.pendingRequests.set(key, promise);
         return promise;
     }
-
-    getPendingCount(): number{
-        return this.pendingRequests.size;
-    }
-
-    clear(): void{
-        this.pendingRequests.clear();
-    }
 }
 
 export const requestDeduplicator = new RequestDeduplicator();

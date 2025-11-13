@@ -32,10 +32,6 @@ type UseGlbSceneParams = {
   scale: number;
   enableInstancing?: boolean;
   updateThrottle: number;
-  useFixedReference?: boolean;
-referencePoint?: 'origin' | 'initial' | 'custom';
-  customReference?: { x: number; y: number; z: number }; 
-  preserveInitialTransform?: boolean; 
 };
 
 export const useGlbScene = ({
@@ -43,10 +39,7 @@ export const useGlbScene = ({
   position,
   rotation,
   scale,
-  updateThrottle,
-  useFixedReference = true,
-  referencePoint,
-  customReference
+  updateThrottle
 }: UseGlbSceneParams) => {
   const { scene, camera, gl, invalidate } = useThree();
   const logger = useLogger('use-glb-scene');
@@ -61,6 +54,8 @@ export const useGlbScene = ({
     mesh: null,
     isSetup: false,
     lastLoadedUrl: null,
+    failedUrls: new Set<string>(),
+    isLoadingUrl: false,
 
     dragging: false,
     selected: null,
@@ -90,41 +85,8 @@ export const useGlbScene = ({
     sizeAnimFrom: null,
     sizeAnimTo: null,
     sizeAnimStartMs: 0,
-	initialTransform: null as { position: Vector3; rotation: Euler; scale: number } | null,
-  fixedReferencePoint: null as Vector3 | null,
-  useFixedReference: false,
   });
-const setFixedReference = useCallback((
-  model: Group, 
-  referenceType: 'origin' | 'initial' | 'custom' = 'initial',
-  customPoint?: Vector3
-) => {
-  const state = stateRef.current;
-  
-  switch (referenceType) {
-    case 'origin':
-      state.fixedReferencePoint = new Vector3(0, 0, 0);
-      break;
-    case 'custom':
-      state.fixedReferencePoint = customPoint ? customPoint.clone() : new Vector3(0, 0, 0);
-      break;
-    case 'initial':
-    default:
-      // Usar el centro del modelo en el primer frame como referencia fija
-      const initialBox = new Box3().setFromObject(model);
-      const center = new Vector3();
-      initialBox.getCenter(center);
-      state.fixedReferencePoint = center.clone();
-      break;
-  }
-  
-  // Guardar transformación inicial
-  state.initialTransform = {
-    position: model.position.clone(),
-    rotation: model.rotation.clone(),
-    scale: model.scale.x
-  };
-}, []);
+
   const [loadingState, setLoadingState] = useState({
     isLoading: false,
     progress: 0,
@@ -250,7 +212,7 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
       if (!obj.material) return;
       
       const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-      mats.forEach((m) => {
+      mats.forEach((m: any) => {
         applyClippingPlanesToMaterial(m, planes);
         
         // Para Points específicamente, forzar invalidación
@@ -268,75 +230,41 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
   if (stateRef.current.isSetup) return model;
 
   const bounds = calculateModelBounds({ scene: model });
-  stateRef.current.modelBounds = bounds;
+  stateRef.current.modelBounds = bounds as any;
 
   const pc = isPointCloudObject(model);
   if (pc) {
     configurePointCloudMaterial(pc);
     stateRef.current.mesh = pc;
   } else {
-    configureGeometry(model, sliceClippingPlanes, (m) => (stateRef.current.mesh = m));
+    configureGeometry(model, sliceClippingPlanes, (m: any) => (stateRef.current.mesh = m));
   }
 
   applyClippingPlanesToModel(model, sliceClippingPlanes);
 
-  if (!useFixedReference) {
-    const { position: p, rotation: r, scale: s } = calculateOptimalTransforms(bounds);
+  // Apply default positioning and scale
+  const { position: p, rotation: r, scale: s } = calculateOptimalTransforms(bounds);
 
-    model.position.set(
-      (position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x) + p.x,
-      (position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y) + p.y,
-      (position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z) + p.z
-    );
+  model.position.set(
+    (position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x) + p.x,
+    (position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y) + p.y,
+    (position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z) + p.z
+  );
 
-    model.rotation.set(
-      (rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x) + r.x,
-      (rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y) + r.y,
-      (rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z) + r.z
-    );
+  model.rotation.set(
+    (rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x) + r.x,
+    (rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y) + r.y,
+    (rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z) + r.z
+  );
 
-    const finalScale = scale * s;
-    model.scale.setScalar(finalScale);
-  } else {
-    // 1) Calcula una sola vez el factor de escala de referencia (normalización)
-    if (stateRef.current.referenceScaleFactor == null) {
-      const { scale: sRef } = calculateOptimalTransforms(bounds);
-      stateRef.current.referenceScaleFactor = sRef;
-    }
-
-    // 2) Aplica SIEMPRE la misma normalización + tu 'scale' externo
-    const finalScale = scale * (stateRef.current.referenceScaleFactor || 1);
-    model.scale.setScalar(finalScale);
-
-    // 3) Posición/rotación base fijas (no dependientes del frame)
-    model.position.set(
-      position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x,
-      position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y,
-      position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z
-    );
-
-    model.rotation.set(
-      rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x,
-      rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y,
-      rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z
-    );
-
-    // 4) Define el punto de referencia fijo en el primer setup
-    if (!stateRef.current.useFixedReference) {
-      setFixedReference(
-        model,
-        referencePoint || 'initial',
-        customReference ? new Vector3(customReference.x, customReference.y, customReference.z) : undefined
-      );
-      stateRef.current.useFixedReference = true;
-    }
-  }
+  const finalScale = scale * s;
+  model.scale.setScalar(finalScale);
 
   stateRef.current.currentRotation.copy(model.rotation);
   stateRef.current.targetScale = model.scale.x;
   stateRef.current.currentScale = model.scale.x;
 
-    adjustModelToGround(model);
+  adjustModelToGround(model);
 
   model.updateMatrixWorld(true);
   const finalBounds = calculateModelBounds({ scene: model });
@@ -352,11 +280,7 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
   sliceClippingPlanes,
   adjustModelToGround,
   setModelBounds,
-  invalidate,
-  useFixedReference,
-  referencePoint,
-  customReference,
-  setFixedReference
+  invalidate
 ]);
 
 
@@ -394,14 +318,29 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
 
   const loadAndSetupModel = useCallback(
     async (url: string) => {
-      if (stateRef.current.lastLoadedUrl === url || loadingState.isLoading) return;
+      console.log(`[loadAndSetupModel] START: ${url}`);
+      if (stateRef.current.lastLoadedUrl === url) {
+        console.log(`[loadAndSetupModel] Already loaded, returning`);
+        return;
+      }
+      
+      // Use stateRef to mark as loading to prevent concurrent loads
+      if (stateRef.current.isLoadingUrl) {
+        console.log(`[loadAndSetupModel] Already loading, returning`);
+        return;
+      }
+      stateRef.current.isLoadingUrl = true;
+      console.log(`[loadAndSetupModel] Set isLoadingUrl=true`);
+      
       setIsModelLoading(true);
       setLoadingState({ isLoading: true, progress: 0, error: null });
 
       try {
+        console.log(`[loadAndSetupModel] Calling loadGLB for: ${url}`);
         const loadedModel = await loadGLB(url, (progress) => {
           setLoadingState((prev) => ({ ...prev, progress: Math.round(progress * 100) }));
         });
+        console.log(`[loadAndSetupModel] loadGLB completed, setting up model`);
 
         cleanupResources();
         const newModel = setupModel(loadedModel);
@@ -409,17 +348,27 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
         scene.add(newModel);
         stateRef.current.model = newModel;
         stateRef.current.lastLoadedUrl = url;
+        // Remove from failed URLs on successful load (allows retry if user changes trajectory)
+        stateRef.current.failedUrls.delete(url);
         setLoadingState({ isLoading: false, progress: 100, error: null });
+        console.log(`[loadAndSetupModel] SUCCESS: ${url}`);
       } catch (error: any) {
         const message = error instanceof Error ? error.message : String(error);
+        // Mark this URL as permanently failed to prevent infinite retry loops
+        stateRef.current.failedUrls.add(url);
+        console.log(`[loadAndSetupModel] ERROR: Added to failedUrls: ${url}`, Array.from(stateRef.current.failedUrls));
+        // Also mark as loaded to prevent retries
+        stateRef.current.lastLoadedUrl = url;
         setLoadingState({ isLoading: false, progress: 0, error: message });
         logger.error('Model loading failed:', message);
       } finally {
+        stateRef.current.isLoadingUrl = false;
+        console.log(`[loadAndSetupModel] Set isLoadingUrl=false (finally)`);
         setIsModelLoading(false);
         invalidate();
       }
     },
-    [scene, activeScene, cleanupResources, setupModel, invalidate, logger, loadingState.isLoading, setIsModelLoading]
+    [scene, activeScene, cleanupResources, setupModel, invalidate, logger, setIsModelLoading]
   );
 
   useEffect(() => {
@@ -582,14 +531,41 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
   }, [activeModel, activeScene]);
 
   const updateSceneRef = useRef<() => void>(() => {});
+  const loadingStateRef = useRef(loadingState);
   
+  useEffect(() => {
+    loadingStateRef.current = loadingState;
+  }, [loadingState]);
+
   const updateScene = useCallback(() => {
     const targetUrl = getTargetUrl();
-    // Don't retry if model failed to load - prevent infinite retry loops
-    if (targetUrl && targetUrl !== stateRef.current.lastLoadedUrl && !loadingState.isLoading && !loadingState.error) {
+    const isFailed = stateRef.current.failedUrls.has(targetUrl || '');
+    const isLoading = stateRef.current.isLoadingUrl;
+    const alreadyLoaded = targetUrl === stateRef.current.lastLoadedUrl;
+    
+    if (targetUrl) {
+      const reasons = [];
+      if (alreadyLoaded) reasons.push('already loaded');
+      if (isLoading) reasons.push('currently loading');
+      if (isFailed) reasons.push('URL failed');
+      
+      if (reasons.length === 0) {
+        console.log(`[updateScene] WILL LOAD: ${targetUrl}`);
+      } else {
+        console.log(`[updateScene] SKIP: ${targetUrl} (${reasons.join(', ')})`);
+      }
+    }
+    
+    // Don't retry if model failed to load or is in the failedUrls set - prevent infinite retry loops
+    if (
+      targetUrl &&
+      targetUrl !== stateRef.current.lastLoadedUrl &&
+      !stateRef.current.isLoadingUrl &&
+      !stateRef.current.failedUrls.has(targetUrl)
+    ) {
       loadAndSetupModel(targetUrl);
     }
-  }, [getTargetUrl, loadingState.isLoading, loadingState.error, loadAndSetupModel]);
+  }, [getTargetUrl, loadAndSetupModel]);
 
   updateSceneRef.current = updateScene;
 
@@ -598,10 +574,14 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
     throttledUpdateScene2();
   }, [throttledUpdateScene2]);
 
-  // Reset lastLoadedUrl when activeModel changes to force reload
+  // Don't automatically reset lastLoadedUrl - it causes infinite reloads
+  // The URL will naturally change when activeModel.glbs changes, and updateScene will detect it
+  // Only reset if activeModel becomes null
   useEffect(() => {
-    if (activeModel?.glbs) {
+    if (!activeModel) {
       stateRef.current.lastLoadedUrl = null;
+      stateRef.current.failedUrls.clear();
+      console.log(`[useEffect] Model cleared`);
     }
   }, [activeModel]);
 

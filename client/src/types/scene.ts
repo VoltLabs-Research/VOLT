@@ -22,6 +22,8 @@ export type SceneState = {
     mesh: Mesh | Points | null;
     isSetup: boolean;
     lastLoadedUrl: string | null;
+    failedUrls: Set<string>;
+    isLoadingUrl: boolean;
 
     dragging: boolean;
     selected: Group | null;
