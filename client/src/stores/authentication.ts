@@ -22,7 +22,7 @@
 
 import { create } from 'zustand';
 import { TokenStorage } from '@/utilities/storage';
-import { api } from '@/services/api';
+import { api } from '@/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import type { ApiResponse, AuthResponsePayload } from '@/types/api';
 import type { User } from '@/types/models';

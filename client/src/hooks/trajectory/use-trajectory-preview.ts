@@ -23,7 +23,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Logger from '@/services/logger';
 import useLogger from '@/hooks/core/use-logger';
-import { api } from '@/services/api';
+import { api } from '@/api';
 
 interface UseTrajectoryPreviewOptions{
     trajectoryId: string;
@@ -116,7 +116,7 @@ const useTrajectoryPreview = ({
                     r: Math.random().toString(36)
                 }).toString();
 
-                const response = await api.get(
+                const response = await api.get<Blob>(
                     `/trajectories/${trajId}/preview?${cacheBuster}`,
                     {
                         responseType: 'blob',
@@ -131,11 +131,12 @@ const useTrajectoryPreview = ({
                     }
                 );
 
-                if(!response.data || response.data.size === 0){
+                const blob = response.data;
+                if(!blob || blob.size === 0){
                     throw new Error('Empty or invalid image response');
                 }
 
-                const blobUrl = URL.createObjectURL(response.data);
+                const blobUrl = URL.createObjectURL(blob);
                 previewCache.set(cacheKey, {
                     blobUrl,
                     updatedAt: updated,

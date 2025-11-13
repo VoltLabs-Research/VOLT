@@ -33,4 +33,24 @@ export interface AuthResponsePayload{
   user: User;
 }
 
+export enum ErrorType {
+    NETWORK = 'NETWORK',
+    TIMEOUT = 'TIMEOUT',
+    AUTH = 'AUTH',
+    FORBIDDEN = 'FORBIDDEN',
+    NOT_FOUND = 'NOT_FOUND',
+    VALIDATION = 'VALIDATION',
+    CONFLICT = 'CONFLICT',
+    RATE_LIMIT = 'RATE_LIMIT',
+    SERVER_ERROR = 'SERVER_ERROR',
+    CIRCUIT_BREAKER_OPEN = 'CIRCUIT_BREAKER_OPEN',
+    UNKNOWN = 'UNKNOWN'
+}
+
+export enum CircuitState{
+    CLOSED = 'CLOSED',
+    OPEN = 'OPEN',
+    HALF_OPEN = 'HALF_OPEN'
+}
+
 export type ApiAxiosResponse<T> = AxiosResponse<ApiResponse<T>>;

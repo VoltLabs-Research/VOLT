@@ -21,7 +21,7 @@
 **/
 
 import { create } from 'zustand';
-import { api } from '@/services/api';
+import { api } from '@/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import type { Trajectory } from '@/types/models';
 import type { ApiResponse } from '@/types/api';

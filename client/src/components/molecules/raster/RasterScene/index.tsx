@@ -7,7 +7,7 @@ import RasterSceneSkeleton from '@/components/atoms/raster/RasterSceneSkeleton';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlaybackControls from '@/components/atoms/raster/PlaybackControls';
 import ModelRail from '@/components/atoms/raster/ModelRail';
-import { downloadBlob, downloadJson } from '@/services/api';
+import { api } from '@/api';
 import './RasterScene.css';
 
 const RasterScene: React.FC<RasterSceneProps> = ({
@@ -22,7 +22,6 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   const [showUnavailable, setShowUnavailable] = React.useState(false);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [downloadProgress, setDownloadProgress] = React.useState<number | null>(null);
-  const [downloadDone, setDownloadDone] = React.useState(false);
 
   React.useEffect(() => {
     setShowUnavailable(false);
@@ -42,21 +41,19 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   const handleDownloadDislocations = async () => {
     if(!scene?.analysisId) return;
   setDownloadProgress(0);
-    await downloadJson(`/analysis-config/${scene.analysisId}/dislocations`, `dislocations_${scene.analysisId}.json`, {
-      onProgress: (p) => setDownloadProgress(p)
+    await api.downloadJson(`/analysis-config/${scene.analysisId}/dislocations`, `dislocations_${scene.analysisId}.json`, {
+      onProgress: (p: number) => setDownloadProgress(p)
     });
-  setDownloadDone(true);
-  setTimeout(() => { setDownloadProgress(null); setDownloadDone(false); }, 700);
+  setDownloadProgress(null);
     setIsMenuOpen(false);
   };
   const handleDownloadGLBZip = async () => {
     if(!trajectoryId) return;
   setDownloadProgress(0);
-    await downloadBlob(`/trajectories/${trajectoryId}/glb-archive`, `trajectory_${trajectoryId}_glbs.zip`, {
-      onProgress: (p) => setDownloadProgress(p)
+    await api.downloadBlob(`/trajectories/${trajectoryId}/glb-archive`, `trajectory_${trajectoryId}_glbs.zip`, {
+      onProgress: (p: number) => setDownloadProgress(p)
     });
-  setDownloadDone(true);
-  setTimeout(() => { setDownloadProgress(null); setDownloadDone(false); }, 700);
+  setDownloadProgress(null);
     setIsMenuOpen(false);
   };
   const handleDownloadRasterImagesZip = async () => {
@@ -68,11 +65,10 @@ const RasterScene: React.FC<RasterSceneProps> = ({
     q.push('includePreview=0');
     const qs = q.length ? `?${q.join('&')}` : '';
   setDownloadProgress(0);
-    await downloadBlob(`/raster/${trajectoryId}/images-archive${qs}`, `trajectory_${trajectoryId}_raster_images.zip`, {
-      onProgress: (p) => setDownloadProgress(p)
+    await api.downloadBlob(`/raster/${trajectoryId}/images-archive${qs}`, `trajectory_${trajectoryId}_raster_images.zip`, {
+      onProgress: (p: number) => setDownloadProgress(p)
     });
-  setDownloadDone(true);
-  setTimeout(() => { setDownloadProgress(null); setDownloadDone(false); }, 700);
+  setDownloadProgress(null);
     setIsMenuOpen(false);
   };
 

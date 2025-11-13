@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '@/services/api';
+import { api } from '@/api';
 
 type TeamAnalysesItem = {
   _id: string;

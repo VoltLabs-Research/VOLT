@@ -21,7 +21,7 @@
 **/
 
 import { useState, useEffect } from 'react';
-import { api } from '@/services/api';
+import { api } from '@/api';
 
 export interface ApiTrackerRequest {
     _id: string;
@@ -83,7 +83,7 @@ export const useApiTracker = (options: UseApiTrackerOptions = {}) => {
 
             const url = `/api-tracker/my-stats?${params.toString()}`;
             
-            const response = await api.get(url);
+            const response = await api.get<ApiTrackerResponse>(url);
             setData(response.data);
         } catch (err: any) {
             console.error('❌ API tracker error:', err);

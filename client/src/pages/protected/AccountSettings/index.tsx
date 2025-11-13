@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TbUser, TbShield, TbCreditCard, TbFileText, TbActivity, TbLock, TbKey, TbX, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbTrash, TbPlus, TbWebhook, TbCheck } from 'react-icons/tb';
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
-import { api } from '@/services/api';
+import { api } from '@/api';
 import LoginActivityModal from '@/components/molecules/LoginActivityModal';
 import ApiTokenModal from '@/components/molecules/ApiTokenModal';
 import ApiTokenList from '@/components/molecules/ApiTokenList';

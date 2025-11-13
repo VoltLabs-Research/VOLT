@@ -21,7 +21,7 @@
 **/
 
 import { create } from 'zustand';
-import { api } from '@/services/api';
+import { api } from '@/api';
 
 type EntryType = 'file' | 'dir';
 

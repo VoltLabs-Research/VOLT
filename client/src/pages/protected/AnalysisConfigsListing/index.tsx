@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/DocumentListing'
 import useTeamStore from '@/stores/team/team'
-import { api } from '@/services/api'
+import { api } from '@/api'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
 import useDashboardSearchStore from '@/stores/ui/dashboard-search'
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { api } from '@/services/api';
+import { api } from '@/api';
 import type { Notification } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
 

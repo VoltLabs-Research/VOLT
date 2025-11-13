@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import { api } from './api';
+import { api } from '@/api';
 
 export interface StructureTypeStat {
     name: string;

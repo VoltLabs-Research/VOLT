@@ -3,7 +3,7 @@ import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, MethodBadge, RateBadge, formatNumber } from '@/components/organisms/DocumentListing'
 import useTeamStore from '@/stores/team/team'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
-import { api } from '@/services/api'
+import { api } from '@/api'
 import useDashboardSearchStore from '@/stores/ui/dashboard-search'
 
 const StructureAnalysisListing = () => {

@@ -25,6 +25,7 @@ import { v4 } from 'uuid';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { api } from '@/api';
 
 export const GLB_CONSTANTS = {
     DEFAULT_POSITION: Object.freeze({ x: 0, y: 0, z: 0 }),
@@ -157,7 +158,7 @@ class WorkerGLBLoader{
         
         const id = v4();
         return new Promise<void>((resolve, reject) => {
-            this.pendingRequests.set(id, { id, resolve, reject });
+            this.pendingRequests.set(id, { id, resolve: resolve as any, reject, onProgress: undefined });
             this.worker!.postMessage({ id, type: 'preload', urls, token });
         });
     }
@@ -182,20 +183,51 @@ class WorkerGLBLoader{
 
 const workerLoader = WorkerGLBLoader.getInstance();
 
-export const loadGLB = (url: string, onProgress?: (progress: number) => void): Promise<THREE.Group> => {
-    const endpoint = `${import.meta.env.VITE_API_URL}/api${url}`;
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-    return workerLoader.loadGLB(endpoint, token || undefined, onProgress);
+export const loadGLB = async (url: string, onProgress?: (progress: number) => void): Promise<THREE.Group> => {
+    try {
+        const response = await api.get<ArrayBuffer>(url, {
+            responseType: 'arraybuffer',
+            onDownloadProgress: (evt) => {
+                const total = evt.total ?? 0;
+                if (total > 0 && onProgress) {
+                    onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
+                }
+            }
+        });
+
+        const arrayBuffer = response.data;
+
+        // Parse with GLTF loader
+        return new Promise<THREE.Group>((resolve, reject) => {
+            const gltfLoader = new GLTFLoader();
+            try {
+                const dracoLoader = new DRACOLoader();
+                dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+                gltfLoader.setDRACOLoader(dracoLoader);
+                gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+            } catch (error) {
+                console.error('Failed to set up GLTF decoders:', error);
+            }
+
+            gltfLoader.parse(
+                arrayBuffer,
+                '',
+                (gltf: any) => {
+                    resolve(gltf.scene);
+                },
+                (err: any) => {
+                    reject(err instanceof Error ? err : new Error(String(err)));
+                }
+            );
+        });
+    } catch (error) {
+        throw error instanceof Error ? error : new Error(String(error));
+    }
 };
 
-export const preloadGLBs = (urls: string[]): void => {
-    // No hacer nada - deshabilitar precarga
-    //console.log('Precarga de GLBs deshabilitada:', urls.length, 'modelos');
+export const preloadGLBs = (): void => {
+    // Preload disabled
     return;
-    
-    /*workerLoader.preloadGLBs(endpoints, token || undefined).catch(error => {
-        console.warn('Preload failed:', error);
-    });*/
 };
 
 export const clearModelCache = (): void => {

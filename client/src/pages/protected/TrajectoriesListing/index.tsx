@@ -5,7 +5,7 @@ import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@
 import useTrajectoryStore from '@/stores/trajectories'
 import useTeamStore from '@/stores/team/team'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
-import { api } from '@/services/api'
+import { api } from '@/api'
 import useDashboardSearchStore from '@/stores/ui/dashboard-search'
 
 const TrajectoriesListing = () => {

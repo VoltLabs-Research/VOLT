@@ -412,7 +412,7 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
         setLoadingState({ isLoading: false, progress: 100, error: null });
       } catch (error: any) {
         const message = error instanceof Error ? error.message : String(error);
-        setLoadingState({ isLoading: false, progress: 0, error: null });
+        setLoadingState({ isLoading: false, progress: 0, error: message });
         logger.error('Model loading failed:', message);
       } finally {
         setIsModelLoading(false);
@@ -581,14 +581,19 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
     return activeModel.glbs[activeScene];
   }, [activeModel, activeScene]);
 
+  const updateSceneRef = useRef<() => void>(() => {});
+  
   const updateScene = useCallback(() => {
     const targetUrl = getTargetUrl();
-    if (targetUrl && targetUrl !== stateRef.current.lastLoadedUrl && !loadingState.isLoading) {
+    // Don't retry if model failed to load - prevent infinite retry loops
+    if (targetUrl && targetUrl !== stateRef.current.lastLoadedUrl && !loadingState.isLoading && !loadingState.error) {
       loadAndSetupModel(targetUrl);
     }
-  }, [getTargetUrl, loadingState.isLoading, loadAndSetupModel]);
+  }, [getTargetUrl, loadingState.isLoading, loadingState.error, loadAndSetupModel]);
 
-  const throttledUpdateScene2 = useThrottledCallback(updateScene, updateThrottle);
+  updateSceneRef.current = updateScene;
+
+  const throttledUpdateScene2 = useThrottledCallback(() => updateSceneRef.current(), updateThrottle);
   useEffect(() => {
     throttledUpdateScene2();
   }, [throttledUpdateScene2]);

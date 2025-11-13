@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import { api } from './api';
+import api from '@/api/';
 import type { Chat, Message } from '@/types/chat';
 import type { User } from '@/types/models';
 
@@ -95,11 +95,6 @@ export const chatApi = {
     // Delete a message
     deleteMessage: async (chatId: string, messageId: string): Promise<void> => {
         await api.delete(`/chat/${chatId}/messages/${messageId}`);
-    },
-
-    // Toggle reaction - DEPRECATED: Use socket instead
-    toggleReaction: async (chatId: string, messageId: string, emoji: string): Promise<Message> => {
-        throw new Error('toggleReaction API is deprecated. Use socket events for real-time reactions.');
     },
 
     // Get file as base64 for preview

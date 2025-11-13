@@ -21,7 +21,7 @@
 **/
 
 import { create } from 'zustand';
-import { api } from '@/services/api';
+import { api } from '@/api';
 import type { ApiResponse } from '@/types/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import { clearTrajectoryPreviewCache } from '@/hooks/trajectory/use-trajectory-preview';

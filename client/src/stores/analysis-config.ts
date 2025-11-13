@@ -24,7 +24,7 @@ import { create } from 'zustand';
 import type { AnalysisConfig } from '@/types/models';
 import type { AnalysisConfigStore } from '@/types/stores/analysis-config';
 import type { ApiResponse } from '@/types/api';
-import { api } from '@/services/api';
+import { api } from '@/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 
 const DEFAULT_ANALYSIS_CONFIG: AnalysisConfig = {
