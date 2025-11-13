@@ -77,7 +77,6 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
         retry: retryPreview
     } = useTrajectoryPreview({
         trajectoryId: trajectory._id,
-        previewId: trajectory.preview,
         updatedAt: trajectory.updatedAt,
         enabled: true
     })

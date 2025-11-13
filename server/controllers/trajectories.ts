@@ -63,7 +63,7 @@ const sendFileInline = async (
     }else{
         res.setHeader('Content-Disposition', 'inline');
     }
-    res.sendFile(absPath);
+    return res.sendFile(absPath);
 };
 
 
@@ -174,9 +174,24 @@ export const getMetrics = async (req: Request, res: Response) => {
 export const getTrajectoryPreview = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     const trajFS = new TrajectoryFS(trajectory.folderId);
-    const previews = await trajFS.getPreviews({ media: 'raster' });
-    const previewPng = previews.previewPng;
-    if(!previewPng){
+    
+    let previewPath: string | null = null;
+    
+    // First, try to get the root preview.png (main preview generated during upload)
+    const rootPreviews = await trajFS.getPreviews();
+    if (rootPreviews.previewPng) {
+        previewPath = rootPreviews.previewPng;
+    } else {
+        // Fallback: try to get the first available raster preview
+        const rasterPreviews = await trajFS.getPreviews({ media: 'raster' });
+        const rasterMap = rasterPreviews.raster || {};
+        const firstKey = Object.keys(rasterMap).sort((a, b) => Number(a) - Number(b))[0];
+        if (firstKey && rasterMap[firstKey]) {
+            previewPath = rasterMap[firstKey];
+        }
+    }
+    
+    if (!previewPath) {
         return res.status(404).json({
             status: 'error',
             data: { error: 'Preview not found' }
@@ -184,7 +199,7 @@ export const getTrajectoryPreview = async (req: Request, res: Response) => {
     }
 
     const filename = `${trajectory.name || trajectory._id}_preview.png`;
-    await sendFileInline(res, previewPng, 'image/png', filename);
+    return await sendFileInline(res, previewPath, 'image/png', filename);
 };
 
 // Stream atom positions [x,y,z] for a given timestep by parsing the stored LAMMPS dump file (paginated)

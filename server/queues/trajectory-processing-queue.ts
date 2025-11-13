@@ -23,9 +23,18 @@
 import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import { BaseProcessingQueue } from './base-processing-queue';
+import { getRasterizerQueue } from './index';
+import { v4 } from 'uuid';
+import { RasterizerJob } from '@/types/services/rasterizer-queue';
+import { join } from 'path';
+import { existsSync } from 'fs';
+import { Trajectory } from '@/models';
+import TrajectoryFS from '@/services/trajectory-fs';
 import path from 'path';
 
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
+    private firstChunkProcessed = new Set<string>();
+
     constructor(){
         const options: QueueOptions = {
             queueName: 'trajectory-processing-queue',
@@ -37,6 +46,87 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
         };
         
         super(options);
+
+        // Listen for job completion to trigger preview generation
+        this.on('jobCompleted', (data: any) => {
+            this.onJobCompleted(data).catch(error => {
+                console.error('Unhandled error in onJobCompleted handler:', error);
+            });
+        });
+    }
+
+    private async onJobCompleted(data: any): Promise<void> {
+        const job = data.job as TrajectoryProcessingJob;
+        
+        // Only process if this is the first chunk (index 0)
+        if (job.chunkIndex !== 0) return;
+
+        const trackingKey = `${job.trajectoryId}:preview-scheduled`;
+        if (this.firstChunkProcessed.has(trackingKey)) return;
+
+        this.firstChunkProcessed.add(trackingKey);
+
+        try {
+            console.log(`First chunk completed for trajectory ${job.trajectoryId}, scheduling preview generation`);
+            
+            // Get first frame timestep from the job
+            const firstFrame = job.files?.[0];
+            if (!firstFrame || firstFrame.frameData?.timestep === undefined) {
+                console.warn(`No first frame data found for trajectory ${job.trajectoryId}`);
+                return;
+            }
+
+            const firstFrameTimestep = firstFrame.frameData.timestep;
+            const glbPath = join(job.glbFolderPath, `${firstFrameTimestep}.glb`);
+
+            // Check if GLB file exists
+            if (!existsSync(glbPath)) {
+                console.warn(`GLB file not found at ${glbPath}`);
+                return;
+            }
+
+            // Get trajectory to access team info and folder structure
+            const trajectory = await Trajectory.findById(job.trajectoryId);
+            if (!trajectory) {
+                console.warn(`Trajectory not found: ${job.trajectoryId}`);
+                return;
+            }
+
+            const tfs = new TrajectoryFS(trajectory.folderId);
+            
+            // Output preview PNG at {root}/preview.png
+            const previewPath = join(tfs.root, 'preview.png');
+
+            const rasterizerQueue = getRasterizerQueue();
+            
+            // Create a rasterizer job for preview
+            const previewJob: RasterizerJob = {
+                jobId: v4(),
+                trajectoryId: job.trajectoryId,
+                teamId: job.teamId,
+                name: 'Headless Rasterizer (Preview)',
+                message: `${trajectory.name} - Preview frame ${firstFrameTimestep}`,
+                opts: {
+                    inputPath: glbPath,
+                    outputPath: previewPath,
+                    width: 1024,
+                    height: 768,
+                    background: '#1a1a1a',
+                    fov: 45,
+                    maxPoints: 100000,
+                    up: 'z',
+                    az: 45,
+                    el: 30,
+                    distScale: 1.0
+                }
+            };
+
+            await rasterizerQueue.addJobs([previewJob]);
+            console.log(`Preview generation job queued for trajectory ${job.trajectoryId}, frame ${firstFrameTimestep}`);
+        } catch (error) {
+            console.error(`Failed to queue preview generation for trajectory ${job.trajectoryId}:`, error);
+            // Don't throw - trajectory processing shouldn't fail if preview generation fails
+        }
     }
 
     protected deserializeJob(rawData: string): TrajectoryProcessingJob {

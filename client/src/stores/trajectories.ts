@@ -278,7 +278,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         async getRasterizedFrames(_id: string, _query?: any){
             return null; // Not implemented here
         },
-        clearRasterCache(_id?: string){ /* not implemented in this store */ },
 
         // Fetch atoms positions for a given trajectory/timestep with simple cache.
         async getFrameAtoms(trajectoryId, timestep, opts){
@@ -377,14 +376,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
     }
   );
 },
-
-
-        getTrajectoryPreviewUrl: (id: string) => {
-            const trajectory = get().trajectories.find(t => t._id === id)
-                || (get().trajectory?._id === id ? get().trajectory : null);
-            return trajectory?.preview ? `/trajectories/${id}/preview` : null;
-        },
-
         loadAuthenticatedPreview: (id: string) => previewCache.loadPreview(id),
         isPreviewLoading: (id: string) => previewCache.isLoading(id),
         clearPreviewCache: (id?: string) => previewCache.clear(id),

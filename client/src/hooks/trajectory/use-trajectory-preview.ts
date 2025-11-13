@@ -27,7 +27,6 @@ import { api } from '@/api';
 
 interface UseTrajectoryPreviewOptions{
     trajectoryId: string;
-    previewId?: string | null;
     updatedAt: string;
     enabled?: boolean;
 }
@@ -63,7 +62,6 @@ setInterval(() => {
 
 const useTrajectoryPreview = ({
     trajectoryId,
-    previewId,
     updatedAt,
     enabled = true
 }: UseTrajectoryPreviewOptions): UseTrajectoryPreviewReturn => {
@@ -76,16 +74,15 @@ const useTrajectoryPreview = ({
     const currentRequestRef = useRef<AbortController | null>(null);
     const mountedRef = useRef(true);
 
-    const getCacheKey = useCallback((trajId: string, prevId: string, updated: string) => {
-        return `${trajId}:${prevId}:${new Date(updated).getTime()}`;
+    const getCacheKey = useCallback((trajId: string, updated: string) => {
+        return `${trajId}:${new Date(updated).getTime()}`;
     }, []);
 
     const getPreviewFromCacheOrServer = useCallback(async (
         trajId: string,
-        prevId: string,
         updated: string
     ): Promise<string | null> => {
-        const cacheKey = getCacheKey(trajId, prevId, updated);
+        const cacheKey = getCacheKey(trajId, updated);
 
         const cached = previewCache.get(cacheKey);
         if(cached && cached.updatedAt === updated){
@@ -170,15 +167,15 @@ const useTrajectoryPreview = ({
     }, []);
 
     const loadPreview = useCallback(async () => {
-        // Do not load if disabled or there is no preview
-        if(!enabled || !previewId){
+        // Do not load if disabled
+        if(!enabled){
             setPreviewBlobUrl(null);
             setLastLoadedKey(null);
             setIsLoading(false);
             return;
         }
 
-        const currentKey = getCacheKey(trajectoryId, previewId, updatedAt);
+        const currentKey = getCacheKey(trajectoryId, updatedAt);
 
         if(currentKey === lastLoadedKey && previewBlobUrl){
             setIsLoading(false);
@@ -197,7 +194,7 @@ const useTrajectoryPreview = ({
             setIsLoading(true);
             setError(false);
 
-            const blobUrl = await getPreviewFromCacheOrServer(trajectoryId, previewId, updatedAt);
+            const blobUrl = await getPreviewFromCacheOrServer(trajectoryId, updatedAt);
 
             // Check if component is still mounted and request wan't cancelled
             if(!mountedRef.current || abortController.signal.aborted){
@@ -231,12 +228,12 @@ const useTrajectoryPreview = ({
                 currentRequestRef.current = null;
             }
         }
-    }, [enabled, previewId, trajectoryId, updatedAt, lastLoadedKey, previewBlobUrl, getCacheKey, getPreviewFromCacheOrServer]);
+    }, [enabled, trajectoryId, updatedAt, lastLoadedKey, previewBlobUrl, getCacheKey, getPreviewFromCacheOrServer]);
 
     const retry = useCallback(() => {
         setError(false);
 
-        const currentKey = getCacheKey(trajectoryId, previewId || '', updatedAt);
+        const currentKey = getCacheKey(trajectoryId, updatedAt);
         const cached = previewCache.get(currentKey);
         if(cached){
             logger.log('Force retry: clearing cache for', currentKey);
@@ -246,7 +243,7 @@ const useTrajectoryPreview = ({
 
         setLastLoadedKey(null);
         loadPreview();
-    }, [loadPreview, previewId, trajectoryId, updatedAt, getCacheKey]);
+    }, [loadPreview, trajectoryId, updatedAt, getCacheKey]);
 
     useEffect(() => {
         loadPreview();

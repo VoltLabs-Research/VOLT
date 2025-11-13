@@ -40,11 +40,9 @@ export interface TrajectoryActions {
     clearSelection: () => void;
     getMetrics: (id: string, opts?: { force?: boolean }) => void;
     saveTrajectoryPreview: (id: string, dataURL: string) => Promise<{ success: boolean; error?: string }>;
-    getTrajectoryPreviewUrl: (id: string) => string | null;
     loadAuthenticatedPreview: (id: string) => Promise<string | null>;
     isPreviewLoading: (id: string) => boolean;
     getRasterizedFrames: (id: string, query?: RasterQuery & { force?: boolean }) => Promise<RasterPage | null>;
-    clearRasterCache: (id?: string) => void;
     clearPreviewCache: (id?: string) => void;
     getFrameAtoms: (
         trajectoryId: string,
