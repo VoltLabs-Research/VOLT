@@ -74,7 +74,8 @@ const DocumentListingTable = ({
         return () => observer.disconnect();
     }, [enableInfinite, hasMore, isFetchingMore, onLoadMore, scrollContainerRef]);
 
-    const isInitialLoading = !!isLoading && (Array.isArray(data) ? data.length === 0 : true);
+    const isInitialLoading = isLoading && data.length === 0;
+    const hasNoData = data.length === 0;
 
     return (
         <div className='document-listing-table-container'>
@@ -95,52 +96,59 @@ const DocumentListingTable = ({
             )}
 
             <div className='document-listing-table-body-container'>
-                {isInitialLoading ? (
-                    Array.from({ length: 16 }).map((_, index) => (
-                        <SkeletonRow key={`skeleton-${index}`} columns={columns} />
-                    )) 
-                ) : data.length === 0 ? (
-                    <div className='document-listing-empty'>
-                        <p>{emptyMessage}</p>
-                    </div>
-                ) : (
-                    <>
-                        {data.map((item: any, idx: number) => {
-                            const rowKey = keyExtractor ? keyExtractor(item, idx) : `item-${idx}`;
-                            return (
-                            <ActionBasedFloatingContainer
-                                key={rowKey}
-                                options={getMenuOptions ? getMenuOptions(item) : []}
-                                className='document-listing-table-row-container'
-                                useCursorPosition={true}
-                                deleteMenuStyle={true}
+                {!hasNoData && data.map((item: any, idx: number) => {
+                    const rowKey = keyExtractor ? keyExtractor(item, idx) : `item-${idx}`;
+                    return (
+                    <ActionBasedFloatingContainer
+                        key={rowKey}
+                        options={getMenuOptions ? getMenuOptions(item) : []}
+                        className='document-listing-table-row-container'
+                        useCursorPosition={true}
+                        deleteMenuStyle={true}
+                    >
+                        {columns.map((col: any, colIdx: number) => (
+                            <div
+                                className='document-listing-cell'
+                                data-label={col.title}
+                                key={`cell-${col.title}-${colIdx}`}
+                                title={String(item?.[col.key] ?? '')}
                             >
-                                {columns.map((col: any, colIdx: number) => (
-                                    <div
-                                        className='document-listing-cell'
-                                        data-label={col.title}
-                                        key={`cell-${col.title}-${colIdx}`}
-                                        title={String(item?.[col.key] ?? '')}
-                                    >
-                                        <span className='document-listing-cell-value'>
-                                            {col.render
-                                                ? col.render(item[col.key], item)
-                                                : String(item[col.key] ?? '—')}
-                                        </span>
-                                    </div>
-                                ))}
-                            </ActionBasedFloatingContainer>
-                            );
-                        })}
-                        {enableInfinite && hasMore && (isFetchingMore || (isLoading && data.length > 0)) && (
-                            Array.from({ length: skeletonRowsCount }).map((_, index) => (
-                                <SkeletonRow key={`append-skeleton-${index}`} columns={columns} />
-                            ))
-                        )}
-                    </>
+                                <span className='document-listing-cell-value'>  
+                                    {col.render
+                                        ? col.render(item[col.key], item)
+                                        : String(item[col.key] ?? '—')}
+                                </span>
+                            </div>
+                        ))}
+                    </ActionBasedFloatingContainer>
+                    );
+                })}
+
+                {!hasNoData && enableInfinite && hasMore && isFetchingMore && (
+                    Array.from({ length: skeletonRowsCount }).map((_, index) => (
+                        <SkeletonRow key={`append-skeleton-${index}`} columns={columns} />
+                    ))
                 )}
+
                 {/* Infinite scroll sentinel */}
                 {enableInfinite && <div ref={sentinelRef} style={{ height: 1 }} />}
+
+                {hasNoData && (
+                    <div className='document-listing-overlay-blur'>
+                        {/* Infinite skeleton loader background */}
+                        <div className='document-listing-infinite-skeleton-loader'>
+                            {Array.from({ length: 20 }).map((_, index) => (
+                                <SkeletonRow key={`infinite-skeleton-${index}`} columns={columns} />
+                            ))}
+                        </div>
+
+                        {/* Empty message overlay */}
+                        <div className='document-listing-empty-content document-listing-empty-message'>
+                            <h3 className='document-listing-empty-title'>No Documents</h3>
+                            <p className='document-listing-empty-description'>{emptyMessage}</p>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className='document-listing-table-footer-container' />

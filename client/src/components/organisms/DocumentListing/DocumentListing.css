@@ -115,6 +115,8 @@
 .document-listing-table-body-container{
     display: flex;
     flex-direction: column;
+    position: relative;
+    min-height: 400px;
 }
 
 .document-listing-table-row-container{
@@ -424,4 +426,117 @@
     background-color: #f1f5f9;
     color: #475569;
     border-color: #e2e8f0;
+}
+
+/* Empty State Overlay for Document Listing - Similar to Raster View */
+.document-listing-overlay-blur {
+    position: absolute;
+    top: 0;
+    left: 0;    
+    height: calc(100vh - 320px);
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+/* Infinite skeleton loader background */
+.document-listing-infinite-skeleton-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0.8;
+    animation: pulse-infinite 3s ease-in-out infinite;
+}
+
+@keyframes pulse-infinite {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.3; }
+}
+
+.document-listing-infinite-skeleton-loader .skeleton-row {
+    padding: 1rem 0 !important;
+    margin: 0 !important;
+    flex-shrink: 0;
+}
+
+.document-listing-empty-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    text-align: center;
+    color: var(--color-text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 3rem 2rem;
+    z-index: 101;
+}
+
+
+.document-listing-empty-message {
+    /* Mensaje vacío mantiene el centrado del contenedor padre */
+}
+
+.document-listing-empty-content .skeleton-row {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 1rem 0;
+    margin: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.document-listing-empty-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    width: 100%;
+    text-align: center;
+    align-self: center;
+}
+
+.document-listing-empty-description {
+    margin: 0;
+    font-size: 1rem;
+    opacity: 0.75;
+    line-height: 1.5;
+    color: var(--color-text-primary);
+    width: 100%;
+    text-align: center;
+    align-self: center;
+}
+
+/* Light Mode Adjustments */
+@media (prefers-color-scheme: light) {
+    .document-listing-overlay-blur {
+        background-color: rgba(255, 255, 255, 0.85);
+    }
+}
+
+/* Dark Mode Explicit (if theme class is used) */
+:root[data-theme='dark'] .document-listing-overlay-blur,
+.dark .document-listing-overlay-blur {
+    background-color: rgba(0, 0, 0, 0.65);
+}
+
+:root[data-theme='light'] .document-listing-overlay-blur,
+.light .document-listing-overlay-blur {
+    background-color: rgba(255, 255, 255, 0.85);
 }
