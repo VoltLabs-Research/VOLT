@@ -492,7 +492,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const hasError = !!error;
 
     return (
-        <CursorShareLayer roomName={trajectoryId} user={cursorUser} minIntervalMs={0} className='raster-view-container' style={{ position: 'relative' }}>
+        <CursorShareLayer roomName={trajectoryId} user={cursorUser} className='raster-view-container' style={{ position: 'relative' }}>
             <RasterHeader
                 trajectory={trajectory}
                 isLoading={isLoading}

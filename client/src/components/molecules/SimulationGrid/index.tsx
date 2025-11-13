@@ -4,9 +4,9 @@ import SimulationSkeletonCard from '@/components/atoms/SimulationSkeletonCard';
 import useTrajectoryStore from '@/stores/trajectories';
 import useAnimationPresence from '@/hooks/ui/animation/use-animation-presence';
 import useTeamJobsStore from '@/stores/team/jobs';
-import './SimulationGrid.css';
-import '@/assets/stylesheets/empty-state.css';
 import type { Job } from '@/types/jobs';
+import EmptyState from '@/components/atoms/EmptyState';
+import './SimulationGrid.css';
 
 const SimulationGrid = () => {
     const [parent] = useAnimationPresence();
@@ -42,16 +42,9 @@ const SimulationGrid = () => {
     }, []);
 
     if (hasEmptyState) {
-        return (
-            <div className='empty-state-container'>
-                <div className='empty-state-content'>
-                    <h2 className='empty-state-title'>No Trajectories Yet</h2>
-                    <p className='empty-state-description'>
-                        Get started by uploading your first simulation trajectory file to visualize and analyze atomic structures.
-                    </p>
-                </div>
-            </div>
-        );
+        return <EmptyState
+            title='No Trajectories Yet'
+            description='Get started by uploading your first simulation trajectory file to visualize and analyze atomic structures.' />
     }
 
     return (

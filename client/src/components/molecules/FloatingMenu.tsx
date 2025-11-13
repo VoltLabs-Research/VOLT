@@ -20,10 +20,11 @@
 * SOFTWARE.
 **/
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { FloatingMenuProps } from '@/types/floating-container';
 import FloatingMenuItem from '@/components/atoms/FloatingMenuItem';
+import './FloatingMenu.css';
 
 interface ExtendedFloatingMenuProps extends FloatingMenuProps {
     deleteMenuStyle?: boolean;
@@ -39,13 +40,52 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
     portalTarget = document.body,
     deleteMenuStyle = false
 }) => {
+    const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+    useEffect(() => {
+        const root = document.documentElement;
+        
+        // Set initial theme
+        const initialTheme = root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+        setTheme(initialTheme);
+
+        // Watch for theme changes
+        const observer = new MutationObserver(() => {
+            const currentTheme = root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+            setTheme(currentTheme);
+        });
+
+        observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+        return () => observer.disconnect();
+    }, []);
+
     if(!isVisible){
         return null;
     }
 
+    const getThemeColors = () => {
+        if (theme === 'light') {
+            return {
+                bg: 'rgba(255, 255, 255, 0.95)',
+                border: 'rgba(0, 0, 0, 0.1)',
+                text: '#1c1c1e',
+                itemHover: 'rgba(0, 0, 0, 0.04)'
+            };
+        } else {
+            return {
+                bg: '#181818',
+                border: '#2a2a2a',
+                text: '#e5e5e5',
+                itemHover: '#212121'
+            };
+        }
+    };
+
+    const colors = getThemeColors();
+
     const baseMenuStyles: React.CSSProperties = {
-        backgroundColor: 'white',
-        border: '1px solid #e5e5e5',
+        backgroundColor: colors.bg,
+        border: `1px solid ${colors.border}`,
         borderRadius: '8px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
         minWidth: '150px',
@@ -87,13 +127,13 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
                                 gap: '8px',
                                 cursor: 'pointer',
                                 fontSize: '14px',
-                                color: deleteMenuStyle ? '#dc2626' : '#374151',
+                                color: deleteMenuStyle ? '#dc2626' : colors.text,
                                 transition: 'background-color 0.2s ease',
                                 borderRadius: '.5rem',
                                 margin: '0 4px'
                             }}
                             onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = deleteMenuStyle ? '#fee2e2' : '#f3f4f6';
+                                e.currentTarget.style.backgroundColor = deleteMenuStyle ? '#fee2e2' : colors.itemHover;
                             }}
                             onMouseLeave={(e) => {
                                 e.currentTarget.style.backgroundColor = 'transparent';

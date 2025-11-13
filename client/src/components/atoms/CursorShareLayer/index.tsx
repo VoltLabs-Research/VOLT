@@ -113,7 +113,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
 }) => {
     const [cursors, setCursors] = useState<Map<string, Cursor>>(new Map());
     const containerRef = useRef<HTMLDivElement>(null);
-    const animationFrameRef = useRef<number>();
+    const animationFrameRef = useRef<number>(0);
     const lastUpdateRef = useRef<number>(0);
     const reduced = prefersReducedMotion();
 
@@ -123,7 +123,6 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
 
     const animate = useCallback(() => {
         const now = performance.now();
-        const deltaTime = now - lastUpdateRef.current;
         lastUpdateRef.current = now;
 
         setCursors((prev) => {
@@ -227,7 +226,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
                 const next = new Map(prev);
                 const existing = next.get(data.id);
                 const hue = hasH(data.id);
-                const { base, halo, line } = parseToHsl(data.user?.color, hue, vividness);
+                const { base } = parseToHsl(data.user?.color, hue, vividness);
                 const rect = containerRef.current?.getBoundingClientRect();
                 const x = rect ? clamp(data.nx, 0, 1) * rect.width : 0;
                 const y = rect ? clamp(data.ny, 0, 1) * rect.height : 0;
@@ -439,7 +438,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
                 );
             })}
 
-            <style jsx>{`
+            <style>{`
                 @media (prefers-reduced-motion: reduce) {
                 div { transition: none !important; animation: none !important; }
                 }
