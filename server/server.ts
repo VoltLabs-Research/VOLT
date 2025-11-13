@@ -29,8 +29,6 @@ import CursorModule from '@/socket/modules/cursor';
 import TrajectoryModule from '@/socket/modules/trajectory';
 import ChatModule from '@/socket/modules/chat';
 import { initializeRedis } from '@config/redis';
-import { fixChatIndex } from '@/utilities/fix-chat-index';
-import { updateExistingChats } from '@/utilities/update-existing-chats';
 
 const SERVER_PORT = process.env.SERVER_PORT || 8000;
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
@@ -54,10 +52,6 @@ server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
     
     // Now initialize the Socket Gateway with Redis already running
     await gateway.initialize(server);
-    
-    // Fix chat indexes and update existing chats
-    await fixChatIndex();
-    await updateExistingChats();
     
     console.log(`Server running at http://${SERVER_HOST}:${SERVER_PORT}/`);
 

@@ -27,6 +27,7 @@ import { createRedisClient } from '@config/redis';
 import { Worker } from 'worker_threads';
 import { EventEmitter } from 'events';
 import { publishJobUpdate } from '@/events/job-updates';
+import useClusterId from '@/utilities/use-cluster-id';
 
 export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitter{
     protected readonly queueName: string;
@@ -54,7 +55,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     constructor(options: QueueOptions){
         super();
 
-        this.queueName = options.queueName;
+        this.queueName = useClusterId(options.queueName);
         this.workerPath = options.workerPath;
 
         this.queueKey = `${this.queueName}_queue`;
@@ -102,8 +103,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 try {
                     const data = JSON.parse(raw);
                     if (data?.status !== 'running') continue;
-                    // reconstruimos el job a partir del status guardado
-                    const jobObj = this.deserializeJob(JSON.stringify(data)); // por si quieres validar la forma
+                    const jobObj = this.deserializeJob(JSON.stringify(data)); 
                     const rawData = JSON.stringify(jobObj);
 
                     const [inQueue, inProc] = await Promise.all([
