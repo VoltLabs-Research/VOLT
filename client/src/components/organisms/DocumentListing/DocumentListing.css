@@ -473,54 +473,12 @@
     left: 0;
     right: 0;
     bottom: 0;
-    text-align: center;
-    color: var(--color-text-primary);
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    padding: 3rem 2rem;
     z-index: 101;
+    /* Inherits from empty-state styles */
 }
-
 
 .document-listing-empty-message {
     /* Mensaje vacío mantiene el centrado del contenedor padre */
-}
-
-.document-listing-empty-content .skeleton-row {
-    background: none;
-    border: none;
-    box-shadow: none;
-    padding: 1rem 0;
-    margin: 0;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-}
-
-.document-listing-empty-title {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    width: 100%;
-    text-align: center;
-    align-self: center;
-}
-
-.document-listing-empty-description {
-    margin: 0;
-    font-size: 1rem;
-    opacity: 0.75;
-    line-height: 1.5;
-    color: var(--color-text-primary);
-    width: 100%;
-    text-align: center;
-    align-self: center;
 }
 
 /* Light Mode Adjustments */

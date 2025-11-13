@@ -1,5 +1,6 @@
 import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer';
 import type { ColumnConfig } from '@/components/organisms/DocumentListing';
+import EmptyState from '@/components/atoms/EmptyState';
 import { Skeleton } from '@mui/material';
 import { useEffect, useRef } from 'react';
 
@@ -33,6 +34,8 @@ type InfiniteProps = {
     skeletonRowsCount?: number;
   scrollContainerRef?: React.RefObject<HTMLElement> | null;
   keyExtractor?: (item: any, index: number) => string | number;
+  emptyButtonText?: string;
+  onEmptyButtonClick?: () => void;
 }
 
 const DocumentListingTable = ({
@@ -49,7 +52,9 @@ const DocumentListingTable = ({
     isFetchingMore = false,
     skeletonRowsCount = 8,
     scrollContainerRef = null,
-    keyExtractor
+    keyExtractor,
+    emptyButtonText,
+    onEmptyButtonClick
 }: any & InfiniteProps) => {
     const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -142,10 +147,15 @@ const DocumentListingTable = ({
                             ))}
                         </div>
 
-                        {/* Empty message overlay */}
-                        <div className='document-listing-empty-content document-listing-empty-message'>
-                            <h3 className='document-listing-empty-title'>No Documents</h3>
-                            <p className='document-listing-empty-description'>{emptyMessage}</p>
+                        {/* Empty state with EmptyState component */}
+                        <div className='document-listing-empty-content'>
+                            <EmptyState
+                                title="No Documents"
+                                description={emptyMessage}
+                                buttonText={emptyButtonText}
+                                buttonOnClick={onEmptyButtonClick}
+                                className="document-listing-empty-message"
+                            />
                         </div>
                     </div>
                 )}
