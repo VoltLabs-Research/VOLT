@@ -53,6 +53,7 @@ export interface Scene3DRef {
 	markContentReady: () => void;
 	waitForContentFrame: () => Promise<void>;
 	zoomTo: (zoomFactor: number) => void;
+	getCurrentZoom: () => number;
 }
 
 const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
@@ -196,6 +197,29 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 			camera.position.copy(clampedPosition);
 			
 			controls.update();
+		},
+		getCurrentZoom: () => {
+			if (!orbitControlsRef.current) return 100;
+			const controls = orbitControlsRef.current;
+			const camera = controls.object as THREE.PerspectiveCamera;
+			
+			// Initialize reference distance on first call if not already done
+			if (!initialDistanceRef.current) {
+				initialDistanceRef.current = camera.position.distanceTo(controls.target);
+			}
+			
+			// Calculate current distance
+			const currentDistance = camera.position.distanceTo(controls.target);
+			
+			// Calculate zoom percentage relative to initial distance
+			// From: targetDistance = initialDistance * (100 / zoomPercent)
+			// Solve for zoomPercent: zoomPercent = initialDistance * 100 / currentDistance
+			const zoomPercent = (initialDistanceRef.current * 100) / currentDistance;
+			
+			// Round to nearest preset or to nearest 5%
+			const roundedZoom = Math.round(zoomPercent / 5) * 5;
+			
+			return Math.max(10, Math.min(1000, roundedZoom)); // Clamp between 10% and 1000%
 		}
 	}), [tools]);
 
@@ -209,6 +233,24 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 		orbitControlsRef.current.target.set(ocTarget[0], ocTarget[1], ocTarget[2]);
 		orbitControlsRef.current.update();
 	}, [ocTarget[0], ocTarget[1], ocTarget[2]]);
+
+	// Initialize zoom reference distance when OrbitControls is ready
+	useEffect(() => {
+		const initializeZoom = () => {
+			if (!orbitControlsRef.current || initialDistanceRef.current) return true;
+			const controls = orbitControlsRef.current;
+			const camera = controls.object as any;
+			initialDistanceRef.current = camera.position.distanceTo(controls.target);
+			return true;
+		};
+		
+		// Try to initialize immediately
+		if (!initializeZoom()) {
+			// If not ready, retry on next frame
+			const timer = setTimeout(initializeZoom, 100);
+			return () => clearTimeout(timer);
+		}
+	}, []);
 
 	const isDefectScene = useMemo(() => ['defect_mesh', 'interface_mesh'].includes(activeScene), [activeScene]);
 	const isTrajectoryScene = useMemo(() => ['trajectory', 'atoms_colored_by_type', 'dislocations'].includes(activeScene), [activeScene]);

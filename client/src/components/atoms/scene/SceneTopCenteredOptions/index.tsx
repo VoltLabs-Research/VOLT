@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import Select from '@/components/atoms/form/Select';
 import { useNavigate } from 'react-router';
@@ -20,6 +20,45 @@ interface SceneTopCenteredOptionsProps {
 const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) => {
     const navigate = useNavigate();
     const [currentZoom, setCurrentZoom] = useState('100');
+    const lastZoomRef = useRef<number>(100);
+    
+    // Update selector when zoom changes via touchpad
+    useEffect(() => {
+        let rafId: number | null = null;
+        
+        const updateZoom = () => {
+            try {
+                if (!scene3DRef?.current?.getCurrentZoom) {
+                    rafId = requestAnimationFrame(updateZoom);
+                    return;
+                }
+                
+                const newZoom = scene3DRef.current.getCurrentZoom();
+                
+                // Only update if zoom changed significantly (more than 1%)
+                if (Math.abs(newZoom - lastZoomRef.current) > 1) {
+                    lastZoomRef.current = newZoom;
+                    // Find closest preset
+                    const closest = ZOOM_PRESETS.reduce((prev, curr) => 
+                        Math.abs(curr - newZoom) < Math.abs(prev - newZoom) ? curr : prev
+                    );
+                    setCurrentZoom(closest.toString());
+                }
+            } catch (error) {
+                console.error('Error updating zoom:', error);
+            }
+            
+            rafId = requestAnimationFrame(updateZoom);
+        };
+        
+        rafId = requestAnimationFrame(updateZoom);
+        
+        return () => {
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+            }
+        };
+    }, [scene3DRef]);
     
     const zoomOptions = useMemo(() => 
         ZOOM_PRESETS.map(preset => ({
@@ -32,6 +71,7 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
     const handleZoomChange = useCallback((zoomPercentStr: string) => {
         setCurrentZoom(zoomPercentStr);
         const zoomPercent = parseInt(zoomPercentStr, 10);
+        lastZoomRef.current = zoomPercent;
         
         // Use scene3DRef to zoom via OrbitControls if available
         if (scene3DRef?.current?.zoomTo) {

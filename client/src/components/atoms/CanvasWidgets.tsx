@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import type { EditorWidgetsProps } from '@/types/canvas';
 import useEditorUIStore from '@/stores/ui/editor';
 import EditorSidebar from '@/components/organisms/EditorSidebar';
