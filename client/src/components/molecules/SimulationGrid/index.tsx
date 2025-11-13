@@ -5,6 +5,7 @@ import useTrajectoryStore from '@/stores/trajectories';
 import useAnimationPresence from '@/hooks/ui/animation/use-animation-presence';
 import useTeamJobsStore from '@/stores/team/jobs';
 import './SimulationGrid.css';
+import '@/assets/stylesheets/empty-state.css';
 import type { Job } from '@/types/jobs';
 
 const SimulationGrid = () => {
@@ -17,6 +18,8 @@ const SimulationGrid = () => {
     const isLoading = useTrajectoryStore((state) => state.isLoadingTrajectories);
     const uploadingFileCount = useTrajectoryStore((state) => state.uploadingFileCount);
     const getJobsForTrajectory = useTeamJobsStore((state) => state.getJobsForTrajectory);
+
+    const hasEmptyState = !isLoading && trajectories.length === 0 && uploadingFileCount === 0;
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -37,6 +40,19 @@ const SimulationGrid = () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, []);
+
+    if (hasEmptyState) {
+        return (
+            <div className='empty-state-container'>
+                <div className='empty-state-content'>
+                    <h2 className='empty-state-title'>No Trajectories Yet</h2>
+                    <p className='empty-state-description'>
+                        Get started by uploading your first simulation trajectory file to visualize and analyze atomic structures.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className='trajectories-container' ref={parent as React.MutableRefObject<HTMLDivElement | null>}>
