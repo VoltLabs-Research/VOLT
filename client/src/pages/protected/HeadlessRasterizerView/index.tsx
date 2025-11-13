@@ -39,6 +39,7 @@ import SceneColumn from '@/components/molecules/raster/SceneColumn';
 import Thumbnails from '@/components/molecules/raster/Thumbnails';
 import MetricsBar from '@/components/molecules/raster/MetricsBar';
 import CursorShareLayer from '@/components/atoms/CursorShareLayer';
+import EmptyState from '@/components/atoms/EmptyState';
 import useRasterConnectedUsers from '@/hooks/raster/useRasterConnectedUsers';
 import FrameAtomsTable from '@/components/organisms/FrameAtomsTable';
 import TrajectoryFileExplorer from '@/components/organisms/TrajectoryFileExplorer';
@@ -542,28 +543,26 @@ const HeadlessRasterizerView: React.FC = () => {
 
                 {hasNoRasterData && !isLoading && (
                     <div className="raster-empty-state-overlay">
-                        <div className="raster-empty-state-content">
-                            <h2 className="raster-empty-state-title">No Rasterized Data</h2>
-                            <p className="raster-empty-state-description">
-                                This trajectory hasn't been rasterized yet. Rasterize it first to view the visualization and analysis results.
-                            </p>
-                            <button className="raster-empty-state-button" onClick={handleGoBack}>
-                                Return to Dashboard
-                            </button>
-                        </div>
+                        <EmptyState
+                            title="No Rasterized Data"
+                            description="This trajectory hasn't been rasterized yet. Rasterize it first to view the visualization and analysis results."
+                            buttonText="Return to Dashboard"
+                            buttonOnClick={handleGoBack}
+                            className="raster-empty-state-content"
+                        />
                     </div>
                 )}
 
                 {hasError && !isLoading && (
                     <div className="raster-empty-state-overlay">
-                        <div className="raster-empty-state-content">
-                            <div className="raster-empty-state-icon">⚠️</div>
-                            <h2 className="raster-empty-state-title">Error Loading Data</h2>
-                            <p className="raster-error-message">{error}</p>
-                            <button className="raster-empty-state-button" onClick={handleGoBack}>
-                                Return to Dashboard
-                            </button>
-                        </div>
+                        <EmptyState
+                            title="Error Loading Data"
+                            description={error}
+                            icon="⚠️"
+                            buttonText="Return to Dashboard"
+                            buttonOnClick={handleGoBack}
+                            className="raster-empty-state-content"
+                        />
                     </div>
                 )}
 

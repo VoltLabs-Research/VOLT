@@ -17,6 +17,7 @@
     flex-direction: column;
     gap: 1rem;
     max-width: 500px;
+    align-items: center;
 }
 
 .empty-state-icon {
@@ -24,6 +25,7 @@
     opacity: 0.7;
     display: flex;
     justify-content: center;
+    align-items: center;
 }
 
 .empty-state-title {
