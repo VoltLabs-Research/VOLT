@@ -7,6 +7,11 @@
     background-color: transparent;
 }
 
+.dashboard-stats-wrapper {
+    position: relative;
+    width: 100%;
+}
+
 .dashboard-body-left-container{
     height: 100%;
     display: flex;
@@ -378,6 +383,92 @@
 /* TODO: */
 .trajectories-container:has(.progress-border-container) .simulation-container:has(.MuiSkeleton-root){
     display: none;
+}
+
+/* Overlay blur for disabled sections when no trajectories */
+.dashboard-overlay-blur {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(4px);
+    border-radius: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.dashboard-canvas-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.4) 100%);
+    backdrop-filter: blur(6px);
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.dashboard-overlay-content {
+    text-align: center;
+}
+
+.dashboard-overlay-title {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem 0;
+}
+
+.dashboard-overlay-description {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+    margin: 0;
+    line-height: 1.5;
+    max-width: 350px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-overlay-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-stats-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    border-radius: inherit;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.dashboard-stats-overlay-content {
+    text-align: center;
+}
+
+.dashboard-stats-overlay-title {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
+
+.dashboard-stats-overlay-description {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
+    margin: 0;
+    line-height: 1.4;
+    max-width: 280px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 @media screen and (max-width: 768px){

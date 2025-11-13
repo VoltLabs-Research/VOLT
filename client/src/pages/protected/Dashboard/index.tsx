@@ -17,9 +17,12 @@ import './Dashboard.css';
 const DashboardPage: React.FC = memo(() => {
     useTeamJobs();
     const trajectories = useTrajectoryStore((state) => state.trajectories);
+    const isLoadingTrajectories = useTrajectoryStore((state) => state.isLoadingTrajectories);
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId: trajectories?.[0]?._id });
     const scene3DRef = useRef<Scene3DRef>(null)
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
+
+    const hasNoTrajectories = !isLoadingTrajectories && trajectories.length === 0;
 
     const [isLight, setIsLight] = useState(() =>
         typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light'
@@ -78,11 +81,24 @@ const DashboardPage: React.FC = memo(() => {
 
                         {/* JobsHistory pinned inside the 3D scene */}
                         <JobsHistoryViewer />
+
+                        {hasNoTrajectories && (
+                            <div className='dashboard-canvas-overlay' aria-label="Canvas preview disabled">
+                                <div className='dashboard-overlay-content'>
+                                    <h3 className='dashboard-overlay-title'>Preview</h3>
+                                    <p className='dashboard-overlay-description'>
+                                        Real-time visualization of atomic structures from your trajectory data will appear here once loaded
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <div className='dashboard-body-right-container'>
-                    <DashboardStats teamId={selectedTeam?._id} />
+                    <div className='dashboard-stats-wrapper'>
+                        <DashboardStats teamId={selectedTeam?._id} />
+                    </div>
 
                     <SimulationGrid />
                 </div>
