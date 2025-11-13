@@ -44,6 +44,7 @@ import FrameAtomsTable from '@/components/organisms/FrameAtomsTable';
 import TrajectoryFileExplorer from '@/components/organisms/TrajectoryFileExplorer';
 import DislocationsComparisonTable from '@/components/organisms/DislocationsComparisonTable';
 import './HeadlessRasterizerView.css';
+import './RasterMessages.css';
 
 const HeadlessRasterizerView: React.FC = () => {
     const navigate = useNavigate();
@@ -60,6 +61,7 @@ const HeadlessRasterizerView: React.FC = () => {
         preloadPriorizedFrames,
         isPreloading,
         preloadProgress,
+        error,
     } = useRasterStore();
 
     const { getMetrics, trajectoryMetrics, isMetricsLoading } = useTrajectoryStore();
@@ -354,21 +356,21 @@ const HeadlessRasterizerView: React.FC = () => {
     const subscribedKeyRef = useRef<string | null>(null);
 
     useEffect(() => {
-    if (!trajectory?._id || !trajectoryId) return;
+        if (!trajectory?._id || !trajectoryId) return;
 
-    const presenceUser = user && user._id
-        ? { id: String(user._id),
-            ...(user.firstName ? { firstName: user.firstName } : {}),
-            ...(user.lastName  ? { lastName:  user.lastName  } : {}),
-            ...(user.email     ? { email:     user.email     } : {}) }
-        : getOrCreateGuestUser();
+        const presenceUser = user && user._id
+            ? { id: String(user._id),
+                ...(user.firstName ? { firstName: user.firstName } : {}),
+                ...(user.lastName  ? { lastName:  user.lastName  } : {}),
+                ...(user.email     ? { email:     user.email     } : {}) }
+            : getOrCreateGuestUser();
 
-    const key = `${trajectory._id}:${presenceUser.id}`;
-    if (subscribedKeyRef.current === key) return;
+        const key = `${trajectory._id}:${presenceUser.id}`;
+        if (subscribedKeyRef.current === key) return;
 
-    const prevTrajectory = subscribedKeyRef.current?.split(':')[0];
-    socketService.subscribeToTrajectory(trajectory._id, presenceUser, prevTrajectory);
-    subscribedKeyRef.current = key;
+        const prevTrajectory = subscribedKeyRef.current?.split(':')[0];
+        socketService.subscribeToTrajectory(trajectory._id, presenceUser, prevTrajectory);
+        subscribedKeyRef.current = key;
     }, [trajectory?._id, trajectoryId, user?._id, user?.firstName, user?.lastName, user?.email]);
 
     const leftScene = useRasterFrame(
@@ -486,6 +488,9 @@ const HeadlessRasterizerView: React.FC = () => {
         currentTimestep !== undefined
     );
 
+    const hasNoRasterData = !isLoading && (!analysesNames || analysesNames.length === 0);
+    const hasError = !!error;
+
     return (
         <CursorShareLayer roomName={trajectoryId} user={cursorUser} minIntervalMs={0} className='raster-view-container' style={{ position: 'relative' }}>
             <RasterHeader
@@ -532,6 +537,33 @@ const HeadlessRasterizerView: React.FC = () => {
                         />
 
                         Preloading frames: {preloadProgress}%
+                    </div>
+                )}
+
+                {hasNoRasterData && !isLoading && (
+                    <div className="raster-empty-state-overlay">
+                        <div className="raster-empty-state-content">
+                            <h2 className="raster-empty-state-title">No Rasterized Data</h2>
+                            <p className="raster-empty-state-description">
+                                This trajectory hasn't been rasterized yet. Rasterize it first to view the visualization and analysis results.
+                            </p>
+                            <button className="raster-empty-state-button" onClick={handleGoBack}>
+                                Return to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {hasError && !isLoading && (
+                    <div className="raster-empty-state-overlay">
+                        <div className="raster-empty-state-content">
+                            <div className="raster-empty-state-icon">⚠️</div>
+                            <h2 className="raster-empty-state-title">Error Loading Data</h2>
+                            <p className="raster-error-message">{error}</p>
+                            <button className="raster-empty-state-button" onClick={handleGoBack}>
+                                Return to Dashboard
+                            </button>
+                        </div>
                     </div>
                 )}
 
