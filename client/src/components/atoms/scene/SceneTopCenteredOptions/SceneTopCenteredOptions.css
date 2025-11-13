@@ -24,7 +24,6 @@
 }
 
 .editor-scene-zoom-selector-wrapper {
-    width: 120px;
     position: relative;
     z-index: 100;
 }
