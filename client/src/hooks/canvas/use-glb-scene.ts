@@ -529,22 +529,6 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
 
   const updateScene = useCallback(() => {
     const targetUrl = getTargetUrl();
-    const isFailed = stateRef.current.failedUrls.has(targetUrl || '');
-    const isLoading = stateRef.current.isLoadingUrl;
-    const alreadyLoaded = targetUrl === stateRef.current.lastLoadedUrl;
-    
-    if (targetUrl) {
-      const reasons = [];
-      if (alreadyLoaded) reasons.push('already loaded');
-      if (isLoading) reasons.push('currently loading');
-      if (isFailed) reasons.push('URL failed');
-      
-      if (reasons.length === 0) {
-        console.log(`[updateScene] WILL LOAD: ${targetUrl}`);
-      } else {
-        console.log(`[updateScene] SKIP: ${targetUrl} (${reasons.join(', ')})`);
-      }
-    }
     
     // Don't retry if model failed to load or is in the failedUrls set - prevent infinite retry loops
     if (
@@ -571,7 +555,6 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
     if (!activeModel) {
       stateRef.current.lastLoadedUrl = null;
       stateRef.current.failedUrls.clear();
-      console.log(`[useEffect] Model cleared`);
     }
   }, [activeModel]);
 
