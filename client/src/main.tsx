@@ -55,15 +55,41 @@ self.MonacoEnvironment = {
 
 loader.config({ monaco });
 
-// Theme bootstrap: set data-theme attribute based on system preference
+// Force dark mode if VITE_FORCE_DARK_MODE is set
+if (import.meta.env.VITE_FORCE_DARK_MODE === 'true') {
+    try {
+        localStorage.setItem('theme', 'dark');
+    } catch (e) {
+        // Ignore localStorage errors
+    }
+}
+
+// Theme bootstrap: set data-theme attribute based on localStorage or system preference
 (() => {
     const root = document.documentElement;
     const apply = (mode: 'light' | 'dark') => root.setAttribute('data-theme', mode);
-    const mq = window.matchMedia('(prefers-color-scheme: light)');
-    apply(mq.matches ? 'light' : 'dark');
-    mq.addEventListener?.('change', (e) => apply(e.matches ? 'light' : 'dark'));
+    const forceDarkMode = import.meta.env.VITE_FORCE_DARK_MODE === 'true';
+    
+    // Check localStorage first, then fall back to system preference
+    const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (storedTheme) {
+        apply(storedTheme);
+    } else {
+        const mq = window.matchMedia('(prefers-color-scheme: light)');
+        apply(mq.matches ? 'light' : 'dark');
+        // Only listen to system preference changes if dark mode is not forced
+        if (!forceDarkMode) {
+            mq.addEventListener?.('change', (e) => apply(e.matches ? 'light' : 'dark'));
+        }
+    }
+    
     // Optional: expose quick toggle for future settings panel
-    (window as any).__setTheme = (mode: 'light' | 'dark') => apply(mode);
+    (window as any).__setTheme = (mode: 'light' | 'dark') => {
+        // Prevent changing theme if dark mode is forced
+        if (forceDarkMode && mode !== 'dark') return;
+        localStorage.setItem('theme', mode);
+        apply(mode);
+    };
 })();
 
 createRoot(document.getElementById('root')!).render(
