@@ -341,6 +341,9 @@
     padding: 8px 0;
     border-bottom: 1px solid var(--invite-border);
     flex-shrink: 0;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 4px;
 }
 
 .team-invite-member-item {

@@ -8,6 +8,7 @@ import { MdContentCopy } from 'react-icons/md';
 import { MdPublic } from 'react-icons/md';
 import { IoBook } from 'react-icons/io5';
 import { IoCheckmark } from 'react-icons/io5';
+import { Skeleton } from '@mui/material';
 import usePositioning from '@/hooks/ui/positioning/use-positioning';
 import useToast from '@/hooks/ui/use-toast';
 import Select from '@/components/atoms/form/Select';
@@ -38,10 +39,9 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 }) => {
     const [email, setEmail] = useState('');
     const [generalAccess, setGeneralAccess] = useState<'Can edit' | 'Can view' | 'Restricted'>('Restricted');
-    const [members, setMembers] = useState<TeamMember[]>([
-        { email: 'rodolfo.herrera@alumnos.ucm.cl', name: 'Rodolfo Herrera (You)', role: 'Full access', avatar: 'R' }
-    ]);
+    const [members, setMembers] = useState<TeamMember[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingMembers, setLoadingMembers] = useState(true);
     const [buttonState, setButtonState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -55,6 +55,35 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         panelRef,
         isOpen
     );
+
+    // Fetch team members when panel opens
+    useEffect(() => {
+        const fetchMembers = async () => {
+            if (!isOpen || !teamId) return;
+            
+            setLoadingMembers(true);
+            try {
+                const response = await api.get(`/teams/${teamId}/members`);
+                const membersData = response.data.data.members;
+                
+                // Map members to the expected format
+                const formattedMembers: TeamMember[] = membersData?.map((member: any) => ({
+                    email: member.email || member._id,
+                    name: member.username || member.email,
+                    role: 'Can edit',
+                    avatar: member.avatar || member.username?.charAt(0).toUpperCase() || member.email?.charAt(0).toUpperCase()
+                })) || [];
+                
+                setMembers(formattedMembers);
+            } catch (err) {
+                console.error('Error fetching team members:', err);
+            } finally {
+                setLoadingMembers(false);
+            }
+        };
+        
+        fetchMembers();
+    }, [isOpen, teamId]);
 
     // Initialize position when panel opens
     useEffect(() => {
@@ -145,11 +174,26 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         }
     };
 
-    const handleRemoveMember = (emailToRemove: string) => {
-        setMembers(members.filter(m => m.email !== emailToRemove));
+    const handleRemoveMember = async (emailToRemove: string) => {
+        try {
+            await api.post(`/teams/${teamId}/members/remove`, {
+                email: emailToRemove
+            });
+            
+            setMembers(members.filter(m => m.email !== emailToRemove));
+            showSuccess(`Member ${emailToRemove} removed successfully`);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to remove member';
+            showError(errorMessage);
+        }
     };
 
-    const handleRoleChange = (email: string, newRole: 'Can view' | 'Full access' | 'Can edit') => {
+    const handleRoleChange = async (email: string, newRole: 'Can view' | 'Full access' | 'Can edit' | 'Remove') => {
+        if (newRole === 'Remove') {
+            handleRemoveMember(email);
+            return;
+        }
+        
         setMembers(members.map(m => 
             m.email === email ? { ...m, role: newRole } : m
         ));
@@ -227,43 +271,58 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
                 {/* Members List */}
                 <div className='team-invite-members-section'>
-                    {members.map((member) => (
-                        <div key={member.email} className='team-invite-member-item'>
-                            <div className='team-invite-member-info'>
-                                <div 
-                                    className='team-invite-avatar'
-                                    style={{ backgroundColor: getAvatarColor(member.email) }}
-                                >
-                                    {member.avatar || getInitials(member.email)}
+                    {loadingMembers ? (
+                        <>
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className='team-invite-member-item' style={{ padding: '10px 20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <Skeleton variant='circular' width={36} height={36} />
+                                        <div>
+                                            <Skeleton variant='text' width='8rem' height={20} sx={{ mb: 0.5 }} />
+                                            <Skeleton variant='text' width='85%' height={16} />
+                                        </div>
+                                    </div>
+                                    <Skeleton variant='rectangular' width={120} height={36} sx={{ borderRadius: '6px' }} />
                                 </div>
-                                <div className='team-invite-member-details'>
-                                    <p className='team-invite-member-name'>{member.name || member.email}</p>
-                                    {member.name && <p className='team-invite-member-email'>{member.email}</p>}
-                                </div>
-                            </div>
-                            <div className='team-invite-member-role'>
-                                <Select
-                                    options={[
-                                        { value: 'Can view', title: 'Can view' },
-                                        { value: 'Can edit', title: 'Can edit' },
-                                        { value: 'Full access', title: 'Full access' }
-                                    ]}
-                                    value={member.role}
-                                    onChange={(value) => handleRoleChange(member.email, value as 'Can view' | 'Full access' | 'Can edit')}
-                                    className='team-invite-role-select'
-                                    maxListWidth={150}
-                                />
-                                {member.email !== members[0].email && (
-                                    <button 
-                                        className='team-invite-remove-btn'
-                                        onClick={() => handleRemoveMember(member.email)}
-                                    >
-                                        <IoClose size={16} />
-                                    </button>
-                                )}
-                            </div>
+                            ))}
+                        </>
+                    ) : members.length === 0 ? (
+                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--invite-text-secondary)', fontSize: '13px' }}>
+                            No members yet
                         </div>
-                    ))}
+                    ) : (
+                        members.map((member) => (
+                            <div key={member.email} className='team-invite-member-item'>
+                                <div className='team-invite-member-info'>
+                                    <div 
+                                        className='team-invite-avatar'
+                                        style={{ backgroundColor: getAvatarColor(member.email) }}
+                                    >
+                                        {member.avatar || getInitials(member.email)}
+                                    </div>
+                                    <div className='team-invite-member-details'>
+                                        <p className='team-invite-member-name'>{member.name || member.email}</p>
+                                        {member.name && member.name !== member.email && <p className='team-invite-member-email'>{member.email}</p>}
+                                    </div>
+                                </div>
+                                <div className='team-invite-member-role'>
+                                    <Select
+                                        options={[
+                                            { value: 'Can view', title: 'Can view' },
+                                            { value: 'Can edit', title: 'Can edit' },
+                                            { value: 'Full access', title: 'Full access' },
+                                            { value: 'Remove', title: 'Remove' }
+                                        ]}
+                                        value={member.role}
+                                        onChange={(value) => handleRoleChange(member.email, value as 'Can view' | 'Full access' | 'Can edit' | 'Remove')}
+                                        className='team-invite-role-select'
+                                        maxListWidth={150}
+                                        renderInPortal={true}
+                                    />
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 {/* General Access */}
@@ -288,6 +347,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                             onChange={(value) => setGeneralAccess(value as 'Can edit' | 'Can view' | 'Restricted')}
                             className='team-invite-general-select'
                             maxListWidth={150}
+                            renderInPortal={true}
                         />
                     </div>
                 </div>

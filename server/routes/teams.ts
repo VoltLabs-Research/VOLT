@@ -18,4 +18,10 @@ router.route('/:id')
 // Leave team endpoint
 router.post('/:id/leave', controller.leaveTeam);
 
+// Get team members
+router.get('/:id/members', middleware.checkTeamMembership, controller.getTeamMembers);
+
+// Remove member from team
+router.post('/:id/members/remove', middleware.checkTeamOwnership, controller.removeMember);
+
 export default router;
