@@ -149,8 +149,6 @@ const DashboardPage: React.FC = memo(() => {
 
 
             </DashboardContainer>
-
-            {/* <AIPromptBox /> */}
         </FileUpload>
     );
 });

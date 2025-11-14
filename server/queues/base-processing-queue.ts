@@ -27,8 +27,8 @@ import { createRedisClient } from '@config/redis';
 import { Worker } from 'worker_threads';
 import { EventEmitter } from 'events';
 import { publishJobUpdate } from '@/events/job-updates';
-import useClusterId from '@/utilities/use-cluster-id';
 import { Trajectory } from '@/models';
+import useClusterId from '@/utilities/use-cluster-id';
 
 export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitter{
     protected readonly queueName: string;

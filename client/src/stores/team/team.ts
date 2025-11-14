@@ -15,22 +15,6 @@ const initialState: TeamState = {
 const useTeamStore = create<TeamStore>((set, get) => {
     const asyncAction = createAsyncAction(set, get);
 
-    // Load selected team from localStorage on initialization
-    const loadSelectedTeamFromStorage = () => {
-        if (typeof window !== 'undefined') {
-            const storedTeamId = localStorage.getItem('selectedTeamId');
-            if (storedTeamId) {
-                const teams = get().teams;
-                const team = teams.find(t => t._id === storedTeamId);
-                if (team) {
-                    set({ selectedTeam: team });
-                    return team;
-                }
-            }
-        }
-        return null;
-    };
-
     return {
         ...initialState,
 
