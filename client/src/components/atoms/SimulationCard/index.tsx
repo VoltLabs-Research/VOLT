@@ -207,12 +207,27 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
                         initial={false}
                         whileHover="expanded"
                         animate="collapsed"
+                        variants={{
+                            collapsed: { 
+                                padding: 0
+                            },
+                            expanded: { 
+                                padding: '0.3rem 0.5rem'
+                            }
+                        }}
+                        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                     >
                         <motion.div 
                             className='simulation-user-avatar'
                             variants={{
-                                collapsed: { scale: 0.8, opacity: 0.9 },
-                                expanded: { scale: 1, opacity: 1 }
+                                collapsed: { 
+                                    scale: 0.8, 
+                                    opacity: 0.9
+                                },
+                                expanded: { 
+                                    scale: 1, 
+                                    opacity: 1
+                                }
                             }}
                             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                         >
