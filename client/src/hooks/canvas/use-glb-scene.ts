@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
-import { GLB_CONSTANTS, loadGLB /*, preloadGLBs*/ } from '@/utilities/glb/loader';
+import { GLB_CONSTANTS, loadGLB } from '@/utilities/glb/loader';
 import { calculateModelBounds, calculateOptimalTransforms } from '@/utilities/glb/modelUtils';
 import { ANIMATION_CONSTANTS } from '@/utilities/glb/simulation-box';
 import type { SceneState } from '@/types/scene';
@@ -10,8 +10,6 @@ import { configurePointCloudMaterial, configureGeometry, isPointCloudObject } fr
 import { attachPointerEvents, attachKeyboard } from '@/utilities/glb/interaction';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 import useLogger from '@/hooks/core/use-logger';
-import { classifyError } from '@/api/error';
-import { notifyApiError } from '@/api/error-notification';
 import {
   Group,
   Box3,
@@ -34,14 +32,30 @@ type UseGlbSceneParams = {
   scale: number;
   enableInstancing?: boolean;
   updateThrottle: number;
+  useFixedReference?: boolean;
+  referencePoint?: 'origin' | 'initial' | 'custom';
+  customReference?: { x: number; y: number; z: number }; 
+  preserveInitialTransform?: boolean; 
 };
+
+interface ExtendedSceneState extends SceneState {
+  referenceScaleFactor?: number;
+  fixedReferencePoint?: Vector3 | null;
+  useFixedReference?: boolean;
+  initialTransform?: { position: Vector3; rotation: Euler; scale: number } | null;
+  failedUrls?: Set<string>;
+  isLoadingUrl?: boolean;
+}
 
 export const useGlbScene = ({
   sliceClippingPlanes,
   position,
   rotation,
   scale,
-  updateThrottle
+  updateThrottle,
+  useFixedReference = true,
+  referencePoint = 'initial',
+  customReference
 }: UseGlbSceneParams) => {
   const { scene, camera, gl, invalidate } = useThree();
   const logger = useLogger('use-glb-scene');
@@ -51,7 +65,7 @@ export const useGlbScene = ({
   const setIsModelLoading = useModelStore((s) => s.setIsModelLoading);
   const activeScene = useModelStore((state) => state.activeScene);
 
-  const stateRef = useRef<SceneState>({
+  const stateRef = useRef<ExtendedSceneState>({
     model: null,
     mesh: null,
     isSetup: false,
@@ -87,6 +101,11 @@ export const useGlbScene = ({
     sizeAnimFrom: null,
     sizeAnimTo: null,
     sizeAnimStartMs: 0,
+
+    referenceScaleFactor: undefined,
+    fixedReferencePoint: null,
+    useFixedReference: false,
+    initialTransform: null,
   });
 
   const [loadingState, setLoadingState] = useState({
@@ -97,6 +116,41 @@ export const useGlbScene = ({
 
   const raycaster = useRef(new Raycaster()).current;
   const groundPlane = useRef(new Plane(new Vector3(0, 0, 1), 0));
+
+  /**
+   * Define el punto de referencia fijo para rotaciones
+   */
+  const setFixedReference = useCallback((
+    model: Group, 
+    refType: 'origin' | 'initial' | 'custom' = 'initial',
+    customPoint?: Vector3
+  ) => {
+    const state = stateRef.current;
+    
+    switch (refType) {
+      case 'origin':
+        state.fixedReferencePoint = new Vector3(0, 0, 0);
+        break;
+      case 'custom':
+        state.fixedReferencePoint = customPoint ? customPoint.clone() : new Vector3(0, 0, 0);
+        break;
+      case 'initial':
+      default:
+        // Usar el centro del modelo en el primer frame como referencia fija
+        const initialBox = new Box3().setFromObject(model);
+        const center = new Vector3();
+        initialBox.getCenter(center);
+        state.fixedReferencePoint = center.clone();
+        break;
+    }
+    
+    // Guardar transformación inicial
+    state.initialTransform = {
+      position: model.position.clone(),
+      rotation: model.rotation.clone(),
+      scale: model.scale.x
+    };
+  }, []);
 
   const createSelectionGroup = useCallback(
     (hover = false) => {
@@ -164,38 +218,33 @@ export const useGlbScene = ({
     stateRef.current.targetScale = s;
     stateRef.current.lastInteractionTime = Date.now();
   }, []);
-const adjustModelToGround = useCallback((model: Group) => {
-  model.updateMatrixWorld(true);
-  const box = new Box3().setFromObject(model);
-  const minZ = box.min.z;
-  if (minZ !== 0) {
-    model.position.z -= minZ;
-    model.updateMatrixWorld(true);
-  }
-}, []);
 
+  const adjustModelToGround = useCallback((model: Group) => {
+    model.updateMatrixWorld(true);
+    const box = new Box3().setFromObject(model);
+    const minZ = box.min.z;
+    if (minZ !== 0) {
+      model.position.z -= minZ;
+      model.updateMatrixWorld(true);
+    }
+  }, []);
 
   // ---------- helpers de clipping ----------
-const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
-    // Para ShaderMaterial (point clouds)
+  const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
     if (m instanceof ShaderMaterial) {
-      // Actualizar clipping planes en el renderer
       if (gl) {
         gl.localClippingEnabled = planes.length > 0;
       }
       
-      // Si el shader usa clipping planes, asegurarse de que esté habilitado
       m.clipping = planes.length > 0;
       m.clippingPlanes = planes.length > 0 ? planes : null;
       m.needsUpdate = true;
       
-      // Forzar actualización del uniform si existe
       if (m.uniforms && m.uniforms.clippingPlanes) {
         m.uniforms.clippingPlanes.value = planes;
         m.uniformsNeedUpdate = true;
       }
     }
-    // Para materiales Three.js estándar
     else if ('clippingPlanes' in (m as any)) {
       (m as any).clippingPlanes = planes;
       (m as any).needsUpdate = true;
@@ -205,7 +254,6 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
   const applyClippingPlanesToModel = (root: Group | null, planes: Plane[]) => {
     if (!root) return;
     
-    // Habilitar clipping en el renderer
     if (gl) {
       gl.localClippingEnabled = planes.length > 0;
     }
@@ -214,77 +262,115 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
       if (!obj.material) return;
       
       const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-      mats.forEach((m: any) => {
+      mats.forEach((m: Material) => {
         applyClippingPlanesToMaterial(m, planes);
         
-        // Para Points específicamente, forzar invalidación
         if (obj instanceof Points && m instanceof ShaderMaterial) {
-          // Forzar recompilación del shader si es necesario
           m.needsUpdate = true;
           obj.geometry.attributes.position.needsUpdate = true;
         }
       });
     });
     
-    // Forzar renderizado
     invalidate();
-  };const setupModel = useCallback((model: Group) => {
-  if (stateRef.current.isSetup) return model;
+  };
 
-  const bounds = calculateModelBounds({ scene: model });
-  stateRef.current.modelBounds = bounds as any;
+  const setupModel = useCallback((model: Group) => {
+    if (stateRef.current.isSetup) return model;
 
-  const pc = isPointCloudObject(model);
-  if (pc) {
-    configurePointCloudMaterial(pc);
-    stateRef.current.mesh = pc;
-  } else {
-    configureGeometry(model, sliceClippingPlanes, (m: any) => (stateRef.current.mesh = m));
-  }
+    const bounds = calculateModelBounds({ scene: model });
+    stateRef.current.modelBounds = bounds;
 
-  applyClippingPlanesToModel(model, sliceClippingPlanes);
+    const pc = isPointCloudObject(model);
+    if (pc) {
+      configurePointCloudMaterial(pc);
+      stateRef.current.mesh = pc;
+    } else {
+      configureGeometry(model, sliceClippingPlanes, (m) => (stateRef.current.mesh = m));
+    }
 
-  // Apply default positioning and scale
-  const { position: p, rotation: r, scale: s } = calculateOptimalTransforms(bounds);
+    applyClippingPlanesToModel(model, sliceClippingPlanes);
 
-  model.position.set(
-    (position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x) + p.x,
-    (position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y) + p.y,
-    (position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z) + p.z
-  );
+    if (!useFixedReference) {
+      // Modo normal: calcula transformación óptima
+      const { position: p, rotation: r, scale: s } = calculateOptimalTransforms(bounds);
 
-  model.rotation.set(
-    (rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x) + r.x,
-    (rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y) + r.y,
-    (rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z) + r.z
-  );
+      model.position.set(
+        (position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x) + p.x,
+        (position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y) + p.y,
+        (position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z) + p.z
+      );
 
-  const finalScale = scale * s;
-  model.scale.setScalar(finalScale);
+      model.rotation.set(
+        (rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x) + r.x,
+        (rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y) + r.y,
+        (rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z) + r.z
+      );
 
-  stateRef.current.currentRotation.copy(model.rotation);
-  stateRef.current.targetScale = model.scale.x;
-  stateRef.current.currentScale = model.scale.x;
+      const finalScale = scale * s;
+      model.scale.setScalar(finalScale);
+    } else {
+      // Modo con referencia fija: 
+      // 1) Calcula el factor de escala de normalización UNA SOLA VEZ
+      if (stateRef.current.referenceScaleFactor == null) {
+        const { scale: sRef } = calculateOptimalTransforms(bounds);
+        stateRef.current.referenceScaleFactor = sRef;
+      }
 
-  adjustModelToGround(model);
+      // 2) Aplica SIEMPRE la misma normalización + tu 'scale' externo
+      const finalScale = scale * (stateRef.current.referenceScaleFactor || 1);
+      model.scale.setScalar(finalScale);
 
-  model.updateMatrixWorld(true);
-  const finalBounds = calculateModelBounds({ scene: model });
-  setModelBounds(finalBounds);
-  invalidate();
-  stateRef.current.isSetup = true;
+      // 3) Posición/rotación base fijas (NO dependientes del frame)
+      model.position.set(
+        position.x ?? GLB_CONSTANTS.DEFAULT_POSITION.x,
+        position.y ?? GLB_CONSTANTS.DEFAULT_POSITION.y,
+        position.z ?? GLB_CONSTANTS.DEFAULT_POSITION.z
+      );
 
-  return model;
-}, [
-  position,
-  rotation,
-  scale,
-  sliceClippingPlanes,
-  adjustModelToGround,
-  setModelBounds,
-  invalidate
-]);
+      model.rotation.set(
+        rotation.x ?? GLB_CONSTANTS.DEFAULT_ROTATION.x,
+        rotation.y ?? GLB_CONSTANTS.DEFAULT_ROTATION.y,
+        rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z
+      );
 
+      // 4) Define el punto de referencia fijo en el primer setup
+      if (!stateRef.current.useFixedReference) {
+        setFixedReference(
+          model,
+          referencePoint,
+          customReference ? new Vector3(customReference.x, customReference.y, customReference.z) : undefined
+        );
+        stateRef.current.useFixedReference = true;
+      }
+    }
+
+    stateRef.current.currentRotation.copy(model.rotation);
+    stateRef.current.targetScale = model.scale.x;
+    stateRef.current.currentScale = model.scale.x;
+
+    adjustModelToGround(model);
+
+    model.updateMatrixWorld(true);
+    const finalBounds = calculateModelBounds({ scene: model });
+    setModelBounds(finalBounds);
+    invalidate();
+    stateRef.current.isSetup = true;
+
+    return model;
+  }, [
+    position,
+    rotation,
+    scale,
+    sliceClippingPlanes,
+    adjustModelToGround,
+    setModelBounds,
+    invalidate,
+    useFixedReference,
+    referencePoint,
+    customReference,
+    setFixedReference
+  ]);
 
   const cleanupResources = useCallback(() => {
     scene.children.forEach((child: any) => {
@@ -315,17 +401,16 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
     stateRef.current.isRotating = false;
     stateRef.current.rotationFreezeSize = null;
     stateRef.current.sizeAnimActive = false;
+    stateRef.current.referenceScaleFactor = undefined;
+    stateRef.current.fixedReferencePoint = null;
+    stateRef.current.useFixedReference = false;
+    stateRef.current.initialTransform = null;
     invalidate();
   }, [scene, invalidate]);
 
   const loadAndSetupModel = useCallback(
     async (url: string) => {
-      if (stateRef.current.lastLoadedUrl === url) return;
-      
-      // Use stateRef to mark as loading to prevent concurrent loads
-      if (stateRef.current.isLoadingUrl) return;
-      stateRef.current.isLoadingUrl = true;
-      
+      if (stateRef.current.lastLoadedUrl === url || loadingState.isLoading) return;
       setIsModelLoading(true);
       setLoadingState({ isLoading: true, progress: 0, error: null });
 
@@ -340,30 +425,19 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
         scene.add(newModel);
         stateRef.current.model = newModel;
         stateRef.current.lastLoadedUrl = url;
-        // Remove from failed URLs on successful load (allows retry if user changes trajectory)
-        stateRef.current.failedUrls.delete(url);
+        stateRef.current.failedUrls?.delete(url);
         setLoadingState({ isLoading: false, progress: 100, error: null });
       } catch (error: any) {
-        logger.error('Model loading failed');
-        // Classify the error to get user-friendly message with deduplication
-        const apiError = classifyError(error);
-        const userMessage = apiError.getUserMessage();
-        
-        // Mark this URL as permanently failed to prevent infinite retry loops
-        stateRef.current.failedUrls.add(url);
-        // Also mark as loaded to prevent retries
-        stateRef.current.lastLoadedUrl = url;
-        setLoadingState({ isLoading: false, progress: 0, error: userMessage });
-        
-        // Use notifyApiError which has deduplication system built-in
-        notifyApiError(apiError);
+        const message = error instanceof Error ? error.message : String(error);
+        stateRef.current.failedUrls?.add(url);
+        setLoadingState({ isLoading: false, progress: 0, error: message });
+        logger.error('Model loading failed:', message);
       } finally {
-        stateRef.current.isLoadingUrl = false;
         setIsModelLoading(false);
         invalidate();
       }
     },
-    [scene, activeScene, cleanupResources, setupModel, invalidate, logger, setIsModelLoading]
+    [scene, cleanupResources, setupModel, invalidate, logger, loadingState.isLoading, setIsModelLoading]
   );
 
   useEffect(() => {
@@ -398,7 +472,6 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
     const now = Date.now();
 
     if (S.mesh && S.mesh instanceof Points && S.mesh.material instanceof ShaderMaterial) {
-      // si tu shader usa cameraPosition como uniform:
       if (S.mesh.material.uniforms?.cameraPosition) {
         S.mesh.material.uniforms.cameraPosition.value.copy(camera.position);
       }
@@ -420,7 +493,7 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
       invalidate();
     }
 
-    // rotation + settle
+    // rotation + settle - SIN MANIPULACIÓN DE POSICIÓN
     if (S.selected && S.targetRotation) {
       const f = ANIMATION_CONSTANTS.ROTATION_LERP_SPEED;
       S.currentRotation.x += (S.targetRotation.x - S.currentRotation.x) * f;
@@ -507,13 +580,11 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
     }
   });
 
-  // --- habilita/deshabilita clipping del renderer según haya planos
   useEffect(() => {
     if (!gl) return;
     gl.localClippingEnabled = (sliceClippingPlanes?.length ?? 0) > 0;
   }, [gl, sliceClippingPlanes]);
 
-  // --- reinyecta clippingPlanes cuando cambien (mesh + puntos/ShaderMaterial)
   useEffect(() => {
     if (!stateRef.current.isSetup || !stateRef.current.model) return;
     applyClippingPlanesToModel(stateRef.current.model, sliceClippingPlanes);
@@ -525,43 +596,17 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
     return activeModel.glbs[activeScene];
   }, [activeModel, activeScene]);
 
-  const updateSceneRef = useRef<() => void>(() => {});
-  const loadingStateRef = useRef(loadingState);
-  
-  useEffect(() => {
-    loadingStateRef.current = loadingState;
-  }, [loadingState]);
-
   const updateScene = useCallback(() => {
     const targetUrl = getTargetUrl();
-    
-    // Don't retry if model failed to load or is in the failedUrls set - prevent infinite retry loops
-    if (
-      targetUrl &&
-      targetUrl !== stateRef.current.lastLoadedUrl &&
-      !stateRef.current.isLoadingUrl &&
-      !stateRef.current.failedUrls.has(targetUrl)
-    ) {
+    if (targetUrl && targetUrl !== stateRef.current.lastLoadedUrl && !loadingState.isLoading) {
       loadAndSetupModel(targetUrl);
     }
-  }, [getTargetUrl, loadAndSetupModel]);
+  }, [getTargetUrl, loadingState.isLoading, loadAndSetupModel]);
 
-  updateSceneRef.current = updateScene;
-
-  const throttledUpdateScene2 = useThrottledCallback(() => updateSceneRef.current(), updateThrottle);
+  const throttledUpdateScene2 = useThrottledCallback(updateScene, updateThrottle);
   useEffect(() => {
     throttledUpdateScene2();
   }, [throttledUpdateScene2]);
-
-  // Don't automatically reset lastLoadedUrl - it causes infinite reloads
-  // The URL will naturally change when activeModel.glbs changes, and updateScene will detect it
-  // Only reset if activeModel becomes null
-  useEffect(() => {
-    if (!activeModel) {
-      stateRef.current.lastLoadedUrl = null;
-      stateRef.current.failedUrls.clear();
-    }
-  }, [activeModel]);
 
   const resetModel = useCallback(() => {
     if (!stateRef.current.selected) return;

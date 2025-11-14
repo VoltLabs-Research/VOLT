@@ -82,8 +82,8 @@ const HeadlessRasterizerView: React.FC = () => {
 
     const [leftAnalysis, setLeftAnalysis] = useState<string | null>(null);
     const [rightAnalysis, setRightAnalysis] = useState<string | null>(null);
-    const [leftModel, setLeftModel] = useState<string>('preview');
-    const [rightModel, setRightModel] = useState<string>('preview');
+    const [leftModel, setLeftModel] = useState<string>('__preview__');
+    const [rightModel, setRightModel] = useState<string>('__preview__');
     const [frameIndex, setFrameIndex] = useState<number>(-1);
 
     const [isPlaying, setIsPlaying] = useState(false);

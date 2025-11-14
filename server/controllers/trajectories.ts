@@ -51,6 +51,13 @@ const factory = new HandlerFactory<any>({
         default: {
             path: 'createdBy',
             select: 'email firstName lastName'
+        },
+        analysis: {
+            path: 'analysis'
+        },
+        team: {
+            path: 'team',
+            select: '_id name'
         }
     },
     defaultPopulate: 'default'

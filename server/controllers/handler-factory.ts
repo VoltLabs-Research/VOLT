@@ -97,8 +97,8 @@ class HandlerFactory<T extends Document = Document>{
     /**
      * Resolves populate configuration
     */
-    private resolvePopulate(options: MethodOptions<T>, req: Request): PopulateOptions | string | null {
-        // Priority: customPopulate > populateConfig > defaultPopulate > query
+    private resolvePopulate(options: MethodOptions<T>, req: Request): PopulateOptions | PopulateOptions[] | string | null {
+        // Priority: customPopulate > populateConfig > query > defaultPopulate
         if(options.customPopulate){
             return options.customPopulate(req);
         }
@@ -107,11 +107,37 @@ class HandlerFactory<T extends Document = Document>{
             return this.populateConfigs[options.populateConfig];
         }
         
+        // Check if query has populate parameter
+        const queryPopulate = this.getPopulateFromRequest(req.query);
+        if(queryPopulate){
+            // Parse the populate fields from query
+            const fields = queryPopulate.split(' ').filter(f => f.trim());
+            const populateArray: PopulateOptions[] = [];
+            
+            // For each field, check if we have a config for it
+            for(const field of fields){
+                if(this.populateConfigs[field]){
+                    const config = this.populateConfigs[field];
+                    if(typeof config === 'string'){
+                        populateArray.push({ path: config });
+                    } else {
+                        populateArray.push(config);
+                    }
+                } else {
+                    // No config found, use field name directly
+                    populateArray.push({ path: field });
+                }
+            }
+            
+            return populateArray.length > 0 ? populateArray : null;
+        }
+        
+        // Fallback to default populate
         if(this.defaultPopulate && this.populateConfigs[this.defaultPopulate]){
             return this.populateConfigs[this.defaultPopulate];
         }
         
-        return this.getPopulateFromRequest(req.query);
+        return null;
     }
 
     /**
