@@ -1,0 +1,90 @@
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
+import { ANIMATION_CONSTANTS } from '@/utilities/glb/simulation-box';
+import { makeSelectionGroup, updateSelectionGeometry } from '@/utilities/glb/selection';
+import { Box3, Group, Vector3, Scene } from 'three';
+import type { ExtendedSceneState } from '@/types/canvas';
+
+export default class SelectionManager{
+    constructor(
+        private state: ExtendedSceneState,
+        private scene: Scene,
+        private invalidate: () => void
+    ){}
+    
+    createSelectionGroup(hover = false): Group{
+        const selection = makeSelectionGroup();
+        
+        if(this.state.selection){
+            this.scene.remove(this.state.selection.group);
+        }
+
+        this.scene.add(selection.group);
+        this.state.selection = selection;
+        this.state.showSelection = true;
+        this.state.lastInteractionTime = Date.now();
+
+        if(!this.state.model) return selection.group;
+
+        const box = new Box3().setFromObject(this.state.model);
+        const size = new Vector3();
+        const center = new Vector3();
+
+        box.getSize(size).multiplyScalar(
+            hover ? ANIMATION_CONSTANTS.HOVER_BOX_PADDING : ANIMATION_CONSTANTS.SELECTION_BOX_PADDING);
+        box.getCenter(center);
+
+        selection.group.position.copy(center);
+        updateSelectionGeometry(selection, size, hover);
+
+        return selection.group;
+    }
+
+    show(hover = false): void{
+        if(!this.state.model) return;
+        this.createSelectionGroup(hover);
+    }
+
+    hide(): void{
+        this.state.showSelection = false;
+        if(this.state.selection){
+            this.scene.remove(this.state.selection.group);
+            this.state.selection = null;
+        }
+    }
+
+    deselect(): void{
+        this.state.isSelectedPersistent = false;
+        this.state.selected = null;
+        this.hide();
+        this.invalidate();
+    }
+
+    isSelected(): boolean{
+        return this.state.isSelectedPersistent;
+    }
+
+    isHovered(): boolean{
+        return this.state.isHovered;
+    }
+};
