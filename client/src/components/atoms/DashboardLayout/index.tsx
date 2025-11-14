@@ -44,6 +44,7 @@ import ShortcutsModal from '@/components/organisms/ShortcutsModal';
 import useNotificationStore from '@/stores/notifications';
 import useWindowsStore from '@/stores/ui/windows';
 import Select from '@/components/atoms/form/Select';
+import useToast from '@/hooks/ui/use-toast';
 import { Skeleton } from '@mui/material';
 import type { IconType } from 'react-icons';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';
@@ -57,7 +58,9 @@ const DashboardLayout = () => {
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const getUserTeams = useTeamStore((state) => state.getUserTeams);
     const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
+    const leaveTeam = useTeamStore((state) => state.leaveTeam);
     const navigate = useNavigate();
+    const { showError, showSuccess } = useToast();
     const toggleTeamCreator = useWindowsStore((state) => state.toggleTeamCreator);
     const showTeamCreator = useWindowsStore((state) => state.showTeamCreator);
     const [searchParams, setSearchParams] = useSearchParams();
@@ -205,6 +208,52 @@ const DashboardLayout = () => {
         setSearchParams({ team: teamId });
     };
 
+    const handleLeaveTeam = async (teamId: string) => {
+        try {
+            await leaveTeam(teamId);
+            
+            // Get the state after leaving
+            const state = useTeamStore.getState();
+            const remainingTeams = state.teams;
+            const currentSelected = state.selectedTeam;
+
+            // If the left team was the selected one, switch to the first available team
+            if (currentSelected?._id === teamId && remainingTeams.length > 0) {
+                const newTeamId = remainingTeams[0]._id;
+                setSelectedTeam(newTeamId);
+                
+                // Reset all team-dependent states
+                const { reset: resetTrajectories } = useTrajectoryStore.getState();
+                const { clearFrameCache } = useRasterStore.getState();
+                const { resetAnalysisConfig } = useAnalysisConfigStore.getState();
+                const { reset: resetStructureAnalysis } = useStructureAnalysisStore.getState();
+                const { reset: resetModel } = useModelStore.getState();
+                const { reset: resetTimesteps } = useTimestepStore.getState();
+                const { reset: resetPlayback } = usePlaybackStore.getState();
+                const { reset: resetEditorUI } = useEditorUIStore.getState();
+                const { reset: resetRenderConfig } = useRenderConfigStore.getState();
+                
+                resetTrajectories();
+                clearFrameCache();
+                resetAnalysisConfig();
+                resetStructureAnalysis();
+                resetModel();
+                resetTimesteps();
+                resetPlayback();
+                resetEditorUI();
+                resetRenderConfig();
+                
+                // Update URL with new team
+                setSearchParams({ team: newTeamId });
+            }
+
+            showSuccess(`Left team successfully`);
+        } catch (err: any) {
+            const errorMessage = err?.message || 'Failed to leave team';
+            showError(errorMessage);
+        }
+    };
+
     return (
         <main className='dashboard-main'>
             {showTeamCreator && (
@@ -296,6 +345,7 @@ const DashboardLayout = () => {
                             options={teamOptions}
                             value={selectedTeam?._id || null}
                             onChange={handleTeamChange}
+                            onLeaveTeam={handleLeaveTeam}
                             placeholder="Select team"
                             className="team-select"
                             maxListWidth={300}
@@ -375,6 +425,7 @@ const DashboardLayout = () => {
                     isOpen={invitePanelOpen}
                     onClose={() => setInvitePanelOpen(false)}
                     teamName={selectedTeam.name}
+                    teamId={selectedTeam._id}
                     triggerRef={teamSelectorRef}
                 />
             )}

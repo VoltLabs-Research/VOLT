@@ -15,4 +15,7 @@ router.route('/:id')
     .patch(middleware.checkTeamOwnership, controller.updateTeam)
     .delete(middleware.checkTeamOwnership, controller.deleteTeam);
 
+// Leave team endpoint
+router.post('/:id/leave', controller.leaveTeam);
+
 export default router;

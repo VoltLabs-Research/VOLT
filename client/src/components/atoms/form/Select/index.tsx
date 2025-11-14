@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { IoExitOutline } from 'react-icons/io5';
 import './Select.css';
 
 export interface SelectOption{
@@ -19,6 +20,7 @@ export interface SelectProps{
 	optionClassName?: string;
 	maxListWidth?: number;
     renderInPortal?: boolean;
+	onLeaveTeam?: (value: string) => void;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -31,10 +33,12 @@ const Select: React.FC<SelectProps> = ({
 	className = '',
 	optionClassName = '',
     maxListWidth = 480,
-    renderInPortal = false
+    renderInPortal = false,
+	onLeaveTeam
 }) => {
 	const [open, setOpen] = useState(false);
 	const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+	const [hoveredIndex, setHoveredIndex] = useState<number>(-1);
 
 	const triggerRef = useRef<HTMLButtonElement | null>(null);
 	const listRef = useRef<HTMLDivElement | null>(null);
@@ -220,6 +224,7 @@ const Select: React.FC<SelectProps> = ({
                     {options.map((opt, i) => {
                         const isSelected = i === selectedIndex;
                         const isActive = i === highlightedIndex;
+                        const isHovered = i === hoveredIndex;
                         return (
                             <div
                                 id={`${uid}-opt-${i}`}
@@ -227,7 +232,11 @@ const Select: React.FC<SelectProps> = ({
                                 role="option"
                                 aria-selected={isSelected}
                                 className={`select-option-container ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-active' : ''} ${optionClassName}`}
-                                onMouseEnter={() => setHighlightedIndex(i)}
+                                onMouseEnter={() => {
+                                    setHighlightedIndex(i);
+                                    setHoveredIndex(i);
+                                }}
+                                onMouseLeave={() => setHoveredIndex(-1)}
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => {
                                     onChange(opt.value);
@@ -242,10 +251,24 @@ const Select: React.FC<SelectProps> = ({
                                         </span>
                                     )}
                                 </span>
-                                {isSelected && (
+                                {isSelected && !isHovered && (
                                     <svg className="select-option-check" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                                         <path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" strokeWidth="2" />
                                     </svg>
+                                )}
+                                {(isSelected || isHovered) && isHovered && onLeaveTeam && (
+                                    <button
+                                        className="select-option-leave-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onLeaveTeam(opt.value);
+                                            setOpen(false);
+                                        }}
+                                        title="Leave this team"
+                                        aria-label="Leave this team"
+                                    >
+                                        <IoExitOutline size={16} />
+                                    </button>
                                 )}
                             </div>
                         );
@@ -266,6 +289,7 @@ const Select: React.FC<SelectProps> = ({
                     {options.map((opt, i) => {
                         const isSelected = i === selectedIndex;
                         const isActive = i === highlightedIndex;
+                        const isHovered = i === hoveredIndex;
                         return (
                             <div
                                 id={`${uid}-opt-${i}`}
@@ -273,7 +297,11 @@ const Select: React.FC<SelectProps> = ({
                                 role="option"
                                 aria-selected={isSelected}
                                 className={`select-option-container ${isSelected ? 'is-selected' : ''} ${isActive ? 'is-active' : ''} ${optionClassName}`}
-                                onMouseEnter={() => setHighlightedIndex(i)}
+                                onMouseEnter={() => {
+                                    setHighlightedIndex(i);
+                                    setHoveredIndex(i);
+                                }}
+                                onMouseLeave={() => setHoveredIndex(-1)}
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => {
                                     onChange(opt.value);
@@ -288,10 +316,24 @@ const Select: React.FC<SelectProps> = ({
                                         </span>
                                     )}
                                 </span>
-                                {isSelected && (
+                                {isSelected && !isHovered && (
                                     <svg className="select-option-check" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                                         <path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" strokeWidth="2" />
                                     </svg>
+                                )}
+                                {(isSelected || isHovered) && isHovered && onLeaveTeam && (
+                                    <button
+                                        className="select-option-leave-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onLeaveTeam(opt.value);
+                                            setOpen(false);
+                                        }}
+                                        title="Leave this team"
+                                        aria-label="Leave this team"
+                                    >
+                                        <IoExitOutline size={16} />
+                                    </button>
                                 )}
                             </div>
                         );

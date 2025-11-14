@@ -13,6 +13,7 @@ export interface TeamActions {
     createTeam: (data: CreateTeamData) => Promise<Team>;
     updateTeam: (teamId: string, data: UpdateTeamData) => Promise<void>;
     deleteTeam: (teamId: string) => Promise<void>;
+    leaveTeam: (teamId: string) => Promise<void>;
     clearError: () => void;
     reset: () => void;
 }

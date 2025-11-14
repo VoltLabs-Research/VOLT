@@ -169,6 +169,33 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 }
                 }),
 
+        leaveTeam: (teamId: string) => asyncAction(() => api.post(`/teams/${teamId}/leave`),
+            {
+                loadingKey: 'isLoading',
+                onSuccess: () => {
+                    const currentTeams = get().teams;
+                    const currentSelected = get().selectedTeam;
+
+                    const teams = currentTeams.filter((team) => team._id !== teamId);
+                    const selectedTeam = currentSelected?._id === teamId 
+                        ? teams[0] || null
+                        : currentSelected;
+                    
+                    return { teams, selectedTeam, error: null };
+                },
+                onError: (error) => {
+                    const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to leave team';
+                    // Enhance context
+                    if (error?.context) {
+                        error.context.teamId = teamId;
+                        error.context.operation = 'leaveTeam';
+                    }
+                    return {
+                        error: errorMessage
+                    };
+                }
+                }),
+
         clearError: () => set({ error: null }),
 
         reset: () => set(initialState)

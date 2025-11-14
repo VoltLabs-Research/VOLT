@@ -85,6 +85,7 @@
     user-select: none;
     color: var(--color-text-primary);
     transition: background .12s ease, color .12s ease;
+    min-height: 40px;
 }
 .select-option-container:hover,
 .select-option-container.is-active{
@@ -112,6 +113,36 @@
 .select-option-check{
     color: var(--accent-indigo);
     flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.select-option-leave-btn{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--color-text-primary);
+    transition: background .12s ease, color .12s ease;
+    flex: 0 0 24px;
+}
+
+.select-option-leave-btn:hover{
+    background: color-mix(in srgb, var(--accent-red, #ff6b6b) 20%, transparent);
+    color: var(--accent-red, #ff6b6b);
+}
+
+.select-option-leave-btn:active{
+    background: color-mix(in srgb, var(--accent-red, #ff6b6b) 30%, transparent);
 }
 
 .rh-select.on-dark .rh-select-trigger{

@@ -7,8 +7,11 @@ import { IoClose } from 'react-icons/io5';
 import { MdContentCopy } from 'react-icons/md';
 import { MdPublic } from 'react-icons/md';
 import { IoBook } from 'react-icons/io5';
+import { IoCheckmark } from 'react-icons/io5';
 import usePositioning from '@/hooks/ui/positioning/use-positioning';
+import useToast from '@/hooks/ui/use-toast';
 import Select from '@/components/atoms/form/Select';
+import { api } from '@/api';
 import './TeamInvitePanel.css';
 
 interface TeamMember {
@@ -22,6 +25,7 @@ interface TeamInvitePanelProps {
     isOpen: boolean;
     onClose: () => void;
     teamName: string;
+    teamId: string;
     triggerRef?: React.RefObject<HTMLDivElement>;
 }
 
@@ -29,14 +33,21 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     isOpen,
     onClose,
     teamName,
+    teamId,
     triggerRef
 }) => {
     const [email, setEmail] = useState('');
-    const [generalAccess, setGeneralAccess] = useState<'Can edit' | 'Can view' | 'Restricted'>('Can edit');
+    const [generalAccess, setGeneralAccess] = useState<'Can edit' | 'Can view' | 'Restricted'>('Restricted');
     const [members, setMembers] = useState<TeamMember[]>([
         { email: 'rodolfo.herrera@alumnos.ucm.cl', name: 'Rodolfo Herrera (You)', role: 'Full access', avatar: 'R' }
     ]);
+    const [loading, setLoading] = useState(false);
+    const [buttonState, setButtonState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const panelRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const { showError, showSuccess } = useToast();
     
     // Use positioning hook for intelligent positioning
     const { styles, setInitialPosition } = usePositioning(
@@ -49,6 +60,10 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     useEffect(() => {
         if (isOpen) {
             setInitialPosition();
+            // Auto-focus input when panel opens
+            setTimeout(() => {
+                inputRef.current?.focus();
+            }, 150);
         }
     }, [isOpen, setInitialPosition]);
 
@@ -71,16 +86,62 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         };
     }, [isOpen, onClose, triggerRef]);
 
-    const handleAddMember = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && email.trim()) {
-            e.preventDefault();
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (emailRegex.test(email.trim())) {
-                if (!members.find(m => m.email === email.trim())) {
-                    setMembers([...members, { email: email.trim(), role: 'Can view' }]);
-                    setEmail('');
-                }
-            }
+    const handleAddMember = async (e: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>) => {
+        // Handle both Enter key and button click
+        if ('key' in e && e.key !== 'Enter') return;
+        if ('key' in e) e.preventDefault();
+
+        if (!email.trim()) return;
+            
+        setError(null);
+        setSuccessMessage(null);
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+            const errorMsg = 'Invalid email format';
+            setError(errorMsg);
+            showError(errorMsg);
+            setButtonState('error');
+            setTimeout(() => setButtonState('idle'), 2000);
+            return;
+        }
+
+        if (members.find(m => m.email === email.trim())) {
+            const errorMsg = 'This email is already invited';
+            setError(errorMsg);
+            showError(errorMsg);
+            setButtonState('error');
+            setTimeout(() => setButtonState('idle'), 2000);
+            return;
+        }
+
+        setLoading(true);
+        setButtonState('loading');
+        try {
+            await api.post(`/team-invitations/${teamId}/invite`, {
+                email: email.trim(),
+                role: 'Can view'
+            });
+
+            setMembers([...members, { email: email.trim(), role: 'Can view' }]);
+            setEmail('');
+            const successMsg = `Invitation sent to ${email.trim()}`;
+            setSuccessMessage(successMsg);
+            showSuccess(successMsg);
+            setButtonState('success');
+            
+            setTimeout(() => {
+                setSuccessMessage(null);
+                setButtonState('idle');
+            }, 2500);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+            setError(errorMessage);
+            showError(errorMessage);
+            setButtonState('error');
+            setTimeout(() => setButtonState('idle'), 2000);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -116,10 +177,10 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             <div className='team-invite-header'>
                 <div className='team-invite-tabs'>
                     <button className='team-invite-tab active'>Share</button>
-                    <button className='team-invite-tab'>Publish</button>
+                    <button className='team-invite-tab' style={{ opacity: 0.5, cursor: 'not-allowed' }}>Publish</button>
                 </div>
-                <button className='team-invite-close' onClick={onClose}>
-                    <IoClose size={18} />
+                <button className='team-invite-close' onClick={onClose} aria-label='Close'>
+                    <IoClose size={20} />
                 </button>
             </div>
 
@@ -128,14 +189,40 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 {/* Input Section */}
                 <div className='team-invite-input-section'>
                     <input
+                        ref={inputRef}
                         type='email'
-                        placeholder='Email or group, separated by commas'
+                        placeholder='Add people by email...'
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         onKeyPress={handleAddMember}
                         className='team-invite-search-input'
+                        disabled={loading}
                     />
-                    <button className='team-invite-invite-btn'>Invite</button>
+                    <button 
+                        className={`team-invite-invite-btn team-invite-invite-btn--${buttonState}`}
+                        onClick={handleAddMember}
+                        disabled={loading}
+                    >
+                        {buttonState === 'loading' && (
+                            <>
+                                <span className='team-invite-btn-spinner'></span>
+                                <span>Sending...</span>
+                            </>
+                        )}
+                        {buttonState === 'success' && (
+                            <>
+                                <IoCheckmark size={18} />
+                                <span>Sent!</span>
+                            </>
+                        )}
+                        {buttonState === 'error' && (
+                            <>
+                                <IoClose size={18} />
+                                <span>Error</span>
+                            </>
+                        )}
+                        {buttonState === 'idle' && 'Invite'}
+                    </button>
                 </div>
 
                 {/* Members List */}
@@ -182,20 +269,20 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 {/* General Access */}
                 <div className='team-invite-general-access'>
                     <div className='team-invite-general-header'>
-                        <h4 className='team-invite-general-title'>General access</h4>
+                        <h4 className='team-invite-general-title'>General Access</h4>
                     </div>
                     <div className='team-invite-general-item'>
                         <div className='team-invite-general-icon'>
-                            <MdPublic size={20} />
+                            <MdPublic size={18} />
                         </div>
                         <div className='team-invite-general-info'>
-                            <p className='team-invite-general-name'>Anyone on the web with link</p>
+                            <p className='team-invite-general-name'>Anyone with the link</p>
                         </div>
                         <Select
                             options={[
-                                { value: 'Can edit', title: 'Can edit' },
+                                { value: 'Restricted', title: 'Restricted' },
                                 { value: 'Can view', title: 'Can view' },
-                                { value: 'Restricted', title: 'Restricted' }
+                                { value: 'Can edit', title: 'Can edit' }
                             ]}
                             value={generalAccess}
                             onChange={(value) => setGeneralAccess(value as 'Can edit' | 'Can view' | 'Restricted')}
@@ -208,10 +295,10 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 {/* Footer Links */}
                 <div className='team-invite-footer'>
                     <button className='team-invite-footer-link'>
-                        <IoBook size={16} /> Learn about sharing
+                        <MdContentCopy size={16} /> Copy link
                     </button>
                     <button className='team-invite-footer-link'>
-                        <MdContentCopy size={16} /> Copy link
+                        <IoBook size={16} /> Learn more
                     </button>
                 </div>
             </div>

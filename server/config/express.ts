@@ -81,6 +81,7 @@ configureApp({
     routes: [
         'modifiers',
         'teams',
+        'team-invitations',
         'analysis-config',
         'raster',
         'trajectories',
