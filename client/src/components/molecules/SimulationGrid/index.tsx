@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback, memo } from 'react';
 import SimulationCard from '@/components/atoms/SimulationCard';
 import SimulationSkeletonCard from '@/components/atoms/SimulationSkeletonCard';
 import useTrajectoryStore from '@/stores/trajectories';
@@ -8,13 +8,17 @@ import type { Job } from '@/types/jobs';
 import EmptyState from '@/components/atoms/EmptyState';
 import './SimulationGrid.css';
 
-const SimulationGrid = () => {
+const SimulationGrid = memo(() => {
     const [parent] = useAnimationPresence();
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const selectedTrajectories = useTrajectoryStore((state) => state.selectedTrajectories);
     const deleteSelectedTrajectories = useTrajectoryStore((state) => state.deleteSelectedTrajectories);
-    const toggleTrajectorySelection = useTrajectoryStore((state) => state.toggleTrajectorySelection);
+    const toggleTrajectorySelectionStore = useTrajectoryStore((state) => state.toggleTrajectorySelection);
+    
+    const toggleTrajectorySelection = useCallback((id: string) => {
+        toggleTrajectorySelectionStore(id);
+    }, [toggleTrajectorySelectionStore]);
     const isLoading = useTrajectoryStore((state) => state.isLoadingTrajectories);
     const uploadingFileCount = useTrajectoryStore((state) => state.uploadingFileCount);
 
@@ -57,11 +61,13 @@ const SimulationGrid = () => {
                     key={trajectory._id} 
                     trajectory={trajectory}
                     isSelected={selectedTrajectories.includes(trajectory._id)}
-                    onSelect={(id) => toggleTrajectorySelection(id)}
+                    onSelect={toggleTrajectorySelection}
                 />
             ))}
         </div>
     );
-};
+});
+
+SimulationGrid.displayName = 'SimulationGrid';
 
 export default SimulationGrid;

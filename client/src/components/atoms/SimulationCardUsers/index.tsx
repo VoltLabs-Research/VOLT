@@ -20,7 +20,7 @@
  * SOFTWARE.
  **/
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { socketService } from '@/services/socketio';
 import './SimulationCardUsers.css';
@@ -61,7 +61,7 @@ const getDisplayName = (user: CardPresenceUser): string => {
     return 'Anonymous';
 };
 
-const SimulationCardUsers: React.FC<SimulationCardUsersProps> = ({ trajectoryId }) => {
+const SimulationCardUsers: React.FC<SimulationCardUsersProps> = memo(({ trajectoryId }) => {
     const [users, setUsers] = useState<CardPresenceUser[]>([]);
     const [isConnected, setIsConnected] = useState(() => socketService.isConnected());
 
@@ -194,6 +194,8 @@ const SimulationCardUsers: React.FC<SimulationCardUsersProps> = ({ trajectoryId 
             </div>
         </div>
     );
-};
+});
+
+SimulationCardUsers.displayName = 'SimulationCardUsers';
 
 export default SimulationCardUsers;

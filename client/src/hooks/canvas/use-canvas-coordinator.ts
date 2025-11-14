@@ -128,12 +128,8 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
         if(trajectory?._id && currentTimestep !== undefined){
             // Only log when computing, which is less frequent than render cycles
             computeTimestepData(trajectory, currentTimestep);
-
-            return () => {
-                resetModel();
-            }
         }
-    }, [trajectory, currentTimestep, computeTimestepData, resetModel]);
+    }, [trajectory?._id, currentTimestep, computeTimestepData]);
 
     useEffect(() => {
         return () => {

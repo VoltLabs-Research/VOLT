@@ -78,7 +78,7 @@ const useAnimationPresence = (options: UseAnimationPresenceOptions = {}) => {
             if(observerRef.current) observerRef.current.disconnect();
             if(animationManagerRef.current) animationManagerRef.current.cleanup();
         };
-    }, [config, elementRef.current]);
+    }, [config]);
 
     return [elementRef];
 };

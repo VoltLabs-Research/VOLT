@@ -260,7 +260,7 @@ const useTrajectoryPreview = ({
             logger.log('Triggering preview reload for updatedAt:', updatedAt);
             loadPreviewRef.current();
         }
-    }, [updatedAt, enabled, trajectoryId, logger]);
+    }, [updatedAt, enabled, trajectoryId]);
 
     useEffect(() => {
         mountedRef.current = true;

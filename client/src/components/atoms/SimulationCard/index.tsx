@@ -2,7 +2,7 @@
 * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
 */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PiAtomThin, PiLineSegmentsLight, PiDotsThreeVerticalBold, PiImagesSquareThin } from 'react-icons/pi';
 import { RxTrash } from "react-icons/rx";
@@ -99,7 +99,7 @@ const useTrajectoryProcessingStatus = ({ trajectoryId }: any) => {
     };
 };
 
-const SimulationCard: React.FC<SimulationCardProps> = ({ 
+const SimulationCard: React.FC<SimulationCardProps> = memo(({ 
     trajectory, 
     isSelected,
     onSelect
@@ -207,10 +207,10 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
                 animate="normal"
                 variants={{
                     normal: {
-                        background: 'transparent'
+                        background: 'rgba(18, 18, 18, 0)'
                     },
                     hover: {
-                        background: 'var(--glass-bg)'
+                        background: 'rgba(18, 18, 18, 0.45)'
                     }
                 }}
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
@@ -316,6 +316,8 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
         </figure>
         </>
     );
-};
+});
+
+SimulationCard.displayName = 'SimulationCard';
 
 export default SimulationCard;

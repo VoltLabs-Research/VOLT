@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef, useState } from 'react';
+import React, { memo, useEffect, useRef, useState, useMemo } from 'react';
 import DashboardContainer from '@/components/atoms/DashboardContainer';
 import FileUpload from '@/components/molecules/FileUpload';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
@@ -21,17 +21,21 @@ const DashboardPage: React.FC = memo(() => {
     useTrajectoryUpdates();
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoadingTrajectories = useTrajectoryStore((state) => state.isLoadingTrajectories);
-    const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId: trajectories?.[0]?._id });
+    
+    // Memoize the first trajectory ID to prevent unnecessary hook reruns
+    const firstTrajectoryId = useMemo(() => trajectories?.[0]?._id ?? undefined, [trajectories?.[0]?._id]);
+    
+    const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId: firstTrajectoryId });
     const scene3DRef = useRef<Scene3DRef>(null)
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
 
     // Check if there are any trajectories being processed (not completed)
-    const isProcessing = trajectories.some(t => t.status !== 'completed');
-    const completedTrajectories = trajectories.filter(t => t.status === 'completed');
+    const isProcessing = useMemo(() => trajectories.some(t => t.status !== 'completed'), [trajectories]);
+    const completedTrajectories = useMemo(() => trajectories.filter(t => t.status === 'completed'), [trajectories]);
     const lastCompletedTrajectory = completedTrajectories[0]; // Get most recent completed
     
     // When processing, show last completed trajectory. Otherwise show first trajectory
-    const displayTrajectory = isProcessing && lastCompletedTrajectory ? lastCompletedTrajectory : trajectories[0];
+    const displayTrajectory = useMemo(() => isProcessing && lastCompletedTrajectory ? lastCompletedTrajectory : trajectories[0], [isProcessing, lastCompletedTrajectory, trajectories]);
     
     const hasNoTrajectories = !isLoadingTrajectories && trajectories.length === 0;
 
