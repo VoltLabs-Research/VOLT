@@ -35,11 +35,34 @@ interface SimulationCardProps {
     onSelect: (id: string) => void;
 }
 
+type ProcessingStage = 'idle' | 'queued' | 'processing' | 'rendering' | 'completed' | 'failed';
+
+const getMessageForStage = (stage: ProcessingStage): string => {
+    switch (stage) {
+        case 'idle':
+            return '';
+        case 'queued':
+            return 'Queued...';
+        case 'processing':
+            return 'Processing frames...';
+        case 'rendering':
+            return 'Rendering...';
+        case 'completed':
+            return 'Complete';
+        default:
+            return 'Processing...';
+    }
+};
+
 const useTrajectoryProcessingStatus = ({ trajectoryId }: any) => {
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const traj = trajectories.find((t) => t._id == trajectoryId);
+    const stage = (traj?.status || 'idle') as ProcessingStage;
 
-    return { isProcessing: traj?.status !== 'completed', message: traj?.status };
+    return { 
+        isProcessing: traj?.status !== 'completed' && traj?.status !== undefined, 
+        message: getMessageForStage(stage) 
+    };
 };
 
 const SimulationCard: React.FC<SimulationCardProps> = ({ 
