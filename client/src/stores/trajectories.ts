@@ -124,7 +124,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 return Promise.resolve();
             }
 
-            const url = teamId ? `/trajectories?teamId=${teamId}&populate=analysis` : '/trajectories';
+            const url = teamId ? `/trajectories?teamId=${teamId}&populate=analysis,createdBy` : '/trajectories?populate=analysis,createdBy';
             
             return asyncAction(() => api.get<ApiResponse<Trajectory[]>>(url), {
                 loadingKey: 'isLoadingTrajectories',

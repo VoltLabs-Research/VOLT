@@ -31,7 +31,7 @@ const TrajectoriesListing = () => {
         (async () => {
             try{
                 const res = await api.get(`/trajectories`, {
-                    params: { teamId: team._id, page: 1, limit, sort: '-createdAt', populate: 'analysis', q: searchQuery }
+                    params: { teamId: team._id, page: 1, limit, sort: '-createdAt', populate: 'analysis,createdBy', q: searchQuery }
                 });
                 if(canceled) return;
                 const payload: any = res.data;
@@ -96,6 +96,12 @@ const TrajectoriesListing = () => {
             skeleton: { variant: 'text', width: 50 }
         },
         {
+            title: 'Created By',
+            key: 'createdBy',
+            render: (v) => v ? `${v.firstName} ${v.lastName}` : 'Unknown',
+            skeleton: { variant: 'text', width: 110 }
+        },
+        {
             title: 'Created At',
             key: 'createdAt',
             render: (v) => formatTimeAgo(v),
@@ -128,7 +134,7 @@ const TrajectoriesListing = () => {
                 const next = page + 1;
                 try{
                     const res = await api.get(`/trajectories`, {
-                        params: { teamId: team._id, page: next, limit, sort: '-createdAt', populate: 'analysis', q: searchQuery }
+                        params: { teamId: team._id, page: next, limit, sort: '-createdAt', populate: 'analysis,createdBy', q: searchQuery }
                     });
                     const payload: any = res.data;
                     const rows = payload?.data || payload?.data?.data || [];
