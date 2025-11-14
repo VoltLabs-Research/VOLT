@@ -86,7 +86,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     } = useTrajectoryPreview({
         trajectoryId: trajectory._id,
         updatedAt: trajectory.updatedAt,
-        enabled: true
+        enabled: trajectory.status === 'completed'
     });
 
     const processingStatus = useTrajectoryProcessingStatus({
