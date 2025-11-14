@@ -28,6 +28,7 @@ import { TbBook } from 'react-icons/tb';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { IoNotificationsOutline } from "react-icons/io5";
 import { CiChat1 } from 'react-icons/ci';
+import { GoPersonAdd } from "react-icons/go";
 import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import useTeamStore from '@/stores/team/team';
 import useTrajectoryStore from '@/stores/trajectories';
@@ -48,6 +49,7 @@ import type { IconType } from 'react-icons';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';
 import TeamCreator from '@/components/organisms/TeamCreator';
 import { IoIosAdd } from 'react-icons/io';
+import TeamInvitePanel from '@/components/organisms/TeamInvitePanel';
 import './DashboardLayout.css';
 
 const DashboardLayout = () => {
@@ -65,8 +67,10 @@ const DashboardLayout = () => {
     const { notifications, loading, fetch, markAsRead } = useNotificationStore();
     const [notifOpen, setNotifOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [invitePanelOpen, setInvitePanelOpen] = useState(false);
     const mobileMenuWrapperRef = useRef<HTMLDivElement | null>(null);
     const bellWrapperRef = useRef<HTMLDivElement | null>(null);
+    const teamSelectorRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if(selectedTeam === null || trajectories.length) return;
@@ -284,7 +288,10 @@ const DashboardLayout = () => {
                         />
                     </div>
                     
-                    <div className='team-selector-container'>
+                    <div 
+                        ref={teamSelectorRef}
+                        className='team-selector-container'
+                    >
                         <Select
                             options={teamOptions}
                             value={selectedTeam?._id || null}
@@ -294,6 +301,15 @@ const DashboardLayout = () => {
                             maxListWidth={300}
                         />
                     </div>
+
+                    <button
+                        className='team-invite-icon-btn badge-container as-icon-container over-light-bg'
+                        onClick={() => selectedTeam && setInvitePanelOpen(true)}
+                        title='Invite members or share team'
+                        aria-label='Invite members or share team'
+                    >
+                        <GoPersonAdd size={20} />
+                    </button>
 
                     <div 
                         onClick={toggleTeamCreator}
@@ -353,6 +369,15 @@ const DashboardLayout = () => {
             <Outlet />
 
             <ShortcutsModal />
+            
+            {selectedTeam && (
+                <TeamInvitePanel 
+                    isOpen={invitePanelOpen}
+                    onClose={() => setInvitePanelOpen(false)}
+                    teamName={selectedTeam.name}
+                    triggerRef={teamSelectorRef}
+                />
+            )}
         </main>
     );
 };

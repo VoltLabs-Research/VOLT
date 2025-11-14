@@ -1,0 +1,362 @@
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*/
+
+.team-invite-panel {
+    position: fixed;
+    z-index: 1001;
+    width: 430px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideIn 0.2s ease-out;
+    background: var(--glass-bg);
+    backdrop-filter: blur(7px);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-elevated);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header */
+.team-invite-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.team-invite-tabs {
+    display: flex;
+    flex: 1;
+}
+
+.team-invite-tab {
+    padding: 0.75rem 1rem;
+    border: none;
+    background: none;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-bottom: 2px solid transparent;
+    font-family: inherit;
+}
+
+.team-invite-tab:hover {
+    color: var(--color-text-primary);
+}
+
+.team-invite-tab.active {
+    color: var(--color-text-primary);
+    border-bottom-color: var(--accent-blue);
+}
+
+.team-invite-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    transition: all 0.15s ease;
+    padding: 0.75rem;
+    border-radius: 0;
+    flex-shrink: 0;
+}
+
+.team-invite-close:hover {
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-2);
+}
+
+/* Content */
+.team-invite-content {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Input Section */
+.team-invite-input-section {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.team-invite-search-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.4rem;
+    background-color: transparent;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: all 0.15s ease;
+    outline: none;
+    font-family: inherit;
+}
+
+.team-invite-search-input:focus {
+    border-color: var(--accent-blue);
+    background-color: var(--color-surface-1);
+    box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1);
+}
+
+.team-invite-search-input::placeholder {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.team-invite-invite-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.4rem;
+    background-color: var(--accent-blue);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    outline: none;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.team-invite-invite-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* Members List */
+.team-invite-members-section {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.team-invite-member-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+    transition: background-color 0.15s ease;
+}
+
+.team-invite-member-item:hover {
+    background-color: var(--color-surface-2);
+}
+
+.team-invite-member-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.team-invite-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.team-invite-member-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.team-invite-member-name {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.team-invite-member-email {
+    margin: 0.2rem 0 0 0;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.team-invite-member-role {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.team-invite-role-select {
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    outline: none;
+    font-family: inherit;
+}
+
+.team-invite-role-select:hover,
+.team-invite-role-select:focus {
+    border-color: var(--accent-blue);
+    color: var(--color-text-primary);
+}
+
+.team-invite-remove-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    padding: 0.4rem;
+    border-radius: 0.3rem;
+    transition: all 0.15s ease;
+}
+
+.team-invite-remove-btn:hover {
+    color: var(--color-text-primary);
+    background-color: rgba(255, 107, 107, 0.1);
+}
+
+/* General Access */
+.team-invite-general-access {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.team-invite-general-header {
+    margin-bottom: 0.75rem;
+}
+
+.team-invite-general-title {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.team-invite-general-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 0.4rem;
+}
+
+.team-invite-general-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-primary);
+}
+
+.team-invite-general-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.team-invite-general-name {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+.team-invite-general-select {
+    border-radius: 0.3rem;
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    outline: none;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.team-invite-general-select:hover,
+.team-invite-general-select:focus {
+    border-color: var(--accent-blue);
+    color: var(--color-text-primary);
+}
+
+/* Footer */
+.team-invite-footer {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    justify-content: space-between;
+}
+
+.team-invite-footer-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    transition: color 0.15s ease;
+    font-family: inherit;
+    text-align: left;
+}
+
+.team-invite-footer-link:hover {
+    color: var(--accent-blue);
+}
+
+/* Scrollbar */
+.team-invite-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.team-invite-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.team-invite-panel::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+}
+
+.team-invite-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-secondary);
+}
+
+/* Responsive */
+@media screen and (max-width: 480px) {
+    .team-invite-panel {
+        width: calc(100% - 20px);
+        max-width: 380px;
+    }
+}
+
+
