@@ -301,7 +301,6 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                     options={[
                         ['View Scene', HiOutlineViewfinderCircle, handleViewScene],
                         ['Rasterize', PiImagesSquareThin, handleRasterize],
-                        ['Share with Team', CiShare1, handleShare],
                         ['Dislocation Analysis', PiLineSegmentsLight, handleDislocationAnalysis],
                         ['Delete', RxTrash, onDelete],
                     ]}

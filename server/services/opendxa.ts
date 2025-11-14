@@ -157,6 +157,14 @@ class OpenDXAService{
      * @throws Propagates any CLI, I/O, or decoding errors.
      */
     public async processSingleFile(inputFile: string, options: ConfigParameters): Promise<any> {
+        // Check if CPU intensive tasks are disabled
+        const cpuIntensiveTasksEnabled = process.env.CPU_INTENSIVE_TASKS !== 'false';
+        if (!cpuIntensiveTasksEnabled) {
+            const error: any = new Error('CPU intensive tasks are currently disabled on this server');
+            error.code = 'CpuIntensiveTasks::Disabled';
+            throw error;
+        }
+
         const baseFilename = path.basename(inputFile);
         console.log(`[OpenDXAService] Starting processing for: ${baseFilename}`);
 

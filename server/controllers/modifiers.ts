@@ -57,6 +57,18 @@ export const getAnalysisStats = async (req: Request, res: Response) => {
 
 export const crystalAnalysis = async (req: Request, res: Response) => {
     try {
+        // Check if CPU intensive tasks are enabled
+        const cpuIntensiveTasksEnabled = process.env.CPU_INTENSIVE_TASKS !== 'false';
+        if (!cpuIntensiveTasksEnabled) {
+            return res.status(503).json({
+                status: 'error',
+                data: {
+                    error: 'CPU intensive tasks are currently disabled on this server',
+                    code: 'CpuIntensiveTasks::Disabled'
+                }
+            });
+        }
+
         const { folderId, _id: trajectoryId, team, name, frames } = res.locals.trajectory;
         const analysisConfig = req.body;
 

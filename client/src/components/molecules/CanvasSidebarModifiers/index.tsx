@@ -67,6 +67,10 @@ const CanvasSidebarModifiers = () => {
             title: 'Render Settings',
             modifierId: 'render-settings'
         }, {
+            Icon: CiImageOn,
+            title: 'Raster Frames',
+            modifierId: 'raster'
+        }, {
             Icon: PiLineSegmentThin,
             title: 'Dislocation Analysis', 
             modifierId: 'dislocation-analysis-config' 
@@ -105,10 +109,6 @@ const CanvasSidebarModifiers = () => {
             Icon: GrFormViewHide,
             title: 'Dislocations Render Options',
             modifierId: 'render-options'
-        }, {
-            Icon: CiImageOn,
-            title: 'Raster Frames',
-            modifierId: 'raster'
         }
     ];
 

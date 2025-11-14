@@ -70,16 +70,16 @@ const useModifiersStore = create<ModifiersStore>()((set, get) => {
     return {
         ...initialState,
 
-        async structureIdentification(id: string, analysisConfig: any, identificationMode: string){
-            const config = { 
-                ...analysisConfig, 
-                structureIdentificationOnly: true,
-                identificationMode
-            };
+            async structureIdentification(id: string, analysisConfig: any, identificationMode: string){
+                const config = { 
+                    ...analysisConfig, 
+                    structureIdentificationOnly: true,
+                    identificationMode
+                };
 
-            delete (config as any)._id;
-            await api.post(`/structure-analysis/crystal-analysis/${id}`, config);  
-        },
+                delete (config as any)._id;
+                await api.post(`/modifiers/crystal-analysis/${id}`, config);  
+            },
 
         dislocationRenderOptions: async (trajectoryId: string, timestep: string, analysisId: string, options: any) => {
             set({ isRenderOptionsLoading: true });

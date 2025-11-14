@@ -126,6 +126,9 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'Database::DuplicateKey': 'A record with this value already exists',
     'Database::InvalidId': 'Invalid ID format',
 
+    // Service errors
+    'CpuIntensiveTasks::Disabled': 'Analysis operations are temporarily disabled on this server. Please try again later or contact your administrator.',
+
     // HTTP errors (generic fallbacks)
     'Http::400': 'Bad Request',
     'Http::401': 'Unauthorized - Please sign in again',

@@ -51,7 +51,8 @@ const AnalysisConfiguration = () => {
                 { value: 'HCP', title: 'HCP (Hexagonal Close-Packed)' },
                 { value: 'CUBIC_DIAMOND', title: 'Cubic Diamond' },
                 { value: 'SC', title: 'Simple Cubic' }
-            ] 
+            ],
+            selectProps: { renderInPortal: true }
         },
         { 
             key: 'identificationMode', 
@@ -61,7 +62,8 @@ const AnalysisConfiguration = () => {
                 { value: 'PTM', title: 'PTM (Polyhedral Template Matching)' },
                 { value: 'CNA', title: 'CNA (Common Neighbor Analysis)' },
                 { value: 'DIAMOND', title: 'Diamond' }
-            ] 
+            ],
+            selectProps: { renderInPortal: true }
         },
         { key: 'RMSD', label: 'RMSD', type: 'input', inputProps: { type: 'input', inputProps: { type: 'number', step: '0.1' } } },
         { key: 'maxTrialCircuitSize', label: 'Max Trial Circuit Size', type: 'input', inputProps: { type: 'number', step: '0.1' }},
@@ -104,6 +106,7 @@ const AnalysisConfiguration = () => {
                         inputProps={field.type === 'input' ? field.inputProps : undefined}
                         fieldValue={analysisConfig[field.key]}
                         onFieldChange={setAnalysisConfig}
+                        {...(field.type === 'select' ? field.selectProps : {})}
                     />
             ))}
             </div>

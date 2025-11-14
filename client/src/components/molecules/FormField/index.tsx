@@ -23,7 +23,8 @@ const FormField: React.FC<FormFieldProps> = ({
     onFieldChange,
     inputProps,
     options,
-    isLoading = false
+    isLoading = false,
+    renderInPortal
 }) => {
 
     const handleChange = (value: string | number | boolean) => {
@@ -33,12 +34,14 @@ const FormField: React.FC<FormFieldProps> = ({
     const renderInput = () => {
         switch (fieldType) {
             case 'select':
+                // Pass renderInPortal if present in props
                 return (
                     <Select
                         options={options || []}
                         value={String(fieldValue)}
                         onChange={handleChange}
                         className='labeled-input'
+                        renderInPortal={renderInPortal}
                     />
                 );
 

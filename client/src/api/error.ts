@@ -30,18 +30,18 @@ const HTTP_ERROR_MAP: ErrorClassificationMap = {
 
 /**
  * Extract error code from server response
- * The error code is in data.code field (format: "Category::Subcategory::Type")
+ * The error code can be in data.code or data.data.code field (format: "Category::Subcategory::Type")
  */
 const extractErrorCode = (data: any): string | undefined => {
     if (typeof data === 'string') {
         try {
             const parsed = JSON.parse(data);
-            return parsed?.code;
+            return parsed?.code || parsed?.data?.code;
         } catch {
             return undefined;
         }
     }
-    return data?.code;
+    return data?.code || data?.data?.code;
 };
 
 const classifyNetworkError = (error: AxiosError): ApiError => {

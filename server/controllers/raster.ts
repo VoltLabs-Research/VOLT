@@ -13,6 +13,18 @@ import TrajectoryFS from '@/services/trajectory-fs';
 import archiver from 'archiver';
 
 export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
+    // Check if CPU intensive tasks are enabled
+    const cpuIntensiveTasksEnabled = process.env.CPU_INTENSIVE_TASKS !== 'false';
+    if (!cpuIntensiveTasksEnabled) {
+        return res.status(503).json({
+            status: 'error',
+            data: {
+                error: 'CPU intensive tasks are currently disabled on this server',
+                code: 'CpuIntensiveTasks::Disabled'
+            }
+        });
+    }
+
     const trajectory = res.locals.trajectory;
     const tfs = new TrajectoryFS(trajectory.folderId);
     await tfs.ensureStructure();
