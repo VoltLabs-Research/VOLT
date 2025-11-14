@@ -34,16 +34,15 @@ export const setupInterceptors = (axiosInstance: AxiosInstance): void => {
         // const duration = Date.now() - (response.config as any).metadata?.startTime;
         return response;
     }, (error) => {
-        // const config = error.config as InternalAxiosRequestConfig & { metadata?: RequestMetadata };
-        // const duration = Date.now() - config?.metadata?.startTime;
-
         const classifiedError = classifyError(error);
         
-        // Log the error with full context
-        console.error('API Error:', {
-            message: classifiedError.message,
+        // Log detailed information for developers (console - dev tools only)
+        console.error('API Error Details:', {
+            userMessage: classifiedError.getUserMessage?.(),
+            detailedMessage: classifiedError.getDetailedMessage?.(),
             context: classifiedError.context,
-            detailedMessage: classifiedError.getDetailedMessage()
+            type: classifiedError.type,
+            status: classifiedError.status
         });
         
         notifyApiError(classifiedError);

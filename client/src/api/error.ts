@@ -48,7 +48,7 @@ const extractErrorMessage = (data: ErrorResponse | unknown): string => {
     return errorData.message || errorData.error || errorData.detail || 'Unknown error';
 };
 
-const extractContextFromError = (error: AxiosError, errorMessage: string): ApiErrorContext => {
+const extractContextFromError = (error: AxiosError): ApiErrorContext => {
     const config = error.config;
     const status = error.response?.status;
     
@@ -116,7 +116,7 @@ export const classifyHttpError = (error: AxiosError): ApiError => {
 
     const type = HTTP_ERROR_MAP[status] || ErrorType.UNKNOWN;
     
-    const context = extractContextFromError(error, finalMessage);
+    const context = extractContextFromError(error);
     // Override server message with the extracted one
     context.serverMessage = serverMessage;
 

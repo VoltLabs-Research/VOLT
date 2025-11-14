@@ -24,6 +24,7 @@ import { create } from 'zustand';
 import { TokenStorage } from '@/utilities/storage';
 import { api } from '@/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
+import { clearErrorHistory } from '@/api/error-notification';
 import type { ApiResponse, AuthResponsePayload } from '@/types/api';
 import type { User } from '@/types/models';
 import type { AuthState, AuthStore } from '@/types/stores/authentication';
@@ -90,6 +91,7 @@ const useAuthStore = create<AuthStore>()((set, get) => {
 
         signOut(){
             TokenStorage.removeToken();
+            clearErrorHistory(); // Clear error history when user signs out
             set({ user: null, error: null });
         },
 

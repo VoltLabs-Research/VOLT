@@ -1,11 +1,11 @@
-// cloc --exclude-list=./tools/.clocignore .
-./client/node_modules/
-./client/package-lock.json
-
-./server/node_modules/
-./server/package-lock.json
-
-./opendxa/dependencies/
-./opendxa/build-debug/
-./opendxa/build/
-./bindings/
+# cloc --fullpath --not-match-d="$(grep -v '^#' tools/.clocignore | paste -sd '|' -)" .
+node_modules
+build
+build-debug
+dependencies
+bindings
+opendxa/build
+opendxa/build-debug
+opendxa/dependencies
+client/node_modules
+server/node_modules

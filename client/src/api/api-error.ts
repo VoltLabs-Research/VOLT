@@ -1,4 +1,5 @@
 import { ErrorType } from '@/types/api';
+import { buildUserMessage } from '@/utilities/user-friendly-errors';
 
 export interface ApiErrorContext {
     endpoint?: string;
@@ -28,6 +29,9 @@ export class ApiError extends Error{
         Object.setPrototypeOf(this, ApiError.prototype);
     }
 
+    /**
+     * Get detailed message for developers (includes context, endpoint, status, etc.)
+     */
     getDetailedMessage(): string {
         const parts = [this.message];
         
@@ -37,6 +41,14 @@ export class ApiError extends Error{
         if (this.context.resourceId) parts.push(`Resource: ${this.context.resourceId}`);
         
         return parts.join(' | ');
+    }
+
+    /**
+     * Get user-friendly message for UI display
+     * Safe to show directly to end users
+     */
+    getUserMessage(): string {
+        return buildUserMessage(this.type, this.context);
     }
 
     isRetryable(): boolean{
