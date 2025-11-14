@@ -67,7 +67,8 @@ const useTrajectoryProcessingStatus = ({ trajectoryId }: any) => {
 
 const SimulationCard: React.FC<SimulationCardProps> = ({ 
     trajectory, 
-    isSelected
+    isSelected,
+    onSelect
 }) => {
     const navigate = useNavigate();
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
@@ -94,7 +95,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     });
 
     const { isDeleting, handleClick, handleDelete } = useCardInteractions(
-        toggleTrajectorySelection,
+        onSelect,
         (id: string) => navigate(`/canvas/${id}/`),
         processingStatus.isProcessing
     );

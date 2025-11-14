@@ -26,7 +26,7 @@ const SimulationGrid = () => {
                 return;
             }
 
-            const isDeleteShortcut = (event.ctrlKey || event.metaKey) && event.key === 'Backspace';
+            const isDeleteShortcut = (event.ctrlKey || event.metaKey) && (event.key === 'Backspace' || event.key === 'Delete');
             if(isDeleteShortcut){
                 event.preventDefault();
                 deleteSelectedTrajectories();
@@ -38,7 +38,7 @@ const SimulationGrid = () => {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, []);
+    }, [selectedTrajectories.length, deleteSelectedTrajectories]);
 
     if (hasEmptyState) {
         return <EmptyState

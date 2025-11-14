@@ -27,6 +27,10 @@
     animation: opacity-pulse 2s ease-in-out infinite;
 }
 
+.simulation-container.is-selected {
+    border-color: var(--accent-blue);
+}
+
 .simulation-cover-container::before{
     content: '';
     display: block;
