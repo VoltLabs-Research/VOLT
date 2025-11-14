@@ -61,6 +61,13 @@ export interface ITrajectory extends Document {
         totalFiles: number;
         totalSize: number;
     };
+    availableModels: {
+        atomicStructure: boolean;
+        dislocations: boolean;
+        bonds: boolean;
+        simulationCell: boolean;
+        structureIdentification: boolean;
+    };
     createdAt?: Date;
     updatedAt?: Date;
 }

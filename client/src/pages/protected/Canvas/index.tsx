@@ -34,6 +34,8 @@ const EditorPage: React.FC = () => {
     const isModelLoading = useModelStore((state) => state.isModelLoading);
     const isPreloading = usePlaybackStore((state) => state.isPreloading ?? false);
     const preloadProgress = usePlaybackStore((state) => state.preloadProgress ?? 0);
+    const didPreload = usePlaybackStore((state) => state.didPreload ?? false);
+    const isPlaying = usePlaybackStore((state) => state.isPlaying);
     const showCanvasGrid = useEditorUIStore((state) => state.showCanvasGrid);
     const reset = useModelStore((state) => state.reset);
 
@@ -75,7 +77,7 @@ const EditorPage: React.FC = () => {
                     </motion.div>
                 )}
 
-                {((isModelLoading) || (!trajectory || currentTimestep === undefined)) && (
+                {((isModelLoading && !(didPreload && isPlaying)) || (!trajectory || currentTimestep === undefined)) && (
                     <div className='model-loading-container'>
                         <Loader scale={0.7} />
                     </div>

@@ -78,6 +78,13 @@ export interface Trajectory{
     updatedAt: string;
     users: (User | string)[];
     createdBy?: User | string;
+    availableModels?: {
+        atomicStructure: boolean;
+        dislocations: boolean;
+        bonds: boolean;
+        simulationCell: boolean;
+        structureIdentification: boolean;
+    };
 }
 
 export interface Notification{

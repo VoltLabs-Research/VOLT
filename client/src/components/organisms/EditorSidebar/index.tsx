@@ -133,7 +133,7 @@ const EditorSidebar = () => {
                 </div>
             ) : (
                 activeSidebarTab === 'Scene' ? (
-                    <CanvasSidebarScene />
+                    <CanvasSidebarScene trajectory={trajectory} />
                 ) : (
                     <CanvasSidebarModifiers />
                 )

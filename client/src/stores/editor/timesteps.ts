@@ -43,12 +43,14 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
         const { timesteps } = get().timestepData;
 
         if(!trajectory?._id) throw new Error('No trajectory loaded');
-        if(!analysis?._id) throw new Error('No analysis configuration available');
         if(timesteps.length === 0) throw new Error('No timesteps available in trajectory');
+
+        // Use analysis ID if available, otherwise use 'default' to allow preloading without explicit analysis
+        const analysisId = analysis?._id || 'default';
 
         const map = await fetchModels({
             trajectoryId: trajectory._id,
-            analysisId: analysis._id,
+            analysisId,
             timesteps,
             preloadBehavior,
             concurrency: 6,

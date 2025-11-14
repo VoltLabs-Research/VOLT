@@ -115,6 +115,13 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     stats: {
         totalFiles: { type: Number, default: 0 },
         totalSize: { type: Number, default: 0 }
+    },
+    availableModels: {
+        atomicStructure: { type: Boolean, default: false },
+        dislocations: { type: Boolean, default: false },
+        bonds: { type: Boolean, default: false },
+        simulationCell: { type: Boolean, default: false },
+        structureIdentification: { type: Boolean, default: false }
     }
 }, {
     timestamps: true,
@@ -122,6 +129,35 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
 
 TrajectorySchema.plugin(useInverseRelations);
 TrajectorySchema.plugin(useCascadeDelete);
+
+// Calculate available models based on trajectory data
+TrajectorySchema.post('findOne', function(doc) {
+    if (doc) {
+        const availableModels = {
+            atomicStructure: doc.frames && doc.frames.length > 0,
+            dislocations: doc.dislocations && doc.dislocations.length > 0,
+            bonds: doc.frames && doc.frames.length > 0, // Bonds are part of frames
+            simulationCell: !!doc.simulationCell,
+            structureIdentification: doc.structureAnalysis && doc.structureAnalysis.length > 0
+        };
+        doc.availableModels = availableModels;
+    }
+});
+
+TrajectorySchema.post('find', function(docs) {
+    if (Array.isArray(docs)) {
+        docs.forEach(doc => {
+            const availableModels = {
+                atomicStructure: doc.frames && doc.frames.length > 0,
+                dislocations: doc.dislocations && doc.dislocations.length > 0,
+                bonds: doc.frames && doc.frames.length > 0,
+                simulationCell: !!doc.simulationCell,
+                structureIdentification: doc.structureAnalysis && doc.structureAnalysis.length > 0
+            };
+            doc.availableModels = availableModels;
+        });
+    }
+});
 
 // Text index to enable full-text search (used by APIFeatures.search via HandlerFactory)
 // Include name (primary) and status for flexible queries

@@ -5,36 +5,47 @@ import { SiTraefikmesh } from 'react-icons/si';
 import { IoIosColorFilter } from 'react-icons/io';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
 import useModelStore, { type SceneObjectType } from '@/stores/editor/model';
+import type { Trajectory } from '@/types/models';
 import './CanvasSidebarScene.css';
 
-const CanvasSidebarScene: React.FC = () => {
+interface CanvasSidebarSceneProps {
+    trajectory?: Trajectory | null;
+}
+
+const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) => {
     const setActiveScene = useModelStore((state) => state.setActiveScene);
     const activeScene = useModelStore((state) => state.activeScene);
 
     const options = [{
         Icon: TbObjectScan,
-        title: 'Camera 1',
-        sceneType: 'trajectory'
+        title: 'Frame Atoms',
+        sceneType: 'trajectory',
+        isAvailable: trajectory?.availableModels?.atomicStructure ?? true
     }, {
         Icon: PiLineSegmentThin,
         title: 'Dislocations',
-        sceneType: 'dislocations'
+        sceneType: 'dislocations',
+        isAvailable: trajectory?.availableModels?.dislocations ?? true
     }, {
         Icon: SiTraefikmesh,
         title: 'Defect Mesh',
-        sceneType: 'defect_mesh'
+        sceneType: 'defect_mesh',
+        isAvailable: trajectory?.availableModels?.dislocations ?? true
     }, {
         Icon: PiAtomThin,
         title: 'Dislocation Core Atoms',
-        sceneType: 'core_atoms'
+        sceneType: 'core_atoms',
+        isAvailable: trajectory?.availableModels?.dislocations ?? true
     }, {
         Icon: PiTriangleDashedThin,
         title: 'Interface Mesh',
-        sceneType: 'interface_mesh'
+        sceneType: 'interface_mesh',
+        isAvailable: trajectory?.availableModels?.dislocations ?? true
     }, {
         Icon: IoIosColorFilter,
         title: 'Structure Identification',
-        sceneType: 'atoms_colored_by_type'
+        sceneType: 'atoms_colored_by_type',
+        isAvailable: trajectory?.availableModels?.structureIdentification ?? true
     }];
 
     const onSelect = (option: SceneObjectType) => {
@@ -45,12 +56,19 @@ const CanvasSidebarScene: React.FC = () => {
         <div className='editor-sidebar-scene-container'>
             <div className='editor-sidebar-scene-options-container'>
                 {options.map((option, index) => (
-                    <CanvasSidebarOption
-                        onSelect={onSelect}
-                        activeOption={activeScene}
-                        option={option}
+                    <div
                         key={index}
-                    />
+                        style={{
+                            opacity: option.isAvailable ? 1 : 0.4,
+                            pointerEvents: option.isAvailable ? 'auto' : 'none'
+                        }}
+                    >
+                        <CanvasSidebarOption
+                            onSelect={onSelect}
+                            activeOption={activeScene}
+                            option={option}
+                        />
+                    </div>
                 ))}
             </div>
         </div>
