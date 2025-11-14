@@ -97,11 +97,16 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
 
     // Separate effect for analysis config changes to avoid unnecessary re-renders
     useEffect(() => {
-        if(trajectory?._id && currentTimestep !== undefined){
+        if(trajectory?._id && currentTimestep !== undefined && analysisConfig?._id){
             // Reset model when analysis config changes to force reload
             resetModel();
+            // Force recompute timestep data to reload GLB with new analysis config
+            // Use a small delay to ensure model reset is processed first
+            setTimeout(() => {
+                computeTimestepData(trajectory, currentTimestep, Date.now());
+            }, 50);
         }
-    }, [analysisConfig?._id, trajectory?._id, currentTimestep, resetModel]);
+    }, [analysisConfig?._id, trajectory?._id, currentTimestep, resetModel, computeTimestepData, trajectory]);
 
     // When trajectory.status changes to 'completed', force a GLB reload by resetting and recomputing
     useEffect(() => {
