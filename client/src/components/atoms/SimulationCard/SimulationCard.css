@@ -99,7 +99,6 @@
     right: 0;
     z-index: 2;
     pointer-events: none;
-    background: var(--glass-bg);
     backdrop-filter: blur(2px) saturate(160%);
     box-shadow: var(--shadow-glass);
     width: min-content;

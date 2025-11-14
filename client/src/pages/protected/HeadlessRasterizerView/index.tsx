@@ -489,7 +489,7 @@ const HeadlessRasterizerView: React.FC = () => {
         currentTimestep !== undefined
     );
 
-    const hasNoRasterData = !isLoading && (!analysesNames || analysesNames.length === 0);
+    const hasNoRasterData = !isLoading && (!trajectory || ((!analysesNames || analysesNames.length === 0) && (!trajectory?.frames || trajectory.frames.length === 0)));
     const hasError = !!error;
 
     return (

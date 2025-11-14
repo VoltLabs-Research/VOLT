@@ -62,7 +62,7 @@ const useRasterStore = create<RasterStore>((set, get) => {
                 const res = await api.get(`/raster/${id}/metadata`);
                 const { analyses, trajectory } = res.data.data;
 
-                console.log(analyses    );
+                console.log(analyses);
                 const analysesNames = Object.values(analyses).map((a: any) => ({
                     _id: a._id,
 					name: `${a.identificationMode}${a.identificationMode === 'PTM' ? ` - RMSD: ${a.RMSD}` : ''}`,
@@ -73,13 +73,43 @@ const useRasterStore = create<RasterStore>((set, get) => {
                     identificationMode: a.identificationMode
                 }));
 
+                // If no analyses but trajectory has frames, create a virtual "preview" analysis
+                let finalAnalyses = analyses;
+                let finalAnalysesNames = analysesNames;
+                
+                if (analysesNames.length === 0 && trajectory?.frames?.length > 0) {
+                    const previewAnalysisId = '__preview__';
+                    const previewFrames: Record<string, any> = {};
+                    
+                    trajectory.frames.forEach((frame: any) => {
+                        previewFrames[frame.timestep] = {
+                            timestep: frame.timestep,
+                            availableModels: ['preview']
+                        };
+                    });
+                    
+                    finalAnalyses = {
+                        [previewAnalysisId]: {
+                            _id: previewAnalysisId,
+                            frames: previewFrames
+                        }
+                    };
+                    
+                    finalAnalysesNames = [{
+                        _id: previewAnalysisId,
+                        name: 'Preview',
+                        description: 'Original trajectory preview',
+                        identificationMode: 'Preview'
+                    }];
+                }
+
                 set({
                     trajectory,
-                    analyses,
-                    analysesNames,
+                    analyses: finalAnalyses,
+                    analysesNames: finalAnalysesNames,
                     isLoading: false,
                     error: null,
-                    selectedAnalysis: analysesNames.length > 0 ? analysesNames[0]._id : null
+                    selectedAnalysis: finalAnalysesNames.length > 0 ? finalAnalysesNames[0]._id : null
                 });
             }catch(e: any){
                 set({
@@ -102,7 +132,9 @@ const useRasterStore = create<RasterStore>((set, get) => {
             }));
 
             try{
-				const res = await api.get(`/raster/${trajectoryId}/frame-data/${timestep}/${analysisId}/${model}`);
+                // Handle virtual preview analysis
+                const actualAnalysisId = analysisId === '__preview__' ? analysisId : analysisId;
+				const res = await api.get(`/raster/${trajectoryId}/frame-data/${timestep}/${actualAnalysisId}/${model}`);
                 const imageData = res.data?.data?.data;
 
                 set((state) => {

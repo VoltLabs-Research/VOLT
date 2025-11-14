@@ -86,12 +86,20 @@ export const useDashboardMetrics = (
     const key = keyOf(teamId);
     const ttlMs = opts?.ttlMs ?? 5 * 60 * 1000;
     const [data, setData] = useState<TrajectoryMetrics | null>(() => cache.get(key)?.data ?? null);
-    const [loading, setLoading] = useState<boolean>(() => !cache.has(key));
+    const [loading, setLoading] = useState<boolean>(() => !teamId || !cache.has(key));
     const [error, setError] = useState<string | null>(null);
 
     const abortRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
+        // Don't fetch if teamId is required but not provided
+        if(!teamId){
+            setLoading(true);
+            setData(null);
+            setError(null);
+            return;
+        }
+
         const hit = cache.get(key);
         const expired = hit ? Date.now() - hit.fetchedAt > ttlMs : true;
         const shouldFetch = opts?.force || expired;

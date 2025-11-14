@@ -200,18 +200,29 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
                 </div>
             </div>
 
-            <figcaption className='simulation-caption-container'>
+            <motion.figcaption 
+                className='simulation-caption-container'
+                initial={false}
+                whileHover="hover"
+                animate="normal"
+                variants={{
+                    normal: {
+                        background: 'transparent'
+                    },
+                    hover: {
+                        background: 'var(--glass-bg)'
+                    }
+                }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            >
                 {trajectory?.createdBy?.firstName && (
                     <motion.div 
                         className='simulation-caption-header'
-                        initial={false}
-                        whileHover="expanded"
-                        animate="collapsed"
                         variants={{
-                            collapsed: { 
+                            normal: { 
                                 padding: 0
                             },
-                            expanded: { 
+                            hover: { 
                                 padding: '0.3rem 0.5rem'
                             }
                         }}
@@ -220,11 +231,11 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
                         <motion.div 
                             className='simulation-user-avatar'
                             variants={{
-                                collapsed: { 
+                                normal: { 
                                     scale: 0.8, 
                                     opacity: 0.9
                                 },
-                                expanded: { 
+                                hover: { 
                                     scale: 1, 
                                     opacity: 1
                                 }
@@ -238,13 +249,13 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
                         <motion.div 
                             className='simulation-user-info'
                             variants={{
-                                collapsed: { 
+                                normal: { 
                                     width: 0, 
                                     opacity: 0,
                                     marginLeft: 0,
                                     scale: 0.8
                                 },
-                                expanded: { 
+                                hover: { 
                                     width: 'auto', 
                                     opacity: 1,
                                     marginLeft: '0.75rem',
@@ -260,7 +271,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
                         </motion.div>
                     </motion.div>
                 )}
-            </figcaption>
+            </motion.figcaption>
 
             <div className='simulation-info-footer'>
                 <div className='simulation-caption-left-container'>
