@@ -1,11 +1,12 @@
 .team-creator-container{
-    width: 1000px;
-    height: 600px !important;
+    width: 90vw;
+    max-width: 1000px;
+    height: 90vh;
+    max-height: 600px;
     position: absolute;
     z-index: 99999999999999999999;
     border-radius: .5rem;
     overflow: hidden;
-    position: absolute;
 }
 
 .team-creator-container{

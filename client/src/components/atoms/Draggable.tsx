@@ -1,5 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState } from 'react';
 import useDraggable, { type DraggableOptions, type DraggableHandle } from '@/hooks/ui/drag-drop/use-draggable';
+import './Draggable.css';
 
 export interface DraggableProps extends Omit<DraggableOptions, 'ondragStart' | 'onDrag' | 'onDragEnd'>{
     className?: string;
@@ -129,34 +130,34 @@ const Draggable = forwardRef<DraggableHandle, DraggableProps>((props, ref) => {
             className={className}
             style={containerStyle}
         >
-            {children}
-            {resizable && (
-                <div
-                    ref={resizeRef}
-                    style={{
-                        position: 'absolute',
-                        right: 0,
-                        bottom: 0,
-                        width: '20px',
-                        height: '20px',
-                        cursor: 'nwse-resize',
-                        zIndex: 10,
-                        background: 'transparent'
-                    }}
-                    onPointerDown={(e) => e.stopPropagation()}
-                >
-                    <div style={{
-                        position: 'absolute',
-                        right: '2px',
-                        bottom: '2px',
-                        width: '12px',
-                        height: '12px',
-                        borderRight: '2px solid rgba(255, 255, 255, 0.3)',
-                        borderBottom: '2px solid rgba(255, 255, 255, 0.3)',
-                    }} />
-                </div>
-            )}
-        </div>
+                {children}
+                {resizable && (
+                    <div
+                        ref={resizeRef}
+                        style={{
+                            position: 'absolute',
+                            right: 0,
+                            bottom: 0,
+                            width: '20px',
+                            height: '20px',
+                            cursor: 'nwse-resize',
+                            zIndex: 10,
+                            background: 'transparent'
+                        }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                    >
+                        <div style={{
+                            position: 'absolute',
+                            right: '2px',
+                            bottom: '2px',
+                            width: '12px',
+                            height: '12px',
+                            borderRight: '2px solid rgba(255, 255, 255, 0.3)',
+                            borderBottom: '2px solid rgba(255, 255, 255, 0.3)',
+                        }} />
+                    </div>
+                )}
+            </div>
     );
 });
 

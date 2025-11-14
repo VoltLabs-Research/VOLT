@@ -55,6 +55,7 @@ import './DashboardLayout.css';
 
 const DashboardLayout = () => {
     const teams = useTeamStore((state) => state.teams);
+    const isLoadingTeams = useTeamStore((state) => state.isLoading);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const getUserTeams = useTeamStore((state) => state.getUserTeams);
     const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
@@ -96,6 +97,17 @@ const DashboardLayout = () => {
         if(teams.length) return;
         getUserTeams();
     }, []);
+
+    // Force user to create a team if they don't belong to any
+    // Wait for teams to finish loading first
+    useEffect(() => {
+        if (isLoadingTeams) return; // Still loading, don't check yet
+        
+        if (teams.length === 0 && !showTeamCreator) {
+            // User has no teams after loading, force team creation
+            toggleTeamCreator();
+        }
+    }, [isLoadingTeams, teams.length, showTeamCreator, toggleTeamCreator]);
 
     // Initialize socket listener for notifications
     useEffect(() => {
@@ -309,7 +321,7 @@ const DashboardLayout = () => {
     return (
         <main className='dashboard-main'>
             {showTeamCreator && (
-                <TeamCreator />
+                <TeamCreator isRequired={teams.length === 0} />
             )}
 
             <section className='dashboard-layout-header-container'>

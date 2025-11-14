@@ -26,7 +26,7 @@ import RuntimeError from '@/utilities/runtime-error';
 
 export const checkTeamMembership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const teamId = req.params.id;
-    const userId = (req as any).user.id;
+    const userId = (req as any).user._id;
 
     const team = await Team.findOne({ _id: teamId, members: userId });
 
@@ -41,7 +41,7 @@ export const checkTeamMembership = async (req: Request, res: Response, next: Nex
 
 export const checkTeamOwnership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const teamId = req.params.id;
-    const userId = (req as any).user.id;
+    const userId = (req as any).user._id;
     
     const team = await Team.findOne({ _id: teamId, owner: userId });
 

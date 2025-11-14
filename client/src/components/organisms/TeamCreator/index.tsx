@@ -5,20 +5,32 @@ import Button from '@/components/atoms/Button';
 import useTeamStore from '@/stores/team/team';
 import Loader from '@/components/atoms/Loader';
 import useWindowsStore from '@/stores/ui/windows';
+import useToast from '@/hooks/ui/use-toast';
 import DraggableBinaryContainer from '../DraggableBinaryContainer';
 import './TeamCreator.css';
 
 interface TeamCreatorProps {
     onClose?: () => void;
+    isRequired?: boolean;
 }
 
-const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose }) => {
+const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }) => {
     const [teamName, setTeamName] = useState('');
     const [teamDescription, setTeamDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const toggleTeamCreator = useWindowsStore((state) => state.toggleTeamCreator);
+    const { showError } = useToast();
     
     const { createTeam, isLoading, error, clearError } = useTeamStore();
+
+    const handleClose = () => {
+        if (isRequired) {
+            showError('You must create a team to continue.');
+            return;
+        }
+        toggleTeamCreator();
+        onClose?.();
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -65,7 +77,8 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose }) => {
             description="When you create an account, you're assigned a personal team. You can create new teams to manage your trajectories and work with others."
             bg={TeamCreatorBg}
             handleSubmit={handleSubmit}
-            onClose={toggleTeamCreator}
+            onClose={handleClose}
+            isRequired={isRequired}
         >
             <FormInput
                 label='Enter a name for your team'
@@ -83,12 +96,6 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose }) => {
                 placeholder='Team description'
                 disabled={isLoading || isSubmitting}
             />
-
-            {error && (
-                <div className='team-creator-error'>
-                    {error}
-                </div>
-            )}
 
             {(isLoading || isSubmitting) ? (
                 <div className='team-creator-loader-container'>

@@ -1,7 +1,6 @@
 .chat-main-container {
     display: flex;
     height: 100%;
-    margin-top: 1rem;
     border-radius: 1.5rem;
     background: var(--glass-bg);
     backdrop-filter: blur(20px) saturate(180%);
