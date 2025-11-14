@@ -1,9 +1,7 @@
 import React, { useMemo, forwardRef, useImperativeHandle } from 'react';
 import CameraManager from '@/components/atoms/scene/CameraManager';
 import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
-import { useGlbScene } from '@/hooks/canvas/use-glb-scene';
-import useConfigurationStore from '@/stores/editor/configuration';
-import useModelStore from '@/stores/editor/model';
+import useGlbScene from '@/hooks/canvas/use-glb-scene';
 
 interface TimestepViewerProps {
     rotation?: { x?: number; y?: number; z?: number };
@@ -31,13 +29,10 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     enableSlice = true,
     enableInstancing = true,
     updateThrottle = 16,
-    centerModelToCamera = true,
 }, ref) => {
     const sliceClippingPlanes = useSlicingPlanes(enableSlice);
-    const activeScene = useModelStore((state) => state.activeScene);
 
     const sceneProps = useMemo(() => ({
-        activeScene,
         sliceClippingPlanes,
         position: {
             x: position.x || 0,
@@ -54,13 +49,14 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         updateThrottle,
     }), [sliceClippingPlanes, position, rotation, scale, enableInstancing, updateThrottle]);
 
-    const { modelBounds, loadModel } = useGlbScene(sceneProps);
+    const { modelBounds, resetModel } = useGlbScene(sceneProps);
 
     useImperativeHandle(ref, () => ({
         loadModel: () => {
-            loadModel();
+            // Usar los métodos del hook según necesites
+            resetModel();
         }
-    }), [loadModel]);
+    }), [resetModel]);
 
     const shouldRenderCamera = useMemo(() => 
         autoFit && modelBounds, 

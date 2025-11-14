@@ -53,6 +53,16 @@ export type SceneState = {
     sizeAnimFrom: Vector3 | null;
     sizeAnimTo: Vector3 | null;
     sizeAnimStartMs: number;
+
+    referenceScaleFactor?: number;
+    fixedReferencePoint: Vector3 | null;
+    useFixedReference: boolean;
+    initialTransform: {
+        position: Vector3;
+        rotation: Euler;
+        scale: Vector3;
+        matrix?: any;
+    } | null;
 };
 
 export type LoadingState = {
