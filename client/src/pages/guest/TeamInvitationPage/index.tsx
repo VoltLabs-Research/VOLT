@@ -14,7 +14,6 @@ const TeamInvitationPage: React.FC = () => {
     const { token } = useParams<{ token: string }>();
     const navigate = useNavigate();
     const [invitation, setInvitation] = useState<TeamInvitation | null>(null);
-    const [memberCount, setMemberCount] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState(false);
@@ -23,16 +22,7 @@ const TeamInvitationPage: React.FC = () => {
         const fetchInvitation = async () => {
             try {
                 const response = await api.get(`/team-invitations/details/${token}`);
-                const invitationData = response.data.data.invitation;
-                setInvitation(invitationData);
-                
-                // Fetch team members count
-                try {
-                    const teamResponse = await api.get(`/teams/${invitationData.team._id}`);
-                    setMemberCount(teamResponse.data.data.team.members?.length || 0);
-                } catch (teamErr) {
-                    console.error('Error fetching team details:', teamErr);
-                }
+                setInvitation(response.data.data.invitation);
             } catch (err: any) {
                 setError(err?.message || 'An error occurred');
             } finally {
@@ -160,7 +150,9 @@ const TeamInvitationPage: React.FC = () => {
                         </div>
                         <div className='detail-item'>
                             <span className='label'>Team Members</span>
-                            <span className='value'>{memberCount} {memberCount === 1 ? 'member' : 'members'}</span>
+                            <span className='value'>
+                                {invitation.team.memberCount || 0} {invitation.team.memberCount === 1 ? 'member' : 'members'}
+                            </span>
                         </div>
                         <div className='detail-item'>
                             <span className='label'>Expires</span>

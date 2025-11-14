@@ -232,7 +232,6 @@ export const getInvitationDetails = catchAsync(async (req: Request, res: Respons
     }
 
     const invitation = await TeamInvitation.findOne({ token })
-        .populate('team', 'name description')
         .populate('invitedBy', 'email');
 
     if (!invitation) {
@@ -247,8 +246,28 @@ export const getInvitationDetails = catchAsync(async (req: Request, res: Respons
         throw createHttpError(400, 'Invitation has expired');
     }
 
+    // Get team details with member count
+    const team = await Team.findById(invitation.team)
+        .select('name description members')
+        .lean();
+
+    if (!team) {
+        throw createHttpError(404, 'Team not found');
+    }
+
+    // Create response with team info including member count
+    const invitationData = {
+        ...invitation.toObject(),
+        team: {
+            _id: team._id,
+            name: team.name,
+            description: team.description,
+            memberCount: team.members?.length || 0
+        }
+    };
+
     res.status(200).json({
         status: 'success',
-        data: { invitation }
+        data: { invitation: invitationData }
     });
 });

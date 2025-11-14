@@ -47,7 +47,7 @@ import useToast from '@/hooks/ui/use-toast';
 import { setErrorNotificationHandler } from '@/api/error-notification';
 import TrajectoriesListing from './pages/protected/TrajectoriesListing';
 import AccountSettings from './pages/protected/AccountSettings';
-import TeamInvitationPage from './pages/public/TeamInvitationPage';
+import TeamInvitationPage from './pages/guest/TeamInvitationPage';
 
 const AuthLoadingOverlay = () => (
     <motion.div

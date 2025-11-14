@@ -4,6 +4,7 @@ export interface TeamInvitation {
         _id: string;
         name: string;
         description?: string;
+        memberCount?: number;
     };
     invitedBy: {
         email: string;
