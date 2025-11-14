@@ -200,16 +200,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             const chats = await chatApi.getChats();
             set({ chats, isLoadingChats: false });
         } catch (error: any) {
-            const errorContext = {
-                endpoint: '/chats',
-                method: 'GET',
-                statusCode: error?.response?.status,
-                statusText: error?.response?.statusText,
-                errorMessage: error?.message,
-                serverMessage: error?.response?.data?.message,
-                timestamp: new Date().toISOString()
-            };
-            console.error('Failed to load chats:', errorContext);
+            console.error('Failed to load chats');
             set({ isLoadingChats: false });
         }
     },
@@ -219,17 +210,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             const members = await chatApi.getTeamMembers(teamId);
             set({ teamMembers: members });
         } catch (error: any) {
-            const errorContext = {
-                endpoint: `/teams/${teamId}/members`,
-                method: 'GET',
-                teamId,
-                statusCode: error?.response?.status,
-                statusText: error?.response?.statusText,
-                errorMessage: error?.message,
-                serverMessage: error?.response?.data?.message,
-                timestamp: new Date().toISOString()
-            };
-            console.error('Failed to load team members:', errorContext);
+            console.error('Failed to load team members:');
         }
     },
 
@@ -239,17 +220,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             const messages = await chatApi.getChatMessages(chatId);
             set({ messages, isLoadingMessages: false });
         } catch (error: any) {
-            const errorContext = {
-                endpoint: `/chats/${chatId}/messages`,
-                method: 'GET',
-                chatId,
-                statusCode: error?.response?.status,
-                statusText: error?.response?.statusText,
-                errorMessage: error?.message,
-                serverMessage: error?.response?.data?.message,
-                timestamp: new Date().toISOString()
-            };
-            console.error('Failed to load messages:', errorContext);
+            console.error('Failed to load messages');
             set({ isLoadingMessages: false });
         }
     },
@@ -268,27 +239,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                     messageType,
                     metadata
                 }).catch((error: any) => {
-                    const errorContext = {
-                        endpoint: 'socket:send_message',
-                        chatId: currentChat._id,
-                        messageType,
-                        statusCode: error?.response?.status,
-                        errorMessage: error?.message,
-                        timestamp: new Date().toISOString()
-                    };
-                    console.error('Failed to send message:', errorContext);
+                    console.error('Failed to send message:');
                 });
             } else {
                 console.error('Socket not connected - cannot send message');
             }
         } catch (error: any) {
-            const errorContext = {
-                endpoint: 'send_message',
-                chatId: currentChat?._id,
-                errorMessage: error?.message,
-                timestamp: new Date().toISOString()
-            };
-            console.error('Failed to send message:', errorContext);
+            console.error('Failed to send message');
         }
     },
 
@@ -331,17 +288,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 socketService.emit('edit_message', { chatId: currentChat._id, messageId, content }).catch(() => {});
             }
         } catch (error: any) {
-            const errorContext = {
-                endpoint: `/chats/${currentChat._id}/messages/${messageId}`,
-                method: 'PATCH',
-                chatId: currentChat._id,
-                messageId,
-                statusCode: error?.response?.status,
-                errorMessage: error?.message,
-                serverMessage: error?.response?.data?.message,
-                timestamp: new Date().toISOString()
-            };
-            console.error('Failed to edit message:', errorContext);
+            console.error('Failed to edit message');
         }
     },
 

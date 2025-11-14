@@ -25,6 +25,7 @@ import { IUser } from '@/types/models/user';
 import HandlerFactory from '@/controllers/handler-factory';
 import { User, Session } from '@models/index';
 import jwt, { type Secret, type SignOptions } from 'jsonwebtoken';
+import RuntimeError from '@/utilities/runtime-error';
 
 const userFactory = new HandlerFactory({
     model: User,
@@ -188,7 +189,7 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
     const ip = req.ip || req.connection.remoteAddress || 'Unknown';
     
     if(!email || !password){
-        return next(new Error('Missing email or password'));
+        return next(new RuntimeError('Auth::Credentials::Missing', 400));
     }
     
     const requestedUser = await User.findOne({ email }).select('+password');
@@ -206,7 +207,7 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
             failureReason: !requestedUser ? 'User not found' : 'Invalid password'
         });
         
-        return next(new Error('Email or password are incorrect'));
+        return next(new RuntimeError('Auth::Credentials::Invalid', 401));
     }
     
     await createAndSendToken(res, 200, requestedUser, req);
@@ -258,13 +259,13 @@ export const updateMyPassword = async (req: Request, res: Response, next: NextFu
     const user = (req as any).user as IUser;
     const requestedUser = await User.findById(user.id).select('+password');
     if(!requestedUser){
-        return next(new Error('Authentication::Update::UserNotFound'));
+        return next(new RuntimeError('Authentication::Update::UserNotFound', 404));
     }
     if(!(await requestedUser.isCorrectPassword(req.body.passwordCurrent, requestedUser.password))){
-        return next(new Error('Authentication::Update::PasswordCurrentIncorrect'));
+        return next(new RuntimeError('Authentication::Update::PasswordCurrentIncorrect', 400));
     }
     if(await requestedUser.isCorrectPassword(req.body.passwordConfirm, requestedUser.password)){
-        return next(new Error('Authentication::Update::PasswordsAreSame'));
+        return next(new RuntimeError('Authentication::Update::PasswordsAreSame', 400));
     }
     requestedUser.password = req.body.password;
     await requestedUser.save();

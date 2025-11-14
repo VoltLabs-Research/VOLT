@@ -1,6 +1,6 @@
 import type { AxiosError } from 'axios';
 import { ErrorType } from '@/types/api';
-import { ApiError, type ApiErrorContext } from '@/api/api-error';
+import { ApiError } from '@/api/api-error';
 
 interface ErrorClassificationMap{
     [key: number]: ErrorType;
@@ -11,6 +11,8 @@ interface ErrorResponse{
     error?: string;
     errors?: unknown;
     detail?: string;
+    code?: string;
+    status?: string;
 }
 
 const HTTP_ERROR_MAP: ErrorClassificationMap = {
@@ -26,58 +28,29 @@ const HTTP_ERROR_MAP: ErrorClassificationMap = {
     504: ErrorType.SERVER_ERROR,
 };
 
-const HTTP_STATUS_MESSAGES: { [key: number]: string } = {
-    400: 'Bad Request',
-    401: 'Unauthorized',
-    403: 'Forbidden',
-    404: 'Resource Not Found',
-    409: 'Conflict',
-    429: 'Too Many Requests',
-    500: 'Server Error',
-    502: 'Bad Gateway',
-    503: 'Service Unavailable',
-    504: 'Gateway Timeout',
-};
-
-const extractErrorMessage = (data: ErrorResponse | unknown): string => {
-    if(!data || typeof data !== 'object'){
-        return 'Unknown error';
+/**
+ * Extract error code from server response
+ * The error code is in data.code field (format: "Category::Subcategory::Type")
+ */
+const extractErrorCode = (data: any): string | undefined => {
+    if (typeof data === 'string') {
+        try {
+            const parsed = JSON.parse(data);
+            return parsed?.code;
+        } catch {
+            return undefined;
+        }
     }
-
-    const errorData = data as ErrorResponse;
-    return errorData.message || errorData.error || errorData.detail || 'Unknown error';
-};
-
-const extractContextFromError = (error: AxiosError): ApiErrorContext => {
-    const config = error.config;
-    const status = error.response?.status;
-    
-    return {
-        endpoint: config?.url || 'unknown',
-        method: (config?.method || 'GET').toUpperCase(),
-        statusCode: status,
-        statusText: error.response?.statusText || HTTP_STATUS_MESSAGES[status || 0] || 'Unknown',
-        errorMessage: error.message || 'Unknown error',
-        serverMessage: extractErrorMessage(error.response?.data),
-        timestamp: new Date().toISOString()
-    };
+    return data?.code;
 };
 
 const classifyNetworkError = (error: AxiosError): ApiError => {
-    const context: ApiErrorContext = {
-        endpoint: error.config?.url || 'unknown',
-        method: (error.config?.method || 'GET').toUpperCase(),
-        errorMessage: error.message || 'Unknown error',
-        timestamp: new Date().toISOString()
-    };
-
     if(error.code === 'ECONNABORTED'){
         return new ApiError(
             ErrorType.TIMEOUT, 
-            'The request took too long (timeout)', 
+            'Network::Timeout', 
             undefined, 
-            error,
-            context
+            error
         );
     }
 
@@ -89,38 +62,33 @@ const classifyNetworkError = (error: AxiosError): ApiError => {
     ){
         return new ApiError(
             ErrorType.NETWORK,
-            'Internet connection error. Check your connection.',
+            'Network::ConnectionError',
             undefined,
-            error,
-            context
+            error
         );
     }
 
     return new ApiError(
         ErrorType.UNKNOWN,
-        error.message || 'Unknown error',
+        'Network::Unknown',
         undefined,
-        error,
-        context
+        error
     );
 }
 
 export const classifyHttpError = (error: AxiosError): ApiError => {
     const status = error.response!.status;
     const data = error.response!.data as ErrorResponse | undefined;
-    const serverMessage = extractErrorMessage(data);
     
-    // Use a more user-friendly message based on status code
-    const defaultMessage = HTTP_STATUS_MESSAGES[status] || 'Unknown error';
-    const finalMessage = serverMessage !== 'Unknown error' ? serverMessage : defaultMessage;
-
+    // Try to extract error code from server response
+    const errorCode = extractErrorCode(data);
+    
     const type = HTTP_ERROR_MAP[status] || ErrorType.UNKNOWN;
     
-    const context = extractContextFromError(error);
-    // Override server message with the extracted one
-    context.serverMessage = serverMessage;
-
-    return new ApiError(type, finalMessage, status, error, context);
+    // Use server error code if available, otherwise fall back to HTTP status message code
+    const finalCode = errorCode || `Http::${status}`;
+    
+    return new ApiError(type, finalCode, status, error);
 };
 
 export const classifyError = (error: unknown): ApiError => {

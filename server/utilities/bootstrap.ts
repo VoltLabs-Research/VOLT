@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-export const configureApp = async ({ app, routes, suffix, middlewares }: any): Promise<void> => {
+export const configureApp = async ({ app, routes, suffix, middlewares, errorHandler }: any): Promise<void> => {
     middlewares.forEach((middlewares: any) => app.use(middlewares));
     try{
         const routePromises = routes.map(async (route: string) => {
@@ -38,6 +38,11 @@ export const configureApp = async ({ app, routes, suffix, middlewares }: any): P
             }
         });
         await Promise.all(routePromises);
+        
+        // Register global error handler AFTER all routes
+        if (errorHandler) {
+            app.use(errorHandler);
+        }
     }catch(error){
         console.error('Error setting up the application routes ' + error);
     }

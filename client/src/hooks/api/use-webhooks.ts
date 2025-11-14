@@ -47,16 +47,7 @@ export const useWebhooks = () => {
             const response = await api.get('/webhooks');
             setWebhooks(response.data.data);
         } catch (err: any) {
-            const errorContext = {
-                endpoint: '/webhooks',
-                method: 'GET',
-                statusCode: err?.response?.status,
-                statusText: err?.response?.statusText,
-                errorMessage: err?.message,
-                serverMessage: err?.response?.data?.message,
-                timestamp: new Date().toISOString()
-            };
-            console.error('Failed to fetch webhooks:', errorContext);
+            console.error('Failed to fetch webhooks');
             setError(err.response?.data?.message || 'Failed to fetch webhooks');
         } finally {
             setLoading(false);
@@ -79,17 +70,7 @@ export const useWebhooks = () => {
             await fetchStats();
             return response.data.data;
         } catch (err: any) {
-            const errorContext = {
-                endpoint: '/webhooks',
-                method: 'POST',
-                payload: webhookData,
-                statusCode: err?.response?.status,
-                statusText: err?.response?.statusText,
-                errorMessage: err?.message,
-                serverMessage: err?.response?.data?.message,
-                timestamp: new Date().toISOString()
-            };
-            console.error('Failed to create webhook:', errorContext);
+            console.error('Failed to create webhook');
             const errorMessage = err.response?.data?.message || 'Failed to create webhook';
             setError(errorMessage);
             throw new Error(errorMessage);
@@ -103,18 +84,7 @@ export const useWebhooks = () => {
             await fetchStats();
             return response.data.data;
         } catch (err: any) {
-            const errorContext = {
-                endpoint: `/webhooks/${id}`,
-                method: 'PATCH',
-                webhookId: id,
-                payload: webhookData,
-                statusCode: err?.response?.status,
-                statusText: err?.response?.statusText,
-                errorMessage: err?.message,
-                serverMessage: err?.response?.data?.message,
-                timestamp: new Date().toISOString()
-            };
-            console.error('Failed to update webhook:', errorContext);
+            console.error('Failed to update webhook');
             const errorMessage = err.response?.data?.message || 'Failed to update webhook';
             setError(errorMessage);
             throw new Error(errorMessage);
@@ -127,17 +97,7 @@ export const useWebhooks = () => {
             await fetchWebhooks();
             await fetchStats();
         } catch (err: any) {
-            const errorContext = {
-                endpoint: `/webhooks/${id}`,
-                method: 'DELETE',
-                webhookId: id,
-                statusCode: err?.response?.status,
-                statusText: err?.response?.statusText,
-                errorMessage: err?.message,
-                serverMessage: err?.response?.data?.message,
-                timestamp: new Date().toISOString()
-            };
-            console.error('Failed to delete webhook:', errorContext);
+            console.error('Failed to delete webhook');
             const errorMessage = err.response?.data?.message || 'Failed to delete webhook';
             setError(errorMessage);
             throw new Error(errorMessage);
@@ -148,17 +108,7 @@ export const useWebhooks = () => {
         try {
             await api.post(`/webhooks/${id}/test`);
         } catch (err: any) {
-            const errorContext = {
-                endpoint: `/webhooks/${id}/test`,
-                method: 'POST',
-                webhookId: id,
-                statusCode: err?.response?.status,
-                statusText: err?.response?.statusText,
-                errorMessage: err?.message,
-                serverMessage: err?.response?.data?.message,
-                timestamp: new Date().toISOString()
-            };
-            console.error('Failed to test webhook:', errorContext);
+            console.error('Failed to test webhook');
             const errorMessage = err.response?.data?.message || 'Failed to test webhook';
             setError(errorMessage);
             throw new Error(errorMessage);

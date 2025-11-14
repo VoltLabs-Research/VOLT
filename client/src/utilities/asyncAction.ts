@@ -1,4 +1,5 @@
 import type { StoreApi } from 'zustand';
+import { ApiError } from '@/api/api-error';
 
 export type ZustandSet<TState> = (
     partial: Partial<TState> | ((state: TState) => Partial<TState>),
@@ -38,9 +39,19 @@ export const createAsyncAction = <TState extends BaseState>(
                 [options.loadingKey]: false
             } as Partial<TState>));
         }catch(err: any){
-            const errorData = err.response?.data?.message || err.message || 'An unknown error occurred';
-            set({ error: errorData, [options.loadingKey]: false } as Partial<TState>);
-            throw errorData;
+            // Handle classified ApiError from interceptors
+            let errorMessage = 'An unknown error occurred';
+            
+            if (err instanceof ApiError) {
+                errorMessage = err.getUserMessage();
+            } else if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            
+            set({ error: errorMessage, [options.loadingKey]: false } as Partial<TState>);
+            throw errorMessage;
         }
     };
 };

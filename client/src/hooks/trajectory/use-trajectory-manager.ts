@@ -36,16 +36,7 @@ const useTrajectoryManager = () => {
             await getTrajectoryById(id);
             return useTrajectoryStore.getState().trajectory;
         }catch(error: any){
-            const errorContext = {
-                trajectoryId: id,
-                endpoint: `/trajectories/${id}`,
-                statusCode: error?.response?.status,
-                statusText: error?.response?.statusText,
-                errorMessage: error?.message,
-                errorCode: error?.code,
-                timestamp: new Date().toISOString()
-            };
-            logger.error('Error loading trajectory:', errorContext);
+            logger.error('Error loading trajectory');
             return null;
         }
     }, [getTrajectoryById]);

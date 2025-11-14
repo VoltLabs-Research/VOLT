@@ -90,7 +90,7 @@ export const notifyApiError = (error: any) => {
   }
 
   // Use user-friendly message for UI
-  const userMessage = error.getUserMessage?.() || error.message || 'An error occurred';
+  const userMessage = error.getUserMessage();
   
   // Check if we should show this error
   if (!shouldShowError(userMessage)) {
@@ -101,9 +101,7 @@ export const notifyApiError = (error: any) => {
   
   // Keep technical details for debugging only
   const details = {
-    context: error.context,
     originalError: error.originalError?.message,
-    detailedMessage: error.getDetailedMessage?.()
   };
 
   showErrorNotification(userMessage, details);

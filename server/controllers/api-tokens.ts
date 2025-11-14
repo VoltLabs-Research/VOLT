@@ -64,7 +64,7 @@ export const createApiToken = catchAsync(async (req: Request, res: Response, nex
     ];
     
     if (permissions && !permissions.every((p: string) => validPermissions.includes(p))) {
-        return next(new RuntimeError('Invalid permissions provided', 400));
+        return next(new RuntimeError('ApiToken::InvalidPermissions', 400));
     }
     
     // Generate token
@@ -106,7 +106,7 @@ export const getApiToken = catchAsync(async (req: Request, res: Response, next: 
     const token = await ApiToken.findOne({ _id: id, createdBy: user.id });
     
     if (!token) {
-        return next(new RuntimeError('API token not found', 404));
+        return next(new RuntimeError('ApiToken::NotFound', 404));
     }
     
     const response = {
@@ -128,7 +128,7 @@ export const updateApiToken = catchAsync(async (req: Request, res: Response, nex
     const token = await ApiToken.findOne({ _id: id, createdBy: user.id });
     
     if (!token) {
-        return next(new RuntimeError('API token not found', 404));
+        return next(new RuntimeError('ApiToken::NotFound', 404));
     }
     
     // Update allowed fields
@@ -148,7 +148,7 @@ export const updateApiToken = catchAsync(async (req: Request, res: Response, nex
         ];
         
         if (!permissions.every((p: string) => validPermissions.includes(p))) {
-            return next(new RuntimeError('Invalid permissions provided', 400));
+            return next(new RuntimeError('ApiToken::InvalidPermissions', 400));
         }
         
         token.permissions = permissions;
@@ -175,7 +175,7 @@ export const deleteApiToken = catchAsync(async (req: Request, res: Response, nex
     const token = await ApiToken.findOne({ _id: id, createdBy: user.id });
     
     if (!token) {
-        return next(new RuntimeError('API token not found', 404));
+        return next(new RuntimeError('ApiToken::NotFound', 404));
     }
     
     await ApiToken.findByIdAndDelete(id);
@@ -196,7 +196,7 @@ export const regenerateApiToken = catchAsync(async (req: Request, res: Response,
     const token = await ApiToken.findOne({ _id: id, createdBy: user.id });
     
     if (!token) {
-        return next(new RuntimeError('API token not found', 404));
+        return next(new RuntimeError('ApiToken::NotFound', 404));
     }
     
     // Generate new token
@@ -224,22 +224,22 @@ export const validateApiToken = catchAsync(async (req: Request, res: Response, n
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return next(new RuntimeError('API token required', 401));
+        return next(new RuntimeError('ApiToken::Required', 401));
     }
     
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const apiToken = await ApiToken.findByToken(token);
     
     if (!apiToken) {
-        return next(new RuntimeError('Invalid API token', 401));
+        return next(new RuntimeError('ApiToken::Invalid', 401));
     }
     
     if (!apiToken.isActive) {
-        return next(new RuntimeError('API token is inactive', 401));
+        return next(new RuntimeError('ApiToken::Inactive', 401));
     }
     
     if (apiToken.isExpired()) {
-        return next(new RuntimeError('API token has expired', 401));
+        return next(new RuntimeError('ApiToken::Expired', 401));
     }
     
     // Update last used timestamp
@@ -260,11 +260,11 @@ export const checkApiTokenPermission = (requiredPermission: string) => {
         const apiToken = (req as any).apiToken;
         
         if (!apiToken) {
-            return next(new RuntimeError('API token required', 401));
+            return next(new RuntimeError('ApiToken::Required', 401));
         }
         
         if (!apiToken.hasPermission(requiredPermission)) {
-            return next(new RuntimeError('Insufficient permissions', 403));
+            return next(new RuntimeError('ApiToken::InsufficientPermissions', 403));
         }
         
         next();

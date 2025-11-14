@@ -147,18 +147,7 @@ const useTrajectoryPreview = ({
 
                 return blobUrl;
             }catch(err: any){
-                const errorContext = {
-                    trajectoryId: trajId,
-                    cacheKey,
-                    updatedAt: updated,
-                    endpoint: `/trajectories/${trajId}/preview`,
-                    statusCode: err?.response?.status,
-                    statusText: err?.response?.statusText,
-                    errorMessage: err?.message,
-                    errorCode: err?.code,
-                    timestamp: new Date().toISOString()
-                };
-                logger.error('API Error loading preview:', errorContext);
+                logger.error('API Error loading preview');
                 throw err;
             }finally{
                 loadingPromises.delete(cacheKey);
@@ -229,21 +218,7 @@ const useTrajectoryPreview = ({
                 return;
             }
 
-            const errorContext = {
-                trajectoryId,
-                updatedAt,
-                currentKey,
-                enabled,
-                endpoint: `/trajectories/${trajectoryId}/preview`,
-                method: 'GET',
-                statusCode: err?.context?.statusCode || err?.response?.status,
-                statusText: err?.context?.statusText || err?.response?.statusText,
-                errorMessage: err?.context?.errorMessage || err?.message,
-                serverMessage: err?.context?.serverMessage,
-                errorCode: err?.code,
-                timestamp: new Date().toISOString()
-            };
-            logger.error('Fatal error in loadPreview:', errorContext);
+            logger.error('Fatal error in loadPreview');
             setError(true);
             setPreviewBlobUrl(null);
             setLastLoadedKey(null);

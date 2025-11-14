@@ -10,7 +10,8 @@ import { configurePointCloudMaterial, configureGeometry, isPointCloudObject } fr
 import { attachPointerEvents, attachKeyboard } from '@/utilities/glb/interaction';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 import useLogger from '@/hooks/core/use-logger';
-import useToast from '@/hooks/ui/use-toast';
+import { classifyError } from '@/api/error';
+import { notifyApiError } from '@/api/error-notification';
 import {
   Group,
   Box3,
@@ -44,7 +45,6 @@ export const useGlbScene = ({
 }: UseGlbSceneParams) => {
   const { scene, camera, gl, invalidate } = useThree();
   const logger = useLogger('use-glb-scene');
-  const { showError } = useToast();
 
   const activeModel = useModelStore((s) => s.activeModel);
   const setModelBounds = useModelStore((s) => s.setModelBounds);
@@ -344,30 +344,26 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
         stateRef.current.failedUrls.delete(url);
         setLoadingState({ isLoading: false, progress: 100, error: null });
       } catch (error: any) {
-        const message = error instanceof Error ? error.message : String(error);
-        const errorContext = {
-          endpoint: '/glb/model',
-          method: 'GET',
-          url: url,
-          statusCode: error?.context?.statusCode,
-          serverMessage: error?.context?.serverMessage,
-          errorMessage: message,
-          timestamp: new Date().toISOString()
-        };
-        logger.error('Model loading failed:', errorContext);
+        logger.error('Model loading failed');
+        // Classify the error to get user-friendly message with deduplication
+        const apiError = classifyError(error);
+        const userMessage = apiError.getUserMessage();
+        
         // Mark this URL as permanently failed to prevent infinite retry loops
         stateRef.current.failedUrls.add(url);
         // Also mark as loaded to prevent retries
         stateRef.current.lastLoadedUrl = url;
-        setLoadingState({ isLoading: false, progress: 0, error: message });
-        showError(`Failed to load model: ${message}`);
+        setLoadingState({ isLoading: false, progress: 0, error: userMessage });
+        
+        // Use notifyApiError which has deduplication system built-in
+        notifyApiError(apiError);
       } finally {
         stateRef.current.isLoadingUrl = false;
         setIsModelLoading(false);
         invalidate();
       }
     },
-    [scene, activeScene, cleanupResources, setupModel, invalidate, logger, setIsModelLoading, showError]
+    [scene, activeScene, cleanupResources, setupModel, invalidate, logger, setIsModelLoading]
   );
 
   useEffect(() => {

@@ -29,6 +29,7 @@ import '@config/env';
 
 import { configureApp } from '@utilities/bootstrap';
 import { apiTracker } from '@/middlewares/api-tracker';
+import { globalErrorHandler } from '@/middlewares/global-error-handler';
 
 const app = express();
 
@@ -120,7 +121,8 @@ configureApp({
         }),
         bodyParser.json(),
         bodyParser.urlencoded({ extended: true })
-    ]
+    ],
+    errorHandler: globalErrorHandler
 });
 
 export default app;

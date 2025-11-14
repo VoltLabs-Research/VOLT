@@ -70,7 +70,7 @@ class SocketGateway{
             try {
                 const token = socket.handshake.auth?.token;
                 if (!token) {
-                    return next(new Error('Authentication token required'));
+                    return next(new Error('Socket::Auth::TokenRequired'));
                 }
 
                 const secret = process.env.SECRET_KEY as string;
@@ -78,13 +78,13 @@ class SocketGateway{
                 
                 const user = await User.findById(decoded.id).select('-password');
                 if (!user) {
-                    return next(new Error('User not found'));
+                    return next(new Error('Socket::Auth::UserNotFound'));
                 }
 
                 (socket as any).user = user;
                 next();
             } catch (error) {
-                next(new Error('Invalid token'));
+                next(new Error('Socket::Auth::InvalidToken'));
             }
         });
 

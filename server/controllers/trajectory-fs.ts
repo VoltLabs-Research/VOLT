@@ -71,7 +71,7 @@ const safeResolve = (root: string, userRelPath?: string) => {
     const abs = resolve(root, rel);
     const inside = abs.startsWith(root + '/') || abs === root;
     if(!inside){
-        throw new RuntimeError('Invalid path', 400);
+        throw new RuntimeError('Trajectory::InvalidPath', 400);
     }
     return { abs, rel };
 };
@@ -100,7 +100,7 @@ export const listTrajectoryFs = async (req: Request, res: Response) => {
     const st = await fs.lstat(abs);
     // avoid symlinks 
     if(st.isSymbolicLink()){
-        throw new RuntimeError('Symbolic links are not allowed', 400);
+        throw new RuntimeError('Trajectory::SymbolicLinksNotAllowed', 400);
     }
 
     let targetDir = abs;
@@ -176,7 +176,7 @@ export const downloadTrajectoryFs = async (req: Request, res: Response) => {
     const st = await fs.lstat(abs);
 
     if(st.isSymbolicLink()){
-        throw new RuntimeError('Symbolic links are not allowed', 400);
+        throw new RuntimeError('Trajectory::SymbolicLinksNotAllowed', 400);
     }
 
     if(!st.isFile()){

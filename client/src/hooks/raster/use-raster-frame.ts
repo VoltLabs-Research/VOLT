@@ -86,18 +86,7 @@ const useRasterFrame = (
                 }
             }catch(e: any){
                 if(!mounted) return;
-                const errorContext = {
-                    trajectoryId,
-                    timestep,
-                    analysisId,
-                    endpoint: `/trajectories/${trajectoryId}/analyses/${analysisId}/rasters/${timestep}`,
-                    statusCode: e?.response?.status,
-                    statusText: e?.response?.statusText,
-                    errorMessage: e?.message,
-                    errorCode: e?.code,
-                    timestamp: new Date().toISOString()
-                };
-                console.error('Error loading raster frame:', errorContext);
+                console.error('Error loading raster frame');
                 setScene({
                     frame: timestep,
                     model,

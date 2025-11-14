@@ -101,7 +101,7 @@ export const getUserTrajectories = factory.getAll({
         let teamQuery: any = { members: userId };
         if(teamId && typeof teamId === 'string'){
             if(!isValidObjectId(teamId)){
-                throw new Error(`Invalid teamId: ${teamId}`);
+                throw new RuntimeError('Trajectory::Team::InvalidId', 400);
             }
             teamQuery._id = teamId;
         }
@@ -476,7 +476,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
 
     if (validFiles.length === 0) {
         await rm(folderPath, { recursive: true, force: true });
-        return next(new RuntimeError('No valid files for trajectory', 400));
+        return next(new RuntimeError('Trajectory::NoValidFiles', 400));
     }
 
     const totalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);

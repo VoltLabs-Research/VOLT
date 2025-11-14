@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api } from '@/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
+import { extractErrorMessage } from '@/utilities/error-extractor';
 import type { ApiResponse } from '@/types/api';
 import type { DislocationState, DislocationStore, DislocationsResponse } from '@/types/stores/dislocations';
 
@@ -63,7 +64,7 @@ const useDislocationStore = create<DislocationStore>()((set, get) => {
                     };
                 },
                 onError: (error) => ({
-                    error: error?.response?.data?.message || 'Failed to load dislocations'
+                    error: extractErrorMessage(error, 'Failed to load dislocations')
                 })
                 }
             );

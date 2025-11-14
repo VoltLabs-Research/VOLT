@@ -32,11 +32,11 @@ export const createWebhook = catchAsync(async (req: Request, res: Response, next
     ];
     
     if (!events || !Array.isArray(events) || events.length === 0) {
-        return next(new RuntimeError('At least one event must be selected', 400));
+        return next(new RuntimeError('Webhook::Events::AtLeastOneRequired', 400));
     }
     
     if (!events.every((event: string) => validEvents.includes(event))) {
-        return next(new RuntimeError('Invalid event type', 400));
+        return next(new RuntimeError('Webhook::Event::Invalid', 400));
     }
     
     const secret = require('crypto').randomBytes(32).toString('hex');

@@ -68,18 +68,7 @@ const useFrameAtoms = (
             }
             return res;
         }catch(e: any){
-            const errorContext = {
-                trajectoryId,
-                timestep,
-                endpoint: `/trajectories/${trajectoryId}/frames/${timestep}/atoms`,
-                statusCode: e?.response?.status,
-                statusText: e?.response?.statusText,
-                errorMessage: e?.message,
-                errorCode: e?.code,
-                response: e?.response?.data,
-                timestamp: new Date().toISOString()
-            };
-            console.error('API Error loading frame atoms:', errorContext);
+            console.error('API Error loading frame atoms');
             const errorMsg = `Failed to load atoms: ${e?.message}`;
             setError(errorMsg);
             setData(null);

@@ -23,6 +23,7 @@
 import { create } from 'zustand';
 import { api } from '@/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
+import { extractErrorMessage } from '@/utilities/error-extractor';
 import type { Trajectory } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
 import type { TrajectoryState, TrajectoryStore } from '@/types/stores/trajectories';
@@ -139,12 +140,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     };
                 },
                 onError: (error) => {
-                    const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to load trajectories';
-                    // Enhance context
-                    if (error?.context) {
-                        error.context.teamId = teamId;
-                        error.context.operation = 'loadTrajectories';
-                    }
+                    const errorMessage = extractErrorMessage(error, 'Failed to load trajectories');
                     return {
                         error: errorMessage
                     };
@@ -172,7 +168,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     };
                 },
                 onError: (error) => ({
-                    error: error?.response?.data?.message || 'Failed to load trajectories'
+                    error: extractErrorMessage(error, 'Failed to load structure analysis')
                 })
             });
         },
@@ -185,12 +181,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     error: null
                 }),
                 onError: (error) => {
-                    const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to load trajectory';
-                    // Enhance context
-                    if (error?.context) {
-                        error.context.trajectoryId = id;
-                        error.context.operation = 'getTrajectoryById';
-                    }
+                    const errorMessage = extractErrorMessage(error, 'Failed to load trajectory');
                     return {
                         error: errorMessage
                     };
@@ -215,16 +206,11 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     error: null
                 });
             } catch (error: any) {
-                const errorMessage = error?.context?.serverMessage || error?.message || 'Error uploading trajectory';
+                const errorMessage = extractErrorMessage(error, 'Error uploading trajectory');
                 set({
                     uploadingFileCount: Math.max(0, get().uploadingFileCount - 1),
                     error: errorMessage
                 });
-                // Enhance context
-                if (error?.context) {
-                    error.context.teamId = teamId;
-                    error.context.operation = 'createTrajectory';
-                }
                 throw error;
             }
         },
@@ -245,13 +231,8 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 set({ cache: nextCache });
             } catch (error: any) {
                 set(originalState);
-                const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to update trajectory';
+                const errorMessage = extractErrorMessage(error, 'Failed to update trajectory');
                 set({ error: errorMessage });
-                // Enhance error context
-                if (error?.context) {
-                    error.context.trajectoryId = id;
-                    error.context.operation = 'updateTrajectory';
-                }
                 throw error;
             }
         },
@@ -271,7 +252,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 await api.delete(`/trajectories/${id}`);
             } catch (error: any) {
                 set(originalState);
-                set({ error: error?.response?.data?.message || 'Failed to delete trajectory' });
+                set({ error: extractErrorMessage(error, 'Failed to delete trajectory') });
                 throw error;
             }
         },
@@ -294,18 +275,8 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const idsToDelete = [...selectedTrajectories];
             set({ selectedTrajectories: [] });
             const deletePromises = idsToDelete.map(id =>
-                get().deleteTrajectoryById(id).catch((error: any) => {
-                    const errorContext = {
-                        endpoint: `/trajectories/${id}`,
-                        method: 'DELETE',
-                        trajectoryId: id,
-                        statusCode: error?.response?.status,
-                        statusText: error?.response?.statusText,
-                        errorMessage: error?.message,
-                        serverMessage: error?.response?.data?.message,
-                        timestamp: new Date().toISOString()
-                    };
-                    logger.error(`Failed to delete trajectory ${id}:`, errorContext);
+                get().deleteTrajectoryById(id).catch(() => {
+                    logger.error(`Failed to delete trajectory ${id}`);
                 })
             );
             await Promise.allSettled(deletePromises);
@@ -353,13 +324,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 }));
                 return payload;
             }catch(e: any){
-                const errorMessage = (e?.context?.serverMessage || e?.message) ?? 'Error loading frame atoms';
-                // Enhance context
-                if (e?.context) {
-                    e.context.trajectoryId = trajectoryId;
-                    e.context.timestep = timestep;
-                    e.context.operation = 'getFrameAtoms';
-                }
+                const errorMessage = extractErrorMessage(e, 'Error loading frame atoms');
                 console.error('Failed to load frame atoms:', errorMessage);
                 return null;
             }
@@ -393,16 +358,11 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 set({ cache: nextCache });
                 return { success: true };
             } catch (error: any) {
-                const errorMessage = (error?.context?.serverMessage || error?.message) ?? 'Error saving preview';
+                const errorMessage = extractErrorMessage(error, 'Error saving preview');
                 set({
                     isSavingPreview: false,
                     error: errorMessage
                 });
-                // Enhance context
-                if (error?.context) {
-                    error.context.trajectoryId = id;
-                    error.context.operation = 'savePreview';
-                }
                 return { success: false, error: errorMessage };
             }
         },
@@ -425,7 +385,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         error: null
       }),
       onError: (error) => ({
-        error: error?.response?.data?.message || 'Failed to load trajectory metrics'
+        error: extractErrorMessage(error, 'Failed to load trajectory metrics')
       })
     }
   );
