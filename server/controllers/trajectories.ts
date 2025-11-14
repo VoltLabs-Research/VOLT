@@ -72,7 +72,15 @@ export const updateTrajectoryById = factory.updateOne();
 
 export const getTrajectoryMetrics = async (req: Request, res: Response) => {
     const { teamId } = req.query;
-    const teamMetrics = await getMetricsByTeamId(teamId as string);
+    
+    if (!teamId || typeof teamId !== 'string') {
+        return res.status(400).json({
+            status: 'error',
+            message: 'teamId query parameter is required'
+        });
+    }
+    
+    const teamMetrics = await getMetricsByTeamId(teamId);
 
     return res.status(200).json({
         status: 'success',
