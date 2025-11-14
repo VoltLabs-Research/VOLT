@@ -93,6 +93,9 @@ const useAuthStore = create<AuthStore>()((set, get) => {
             TokenStorage.removeToken();
             clearErrorHistory(); // Clear error history when user signs out
             set({ user: null, error: null });
+            
+            // Reload page to reset all stores and redirect to sign-in
+            window.location.href = '/auth/sign-in';
         },
 
         clearError(){
