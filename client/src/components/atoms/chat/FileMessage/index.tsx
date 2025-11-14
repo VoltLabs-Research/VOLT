@@ -24,7 +24,19 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
                 if(!cancelled){
                     setPreview(res.dataUrl);
                 }
-            }catch{}
+            }catch(error: any){
+                const errorContext = {
+                    endpoint: `/chat/${currentChatId}/files/${msg._id}`,
+                    method: 'GET',
+                    chatId: currentChatId,
+                    messageId: msg._id,
+                    operation: 'getFilePreview',
+                    statusCode: error?.context?.statusCode,
+                    serverMessage: error?.context?.serverMessage,
+                    timestamp: new Date().toISOString()
+                };
+                console.error('Failed to load file preview:', errorContext);
+            }
         };
 
         run();

@@ -1,15 +1,42 @@
 import { ErrorType } from '@/types/api';
 
+export interface ApiErrorContext {
+    endpoint?: string;
+    method?: string;
+    statusCode?: number;
+    statusText?: string;
+    errorMessage?: string;
+    serverMessage?: string;
+    resourceId?: string;
+    timestamp?: string;
+    [key: string]: any;
+}
+
 export class ApiError extends Error{
+    context: ApiErrorContext = {};
+
     constructor(
         public type: ErrorType,
         message: string,
         public status?: number,
-        public originalError?: any
+        public originalError?: any,
+        context?: ApiErrorContext
     ){
         super(message);
         this.name = 'ApiError';
+        this.context = context || {};
         Object.setPrototypeOf(this, ApiError.prototype);
+    }
+
+    getDetailedMessage(): string {
+        const parts = [this.message];
+        
+        if (this.context.endpoint) parts.push(`[${this.context.method || 'HTTP'} ${this.context.endpoint}]`);
+        if (this.context.statusCode) parts.push(`Status: ${this.context.statusCode}`);
+        if (this.context.serverMessage) parts.push(`Server: ${this.context.serverMessage}`);
+        if (this.context.resourceId) parts.push(`Resource: ${this.context.resourceId}`);
+        
+        return parts.join(' | ');
     }
 
     isRetryable(): boolean{

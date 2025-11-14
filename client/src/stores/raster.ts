@@ -122,13 +122,20 @@ const useRasterStore = create<RasterStore>((set, get) => {
 
                 return imageData ?? null;
             }catch(e: any){
-                // TODO: duplicated
+                const errorMessage = e?.context?.serverMessage || e?.message || 'Error loading frame';
+                // Enhance context
+                if (e?.context) {
+                    e.context.trajectoryId = trajectoryId;
+                    e.context.timestep = timestep;
+                    e.context.analysisId = analysisId;
+                    e.context.operation = 'loadRasterFrame';
+                }
                 set((state) => {
                     const loadingFrames = new Set(state.loadingFrames);
                     loadingFrames.delete(cacheKey);
                     return {
                         loadingFrames,
-                        error: e?.message ?? 'Error loading frame'
+                        error: errorMessage
                     };
                 });
 

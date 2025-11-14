@@ -65,9 +65,16 @@ const useTeamStore = create<TeamStore>((set, get) => {
                         error: null
                     };
                 },
-                onError: (error) => ({
-                    error: error?.response?.data?.message || 'Failed to load teams'
-                })
+                onError: (error) => {
+                    const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to load teams';
+                    // Enhance context
+                    if (error?.context) {
+                        error.context.operation = 'getUserTeams';
+                    }
+                    return {
+                        error: errorMessage
+                    };
+                }
             }
         ),
 
@@ -94,9 +101,16 @@ const useTeamStore = create<TeamStore>((set, get) => {
                         error: null,
                     };
                 },
-                onError: (error) => ({
-                    error: error?.response?.data?.message || 'Failed to create team'
-                })
+                onError: (error) => {
+                    const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to create team';
+                    // Enhance context
+                    if (error?.context) {
+                        error.context.operation = 'createTeam';
+                    }
+                    return {
+                        error: errorMessage
+                    };
+                }
             }
         ).then(() => {
             const newTeam = get().teams[0];
@@ -114,9 +128,17 @@ const useTeamStore = create<TeamStore>((set, get) => {
                     const selectedTeam = currentSelected?._id === teamId ? updatedTeam : currentSelected;
                     return { teams, selectedTeam, error: null };
                 },
-                onError: (error) => ({
-                    error: error?.response?.data?.message || 'Failed to update team'
-                })
+                onError: (error) => {
+                    const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to update team';
+                    // Enhance context
+                    if (error?.context) {
+                        error.context.teamId = teamId;
+                        error.context.operation = 'updateTeam';
+                    }
+                    return {
+                        error: errorMessage
+                    };
+                }
             }
         ),
 
@@ -134,11 +156,18 @@ const useTeamStore = create<TeamStore>((set, get) => {
                     
                     return { teams, selectedTeam, error: null };
                 },
-                onError: (error) => ({
-                    error: error?.response?.data?.message || 'Failed to delete team'
-                })
-            }
-        ),
+                onError: (error) => {
+                    const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to delete team';
+                    // Enhance context
+                    if (error?.context) {
+                        error.context.teamId = teamId;
+                        error.context.operation = 'deleteTeam';
+                    }
+                    return {
+                        error: errorMessage
+                    };
+                }
+                }),
 
         clearError: () => set({ error: null }),
 

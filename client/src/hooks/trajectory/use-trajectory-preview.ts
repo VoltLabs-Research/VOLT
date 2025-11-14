@@ -113,8 +113,11 @@ const useTrajectoryPreview = ({
                     r: Math.random().toString(36)
                 }).toString();
 
+                const endpoint = `/trajectories/${trajId}/preview?${cacheBuster}`;
+                logger.log('Requesting preview endpoint:', { endpoint, trajectoryId: trajId, updatedAt: updated });
+                
                 const response = await api.get<Blob>(
-                    `/trajectories/${trajId}/preview?${cacheBuster}`,
+                    endpoint,
                     {
                         responseType: 'blob',
                         headers: {
@@ -143,8 +146,19 @@ const useTrajectoryPreview = ({
                 logger.log('Preview loaded and cached:', cacheKey);
 
                 return blobUrl;
-            }catch(err){
-                logger.error('Error loading preview:', err);
+            }catch(err: any){
+                const errorContext = {
+                    trajectoryId: trajId,
+                    cacheKey,
+                    updatedAt: updated,
+                    endpoint: `/trajectories/${trajId}/preview`,
+                    statusCode: err?.response?.status,
+                    statusText: err?.response?.statusText,
+                    errorMessage: err?.message,
+                    errorCode: err?.code,
+                    timestamp: new Date().toISOString()
+                };
+                logger.error('API Error loading preview:', errorContext);
                 throw err;
             }finally{
                 loadingPromises.delete(cacheKey);
@@ -211,11 +225,25 @@ const useTrajectoryPreview = ({
         }catch(err: any){
             // Don't set error state if request was cancelled
             if(err.name === 'CanceledError' || err.name === 'Aborterror'){
-                logger.log('Preview request cancelled');
+                logger.log('Preview request cancelled', { trajectoryId, updatedAt });
                 return;
             }
 
-            logger.log('Error in loadPreview:', err);
+            const errorContext = {
+                trajectoryId,
+                updatedAt,
+                currentKey,
+                enabled,
+                endpoint: `/trajectories/${trajectoryId}/preview`,
+                method: 'GET',
+                statusCode: err?.context?.statusCode || err?.response?.status,
+                statusText: err?.context?.statusText || err?.response?.statusText,
+                errorMessage: err?.context?.errorMessage || err?.message,
+                serverMessage: err?.context?.serverMessage,
+                errorCode: err?.code,
+                timestamp: new Date().toISOString()
+            };
+            logger.error('Fatal error in loadPreview:', errorContext);
             setError(true);
             setPreviewBlobUrl(null);
             setLastLoadedKey(null);

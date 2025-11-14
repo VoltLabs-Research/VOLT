@@ -50,7 +50,16 @@ export const useApiTokens = () => {
             const response = await api.get('/api-tokens');
             setTokens(response.data.data);
         } catch (err: any) {
-            console.error('❌ Failed to fetch API tokens:', err);
+            const errorContext = {
+                endpoint: '/api-tokens',
+                method: 'GET',
+                statusCode: err?.response?.status,
+                statusText: err?.response?.statusText,
+                errorMessage: err?.message,
+                serverMessage: err?.response?.data?.message,
+                timestamp: new Date().toISOString()
+            };
+            console.error('Failed to fetch API tokens:', errorContext);
             setError(err.response?.data?.message || 'Failed to fetch API tokens');
         } finally {
             setLoading(false);
@@ -73,6 +82,17 @@ export const useApiTokens = () => {
             await fetchStats();
             return response.data.data;
         } catch (err: any) {
+            const errorContext = {
+                endpoint: '/api-tokens',
+                method: 'POST',
+                payload: tokenData,
+                statusCode: err?.response?.status,
+                statusText: err?.response?.statusText,
+                errorMessage: err?.message,
+                serverMessage: err?.response?.data?.message,
+                timestamp: new Date().toISOString()
+            };
+            console.error('Failed to create API token:', errorContext);
             const errorMessage = err.response?.data?.message || 'Failed to create API token';
             setError(errorMessage);
             throw new Error(errorMessage);
@@ -86,6 +106,18 @@ export const useApiTokens = () => {
             await fetchStats();
             return response.data.data;
         } catch (err: any) {
+            const errorContext = {
+                endpoint: `/api-tokens/${id}`,
+                method: 'PATCH',
+                tokenId: id,
+                payload: tokenData,
+                statusCode: err?.response?.status,
+                statusText: err?.response?.statusText,
+                errorMessage: err?.message,
+                serverMessage: err?.response?.data?.message,
+                timestamp: new Date().toISOString()
+            };
+            console.error('Failed to update API token:', errorContext);
             const errorMessage = err.response?.data?.message || 'Failed to update API token';
             setError(errorMessage);
             throw new Error(errorMessage);
@@ -98,6 +130,17 @@ export const useApiTokens = () => {
             await fetchTokens();
             await fetchStats();
         } catch (err: any) {
+            const errorContext = {
+                endpoint: `/api-tokens/${id}`,
+                method: 'DELETE',
+                tokenId: id,
+                statusCode: err?.response?.status,
+                statusText: err?.response?.statusText,
+                errorMessage: err?.message,
+                serverMessage: err?.response?.data?.message,
+                timestamp: new Date().toISOString()
+            };
+            console.error('Failed to delete API token:', errorContext);
             const errorMessage = err.response?.data?.message || 'Failed to delete API token';
             setError(errorMessage);
             throw new Error(errorMessage);
@@ -111,6 +154,17 @@ export const useApiTokens = () => {
             await fetchStats();
             return response.data.data;
         } catch (err: any) {
+            const errorContext = {
+                endpoint: `/api-tokens/${id}/regenerate`,
+                method: 'POST',
+                tokenId: id,
+                statusCode: err?.response?.status,
+                statusText: err?.response?.statusText,
+                errorMessage: err?.message,
+                serverMessage: err?.response?.data?.message,
+                timestamp: new Date().toISOString()
+            };
+            console.error('Failed to regenerate API token:', errorContext);
             const errorMessage = err.response?.data?.message || 'Failed to regenerate API token';
             setError(errorMessage);
             throw new Error(errorMessage);

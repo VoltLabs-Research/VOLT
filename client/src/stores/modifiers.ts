@@ -136,25 +136,45 @@ const useModifiersStore = create<ModifiersStore>()((set, get) => {
                         dislocationSeries,
                         error: null
                     };
+                },
+                onError(error){
+                    // Enhance context
+                    if (error?.context) {
+                        error.context.trajectoryId = id;
+                        error.context.operation = 'computeAnalyses';
+                    }
+                    return {
+                        error: error?.context?.serverMessage || error?.message || 'Failed to compute analysis'
+                    };
                 }
             });
         },     
 
         async dislocationAnalysis(trajectoryId: string, analysisConfig: any){
-            const cpuIntensiveTasksEnabled = import.meta.env.VITE_CPU_INTENSIVE_TASKS === 'true';
-            if (!cpuIntensiveTasksEnabled) {
-                throw new Error('CPU-intensive tasks are disabled');
+            try {
+                const cpuIntensiveTasksEnabled = import.meta.env.VITE_CPU_INTENSIVE_TASKS === 'true';
+                if (!cpuIntensiveTasksEnabled) {
+                    throw new Error('CPU-intensive tasks are disabled');
+                }
+                
+                delete analysisConfig._id;
+                delete analysisConfig.trajectory;
+                delete analysisConfig.structureAnalysis;
+                delete analysisConfig.simulationCell;
+                delete analysisConfig.dislocations;
+                delete analysisConfig.__v;
+                delete analysisConfig.updatedAt;
+                delete analysisConfig.createdAt;
+                await api.post(`/modifiers/crystal-analysis/${trajectoryId}`, analysisConfig);
+            } catch (error: any) {
+                // Enhance error context
+                if (error?.context) {
+                    error.context.trajectoryId = trajectoryId;
+                    error.context.operation = 'dislocationAnalysis';
+                    error.context.analysisType = 'crystal-analysis';
+                }
+                throw error;
             }
-            
-            delete analysisConfig._id;
-            delete analysisConfig.trajectory;
-            delete analysisConfig.structureAnalysis;
-            delete analysisConfig.simulationCell;
-            delete analysisConfig.dislocations;
-            delete analysisConfig.__v;
-            delete analysisConfig.updatedAt;
-            delete analysisConfig.createdAt;
-            await api.post(`/modifiers/crystal-analysis/${trajectoryId}`, analysisConfig);
         }
     };
 });

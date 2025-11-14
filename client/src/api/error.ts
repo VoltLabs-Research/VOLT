@@ -1,6 +1,6 @@
 import type { AxiosError } from 'axios';
 import { ErrorType } from '@/types/api';
-import { ApiError } from '@/api/api-error';
+import { ApiError, type ApiErrorContext } from '@/api/api-error';
 
 interface ErrorClassificationMap{
     [key: number]: ErrorType;
@@ -26,22 +26,58 @@ const HTTP_ERROR_MAP: ErrorClassificationMap = {
     504: ErrorType.SERVER_ERROR,
 };
 
+const HTTP_STATUS_MESSAGES: { [key: number]: string } = {
+    400: 'Bad Request',
+    401: 'Unauthorized',
+    403: 'Forbidden',
+    404: 'Resource Not Found',
+    409: 'Conflict',
+    429: 'Too Many Requests',
+    500: 'Server Error',
+    502: 'Bad Gateway',
+    503: 'Service Unavailable',
+    504: 'Gateway Timeout',
+};
+
 const extractErrorMessage = (data: ErrorResponse | unknown): string => {
     if(!data || typeof data !== 'object'){
         return 'Unknown error';
     }
 
     const errorData = data as ErrorResponse;
-    return errorData.message || 'Uknown error';
+    return errorData.message || errorData.error || errorData.detail || 'Unknown error';
+};
+
+const extractContextFromError = (error: AxiosError, errorMessage: string): ApiErrorContext => {
+    const config = error.config;
+    const status = error.response?.status;
+    
+    return {
+        endpoint: config?.url || 'unknown',
+        method: (config?.method || 'GET').toUpperCase(),
+        statusCode: status,
+        statusText: error.response?.statusText || HTTP_STATUS_MESSAGES[status || 0] || 'Unknown',
+        errorMessage: error.message || 'Unknown error',
+        serverMessage: extractErrorMessage(error.response?.data),
+        timestamp: new Date().toISOString()
+    };
 };
 
 const classifyNetworkError = (error: AxiosError): ApiError => {
+    const context: ApiErrorContext = {
+        endpoint: error.config?.url || 'unknown',
+        method: (error.config?.method || 'GET').toUpperCase(),
+        errorMessage: error.message || 'Unknown error',
+        timestamp: new Date().toISOString()
+    };
+
     if(error.code === 'ECONNABORTED'){
         return new ApiError(
             ErrorType.TIMEOUT, 
             'The request took too long (timeout)', 
             undefined, 
-            error
+            error,
+            context
         );
     }
 
@@ -55,7 +91,8 @@ const classifyNetworkError = (error: AxiosError): ApiError => {
             ErrorType.NETWORK,
             'Internet connection error. Check your connection.',
             undefined,
-            error
+            error,
+            context
         );
     }
 
@@ -63,18 +100,27 @@ const classifyNetworkError = (error: AxiosError): ApiError => {
         ErrorType.UNKNOWN,
         error.message || 'Unknown error',
         undefined,
-        error
+        error,
+        context
     );
 }
 
 export const classifyHttpError = (error: AxiosError): ApiError => {
     const status = error.response!.status;
     const data = error.response!.data as ErrorResponse | undefined;
-    const message = extractErrorMessage(data);
+    const serverMessage = extractErrorMessage(data);
+    
+    // Use a more user-friendly message based on status code
+    const defaultMessage = HTTP_STATUS_MESSAGES[status] || 'Unknown error';
+    const finalMessage = serverMessage !== 'Unknown error' ? serverMessage : defaultMessage;
 
     const type = HTTP_ERROR_MAP[status] || ErrorType.UNKNOWN;
+    
+    const context = extractContextFromError(error, finalMessage);
+    // Override server message with the extracted one
+    context.serverMessage = serverMessage;
 
-    return new ApiError(type, message, status, error);
+    return new ApiError(type, finalMessage, status, error, context);
 };
 
 export const classifyError = (error: unknown): ApiError => {

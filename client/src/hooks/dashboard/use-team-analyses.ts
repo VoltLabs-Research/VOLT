@@ -58,6 +58,17 @@ export const useTeamAnalyses = (teamId?: string, opts?: { limit?: number; force?
           setLoading(false);
           return;
         }
+        const errorContext = {
+          teamId,
+          endpoint: '/analyses/team',
+          limit,
+          statusCode: err?.response?.status,
+          statusText: err?.response?.statusText,
+          errorMessage: err?.message,
+          serverMessage: err?.response?.data?.message,
+          timestamp: new Date().toISOString()
+        };
+        console.error('Error loading team analyses:', errorContext);
         const message = err?.response?.data?.message || err?.message || 'Failed to load analyses';
         setError(message);
       }finally{

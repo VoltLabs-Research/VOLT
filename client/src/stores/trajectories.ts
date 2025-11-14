@@ -138,9 +138,17 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                         error: null
                     };
                 },
-                onError: (error) => ({
-                    error: error?.response?.data?.message || 'Failed to load trajectories'
-                })
+                onError: (error) => {
+                    const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to load trajectories';
+                    // Enhance context
+                    if (error?.context) {
+                        error.context.teamId = teamId;
+                        error.context.operation = 'loadTrajectories';
+                    }
+                    return {
+                        error: errorMessage
+                    };
+                }
             });
         },
 
@@ -176,9 +184,17 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     trajectory: res.data.data,
                     error: null
                 }),
-                onError: (error) => ({
-                    error: error?.response?.data?.message || 'Failed to load trajectory'
-                })
+                onError: (error) => {
+                    const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to load trajectory';
+                    // Enhance context
+                    if (error?.context) {
+                        error.context.trajectoryId = id;
+                        error.context.operation = 'getTrajectoryById';
+                    }
+                    return {
+                        error: errorMessage
+                    };
+                }
             }),
 
         createTrajectory: async (formData: FormData, teamId?: string) => {
@@ -199,10 +215,16 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     error: null
                 });
             } catch (error: any) {
+                const errorMessage = error?.context?.serverMessage || error?.message || 'Error uploading trajectory';
                 set({
                     uploadingFileCount: Math.max(0, get().uploadingFileCount - 1),
-                    error: error?.response?.data?.message || 'Error uploading trajectory'
+                    error: errorMessage
                 });
+                // Enhance context
+                if (error?.context) {
+                    error.context.teamId = teamId;
+                    error.context.operation = 'createTrajectory';
+                }
                 throw error;
             }
         },
@@ -223,7 +245,13 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 set({ cache: nextCache });
             } catch (error: any) {
                 set(originalState);
-                set({ error: error?.response?.data?.message || 'Failed to update trajectory' });
+                const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to update trajectory';
+                set({ error: errorMessage });
+                // Enhance error context
+                if (error?.context) {
+                    error.context.trajectoryId = id;
+                    error.context.operation = 'updateTrajectory';
+                }
                 throw error;
             }
         },
@@ -266,9 +294,19 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const idsToDelete = [...selectedTrajectories];
             set({ selectedTrajectories: [] });
             const deletePromises = idsToDelete.map(id =>
-                get().deleteTrajectoryById(id).catch((error) =>
-                    logger.error(`Failed to delete trajectory ${id}:`, error)
-                )
+                get().deleteTrajectoryById(id).catch((error: any) => {
+                    const errorContext = {
+                        endpoint: `/trajectories/${id}`,
+                        method: 'DELETE',
+                        trajectoryId: id,
+                        statusCode: error?.response?.status,
+                        statusText: error?.response?.statusText,
+                        errorMessage: error?.message,
+                        serverMessage: error?.response?.data?.message,
+                        timestamp: new Date().toISOString()
+                    };
+                    logger.error(`Failed to delete trajectory ${id}:`, errorContext);
+                })
             );
             await Promise.allSettled(deletePromises);
         },
@@ -314,7 +352,15 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     atomsCache: { ...(state.atomsCache || {}), [cacheKey]: payload }
                 }));
                 return payload;
-            }catch(e){
+            }catch(e: any){
+                const errorMessage = (e?.context?.serverMessage || e?.message) ?? 'Error loading frame atoms';
+                // Enhance context
+                if (e?.context) {
+                    e.context.trajectoryId = trajectoryId;
+                    e.context.timestep = timestep;
+                    e.context.operation = 'getFrameAtoms';
+                }
+                console.error('Failed to load frame atoms:', errorMessage);
                 return null;
             }
         },
@@ -347,11 +393,17 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 set({ cache: nextCache });
                 return { success: true };
             } catch (error: any) {
+                const errorMessage = (error?.context?.serverMessage || error?.message) ?? 'Error saving preview';
                 set({
                     isSavingPreview: false,
-                    error: error?.response?.data?.message || 'Error saving preview'
+                    error: errorMessage
                 });
-                return { success: false, error: error?.message || 'Unknown error' };
+                // Enhance context
+                if (error?.context) {
+                    error.context.trajectoryId = id;
+                    error.context.operation = 'savePreview';
+                }
+                return { success: false, error: errorMessage };
             }
         },
 

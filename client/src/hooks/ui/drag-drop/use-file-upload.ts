@@ -56,9 +56,19 @@ const useFileUpload = (
                 folderName,
                 selectedTeam._id
             );
-        }catch(err){
-            const error = err instanceof Error ? err : new Error('Upload failed');
-            logger.error('Upload failed:', error);
+        }catch(err: any){
+            const errorContext = {
+                endpoint: '/trajectories/upload',
+                method: 'POST',
+                teamId: selectedTeam?._id,
+                filesCount: filesWithPath?.length,
+                statusCode: err?.response?.status,
+                statusText: err?.response?.statusText,
+                errorMessage: err?.message || 'Upload failed',
+                serverMessage: err?.response?.data?.message,
+                timestamp: new Date().toISOString()
+            };
+            logger.error('Upload failed:', errorContext);
         }
     }, [uploadAndProcessTrajectory, selectedTeam]);
 

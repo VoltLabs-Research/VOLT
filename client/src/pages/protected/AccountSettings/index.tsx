@@ -163,9 +163,16 @@ const AccountSettings: React.FC = () => {
             });
             // Refresh password info after successful change
             await getPasswordInfo();
-        } catch (error) {
-            // Error is handled by the auth store
-            console.error('Password change failed:', error);
+        } catch (error: any) {
+            const errorContext = {
+                endpoint: '/auth/change-password',
+                method: 'POST',
+                statusCode: error?.response?.status,
+                errorMessage: error?.message,
+                serverMessage: error?.response?.data?.message,
+                timestamp: new Date().toISOString()
+            };
+            console.error('Password change failed:', errorContext);
         }
     };
 
@@ -186,7 +193,16 @@ const AccountSettings: React.FC = () => {
             try {
                 await deleteToken(token._id);
             } catch (error: any) {
-                console.error('Failed to delete token:', error);
+                const errorContext = {
+                    endpoint: `/api-tokens/${token._id}`,
+                    method: 'DELETE',
+                    tokenId: token._id,
+                    statusCode: error?.response?.status,
+                    errorMessage: error?.message,
+                    serverMessage: error?.response?.data?.message,
+                    timestamp: new Date().toISOString()
+                };
+                console.error('Failed to delete token:', errorContext);
             }
         }
     };
@@ -196,7 +212,16 @@ const AccountSettings: React.FC = () => {
             try {
                 await regenerateToken(token._id);
             } catch (error: any) {
-                console.error('Failed to regenerate token:', error);
+                const errorContext = {
+                    endpoint: `/api-tokens/${token._id}/regenerate`,
+                    method: 'POST',
+                    tokenId: token._id,
+                    statusCode: error?.response?.status,
+                    errorMessage: error?.message,
+                    serverMessage: error?.response?.data?.message,
+                    timestamp: new Date().toISOString()
+                };
+                console.error('Failed to regenerate token:', errorContext);
             }
         }
     };
@@ -231,7 +256,16 @@ const AccountSettings: React.FC = () => {
             try {
                 await deleteWebhook(webhook._id);
             } catch (error: any) {
-                console.error('Failed to delete webhook:', error);
+                const errorContext = {
+                    endpoint: `/webhooks/${webhook._id}`,
+                    method: 'DELETE',
+                    webhookId: webhook._id,
+                    statusCode: error?.response?.status,
+                    errorMessage: error?.message,
+                    serverMessage: error?.response?.data?.message,
+                    timestamp: new Date().toISOString()
+                };
+                console.error('Failed to delete webhook:', errorContext);
             }
         }
     };
@@ -241,7 +275,17 @@ const AccountSettings: React.FC = () => {
             await testWebhook(webhook._id);
             alert('Webhook test sent successfully!');
         } catch (error: any) {
-            alert(`Webhook test failed: ${error.message}`);
+            const errorContext = {
+                endpoint: `/webhooks/${webhook._id}/test`,
+                method: 'POST',
+                webhookId: webhook._id,
+                statusCode: error?.response?.status,
+                errorMessage: error?.message,
+                serverMessage: error?.response?.data?.message,
+                timestamp: new Date().toISOString()
+            };
+            console.error('Webhook test failed:', errorContext);
+            alert(`Webhook test failed: ${error?.response?.data?.message || error?.message || 'Unknown error'}`);
         }
     };
 

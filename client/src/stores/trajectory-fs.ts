@@ -137,7 +137,13 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
                 };
             });
         }catch(e: any){
-            set({ loading: false, error: e?.response?.data?.data?.error || e?.message || 'Error loading files' });
+            const errorMessage = (e?.context?.serverMessage || e?.response?.data?.data?.error || e?.message) ?? 'Error loading files';
+            // Enhance context
+            if (e?.context) {
+                e.context.trajectoryId = trajectoryId;
+                e.context.operation = 'listFiles';
+            }
+            set({ loading: false, error: errorMessage });
         }
     },
 

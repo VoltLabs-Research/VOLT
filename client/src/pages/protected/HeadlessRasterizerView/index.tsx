@@ -558,7 +558,6 @@ const HeadlessRasterizerView: React.FC = () => {
                         <EmptyState
                             title="Error Loading Data"
                             description={error}
-                            icon="⚠️"
                             buttonText="Return to Dashboard"
                             buttonOnClick={handleGoBack}
                             className="raster-empty-state-content"

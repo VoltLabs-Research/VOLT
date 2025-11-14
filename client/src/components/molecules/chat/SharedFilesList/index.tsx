@@ -24,7 +24,19 @@ const SharedFilesList = ({ messages, currentChatId }: SharedFilesListProps) => {
                     try {
                     const p = await chatApi.getFilePreview(currentChatId, m._id);
                     if (!cancelled) setPreviews(prev => ({ ...prev, [m._id]: p.dataUrl }));
-                } catch {}
+                } catch (error: any) {
+                    const errorContext = {
+                        endpoint: `/chat/${currentChatId}/files/${m._id}`,
+                        method: 'GET',
+                        chatId: currentChatId,
+                        messageId: m._id,
+                        operation: 'getFilePreview',
+                        statusCode: error?.context?.statusCode,
+                        serverMessage: error?.context?.serverMessage,
+                        timestamp: new Date().toISOString()
+                    };
+                    console.error('Failed to load file preview:', errorContext);
+                }
             }
         }
 

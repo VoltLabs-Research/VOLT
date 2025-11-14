@@ -345,13 +345,22 @@ const applyClippingPlanesToMaterial = (m: Material, planes: Plane[]) => {
         setLoadingState({ isLoading: false, progress: 100, error: null });
       } catch (error: any) {
         const message = error instanceof Error ? error.message : String(error);
+        const errorContext = {
+          endpoint: '/glb/model',
+          method: 'GET',
+          url: url,
+          statusCode: error?.context?.statusCode,
+          serverMessage: error?.context?.serverMessage,
+          errorMessage: message,
+          timestamp: new Date().toISOString()
+        };
+        logger.error('Model loading failed:', errorContext);
         // Mark this URL as permanently failed to prevent infinite retry loops
         stateRef.current.failedUrls.add(url);
         // Also mark as loaded to prevent retries
         stateRef.current.lastLoadedUrl = url;
         setLoadingState({ isLoading: false, progress: 0, error: message });
         showError(`Failed to load model: ${message}`);
-        logger.error('Model loading failed:', message);
       } finally {
         stateRef.current.isLoadingUrl = false;
         setIsModelLoading(false);

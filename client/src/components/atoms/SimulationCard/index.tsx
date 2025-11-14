@@ -117,8 +117,17 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     const handleDislocationAnalysis = async (): Promise<void> => {
         try {
             await dislocationAnalysis(trajectory._id, analysisConfig);
-        } catch (error) {
-            console.error('Dislocation analysis failed:', error);
+        } catch (error: any) {
+            const errorContext = {
+                endpoint: `/trajectories/${trajectory._id}/analyses/dislocation`,
+                method: 'POST',
+                trajectoryId: trajectory._id,
+                statusCode: error?.response?.status,
+                errorMessage: error?.message,
+                serverMessage: error?.response?.data?.message,
+                timestamp: new Date().toISOString()
+            };
+            console.error('Dislocation analysis failed:', errorContext);
         }
     };
 
@@ -127,8 +136,17 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
             if (rasterize) {
                 await rasterize(trajectory._id);
             }
-        } catch (error) {
-            console.error('Rasterize failed:', error);
+        } catch (error: any) {
+            const errorContext = {
+                endpoint: `/raster/${trajectory._id}/glb`,
+                method: 'POST',
+                trajectoryId: trajectory._id,
+                statusCode: error?.response?.status,
+                errorMessage: error?.message,
+                serverMessage: error?.response?.data?.message,
+                timestamp: new Date().toISOString()
+            };
+            console.error('Rasterize failed:', errorContext);
         }
     }, [trajectory._id, rasterize]);
 

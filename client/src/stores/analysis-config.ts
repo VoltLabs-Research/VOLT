@@ -74,8 +74,13 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
             }
           };
         },
-        onError: () => {
+        onError: (error) => {
           const current = get().analysisDislocationsById || {};
+          // Enhance context
+          if (error?.context) {
+            error.context.analysisId = analysisId;
+            error.context.operation = 'getDislocationsByAnalysisId';
+          }
           return {
             analysisDislocationsById: {
               ...current,
