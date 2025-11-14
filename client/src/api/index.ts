@@ -23,7 +23,6 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { setupInterceptors } from '@/api/interceptors';
-import { mainCircuitBreaker } from '@/api/circuit-breaker';
 import { requestDeduplicator, generateDeduplicationKey } from '@/api/request-deduplicator';
 import { classifyError } from '@/api/error';
 
@@ -51,7 +50,7 @@ export const DEFAULT_RETRY_CONFIG: RetryConfig = {
 const createHttpClient = (): AxiosInstance => {
     const client = axios.create({
         baseURL: API_BASE_URL,
-        timeout: 30000,
+        // timeout: 30000,
         headers: {
             'Content-Type': 'application/json'
         }
@@ -113,12 +112,10 @@ async function get<T = any>(
 ): Promise<{ data: T }>{
     const deduplicationKey = generateDeduplicationKey('GET', url);
 
-    return requestDeduplicator.deduplicate(deduplicationKey, () => (
-        mainCircuitBreaker.execute(async () => {
-            const response = await withRetry(() => client.get<T>(url, config));
-            return { data: response.data };
-        })
-    ));
+    return requestDeduplicator.deduplicate(deduplicationKey, async () => {
+        const response = await withRetry(() => client.get<T>(url, config));
+        return { data: response.data };
+    });
 };
 
 async function mutate<T = any>(
@@ -128,12 +125,10 @@ async function mutate<T = any>(
     data?: any,
     config?: AxiosRequestConfig
 ): Promise<{ data: T }>{
-    return mainCircuitBreaker.execute(async () => {
-        const response = await withRetry(() => (
-            client[method]<T>(url, data, config)
-        ));
-        return { data: response.data };
-    });
+    const response = await withRetry(() => (
+        client[method]<T>(url, data, config)
+    ));
+    return { data: response.data };
 };
 
 async function downloadBlob(
@@ -237,7 +232,6 @@ export const api = {
     instance: httpClient,
 
     // Utilities
-    circuitBreaker: mainCircuitBreaker,
     requestDeduplicator,
     classifyError 
 };

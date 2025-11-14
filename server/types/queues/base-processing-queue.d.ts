@@ -44,13 +44,3 @@ export interface QueueMetrics {
     workerRestarts: number;
     lastHealthCheck: string;
 }
-
-export interface CircuitBreaker {
-    failures: number;
-    lastFailure: number;
-    threshold: number;
-    timeout: number;
-    isOpen(): boolean;
-    recordFailure(): void;
-    reset(): void;
-}

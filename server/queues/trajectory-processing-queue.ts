@@ -110,16 +110,7 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
                 message: `${trajectory.name} - Preview frame ${firstFrameTimestep}`,
                 opts: {
                     inputPath: glbPath,
-                    outputPath: previewPath,
-                    width: 1024,
-                    height: 768,
-                    background: '#1a1a1a',
-                    fov: 45,
-                    maxPoints: 100000,
-                    up: 'z',
-                    az: 45,
-                    el: 30,
-                    distScale: 1.0
+                    outputPath: previewPath
                 }
             };
 

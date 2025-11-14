@@ -5,7 +5,7 @@ export interface CameraConfig{
     fov: number;
     near: number;
     far: number;
-    up: [number, number, number]
+    up:  [number, number, number]
 }
 
 export interface GLConfig{
