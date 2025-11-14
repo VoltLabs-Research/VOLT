@@ -8,6 +8,7 @@ import { PiAtomThin, PiLineSegmentsLight, PiDotsThreeVerticalBold, PiImagesSquar
 import { RxTrash } from "react-icons/rx";
 import { CiShare1 } from "react-icons/ci";
 import { HiOutlineViewfinderCircle } from "react-icons/hi2";
+import { motion } from 'framer-motion';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
 import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer';
@@ -201,19 +202,48 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
 
             <figcaption className='simulation-caption-container'>
                 {trajectory?.createdBy?.firstName && (
-                    <div className='simulation-caption-header'>
-                        <div className='simulation-user-avatar'>
+                    <motion.div 
+                        className='simulation-caption-header'
+                        initial={false}
+                        whileHover="expanded"
+                        animate="collapsed"
+                    >
+                        <motion.div 
+                            className='simulation-user-avatar'
+                            variants={{
+                                collapsed: { scale: 0.8, opacity: 0.9 },
+                                expanded: { scale: 1, opacity: 1 }
+                            }}
+                            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                        >
                             <span className='avatar-initials'>
                                 {trajectory.createdBy ? getInitialsFromUser(trajectory.createdBy) : '?'}
                             </span>
-                        </div>
-                        <div className='simulation-user-info'>
+                        </motion.div>
+                        <motion.div 
+                            className='simulation-user-info'
+                            variants={{
+                                collapsed: { 
+                                    width: 0, 
+                                    opacity: 0,
+                                    marginLeft: 0,
+                                    scale: 0.8
+                                },
+                                expanded: { 
+                                    width: 'auto', 
+                                    opacity: 1,
+                                    marginLeft: '0.75rem',
+                                    scale: 1
+                                }
+                            }}
+                            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                        >
                             <span className='simulation-created-by'>Created by</span>
                             <span className='simulation-user-name'>
                                 {getUserDisplayName(trajectory.createdBy)}
                             </span>
-                        </div>
-                    </div>
+                        </motion.div>
+                    </motion.div>
                 )}
             </figcaption>
 
