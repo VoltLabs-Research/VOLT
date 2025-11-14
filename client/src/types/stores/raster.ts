@@ -61,7 +61,6 @@ export interface RasterActions{
         priorityModels: { ml?: string; mr?: string },
         currentTimestep?: number
     ) => Promise<void>;
-    setSelectedAnalysis: (id: string | null) => void;
     getFrameCacheKey: (timestep: number, analysisId: string, model: string) => string;
     clearFrameCache: () => void;
 

@@ -30,19 +30,15 @@ import useLogger from '@/hooks/core/use-logger';
 import './FileUpload.css';
 
 interface FileUploadProps{
-    onUploadSuccess?: (res: any) => void;
-    onUploadError?: (res: any) => void;
-    className?: string;
     children?: React.ReactNode;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
-    onUploadSuccess = () => {},
     children,
 }) => {
     const dropRef = useRef<HTMLDivElement>(null);
     const { isDraggingOver, handleDragEnter, handleDragLeave, resetDragState } = useDragState();
-    const { uploadFiles } = useFileUpload(onUploadSuccess);
+    const { uploadFiles } = useFileUpload();
     const logger = useLogger('file-upload');
 
     const handleWindowDragEnter = useCallback((event: DragEvent) => {

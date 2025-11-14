@@ -19,7 +19,7 @@ SOFTWARE.
 import { create } from 'zustand';
 import { socketService } from '@/services/socketio';
 import Logger from '@/services/logger';
-import type { Job, JobsByStatus } from '@/types/jobs';
+import type { Job } from '@/types/jobs';
 import { sortJobsByTimestamp } from '@/utilities/jobs';
 import type { TeamJobsStore } from '@/types/stores/team/jobs';
 
@@ -182,138 +182,7 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
                 isLoading: true
             });
         },
-
-        hasJobForTrajectory: (trajectoryId: string) => {
-            const { jobs } = get();
-            return jobs.some((job) => job.trajectoryId === trajectoryId);
-        },
-
-        _getCurrentActiveSession: (trajectoryJobs: Job[], expiredSessions: Set<string>) => {
-            if (trajectoryJobs.length === 0) return null;
-
-            const activeJobs = trajectoryJobs.filter(job => 
-                ['running', 'queued', 'retrying'].includes(job.status) &&
-                job.sessionId &&
-                !expiredSessions.has(job.sessionId)
-            );
-
-            if (activeJobs.length === 0) return null;
-
-            const sessionCounts = activeJobs.reduce((acc, job) => {
-                if (job.sessionId) {
-                    acc[job.sessionId] = (acc[job.sessionId] || 0) + 1;
-                }
-                return acc;
-            }, {} as Record<string, number>);
-
-            const mostActiveSession = Object.keys(sessionCounts).reduce((a, b) => 
-                sessionCounts[a] > sessionCounts[b] ? a : b
-            );
-
-            logger.log(`Current active session for trajectory: ${mostActiveSession}`, {
-                sessionCounts,
-                expiredSessions: Array.from(expiredSessions)
-            });
-
-            return mostActiveSession;
-        },
-
-        getJobsForTrajectory: (trajectoryId: string): JobsByStatus => {
-            const { jobs, expiredSessions, _getCurrentActiveSession } = get();
-            const trajectoryJobs = jobs.filter((job) => job.trajectoryId === trajectoryId);
-
-            if (trajectoryJobs.length === 0) {
-                return {};
-            }
-
-            const currentActiveSession = _getCurrentActiveSession(trajectoryJobs, expiredSessions);
-            
-            logger.log(`Processing trajectory ${trajectoryId}:`, {
-                totalJobs: trajectoryJobs.length,
-                currentActiveSession,
-                expiredSessions: Array.from(expiredSessions)
-            });
-
-            let activeJobs: Job[] = [];
-
-            if (currentActiveSession) {
-                activeJobs = trajectoryJobs.filter((job) => 
-                    job.sessionId === currentActiveSession
-                );
-                logger.log(`Using current session ${currentActiveSession}: ${activeJobs.length} jobs`);
-            }
-
-            if (activeJobs.length === 0 && trajectoryJobs.length > 0) {
-                logger.log(`No active session found for ${trajectoryId}. Finding the most recent completed session.`);
-                
-                const sortedAllJobs = sortJobsByTimestamp(trajectoryJobs);
-                const mostRecentSessionId = sortedAllJobs[0]?.sessionId;
-
-                if (mostRecentSessionId) {
-                    logger.log(`Using most recent session ${mostRecentSessionId} as a fallback.`);
-                    activeJobs = trajectoryJobs.filter(job => job.sessionId === mostRecentSessionId);
-                } else {
-                     logger.log(`Could not determine the most recent session for ${trajectoryId}.`);
-                }
-            }
-
-            if (activeJobs.length === 0) {
-                logger.log(`No active jobs found for trajectory ${trajectoryId}, and no previous session could be determined.`);
-                return {};
-            }
-
-            const jobsByStatus = activeJobs.reduce((acc, job) => {
-                const status = job.status || 'unknown';
-                if (!acc[status]) {
-                    acc[status] = [];
-                }
-                
-                acc[status].push(job);
-                return acc;
-            }, {} as Record<string, Job[]>);
-
-            Object.keys(jobsByStatus).forEach((status) => {
-                jobsByStatus[status].sort((a, b) => {
-                    if (!a.timestamp && !b.timestamp) return 0;
-                    if (!a.timestamp) return 1;
-                    if (!b.timestamp) return -1;
-
-                    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-                });
-            });
-
-            const completedJobs = (jobsByStatus.completed?.length || 0) + (jobsByStatus.failed?.length || 0);
-            const totalActiveJobs = activeJobs.length;
-            const completionRate = totalActiveJobs > 0 ? Math.round((completedJobs / totalActiveJobs) * 100) : 0;
-
-            const currentlyActiveJobs = activeJobs.filter((job) => ['running', 'queued', 'retrying'].includes(job.status));
-
-            jobsByStatus._stats = {
-                total: totalActiveJobs,
-                completed: completedJobs,
-                totalAllTime: trajectoryJobs.length,
-                byStatus: Object.keys(jobsByStatus).reduce((acc, status) => {
-                    if (status !== '_stats') {
-                        acc[status] = jobsByStatus[status].length;
-                    }
-                    return acc;
-                }, {} as Record<string, number>),
-                hasActiveJobs: currentlyActiveJobs.length > 0,
-                completionRate: completionRate,
-                isActiveSession: !!currentActiveSession || totalActiveJobs > 0
-            };
-
-            logger.log(`Final stats for trajectory ${trajectoryId}:`, {
-                session: currentActiveSession || activeJobs[0]?.sessionId,
-                completed: completedJobs,
-                total: totalActiveJobs,
-                rate: completionRate,
-                hasActive: currentlyActiveJobs.length > 0
-            });
-
-            return jobsByStatus;
-        }
-    };
+    }
 });
 
 export default useTeamJobsStore;

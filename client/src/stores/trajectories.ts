@@ -115,8 +115,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
     return {
         ...initialState,
         
-    // (Deprecated) metrics helpers were removed; using trajectoryMetrics instead.
-
         getTrajectories: (teamId?: string, opts?: { force?: boolean }) => {
             const key = keyForTeam(teamId);
             const force = !!opts?.force;
@@ -236,6 +234,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 throw error;
             }
         },
+
         deleteTrajectoryById: async (id: string, teamId?: string) => {
             const originalState = {
                 trajectories: get().trajectories,
@@ -267,8 +266,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             });
         },
 
-        clearSelection: () => set({ selectedTrajectories: [] }),
-
         deleteSelectedTrajectories: async () => {
             const { selectedTrajectories } = get();
             if (selectedTrajectories.length === 0) return;
@@ -282,10 +279,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             await Promise.allSettled(deletePromises);
         },
 
-        // Raster helpers (stubs to satisfy interface; raster logic lives in raster store)
-        async rasterize(id: string){
-            try{ await api.post(`/raster/${id}/glb/`); } catch { /* noop */ }
-        },
         async getRasterizedFrames(_id: string, _query?: any){
             return null; // Not implemented here
         },
@@ -330,69 +323,29 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             }
         },
 
-        saveTrajectoryPreview: async (id: string, dataURL: string) => {
-            set({ isSavingPreview: true, error: null });
-            try {
-                const response = await fetch(dataURL);
-                const blob = await response.blob();
-                const formData = new FormData();
-                formData.append('preview', blob, 'preview.png');
-                const result = await api.patch<ApiResponse<Trajectory>>(
-                    `/trajectories/${id}`,
-                    formData,
-                    { headers: { 'Content-Type': 'multipart/form-data' } }
-                );
-                const updatedTrajectory = result.data.data;
-                clearTrajectoryPreviewCache(id);
-                const next = updateTrajectoryInList(id, {
-                    preview: updatedTrajectory.preview,
-                    updatedAt: updatedTrajectory.updatedAt
-                });
-                set({ ...next, isSavingPreview: false });
-                const nextCache: Record<string, Trajectory[]> = {};
-                Object.entries(get().cache).forEach(([k, arr]) => {
-                    nextCache[k] = arr.map(t =>
-                        t._id === id ? { ...t, preview: updatedTrajectory.preview, updatedAt: updatedTrajectory.updatedAt } as Trajectory : t
-                    );
-                });
-                set({ cache: nextCache });
-                return { success: true };
-            } catch (error: any) {
-                const errorMessage = extractErrorMessage(error, 'Error saving preview');
-                set({
-                    isSavingPreview: false,
-                    error: errorMessage
-                });
-                return { success: false, error: errorMessage };
-            }
-        },
-
         getMetrics: (id: string, opts?: { force?: boolean }) => {
-  const force = !!opts?.force;
-  const current = get().trajectoryMetrics as any;
+            const force = !!opts?.force;
+            const current = get().trajectoryMetrics as any;
 
-  // Evita refetch si ya tenemos métricas de esa trayectoria (a menos que force)
-  if (current && current?.trajectory?._id === id && !force) {
-    return Promise.resolve();
-  }
+            // Evita refetch si ya tenemos métricas de esa trayectoria (a menos que force)
+            if (current && current?.trajectory?._id === id && !force) {
+                return Promise.resolve();
+            }
 
-  return asyncAction(
-    () => api.get<ApiResponse<any>>(`/trajectories/metrics/${id}`),
-    {
-      loadingKey: 'isMetricsLoading',
-      onSuccess: (res) => ({
-        trajectoryMetrics: res.data.data,
-        error: null
-      }),
-      onError: (error) => ({
-        error: extractErrorMessage(error, 'Failed to load trajectory metrics')
-      })
-    }
-  );
-},
-        loadAuthenticatedPreview: (id: string) => previewCache.loadPreview(id),
-        isPreviewLoading: (id: string) => previewCache.isLoading(id),
-        clearPreviewCache: (id?: string) => previewCache.clear(id),
+            return asyncAction(
+                () => api.get<ApiResponse<any>>(`/trajectories/metrics/${id}`),
+                {
+                loadingKey: 'isMetricsLoading',
+                onSuccess: (res) => ({
+                    trajectoryMetrics: res.data.data,
+                    error: null
+                }),
+                onError: (error) => ({
+                    error: extractErrorMessage(error, 'Failed to load trajectory metrics')
+                })
+                }
+            );
+        },
 
         setTrajectory: (trajectory: Trajectory | null) => set({ trajectory }),
         clearError: () => set({ error: null }),

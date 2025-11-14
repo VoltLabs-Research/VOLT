@@ -36,19 +36,6 @@ export const setupInterceptors = (axiosInstance: AxiosInstance): void => {
     }, (error) => {
         const classifiedError = classifyError(error);
         
-        // Handle 401 Unauthorized - redirect to sign in
-        if (classifiedError.status === 401) {
-            // Clear auth data
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
-            
-            // Redirect to sign in page
-            window.location.href = '/auth/sign-in';
-            
-            // Still return the error for error handling in components
-            return Promise.reject(classifiedError);
-        }
-        
         notifyApiError(classifiedError);
         return Promise.reject(classifiedError);
     });

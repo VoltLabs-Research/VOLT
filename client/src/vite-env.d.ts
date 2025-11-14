@@ -11,11 +11,6 @@ declare global {
     }
   }
 
-  interface ImportMetaEnv {
-    readonly VITE_CPU_INTENSIVE_TASKS: string;
-    // Add other environment variables here as needed
-  }
-
   interface ImportMeta {
     readonly env: ImportMetaEnv;
   }

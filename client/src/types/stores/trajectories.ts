@@ -34,16 +34,10 @@ export interface TrajectoryActions {
     createTrajectory: (formData: FormData, teamId?: string) => Promise<void>;
     updateTrajectoryById: (id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => Promise<void>;
     deleteTrajectoryById: (id: string, teamId?: string) => Promise<void>;
-    rasterize: (id: string) => Promise<void>;
     toggleTrajectorySelection: (id: string) => void;
     deleteSelectedTrajectories: () => Promise<void>;
-    clearSelection: () => void;
     getMetrics: (id: string, opts?: { force?: boolean }) => void;
-    saveTrajectoryPreview: (id: string, dataURL: string) => Promise<{ success: boolean; error?: string }>;
-    loadAuthenticatedPreview: (id: string) => Promise<string | null>;
-    isPreviewLoading: (id: string) => boolean;
     getRasterizedFrames: (id: string, query?: RasterQuery & { force?: boolean }) => Promise<RasterPage | null>;
-    clearPreviewCache: (id?: string) => void;
     getFrameAtoms: (
         trajectoryId: string,
         timestep: number,

@@ -71,11 +71,6 @@ const useModifiersStore = create<ModifiersStore>()((set, get) => {
         ...initialState,
 
         async structureIdentification(id: string, analysisConfig: any, identificationMode: string){
-            const cpuIntensiveTasksEnabled = import.meta.env.VITE_CPU_INTENSIVE_TASKS === 'true';
-            if (!cpuIntensiveTasksEnabled) {
-                throw new Error('CPU-intensive tasks are disabled');
-            }
-            
             const config = { 
                 ...analysisConfig, 
                 structureIdentificationOnly: true,
@@ -152,11 +147,6 @@ const useModifiersStore = create<ModifiersStore>()((set, get) => {
 
         async dislocationAnalysis(trajectoryId: string, analysisConfig: any){
             try {
-                const cpuIntensiveTasksEnabled = import.meta.env.VITE_CPU_INTENSIVE_TASKS === 'true';
-                if (!cpuIntensiveTasksEnabled) {
-                    throw new Error('CPU-intensive tasks are disabled');
-                }
-                
                 delete analysisConfig._id;
                 delete analysisConfig.trajectory;
                 delete analysisConfig.structureAnalysis;

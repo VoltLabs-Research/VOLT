@@ -47,11 +47,6 @@ const useRasterStore = create<RasterStore>((set, get) => {
 		...initialState,
 
         rasterize(id: string){
-            const cpuIntensiveTasksEnabled = import.meta.env.VITE_CPU_INTENSIVE_TASKS === 'true';
-            if (!cpuIntensiveTasksEnabled) {
-                return Promise.reject(new Error('CPU-intensive tasks are disabled'));
-            }
-            
             const req = api.post<ApiResponse<any>>(`/raster/${id}/glb/`);
 
             return asyncAction(() => req, {
@@ -150,10 +145,6 @@ const useRasterStore = create<RasterStore>((set, get) => {
         clearFrameCache(){
             // Clear in-flight markers and memory cache
 			set({ loadingFrames: new Set(), frameCache: {} });
-        },
-
-        setSelectedAnalysis(id){
-            set({ selectedAnalysis: id });
         },
 
     async preloadPriorizedFrames(trajectoryId, priorityModels, currentTimestep){

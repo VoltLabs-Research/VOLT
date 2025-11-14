@@ -33,8 +33,7 @@ const useTeamJobs = () => {
         isLoading,
         subscribeToTeam,
         unsubscribeFromTeam,
-        disconnect,
-        getJobsForTrajectory
+        disconnect
     } = useTeamJobsStore();
 
     useEffect(() => {
@@ -53,7 +52,6 @@ const useTeamJobs = () => {
         jobs,
         isConnected,
         isLoading,
-        getJobsForTrajectory,
         disconnect
     };
 };

@@ -506,6 +506,43 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     protected abstract deserializeJob(rawData: string): T;
 
+    private mapJobStatusToTrajectoryStatus(jobStatus: string, queueType: string): string | null {
+        // Map job status based on queue type
+        if (queueType.includes('rasterizer')) {
+            // Rasterizer (preview generation)
+            switch (jobStatus) {
+                case 'queued':
+                case 'waiting':
+                    return 'rendering';
+                case 'running':
+                    return 'rendering';
+                case 'completed':
+                    return 'completed';
+                case 'failed':
+                    return 'failed';
+                default:
+                    return null;
+            }
+        } else {
+            // Trajectory processing
+            switch (jobStatus) {
+                case 'queued':
+                case 'waiting':
+                    return 'queued';
+                case 'running': 
+                    return 'processing';
+                case 'completed':
+                    // When trajectory processing completes, it transitions to rendering
+                    // (rasterizer job will be created next)
+                    return 'rendering';
+                case 'failed':
+                    return 'failed';
+                default:
+                    return null;
+            }
+        }
+    }
+
     private async setJobStatus(jobId: string, status: string, data: any): Promise<void> {
         const statusData = {
             jobId,
@@ -553,43 +590,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }
 
         await publishJobUpdate(teamId, statusData);
-    }
-
-    private mapJobStatusToTrajectoryStatus(jobStatus: string, queueType: string): string | null {
-        // Map job status based on queue type
-        if (queueType.includes('rasterizer')) {
-            // Rasterizer (preview generation)
-            switch (jobStatus) {
-                case 'queued':
-                case 'waiting':
-                    return 'rendering';
-                case 'running':
-                    return 'rendering';
-                case 'completed':
-                    return 'completed';
-                case 'failed':
-                    return 'failed';
-                default:
-                    return null;
-            }
-        } else {
-            // Trajectory processing
-            switch (jobStatus) {
-                case 'queued':
-                case 'waiting':
-                    return 'queued';
-                case 'running': 
-                    return 'processing';
-                case 'completed':
-                    // When trajectory processing completes, it transitions to rendering
-                    // (rasterizer job will be created next)
-                    return 'rendering';
-                case 'failed':
-                    return 'failed';
-                default:
-                    return null;
-            }
-        }
     }
 
     async getJobStatus(jobId: string): Promise<any | null>{

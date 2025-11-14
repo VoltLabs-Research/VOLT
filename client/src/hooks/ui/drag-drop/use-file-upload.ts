@@ -23,7 +23,6 @@
 import { useEffect, useCallback } from 'react';
 import useTrajectoryUpload from '@/hooks/trajectory/use-trajectory-upload';
 import useTeamStore from '@/stores/team/team';
-import useConfigurationStore from '@/stores/editor/configuration';
 import type { FileWithPath } from '@/hooks/trajectory/use-trajectory-upload';
 import useLogger from '@/hooks/core/use-logger';
 

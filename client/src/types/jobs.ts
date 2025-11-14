@@ -17,8 +17,3 @@ export interface JobStats{
     completionRate: number;
     isActiveSession: boolean;
 }
-
-export interface JobsByStatus{
-    [status: string]: Job[];
-    _stats?: JobStats;
-}
