@@ -31,27 +31,44 @@ const useTrajectoryUpdates = () => {
     useEffect(() => {
         const unsubscribe = socketService.on('trajectory_status_updated', (data: any) => {
             const { trajectoryId, status, updatedAt } = data;
-
-            logger.log('Received trajectory status update:', { trajectoryId, status, updatedAt, hasUpdatedAt: !!updatedAt });
+            logger.log('Socket update received', { trajectoryId, status, updatedAt });
 
             // Update the trajectory in the store
             useTrajectoryStore.setState((state) => {
+                const trajectory = state.trajectories.find(t => t._id === trajectoryId);
+                
+                if (!trajectory) {
+                    logger.warn('Trajectory not found in store for socket update', { trajectoryId, status, updatedAt });
+                    return state;
+                }
+
+                const previousStatus = trajectory.status;
                 const updateData: any = { status };
                 if (updatedAt) {
                     updateData.updatedAt = updatedAt;
-                    logger.log('Adding updatedAt to state:', updatedAt);
-                } else {
-                    logger.warn('No updatedAt received from server!');
                 }
 
                 const updatedTrajectories = state.trajectories.map((traj) =>            
                     traj._id === trajectoryId ? { ...traj, ...updateData } : traj
                 );
 
-                logger.log('Updated trajectory in store:', updatedTrajectories.find(t => t._id === trajectoryId));
+                // Also update all cache entries to keep them in sync
+                const updatedCache: Record<string, any> = { ...state.cache };
+                Object.entries(state.cache).forEach(([key, cachedTrajectories]) => {
+                    updatedCache[key] = (cachedTrajectories as any).map((t: any) =>
+                        t._id === trajectoryId ? { ...t, ...updateData } : t
+                    );
+                });
+
+                logger.log('Trajectory updated in store', { 
+                    trajectoryId, 
+                    previousStatus, 
+                    newStatus: status 
+                });
 
                 return {
                     trajectories: updatedTrajectories,
+                    cache: updatedCache,
                     trajectory: state.trajectory?._id === trajectoryId 
                         ? { ...state.trajectory, ...updateData } as any
                         : state.trajectory

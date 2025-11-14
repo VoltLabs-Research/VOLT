@@ -190,9 +190,11 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 const key = keyForTeam(teamId);
                 const currentList = get().cache[key] || get().trajectories;
                 const updated = [newTrajectory, ...currentList];
+                const updatedCache = { ...get().cache, [key]: updated };
+                
                 set({
                     trajectories: updated,
-                    cache: { ...get().cache, [key]: updated },
+                    cache: updatedCache,
                     uploadingFileCount: Math.max(0, get().uploadingFileCount - 1),
                     error: null
                 });

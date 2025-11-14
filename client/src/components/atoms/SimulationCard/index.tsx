@@ -2,7 +2,7 @@
 * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
 */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PiAtomThin, PiLineSegmentsLight, PiDotsThreeVerticalBold, PiImagesSquareThin } from 'react-icons/pi';
 import { RxTrash } from "react-icons/rx";
@@ -15,7 +15,6 @@ import ProcessingLoader from '@/components/atoms/ProcessingLoader';
 import useTrajectoryStore from '@/stores/trajectories';
 import useCardInteractions from '@/hooks/ui/interaction/use-card-interaction';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
-import useTrajectoryProcessingStatus from '@/hooks/trajectory/use-trajectory-processing-status';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import useModifiersStore from '@/stores/modifiers';
 import useRasterStore from '@/stores/raster';
@@ -35,6 +34,13 @@ interface SimulationCardProps {
     isSelected: boolean;
     onSelect: (id: string) => void;
 }
+
+const useTrajectoryProcessingStatus = ({ trajectoryId }: any) => {
+    const trajectories = useTrajectoryStore((state) => state.trajectories);
+    const traj = trajectories.find((t) => t._id == trajectoryId);
+
+    return { isProcessing: traj?.status !== 'completed', message: traj?.status };
+};
 
 const SimulationCard: React.FC<SimulationCardProps> = ({ 
     trajectory, 
@@ -61,8 +67,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
     });
 
     const processingStatus = useTrajectoryProcessingStatus({
-        trajectoryId: trajectory._id,
-        enabled: true
+        trajectoryId: trajectory._id
     });
 
     const { isDeleting, handleClick, handleDelete } = useCardInteractions(
