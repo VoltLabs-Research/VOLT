@@ -16,7 +16,7 @@ type LoadModelsParams = {
     signal?: AbortSignal;
     onProgress?: (progress: number, metrics?: { bps: number }) => void;
 };
-
+    
 export const buildGlbUrl = (
     trajectoryId: string,
     timestep: number,

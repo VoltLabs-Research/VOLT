@@ -6,6 +6,8 @@ import { Server, Socket } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { createRedisClient } from '@/config/redis';
 import { User } from '@/models/index';
+import { initializeJobUpdatesListener } from '@/socket/job-updates-listener';
+import { initializeTrajectoryUpdatesListener } from '@/socket/trajectory-updates-listener';
 
 /**
  * Central gateway that:
@@ -17,6 +19,8 @@ class SocketGateway{
     private io?: Server;
     private adapterPub?: Redis;
     private adapterSub?: Redis;
+    private jobUpdatesSubscriber?: Redis;
+    private trajectoryUpdatesSubscriber?: Redis;
     private initialized = false;
     private modules: BaseSocketModule[] = [];
 
@@ -88,6 +92,12 @@ class SocketGateway{
             module.onInit(this.io);
         }
 
+        // Initialize job updates listener
+        this.jobUpdatesSubscriber = initializeJobUpdatesListener(this.io);
+
+        // Initialize trajectory updates listener
+        this.trajectoryUpdatesSubscriber = initializeTrajectoryUpdatesListener(this.io);
+
         this.io.on('connection', (socket: Socket) => {
             console.log(`[Socket Gateway] Connected ${socket.id}`);
             for(const module of this.modules){
@@ -127,9 +137,19 @@ class SocketGateway{
             await this.adapterSub?.quit();
         }catch{}
 
+        try{
+            await this.jobUpdatesSubscriber?.quit();
+        }catch{}
+
+        try{
+            await this.trajectoryUpdatesSubscriber?.quit();
+        }catch{}
+
         this.io = undefined;
         this.adapterPub = undefined;
         this.adapterSub = undefined;
+        this.jobUpdatesSubscriber = undefined;
+        this.trajectoryUpdatesSubscriber = undefined;
         this.initialized = false;
     }
 

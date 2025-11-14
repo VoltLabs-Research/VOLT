@@ -84,8 +84,8 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     status: {
         type: String,
         lowercase: true,
-        enum: ['processing', 'ready'],
-        default: 'processing'
+        enum: ['queued', 'processing', 'rendering', 'completed', 'failed'],
+        default: 'queued'
     },
     isPublic: {
         type: Boolean,

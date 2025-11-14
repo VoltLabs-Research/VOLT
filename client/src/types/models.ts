@@ -73,6 +73,7 @@ export interface Trajectory{
     stats: TrajectoryStats;
     preview?: any;
     isPublic?: boolean;
+    status?: 'queued' | 'processing' | 'rendering' | 'completed' | 'failed';
     createdAt: string;
     updatedAt: string;
     users: (User | string)[];

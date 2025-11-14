@@ -58,7 +58,7 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
         return map;
     },
 
-    computeTimestepData(trajectory: Trajectory | null, currentTimestep?: number){
+    computeTimestepData(trajectory: Trajectory | null, currentTimestep?: number, cacheBuster?: number){
         if(!trajectory?.frames || trajectory.frames.length === 0){
             set({ timestepData: initialTimestepData });
             return;
@@ -81,7 +81,8 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
             const glbs = createTrajectoryGLBs(
                 trajectory._id,
                 currentTimestep,
-                finalAnalysisId
+                finalAnalysisId,
+                cacheBuster
             );
             
             // Always update model when analysis or timestep changes to ensure reload

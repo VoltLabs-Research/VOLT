@@ -1,24 +1,6 @@
 /**
 * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
+*/
 
 import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -29,16 +11,14 @@ import { HiOutlineViewfinderCircle } from "react-icons/hi2";
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
 import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer';
-import ProgressBadge from '@/components/atoms/animations/ProgressBadge';
-import ProgressBorderContainer from '@/components/atoms/animations/ProgressBorderContainer';
+import ProcessingLoader from '@/components/atoms/ProcessingLoader';
 import useTrajectoryStore from '@/stores/trajectories';
-import useJobProgress from '@/hooks/jobs/use-job-progress';
 import useCardInteractions from '@/hooks/ui/interaction/use-card-interaction';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
+import useTrajectoryProcessingStatus from '@/hooks/trajectory/use-trajectory-processing-status';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import useModifiersStore from '@/stores/modifiers';
 import useRasterStore from '@/stores/raster';
-import type { Job } from '@/types/jobs';
 import './SimulationCard.css';
 
 interface Trajectory {
@@ -47,19 +27,18 @@ interface Trajectory {
     updatedAt: string;
     createdAt: string;
     preview?: string | null;
+    status?: 'queued' | 'processing' | 'rendering' | 'completed' | 'failed';
 }
 
 interface SimulationCardProps {
     trajectory: Trajectory;
     isSelected: boolean;
     onSelect: (id: string) => void;
-    jobs?: Job[];
 }
 
 const SimulationCard: React.FC<SimulationCardProps> = ({ 
     trajectory, 
-    isSelected, 
-    jobs = {} 
+    isSelected
 }) => {
     const navigate = useNavigate();
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
@@ -79,34 +58,23 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
         trajectoryId: trajectory._id,
         updatedAt: trajectory.updatedAt,
         enabled: true
-    })
+    });
 
-    const jobProgress = useJobProgress(jobs, trajectory._id);
-    const {
-        totalJobs,
-        completionRate,
-        hasJobs,
-        hasActiveJobs,
-        isCompleted,
-        shouldHideBorder,
-        getBorderColor,
-        // TODO: PROGRESS BORDE UNUSED
-        getAnimatedProgressBorder,
-        cleanup: cleanupJobs,
-        isAnimating
-    } = jobProgress;
+    const processingStatus = useTrajectoryProcessingStatus({
+        trajectoryId: trajectory._id,
+        enabled: true
+    });
 
     const { isDeleting, handleClick, handleDelete } = useCardInteractions(
         toggleTrajectorySelection,
         (id: string) => navigate(`/canvas/${id}/`),
-        hasActiveJobs
+        processingStatus.isProcessing
     );
 
-    const containerClasses = `simulation-container ${hasActiveJobs ? 'has-jobs' : ''} ${isDeleting ? 'is-deleting' : ''} ${isSelected ? 'is-selected' : ''}`;
+    const containerClasses = `simulation-container ${processingStatus.isProcessing ? 'has-jobs' : ''} ${isDeleting ? 'is-deleting' : ''} ${isSelected ? 'is-selected' : ''}`;
 
     const onDelete = (): void => {
         handleDelete(trajectory._id, deleteTrajectoryById, () => {
-            cleanupJobs();
             cleanupPreview();
         });
     };
@@ -123,27 +91,22 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
             await dislocationAnalysis(trajectory._id, analysisConfig);
         } catch (error) {
             console.error('Dislocation analysis failed:', error);
-            // El error ya fue manejado por el store, solo lo registramos
         }
     };
 
     const handleRasterize = useCallback(async () => {
         try {
-            await rasterize(trajectory._id);
+            if (rasterize) {
+                await rasterize(trajectory._id);
+            }
         } catch (error) {
             console.error('Rasterize failed:', error);
-            // El error ya fue manejado por el store, solo lo registramos
         }
     }, [trajectory._id, rasterize]);
 
-    const getJobStatusText = (): string => {
-        if(isCompleted) return 'completed';
-        if(completionRate === 0 && hasActiveJobs) return 'starting...';
-        return 'processing';
-    };
-
     const shouldShowPreview = previewBlobUrl && !previewError;
     const shouldShowPlaceholder = !shouldShowPreview || previewLoading;
+    const showProcessingLoader = processingStatus.isProcessing;
 
     return (
         <>
@@ -151,11 +114,7 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
             className={containerClasses} 
             onClick={(e) => handleClick(e, trajectory._id)}
         >
-            <ProgressBorderContainer
-                isAnimating={isAnimating}
-                hasJobs={hasJobs}
-                shouldHideBorder={shouldHideBorder}
-            >
+            <div className='container-content'>
                 <div className='simulation-cover-container'>
                     {shouldShowPlaceholder && (
                         <i className='simulation-cover-icon-container'>
@@ -175,54 +134,48 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
                         />
                     )}
                     
-                    <ProgressBadge
-                        completionRate={completionRate}
-                        hasActiveJobs={hasActiveJobs}
-                        isCompleted={isCompleted}
-                        getBorderColor={getBorderColor}
-                        shouldShow={hasJobs && !shouldHideBorder}
-                    />
                 </div>
-                </ProgressBorderContainer>
+            </div>
 
-                <figcaption className='simulation-caption-container'>
-                    <div className='simulation-caption-left-container'>
-                        <EditableTrajectoryName
-                            trajectory={trajectory} 
-                            className='simulation-caption-title' 
-                        />
-                        
-                        <div className='simulation-caption-left-bottom-container'>
-                            <p className='simulation-last-edited'>
-                                Edited {formatTimeAgo(trajectory.updatedAt)}
-                            </p>
-                            
-                            {hasJobs && !shouldHideBorder && (
-                                <>
-                                    <span>•</span>
-                                    <p className='simulation-running-jobs'>
-                                        {totalJobs} jobs {getJobStatusText()}
-                                    </p>
-                                </>
-                            )}
-                        </div>
+            <figcaption className='simulation-caption-container'>
+                <div className='simulation-caption-left-container'>
+                    <EditableTrajectoryName
+                        trajectory={trajectory} 
+                        className='simulation-caption-title' 
+                    />
+                    
+                    <div className='simulation-caption-left-bottom-container'>
+                        {showProcessingLoader ? (
+                            <ProcessingLoader
+                                message={processingStatus.message}
+                                completionRate={0}
+                                isVisible={true}
+                            />
+                        ) : (
+                            <>
+                                <p className='simulation-last-edited'>
+                                    Edited {formatTimeAgo(trajectory.updatedAt)}
+                                </p>
+                            </>
+                        )}
                     </div>
+                </div>
 
-                    <ActionBasedFloatingContainer
-                        options={[
-                            ['View Scene', HiOutlineViewfinderCircle, handleViewScene],
-                            ['Rasterize', PiImagesSquareThin, handleRasterize],
-                            ['Share with Team', CiShare1, handleShare],
-                            ['Dislocation Analysis', PiLineSegmentsLight, handleDislocationAnalysis],
-                            ['Delete', RxTrash, onDelete],
-                        ]}
-                    >
-                        <i className='simulation-options-icon-container'>
-                            <PiDotsThreeVerticalBold />
-                        </i>
-                    </ActionBasedFloatingContainer>
-                </figcaption>
-            </figure>
+                <ActionBasedFloatingContainer
+                    options={[
+                        ['View Scene', HiOutlineViewfinderCircle, handleViewScene],
+                        ['Rasterize', PiImagesSquareThin, handleRasterize],
+                        ['Share with Team', CiShare1, handleShare],
+                        ['Dislocation Analysis', PiLineSegmentsLight, handleDislocationAnalysis],
+                        ['Delete', RxTrash, onDelete],
+                    ]}
+                >
+                    <i className='simulation-options-icon-container'>
+                        <PiDotsThreeVerticalBold />
+                    </i>
+                </ActionBasedFloatingContainer>
+            </figcaption>
+        </figure>
         </>
     );
 };

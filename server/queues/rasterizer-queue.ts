@@ -24,6 +24,7 @@ import { BaseProcessingQueue } from '@/queues/base-processing-queue';
 import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
 import path from 'path';
+import { Trajectory } from '@/models';
 
 export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
     constructor(){
@@ -34,6 +35,34 @@ export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
         };
 
         super(options);
+
+        // Listen for job completion to update trajectory updatedAt
+        this.on('jobCompleted', (data: any) => {
+            this.onJobCompleted(data).catch(error => {
+                console.error('Unhandled error in rasterizer onJobCompleted handler:', error);
+            });
+        });
+    }
+
+    private async onJobCompleted(data: any): Promise<void> {
+        const job = data.job as RasterizerJob;
+        
+        try {
+            console.log(`Rasterizer job completed for trajectory ${job.trajectoryId}, updating trajectory updatedAt`);
+            
+            // Update trajectory to trigger preview refresh on client
+            const trajectory = await Trajectory.findByIdAndUpdate(
+                job.trajectoryId,
+                { updatedAt: new Date() },
+                { new: true }
+            );
+
+            if (trajectory) {
+                console.log(`Updated trajectory ${job.trajectoryId} timestamp`);
+            }
+        } catch (error) {
+            console.error(`Failed to update trajectory ${job.trajectoryId} after rasterizer completion:`, error);
+        }
     }
 
     protected deserializeJob(rawData: string): RasterizerJob {

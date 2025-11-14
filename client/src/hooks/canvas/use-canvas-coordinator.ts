@@ -103,6 +103,19 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
         }
     }, [analysisConfig?._id, trajectory?._id, currentTimestep, resetModel]);
 
+    // When trajectory.status changes to 'completed', force a GLB reload by resetting and recomputing
+    useEffect(() => {
+        if(trajectory?._id && currentTimestep !== undefined && trajectory.status === 'completed'){
+            logger.log(`Trajectory rendering completed, forcing GLB reload for ${trajectory._id}`);
+            // Reset model to clear cache
+            resetModel();
+            // Then recompute to reload the GLB with cache buster (timestamp to break cache)
+            setTimeout(() => {
+                computeTimestepData(trajectory, currentTimestep, Date.now());
+            }, 100);
+        }
+    }, [trajectory?.status, trajectory?._id, currentTimestep, computeTimestepData, resetModel, logger]);
+
     useEffect(() => {
         // Throttle console logging to avoid excessive rendering and console spam
         const now = Date.now();

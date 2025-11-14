@@ -28,6 +28,7 @@ import { Worker } from 'worker_threads';
 import { EventEmitter } from 'events';
 import { publishJobUpdate } from '@/events/job-updates';
 import useClusterId from '@/utilities/use-cluster-id';
+import { Trajectory } from '@/models';
 
 export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitter{
     protected readonly queueName: string;
@@ -524,7 +525,71 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             await this.redis.sadd(teamJobsKey, jobId);
         }
 
-await publishJobUpdate(teamId, statusData);   // en setJobStatus(...)
+        // Map job status to trajectory status
+        const trajectoryStatus = this.mapJobStatusToTrajectoryStatus(status, data.queueType || this.queueName);
+        
+        // Update trajectory status if trajectoryId is present
+        if (data.trajectoryId && trajectoryStatus) {
+            try {
+                const updatedTrajectory = await Trajectory.findByIdAndUpdate(
+                    data.trajectoryId,
+                    { status: trajectoryStatus },
+                    { new: true }
+                );
+
+                // Emit trajectory update event to notify clients
+                if (updatedTrajectory && teamId) {
+                    await this.redis.publish('trajectory_updates', JSON.stringify({
+                        trajectoryId: data.trajectoryId,
+                        status: trajectoryStatus,
+                        teamId: teamId,
+                        updatedAt: updatedTrajectory.updatedAt,
+                        timestamp: new Date().toISOString()
+                    }));
+                }
+            } catch (error) {
+                console.error(`[${this.queueName}] Failed to update trajectory ${data.trajectoryId} status:`, error);
+            }
+        }
+
+        await publishJobUpdate(teamId, statusData);
+    }
+
+    private mapJobStatusToTrajectoryStatus(jobStatus: string, queueType: string): string | null {
+        // Map job status based on queue type
+        if (queueType.includes('rasterizer')) {
+            // Rasterizer (preview generation)
+            switch (jobStatus) {
+                case 'queued':
+                case 'waiting':
+                    return 'rendering';
+                case 'running':
+                    return 'rendering';
+                case 'completed':
+                    return 'completed';
+                case 'failed':
+                    return 'failed';
+                default:
+                    return null;
+            }
+        } else {
+            // Trajectory processing
+            switch (jobStatus) {
+                case 'queued':
+                case 'waiting':
+                    return 'queued';
+                case 'running': 
+                    return 'processing';
+                case 'completed':
+                    // When trajectory processing completes, it transitions to rendering
+                    // (rasterizer job will be created next)
+                    return 'rendering';
+                case 'failed':
+                    return 'failed';
+                default:
+                    return null;
+            }
+        }
     }
 
     async getJobStatus(jobId: string): Promise<any | null>{

@@ -165,7 +165,7 @@ const useTrajectoryPreview = ({
         setPreviewBlobUrl(null);
         setLastLoadedKey(null);
     }, []);
-
+    
     const loadPreview = useCallback(async () => {
         // Do not load if disabled
         if(!enabled){
@@ -228,7 +228,12 @@ const useTrajectoryPreview = ({
                 currentRequestRef.current = null;
             }
         }
-    }, [enabled, trajectoryId, updatedAt, lastLoadedKey, previewBlobUrl, getCacheKey, getPreviewFromCacheOrServer]);
+    }, [enabled, trajectoryId, updatedAt, getCacheKey, getPreviewFromCacheOrServer]);
+
+    const loadPreviewRef = useRef(loadPreview);
+    useEffect(() => {
+        loadPreviewRef.current = loadPreview;
+    }, [loadPreview]);
 
     const retry = useCallback(() => {
         setError(false);
@@ -242,12 +247,17 @@ const useTrajectoryPreview = ({
         }
 
         setLastLoadedKey(null);
-        loadPreview();
-    }, [loadPreview, trajectoryId, updatedAt, getCacheKey]);
+        loadPreviewRef.current();
+    }, [trajectoryId, updatedAt, getCacheKey]);
 
+    // Detectar cambios en updatedAt y recargar preview
     useEffect(() => {
-        loadPreview();
-    }, [loadPreview]);
+        logger.log('useTrajectoryPreview effect - updatedAt changed:', { updatedAt, enabled, trajectoryId });
+        if (enabled && trajectoryId) {
+            logger.log('Triggering preview reload for updatedAt:', updatedAt);
+            loadPreviewRef.current();
+        }
+    }, [updatedAt, enabled, trajectoryId, logger]);
 
     useEffect(() => {
         mountedRef.current = true;

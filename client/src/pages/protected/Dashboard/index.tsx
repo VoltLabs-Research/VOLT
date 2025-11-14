@@ -2,6 +2,7 @@ import React, { memo, useEffect, useRef, useState } from 'react';
 import DashboardContainer from '@/components/atoms/DashboardContainer';
 import FileUpload from '@/components/molecules/FileUpload';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
+import useTrajectoryUpdates from '@/hooks/trajectory/use-trajectory-updates';
 import TimestepViewer from '@/components/organisms/TimestepViewer';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/Scene3D';
 import useTrajectoryStore from '@/stores/trajectories';
@@ -16,6 +17,7 @@ import './Dashboard.css';
 
 const DashboardPage: React.FC = memo(() => {
     useTeamJobs();
+    useTrajectoryUpdates();
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoadingTrajectories = useTrajectoryStore((state) => state.isLoadingTrajectories);
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId: trajectories?.[0]?._id });

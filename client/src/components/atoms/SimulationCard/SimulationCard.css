@@ -1,3 +1,12 @@
+@keyframes opacity-pulse {
+    0%, 100% {
+        border-color: color-mix(in srgb, var(--accent-blue), transparent 60%);
+    }
+    50% {
+        border-color: color-mix(in srgb, var(--accent-blue), transparent 20%);
+    }
+}
+
 .simulation-container{
     width: 100%;
     cursor: pointer;
@@ -6,6 +15,16 @@
     border-radius: .8rem;
     overflow: hidden;
     background: var(--color-surface-1);
+    border: 1px solid transparent;
+    transition: border-color 0.3s ease;
+}
+
+.simulation-container:hover {
+    border-color: var(--accent-blue);
+}
+
+.simulation-container.has-jobs {
+    animation: opacity-pulse 2s ease-in-out infinite;
 }
 
 .simulation-cover-container::before{
@@ -20,6 +39,14 @@
     background-image: linear-gradient(to top, color-mix(in srgb, var(--color-bg), transparent 35%) 0%, transparent 100%);
 }
 
+.container-content{
+    position: relative;
+    z-index: 1;
+    border-radius: 11px;
+    height: 100%;
+    width: 100%;
+}
+
 .progress-border-wrapper {
     position: relative;
     transition: all 0.3s ease;
@@ -27,11 +54,6 @@
 
 .simulation-container.has-jobs{
     cursor: wait !important;
-}
-
-.simulation-container:not(.has-jobs):hover .simulation-cover-container,
-.simulation-container.is-selected .simulation-cover-container{
-    outline: 1px solid color-mix(in srgb, var(--accent-blue), transparent 30%);
 }
 
 .simulation-container:hover .simulation-options-icon-container{
@@ -101,6 +123,25 @@
     color: var(--color-text-secondary);
     font-size: .9rem;
     gap: .5rem;
+    min-height: 1.2rem;
+}
+
+.simulation-caption-left-bottom-container .processing-loader-container {
+    margin: -0.5rem 0;
+}
+
+.simulation-last-edited {
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.simulation-running-jobs {
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .simulation-options-icon-container{

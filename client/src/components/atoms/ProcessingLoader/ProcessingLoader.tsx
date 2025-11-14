@@ -20,45 +20,40 @@
 * SOFTWARE.
 **/
 
-import { ITeam } from '@types/models/team';
-import { IStructureAnalysis } from '@types/model/structureAnalysis';
-import { ICellAnalysis } from '@/types/model/simulation-cell';
-import { IAnalysisConfig } from '@/types/models/analysis-config';
+import React from 'react';
+import './ProcessingLoader.css';
 
-// Defines the limits of the simulation box on the three axes.
-export interface IBoxBounds{
-    xlo: number;
-    xhi: number;
-    ylo: number;
-    yhi: number;
-    zlo: number;
-    zhi: number;
+interface ProcessingLoaderProps {
+    message?: string;
+    completionRate?: number;
+    isVisible: boolean;
+    showProgress?: boolean;
 }
 
-export interface ITimestepInfo{
-    timestep: number;
-    natoms: number;
-    boxBounds: IBoxBounds
-    glbPath: string;
-}
+const ProcessingLoader: React.FC<ProcessingLoaderProps> = ({
+    message = 'Processing...',
+    completionRate = 0,
+    isVisible = true,
+    showProgress = false
+}) => {
+    if (!isVisible) return null;
 
-export interface ITrajectory extends Document {
-    name: string;
-    status: 'queued' | 'processing' | 'rendering' | 'completed' | 'failed';
-    isPublic: boolean;
-    folderId: string;
-    team: ITeam;
-    rasterSceneViews: number;
-    simulationCell: ICellAnalysis,
-    frames: ITimestepInfo[];
-    analysis: IAnalysisConfig[];
-    structureAnalysis: IStructureAnalysis[];
-    dislocations: any[];
-    preview: string;
-    stats: {
-        totalFiles: number;
-        totalSize: number;
-    };
-    createdAt?: Date;
-    updatedAt?: Date;
-}
+    return (
+        <div className="processing-loader-container">
+            <div className="processing-loader-spinner" />
+            <div className="processing-loader-content">
+                <p className="processing-loader-text">{message}</p>
+                {showProgress && completionRate > 0 && (
+                    <div className="processing-loader-progress-bar">
+                        <div 
+                            className="processing-loader-progress-fill"
+                            style={{ width: `${Math.min(completionRate * 100, 100)}%` }}
+                        />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default ProcessingLoader;
