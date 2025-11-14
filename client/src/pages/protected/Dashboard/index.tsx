@@ -13,6 +13,7 @@ import SimulationGrid from '@/components/molecules/SimulationGrid';
 import DashboardStats from '@/components/atoms/DashboardStats';
 import useTeamStore from '@/stores/team/team';
 import JobsHistoryViewer from '@/components/organisms/JobsHistoryViewer';
+import ProcessingLoader from '@/components/atoms/ProcessingLoader';
 import './Dashboard.css';
 
 const DashboardPage: React.FC = memo(() => {
@@ -24,6 +25,14 @@ const DashboardPage: React.FC = memo(() => {
     const scene3DRef = useRef<Scene3DRef>(null)
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
 
+    // Check if there are any trajectories being processed (not completed)
+    const isProcessing = trajectories.some(t => t.status !== 'completed');
+    const completedTrajectories = trajectories.filter(t => t.status === 'completed');
+    const lastCompletedTrajectory = completedTrajectories[0]; // Get most recent completed
+    
+    // When processing, show last completed trajectory. Otherwise show first trajectory
+    const displayTrajectory = isProcessing && lastCompletedTrajectory ? lastCompletedTrajectory : trajectories[0];
+    
     const hasNoTrajectories = !isLoadingTrajectories && trajectories.length === 0;
 
     const [isLight, setIsLight] = useState(() =>
@@ -49,7 +58,16 @@ const DashboardPage: React.FC = memo(() => {
                     </div>
 
                     <div className='scene-preview-container'>
-                        {(trajectory?._id && currentTimestep !== undefined) && (
+                        {isProcessing ? (
+                            <div style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 20, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <ProcessingLoader
+                                    className='scene-preview-processing'
+                                    message="Your trajectory is being processed"
+                                    completionRate={0}
+                                    isVisible={true}
+                                />
+                            </div>
+                        ) : (trajectory?._id && currentTimestep !== undefined) && (
                             <>
                                 <div className='badge-container scene-preview-name-badge primary-surface'>
                                     <p className='badge-text'>{trajectory.name}</p>
@@ -68,7 +86,7 @@ const DashboardPage: React.FC = memo(() => {
                         )}
 
                         <Scene3D 
-                            key={`${selectedTeam?._id || 'no-team'}-${trajectory?._id || 'no-trajectory'}`}
+                            key={`${selectedTeam?._id || 'no-team'}-${displayTrajectory?._id || 'no-trajectory'}`}
                             showGizmo={false}
                             ref={scene3DRef}
                             {...(isLight ? { background: '#f8f8f8ff' } : {})}
@@ -81,8 +99,28 @@ const DashboardPage: React.FC = memo(() => {
                             <TimestepViewer />
                         </Scene3D>
 
-                        {/* JobsHistory pinned inside the 3D scene */}
-                        <JobsHistoryViewer />
+                        {/* Blur overlay when processing */}
+                        {isProcessing && (
+                            <div 
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                    backdropFilter: 'blur(4px)',
+                                    zIndex: 5,
+                                    borderRadius: '0.75rem',
+                                    pointerEvents: 'none'
+                                }}
+                            />
+                        )}
+
+                        {/* JobsHistory pinned inside the 3D scene - above overlay */}
+                        <div style={{ position: 'relative', zIndex: isProcessing ? 20 : 10 }}>
+                            <JobsHistoryViewer />
+                        </div>
 
                         {hasNoTrajectories && (
                             <div className='dashboard-canvas-overlay' aria-label="Canvas preview disabled">

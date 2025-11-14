@@ -104,6 +104,8 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
                 jobId: v4(),
                 trajectoryId: job.trajectoryId,
                 teamId: job.teamId,
+                sessionId: job.sessionId,
+                sessionStartTime: job.sessionStartTime,
                 name: 'Headless Rasterizer (Preview)',
                 message: `${trajectory.name} - Preview frame ${firstFrameTimestep}`,
                 opts: {
@@ -120,6 +122,13 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
                     distScale: 1.0
                 }
             };
+
+            // If this is part of a session, increment the remaining counter to include this rasterizer job
+            if (job.sessionId) {
+                const counterKey = `session:${job.sessionId}:remaining`;
+                await this.redis.incr(counterKey);
+                console.log(`Incremented session counter for rasterizer preview job for trajectory ${job.trajectoryId}`);
+            }
 
             await rasterizerQueue.addJobs([previewJob]);
             console.log(`Preview generation job queued for trajectory ${job.trajectoryId}, frame ${firstFrameTimestep}`);

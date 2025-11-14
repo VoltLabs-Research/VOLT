@@ -6,4 +6,5 @@ export interface AnalysisJob extends BaseJob{
     config: any;
     inputFile: string;
     analysisConfigId: string;
+    sessionStartTime?: string;
 }

@@ -50,7 +50,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     private jobMap = new Map<number, { job: T; rawData: string; startTime: number }>();
 
     private isShutdown = false;
-    private redis: IORedis;
+    protected redis: IORedis;
     private redisBlocking: IORedis;
 
     constructor(options: QueueOptions){
@@ -232,6 +232,34 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         ) as [number, number, string];
     }
 
+    private async emitSessionCompleted(teamId: string, sessionId: string, trajectoryId: string): Promise<void> {
+        const sessionKey = `session:${sessionId}`;
+        const sessionData = await this.redis.get(sessionKey);
+        
+        if (!sessionData) {
+            console.warn(`Session data not found for ${sessionId}`);
+            return;
+        }
+
+        try {
+            const session = JSON.parse(sessionData);
+            const completedEvent = {
+                type: 'session_completed',
+                sessionId,
+                trajectoryId,
+                totalJobs: session.totalJobs,
+                startTime: session.startTime,
+                completedAt: new Date().toISOString(),
+                timestamp: new Date().toISOString()
+            };
+            
+            await publishJobUpdate(teamId, completedEvent);
+            console.log(`Session completed event emitted to team ${teamId} for trajectory ${trajectoryId}`);
+        } catch (error) {
+            console.error(`[${this.queueName}] Failed to emit session completed event:`, error);
+        }
+    }
+
     private async emitSessionExpired(teamId: string, sessionId: string, trajectoryId: string): Promise<void> {
         const expiredEvent = {
             type: 'session_expired',
@@ -256,7 +284,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
             if(shouldClean === 1){
                 this.sessionsBeingCleaned.add(sessionId);
-                await this.emitSessionExpired(job.teamId, sessionId, trajectoryId);
+                await this.emitSessionCompleted(job.teamId, sessionId, trajectoryId);
                 
                 setTimeout(() => {
                     this.sessionsBeingCleaned.delete(sessionId);
@@ -565,24 +593,72 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         // Map job status to trajectory status
         const trajectoryStatus = this.mapJobStatusToTrajectoryStatus(status, data.queueType || this.queueName);
         
-        // Update trajectory status if trajectoryId is present
+        // Update trajectory status only on meaningful state transitions
+        // and only once per session (when the first job reaches a certain status)
         if (data.trajectoryId && trajectoryStatus) {
             try {
-                const updatedTrajectory = await Trajectory.findByIdAndUpdate(
-                    data.trajectoryId,
-                    { status: trajectoryStatus },
-                    { new: true }
-                );
+                const trajectory = await Trajectory.findById(data.trajectoryId);
+                if (!trajectory) {
+                    console.warn(`[${this.queueName}] Trajectory not found: ${data.trajectoryId}`);
+                    return;
+                }
 
-                // Emit trajectory update event to notify clients
-                if (updatedTrajectory && teamId) {
-                    await this.redis.publish('trajectory_updates', JSON.stringify({
-                        trajectoryId: data.trajectoryId,
-                        status: trajectoryStatus,
-                        teamId: teamId,
-                        updatedAt: updatedTrajectory.updatedAt,
-                        timestamp: new Date().toISOString()
-                    }));
+                // Only update if:
+                // 1. This is a meaningful state transition
+                // 2. For 'processing' state, update only for the first job in the session
+                let shouldUpdate = false;
+                const currentStatus = trajectory.status;
+
+                if (status === 'queued' && currentStatus !== 'processing' && currentStatus !== 'rendering' && currentStatus !== 'completed') {
+                    shouldUpdate = true;
+                } else if (status === 'running' && currentStatus !== 'rendering' && currentStatus !== 'completed') {
+                    shouldUpdate = true;
+                    // Check if this is the first job to reach 'running' in this session
+                    if (data.sessionId) {
+                        const sessionRunningKey = `${data.sessionId}:first_running_job`;
+                        const alreadyRunning = await this.redis.get(sessionRunningKey);
+                        if (alreadyRunning) {
+                            shouldUpdate = false;
+                        } else {
+                            await this.redis.setex(sessionRunningKey, 86400, '1');
+                        }
+                    }
+                } else if (status === 'completed' && trajectoryStatus === 'rendering') {
+                    // Check if this is the first job to complete in this session
+                    if (data.sessionId) {
+                        const sessionCompleteKey = `${data.sessionId}:first_complete_job`;
+                        const alreadyCompleted = await this.redis.get(sessionCompleteKey);
+                        if (alreadyCompleted) {
+                            shouldUpdate = false;
+                        } else {
+                            await this.redis.setex(sessionCompleteKey, 86400, '1');
+                            shouldUpdate = true;
+                        }
+                    }
+                } else if (status === 'completed' && trajectoryStatus === 'completed' && currentStatus !== 'completed') {
+                    // Rasterizer job completed - mark trajectory as fully completed
+                    shouldUpdate = true;
+                } else if (status === 'failed' && currentStatus !== 'failed') {
+                    shouldUpdate = true;
+                }
+
+                if (shouldUpdate) {
+                    const updatedTrajectory = await Trajectory.findByIdAndUpdate(
+                        data.trajectoryId,
+                        { status: trajectoryStatus },
+                        { new: true }
+                    );
+
+                    // Emit trajectory update event to notify clients
+                    if (updatedTrajectory && teamId) {
+                        await this.redis.publish('trajectory_updates', JSON.stringify({
+                            trajectoryId: data.trajectoryId,
+                            status: trajectoryStatus,
+                            teamId: teamId,
+                            updatedAt: updatedTrajectory.updatedAt,
+                            timestamp: new Date().toISOString()
+                        }));
+                    }
                 }
             } catch (error) {
                 console.error(`[${this.queueName}] Failed to update trajectory ${data.trajectoryId} status:`, error);

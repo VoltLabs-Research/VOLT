@@ -518,9 +518,8 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             tempFolderPath: folderPath
         });
     }
-    for (const job of jobs) {
-        await trajectoryProcessingQueue.addJobs([job]);
-    }
+    // Add all jobs at once to ensure they share the same sessionId
+    trajectoryProcessingQueue.addJobs(jobs);
 
     res.status(201).json({
         status: 'success',

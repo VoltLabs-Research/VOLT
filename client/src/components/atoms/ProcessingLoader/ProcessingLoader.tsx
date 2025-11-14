@@ -26,6 +26,7 @@ import './ProcessingLoader.css';
 interface ProcessingLoaderProps {
     message?: string;
     completionRate?: number;
+    className: string,
     isVisible: boolean;
     showProgress?: boolean;
 }
@@ -34,12 +35,13 @@ const ProcessingLoader: React.FC<ProcessingLoaderProps> = ({
     message = 'Processing...',
     completionRate = 0,
     isVisible = true,
+    className = '',
     showProgress = false
 }) => {
     if (!isVisible) return null;
 
     return (
-        <div className="processing-loader-container">
+        <div className={`processing-loader-container ${className}`}>
             <div className="processing-loader-spinner" />
             <div className="processing-loader-content">
                 <p className="processing-loader-text">{message}</p>

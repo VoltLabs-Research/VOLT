@@ -67,10 +67,9 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
         const timesteps = extractTimesteps(trajectory);
         const timestepData = createTimestepData(timesteps);
 
-        // No seleccionamos el modelo automáticamente - esto evita la precarga de GLBs
-        // Nota: Solo generamos las URLs pero no las cargamos
-        // La carga se hará explícitamente cuando el usuario haga doble clic en RasterScene
-        if(trajectory._id && currentTimestep !== undefined && timesteps.length > 0){
+        // Only load GLB if trajectory processing is completed
+        // This prevents 404 errors when trying to load GLB files that don't exist yet during processing
+        if(trajectory._id && currentTimestep !== undefined && timesteps.length > 0 && trajectory.status === 'completed'){
             // Obtener el ID del análisis actual del store, no del trajectory
             const currentAnalysis = useAnalysisConfigStore.getState().analysisConfig;
             const analysisId = currentAnalysis?._id || '';
@@ -85,7 +84,7 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
                 cacheBuster
             );
             
-            // Always update model when analysis or timestep changes to ensure reload
+            // Only update model and load GLB when trajectory is completed
             useModelStore.getState().selectModel(glbs);
         }
 

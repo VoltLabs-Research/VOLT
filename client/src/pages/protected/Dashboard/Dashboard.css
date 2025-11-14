@@ -398,6 +398,14 @@
     z-index: 100;
 }
 
+.scene-preview-processing{
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px) saturate(160%);
+    box-shadow: var(--shadow-glass);
+    padding: .8rem 1rem;
+    border-radius: 5rem;
+}
+
 .dashboard-canvas-overlay {
     position: absolute;
     inset: 0;

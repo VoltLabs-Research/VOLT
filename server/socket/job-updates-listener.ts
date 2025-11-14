@@ -44,6 +44,22 @@ export const initializeJobUpdatesListener = (io: Server) => {
             
             // Emit to all clients in the team room
             if (teamId && payload) {
+                // Check if this is a session completion event
+                if (payload.type === 'session_completed') {
+                    const sessionCompleteEvent = {
+                        trajectoryId: payload.trajectoryId,
+                        sessionId: payload.sessionId,
+                        totalJobs: payload.totalJobs,
+                        completedAt: payload.completedAt,
+                        timestamp: payload.timestamp || new Date().toISOString()
+                    };
+                    
+                    console.log(`[JobUpdatesListener] Emitting session completion for trajectory ${payload.trajectoryId}`);
+                    io.to(`team-${teamId}`).emit('trajectory_session_completed', sessionCompleteEvent);
+                    return;
+                }
+
+                // Regular job update
                 const normalizedPayload = {
                     jobId: payload.jobId,
                     status: payload.status,

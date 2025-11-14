@@ -56,7 +56,9 @@ const useFileUpload = (
                 selectedTeam._id
             );
         }catch(err: any){
-            logger.error('Upload failed');
+            logger.error('Upload failed', { error: err?.message });
+            // Don't rethrow - let the trajectory be created anyway if it exists
+            // Errors during processing should not affect the UI showing the card
         }
     }, [uploadAndProcessTrajectory, selectedTeam]);
 
