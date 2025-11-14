@@ -42,6 +42,8 @@ const EditorPage: React.FC = () => {
     useEffect(() => {
         return () => {
             reset();
+            usePlaybackStore.getState().reset();
+            useModelStore.getState().reset();
         };
     }, []);
 
