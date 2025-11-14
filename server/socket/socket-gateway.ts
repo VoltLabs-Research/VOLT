@@ -65,12 +65,16 @@ class SocketGateway{
             requestsTimeout: 10000, // 10 seconds timeout for fetchSockets operations
         }));
 
-        // Add authentication middleware
+        // Add authentication middleware (allows anonymous users for public trajectories)
         this.io.use(async (socket, next) => {
             try {
                 const token = socket.handshake.auth?.token;
+                
+                // Allow anonymous connections (for public trajectories)
                 if (!token) {
-                    return next(new Error('Socket::Auth::TokenRequired'));
+                    (socket as any).user = null;
+                    console.log(`[Socket Gateway] Anonymous user connected: ${socket.id}`);
+                    return next();
                 }
 
                 const secret = process.env.SECRET_KEY as string;
@@ -78,13 +82,20 @@ class SocketGateway{
                 
                 const user = await User.findById(decoded.id).select('-password');
                 if (!user) {
-                    return next(new Error('Socket::Auth::UserNotFound'));
+                    // Invalid token but allow anonymous access
+                    (socket as any).user = null;
+                    console.log(`[Socket Gateway] User not found for token, allowing anonymous: ${socket.id}`);
+                    return next();
                 }
 
                 (socket as any).user = user;
+                console.log(`[Socket Gateway] Authenticated user connected: ${user.firstName} ${user.lastName} (${socket.id})`);
                 next();
             } catch (error) {
-                next(new Error('Socket::Auth::InvalidToken'));
+                // Token verification failed, allow anonymous access
+                (socket as any).user = null;
+                console.log(`[Socket Gateway] Token verification failed, allowing anonymous: ${socket.id}`);
+                next();
             }
         });
 

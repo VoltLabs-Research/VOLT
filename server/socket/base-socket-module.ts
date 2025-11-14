@@ -168,7 +168,18 @@ abstract class BaseSocketModule{
         }
 
         const users = await this.collectPresence(room, userFromSocket);
+        console.log(`[${this.name}] Broadcasting presence to room ${room} with event ${updateEvent}: ${users.length} users`, users);
         this.io.to(room).emit(updateEvent, users);
+
+        // Also broadcast to observer rooms with trajectory-specific event
+        const observerRoom = room.replace(/^(canvas|raster):/, '$1-observer:');
+        if (observerRoom !== room) {
+            // Extract trajectoryId from room name (e.g., "canvas:123" -> "123")
+            const trajectoryId = room.split(':')[1];
+            const trajectorySpecificEvent = `${updateEvent}:${trajectoryId}`;
+            console.log(`[${this.name}] Also broadcasting to observer room: ${observerRoom} with event ${trajectorySpecificEvent}`);
+            this.io.to(observerRoom).emit(trajectorySpecificEvent, users);
+        }
     }
 
     /**
@@ -191,17 +202,26 @@ abstract class BaseSocketModule{
             const byId = new Map<string, any>();
 
             for(const socket of sockets){
-                const user: any = socket.data?.user || {};
-                const uid = (user.id as string) || socket.id;
+                // Use custom extractor if provided, otherwise fall back to default
+                const presenceUser = userFromSocket 
+                    ? userFromSocket(socket)
+                    : (() => {
+                        const user: any = (socket as any).user;
+                        const isAnonymous = !user || !user._id;
+                        return {
+                            id: user?._id?.toString() || socket.id,
+                            email: user?.email,
+                            firstName: user?.firstName,
+                            lastName: user?.lastName,
+                            isAnonymous
+                        };
+                    })();
+
+                const uid = presenceUser.id || socket.id;
                 if(!uid) continue;
 
                 if(!byId.has(uid)){
-                    byId.set(uid, {
-                        id: uid,
-                        email: user.email,
-                        firstName: user.firstName,
-                        lastName: user.lastName
-                    });
+                    byId.set(uid, presenceUser);
                 }
             }
 

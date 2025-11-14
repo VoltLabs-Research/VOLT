@@ -5,7 +5,9 @@ import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import TimestepViewer from '@/components/organisms/TimestepViewer';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
+import useCanvasPresence from '@/hooks/canvas/use-canvas-presence';
 import CanvasWidgets from '@/components/atoms/CanvasWidgets';
+import CanvasPresenceAvatars from '@/components/atoms/CanvasPresenceAvatars';
 import TetrahedronLoader from '@/components/atoms/TetrahedronLoader';
 import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
@@ -28,6 +30,7 @@ const EditorPage: React.FC = () => {
     const scene3DRef = useRef<Scene3DRef>(null);
     const trajectoryId = rawTrajectoryId ?? '';
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId });
+    const { canvasUsers, rasterUsers } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
     const isModelLoading = useModelStore((state) => state.isModelLoading);
     const isPreloading = usePlaybackStore((state) => state.isPreloading ?? false);
     const preloadProgress = usePlaybackStore((state) => state.preloadProgress ?? 0);
@@ -80,6 +83,7 @@ const EditorPage: React.FC = () => {
             </AnimatePresence>
 
             <CanvasWidgets trajectory={trajectory} currentTimestep={currentTimestep} scene3DRef={scene3DRef} />
+            <CanvasPresenceAvatars users={canvasUsers} />
             <Scene3D ref={scene3DRef} showCanvasGrid={showCanvasGrid}>
                 <TimestepViewer
                     scale={CANVAS_CONFIG.timestepViewerDefaults.scale}

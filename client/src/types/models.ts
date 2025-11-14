@@ -77,6 +77,7 @@ export interface Trajectory{
     createdAt: string;
     updatedAt: string;
     users: (User | string)[];
+    createdBy?: User | string;
 }
 
 export interface Notification{

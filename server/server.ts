@@ -29,6 +29,7 @@ import CursorModule from '@/socket/modules/cursor';
 import TrajectoryModule from '@/socket/modules/trajectory';
 import ChatModule from '@/socket/modules/chat';
 import NotificationsModule from '@/socket/modules/notifications';
+import CanvasPresenceModule from '@/socket/modules/canvas-presence';
 import { initializeRedis } from '@config/redis';
 
 const SERVER_PORT = process.env.SERVER_PORT || 8000;
@@ -40,7 +41,8 @@ const gateway = new SocketGateway()
     .register(new CursorModule())
     .register(new TrajectoryModule())
     .register(new ChatModule())
-    .register(new NotificationsModule());
+    .register(new NotificationsModule())
+    .register(new CanvasPresenceModule());
 
 const shutodwn = async () => {
     await gateway.close();

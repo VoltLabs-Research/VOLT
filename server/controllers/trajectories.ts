@@ -38,7 +38,7 @@ import archiver from 'archiver';
 
 const factory = new HandlerFactory<any>({
     model: Trajectory as any,
-    fields: ['name', 'preview', 'isPublic'],
+    fields: ['name', 'preview', 'isPublic', 'createdBy'],
     errorMessages: {
         default: {
             notFound: 'Trajectory::NotFound',
@@ -46,7 +46,14 @@ const factory = new HandlerFactory<any>({
             validation: 'Trajectory::ValidationError'
         }
     },
-    defaultErrorConfig: 'default'
+    defaultErrorConfig: 'default',
+    populate: {
+        default: {
+            path: 'createdBy',
+            select: 'email firstName lastName'
+        }
+    },
+    defaultPopulate: 'default'
 });
 
 const sendFileInline = async (
@@ -432,6 +439,7 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
 
 export const createTrajectory = async (req: Request, res: Response, next: NextFunction) => {
     const { files, teamId } = (res as any).locals.data;
+    const userId = (req as any).user._id;
 
     const folderId = v4();
     const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
@@ -495,6 +503,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         folderId,
         name: trajectoryName,
         team: teamId,
+        createdBy: userId,
         frames,
         status: 'processing',
         stats: {

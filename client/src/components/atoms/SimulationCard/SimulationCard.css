@@ -84,24 +84,114 @@
     flex-direction: column;
     gap: .5rem;
     width: 100%;
+    flex: 1;
 }
 
 .simulation-caption-container{
-    padding-top: 1rem;
+    padding: .3rem .5rem;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+    position: absolute;
+    top: .5rem;
+    left: 1rem;
+    right: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: var(--glass-bg);
+    backdrop-filter: blur(2px) saturate(160%);
+    box-shadow: var(--shadow-glass);
+    width: min-content;
+    border-radius: 2rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.simulation-container:hover .simulation-caption-container{
+    opacity: 1;
+}
+
+.simulation-caption-content-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.simulation-info-footer {
     position: absolute;
     bottom: 1.5rem;
     left: 1.5rem;
-    gap: .5rem;
-    width: calc(100% - 2rem);
+    right: 1.5rem;
     z-index: 2;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    width: calc(100% - 3rem);
+    pointer-events: auto;
 }
 
 .simulation-caption-title{
     font-weight: 450;
     font-size: 1rem;
     color: var(--color-text-primary);
+}
+
+.simulation-created-by{
+    font-size: .8rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.simulation-caption-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 0.5rem;
+    pointer-events: auto;
+}
+
+.simulation-user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--color-surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+}
+
+.avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-initials {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.simulation-user-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+}
+
+.simulation-user-name {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-transform: capitalize;
+    text-overflow: ellipsis;
 }
 
 .simulation-image{

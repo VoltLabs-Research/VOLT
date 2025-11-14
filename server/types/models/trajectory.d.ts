@@ -21,6 +21,7 @@
 **/
 
 import { ITeam } from '@types/models/team';
+import { IUser } from '@/types/models/user';
 import { IStructureAnalysis } from '@types/model/structureAnalysis';
 import { ICellAnalysis } from '@/types/model/simulation-cell';
 import { IAnalysisConfig } from '@/types/models/analysis-config';
@@ -48,6 +49,7 @@ export interface ITrajectory extends Document {
     isPublic: boolean;
     folderId: string;
     team: ITeam;
+    createdBy: IUser;
     rasterSceneViews: number;
     simulationCell: ICellAnalysis,
     frames: ITimestepInfo[];

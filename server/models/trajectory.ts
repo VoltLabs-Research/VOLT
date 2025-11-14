@@ -63,6 +63,11 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         cascade: 'delete',
         inverse: { path: 'trajectories', behavior: 'addToSet' }
     },
+    createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
     structureAnalysis: [{
         type: Schema.Types.ObjectId,
         ref: 'StructureAnalysis',

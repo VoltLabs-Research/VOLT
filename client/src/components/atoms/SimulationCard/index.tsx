@@ -12,6 +12,7 @@ import formatTimeAgo from '@/utilities/formatTimeAgo';
 import EditableTrajectoryName from '@/components/atoms/EditableTrajectoryName';
 import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer';
 import ProcessingLoader from '@/components/atoms/ProcessingLoader';
+import SimulationCardUsers from '@/components/atoms/SimulationCardUsers';
 import useTrajectoryStore from '@/stores/trajectories';
 import useCardInteractions from '@/hooks/ui/interaction/use-card-interaction';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
@@ -27,6 +28,12 @@ interface Trajectory {
     createdAt: string;
     preview?: string | null;
     status?: 'queued' | 'processing' | 'rendering' | 'completed' | 'failed';
+    createdBy?: {
+        _id?: string;
+        email?: string;
+        firstName?: string;
+        lastName?: string;
+    };
 }
 
 interface SimulationCardProps {
@@ -52,6 +59,32 @@ const getMessageForStage = (stage: ProcessingStage): string => {
         default:
             return 'Processing...';
     }
+};
+
+const getInitialsFromUser = (user): string => {
+    if (!user) return '?';
+    if (user.firstName && user.lastName) {
+        return (user.firstName[0] + user.lastName[0]).toUpperCase();
+    }
+    if (user.email) {
+        const parts = user.email.split('@')[0].split('.');
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+        return user.email[0].toUpperCase();
+    }
+    return '?';
+};
+
+const getUserDisplayName = (user): string => {
+    if (!user) return 'Unknown';
+    if (user.firstName && user.lastName) {
+        return `${user.firstName} ${user.lastName}`;
+    }
+    if (user.email) {
+        return user.email.split('@')[0];
+    }
+    return 'Unknown';
 };
 
 const useTrajectoryProcessingStatus = ({ trajectoryId }: any) => {
@@ -167,6 +200,24 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
             </div>
 
             <figcaption className='simulation-caption-container'>
+                {trajectory?.createdBy?.firstName && (
+                    <div className='simulation-caption-header'>
+                        <div className='simulation-user-avatar'>
+                            <span className='avatar-initials'>
+                                {trajectory.createdBy ? getInitialsFromUser(trajectory.createdBy) : '?'}
+                            </span>
+                        </div>
+                        <div className='simulation-user-info'>
+                            <span className='simulation-created-by'>Created by</span>
+                            <span className='simulation-user-name'>
+                                {getUserDisplayName(trajectory.createdBy)}
+                            </span>
+                        </div>
+                    </div>
+                )}
+            </figcaption>
+
+            <div className='simulation-info-footer'>
                 <div className='simulation-caption-left-container'>
                     <EditableTrajectoryName
                         trajectory={trajectory} 
@@ -203,7 +254,9 @@ const SimulationCard: React.FC<SimulationCardProps> = ({
                         <PiDotsThreeVerticalBold />
                     </i>
                 </ActionBasedFloatingContainer>
-            </figcaption>
+            </div>
+
+            <SimulationCardUsers trajectoryId={trajectory._id} />
         </figure>
         </>
     );
