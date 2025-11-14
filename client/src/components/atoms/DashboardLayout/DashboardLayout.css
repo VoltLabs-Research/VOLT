@@ -32,6 +32,61 @@
 }
 
 .dashboard-bell-wrapper{ position: relative; }
+
+.dashboard-bell-trigger {
+    position: relative;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    animation: badge-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Light mode - gradient background */
+.notification-badge {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+}
+
+/* Dark mode - white background */
+@media (prefers-color-scheme: dark) {
+    .notification-badge {
+        background: white;
+        color: #1a1a1a;
+        box-shadow: 0 2px 4px rgba(255, 255, 255, 0.15);
+    }
+}
+
+[data-theme="dark"] .notification-badge {
+    background: white;
+    color: #1a1a1a;
+    box-shadow: 0 2px 4px rgba(255, 255, 255, 0.15);
+}
+
+@keyframes badge-pop {
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
 .dashboard-notifications-dropdown{
     position: absolute;
     top: calc(100% + 8px);

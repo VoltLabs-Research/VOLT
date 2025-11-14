@@ -24,6 +24,8 @@ import { Request, Response } from 'express';
 import { TeamInvitation, User, Team, Notification } from '@/models/index';
 import { catchAsync } from '@/utilities/runtime';
 import createHttpError from 'http-errors';
+import { publishNotificationCreated } from '@/events/notification-events';
+import { publishNotificationCreated } from '@/events/notification-events';
 
 // Send team invitation
 export const sendTeamInvitation = catchAsync(async (req: Request, res: Response) => {
@@ -89,12 +91,15 @@ export const sendTeamInvitation = catchAsync(async (req: Request, res: Response)
 
     // If user exists, send notification
     if (user) {
-        await Notification.create({
+        const notification = await Notification.create({
             recipient: user._id,
             title: 'Team Invitation',
             content: `You have been invited to join the team "${team.name}" as ${role.toLowerCase()}`,
             link: `/team-invitation/${invitation.token}`
         });
+        
+        // Publish real-time event
+        await publishNotificationCreated(user._id.toString(), notification);
     }
 
     res.status(201).json({

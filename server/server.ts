@@ -28,6 +28,7 @@ import JobsModule from '@/socket/modules/jobs';
 import CursorModule from '@/socket/modules/cursor';
 import TrajectoryModule from '@/socket/modules/trajectory';
 import ChatModule from '@/socket/modules/chat';
+import NotificationsModule from '@/socket/modules/notifications';
 import { initializeRedis } from '@config/redis';
 
 const SERVER_PORT = process.env.SERVER_PORT || 8000;
@@ -38,7 +39,8 @@ const gateway = new SocketGateway()
     .register(new JobsModule())
     .register(new CursorModule())
     .register(new TrajectoryModule())
-    .register(new ChatModule());
+    .register(new ChatModule())
+    .register(new NotificationsModule());
 
 const shutodwn = async () => {
     await gateway.close();

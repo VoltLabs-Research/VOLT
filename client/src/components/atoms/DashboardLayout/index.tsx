@@ -67,13 +67,25 @@ const DashboardLayout = () => {
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
-    const { notifications, loading, fetch, markAsRead } = useNotificationStore();
+    const { notifications, loading, fetch, markAsRead, unreadCount, initializeSocket } = useNotificationStore();
     const [notifOpen, setNotifOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [invitePanelOpen, setInvitePanelOpen] = useState(false);
     const mobileMenuWrapperRef = useRef<HTMLDivElement | null>(null);
     const bellWrapperRef = useRef<HTMLDivElement | null>(null);
     const teamSelectorRef = useRef<HTMLDivElement | null>(null);
+    const notificationBodyRef = useRef<HTMLDivElement | null>(null);
+    const observedNotificationsRef = useRef<Set<string>>(new Set());
+
+    // Memoized values - must be declared before useEffect
+    const notificationList = useMemo(() => notifications, [notifications]);
+    const navItems: Array<[string, IconType, string]> = useMemo(() => ([
+        ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
+        ['Messages', CiChat1, '/dashboard/messages'],
+        ['Studio', TbCube3dSphere, ''],
+        ['Tutorials', TbBook, '/dashboard/tutorials']
+    ]), []);
+    const searchQuery = useDashboardSearchStore((s) => s.query);
 
     useEffect(() => {
         if(selectedTeam === null || trajectories.length) return;
@@ -83,6 +95,14 @@ const DashboardLayout = () => {
     useEffect(() => {
         if(teams.length) return;
         getUserTeams();
+    }, []);
+
+    // Initialize socket listener for notifications
+    useEffect(() => {
+        const unsubscribe = initializeSocket();
+        // Fetch initial notifications
+        fetch();
+        return unsubscribe;
     }, []);
 
     // Handle team query param and localStorage synchronization
@@ -116,8 +136,12 @@ const DashboardLayout = () => {
     }, [teams, searchParams, setSearchParams, setSelectedTeam]);
 
     useEffect(() => {
-        if(!notifOpen) return;
-        fetch({ force: true });
+        if(notifOpen) {
+            fetch({ force: true });
+        } else {
+            // Clear observed notifications when closing panel
+            observedNotificationsRef.current.clear();
+        }
     }, [notifOpen]);
 
     useEffect(() => {
@@ -132,6 +156,44 @@ const DashboardLayout = () => {
         return () => document.removeEventListener('mousedown', onDoc);
     }, [notifOpen]);
 
+    // Mark notifications as read when they become visible
+    useEffect(() => {
+        if (!notifOpen || !notificationBodyRef.current) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const notificationId = entry.target.getAttribute('data-notification-id');
+                        const isRead = entry.target.getAttribute('data-notification-read') === 'true';
+                        
+                        if (notificationId && !isRead && !observedNotificationsRef.current.has(notificationId)) {
+                            observedNotificationsRef.current.add(notificationId);
+                            // Mark as read after a short delay to ensure user saw it
+                            setTimeout(() => {
+                                markAsRead(notificationId);
+                            }, 1000);
+                        }
+                    }
+                });
+            },
+            {
+                root: notificationBodyRef.current,
+                threshold: 0.8, // 80% visible
+            }
+        );
+
+        // Observe all notification items
+        const notificationItems = notificationBodyRef.current.querySelectorAll('.dashboard-notification-item');
+        notificationItems.forEach((item) => observer.observe(item));
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [notifOpen, notificationList, markAsRead]);
+
     useEffect(() => {
         if(!mobileMenuOpen) return;
         const onDoc = (e: MouseEvent) => {
@@ -143,16 +205,6 @@ const DashboardLayout = () => {
         document.addEventListener('mousedown', onDoc);
         return () => document.removeEventListener('mousedown', onDoc);
     }, [mobileMenuOpen]);
-
-    const notificationList = useMemo(() => notifications, [notifications]);
-    const navItems: Array<[string, IconType, string]> = useMemo(() => ([
-        ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
-        ['Messages', CiChat1, '/dashboard/messages'],
-        ['Studio', TbCube3dSphere, ''],
-        ['Tutorials', TbBook, '/dashboard/tutorials']
-    ]), []);
-
-    const searchQuery = useDashboardSearchStore((s) => s.query);
     const setSearchQuery = useDashboardSearchStore((s) => s.setQuery);
     const [localQuery, setLocalQuery] = useState(searchQuery);
 
@@ -377,6 +429,9 @@ const DashboardLayout = () => {
                     <div ref={bellWrapperRef} className='dashboard-bell-wrapper'>
                         <div onClick={() => setNotifOpen((v) => !v)} className='badge-container as-icon-container over-light-bg dashboard-bell-trigger'>
                             <IoNotificationsOutline />
+                            {unreadCount > 0 && (
+                                <span className='notification-badge'>{unreadCount > 99 ? '99+' : unreadCount}</span>
+                            )}
                         </div>
                         {notifOpen && (
                             <div className='dashboard-notifications-dropdown'>
@@ -384,7 +439,7 @@ const DashboardLayout = () => {
                                     <span>Notifications</span>
                                     <button className='dashboard-notifications-close' onClick={(e) => { e.stopPropagation(); setNotifOpen(false); }}>×</button>
                                 </div>
-                                <div className='dashboard-notifications-body'>
+                                <div ref={notificationBodyRef} className='dashboard-notifications-body'>
                                     {loading ? (
                                         Array.from({ length: 5 }).map((_, i) => (
                                             <div key={`notif-skel-${i}`} className='dashboard-notification-item'>
@@ -398,7 +453,13 @@ const DashboardLayout = () => {
                                                 <div className='dashboard-notifications-empty'>No notifications</div>
                                             )}
                                             {notificationList.map((n) => (
-                                                <div key={n._id} className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`} onClick={() => { if(!n.read) markAsRead(n._id); if(n.link) navigate(n.link); setNotifOpen(false); }}>
+                                                <div 
+                                                    key={n._id} 
+                                                    className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`} 
+                                                    data-notification-id={n._id}
+                                                    data-notification-read={n.read}
+                                                    onClick={() => { if(n.link) navigate(n.link); setNotifOpen(false); }}
+                                                >
                                                     <div className='dashboard-notification-title'>{n.title}</div>
                                                     <div className='dashboard-notification-content'>{n.content}</div>
                                                 </div>
