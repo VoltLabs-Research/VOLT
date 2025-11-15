@@ -79,6 +79,7 @@ configureApp({
     app,
     suffix: '/api/',
     routes: [
+        'health',
         'modifiers',
         'teams',
         'team-invitations',

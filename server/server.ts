@@ -31,20 +31,33 @@ import ChatModule from '@/socket/modules/chat';
 import NotificationsModule from '@/socket/modules/notifications';
 import CanvasPresenceModule from '@/socket/modules/canvas-presence';
 import { initializeRedis } from '@config/redis';
+import MetricsModule from '@/socket/modules/metrics';
+import MetricsCollector from '@/services/metrics-collector';
 
 const SERVER_PORT = process.env.SERVER_PORT || 8000;
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
 
 const server = http.createServer(app);
+
 const gateway = new SocketGateway()
     .register(new JobsModule())
     .register(new CursorModule())
     .register(new TrajectoryModule())
     .register(new ChatModule())
     .register(new NotificationsModule())
-    .register(new CanvasPresenceModule());
+    .register(new CanvasPresenceModule())
+    .register(new MetricsModule());
+
+// Background metrics collector
+let metricsCollector: MetricsCollector;
+let collectionInterval: NodeJS.Timeout;
+let cleanupInterval: NodeJS.Timeout;
 
 const shutodwn = async () => {
+    // Stop metrics collection
+    if (collectionInterval) clearInterval(collectionInterval);
+    if (cleanupInterval) clearInterval(cleanupInterval);
+    
     await gateway.close();
     process.exit(0);
 };
@@ -53,6 +66,35 @@ server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
     // Initialize Redis BEFORE the Socket Gateway and wait for it to be ready
     await initializeRedis();
     await mongoConnector();
+    
+    // Initialize metrics collector in background
+    metricsCollector = new MetricsCollector('backend-01');
+    
+    // Start collecting metrics every second in background
+    collectionInterval = setInterval(async () => {
+        try {
+            await metricsCollector.collect();
+        } catch (error) {
+            console.error('[Server] Metrics collection error:', error);
+        }
+    }, 1000);
+    
+    // Clean old metrics from Redis every 24 hours
+    cleanupInterval = setInterval(async () => {
+        try {
+            await metricsCollector.cleanOldMetrics();
+            console.log('[Server] Cleaned old metrics from Redis');
+        } catch (error) {
+            console.error('[Server] Metrics cleanup error:', error);
+        }
+    }, 24 * 60 * 60 * 1000);
+    
+    // Run initial cleanup
+    metricsCollector.cleanOldMetrics().catch(err => 
+        console.error('[Server] Initial cleanup error:', err)
+    );
+    
+    console.log('[Server] Background metrics collection started');
     
     // Now initialize the Socket Gateway with Redis already running
     await gateway.initialize(server);

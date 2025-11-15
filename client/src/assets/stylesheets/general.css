@@ -9,13 +9,13 @@
 html, body{
     height: 100%;
     width: 100%;
-    background-color: var(--color-bg); /* Themed base background */
+    background-color: var(--color-bg);
 }
 
 #root{
     width: 100%;
     height: 100vh;
-    background-color: transparent; /* Inherit themed bg */
+    background-color: transparent; 
 }
 
 body{

@@ -1,0 +1,121 @@
+/* Resource Usage Styles */
+.resource-usage {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(80px);
+  border-radius: 20px;
+  padding: 1.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.resource-usage-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+.resource-usage-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0;
+}
+
+.resource-usage-menu {
+  color: var(--muted-foreground);
+  transition: color 0.2s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.resource-usage-menu:hover {
+  color: var(--foreground);
+}
+
+.resource-usage-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.resource-usage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  justify-content: space-around;
+}
+
+.resource-usage-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.resource-usage-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.resource-usage-item-label {
+  font-size: 0.875rem;
+  color: var(--foreground);
+}
+
+.resource-usage-item-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.resource-usage-bar {
+  height: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 9999px;
+  overflow: visible;
+  display: flex;
+  gap: 0.125rem;
+  padding: 0.125rem;
+}
+
+.resource-usage-bar-segment {
+  height: 100%;
+  flex: 1;
+  border-radius: 2px;
+  transform-origin: center;
+  animation: segmentPulse 2s ease-in-out infinite;
+}
+
+@keyframes segmentPulse {
+  0%, 100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.95);
+  }
+}
+
+
+.resource-usage-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.resource-usage-alert-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--muted-foreground);
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+
+.resource-usage-alert-text {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}

@@ -84,7 +84,7 @@ const DashboardLayout = () => {
         ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
         ['Messages', CiChat1, '/dashboard/messages'],
         ['Studio', TbCube3dSphere, ''],
-        ['Tutorials', TbBook, '/dashboard/tutorials']
+        ['Clusters', TbBook, '/dashboard/clusters']
     ]), []);
     const searchQuery = useDashboardSearchStore((s) => s.query);
 

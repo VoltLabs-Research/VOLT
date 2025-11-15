@@ -1,0 +1,79 @@
+/* Storage Usage Styles */
+.storage-usage-container {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(80px);
+  border-radius: 20px;
+  padding: 1.5rem;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.storage-usage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+.storage-usage-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.storage-usage-icon {
+  width: 20px;
+  height: 20px;
+  color: #0A84FF;
+}
+
+.storage-usage-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0;
+}
+
+.storage-total-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.125rem;
+}
+
+.storage-total-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1;
+}
+
+.storage-total-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.storage-tooltip {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.storage-tooltip-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+
+.storage-tooltip-item {
+  font-size: 0.75rem;
+  margin: 0.25rem 0;
+  color: var(--muted-foreground);
+}

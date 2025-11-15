@@ -23,6 +23,7 @@
 import { useMemo } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { setErrorNotificationHandler } from '@/api/error-notification';
 import Canvas from './pages/protected/Canvas';
 import Dashboard from './pages/protected/Dashboard';
 import SignUp from './pages/guest/SignUp';
@@ -30,7 +31,6 @@ import SignIn from './pages/guest/SignIn';
 import ProtectedRoute from './components/atoms/ProtectedRoute';
 import DashboardLayout from './components/atoms/DashboardLayout';
 import Studio from './pages/protected/Studio';
-import Tutorials from './pages/protected/Tutorials';
 import HeadlessRasterizerView from './pages/protected/HeadlessRasterizerView';
 import Messages from './pages/protected/Messages';
 import StructureAnalysisListing from './pages/protected/StructureAnalysisListing';
@@ -44,10 +44,10 @@ import LoadingShimmer from '@/components/atoms/animations/LoadingShimmer';
 import ToastContainer from '@/components/atoms/ToastContainer';
 import useAuthStore from '@/stores/authentication';
 import useToast from '@/hooks/ui/use-toast';
-import { setErrorNotificationHandler } from '@/api/error-notification';
 import TrajectoriesListing from './pages/protected/TrajectoriesListing';
 import AccountSettings from './pages/protected/AccountSettings';
 import TeamInvitationPage from './pages/guest/TeamInvitationPage';
+import Clusters from './pages/protected/Clusters';
 
 const AuthLoadingOverlay = () => (
     <motion.div
@@ -168,6 +168,15 @@ const App = () => {
                             />
 
                             <Route
+                                path='/dashboard/clusters'
+                                element={
+                                    <PageWrapper>
+                                        <Clusters />
+                                    </PageWrapper>
+                                }
+                            />
+
+                            <Route
                                 path='/dashboard/trajectories/list'
                                 element={
                                     <PageWrapper>
@@ -224,14 +233,6 @@ const App = () => {
                                 element={
                                     <PageWrapper>
                                         <Messages />
-                                    </PageWrapper>
-                                }
-                            />
-                            <Route
-                                path='/dashboard/tutorials/'
-                                element={
-                                    <PageWrapper>
-                                        <Tutorials />
                                     </PageWrapper>
                                 }
                             />
