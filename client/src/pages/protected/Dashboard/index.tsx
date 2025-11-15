@@ -14,9 +14,32 @@ import DashboardStats from '@/components/atoms/DashboardStats';
 import useTeamStore from '@/stores/team/team';
 import JobsHistoryViewer from '@/components/organisms/JobsHistoryViewer';
 import ProcessingLoader from '@/components/atoms/ProcessingLoader';
+import useAuthStore from '@/stores/authentication';
 import './Dashboard.css';
 
+const getGreeting = (): string => {
+    const hour = new Date().getHours();
+    
+    if (hour >= 5 && hour < 12) {
+        return 'Good Morning';
+    } else if (hour >= 12 && hour < 17) {
+        return 'Good Afternoon';
+    } else if (hour >= 17 && hour < 21) {
+        return 'Good Evening';
+    } else {
+        return 'Good Night';
+    }
+};
+
+const capitalize = (name?: string) => {
+    if (!name) return '';
+    const trimmed = String(name).trim();
+    if (!trimmed) return '';
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+};
+
 const DashboardPage: React.FC = memo(() => {
+    const user = useAuthStore((state) => state.user);
     useTeamJobs();
     useTrajectoryUpdates();
     const trajectories = useTrajectoryStore((state) => state.trajectories);
@@ -58,7 +81,9 @@ const DashboardPage: React.FC = memo(() => {
             <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
                 <div className='dashboard-body-left-container'>
                     <div className='dashboard-body-left-header-container'>
-                        <h3 className='dashboard-body-left-header-title'>Good Morning, Rodolfo</h3>
+                                                <h3 className='dashboard-body-left-header-title'>
+                                                    {getGreeting()}, {capitalize(user?.firstName)}
+                                                </h3>
                     </div>
 
                     <div className='scene-preview-container'>
