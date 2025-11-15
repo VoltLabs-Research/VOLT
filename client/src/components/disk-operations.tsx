@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { HardDrive } from 'lucide-react';
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics';
+import { Skeleton } from '@mui/material';
 import './disk-operations.css';
 
 interface DataPoint {
@@ -49,7 +50,9 @@ export function DiskOperations() {
     });
   }, [metrics]);
 
-  if (!metrics?.diskOperations || history.length === 0) {
+  const isLoading = !isHistoryLoaded || !metrics?.diskOperations || history.length === 0
+
+  if (isLoading) {
     return (
       <div className="disk-ops-container">
         <div className="disk-ops-header">
@@ -57,8 +60,16 @@ export function DiskOperations() {
             <HardDrive className="disk-ops-icon" />
             <h3 className="disk-ops-title">Disk Operations</h3>
           </div>
+          <div className="disk-ops-stats">
+            {['Read', 'Write', 'IOPS'].map((label) => (
+              <div key={label} className="disk-ops-stat">
+                <span className="disk-ops-stat-label">{label}</span>
+                <Skeleton variant="text" width={60} height={18} />
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="disk-ops-loading">Waiting for data...</div>
+        <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: '8px' }} />
       </div>
     );
   }
@@ -89,9 +100,9 @@ export function DiskOperations() {
   const writePath = createPath(history.map(d => d.write));
   const speedPath = createPath(history.map(d => d.speed / 10));
 
-  const currentRead = metrics.diskOperations.read;
-  const currentWrite = metrics.diskOperations.write;
-  const currentSpeed = metrics.diskOperations.speed;
+  const currentRead = metrics?.diskOperations?.read || 0;
+  const currentWrite = metrics?.diskOperations?.write || 0;
+  const currentSpeed = metrics?.diskOperations?.speed || 0;
 
   return (
     <div className="disk-ops-container">

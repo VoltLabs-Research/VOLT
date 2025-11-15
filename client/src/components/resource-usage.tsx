@@ -1,5 +1,6 @@
 import { AlertCircle, MoreVertical } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
+import { Skeleton } from '@mui/material'
 import './resource-usage.css'
 
 function getLoadColor(value: number): string {
@@ -15,7 +16,9 @@ function getLoadGlow(value: number): string {
 }
 
 export function ResourceUsage() {
-  const { metrics } = useServerMetrics()
+  const { metrics, isHistoryLoaded } = useServerMetrics()
+
+  const isLoading = !metrics || !isHistoryLoaded
 
   const resources = metrics ? [
     { 
@@ -43,16 +46,6 @@ export function ResourceUsage() {
     { name: 'Network TX', value: 0 },
   ]
 
-  const alerts = metrics ? [
-    metrics.cpu.usage > 80 ? 'High CPU usage detected' : metrics.cpu.usage > 60 ? 'Moderate CPU load' : 'CPU operating normally',
-    metrics.memory.usagePercent > 85 ? 'Memory usage critical' : metrics.memory.usagePercent > 70 ? 'Memory usage elevated' : 'Memory stable',
-    metrics.status === 'Critical' ? 'Critical system status' : metrics.status === 'Warning' ? 'System warnings detected' : 'All systems operational',
-  ] : [
-    'Loading system metrics...',
-    'Connecting to server...',
-    'Initializing monitoring...',
-  ]
-
   return (
     <div className="resource-usage">
       <div className="resource-usage-header">
@@ -62,6 +55,19 @@ export function ResourceUsage() {
         </button>
       </div>
 
+      {isLoading ? (
+        <div className="resource-usage-list">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="resource-usage-item">
+              <div className="resource-usage-item-header">
+                <Skeleton variant="text" width={80} height={20} />
+                <Skeleton variant="text" width={40} height={20} />
+              </div>
+              <Skeleton variant="rectangular" width="100%" height={8} sx={{ borderRadius: '4px', marginTop: '8px' }} />
+            </div>
+          ))}
+        </div>
+      ) : (
       <div className="resource-usage-list">
         {resources.map((resource) => {
           const color = getLoadColor(resource.value)
@@ -97,6 +103,7 @@ export function ResourceUsage() {
           )
         })}
       </div>
+      )}
     </div>
   )
 }

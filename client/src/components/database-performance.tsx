@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { LineChart, Line, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { Database } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
+import { Skeleton } from '@mui/material'
 import './database-performance.css'
 
 interface DataPoint {
@@ -70,7 +71,9 @@ export function DatabasePerformance() {
     });
   }, [metrics]);
 
-  if (!metrics?.mongodb || history.length === 0) {
+  const isLoading = !isHistoryLoaded || !metrics?.mongodb || history.length === 0
+
+  if (isLoading) {
     return (
       <div className="db-performance-container">
         <div className="db-performance-header">
@@ -78,10 +81,18 @@ export function DatabasePerformance() {
             <Database className="db-performance-icon" />
             <h3 className="db-performance-title">MongoDB Performance</h3>
           </div>
+          <div className="db-performance-stats">
+            <div className="db-stat">
+              <span className="db-stat-label">Avg Queries</span>
+              <Skeleton variant="text" width={40} height={20} />
+            </div>
+            <div className="db-stat">
+              <span className="db-stat-label">Avg Latency</span>
+              <Skeleton variant="text" width={40} height={20} />
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '280px', color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem' }}>
-          Waiting for data...
-        </div>
+        <Skeleton variant="rectangular" width="100%" height={280} sx={{ borderRadius: '8px' }} />
       </div>
     );
   }

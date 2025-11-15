@@ -1,5 +1,6 @@
 import { Server, Cpu, MemoryStick, Activity, TrendingUp, TrendingDown, MoreVertical } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
+import { Skeleton } from '@mui/material'
 import './metrics-cards.css'
 
 function formatNetworkSpeed(kbs: number): { value: string; unit: string } {
@@ -15,7 +16,34 @@ function formatNetworkSpeed(kbs: number): { value: string; unit: string } {
 }
 
 export function MetricsCards() {
-  const { metrics } = useServerMetrics()
+  const { metrics, isHistoryLoaded } = useServerMetrics()
+
+  const isLoading = !metrics || !isHistoryLoaded
+
+  if (isLoading) {
+    return (
+      <div className="metrics-cards">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="metric-card">
+            <div className="metric-card-header">
+              <div className="metric-card-title-group">
+                <Skeleton variant="circular" width={16} height={16} />
+                <Skeleton variant="text" width={120} height={20} />
+              </div>
+              <Skeleton variant="circular" width={16} height={16} />
+            </div>
+            <div className="metric-card-body">
+              <Skeleton variant="rectangular" width={100} height={48} sx={{ borderRadius: '4px' }} />
+              <div className="metric-card-footer" style={{ marginTop: '12px' }}>
+                <Skeleton variant="text" width={100} height={16} />
+                <Skeleton variant="text" width={80} height={16} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   const cards = [
     {

@@ -2,6 +2,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Activity } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { useState, useEffect } from 'react'
+import { Skeleton } from '@mui/material'
 import './traffic-overview.css'
 
 function formatNetworkSpeed(kbs: number): string {
@@ -59,6 +60,8 @@ export function TrafficOverview() {
       setData(historicalData)
     }
   }, [isHistoryLoaded, metricsHistory])
+
+  const isLoading = !isHistoryLoaded || data.length === 0
   
   useEffect(() => {
     if (metrics) {
@@ -95,6 +98,9 @@ export function TrafficOverview() {
           </div>
         </div>
       </div>
+      {isLoading ? (
+        <Skeleton variant="rectangular" width="100%" height={300} sx={{ borderRadius: '8px' }} />
+      ) : (
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={data.length > 0 ? data : [{ time: '', incoming: 0, outgoing: 0, total: 0 }]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <defs>
@@ -140,6 +146,7 @@ export function TrafficOverview() {
           />
         </AreaChart>
       </ResponsiveContainer>
+      )}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { ChevronDown, RefreshCw, Download } from 'lucide-react'
 import { ServerDetails } from './server-details'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
+import { Skeleton } from '@mui/material'
 import './server-table.css'
 
 function formatNetworkSpeed(kbs: number): string {
@@ -12,8 +13,10 @@ function formatNetworkSpeed(kbs: number): string {
 }
 
 export function ServerTable() {
-  const { metrics } = useServerMetrics()
+  const { metrics, isHistoryLoaded } = useServerMetrics()
   const [selectedServer, setSelectedServer] = useState<any | null>(null)
+
+  const isLoading = !metrics || !isHistoryLoaded
 
   const server = useMemo(() => {
     if (!metrics) return null
@@ -85,7 +88,26 @@ export function ServerTable() {
             </tr>
           </thead>
           <tbody>
-            {server && (
+            {isLoading ? (
+              <tr>
+                <td colSpan={8}>
+                  <div style={{ padding: '40px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {[...Array(1)].map((_, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <Skeleton variant="text" width={100} height={20} />
+                        <Skeleton variant="rectangular" width={60} height={24} sx={{ borderRadius: '4px' }} />
+                        <Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: '12px' }} />
+                        <Skeleton variant="text" width={60} height={20} />
+                        <Skeleton variant="text" width={60} height={20} />
+                        <Skeleton variant="text" width={60} height={20} />
+                        <Skeleton variant="text" width={80} height={20} />
+                        <Skeleton variant="text" width={60} height={20} />
+                      </div>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ) : server && (
               <tr key={server.id} onClick={() => setSelectedServer(server)} style={{ cursor: 'pointer' }}>
                 <td>
                   <div className="server-table-cell-id">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Cpu } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
+import { Skeleton } from '@mui/material'
 import './cpu-distribution.css'
 
 interface DataPoint {
@@ -53,16 +54,27 @@ export function CpuDistribution() {
     })
   }, [metrics])
 
-  if (!metrics?.cpu || history.length === 0) {
+  const isLoading = !isHistoryLoaded || !metrics?.cpu || history.length === 0
+
+  if (isLoading) {
     return (
       <div className="cpu-distribution-container">
         <div className="cpu-distribution-header">
           <div className="cpu-distribution-title-group">
             <Cpu className="cpu-distribution-icon" />
-            <h3 className="cpu-distribution-title">CPU Load Analysis</h3>
+            <h3 className="cpu-distribution-title">CPU</h3>
+            <span className="cpu-mode-badge">Per Core</span>
+          </div>
+          <div className="cpu-stats">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="cpu-stat">
+                <span className="cpu-stat-label">Loading</span>
+                <Skeleton variant="text" width={40} height={18} />
+              </div>
+            ))}
           </div>
         </div>
-        <div className="cpu-loading">Waiting for data...</div>
+        <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: '8px' }} />
       </div>
     )
   }

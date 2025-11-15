@@ -1,6 +1,7 @@
 import { MoreVertical, ChevronDown, Calendar, Maximize2 } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { useState, useEffect } from 'react'
+import { Skeleton } from '@mui/material'
 import './response-time-chart.css'
 
 const MAX_POINTS = 60 // Show last 60 seconds
@@ -86,6 +87,8 @@ export function ResponseTimeChart() {
     ...history.flatMap(d => [d.mongodb, d.redis, d.self]),
     100
   )
+
+  const isLoading = !isHistoryLoaded || history.length === 0
   
   return (
     <div className="response-chart">
@@ -125,6 +128,9 @@ export function ResponseTimeChart() {
       </div>
 
       <div className="response-chart-container">
+        {isLoading ? (
+          <Skeleton variant="rectangular" width="100%" height={300} sx={{ borderRadius: '8px' }} />
+        ) : (
         <svg 
           viewBox={`0 0 ${chartWidth} ${chartHeight}`} 
           preserveAspectRatio="none"
@@ -161,14 +167,17 @@ export function ResponseTimeChart() {
             )
           })}
         </svg>
+        )}
         
         {/* Y-axis labels */}
+        {!isLoading && (
         <div className="response-chart-y-labels">
           {Array.from({ length: 6 }, (_, i) => {
             const value = Math.round(maxValue - (maxValue / 5) * i)
             return <span key={i} className="response-chart-y-label">{value}ms</span>
           })}
         </div>
+        )}
       </div>
     </div>
   )
