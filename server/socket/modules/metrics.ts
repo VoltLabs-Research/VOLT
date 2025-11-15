@@ -41,8 +41,10 @@ class MetricsModule extends BaseSocketModule {
     this.sendInitialMetrics(socket);
 
     // Handle requests for historical data (from Redis first, fallback to MongoDB)
-    socket.on('metrics:history', async (hours: number = 24) => {
+    socket.on('metrics:history', async (minutes: number = 15) => {
       try {
+        // Convert minutes to hours for compatibility with existing methods
+        const hours = minutes / 60;
         // Try to get from Redis first for faster access
         let history = await this.collector.getMetricsFromRedis(hours);
         

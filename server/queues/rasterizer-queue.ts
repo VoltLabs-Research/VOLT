@@ -31,7 +31,7 @@ export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
         const options: QueueOptions = {
             queueName: 'rasterizer-queue',
             workerPath: path.resolve(__dirname, '../workers/headless-rasterizer.ts'),
-            maxConcurrentJobs: 10
+            maxConcurrentJobs: 5
         };
 
         super(options);

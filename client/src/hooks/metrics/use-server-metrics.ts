@@ -66,10 +66,10 @@ export function useServerMetrics() {
       console.log('[Metrics] Connection status:', connected);
       setIsConnected(connected);
       
-      // Request historical data when connected
+      // Request historical data when connected (15 minutes by default)
       if (connected && !isHistoryLoaded) {
         console.log('[Metrics] Requesting historical data...');
-        socketService.emit('metrics:history', 1).catch((error) => {
+        socketService.emit('metrics:history', 15).catch((error) => {
           console.error('[Metrics] Error requesting history:', error);
         });
       }
@@ -95,10 +95,10 @@ export function useServerMetrics() {
       setIsHistoryLoaded(true);
     });
 
-    // Request historical data on mount if connected
+    // Request historical data on mount if connected (15 minutes by default)
     if (socketService.isConnected() && !isHistoryLoaded) {
       console.log('[Metrics] Initial history request...');
-      socketService.emit('metrics:history', 1).catch((error) => {
+      socketService.emit('metrics:history', 15).catch((error) => {
         console.error('[Metrics] Error requesting initial history:', error);
       });
     }
@@ -113,8 +113,8 @@ export function useServerMetrics() {
     };
   }, [isHistoryLoaded]);
 
-  const requestHistory = (hours: number = 24) => {
-    socketService.emit('metrics:history', hours).catch((error) => {
+  const requestHistory = (minutes: number = 15) => {
+    socketService.emit('metrics:history', minutes).catch((error) => {
       console.error('[Metrics] Error requesting history:', error);
     });
   };

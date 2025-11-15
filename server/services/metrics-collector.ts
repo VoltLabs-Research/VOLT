@@ -183,11 +183,11 @@ export class MetricsCollector {
     try {
       const start = Date.now();
       const http = require('http');
-      const port = process.env.PORT || 5000;
+      const port = process.env.SERVER_PORT;
       
       return new Promise((resolve) => {
         const req = http.get({
-          hostname: 'localhost',
+          hostname: '0.0.0.0',
           port,
           path: '/api/health',
           timeout: 2000
