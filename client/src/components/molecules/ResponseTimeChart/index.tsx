@@ -1,7 +1,7 @@
-import { MoreVertical, ChevronDown, Calendar, Maximize2 } from 'lucide-react'
+import { ChevronDown, Calendar, Maximize2 } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { useState, useEffect } from 'react'
-import { Skeleton } from '@mui/material'
+import { ChartContainer } from '@/components/atoms/ChartContainer'
 import './ResponseTimeChart.css'
 
 const MAX_POINTS = 60 // Show last 60 seconds
@@ -89,34 +89,9 @@ export function ResponseTimeChart() {
   )
 
   const isLoading = !isHistoryLoaded || history.length === 0
-  
-  return (
-    <div className="response-chart">
-      <div className="response-chart-header">
-        <div className="response-chart-title-group">
-          <div className="response-chart-bar" />
-          <div className="response-chart-title-content">
-            <h3>Response Time</h3>
-            <p>Nov 9, 12:47 PM (UTC+7)</p>
-          </div>
-        </div>
-        <div className="response-chart-actions">
-          <button className="response-chart-btn">
-            Week
-            <ChevronDown className="response-chart-icon-sm" />
-          </button>
-          <button className="response-chart-icon-btn">
-            <Calendar className="response-chart-icon" />
-          </button>
-          <button className="response-chart-icon-btn">
-            <Maximize2 className="response-chart-icon" />
-          </button>
-          <button className="response-chart-icon-btn">
-            <MoreVertical className="response-chart-icon" />
-          </button>
-        </div>
-      </div>
 
+  const chartContent = (
+    <>
       <div className="response-chart-legend">
         {regions.map((region) => (
           <div key={region.name} className="response-chart-legend-item">
@@ -128,9 +103,6 @@ export function ResponseTimeChart() {
       </div>
 
       <div className="response-chart-container">
-        {isLoading ? (
-          <Skeleton variant="rectangular" width="100%" height={300} sx={{ borderRadius: '8px' }} />
-        ) : (
         <svg 
           viewBox={`0 0 ${chartWidth} ${chartHeight}`} 
           preserveAspectRatio="none"
@@ -167,18 +139,25 @@ export function ResponseTimeChart() {
             )
           })}
         </svg>
-        )}
         
         {/* Y-axis labels */}
-        {!isLoading && (
         <div className="response-chart-y-labels">
           {Array.from({ length: 6 }, (_, i) => {
             const value = Math.round(maxValue - (maxValue / 5) * i)
             return <span key={i} className="response-chart-y-label">{value}ms</span>
           })}
         </div>
-        )}
       </div>
-    </div>
+    </>
+  )
+
+  return (
+    <ChartContainer
+      icon={() => <div className="response-chart-bar" />}
+      title="Response Time"
+      isLoading={isLoading}
+    >
+      {chartContent}
+    </ChartContainer>
   )
 }

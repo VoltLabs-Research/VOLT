@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { LineChart, Line, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { Database } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
-import { Skeleton } from '@mui/material'
+import { ChartContainer } from '@/components/atoms/ChartContainer'
 import './DatabasePerformance.css'
 
 interface DataPoint {
@@ -15,7 +15,7 @@ interface DataPoint {
 const MAX_POINTS = 60;
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
+  if (active && payload && payload.length >= 3) {
     return (
       <div className="db-tooltip">
         <p className="db-tooltip-label">{payload[0].payload.time}</p>
@@ -83,53 +83,22 @@ export function DatabasePerformance() {
 
   const isLoading = !isHistoryLoaded || !metrics?.mongodb || history.length === 0
 
-  if (isLoading) {
-    return (
-      <div className="db-performance-container">
-        <div className="db-performance-header">
-          <div className="db-performance-title-group">
-            <Database className="db-performance-icon" />
-            <h3 className="db-performance-title">MongoDB Performance</h3>
-          </div>
-          <div className="db-performance-stats">
-            <div className="db-stat">
-              <span className="db-stat-label">Avg Queries</span>
-              <Skeleton variant="text" width={40} height={20} />
-            </div>
-            <div className="db-stat">
-              <span className="db-stat-label">Avg Latency</span>
-              <Skeleton variant="text" width={40} height={20} />
-            </div>
-          </div>
-        </div>
-        <Skeleton variant="rectangular" width="100%" height={280} sx={{ borderRadius: '8px' }} />
-      </div>
-    );
-  }
-
   const avgQueries = Math.round(history
     .filter(d => d.queriesPerSecond !== undefined)
     .reduce((sum, d) => sum + (d.queriesPerSecond || 0), 0) / Math.max(1, history.filter(d => d.queriesPerSecond !== undefined).length));
   const avgLatency = Math.round(history.reduce((sum, d) => sum + d.latency, 0) / history.length);
-  
+
   return (
-    <div className="db-performance-container">
-      <div className="db-performance-header">
-        <div className="db-performance-title-group">
-          <Database className="db-performance-icon" />
-          <h3 className="db-performance-title">MongoDB Performance</h3>
-        </div>
-        <div className="db-performance-stats">
-          <div className="db-stat">
-            <span className="db-stat-label">Avg Queries</span>
-            <span className="db-stat-value">{avgQueries}/s</span>
-          </div>
-          <div className="db-stat">
-            <span className="db-stat-label">Avg Latency</span>
-            <span className="db-stat-value">{avgLatency}ms</span>
-          </div>
-        </div>
-      </div>
+    <ChartContainer
+      icon={Database}
+      title="MongoDB Performance"
+      isLoading={isLoading}
+      stats={[
+        { label: 'Avg Queries', value: `${avgQueries}/s` },
+        { label: 'Avg Latency', value: `${avgLatency}ms` }
+      ]}
+      statsLoading={isLoading}
+    >
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={history} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -182,6 +151,6 @@ export function DatabasePerformance() {
           />
         </LineChart>
       </ResponsiveContainer>
-    </div>
+    </ChartContainer>
   )
 }

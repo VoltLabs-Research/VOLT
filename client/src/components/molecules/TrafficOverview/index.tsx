@@ -2,7 +2,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Activity } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { useState, useEffect } from 'react'
-import { Skeleton } from '@mui/material'
+import { ChartContainer } from '@/components/atoms/ChartContainer'
 import './TrafficOverview.css'
 
 function formatNetworkSpeed(kbs: number): string {
@@ -62,91 +62,70 @@ export function TrafficOverview() {
   }, [isHistoryLoaded, metricsHistory])
 
   const isLoading = !isHistoryLoaded || data.length === 0
-  
-  useEffect(() => {
-    if (metrics) {
-      const now = new Date()
-      const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
-      
-      setData(prev => {
-        const newData = [...prev, {
-          time: timeStr,
-          incoming: metrics.network.incoming,
-          outgoing: metrics.network.outgoing,
-          total: metrics.network.incoming + metrics.network.outgoing
-        }]
-        return newData.slice(-MAX_POINTS)
-      })
-    }
-  }, [metrics])
-  
+
+  const chartContent = (
+    <ResponsiveContainer width="100%" height={300}>
+      <AreaChart data={data.length > 0 ? data : [{ time: '', incoming: 0, outgoing: 0, total: 0 }]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="colorIncoming" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#0A84FF" stopOpacity={0.3}/>
+            <stop offset="95%" stopColor="#0A84FF" stopOpacity={0}/>
+          </linearGradient>
+          <linearGradient id="colorOutgoing" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#30D158" stopOpacity={0.3}/>
+            <stop offset="95%" stopColor="#30D158" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+        <YAxis 
+          stroke="rgba(255,255,255,0.4)" 
+          style={{ fontSize: '12px' }}
+          tickFormatter={(value) => `${value}M`}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Legend 
+          wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
+          iconType="circle"
+        />
+        <Area 
+          type="monotone" 
+          dataKey="incoming" 
+          stroke="#0A84FF" 
+          strokeWidth={2}
+          fillOpacity={1} 
+          fill="url(#colorIncoming)"
+          name="Incoming"
+          isAnimationActive={false}
+        />
+        <Area 
+          type="monotone" 
+          dataKey="outgoing" 
+          stroke="#30D158" 
+          strokeWidth={2}
+          fillOpacity={1} 
+          fill="url(#colorOutgoing)"
+          name="Outgoing"
+          isAnimationActive={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+
+  const peakTraffic = data.length > 0 ? formatNetworkSpeed(Math.max(...data.map(d => d.total))) : '0 B/s'
+  const avgTraffic = data.length > 0 ? formatNetworkSpeed(data.reduce((sum, d) => sum + d.total, 0) / data.length) : '0 B/s'
+
   return (
-    <div className="traffic-overview-container">
-      <div className="traffic-overview-header">
-        <div className="traffic-overview-title-group">
-          <Activity className="traffic-overview-icon" />
-          <h3 className="traffic-overview-title">Network Traffic</h3>
-        </div>
-        <div className="traffic-overview-stats">
-          <div className="traffic-stat">
-            <span className="traffic-stat-label">Peak</span>
-            <span className="traffic-stat-value">{data.length > 0 ? formatNetworkSpeed(Math.max(...data.map(d => d.total))) : '0 B/s'}</span>
-          </div>
-          <div className="traffic-stat">
-            <span className="traffic-stat-label">Avg</span>
-            <span className="traffic-stat-value">{data.length > 0 ? formatNetworkSpeed(data.reduce((sum, d) => sum + d.total, 0) / data.length) : '0 B/s'}</span>
-          </div>
-        </div>
-      </div>
-      {isLoading ? (
-        <Skeleton variant="rectangular" width="100%" height={300} sx={{ borderRadius: '8px' }} />
-      ) : (
-      <ResponsiveContainer width="100%" height={300}>
-        <AreaChart data={data.length > 0 ? data : [{ time: '', incoming: 0, outgoing: 0, total: 0 }]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id="colorIncoming" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#0A84FF" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="#0A84FF" stopOpacity={0}/>
-            </linearGradient>
-            <linearGradient id="colorOutgoing" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#30D158" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="#30D158" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-          <YAxis 
-            stroke="rgba(255,255,255,0.4)" 
-            style={{ fontSize: '12px' }}
-            tickFormatter={(value) => `${value}M`}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend 
-            wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
-            iconType="circle"
-          />
-          <Area 
-            type="monotone" 
-            dataKey="incoming" 
-            stroke="#0A84FF" 
-            strokeWidth={2}
-            fillOpacity={1} 
-            fill="url(#colorIncoming)"
-            name="Incoming"
-            isAnimationActive={false}
-          />
-          <Area 
-            type="monotone" 
-            dataKey="outgoing" 
-            stroke="#30D158" 
-            strokeWidth={2}
-            fillOpacity={1} 
-            fill="url(#colorOutgoing)"
-            name="Outgoing"
-            isAnimationActive={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-      )}
-    </div>
+    <ChartContainer
+      icon={Activity}
+      title="Network Traffic"
+      isLoading={isLoading}
+      stats={[
+        { label: 'Peak', value: peakTraffic },
+        { label: 'Avg', value: avgTraffic }
+      ]}
+      statsLoading={isLoading}
+    >
+      {chartContent}
+    </ChartContainer>
   )
 }

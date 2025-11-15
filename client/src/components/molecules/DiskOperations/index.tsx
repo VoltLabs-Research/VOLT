@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { HardDrive } from 'lucide-react';
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics';
-import { Skeleton } from '@mui/material';
+import { ChartContainer } from '@/components/atoms/ChartContainer';
 import './DiskOperations.css';
 
 interface DataPoint {
@@ -52,31 +52,9 @@ export function DiskOperations() {
 
   const isLoading = !isHistoryLoaded || !metrics?.diskOperations || history.length === 0
 
-  if (isLoading) {
-    return (
-      <div className="disk-ops-container">
-        <div className="disk-ops-header">
-          <div className="disk-ops-title-group">
-            <HardDrive className="disk-ops-icon" />
-            <h3 className="disk-ops-title">Disk Operations</h3>
-          </div>
-          <div className="disk-ops-stats">
-            {['Read', 'Write', 'IOPS'].map((label) => (
-              <div key={label} className="disk-ops-stat">
-                <span className="disk-ops-stat-label">{label}</span>
-                <Skeleton variant="text" width={60} height={18} />
-              </div>
-            ))}
-          </div>
-        </div>
-        <Skeleton variant="rectangular" width="100%" height={'100%'} sx={{ borderRadius: '8px' }} />
-      </div>
-    );
-  }
-
-  const maxRead = Math.max(...history.map(d => d.read));
-  const maxWrite = Math.max(...history.map(d => d.write));
-  const maxSpeed = Math.max(...history.map(d => d.speed));
+  const maxRead = Math.max(...history.map(d => d.read), 1);
+  const maxWrite = Math.max(...history.map(d => d.write), 1);
+  const maxSpeed = Math.max(...history.map(d => d.speed), 1);
   const maxValue = Math.max(maxRead, maxWrite, Math.ceil(maxSpeed / 10));
 
   const width = 100;
@@ -104,102 +82,95 @@ export function DiskOperations() {
   const currentWrite = metrics?.diskOperations?.write || 0;
   const currentSpeed = metrics?.diskOperations?.speed || 0;
 
-  return (
-    <div className="disk-ops-container">
-      <div className="disk-ops-header">
-        <div className="disk-ops-title-group">
-          <HardDrive className="disk-ops-icon" />
-          <h3 className="disk-ops-title">Disk Operations</h3>
-        </div>
-        <div className="disk-ops-stats">
-          <div className="disk-ops-stat">
-            <span className="disk-ops-stat-label">Read</span>
-            <span className="disk-ops-stat-value">{currentRead} MB/s</span>
-          </div>
-          <div className="disk-ops-stat">
-            <span className="disk-ops-stat-label">Write</span>
-            <span className="disk-ops-stat-value">{currentWrite} MB/s</span>
-          </div>
-          <div className="disk-ops-stat">
-            <span className="disk-ops-stat-label">IOPS</span>
-            <span className="disk-ops-stat-value">{currentSpeed}</span>
-          </div>
-        </div>
-      </div>
+  const chartContent = (
+    <div className="disk-ops-chart">
+      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="diskReadGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0A84FF" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="#0A84FF" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="diskWriteGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#30D158" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="#30D158" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="diskSpeedGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FF9F0A" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="#FF9F0A" stopOpacity={0} />
+          </linearGradient>
+        </defs>
 
-      <div className="disk-ops-chart">
-        <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="diskReadGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0A84FF" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#0A84FF" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="diskWriteGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#30D158" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#30D158" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="diskSpeedGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#FF9F0A" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#FF9F0A" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-
-          {readPath && (
-            <>
-              <path
-                d={`${readPath} L ${getX(history.length - 1)} 100 L 0 100 Z`}
-                fill="url(#diskReadGradient)"
-              />
-              <path
-                d={readPath}
-                fill="none"
-                stroke="#0A84FF"
-                strokeWidth="0.5"
-              />
-            </>
-          )}
-
-          {writePath && (
-            <>
-              <path
-                d={`${writePath} L ${getX(history.length - 1)} 100 L 0 100 Z`}
-                fill="url(#diskWriteGradient)"
-              />
-              <path
-                d={writePath}
-                fill="none"
-                stroke="#30D158"
-                strokeWidth="0.5"
-              />
-            </>
-          )}
-
-          {speedPath && (
+        {readPath && (
+          <>
             <path
-              d={speedPath}
-              fill="none"
-              stroke="#FF9F0A"
-              strokeWidth="0.5"
-              strokeDasharray="2,2"
+              d={`${readPath} L ${getX(history.length - 1)} 100 L 0 100 Z`}
+              fill="url(#diskReadGradient)"
             />
-          )}
-        </svg>
+            <path
+              d={readPath}
+              fill="none"
+              stroke="#0A84FF"
+              strokeWidth="0.5"
+            />
+          </>
+        )}
 
-        <div className="disk-ops-legend">
-          <div className="disk-ops-legend-item">
-            <span className="disk-ops-legend-dot" style={{ backgroundColor: '#0A84FF' }}></span>
-            <span className="disk-ops-legend-label">Read (MB/s)</span>
-          </div>
-          <div className="disk-ops-legend-item">
-            <span className="disk-ops-legend-dot" style={{ backgroundColor: '#30D158' }}></span>
-            <span className="disk-ops-legend-label">Write (MB/s)</span>
-          </div>
-          <div className="disk-ops-legend-item">
-            <span className="disk-ops-legend-dot" style={{ backgroundColor: '#FF9F0A' }}></span>
-            <span className="disk-ops-legend-label">IOPS (x10)</span>
-          </div>
+        {writePath && (
+          <>
+            <path
+              d={`${writePath} L ${getX(history.length - 1)} 100 L 0 100 Z`}
+              fill="url(#diskWriteGradient)"
+            />
+            <path
+              d={writePath}
+              fill="none"
+              stroke="#30D158"
+              strokeWidth="0.5"
+            />
+          </>
+        )}
+
+        {speedPath && (
+          <path
+            d={speedPath}
+            fill="none"
+            stroke="#FF9F0A"
+            strokeWidth="0.5"
+            strokeDasharray="2,2"
+          />
+        )}
+      </svg>
+
+      <div className="disk-ops-legend">
+        <div className="disk-ops-legend-item">
+          <span className="disk-ops-legend-dot" style={{ backgroundColor: '#0A84FF' }}></span>
+          <span className="disk-ops-legend-label">Read (MB/s)</span>
+        </div>
+        <div className="disk-ops-legend-item">
+          <span className="disk-ops-legend-dot" style={{ backgroundColor: '#30D158' }}></span>
+          <span className="disk-ops-legend-label">Write (MB/s)</span>
+        </div>
+        <div className="disk-ops-legend-item">
+          <span className="disk-ops-legend-dot" style={{ backgroundColor: '#FF9F0A' }}></span>
+          <span className="disk-ops-legend-label">IOPS (x10)</span>
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <ChartContainer
+      icon={HardDrive}
+      title="Disk Operations"
+      isLoading={isLoading}
+      stats={[
+        { label: 'Read', value: `${currentRead} MB/s` },
+        { label: 'Write', value: `${currentWrite} MB/s` },
+        { label: 'IOPS', value: currentSpeed }
+      ]}
+      statsLoading={isLoading}
+    >
+      {chartContent}
+    </ChartContainer>
   );
 }

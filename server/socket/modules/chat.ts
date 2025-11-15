@@ -1,34 +1,20 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-**/
-
 import { Server, Socket } from 'socket.io';
 import { User, Chat, Message } from '@/models/index';
 import BaseSocketModule from '@/socket/base-socket-module';
+import { redis } from '@/config/redis';
 
 interface AuthenticatedSocket extends Socket {
     user?: any;
+    rateLimits?: Map<string, number[]>;
 }
 
 class ChatModule extends BaseSocketModule {
+    private readonly CACHE_TTL = {
+        CHAT_PERMISSION: 300,      // 5 minutos
+        USER_INFO: 600,            // 10 minutos
+        RATE_LIMIT: 60             // 1 minuto
+    };
+
     constructor() {
         super('ChatModule');
     }
@@ -37,8 +23,180 @@ class ChatModule extends BaseSocketModule {
         this.io = io;
     }
 
+    /**
+     * ✅ Verificar permisos con Redis cache
+     */
+    private async verifyUserChatAccess(userId: string, chatId: string): Promise<boolean> {
+        if (!redis) {
+            // Fallback sin caché si Redis no disponible
+            return await this.verifyUserChatAccessDB(userId, chatId);
+        }
+
+        const cacheKey = `chat:permission:${userId}:${chatId}`;
+        
+        try {
+            // ✅ Check Redis cache first
+            const cached = await redis.get(cacheKey);
+            if (cached !== null) {
+                return cached === '1';
+            }
+
+            // ✅ Query DB
+            const hasAccess = await this.verifyUserChatAccessDB(userId, chatId);
+
+            // ✅ Cache result in Redis
+            await redis.setex(
+                cacheKey,
+                this.CACHE_TTL.CHAT_PERMISSION,
+                hasAccess ? '1' : '0'
+            );
+
+            return hasAccess;
+        } catch (error) {
+            console.error('Redis cache error:', error);
+            // Fallback a query directo si Redis falla
+            return await this.verifyUserChatAccessDB(userId, chatId);
+        }
+    }
+
+    /**
+     * Query DB para verificar acceso
+     */
+    private async verifyUserChatAccessDB(userId: string, chatId: string): Promise<boolean> {
+        const hasAccess = await Chat.exists({
+            _id: chatId,
+            participants: userId,
+            $or: [
+                { isGroup: false },
+                { isGroup: true, isActive: true }
+            ]
+        });
+        return !!hasAccess;
+    }
+
+    /**
+     * ✅ Rate limiting con Redis (más robusto)
+     */
+    private async checkRateLimit(
+        userId: string, 
+        event: string, 
+        maxPerMinute: number = 30
+    ): Promise<boolean> {
+        if (!redis) {
+            return true; // Permitir si Redis no disponible (o implementar fallback local)
+        }
+
+        const key = `rate:${event}:${userId}`;
+        const now = Date.now();
+
+        try {
+            // ✅ Usar Redis Sorted Set para rate limiting preciso
+            // Remover entradas antiguas (> 1 minuto)
+            await redis.zremrangebyscore(key, 0, now - 60000);
+
+            // Contar requests recientes
+            const count = await redis.zcard(key);
+
+            if (count >= maxPerMinute) {
+                return false; // Rate limit exceeded
+            }
+
+            // Agregar timestamp actual
+            await redis.zadd(key, now, `${now}`);
+
+            // Set expiration
+            await redis.expire(key, 60);
+
+            return true;
+        } catch (error) {
+            console.error('Redis rate limit error:', error);
+            return true; // Permitir en caso de error (fail open)
+        }
+    }
+
+    /**
+     * ✅ Obtener info de usuario con Redis cache
+     */
+    private async getUserInfo(userId: string) {
+        if (!redis) {
+            return await this.getUserInfoDB(userId);
+        }
+
+        const cacheKey = `user:info:${userId}`;
+
+        try {
+            // Check cache
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+                return JSON.parse(cached);
+            }
+
+            // Query DB
+            const user = await this.getUserInfoDB(userId);
+            if (user) {
+                await redis.setex(
+                    cacheKey,
+                    this.CACHE_TTL.USER_INFO,
+                    JSON.stringify(user)
+                );
+            }
+
+            return user;
+        } catch (error) {
+            console.error('Redis user cache error:', error);
+            return await this.getUserInfoDB(userId);
+        }
+    }
+
+    /**
+     * Query DB para info de usuario
+     */
+    private async getUserInfoDB(userId: string) {
+        return await User.findById(userId)
+            .select('firstName lastName email')
+            .lean();
+    }
+
+    /**
+     * ✅ Invalidar caché de chat (multi-server safe)
+     */
+    private async invalidateChatCache(chatId: string, userIds?: string[]): Promise<void> {
+        if (!redis) return;
+
+        try {
+            if (userIds) {
+                // Invalidar solo para usuarios específicos
+                const keys = userIds.map(userId => `chat:permission:${userId}:${chatId}`);
+                if (keys.length > 0) {
+                    await redis.del(...keys);
+                }
+            } else {
+                // Invalidar todos los permisos de este chat
+                const pattern = `chat:permission:*:${chatId}`;
+                const keys = await redis.keys(pattern);
+                if (keys.length > 0) {
+                    await redis.del(...keys);
+                }
+            }
+        } catch (error) {
+            console.error('Error invalidating chat cache:', error);
+        }
+    }
+
+    /**
+     * ✅ Invalidar caché de usuario
+     */
+    private async invalidateUserCache(userId: string): Promise<void> {
+        if (!redis) return;
+
+        try {
+            await redis.del(`user:info:${userId}`);
+        } catch (error) {
+            console.error('Error invalidating user cache:', error);
+        }
+    }
+
     onConnection(socket: AuthenticatedSocket): void {
-        // Extract user from socket auth (set by socket.io middleware)
         const user = (socket as any).user;
         if (!user) {
             socket.emit('error', 'Not authenticated');
@@ -46,144 +204,143 @@ class ChatModule extends BaseSocketModule {
         }
 
         socket.user = user;
-        
-        // Handle user presence
         this.handleUserPresence(socket, 'online');
-        
-        // Join user to their personal room for notifications
         this.joinRoom(socket, `user-${user._id}`);
         
         console.log(`[ChatModule] User ${user.firstName} ${user.lastName} connected`);
 
-        // Join a chat room
+        // ✅ Join chat con Redis cache
         socket.on('join_chat', async (chatId: string) => {
-            if (!socket.user) {
-                socket.emit('error', 'Not authenticated');
+            if (!socket.user) return;
+
+            const hasAccess = await this.verifyUserChatAccess(
+                socket.user._id.toString(), 
+                chatId
+            );
+
+            if (!hasAccess) {
+                socket.emit('error', 'Chat not found or access denied');
                 return;
             }
 
-            try {
-                // Verify user has access to this chat
-                // For direct chats, allow access even if not active
-                // For group chats, only allow if active
-                const chat = await Chat.findOne({
-                    _id: chatId,
-                    participants: socket.user._id,
-                    $or: [
-                        { isGroup: false }, // Allow all direct chats
-                        { isGroup: true, isActive: true } // Only active group chats
-                    ]
-                });
-
-                if (!chat) {
-                    socket.emit('error', 'Chat not found or access denied');
-                    return;
-                }
-
-                this.joinRoom(socket, `chat-${chatId}`);
-                socket.emit('joined_chat', { chatId });
-                
-                console.log(`[ChatModule] User ${socket.user.firstName} joined chat ${chatId}`);
-            } catch (error) {
-                socket.emit('error', 'Failed to join chat');
-            }
+            this.joinRoom(socket, `chat-${chatId}`);
+            socket.emit('joined_chat', { chatId });
         });
 
-        // Leave a chat room
-        socket.on('leave_chat', (chatId: string) => {
-            this.leaveRoom(socket, `chat-${chatId}`);
-            socket.emit('left_chat', { chatId });
-        });
+        // ✅ Send message con Redis rate limiting
+        socket.on('send_message', async (data: { 
+            chatId: string; 
+            content: string; 
+            messageType?: string; 
+            metadata?: any 
+        }) => {
+            if (!socket.user) return;
 
-        // Send a message
-        socket.on('send_message', async (data: { chatId: string; content: string; messageType?: string; metadata?: any }) => {
-            if (!socket.user) {
-                socket.emit('error', 'Not authenticated');
+            // ✅ Redis rate limiting
+            const allowed = await this.checkRateLimit(
+                socket.user._id.toString(),
+                'send_message',
+                30
+            );
+
+            if (!allowed) {
+                socket.emit('error', 'Rate limit exceeded. Max 30 messages per minute.');
                 return;
             }
 
             try {
                 const { chatId, content, messageType = 'text', metadata } = data;
 
-                // Verify user has access to this chat
-                // For direct chats, allow access even if not active
-                // For group chats, only allow if active
-                const chat = await Chat.findOne({
-                    _id: chatId,
-                    participants: socket.user._id,
-                    $or: [
-                        { isGroup: false }, // Allow all direct chats
-                        { isGroup: true, isActive: true } // Only active group chats
-                    ]
-                });
+                // ✅ Verificar acceso con Redis cache
+                const hasAccess = await this.verifyUserChatAccess(
+                    socket.user._id.toString(), 
+                    chatId
+                );
 
-                if (!chat) {
+                if (!hasAccess) {
                     socket.emit('error', 'Chat not found or access denied');
                     return;
                 }
 
-                // Create the message
+                // Crear mensaje
                 const message = await Message.create({
                     chat: chatId,
                     sender: socket.user._id,
                     content,
                     messageType,
                     metadata,
-                    readBy: [socket.user._id] // Sender has read their own message
+                    readBy: [socket.user._id]
                 });
 
-                await message.populate('sender', 'firstName lastName email');
-
-                // Update chat's last message
-                await Chat.findByIdAndUpdate(chatId, {
+                // Update chat (fire and forget)
+                Chat.findByIdAndUpdate(chatId, {
                     lastMessage: message._id,
                     lastMessageAt: new Date()
-                });
+                }).exec();
 
-                // Broadcast message to all users in the chat room
+                // Agregar sender info desde socket.user (sin populate)
+                const messageWithSender = {
+                    ...message.toObject(),
+                    sender: {
+                        _id: socket.user._id,
+                        firstName: socket.user.firstName,
+                        lastName: socket.user.lastName,
+                        email: socket.user.email
+                    }
+                };
+
+                // Emitir inmediatamente
                 this.io?.to(`chat-${chatId}`).emit('new_message', {
-                    message,
+                    message: messageWithSender,
                     chatId
                 });
 
-                console.log(`[ChatModule] Message sent in chat ${chatId} by ${socket.user.firstName}`);
+                console.log(`[ChatModule] Message sent in chat ${chatId}`);
             } catch (error) {
+                console.error('Error sending message:', error);
                 socket.emit('error', 'Failed to send message');
             }
         });
 
-        // Send a file message
-        socket.on('send_file_message', async (data: { chatId: string; filename: string; originalName: string; size: number; mimetype: string; url: string }) => {
-            if (!socket.user) {
-                socket.emit('error', 'Not authenticated');
+        // ✅ Send file message
+        socket.on('send_file_message', async (data: { 
+            chatId: string; 
+            filename: string; 
+            originalName: string; 
+            size: number; 
+            mimetype: string; 
+            url: string 
+        }) => {
+            if (!socket.user) return;
+
+            const allowed = await this.checkRateLimit(
+                socket.user._id.toString(),
+                'send_file_message',
+                10
+            );
+
+            if (!allowed) {
+                socket.emit('error', 'Rate limit exceeded. Max 10 files per minute.');
                 return;
             }
 
             try {
                 const { chatId, filename, originalName, size, mimetype, url } = data;
 
-                // Verify user has access to this chat
-                // For direct chats, allow access even if not active
-                // For group chats, only allow if active
-                const chat = await Chat.findOne({
-                    _id: chatId,
-                    participants: socket.user._id,
-                    $or: [
-                        { isGroup: false }, // Allow all direct chats
-                        { isGroup: true, isActive: true } // Only active group chats
-                    ]
-                });
+                const hasAccess = await this.verifyUserChatAccess(
+                    socket.user._id.toString(), 
+                    chatId
+                );
 
-                if (!chat) {
+                if (!hasAccess) {
                     socket.emit('error', 'Chat not found or access denied');
                     return;
                 }
 
-                // Create the file message
                 const message = await Message.create({
                     chat: chatId,
                     sender: socket.user._id,
-                    content: originalName, // Use original filename as content
+                    content: originalName,
                     messageType: 'file',
                     metadata: {
                         fileName: originalName,
@@ -192,64 +349,135 @@ class ChatModule extends BaseSocketModule {
                         fileUrl: url,
                         filePath: filename
                     },
-                    readBy: [socket.user._id] // Sender has read their own message
+                    readBy: [socket.user._id]
                 });
 
-                await message.populate('sender', 'firstName lastName email');
-
-                // Update chat's last message
-                await Chat.findByIdAndUpdate(chatId, {
+                Chat.findByIdAndUpdate(chatId, {
                     lastMessage: message._id,
                     lastMessageAt: new Date()
-                });
+                }).exec();
 
-                // Broadcast message to all users in the chat room
+                const messageWithSender = {
+                    ...message.toObject(),
+                    sender: {
+                        _id: socket.user._id,
+                        firstName: socket.user.firstName,
+                        lastName: socket.user.lastName,
+                        email: socket.user.email
+                    }
+                };
+
                 this.io?.to(`chat-${chatId}`).emit('new_message', {
-                    message,
+                    message: messageWithSender,
                     chatId
                 });
-
-                console.log(`[ChatModule] File message sent in chat ${chatId} by ${socket.user.firstName}`);
             } catch (error) {
                 socket.emit('error', 'Failed to send file message');
             }
         });
 
-        // Edit a message (only sender)
-        socket.on('edit_message', async (data: { chatId: string; messageId: string; content: string }) => {
+        // ✅ Edit message
+        socket.on('edit_message', async (data: { 
+            chatId: string; 
+            messageId: string; 
+            content: string 
+        }) => {
             if (!socket.user) return;
+
+            const allowed = await this.checkRateLimit(
+                socket.user._id.toString(),
+                'edit_message',
+                20
+            );
+
+            if (!allowed) {
+                socket.emit('error', 'Rate limit exceeded');
+                return;
+            }
+
             try {
                 const { chatId, messageId, content } = data;
-                const message = await Message.findOne({ _id: messageId, chat: chatId });
-                if (!message) return;
-                if (message.sender.toString() !== socket.user._id.toString()) return;
+                
+                const message = await Message.findOne({ 
+                    _id: messageId, 
+                    chat: chatId,
+                    sender: socket.user._id
+                });
+
+                if (!message) {
+                    socket.emit('error', 'Message not found or access denied');
+                    return;
+                }
+
                 message.content = content;
                 (message as any).editedAt = new Date();
                 await message.save();
-                await message.populate('sender', 'firstName lastName email');
-                this.io?.to(`chat-${chatId}`).emit('message_edited', { chatId, message });
-            } catch {}
+
+                const messageWithSender = {
+                    ...message.toObject(),
+                    sender: {
+                        _id: socket.user._id,
+                        firstName: socket.user.firstName,
+                        lastName: socket.user.lastName,
+                        email: socket.user.email
+                    }
+                };
+
+                this.io?.to(`chat-${chatId}`).emit('message_edited', { 
+                    chatId, 
+                    message: messageWithSender 
+                });
+            } catch (error) {
+                socket.emit('error', 'Failed to edit message');
+            }
         });
 
-        // Delete a message (soft delete)
+        // ✅ Delete message
         socket.on('delete_message', async (data: { chatId: string; messageId: string }) => {
             if (!socket.user) return;
+
             try {
                 const { chatId, messageId } = data;
-                const message = await Message.findOne({ _id: messageId, chat: chatId });
-                if (!message) return;
-                if (message.sender.toString() !== socket.user._id.toString()) return;
-                (message as any).deleted = true;
-                (message as any).deletedAt = new Date();
-                (message as any).deletedBy = socket.user._id;
-                await message.save();
-                this.io?.to(`chat-${chatId}`).emit('message_deleted', { chatId, messageId });
-            } catch {}
+                
+                const result = await Message.updateOne(
+                    { 
+                        _id: messageId, 
+                        chat: chatId,
+                        sender: socket.user._id 
+                    },
+                    {
+                        $set: {
+                            deleted: true,
+                            deletedAt: new Date(),
+                            deletedBy: socket.user._id
+                        }
+                    }
+                );
+
+                if (result.modifiedCount > 0) {
+                    this.io?.to(`chat-${chatId}`).emit('message_deleted', { chatId, messageId });
+                }
+            } catch (error) {
+                socket.emit('error', 'Failed to delete message');
+            }
         });
 
-        // Toggle reaction
-        socket.on('toggle_reaction', async (data: { chatId: string; messageId: string; emoji: string }) => {
+        // ✅ Toggle reaction
+        socket.on('toggle_reaction', async (data: { 
+            chatId: string; 
+            messageId: string; 
+            emoji: string 
+        }) => {
             if (!socket.user) return;
+
+            const allowed = await this.checkRateLimit(
+                socket.user._id.toString(),
+                'toggle_reaction',
+                60
+            );
+
+            if (!allowed) return;
+
             try {
                 const { chatId, messageId, emoji } = data;
                 const message: any = await Message.findOne({ _id: messageId, chat: chatId });
@@ -258,84 +486,60 @@ class ChatModule extends BaseSocketModule {
                 const reactions = message.reactions || [];
                 const userIdStr = socket.user._id.toString();
 
-                // Remove user from all existing reactions first (user can only have one reaction)
                 const filteredReactions = reactions.map((reaction: any) => ({
                     ...reaction,
                     users: reaction.users.filter((u: any) => u.toString() !== userIdStr)
                 })).filter((reaction: any) => reaction.users.length > 0);
 
-                // Check if user is trying to remove their current reaction
                 const currentUserReaction = reactions.find((reaction: any) => 
                     reaction.users.some((u: any) => u.toString() === userIdStr)
                 );
 
                 if (currentUserReaction && currentUserReaction.emoji === emoji) {
-                    // User is removing their current reaction
                     message.reactions = filteredReactions;
                 } else {
-                    // User is adding a new reaction (or changing their reaction)
                     const existingEmojiIndex = filteredReactions.findIndex((r: any) => r.emoji === emoji);
                     
                     if (existingEmojiIndex !== -1) {
-                        // Add user to existing emoji reaction (only if not already there)
-                        const existingUsers = filteredReactions[existingEmojiIndex].users;
-                        const userAlreadyExists = existingUsers.some((u: any) => u.toString() === socket.user._id.toString());
-                        
-                        if (!userAlreadyExists) {
-                            filteredReactions[existingEmojiIndex].users.push(socket.user._id);
-                        }
+                        filteredReactions[existingEmojiIndex].users.push(socket.user._id);
                     } else {
-                        // Create new emoji reaction
                         filteredReactions.push({ emoji, users: [socket.user._id] });
                     }
                     
                     message.reactions = filteredReactions;
                 }
 
-                // Mark the reactions field as modified
                 message.markModified('reactions');
                 await message.save();
-                await message.populate('sender', 'firstName lastName email');
-                
-                // Emit to all users in the chat to keep everyone in sync
-                this.io?.to(`chat-${chatId}`).emit('reaction_updated', { chatId, message });
+
+                this.io?.to(`chat-${chatId}`).emit('reaction_updated', { 
+                    chatId, 
+                    messageId,
+                    reactions: message.reactions 
+                });
             } catch (error) {
                 console.error('Socket toggle_reaction error:', error);
             }
         });
 
-        // Mark messages as read
+        // ✅ Mark read
         socket.on('mark_read', async (data: { chatId: string }) => {
-            if (!socket.user) {
-                socket.emit('error', 'Not authenticated');
-                return;
-            }
+            if (!socket.user) return;
 
             try {
                 const { chatId } = data;
 
-                // Verify user has access to this chat
-                // For direct chats, allow access even if not active
-                // For group chats, only allow if active
-                const chat = await Chat.findOne({
-                    _id: chatId,
-                    participants: socket.user._id,
-                    $or: [
-                        { isGroup: false }, // Allow all direct chats
-                        { isGroup: true, isActive: true } // Only active group chats
-                    ]
-                });
+                const hasAccess = await this.verifyUserChatAccess(
+                    socket.user._id.toString(), 
+                    chatId
+                );
 
-                if (!chat) {
-                    socket.emit('error', 'Chat not found or access denied');
-                    return;
-                }
+                if (!hasAccess) return;
 
-                // Mark all unread messages in this chat as read by this user
-                await Message.updateMany(
+                const result = await Message.updateMany(
                     {
                         chat: chatId,
-                        sender: { $ne: socket.user._id }, // Don't mark own messages
+                        sender: { $ne: socket.user._id },
                         readBy: { $ne: socket.user._id }
                     },
                     {
@@ -343,23 +547,22 @@ class ChatModule extends BaseSocketModule {
                     }
                 );
 
-                // Notify other participants that messages were read
-                this.io?.to(`chat-${chatId}`).emit('messages_read', {
-                    chatId,
-                    readBy: socket.user._id,
-                    readAt: new Date()
-                });
-
-                console.log(`[ChatModule] Messages marked as read in chat ${chatId} by ${socket.user.firstName}`);
+                if (result.modifiedCount > 0) {
+                    this.io?.to(`chat-${chatId}`).emit('messages_read', {
+                        chatId,
+                        readBy: socket.user._id,
+                        readAt: new Date(),
+                        count: result.modifiedCount
+                    });
+                }
             } catch (error) {
                 socket.emit('error', 'Failed to mark messages as read');
             }
         });
 
-        // Typing indicator
+        // Typing indicators (sin cambios)
         socket.on('typing_start', (data: { chatId: string }) => {
             if (!socket.user) return;
-            
             socket.to(`chat-${data.chatId}`).emit('user_typing', {
                 chatId: data.chatId,
                 userId: socket.user._id,
@@ -370,7 +573,6 @@ class ChatModule extends BaseSocketModule {
 
         socket.on('typing_stop', (data: { chatId: string }) => {
             if (!socket.user) return;
-            
             socket.to(`chat-${data.chatId}`).emit('user_typing', {
                 chatId: data.chatId,
                 userId: socket.user._id,
@@ -379,16 +581,12 @@ class ChatModule extends BaseSocketModule {
             });
         });
 
-        // Group management events
-        socket.on('group_created', (data: { chatId: string }) => {
+        // ✅ Group events con invalidación de Redis cache
+        socket.on('users_added_to_group', async (data: { chatId: string; userIds: string[] }) => {
             if (!socket.user) return;
-            // Notify all participants about the new group
-            this.io?.to(`chat-${data.chatId}`).emit('group_created', { chatId: data.chatId });
-        });
-
-        socket.on('users_added_to_group', (data: { chatId: string; userIds: string[] }) => {
-            if (!socket.user) return;
-            // Notify all participants about new members
+            
+            await this.invalidateChatCache(data.chatId, data.userIds);
+            
             this.io?.to(`chat-${data.chatId}`).emit('users_added_to_group', { 
                 chatId: data.chatId, 
                 userIds: data.userIds,
@@ -396,9 +594,11 @@ class ChatModule extends BaseSocketModule {
             });
         });
 
-        socket.on('users_removed_from_group', (data: { chatId: string; userIds: string[] }) => {
+        socket.on('users_removed_from_group', async (data: { chatId: string; userIds: string[] }) => {
             if (!socket.user) return;
-            // Notify all participants about removed members
+            
+            await this.invalidateChatCache(data.chatId, data.userIds);
+            
             this.io?.to(`chat-${data.chatId}`).emit('users_removed_from_group', { 
                 chatId: data.chatId, 
                 userIds: data.userIds,
@@ -408,7 +608,6 @@ class ChatModule extends BaseSocketModule {
 
         socket.on('group_info_updated', (data: { chatId: string; groupName?: string; groupDescription?: string }) => {
             if (!socket.user) return;
-            // Notify all participants about group info changes
             this.io?.to(`chat-${data.chatId}`).emit('group_info_updated', { 
                 chatId: data.chatId, 
                 groupName: data.groupName,
@@ -417,16 +616,17 @@ class ChatModule extends BaseSocketModule {
             });
         });
 
-        socket.on('user_left_group', (data: { chatId: string; userId: string }) => {
+        socket.on('user_left_group', async (data: { chatId: string; userId: string }) => {
             if (!socket.user) return;
-            // Notify all participants about user leaving
+            
+            await this.invalidateChatCache(data.chatId, [data.userId]);
+            
             this.io?.to(`chat-${data.chatId}`).emit('user_left_group', { 
                 chatId: data.chatId, 
                 userId: data.userId
             });
         });
 
-        // Handle disconnect
         socket.on('disconnect', () => {
             if (socket.user) {
                 this.handleUserPresence(socket, 'offline');
@@ -441,22 +641,23 @@ class ChatModule extends BaseSocketModule {
         const userId = socket.user._id.toString();
         
         try {
-            // Find all chats where this user participates
             const userChats = await Chat.find({
                 participants: userId,
                 isActive: true
+            }).select('_id').lean();
+
+            const presenceData = {
+                userId,
+                status,
+                timestamp: new Date().toISOString()
+            };
+
+            const rooms = userChats.map(chat => `chat-${chat._id}`);
+            rooms.forEach(room => {
+                this.io?.to(room).emit('user_presence_update', presenceData);
             });
 
-            // Emit presence update to all users in those chats
-            for (const chat of userChats) {
-                this.io?.to(`chat-${chat._id}`).emit('user_presence_update', {
-                    userId,
-                    status,
-                    timestamp: new Date().toISOString()
-                });
-            }
-
-            console.log(`[ChatModule] User ${socket.user.firstName} is now ${status} - notified ${userChats.length} chats`);
+            console.log(`[ChatModule] User ${socket.user.firstName} is now ${status}`);
         } catch (error) {
             console.error('Error handling user presence:', error);
         }

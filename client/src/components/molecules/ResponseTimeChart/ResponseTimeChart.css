@@ -5,7 +5,7 @@
   border-radius: 20px;
   padding: 1.5rem;
   height: 100%;
-  max-height: 450px;
+  max-height: 400px;
   display: flex;
   flex-direction: column;
 }

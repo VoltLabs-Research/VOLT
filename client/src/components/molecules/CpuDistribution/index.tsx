@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Cpu } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
-import { Skeleton } from '@mui/material'
+import { ChartContainer } from '@/components/atoms/ChartContainer'
 import './CpuDistribution.css'
 
 interface DataPoint {
@@ -56,33 +56,10 @@ export function CpuDistribution() {
 
   const isLoading = !isHistoryLoaded || !metrics?.cpu || history.length === 0
 
-  if (isLoading) {
-    return (
-      <div className="cpu-distribution-container">
-        <div className="cpu-distribution-header">
-          <div className="cpu-distribution-title-group">
-            <Cpu className="cpu-distribution-icon" />
-            <h3 className="cpu-distribution-title">CPU</h3>
-            <span className="cpu-mode-badge">Per Core</span>
-          </div>
-          <div className="cpu-stats">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="cpu-stat">
-                <span className="cpu-stat-label">Loading</span>
-                <Skeleton variant="text" width={40} height={18} />
-              </div>
-            ))}
-          </div>
-        </div>
-        <Skeleton variant="rectangular" width="100%" height={'100%'} sx={{ borderRadius: '8px' }} />
-      </div>
-    )
-  }
-
   const width = 100
   const height = 100
   const padding = 10
-  const numCores = metrics.cpu.cores
+  const numCores = metrics?.cpu.cores || 0
   const coreColors = generateCoreColors(numCores)
 
   const getX = (index: number, length: number) => {
@@ -107,18 +84,15 @@ export function CpuDistribution() {
 
   const hasCoreData = history.some(d => d.coresUsage && d.coresUsage.length > 0)
   
-  if (!hasCoreData) {
+  if (!hasCoreData && !isLoading) {
     return (
-      <div className="cpu-distribution-container">
-        <div className="cpu-distribution-header">
-          <div className="cpu-distribution-title-group">
-            <Cpu className="cpu-distribution-icon" />
-            <h3 className="cpu-distribution-title">CPU</h3>
-            <span className="cpu-mode-badge">Per Core</span>
-          </div>
-        </div>
+      <ChartContainer
+        icon={Cpu}
+        title="CPU"
+        isLoading={false}
+      >
         <div className="cpu-loading">Waiting for per-core data...</div>
-      </div>
+      </ChartContainer>
     )
   }
 
@@ -134,82 +108,50 @@ export function CpuDistribution() {
     return values.reduce((sum, val) => sum + val, 0) / values.length
   })
 
+  const avgUsage = coreAverages.length > 0 ? (coreAverages.reduce((a, b) => a + b, 0) / numCores).toFixed(1) : '0'
+  const maxCore = coreAverages.length > 0 ? Math.max(...coreAverages).toFixed(1) : '0'
+  const minCore = coreAverages.length > 0 ? Math.min(...coreAverages).toFixed(1) : '0'
+
+  const chartContent = (
+    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="cpu-distribution-chart">
+      {history.length > 0 && coreColors.map((color, coreIndex) => {
+        const points = history
+          .filter(d => d.coresUsage && d.coresUsage[coreIndex] !== undefined)
+          .map(d => d.coresUsage![coreIndex])
+        
+        if (points.length === 0) return null
+        
+        const pathData = createPath(points, maxValue)
+        
+        return (
+          <path
+            key={`core-${coreIndex}`}
+            d={pathData}
+            fill="none"
+            stroke={color}
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+            opacity={0.8}
+          />
+        )
+      })}
+    </svg>
+  )
+
   return (
-    <div className="cpu-distribution-container">
-      <div className="cpu-distribution-header">
-        <div className="cpu-distribution-title-group">
-          <Cpu className="cpu-distribution-icon" />
-          <h3 className="cpu-distribution-title">CPU</h3>
-          <span className="cpu-mode-badge">Per Core</span>
-        </div>
-        <div className="cpu-stats">
-          <div className="cpu-stat">
-            <span className="cpu-stat-label">Cores</span>
-            <span className="cpu-stat-value">{numCores}</span>
-          </div>
-          <div className="cpu-stat">
-            <span className="cpu-stat-label">Avg Usage</span>
-            <span className="cpu-stat-value">
-              {(coreAverages.reduce((a, b) => a + b, 0) / numCores).toFixed(1)}%
-            </span>
-          </div>
-          <div className="cpu-stat">
-            <span className="cpu-stat-label">Max Core</span>
-            <span className="cpu-stat-value">{Math.max(...coreAverages).toFixed(1)}%</span>
-          </div>
-          <div className="cpu-stat">
-            <span className="cpu-stat-label">Min Core</span>
-            <span className="cpu-stat-value">{Math.min(...coreAverages).toFixed(1)}%</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="cpu-chart">
-        <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-          <line x1="0" y1="25" x2="100" y2="25" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
-          <line x1="0" y1="50" x2="100" y2="50" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-          <line x1="0" y1="75" x2="100" y2="75" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
-          
-          {Array.from({ length: numCores }).map((_, coreIndex) => {
-            const coreValues = history.map(d => 
-              d.coresUsage && d.coresUsage[coreIndex] !== undefined 
-                ? d.coresUsage[coreIndex] 
-                : 0
-            )
-            
-            if (coreValues.every(v => v === 0)) return null
-            
-            const path = createPath(coreValues, maxValue)
-            
-            return path ? (
-              <path
-                key={coreIndex}
-                d={path}
-                fill="none"
-                stroke={coreColors[coreIndex]}
-                strokeWidth="0.5"
-                opacity={0.9}
-              />
-            ) : null
-          })}
-        </svg>
-
-        <div className="cpu-legend">
-          <div className="cpu-cores-grid">
-            {Array.from({ length: Math.min(numCores, 16) }).map((_, i) => (
-              <div key={i} className="cpu-legend-item">
-                <span className="cpu-legend-dot" style={{ backgroundColor: coreColors[i] }}></span>
-                <span className="cpu-legend-label">Core {i}</span>
-              </div>
-            ))}
-            {numCores > 16 && (
-              <div className="cpu-legend-item">
-                <span className="cpu-legend-label">+{numCores - 16} more</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+    <ChartContainer
+      icon={Cpu}
+      title="CPU"
+      isLoading={isLoading}
+      stats={[
+        { label: 'Cores', value: numCores },
+        { label: 'Avg Usage', value: `${avgUsage}%` },
+        { label: 'Max Core', value: `${maxCore}%` },
+        { label: 'Min Core', value: `${minCore}%` }
+      ]}
+      statsLoading={isLoading}
+    >
+      {chartContent}
+    </ChartContainer>
   )
 }
