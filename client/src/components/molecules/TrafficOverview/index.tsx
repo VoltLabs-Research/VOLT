@@ -61,6 +61,26 @@ export function TrafficOverview() {
     }
   }, [isHistoryLoaded, metricsHistory])
 
+  // Update with real-time metrics
+  useEffect(() => {
+    if (metrics && data.length > 0) {
+      const timestamp = new Date()
+      const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')}`
+      
+      setData(prevData => {
+        const newData = [...prevData, {
+          time: timeStr,
+          incoming: metrics.network.incoming,
+          outgoing: metrics.network.outgoing,
+          total: metrics.network.incoming + metrics.network.outgoing
+        }]
+        
+        // Keep only the last MAX_POINTS
+        return newData.slice(-MAX_POINTS)
+      })
+    }
+  }, [metrics])
+
   const isLoading = !isHistoryLoaded || data.length === 0
 
   const chartContent = (
