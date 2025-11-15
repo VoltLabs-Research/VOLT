@@ -78,10 +78,12 @@ export function useServerMetrics() {
     // Subscribe to metrics events
     const unsubscribeInitial = socketService.on<ServerMetrics>('metrics:initial', (data) => {
       console.log('[Metrics] Initial data received');
+      console.log(data);
       setMetrics(data);
     });
 
     const unsubscribeUpdate = socketService.on<ServerMetrics>('metrics:update', (data) => {
+      console.log(data);
       setMetrics(data);
     });
 
@@ -91,6 +93,7 @@ export function useServerMetrics() {
 
     const unsubscribeHistory = socketService.on<ServerMetrics[]>('metrics:history', (data) => {
       console.log('[Metrics] Historical data received:', data.length, 'points');
+      console.log(data);
       setHistory(data);
       setIsHistoryLoaded(true);
     });

@@ -13,4 +13,3 @@ export { default as ApiToken } from '@/models/api-token';
 export { default as Webhook } from '@/models/webhook';
 export { default as Chat } from '@/models/chat';
 export { default as Message } from '@/models/message';
-export { ServerMetrics } from '@/models/server-metrics';

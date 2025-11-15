@@ -39,6 +39,7 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
     usedMemory: (metrics.memory.used / (1024 ** 3)).toFixed(2),
     totalDisk: (metrics.disk.total / (1024 ** 3)).toFixed(2),
     usedDisk: (metrics.disk.used / (1024 ** 3)).toFixed(2),
+    freeDisk: (metrics.disk.free / (1024 ** 3)).toFixed(2),
   } : {
     platform: 'Linux',
     arch: 'x86_64',
@@ -47,6 +48,7 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
     usedMemory: '32.00',
     totalDisk: '500.00',
     usedDisk: '250.00',
+    freeDisk: '250.00',
   }
 
   return (
@@ -113,7 +115,7 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
               </div>
               <div className="server-details-info-card">
                 <span className="server-details-info-label">Disk</span>
-                <span className="server-details-info-value">{osInfo.usedDisk}GB / {osInfo.totalDisk}GB ({server.disk}%)</span>
+                <span className="server-details-info-value">{osInfo.freeDisk}GB Available</span>
               </div>
               <div className="server-details-info-card">
                 <span className="server-details-info-label">Network</span>

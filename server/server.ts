@@ -68,7 +68,7 @@ server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
     await mongoConnector();
     
     // Initialize metrics collector in background
-    metricsCollector = new MetricsCollector('backend-01');
+    metricsCollector = new MetricsCollector();
     
     // Start collecting metrics every second in background
     collectionInterval = setInterval(async () => {

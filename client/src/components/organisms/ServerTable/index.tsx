@@ -26,6 +26,12 @@ export function ServerTable() {
       ? Math.round(metrics.cpu.coresUsage.reduce((sum, val) => sum + val, 0) / metrics.cpu.coresUsage.length)
       : Math.round(metrics.cpu.usage)
     
+    // Calculate uptime in days, hours, minutes
+    const uptimeSeconds = metrics.uptime;
+    const uptimeDays = Math.floor(uptimeSeconds / 86400);
+    const uptimeHours = Math.floor((uptimeSeconds % 86400) / 3600);
+    const uptimeMinutes = Math.floor((uptimeSeconds % 3600) / 60);
+
     return {
       id: 'backend-01',
       region: 'US',
@@ -33,9 +39,11 @@ export function ServerTable() {
       statusColor: metrics.status === 'Healthy' ? 'text-emerald-500' : metrics.status === 'Warning' ? 'text-amber-500' : 'text-red-500',
       cpu: cpuUsage,
       memory: Math.round(metrics.memory.usagePercent),
-      disk: Math.round(metrics.disk.usagePercent),
+      disk: Math.round(metrics.disk.free),
+      diskUsed: Math.round(metrics.disk.used),
+      diskUsagePercent: Math.round(metrics.disk.usagePercent),
       network: formatNetworkSpeed(metrics.network.incoming + metrics.network.outgoing),
-      uptime: `${((metrics.uptime / 86400) * 100 / 365 * 100).toFixed(2)}%`,
+      uptime: uptimeDays > 0 ? `${uptimeDays}d ${uptimeHours}h` : `${uptimeHours}h ${uptimeMinutes}m`,
       metrics // Pass full metrics for details modal
     }
   }, [metrics])
@@ -153,11 +161,11 @@ export function ServerTable() {
                       {[...Array(5)].map((_, i) => (
                         <div 
                           key={i}
-                          className={`server-table-bar ${i < Math.floor(server.disk / 20) ? 'server-table-bar-active' : ''}`}
+                          className={`server-table-bar ${i < Math.floor(server.diskUsagePercent / 20) ? 'server-table-bar-active' : ''}`}
                         />
                       ))}
                     </div>
-                    <span className="server-table-metric-value">{server.disk}%</span>
+                    <span className="server-table-metric-value">{server.disk.toFixed(1)}GB Available</span>
                   </div>
                 </td>
                 <td>

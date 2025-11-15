@@ -32,8 +32,8 @@ export function ResourceUsage() {
       value: Math.round(metrics.memory.usagePercent), 
     },
     { 
-      name: 'Disk I/O', 
-      value: Math.min(100, Math.round((metrics.diskOperations?.read || 0) / 3)), 
+      name: 'Available Space', 
+      value: Math.max(0, 100 - metrics.disk.usagePercent), 
     },
     { 
       name: 'Network TX', 
@@ -42,7 +42,7 @@ export function ResourceUsage() {
   ] : [
     { name: 'CPU Load', value: 0 },
     { name: 'Memory', value: 0 },
-    { name: 'Disk I/O', value: 0 },
+    { name: 'Available Space', value: 0 },
     { name: 'Network TX', value: 0 },
   ]
 

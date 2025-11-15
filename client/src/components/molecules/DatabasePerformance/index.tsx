@@ -9,6 +9,7 @@ interface DataPoint {
   queries: number;
   connections: number;
   latency: number;
+  queriesPerSecond?: number;
 }
 
 const MAX_POINTS = 60;
@@ -57,11 +58,20 @@ export function DatabasePerformance() {
     if (!metrics?.mongodb) return;
 
     setHistory(prev => {
-      const newHistory = [...prev, {
+      const newDataPoint: DataPoint = {
         queries: metrics.mongodb!.queries,
         connections: metrics.mongodb!.connections,
         latency: metrics.mongodb!.latency
-      }];
+      };
+
+      // Calculate queries per second (delta from previous point)
+      if (prev.length > 0) {
+        const lastPoint = prev[prev.length - 1];
+        const queriesDelta = Math.max(0, newDataPoint.queries - lastPoint.queries);
+        newDataPoint.queriesPerSecond = queriesDelta;
+      }
+
+      const newHistory = [...prev, newDataPoint];
 
       if (newHistory.length > MAX_POINTS) {
         newHistory.shift();
@@ -97,7 +107,9 @@ export function DatabasePerformance() {
     );
   }
 
-  const avgQueries = Math.round(history.reduce((sum, d) => sum + d.queries, 0) / history.length);
+  const avgQueries = Math.round(history
+    .filter(d => d.queriesPerSecond !== undefined)
+    .reduce((sum, d) => sum + (d.queriesPerSecond || 0), 0) / Math.max(1, history.filter(d => d.queriesPerSecond !== undefined).length));
   const avgLatency = Math.round(history.reduce((sum, d) => sum + d.latency, 0) / history.length);
   
   return (
@@ -141,7 +153,7 @@ export function DatabasePerformance() {
           <Line 
             yAxisId="left"
             type="monotone" 
-            dataKey="queries" 
+            dataKey="queriesPerSecond" 
             stroke="#0A84FF" 
             strokeWidth={2}
             dot={false}
