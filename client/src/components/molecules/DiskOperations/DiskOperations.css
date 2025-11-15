@@ -2,6 +2,7 @@
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(80px);
   border-radius: 20px;
+  height: 100%;
   padding: 1.5rem;
   max-height: 400px;
   display: flex;

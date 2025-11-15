@@ -1,7 +1,7 @@
 import { AlertCircle, MoreVertical } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
-import './resource-usage.css'
+import './ResourceUsage.css'
 
 function getLoadColor(value: number): string {
   if (value >= 80) return '#FF453A' // Rojo - Sobrecarga

@@ -1,7 +1,7 @@
 import { Server, Cpu, MemoryStick, Activity, TrendingUp, TrendingDown, MoreVertical } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
-import './metrics-cards.css'
+import './MetricsCards.css'
 
 function formatNetworkSpeed(kbs: number): { value: string; unit: string } {
   if (kbs < 1) {

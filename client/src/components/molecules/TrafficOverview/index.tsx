@@ -3,7 +3,7 @@ import { Activity } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { useState, useEffect } from 'react'
 import { Skeleton } from '@mui/material'
-import './traffic-overview.css'
+import './TrafficOverview.css'
 
 function formatNetworkSpeed(kbs: number): string {
   if (kbs < 1) return `${(kbs * 1024).toFixed(0)} B/s`;

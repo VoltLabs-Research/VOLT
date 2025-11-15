@@ -1,5 +1,5 @@
 import { X, Server } from 'lucide-react'
-import './server-details.css'
+import './ServerDetails.css'
 
 interface ServerDetailsProps {
   server: {

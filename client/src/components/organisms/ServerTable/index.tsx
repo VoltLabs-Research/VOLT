@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
 import { ChevronDown, RefreshCw, Download } from 'lucide-react'
-import { ServerDetails } from './server-details'
+import { ServerDetails } from '../ServerDetails'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
-import './server-table.css'
+import './ServerTable.css'
 
 function formatNetworkSpeed(kbs: number): string {
   if (kbs < 1) return `${(kbs * 1024).toFixed(0)} B/s`;

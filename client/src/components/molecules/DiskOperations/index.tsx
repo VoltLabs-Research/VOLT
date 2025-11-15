@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { HardDrive } from 'lucide-react';
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics';
 import { Skeleton } from '@mui/material';
-import './disk-operations.css';
+import './DiskOperations.css';
 
 interface DataPoint {
   read: number;
@@ -69,7 +69,7 @@ export function DiskOperations() {
             ))}
           </div>
         </div>
-        <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: '8px' }} />
+        <Skeleton variant="rectangular" width="100%" height={'100%'} sx={{ borderRadius: '8px' }} />
       </div>
     );
   }

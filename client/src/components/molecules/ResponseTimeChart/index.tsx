@@ -2,7 +2,7 @@ import { MoreVertical, ChevronDown, Calendar, Maximize2 } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { useState, useEffect } from 'react'
 import { Skeleton } from '@mui/material'
-import './response-time-chart.css'
+import './ResponseTimeChart.css'
 
 const MAX_POINTS = 60 // Show last 60 seconds
 

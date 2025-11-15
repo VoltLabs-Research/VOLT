@@ -3,7 +3,7 @@ import { LineChart, Line, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Le
 import { Database } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
-import './database-performance.css'
+import './DatabasePerformance.css'
 
 interface DataPoint {
   queries: number;

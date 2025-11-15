@@ -1,6 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts'
 import { HardDrive } from 'lucide-react'
-import './storage-usage.css'
+import './StorageUsage.css'
 
 const data = [
   { name: 'DB-01', used: 1245, total: 2000, percentage: 62 },
