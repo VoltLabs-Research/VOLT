@@ -69,6 +69,7 @@ export const useChat = () => {
     const { user } = useAuthStore();
     const { selectedTeam } = useTeamStore();
     const typingTimeoutRef = useRef<number | null>(null);
+    const selectingChatRef = useRef(false);
 
     // Initialize socket connection and authentication
     useEffect(() => {
@@ -171,7 +172,7 @@ export const useChat = () => {
 
         const handleReactionUpdated = (payload: { chatId: string; message: any }) => {
             const { currentChat, messages, setMessages } = useChatStore.getState();
-            if (currentChat && currentChat._id === payload.chatId) {
+            if (currentChat && currentChat._id === payload.chatId && payload.message) {
                 const updated = payload.message;
                 
                 // Deduplicate reactions to prevent duplicate emojis
@@ -224,17 +225,25 @@ export const useChat = () => {
 
     // Select a chat and load its messages
     const selectChat = useCallback(async (chat: any) => {
+        // Prevent duplicate selections
+        if (selectingChatRef.current) return;
         if (currentChat?._id === chat._id) return;
 
-        // Leave current chat if any
-        if (currentChat) {
-            leaveChat(currentChat._id);
-        }
+        selectingChatRef.current = true;
 
-        setCurrentChat(chat);
-        await loadMessages(chat._id);
-        joinChat(chat._id);
-        markAsRead(chat._id);
+        try {
+            // Leave current chat if any
+            if (currentChat) {
+                leaveChat(currentChat._id);
+            }
+
+            setCurrentChat(chat);
+            await loadMessages(chat._id);
+            joinChat(chat._id);
+            markAsRead(chat._id);
+        } finally {
+            selectingChatRef.current = false;
+        }
     }, [currentChat, setCurrentChat, loadMessages, joinChat, leaveChat, markAsRead]);
 
     // Create or get a chat with a team member

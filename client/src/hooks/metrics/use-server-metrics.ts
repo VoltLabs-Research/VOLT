@@ -1,63 +1,11 @@
 import { useEffect, useState } from 'react';
 import { socketService } from '@/services/socketio';
 
-interface ServerMetrics {
-  timestamp: Date;
-  serverId: string;
-  cpu: {
-    usage: number;
-    cores: number;
-    loadAvg: number[];
-    coresUsage?: number[];
-  };
-  memory: {
-    total: number;
-    used: number;
-    free: number;
-    usagePercent: number;
-  };
-  disk: {
-    total: number;
-    used: number;
-    free: number;
-    usagePercent: number;
-  };
-  network: {
-    incoming: number;
-    outgoing: number;
-    total: number;
-  };
-  responseTime: number;
-  responseTimes?: {
-    mongodb: number;
-    redis: number;
-    self: number;
-    average: number;
-  };
-  diskOperations?: {
-    read: number;
-    write: number;
-    speed: number;
-  };
-  status: 'Healthy' | 'Warning' | 'Critical';
-  uptime: number;
-  mongodb?: {
-    connections: number;
-    queries: number;
-    latency: number;
-  };
-  drives: {
-    name: string;
-    capacity: number;
-    used: number;
-    type: string;
-  }[];
-}
 
 export function useServerMetrics() {
-  const [metrics, setMetrics] = useState<ServerMetrics | null>(null);
+  const [metrics, setMetrics] = useState(null);
   const [isConnected, setIsConnected] = useState(socketService.isConnected());
-  const [history, setHistory] = useState<ServerMetrics[]>([]);
+  const [history, setHistory] = useState([]);
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
 
   useEffect(() => {
@@ -76,14 +24,11 @@ export function useServerMetrics() {
     });
 
     // Subscribe to metrics events
-    const unsubscribeInitial = socketService.on<ServerMetrics>('metrics:initial', (data) => {
-      console.log('[Metrics] Initial data received');
-      console.log(data);
+    const unsubscribeInitial = socketService.on('metrics:initial', (data) => {
       setMetrics(data);
     });
 
-    const unsubscribeUpdate = socketService.on<ServerMetrics>('metrics:update', (data) => {
-      console.log(data);
+    const unsubscribeUpdate = socketService.on('metrics:update', (data) => {
       setMetrics(data);
     });
 
@@ -91,9 +36,7 @@ export function useServerMetrics() {
       console.error('[Metrics] Error:', error);
     });
 
-    const unsubscribeHistory = socketService.on<ServerMetrics[]>('metrics:history', (data) => {
-      console.log('[Metrics] Historical data received:', data.length, 'points');
-      console.log(data);
+    const unsubscribeHistory = socketService.on('metrics:history', (data) => {
       setHistory(data);
       setIsHistoryLoaded(true);
     });

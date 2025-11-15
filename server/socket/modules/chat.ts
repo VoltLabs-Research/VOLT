@@ -512,10 +512,14 @@ class ChatModule extends BaseSocketModule {
                 message.markModified('reactions');
                 await message.save();
 
+                // Populate the message to ensure proper serialization
+                const populatedMessage = await Message.findById(messageId)
+                    .populate('sender', 'firstName lastName email')
+                    .lean();
+
                 this.io?.to(`chat-${chatId}`).emit('reaction_updated', { 
                     chatId, 
-                    messageId,
-                    reactions: message.reactions 
+                    message: populatedMessage
                 });
             } catch (error) {
                 console.error('Socket toggle_reaction error:', error);

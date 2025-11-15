@@ -75,7 +75,10 @@ const MessageItem: React.FC<MessageItemProps> = ({
                     {isReactionsOpen && (
                         <div className='chat-message-reactions-menu'>
                             {['👍','❤️','😂','😮','😢','😡'].map(e =>
-                            <button key={e} className='chat-reaction-btn' onClick={() => onToggleReaction(msg._id, e)}>{e}</button>
+                            <button key={e} className='chat-reaction-btn' onClick={() => {
+                                onToggleReaction(msg._id, e);
+                                onToggleReactions(msg._id);
+                            }}>{e}</button>
                             )}
                         </div>
                     )}

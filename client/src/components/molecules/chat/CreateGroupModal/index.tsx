@@ -1,5 +1,6 @@
 import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/chat';
+import useTeamStore from '@/stores/team/team';
 import { IoCheckmarkOutline } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
@@ -10,8 +11,9 @@ import CreateGroupBg from '@/assets/images/create-new-group.webp';
 import './CreateGroupModal.css';
 
 const CreateGroupModal = () => {
-    const { teamMembers, createGroupChat, currentChat } = useChat();
+    const { teamMembers, createGroupChat } = useChat();
     const user = useAuthStore((store) => store.user);
+    const { selectedTeam } = useTeamStore();
     
     const {
         selectedMembers,
@@ -26,11 +28,11 @@ const CreateGroupModal = () => {
 
     const handleCreateGroup = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!groupName.trim() || selectedMembers.length === 0) return;
+        if (!groupName.trim() || selectedMembers.length === 0 || !selectedTeam) return;
         
         try {
             await createGroupChat(
-                currentChat?.team._id || '',
+                selectedTeam._id,
                 groupName.trim(),
                 groupDescription.trim(),
                 selectedMembers
