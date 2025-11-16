@@ -96,15 +96,15 @@ export function TrafficOverview() {
             <stop offset="95%" stopColor="#30D158" stopOpacity={0}/>
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <YAxis 
-          stroke="rgba(255,255,255,0.4)" 
-          style={{ fontSize: '12px' }}
+          stroke="var(--muted-foreground)" 
+          style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}
           tickFormatter={(value) => `${value}M`}
         />
         <Tooltip content={<CustomTooltip />} />
         <Legend 
-          wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
+          wrapperStyle={{ fontSize: '12px', paddingTop: '20px', color: 'var(--foreground)' }}
           iconType="circle"
         />
         <Area 

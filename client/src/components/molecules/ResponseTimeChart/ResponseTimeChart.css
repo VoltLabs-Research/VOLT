@@ -1,6 +1,7 @@
 /* Response Time Chart Styles */
 .response-chart {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--card);
+  border: 1px solid var(--border);
   backdrop-filter: blur(80px);
   border-radius: 20px;
   padding: 1.5rem;
@@ -27,20 +28,20 @@
 .response-chart-bar {
   width: 3px;
   height: 1.25rem;
-  background-color: #0A84FF;
+  background-color: var(--accent);
   border-radius: 9999px;
 }
 
 .response-chart-title-content h3 {
   font-size: 1rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--foreground);
   margin: 0;
 }
 
 .response-chart-title-content p {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--muted-foreground);
   margin: 0.125rem 0 0 0;
 }
 

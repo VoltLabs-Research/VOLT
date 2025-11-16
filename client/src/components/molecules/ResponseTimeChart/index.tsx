@@ -116,7 +116,7 @@ export function ResponseTimeChart() {
               y1={y}
               x2={chartWidth}
               y2={y}
-              stroke="#333"
+              stroke="var(--border)"
               strokeWidth="0.2"
               strokeDasharray="1,1"
             />

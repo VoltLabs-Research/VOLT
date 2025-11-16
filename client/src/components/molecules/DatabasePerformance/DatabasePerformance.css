@@ -1,6 +1,7 @@
 /* Database Performance Styles */
 .db-performance-container {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--card);
+  border: 1px solid var(--border);
   backdrop-filter: blur(80px);
   border-radius: 20px;
   padding: 1.5rem;
@@ -27,13 +28,13 @@
 .db-performance-icon {
   width: 20px;
   height: 20px;
-  color: #0A84FF;
+  color: var(--accent);
 }
 
 .db-performance-title {
   font-size: 1rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--foreground);
   margin: 0;
 }
 
@@ -51,7 +52,7 @@
 
 .db-stat-label {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -59,7 +60,7 @@
 .db-stat-value {
   font-size: 0.9rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--foreground);
 }
 
 .db-tooltip {

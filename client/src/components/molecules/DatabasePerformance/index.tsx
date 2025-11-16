@@ -101,22 +101,22 @@ export function DatabasePerformance() {
     >
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={history} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <YAxis 
             yAxisId="left"
-            stroke="rgba(255,255,255,0.4)" 
-            style={{ fontSize: '12px' }}
+            stroke="var(--muted-foreground)" 
+            style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}
           />
           <YAxis 
             yAxisId="right"
             orientation="right"
-            stroke="rgba(255,255,255,0.4)" 
-            style={{ fontSize: '12px' }}
+            stroke="var(--muted-foreground)" 
+            style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}
             tickFormatter={(value) => `${value}ms`}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend 
-            wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
+            wrapperStyle={{ fontSize: '12px', paddingTop: '20px', color: 'var(--foreground)' }}
             iconType="circle"
           />
           <Line 

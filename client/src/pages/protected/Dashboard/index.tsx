@@ -81,9 +81,9 @@ const DashboardPage: React.FC = memo(() => {
             <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
                 <div className='dashboard-body-left-container'>
                     <div className='dashboard-body-left-header-container'>
-                                                <h3 className='dashboard-body-left-header-title'>
-                                                    {getGreeting()}, {capitalize(user?.firstName)}
-                                                </h3>
+                        <h3 className='dashboard-body-left-header-title'>
+                            {getGreeting()}, {capitalize(user?.firstName)}
+                        </h3>
                     </div>
 
                     <div className='scene-preview-container'>

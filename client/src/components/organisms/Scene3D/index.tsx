@@ -33,6 +33,11 @@ interface Scene3DProps {
 	children?: React.ReactNode;
 	cameraControlsEnabled?: boolean;
 	background?: string;
+	/**
+	 * Optional CSS background for the canvas container (allows gradients or CSS variables)
+	 * If provided, it will be applied as `background` css property instead of `backgroundColor`.
+	 */
+	cssBackground?: string;
 	showGizmo?: boolean;
 	orbitControlsConfig?: any;
 	showCanvasGrid?: boolean;
@@ -60,6 +65,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	children,
 	showGizmo = true,
 	background = null,
+	cssBackground,
 	cameraControlsEnabled = true,
 	showCanvasGrid = true,
 	orbitControlsConfig = {},
@@ -258,11 +264,18 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	const canvasStyle = useMemo(() => ({
 		width: '100%',
 		height: '100%',
-		backgroundColor,
+		// Prefer an explicit CSS background (allows gradients) otherwise fall back to a plain background color
+		...(cssBackground ? { background: cssBackground } : { backgroundColor }),
 		touchAction: 'none',
 		willChange: 'transform',
 		transform: 'translateZ(0)'
-	}), [backgroundColor]);
+	}), [backgroundColor, cssBackground]);
+
+	const threeBackgroundColor = useMemo(() => {
+		// If a CSS gradient is used and alpha is enabled in renderer, keep the WebGL background transparent so the gradient shows through
+		if (cssBackground && rCreate.alpha) return 'transparent';
+		return backgroundColor;
+	}, [cssBackground, rCreate.alpha, backgroundColor]);
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -315,7 +328,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 				<DynamicRenderer />
 				<CameraRig orbitRef={orbitControlsRef} />
 				<ScreenshotHandler onToolsReady={handleToolsReady} backgroundColor={backgroundColor} />
-				<color attach="background" args={[backgroundColor]} />
+				<color attach="background" args={[threeBackgroundColor]} />
 				<Preload all />
 				{adaptiveEnabled && <AdaptiveDpr pixelated={pixelated} />}
 				{adaptiveEventsEnabled && <AdaptiveEvents />}

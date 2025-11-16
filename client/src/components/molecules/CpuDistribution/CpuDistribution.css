@@ -1,5 +1,6 @@
 .cpu-distribution-container {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--card);
+  border: 1px solid var(--border);
   backdrop-filter: blur(80px);
   border-radius: 20px;
   padding: 1.5rem;
@@ -26,13 +27,13 @@
 .cpu-distribution-icon {
   width: 20px;
   height: 20px;
-  color: #0A84FF;
+  color: var(--accent);
 }
 
 .cpu-distribution-title {
   font-size: 1rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--foreground);
   margin: 0;
 }
 
@@ -50,7 +51,7 @@
 
 .cpu-stat-label {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -58,7 +59,7 @@
 .cpu-stat-value {
   font-size: 0.9rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--foreground);
 }
 
 .cpu-chart {
@@ -76,12 +77,12 @@
 
 .cpu-mode-badge {
   padding: 0.25rem 0.625rem;
-  background: rgba(10, 132, 255, 0.15);
-  border: 1px solid rgba(10, 132, 255, 0.3);
+  background: var(--accent-glow);
+  border: 1px solid var(--accent);
   border-radius: 8px;
   font-size: 0.7rem;
   font-weight: 500;
-  color: #0A84FF;
+  color: var(--accent);
   margin-left: 0.75rem;
 }
 
@@ -109,7 +110,7 @@
   align-items: center;
   gap: 0.375rem;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--muted-foreground);
 }
 
 .cpu-legend-dot {
@@ -132,9 +133,9 @@
   gap: 0.375rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border);
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--muted-foreground);
 }
 
 .cpu-mode-hint svg {
@@ -148,6 +149,6 @@
   align-items: center;
   justify-content: center;
   flex: 1;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
 }
