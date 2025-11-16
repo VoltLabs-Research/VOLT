@@ -152,7 +152,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	}, [setSceneInteracting]);
 
 	const backgroundColor = useMemo(() => {
-		if (background !== null) return background;
+		if (background !== null && background !== undefined) return background;
 		return !showEditorWidgets ? '#FFF' : '#1E1E1E';
 	}, [showEditorWidgets, background]);
 

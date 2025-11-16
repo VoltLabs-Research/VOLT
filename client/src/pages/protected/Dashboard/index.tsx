@@ -15,6 +15,7 @@ import useTeamStore from '@/stores/team/team';
 import JobsHistoryViewer from '@/components/organisms/JobsHistoryViewer';
 import ProcessingLoader from '@/components/atoms/ProcessingLoader';
 import useAuthStore from '@/stores/authentication';
+import useEnvironmentConfigStore from '@/stores/editor/environment-config';
 import './Dashboard.css';
 
 const getGreeting = (): string => {
@@ -62,19 +63,26 @@ const DashboardPage: React.FC = memo(() => {
     
     const hasNoTrajectories = !isLoadingTrajectories && trajectories.length === 0;
 
+    const setBackgroundColor = useEnvironmentConfigStore((state) => state.setBackgroundColor);
+    
     const [isLight, setIsLight] = useState(() =>
         typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light'
     );
 
+    // Update background color in environment config when theme changes
     useEffect(() => {
         if (typeof document === 'undefined') return;
         const root = document.documentElement;
-        const update = () => setIsLight(root.getAttribute('data-theme') === 'light');
+        const update = () => {
+            const isLightTheme = root.getAttribute('data-theme') === 'light';
+            setIsLight(isLightTheme);
+            setBackgroundColor(isLightTheme ? '#f8f8f8' : '#1E1E1E');
+        };
         update();
         const observer = new MutationObserver(update);
         observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
         return () => observer.disconnect();
-    }, []);
+    }, [setBackgroundColor]);
 
     return (
         <FileUpload>
@@ -118,7 +126,6 @@ const DashboardPage: React.FC = memo(() => {
                             key={`${selectedTeam?._id || 'no-team'}-${displayTrajectory?._id || 'no-trajectory'}`}
                             showGizmo={false}
                             ref={scene3DRef}
-                            {...(isLight ? { background: '#f8f8f8ff' } : {})}
                             showCanvasGrid={false}
                             orbitControlsConfig={{
                                 enablePan: false,
