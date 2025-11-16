@@ -21,69 +21,79 @@
 **/
 
 import { Router } from 'express';
-import { protect } from '@/middlewares/authentication';
-import {
-    getChats,
-    getOrCreateChat,
-    getChatMessages,
-    sendMessage,
-    markMessagesAsRead,
-    getTeamMembers,
-    editMessage,
-    deleteMessage,
-    toggleReaction,
-    uploadFile,
-    sendFileMessage
-} from '@/controllers/chat';
 import { getFileBase64 } from '@/controllers/file-preview';
 import {
-    createGroupChat,
-    addUsersToGroup,
-    removeUsersFromGroup,
-    updateGroupInfo,
-    updateGroupAdmins,
-    leaveGroup
-} from '@/controllers/group-chat';
+    verifyChatAccess, 
+    verifyTeamAccess, 
+    verifyParticipantInTeam, 
+    requireMessageOwner, 
+    loadMessage } from '@/middlewares/chat';
+
+import * as auth from '@/middlewares/authentication';
+import * as controller from '@/controllers/chat';
+import * as group from '@/controllers/group-chat';
 
 const router = Router();
 
-// All routes require authentication
-router.use(protect);
+router.use(auth.protect);
 
-// Get all chats for user's teams
-router.get('/', getChats);
+router.get('/', controller.getChats);
+router.get('/teams/:teamId/members', verifyTeamAccess, controller.getTeamMembers);
+router.get('/teams/:teamId/participants/:participantId',
+    verifyTeamAccess,
+    verifyParticipantInTeam,
+    controller.getOrCreateChat
+);
 
-// Get team members for chat initialization
-router.get('/teams/:teamId/members', getTeamMembers);
+router.get('/:chatId/messages',
+    verifyChatAccess,
+    controller.getChatMessages
+);
 
-// Get or create a chat between two users
-router.get('/teams/:teamId/participants/:participantId', getOrCreateChat);
+router.post('/:chatId/messages',
+    verifyChatAccess,
+    controller.sendMessage
+);
 
-// Get messages for a specific chat
-router.get('/:chatId/messages', getChatMessages);
+router.patch('/:chatId/messages/:messageId',
+    verifyChatAccess,
+    loadMessage,
+    requireMessageOwner,
+    controller.editMessage
+);
 
-// Send a message to a chat
-router.post('/:chatId/messages', sendMessage);
+router.delete('/:chatId/messages/:messageId',
+    verifyChatAccess,
+    loadMessage,
+    requireMessageOwner,
+    controller.deleteMessage
+);
 
-// Edit, delete and react to messages
-router.patch('/:chatId/messages/:messageId', editMessage);
-router.delete('/:chatId/messages/:messageId', deleteMessage);
-router.post('/:chatId/messages/:messageId/reactions', toggleReaction);
+router.patch('/:chatId/read',
+    verifyChatAccess,
+    controller.markMessagesAsRead
+);
 
-// Mark messages as read
-router.patch('/:chatId/read', markMessagesAsRead);
+router.post('/:chatId/upload',
+    verifyChatAccess,
+    controller.uploadFile
+);
 
-// File upload and serving
-router.post('/:chatId/upload', uploadFile);
-router.post('/:chatId/send-file', sendFileMessage);
-router.get('/:chatId/messages/:messageId/preview', getFileBase64);
+router.post('/:chatId/send-file',
+    verifyChatAccess,
+    controller.sendFileMessage
+);
 
-// Group chat management
-router.post('/groups', createGroupChat);
-router.post('/:chatId/groups/add-users', addUsersToGroup);
-router.post('/:chatId/groups/remove-users', removeUsersFromGroup);
-router.patch('/:chatId/groups/info', updateGroupInfo);
-router.patch('/:chatId/groups/admins', updateGroupAdmins);
-router.post('/:chatId/groups/leave', leaveGroup);
+router.get('/:chatId/messages/:messageId/preview',
+    verifyChatAccess,
+    getFileBase64
+);
+
+router.post('/groups', group.createGroupChat);
+router.post('/:chatId/groups/add-users', group.addUsersToGroup);
+router.post('/:chatId/groups/remove-users', group.removeUsersFromGroup);
+router.patch('/:chatId/groups/info', group.updateGroupInfo);
+router.patch('/:chatId/groups/admins', group.updateGroupAdmins);
+router.post('/:chatId/groups/leave', group.leaveGroup);
 
 export default router;

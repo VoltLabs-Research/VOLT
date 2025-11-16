@@ -31,19 +31,7 @@ import fs from 'fs';
  * Get file as base64 for preview
  */
 export const getFileBase64 = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user;
     const { chatId, messageId } = req.params;
-
-    // Verify user has access to this chat
-    const chat = await Chat.findOne({
-        _id: chatId,
-        participants: user._id,
-        isActive: true
-    });
-
-    if (!chat) {
-        throw new RuntimeError('Chat::NotFound', 404);
-    }
 
     // Find the message
     const message = await Message.findOne({ _id: messageId, chat: chatId });

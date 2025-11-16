@@ -58,6 +58,7 @@ class GLBWorkerLoader{
             switch(task.type){
                 case 'load':
                     const buffer = await this.fetchAndCache(task.url!, task.token);
+                    // @ts-ignore
                     self.postMessage({ id: task.id, type: 'success', data: buffer }, [buffer]);
                     break;
 
