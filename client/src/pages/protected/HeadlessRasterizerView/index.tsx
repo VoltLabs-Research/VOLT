@@ -552,19 +552,7 @@ const HeadlessRasterizerView: React.FC = () => {
                         />
                     </div>
                 )}
-
-                {hasError && !isLoading && (
-                    <div className="raster-empty-state-overlay">
-                        <EmptyState
-                            title="Error Loading Data"
-                            description={error}
-                            buttonText="Return to Dashboard"
-                            buttonOnClick={handleGoBack}
-                            className="raster-empty-state-content"
-                        />
-                    </div>
-                )}
-
+    
                 <div className='raster-scenes-top-container' style={{ alignItems: 'stretch', gap: '0.75rem' }}>
                     <SceneColumn
                         trajectoryId={trajectory?._id}

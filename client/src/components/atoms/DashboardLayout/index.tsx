@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { TbCube3dSphere } from "react-icons/tb";
-import { IoSearchOutline, IoSettingsOutline, IoMenuOutline, IoCloseOutline } from "react-icons/io5";
+import { IoSearchOutline, IoSettingsOutline, IoMenuOutline } from "react-icons/io5";
 import { TbBook } from 'react-icons/tb';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { IoNotificationsOutline } from "react-icons/io5";

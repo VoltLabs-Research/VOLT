@@ -23,7 +23,8 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
 export interface IApiTracker extends Document {
-    _id: string;
+    // TODO: fix any type for _id
+    _id: any;
     method: string;
     url: string;
     userAgent?: string;

@@ -30,26 +30,6 @@ import { mkdir } from 'node:fs/promises';
 import path from 'path';
 
 /**
- * World-space point with linear RGB color.
- */
-type Point = { 
-    x: number;
-    y: number; 
-    z: number; 
-    c: [number, number, number] 
-};
-
-/**
- * Screen-space point (after projection) with linear RGB color.
- */
-type P2D = {
-    sx: number;
-    sy: number;
-    z: number;
-    c: [number, number, number]
-};
-
-/**
  * 3D vertex with color.
  */
 type Vertex3D = {
@@ -66,6 +46,11 @@ type Triangle3D = {
     a: Vertex3D;
     b: Vertex3D;
     c: Vertex3D;
+};
+
+interface StackItem{
+    node: GNode; 
+    worldMatrix: mat4;
 };
 
 /**
@@ -280,75 +265,6 @@ const nodeLocalMatrix = (node: GNode): mat4 => {
 };
 
 /**
- * Pushes transformed POINTS from a primitive into "into".
- * Honors optional "COLOR_0" with normalization if in 0...255.
- */
-const collectPointsFromPrimitive = (prim: Primitive, world: mat4, into: Point[]) => {
-    const posAcc = prim.getAttribute('POSITION'); 
-    if (!posAcc) return;
-    
-    const colAcc = prim.getAttribute('COLOR_0') ?? null;
-
-    const posArr = posAcc.getArray() as Float32Array | number[];
-    const count = posAcc.getCount();
-    const colArr = colAcc ? (colAcc.getArray() as Float32Array | number[]) : null;
-    const colSize = colAcc ? colAcc.getElementSize() : 0;
-
-    // Pre-allocate arrays for the inner loop
-    const tmp = vec3.create();
-    const colorTmp = [1, 1, 1] as [number, number, number];
-    
-    // Process points in chunks for better cache locality
-    const CHUNK_SIZE = 512;
-    
-    for (let chunkStart = 0; chunkStart < count; chunkStart += CHUNK_SIZE) {
-        const chunkEnd = Math.min(chunkStart + CHUNK_SIZE, count);
-        
-        for (let i = chunkStart; i < chunkEnd; i++) {
-            const idx = i * 3;
-            vec3.set(tmp, 
-                (posArr as any)[idx], 
-                (posArr as any)[idx + 1], 
-                (posArr as any)[idx + 2]
-            );
-            vec3.transformMat4(tmp, tmp, world);
-            
-            if (colArr) {
-                const base = i * colSize;
-                let r = (colArr as any)[base] ?? 1;
-                let g = (colArr as any)[base + 1] ?? 1;
-                let b = (colArr as any)[base + 2] ?? 1;
-                
-                if (r > 1 || g > 1 || b > 1) {
-                    r /= 255; 
-                    g /= 255;
-                    b /= 255; 
-                }
-                
-                // Enhance color saturation
-                const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-                const saturationBoost = 1.3;
-                
-                colorTmp[0] = clamp(r + (r - luminance) * saturationBoost, 0, 1);
-                colorTmp[1] = clamp(g + (g - luminance) * saturationBoost, 0, 1);
-                colorTmp[2] = clamp(b + (b - luminance) * saturationBoost, 0, 1);
-            } else {
-                colorTmp[0] = 1;
-                colorTmp[1] = 1;
-                colorTmp[2] = 1;
-            }
-
-            into.push({ 
-                x: tmp[0], 
-                y: tmp[1], 
-                z: tmp[2], 
-                c: [colorTmp[0], colorTmp[1], colorTmp[2]] 
-            });
-        }
-    }
-};
-
-/**
  * Pushes transformed TRIANGLES from a primitive into `into`.
  * Handles TRIANGLES, STRIP and FAN with or without indices.
  */
@@ -494,44 +410,243 @@ const shouldRenderAsMesh = (node: GNode): boolean => {
     return false;
 };
 
-/**
- * Adaptive point size based on number of particles.
- * @param particleCount - Number of points.
- */
-const adaptivePointSize = (particleCount: number) => {
-    const baseSize = 7.0;
-    const referenceCount = 36624;
-    return baseSize * Math.sqrt(referenceCount / particleCount);
+// TODO: experimental
+const adaptivePointSize = (particleCount: number, width: number, height: number) => {
+    if(particleCount <= 0) return 0.0;
+
+    const pixels = width * height;
+    const density = particleCount / pixels;
+
+    if(density <= 0.25) return 4.0; 
+    if(density <= 1.0) return 3.0;
+    if(density <= 3.0) return 2.0;
+    if(density <= 6.0) return 1.5;
+    return 1.0;                      
 };
 
-
 /**
- * Iterative DFS traversal that collects either points or triangles from a scene graph.
- * @param rootNode - Root node to start from.
- * @param parentWorld - Parent world matrix.
- * @param pointsOut - Output points array (mutated).
- * @param trisOut - Output triangles array (mutated).
+ * Recorre el grafo de escena, acumula bounds en espacio mundial
+ * y devuelve cuántos vértices "tipo punto" (no-mesh) hay en total.
  */
-const traverseCollectPoints = (rootNode: GNode, parentWorld: mat4, pointsOut: Point[], trisOut: Triangle3D[]) => {
-    interface StackItem { node: GNode, worldMatrix: mat4 }
-    const stack: StackItem[] = [{ node: rootNode, worldMatrix: mat4.clone(parentWorld) }];
-    
+const computeBoundsAndCountForNode = (
+    rootNode: GNode,
+    parentWorld: mat4,
+    min: [number, number, number],
+    max: [number, number, number],
+): number => {
+    const stack: StackItem[] = [{
+        node: rootNode, 
+        worldMatrix: mat4.clone(parentWorld) 
+    }];
+
+    const tmp = vec3.create();
+    let countTotal = 0;
+
+    while(stack.length > 0){
+        const { node, worldMatrix } = stack.pop()!;
+        const local = nodeLocalMatrix(node);
+        const world = mat4.create();
+        mat4.multiply(world, worldMatrix, local);
+
+        const mesh = node.getMesh();
+        if(mesh){
+            const primitives = mesh.listPrimitives();
+            const asMesh = shouldRenderAsMesh(node); 
+
+            for(let p = 0; p < primitives.length; p++){
+                const prim = primitives[p];
+                const posAcc = prim.getAttribute('POSITION');
+                if(!posAcc) continue;
+
+                const posArr = posAcc.getArray() as Float32Array | number[];
+                const count = posAcc.getCount();
+
+                if(!asMesh){
+                    countTotal += count;
+                }
+
+                for(let i = 0; i < count; i++){
+                    const idx = i * 3;
+                    vec3.set(
+                        tmp,
+                        (posArr as any)[idx],
+                        (posArr as any)[idx + 1],
+                        (posArr as any)[idx + 2]
+                    );
+                    vec3.transformMat4(tmp, tmp, world);
+
+                    if(tmp[0] < min[0]) min[0] = tmp[0];
+                    if(tmp[1] < min[1]) min[1] = tmp[1];
+                    if(tmp[2] < min[2]) min[2] = tmp[2];
+
+                    if(tmp[0] > max[0]) max[0] = tmp[0];
+                    if(tmp[1] > max[1]) max[1] = tmp[1];
+                    if(tmp[2] > max[2]) max[2] = tmp[2];
+                }
+            }
+        }
+
+        const children = node.listChildren();
+        for(let i = children.length - 1; i >= 0; i--){
+            stack.push({
+                node: children[i],
+                worldMatrix: mat4.clone(world)
+            });
+        }
+    }
+
+    return countTotal;
+};
+
+const rasterizePointsForNode = (
+    rootNode: GNode,
+    parentWorld: mat4,
+    vp: mat4,
+    width: number,
+    height: number,
+    depthBuffer: Float32Array,
+    colorBuffer: Uint8ClampedArray,
+    pointRadius: number,
+) => {
+    if (pointRadius <= 0) return;
+
+    const stack: StackItem[] = [{
+        node: rootNode,
+        worldMatrix: mat4.clone(parentWorld)
+    }];
+
+    const tmp3 = vec3.create();
+    const tmp4 = vec4.create();
+
+    const r = Math.max(1, pointRadius | 0);
+    const r2 = r * r;
+
+    const halfW = width * 0.5;
+    const halfH = height * 0.5;
+
+    const buf32 = new Uint32Array(colorBuffer.buffer);
+
+    const packRGBA = (R: number, G: number, B: number, A: number) => {
+        // Little endian: [R, G, B, A]
+        return (A << 24) | (B << 16) | (G << 8) | (R);
+    };
+
     while (stack.length > 0) {
         const { node, worldMatrix } = stack.pop()!;
         const local = nodeLocalMatrix(node);
         const world = mat4.create();
         mat4.multiply(world, worldMatrix, local);
 
-        const asMesh = shouldRenderAsMesh(node);
         const mesh = node.getMesh();
         if (mesh) {
-            const primitives = mesh.listPrimitives();
-            for (let i = 0; i < primitives.length; i++) {
-                const prim = primitives[i];
-                if (asMesh) {
-                    collectTrianglesFromPrimitive(prim, world, trisOut);
-                } else {
-                    collectPointsFromPrimitive(prim, world, pointsOut);
+            const asMesh = shouldRenderAsMesh(node);
+            if (!asMesh) {
+                const primitives = mesh.listPrimitives();
+                for (let p = 0; p < primitives.length; p++) {
+                    const prim = primitives[p];
+
+                    const posAcc = prim.getAttribute('POSITION');
+                    if (!posAcc) continue;
+
+                    const colAcc = prim.getAttribute('COLOR_0') ?? null;
+
+                    const posArr = posAcc.getArray() as Float32Array | number[];
+                    const count = posAcc.getCount();
+                    const colArr = colAcc ? (colAcc.getArray() as Float32Array | number[]) : null;
+                    const colSize = colAcc ? colAcc.getElementSize() : 0;
+
+                    for (let i = 0; i < count; i++) {
+                        const idx = i * 3;
+
+                        vec3.set(
+                            tmp3,
+                            (posArr as any)[idx],
+                            (posArr as any)[idx + 1],
+                            (posArr as any)[idx + 2]
+                        );
+                        vec3.transformMat4(tmp3, tmp3, world);
+
+                        vec4.set(tmp4, tmp3[0], tmp3[1], tmp3[2], 1.0);
+                        vec4.transformMat4(tmp4, tmp4, vp);
+
+                        const w = tmp4[3];
+                        if (w === 0) continue;
+
+                        const invW = 1 / w;
+                        const ndcX = tmp4[0] * invW;
+                        const ndcY = tmp4[1] * invW;
+                        const ndcZ = tmp4[2] * invW;
+
+                        if (ndcX < -1 || ndcX > 1 || ndcY < -1 || ndcY > 1 || ndcZ < -1 || ndcZ > 1) {
+                            continue;
+                        }
+
+                        const px = ndcX * halfW + halfW;
+                        const py = -ndcY * halfH + halfH;
+
+                        const ix = px | 0;
+                        const iy = py | 0;
+
+                        if (ix < 0 || ix >= width || iy < 0 || iy >= height) continue;
+
+                        const depth = (ndcZ + 1) * 0.5;
+
+                        let rCol = 1, gCol = 1, bCol = 1;
+                        if (colArr) {
+                            const base = i * colSize;
+                            rCol = (colArr as any)[base] ?? 1;
+                            gCol = (colArr as any)[base + 1] ?? 1;
+                            bCol = (colArr as any)[base + 2] ?? 1;
+
+                            if (rCol > 1 || gCol > 1 || bCol > 1) {
+                                rCol *= 1 / 255;
+                                gCol *= 1 / 255;
+                                bCol *= 1 / 255;
+                            }
+
+                            const luminance = 0.299 * rCol + 0.587 * gCol + 0.114 * bCol;
+                            const saturationBoost = 1.3;
+                            rCol = clamp(rCol + (rCol - luminance) * saturationBoost, 0, 1);
+                            gCol = clamp(gCol + (gCol - luminance) * saturationBoost, 0, 1);
+                            bCol = clamp(bCol + (bCol - luminance) * saturationBoost, 0, 1);
+                        }
+
+                        const boost = 1.15;
+                        const R = Math.round(clamp01(lin2srgb(rCol * boost)) * 255);
+                        const G = Math.round(clamp01(lin2srgb(gCol * boost)) * 255);
+                        const B = Math.round(clamp01(lin2srgb(bCol * boost)) * 255);
+                        const packed = packRGBA(R, G, B, 255);
+
+                        const centerIndex = iy * width + ix;
+
+                        if (r === 1) {
+                            if (depth < depthBuffer[centerIndex]) {
+                                depthBuffer[centerIndex] = depth;
+                                buf32[centerIndex] = packed;
+                            }
+                            continue;
+                        }
+
+                        for (let dy = -r; dy <= r; dy++) {
+                            const yy = iy + dy;
+                            if (yy < 0 || yy >= height) continue;
+
+                            const rowIndex = yy * width;
+
+                            for (let dx = -r; dx <= r; dx++) {
+                                const xx = ix + dx;
+                                if (xx < 0 || xx >= width) continue;
+
+                                if (dx * dx + dy * dy > r2) continue;
+
+                                const index = rowIndex + xx;
+
+                                if (depth >= depthBuffer[index]) continue;
+                                depthBuffer[index] = depth;
+                                buf32[index] = packed;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -540,102 +655,39 @@ const traverseCollectPoints = (rootNode: GNode, parentWorld: mat4, pointsOut: Po
         for (let i = children.length - 1; i >= 0; i--) {
             stack.push({ node: children[i], worldMatrix: mat4.clone(world) });
         }
-        
-        // Free the world matrix we created for this node
-        if (stack.length > 0) {
-            mat4.copy(worldMatrix, world);
-        }
     }
 };
 
-/**
- * Reservoir sampling that keeps k items with uniform probability.
- * @param arr - Source array.
- * @param k - Sample size.
- */
-const reservoirSample = <T>(arr: T[], k: number): T[] => {
-    if (k <= 0 || k >= arr.length) {
-        return arr.slice();
-    }
+const collectMeshTriangles = (
+    rootNode: GNode,
+    parentWorld: mat4,
+    trisOut: Triangle3D[],
+) => {
+    const stack: StackItem[] = [{
+        node: rootNode, 
+        worldMatrix: mat4.clone(parentWorld)
+    }];
 
-    const res = arr.slice(0, k);
-    for (let i = k; i < arr.length; i++) {
-        const j = Math.floor(Math.random() * (i + 1));
-        if (j < k) res[j] = arr[i];
-    }
+    while(stack.length > 0){
+        const { node, worldMatrix } = stack.pop()!;
+        const local = nodeLocalMatrix(node);
+        const world = mat4.create();
+        mat4.multiply(world, worldMatrix, local);
 
-    return res;
-};
-
-/**
- * Ambient occlusion estimation using a uniform grid to limit neighbor checks.
- * Returns a map with AO factor `[0..0.7]` per point.
- * @param points - Input points.
- * @param maxDistance - Influence radius.
- */
-const calculateAO = (points: Point[], maxDistance: number = 5) => {
-    const aoMap = new Map<Point, number>();
-    
-    // AO calculation for very large point sets to improve performance
-    if (points.length > 100000) {
-        return aoMap;
-    }
-    
-    // Spatial partitioning using grid
-    const gridSize = maxDistance;
-    const grid = new Map<string, Point[]>();
-    
-    // Build spatial grid
-    for (const point of points) {
-        const gx = Math.floor(point.x / gridSize);
-        const gy = Math.floor(point.y / gridSize);
-        const gz = Math.floor(point.z / gridSize);
-        const key = `${gx},${gy},${gz}`;
-        
-        if (!grid.has(key)) {
-            grid.set(key, []);
-        }
-        grid.get(key)!.push(point);
-    }
-    
-    // Calculate AO using grid to reduce neighbor checks
-    for (const point of points) {
-        const gx = Math.floor(point.x / gridSize);
-        const gy = Math.floor(point.y / gridSize);
-        const gz = Math.floor(point.z / gridSize);
-        
-        let occlusionCount = 0;
-        
-        // Check only neighboring cells
-        for (let dx = -1; dx <= 1; dx++) {
-            for (let dy = -1; dy <= 1; dy++) {
-                for (let dz = -1; dz <= 1; dz++) {
-                    const key = `${gx + dx},${gy + dy},${gz + dz}`;
-                    const cell = grid.get(key);
-                    if (!cell) continue;
-                    
-                    for (const otherPoint of cell) {
-                        if (point === otherPoint) continue;
-                        
-                        const dx = point.x - otherPoint.x;
-                        const dy = point.y - otherPoint.y;
-                        const dz = point.z - otherPoint.z;
-                        const distSq = dx*dx + dy*dy + dz*dz;
-                        
-                        if (distSq < maxDistance * maxDistance) {
-                            const dist = Math.sqrt(distSq);
-                            occlusionCount += 1 - (dist / maxDistance);
-                        }
-                    }
-                }
+        const mesh = node.getMesh();
+        if(mesh && shouldRenderAsMesh(node)){
+            const primitives = mesh.listPrimitives();
+            for(let i = 0; i < primitives.length; i++){
+                const prim = primitives[i];
+                collectTrianglesFromPrimitive(prim, world, trisOut);
             }
         }
-        
-        const aoFactor = clamp(occlusionCount / 20, 0, 0.7);
-        aoMap.set(point, aoFactor);
+
+        const children = node.listChildren();
+        for(let i = children.length - 1; i >= 0; i--){
+            stack.push({ node: children[i], worldMatrix: mat4.clone(world) });
+        }
     }
-    
-    return aoMap;
 };
 
 /**
@@ -700,149 +752,79 @@ class HeadlessRasterizer {
      * Render the input GLB/GLTF into a PNG at `opts.outputPath`.
      * @throws If no scenes/geometry found, or bounds/projection fails.
      */
+        /**
+     * Render del GLB/GLTF a PNG.
+     * - Átomos (nodos no-mesh): z-buffer por punto con discos de radio adaptativo.
+     * - Meshes (meshgeometry, dislocations, etc.): triángulos con luces/sombras como antes.
+     */
     public async render() {
         const document = await this.loadDocument();
         const root = document.getRoot();
         const scenes = root.listScenes();
-        if (!scenes.length) throw new Error('GLB_WITHOUT_SCENES');
+        if(!scenes.length){
+            throw new Error('GLB_WITHOUT_SCENES');
+        }
 
-        const points: Point[] = [];
-        const tris: Triangle3D[] = [];
-        
-        // Process all scenes
-        for (const scene of scenes) {
-            for (const node of scene.listChildren()) {
-                traverseCollectPoints(node, mat4.create(), points, tris);
+        const width = this.opts.width;
+        const height = this.opts.height;
+
+        const min: [number, number, number] = [ Infinity,  Infinity,  Infinity];
+        const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+        let totalPoints = 0;
+
+        for(const scene of scenes){
+            for(const node of scene.listChildren()){
+                totalPoints += computeBoundsAndCountForNode(node, mat4.create(), min, max);
             }
         }
 
-        if (points.length === 0 && tris.length === 0) throw new Error('NO_GEOMETRY');
-
-        const { maxPoints } = this.opts;
-        const usePoints = (maxPoints > 0 && points.length > maxPoints) ? reservoirSample(points, maxPoints) : points;
-
-        // Calculate scene bounds in one pass for better performance
-        let minX = Infinity, minY = Infinity, minZ = Infinity;
-        let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
-
-        // Process points first
-        for (let i = 0; i < usePoints.length; i++) {
-            const point = usePoints[i];
-            if (point.x < minX) minX = point.x;
-            if (point.y < minY) minY = point.y;
-            if (point.z < minZ) minZ = point.z;
-            if (point.x > maxX) maxX = point.x;
-            if (point.y > maxY) maxY = point.y;
-            if (point.z > maxZ) maxZ = point.z;
-        }
-
-        // Then triangles
-        for (let i = 0; i < tris.length; i++) {
-            const tri = tris[i];
-            
-            // Check vertex a
-            if (tri.a.x < minX) minX = tri.a.x;
-            if (tri.a.y < minY) minY = tri.a.y;
-            if (tri.a.z < minZ) minZ = tri.a.z;
-            if (tri.a.x > maxX) maxX = tri.a.x;
-            if (tri.a.y > maxY) maxY = tri.a.y;
-            if (tri.a.z > maxZ) maxZ = tri.a.z;
-            
-            // Check vertex b
-            if (tri.b.x < minX) minX = tri.b.x;
-            if (tri.b.y < minY) minY = tri.b.y;
-            if (tri.b.z < minZ) minZ = tri.b.z;
-            if (tri.b.x > maxX) maxX = tri.b.x;
-            if (tri.b.y > maxY) maxY = tri.b.y;
-            if (tri.b.z > maxZ) maxZ = tri.b.z;
-            
-            // Check vertex c
-            if (tri.c.x < minX) minX = tri.c.x;
-            if (tri.c.y < minY) minY = tri.c.y;
-            if (tri.c.z < minZ) minZ = tri.c.z;
-            if (tri.c.x > maxX) maxX = tri.c.x;
-            if (tri.c.y > maxY) maxY = tri.c.y;
-            if (tri.c.z > maxZ) maxZ = tri.c.z;
-        }
-
-        if (!isFinite(minX) || !isFinite(minY) || !isFinite(minZ) || 
-            !isFinite(maxX) || !isFinite(maxY) || !isFinite(maxZ)) {
+        if(
+            !isFinite(min[0]) || !isFinite(min[1]) || !isFinite(min[2]) ||
+            !isFinite(max[0]) || !isFinite(max[1]) || !isFinite(max[2])
+        ){
             throw new Error('FAILED_BOUNDS_COMPUTATION');
         }
 
-        const cx = (minX + maxX) / 2;
-        const cy = (minY + maxY) / 2;
-        const cz = (minZ + maxZ) / 2;
+        const cx = (min[0] + max[0]) * 0.5;
+        const cy = (min[1] + max[1]) * 0.5;
+        const cz = (min[2] + max[2]) * 0.5;
 
-        // Calculate radius in one efficient pass
-        let r = 0;
-        
-        // Check points
-        for (let i = 0; i < usePoints.length; i++) {
-            const p = usePoints[i];
-            const dx = p.x - cx;
-            const dy = p.y - cy;
-            const dz = p.z - cz;
-            const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (d > r) r = d;
-        }
-        
-        // Check triangle vertices
-        for (let i = 0; i < tris.length; i++) {
-            const t = tris[i];
-            
-            // Vertex a
-            {
-                const dx = t.a.x - cx;
-                const dy = t.a.y - cy;
-                const dz = t.a.z - cz;
-                const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                if (d > r) r = d;
-            }
-            
-            // Vertex b
-            {
-                const dx = t.b.x - cx;
-                const dy = t.b.y - cy;
-                const dz = t.b.z - cz;
-                const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                if (d > r) r = d;
-            }
-            
-            // Vertex c
-            {
-                const dx = t.c.x - cx;
-                const dy = t.c.y - cy;
-                const dz = t.c.z - cz;
-                const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                if (d > r) r = d;
-            }
+        const dx = max[0] - min[0];
+        const dy = max[1] - min[1];
+        const dz = max[2] - min[2];
+        const r = 0.5 * Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        if(!isFinite(r) || r <= 0){
+            throw new Error('INVALID_RADIUS');
         }
 
-        // Calculate AO with optimized implementation
-        const aoMap = usePoints.length > 0 ? calculateAO(usePoints, r * 0.1) : new Map();
-
-        const aspect = this.opts.width / this.opts.height;
+        const aspect = width / height;
         const fovRad = (this.opts.fov * Math.PI) / 180;
         const fovH = 2 * Math.atan(Math.tan(fovRad / 2) * aspect);
 
-        let distance = 1.2 * Math.max(r / Math.tan(fovRad / 2), r / Math.tan(fovH / 2));
-        distance = Math.max(1e-3, distance * (isFinite(this.opts.distScale) ? this.opts.distScale : 1.0));
+        let distance = 1.2 * Math.max(
+            r / Math.tan(fovRad / 2),
+            r / Math.tan(fovH / 2)
+        );
+        distance = Math.max(
+            1e-3,
+            distance * (isFinite(this.opts.distScale) ? this.opts.distScale : 1.0)
+        );
 
         const near = Math.max(1e-3, distance - r * 2);
-        const far = distance + r * 2;
+        const far  = distance + r * 2;
 
         const azRad = (this.opts.az * Math.PI) / 180;
         const elRad = (this.opts.el * Math.PI) / 180;
 
         let dirX = 0, dirY = 0, dirZ = 0;
         const isZUp = this.opts.up === 'z';
-        
-        if (isZUp) {
+
+        if(isZUp){
             dirX = Math.cos(elRad) * Math.cos(azRad);
             dirY = Math.cos(elRad) * Math.sin(azRad);
             dirZ = Math.sin(elRad);
-        } else {
+        }else{
             dirX = Math.cos(elRad) * Math.cos(azRad);
             dirY = Math.sin(elRad);
             dirZ = Math.cos(elRad) * Math.sin(azRad);
@@ -853,9 +835,9 @@ class HeadlessRasterizer {
         dirY /= L;
         dirZ /= L;
 
-        const eye = vec3.fromValues(cx + dirX * distance, cy + dirY * distance, cz + dirZ * distance);
+        const eye  = vec3.fromValues(cx + dirX * distance, cy + dirY * distance, cz + dirZ * distance);
         const center = vec3.fromValues(cx, cy, cz);
-        const upVec = isZUp ? vec3.fromValues(0, 0, 1) : vec3.fromValues(0, 1, 0);
+        const upVec  = isZUp ? vec3.fromValues(0, 0, 1) : vec3.fromValues(0, 1, 0);
 
         const view = mat4.create();
         mat4.lookAt(view, eye, center, upVec);
@@ -872,119 +854,122 @@ class HeadlessRasterizer {
             return vnorm([v[0], v[1], v[2]]);
         })();
 
-        // Project points in chunks for better cache efficiency
-        const out2D: P2D[] = [];
-        const CHUNK_SIZE = 1024;
-        const v4 = vec4.create();
-        
-        for (let start = 0; start < usePoints.length; start += CHUNK_SIZE) {
-            const end = Math.min(start + CHUNK_SIZE, usePoints.length);
-            
-            for (let i = start; i < end; i++) {
-                const point = usePoints[i];
-                vec4.set(v4, point.x, point.y, point.z, 1.0);
-                vec4.transformMat4(v4, v4, vp);
-                
-                const w = v4[3];
-                if (w === 0) continue;
-
-                const invW = 1 / w;
-                const ndcX = v4[0] * invW;
-                const ndcY = v4[1] * invW;
-                const ndcZ = v4[2] * invW;
-
-                if (ndcX < -1 || ndcX > 1 || ndcY < -1 || ndcY > 1 || ndcZ < -1 || ndcZ > 1) continue;
-                
-                const sx = (ndcX * 0.5 + 0.5) * this.opts.width;
-                const sy = (1 - (ndcY * 0.5 + 0.5)) * this.opts.height;
-                
-                // Apply ambient occlusion to color
-                const aoFactor = aoMap.get(point) || 0;
-                const c0 = point.c[0] * (1 - aoFactor);
-                const c1 = point.c[1] * (1 - aoFactor);
-                const c2 = point.c[2] * (1 - aoFactor);
-                
-                out2D.push({ 
-                    sx, 
-                    sy, 
-                    z: ndcZ, 
-                    c: [c0, c1, c2] 
-                });
+        const tris: Triangle3D[] = [];
+        for(const scene of scenes){
+            for(const node of scene.listChildren()){
+                collectMeshTriangles(node, mat4.create(), tris);
             }
         }
-        
-        // Use TypedArray for faster sorting of large arrays
-        if (out2D.length > 10000) {
-            const indices = new Uint32Array(out2D.length);
-            for (let i = 0; i < indices.length; i++) {
-                indices[i] = i;
-            }
-            
-            // Sort indices by z value
-            indices.sort((a, b) => out2D[b].z - out2D[a].z);
-            
-            // Reorder points based on sorted indices
-            const sorted: P2D[] = new Array(out2D.length);
-            for (let i = 0; i < indices.length; i++) {
-                sorted[i] = out2D[indices[i]];
-            }
-            
-            for (let i = 0; i < sorted.length; i++) {
-                out2D[i] = sorted[i];
-            }
-        } else {
-            out2D.sort((a, b) => b.z - a.z);
+
+        if(totalPoints === 0 && tris.length === 0){
+            throw new Error('NO_GEOMETRY');
         }
 
-        // Project and process triangles
+        const depthBuffer = new Float32Array(width * height);
+        depthBuffer.fill(Number.POSITIVE_INFINITY);
+
+        const colorBuffer = new Uint8ClampedArray(width * height * 4);
+
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        let bgColor: Uint8ClampedArray | null = null;
+
+        if(this.opts.background !== 'transparent'){
+            ctx.fillStyle = this.opts.background;
+            ctx.fillRect(0, 0, width, height);
+
+            const bgPixel = ctx.getImageData(0, 0, 1, 1).data;
+            bgColor = new Uint8ClampedArray([bgPixel[0], bgPixel[1], bgPixel[2], bgPixel[3]]);
+
+            const totalPixels = width * height;
+            for(let i = 0, o = 0; i < totalPixels; i++, o += 4){
+                colorBuffer[o + 0] = bgColor[0];
+                colorBuffer[o + 1] = bgColor[1];
+                colorBuffer[o + 2] = bgColor[2];
+                colorBuffer[o + 3] = bgColor[3];
+            }
+        }
+
+        const pointRadius = adaptivePointSize(totalPoints, width, height);
+        const intRadius = Math.max(1, Math.round(pointRadius));
+
+        if(totalPoints > 0 && pointRadius > 0){
+            for(const scene of scenes){
+                for(const node of scene.listChildren()){
+                    rasterizePointsForNode(
+                        node,
+                        mat4.create(),
+                        vp,
+                        width,
+                        height,
+                        depthBuffer,
+                        colorBuffer,
+                        intRadius,
+                    );
+                }
+            }
+        }
+
+        /*let anyHit = false;
+        for (let i = 0; i < depthBuffer.length; i++){
+            if (depthBuffer[i] !== Number.POSITIVE_INFINITY) {
+                anyHit = true;
+                break;
+            }
+        }*/
+
+        const imageData = ctx.createImageData(width, height);
+        imageData.data.set(colorBuffer);
+        ctx.putImageData(imageData, 0, 0);
+
         type Tri2DPlus = Tri2D & { tri3D: Triangle3D };
-        const outTris2D: Tri2DPlus[] = [];
 
+        const v4 = vec4.create();
         const projV = (x: number, y: number, z: number) => {
             vec4.set(v4, x, y, z, 1.0);
             vec4.transformMat4(v4, v4, vp);
-            
+
             const w = v4[3];
-            if (w === 0) return null;
+            if(w === 0) return null;
 
             const invW = 1 / w;
             const ndcX = v4[0] * invW;
             const ndcY = v4[1] * invW;
             const ndcZ = v4[2] * invW;
-            
-            if (ndcX < -1 || ndcX > 1 || ndcY < -1 || ndcY > 1 || ndcZ < -1 || ndcZ > 1) return null;
-            
-            return { 
-                sx: (ndcX * 0.5 + 0.5) * this.opts.width, 
-                sy: (1 - (ndcY * 0.5 + 0.5)) * this.opts.height, 
-                z: ndcZ 
+
+            if(ndcX < -1 || ndcX > 1 || ndcY < -1 || ndcY > 1 || ndcZ < -1 || ndcZ > 1) return null;
+
+            return {
+                sx: (ndcX * 0.5 + 0.5) * width,
+                sy: (1 - (ndcY * 0.5 + 0.5)) * height,
+                z: ndcZ,
             };
         };
 
-        // Process triangles in batches for better cache efficiency
+        const outTris2D: Tri2DPlus[] = [];
         const TRIANGLE_BATCH_SIZE = 512;
-        
-        for (let batchStart = 0; batchStart < tris.length; batchStart += TRIANGLE_BATCH_SIZE) {
+
+        for(let batchStart = 0; batchStart < tris.length; batchStart += TRIANGLE_BATCH_SIZE){
             const batchEnd = Math.min(batchStart + TRIANGLE_BATCH_SIZE, tris.length);
-            
-            for (let i = batchStart; i < batchEnd; i++) {
+
+            for(let i = batchStart; i < batchEnd; i++){
                 const triangle = tris[i];
-                
+
                 const A = projV(triangle.a.x, triangle.a.y, triangle.a.z);
                 const B = projV(triangle.b.x, triangle.b.y, triangle.b.z);
                 const C = projV(triangle.c.x, triangle.c.y, triangle.c.z);
-                
-                if (!A || !B || !C) continue;
 
-                // Backface culling using 2D cross product
+                if(!A || !B || !C) continue;
+
+                // Backface culling
                 const abx = B.sx - A.sx;
                 const aby = B.sy - A.sy;
                 const acx = C.sx - A.sx;
                 const acy = C.sy - A.sy;
                 const cross = abx * acy - aby * acx;
-                
-                if (cross >= 0) continue;
-                
+                if(cross >= 0) continue;
+
                 const zAvg = (A.z + B.z + C.z) / 3;
                 const cAvg: [number, number, number] = [
                     (triangle.a.c[0] + triangle.b.c[0] + triangle.c.c[0]) / 3,
@@ -994,51 +979,27 @@ class HeadlessRasterizer {
 
                 outTris2D.push({
                     a: { x: A.sx, y: A.sy },
-                    b: { x: B.sx, y: B.sy }, 
-                    c: { x: C.sx, y: C.sy }, 
-                    z: zAvg, 
-                    cAvg, 
-                    tri3D: triangle
+                    b: { x: B.sx, y: B.sy },
+                    c: { x: C.sx, y: C.sy },
+                    z: zAvg,
+                    cAvg,
+                    tri3D: triangle,
                 });
             }
         }
 
-        // sorting of triangles by z-depth
-        if (outTris2D.length > 5000) {
+        if(outTris2D.length > 5000){
             const indices = new Uint32Array(outTris2D.length);
-            for (let i = 0; i < indices.length; i++) {
-                indices[i] = i;
-            }
-            
-            // Sort indices by z value
+            for(let i = 0; i < indices.length; i++) indices[i] = i;
             indices.sort((a, b) => outTris2D[b].z - outTris2D[a].z);
-            
-            // Reorder triangles based on sorted indices
             const sorted: Tri2DPlus[] = new Array(outTris2D.length);
-            for (let i = 0; i < indices.length; i++) {
-                sorted[i] = outTris2D[indices[i]];
-            }
-            
-            for (let i = 0; i < sorted.length; i++) {
-                outTris2D[i] = sorted[i];
-            }
-        } else {
+            for(let i = 0; i < indices.length; i++) sorted[i] = outTris2D[indices[i]];
+            for(let i = 0; i < sorted.length; i++) outTris2D[i] = sorted[i];
+        }else{
             outTris2D.sort((a, b) => b.z - a.z);
         }
 
-        if (out2D.length === 0 && outTris2D.length === 0) {
-            throw new Error('Increase fov or distScale');
-        }
-
-        const canvas = createCanvas(this.opts.width, this.opts.height);
-        const ctx = canvas.getContext('2d');
-        
-        if (this.opts.background !== 'transparent') {
-            ctx.fillStyle = this.opts.background;
-            ctx.fillRect(0, 0, this.opts.width, this.opts.height);
-        }
-
-        // triangle shading with reusable vectors
+        // Shading
         const tmpVA = [0, 0, 0] as [number, number, number];
         const tmpVB = [0, 0, 0] as [number, number, number];
         const tmpVC = [0, 0, 0] as [number, number, number];
@@ -1046,77 +1007,64 @@ class HeadlessRasterizer {
         const tmpN = [0, 0, 0] as [number, number, number];
         const tmpVdir = [0, 0, 0] as [number, number, number];
         const tmpCol = [0, 0, 0] as [number, number, number];
-        
+
         const shadeTriangle = (t: Triangle3D, base: [number, number, number]) => {
-            // Set up vectors for face normal calculation
             tmpVA[0] = t.a.x; tmpVA[1] = t.a.y; tmpVA[2] = t.a.z;
             tmpVB[0] = t.b.x; tmpVB[1] = t.b.y; tmpVB[2] = t.b.z;
             tmpVC[0] = t.c.x; tmpVC[1] = t.c.y; tmpVC[2] = t.c.z;
-            
-            // Calculate triangle center
+
             tmpCenter[0] = (tmpVA[0] + tmpVB[0] + tmpVC[0]) / 3;
             tmpCenter[1] = (tmpVA[1] + tmpVB[1] + tmpVC[1]) / 3;
             tmpCenter[2] = (tmpVA[2] + tmpVB[2] + tmpVC[2]) / 3;
-            
-            // Calculate normal using cross product
+
             const vab = vsub(tmpVB, tmpVA, [0, 0, 0] as [number, number, number]);
             const vac = vsub(tmpVC, tmpVA, [0, 0, 0] as [number, number, number]);
             vcross(vab, vac, tmpN);
             vnorm(tmpN, tmpN);
-            
-            // Calculate view direction
+
             tmpVdir[0] = tmpCenter[0] - eye[0];
             tmpVdir[1] = tmpCenter[1] - eye[1];
             tmpVdir[2] = tmpCenter[2] - eye[2];
             vnorm(tmpVdir, tmpVdir);
-            
-            // Calculate lighting
+
             const negKeyDir = mul3(LIGHTS.key.dir, -1, [0, 0, 0] as [number, number, number]);
             const negFillDir = mul3(LIGHTS.fill.dir, -1, [0, 0, 0] as [number, number, number]);
-            
+
             const ndl_key = Math.pow(clamp(vdot(tmpN, negKeyDir)), 0.8);
             const ndl_fill = Math.pow(clamp(vdot(tmpN, negFillDir)), 0.8);
-            
-            // Start with ambient contribution
+
             mul3(base, LIGHTS.ambient, tmpCol);
-            
-            // Add key light
+
             const keyContrib = mul3(base, LIGHTS.key.intensity * ndl_key, [0, 0, 0] as [number, number, number]);
             add3(tmpCol, keyContrib, tmpCol);
-            
-            // Add fill light
+
             const fillContrib = mul3(base, LIGHTS.fill.intensity * ndl_fill, [0, 0, 0] as [number, number, number]);
             add3(tmpCol, fillContrib, tmpCol);
-            
-            // Calculate rim light
+
             const rim = Math.pow(clamp(1 - Math.abs(vdot(tmpN, tmpVdir))), LIGHTS.rim.power) * LIGHTS.rim.intensity;
             const rimContrib = mul3([1, 1, 1], rim, [0, 0, 0] as [number, number, number]);
             add3(tmpCol, rimContrib, tmpCol);
-            
-            // Apply tone mapping and clamp
+
             toneMapACES(tmpCol, tmpCol);
             tmpCol[0] = clamp(tmpCol[0]);
             tmpCol[1] = clamp(tmpCol[1]);
             tmpCol[2] = clamp(tmpCol[2]);
-            
+
             return [tmpCol[0], tmpCol[1], tmpCol[2]] as [number, number, number];
         };
 
         const screenShadowOffset = (() => {
             let sx = lightKeyView[0];
             let sy = -lightKeyView[1];
-
-            const L = Math.hypot(sx, sy) || 1;
-            sx /= L; 
-            sy /= L;
+            const Ls = Math.hypot(sx, sy) || 1;
+            sx /= Ls;
+            sy /= Ls;
             return [sx * LIGHTS.shadow.sizePx, sy * LIGHTS.shadow.sizePx] as [number, number];
         })();
 
-        // Pre-compute common shadow styles for performance
         const shadowStyle1 = colorToCSS([0, 0, 0], LIGHTS.shadow.alpha * 0.7);
         const shadowStyle2 = colorToCSS([0, 0, 0], LIGHTS.shadow.alpha);
-        
-        // Cache triangle paths for better performance
+
         const drawTriangle = (ctx: CanvasRenderingContext2D, t: Tri2D, offsetX = 0, offsetY = 0) => {
             ctx.beginPath();
             ctx.moveTo(t.a.x + offsetX, t.a.y + offsetY);
@@ -1124,74 +1072,31 @@ class HeadlessRasterizer {
             ctx.lineTo(t.c.x + offsetX, t.c.y + offsetY);
             ctx.closePath();
         };
-        
-        // Batch similar drawing operations
+
         const [ox, oy] = screenShadowOffset;
-        
-        // Render triangles first with fast batch operations
-        for (let i = 0; i < outTris2D.length; i++) {
+
+        for(let i = 0; i < outTris2D.length; i++){
             const t2 = outTris2D[i];
             const shaded = shadeTriangle(t2.tri3D, t2.cAvg);
-            
-            // Draw softer shadow with gradient if needed
-            if (LIGHTS.shadow.softness > 0) {
+
+            if(LIGHTS.shadow.softness > 0){
                 ctx.fillStyle = shadowStyle1;
                 // @ts-ignore
                 drawTriangle(ctx, t2, ox * 1.2, oy * 1.2);
                 ctx.fill();
             }
-            
-            // Main shadow
+
             ctx.fillStyle = shadowStyle2;
             // @ts-ignore
             drawTriangle(ctx, t2, ox, oy);
             ctx.fill();
 
-            // Main triangle
             ctx.fillStyle = colorToCSS(shaded, 1);
             // @ts-ignore
             drawTriangle(ctx, t2);
-            ctx.fill();            
-        }
-
-        // Calculate radius for atoms with improved sizing
-        const radius = adaptivePointSize(points.length);
-        const radius2 = radius * 0.4; 
-        
-        // Pre-calculate highlight offsets
-        const highlightOffsetX = -radius * 0.3;
-        const highlightOffsetY = -radius * 0.3;
-        
-        // Batch render points (atoms)
-        for (let i = 0; i < out2D.length; i++) {
-            const p = out2D[i];
-            
-            // Draw soft outer shadow
-            ctx.fillStyle = colorToCSS([0, 0, 0], 0.15);
-            ctx.beginPath();
-            ctx.arc(p.sx + 1.5, p.sy + 1.5, radius * 1.05, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Draw main shadow
-            ctx.fillStyle = colorToCSS([0, 0, 0], 0.25);
-            ctx.beginPath();
-            ctx.arc(p.sx + 1, p.sy + 1, radius, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Draw atom
-            ctx.fillStyle = colorToCSS(p.c, 1);
-            ctx.beginPath();
-            ctx.arc(p.sx, p.sy, radius, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Add highlight for 3D effect
-            ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-            ctx.beginPath();
-            ctx.arc(p.sx + highlightOffsetX, p.sy + highlightOffsetY, radius2, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // Save image asynchronously
         await new Promise<void>(async (resolve, reject) => {
             await mkdir(path.dirname(this.opts.outputPath), { recursive: true });
             const out = createWriteStream(this.opts.outputPath);
