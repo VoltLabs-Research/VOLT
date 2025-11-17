@@ -22,11 +22,10 @@
 
 import { NextFunction, Request, Response } from 'express';
 import { join, relative, resolve } from 'path';
-import { stat, mkdir, rm, writeFile, constants } from 'fs/promises';
+import { stat, mkdir, rm, writeFile } from 'fs/promises';
 import { isValidObjectId } from 'mongoose';
 import { getTrajectoryProcessingQueue } from '@/queues';
 import { processTrajectoryFile } from '@/utilities/lammps';
-import { v4 } from 'uuid';
 import { Trajectory, Team } from '@models/index';
 import { getMetricsByTeamId } from '@/metrics/team';
 import { getTrajectoryMetricsById } from '@/metrics/trajectory';
@@ -35,6 +34,7 @@ import TrajectoryFS from '@/services/trajectory-fs';
 import RuntimeError from '@/utilities/runtime-error';
 import HandlerFactory from '@/controllers/handler-factory';
 import archiver from 'archiver';
+import { v4 } from 'uuid';
 
 const factory = new HandlerFactory<any>({
     model: Trajectory as any,
@@ -458,13 +458,12 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const previewsGlbDir = join(folderPath, 'previews', 'glb'); 
 
     const filePromises = files.map(async (file: any, i: number) => {
-        try {
+        try{
             const tempPath = join(folderPath, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
             await writeFile(tempPath, file.buffer);
-
-            try {
+            try{
                 const { frameInfo, isValid } = await processTrajectoryFile(tempPath, tempPath);
-                if (!frameInfo || !isValid) {
+                if(!frameInfo || !isValid){
                     await rm(tempPath).catch(() => {});
                     return null;
                 }
@@ -483,13 +482,13 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
                     originalSize: file.size,
                     originalName: file.originalname || `frame_${frameInfo.timestep}`
                 };
-            } catch {
+            }catch(error){
                 await rm(tempPath).catch(() => {});
                 return null;
             }
-        } catch {
+        }catch(error){
             return null;
-        } finally {
+        }finally{
             file.buffer = null;
         }
     });
@@ -497,8 +496,8 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const results = await Promise.all(filePromises);
     const validFiles = (results.filter(Boolean) as any[]);
 
-    if (validFiles.length === 0) {
-        await rm(folderPath, { recursive: true, force: true });
+    if(validFiles.length === 0){
+            await rm(folderPath, { recursive: true, force: true });
         return next(new RuntimeError('Trajectory::NoValidFiles', 400));
     }
 
@@ -523,7 +522,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const CHUNK_SIZE = 20;
     const jobs: any[] = [];
 
-    for (let i = 0; i < validFiles.length; i += CHUNK_SIZE) {
+    for(let i = 0; i < validFiles.length; i += CHUNK_SIZE){
         const chunk = validFiles.slice(i, i + CHUNK_SIZE);
         jobs.push({
             jobId: v4(),
@@ -531,8 +530,8 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             chunkIndex: Math.floor(i / CHUNK_SIZE),
             totalChunks: Math.ceil(validFiles.length / CHUNK_SIZE),
             files: chunk.map(({ frameData, srcPath }) => ({
-            frameData,
-            frameFilePath: srcPath 
+                frameData,
+                frameFilePath: srcPath 
             })),
             teamId,
             name: 'Upload Trajectory',
@@ -542,6 +541,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             tempFolderPath: folderPath
         });
     }
+
     // Add all jobs at once to ensure they share the same sessionId
     trajectoryProcessingQueue.addJobs(jobs);
 

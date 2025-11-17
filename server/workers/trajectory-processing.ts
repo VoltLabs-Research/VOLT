@@ -28,55 +28,57 @@ import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-qu
 import AtomisticExporter from '@/utilities/export/atoms';
 import '@config/env';
 
-const processJob = async (job: TrajectoryProcessingJob) => {
-    console.log(`[Worker #${process.pid}] Starting job ${job.jobId} (chunk ${job.chunkIndex + 1}/${job.totalChunks})`);
+const glbExporter = new AtomisticExporter();
 
-    if(!job || !job.jobId){
-        throw new Error('No job data received in message.');
-    }
+const processSingleFrame = async (frameData: any, frameFilePath: string, glbFolderPath: string) => {
+    const glbFilePath = join(glbFolderPath, `${frameData.timestep}.glb`);
 
     try{
-        const promises = job.files.map(async ({ frameData, frameFilePath }) => {
-            console.log(`[Worker #${process.pid}] Processing timestep ${frameData.timestep}`);
-            
-            try{
-                const glbFilePath = join(job.glbFolderPath, `${frameData.timestep}.glb`);
-                const glbExporter = new AtomisticExporter();
-                await glbExporter.exportAtomsToGLB(
-                    frameFilePath,
-                    glbFilePath,
-                    extractTimestepInfo
-                );
-                
-                console.log(`[Worker #${process.pid}] Completed timestep ${frameData.timestep}`);
-            }catch(fileError){
-                console.error(`[Worker #${process.pid}] Error processing file ${frameFilePath}:`, fileError);
-            }
-        });
+        await glbExporter.exportAtomsToGLB(
+            frameFilePath,
+            glbFilePath,
+            extractTimestepInfo
+        );
+    }finally{
+        await unlink(frameFilePath).catch(() => {});
+    }
+};
 
-        await Promise.all(promises);
+const processJob = async (job: TrajectoryProcessingJob) => {
+    if(!job || !job.jobId){
+        throw new Error('Invalid job payload');
+    }
 
+    const { files, glbFolderPath } = job;
+
+    console.log(
+        `[Worker #${process.pid}] Start job ${job.jobId} ` +
+        `(chunk ${job.chunkIndex + 1}/${job.totalChunks})`
+    );
+    
+    try{
+        await Promise.all(files.map(({ frameData, frameFilePath }) => processSingleFrame(frameData, frameFilePath, glbFolderPath)));
         parentPort?.postMessage({
             status: 'completed',
             jobId: job.jobId,
             chunkIndex: job.chunkIndex,
             totalChunks: job.totalChunks
         });
-        
-        console.log(`[Worker #${process.pid}] Finished job ${job.jobId} successfully`);
-        
+
+        console.log(`[Worker #${process.pid}] Job ${job.jobId} completed OK.`);
     }catch(error){
-        console.error(`[Worker #${process.pid}] Error processing job ${job.jobId}:`, error);
-        
-        // Clean up any remaining temp files
-        for(const { frameFilePath } of job.files){
-            try{
-                await unlink(frameFilePath);
-            }catch(unlinkError) {
-                // Ignore cleanup errors
-            }
-        }
-        
+        console.error(
+            `[Worker #${process.pid}] Job ${job.jobId} failed:`,
+            error
+        );
+
+        // Clean up leftover files (paralelo y sin bloquear)
+        await Promise.all(
+            files.map(({ frameFilePath }) =>
+                unlink(frameFilePath).catch(() => {})
+            )
+        );
+
         parentPort?.postMessage({
             status: 'failed',
             jobId: job.jobId,
@@ -86,19 +88,20 @@ const processJob = async (job: TrajectoryProcessingJob) => {
     }
 };
 
-const main = async () => {
+const main = () => {
     console.log(`[Worker #${process.pid}] Worker started`);
-    
-    parentPort?.on('message', async (message: { job: TrajectoryProcessingJob }) => {
-        try {
-            await processJob(message.job);
-        } catch (error) {
-            console.error(`[Worker #${process.pid}] Unhandled error:`, error);
+
+    parentPort?.on('message', async ({ job }) => {
+        try{
+            await processJob(job);
+        }catch(error){
+            console.error(`[Worker #${process.pid}] Fatal worker error:`, error);
+
             parentPort?.postMessage({
                 status: 'failed',
-                jobId: message.job?.jobId || 'unknown',
+                jobId: job?.jobId || 'unknown',
                 error: error instanceof Error ? error.message : 'Unknown error'
-            });
+            }); 
         }
     });
 };
