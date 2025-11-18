@@ -61,6 +61,15 @@ public:
         bool calculateStrainTensors,
         bool calcD2min
     );
+    
+    void enableElasticStrain(bool flag);
+    void setElasticStrainParameters(
+        double latticeConstant,
+        double caRatio,
+        bool pushForward,
+        bool calculateDeformationGradient,
+        bool calculateStrainTensors
+    );
 
     void setStructureIdentificationOnly(bool structureIdentificationOnly);
     void setGrainSegmentationOnly(bool grainSegmentationOnly);
@@ -115,6 +124,13 @@ private:
 
     bool  _hasAtomicStrainReference;
     LammpsParser::Frame _atomicStrainReferenceFrame;
+
+    bool _elasticStrainEnabled = false;
+    double _elasticLatticeConstant = 1.0;
+    double _elasticCaRatio = 1.0;
+    bool _elasticPushForward = false;
+    bool _elasticCalcDefGrad = true;
+    bool _elasticCalcStrainTensors = true;
     
     mutable json _lastJsonData;
     mutable LammpsParser::Frame _lastFrame;

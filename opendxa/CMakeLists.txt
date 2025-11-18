@@ -113,6 +113,7 @@ set(LIBRARY_SOURCES
     src/analysis/nearest_neighbor_finder.cpp
     src/analysis/crystal_path_finder.cpp
     src/analysis/cluster_connector.cpp
+    src/analysis/elastic_strain.cpp
     src/analysis/burgers_loop_builder.cpp
     src/analysis/analysis_context.cpp
     src/analysis/cutoff_neighbor_finder.cpp

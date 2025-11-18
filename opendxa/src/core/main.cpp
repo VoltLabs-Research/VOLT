@@ -50,6 +50,13 @@ void show_usage(const std::string& name){
               << "  --atomicStrainCalcDeformationGradient <bool>    Compute deformation gradient F (default: true).\n"
               << "  --atomicStrainCalcStrainTensors <bool>          Compute strain tensor (default: true).\n"
               << "  --atomicStrainCalcD2min <bool>                  Compute nonaffine squared disp. D2min (default: true).\n\n"
+              << "  --elasticStrainEnabled <bool>            Enable elastic strain analysis (true/false).\n"
+              << "  --elasticLatticeConstant <float>        Lattice constant a0 for elastic strain.\n"
+              << "  --elasticCaRatio <float>                c/a ratio for non-cubic crystals.\n"
+              << "  --elasticPushForward <bool>             Push strain tensors to spatial frame (Euler strain).\n"
+              << "  --elasticCalcDeformationGradient <bool> Compute deformation gradient F.\n"
+              << "  --elasticCalcStrainTensors <bool>       Compute strain tensors.\n\n"
+
               << "  --help                                Show this help message and exit.\n"
               << std::endl;
 }
@@ -164,8 +171,8 @@ int main(int argc, char* argv[]){
 
         bool eliminateCellDeformation       = false;
         bool assumeUnwrappedCoordinates     = false;
-        bool calcDefGrad                    = true;
-        bool calcStrainTensors              = true;
+        bool calcDefGradAtomic              = true;
+        bool calcStrainTensorsAtomic        = true;
         bool calcD2min                      = true;
 
         if(options.count("--atomicStrainEliminateCellDeformation")){
@@ -175,10 +182,10 @@ int main(int argc, char* argv[]){
             assumeUnwrappedCoordinates = (options["--atomicStrainAssumeUnwrapped"] == "true");
         }
         if(options.count("--atomicStrainCalcDeformationGradient")){
-            calcDefGrad = (options["--atomicStrainCalcDeformationGradient"] == "true");
+            calcDefGradAtomic = (options["--atomicStrainCalcDeformationGradient"] == "true");
         }
         if(options.count("--atomicStrainCalcStrainTensors")){
-            calcStrainTensors = (options["--atomicStrainCalcStrainTensors"] == "true");
+            calcStrainTensorsAtomic = (options["--atomicStrainCalcStrainTensors"] == "true");
         }
         if(options.count("--atomicStrainCalcD2min")){
             calcD2min = (options["--atomicStrainCalcD2min"] == "true");
@@ -187,9 +194,44 @@ int main(int argc, char* argv[]){
         analyzer.setAtomicStrainOptions(
             eliminateCellDeformation,
             assumeUnwrappedCoordinates,
-            calcDefGrad,
-            calcStrainTensors,
+            calcDefGradAtomic,
+            calcStrainTensorsAtomic,
             calcD2min
+        );
+
+        bool elasticEnabled = false;
+        double elasticLatticeConstant = 1.0;
+        double elasticCaRatio = 1.0;
+        bool elasticPushForward = false;
+        bool elasticCalcDefGrad = true;
+        bool elasticCalcStrainTensors = true;
+
+        if(options.count("--elasticStrainEnabled")){
+            elasticEnabled = (options["--elasticStrainEnabled"] == "true");
+        }
+        if(options.count("--elasticLatticeConstant")){
+            elasticLatticeConstant = std::stod(options["--elasticLatticeConstant"]);
+        }
+        if(options.count("--elasticCaRatio")){
+            elasticCaRatio = std::stod(options["--elasticCaRatio"]);
+        }
+        if(options.count("--elasticPushForward")){
+            elasticPushForward = (options["--elasticPushForward"] == "true");
+        }
+        if(options.count("--elasticCalcDeformationGradient")){
+            elasticCalcDefGrad = (options["--elasticCalcDeformationGradient"] == "true");
+        }
+        if(options.count("--elasticCalcStrainTensors")){
+            elasticCalcStrainTensors = (options["--elasticCalcStrainTensors"] == "true");
+        }
+
+        analyzer.enableElasticStrain(elasticEnabled);
+        analyzer.setElasticStrainParameters(
+            elasticLatticeConstant,
+            elasticCaRatio,
+            elasticPushForward,
+            elasticCalcDefGrad,
+            elasticCalcStrainTensors
         );
 
         if(options.count("--identificationMode")){
