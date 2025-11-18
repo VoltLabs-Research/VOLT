@@ -42,7 +42,14 @@ public:
         _grainSegmentationOnly(false),
         _identificationMode(StructureAnalysis::Mode::CNA),
         _markCoreAtoms(false),
+        _coordinationAnalysisOnly(false),
+        _coordinationCutoff(3.2),
+        _coordinationRdfBins(500),
         _onlyPerfectDislocations(false){}
+
+    void setCoordinationAnalysisOnly(bool flag);
+    void setCoordinationCutoff(double cutoff);
+    void setCoordinationRdfBins(int bins);
 
     void setStructureIdentificationOnly(bool structureIdentificationOnly);
     void setGrainSegmentationOnly(bool grainSegmentationOnly);
@@ -76,7 +83,11 @@ private:
     bool _structureIdentificationOnly;
     bool _grainSegmentationOnly;
     bool _onlyPerfectDislocations;
-    
+   
+    bool _coordinationAnalysisOnly;
+    double _coordinationCutoff;
+    int _coordinationRdfBins;
+
     mutable json _lastJsonData;
     mutable LammpsParser::Frame _lastFrame;
     mutable DXAJsonExporter _jsonExporter;

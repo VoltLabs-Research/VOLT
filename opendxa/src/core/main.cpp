@@ -114,6 +114,15 @@ int main(int argc, char* argv[]){
             else if(val == "PTM")analyzer.setIdentificationMode(OpenDXA::StructureAnalysis::Mode::PTM);
             else if(val == "DIAMOND") analyzer.setIdentificationMode(OpenDXA::StructureAnalysis::Mode::DIAMOND);
         }
+        if(options.count("--coordinationAnalysis")){
+            analyzer.setCoordinationAnalysisOnly(options["--coordinationAnalysis"] == "true");
+        }
+        if(options.count("--cordinationCutoff")){
+            analyzer.setCoordinationCutoff(std::stod(options["--coordinationCutoff"]));
+        }
+        if(options.count("--coordinationBins")){
+            analyzer.setCoordinationRdfBins(std::stoi(options["--coordinationBins"]));
+        }
         if(options.count("--rmsd")){
             analyzer.setRmsd(std::stod(options["--rmsd"]));
         }

@@ -1,5 +1,6 @@
 #include <opendxa/core/dislocation_analysis.h>
 #include <opendxa/analysis/structure_analysis.h>
+#include <opendxa/analysis/coordination_analysis.h>
 #include <opendxa/core/property_base.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/analysis_context.h>
@@ -98,6 +99,18 @@ void DislocationAnalysis::setIdentificationMode(StructureAnalysis::Mode identifi
     _identificationMode = identificationMode;
 }
 
+void DislocationAnalysis::setCoordinationAnalysisOnly(bool flag){
+    _coordinationAnalysisOnly = flag;
+}
+
+void DislocationAnalysis::setCoordinationCutoff(double cutoff){
+    _coordinationCutoff = cutoff;
+}
+
+void DislocationAnalysis::setCoordinationRdfBins(int bins){
+    _coordinationRdfBins = bins;
+}
+
 json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& outputFile){
     auto start_time = std::chrono::high_resolution_clock::now();
     spdlog::debug("Processing frame {} with {} atoms", frame.timestep, frame.natoms);
@@ -137,6 +150,51 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     if(!validateSimulationCell(frame.simulationCell)){
         result["is_failed"] = true;
         result["error"] = "Invalid simulation cell";
+        return result;
+    }
+
+    if(_coordinationAnalysisOnly){
+        spdlog::info("Starting coordination analysis (cutoff = {}, bins = {})...", _coordinationCutoff, _coordinationRdfBins);
+        CoordinationNumber cn;
+        cn.setCutoff(_coordinationCutoff);
+
+        CoordinationNumber::CoordinationAnalysisEngine engine(
+            positions.get(),
+            frame.simulationCell,
+            _coordinationCutoff,
+            _coordinationRdfBins
+        );
+
+        engine.perform();
+        cn.transferComputationResults(&engine);
+
+        const auto &rdfX = cn.rdfX();
+        const auto &rdfY = cn.rdY();
+
+        auto coordProp = engine.coordinationNumbers();
+        std::vector<int> coord(frame.natoms);
+        for(int i = 0; i < frame.natoms; i++){
+            coord[i] = coordProp->getInt(i);
+        }
+
+        result["is_failed"] = false;
+        result["cutoff"] = _coordinationCutoff;
+        result["rdf"]["x"] = rdfX;
+        result["rdf"]["y"] = rdfY;
+        result["coordination"] = coord;
+        if(!outputFile.empty()){
+            std::string coordPath = outputFile + "_coordination.json";
+            std::ofstream ofs(coordPath);
+            ofs << std::setw(2) << result << std::endl;
+            ofs.close();
+            spdlog::info("Coordination analysis written to {}", coordPath);
+        }
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+            end_time - start_time).count();
+        result["total_time"] = duration;
+        spdlog::debug("Coordination analysis time {} ms", duration);
+
         return result;
     }
 

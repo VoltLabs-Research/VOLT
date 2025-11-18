@@ -116,6 +116,7 @@ set(LIBRARY_SOURCES
     src/analysis/analysis_context.cpp
     src/analysis/cutoff_neighbor_finder.cpp
     src/analysis/polyhedral_template_matching.cpp
+    src/analysis/coordination_analysis.cpp
     src/analysis/elastic_mapping.cpp
     src/analysis/structure_analysis.cpp
     src/analysis/common_neighbor_analysis.cpp
