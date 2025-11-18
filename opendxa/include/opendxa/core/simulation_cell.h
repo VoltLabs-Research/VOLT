@@ -22,6 +22,11 @@ public:
 		return _is2D;
 	}
 
+	static inline double modulo(double k, double n) {
+		k = fmod(k, n);
+		return (k < 0) ? k+n : k;
+	}
+
 	[[nodiscard]] const AffineTransformation& matrix() const noexcept{
 		return _simulationCell;
 	}

@@ -45,8 +45,6 @@ namespace OpenDXA::Particles{
 	class SurfaceMesh;
 	class SimulationCell;
 	class SimulationCellObject;
-
-	class CutoffNeighborFinder;
 }
 
 namespace OpenDXA{
