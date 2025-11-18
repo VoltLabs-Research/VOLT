@@ -46,6 +46,7 @@
     "jsonwebtoken": "^9.0.2",
     "meshoptimizer": "^0.24.0",
     "mime-types": "^3.0.1",
+    "minio": "^8.0.6",
     "mongoose": "^8.16.3",
     "multer": "^2.0.1",
     "pm2": "^6.0.8",

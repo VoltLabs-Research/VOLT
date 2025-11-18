@@ -31,6 +31,7 @@ import ChatModule from '@/socket/modules/chat';
 import NotificationsModule from '@/socket/modules/notifications';
 import CanvasPresenceModule from '@/socket/modules/canvas-presence';
 import { initializeRedis } from '@config/redis';
+import { initializeMinio } from '@/config/minio';
 import MetricsModule from '@/socket/modules/metrics';
 import MetricsCollector from '@/services/metrics-collector';
 
@@ -65,6 +66,7 @@ const shutodwn = async () => {
 server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
     // Initialize Redis BEFORE the Socket Gateway and wait for it to be ready
     await initializeRedis();
+    await initializeMinio();
     await mongoConnector();
     
     // Initialize metrics collector in background
