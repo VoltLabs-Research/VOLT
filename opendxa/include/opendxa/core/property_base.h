@@ -113,7 +113,7 @@ public:
 
     SymmetricTensor2* dataSymmetricTensor2() noexcept{
         return reinterpret_cast<SymmetricTensor2*>(data());
-    }
+    }   
 
     Matrix3* dataMatrix3() noexcept{
         return reinterpret_cast<Matrix3*>(data());
@@ -123,6 +123,11 @@ public:
         return reinterpret_cast<Quaternion*>(data());
     }
 
+    void setSymmetricTensor2(std::size_t idx, const SymmetricTensor2& t){
+        assert(idx < _numElements);
+        dataSymmetricTensor2()[idx] = t;
+    }
+
     boost::iterator_range<Point3*> point3Range(){
         return { dataPoint3(), dataPoint3() + _numElements };
     }
@@ -130,6 +135,14 @@ public:
     [[nodiscard]] int getInt(std::size_t idx) const{
         //assert(idx < _numElements);
         return constDataInt()[idx];
+    }
+
+    [[nodiscard]] boost::iterator_range<const int*> constIntRange() const{
+        return { constDataInt(), constDataInt() + _numElements * _componentCount };
+    }
+
+    boost::iterator_range<int*> intRange(){
+        return { dataInt(), dataInt() + _numElements * _componentCount };
     }
 
     [[nodiscard]] double getDouble(std::size_t idx) const{

@@ -73,6 +73,20 @@ public:
 };
 
 template<typename T>
+inline SymmetricTensor2T<T> Product_AtA(const Matrix_3<T>& A){
+	SymmetricTensor2T<T> S;
+	for(size_t i = 0; i < 3; i++) {
+		for(size_t j = 0; j <= i; j++) {
+			T b = 0;
+			for(size_t k = 0; k < 3; k++)
+				b += A(k,i) * A(k,j);
+			S(i,j) = b;
+		}
+	}
+	return S;
+}
+
+template<typename T>
 inline SymmetricTensor2T<T> operator+(const SymmetricTensor2T<T>& A, const SymmetricTensor2T<T>& B){
 	return { A[0]+B[0], A[1]+B[1], A[2]+B[2], A[3]+B[3], A[4]+B[4], A[5]+B[5] };
 }

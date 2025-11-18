@@ -51,6 +51,17 @@ public:
     void setCoordinationCutoff(double cutoff);
     void setCoordinationRdfBins(int bins);
 
+    void enableAtomicStrain(bool flag);
+    void setAtomicStrainCutoff(double cutoff);
+    void setAtomicStrainReferenceFrame(const LammpsParser::Frame &ref);
+    void setAtomicStrainOptions(
+        bool eliminateCellDeformation,
+        bool assumeUnwrappedCoordinates,
+        bool calculateDeformationGradient,
+        bool calculateStrainTensors,
+        bool calcD2min
+    );
+
     void setStructureIdentificationOnly(bool structureIdentificationOnly);
     void setGrainSegmentationOnly(bool grainSegmentationOnly);
     void setInputCrystalStructure(LatticeStructureType structure);
@@ -65,6 +76,12 @@ public:
     void setRmsd(float rmsd);
     json compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile = "");
     json exportResultsToJson(const std::string& filename = "") const;
+
+    json computeAtomicStrain(
+        const LammpsParser::Frame &currentFrame,
+        const LammpsParser::Frame &refFrame,
+        Particles::ParticleProperty *positions
+    );
 
 private:
     LatticeStructureType _inputCrystalStructure;
@@ -88,6 +105,17 @@ private:
     double _coordinationCutoff;
     int _coordinationRdfBins;
 
+    bool  _atomicStrainEnabled;
+    double _atomicStrainCutoff;
+    bool  _atomicStrainEliminateCellDeformation;
+    bool  _atomicStrainAssumeUnwrappedCoordinates;
+    bool  _atomicStrainCalcDeformationGradients;
+    bool  _atomicStrainCalcStrainTensors;
+    bool  _atomicStrainCalcNonaffineSquaredDisplacements;
+
+    bool  _hasAtomicStrainReference;
+    LammpsParser::Frame _atomicStrainReferenceFrame;
+    
     mutable json _lastJsonData;
     mutable LammpsParser::Frame _lastFrame;
     mutable DXAJsonExporter _jsonExporter;

@@ -105,6 +105,7 @@ set(LIBRARY_SOURCES
     src/core/lammps_parser.cpp
     src/core/dislocation_analysis.cpp
     src/core/coordination_structures.cpp
+    src/analysis/atomic_strain.cpp
     src/analysis/ptm_neighbor_finder.cpp
     src/structures/cluster_graph.cpp
     src/structures/dislocation_network.cpp
