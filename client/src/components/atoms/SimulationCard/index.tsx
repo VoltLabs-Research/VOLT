@@ -43,7 +43,7 @@ interface SimulationCardProps {
     onSelect: (id: string) => void;
 }
 
-type ProcessingStage = 'idle' | 'queued' | 'processing' | 'rendering' | 'completed' | 'failed';
+type ProcessingStage = 'idle' | 'queued' | 'processing' | 'rendering' | 'completed' | 'failed' | 'analyzing';
 
 const getMessageForStage = (stage: ProcessingStage): string => {
     switch (stage) {
@@ -51,6 +51,8 @@ const getMessageForStage = (stage: ProcessingStage): string => {
             return '';
         case 'queued':
             return 'Queued...';
+        case 'analyzing':
+            return 'Analyzing...';
         case 'processing':
             return 'Processing frames...';
         case 'rendering':

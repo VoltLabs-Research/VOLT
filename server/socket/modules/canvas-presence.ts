@@ -42,7 +42,7 @@ class CanvasPresenceModule extends BaseSocketModule {
             event: 'subscribe_to_canvas',
             roomOf: (payload: { trajectoryId?: string }) => {
                 const room = payload.trajectoryId ? `canvas:${payload.trajectoryId}` : undefined;
-                console.log(`[${this.name}] Canvas room determined: ${room} for trajectory: ${payload.trajectoryId}`);
+                //console.log(`[${this.name}] Canvas room determined: ${room} for trajectory: ${payload.trajectoryId}`);
                 return room;
             },
             previousOf: (payload: { trajectoryId?: string; previousTrajectoryId?: string }) => 
@@ -51,12 +51,12 @@ class CanvasPresenceModule extends BaseSocketModule {
                 socket.data.trajectoryId = payload.trajectoryId;
                 socket.data.user = payload.user;
                 socket.data.viewType = 'canvas';
-                console.log(`[${this.name}] Context set for socket ${socket.id}: trajectoryId=${payload.trajectoryId}, user=${socket.data.user?.firstName || 'anonymous'}`);
+                //console.log(`[${this.name}] Context set for socket ${socket.id}: trajectoryId=${payload.trajectoryId}, user=${socket.data.user?.firstName || 'anonymous'}`);
             },
             updateEvent: 'canvas_users_update',
             userFromSocket: (socket) => {
                 const user = this.extractPresenceUser(socket);
-                console.log(`[${this.name}] Extracted presence user from socket ${socket.id}:`, user);
+                //console.log(`[${this.name}] Extracted presence user from socket ${socket.id}:`, user);
                 return user;
             }
         });
@@ -66,7 +66,7 @@ class CanvasPresenceModule extends BaseSocketModule {
             if (!payload.trajectoryId) return;
 
             const canvasRoom = `canvas:${payload.trajectoryId}`;
-            console.log(`[${this.name}] Socket ${socket.id} unsubscribing from canvas: ${canvasRoom}`);
+            //console.log(`[${this.name}] Socket ${socket.id} unsubscribing from canvas: ${canvasRoom}`);
             
             this.leaveRoom(socket, canvasRoom);
             
@@ -90,7 +90,7 @@ class CanvasPresenceModule extends BaseSocketModule {
             socket.data.observing = payload.trajectoryId;
             socket.data.observerType = 'canvas';
 
-            console.log(`[${this.name}] Socket ${socket.id} observing canvas presence for ${payload.trajectoryId}`);
+            //console.log(`[${this.name}] Socket ${socket.id} observing canvas presence for ${payload.trajectoryId}`);
 
             // Immediately send current canvas users to this observer with trajectory-specific event
             const users = await this.collectPresence(mainRoom, (s) => this.extractPresenceUser(s));
@@ -125,7 +125,7 @@ class CanvasPresenceModule extends BaseSocketModule {
 
             if (!rasterRoom) return;
 
-            console.log(`[${this.name}] Socket ${socket.id} unsubscribing from raster: ${rasterRoom}`);
+            //console.log(`[${this.name}] Socket ${socket.id} unsubscribing from raster: ${rasterRoom}`);
             
             this.leaveRoom(socket, rasterRoom);
             
@@ -150,7 +150,7 @@ class CanvasPresenceModule extends BaseSocketModule {
             socket.data.observingRaster = payload.trajectoryId;
             socket.data.observerType = 'raster';
 
-            console.log(`[${this.name}] Socket ${socket.id} observing raster presence for ${payload.trajectoryId}`);
+            //console.log(`[${this.name}] Socket ${socket.id} observing raster presence for ${payload.trajectoryId}`);
 
             // Immediately send current raster users to this observer with trajectory-specific event
             const users = await this.collectPresence(mainRoom, (s) => this.extractPresenceUser(s));

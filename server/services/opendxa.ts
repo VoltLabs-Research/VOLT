@@ -279,7 +279,6 @@ class OpenDXAService{
      */
     private async processFrameData(frameResult: any, timestep: number, options: ConfigParameters): Promise<void>{
         const { interface_mesh, defect_mesh, dislocations, atoms, structures, simulation_cell } = frameResult;
-
         if(options?.structureIdentificationOnly && atoms){
             this.exportAtomsColoredByType(atoms, timestep);
             return;
