@@ -27,6 +27,8 @@ import { Mesh } from '@/types/utilities/export/mesh';
 import { Dislocation } from '@/types/utilities/export/dislocations';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { readMsgpackFile } from '@/utilities/msgpack';
+import { fileExists } from '@/utilities/fs';
+import { calculateDislocationType } from '@/utilities/dislocation-utils';
 import { StructureAnalysis, SimulationCell, Dislocations } from '@/models/index';
 import { upsert } from '@/utilities/mongo/mongo-utils';
 import path from 'path';
@@ -34,7 +36,6 @@ import os from 'os';
 import MeshExporter from '@utilities/export/mesh';
 import DislocationExporter from '@utilities/export/dislocations';
 import AtomisticExporter from '@utilities/export/atoms';
-import { fileExists } from '@/utilities/fs';
 
 /**
  * Absolute path to the compiled OpenDXA CLI executable.
@@ -332,7 +333,7 @@ class OpenDXAService{
             totalSegments: data.metadata.count,
             dislocations: data.data.map((dislocation) => ({
                 segmentId: dislocation.segment_id,
-                type: dislocation.type,
+                type: calculateDislocationType(dislocation),
                 numPoints: dislocation.num_points,
                 length: dislocation.length,
                 points: dislocation.points,
