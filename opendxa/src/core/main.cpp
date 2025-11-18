@@ -30,7 +30,7 @@ void show_usage(const std::string& name){
               << "  --identificationMode <mode> Structure identification mode. Default: CNA.\n"
               << "                             Available modes: CNA, PTM, DIAMOND.\n\n"
               << "  --rmsd <float>             If identification mode is PTM. RMSD should be specified.\n\n"
-              << "  --structureIdentificationOnly <bool>  Only generates a output file with the structure identification.\n\n"
+              << "  --structureIdentificationOnly <bool>  Only generates an output file with the structure identification.\n\n"
               << "  --grainSegmentationOnly <bool>        Only performs grain segmentation analysis and exports GLB model.\n\n"
               << "  --maxTrialCircuitSize <int>           Maximum size of the Burgers circuit. Default: 14.\n\n"
               << "  --circuitStretchability <int>         Circuit stretchability factor. Default: 9.\n\n"
@@ -44,7 +44,12 @@ void show_usage(const std::string& name){
               << "  --atomicStrainEnabled <bool>          Enable atomic strain inside DXA (true/false).\n"
               << "  --atomicStrainCutoff <float>          Cutoff radius for atomic strain. Default: 3.0.\n"
               << "  --referenceSource <file>              LAMMPS dump to use as reference configuration for atomic strain.\n"
-              << "                                        If omitted, the current frame is used as reference (≈ zero strain).\n\n"
+              << "                                        If omitted, the current frame is used as reference (≈ zero strain).\n"
+              << "  --atomicStrainEliminateCellDeformation <bool>   Eliminate cell deformation (default: false).\n"
+              << "  --atomicStrainAssumeUnwrapped <bool>            Assume unwrapped coords (default: false).\n"
+              << "  --atomicStrainCalcDeformationGradient <bool>    Compute deformation gradient F (default: true).\n"
+              << "  --atomicStrainCalcStrainTensors <bool>          Compute strain tensor (default: true).\n"
+              << "  --atomicStrainCalcD2min <bool>                  Compute nonaffine squared disp. D2min (default: true).\n\n"
               << "  --help                                Show this help message and exit.\n"
               << std::endl;
 }
@@ -157,7 +162,36 @@ int main(int argc, char* argv[]){
             analyzer.setAtomicStrainReferenceFrame(refFrame);
         }
 
-        // === resto de opciones ===
+        bool eliminateCellDeformation       = false;
+        bool assumeUnwrappedCoordinates     = false;
+        bool calcDefGrad                    = true;
+        bool calcStrainTensors              = true;
+        bool calcD2min                      = true;
+
+        if(options.count("--atomicStrainEliminateCellDeformation")){
+            eliminateCellDeformation = (options["--atomicStrainEliminateCellDeformation"] == "true");
+        }
+        if(options.count("--atomicStrainAssumeUnwrapped")){
+            assumeUnwrappedCoordinates = (options["--atomicStrainAssumeUnwrapped"] == "true");
+        }
+        if(options.count("--atomicStrainCalcDeformationGradient")){
+            calcDefGrad = (options["--atomicStrainCalcDeformationGradient"] == "true");
+        }
+        if(options.count("--atomicStrainCalcStrainTensors")){
+            calcStrainTensors = (options["--atomicStrainCalcStrainTensors"] == "true");
+        }
+        if(options.count("--atomicStrainCalcD2min")){
+            calcD2min = (options["--atomicStrainCalcD2min"] == "true");
+        }
+
+        analyzer.setAtomicStrainOptions(
+            eliminateCellDeformation,
+            assumeUnwrappedCoordinates,
+            calcDefGrad,
+            calcStrainTensors,
+            calcD2min
+        );
+
         if(options.count("--identificationMode")){
             std::string val = options["--identificationMode"];
             if(val == "CNA")      analyzer.setIdentificationMode(OpenDXA::StructureAnalysis::Mode::CNA);
@@ -168,7 +202,7 @@ int main(int argc, char* argv[]){
             analyzer.setCoordinationAnalysisOnly(options["--coordinationAnalysis"] == "true");
         }
         if(options.count("--cordinationCutoff")){
-            analyzer.setCoordinationCutoff(std::stod(options["--coordinationCutoff"]));
+            analyzer.setCoordinationCutoff(std::stod(options["--cordinationCutoff"]));
         }
         if(options.count("--coordinationBins")){
             analyzer.setCoordinationRdfBins(std::stoi(options["--coordinationBins"]));
