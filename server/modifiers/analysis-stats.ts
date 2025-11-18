@@ -1,4 +1,5 @@
-import { AnalysisConfig, Dislocations as Dislocation, StructureAnalysis, Trajectory, SimulationCell } from '@/models/index';
+import { AnalysisConfig, StructureAnalysis, Trajectory, SimulationCell } from '@/models/index';
+import { listDislocationsByPrefix } from '@/buckets/dislocations';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -46,24 +47,19 @@ export const computeAnalysisStats = async (trajectoryId: string): Promise<any> =
     const stats: any = [];
     console.log('waiting');
     const promises = trajectoryAnalysis.map(async (analysis) => {
-        const filter = { analysisConfig: analysis._id };
-        const dislocations = await Dislocation
-            .find(filter)
-            .select({
-                totalSegments: 1,
-                timestep: 1,
-                dislocations: {
-                    segmentId: 1,
-                    length: 1,
-                    burgers: 1
-                },
-                averageSegmentLength: 1,
-                totalLength: 1
-            });
-        
+        const prefix = `${trajectory._id.toString()}/${analysis._id.toString()}/`;
+        const objects = await listDislocationsByPrefix(prefix);
+
+        const dislocations = objects.map(({ data }) => ({
+            totalSegments: data.totalSegments,
+            timestep: data.timestep,
+            dislocations: data.dislocations,
+            averageSegmentLength: data.averageSegmentLength,
+            totalLength: data.totalLength
+        }));
 
         const structureAnalysis = await StructureAnalysis
-            .find(filter)
+            .find({ analysisConfig: analysis._id })
             .select({
                 totalAtoms: 1,
                 timestep: 1,

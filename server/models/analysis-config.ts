@@ -26,6 +26,21 @@ import { IdentificationMode, LatticeStructure } from '@/types/services/opendxa';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
+const DislocationFileSchema = new Schema({
+  timestep: { type: Number, required: true },
+  storageKey: { type: String, required: true },
+
+  totalSegments: { type: Number, required: true },
+  totalPoints: { type: Number, required: true },
+  totalLength: { type: Number, required: true },
+  averageSegmentLength: { type: Number, required: true },
+  maxSegmentLength: { type: Number, required: true },
+  minSegmentLength: { type: Number, required: true },
+
+  createdAt: { type: Date, default: Date.now }
+}, { _id: false });
+
+
 const AnalysisConfigSchema: Schema<IAnalysisConfig> = new Schema({
     crystalStructure: {
         type: String,
@@ -69,6 +84,10 @@ const AnalysisConfigSchema: Schema<IAnalysisConfig> = new Schema({
         type: Boolean,
         required: true
     },
+  dislocationFiles: {
+    type: [DislocationFileSchema],
+    default: []
+  },
     trajectory: {
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
@@ -88,12 +107,6 @@ const AnalysisConfigSchema: Schema<IAnalysisConfig> = new Schema({
         cascade: 'unset',
         inverse: { path: 'analysisConfig', behavior: 'set' }
     },
-    dislocations: [{
-        type: Schema.Types.ObjectId,
-        ref: 'Dislocation',
-        cascade: 'pull',
-        inverse: { path: 'analysisConfig', behavior: 'set' }
-    }],
     structureIdentificationOnly: {
         type: Boolean,
         required: true

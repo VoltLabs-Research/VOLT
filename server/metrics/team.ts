@@ -20,7 +20,8 @@
 * SOFTWARE.
 **/
 
-import { Trajectory, StructureAnalysis, Dislocations, AnalysisConfig } from '@models/index';
+import { Trajectory, StructureAnalysis, AnalysisConfig } from '@models/index';
+import { listDislocationsByPrefix } from '@/buckets/dislocations';
 
 export const getMetricsByTeamId = async (teamId: string) => {
     const now = new Date();
@@ -32,21 +33,54 @@ export const getMetricsByTeamId = async (teamId: string) => {
     
     const trajectories = await Trajectory.find({ team: { $in: [teamId] } }).select('_id createdAt');
     const trajectoryIds = trajectories.map(({ _id }) => _id);
-    
-    const totals = await Promise.all([
+
+    const [totalTrajectories, totalStructAnalyses, totalAnalysisConfigs] = await Promise.all([
         Trajectory.countDocuments({ team: { $in: [teamId] } }),
         StructureAnalysis.countDocuments({ trajectory: { $in: trajectoryIds } }),
-        AnalysisConfig.countDocuments({ trajectory: { $in: trajectoryIds } }),
-        Dislocations.aggregate([
-            { $match: { trajectory: { $in: trajectoryIds } } },
-            { $group: { _id: null, total: { $sum: '$totalSegments' } } }
-        ])
+        AnalysisConfig.countDocuments({ trajectory: { $in: trajectoryIds } })
     ]);
 
-    const totalTrajectories = totals[0] || 0;
-    const totalStructAnalyses = totals[1] || 0;
-    const totalAnalysisConfigs = totals[2] || 0;
-    const totalDislocations = (totals[3][0]?.total as number) || 0;
+    const dislocationObjectsPerTraj = await Promise.all(
+        trajectoryIds.map((tid) => listDislocationsByPrefix(`${tid.toString()}/`))
+    );
+    const allDislocationObjects = dislocationObjectsPerTraj.flat();
+
+    let totalDislocations = 0;
+    let dislCurr = 0;
+    let dislPrev = 0;
+
+    const sinceDate = new Date(now);
+    sinceDate.setUTCDate(sinceDate.getUTCDate() - (weeks * 7));
+    sinceDate.setUTCHours(0, 0, 0, 0);
+
+    const dislWeeklyMap = new Map<string, number>();
+
+    const inRange = (d: Date, from: Date, to: Date) => d >= from && d < to;
+
+    for(const { data } of allDislocationObjects){
+        const segments = Number(data.totalSegments) || 0;
+        totalDislocations += segments;
+
+        const createdAt = data.createdAt ? new Date(data.createdAt) : null;
+        if(!createdAt || isNaN(createdAt.getTime())) continue;
+
+        if(inRange(createdAt, monthStart, now)){
+            dislCurr += segments;
+        }else if(inRange(createdAt, prevMonthStart, monthStart)){
+            dislPrev += segments;
+        }
+
+        if(createdAt >= sinceDate){
+            const weekStart = new Date(createdAt);
+            weekStart.setUTCHours(0, 0, 0, 0);
+            const day = weekStart.getUTCDay();
+            const diff = (day + 6) % 7;
+            weekStart.setUTCDate(weekStart.getUTCDate() - diff);
+
+            const keyStr = weekStart.toISOString().slice(0, 10);
+            dislWeeklyMap.set(keyStr, (dislWeeklyMap.get(keyStr) ?? 0) + segments);
+        }
+    }
 
     const [currTrajectory, prevTrajectory] = await Promise.all([
         Trajectory.countDocuments({ team: { $in: [teamId] }, createdAt: { $gte: monthStart, $lt: now } }),
@@ -63,19 +97,6 @@ export const getMetricsByTeamId = async (teamId: string) => {
         AnalysisConfig.countDocuments({ trajectory: { $in: trajectoryIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } })
     ]);
 
-    const currDislocationsAgg = await Dislocations.aggregate([
-        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: monthStart, $lt: now } } },
-        { $group: { _id: null, total: { $sum: '$totalSegments' } } }
-    ]);
-
-    const prevDislocationsAgg = await Dislocations.aggregate([
-        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: prevMonthStart, $lt: monthStart } } },
-        { $group: { _id: null, total: { $sum: '$totalSegments' } } }
-    ]);
-
-    const dislCurr = (currDislocationsAgg[0]?.total as number) || 0;
-    const dislPrev = (prevDislocationsAgg[0]?.total as number) || 0;
-
     const pct = (c: number, p: number) => p === 0 ? (c > 0 ? 100 : 0) : Math.round(((c - p) / p) * 100);
     const lastMonth = {
         trajectories: pct(currTrajectory, prevTrajectory),
@@ -83,10 +104,6 @@ export const getMetricsByTeamId = async (teamId: string) => {
         analysisConfigs: pct(currConfigs, prevConfigs),
         dislocations: pct(dislCurr, dislPrev)
     };
-
-    const sinceDate = new Date(now);
-    sinceDate.setUTCDate(sinceDate.getUTCDate() - (weeks * 7));
-    sinceDate.setUTCHours(0, 0, 0, 0);
 
     const trajWeekly = await Trajectory.aggregate([
         { $match: { team: { $in: [teamId] }, createdAt: { $gte: sinceDate } } },
@@ -100,17 +117,17 @@ export const getMetricsByTeamId = async (teamId: string) => {
         { $sort: { _id: 1 } }
     ]);
 
-    const dislWeekly = await Dislocations.aggregate([
-        { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: sinceDate } } },
-        { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: 'week', timezone: tz } }, value: { $sum: '$totalSegments' } } },
-        { $sort: { _id: 1 } }
-    ]);
-
     const cfgWeekly = await AnalysisConfig.aggregate([
         { $match: { trajectory: { $in: trajectoryIds }, createdAt: { $gte: sinceDate } } },
         { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: 'week', timezone: tz } }, value: { $sum: 1 } } },
         { $sort: { _id: 1 } }
     ]);
+
+    const dislWeekly: Array<{ _id: Date; value: number }> = [];
+    for(const [k, v] of dislWeeklyMap.entries()){
+        dislWeekly.push({ _id: new Date(k + 'T00:00:00.000Z'), value: v });
+    }
+    dislWeekly.sort((a, b) => a._id.getTime() - b._id.getTime());
 
     const key = (d: any) => new Date(d).toISOString().slice(0, 10);
     const allKeys = new Set<string>();

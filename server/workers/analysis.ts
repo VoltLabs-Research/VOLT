@@ -33,7 +33,7 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
 
     try{
         console.log(`[Worker #${process.pid}] Received job ${job.jobId}. Starting processing...`);
-        const analysis = new OpenDXAService(job.trajectoryId, job.folderPath, job.analysisConfigId);
+        const analysis = new OpenDXAService(job.trajectoryId.toString(), job.folderPath.toString(), job.analysisConfigId.toString());
         const results = await analysis.processSingleFile(job.inputFile, job.config);
         parentPort?.postMessage({
             status: 'completed',

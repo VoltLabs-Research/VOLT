@@ -80,12 +80,6 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         ref: 'SimulationCell',
         cascade: 'unset'
     },
-    dislocations: [{
-        type: Schema.Types.ObjectId,
-        ref: 'Dislocation',
-        inverse: { path: 'trajectory', behavior: 'set' },
-        cascade: 'pull'
-    }],
     status: {
         type: String,
         lowercase: true,
@@ -130,37 +124,51 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
 TrajectorySchema.plugin(useInverseRelations);
 TrajectorySchema.plugin(useCascadeDelete);
 
-// Calculate available models based on trajectory data
 TrajectorySchema.post('findOne', function(doc) {
-    if (doc) {
-        const availableModels = {
-            atomicStructure: doc.frames && doc.frames.length > 0,
-            dislocations: doc.dislocations && doc.dislocations.length > 0,
-            bonds: doc.frames && doc.frames.length > 0, // Bonds are part of frames
-            simulationCell: !!doc.simulationCell,
-            structureIdentification: doc.structureAnalysis && doc.structureAnalysis.length > 0
-        };
-        doc.availableModels = availableModels;
-    }
+  if (doc) {
+    const hasFrames = Array.isArray(doc.frames) && doc.frames.length > 0;
+    
+    const hasDislocationsFromAnalysis =
+      Array.isArray(doc.analysis) &&
+      doc.analysis.some((cfg: any) =>
+        Array.isArray(cfg?.dislocationFiles) && cfg.dislocationFiles.length > 0
+      );
+
+    const hasStructureAnalysis = Array.isArray(doc.structureAnalysis) && doc.structureAnalysis.length > 0;
+
+    const availableModels = {
+      atomicStructure: hasFrames,
+      dislocations: hasDislocationsFromAnalysis || !!doc?.availableModels?.dislocations,
+      bonds: hasFrames,
+      simulationCell: !!doc.simulationCell,
+      structureIdentification: hasStructureAnalysis
+    };
+    doc.availableModels = availableModels;
+  }
 });
 
 TrajectorySchema.post('find', function(docs) {
-    if (Array.isArray(docs)) {
-        docs.forEach(doc => {
-            const availableModels = {
-                atomicStructure: doc.frames && doc.frames.length > 0,
-                dislocations: doc.dislocations && doc.dislocations.length > 0,
-                bonds: doc.frames && doc.frames.length > 0,
-                simulationCell: !!doc.simulationCell,
-                structureIdentification: doc.structureAnalysis && doc.structureAnalysis.length > 0
-            };
-            doc.availableModels = availableModels;
-        });
-    }
-});
+  if (Array.isArray(docs)) {
+    docs.forEach((doc: any) => {
+      const hasFrames = Array.isArray(doc.frames) && doc.frames.length > 0;
+      const hasDislocationsFromAnalysis =
+        Array.isArray(doc.analysis) &&
+        doc.analysis.some((cfg: any) =>
+          Array.isArray(cfg?.dislocationFiles) && cfg.dislocationFiles.length > 0
+        );
+      const hasStructureAnalysis = Array.isArray(doc.structureAnalysis) && doc.structureAnalysis.length > 0;
 
-// Text index to enable full-text search (used by APIFeatures.search via HandlerFactory)
-// Include name (primary) and status for flexible queries
+      const availableModels = {
+        atomicStructure: hasFrames,
+        dislocations: hasDislocationsFromAnalysis || !!doc?.availableModels?.dislocations,
+        bonds: hasFrames,
+        simulationCell: !!doc.simulationCell,
+        structureIdentification: hasStructureAnalysis
+      };
+      doc.availableModels = availableModels;
+    });
+  }
+});
 TrajectorySchema.index({ name: 'text', status: 'text' });
 
 TrajectorySchema.pre('findOneAndDelete', async function(next){

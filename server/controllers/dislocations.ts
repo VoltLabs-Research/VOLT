@@ -1,205 +1,160 @@
 import { Request, Response } from 'express';
 import { isValidObjectId } from 'mongoose';
-import { Team, Trajectory, Dislocations } from '@/models/index';
+import { Team, Trajectory, AnalysisConfig } from '@/models/index';
+import { listDislocationsByPrefix } from '@/buckets/dislocations';
+import path from 'path';
 
-// TODO: HandlerFactory
 export const getUserDislocations = async (req: Request, res: Response) => {
-  try{
-    const userId = (req as any).user?.id;
-    const {
-      teamId,
-      trajectoryId,
-      analysisConfigId,
-      timestepFrom,
-      timestepTo,
-      page = '1',
-      limit = '100',
-      sort = '-createdAt',
-      q = ''
-    } = req.query as Record<string, string>;
-    let teamIds: string[] = [];
-    if(teamId){
-      if(!isValidObjectId(teamId)){
-        return res.status(400).json({ status: 'error', data: { error: 'teamId inválido' } });
-      }
-      const team = await Team.findOne({ _id: teamId, members: userId }).select('_id');
-      if(!team){
-        return res.status(403).json({ status: 'error', data: { error: 'Forbidden. No perteneces a este equipo.' } });
-      }
-      teamIds = [(team as any)._id.toString()];
-    }else{
-      const teams = await Team.find({ members: userId }).select('_id');
-      teamIds = (teams as any[]).map((t: any) => t._id.toString());
-    }
+	try{
+		const userId = (req as any).user?.id;
+		const {
+			teamId,
+			trajectoryId,
+			analysisConfigId,
+			timestepFrom,
+			timestepTo,
+			page = '1',
+			limit = '100'
+		} = req.query as Record<string, string>;
 
-    if(teamIds.length === 0){
-      return res.status(200).json({
-        status: 'success',
-        data: { page: 1, limit: 0, total: 0, totals: { segments: 0, points: 0, length: 0 }, dislocations: [] }
-      });
-    }
+		let teamIds: string[] = [];
+		if(teamId){
+			if(!isValidObjectId(teamId)){
+				return res.status(400).json({
+					status: 'error',
+					data: { error: 'TeamId::Invalid' }
+				});
+			}
 
-    let trajectoryIds: string[] = [];
-    if(trajectoryId){
-      if(!isValidObjectId(trajectoryId)){
-        return res.status(400).json({ status: 'error', data: { error: 'trajectoryId inválido' } });
-      }
-      const traj = await Trajectory.findOne({ _id: trajectoryId }).select('_id team');
-      if(!traj){
-        return res.status(404).json({ status: 'error', data: { error: 'Trajectory no encontrada' } });
-      }
-      if(!teamIds.includes(traj.team.toString())){
-        return res.status(403).json({ status: 'error', data: { error: 'Forbidden. La trayectoria no pertenece a tus equipos.' } });
-      }
-      trajectoryIds = [traj._id.toString()];
-    }else{
-      const trajectories = await Trajectory.find({ team: { $in: teamIds } }).select('_id');
-      trajectoryIds = (trajectories as any[]).map((t: any) => t._id.toString());
-    }
+			const team = await Team.findOne({ _id: teamId, members: userId }).select('_id');
+			if(!team){
+				return res.status(403).json({
+					status: 'error',
+					data: { error: 'Forbbiden' }
+				});
+			}
 
-    if(trajectoryIds.length === 0){
-      return res.status(200).json({
-        status: 'success',
-        data: { page: 1, limit: 0, total: 0, totals: { segments: 0, points: 0, length: 0 }, dislocations: [] }
-      });
-    }
+			teamIds = [(team as any)._id.toString()];
+		}else{
+			const teams = await Team.find({ members: userId }).select('_id');
+			teamIds = (teams as any[]).map((t: any) => t._id.toString());
+		}
 
-    const match: any = { trajectory: { $in: trajectoryIds } };
+		if(teamIds.length === 0){
+			return res.status(200).json({
+				status: 'success',
+				data: {
+					page: 1,
+					limit: 0,
+					total: 0,
+					totals: { segments: 0, points: 0, length: 0 },
+					dislocations: []
+				}
+			});
+		}
 
-    if(analysisConfigId){
-      if(!isValidObjectId(analysisConfigId)){
-        return res.status(400).json({ status: 'error', data: { error: 'analysisConfigId inválido' } });
-      }
-      match.analysisConfig = analysisConfigId;
-    }
+		let trajectoryIds: string[] = [];
+		if(trajectoryId){
+			if(!isValidObjectId(trajectoryId)){
+				return res.status(400).json({
+					status: 'error',
+					data: { error: 'TrajectoryId::Invalid' }
+				});
+			}
+			const traj = await Trajectory.findOne({ _id: trajectoryId }).select('_id team');
+			if(!traj){
+				return res.status(404).json({
+					status: 'error', 
+					data: { error: 'Trajectory::NotFound' } 
+				});
+			}
+			if(!teamIds.includes(traj.team.toString())){
+				return res.status(403).json({
+					status: 'error',
+					data: { error: 'Forbidden' }
+				});
+			}
 
-    const fromNum = Number(timestepFrom);
-    const toNum = Number(timestepTo);
-    if(!Number.isNaN(fromNum) || !Number.isNaN(toNum)){
-        match.timestep = {};
-        if(!Number.isNaN(fromNum)) match.timestep.$gte = fromNum;
-        if(!Number.isNaN(toNum))   match.timestep.$lte = toNum;
-        if(Object.keys(match.timestep).length === 0) delete match.timestep;
-    }
+			trajectoryIds = [traj._id.toString()];
+		}else{
+			const trajectories = await Trajectory.find({ team: { $in: teamIds } }).select('_id');
+			trajectoryIds = (trajectories as any[]).map((t: any) => t._id.toString());
+		}
 
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(500, Math.max(1, parseInt(limit, 10) || 100));
-    const skip = (pageNum - 1) * limitNum;
+		if(trajectoryIds.length === 0){
+			return res.status(200).json({
+				status: 'success',
+				data: {
+					page: 1,
+					limit: 0,
+					total: 0,
+					totals: { segments: 0, points: 0, length: 0 },
+					dislocations: []
+				}
+			});
+		}
 
-    const sortObj: Record<string, 1 | -1> = {};
-    if(typeof sort === 'string' && sort.length){
-        const fields = sort.split(',').map(s => s.trim()).filter(Boolean);
-        for(const f of fields){
-            if(f.startsWith('-')) sortObj[f.slice(1)] = -1;
-            else sortObj[f] = 1;
-        }
-    }else{
-        sortObj.createdAt = -1;
-    }
+		const fromNum = Number(timestepFrom);
+		const toNum = Number(timestepTo);
+		const allRows: any[] = [];
 
-    const query = typeof q === 'string' ? q.trim() : '';
-    const regex = query ? { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } : null;
+		for(const trajId of trajectoryIds){
+			const prefix = `${trajId}/`;
+			const objects = await listDislocationsByPrefix(prefix);
 
-    let rows: any[] = [];
-    let totalDocs = 0;
-    let totalsAgg: any[] = [];
+			for(const { key, data } of objects){
+				const [, analysisId, filename] = key.split('/');
+				const timestep = data.timestep ?? Number(path.basename(filename, '.json'));
 
-    if (regex) {
-      // Aggregation pipeline to filter by trajectory name or analysisConfig.identificationMode
-      const basePipeline: any[] = [
-        { $match: match },
-        { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
-        { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
-        { $lookup: { from: 'analysisconfigs', localField: 'analysisConfig', foreignField: '_id', as: 'analysisConfigDoc' } },
-        { $addFields: { analysisConfigDoc: { $arrayElemAt: ['$analysisConfigDoc', 0] } } },
-        { $match: { $or: [ { 'trajectoryDoc.name': regex }, { 'analysisConfigDoc.identificationMode': regex } ] } }
-      ];
+				if(analysisConfigId && analysisId !== analysisConfigId) continue;
+				if(!Number.isNaN(fromNum) && timestep < fromNum) continue;
+				if(!Number.isNaN(toNum) && timestep > toNum) continue;
 
-      const dataPipeline: any[] = [
-        ...basePipeline,
-        { $sort: sortObj },
-        { $skip: skip },
-        { $limit: limitNum },
-        { $project: {
-          trajectory: { _id: '$trajectoryDoc._id', name: '$trajectoryDoc.name', team: '$trajectoryDoc.team' },
-          analysisConfig: { _id: '$analysisConfigDoc._id', crystalStructure: '$analysisConfigDoc.crystalStructure', RMSD: '$analysisConfigDoc.RMSD', identificationMode: '$analysisConfigDoc.identificationMode' },
-          timestep: 1,
-          totalSegments: 1,
-          totalPoints: 1,
-          averageSegmentLength: 1,
-          maxSegmentLength: 1,
-          minSegmentLength: 1,
-          totalLength: 1,
-          createdAt: 1,
-          updatedAt: 1
-        } }
-      ];
+				allRows.push({
+					trajectory: trajId,
+					analysisConfig: analysisId,
+					timestep,
+					totalSegments: data.totalSegments,
+					totalPoints: data.totalPoints,
+					averageSegmentLength: data.averageSegmentLength,
+					maxSegmentLength: data.maxSegmentLength,
+					minSegmentLength: data.minSegmentLength,
+					totalLength: data.totalLength
+				});
+			}
+		}
 
-      const countPipeline: any[] = [
-        ...basePipeline,
-        { $count: 'total' }
-      ];
+		const totalDocs = allRows.length;
+		const pageNum = Math.max(1, parseInt(page, 10) || 1);
+		const limitNum = Math.min(500, Math.max(1, parseInt(limit, 10) || 100));
+		const start = (pageNum - 1) * limitNum;
+		const end = start + limitNum;
 
-      const totalsPipeline: any[] = [
-        ...basePipeline,
-        { $group: {
-          _id: null,
-          segments: { $sum: '$totalSegments' },
-          points:   { $sum: '$totalPoints' },
-          length:   { $sum: '$totalLength' }
-        } }
-      ];
+		allRows.sort((a, b) => a.timestep - b.timestep);
+		const rows = allRows.slice(start, end);
+		
+		const totals = rows.reduce((acc, r) => {
+			acc.segments += r.totalSegments || 0;
+			acc.points += r.totalPoints || 0;
+			acc.length += r.totalLength || 0;
+			return acc;
+		}, { segments: 0, points: 0, length: 0 });
 
-      const [aggRows, aggCount, aggTotals] = await Promise.all([
-        Dislocations.aggregate(dataPipeline),
-        Dislocations.aggregate(countPipeline),
-        Dislocations.aggregate(totalsPipeline)
-      ]);
-      rows = aggRows as any[];
-      totalDocs = (aggCount?.[0]?.total as number) ?? 0;
-      totalsAgg = aggTotals as any[];
-    } else {
-      const [found, total, totals] = await Promise.all([
-        Dislocations.find(match)
-          .select('trajectory timestep totalSegments totalPoints totalLength averageSegmentLength maxSegmentLength minSegmentLength analysisConfig createdAt updatedAt')
-          .sort(sortObj)
-          .skip(skip)
-          .limit(limitNum)
-          .populate({ path: 'trajectory', select: 'name _id team' })
-          .populate({ path: 'analysisConfig', select: '_id crystalStructure RMSD identificationMode' })
-          .lean(),
-        Dislocations.countDocuments(match),
-        Dislocations.aggregate([
-          { $match: match },
-          { $group: { _id: null, segments: { $sum: '$totalSegments' }, points: { $sum: '$totalPoints' }, length: { $sum: '$totalLength' } } }
-        ])
-      ]);
-      rows = found as any[];
-      totalDocs = total as number;
-      totalsAgg = totals as any[];
-    }
-
-    const totals = {
-        segments: totalsAgg?.[0]?.segments ?? 0,
-        points:   totalsAgg?.[0]?.points   ?? 0,
-        length:   totalsAgg?.[0]?.length   ?? 0
-    };
-
-    return res.status(200).json({
-        status: 'success',
-        data: {
-            page: pageNum,
-            limit: limitNum,
-            total: totalDocs,
-            totals,
-            dislocations: rows
-        }
-    });
-    }catch(err){
-        console.error('getUserDislocations error:', err);
-        return res.status(500).json({
-        status: 'error',
-        data: { error: 'Internal Server Error' }
-        });
-    }
+		return res.status(200).json({
+			status: 'success',
+			data: {
+				page: pageNum,
+				limit: limitNum,
+				total: totalDocs,
+				totals,
+				dislocations: rows
+			}
+		});
+	}catch(error){
+		console.error('getUserDislocations error:', error);
+		return res.status(500).json({
+			status: 'error',
+			data: { error: 'Internal Server Error' }
+		});
+	}
 };

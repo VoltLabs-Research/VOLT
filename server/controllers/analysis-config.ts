@@ -21,7 +21,7 @@
 **/
 
 import HandlerFactory from '@/controllers/handler-factory';
-import { AnalysisConfig, Dislocations, Team, Trajectory } from "@/models";
+import { AnalysisConfig, Team, Trajectory } from "@/models";
 import { Request, Response } from 'express';
 
 const factory = new HandlerFactory({
@@ -32,14 +32,65 @@ const factory = new HandlerFactory({
 export const getAnalysisConfigById = factory.getOne();
 export const deleteAnalysisConfigById = factory.deleteOne();
 
+import { getDislocationsObject, listDislocationsByPrefix } from '@/buckets/dislocations';
+
+
 export const getAnalysisDislocations = async (req: Request, res: Response) => {
+  try{
     const analysisConfigId = (req as any).params.id;
-    const dislocations = await Dislocations.find({ analysisConfig: analysisConfigId });
+
+    const analysis = await AnalysisConfig
+      .findById(analysisConfigId)
+      .select('trajectory dislocationFiles identificationMode RMSD')
+      .populate('trajectory', '_id name');
+
+    if (!analysis) {
+      return res.status(404).json({
+        status: 'error',
+        data: { error: 'AnalysisConfig not found' }
+      });
+    }
+
+    const { trajectory, dislocationFiles = [] } = (analysis as any);
+    const trajectoryId = String(trajectory?._id || analysis.trajectory);
+
+    const results = await Promise.all(
+      dislocationFiles.map(async (file: any) => {
+        const key = file.storageKey || `${trajectoryId}/${analysis._id.toString()}/${file.timestep}.json`;
+        const payload = await getDislocationsObject(key);
+
+        return {
+          // pseudo-id estable
+          _id: `${analysis._id.toString()}:${file.timestep}`,
+          trajectory: trajectory,                // o trajectoryId si prefieres
+          analysisConfig: {
+            _id: analysis._id,
+            identificationMode: analysis.identificationMode,
+            RMSD: analysis.RMSD
+          },
+          // Sobrescribimos algunos campos con los del índice por seguridad
+          timestep: file.timestep,
+          totalSegments: file.totalSegments ?? payload.totalSegments,
+          totalPoints: file.totalPoints ?? payload.totalPoints,
+          totalLength: file.totalLength ?? payload.totalLength,
+          averageSegmentLength: file.averageSegmentLength ?? payload.averageSegmentLength,
+          maxSegmentLength: file.maxSegmentLength ?? payload.maxSegmentLength,
+          minSegmentLength: file.minSegmentLength ?? payload.minSegmentLength,
+          createdAt: file.createdAt || payload.createdAt,
+          // Y dejamos los datos de segmentos completos
+          dislocations: payload.dislocations
+        };
+      })
+    );
 
     res.status(200).json({
-        status: 'success',
-        data: dislocations
+      status: 'success',
+      data: results
     });
+  }catch(err){
+    console.error('getAnalysisDislocations error:', err);
+    res.status(500).json({ status: 'error', data: { error: 'Internal Server Error' } });
+  }
 };
 
 // List analysis configs by team

@@ -20,7 +20,6 @@
 * SOFTWARE.
 **/
 
-import { Dislocations } from '@/models/index';
 import { 
     DislocationExportOptions, 
     ProcessedDislocationGeometry 
@@ -29,6 +28,7 @@ import { calculateDislocationType } from '@/utilities/dislocation-utils';
 import { assembleAndWriteGLB } from '@/utilities/export/utils';
 import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
 import { computeBoundsFromPoints } from '@/utilities/export/bounds';
+import { getDislocationsObject } from '@/buckets/dislocations';
 
 class DislocationExporter{
     private createLineGeometry(
@@ -275,6 +275,47 @@ class DislocationExporter{
         assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
     }
 
+    private convertStorageFormatToDislocationFormat(storage: any): any {
+        const dislocationSegments = storage.dislocations.map((segment: any) => ({
+            segment_id: segment.segmentId,
+            type: segment.type,
+            num_points: segment.numPoints,
+            length: segment.length,
+            points: segment.points,
+            burgers: {
+                vector: segment.burgers.vector,
+                magnitude: segment.burgers.magnitude,
+                fractional: segment.burgers.fractional
+            },
+            nodes: segment.nodes,
+            line_direction: segment.lineDirection ? {
+                vector: segment.lineDirection.vector || [0, 0, 0],
+                string: segment.lineDirection.string || ''
+            } : {
+                vector: [0, 0, 0],
+                string: ''
+            }
+        }));
+
+        return {
+            data: dislocationSegments,
+            metadata: {
+                count: storage.totalSegments,
+                timestep: storage.timestep,
+                trajectoryId: storage.trajectory,
+                analysisConfigId: storage.analysisConfig
+            },
+            summary: {
+                total_points: storage.totalPoints,
+                average_segment_length: storage.averageSegmentLength,
+                max_segment_length: storage.maxSegmentLength,
+                min_segment_length: storage.minSegmentLength,
+                total_length: storage.totalLength
+            }
+        };
+    }
+
+    // TODO: I'm not sure if this method works after change Dislocations storage from mongo to minio
     public async rebuildGLBFromDB(
         analysisConfigId: string,
         timestep: number,
@@ -283,19 +324,16 @@ class DislocationExporter{
         options: DislocationExportOptions = {}
     ): Promise<void> {
         try {
-            console.log(`[DislocationExporter] Rebuilding GLB from DB for timestep ${timestep}...`);
+            // TODO: maybe a method for this
+            const key = `${trajectoryId}/${analysisConfigId}/${timestep}.json`;
 
-            const dislocationDoc = await Dislocations.findOne({
-                analysisConfig: analysisConfigId,
-                timestep: timestep,
-                trajectory: trajectoryId
-            }).lean();
-
-            if(!dislocationDoc){
-                throw new Error(`No dislocation data found for timestep ${timestep}, analysisConfig ${analysisConfigId}, trajectory ${trajectoryId}`);
+            console.log(`[DislocationExporter] Rebuilding GLB from MinIO object: ${key}`);
+            const storageObject = await getDislocationsObject(key);
+            if(!storageObject){
+                throw new Error(`No dislocation object found in MinIO for key ${key}`);
             }
 
-            const dislocationData = this.convertDBDataToDislocationFormat(dislocationDoc);
+            const dislocationData = this.convertStorageFormatToDislocationFormat(storageObject);
 
             const opts: Required<DislocationExportOptions> = {
                 lineWidth: options.lineWidth ?? 0.08,
@@ -325,46 +363,6 @@ class DislocationExporter{
             console.error(`[DislocationExporter] Failed to rebuild GLB from DB:`, error);
             throw error;
         }
-    }
-
-    private convertDBDataToDislocationFormat(dbData: any): any {
-        const dislocationSegments = dbData.dislocations.map((segment: any) => ({
-            segment_id: segment.segmentId,
-            type: segment.type,
-            num_points: segment.numPoints,
-            length: segment.length,
-            points: segment.points,
-            burgers: {
-                vector: segment.burgers.vector,
-                magnitude: segment.burgers.magnitude,
-                fractional: segment.burgers.fractional
-            },
-            nodes: segment.nodes,
-            line_direction: segment.lineDirection ? {
-                vector: segment.lineDirection.vector || [0, 0, 0],
-                string: segment.lineDirection.string || ''
-            } : {
-                vector: [0, 0, 0],
-                string: ''
-            }
-        }));
-
-        return {
-            data: dislocationSegments,
-            metadata: {
-                count: dbData.totalSegments,
-                timestep: dbData.timestep,
-                trajectoryId: dbData.trajectory.toString(),
-                analysisConfigId: dbData.analysisConfig.toString()
-            },
-            summary: {
-                total_points: dbData.totalPoints,
-                average_segment_length: dbData.averageSegmentLength,
-                max_segment_length: dbData.maxSegmentLength,
-                min_segment_length: dbData.minSegmentLength,
-                total_length: dbData.totalLength
-            }
-        };
     }
         
     public toGLB(
