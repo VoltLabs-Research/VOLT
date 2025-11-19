@@ -9,6 +9,7 @@ const MAX_POINTS = 60 // Show last 60 seconds
 interface DataPoint {
   mongodb: number
   redis: number
+  minio: number
   self: number
 }
 
@@ -43,6 +44,7 @@ export function ResponseTimeChart() {
         .map(m => ({
           mongodb: m.responseTimes!.mongodb,
           redis: m.responseTimes!.redis,
+          minio: m.responseTimes!.minio || 0,
           self: m.responseTimes!.self
         }))
       setHistory(historicalData)
@@ -55,6 +57,7 @@ export function ResponseTimeChart() {
         const newHistory = [...prev, {
           mongodb: metrics.responseTimes!.mongodb,
           redis: metrics.responseTimes!.redis,
+          minio: metrics.responseTimes!.minio || 0,
           self: metrics.responseTimes!.self
         }]
         return newHistory.slice(-MAX_POINTS)
@@ -76,6 +79,12 @@ export function ResponseTimeChart() {
       key: 'redis' as keyof DataPoint
     },
     { 
+      name: 'MinIO', 
+      value: metrics?.responseTimes?.minio?.toFixed(0) || '--', 
+      color: '#C73A63', 
+      key: 'minio' as keyof DataPoint
+    },
+    { 
       name: 'Server', 
       value: metrics?.responseTimes?.self.toFixed(0) || '--', 
       color: '#FF9F0A', 
@@ -84,7 +93,7 @@ export function ResponseTimeChart() {
   ]
   
   const maxValue = Math.max(
-    ...history.flatMap(d => [d.mongodb, d.redis, d.self]),
+    ...history.flatMap(d => [d.mongodb, d.redis, d.minio, d.self]),
     100
   )
 

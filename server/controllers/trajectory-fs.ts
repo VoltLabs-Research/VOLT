@@ -243,7 +243,7 @@ export const downloadTrajectoryFs = async (req: Request, res: Response) => {
     if(!st.isFile()){
         return res.status(400).json({ status: 'error', data: { error: 'Not a file' } });
     }
-
+    
     const ct = mime.lookup(abs) || 'application/octet-stream';
     res.setHeader('Content-Type', String(ct));
     res.setHeader('Content-Length', st.size);

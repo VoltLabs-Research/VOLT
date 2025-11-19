@@ -210,13 +210,15 @@ export default class MetricsCollector{
     private async getResponseTimes(){
         const mongooseLatency = await this.pingMongoose();
         const redisLatency = await this.pingRedis();
+        const minioLatency = await this.pingMinIO();
         const selfLatency = await this.pingHost(`0.0.0.0:${process.env.SERVER_PORT}`);
 
         return {
             mongodb: mongooseLatency,
             redis: redisLatency,
+            minio: minioLatency,
             self: selfLatency,
-            average: Math.round((mongooseLatency + redisLatency + selfLatency) / 3)
+            average: Math.round((mongooseLatency + redisLatency + minioLatency + selfLatency) / 4)
         }
     }
 
@@ -224,6 +226,19 @@ export default class MetricsCollector{
         try{
             const start = Date.now();
             await mongoose.connection.db?.admin().ping();
+            return Date.now() - start;
+        }catch{
+            return 0;
+        }
+    }
+
+    private async pingMinIO(): Promise<number>{
+        try{
+            const { getMinioClient } = await import('@/config/minio');
+            const client = getMinioClient();
+            const start = Date.now();
+            // List buckets is a lightweight operation to test MinIO connectivity
+            await client.listBuckets();
             return Date.now() - start;
         }catch{
             return 0;
