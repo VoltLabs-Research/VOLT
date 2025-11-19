@@ -21,7 +21,7 @@ export enum DislocationAnalysisModifierError{
 
 // TODO: I think that it's better create a BaseModifier class.
 export const dislocationAnalysis = async (config: DislocationAnalysisModifierConfig) => {
-    const trajFS = new TrajectoryFS(config.folderId);
+    const trajFS = new TrajectoryFS(config.trajectoryId);
     
     const analysisConfig = await AnalysisConfig.create({
         trajectory: config.trajectoryId,

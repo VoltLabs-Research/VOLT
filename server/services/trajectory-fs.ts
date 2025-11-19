@@ -43,7 +43,10 @@ class TrajectoryFS{
     readonly trajectoryId: string;
     readonly root: string;
 
-    constructor(trajectoryId: string, baseDir = process.env.TRAJECTORY_DIR){
+    constructor(
+        trajectoryId: string,
+        baseDir = process.env.TRAJECTORY_DIR
+    ){
         if(!baseDir){
             throw new Error('TRAJECTORY_DIR is not defined.')
         }
@@ -304,7 +307,7 @@ class TrajectoryFS{
         }
 
         if(glb){
-            // Read GLBs from MinIO instead of filesystem
+            // TODO: DUPLICATED CODE: Read GLBs from MinIO instead of filesystem
             // Path format: {trajectoryId}/{analysisId}/glb/{frame}/{type}.glb
             const prefix = `${this.trajectoryId}/${analysisId}/glb/`;
             const glbKeys = await listGLBsByPrefix(prefix);
@@ -337,6 +340,30 @@ class TrajectoryFS{
     }
 
     /**
+     * Returns all GLB keys for a given analysis grouped by frame and type
+     */
+    async listAnalysisGlbKeys(analysisId: string): Promise<Record<string, Record<string, string>>>{
+        const prefix = `${this.trajectoryId}/${analysisId}/glb/`;
+        const glbKeys = await listGLBsByPrefix(prefix);
+        const result: Record<string, Record<string, string>> = {};
+
+        for(const key of glbKeys){
+            const parts = key.split('/');
+            if(parts.length < 5) continue;
+            const frame = parts[parts.length - 2];
+            const filename = parts[parts.length - 1];
+            const type = path.basename(filename, '.glb');
+            if(!frame || !type) continue;
+            if(!result[frame]){
+                result[frame] = {};
+            }
+            result[frame][type] = key;
+        }
+
+        return result;
+    }
+
+    /**
      * Lists all GLB files in MinIO for this trajectory.
      * Returns a virtual directory structure compatible with the file explorer.
      */
@@ -361,19 +388,6 @@ class TrajectoryFS{
         }
 
         return results;
-    }
-
-    /**
-     * Checks if a path points to a GLB in MinIO.
-     */
-    async isGLBInMinIO(relativePath: string): Promise<boolean> {
-        const key = `${this.trajectoryId}/${relativePath}`;
-        try{
-            await statGLBObject(key);
-            return true;
-        }catch{
-            return false;
-        }
     }
 
     /**

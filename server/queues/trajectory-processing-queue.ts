@@ -31,6 +31,8 @@ import { existsSync } from 'fs';
 import { Trajectory } from '@/models';
 import TrajectoryFS from '@/services/trajectory-fs';
 import path from 'path';
+import { getGLBObject } from '@/buckets/glbs';
+import { writeFile } from 'fs/promises';
 
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
     private firstChunkProcessed = new Set<string>();
@@ -80,17 +82,15 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
             
             // GLBs are now in MinIO, we need to download it temporarily for rasterization
             // TODO: Update rasterizer to work directly with MinIO streams
-            const minioKey = `${job.folderId}/previews/glb/${firstFrameTimestep}.glb`;
+            const objectName = `${job.trajectoryId}/previews/glb/${firstFrameTimestep}.glb`;
             const tempGlbPath = join(job.tempFolderPath, `${firstFrameTimestep}.glb`);
             
             // Download GLB from MinIO to temp location for rasterizer
             try{
-                const { getGLBObject } = await import('@/buckets/glbs');
-                const glbBuffer = await getGLBObject(minioKey);
-                const { writeFile } = await import('fs/promises');
+                const glbBuffer = await getGLBObject(objectName);
                 await writeFile(tempGlbPath, glbBuffer);
             }catch(err){
-                console.warn(`Failed to download GLB from MinIO: ${minioKey}`, err);
+                console.warn(`Failed to download GLB from MinIO: ${objectName}`, err);
                 return;
             }
 
@@ -101,7 +101,8 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
                 return;
             }
 
-            const tfs = new TrajectoryFS(trajectory.folderId);
+            const trajectoryId = trajectory._id.toString();
+            const tfs = new TrajectoryFS(trajectoryId);
             
             // Output preview PNG at {root}/preview.png
             const previewPath = join(tfs.root, 'preview.png');

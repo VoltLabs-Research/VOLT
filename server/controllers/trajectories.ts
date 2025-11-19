@@ -23,7 +23,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { join, relative, resolve } from 'path';
 import { stat, mkdir, rm, writeFile } from 'fs/promises';
-import { isValidObjectId } from 'mongoose';
+import { isValidObjectId, Types } from 'mongoose';
 import { getTrajectoryProcessingQueue } from '@/queues';
 import { processTrajectoryFile } from '@/utilities/lammps';
 import { Trajectory, Team } from '@models/index';
@@ -142,6 +142,7 @@ export const getUserTrajectories = factory.getAll({
 
 export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
+    const trajectoryId = trajectory._id.toString();
     const analysisId = req.params.analysisId;
 
     if(!trajectory){
@@ -151,7 +152,7 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
         });  
     }
 
-    const trajFS = new TrajectoryFS(trajectory.folderId);
+    const trajFS = new TrajectoryFS(trajectoryId);
 
      const TYPES = [
         'atoms_colored_by_type', 
@@ -202,7 +203,9 @@ export const getMetrics = async (req: Request, res: Response) => {
 
 export const getTrajectoryPreview = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
-    const trajFS = new TrajectoryFS(trajectory.folderId);
+    // TODO: maybe in the middleware save trajectory._id.toString()...
+    const trajectoryId = trajectory._id.toString();
+    const trajFS = new TrajectoryFS(trajectoryId);
     
     let previewPath: string | null = null;
     
@@ -227,7 +230,7 @@ export const getTrajectoryPreview = async (req: Request, res: Response) => {
         });
     }
 
-    const filename = `${trajectory.name || trajectory._id}_preview.png`;
+    const filename = `${trajectory.name || trajectoryId}_preview.png`;
     return await sendFileInline(res, previewPath, 'image/png', filename);
 };
 
@@ -243,8 +246,10 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
         return res.status(400).json({ status: 'error', data: { error: 'Trajectory not found in context' } });
     }
 
+    const trajectoryId = trajectory._id.toString();
+
     try{
-        const trajFS = new TrajectoryFS(trajectory.folderId);
+        const trajFS = new TrajectoryFS(trajectoryId);
         const frameFilePath = await trajFS.getDump(timestep);
 
         if(!frameFilePath){
@@ -368,9 +373,9 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
     try{
         const { timestep, analysisId } = req.params;
         const { type } = req.query as { type?: string };
-        const trajectory = res.locals.trajectory as { name: string; folderId: string; frames: Array<{ timestep: number | string }> };
-
-        const trajFS = new TrajectoryFS(trajectory.folderId);
+        const trajectory = res.locals.trajectory;
+        const trajectoryId = trajectory._id.toString();
+        const trajFS = new TrajectoryFS(trajectoryId);
 
         let result = null;
         
@@ -411,8 +416,9 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
 
 export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
+    const trajectoryId = trajectory._id.toString();
     const { analysisId, type } = req.params;
-    const trajFS = new TrajectoryFS(trajectory.folderId);
+    const trajFS = new TrajectoryFS(trajectoryId);
     const maps = await trajFS.getAnalysis(analysisId, type, { media: 'glb' });
     const glbMap = maps.glb || {};
     const frameFilter = req.query.frame ? String(req.query.frame): null;
@@ -428,7 +434,7 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
         });
     }
 
-    const filename = String(trajectory.anme || trajectory._id).replace(/[^a-z0-9_\-]+/gi, '_');
+    const filename = String(trajectory.anme || trajectoryId).replace(/[^a-z0-9_\-]+/gi, '_');
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}_${analysisId}_${type}.zip"`);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
@@ -463,11 +469,12 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const { files, teamId } = (res as any).locals.data;
     const userId = (req as any).user._id;
 
-    const folderId = v4();
-    const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
+    const trajectoryId = new Types.ObjectId();
+    const trajectoryIdStr = trajectoryId.toString();
+    const folderPath = join(process.env.TRAJECTORY_DIR as string, trajectoryIdStr);
     await mkdir(folderPath, { recursive: true });
 
-    const trajFS = new TrajectoryFS(folderId, process.env.TRAJECTORY_DIR);
+    const trajFS = new TrajectoryFS(trajectoryIdStr, process.env.TRAJECTORY_DIR);
     await trajFS.ensureStructure(); 
 
     const filePromises = files.map(async (file: any, i: number) => {
@@ -519,7 +526,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
 
     const trajectoryName = (req.body.originalFolderName || 'Untitled Trajectory') as string;
     const newTrajectory = await Trajectory.create({
-        folderId,
+        _id: trajectoryId,
         name: trajectoryName,
         team: teamId,
         createdBy: userId,
@@ -540,7 +547,6 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         jobs.push({
             jobId: v4(),
             trajectoryId: newTrajectory._id.toString(),
-            folderId: folderId, // UUID for MinIO paths
             chunkIndex: Math.floor(i / CHUNK_SIZE),
             totalChunks: Math.ceil(validFiles.length / CHUNK_SIZE),
             files: chunk.map(({ frameData, srcPath }) => ({

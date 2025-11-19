@@ -16,7 +16,8 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
     // Rasterization is allowed regardless of CPU_INTENSIVE_TASKS
 
     const trajectory = res.locals.trajectory;
-    const tfs = new TrajectoryFS(trajectory.folderId);
+    const trajectoryId = trajectory._id.toString();
+    const tfs = new TrajectoryFS(trajectoryId);
     await tfs.ensureStructure();
 
     const customOpts: Partial<HeadlessRasterizerOptions> = req.body ?? {};
@@ -43,7 +44,7 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
             const outPath = join(tfs.root, 'previews', 'raster', `${frame}.png`);
             jobs.push({
                 jobId: v4(),
-                trajectoryId: trajectory._id,
+                trajectoryId: trajectoryId,
                 teamId: trajectory.team._id,
                 name: 'Headless Rasterizer (Preview)',
                 message: `${trajectory.name} - Preview frame ${frame}`,
@@ -58,7 +59,7 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
         }
     }
 
-    const analyses = await AnalysisConfig.find({ trajectory: trajectory._id }).lean();
+    const analyses = await AnalysisConfig.find({ trajectory: trajectoryId }).lean();
 
     for (const analysis of analyses) {
         const analysisId = String(analysis._id);
@@ -76,7 +77,7 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
 
                 jobs.push({
                     jobId: v4(),
-                    trajectoryId: trajectory._id,
+                    trajectoryId: trajectoryId,
                     teamId: trajectory.team._id,
                     name: 'Headless Rasterizer (Analysis)',
                     message: `${trajectory.name} - ${analysisId} - Frame ${frame}`,
@@ -115,26 +116,27 @@ export const readRasterModel = async (
     trajectoryId: string,
     frame: number
 ): Promise<Buffer> => {
-    const trajFS = new TrajectoryFS(trajectoryId);
+    const trajFS = new TrajectoryFS(trajectoryId.toString());
     const absPath = join(trajFS.root, analysisId, 'raster', String(frame), `${modelType}.png`);
     return readFile(absPath);
 };
 
 export const getRasterFrameMetadata = async (req: Request, res: Response) => {
     let trajectory = res.locals.trajectory;
+    const trajectoryId = trajectory._id.toString();
 
     trajectory = await Trajectory.findOneAndUpdate(
-        { _id: trajectory._id },
+        { _id: trajectoryId },
         { $inc: { rasterSceneViews: 1 } },
         { new: true }
     );
 
     const analyses = await AnalysisConfig
-        .find({ trajectory: trajectory._id })
+        .find({ trajectory: trajectoryId })
         .select('-createdAt -updatedAt -__v')
         .lean();
 
-    const tfs = new TrajectoryFS(trajectory.folderId);
+    const tfs = new TrajectoryFS(trajectoryId);
     const analysesMetadata: Record<string, any> = {};
 
     for (const analysis of analyses) {
@@ -157,7 +159,7 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
     res.setHeader('Expires', '0');
     res.setHeader('Surrogate-Control', 'no-store');
     res.setHeader('Vary', 'Authorization');
-    res.setHeader('ETag', `"raster-meta-${trajectory._id}-${trajectory.rasterSceneViews}"`);
+    res.setHeader('ETag', `"raster-meta-${trajectoryId}-${trajectory.rasterSceneViews}"`);
 
     return res.status(200).json({
         status: 'success',
@@ -167,6 +169,7 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
 
 export const getRasterFrame = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
+    const trajectoryId = trajectory._id.toString();
     const { timestep, analysisId, model } = req.params;
     const frameNumber = Number(timestep);
 
@@ -175,7 +178,7 @@ export const getRasterFrame = async (req: Request, res: Response) => {
     }
 
     try {
-        const tfs = new TrajectoryFS(trajectory.folderId);
+        const tfs = new TrajectoryFS(trajectoryId);
         let buffer: Buffer;
 
         if (model === 'preview') {
@@ -189,7 +192,7 @@ export const getRasterFrame = async (req: Request, res: Response) => {
         res.setHeader('Cache-Control', 'public, max-age=86400');
         res.setHeader('Content-Type', 'image/png');
         res.setHeader('Content-Length', String(buffer.length));
-        res.setHeader('ETag', `"frame-${trajectory._id}-${frameNumber}-${model}-${analysisId}"`);
+        res.setHeader('ETag', `"frame-${trajectoryId}-${frameNumber}-${model}-${analysisId}"`);
         return res.send(buffer);
     } catch {
         return res.status(404).json({ status: 'error', message: 'Frame not found' });
@@ -198,6 +201,7 @@ export const getRasterFrame = async (req: Request, res: Response) => {
 
 export const getRasterFrameData = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
+    const trajectoryId = trajectory._id.toString();
     const { timestep, analysisId, model } = req.params;
     const frameNumber = Number(timestep);
 
@@ -206,7 +210,7 @@ export const getRasterFrameData = async (req: Request, res: Response) => {
     }
 
     try {
-        const tfs = new TrajectoryFS(trajectory.folderId);
+        const tfs = new TrajectoryFS(trajectoryId);
         let buffer: Buffer;
 
         if (model === 'preview') {
@@ -219,7 +223,7 @@ export const getRasterFrameData = async (req: Request, res: Response) => {
         const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
 
         res.setHeader('Cache-Control', 'public, max-age=86400');
-        res.setHeader('ETag', `"frame-data-${trajectory._id}-${frameNumber}-${model}-${analysisId}"`);
+        res.setHeader('ETag', `"frame-data-${trajectoryId}-${frameNumber}-${model}-${analysisId}"`);
 
         return res.status(200).json({
             status: 'success',
@@ -233,22 +237,23 @@ export const getRasterFrameData = async (req: Request, res: Response) => {
 
 export const getRasterizedFrames = async (req: Request, res: Response) => {
     let trajectory = res.locals.trajectory;
+    const trajectoryId = trajectory._id.toString();
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
     const rasterDir = join(basePath, trajectory.folderId, 'raster');
 
     trajectory = await Trajectory.findOneAndUpdate(
-        { _id: trajectory._id }, 
+        { _id: trajectoryId }, 
         { $inc: { rasterSceneViews: 1 } },
         { new: true }
     );
 
     const analyses = await AnalysisConfig
-        .find({ trajectory: trajectory._id })
+        .find({ trajectory: trajectoryId })
         .select('-createdAt -updatedAt -__v')
         .lean();
 
     const analysesData: Record<string, any> = {};
-    const trajFS = new TrajectoryFS(trajectory.folderId);
+    const trajFS = new TrajectoryFS(trajectoryId);
 
     for(const analysis of analyses){
         const id = analysis._id.toString();
@@ -290,7 +295,7 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
     res.setHeader('Expires', '0');
     res.setHeader('Surrogate-Control', 'no-store');
     res.setHeader('Vary', 'Authorization');
-    const etagBase = `raster-${trajectory._id}-${trajectory.rasterSceneViews}-${trajectory.frames?.length ?? 0}`;
+    const etagBase = `raster-${trajectoryId}-${trajectory.rasterSceneViews}-${trajectory.frames?.length ?? 0}`;
     res.setHeader('ETag', `"${etagBase}"`);
 
     return res.status(200).json({
@@ -304,6 +309,7 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
 
 export const downloadRasterImagesArchive = async (req: Request, res: Response) => {
     const trajectory = res.locals?.trajectory;
+    const trajectoryId = trajectory._id.toString();
     const { analysisId, model, includePreview } = req.query as {
         analysisId?: string;
         model?: string;
@@ -315,7 +321,7 @@ export const downloadRasterImagesArchive = async (req: Request, res: Response) =
     }
 
     try {
-        const tfs = new TrajectoryFS(trajectory.folderId);
+        const tfs = new TrajectoryFS(trajectoryId);
         const wantPreview = includePreview === '1' || includePreview === 'true';
         const files: string[] = [];
 
@@ -355,7 +361,7 @@ export const downloadRasterImagesArchive = async (req: Request, res: Response) =
             });
         }
 
-        const filenameSafe = String(trajectory.name || trajectory._id).replace(/[^a-z0-9_\-]+/gi, '_');
+        const filenameSafe = String(trajectory.name || trajectoryId).replace(/[^a-z0-9_\-]+/gi, '_');
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', `attachment; filename="${filenameSafe}_raster_images.zip"`);
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
@@ -380,7 +386,6 @@ export const downloadRasterImagesArchive = async (req: Request, res: Response) =
         archive.pipe(res);
         files.sort((a, b) => a.localeCompare(b));
         for (const abs of files) {
-            // Conservamos la estructura relativa básica en el zip
             const rel = abs.split(trajectory.folderId).pop()!.replace(/^[/\\]/, '');
             archive.file(abs, { name: rel });
         }

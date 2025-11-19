@@ -90,10 +90,11 @@ const breadcrumbsOf = (rel: string) => {
 
 export const listTrajectoryFs = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
+    const trajectoryId = trajectory._id.toString();
     const pathParam = String(req.query.path) || '';
     const includeHidden = String(req.query.hidden || 'false') === 'true';
 
-    const trajFS = new TrajectoryFS(trajectory.folderId);
+    const trajFS = new TrajectoryFS(trajectoryId);
     const root = trajFS.root;
 
     const { abs, rel } = safeResolve(root, pathParam);
@@ -211,9 +212,9 @@ export const listTrajectoryFs = async (req: Request, res: Response) => {
 
 export const downloadTrajectoryFs = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
-
+    const trajectoryId = trajectory._id.toString();
     const pathParam = String(req.query.path || '');
-    const trajFS = new TrajectoryFS(trajectory.folderId);
+    const trajFS = new TrajectoryFS(trajectoryId);
     const root = trajFS.root;
 
     // Check if it's a GLB file in MinIO first
