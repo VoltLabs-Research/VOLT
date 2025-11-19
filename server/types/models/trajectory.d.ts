@@ -39,8 +39,7 @@ export interface IBoxBounds{
 export interface ITimestepInfo{
     timestep: number;
     natoms: number;
-    boxBounds: IBoxBounds
-    glbPath: string;
+    boxBounds: IBoxBounds;
 }
 
 export interface ITrajectory extends Document {

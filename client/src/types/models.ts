@@ -54,7 +54,6 @@ export interface BoxBounds{
 export interface TimestepInfo{
     timestep: number;
     natoms: number;
-    glbPath: string;
     boxBounds: BoxBounds;
 }
 

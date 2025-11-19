@@ -21,11 +21,12 @@
 **/
 
 import { Request, Response } from 'express';
-import { join, resolve, relative, dirname } from 'path';
+import { join, resolve, relative, dirname, basename } from 'path';
 import { promises as fs } from 'fs';
 import mime from 'mime-types';
 import TrajectoryFS from '@/services/trajectory-fs';
 import RuntimeError from '@/utilities/runtime-error';
+import { getGLBStream } from '@/buckets/glbs';
 
 type EntryType = 'file' | 'dir';
 
@@ -150,7 +151,50 @@ export const listTrajectoryFs = async (req: Request, res: Response) => {
         }
     }
 
+    // Add virtual GLB directory from MinIO if we're at root or in a glb-related path
     const cwdRel = relative(root, targetDir);
+    
+    // If we're browsing a path that could contain GLBs, add them from MinIO
+    if(cwdRel === '' || cwdRel.includes('glb') || cwdRel.includes('previews')){
+        try{
+            const glbFiles = await trajFS.listGLBsVirtual();
+            
+            // Filter GLBs that belong to the current directory
+            for(const glbFile of glbFiles){
+                const glbRelPath = glbFile.path;
+                const glbDir = dirname(glbRelPath);
+                
+                // Check if this GLB belongs to the current directory
+                if(glbDir === cwdRel || (cwdRel === '' && !glbRelPath.includes('/'))){
+                    const name = basename(glbRelPath);
+                    entries.push({
+                        type: 'file',
+                        name,
+                        relPath: glbRelPath,
+                        size: glbFile.size,
+                        mtime: glbFile.mtime.toISOString(),
+                        ext: '.glb',
+                        mime: 'model/gltf-binary'
+                    });
+                }else if(cwdRel === ''){
+                    // At root, show top-level directories that contain GLBs
+                    const topDir = glbRelPath.split('/')[0];
+                    if(!entries.find(e => e.name === topDir && e.type === 'dir')){
+                        entries.push({
+                            type: 'dir',
+                            name: topDir,
+                            relPath: topDir,
+                            mtime: glbFile.mtime.toISOString(),
+                            size: 0 // Will be calculated if needed
+                        });
+                    }
+                }
+            }
+        }catch(err){
+            console.error('Failed to list GLBs from MinIO:', err);
+        }
+    }
+
     const breadcrumbs = breadcrumbsOf(cwdRel);
 
     res.status(200).json({
@@ -172,6 +216,23 @@ export const downloadTrajectoryFs = async (req: Request, res: Response) => {
     const trajFS = new TrajectoryFS(trajectory.folderId);
     const root = trajFS.root;
 
+    // Check if it's a GLB file in MinIO first
+    if(pathParam.endsWith('.glb')){
+        const glbStat = await trajFS.statGLBInMinIO(pathParam);
+        if(glbStat){
+            // File is in MinIO
+            const minioKey = `${trajectory.folderId}/${pathParam}`;
+            const stream = await getGLBStream(minioKey);
+            
+            res.setHeader('Content-Type', 'model/gltf-binary');
+            res.setHeader('Content-Length', glbStat.size);
+            res.setHeader('Content-Disposition', `attachment; filename="${pathParam.split('/').pop()}"`);
+            
+            return stream.pipe(res);
+        }
+    }
+
+    // Otherwise, check filesystem
     const { abs, rel } = safeResolve(root, pathParam);
     const st = await fs.lstat(abs);
 
@@ -185,7 +246,7 @@ export const downloadTrajectoryFs = async (req: Request, res: Response) => {
 
     const ct = mime.lookup(abs) || 'application/octet-stream';
     res.setHeader('Content-Type', String(ct));
-    res.setHeader('Content-Length', st.size)    ;
+    res.setHeader('Content-Length', st.size);
     res.setHeader('Content-Disposition', `attachment; filename="${rel.split('/').pop()}"`);
     return res.sendFile(abs);
 };

@@ -32,7 +32,6 @@ import useInverseRelations from '@/utilities/mongo/inverse-relations';
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
     natoms: { type: Number, required: true },
-    glbPath: { type: String, required: true },
     boxBounds: {
         xlo: { type: Number, required: true },
         xhi: { type: Number, required: true },

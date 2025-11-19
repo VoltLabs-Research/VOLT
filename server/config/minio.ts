@@ -52,7 +52,7 @@ export const putObject = async (bucketName: string, objectName: string, payload:
 
 export const initializeMinio = async (): Promise<void> => {
     const client = getMinioClient();
-    const buckets = ['elastic-strain', 'atomic-strain', 'dislocations'];
+    const buckets = ['elastic-strain', 'atomic-strain', 'dislocations', 'glbs'];
     for(const bucket of buckets){
         await ensureBucketExists(client, bucket);
     }

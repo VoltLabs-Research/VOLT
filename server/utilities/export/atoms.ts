@@ -23,9 +23,10 @@
 import { Document, Accessor } from '@gltf-transform/core';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { readLargeFile } from '@/utilities/fs';
-import { applyQuantizeAndMeshopt, writeGLB } from '@/utilities/export/gltf-pipeline';
+import { applyQuantizeAndMeshopt, writeGLBToBuffer } from '@/utilities/export/gltf-pipeline';
 import { computeBoundsFromFlat } from '@/utilities/export/bounds';
 import encodeMorton from '@/utilities/export/morton';
+import { putGLBObject } from '@/buckets/glbs';
 
 /**
  * Options that control quantization and compression of the exported GLB.
@@ -327,12 +328,13 @@ export default class AtomisticExporter{
         idx.set(tmp);
     }
 
-    public async toGLB(
+    // Removed toGLB method - use toGLBMinIO instead
+
+    public async toGLBBuffer(
         filePath: string,
-        outputFilePath: string,
         extractTimestepInfo: Function,
         opts: CompressionOptions = {}
-    ): Promise<void> {
+    ): Promise<Buffer> {
         const mortonBits = Math.max(1, opts.maxMortonBitsPerAxis ?? 10);
 
         const { positions, types, min, max } = await this.parseToTypedArrays(
@@ -438,14 +440,25 @@ export default class AtomisticExporter{
             extent
         );
 
-        await writeGLB(doc, outputFilePath);
+        return await writeGLBToBuffer(doc);
     }
 
-    public async exportAtomsTypeToGLB(
-        atomsByType: AtomsGroupedByType,
-        outputFilePath: string,
+    public async toGLBMinIO(
+        filePath: string,
+        minioObjectName: string,
+        extractTimestepInfo: Function,
         opts: CompressionOptions = {}
     ): Promise<void> {
+        const buffer = await this.toGLBBuffer(filePath, extractTimestepInfo, opts);
+        await putGLBObject(minioObjectName, buffer);
+    }
+
+    // Removed exportAtomsTypeToGLB method - use exportAtomsTypeToGLBMinIO instead
+
+    public async exportAtomsTypeToGLBBuffer(
+        atomsByType: AtomsGroupedByType,
+        opts: CompressionOptions = {}
+    ): Promise<Buffer> {
         const totalAtoms = Object.values(atomsByType).reduce((s, list) => s + list.length, 0);
         const positions = new Float32Array(totalAtoms * 3);
         const colors = new Float32Array(totalAtoms * 3);
@@ -535,6 +548,15 @@ export default class AtomisticExporter{
             extent
         );
 
-        await writeGLB(doc, outputFilePath);
+        return await writeGLBToBuffer(doc);
+    }
+
+    public async exportAtomsTypeToGLBMinIO(
+        atomsByType: AtomsGroupedByType,
+        minioObjectName: string,
+        opts: CompressionOptions = {}
+    ): Promise<void> {
+        const buffer = await this.exportAtomsTypeToGLBBuffer(atomsByType, opts);
+        await putGLBObject(minioObjectName, buffer);
     }
 };

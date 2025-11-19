@@ -77,11 +77,20 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
             }
 
             const firstFrameTimestep = firstFrame.frameData.timestep;
-            const glbPath = join(job.glbFolderPath, `${firstFrameTimestep}.glb`);
-
-            // Check if GLB file exists
-            if (!existsSync(glbPath)) {
-                console.warn(`GLB file not found at ${glbPath}`);
+            
+            // GLBs are now in MinIO, we need to download it temporarily for rasterization
+            // TODO: Update rasterizer to work directly with MinIO streams
+            const minioKey = `${job.folderId}/previews/glb/${firstFrameTimestep}.glb`;
+            const tempGlbPath = join(job.tempFolderPath, `${firstFrameTimestep}.glb`);
+            
+            // Download GLB from MinIO to temp location for rasterizer
+            try{
+                const { getGLBObject } = await import('@/buckets/glbs');
+                const glbBuffer = await getGLBObject(minioKey);
+                const { writeFile } = await import('fs/promises');
+                await writeFile(tempGlbPath, glbBuffer);
+            }catch(err){
+                console.warn(`Failed to download GLB from MinIO: ${minioKey}`, err);
                 return;
             }
 
@@ -109,7 +118,7 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
                 name: 'Headless Rasterizer (Preview)',
                 message: `${trajectory.name} - Preview frame ${firstFrameTimestep}`,
                 opts: {
-                    inputPath: glbPath,
+                    inputPath: tempGlbPath,
                     outputPath: previewPath
                 }
             };

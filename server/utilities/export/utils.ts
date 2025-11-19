@@ -20,9 +20,7 @@
 * SOFTWARE.
 **/
 
-import * as fs from 'fs';
 import { readFile } from 'fs/promises';
-import { dirname } from 'path';
 
 const GLB_MAGIC = 0x46546c67;
 const CHUNK_JSON = 0x4e4f534a;
@@ -205,14 +203,9 @@ export const parseGLB = async (inputFilePath: string, isMeshGLB: boolean = false
     return { data: { points, facets: facetsOut, metadata: gltf.extras ?? {} } };
 };
 
-function ensureDir(filePath: string){
-    const dir = dirname(filePath)
-    if(!fs.existsSync(dir)){
-        fs.mkdirSync(dir, { recursive: true })
-    }
-}
+// Removed assembleAndWriteGLB - use assembleGLBToBuffer instead
 
-export const assembleAndWriteGLB = (glbJson: any, binaryBuffer: ArrayBuffer, outputFilePath: string): void => {
+export const assembleGLBToBuffer = (glbJson: any, binaryBuffer: ArrayBuffer): Buffer => {
     const jsonString = JSON.stringify(glbJson);
     const jsonChunkLength = Buffer.byteLength(jsonString, 'utf8');
     const jsonPadding = (4 - (jsonChunkLength % 4)) % 4;
@@ -258,7 +251,6 @@ export const assembleAndWriteGLB = (glbJson: any, binaryBuffer: ArrayBuffer, out
 
     new Uint8Array(glbBuffer, byteOffset).set(new Uint8Array(binaryBuffer));
     byteOffset += binaryChunkLength;
-    ensureDir(outputFilePath)
 
-    fs.writeFileSync(outputFilePath, Buffer.from(glbBuffer));
+    return Buffer.from(glbBuffer);
 };

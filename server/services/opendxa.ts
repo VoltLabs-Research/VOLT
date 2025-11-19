@@ -382,8 +382,9 @@ class OpenDXAService{
 	 */
     private async exportAtomsColoredByType(groupedAtoms: AtomsGroupedByType, frame: number): Promise<void> {
         const exporter = new AtomisticExporter();
-        const outputPath = await this.getOutputPath(frame, 'atoms_colored_by_type');
-        exporter.exportAtomsTypeToGLB(groupedAtoms, outputPath);
+        // Path format: {folderId}/{analysisId}/glb/{frame}/atoms_colored_by_type.glb
+        const minioObjectName = `${this.trajectoryFolderPath.split('/').pop()}/${this.analysisConfigId}/glb/${frame}/atoms_colored_by_type.glb`;
+        await exporter.exportAtomsTypeToGLBMinIO(groupedAtoms, minioObjectName);
     }
 
     /**
@@ -395,8 +396,9 @@ class OpenDXAService{
      */
     private async exportDislocations(dislocation: Dislocation, frame: number): Promise<void> {
         const exporter = new DislocationExporter();
-        const outputPath = await this.getOutputPath(frame, 'dislocations');
-        exporter.toGLB(dislocation, outputPath, {
+        // Path format: {folderId}/{analysisId}/glb/{frame}/dislocations.glb
+        const minioObjectName = `${this.trajectoryFolderPath.split('/').pop()}/${this.analysisConfigId}/glb/${frame}/dislocations.glb`;
+        await exporter.toGLBMinIO(dislocation, minioObjectName, {
             lineWidth: 0.8,
             colorByType: true,
             material: {
@@ -417,8 +419,9 @@ class OpenDXAService{
      */
     private async exportMesh(mesh: Mesh, frame: number, meshType: 'defect' | 'interface' = 'defect'): Promise<void> {
         const exporter = new MeshExporter();
-        const outputPath = await this.getOutputPath(frame, `${meshType}_mesh`);
-        exporter.toGLB(mesh, outputPath, {
+        // Path format: {folderId}/{analysisId}/glb/{frame}/{meshType}_mesh.glb
+        const minioObjectName = `${this.trajectoryFolderPath.split('/').pop()}/${this.analysisConfigId}/glb/${frame}/${meshType}_mesh.glb`;
+        await exporter.toGLBMinIO(mesh, minioObjectName, {
             material: {
                 baseColor: [1.0, 1.0, 1.0, 1.0],
                 metallic: 0.0,

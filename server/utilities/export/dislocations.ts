@@ -25,10 +25,11 @@ import {
     ProcessedDislocationGeometry 
 } from '@/types/utilities/export/dislocations';
 import { calculateDislocationType } from '@/utilities/dislocation-utils';
-import { assembleAndWriteGLB } from '@/utilities/export/utils';
+import { assembleGLBToBuffer } from '@/utilities/export/utils';
 import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
 import { computeBoundsFromPoints } from '@/utilities/export/bounds';
 import { getDislocationsObject } from '@/buckets/dislocations';
+import { putGLBObject } from '@/buckets/glbs';
 
 class DislocationExporter{
     private createLineGeometry(
@@ -231,49 +232,7 @@ class DislocationExporter{
         };
     }
 
-    private createGLB(
-        geometry: ProcessedDislocationGeometry,
-        options: Required<DislocationExportOptions>,
-        outputFilePath: string
-    ): any {
-        const useU16 = geometry.vertexCount > 0 && geometry.vertexCount <= 65535;
-        const idx = useU16 ? new Uint16Array(geometry.indices) : geometry.indices;
-        
-        const { glb, arrayBuffer } = buildPrimitiveGLB({
-            positions: geometry.positions,
-            normals: geometry.normals,
-            colors: geometry.colors,
-            indices: idx,
-            // TRIANGLES
-            mode: 4,
-            nodeName: 'Dislocations',
-            meshName: 'DislocationGeometry',
-            generator: 'OpenDXA Dislocation Exporter',
-            copyright: 'https://github.com/rodyherrera/OpenDXA',
-            material: {
-                baseColor: options.material.baseColor,
-                metallic: options.material.metallic,
-                roughness: options.material.roughness,
-                emissive: options.material.emissive,
-                doubleSided: true,
-                name: 'DislocationMaterial'
-            },
-            extras: options.metadata.includeOriginalStats ? {
-                stats: {
-                vertexCount: geometry.vertexCount,
-                triangleCount: geometry.triangleCount,
-                segmentCount: geometry.triangleCount / (options.tubularSegments * 2)
-                },
-                ...options.metadata.customProperties
-            } : options.metadata.customProperties
-        }); 
-
-        const accPos = glb.accessors[0];
-        accPos.min = geometry.bounds.min;
-        accPos.max = geometry.bounds.max;
-
-        assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
-    }
+    // Removed createGLB method - use toGLBBuffer instead
 
     private convertStorageFormatToDislocationFormat(storage: any): any {
         const dislocationSegments = storage.dislocations.map((segment: any) => ({
@@ -315,16 +274,14 @@ class DislocationExporter{
         };
     }
 
-    // TODO: I'm not sure if this method works after change Dislocations storage from mongo to minio
     public async rebuildGLBFromDB(
         analysisConfigId: string,
         timestep: number,
         trajectoryId: string,
-        outputFilePath: string,
+        minioKey: string,
         options: DislocationExportOptions = {}
     ): Promise<void> {
         try {
-            // TODO: maybe a method for this
             const key = `${trajectoryId}/${analysisConfigId}/${timestep}.json`;
 
             console.log(`[DislocationExporter] Rebuilding GLB from MinIO object: ${key}`);
@@ -354,9 +311,12 @@ class DislocationExporter{
             };
 
             const processedGeometry = this.processGeometry(dislocationData, opts);
-            this.createGLB(processedGeometry, opts, outputFilePath);
+            
+            // Upload to MinIO instead of writing to filesystem
+            const buffer = this.toGLBBuffer(dislocationData, options);
+            await putGLBObject(minioKey, buffer);
 
-            console.log(`[DislocationExporter] GLB successfully rebuilt and saved to: ${outputFilePath}`);
+            console.log(`[DislocationExporter] GLB successfully rebuilt and uploaded to MinIO: ${minioKey}`);
             console.log(`[DislocationExporter] Statistics: ${processedGeometry.triangleCount} triangles, ${processedGeometry.vertexCount} vertices`);
 
         } catch (error) {
@@ -365,11 +325,12 @@ class DislocationExporter{
         }
     }
         
-    public toGLB(
+    // Removed toGLB method - use toGLBMinIO instead
+
+    public toGLBBuffer(
         dislocationData: any,
-        outputFilePath: string,
         options: DislocationExportOptions = {}
-    ): void {
+    ): Buffer {
         const opts: Required<DislocationExportOptions> = {
             lineWidth: options.lineWidth ?? 0.08,
             tubularSegments: options.tubularSegments ?? 12,
@@ -388,14 +349,53 @@ class DislocationExporter{
             }
         };
 
-        console.log('Starting dislocation export with automatic type calculation...');
-
         const processedGeometry = this.processGeometry(dislocationData, opts);
-        this.createGLB(processedGeometry, opts, outputFilePath);
         
-        console.log(`Dislocations successfully exported to: ${outputFilePath}`);
-        console.log(`Final statistics: ${processedGeometry.triangleCount} triangles, ${processedGeometry.vertexCount} vertices.`);
-        console.log(`Segments processed: ${dislocationData.data.length}`);
+        const useU16 = processedGeometry.vertexCount > 0 && processedGeometry.vertexCount <= 65535;
+        const idx = useU16 ? new Uint16Array(processedGeometry.indices) : processedGeometry.indices;
+        
+        const { glb, arrayBuffer } = buildPrimitiveGLB({
+            positions: processedGeometry.positions,
+            normals: processedGeometry.normals,
+            colors: processedGeometry.colors,
+            indices: idx,
+            mode: 4,
+            nodeName: 'Dislocations',
+            meshName: 'DislocationGeometry',
+            generator: 'OpenDXA Dislocation Exporter',
+            copyright: 'https://github.com/rodyherrera/OpenDXA',
+            material: {
+                baseColor: opts.material.baseColor,
+                metallic: opts.material.metallic,
+                roughness: opts.material.roughness,
+                emissive: opts.material.emissive,
+                doubleSided: true,
+                name: 'DislocationMaterial'
+            },
+            extras: opts.metadata.includeOriginalStats ? {
+                stats: {
+                vertexCount: processedGeometry.vertexCount,
+                triangleCount: processedGeometry.triangleCount,
+                segmentCount: processedGeometry.triangleCount / (opts.tubularSegments * 2)
+                },
+                ...opts.metadata.customProperties
+            } : opts.metadata.customProperties
+        }); 
+
+        const accPos = glb.accessors[0];
+        accPos.min = processedGeometry.bounds.min;
+        accPos.max = processedGeometry.bounds.max;
+
+        return assembleGLBToBuffer(glb, arrayBuffer);
+    }
+
+    public async toGLBMinIO(
+        dislocationData: any,
+        minioObjectName: string,
+        options: DislocationExportOptions = {}
+    ): Promise<void> {
+        const buffer = this.toGLBBuffer(dislocationData, options);
+        await putGLBObject(minioObjectName, buffer);
     }
 };
 

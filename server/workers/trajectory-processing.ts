@@ -30,12 +30,14 @@ import '@config/env';
 
 const glbExporter = new AtomisticExporter();
 
-const processSingleFrame = async (frameData: any, frameFilePath: string, glbFolderPath: string) => {
-    const glbFilePath = join(glbFolderPath, `${frameData.timestep}.glb`);
+const processSingleFrame = async (frameData: any, frameFilePath: string, folderId: string) => {
+    // Upload to MinIO instead of writing to filesystem
+    // Path format: {folderId}/previews/glb/{timestep}.glb
+    const minioObjectName = `${folderId}/previews/glb/${frameData.timestep}.glb`;
 
-    await glbExporter.toGLB(
+    await glbExporter.toGLBMinIO(
         frameFilePath,
-        glbFilePath,
+        minioObjectName,
         extractTimestepInfo
     );
 };
@@ -45,7 +47,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
         throw new Error('Invalid job payload');
     }
 
-    const { files, glbFolderPath } = job;
+    const { files, folderId } = job;
 
     console.log(
         `[Worker #${process.pid}] Start job ${job.jobId} ` +
@@ -53,7 +55,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
     );
     
     try{
-        await Promise.all(files.map(({ frameData, frameFilePath }) => processSingleFrame(frameData, frameFilePath, glbFolderPath)));
+        await Promise.all(files.map(({ frameData, frameFilePath }) => processSingleFrame(frameData, frameFilePath, folderId)));
         parentPort?.postMessage({
             status: 'completed',
             jobId: job.jobId,

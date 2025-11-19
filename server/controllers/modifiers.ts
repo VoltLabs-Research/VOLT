@@ -22,7 +22,6 @@
 import { Request, Response } from 'express';
 import { dislocationAnalysis, DislocationAnalysisModifierError } from '@/modifiers/dislocation-analysis';
 import { computeAnalysisStats } from '@/modifiers/analysis-stats';
-import { getGLBPath } from '@/utilities/trajectory-glbs';
 import DislocationExporter from '@/utilities/export/dislocations';
 
 export const dislocationRenderOptions = async (req: Request, res: Response) => {
@@ -33,19 +32,23 @@ export const dislocationRenderOptions = async (req: Request, res: Response) => {
 
     const options = req.body;
     const exporter = new DislocationExporter();
-    const glbFilePath = await getGLBPath(Number(timestep), 'dislocations', analysisConfigId, folderId);
-    if(!glbFilePath){
-        return res.status(404).json({
+    
+    // GLBs are now in MinIO, rebuild and upload directly to MinIO
+    const minioKey = `${folderId}/${analysisConfigId}/glb/${timestep}/dislocations.glb`;
+    
+    try{
+        await exporter.rebuildGLBFromDB(String(analysisConfigId), Number(timestep), String(_id), minioKey, options);
+        res.status(200).json({
+            status: 'success',
+            data: { minioKey }
+        });
+    }catch(err){
+        console.error('Failed to rebuild GLB:', err);
+        return res.status(500).json({
             status: 'error',
-            data: { error: `GLB file for timestep ${timestep} not found` }
+            data: { error: 'Failed to rebuild GLB from database' }
         });
     }
-    console.log('glb file path:', glbFilePath)
-    await exporter.rebuildGLBFromDB(String(analysisConfigId), Number(timestep), String(_id), glbFilePath, options)
-    res.status(200).json({
-        status: 'success',
-        data: {}
-    })
 };
 
 export const getAnalysisStats = async (req: Request, res: Response) => {

@@ -22,6 +22,7 @@
 
 import DislocationExporter from '@/utilities/export/dislocations';
 import { readMsgpackFile } from '@/utilities/msgpack';
+import { writeFile } from 'fs/promises';
 
 const main = async () => {
     const msgpackPath = process.argv[2];
@@ -30,7 +31,7 @@ const main = async () => {
     const dislocationData = await readMsgpackFile(msgpackPath);
 
     const exporter = new DislocationExporter();
-    exporter.toGLB(dislocationData, glbPath, {
+    const buffer = exporter.toGLBBuffer(dislocationData, {
         lineWidth: 0.8,
         colorByType: true,
         material: {
@@ -40,6 +41,9 @@ const main = async () => {
             emissive: [0.0, 0.0, 0.0]
         }
     });
+
+    await writeFile(glbPath, buffer);
+    console.log(`GLB written to: ${glbPath}`);
 };
 
 main();

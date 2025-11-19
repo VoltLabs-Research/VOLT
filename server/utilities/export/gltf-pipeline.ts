@@ -89,16 +89,19 @@ export const applyQuantizeAndMeshopt = async (
     await doc.transform(meshopt({ encoder: MeshoptEncoder }));
 };
 
+// Removed writeGLB - use writeGLBToBuffer instead
+
 /**
- * Writes a glTF {@link Document} to a **.glb** file, registering Meshopt support.
+ * Serializes a glTF {@link Document} to a GLB buffer in memory.
  *
  * @param doc - The glTF-Transform {@link Document} to serialize.
- * @param outputFilePath - Filesystem path for the output `.glb`.
+ * @returns Buffer containing the GLB binary data.
  */
-export const writeGLB = async (doc: Document, outputFilePath: string): Promise<void> => {
+export const writeGLBToBuffer = async (doc: Document): Promise<Buffer> => {
     const io = new NodeIO() 
         .registerExtensions([EXTMeshoptCompression])
         .registerDependencies({ 'meshopt.encoder': MeshoptEncoder })
 
-    await io.write(outputFilePath, doc);
+    const arrayBuffer = await io.writeBinary(doc);
+    return Buffer.from(arrayBuffer);
 };

@@ -21,16 +21,18 @@
 **/
 
 import { Mesh, DefectMeshExportOptions, ProcessedMesh } from '@/types/utilities/export/mesh';
-import { assembleAndWriteGLB } from '@/utilities/export/utils';
+import { assembleGLBToBuffer } from '@/utilities/export/utils';
 import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
 import taubinSmoothing from '@/utilities/export/taubin-smoothing';
+import { putGLBObject } from '@/buckets/glbs';
 
 class MeshExporter{
-    public toGLB(
+    // Removed toGLB method - use toGLBMinIO instead
+
+    public toGLBBuffer(
         mesh: Mesh,
-        outputFilePath: string,
         options: DefectMeshExportOptions = {}
-    ): void{
+    ): Buffer{
         const opts: Required<DefectMeshExportOptions> = {
             generateNormals: options.generateNormals ?? true,
             enableDoubleSided: options.enableDoubleSided ?? true,
@@ -55,7 +57,6 @@ class MeshExporter{
             positions: processedMesh.positions,
             normals: processedMesh.normals,
             indices,
-            // TRIANGLES
             mode: 4,
             nodeName: 'Mesh',
             meshName: 'MeshGeometry',
@@ -82,7 +83,16 @@ class MeshExporter{
         accPos.min = processedMesh.bounds.min;
         accPos.max = processedMesh.bounds.max;
 
-        assembleAndWriteGLB(glb, arrayBuffer, outputFilePath);
+        return assembleGLBToBuffer(glb, arrayBuffer);
+    }
+
+    public async toGLBMinIO(
+        mesh: Mesh,
+        minioObjectName: string,
+        options: DefectMeshExportOptions = {}
+    ): Promise<void>{
+        const buffer = this.toGLBBuffer(mesh, options);
+        await putGLBObject(minioObjectName, buffer);
     }
 
     private processMeshGeometry(mesh: Mesh, options: Required<DefectMeshExportOptions>): ProcessedMesh{

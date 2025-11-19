@@ -198,7 +198,8 @@ export const getTrajectoryMetricsById = async (trajectoryId: string): Promise<an
   const totalFrames = frames.length;
   const timesteps: number[] = frames.map((f: any) => Number(f.timestep)).filter((v: any) => Number.isFinite(v));
   const natoms: number[] = frames.map((f: any) => Number(f.natoms)).filter((v: any) => Number.isFinite(v));
-  const withGLB = frames.filter((f: any) => !!f.glbPath).length;
+  // GLBs are now in MinIO, so we assume all frames have GLBs after processing
+  const withGLB = totalFrames;
 
   const atomsStats = totalFrames
     ? {

@@ -35,6 +35,7 @@ import RuntimeError from '@/utilities/runtime-error';
 import HandlerFactory from '@/controllers/handler-factory';
 import archiver from 'archiver';
 import { v4 } from 'uuid';
+import { statGLBObject, getGLBStream } from '@/buckets/glbs';
 
 const factory = new HandlerFactory<any>({
     model: Trajectory as any,
@@ -159,7 +160,14 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
         'interface_mesh'
     ] as const;
 
-    const toRel = (abs: string) => relative(trajFS.root, abs);
+    // MinIO keys are already in the format we need, just extract the relative part
+    const toRel = (minioKey: string) => {
+        // MinIO key format: {trajectoryId}/{analysisId}/glb/{frame}/{type}.glb
+        // We want: {analysisId}/glb/{frame}/{type}.glb
+        const parts = minioKey.split('/');
+        // Remove trajectoryId (first part)
+        return parts.slice(1).join('/');
+    };
 
     const typeMap: Record<string, Record<string, string>> = {
         atoms_colored_by_type: {},
@@ -172,7 +180,6 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
         const maps = await trajFS.getAnalysis(analysisId, type, { media: 'glb' });
         const glbByFrame = maps.glb || {};
         for(const frame of Object.keys(glbByFrame).sort((a, b) => Number(a) - Number(b))){
-            // e.g. "<analysisId>/glb/36000/<type>.glb"
             typeMap[type][frame] = toRel(glbByFrame[frame]);
         }
     }
@@ -366,33 +373,38 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
         const trajFS = new TrajectoryFS(trajectory.folderId);
 
         let result = null;
-        if(type){
-            result = await trajFS.getAnalysis(analysisId, type ?? '', { media: 'glb' });
-        }else{
+        
+        // If analysisId is 'default' or no type specified, get from previews
+        // Otherwise get from analysis
+        if(analysisId === 'default' || !type){
             result = await trajFS.getPreviews({ media: 'glb' });
+        }else{
+            result = await trajFS.getAnalysis(analysisId, type, { media: 'glb' });
         }
 
-        const glbPath = result.glb?.[String(timestep)];
-        if(!glbPath){
+        const glbKey = result.glb?.[String(timestep)];
+        if(!glbKey){
             return res.status(404).json({
                 status: 'error',    
                 data: { error: `GLB file for timestep ${timestep} not found (analysisId=${analysisId}, type=${type})` }
             });
         }
 
-        const st = await stat(glbPath);
+        // Get GLB from MinIO
+        const stat = await statGLBObject(glbKey);
+        const stream = await getGLBStream(glbKey);
 
         res.setHeader('Content-Type', 'model/gltf-binary');
-        res.setHeader('Content-Length', st.size);
+        res.setHeader('Content-Length', stat.size);
         res.setHeader('Content-Disposition', `inline; filename="${trajectory.name}_${timestep}.glb"`);
 
-        if(type === undefined){
+        if(analysisId === 'default' || !type){
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         }
 
-        return res.sendFile(glbPath);
+        stream.pipe(res);
     }catch(err){
-        console.error(err);
+        console.error('[getTrajectoryGLB] Error:', err);
         return res.status(500).json({ status: 'error', data: { error: 'Internal server error' }});
     }
 };
@@ -405,11 +417,11 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
     const glbMap = maps.glb || {};
     const frameFilter = req.query.frame ? String(req.query.frame): null;
 
-    const files = Object.entries(glbMap)
+    const glbKeys = Object.entries(glbMap)
         .filter(([frame]) => !frameFilter || frameFilter === frame)
-        .map(([, abs]) => abs);
+        .map(([, key]) => key);
 
-    if(!files.length){
+    if(!glbKeys.length){
         return res.status(404).json({
             status: 'error',
             data: { error: 'No GLB files found' }
@@ -436,9 +448,12 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
     });
 
     archive.pipe(res);
-    for(const absPath of files){
-        const name = absPath.split('/').pop() || 'frame.glb';
-        archive.file(absPath, { name: `glb/${name}` });
+    
+    // Stream GLBs from MinIO into the archive
+    for(const glbKey of glbKeys){
+        const name = glbKey.split('/').pop() || 'frame.glb';
+        const stream = await getGLBStream(glbKey);
+        archive.append(stream, { name: `glb/${name}` });
     }
 
     await archive.finalize();
@@ -451,11 +466,9 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const folderId = v4();
     const folderPath = join(process.env.TRAJECTORY_DIR as string, folderId);
     await mkdir(folderPath, { recursive: true });
-    await mkdir(join(folderPath, 'glb'), { recursive: true });
 
     const trajFS = new TrajectoryFS(folderId, process.env.TRAJECTORY_DIR);
-    await trajFS.ensureStructure();
-    const previewsGlbDir = join(folderPath, 'previews', 'glb'); 
+    await trajFS.ensureStructure(); 
 
     const filePromises = files.map(async (file: any, i: number) => {
         try{
@@ -472,8 +485,8 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
                 await rm(tempPath).catch(() => {});
 
                 const frameData = {
-                    ...frameInfo,
-                    glbPath: `glb/${frameInfo.timestep}.glb`
+                    ...frameInfo
+                    // GLBs are now stored in MinIO, not in frame data
                 };
 
                 return {
@@ -527,6 +540,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
         jobs.push({
             jobId: v4(),
             trajectoryId: newTrajectory._id.toString(),
+            folderId: folderId, // UUID for MinIO paths
             chunkIndex: Math.floor(i / CHUNK_SIZE),
             totalChunks: Math.ceil(validFiles.length / CHUNK_SIZE),
             files: chunk.map(({ frameData, srcPath }) => ({
@@ -537,7 +551,6 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             name: 'Upload Trajectory',
             message: trajectoryName,
             folderPath,
-            glbFolderPath: previewsGlbDir,
             tempFolderPath: folderPath
         });
     }

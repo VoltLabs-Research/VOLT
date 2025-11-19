@@ -22,22 +22,40 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
     const customOpts: Partial<HeadlessRasterizerOptions> = req.body ?? {};
     const jobs: RasterizerJob[] = [];
 
+    // Import GLB utilities
+    const { getGLBObject } = await import('@/buckets/glbs');
+    const { writeFile, mkdir } = await import('fs/promises');
+    
+    // Create temp directory for GLBs
+    const tempGlbDir = join(tfs.root, 'temp_glbs');
+    await mkdir(tempGlbDir, { recursive: true });
+
     const previews = await tfs.getPreviews({ media: 'glb' });
     const glbPreviews = previews.glb ?? {};
-    for (const [frame, glbPath] of Object.entries(glbPreviews)) {
-        const outPath = join(tfs.root, 'previews', 'raster', `${frame}.png`);
-        jobs.push({
-            jobId: v4(),
-            trajectoryId: trajectory._id,
-            teamId: trajectory.team._id,
-            name: 'Headless Rasterizer (Preview)',
-            message: `${trajectory.name} - Preview frame ${frame}`,
-            opts: {
-                inputPath: glbPath,
-                outputPath: outPath,
-                ...customOpts,
-            },
-        });
+    
+    for (const [frame, minioKey] of Object.entries(glbPreviews)) {
+        // Download GLB from MinIO to temp location
+        try{
+            const glbBuffer = await getGLBObject(minioKey);
+            const tempGlbPath = join(tempGlbDir, `preview_${frame}.glb`);
+            await writeFile(tempGlbPath, glbBuffer);
+            
+            const outPath = join(tfs.root, 'previews', 'raster', `${frame}.png`);
+            jobs.push({
+                jobId: v4(),
+                trajectoryId: trajectory._id,
+                teamId: trajectory.team._id,
+                name: 'Headless Rasterizer (Preview)',
+                message: `${trajectory.name} - Preview frame ${frame}`,
+                opts: {
+                    inputPath: tempGlbPath,
+                    outputPath: outPath,
+                    ...customOpts,
+                },
+            });
+        }catch(err){
+            console.error(`Failed to download preview GLB for frame ${frame}:`, err);
+        }
     }
 
     const analyses = await AnalysisConfig.find({ trajectory: trajectory._id }).lean();
@@ -48,22 +66,29 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
 
         if (!analysisTypes.glb) continue;
 
-        for (const [frame, glbPath] of Object.entries(analysisTypes.glb)) {
-            const frameNum = basename(glbPath).replace(/\.[^.]+$/, '');
-            const outPath = join(tfs.root, analysisId, 'raster', frameNum, 'preview.png');
+        for (const [frame, minioKey] of Object.entries(analysisTypes.glb)) {
+            try{
+                const glbBuffer = await getGLBObject(minioKey);
+                const tempGlbPath = join(tempGlbDir, `analysis_${analysisId}_${frame}.glb`);
+                await writeFile(tempGlbPath, glbBuffer);
+                
+                const outPath = join(tfs.root, analysisId, 'raster', frame, 'preview.png');
 
-            jobs.push({
-                jobId: v4(),
-                trajectoryId: trajectory._id,
-                teamId: trajectory.team._id,
-                name: 'Headless Rasterizer (Analysis)',
-                message: `${trajectory.name} - ${analysisId} - Frame ${frameNum}`,
-                opts: {
-                    inputPath: glbPath,
-                    outputPath: outPath,
-                    ...customOpts,
-                },
-            });
+                jobs.push({
+                    jobId: v4(),
+                    trajectoryId: trajectory._id,
+                    teamId: trajectory.team._id,
+                    name: 'Headless Rasterizer (Analysis)',
+                    message: `${trajectory.name} - ${analysisId} - Frame ${frame}`,
+                    opts: {
+                        inputPath: tempGlbPath,
+                        outputPath: outPath,
+                        ...customOpts,
+                    },
+                });
+            }catch(err){
+                console.error(`Failed to download analysis GLB for frame ${frame}:`, err);
+            }
         }
     }
 
