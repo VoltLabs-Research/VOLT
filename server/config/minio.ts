@@ -57,4 +57,15 @@ export const initializeMinio = async (): Promise<void> => {
         await ensureBucketExists(client, bucket);
     }
     console.log('[MinIO] Complete initialization');
-}
+};
+
+export const getJSONFromBucket = async<T = any>(bucket: string, objectName: string): Promise<T> => {
+    const client = getMinioClient();
+    const stream = await client.getObject(bucket, objectName);
+    const chunks: Buffer[] = [];
+    for await(const chunk of stream){
+        chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+    return JSON.parse(buffer.toString('utf-8')) as T;
+};

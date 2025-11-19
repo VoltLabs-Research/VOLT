@@ -87,7 +87,7 @@ export const computeAnalysisStats = async (trajectoryId: string): Promise<any> =
     await Promise.all(promises);
     console.log('ok')
 
-    const folderPath = path.join(process.env.TRAJECTORY_DIR as string, trajectory.folderId);
+    const folderPath = path.join(process.env.TRAJECTORY_DIR as string, trajectoryId);
     const analysisPath = path.join(folderPath, 'analysis-stats.json');
 
     await fs.writeFile(analysisPath, JSON.stringify(stats));

@@ -382,7 +382,6 @@ class OpenDXAService{
 	 */
     private async exportAtomsColoredByType(groupedAtoms: AtomsGroupedByType, frame: number): Promise<void> {
         const exporter = new AtomisticExporter();
-        // Path format: {folderId}/{analysisId}/glb/{frame}/atoms_colored_by_type.glb
         const minioObjectName = `${this.trajectoryFolderPath.split('/').pop()}/${this.analysisConfigId}/glb/${frame}/atoms_colored_by_type.glb`;
         await exporter.exportAtomsTypeToGLBMinIO(groupedAtoms, minioObjectName);
     }
@@ -396,7 +395,6 @@ class OpenDXAService{
      */
     private async exportDislocations(dislocation: Dislocation, frame: number): Promise<void> {
         const exporter = new DislocationExporter();
-        // Path format: {folderId}/{analysisId}/glb/{frame}/dislocations.glb
         const minioObjectName = `${this.trajectoryFolderPath.split('/').pop()}/${this.analysisConfigId}/glb/${frame}/dislocations.glb`;
         await exporter.toGLBMinIO(dislocation, minioObjectName, {
             lineWidth: 0.8,
@@ -419,7 +417,6 @@ class OpenDXAService{
      */
     private async exportMesh(mesh: Mesh, frame: number, meshType: 'defect' | 'interface' = 'defect'): Promise<void> {
         const exporter = new MeshExporter();
-        // Path format: {folderId}/{analysisId}/glb/{frame}/{meshType}_mesh.glb
         const minioObjectName = `${this.trajectoryFolderPath.split('/').pop()}/${this.analysisConfigId}/glb/${frame}/${meshType}_mesh.glb`;
         await exporter.toGLBMinIO(mesh, minioObjectName, {
             material: {

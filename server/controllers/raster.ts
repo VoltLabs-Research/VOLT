@@ -3,14 +3,15 @@ import { join, resolve, basename } from 'path';
 import { getRasterizerQueue } from '@/queues';
 import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
-import { catchAsync } from '@/utilities/runtime';
+import { catchAsync, slugify } from '@/utilities/runtime';
 import { readFile } from 'fs/promises';;
 import { readdir } from 'fs/promises';
-import { AnalysisConfig, Trajectory } from '@/models';  
+import { Analysis, AnalysisConfig, Trajectory } from '@/models';  
 import { v4 } from 'uuid';
 import path from 'path';
 import TrajectoryFS from '@/services/trajectory-fs';
 import archiver from 'archiver';
+import { sanitizeModelName } from '@/utilities/plugins';
 
 export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
     // Rasterization is allowed regardless of CPU_INTENSIVE_TASKS
@@ -59,36 +60,39 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
         }
     }
 
-    const analyses = await AnalysisConfig.find({ trajectory: trajectoryId }).lean();
+    const analyses = await Analysis.find({ trajectory: trajectoryId }).lean();
+    for(const analysis of analyses){
+        const analysisId = analysis._id.toString();
+        const glbMap = await tfs.listAnalysisGlbKeys(analysisId);
+        const entries = Object.entries(glbMap);
 
-    for (const analysis of analyses) {
-        const analysisId = String(analysis._id);
-        const analysisTypes = await tfs.getAnalysis(analysisId, '', { media: 'glb' });
+        for(const [frame, types] of entries){
+            for(const [rawType, objectName] of Object.entries(types)){
+                const modelName = sanitizeModelName(rawType || 'preview');
+                try{
+                    const glbBuffer = await getGLBObject(objectName);
+                    const tempGlbPath = join(tempGlbDir, `analysis_${analysisId}_${frame}_${modelName}.glb`);
+                    await writeFile(tempGlbPath, glbBuffer);
 
-        if (!analysisTypes.glb) continue;
+                    const frameRasterDir = join(tfs.root, analysisId, 'raster', frame);
+                    await mkdir(frameRasterDir, { recursive: true });
+                    const outPath = join(frameRasterDir, `${modelName}.png`);
 
-        for (const [frame, minioKey] of Object.entries(analysisTypes.glb)) {
-            try{
-                const glbBuffer = await getGLBObject(minioKey);
-                const tempGlbPath = join(tempGlbDir, `analysis_${analysisId}_${frame}.glb`);
-                await writeFile(tempGlbPath, glbBuffer);
-                
-                const outPath = join(tfs.root, analysisId, 'raster', frame, 'preview.png');
-
-                jobs.push({
-                    jobId: v4(),
-                    trajectoryId: trajectoryId,
-                    teamId: trajectory.team._id,
-                    name: 'Headless Rasterizer (Analysis)',
-                    message: `${trajectory.name} - ${analysisId} - Frame ${frame}`,
-                    opts: {
-                        inputPath: tempGlbPath,
-                        outputPath: outPath,
-                        ...customOpts,
-                    },
-                });
-            }catch(err){
-                console.error(`Failed to download analysis GLB for frame ${frame}:`, err);
+                    jobs.push({
+                        jobId: v4(),
+                        trajectoryId: trajectory._id,
+                        teamId: trajectory.team._id,
+                        name: 'Headless Rasterizer (Analysis)',
+                        message: `${trajectory.name} - ${analysisId} - Frame ${frame} (${modelName})`,
+                        opts: {
+                            inputPath: tempGlbPath,
+                            outputPath: outPath,
+                            ...customOpts,
+                        },
+                    });
+                }catch(error){
+                    console.error(`Failed to download analysis GLB for frame ${frame} type ${modelName}:`, error);
+                }
             }
         }
     }
@@ -131,7 +135,7 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
         { new: true }
     );
 
-    const analyses = await AnalysisConfig
+    const analyses = await Analysis
         .find({ trajectory: trajectoryId })
         .select('-createdAt -updatedAt -__v')
         .lean();
@@ -151,7 +155,17 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
             };
         }
 
-        analysesMetadata[id] = { ...analysis, frames: framesMeta };
+        analysesMetadata[id] = {
+            _id: analysis._id,
+            name: analysis.name,
+            key: analysis.key,
+            plugin: analysis.plugin,
+            config: analysis.config,
+            status: analysis.status,
+            outputs: analysis.outputs,
+            exposure: analysis.exposure,
+            frames: framesMeta
+        };
     }
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
@@ -186,7 +200,7 @@ export const getRasterFrame = async (req: Request, res: Response) => {
             const p = path.join(tfs.root, 'previews', 'raster', `${frameNumber}.png`);
             buffer = await readFile(p);
         } else {
-            buffer = await readRasterModel(model, analysisId, trajectory.folderId, frameNumber);
+            buffer = await readRasterModel(model, analysisId, trajectoryId, frameNumber);
         }
 
         res.setHeader('Cache-Control', 'public, max-age=86400');
@@ -217,7 +231,7 @@ export const getRasterFrameData = async (req: Request, res: Response) => {
             const p = path.join(tfs.root, 'previews', 'raster', `${frameNumber}.png`);
             buffer = await readFile(p);
         } else {
-            buffer = await readRasterModel(model, analysisId, trajectory.folderId, frameNumber);
+            buffer = await readRasterModel(model, analysisId, trajectoryId, frameNumber);
         }
 
         const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
@@ -239,7 +253,7 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
     let trajectory = res.locals.trajectory;
     const trajectoryId = trajectory._id.toString();
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-    const rasterDir = join(basePath, trajectory.folderId, 'raster');
+    const rasterDir = join(basePath, trajectoryId, 'raster');
 
     trajectory = await Trajectory.findOneAndUpdate(
         { _id: trajectoryId }, 
@@ -386,7 +400,9 @@ export const downloadRasterImagesArchive = async (req: Request, res: Response) =
         archive.pipe(res);
         files.sort((a, b) => a.localeCompare(b));
         for (const abs of files) {
-            const rel = abs.split(trajectory.folderId).pop()!.replace(/^[/\\]/, '');
+            const rel = abs.startsWith(tfs.root)
+                ? abs.slice(tfs.root.length).replace(/^[/\\]/, '')
+                : basename(abs);
             archive.file(abs, { name: rel });
         }
         await archive.finalize();

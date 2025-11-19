@@ -5,7 +5,6 @@ import { AnalysisConfig } from '@/models/index';
 import TrajectoryFS from '@/services/trajectory-fs';
 
 export interface DislocationAnalysisModifierConfig{
-    folderId: string;
     team: string;
     name: string;
     trajectoryId: string;

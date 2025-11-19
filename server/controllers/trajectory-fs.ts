@@ -222,8 +222,8 @@ export const downloadTrajectoryFs = async (req: Request, res: Response) => {
         const glbStat = await trajFS.statGLBInMinIO(pathParam);
         if(glbStat){
             // File is in MinIO
-            const minioKey = `${trajectory.folderId}/${pathParam}`;
-            const stream = await getGLBStream(minioKey);
+            const objectName = `${trajectoryId}/${pathParam}`;
+            const stream = await getGLBStream(objectName);
             
             res.setHeader('Content-Type', 'model/gltf-binary');
             res.setHeader('Content-Length', glbStat.size);

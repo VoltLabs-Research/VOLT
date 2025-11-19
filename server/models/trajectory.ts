@@ -50,11 +50,6 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         maxlength: [64, 'Trajectory::Name::MaxLength'],
         trim: true
     },
-    folderId: {
-        type: String,
-        required: true,
-        unique: true
-    },
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
@@ -176,8 +171,8 @@ TrajectorySchema.pre('findOneAndDelete', async function(next){
         return next();
     }
 
-    const { folderId } = trajectoryToDelete;
-    const trajectoryPath = join(process.env.TRAJECTORY_DIR as string, folderId);
+    const trajectoryId = trajectoryToDelete._id.toString();
+    const trajectoryPath = join(process.env.TRAJECTORY_DIR as string, trajectoryId);
 
     try{
         if(existsSync(trajectoryPath)){

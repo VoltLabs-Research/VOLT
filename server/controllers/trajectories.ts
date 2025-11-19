@@ -106,7 +106,7 @@ export const getTrajectoryMetrics = async (req: Request, res: Response) => {
 export const deleteTrajectoryById = factory.deleteOne({
     beforeDelete: async (doc: any) => {
         const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-        const trajectoryPath = join(basePath, doc.folderId);
+        const trajectoryPath = join(basePath, doc._id.toString());
         try{
             await rm(trajectoryPath, { recursive: true, force: true });
             console.log(`Cleaned up trajectory files at: ${trajectoryPath}`);
