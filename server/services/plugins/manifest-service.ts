@@ -20,42 +20,66 @@
 * SOFTWARE.
 **/
 
-import type { Artifact } from '@/services/plugins/artifact-processor';
-import * as fs from 'node:fs/promises';
+import ManifestResolver from '@/services/plugins/manifest-resolver';
 import * as path from 'node:path';
-
-interface EntrypointArg {
-    type: 'enum' | 'number';
-    default: string | number;
-    values?: string[];
-};
-
-interface Entrypoint{
-    bin: string;
-    args: Record<string, EntrypointArg>;
-};
 
 export interface Manifest{
     name: string;
     version: string;
-    artifacts: Artifact[];
-    entrypoint: Entrypoint;
+    artifacts: any[];
+    entrypoint: {
+        bin: string;
+        args: Record<string, any>;
+    };
+    analyses?: any[];
 };
 
 export default class ManifestService{
-    private manifestCache: Manifest | null = null;
+    private manifest: Manifest | null = null;
+    private pluginDir: string;
+    private resolver: ManifestResolver;
 
-    constructor(
-        private pluginsDir: string,
-        private pluginName: string
-    ){}
+    constructor(pluginsDir: string, pluginName: string){
+        this.pluginDir = path.join(pluginsDir, pluginName);
+        this.resolver = new ManifestResolver(this.pluginDir);
+    }
 
     async get(): Promise<Manifest>{
-        if(this.manifestCache) return this.manifestCache;
+        if(this.manifest){
+            return this.manifest;
+        }
 
-        const p = path.join(this.pluginsDir, this.pluginName, 'manifest.json');
-        const data = await fs.readFile(p, 'utf-8');
-        this.manifestCache = JSON.parse(data) as Manifest;
-        return this.manifestCache;
+        this.manifest = await this.resolver.load('manifest.json');
+        return this.manifest!;
+    }
+
+    async reload(): Promise<Manifest>{
+        this.manifest = null;
+        this.resolver.clearCache();
+        return await this.get();
+    }
+
+    async validate(): Promise<{ valid: boolean; errors: string[] }>{
+        const errors: string[] = [];
+        try{
+            const manifest = await this.get();
+
+            if(!manifest.name) errors.push('Missing required field: name');
+            if(!manifest.version) errors.push('Missing required field: version');
+            if(!manifest.artifacts || !Array.isArray(manifest.artifacts)){
+                errors.push('Missing or invalid field: artifacts (must be array)');
+            }
+
+            if(!manifest.entrypoint) {
+                errors.push('Missing required field: entrypoint');
+            }else{
+                if(!manifest.entrypoint.bin) errors.push('Missing required field: entrypoint.bin');
+                if(!manifest.entrypoint.args) errors.push('Missing required field: entrypoint.args');
+            }
+
+            return { valid: errors.length === 0, errors };
+        }catch(error: any){
+            return { valid: false, errors: [error.message || 'Failed to load manifest'] };
+        }
     }
 };

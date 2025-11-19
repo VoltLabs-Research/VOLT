@@ -38,11 +38,13 @@ export default class Plugin{
     private context: AnalysisContext;
     private manifest: ManifestService;
     private cli: CLIExec;
+    private exportDirectory: string;
 
     constructor(
         private pluginName: string,
         private trajectoryId: string,
-        private exportDirectory: string,
+        private analysisId: string,
+        private trajectoryFolderPath: string,
         private pluginsDir = process.env.PLUGINS_DIR || ''
     ){
         if(!pluginsDir){
@@ -52,6 +54,7 @@ export default class Plugin{
         this.context = new AnalysisContext(this.pluginName);
         this.manifest = new ManifestService(this.pluginsDir, this.pluginName);
         this.cli = new CLIExec();
+        this.exportDirectory = path.join(this.trajectoryFolderPath, this.analysisId, 'glb');
     }
 
     private getArtifactBucket(artifact: any){
@@ -81,12 +84,26 @@ export default class Plugin{
             if(!exists) continue;
 
             console.log(`[${this.pluginName} plugin] reading file: ${filePath}`);
-            const data = await readMsgpackFile(filePath);
+            const data = await this.readResultFile(filePath);
             results[name] = data;
             generatedFiles.push(filePath);
         }
 
         return { results, generatedFiles };
+    }
+
+    private async readResultFile(filePath: string){
+        let data: any;
+        // TODO: read large file function
+        if(filePath.endsWith('.json')){
+            const content = await fs.readFile(filePath, 'utf-8');
+            data = JSON.parse(content);
+        }else if(filePath.endsWith('.msgpack')){
+            data = await readMsgpackFile(filePath);
+        }else{
+            data = await readMsgpackFile(filePath);
+        }
+        return data;
     }
 
     private async buildArgs<T>(options: T): Promise<string[]>{
@@ -134,14 +151,14 @@ export default class Plugin{
         const processor = new ArtifactProcessor(
             this.pluginName,
             this.trajectoryId,
-            this.exportDirectory,
+            this.analysisId,
             this.context
         );
 
         for(const artifact of artifacts){
             const result = results[artifact.name];
             if(!result) continue;
-            await processor.evaluate(artifact, result, timestep, options);
+            await processor.evaluate(artifact, result, timestep);
         }
     }
     
@@ -160,14 +177,3 @@ export default class Plugin{
         }));
     }
 };
-
-import '@config/env';
-import { initializeMinio } from '@/config/minio';
-import mongoConnector from '@/utilities/mongo/mongo-connector';
-(async () => {
-    await mongoConnector();
-    await initializeMinio();
-    const odxaPlugin = new Plugin('OpenDXA', '691cabc27b7d06a37aea066c', '/home/rodyherrera/Desktop/OpenDXA/server/storage/trajectories/529a20a4-983f-4d97-86fb-197ae329b392');
-    await odxaPlugin.register();
-    await odxaPlugin.evaluate('/home/rodyherrera/Desktop/OpenDXA/server/storage/trajectories/529a20a4-983f-4d97-86fb-197ae329b392/dumps/25000', {});
-})();

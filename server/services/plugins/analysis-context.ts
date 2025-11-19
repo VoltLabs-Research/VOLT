@@ -22,8 +22,6 @@
 
 import type { ExecutionRecorder } from '@/services/plugins/artifact-processor';
 import { getMinioClient } from '@/config/minio';
-import { IAnalysis } from '@/models/analysis';
-import { Analysis } from '@/models';
 
 interface UploadedObject{
     bucket: string;
@@ -31,18 +29,14 @@ interface UploadedObject{
 };
 
 export default class AnalysisContext implements ExecutionRecorder{
-    private createdAnalyses: IAnalysis[] = [];
     private uploadedObjects: UploadedObject[] = [];
 
-    constructor(private pluginName: string){}
+    constructor(
+        private pluginName: string
+    ){}
 
     async rollback(): Promise<void>{
         await this.cleanupUploadedObjects();
-        await this.cleanupAnalyses();
-    }
-
-    recordAnalysis(analysis: IAnalysis): void{
-        this.createdAnalyses.push(analysis);
     }
 
     recordUpload(bucket: string, key: string): void{
@@ -51,7 +45,6 @@ export default class AnalysisContext implements ExecutionRecorder{
 
     private async cleanupUploadedObjects(){
         const client = getMinioClient();
-
         await Promise.all(this.uploadedObjects.map(({ bucket, key }) => {
             client.removeObject(bucket, key).catch((err) => {
                 console.error(`[${this.pluginName} plugin] failed to delete ${bucket}/${key}:`, err);
@@ -60,18 +53,4 @@ export default class AnalysisContext implements ExecutionRecorder{
 
         this.uploadedObjects = [];
     }
-
-    private async cleanupAnalyses(){
-        const ids = this.createdAnalyses.map((a) => a._id);
-    
-        if(ids.length === 0) return;
-    
-        try{
-            await Analysis.deleteMany({ _id: { $in: ids } });
-        }catch(err){
-            console.error(`[${this.pluginName} plugin] failed to delete Analysis docs:`, err);
-        }
-
-        this.createdAnalyses = [];
-    }
-};
+}

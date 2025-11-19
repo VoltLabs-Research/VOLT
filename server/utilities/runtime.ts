@@ -39,6 +39,12 @@ const SLUG_REGEX = /^[a-zA-Z0-9_-]+$/;
 // Maximum slug length for security
 const MAX_SLUG_LENGTH = 100;
 
+export const slugify = (value: string) => value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+
 /**
  * Catches async errors in Express route handlers and passes them to the error middleware.
  * This eliminate the need for try-catch blocks in every async route handler.

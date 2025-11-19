@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-type ArgType = 'enum' | 'number';
+type ArgType = 'enum' | 'number' | 'boolean';
 
 interface ArgDef{
     type: ArgType;
@@ -33,7 +33,6 @@ export default class ArgumentsBuilder{
         private argDefs: Record<string, ArgDef>
     ){}
 
-
     async isValidArg(arg: string, value: string): Promise<boolean>{
         const def = this.argDefs[arg];
         if(!def) return false;
@@ -44,6 +43,11 @@ export default class ArgumentsBuilder{
         }
         
         if(def.type === 'number') return !Number.isNaN(Number(value));
+
+        if(def.type === 'boolean'){
+            const v = String(value).toLowerCase();
+            return v === 'true' || v === 'false' || v === '1' || v === '0';
+        }
 
         return true;
     }
@@ -57,7 +61,15 @@ export default class ArgumentsBuilder{
             const value = options[argKey] as string;
             if(!(await this.isValidArg(argKey, value))) continue;
 
-            args.push(`--${argKey}`, String(value));
+            // TODO: Check this!
+            if(this.argDefs[argKey].type === 'boolean'){
+                const normalized = typeof value === 'boolean'
+                    ? value
+                    : ['true', '1'].includes(String(value).toLowerCase());
+                args.push(`--${argKey}`, normalized ? 'true' : 'false');
+            }else{
+                args.push(`--${argKey}`, String(value));
+            }
         }
 
         return args;
