@@ -44,7 +44,7 @@ class TrajectoryFS{
 
     constructor(trajectoryId: string, baseDir = process.env.TRAJECTORY_DIR){
         if(!baseDir){
-            throw new Error('TRAJECTORY_DIR is not not defined.')
+            throw new Error('TRAJECTORY_DIR is not defined.')
         }
         this.trajectoryId = trajectoryId;
         this.root = path.resolve(baseDir, trajectoryId);

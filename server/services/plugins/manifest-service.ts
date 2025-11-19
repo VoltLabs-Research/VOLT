@@ -20,10 +20,42 @@
 * SOFTWARE.
 **/
 
-import { decode } from '@msgpack/msgpack';
-import { readBinaryFile } from '@utilities/fs';
+import type { Artifact } from '@/services/plugins/artifact-processor';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 
-export const readMsgpackFile = async (filePath: string): Promise<any> => {
-    const { buffer } = await readBinaryFile(filePath);
-    return decode(buffer);
-}
+interface EntrypointArg {
+    type: 'enum' | 'number';
+    default: string | number;
+    values?: string[];
+};
+
+interface Entrypoint{
+    bin: string;
+    args: Record<string, EntrypointArg>;
+};
+
+export interface Manifest{
+    name: string;
+    version: string;
+    artifacts: Artifact[];
+    entrypoint: Entrypoint;
+};
+
+export default class ManifestService{
+    private manifestCache: Manifest | null = null;
+
+    constructor(
+        private pluginsDir: string,
+        private pluginName: string
+    ){}
+
+    async get(): Promise<Manifest>{
+        if(this.manifestCache) return this.manifestCache;
+
+        const p = path.join(this.pluginsDir, this.pluginName, 'manifest.json');
+        const data = await fs.readFile(p, 'utf-8');
+        this.manifestCache = JSON.parse(data) as Manifest;
+        return this.manifestCache;
+    }
+};

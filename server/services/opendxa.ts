@@ -324,97 +324,35 @@ class OpenDXAService{
      * @internal
      */
     private async handleDislocationData(data: Dislocation, timestep: number): Promise<void>{
-  try {
-    console.log('[OpenDXAService] handleDislocationData: trajectoryId=', this.trajectoryId, 'analysisConfigId=', this.analysisConfigId, 'timestep=', timestep);
-
-    const storageKey = `${this.trajectoryId}/${this.analysisConfigId}/${timestep}.json`;
+        const storageKey = `${this.trajectoryId}/${this.analysisConfigId}/${timestep}.json`;
         
-    const updateData = {
-      totalSegments: data.metadata.count,
-      dislocations: data.data.map((dislocation) => ({
-        segmentId: dislocation.segment_id,
-        type: calculateDislocationType(dislocation),
-        numPoints: dislocation.num_points,
-        length: dislocation.length,
-        points: dislocation.points,
-        burgers: dislocation.burgers,
-        nodes: dislocation.nodes,
-        lineDirection: {
-          string: dislocation.line_direction?.string,
-          vector: dislocation.line_direction?.vector.map(v => isNaN(v) ? null : v)
-        }
-      })),
-      totalPoints: data.summary.total_points,
-      averageSegmentLength: data.summary.average_segment_length,
-      maxSegmentLength: data.summary.max_segment_length,
-      minSegmentLength: data.summary.min_segment_length,
-      totalLength: data.summary.total_length,
-      analysisConfig: this.analysisConfigId,
-      trajectory: this.trajectoryId,
-      timestep
-    };
+        const updateData = {
+            totalSegments: data.metadata.count,
+            dislocations: data.data.map((dislocation) => ({
+                segmentId: dislocation.segment_id,
+                type: calculateDislocationType(dislocation),
+                numPoints: dislocation.num_points,
+                length: dislocation.length,
+                points: dislocation.points,
+                burgers: dislocation.burgers,
+                nodes: dislocation.nodes,
+                lineDirection: {
+                    string: dislocation.line_direction?.string,
+                    vector: dislocation.line_direction?.vector.map(v => isNaN(v) ? null : v)
+                }
+            })),
+            totalPoints: data.summary.total_points,
+            averageSegmentLength: data.summary.average_segment_length,
+            maxSegmentLength: data.summary.max_segment_length,
+            minSegmentLength: data.summary.min_segment_length,
+            totalLength: data.summary.total_length,
+            analysisConfig: this.analysisConfigId,
+            trajectory: this.trajectoryId,
+            timestep
+        };
 
-    // 1) Guardar JSON completo en MinIO
-    await putDislocationsObject(storageKey, updateData);
-    console.log('[OpenDXAService] handleDislocationData: stored in MinIO with key', storageKey);
-
-    // 2) Intentar actualizar una entrada existente por timestep
-    const updateResult = await AnalysisConfig.updateOne(
-      { _id: this.analysisConfigId, 'dislocationFiles.timestep': timestep },
-      {
-        $set: {
-          'dislocationFiles.$': {
-            timestep,
-            storageKey,
-            totalSegments: updateData.totalSegments,
-            totalPoints: updateData.totalPoints,
-            totalLength: updateData.totalLength,
-            averageSegmentLength: updateData.averageSegmentLength,
-            maxSegmentLength: updateData.maxSegmentLength,
-            minSegmentLength: updateData.minSegmentLength,
-            createdAt: new Date()
-          }
-        }
-      }
-    );
-
-    console.log('[OpenDXAService] handleDislocationData: updateResult (existing entry)', updateResult);
-
-    // 3) Si no existía entrada para ese timestep, hacemos un push
-    if (!('matchedCount' in updateResult) || updateResult.matchedCount === 0) {
-      const pushResult = await AnalysisConfig.updateOne(
-        { _id: this.analysisConfigId },
-        {
-          $push: {
-            dislocationFiles: {
-              timestep,
-              storageKey,
-              totalSegments: updateData.totalSegments,
-              totalPoints: updateData.totalPoints,
-              totalLength: updateData.totalLength,
-              averageSegmentLength: updateData.averageSegmentLength,
-              maxSegmentLength: updateData.maxSegmentLength,
-              minSegmentLength: updateData.minSegmentLength,
-              createdAt: new Date()
-            }
-          }
-        }
-      );
-      console.log('[OpenDXAService] handleDislocationData: pushResult (new entry)', pushResult);
+        await putDislocationsObject(storageKey, updateData);
     }
-
-    // 4) Marcar la trayectoria como que tiene dislocaciones
-    const trajResult = await Trajectory.updateOne(
-      { _id: this.trajectoryId },
-      { $set: { 'availableModels.dislocations': true } }
-    );
-    console.log('[OpenDXAService] handleDislocationData: trajectory update result', trajResult);
-
-  } catch (error) {
-    console.error('[OpenDXAService] handleDislocationData error:', error);
-  }
-}
-
 
     private async ensureDir(dir: string): Promise<void>{
         await fs.mkdir(dir, { recursive: true });

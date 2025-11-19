@@ -20,10 +20,46 @@
 * SOFTWARE.
 **/
 
-import { decode } from '@msgpack/msgpack';
-import { readBinaryFile } from '@utilities/fs';
+type ArgType = 'enum' | 'number';
 
-export const readMsgpackFile = async (filePath: string): Promise<any> => {
-    const { buffer } = await readBinaryFile(filePath);
-    return decode(buffer);
-}
+interface ArgDef{
+    type: ArgType;
+    default: string | number;
+    values?: string[];
+};
+
+export default class ArgumentsBuilder{
+    constructor(
+        private argDefs: Record<string, ArgDef>
+    ){}
+
+
+    async isValidArg(arg: string, value: string): Promise<boolean>{
+        const def = this.argDefs[arg];
+        if(!def) return false;
+        
+        if(def.type === 'enum'){
+            if(!def.values || !def.values.length) return false;
+            return def.values.includes(value);
+        }
+        
+        if(def.type === 'number') return !Number.isNaN(Number(value));
+
+        return true;
+    }
+
+    async build(options: any): Promise<string[]>{
+        const args: string[] = [];
+        
+        for(const argKey in this.argDefs){
+            if(!Object.prototype.hasOwnProperty.call(options, argKey)) continue;
+
+            const value = options[argKey] as string;
+            if(!(await this.isValidArg(argKey, value))) continue;
+
+            args.push(`--${argKey}`, String(value));
+        }
+
+        return args;
+    }
+};

@@ -22,7 +22,6 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Trajectory, Team } from '@/models/index';
-import TrajectoryFS from '@/services/trajectory-fs';
 
 // Strict variant for write operations: always require team membership, regardless of public status
 export const requireTeamMembershipForTrajectory = async (req: Request, res: Response, next: NextFunction) => {

@@ -33,7 +33,7 @@ const glbExporter = new AtomisticExporter();
 const processSingleFrame = async (frameData: any, frameFilePath: string, glbFolderPath: string) => {
     const glbFilePath = join(glbFolderPath, `${frameData.timestep}.glb`);
 
-    await glbExporter.exportAtomsToGLB(
+    await glbExporter.toGLB(
         frameFilePath,
         glbFilePath,
         extractTimestepInfo

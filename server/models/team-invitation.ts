@@ -25,7 +25,6 @@ import crypto from 'crypto';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 export interface ITeamInvitation extends Document {
-    _id: mongoose.Types.ObjectId;
     team: mongoose.Types.ObjectId;
     invitedBy: mongoose.Types.ObjectId;
     invitedUser: mongoose.Types.ObjectId;

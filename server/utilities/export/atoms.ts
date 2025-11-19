@@ -327,69 +327,7 @@ export default class AtomisticExporter{
         idx.set(tmp);
     }
 
-    public async exportAtomsToPointCloudGLB(
-        positions: Float32Array,
-        colors: Float32Array | undefined,
-        outputFilePath: string,
-        opts: CompressionOptions = {}
-    ): Promise<void> {
-        const { min, max } = computeBoundsFromFlat(positions);
-        const doc = new Document();
-        const buffer = doc.createBuffer('bin');
-        const extent = {
-            x: Math.max(1e-20, max[0] - min[0]),
-            y: Math.max(1e-20, max[1] - min[1]),
-            z: Math.max(1e-20, max[2] - min[2])
-        };
-
-        const positionAcc = doc
-            .createAccessor('POSITION')
-            .setArray(positions)
-            .setType(Accessor.Type.VEC3)
-            .setBuffer(buffer);
-
-        let colorAcc: Accessor | undefined;
-        if(colors){
-            colorAcc = doc
-                .createAccessor('COLOR_0')
-                .setArray(colors)
-                .setType(Accessor.Type.VEC3)
-                .setBuffer(buffer);
-        }
-
-        // POINTS
-        const primitive = doc
-            .createPrimitive()
-            .setAttribute('POSITION', positionAcc)
-            .setMode(0);
-
-        if(colorAcc){
-            primitive.setAttribute('COLOR_0', colorAcc);
-        }
-
-        const mesh = doc.createMesh('AtomsPoints').addPrimitive(primitive);
-        const node = doc.createNode('Frame').setMesh(mesh);
-
-        doc.createScene('Scene').addChild(node);
-        doc.createMaterial('PointMat');
-
-        await applyQuantizeAndMeshopt(
-            doc,
-            {
-                quantization: {
-                    positionBits: opts.quantization?.positionBits ?? 15,
-                    colorBits: opts.quantization?.colorBits ?? 8
-                },
-                epsilon: opts.epsilon,
-                requireExtensions: true
-            },
-            extent
-        );
-
-        await writeGLB(doc, outputFilePath);
-    }
-
-    public async exportAtomsToGLB(
+    public async toGLB(
         filePath: string,
         outputFilePath: string,
         extractTimestepInfo: Function,
