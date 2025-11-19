@@ -26,11 +26,27 @@ import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 export interface IAnalysis extends Document{
     plugin: string;
-    artifact: string;
+    key: string;
+    name: string;
+    description?: string;
     config: any;
-    storageKey?: string;
     trajectory: mongoose.Types.ObjectId;
-    timestep: number;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    outputs: {
+        artifact: string;
+        type?: string;
+        displayName?: string;
+    }[];
+    exposure?: {
+        canvasModifiers: boolean;
+        raster?: boolean;
+        analysisListing?: boolean;
+    };
+    totalFrames?: number;
+    completedFrames?: number;
+    startedAt?: Date;
+    finishedAt?: Date;
+    lastFrameProcessed?: number;
 };
 
 const AnalysisSchema: Schema<IAnalysis> = new Schema({
@@ -39,28 +55,77 @@ const AnalysisSchema: Schema<IAnalysis> = new Schema({
         required: true,
         lowercase: true
     },
-    artifact: {
+    key: {
         type: String,
         required: true,
         lowercase: true
+    },
+    name: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    description: {
+        type: String,
+        default: ''
     },
     config: {
         type: Schema.Types.Mixed,
         required: true
     },
-    timestep: {
-        type: Number,
-        required: true
+    status: {
+        type: String,
+        enum: ['pending', 'running', 'completed', 'failed'],
+        default: 'pending'
     },
-    storageKey: {
-        type: String
+    outputs: {
+        type: [{
+            artifact: {
+                type: String,
+                required: true
+            },
+            type: {
+                type: String
+            },
+            displayName: {
+                type: String
+            }
+        }],
+        default: []
+    },
+    exposure: {
+        canvasModifier: {
+            type: Boolean,
+            default: false
+        },
+        raster: {
+            type: Boolean,
+            default: false
+        },
+        analysisListing: {
+            type: Boolean,
+            default: false
+        }
+    },
+    totalFrames: {
+        type: Number,
+        default: 0
+    },
+    completedFrames: {
+        type: Number,
+        default: 0
+    },
+    startedAt: Date,
+    finishedAt: Date,
+    lastFrameProcessed: {
+        type: Number
     },
     trajectory: {
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
         required: true,
         cascade: 'delete',
-        inverse: { path: 'analysis', behavior: 'addToSet' } 
+        inverse: { path: 'analysis', behavior: 'addToSet' }
     }
 }, {
     timestamps: true

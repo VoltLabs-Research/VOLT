@@ -21,10 +21,13 @@
 **/
 
 import { parentPort } from 'worker_threads';
+import { Analysis } from '@/models';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
-import OpenDXAService from '@services/opendxa';
+import Plugin from '@/services/plugins/plugin';
 import mongoConnector from '@/utilities/mongo/mongo-connector';
+import path from 'node:path';
 import '@config/env';
+
 
 const processJob = async (job: AnalysisJob): Promise<void> => {
     if(!job){
@@ -33,17 +36,37 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
 
     try{
         console.log(`[Worker #${process.pid}] Received job ${job.jobId}. Starting processing...`);
-        const analysis = new OpenDXAService(job.trajectoryId.toString(), job.folderPath.toString(), job.analysisConfigId.toString());
-        const results = await analysis.processSingleFile(job.inputFile, job.config);
+        const plugin = new Plugin(
+            job.plugin,
+            job.trajectoryId.toString(),
+            job.analysisId.toString(),
+            job.folderPath.toString()
+        );
+        await plugin.register();
+        await plugin.evaluate(job.inputFile, job.config);
+
+        // TODO: This should be more robust; besides, there's an existing function for this.
+        const frameNumber = Number(path.basename(job.inputFile));
+
+        const update = {
+            $inc: { completedFrames: 1 },
+            $set: { lastFrameProcessed: frameNumber }
+        };
+
+        const updated = await Analysis.findOneAndUpdate({ _id: job.analysisId }, update, { new: true });
+        if(updated && updated.totalFrames && (updated.completedFrames ?? 0) >= updated.totalFrames){
+            await Analysis.updateOne({ _id: job.analysisId }, { status: 'completed', finishedAt: new Date() });
+        }
+
         parentPort?.postMessage({
             status: 'completed',
             jobId: job.jobId,
-            result: results
+            result: null
         });
-
         console.log(`[Worker #${process.pid}] Finished job ${job.trajectoryId} successfully.`);
     }catch(err: any){
         console.error(`[Worker #${process.pid}] An error occurred while processing trajectory ${job.trajectoryId}:`, err);
+        await Analysis.updateOne({ _id: job.analysisId }, { status: 'failed', finishedAt: new Date() }).catch(() => { /** noop */ });
         
         parentPort?.postMessage({
             status: 'failed',

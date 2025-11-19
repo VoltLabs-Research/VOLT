@@ -5,6 +5,8 @@ export interface AnalysisJob extends BaseJob{
     folderPath: string;
     config: any;
     inputFile: string;
-    analysisConfigId: string;
+    analysisId: string;
+    analysisKey: string;
+    plugin: string;
     sessionStartTime?: string;
 }

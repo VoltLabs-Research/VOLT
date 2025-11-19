@@ -22,7 +22,6 @@
 
 import { extractTimestepInfo } from '@/utilities/lammps';
 import { parentPort } from 'worker_threads';
-import { join } from 'path';
 import { unlink } from 'fs/promises';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import AtomisticExporter from '@/utilities/export/atoms';
@@ -30,14 +29,13 @@ import '@config/env';
 
 const glbExporter = new AtomisticExporter();
 
-const processSingleFrame = async (frameData: any, frameFilePath: string, folderId: string) => {
-    // Upload to MinIO instead of writing to filesystem
-    // Path format: {folderId}/previews/glb/{timestep}.glb
-    const minioObjectName = `${folderId}/previews/glb/${frameData.timestep}.glb`;
+const processSingleFrame = async (frameData: any, frameFilePath: string, trajectoryId: string) => {
+    // TODO: function for get object name
+    const objectName = `${trajectoryId}/previews/glb/${frameData.timestep}.glb`;
 
     await glbExporter.toGLBMinIO(
         frameFilePath,
-        minioObjectName,
+        objectName,
         extractTimestepInfo
     );
 };
@@ -47,7 +45,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
         throw new Error('Invalid job payload');
     }
 
-    const { files, folderId } = job;
+    const { files, trajectoryId } = job;
 
     console.log(
         `[Worker #${process.pid}] Start job ${job.jobId} ` +
@@ -55,7 +53,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
     );
     
     try{
-        await Promise.all(files.map(({ frameData, frameFilePath }) => processSingleFrame(frameData, frameFilePath, folderId)));
+        await Promise.all(files.map(({ frameData, frameFilePath }) => processSingleFrame(frameData, frameFilePath, trajectoryId)));
         parentPort?.postMessage({
             status: 'completed',
             jobId: job.jobId,
