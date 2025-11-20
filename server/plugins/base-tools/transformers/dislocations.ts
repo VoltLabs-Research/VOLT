@@ -11,7 +11,7 @@ export default async function transformer(
         const slice: DislocationSegment[] = JSON.parse(chunk.toString('utf-8'));
         
         for(const seg of slice){
-            segments.push({
+            await ctx.writeChunk({
                 segmentId: seg.segment_id,
                 type: calculateDislocationType(seg),
                 numPoints: seg.num_points,
@@ -24,5 +24,5 @@ export default async function transformer(
         }
     }
 
-    return segments;
+    return null;
 };

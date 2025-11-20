@@ -26,6 +26,7 @@ import { slugify } from '@/utilities/runtime';
 import { encodeMsgpack, readMsgpackFile } from '@/utilities/msgpack';
 import DislocationExporter from '@/utilities/export/dislocations';
 import MeshExporter from '@/utilities/export/mesh';
+import SummaryStreamWriter from './summary-stream-writer';
 import AtomisticExporter from '@/utilities/export/atoms';
 import path from 'node:path';
 import * as fs from 'node:fs';
@@ -63,6 +64,7 @@ export interface ArtifactTransformContext{
 
     iterateChunks(): AsyncIterable<Buffer>;
     readAllAsBuffer(): Promise<Buffer>;
+    writeChunk(chunk: unknown): Promise<void>;
 }
 
 export type ArtifactTransformer = (ctx: ArtifactTransformContext) => Promise<any | null> | any | null;
@@ -78,8 +80,32 @@ export default class ArtifactProcessor{
 
     async evaluate<T>(artifact: Artifact, timestep: number, filePath: string): Promise<void>{
         await this.saveRawResult(artifact, timestep, filePath);
-        const summary = await this.applyTransformer(artifact, timestep, filePath);
-        if(summary !== null) await this.saveSummary(artifact, timestep, summary);
+
+        const summaryWriter = new SummaryStreamWriter(
+            this.pluginName,
+            this.trajectoryId,
+            this.analysisId,
+            artifact.name,
+            timestep
+        );
+
+        const summary = await this.applyTransformer(
+            artifact,
+            timestep,
+            filePath,
+            summaryWriter
+        );
+
+        // If the transformer used writeSummaryChunk, we uploaded the stream
+        if(summaryWriter.wroteAny){
+            const res = await summaryWriter.finalizeAndUpload();
+            if(res){
+                this.recorder.recordUpload(SYS_BUCKETS.PLUGINS, res.storageKey);
+            }
+        }else if(summary !== null && summary !== undefined){
+            // The transformer returned a manageable object in memory
+            await this.saveSummary(artifact, timestep, summary);
+        }
 
         if(artifact.exportConfig){
             const resultForExport = await this.loadResultForExport(filePath);
@@ -165,7 +191,8 @@ export default class ArtifactProcessor{
     private async applyTransformer(
         artifact: Artifact,
         timestep: number,
-        filePath: string
+        filePath: string,
+        summaryWriter: SummaryStreamWriter
     ): Promise<any | null>{
         const transformer = await this.loadTransformer(artifact);
         if(!transformer) return null;
@@ -183,7 +210,8 @@ export default class ArtifactProcessor{
                 }
                 return this.iterateIterableChunks(artifact, filePath);
             },
-            readAllAsBuffer: () => fsp.readFile(filePath)
+            readAllAsBuffer: () => fsp.readFile(filePath),
+            writeChunk: (chunk: unknown) => summaryWriter.append(chunk)
         };
 
         return await transformer(ctx);
@@ -200,7 +228,7 @@ export default class ArtifactProcessor{
             yield Buffer.from(json, 'utf-8');
         }
     }
-
+    
     private async loadTransformer(artifact: Artifact): Promise<ArtifactTransformer | null>{
         const fileName = `${slugify(artifact.name)}.ts`;
         const fullPath = path.join(this.pluginsDir, this.pluginName, 'transformers', fileName);

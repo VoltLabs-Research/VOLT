@@ -1,75 +1,41 @@
-import { decodeMultiStream } from '@msgpack/msgpack';
-import type { Readable } from 'node:stream';
-import * as fs from 'node:fs';
+import { decodeMultiStreamFromFile } from '@/utilities/msgpack-stream';
 
 export interface DecodeArrayStreamOptions{
     iterableKey?: string;
     chunkSize?: number;
 };
 
-export async function *decodeArrayStream(
-    input: Readable,
+export async function *decodeArrayStreamFromFile<T = unknown>(
+    filePath: string,
     options: DecodeArrayStreamOptions = {}
-): AsyncIterable<any[]>{
-    const { iterableKey, chunkSize = 10_000 } = options;
-    const msgStream = decodeMultiStream(input);
-    let batch: any[] = [];
-    
-    const flush = () => {
-        if(batch.length === 0) return null;
-        const out = batch;
-        batch = []
-        return out;
-    };
+): AsyncIterable<T[]>{
+    const { iterableKey, chunkSize } = options;
 
-    for await(const msg of msgStream){
-        if(Array.isArray(msg)){
-            for(const item of msg){
-                batch.push(item);
-                if(batch.length >= chunkSize){
-                    const out = flush();
-                    if(out) yield out;
-                }
-            }
+    for await(const msg of decodeMultiStreamFromFile(filePath)){
+        const m = msg as any;
 
+        let arr: unknown;
+        if(iterableKey){
+            if(!m || typeof m !== 'object') continue;
+            arr = (m as any)[iterableKey];
+        }else{
+            arr = m;
+        }
+
+        if(!Array.isArray(arr) || arr.length === 0){
             continue;
         }
 
-        if(iterableKey && msg && typeof msg === 'object'){
-            const arr = (msg as any)[iterableKey];
-            if(Array.isArray(arr)){
-                for(const item of arr){
-                    batch.push(item);
-                    if(batch.length >= chunkSize){
-                        const out = flush();
-                        if(out) yield out;
-                    }
-                }
-                continue;
+        if(!chunkSize || chunkSize <= 0 || arr.length <= chunkSize){
+            yield arr as T[];
+            continue;
+        }
+
+        for(let i = 0; i < arr.length; i += chunkSize){
+            const slice = arr.slice(i, i + chunkSize);
+            if(slice.length > 0){
+                yield slice as T[];
             }
         }
-
-        batch.push(msg);
-        if(batch.length >= chunkSize){
-            const out = flush();
-            if(out) yield out;
-        }
-    }
-
-    const last = flush();
-    if(last) yield last;
-}
-
-export async function *decodeArrayStreamFromFile(
-    filePath: string,
-    options: DecodeArrayStreamOptions = {}
-): AsyncIterable<any[]>{
-    const stream = fs.createReadStream(filePath);
-    try{
-        for await(const slice of decodeArrayStream(stream, options)){
-            yield slice;
-        }
-    }finally{
-        stream.close();
     }
 }

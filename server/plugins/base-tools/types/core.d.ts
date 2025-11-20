@@ -23,6 +23,7 @@ export interface ArtifactTransformContext{
 
     iterateChunks(): AsyncIterable<Buffer>;
     readAllAsBuffer(): Promise<Buffer>;
+    writeChunk(chunk: unknown): Promise<void>;
 }
 
 export type ArtifactTransformer = (ctx: ArtifactTransformContext) => Promise<any | null> | any | null;  
