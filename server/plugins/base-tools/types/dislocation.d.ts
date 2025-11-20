@@ -36,14 +36,3 @@ export interface DislocationSegment{
     line_direction: LineDirection;
     nodes: DislocationNodes;
 };
-
-export interface DislocationSummary{
-    segmentId: number;
-    type: string;
-    numPoints: number;
-    length: number;
-    points: [number, number, number][];
-    burgers: DislocationBurger;
-    nodes: DislocationNodes;
-    lineDirection: LineDirection;
-}

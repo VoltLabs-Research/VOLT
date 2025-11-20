@@ -1,12 +1,10 @@
 import { AnyRecord, ArtifactTransformContext } from '../types/core';
-import { DislocationSummary, DislocationSegment } from '../types/dislocation';
+import { DislocationSegment } from '../types/dislocation';
 import calculateDislocationType from '../utilities/calculate-dislocation-type';
 
 export default async function transformer(
     ctx: ArtifactTransformContext
 ): Promise<AnyRecord | null> {
-    const segments: DislocationSummary[] = [];
-    
     for await(const chunk of ctx.iterateChunks()){
         const slice: DislocationSegment[] = JSON.parse(chunk.toString('utf-8'));
         
