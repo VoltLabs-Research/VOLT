@@ -1,7 +1,7 @@
 import { parentPort } from 'node:worker_threads';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
 import { putObject } from '@/utilities/buckets';
-import { initializeMinio } from '@/config/minio';
+import { initializeMinio, SYS_BUCKETS } from '@/config/minio';
 import HeadlessRasterizer from '@/services/headless-rasterizer';
 import * as fs from 'node:fs/promises';
 
@@ -14,9 +14,9 @@ const processJob = async (job: RasterizerJob) => {
 
         parentPort?.postMessage({ status: 'completed', jobId: job.jobId });
 
-        const objectName = `${job.trajectoryId}/previews/raster/${job.timestep}.png`;
+        const objectName = `trajectory-${job.trajectoryId}/previews/timestep-${job.timestep}.png`;
         await fs.unlink(job.opts.inputPath as string);
-        await putObject(objectName, 'raster', buffer, {
+        await putObject(objectName, SYS_BUCKETS.RASTERIZER, buffer, {
             'Content-Type': 'image/png',
             'Cache-Control': 'public, max-age=86400'
         });

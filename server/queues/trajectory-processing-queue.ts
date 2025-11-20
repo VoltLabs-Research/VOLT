@@ -26,6 +26,7 @@ import { BaseProcessingQueue } from './base-processing-queue';
 import { Trajectory } from '@/models';
 import { rasterizeGLBs } from '@/utilities/raster';
 import path from 'path';
+import { SYS_BUCKETS } from '@/config/minio';
 
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
     private firstChunkProcessed = new Set<string>();
@@ -68,11 +69,11 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
                 return;
             }
 
-            const frameGLB = `${job.trajectoryId}/previews/glb/${firstFrame.frameData.timestep}.glb`;
+            const frameGLB = `trajectory-${job.trajectoryId}/previews/timestep-${firstFrame.frameData.timestep}.glb`;
             const trajectory = await Trajectory.findById(job.trajectoryId);
             if(!trajectory) throw Error('Trajectory::NotFound');
             
-            await rasterizeGLBs(frameGLB, 'glbs', trajectory);
+            await rasterizeGLBs(frameGLB, SYS_BUCKETS.MODELS, SYS_BUCKETS.RASTERIZER, trajectory);
 
             // If this is part of a session, increment the remaining counter to include this rasterizer job
             if(job.sessionId){

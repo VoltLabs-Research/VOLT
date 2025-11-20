@@ -20,7 +20,7 @@ artifacts:
       resultFile: atoms.msgpack
       exportConfig:
         name: AtomisticExporter
-        handler: exportAtomsTypeToGLB
+        handler: exportAtomsTypeToGLBMinIO
         type: glb
 
     - name: Defect Mesh

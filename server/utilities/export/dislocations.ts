@@ -29,6 +29,7 @@ import { assembleGLBToBuffer } from '@/utilities/export/utils';
 import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
 import { computeBoundsFromPoints } from '@/utilities/export/bounds';
 import { putObject, getObject } from '@/utilities/buckets';
+import { SYS_BUCKETS } from '@/config/minio';
 
 class DislocationExporter{
     private createLineGeometry(
@@ -285,7 +286,7 @@ class DislocationExporter{
             const key = `${trajectoryId}/${analysisConfigId}/${timestep}.json`;
 
             console.log(`[DislocationExporter] Rebuilding GLB from MinIO object: ${key}`);
-            const storageObject = await getObject(key, 'glbs');
+            const storageObject = await getObject(key, SYS_BUCKETS.MODELS);
             if(!storageObject){
                 throw new Error(`No dislocation object found in MinIO for key ${key}`);
             }
@@ -314,7 +315,7 @@ class DislocationExporter{
             
             // Upload to MinIO instead of writing to filesystem
             const buffer = this.toGLBBuffer(dislocationData, options);
-            await putObject(minioKey, 'glbs', buffer, { 'Content-Type': 'model/gltf-binary' });
+            await putObject(minioKey, SYS_BUCKETS.MODELS, buffer, { 'Content-Type': 'model/gltf-binary' });
 
             console.log(`[DislocationExporter] GLB successfully rebuilt and uploaded to MinIO: ${minioKey}`);
             console.log(`[DislocationExporter] Statistics: ${processedGeometry.triangleCount} triangles, ${processedGeometry.vertexCount} vertices`);
@@ -395,7 +396,7 @@ class DislocationExporter{
         options: DislocationExportOptions = {}
     ): Promise<void> {
         const buffer = this.toGLBBuffer(dislocationData, options);
-        await putObject(minioObjectName, 'glbs', buffer, { 'Content-Type': 'model/gltf-binary' });
+        await putObject(minioObjectName, SYS_BUCKETS.MODELS, buffer, { 'Content-Type': 'model/gltf-binary' });
     }
 };
 

@@ -7,30 +7,44 @@ import { getRasterizerQueue } from '@/queues';
 import { Response } from 'express';
 import { v4 } from 'uuid';
 import * as path from 'node:path';
+import { SYS_BUCKETS } from '@/config/minio';
 
 export const rasterizeGLBs = async (
     prefix: string, 
+    prefixBucketName: string,
     bucketName: string,
     trajectory: ITrajectory,
     opts: Partial<HeadlessRasterizerOptions> = {}
 ): Promise<void> => {
     const jobs: RasterizerJob[] = [];
-    const keys = await listByPrefix(prefix, bucketName);
+    const keys = await listByPrefix(prefix, prefixBucketName);
     
     const promises = keys.map(async (key) => {
         const filename = key.split('/').pop();
         if(!filename) return;
-        
-        const timestep = path.basename(filename, '.glb');
+
+        const base = path.basename(filename, '.glb');
+        const match = base.match(/\d+/g);
+        if(!match) {
+            console.warn('No timestep found in filename:', filename);
+            return;
+        }
+
+        const timestep = Number(match[match.length - 1]);
+        if(Number.isNaN(timestep)) {
+            console.warn('Invalid timestep parsed from filename:', filename);
+            return;
+        }
+
         const tempDir = await createTempDir();
-        const tempPath = path.join(tempDir, timestep);
-        await downloadObject(key, bucketName, tempPath);
+        const tempPath = path.join(tempDir, timestep.toString());
+        await downloadObject(key, prefixBucketName, tempPath);
 
         jobs.push({
             jobId: v4(),
             trajectoryId: trajectory._id.toString(),
             teamId: trajectory.team._id.toString(),
-            timestep: Number(timestep),
+            timestep,
             name: 'Headless Rasterizer (Preview)',
             message: `${trajectory.name} - Preview frame ${timestep}`,
             opts: {
@@ -60,8 +74,8 @@ export const getTimestepPreview = async (
     trajectoryId: string, 
     timestep: number
 ): Promise<{ buffer: Buffer, etag: string }> => {
-    const objectName = `${trajectoryId}/previews/raster/${timestep}.png`;
-    const buffer = await getObject(objectName, 'raster');
+    const objectName = `trajectory-${trajectoryId}/previews/timestep-${timestep}.png`;
+    const buffer = await getObject(objectName, SYS_BUCKETS.RASTERIZER);
     const etag = `"trajectory-preview-${trajectoryId}"`;
     return { buffer, etag };
 };

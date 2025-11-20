@@ -27,6 +27,7 @@ import mime from 'mime-types';
 import TrajectoryFS from '@/services/trajectory-fs';
 import RuntimeError from '@/utilities/runtime-error';
 import { getStream } from '@/utilities/buckets';
+import { SYS_BUCKETS } from '@/config/minio';
 
 type EntryType = 'file' | 'dir';
 
@@ -223,7 +224,7 @@ export const downloadTrajectoryFs = async (req: Request, res: Response) => {
         if(glbStat){
             // File is in MinIO
             const objectName = `${trajectoryId}/${pathParam}`;
-            const stream = await getStream(objectName, 'glbs');
+            const stream = await getStream(objectName, SYS_BUCKETS.MODELS);
             
             res.setHeader('Content-Type', 'model/gltf-binary');
             res.setHeader('Content-Length', glbStat.size);

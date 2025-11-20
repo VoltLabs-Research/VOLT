@@ -26,6 +26,7 @@ import { readLargeFile } from '@/utilities/fs';
 import { applyQuantizeAndMeshopt, writeGLBToBuffer } from '@/utilities/export/gltf-pipeline';
 import { putObject } from '@/utilities/buckets';
 import encodeMorton from '@/utilities/export/morton';
+import { SYS_BUCKETS } from '@/config/minio';
 
 /**
  * Options that control quantization and compression of the exported GLB.
@@ -449,7 +450,7 @@ export default class AtomisticExporter{
         opts: CompressionOptions = {}
     ): Promise<void> {
         const buffer = await this.toGLBBuffer(filePath, extractTimestepInfo, opts);
-        await putObject(minioObjectName, 'glbs', buffer, { 'Content-Type': 'model/gltf-binary' });
+        await putObject(minioObjectName, SYS_BUCKETS.MODELS, buffer, { 'Content-Type': 'model/gltf-binary' });
     }
 
     public async exportAtomsTypeToGLBBuffer(
@@ -554,6 +555,6 @@ export default class AtomisticExporter{
         opts: CompressionOptions = {}
     ): Promise<void> {
         const buffer = await this.exportAtomsTypeToGLBBuffer(atomsByType, opts);
-        await putObject(minioObjectName, 'glbs', buffer, { 'Content-Type': 'model/gltf-binary' });
+        await putObject(minioObjectName, SYS_BUCKETS.MODELS, buffer, { 'Content-Type': 'model/gltf-binary' });
     }
 };

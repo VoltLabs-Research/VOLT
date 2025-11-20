@@ -37,6 +37,7 @@ import archiver from 'archiver';
 import { v4 } from 'uuid';
 import { getObject, getStream, statObject } from '@/utilities/buckets';
 import { getTimestepPreview, sendImage } from '@/utilities/raster';
+import { SYS_BUCKETS } from '@/config/minio';
 
 const factory = new HandlerFactory<any>({
     model: Trajectory as any,
@@ -339,14 +340,14 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
         
         // If analysisId is 'default' or no type specified, get from previews
         // Otherwise get from analysis
-        if(analysisId === 'default' || !type){
-            result = await trajFS.getPreviews({ media: 'glb' });
-        }else{
-            result = await trajFS.getAnalysis(analysisId, type, { media: 'glb' });
-        }
+        // if(analysisId === 'default' || !type){
+        //    result = await trajFS.getPreviews({ media: 'glb' });
+        // }else{
+        //     result = await trajFS.getAnalysis(analysisId, type, { media: 'glb' });
+        // }
 
-        const glbKey = result.glb?.[String(timestep)];
-        if(!glbKey){
+        const objectName = `trajectory-${trajectoryId}/previews/timestep-${timestep}.glb`;
+        if(!objectName){
             return res.status(404).json({
                 status: 'error',    
                 data: { error: `GLB file for timestep ${timestep} not found (analysisId=${analysisId}, type=${type})` }
@@ -354,8 +355,8 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
         }
 
         // Get GLB from MinIO
-        const stat = await statObject(glbKey, 'glbs');
-        const stream = await getStream(glbKey, 'glbs');
+        const stat = await statObject(objectName, SYS_BUCKETS.MODELS);
+        const stream = await getStream(objectName, SYS_BUCKETS.MODELS);
 
         res.setHeader('Content-Type', 'model/gltf-binary');
         res.setHeader('Content-Length', stat.size);
@@ -416,7 +417,7 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
     // Stream GLBs from MinIO into the archive
     for(const glbKey of glbKeys){
         const name = glbKey.split('/').pop() || 'frame.glb';
-        const stream = await getStream(glbKey, 'glbs');
+        const stream = await getStream(glbKey, SYS_BUCKETS.MODELS);
         archive.append(stream, { name: `glb/${name}` });
     }
 

@@ -31,7 +31,7 @@ const glbExporter = new AtomisticExporter();
 
 const processSingleFrame = async (frameData: any, frameFilePath: string, trajectoryId: string) => {
     // TODO: function for get object name
-    const objectName = `${trajectoryId}/previews/glb/${frameData.timestep}.glb`;
+    const objectName = `trajectory-${trajectoryId}/previews/timestep-${frameData.timestep}.glb`;
 
     await glbExporter.toGLBMinIO(
         frameFilePath,

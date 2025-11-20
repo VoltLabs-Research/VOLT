@@ -20,10 +20,11 @@
 * SOFTWARE.
 **/
 
-import { ensureBucketExists, getMinioClient } from '@/config/minio';
+import { ensureBucketExists, getMinioClient, initializeMinio } from '@/config/minio';
 import { readMsgpackFile } from '@/utilities/msgpack';
 import { fileExists } from '@/utilities/fs';
-import ArtifactProcessor from '@/services/plugins/artifact-processor';
+import { getArtifactId } from '@/utilities/plugins';
+import ArtifactProcessor, { Artifact } from '@/services/plugins/artifact-processor';
 import ManifestService from '@/services/plugins/manifest-service';
 import AnalysisContext from '@/services/plugins/analysis-context';
 import ArgumentsBuilder from '@/services/plugins/arguments-builder';
@@ -38,33 +39,26 @@ export default class Plugin{
     private context: AnalysisContext;
     private manifest: ManifestService;
     private cli: CLIExec;
-    private exportDirectory: string;
 
     constructor(
         private pluginName: string,
         private trajectoryId: string,
         private analysisId: string,
-        private trajectoryFolderPath: string,
         private pluginsDir = process.env.PLUGINS_DIR || ''
     ){
         if(!pluginsDir){
             throw new Error('PLUGINS_DIR is not defined.');
         }
 
+        this.pluginName = slugify(this.pluginName);
         this.context = new AnalysisContext(this.pluginName);
         this.manifest = new ManifestService(this.pluginsDir, this.pluginName);
         this.cli = new CLIExec();
-        this.exportDirectory = path.join(this.trajectoryFolderPath, this.analysisId, 'glb');
     }
 
-    private getArtifactBucket(artifact: any){
-        const bucketName = `${this.pluginName.toLowerCase()}-${artifact.name.replace(' ', '-')}`;
-        return bucketName;
-    }
-
-    private async ensureArtifactBucket(artifact: any){
+    private async ensureArtifactBucket(artifact: Artifact){
         const client = getMinioClient();
-        const bucketName = this.getArtifactBucket(artifact);
+        const bucketName = getArtifactId(this.pluginName, artifact.name);
         await ensureBucketExists(client, bucketName);
     }
 
@@ -177,3 +171,24 @@ export default class Plugin{
         }));
     }
 };
+
+import { Analysis } from '@/models';
+import { slugify } from '@/utilities/runtime';
+import mongoConnector from '@/utilities/mongo/mongo-connector';
+import '@/config/env';
+
+(async () => {
+    await mongoConnector();
+    await initializeMinio();
+
+    const analysis = await Analysis.create({
+        plugin: 'opendxa',
+        artifact: 'dislocation-analysis',
+        trajectory: '691e898ae9fcd8a0108bac2e',
+        config: {}
+    });
+
+    const plugin = new Plugin('base-tools', '691e898ae9fcd8a0108bac2e', analysis._id.toString());
+    await plugin.register();
+    await plugin.evaluate('/home/rodyherrera/Desktop/OpenDXA/server/storage/trajectories/691e898ae9fcd8a0108bac2e/dumps/25000', {});
+})();

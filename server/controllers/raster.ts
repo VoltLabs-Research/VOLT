@@ -5,25 +5,26 @@ import { catchAsync } from '@/utilities/runtime';
 import { readFile } from 'fs/promises';;
 import { readdir } from 'fs/promises';
 import { Analysis, Trajectory } from '@/models';
-import { getTimestepPreview, rasterizeGLBs, sendImage } from '@/utilities/raster';
-import path from 'path';
+import { getTimestepPreview, rasterizeGLBs } from '@/utilities/raster';
+import { SYS_BUCKETS } from '@/config/minio';
 import TrajectoryFS from '@/services/trajectory-fs';
 import archiver from 'archiver';
+import { getArtifactId } from '@/utilities/plugins';
 
 export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     const trajectoryId = trajectory._id.toString();
     const opts: Partial<HeadlessRasterizerOptions> = req.body ?? {};
 
-    const trajectoryPreviews = `${trajectoryId}/previews/glb`;
-    await rasterizeGLBs(trajectoryPreviews, 'glbs', trajectory, opts);
+    const trajectoryPreviews = `trajectory-${trajectoryId}/previews/`;
+    await rasterizeGLBs(trajectoryPreviews, SYS_BUCKETS.MODELS, SYS_BUCKETS.RASTERIZER, trajectory, opts);
 
     // Raster GLBs generated from plugins modifiers
     const analyses = await Analysis.find({ trajectory: trajectoryId }).lean();
     const promises = analyses.map(async (analysis) => {
         const analysisId = analysis._id.toString();
-        const analysisPreviews = `${trajectoryId}/${analysisId}/glb`;
-        await rasterizeGLBs(analysisPreviews, 'analysis', trajectory, opts);
+        const analysisPreviews = `trajectory-${trajectoryId}/plugins/plugin-${analysis.plugin}/artifact-${analysis.artifact}/analisis-${analysisId}`;
+        await rasterizeGLBs(analysisPreviews, SYS_BUCKETS.MODELS, SYS_BUCKETS.RASTERIZER, trajectory, opts);
     });
     await Promise.all(promises);
 

@@ -2,6 +2,11 @@ import { Client } from 'minio';
 
 let minioClient: Client | null = null;
 
+export const SYS_BUCKETS = {
+    MODELS: 'opendxa-models',
+    RASTERIZER: 'opendxa-rasterizer'
+};
+
 const createClient = (): Client => {
     const endPoint = process.env.MINIO_ENDPOINT || 'localhost';
     const port = Number(process.env.MINIO_PORT ?? 9000);
@@ -52,8 +57,7 @@ export const putObject = async (bucketName: string, objectName: string, payload:
 
 export const initializeMinio = async (): Promise<void> => {
     const client = getMinioClient();
-    // System buckets
-    const buckets = ['glbs', 'raster'];
+    const buckets = Object.values(SYS_BUCKETS);
     for(const bucket of buckets){
         await ensureBucketExists(client, bucket);
     }
