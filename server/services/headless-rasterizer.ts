@@ -71,7 +71,6 @@ export interface HeadlessRasterizerOptions{
     /** Path to input GLTB/GLTF. */
     inputPath: string;
     /** Output PNG path. */
-    outputPath: string;
     /** Canvas width in pixels. */
     width: number;
     /** Canvas height in pixels. */
@@ -705,8 +704,7 @@ class HeadlessRasterizer {
      */
     constructor(opts: HeadlessRasterizerOptions) {
         this.opts = {
-            inputPath: opts?.inputPath,
-            outputPath: opts?.outputPath,
+            inputPath: opts.inputPath,
             width: opts?.width ?? 1600,
             height: opts?.height ?? 900,
             background: opts.background ?? 'transparent',
@@ -757,7 +755,7 @@ class HeadlessRasterizer {
      * - Átomos (nodos no-mesh): z-buffer por punto con discos de radio adaptativo.
      * - Meshes (meshgeometry, dislocations, etc.): triángulos con luces/sombras como antes.
      */
-    public async render() {
+    public async render(): Promise<Buffer> {
         const document = await this.loadDocument();
         const root = document.getRoot();
         const scenes = root.listScenes();
@@ -1097,12 +1095,19 @@ class HeadlessRasterizer {
             ctx.fill();
         }
 
-        await new Promise<void>(async (resolve, reject) => {
-            await mkdir(path.dirname(this.opts.outputPath), { recursive: true });
-            const out = createWriteStream(this.opts.outputPath);
-            canvas.createPNGStream().pipe(out);
-            out.on('finish', resolve);
-            out.on('error', reject);
+        return new Promise<Buffer>(async (resolve, reject) => {
+            const pngStream = canvas.createPNGStream();
+            const chunks: Buffer[] = [];
+
+            pngStream.on('data', (chunk: Buffer) => {
+                chunks.push(chunk);
+            })
+
+            pngStream.on('end', () => {
+                resolve(Buffer.concat(chunks));
+            });
+
+            pngStream.on('error', reject);
         });
     }
 }

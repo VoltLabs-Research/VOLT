@@ -28,8 +28,7 @@ import { calculateDislocationType } from '@/utilities/dislocation-utils';
 import { assembleGLBToBuffer } from '@/utilities/export/utils';
 import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
 import { computeBoundsFromPoints } from '@/utilities/export/bounds';
-import { getDislocationsObject } from '@/buckets/dislocations';
-import { putGLBObject } from '@/buckets/glbs';
+import { putObject, getObject } from '@/utilities/buckets';
 
 class DislocationExporter{
     private createLineGeometry(
@@ -274,6 +273,7 @@ class DislocationExporter{
         };
     }
 
+    // TODO:
     public async rebuildGLBFromDB(
         analysisConfigId: string,
         timestep: number,
@@ -285,7 +285,7 @@ class DislocationExporter{
             const key = `${trajectoryId}/${analysisConfigId}/${timestep}.json`;
 
             console.log(`[DislocationExporter] Rebuilding GLB from MinIO object: ${key}`);
-            const storageObject = await getDislocationsObject(key);
+            const storageObject = await getObject(key, 'glbs');
             if(!storageObject){
                 throw new Error(`No dislocation object found in MinIO for key ${key}`);
             }
@@ -314,7 +314,7 @@ class DislocationExporter{
             
             // Upload to MinIO instead of writing to filesystem
             const buffer = this.toGLBBuffer(dislocationData, options);
-            await putGLBObject(minioKey, buffer);
+            await putObject(minioKey, 'glbs', buffer, { 'Content-Type': 'model/gltf-binary' });
 
             console.log(`[DislocationExporter] GLB successfully rebuilt and uploaded to MinIO: ${minioKey}`);
             console.log(`[DislocationExporter] Statistics: ${processedGeometry.triangleCount} triangles, ${processedGeometry.vertexCount} vertices`);
@@ -395,7 +395,7 @@ class DislocationExporter{
         options: DislocationExportOptions = {}
     ): Promise<void> {
         const buffer = this.toGLBBuffer(dislocationData, options);
-        await putGLBObject(minioObjectName, buffer);
+        await putObject(minioObjectName, 'glbs', buffer, { 'Content-Type': 'model/gltf-binary' });
     }
 };
 

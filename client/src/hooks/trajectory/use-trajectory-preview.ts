@@ -116,24 +116,35 @@ const useTrajectoryPreview = ({
                 const endpoint = `/trajectories/${trajId}/preview?${cacheBuster}`;
                 logger.log('Requesting preview endpoint:', { endpoint, trajectoryId: trajId, updatedAt: updated });
                 
-                const response = await api.get<Blob>(
-                    endpoint,
-                    {
-                        responseType: 'blob',
-                        headers: {
-                            'Cache-Control': 'no-cache, no-store, must-revalidate',
-                            'Pragma': 'no-cache',
-                            'Expires': '0',
-                            'If-None-Match': '',
-                            'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
-                        },
-                        timeout: 15000
-                    }
-                );
+                const response = await api.get(endpoint, {
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0',
+                        'If-None-Match': '',
+                        'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
+                    },
+                    timeout: 15000
+                });
 
-                const blob = response.data;
-                if(!blob || blob.size === 0){
-                    throw new Error('Empty or invalid image response');
+                const base64Data = response.data?.data;
+                if(!base64Data || typeof base64Data !== 'string'){
+                    throw new Error('Invalid base64 response from server');
+                }
+
+                const base64Content = base64Data.includes(',') 
+                    ? base64Data.split(',')[1] 
+                    : base64Data;
+                
+                const binaryString = atob(base64Content);
+                const bytes = new Uint8Array(binaryString.length);
+                for(let i = 0; i < binaryString.length; i++){
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                const blob = new Blob([bytes], { type: 'image/png' });
+                if(blob.size === 0){
+                    throw new Error('Empty or invalid image data');
                 }
 
                 const blobUrl = URL.createObjectURL(blob);
@@ -142,8 +153,6 @@ const useTrajectoryPreview = ({
                     updatedAt: updated,
                     timestamp: Date.now()
                 });
-
-                logger.log('Preview loaded and cached:', cacheKey);
 
                 return blobUrl;
             }catch(err: any){

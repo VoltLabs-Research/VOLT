@@ -20,9 +20,9 @@
 * SOFTWARE.
 **/
 
+import { listByPrefix, statObject } from '@/utilities/buckets';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { listGLBsByPrefix, statGLBObject } from '@/buckets/glbs';
 
 type Media = 'raster' | 'glb' | 'both';
 
@@ -203,7 +203,7 @@ class TrajectoryFS{
             // Read GLBs from MinIO instead of filesystem
             // Path format: {trajectoryId}/previews/glb/{frame}.glb
             const prefix = `${this.trajectoryId}/previews/glb/`;
-            const glbKeys = await listGLBsByPrefix(prefix);
+            const glbKeys = await listByPrefix(prefix, 'glbs');
             const map: Record<string, string> = {};
             
             for(const key of glbKeys){
@@ -310,7 +310,7 @@ class TrajectoryFS{
             // TODO: DUPLICATED CODE: Read GLBs from MinIO instead of filesystem
             // Path format: {trajectoryId}/{analysisId}/glb/{frame}/{type}.glb
             const prefix = `${this.trajectoryId}/${analysisId}/glb/`;
-            const glbKeys = await listGLBsByPrefix(prefix);
+            const glbKeys = await listByPrefix(prefix, 'glbs');
             const frameMap: Record<string, string> = {};
             
             for(const key of glbKeys){
@@ -344,7 +344,7 @@ class TrajectoryFS{
      */
     async listAnalysisGlbKeys(analysisId: string): Promise<Record<string, Record<string, string>>>{
         const prefix = `${this.trajectoryId}/${analysisId}/glb/`;
-        const glbKeys = await listGLBsByPrefix(prefix);
+        const glbKeys = await listByPrefix(prefix, 'glbs');
         const result: Record<string, Record<string, string>> = {};
 
         for(const key of glbKeys){
@@ -369,12 +369,12 @@ class TrajectoryFS{
      */
     async listGLBsVirtual(): Promise<{ path: string; size: number; mtime: Date }[]> {
         const prefix = `${this.trajectoryId}/`;
-        const glbKeys = await listGLBsByPrefix(prefix);
+        const glbKeys = await listByPrefix(prefix, 'glbs');
         const results: { path: string; size: number; mtime: Date }[] = [];
 
         for(const key of glbKeys){
             try{
-                const stat = await statGLBObject(key);
+                const stat = await statObject(key, 'glbs');
                 // Remove trajectory ID prefix to make it relative
                 const relativePath = key.substring(prefix.length);
                 results.push({
@@ -396,7 +396,7 @@ class TrajectoryFS{
     async statGLBInMinIO(relativePath: string): Promise<{ size: number; mtime: Date } | null> {
         const key = `${this.trajectoryId}/${relativePath}`;
         try{
-            const stat = await statGLBObject(key);
+            const stat = await statObject(key, 'glbs');
             return {
                 size: stat.size,
                 mtime: stat.lastModified

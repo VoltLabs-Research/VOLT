@@ -1,20 +1,26 @@
 import { parentPort } from 'node:worker_threads';
-import HeadlessRasterizer from '@/services/headless-rasterizer';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
+import { putObject } from '@/utilities/buckets';
+import { initializeMinio } from '@/config/minio';
+import HeadlessRasterizer from '@/services/headless-rasterizer';
+import * as fs from 'node:fs/promises';
 
 const processJob = async (job: RasterizerJob) => {
     try{
         console.log(`[Worker #${process.pid}] Received job ${job.jobId}. Starting processing...`);
-
         // @ts-ignore
         const raster = new HeadlessRasterizer(job.opts);
-        await raster.render();
+        const buffer = await raster.render();
 
-        parentPort?.postMessage({
-            status: 'completed',
-            jobId: job.jobId
+        parentPort?.postMessage({ status: 'completed', jobId: job.jobId });
+
+        const objectName = `${job.trajectoryId}/previews/raster/${(job.isPreview ? 'preview' : job.timestep)}.png`;
+        await fs.unlink(job.opts.inputPath as string);
+        await putObject(objectName, 'raster', buffer, {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=86400'
         });
-
+        
         console.log(`[Worker #${process.pid}] Finished job ${job.trajectoryId} successfully.`);
     }catch(error: any){
         console.error(`[Worker #${process.pid}] An error occurred while processing trajectory ${job.trajectoryId}:`, error);
@@ -28,6 +34,7 @@ const processJob = async (job: RasterizerJob) => {
 };
 
 const main = async () => {
+    await initializeMinio();
     console.log(`[Worker #${process.pid}] Worker started`);
 
     parentPort?.on('message', async (message: { job: RasterizerJob }) => {

@@ -62,18 +62,6 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         ref: 'User',
         required: true
     },
-    structureAnalysis: [{
-        type: Schema.Types.ObjectId,
-        ref: 'StructureAnalysis',
-        inverse: { path: 'trajectory', behavior: 'set' },
-        cascade: 'pull'
-    }],
-    simulationCell: {
-        type: Schema.Types.ObjectId,
-        inverse: { path: 'trajectory', behavior: 'set' },
-        ref: 'SimulationCell',
-        cascade: 'unset'
-    },
     status: {
         type: String,
         lowercase: true,
@@ -86,7 +74,7 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     },
     analysis: [{
         type: Schema.Types.ObjectId,
-        ref: 'AnalysisConfig',
+        ref: 'Analysis',
         cascade: 'pull',
         inverse: { path: 'trajectory', behavior: 'set' },
         default: []
@@ -103,13 +91,6 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     stats: {
         totalFiles: { type: Number, default: 0 },
         totalSize: { type: Number, default: 0 }
-    },
-    availableModels: {
-        atomicStructure: { type: Boolean, default: false },
-        dislocations: { type: Boolean, default: false },
-        bonds: { type: Boolean, default: false },
-        simulationCell: { type: Boolean, default: false },
-        structureIdentification: { type: Boolean, default: false }
     }
 }, {
     timestamps: true,

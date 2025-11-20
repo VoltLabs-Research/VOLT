@@ -35,7 +35,7 @@ import RuntimeError from '@/utilities/runtime-error';
 import HandlerFactory from '@/controllers/handler-factory';
 import archiver from 'archiver';
 import { v4 } from 'uuid';
-import { statGLBObject, getGLBStream } from '@/buckets/glbs';
+import { getObject, getStream, statObject } from '@/utilities/buckets';
 
 const factory = new HandlerFactory<any>({
     model: Trajectory as any,
@@ -63,24 +63,6 @@ const factory = new HandlerFactory<any>({
     },
     defaultPopulate: 'default'
 });
-
-const sendFileInline = async (
-    res: Response,
-    absPath: string,
-    contentType: string,
-    filename?: string
-) => {
-    const st = await stat(absPath);
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Length', st.size);
-    if(filename){
-        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    }else{
-        res.setHeader('Content-Disposition', 'inline');
-    }
-    return res.sendFile(absPath);
-};
-
 
 export const getTrajectoryById = factory.getOne();
 export const updateTrajectoryById = factory.updateOne();
@@ -201,37 +183,24 @@ export const getMetrics = async (req: Request, res: Response) => {
     return res.status(200).json({ status: 'success', data });
 };
 
+const sendImage = (res: Response, etag: string, buffer: Buffer) => {
+    const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('ETag', etag);
+    return res.status(200).json({
+        status: 'success',
+        data: base64
+    })
+}
+
 export const getTrajectoryPreview = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     // TODO: maybe in the middleware save trajectory._id.toString()...
     const trajectoryId = trajectory._id.toString();
-    const trajFS = new TrajectoryFS(trajectoryId);
-    
-    let previewPath: string | null = null;
-    
-    // First, try to get the root preview.png (main preview generated during upload)
-    const rootPreviews = await trajFS.getPreviews();
-    if (rootPreviews.previewPng) {
-        previewPath = rootPreviews.previewPng;
-    } else {
-        // Fallback: try to get the first available raster preview
-        const rasterPreviews = await trajFS.getPreviews({ media: 'raster' });
-        const rasterMap = rasterPreviews.raster || {};
-        const firstKey = Object.keys(rasterMap).sort((a, b) => Number(a) - Number(b))[0];
-        if (firstKey && rasterMap[firstKey]) {
-            previewPath = rasterMap[firstKey];
-        }
-    }
-    
-    if (!previewPath) {
-        return res.status(404).json({
-            status: 'error',
-            data: { error: 'Preview not found' }
-        });
-    }
-
-    const filename = `${trajectory.name || trajectoryId}_preview.png`;
-    return await sendFileInline(res, previewPath, 'image/png', filename);
+    const objectName = `${trajectoryId}/previews/raster/preview.png`;
+    const buffer = await getObject(objectName, 'raster');
+    const etag = `"trajectory-preview-${trajectory._id}"`;
+    return sendImage(res, etag, buffer);
 };
 
 // Stream atom positions [x,y,z] for a given timestep by parsing the stored LAMMPS dump file (paginated)
@@ -396,8 +365,8 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
         }
 
         // Get GLB from MinIO
-        const stat = await statGLBObject(glbKey);
-        const stream = await getGLBStream(glbKey);
+        const stat = await statObject(glbKey, 'glbs');
+        const stream = await getStream(glbKey, 'glbs');
 
         res.setHeader('Content-Type', 'model/gltf-binary');
         res.setHeader('Content-Length', stat.size);
@@ -458,7 +427,7 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
     // Stream GLBs from MinIO into the archive
     for(const glbKey of glbKeys){
         const name = glbKey.split('/').pop() || 'frame.glb';
-        const stream = await getGLBStream(glbKey);
+        const stream = await getStream(glbKey, 'glbs');
         archive.append(stream, { name: `glb/${name}` });
     }
 

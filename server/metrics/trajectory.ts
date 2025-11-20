@@ -21,13 +21,12 @@
 **/
 
 import HandlerFactory from '@/controllers/handler-factory';
-import { AnalysisConfig, SimulationCell, StructureAnalysis, Team, Trajectory } from "@/models";
+import { Analysis, Team, Trajectory } from "@/models";
 import { Request, Response } from 'express';
-import { listDislocationsByPrefix } from '@/buckets/dislocations';
 import { Types } from 'mongoose';
 
 const factory = new HandlerFactory({
-    model: AnalysisConfig as any,
+    model: Analysis as any,
     fields: [],
 });
 

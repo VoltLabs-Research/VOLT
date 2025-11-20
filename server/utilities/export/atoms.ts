@@ -24,9 +24,8 @@ import { Document, Accessor } from '@gltf-transform/core';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { readLargeFile } from '@/utilities/fs';
 import { applyQuantizeAndMeshopt, writeGLBToBuffer } from '@/utilities/export/gltf-pipeline';
-import { computeBoundsFromFlat } from '@/utilities/export/bounds';
+import { putObject } from '@/utilities/buckets';
 import encodeMorton from '@/utilities/export/morton';
-import { putGLBObject } from '@/buckets/glbs';
 
 /**
  * Options that control quantization and compression of the exported GLB.
@@ -450,10 +449,8 @@ export default class AtomisticExporter{
         opts: CompressionOptions = {}
     ): Promise<void> {
         const buffer = await this.toGLBBuffer(filePath, extractTimestepInfo, opts);
-        await putGLBObject(minioObjectName, buffer);
+        await putObject(minioObjectName, 'glbs', buffer, { 'Content-Type': 'model/gltf-binary' });
     }
-
-    // Removed exportAtomsTypeToGLB method - use exportAtomsTypeToGLBMinIO instead
 
     public async exportAtomsTypeToGLBBuffer(
         atomsByType: AtomsGroupedByType,
@@ -557,6 +554,6 @@ export default class AtomisticExporter{
         opts: CompressionOptions = {}
     ): Promise<void> {
         const buffer = await this.exportAtomsTypeToGLBBuffer(atomsByType, opts);
-        await putGLBObject(minioObjectName, buffer);
+        await putObject(minioObjectName, 'glbs', buffer, { 'Content-Type': 'model/gltf-binary' });
     }
 };

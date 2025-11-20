@@ -27,12 +27,10 @@ import { getRasterizerQueue } from './index';
 import { v4 } from 'uuid';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
 import { join } from 'path';
-import { existsSync } from 'fs';
 import { Trajectory } from '@/models';
+import { downloadObject } from '@/utilities/buckets';
 import TrajectoryFS from '@/services/trajectory-fs';
 import path from 'path';
-import { getGLBObject } from '@/buckets/glbs';
-import { writeFile } from 'fs/promises';
 
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
     private firstChunkProcessed = new Set<string>();
@@ -78,61 +76,38 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
                 return;
             }
 
-            const firstFrameTimestep = firstFrame.frameData.timestep;
-            
-            // GLBs are now in MinIO, we need to download it temporarily for rasterization
-            // TODO: Update rasterizer to work directly with MinIO streams
-            const objectName = `${job.trajectoryId}/previews/glb/${firstFrameTimestep}.glb`;
-            const tempGlbPath = join(job.tempFolderPath, `${firstFrameTimestep}.glb`);
-            
-            // Download GLB from MinIO to temp location for rasterizer
-            try{
-                const glbBuffer = await getGLBObject(objectName);
-                await writeFile(tempGlbPath, glbBuffer);
-            }catch(err){
-                console.warn(`Failed to download GLB from MinIO: ${objectName}`, err);
-                return;
-            }
+            const { timestep } = firstFrame.frameData;
+            const objectName = `${job.trajectoryId}/previews/glb/${timestep}.glb`;
+            const tempGlbPath = join(job.tempFolderPath, `${timestep}.glb`);
 
-            // Get trajectory to access team info and folder structure
+            await downloadObject(objectName, 'glbs', tempGlbPath);
+
             const trajectory = await Trajectory.findById(job.trajectoryId);
-            if (!trajectory) {
-                console.warn(`Trajectory not found: ${job.trajectoryId}`);
-                return;
-            }
-
-            const trajectoryId = trajectory._id.toString();
-            const tfs = new TrajectoryFS(trajectoryId);
-            
-            // Output preview PNG at {root}/preview.png
-            const previewPath = join(tfs.root, 'preview.png');
-
             const rasterizerQueue = getRasterizerQueue();
             
             // Create a rasterizer job for preview
             const previewJob: RasterizerJob = {
+                timestep,
                 jobId: v4(),
                 trajectoryId: job.trajectoryId,
                 teamId: job.teamId,
+                isPreview: true,
                 sessionId: job.sessionId,
                 sessionStartTime: job.sessionStartTime,
                 name: 'Headless Rasterizer (Preview)',
-                message: `${trajectory.name} - Preview frame ${firstFrameTimestep}`,
-                opts: {
-                    inputPath: tempGlbPath,
-                    outputPath: previewPath
-                }
+                message: `${trajectory!.name} - Preview frame ${timestep}`,
+                opts: { inputPath: tempGlbPath }
             };
 
             // If this is part of a session, increment the remaining counter to include this rasterizer job
-            if (job.sessionId) {
+            if(job.sessionId){
                 const counterKey = `session:${job.sessionId}:remaining`;
                 await this.redis.incr(counterKey);
                 console.log(`Incremented session counter for rasterizer preview job for trajectory ${job.trajectoryId}`);
             }
 
             await rasterizerQueue.addJobs([previewJob]);
-            console.log(`Preview generation job queued for trajectory ${job.trajectoryId}, frame ${firstFrameTimestep}`);
+            console.log(`Preview generation job queued for trajectory ${job.trajectoryId}, frame ${timestep}`);
         } catch (error) {
             console.error(`Failed to queue preview generation for trajectory ${job.trajectoryId}:`, error);
             // Don't throw - trajectory processing shouldn't fail if preview generation fails

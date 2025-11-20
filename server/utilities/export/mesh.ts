@@ -24,11 +24,9 @@ import { Mesh, DefectMeshExportOptions, ProcessedMesh } from '@/types/utilities/
 import { assembleGLBToBuffer } from '@/utilities/export/utils';
 import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
 import taubinSmoothing from '@/utilities/export/taubin-smoothing';
-import { putGLBObject } from '@/buckets/glbs';
+import { putObject } from '@/utilities/buckets';
 
 class MeshExporter{
-    // Removed toGLB method - use toGLBMinIO instead
-
     public toGLBBuffer(
         mesh: Mesh,
         options: DefectMeshExportOptions = {}
@@ -92,7 +90,7 @@ class MeshExporter{
         options: DefectMeshExportOptions = {}
     ): Promise<void>{
         const buffer = this.toGLBBuffer(mesh, options);
-        await putGLBObject(minioObjectName, buffer);
+        await putObject(minioObjectName, 'glbs', buffer, { 'Content-Type': 'model/gltf-binary' });
     }
 
     private processMeshGeometry(mesh: Mesh, options: Required<DefectMeshExportOptions>): ProcessedMesh{

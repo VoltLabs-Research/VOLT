@@ -20,8 +20,7 @@
 * SOFTWARE.
 **/
 
-import { Trajectory, StructureAnalysis, AnalysisConfig } from '@models/index';
-import { listDislocationsByPrefix } from '@/buckets/dislocations';
+import { Trajectory } from '@models/index';
 
 export const getMetricsByTeamId = async (teamId: string) => {
     const now = new Date();

@@ -52,7 +52,8 @@ export const putObject = async (bucketName: string, objectName: string, payload:
 
 export const initializeMinio = async (): Promise<void> => {
     const client = getMinioClient();
-    const buckets = ['glbs'];
+    // System buckets
+    const buckets = ['glbs', 'raster'];
     for(const bucket of buckets){
         await ensureBucketExists(client, bucket);
     }

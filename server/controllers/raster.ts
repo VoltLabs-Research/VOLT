@@ -3,19 +3,18 @@ import { join, resolve, basename } from 'path';
 import { getRasterizerQueue } from '@/queues';
 import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
-import { catchAsync, slugify } from '@/utilities/runtime';
-import { readFile } from 'fs/promises';;
+import { catchAsync } from '@/utilities/runtime';
+import { mkdir, readFile } from 'fs/promises';;
 import { readdir } from 'fs/promises';
-import { Analysis, AnalysisConfig, Trajectory } from '@/models';  
+import { Analysis, Trajectory } from '@/models';  
 import { v4 } from 'uuid';
 import path from 'path';
 import TrajectoryFS from '@/services/trajectory-fs';
 import archiver from 'archiver';
 import { sanitizeModelName } from '@/utilities/plugins';
+import { downloadObject, getObject } from '@/utilities/buckets';
 
 export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
-    // Rasterization is allowed regardless of CPU_INTENSIVE_TASKS
-
     const trajectory = res.locals.trajectory;
     const trajectoryId = trajectory._id.toString();
     const tfs = new TrajectoryFS(trajectoryId);
@@ -24,10 +23,6 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
     const customOpts: Partial<HeadlessRasterizerOptions> = req.body ?? {};
     const jobs: RasterizerJob[] = [];
 
-    // Import GLB utilities
-    const { getGLBObject } = await import('@/buckets/glbs');
-    const { writeFile, mkdir } = await import('fs/promises');
-    
     // Create temp directory for GLBs
     const tempGlbDir = join(tfs.root, 'temp_glbs');
     await mkdir(tempGlbDir, { recursive: true });
@@ -38,20 +33,18 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
     for (const [frame, minioKey] of Object.entries(glbPreviews)) {
         // Download GLB from MinIO to temp location
         try{
-            const glbBuffer = await getGLBObject(minioKey);
             const tempGlbPath = join(tempGlbDir, `preview_${frame}.glb`);
-            await writeFile(tempGlbPath, glbBuffer);
+            await downloadObject(minioKey, 'glbs', tempGlbPath);
             
-            const outPath = join(tfs.root, 'previews', 'raster', `${frame}.png`);
             jobs.push({
                 jobId: v4(),
                 trajectoryId: trajectoryId,
                 teamId: trajectory.team._id,
+                timestep: Number(frame),
                 name: 'Headless Rasterizer (Preview)',
                 message: `${trajectory.name} - Preview frame ${frame}`,
                 opts: {
                     inputPath: tempGlbPath,
-                    outputPath: outPath,
                     ...customOpts,
                 },
             });
@@ -70,9 +63,8 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
             for(const [rawType, objectName] of Object.entries(types)){
                 const modelName = sanitizeModelName(rawType || 'preview');
                 try{
-                    const glbBuffer = await getGLBObject(objectName);
                     const tempGlbPath = join(tempGlbDir, `analysis_${analysisId}_${frame}_${modelName}.glb`);
-                    await writeFile(tempGlbPath, glbBuffer);
+                    await downloadObject(objectName, 'glbs', tempGlbPath);
 
                     const frameRasterDir = join(tfs.root, analysisId, 'raster', frame);
                     await mkdir(frameRasterDir, { recursive: true });
@@ -83,10 +75,10 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
                         trajectoryId: trajectory._id,
                         teamId: trajectory.team._id,
                         name: 'Headless Rasterizer (Analysis)',
+                        timestep: Number(frame),
                         message: `${trajectory.name} - ${analysisId} - Frame ${frame} (${modelName})`,
                         opts: {
                             inputPath: tempGlbPath,
-                            outputPath: outPath,
                             ...customOpts,
                         },
                     });
@@ -261,7 +253,7 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
         { new: true }
     );
 
-    const analyses = await AnalysisConfig
+    const analyses = await Analysis
         .find({ trajectory: trajectoryId })
         .select('-createdAt -updatedAt -__v')
         .lean();

@@ -21,33 +21,30 @@
 **/
 
 import HandlerFactory from '@/controllers/handler-factory';
-import { AnalysisConfig, Team, Trajectory } from "@/models";
+import { Analysis, Team, Trajectory } from "@/models";
 import { Request, Response } from 'express';
 
 const factory = new HandlerFactory({
-    model: AnalysisConfig as any,
+    model: Analysis as any,
     fields: [],
 });
 
-export const getAnalysisConfigById = factory.getOne();
-export const deleteAnalysisConfigById = factory.deleteOne();
-
-import { getDislocationsObject, listDislocationsByPrefix } from '@/buckets/dislocations';
-
+export const getAnalysisById = factory.getOne();
+export const deleteAnalysisById = factory.deleteOne();
 
 export const getAnalysisDislocations = async (req: Request, res: Response) => {
   try{
-    const analysisConfigId = (req as any).params.id;
+    const AnalysisId = (req as any).params.id;
 
-    const analysis = await AnalysisConfig
-      .findById(analysisConfigId)
+    const analysis = await Analysis
+      .findById(AnalysisId)
       .select('trajectory dislocationFiles identificationMode RMSD')
       .populate('trajectory', '_id name');
 
     if (!analysis) {
       return res.status(404).json({
         status: 'error',
-        data: { error: 'AnalysisConfig not found' }
+        data: { error: 'Analysis not found' }
       });
     }
 
@@ -63,7 +60,7 @@ export const getAnalysisDislocations = async (req: Request, res: Response) => {
           // pseudo-id estable
           _id: `${analysis._id.toString()}:${file.timestep}`,
           trajectory: trajectory,                // o trajectoryId si prefieres
-          analysisConfig: {
+          Analysis: {
             _id: analysis._id,
             identificationMode: analysis.identificationMode,
             RMSD: analysis.RMSD
@@ -94,7 +91,7 @@ export const getAnalysisDislocations = async (req: Request, res: Response) => {
 };
 
 // List analysis configs by team
-export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => {
+export const listAnalysissByTeam = async (req: Request, res: Response) => {
     try{
         const userId = (req as any).user?.id;
         const { teamId } = req.params as { teamId: string };
@@ -177,15 +174,15 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
                 { $count: 'total' }
             ];
             const [rows, countRows] = await Promise.all([
-                AnalysisConfig.aggregate(pipeline),
-                AnalysisConfig.aggregate(countPipeline)
+                Analysis.aggregate(pipeline),
+                Analysis.aggregate(countPipeline)
             ]);
             configs = rows as any[];
             total = (countRows?.[0]?.total as number) ?? 0;
         } else {
             const [rows, count] = await Promise.all([
-                AnalysisConfig.aggregate(pipeline),
-                AnalysisConfig.countDocuments({ trajectory: { $in: trajectoryIds } })
+                Analysis.aggregate(pipeline),
+                Analysis.countDocuments({ trajectory: { $in: trajectoryIds } })
             ]);
             configs = rows as any[];
             total = count as number;
@@ -196,7 +193,7 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
             data: { configs, total, page: pageNum, limit: limitNum }
         });
     }catch(err){
-        console.error('listAnalysisConfigsByTeam error:', err);
+        console.error('listAnalysissByTeam error:', err);
         return res.status(500).json({ status: 'error', data: { error: 'Internal Server Error' } });
     }
 };

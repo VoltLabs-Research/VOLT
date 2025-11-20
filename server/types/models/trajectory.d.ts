@@ -49,22 +49,12 @@ export interface ITrajectory extends Document {
     team: ITeam;
     createdBy: IUser;
     rasterSceneViews: number;
-    simulationCell: ICellAnalysis,
     frames: ITimestepInfo[];
     analysis: IAnalysis[];
-    structureAnalysis: IStructureAnalysis[];
-    dislocations: any[];
     preview: string;
     stats: {
         totalFiles: number;
         totalSize: number;
-    };
-    availableModels: {
-        atomicStructure: boolean;
-        dislocations: boolean;
-        bonds: boolean;
-        simulationCell: boolean;
-        structureIdentification: boolean;
     };
     createdAt?: Date;
     updatedAt?: Date;
