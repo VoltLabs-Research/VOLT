@@ -20,10 +20,14 @@
 * SOFTWARE.
 **/
 
-import { decode } from '@msgpack/msgpack';
+import { encode, decode } from '@msgpack/msgpack';
 import { readBinaryFile } from '@utilities/fs';
 
 export const readMsgpackFile = async (filePath: string): Promise<any> => {
     const { buffer } = await readBinaryFile(filePath);
     return decode(buffer);
 }
+
+export const encodeMsgpack = (value: any): Buffer => {
+    return Buffer.from(encode(value));
+};

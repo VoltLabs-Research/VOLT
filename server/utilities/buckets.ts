@@ -1,20 +1,46 @@
 import { getMinioClient } from '@/config/minio';
-import { writeFile } from 'fs/promises';
+import { ReadStream } from 'fs';
+import { stat, writeFile } from 'fs/promises';
 import { BucketItemStat, ItemBucketMetadata } from 'minio';
 import { Readable } from 'stream';
+
+type PutObjectData = Buffer | Readable;
 
 export const putObject = async (
     objectName: string, 
     bucketName: string, 
-    buffer: Buffer, 
+    data: PutObjectData, 
     metadata: ItemBucketMetadata
 ): Promise<void> => {
     const client = getMinioClient();
+
+    if(Buffer.isBuffer(data)){
+        await client.putObject(
+            bucketName,
+            objectName,
+            data,
+            data.length,
+            metadata
+        );
+        return;
+    }
+
+    let size = -1;
+    const readStream = data as ReadStream & { path?: string };
+    if(readStream.path && typeof readStream.path === 'string'){
+        try{
+            const st = await stat(readStream.path);
+            size = st.size;
+        }catch{
+            size = -1;
+        }
+    }
+
     await client.putObject(
         bucketName,
         objectName,
-        buffer,
-        buffer.length,
+        data,
+        size,
         metadata
     );
 };

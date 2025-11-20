@@ -4,10 +4,11 @@ version: 1.0.0
 artifacts:
     - name: Dislocations
       resultFile: dislocations.msgpack
+      iterableKey: data
       exportConfig:
         name: DislocationExporter
         type: glb
-        options:
+        opts:
             lineWidth: 0.8
             colorByType: true
             material:
@@ -28,7 +29,7 @@ artifacts:
       exportConfig:
         name: MeshExporter
         type: glb
-        options:
+        opts:
             material:
                 baseColor: [1.0, 1.0, 1.0, 1.0]
                 metallic: 0.0
@@ -43,7 +44,7 @@ artifacts:
       exportConfig:
         name: MeshExporter
         type: glb
-        options:
+        opts:
             material:
                 baseColor: [1.0, 1.0, 1.0, 1.0]
                 metallic: 0.0

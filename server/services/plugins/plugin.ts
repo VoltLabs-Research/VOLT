@@ -20,10 +20,9 @@
 * SOFTWARE.
 **/
 
-import { ensureBucketExists, getMinioClient, initializeMinio } from '@/config/minio';
-import { readMsgpackFile } from '@/utilities/msgpack';
+import { initializeMinio } from '@/config/minio';
 import { fileExists } from '@/utilities/fs';
-import ArtifactProcessor, { Artifact } from '@/services/plugins/artifact-processor';
+import ArtifactProcessor from '@/services/plugins/artifact-processor';
 import ManifestService from '@/services/plugins/manifest-service';
 import AnalysisContext from '@/services/plugins/analysis-context';
 import ArgumentsBuilder from '@/services/plugins/arguments-builder';
@@ -65,26 +64,12 @@ export default class Plugin{
             if(!exists) continue;
 
             console.log(`[${this.pluginName} plugin] reading file: ${filePath}`);
-            const data = await this.readResultFile(filePath);
-            results[name] = data;
+            results[name] = { filePath };
             generatedFiles.push(filePath);
         }
 
+        // TODO: 
         return { results, generatedFiles };
-    }
-
-    private async readResultFile(filePath: string){
-        let data: any;
-        // TODO: read large file function
-        if(filePath.endsWith('.json')){
-            const content = await fs.readFile(filePath, 'utf-8');
-            data = JSON.parse(content);
-        }else if(filePath.endsWith('.msgpack')){
-            data = await readMsgpackFile(filePath);
-        }else{
-            data = await readMsgpackFile(filePath);
-        }
-        return data;
     }
 
     private async buildArgs<T>(options: T): Promise<string[]>{
@@ -130,6 +115,7 @@ export default class Plugin{
     private async process<T>(results: ResultFiles, timestep: number, options: T){
         const { artifacts } = await this.manifest.get();
         const processor = new ArtifactProcessor(
+            this.pluginsDir,
             this.pluginName,
             this.trajectoryId,
             this.analysisId,
@@ -137,9 +123,9 @@ export default class Plugin{
         );
 
         for(const artifact of artifacts){
-            const result = results[artifact.name];
-            if(!result) continue;
-            await processor.evaluate(artifact, result, timestep);
+            const entry = results[artifact.name];
+            if(!entry) continue;
+            await processor.evaluate(artifact, timestep, entry.filePath);
         }
     }
     
@@ -171,10 +157,10 @@ import '@/config/env';
     const analysis = await Analysis.create({
         plugin: 'opendxa',
         artifact: 'dislocation-analysis',
-        trajectory: '691e939572a5560a9fd6fe1f',
+        trajectory: '691e9e0011679d6b65f602c4',
         config: {}
     });
 
-    const plugin = new Plugin('base-tools', '691e939572a5560a9fd6fe1f', analysis._id.toString());
-    await plugin.evaluate('/home/rodyherrera/Desktop/OpenDXA/server/storage/trajectories/691e939572a5560a9fd6fe1f/dumps/25000', {});
+    const plugin = new Plugin('base-tools', '691e9e0011679d6b65f602c4', analysis._id.toString());
+    await plugin.evaluate('/home/rodyherrera/Desktop/OpenDXA/server/storage/trajectories/691e9e0011679d6b65f602c4/dumps/25000', {});
 })();
