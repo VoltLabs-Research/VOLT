@@ -20,30 +20,31 @@
 * SOFTWARE.
 **/
 
-import DislocationExporter from '@/utilities/export/dislocations';
-import { readMsgpackFile } from '@/utilities/msgpack';
-import { writeFile } from 'fs/promises';
+import '@/config/env';
+import { getMinioClient, initializeMinio } from '@/config/minio';
 
-const main = async () => {
-    const msgpackPath = process.argv[2];
-    const glbPath = process.argv[3];
+const wipeMinIO = async () => {
+    await initializeMinio();
 
-    const dislocationData = await readMsgpackFile(msgpackPath);
+    const client = getMinioClient();
+    const buckets = await client.listBuckets();
+    const promises = buckets.map(async ({ name }) => {
+        const objectsStream = client.listObjects(name, '', true);
+        const objects: any[] = [];
 
-    const exporter = new DislocationExporter();
-    const buffer = exporter.toGLBBuffer(dislocationData, {
-        lineWidth: 0.8,
-        colorByType: true,
-        material: {
-            baseColor: [1.0, 0.5, 0.0, 1.0],
-            metallic: 0.0,
-            roughness: 0.8,
-            emissive: [0.0, 0.0, 0.0]
+        for await (const obj of objectsStream){
+            objects.push({ name: obj.name });
         }
+
+        if(objects.length){
+            await client.removeObjects(name, objects);
+        }
+
+        await client.removeBucket(name);
+        console.log('[wipeMinIO]:', name, 'OK');
     });
 
-    await writeFile(glbPath, buffer);
-    console.log(`GLB written to: ${glbPath}`);
+    await Promise.all(promises);
 };
 
-main();
+wipeMinIO();
