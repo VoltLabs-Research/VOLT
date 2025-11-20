@@ -45,7 +45,7 @@ export interface ArtifactExport {
 export interface Artifact{
     id: string;
     resultFile: string;
-    exportConfig?: ArtifactExport;
+    export?: ArtifactExport;
     iterableKey?: string;
     iterableChunkSize?: number;
 };
@@ -107,7 +107,7 @@ export default class ArtifactProcessor{
             await this.saveSummary(artifact, timestep, summary);
         }
 
-        if(artifact.exportConfig){
+        if(artifact.export){
             const resultForExport = await this.loadResultForExport(filePath);
             await this.exportArtifactResults(artifact, timestep, resultForExport);
         }
@@ -124,7 +124,7 @@ export default class ArtifactProcessor{
     }
 
     private async exportArtifactResults(artifact: Artifact, timestep: number, result: any){
-        const { exportConfig } = artifact;
+        const exportConfig = artifact.export;
         if(!exportConfig) return;
 
         let { name, type, handler, opts } = exportConfig;

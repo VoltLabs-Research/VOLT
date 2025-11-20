@@ -22,16 +22,19 @@
 
 import ManifestResolver from '@/services/plugins/manifest-resolver';
 import * as path from 'node:path';
+import type { Artifact } from '@/services/plugins/artifact-processor';
 
 export interface Manifest{
     name: string;
     version: string;
-    artifacts: any[];
+    artifacts: Artifact[];
     entrypoint: {
         bin: string;
         args: Record<string, any>;
     };
+
     analyses?: any[];
+    modifiers?: any[];
 };
 
 export default class ManifestService{
@@ -49,7 +52,25 @@ export default class ManifestService{
             return this.manifest;
         }
 
-        this.manifest = await this.resolver.load('manifest.yml');
+        const raw = await this.resolver.load('manifest.yml');
+
+        let artifactsArr: Artifact[] = [];
+        if(raw.artifacts && typeof raw.artifacts === 'object'){
+            artifactsArr = Object.entries(raw.artifacts).map(([id, data]) => {
+                return {
+                    id,
+                    ...(data as Omit<Artifact, 'id'>),
+                };
+            });
+        }else{
+            artifactsArr = [];
+        }
+
+        this.manifest = {
+            ...raw,
+            artifacts: artifactsArr
+        } as Manifest;
+
         return this.manifest!;
     }
 
@@ -66,8 +87,9 @@ export default class ManifestService{
 
             if(!manifest.name) errors.push('Missing required field: name');
             if(!manifest.version) errors.push('Missing required field: version');
+
             if(!manifest.artifacts || !Array.isArray(manifest.artifacts)){
-                errors.push('Missing or invalid field: artifacts (must be array)');
+                errors.push('Missing or invalid field: artifacts (must be mapping or array)');
             }
 
             if(!manifest.entrypoint) {

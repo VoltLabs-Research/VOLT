@@ -1,0 +1,234 @@
+name: Primitives
+author: Rodolfo Herrera Hernandez
+license: MIT
+version: 1.0.0
+homepage: https://github.com/rodyherrera/OpenDXA
+
+# Per Frame Document Listing
+listing:
+    # /dashboard/trajectory/{trajectoryId}/analysis/{analysisId}/dislocations/
+    - dislocations:
+        trajectory: trajectory.name
+        identificationMode: Identification Mode
+        timestep: Timestep
+        rmsd: analysis.config.rmsd
+        totalSegments: Segments
+        averageSegmentLength: Avg Seg. Length
+        totalLength: Total Length
+        totalPoints: Points
+        createdAt: Created At
+
+    # /dashboard/trajectory/{trajectoryId}/analysis/{analysisId}/structure-analysis/
+    - structure-analysis:
+        trajectory: trajectory.name
+        analysisMethod: Identification Mode
+        identificationRate: Identification Rate
+        identifiedStructures: Total Identified
+        unidentifiedStructures: Total Unidentified
+        totalAtoms: Total Atoms
+        timestep: Timestep
+        createdAt: Created At
+
+modifiers:
+    # Dislocation Analysis Modifier
+    - dislocations:
+        preset:
+            structureIdentificationOnly: false
+        exposure:
+            dislocations:
+                results: dislocations.msgpack
+                iterable: data
+                displayName: Dislocation Analysis
+                icon: PiLineSegmentThin
+                canvas: true
+                raster: true
+                export:
+                    name: DislocationExporter
+                    type: glb
+                    options:
+                        lineWidth: 0.8
+                        colorByType: true
+                        material:
+                            baseColor: [1.0, 0.5, 0.0, 1.0]
+                            metallic: 0.0
+                            roughness: 0.8
+                            emissive: [0.0, 0.0, 0.0]
+
+            structure-identification:
+                results: atoms.msgpack
+                displayName: Polyhedral Template Matching (PTM)
+                icon: HiCubeTransparent
+                canvas: true
+                raster: true
+                export:
+                    name: AtomisticExporter
+                    handler: exportAtomsTypeToGLBMinIO
+                    type: glb
+
+            defect-mesh:
+                results: defect_mesh.msgpack
+                icon: SiTraefikmesh
+                displayName: Defect Mesh
+                canvas: true
+                export:
+                    name: MeshExporter
+                    type: glb
+                    options:
+                        smoothIterations: 8
+                        generateNormals: true
+                        enableDoubleSided: true
+                        material:
+                            baseColor: [1.0, 1.0, 1.0, 1.0]
+                            metallic: 0.0
+                            roughness: 0.0
+                            emissive: [0.0, 0.0, 0.0]
+
+            interface-mesh:
+                results: interface_mesh.msgpack
+                icon: PiTriangleDashedThin
+                displayName: Interface Mesh
+                canvas: true
+                export:
+                    name: MeshExporter
+                    type: glb
+                    options:
+                        smoothIterations: 8
+                        generateNormals: true
+                        enableDoubleSided: true
+                    material:
+                        baseColor: [1.0, 1.0, 1.0, 1.0]
+                        metallic: 0.0
+                        roughness: 0.0
+                        emissive: [0.0, 0.0, 0.0]
+
+            simulation-cell:
+                results: simulation_cell.msgpack
+
+            structure-analysis:
+                results: structure_stats.msgpack
+            
+    # Common Neighbor Analysis Modifier
+    - structure-identification:
+        preset:
+            identificationMode: CNA
+            structureIdentificationOnly: true
+        exposure:
+            structure-identification:
+                results: atoms.msgpack
+                displayName: Common Neighbor Analysis (CNA)
+                icon: PiCirclesThreeLight
+                canvas: true
+                raster: true
+
+    # Polyhedral Template Matching Modifier
+    - structure-identification:
+        preset:
+            identificationMode: PTM
+            structureIdentificationOnly: true
+        exposure:
+            structure-identification:
+                results: atoms.msgpack
+                displayName: Polyhedral Template Matching (PTM)
+                icon: HiCubeTransparent
+                canvas: true
+                raster: true
+
+    # Diamond Identifier Modifier
+    - structure-identification:
+        preset:
+            identificationMode: DIAMOND
+            structureIdentificationOnly: true
+        exposure:
+            structure-identification:
+                results: atoms.msgpack
+                displayName: Diamond Identifier
+                icon: RiVipDiamondLine
+                canvas: true
+                raster: true
+
+entrypoint:
+    bin: opendxa
+    arguments:
+        crystalStructure: 
+            type: select
+            default: BCC
+            values:
+                FCC: FCC (Face-Centered Cubic)
+                BCC: BCC (Body-Centered Cubic)
+                HCP: HCP (Hexagonal Closed-Packed)
+                CUBIC_DIAMOND: Cubic Diamond
+                HEX_DIAMOND: Hexagonal Diamond
+                SC: Simple Cubic
+
+        identificationMode:
+            type: select
+            default: PTM
+            label: Identification Modifier
+            values:
+                PTM: Polyhedral Template Matching (PTM)
+                CNA: Common Neighbor Analysis (CNA)
+                DIAMOND: Diamond Identifier
+
+        maxTrialCircuitSize:
+            type: number
+            label: Max Trial Circuit Size
+            default: 14
+            min: 6
+            max: 32
+            step: 0.5
+
+        circuitStretchability:
+            type: number
+            label: Circuit Stretchability
+            default: 9.0
+            min: 1
+            max: 32
+            step: 0.5
+
+        rmsd:
+            type: number
+            label: RMSD
+            default: 0.10
+            min: 0
+            max: 5
+            step: 0.01
+            visibleWhen:
+                identificationMode: PTM
+
+        defectSmoothingLevel:
+            type: number
+            label: Defect Smoothing Level
+            default: 8
+            min: 0
+            max: 32
+            step: 1
+
+        lineSmoothingLevel:
+            type: number
+            label: Line Smoothing Level
+            default: 5
+            min: 0
+            max: 32
+            step: 0.5
+
+        linePointInterval:
+            type: number
+            label: Line Point Interval
+            default: 2.5
+            min: 0.1
+            max: 10
+            step: 0.1
+
+        onlyPerfectDislocations:
+            type: boolean
+            label: Only Perfect Dislocations
+            default: false
+
+        markCoreAtoms:
+            type: boolean
+            label: Mark Core Atoms
+            default: false
+
+        structureIdentificationOnly:
+            type: boolean
+            default: false

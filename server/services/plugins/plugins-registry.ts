@@ -40,7 +40,7 @@ export default class PluginRegistry{
         for(const entry of entries){
             if(!entry.isDirectory()) continue;
             const pluginDir = path.join(this.pluginsDir, entry.name);
-            const manifestPath = path.join(this.pluginsDir, 'manifest.yml');
+            const manifestPath = path.join(pluginDir, 'manifest.yml');
             try{
                 await fs.access(manifestPath);
                 result.push(entry.name);

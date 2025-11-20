@@ -58,17 +58,17 @@ export default class Plugin{
         const { artifacts } = await this.manifest.get();
         const results: ResultFiles = {};
         const generatedFiles: string[] = [];
-        for(const { name, resultFile } of artifacts){
+
+        for(const { id, resultFile } of artifacts){
             const filePath = `${outputBase}_${resultFile}`;
             const exists = await fileExists(filePath);
             if(!exists) continue;
 
             console.log(`[${this.pluginName} plugin] reading file: ${filePath}`);
-            results[name] = { filePath };
+            results[id] = { filePath };
             generatedFiles.push(filePath);
         }
 
-        // TODO: 
         return { results, generatedFiles };
     }
 

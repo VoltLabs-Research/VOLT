@@ -8,7 +8,7 @@ export interface ArtifactExport{
 export interface Artifact{
     name: string;
     resultFile: string;
-    exportConfig?: ArtifactExport;
+    export?: ArtifactExport;
     iterableKey?: string;
     iterableChunkSize?: number;
 }
