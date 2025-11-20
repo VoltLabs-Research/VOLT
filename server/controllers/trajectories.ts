@@ -21,8 +21,8 @@
 **/
 
 import { NextFunction, Request, Response } from 'express';
-import { join, relative, resolve } from 'path';
-import { stat, mkdir, rm, writeFile } from 'fs/promises';
+import { join, resolve } from 'path';
+import { mkdir, rm, writeFile } from 'fs/promises';
 import { isValidObjectId, Types } from 'mongoose';
 import { getTrajectoryProcessingQueue } from '@/queues';
 import { processTrajectoryFile } from '@/utilities/lammps';
@@ -197,7 +197,8 @@ export const getTrajectoryPreview = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     // TODO: maybe in the middleware save trajectory._id.toString()...
     const trajectoryId = trajectory._id.toString();
-    const objectName = `${trajectoryId}/previews/raster/preview.png`;
+    const timestep = Math.min(...trajectory.frames.map(({ timestep }: any) => timestep));
+    const objectName = `${trajectoryId}/previews/raster/${timestep}.png`;
     const buffer = await getObject(objectName, 'raster');
     const etag = `"trajectory-preview-${trajectory._id}"`;
     return sendImage(res, etag, buffer);

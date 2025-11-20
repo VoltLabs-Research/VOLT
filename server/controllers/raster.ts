@@ -1,109 +1,33 @@
 import { Request, Response } from 'express';
 import { join, resolve, basename } from 'path';
-import { getRasterizerQueue } from '@/queues';
 import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
-import { RasterizerJob } from '@/types/services/rasterizer-queue';
 import { catchAsync } from '@/utilities/runtime';
-import { mkdir, readFile } from 'fs/promises';;
+import { readFile } from 'fs/promises';;
 import { readdir } from 'fs/promises';
-import { Analysis, Trajectory } from '@/models';  
-import { v4 } from 'uuid';
+import { Analysis, Trajectory } from '@/models';
+import { rasterizeGLBs } from '@/utilities/raster';
 import path from 'path';
 import TrajectoryFS from '@/services/trajectory-fs';
 import archiver from 'archiver';
-import { sanitizeModelName } from '@/utilities/plugins';
-import { downloadObject, getObject } from '@/utilities/buckets';
 
 export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     const trajectoryId = trajectory._id.toString();
-    const tfs = new TrajectoryFS(trajectoryId);
-    await tfs.ensureStructure();
+    const opts: Partial<HeadlessRasterizerOptions> = req.body ?? {};
 
-    const customOpts: Partial<HeadlessRasterizerOptions> = req.body ?? {};
-    const jobs: RasterizerJob[] = [];
+    const trajectoryPreviews = `${trajectoryId}/previews/glb`;
+    await rasterizeGLBs(trajectoryPreviews, 'glbs', trajectory, opts);
 
-    // Create temp directory for GLBs
-    const tempGlbDir = join(tfs.root, 'temp_glbs');
-    await mkdir(tempGlbDir, { recursive: true });
-
-    const previews = await tfs.getPreviews({ media: 'glb' });
-    const glbPreviews = previews.glb ?? {};
-    
-    for (const [frame, minioKey] of Object.entries(glbPreviews)) {
-        // Download GLB from MinIO to temp location
-        try{
-            const tempGlbPath = join(tempGlbDir, `preview_${frame}.glb`);
-            await downloadObject(minioKey, 'glbs', tempGlbPath);
-            
-            jobs.push({
-                jobId: v4(),
-                trajectoryId: trajectoryId,
-                teamId: trajectory.team._id,
-                timestep: Number(frame),
-                name: 'Headless Rasterizer (Preview)',
-                message: `${trajectory.name} - Preview frame ${frame}`,
-                opts: {
-                    inputPath: tempGlbPath,
-                    ...customOpts,
-                },
-            });
-        }catch(err){
-            console.error(`Failed to download preview GLB for frame ${frame}:`, err);
-        }
-    }
-
+    // Raster GLBs generated from plugins modifiers
     const analyses = await Analysis.find({ trajectory: trajectoryId }).lean();
-    for(const analysis of analyses){
+    const promises = analyses.map(async (analysis) => {
         const analysisId = analysis._id.toString();
-        const glbMap = await tfs.listAnalysisGlbKeys(analysisId);
-        const entries = Object.entries(glbMap);
-
-        for(const [frame, types] of entries){
-            for(const [rawType, objectName] of Object.entries(types)){
-                const modelName = sanitizeModelName(rawType || 'preview');
-                try{
-                    const tempGlbPath = join(tempGlbDir, `analysis_${analysisId}_${frame}_${modelName}.glb`);
-                    await downloadObject(objectName, 'glbs', tempGlbPath);
-
-                    const frameRasterDir = join(tfs.root, analysisId, 'raster', frame);
-                    await mkdir(frameRasterDir, { recursive: true });
-                    const outPath = join(frameRasterDir, `${modelName}.png`);
-
-                    jobs.push({
-                        jobId: v4(),
-                        trajectoryId: trajectory._id,
-                        teamId: trajectory.team._id,
-                        name: 'Headless Rasterizer (Analysis)',
-                        timestep: Number(frame),
-                        message: `${trajectory.name} - ${analysisId} - Frame ${frame} (${modelName})`,
-                        opts: {
-                            inputPath: tempGlbPath,
-                            ...customOpts,
-                        },
-                    });
-                }catch(error){
-                    console.error(`Failed to download analysis GLB for frame ${frame} type ${modelName}:`, error);
-                }
-            }
-        }
-    }
-
-    if (!jobs.length) {
-        return res.status(404).json({
-            status: 'error',
-            message: 'No GLB files were found in the path or its analysis.',
-        });
-    }
-
-    const queueService = getRasterizerQueue();
-    queueService.addJobs(jobs);
-
-    return res.status(200).json({
-        status: 'success',
-        message: `${jobs.length} rasterization jobs (previews and analysis) were added.`,
-        data: { jobCount: jobs.length },
+        const analysisPreviews = `${trajectoryId}/${analysisId}/glb`;
+        await rasterizeGLBs(analysisPreviews, 'analysis', trajectory, opts);
     });
+    await Promise.all(promises);
+
+    return res.status(200).json({ status: 'succes' });
 });
 
 export const readRasterModel = async (

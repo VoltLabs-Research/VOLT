@@ -25,6 +25,7 @@ import { IUser } from '@/types/models/user';
 import { IStructureAnalysis } from '@types/model/structureAnalysis';
 import { ICellAnalysis } from '@/types/model/simulation-cell';
 import { IAnalysis } from '@/models/analysis';
+import { Document } from 'mongoose';
 
 // Defines the limits of the simulation box on the three axes.
 export interface IBoxBounds{

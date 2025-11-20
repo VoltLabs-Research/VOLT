@@ -23,13 +23,8 @@
 import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import { BaseProcessingQueue } from './base-processing-queue';
-import { getRasterizerQueue } from './index';
-import { v4 } from 'uuid';
-import { RasterizerJob } from '@/types/services/rasterizer-queue';
-import { join } from 'path';
 import { Trajectory } from '@/models';
-import { downloadObject } from '@/utilities/buckets';
-import TrajectoryFS from '@/services/trajectory-fs';
+import { rasterizeGLBs } from '@/utilities/raster';
 import path from 'path';
 
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
@@ -59,45 +54,25 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
         const job = data.job as TrajectoryProcessingJob;
         
         // Only process if this is the first chunk (index 0)
-        if (job.chunkIndex !== 0) return;
+        if(job.chunkIndex !== 0) return;
 
         const trackingKey = `${job.trajectoryId}:preview-scheduled`;
-        if (this.firstChunkProcessed.has(trackingKey)) return;
+        if(this.firstChunkProcessed.has(trackingKey)) return;
 
         this.firstChunkProcessed.add(trackingKey);
 
-        try {
-            console.log(`First chunk completed for trajectory ${job.trajectoryId}, scheduling preview generation`);
-            
-            // Get first frame timestep from the job
+        try{
             const firstFrame = job.files?.[0];
-            if (!firstFrame || firstFrame.frameData?.timestep === undefined) {
+            if(!firstFrame || firstFrame.frameData?.timestep === undefined){
                 console.warn(`No first frame data found for trajectory ${job.trajectoryId}`);
                 return;
             }
 
-            const { timestep } = firstFrame.frameData;
-            const objectName = `${job.trajectoryId}/previews/glb/${timestep}.glb`;
-            const tempGlbPath = join(job.tempFolderPath, `${timestep}.glb`);
-
-            await downloadObject(objectName, 'glbs', tempGlbPath);
-
+            const frameGLB = `${job.trajectoryId}/previews/glb/${firstFrame.frameData.timestep}.glb`;
             const trajectory = await Trajectory.findById(job.trajectoryId);
-            const rasterizerQueue = getRasterizerQueue();
+            if(!trajectory) throw Error('Trajectory::NotFound');
             
-            // Create a rasterizer job for preview
-            const previewJob: RasterizerJob = {
-                timestep,
-                jobId: v4(),
-                trajectoryId: job.trajectoryId,
-                teamId: job.teamId,
-                isPreview: true,
-                sessionId: job.sessionId,
-                sessionStartTime: job.sessionStartTime,
-                name: 'Headless Rasterizer (Preview)',
-                message: `${trajectory!.name} - Preview frame ${timestep}`,
-                opts: { inputPath: tempGlbPath }
-            };
+            await rasterizeGLBs(frameGLB, 'glbs', trajectory);
 
             // If this is part of a session, increment the remaining counter to include this rasterizer job
             if(job.sessionId){
@@ -105,10 +80,7 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
                 await this.redis.incr(counterKey);
                 console.log(`Incremented session counter for rasterizer preview job for trajectory ${job.trajectoryId}`);
             }
-
-            await rasterizerQueue.addJobs([previewJob]);
-            console.log(`Preview generation job queued for trajectory ${job.trajectoryId}, frame ${timestep}`);
-        } catch (error) {
+        }catch(error){
             console.error(`Failed to queue preview generation for trajectory ${job.trajectoryId}:`, error);
             // Don't throw - trajectory processing shouldn't fail if preview generation fails
         }

@@ -21,7 +21,10 @@
 **/
 
 import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { mkdtemp } from 'node:fs/promises';
 import { FilterQuery, Types } from 'mongoose';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 // Type for async request handlers that may throw errors
 type AsyncRequestHandler = (
@@ -44,6 +47,11 @@ export const slugify = (value: string) => value
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+/, '')
     .replace(/-+$/, '');
+
+export const createTempDir = async (prefix: string = 'opendxa-'): Promise<string> => {
+    const tempDir = await mkdtemp(join(tmpdir(), prefix));
+    return tempDir;
+};
 
 /**
  * Catches async errors in Express route handlers and passes them to the error middleware.
