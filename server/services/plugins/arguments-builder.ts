@@ -24,7 +24,7 @@ type ArgType = 'enum' | 'number' | 'boolean';
 
 interface ArgDef{
     type: ArgType;
-    default: string | number;
+    default: string | boolean | number;
     values?: string[];
 };
 

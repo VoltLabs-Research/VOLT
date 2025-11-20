@@ -183,7 +183,7 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
 
 
 export const getTrajectoryMetricsById = async (trajectoryId: string): Promise<any> => {
-  if (!Types.ObjectId.isValid(trajectoryId)) {
+  /*if (!Types.ObjectId.isValid(trajectoryId)) {
     throw new Error('InvalidTrajectoryId');
   }
 
@@ -369,7 +369,7 @@ export const getTrajectoryMetricsById = async (trajectoryId: string): Promise<an
         : { min: null, max: null, avg: null },
       dimensionality: { is2D: scNum2D, is3D: scNum3D }
     }
-  };
+  };*/
 
-  return metrics;
+  return [metrics];
 };

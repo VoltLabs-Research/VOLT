@@ -49,7 +49,7 @@ export default class ManifestService{
             return this.manifest;
         }
 
-        this.manifest = await this.resolver.load('manifest.json');
+        this.manifest = await this.resolver.load('manifest.yml');
         return this.manifest!;
     }
 

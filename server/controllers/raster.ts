@@ -5,7 +5,7 @@ import { catchAsync } from '@/utilities/runtime';
 import { readFile } from 'fs/promises';;
 import { readdir } from 'fs/promises';
 import { Analysis, Trajectory } from '@/models';
-import { rasterizeGLBs } from '@/utilities/raster';
+import { getTimestepPreview, rasterizeGLBs, sendImage } from '@/utilities/raster';
 import path from 'path';
 import TrajectoryFS from '@/services/trajectory-fs';
 import archiver from 'archiver';
@@ -97,73 +97,31 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
     });
 };
 
-export const getRasterFrame = async (req: Request, res: Response) => {
-    const trajectory = res.locals.trajectory;
-    const trajectoryId = trajectory._id.toString();
-    const { timestep, analysisId, model } = req.params;
-    const frameNumber = Number(timestep);
-
-    if (!Number.isFinite(frameNumber)) {
-        return res.status(400).json({ status: 'error', message: 'Invalid timestep parameter' });
-    }
-
-    try {
-        const tfs = new TrajectoryFS(trajectoryId);
-        let buffer: Buffer;
-
-        if (model === 'preview') {
-            // previews/raster/<frame>.png
-            const p = path.join(tfs.root, 'previews', 'raster', `${frameNumber}.png`);
-            buffer = await readFile(p);
-        } else {
-            buffer = await readRasterModel(model, analysisId, trajectoryId, frameNumber);
-        }
-
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-        res.setHeader('Content-Type', 'image/png');
-        res.setHeader('Content-Length', String(buffer.length));
-        res.setHeader('ETag', `"frame-${trajectoryId}-${frameNumber}-${model}-${analysisId}"`);
-        return res.send(buffer);
-    } catch {
-        return res.status(404).json({ status: 'error', message: 'Frame not found' });
-    }
-};
-
 export const getRasterFrameData = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     const trajectoryId = trajectory._id.toString();
     const { timestep, analysisId, model } = req.params;
     const frameNumber = Number(timestep);
 
-    if (!Number.isFinite(frameNumber)) {
+    if(!Number.isFinite(frameNumber)){
         return res.status(400).json({ status: 'error', message: 'Invalid timestep parameter' });
     }
 
-    try {
-        const tfs = new TrajectoryFS(trajectoryId);
-        let buffer: Buffer;
+    /*if(model === 'preview'){
+        const { buffer, etag } = await getTimestepPreview(trajectoryId, frameNumber);
+    }else{
+        // buff = await readRasterModel(model, analysisId, trajectoryId, frameNumber);
+    }*/
+    const { buffer } = await getTimestepPreview(trajectoryId, frameNumber);
+    const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
 
-        if (model === 'preview') {
-            const p = path.join(tfs.root, 'previews', 'raster', `${frameNumber}.png`);
-            buffer = await readFile(p);
-        } else {
-            buffer = await readRasterModel(model, analysisId, trajectoryId, frameNumber);
-        }
-
-        const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
-
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-        res.setHeader('ETag', `"frame-data-${trajectoryId}-${frameNumber}-${model}-${analysisId}"`);
-
-        return res.status(200).json({
-            status: 'success',
-            data: { model, frame: frameNumber, analysisId, data: base64 }
-        });
-    } catch {
-        return res.status(404).json({ status: 'error', message: 'Frame not found' });
-    }
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('ETag', `"frame-data-${trajectory._id}-${frameNumber}-${model}-${analysisId}"`);
+    return res.status(200).json({
+        status: 'success',
+        data: { model, frame: frameNumber, analysisId, data: base64 }
+    });
 };
-
 
 export const getRasterizedFrames = async (req: Request, res: Response) => {
     let trajectory = res.locals.trajectory;

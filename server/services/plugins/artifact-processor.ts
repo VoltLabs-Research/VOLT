@@ -20,10 +20,9 @@
 * SOFTWARE.
 **/
 
-import { IAnalysis } from '@/models/analysis';
 import { putObject } from '@/config/minio';
 import { slugify } from '@/utilities/runtime';
-    import DislocationExporter from '@/utilities/export/dislocations';
+import DislocationExporter from '@/utilities/export/dislocations';
 import MeshExporter from '@/utilities/export/mesh';
 import AtomisticExporter from '@/utilities/export/atoms';
 

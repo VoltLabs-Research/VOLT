@@ -14,7 +14,7 @@ const processJob = async (job: RasterizerJob) => {
 
         parentPort?.postMessage({ status: 'completed', jobId: job.jobId });
 
-        const objectName = `${job.trajectoryId}/previews/raster/${(job.isPreview ? 'preview' : job.timestep)}.png`;
+        const objectName = `${job.trajectoryId}/previews/raster/${job.timestep}.png`;
         await fs.unlink(job.opts.inputPath as string);
         await putObject(objectName, 'raster', buffer, {
             'Content-Type': 'image/png',

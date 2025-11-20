@@ -36,6 +36,7 @@ import HandlerFactory from '@/controllers/handler-factory';
 import archiver from 'archiver';
 import { v4 } from 'uuid';
 import { getObject, getStream, statObject } from '@/utilities/buckets';
+import { getTimestepPreview, sendImage } from '@/utilities/raster';
 
 const factory = new HandlerFactory<any>({
     model: Trajectory as any,
@@ -183,24 +184,11 @@ export const getMetrics = async (req: Request, res: Response) => {
     return res.status(200).json({ status: 'success', data });
 };
 
-const sendImage = (res: Response, etag: string, buffer: Buffer) => {
-    const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.setHeader('ETag', etag);
-    return res.status(200).json({
-        status: 'success',
-        data: base64
-    })
-}
-
 export const getTrajectoryPreview = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
-    // TODO: maybe in the middleware save trajectory._id.toString()...
-    const trajectoryId = trajectory._id.toString();
+    // TODO: maybe it's not efficient
     const timestep = Math.min(...trajectory.frames.map(({ timestep }: any) => timestep));
-    const objectName = `${trajectoryId}/previews/raster/${timestep}.png`;
-    const buffer = await getObject(objectName, 'raster');
-    const etag = `"trajectory-preview-${trajectory._id}"`;
+    const { buffer, etag } = await getTimestepPreview(trajectory._id.toString(), timestep);
     return sendImage(res, etag, buffer);
 };
 

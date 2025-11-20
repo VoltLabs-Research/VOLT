@@ -36,13 +36,6 @@ router.get(
 );
 
 router.get(
-    '/:id/frame/:timestep/:analysisId/:model',
-    authMiddleware.optionalAuth,
-    trajectoryMiddleware.checkTeamMembershipForTrajectory,
-    controller.getRasterFrame
-);
-
-router.get(
     '/:id/frame-data/:timestep/:analysisId/:model',
     authMiddleware.optionalAuth,
     trajectoryMiddleware.checkTeamMembershipForTrajectory,

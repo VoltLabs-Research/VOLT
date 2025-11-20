@@ -22,6 +22,7 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import YAML from 'yaml';
 
 export default class ManifestResolver{
     private cache = new Map<string, any>();
@@ -41,10 +42,11 @@ export default class ManifestResolver{
         }
 
         const content = await fs.readFile(filePath, 'utf-8');
-        const rawObj = JSON.parse(content);
-        const resolvedObj = await this.processNode(rawObj, filePath);
+        const rawObj = YAML.parse(content);
 
+        const resolvedObj = await this.processNode(rawObj, filePath);
         this.cache.set(filePath, resolvedObj);
+
         return resolvedObj;
     }
 
