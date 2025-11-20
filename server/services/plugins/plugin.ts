@@ -123,7 +123,7 @@ export default class Plugin{
         );
 
         for(const artifact of artifacts){
-            const entry = results[artifact.name];
+            const entry = results[artifact.id];
             if(!entry) continue;
             await processor.evaluate(artifact, timestep, entry.filePath);
         }

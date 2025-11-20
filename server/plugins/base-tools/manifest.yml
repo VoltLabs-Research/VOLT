@@ -2,9 +2,13 @@ name: OpenDXA - Open Source Dislocation Extraction Algorithm
 version: 1.0.0
 
 artifacts:
-    - name: Dislocations
+    - id: dislocations
+      name: Dislocations
       resultFile: dislocations.msgpack
       iterableKey: data
+      exposure:
+        canvas: true
+        raster: true
       exportConfig:
         name: DislocationExporter
         type: glb
@@ -17,14 +21,21 @@ artifacts:
                 roughness: 0.8
                 emissive: [0.0, 0.0, 0.0]
     
-    - name: Structure Identification
+    - id: structure-identification
+      name: Structure Identification
       resultFile: atoms.msgpack
+      exposure:
+        canvas: true
+        raster: true
       exportConfig:
         name: AtomisticExporter
         handler: exportAtomsTypeToGLBMinIO
         type: glb
 
-    - name: Defect Mesh
+    - id: defect-mesh
+      name: Defect Mesh
+      exposure:
+        canvas: true
       resultFile: defect_mesh.msgpack
       exportConfig:
         name: MeshExporter
@@ -39,7 +50,10 @@ artifacts:
             generateNormals: true
             enableDoubleSided: true
     
-    - name: Interface Mesh
+    - id: interface-mesh
+      name: Interface Mesh
+      exposure:
+        canvas: true
       resultFile: interface_mesh.msgpack
       exportConfig:
         name: MeshExporter
@@ -54,10 +68,12 @@ artifacts:
             generateNormals: true
             enableDoubleSided: true
 
-    - name: Simulation Cell
+    - id: simulation-cell
+      name: Simulation Cell
       resultFile: simulation_cell.msgpack
 
-    - name: Structure Analysis
+    - id: structure-analysis
+      name: Structure Analysis
       resultFile: structure_stats.msgpack
 
 entrypoint:

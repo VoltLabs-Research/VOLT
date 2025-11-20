@@ -43,7 +43,7 @@ export interface ArtifactExport {
 };
 
 export interface Artifact{
-    name: string;
+    id: string;
     resultFile: string;
     exportConfig?: ArtifactExport;
     iterableKey?: string;
@@ -85,7 +85,7 @@ export default class ArtifactProcessor{
             this.pluginName,
             this.trajectoryId,
             this.analysisId,
-            artifact.name,
+            artifact.id,
             timestep
         );
 
@@ -129,7 +129,7 @@ export default class ArtifactProcessor{
 
         let { name, type, handler, opts } = exportConfig;
         if(exportConfig.type !== 'glb'){
-            throw new Error(`[${this.pluginName} plugin]: the "${type}" (type is not yet supported (${artifact.name} artifact).`);
+            throw new Error(`[${this.pluginName} plugin]: the "${type}" (type is not yet supported (${artifact.id} artifact).`);
         }
 
         const exporter = this.getBuiltInExporter(name);
@@ -140,7 +140,7 @@ export default class ArtifactProcessor{
             throw new Error(`[${this.pluginName} plugin]: the "${handler}" method is not available in ${name}.`);
         }
 
-        const artifactKey = slugify(artifact.name || name || 'artifact');
+        const artifactKey = slugify(artifact.id || name || 'artifact');
 
         const objectName = `trajectory-${this.trajectoryId}/analysis-${this.analysisId}/glb/${timestep}/${artifactKey}.${type}`;
         // @ts-ignore
@@ -148,7 +148,7 @@ export default class ArtifactProcessor{
     }
 
     private async saveRawResult(artifact: Artifact, timestep: number, filePath: string){
-        const artifactKey = slugify(artifact.name);
+        const artifactKey = slugify(artifact.id);
         const storageKey = [
             'plugins',
             `trajectory-${this.trajectoryId}`,
@@ -165,7 +165,7 @@ export default class ArtifactProcessor{
     }
 
     private async saveSummary(artifact: Artifact, timestep: number, summary: any){
-        const artifactKey = slugify(artifact.name);
+        const artifactKey = slugify(artifact.id);
         const storageKey = [
             'plugins',
             `trajectory-${this.trajectoryId}`,
@@ -206,7 +206,7 @@ export default class ArtifactProcessor{
             filePath,
             iterateChunks: () => {
                 if(!artifact.iterableKey){
-                    throw new Error(`[${this.pluginName} plugin]: iterateChunks() is only allowed when "iterableKey" is defined for artifact "${artifact.name}".`);
+                    throw new Error(`[${this.pluginName} plugin]: iterateChunks() is only allowed when "iterableKey" is defined for artifact "${artifact.id}".`);
                 }
                 return this.iterateIterableChunks(artifact, filePath);
             },
@@ -230,7 +230,7 @@ export default class ArtifactProcessor{
     }
     
     private async loadTransformer(artifact: Artifact): Promise<ArtifactTransformer | null>{
-        const fileName = `${slugify(artifact.name)}.ts`;
+        const fileName = `${slugify(artifact.id)}.ts`;
         const fullPath = path.join(this.pluginsDir, this.pluginName, 'transformers', fileName);
         
         try{
@@ -242,7 +242,7 @@ export default class ArtifactProcessor{
         const mod = await import(fullPath);
         const func = mod.default as ArtifactTransformer | undefined;
         if(typeof func !== 'function'){
-            throw new Error(`[${this.pluginName} plugin]: transformer for artifact "${artifact.name}" must export a default function.`);
+            throw new Error(`[${this.pluginName} plugin]: transformer for artifact "${artifact.id}" must export a default function.`);
         }
         return func;
     }

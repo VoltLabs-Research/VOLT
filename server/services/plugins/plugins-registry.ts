@@ -83,20 +83,4 @@ export default class PluginRegistry{
         }
         return result;
     }
-
-    async listArgumentsForPlugin(pluginId: string): Promise<ArgumentInfo[]>{
-        const manifest = await this.loadManifest(pluginId);
-        const argsDef = manifest.entrypoint.args;
-        const result: ArgumentInfo[] = [];
-        for(const [id, definition] of Object.entries(argsDef)){
-            result.push({
-                pluginId,
-                pluginName: manifest.name,
-                id,
-                definition
-            });
-        }
-
-        return result;
-    }
 };
