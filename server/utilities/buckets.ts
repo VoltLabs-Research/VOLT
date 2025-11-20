@@ -67,3 +67,31 @@ export const downloadObject = async (objectName: string, bucketName: string, pat
     const buffer = await getObject(objectName, bucketName);
     await writeFile(path, buffer);
 };
+
+export const deleteByPrefix = async (bucket: string, prefix: string): Promise<void> => {
+    const client = getMinioClient();
+    const stream = client.listObjectsV2(bucket, prefix, true);
+    const keys: string[] = [];
+
+    await new Promise<void>((resolve, reject) => {
+        stream.on('data', (obj: any) => {
+            if(obj.name) keys.push(obj.name); 
+        });
+
+        stream.on('error', (err: any) => {
+            reject(err);
+        });
+
+        stream.on('end', () => resolve());
+    });
+
+    if(keys.length === 0) return;
+
+    // TODO: Promise.all(...)
+    const chunkSize = 1000;
+    for(let i = 0; i < keys.length; i += chunkSize){
+        const slice = keys.slice(i, i + chunkSize);
+        console.log(`[deleteByPrefix] Deleting ${slice.length} objects in bucket "${bucket}"...`);
+        await client.removeObjects(bucket, slice);
+    }
+};

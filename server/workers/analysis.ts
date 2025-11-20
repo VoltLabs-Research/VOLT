@@ -42,7 +42,6 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
             job.analysisId.toString(),
             job.folderPath.toString()
         );
-        await plugin.register();
         await plugin.evaluate(job.inputFile, job.config);
 
         // TODO: This should be more robust; besides, there's an existing function for this.

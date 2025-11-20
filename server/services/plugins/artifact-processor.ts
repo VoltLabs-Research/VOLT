@@ -20,9 +20,8 @@
 * SOFTWARE.
 **/
 
-import { putObject } from '@/config/minio';
+import { putObject, SYS_BUCKETS } from '@/config/minio';
 import { slugify } from '@/utilities/runtime';
-import { getArtifactId } from '@/utilities/plugins';
 import DislocationExporter from '@/utilities/export/dislocations';
 import MeshExporter from '@/utilities/export/mesh';
 import AtomisticExporter from '@/utilities/export/atoms';
@@ -78,22 +77,20 @@ export default class ArtifactProcessor{
 
         const artifactKey = slugify(artifact.name || name || 'artifact');
 
-        // {trajectoryId}/{analysisId}/glb/{timestep}/{artifactKey}.glb
         const objectName = `trajectory-${this.trajectoryId}/analysis-${this.analysisId}/glb/${timestep}/${artifactKey}.${type}`;
         // @ts-ignore
         await exporter[handler](result, objectName, opts);
     }
 
     private async saveArtifactResults(artifact: Artifact, timestep: number, result: any){
-        const bucketName = getArtifactId(this.pluginName, artifact.name);
-        const storageKey = `trajectory-${this.trajectoryId}/analysis-${this.analysisId}/timestep-${timestep}.json`;
+        const storageKey = `trajectory-${this.trajectoryId}/analysis-${this.analysisId}/${slugify(artifact.name)}/timestep-${timestep}.json`;
         const payload = {
             ...result,
             trajectory: this.trajectoryId,
             analysis: this.analysisId
         };
-        await putObject(bucketName, storageKey, payload);
-        this.recorder.recordUpload(bucketName, storageKey);
+        await putObject(SYS_BUCKETS.PLUGINS, storageKey, payload);
+        this.recorder.recordUpload(SYS_BUCKETS.PLUGINS, storageKey);
     }
 
     private getBuiltInExporter(name: BuiltInExports){

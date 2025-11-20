@@ -4,7 +4,8 @@ let minioClient: Client | null = null;
 
 export const SYS_BUCKETS = {
     MODELS: 'opendxa-models',
-    RASTERIZER: 'opendxa-rasterizer'
+    RASTERIZER: 'opendxa-rasterizer',
+    PLUGINS: 'opendxa-plugins'
 };
 
 const createClient = (): Client => {

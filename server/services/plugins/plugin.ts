@@ -23,7 +23,6 @@
 import { ensureBucketExists, getMinioClient, initializeMinio } from '@/config/minio';
 import { readMsgpackFile } from '@/utilities/msgpack';
 import { fileExists } from '@/utilities/fs';
-import { getArtifactId } from '@/utilities/plugins';
 import ArtifactProcessor, { Artifact } from '@/services/plugins/artifact-processor';
 import ManifestService from '@/services/plugins/manifest-service';
 import AnalysisContext from '@/services/plugins/analysis-context';
@@ -54,18 +53,6 @@ export default class Plugin{
         this.context = new AnalysisContext(this.pluginName);
         this.manifest = new ManifestService(this.pluginsDir, this.pluginName);
         this.cli = new CLIExec();
-    }
-
-    private async ensureArtifactBucket(artifact: Artifact){
-        const client = getMinioClient();
-        const bucketName = getArtifactId(this.pluginName, artifact.name);
-        await ensureBucketExists(client, bucketName);
-    }
-
-    async register(){
-        const { artifacts } = await this.manifest.get();
-        const bucketsPromises = artifacts.map((artifact) => this.ensureArtifactBucket(artifact));
-        await Promise.all(bucketsPromises);
     }
 
     private async getResultFiles(outputBase: string): Promise<{ results: ResultFiles, generatedFiles: string[] }>{
@@ -184,11 +171,10 @@ import '@/config/env';
     const analysis = await Analysis.create({
         plugin: 'opendxa',
         artifact: 'dislocation-analysis',
-        trajectory: '691e898ae9fcd8a0108bac2e',
+        trajectory: '691e939572a5560a9fd6fe1f',
         config: {}
     });
 
-    const plugin = new Plugin('base-tools', '691e898ae9fcd8a0108bac2e', analysis._id.toString());
-    await plugin.register();
-    await plugin.evaluate('/home/rodyherrera/Desktop/OpenDXA/server/storage/trajectories/691e898ae9fcd8a0108bac2e/dumps/25000', {});
+    const plugin = new Plugin('base-tools', '691e939572a5560a9fd6fe1f', analysis._id.toString());
+    await plugin.evaluate('/home/rodyherrera/Desktop/OpenDXA/server/storage/trajectories/691e939572a5560a9fd6fe1f/dumps/25000', {});
 })();
