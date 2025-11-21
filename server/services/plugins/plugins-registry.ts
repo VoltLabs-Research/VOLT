@@ -31,6 +31,22 @@ export default class PluginRegistry{
         return plugins;
     }
 
+    public async getPluginModifiers(pluginId: string){
+        const manifest = await this.getManifests();
+        const pluginManifest = manifest[pluginId] ?? [];
+        return Object.keys(pluginManifest.modifiers);
+    }
+
+    public async modifierExists(pluginId: string, modifierId: string){
+        const modifiers = this.getPluginModifiers(pluginId);
+        return modifiers.hasOwnProperty(modifierId);
+    }
+
+    public async exists(pluginId: string){
+        const manifests = await this.getManifests();
+        return manifests.hasOwnProperty(pluginId);
+    }
+
     public async getManifests(): Promise<PluginsManifest>{
         const plugins = await this.discoverPluginDirs();
         const manifests: Record<string, Manifest> = {};

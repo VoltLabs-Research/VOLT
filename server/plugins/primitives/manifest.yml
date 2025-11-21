@@ -35,7 +35,7 @@ modifiers:
         preset:
             structureIdentificationOnly: false
         exposure:
-            dislocations:
+            dislocation-analysis:
                 results: dislocations.msgpack
                 iterable: data
                 displayName: Dislocation Analysis

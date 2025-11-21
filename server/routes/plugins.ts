@@ -7,5 +7,6 @@ const router = Router();
 // router.use(authMiddleware.protect);
 
 router.get('/manifests', controllers.getManifests);
+router.get('/:pluginId/modifier/:modifierId/trajectory/:trajectoryId', controllers.evaluateModifier);
 
 export default router;

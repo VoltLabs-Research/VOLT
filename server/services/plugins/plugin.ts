@@ -20,8 +20,8 @@
 * SOFTWARE.
 **/
 
-import { initializeMinio } from '@/config/minio';
 import { fileExists } from '@/utilities/fs';
+import { slugify } from '@/utilities/runtime';
 import ArtifactProcessor from '@/services/plugins/modifier-processor';
 import ManifestService from '@/services/plugins/manifest-service';
 import AnalysisContext from '@/services/plugins/modifier-context';
@@ -147,23 +147,3 @@ export default class Plugin{
         }));
     }
 };
-
-import { Analysis } from '@/models';
-import { slugify } from '@/utilities/runtime';
-import mongoConnector from '@/utilities/mongo/mongo-connector';
-import '@/config/env';
-
-(async () => {
-    await mongoConnector();
-    await initializeMinio();
-
-    const analysis = await Analysis.create({
-        plugin: 'opendxa',
-        modifier: 'dislocation-analysis',
-        trajectory: '691fbfaeed18ed118cbe3b78',
-        config: {}
-    });
-
-    const plugin = new Plugin('primitives', '691fbfaeed18ed118cbe3b78', analysis._id.toString());
-    plugin.evaluate('/home/rodyherrera/Desktop/OpenDXA/server/storage/trajectories/691fbfaeed18ed118cbe3b78/dumps/25000', 'dislocation-analysis', {});
-})();

@@ -12,9 +12,9 @@ import TetrahedronLoader from '@/components/atoms/TetrahedronLoader';
 import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
 import usePlaybackStore from '@/stores/editor/playback';
-// import useAuthStore from '@/stores/authentication';
-import './Canvas.css';
 import Loader from '@/components/atoms/Loader';
+import useModifiers from '@/hooks/plugins/use-modifiers';
+import './Canvas.css';
 
 const CANVAS_CONFIG = {
     autoSaveDelay: 2000,
@@ -26,6 +26,7 @@ const CANVAS_CONFIG = {
 } as const;
 
 const EditorPage: React.FC = () => {
+    const { modifiers } = useModifiers();
     const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
     const scene3DRef = useRef<Scene3DRef>(null);
     const trajectoryId = rawTrajectoryId ?? '';
