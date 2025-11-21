@@ -20,24 +20,18 @@
 * SOFTWARE.
 **/
 
-type ArgType = 'enum' | 'number' | 'boolean';
-
-interface ArgDef{
-    type: ArgType;
-    default: string | boolean | number;
-    values?: string[];
-};
+import { EntrypointArgument } from '@/types/services/plugin';
 
 export default class ArgumentsBuilder{
     constructor(
-        private argDefs: Record<string, ArgDef>
+        private argDefs: Record<string, EntrypointArgument>
     ){}
 
     async isValidArg(arg: string, value: string): Promise<boolean>{
         const def = this.argDefs[arg];
         if(!def) return false;
         
-        if(def.type === 'enum'){
+        if(def.type === 'select'){
             if(!def.values || !def.values.length) return false;
             return def.values.includes(value);
         }

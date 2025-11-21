@@ -9,6 +9,7 @@ export interface Manifest{
     homepage: string;
     entrypoint: Entrypoint;
     modifiers: Record<string, Modifier>;
+
 };
 
 export interface ExposureExportConfig{
@@ -66,5 +67,3 @@ export interface ModifierTransformContext{
 };
 
 export type ModifierTransformer = (ctx: ModifierTransformContext) => Promise<any | null> | any | null;
-
-export type AnyRecord = Record<string, any>;

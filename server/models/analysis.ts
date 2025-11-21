@@ -26,14 +26,9 @@ import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 export interface IAnalysis extends Document{
     plugin: string;
-    artifact: string;
+    modifier: string;
     config: any;
     trajectory: mongoose.Types.ObjectId;
-    exposure?: {
-        canvasModifiers: boolean;
-        raster?: boolean;
-        analysisListing?: boolean;
-    };
     totalFrames?: number;
     completedFrames?: number;
     startedAt?: Date;
@@ -47,7 +42,7 @@ const AnalysisSchema: Schema<IAnalysis> = new Schema({
         required: true,
         lowercase: true
     },
-    artifact: {
+    modifier: {
         type: String,
         required: true,
         lowercase: true
@@ -55,20 +50,6 @@ const AnalysisSchema: Schema<IAnalysis> = new Schema({
     config: {
         type: Schema.Types.Mixed,
         required: true
-    },
-    exposure: {
-        canvasModifier: {
-            type: Boolean,
-            default: false
-        },
-        raster: {
-            type: Boolean,
-            default: false
-        },
-        analysisListing: {
-            type: Boolean,
-            default: false
-        }
     },
     totalFrames: {
         type: Number,

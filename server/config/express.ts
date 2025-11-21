@@ -69,8 +69,8 @@ const corsOptions = {
         'Pragma',
         'Expires',
         'ETag',
-    'Last-Modified',
-    'Content-Length'
+        'Last-Modified',
+        'Content-Length'
     ],
     optionsSuccessStatus: 200
 };
@@ -80,9 +80,9 @@ configureApp({
     suffix: '/api/',
     routes: [
         'health',
+        'plugins',
         'teams',
         'team-invitations',
-        'analysis-config',
         'raster',
         'trajectories',
         'notifications',

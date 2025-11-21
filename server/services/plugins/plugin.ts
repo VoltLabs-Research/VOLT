@@ -22,9 +22,9 @@
 
 import { initializeMinio } from '@/config/minio';
 import { fileExists } from '@/utilities/fs';
-import ArtifactProcessor from '@/services/plugins/artifact-processor';
+import ArtifactProcessor from '@/services/plugins/modifier-processor';
 import ManifestService from '@/services/plugins/manifest-service';
-import AnalysisContext from '@/services/plugins/analysis-context';
+import AnalysisContext from '@/services/plugins/modifier-context';
 import ArgumentsBuilder from '@/services/plugins/arguments-builder';
 import CLIExec from '@/services/cli-exec';
 import * as fs from 'node:fs/promises';
@@ -54,18 +54,18 @@ export default class Plugin{
         this.cli = new CLIExec();
     }
 
-    private async getResultFiles(outputBase: string): Promise<{ results: ResultFiles, generatedFiles: string[] }>{
-        const { artifacts } = await this.manifest.get();
+    private async getResultFiles(outputBase: string, modifierId: string): Promise<{ results: ResultFiles, generatedFiles: string[] }>{
+        const { modifiers } = await this.manifest.get();
+        const  { exposure } = modifiers[modifierId];
         const results: ResultFiles = {};
         const generatedFiles: string[] = [];
-
-        for(const { id, resultFile } of artifacts){
-            const filePath = `${outputBase}_${resultFile}`;
+        for(const [exposureId, config] of Object.entries(exposure)){
+            const filePath = `${outputBase}_${config.results}`;
             const exists = await fileExists(filePath);
             if(!exists) continue;
 
             console.log(`[${this.pluginName} plugin] reading file: ${filePath}`);
-            results[id] = { filePath };
+            results[exposureId] = filePath;
             generatedFiles.push(filePath);
         }
 
@@ -74,7 +74,7 @@ export default class Plugin{
 
     private async buildArgs<T>(options: T): Promise<string[]>{
         const { entrypoint } = await this.manifest.get();
-        const builder = new ArgumentsBuilder(entrypoint.args);
+        const builder = new ArgumentsBuilder(entrypoint.arguments);
         return builder.build(options);
     }
 
@@ -87,7 +87,7 @@ export default class Plugin{
         throw new Error(`Could not extract timestep from filename: ${filename}`);
     }
 
-    async evaluate<T>(inputFile: string, options: T){
+    async evaluate<T>(inputFile: string, modifierId: string, options: T){
         try{
             const cpuIntensiveTasksEnabled = process.env.CPU_INTENSIVE_TASKS !== 'false';
             if(!cpuIntensiveTasksEnabled){
@@ -95,15 +95,15 @@ export default class Plugin{
             }
 
             const baseFilename = path.basename(inputFile);
-            console.log(`[${this.pluginName} plugin]: starting processing for: ${baseFilename}`);
+            console.log(`[${this.pluginName} plugin]: starting ${modifierId} processing for: ${baseFilename}`);
 
             const outputBase = path.join(os.tmpdir(), `opendxa-out-${Date.now()}-${baseFilename}`);
             const args = await this.buildArgs<T>(options);
 
             await this.execute(inputFile, outputBase, args);
-            const { results, generatedFiles } = await this.getResultFiles(outputBase);
+            const { results, generatedFiles } = await this.getResultFiles(outputBase, modifierId);
             const timestep = this.getTimestepFromFilename(inputFile);
-            await this.process(results, timestep, options);
+            await this.process(results, timestep, modifierId);
             await this.unlinkGeneratedFiles(generatedFiles);
         }catch(err){
             console.error(`[${this.pluginName} plugin] failed to process ${inputFile}:`, err);
@@ -112,9 +112,12 @@ export default class Plugin{
         }
     }
 
-    private async process<T>(results: ResultFiles, timestep: number, options: T){
-        const { artifacts } = await this.manifest.get();
+     async process(results: ResultFiles, timestep: number, modifierId: string){
+        const { modifiers } = await this.manifest.get();
+        const modifier = modifiers[modifierId];
         const processor = new ArtifactProcessor(
+            modifierId,
+            modifier,
             this.pluginsDir,
             this.pluginName,
             this.trajectoryId,
@@ -122,10 +125,10 @@ export default class Plugin{
             this.context
         );
 
-        for(const artifact of artifacts){
-            const entry = results[artifact.id];
-            if(!entry) continue;
-            await processor.evaluate(artifact, timestep, entry.filePath);
+        for(const exposureId of Object.keys(modifier.exposure)){
+            const resultsPath = results[exposureId];
+            if(!resultsPath) return;
+            await processor.evaluate(exposureId, timestep, resultsPath);
         }
     }
     
@@ -156,11 +159,11 @@ import '@/config/env';
 
     const analysis = await Analysis.create({
         plugin: 'opendxa',
-        artifact: 'dislocation-analysis',
-        trajectory: '691e9e0011679d6b65f602c4',
+        modifier: 'dislocation-analysis',
+        trajectory: '691fbfaeed18ed118cbe3b78',
         config: {}
     });
 
-    const plugin = new Plugin('base-tools', '691e9e0011679d6b65f602c4', analysis._id.toString());
-    await plugin.evaluate('/home/rodyherrera/Desktop/OpenDXA/server/storage/trajectories/691e9e0011679d6b65f602c4/dumps/25000', {});
+    const plugin = new Plugin('primitives', '691fbfaeed18ed118cbe3b78', analysis._id.toString());
+    plugin.evaluate('/home/rodyherrera/Desktop/OpenDXA/server/storage/trajectories/691fbfaeed18ed118cbe3b78/dumps/25000', 'dislocation-analysis', {});
 })();

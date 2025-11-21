@@ -22,20 +22,7 @@
 
 import ManifestResolver from '@/services/plugins/manifest-resolver';
 import * as path from 'node:path';
-import type { Artifact } from '@/services/plugins/artifact-processor';
-
-export interface Manifest{
-    name: string;
-    version: string;
-    artifacts: Artifact[];
-    entrypoint: {
-        bin: string;
-        args: Record<string, any>;
-    };
-
-    analyses?: any[];
-    modifiers?: any[];
-};
+import { Manifest } from '@/types/services/plugin';
 
 export default class ManifestService{
     private manifest: Manifest | null = null;
@@ -52,25 +39,7 @@ export default class ManifestService{
             return this.manifest;
         }
 
-        const raw = await this.resolver.load('manifest.yml');
-
-        let artifactsArr: Artifact[] = [];
-        if(raw.artifacts && typeof raw.artifacts === 'object'){
-            artifactsArr = Object.entries(raw.artifacts).map(([id, data]) => {
-                return {
-                    id,
-                    ...(data as Omit<Artifact, 'id'>),
-                };
-            });
-        }else{
-            artifactsArr = [];
-        }
-
-        this.manifest = {
-            ...raw,
-            artifacts: artifactsArr
-        } as Manifest;
-
+        this.manifest = await this.resolver.load('manifest.yml');
         return this.manifest!;
     }
 
@@ -88,15 +57,15 @@ export default class ManifestService{
             if(!manifest.name) errors.push('Missing required field: name');
             if(!manifest.version) errors.push('Missing required field: version');
 
-            if(!manifest.artifacts || !Array.isArray(manifest.artifacts)){
-                errors.push('Missing or invalid field: artifacts (must be mapping or array)');
+            if(!manifest.modifiers || !Array.isArray(manifest.modifiers)){
+                errors.push('Missing or invalid field: modifiers (must be mapping or array)');
             }
 
             if(!manifest.entrypoint) {
                 errors.push('Missing required field: entrypoint');
             }else{
                 if(!manifest.entrypoint.bin) errors.push('Missing required field: entrypoint.bin');
-                if(!manifest.entrypoint.args) errors.push('Missing required field: entrypoint.args');
+                if(!manifest.entrypoint.arguments) errors.push('Missing required field: entrypoint.args');
             }
 
             return { valid: errors.length === 0, errors };

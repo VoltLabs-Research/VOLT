@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import type { ExecutionRecorder } from '@/services/plugins/artifact-processor';
+import type { ExecutionRecorder } from '@/services/plugins/modifier-processor';
 import { getMinioClient } from '@/config/minio';
 
 interface UploadedObject{

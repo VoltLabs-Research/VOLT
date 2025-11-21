@@ -32,45 +32,16 @@ import path from 'node:path';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import { decodeArrayStreamFromFile } from '@/utilities/msgpack-iterable';
-
-type BuiltInExports = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter';
-
-export interface ArtifactExport {
-    name: BuiltInExports;
-    handler?: string;
-    type: string;
-    opts: any;
-};
-
-export interface Artifact{
-    id: string;
-    resultFile: string;
-    export?: ArtifactExport;
-    iterableKey?: string;
-    iterableChunkSize?: number;
-};
+import { BuiltInExports, Modifier, ModifierTransformContext, ModifierTransformer } from '@/types/services/plugin';
 
 export interface ExecutionRecorder{
     recordUpload(bucket: string, key: string): void;
 };
 
-export interface ArtifactTransformContext{
-    pluginName: string;
-    trajectoryId: string;
-    analysisId: string;
-    timestep: number;
-    artifact: Artifact;
-    filePath: string;
-
-    iterateChunks(): AsyncIterable<Buffer>;
-    readAllAsBuffer(): Promise<Buffer>;
-    writeChunk(chunk: unknown): Promise<void>;
-}
-
-export type ArtifactTransformer = (ctx: ArtifactTransformContext) => Promise<any | null> | any | null;
-
 export default class ArtifactProcessor{
     constructor(
+        private modifierId: string,
+        private modifier: Modifier,
         private pluginsDir: string,
         private pluginName: string,
         private trajectoryId: string,
@@ -78,19 +49,19 @@ export default class ArtifactProcessor{
         private recorder: ExecutionRecorder
     ){}
 
-    async evaluate<T>(artifact: Artifact, timestep: number, filePath: string): Promise<void>{
-        await this.saveRawResult(artifact, timestep, filePath);
+    async evaluate(exposureId: string, timestep: number, filePath: string): Promise<void>{
+        await this.saveRawResult(exposureId, timestep, filePath);
 
         const summaryWriter = new SummaryStreamWriter(
             this.pluginName,
             this.trajectoryId,
             this.analysisId,
-            artifact.id,
+            exposureId,
             timestep
         );
 
         const summary = await this.applyTransformer(
-            artifact,
+            exposureId,
             timestep,
             filePath,
             summaryWriter
@@ -104,12 +75,12 @@ export default class ArtifactProcessor{
             }
         }else if(summary !== null && summary !== undefined){
             // The transformer returned a manageable object in memory
-            await this.saveSummary(artifact, timestep, summary);
+            await this.saveSummary(exposureId, timestep, summary);
         }
 
-        if(artifact.export){
+        if(this.modifier.exposure[exposureId].export){
             const resultForExport = await this.loadResultForExport(filePath);
-            await this.exportArtifactResults(artifact, timestep, resultForExport);
+            await this.exportArtifactResults(exposureId, timestep, resultForExport);
         }
     }
 
@@ -123,13 +94,13 @@ export default class ArtifactProcessor{
         return await readMsgpackFile(filePath);
     }
 
-    private async exportArtifactResults(artifact: Artifact, timestep: number, result: any){
-        const exportConfig = artifact.export;
+    private async exportArtifactResults(exposureId: any, timestep: number, result: any){
+        const exportConfig = this.modifier.exposure[exposureId].export;
         if(!exportConfig) return;
 
-        let { name, type, handler, opts } = exportConfig;
+        let { name, type, handler, options } = exportConfig;
         if(exportConfig.type !== 'glb'){
-            throw new Error(`[${this.pluginName} plugin]: the "${type}" (type is not yet supported (${artifact.id} artifact).`);
+            throw new Error(`[${this.pluginName} plugin]: the "${type}" (type is not yet supported (${this.modifierId} modifier).`);
         }
 
         const exporter = this.getBuiltInExporter(name);
@@ -140,20 +111,20 @@ export default class ArtifactProcessor{
             throw new Error(`[${this.pluginName} plugin]: the "${handler}" method is not available in ${name}.`);
         }
 
-        const artifactKey = slugify(artifact.id || name || 'artifact');
+        const artifactKey = slugify(this.modifierId || name || 'modifier');
 
         const objectName = `trajectory-${this.trajectoryId}/analysis-${this.analysisId}/glb/${timestep}/${artifactKey}.${type}`;
         // @ts-ignore
-        await exporter[handler](result, objectName, opts);
+        await exporter[handler](result, objectName, options);
     }
 
-    private async saveRawResult(artifact: Artifact, timestep: number, filePath: string){
-        const artifactKey = slugify(artifact.id);
+    private async saveRawResult(exposureId: any, timestep: number, filePath: string){
+        const outputKey = slugify(exposureId);
         const storageKey = [
             'plugins',
             `trajectory-${this.trajectoryId}`,
             `analysis-${this.analysisId}`,
-            artifactKey,
+            exposureId,
             `timestep-${timestep}.msgpack`
         ].join('/');
 
@@ -164,13 +135,13 @@ export default class ArtifactProcessor{
         this.recorder.recordUpload(SYS_BUCKETS.PLUGINS, storageKey);
     }
 
-    private async saveSummary(artifact: Artifact, timestep: number, summary: any){
-        const artifactKey = slugify(artifact.id);
+    private async saveSummary(exposureId: any, timestep: number, summary: any){
+        const outputKey = slugify(exposureId);
         const storageKey = [
             'plugins',
             `trajectory-${this.trajectoryId}`,
             `analysis-${this.analysisId}`,
-            artifactKey,
+            outputKey,
             `timestep-${timestep}.msgpack`
         ].join('/');
 
@@ -189,26 +160,29 @@ export default class ArtifactProcessor{
     }
 
     private async applyTransformer(
-        artifact: Artifact,
+        exposureId: string,
         timestep: number,
         filePath: string,
         summaryWriter: SummaryStreamWriter
     ): Promise<any | null>{
-        const transformer = await this.loadTransformer(artifact);
+        const transformer = await this.loadTransformer(exposureId);
+        const exposure = this.modifier.exposure[exposureId];
         if(!transformer) return null;
-
-        const ctx: ArtifactTransformContext = {
+        
+        const ctx: ModifierTransformContext = {
             pluginName: this.pluginName,
             trajectoryId: this.trajectoryId,
             analysisId: this.analysisId,
+            modifier: this.modifier,
             timestep,
-            artifact,
+            exposureId,
+            exposure,
             filePath,
             iterateChunks: () => {
-                if(!artifact.iterableKey){
-                    throw new Error(`[${this.pluginName} plugin]: iterateChunks() is only allowed when "iterableKey" is defined for artifact "${artifact.id}".`);
+                if(!exposure.iterable){
+                    throw new Error(`[${this.pluginName} plugin]: iterateChunks() is only allowed when "iterable" is defined for modifier "${exposureId}".`);
                 }
-                return this.iterateIterableChunks(artifact, filePath);
+                return this.iterateIterableChunks(exposureId, filePath);
             },
             readAllAsBuffer: () => fsp.readFile(filePath),
             writeChunk: (chunk: unknown) => summaryWriter.append(chunk)
@@ -218,19 +192,20 @@ export default class ArtifactProcessor{
     }
 
     private async *iterateIterableChunks(
-        artifact: Artifact,
+        exposureId: string,
         filePath: string
     ): AsyncIterable<Buffer>{
-        const chunkSize = artifact.iterableChunkSize ?? 10_000;
-        const opts = { iterableKey: artifact.iterableKey, chunkSize };
+        const { iterableChunkSize, iterable } = this.modifier.exposure[exposureId];
+        const chunkSize = iterableChunkSize ?? 10_000;
+        const opts = { iterableKey: iterable, chunkSize };
         for await(const slice of decodeArrayStreamFromFile(filePath, opts)){
             const json = JSON.stringify(slice);
             yield Buffer.from(json, 'utf-8');
         }
     }
     
-    private async loadTransformer(artifact: Artifact): Promise<ArtifactTransformer | null>{
-        const fileName = `${slugify(artifact.id)}.ts`;
+    private async loadTransformer(exposureId: string): Promise<ModifierTransformer | null>{
+        const fileName = `${slugify(exposureId)}.ts`;
         const fullPath = path.join(this.pluginsDir, this.pluginName, 'transformers', fileName);
         
         try{
@@ -240,9 +215,9 @@ export default class ArtifactProcessor{
         }
 
         const mod = await import(fullPath);
-        const func = mod.default as ArtifactTransformer | undefined;
+        const func = mod.default as ModifierTransformer | undefined;
         if(typeof func !== 'function'){
-            throw new Error(`[${this.pluginName} plugin]: transformer for artifact "${artifact.id}" must export a default function.`);
+            throw new Error(`[${this.pluginName} plugin]: transformer for modifier "${exposureId}" must export a default function.`);
         }
         return func;
     }

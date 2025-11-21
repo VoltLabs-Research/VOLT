@@ -22,7 +22,7 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
     const analyses = await Analysis.find({ trajectory: trajectoryId }).lean();
     const promises = analyses.map(async (analysis) => {
         const analysisId = analysis._id.toString();
-        const analysisPreviews = `trajectory-${trajectoryId}/plugins/${analysis.plugin}/${analysis.artifact}/analisis-${analysisId}`;
+        const analysisPreviews = `trajectory-${trajectoryId}/plugins/${analysis.plugin}/${analysis.modifier}/analisis-${analysisId}`;
         await rasterizeGLBs(analysisPreviews, SYS_BUCKETS.MODELS, SYS_BUCKETS.RASTERIZER, trajectory, opts);
     });
     await Promise.all(promises);

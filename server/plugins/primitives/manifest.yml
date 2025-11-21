@@ -7,7 +7,7 @@ homepage: https://github.com/rodyherrera/OpenDXA
 # Per Frame Document Listing
 listing:
     # /dashboard/trajectory/{trajectoryId}/analysis/{analysisId}/dislocations/
-    - dislocations:
+    dislocation-analysis:
         trajectory: trajectory.name
         identificationMode: Identification Mode
         timestep: Timestep
@@ -19,7 +19,7 @@ listing:
         createdAt: Created At
 
     # /dashboard/trajectory/{trajectoryId}/analysis/{analysisId}/structure-analysis/
-    - structure-analysis:
+    structure-analysis:
         trajectory: trajectory.name
         analysisMethod: Identification Mode
         identificationRate: Identification Rate
@@ -31,7 +31,7 @@ listing:
 
 modifiers:
     # Dislocation Analysis Modifier
-    - dislocations:
+    dislocation-analysis:
         preset:
             structureIdentificationOnly: false
         exposure:
@@ -108,12 +108,12 @@ modifiers:
                 results: structure_stats.msgpack
             
     # Common Neighbor Analysis Modifier
-    - structure-identification:
+    common-neighbor-analysis:
         preset:
             identificationMode: CNA
             structureIdentificationOnly: true
         exposure:
-            structure-identification:
+            common-neighbor-analysis:
                 results: atoms.msgpack
                 displayName: Common Neighbor Analysis (CNA)
                 icon: PiCirclesThreeLight
@@ -121,12 +121,12 @@ modifiers:
                 raster: true
 
     # Polyhedral Template Matching Modifier
-    - structure-identification:
+    polyhedral-template-matching:
         preset:
             identificationMode: PTM
             structureIdentificationOnly: true
         exposure:
-            structure-identification:
+            polyhedral-template-matching:
                 results: atoms.msgpack
                 displayName: Polyhedral Template Matching (PTM)
                 icon: HiCubeTransparent
@@ -134,12 +134,12 @@ modifiers:
                 raster: true
 
     # Diamond Identifier Modifier
-    - structure-identification:
+    diamond-identifier:
         preset:
             identificationMode: DIAMOND
             structureIdentificationOnly: true
         exposure:
-            structure-identification:
+            diamond-identifier:
                 results: atoms.msgpack
                 displayName: Diamond Identifier
                 icon: RiVipDiamondLine
