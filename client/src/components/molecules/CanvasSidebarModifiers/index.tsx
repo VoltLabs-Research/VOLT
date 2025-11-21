@@ -1,23 +1,24 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { PiEngine } from 'react-icons/pi';
 import { IoIosStats } from "react-icons/io";
 import { CiImageOn } from 'react-icons/ci';
 import { useNavigate } from 'react-router';
-import useModifiers from '@/hooks/plugins/use-modifiers';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
 import useAnalysisConfigStore from '@/stores/analysis-config';
-import IconResolver from '@/components/atoms/IconResolver';
+import DynamicIcon from '@/components/atoms/DynamicIcon';
 import useEditorUIStore from '@/stores/ui/editor';
 import useModifiersStore from '@/stores/modifiers';
+import usePluginStore from '@/stores/plugins';
 import './CanvasSidebarModifiers.css';
 
 const CanvasSidebarModifiers = () => {
     const logger = useLogger('canvas-sidebar-modifiers');
-    const { modifiers } = useModifiers();
     const activeModifiers = useEditorUIStore((state) => state.activeModifiers);
     const toggleModifiers = useEditorUIStore((state) => state.toggleModifier);
+    const modifiers = usePluginStore((state) => state.getModifiers());
+    const fetchManifests = usePluginStore((state) => state.fetchManifests);
 
     const structureIdentification = useModifiersStore((state) => state.structureIdentification);
     const computeAnalyses = useModifiersStore((state) => state.computeAnalyses);
@@ -31,6 +32,10 @@ const CanvasSidebarModifiers = () => {
 
     // We save the previous state to detect which modifiers have just been activated
     const prevActiveRef = useRef<string[]>(activeModifiers);
+
+    useEffect(() => {
+        fetchManifests();
+    }, []);
 
     useEffect(() => {
         if(!trajectory?._id){
@@ -58,12 +63,12 @@ const CanvasSidebarModifiers = () => {
         prevActiveRef.current = activeModifiers;
     }, [activeModifiers, analysisConfig, structureIdentification, trajectory, logger]);
 
-    const allModifiers = [
+    const allModifiers = useMemo(() => ([
         ...modifiers.map((mod) => ({
             title: mod.exposure.displayName,
             modifierId: mod.modifierId,
-            Icon: () => <IconResolver iconName={mod.exposure.icon} />
-         })),
+            Icon: () => <DynamicIcon iconName={mod.exposure.icon ?? ''} />
+        })),
         {
             Icon: PiEngine,
             title: 'Render Settings',
@@ -92,15 +97,15 @@ const CanvasSidebarModifiers = () => {
             title: 'Dislocations Render Options',
             modifierId: 'render-options'
         }*/
-    ];
+    ]), [modifiers, idRateSeries?.length]);
 
     return (
         <>
             <div className='editor-sidebar-scene-container'>
                 <div className='editor-sidebar-scene-options-container'>
-                    {allModifiers.map((option, index) => (
+                    {allModifiers.map((option) => (
                         <CanvasSidebarOption
-                            key={index}
+                            key={option.modifierId}
                             option={option}
                             isLoading={option.isLoading}
                             activeOption={activeModifiers.includes(option.modifierId ? option.modifierId : '')}
