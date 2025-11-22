@@ -83,6 +83,7 @@ configureApp({
         'plugins',
         'teams',
         'team-invitations',
+        'analysis-config',
         'raster',
         'trajectories',
         'notifications',

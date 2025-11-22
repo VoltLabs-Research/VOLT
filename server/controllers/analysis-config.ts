@@ -29,8 +29,8 @@ const factory = new HandlerFactory({
     fields: [],
 });
 
-export const getAnalysisById = factory.getOne();
-export const deleteAnalysisById = factory.deleteOne();
+export const getAnalysisConfigById = factory.getOne();
+export const deleteAnalysisConfigById = factory.deleteOne();
 
 export const getAnalysisDislocations = async (req: Request, res: Response) => {
   try{
@@ -91,7 +91,7 @@ export const getAnalysisDislocations = async (req: Request, res: Response) => {
 };
 
 // List analysis configs by team
-export const listAnalysissByTeam = async (req: Request, res: Response) => {
+export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => {
     try{
         const userId = (req as any).user?.id;
         const { teamId } = req.params as { teamId: string };
@@ -135,6 +135,8 @@ export const listAnalysissByTeam = async (req: Request, res: Response) => {
         pipeline.push(
             { $sort: { createdAt: -1 } },
             { $project: {
+                plugin: 1,
+                modifier: 1,
                 crystalStructure: 1,
                 identificationMode: 1,
                 maxTrialCircuitSize: 1,
@@ -148,6 +150,10 @@ export const listAnalysissByTeam = async (req: Request, res: Response) => {
                 structureIdentificationOnly: 1,
                 structureAnalysis: 1,
                 simulationCell: 1,
+                totalFrames: { $ifNull: ['$totalFrames', 0] },
+                completedFrames: { $ifNull: ['$completedFrames', 0] },
+                startedAt: 1,
+                finishedAt: 1,
                 createdAt: 1,
                 trajectory: 1,
                 dislocationsCount: { $size: { $ifNull: ['$dislocations', []] } }

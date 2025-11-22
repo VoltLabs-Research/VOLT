@@ -6,12 +6,12 @@ homepage: https://github.com/rodyherrera/OpenDXA
 
 # Per Frame Document Listing
 listing:
-    # /dashboard/trajectory/{trajectoryId}/analysis/{analysisId}/dislocations/
+    # /dashboard/trajectory/{trajectoryId}/analysis/{analysisId}/dislocation-a/
     dislocation-analysis:
         aggregators:
             displayName: Dislocation Analysis
             count: true
-        analysis.trajectory.name: Trajectory
+        trajectory: Trajectory
         analysis.config.identificationMode: Identification Mode
         timestep: Timestep
         analysis.config.rmsd: RMSD
@@ -26,6 +26,16 @@ modifiers:
     dislocation-analysis:
         preset:
             structureIdentificationOnly: false
+        analysisSelection:
+            title:
+                - path: config.identificationMode
+                - path: createdAt
+                - path: config.RMSD
+                  visibleWhen:
+                    config.identificationMode: PTM
+            description:
+                - path: config.maxTrialCircuitSize
+                - path: config.circuitStretchability
         exposure:
             dislocation-analysis:
                 results: dislocations.msgpack
@@ -104,6 +114,13 @@ modifiers:
         preset:
             identificationMode: CNA
             structureIdentificationOnly: true
+        analysisSelection:
+            title:
+                - path: config.identificationMode
+                - path: createdAt
+            description:
+                - path: config.crystalStructure
+                - path: config.structureIdentificationOnly
         exposure:
             common-neighbor-analysis:
                 results: atoms.msgpack
@@ -117,6 +134,15 @@ modifiers:
         preset:
             identificationMode: PTM
             structureIdentificationOnly: true
+        analysisSelection:
+            title:
+                - path: config.identificationMode
+                - path: createdAt
+                - path: config.RMSD
+            description:
+                - path: config.maxTrialCircuitSize
+                - path: config.circuitStretchability
+                - path: config.RMSD
         exposure:
             polyhedral-template-matching:
                 results: atoms.msgpack
@@ -130,6 +156,13 @@ modifiers:
         preset:
             identificationMode: DIAMOND
             structureIdentificationOnly: true
+        analysisSelection:
+            title:
+                - path: config.identificationMode
+                - path: createdAt
+            description:
+                - path: config.crystalStructure
+                - path: config.structureIdentificationOnly
         exposure:
             diamond-identifier:
                 results: atoms.msgpack
@@ -156,7 +189,7 @@ entrypoint:
         identificationMode:
             type: select
             default: PTM
-            label: Identification Modifier
+            label: Identification Mode
             values:
                 PTM: Polyhedral Template Matching (PTM)
                 CNA: Common Neighbor Analysis (CNA)

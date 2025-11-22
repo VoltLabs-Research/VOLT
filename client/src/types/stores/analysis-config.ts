@@ -1,21 +1,19 @@
-import type { AnalysisConfig } from '@/types/models';
+import type { Analysis } from '@/types/models';
 
 export interface AnalysisConfigState{
-    analysisConfig: AnalysisConfig;
-    dislocationsLoading: boolean;
-    analysisDislocations: any[];
+    analysisConfig: Analysis | null;
     isLoading: boolean;
+    error: string | null;
+    dislocationsLoading: boolean;
+    analysisDislocationsById: Record<string, any[]>;
+    dislocationsLoadingById: Record<string, boolean>;
 }
 
 export interface AnalysisConfigActions{
     setIsLoading: (loading: boolean) => void;
     resetAnalysisConfig: () => void;
     getDislocationsByAnalysisId: (analysisId: string) => void;
-    updateAnalysisConfig: (config: Partial<AnalysisConfig>) => void;
-    setAnalysisConfig: <K extends keyof AnalysisConfig>(
-        key: K,
-        value: AnalysisConfig[K]
-    ) => void;
+    updateAnalysisConfig: (analysis?: Analysis | null) => void;
 }
 
 export type AnalysisConfigStore = AnalysisConfigState & AnalysisConfigActions;

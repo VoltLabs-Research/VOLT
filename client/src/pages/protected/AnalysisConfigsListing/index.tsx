@@ -65,53 +65,44 @@ const AnalysisConfigsListing = () => {
     {
       title: 'Trajectory',
       sortable: true,
-      key: 'trajectory',
-      render: (v) => (typeof v === 'object' ? v?.name ?? '\u2014' : String(v)),
-      skeleton: { variant: 'text', width: 120 }
+      key: 'trajectory.name',
+      render: (_value, row) => row?.trajectory?.name ?? '—',
+      skeleton: { variant: 'text', width: 140 }
     },
     {
-      title: 'Crystal Structure',
+      title: 'Plugin',
       sortable: true,
-      key: 'crystalStructure',
-      skeleton: { variant: 'rounded', width: 110, height: 24 }
+      key: 'plugin',
+      render: (value) => (value ? String(value) : '—'),
+      skeleton: { variant: 'text', width: 110 }
     },
     {
-      title: 'Identification Mode',
+      title: 'Modifier',
       sortable: true,
-      key: 'identificationMode',
-      skeleton: { variant: 'rounded', width: 110, height: 24 }
+      key: 'modifier',
+      render: (value) => (value ? String(value) : '—'),
+      skeleton: { variant: 'text', width: 130 }
     },
     {
-      title: 'RMSD',
+      title: 'Total Frames',
       sortable: true,
-      key: 'RMSD',
-      render: (v) => (typeof v === 'number' ? v.toFixed(3) : String(v ?? '\u2014')),
-      skeleton: { variant: 'text', width: 60 }
+      key: 'totalFrames',
+      render: (value) => (typeof value === 'number' ? value.toLocaleString() : '—'),
+      skeleton: { variant: 'text', width: 90 }
     },
     {
-      title: 'Max Trial Circuit',
+      title: 'Completed Frames',
       sortable: true,
-      key: 'maxTrialCircuitSize',
-      skeleton: { variant: 'text', width: 60 }
-    },
-    {
-      title: 'Circuit Stretchability',
-      sortable: true,
-      key: 'circuitStretchability',
-      skeleton: { variant: 'text', width: 80 }
-    },
-    {
-      title: 'Dislocations',
-      sortable: true,
-      key: 'dislocationsCount',
-      skeleton: { variant: 'text', width: 40 }
+      key: 'completedFrames',
+      render: (value) => (typeof value === 'number' ? value.toLocaleString() : '—'),
+      skeleton: { variant: 'text', width: 110 }
     },
     {
       title: 'Created',
       sortable: true,
       key: 'createdAt',
-      render: (v) => formatTimeAgo(v),
-      skeleton: { variant: 'text', width: 90 }
+      render: (value) => formatTimeAgo(value),
+      skeleton: { variant: 'text', width: 100 }
     }
   ], [])
 

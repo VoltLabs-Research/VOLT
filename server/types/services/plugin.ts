@@ -1,5 +1,15 @@
 export type BuiltInExports = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter';
 export type ArgType = 'select' | 'number' | 'boolean';
+export interface AnalysisSelectionField{
+    path: string;
+    label?: string;
+    visibleWhen?: Record<string, any>;
+};
+
+export interface AnalysisSelectionConfig{
+    title?: AnalysisSelectionField[];
+    description?: AnalysisSelectionField[];
+};
 
 export interface Manifest{
     name: string;
@@ -34,6 +44,7 @@ export interface Exposure{
 export interface Modifier{
     preset?: Record<string, any>;
     exposure: Record<string, Exposure>;
+    analysisSelection?: AnalysisSelectionConfig;
 };
 
 export interface EntrypointArgument{

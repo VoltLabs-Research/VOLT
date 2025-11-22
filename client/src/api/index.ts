@@ -110,6 +110,11 @@ async function get<T = any>(
     url: string,
     config?: AxiosRequestConfig
 ): Promise<{ data: T }>{
+    if(config?.signal){
+        const response = await withRetry(() => client.get<T>(url, config));
+        return { data: response.data };
+    }
+
     const deduplicationKey = generateDeduplicationKey('GET', url);
 
     return requestDeduplicator.deduplicate(deduplicationKey, async () => {

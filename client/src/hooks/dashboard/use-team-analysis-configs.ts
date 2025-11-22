@@ -3,8 +3,9 @@ import { api } from '@/api';
 
 type ConfigItem = {
   _id: string;
-  crystalStructure: string;
-  identificationMode: string;
+  plugin: string;
+  modifier: string;
+  config: Record<string, any>;
   createdAt?: string;
   trajectory?: { _id: string; name: string } | string;
 };

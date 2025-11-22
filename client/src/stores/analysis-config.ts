@@ -21,32 +21,18 @@
 **/
 
 import { create } from 'zustand';
-import type { AnalysisConfig } from '@/types/models';
+import type { Analysis } from '@/types/models';
 import type { AnalysisConfigStore } from '@/types/stores/analysis-config';
 import type { ApiResponse } from '@/types/api';
 import { api } from '@/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 
-const DEFAULT_ANALYSIS_CONFIG: AnalysisConfig = {
-  crystalStructure: 'BCC',
-  identificationMode: 'CNA',
-  maxTrialCircuitSize: 14.0,
-  circuitStretchability: 9.0,
-  RMSD: 0.10,
-  defectMeshSmoothingLevel: 8,
-  lineSmoothingLevel: 5,
-  linePointInterval: 2.5,
-  onlyPerfectDislocations: false,
-  markCoreAtoms: false,
-  structureIdentificationOnly: false
-};
-
 const initialState = {
-  analysisConfig: DEFAULT_ANALYSIS_CONFIG,
+  analysisConfig: null as Analysis | null,
   isLoading: true,
-  // Nuevo: mapa por análisis
+  error: null as string | null,
+  dislocationsLoading: false,
   analysisDislocationsById: {} as Record<string, any[]>,
-  // Opcional: loading por análisis
   dislocationsLoadingById: {} as Record<string, boolean>
 };
 
@@ -62,51 +48,54 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
 
     async getDislocationsByAnalysisId(analysisId: string){
       const req = api.get<ApiResponse<any>>(`/analysis-config/${analysisId}/dislocations`);
+      set((state) => ({
+        dislocationsLoadingById: {
+          ...state.dislocationsLoadingById,
+          [analysisId]: true
+        }
+      }));
 
       return asyncAction(() => req, {
         loadingKey: 'dislocationsLoading', 
-        onSuccess: (res: any) => {
-          const current = get().analysisDislocationsById || {};
+        onSuccess: (res: any, state) => {
+          const current = state.analysisDislocationsById || {};
+          const currentLoading = state.dislocationsLoadingById || {};
           return {
             analysisDislocationsById: {
               ...current,
               [analysisId]: res.data?.data ?? []
+            },
+            dislocationsLoadingById: {
+              ...currentLoading,
+              [analysisId]: false
             }
           };
         },
-        onError: (error) => {
-          const current = get().analysisDislocationsById || {};
-          // Enhance context
-          if (error?.context) {
-            error.context.analysisId = analysisId;
-            error.context.operation = 'getDislocationsByAnalysisId';
-          }
+        onError: (_error, state) => {
+          const current = state.analysisDislocationsById || {};
+          const currentLoading = state.dislocationsLoadingById || {};
           return {
             analysisDislocationsById: {
               ...current,
               [analysisId]: []
+            },
+            dislocationsLoadingById: {
+              ...currentLoading,
+              [analysisId]: false
             }
           };
         }
       });
     },
 
-    setAnalysisConfig(key: string, value: any){
-      const currentConfig = get().analysisConfig;
+    updateAnalysisConfig(config?: Analysis | null){
       set({
-        analysisConfig: { ...currentConfig, [key]: value },
-      });
-    },
-
-    updateAnalysisConfig(config: Partial<AnalysisConfig>){
-      const currentConfig = get().analysisConfig;
-      set({
-        analysisConfig: { ...currentConfig, ...config },
+        analysisConfig: config ?? null
       });
     },
 
     resetAnalysisConfig(){
-      set({ analysisConfig: DEFAULT_ANALYSIS_CONFIG });
+      set({ analysisConfig: null });
     },
 
     setIsLoading(loading: boolean){

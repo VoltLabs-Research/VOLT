@@ -1,4 +1,4 @@
-import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios';
 import { generateDeduplicationKey } from '@/api/request-deduplicator';
 import { classifyError } from '@/api/error';
 import { notifyApiError } from '@/api/error-notification';
@@ -34,6 +34,9 @@ export const setupInterceptors = (axiosInstance: AxiosInstance): void => {
         // const duration = Date.now() - (response.config as any).metadata?.startTime;
         return response;
     }, (error) => {
+        if(axios.isCancel(error) || error?.code === 'ERR_CANCELED'){
+            return Promise.reject(error);
+        }
         const classifiedError = classifyError(error);
         
         notifyApiError(classifiedError);

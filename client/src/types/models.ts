@@ -66,7 +66,7 @@ export interface Trajectory{
     _id: string;
     name: string;
     team: Team | string;
-    analysis: [AnalysisConfig];
+    analysis: Analysis[];
     frames: TimestepInfo[];
     stats: TrajectoryStats;
     preview?: any;
@@ -96,17 +96,17 @@ export interface Notification{
     updatedAt: string;
 }
 
-export interface AnalysisConfig {
-    _id?: string; 
-    crystalStructure: 'FCC' | 'BCC' | 'HCP' | 'CUBIC_DIAMOND' | 'HEX_DIAMOND' | 'SC';
-    identificationMode: 'PTM' | 'CNA' | 'DIAMOND';
-    maxTrialCircuitSize: number;
-    circuitStretchability: number;
-    defectMeshSmoothingLevel: number;
-    lineSmoothingLevel: number;
-    linePointInterval: number;
-    onlyPerfectDislocations: boolean;
-    markCoreAtoms: boolean;
-    RMSD: number;
-    structureIdentificationOnly: boolean;
+export interface Analysis {
+    _id: string;
+    plugin: string;
+    modifier: string;
+    config: Record<string, any>;
+    trajectory: Trajectory | string;
+    totalFrames?: number;
+    completedFrames?: number;
+    startedAt?: string;
+    finishedAt?: string;
+    lastFrameProcessed?: number;
+    createdAt: string;
+    updatedAt: string;
 }

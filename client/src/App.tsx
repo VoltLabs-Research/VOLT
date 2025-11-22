@@ -33,10 +33,7 @@ import DashboardLayout from './components/atoms/DashboardLayout';
 import Studio from './pages/protected/Studio';
 import HeadlessRasterizerView from './pages/protected/HeadlessRasterizerView';
 import Messages from './pages/protected/Messages';
-import StructureAnalysisListing from './pages/protected/StructureAnalysisListing';
-import DislocationsListing from './pages/protected/DislocationsListing';
 import PluginListing from './pages/protected/PluginListing';
-import SimulationCellsListing from './pages/protected/SimulationCellsListing';
 import AnalysisConfigsListing from './pages/protected/AnalysisConfigsListing';
 import PageWrapper from '@/components/atoms/animations/PageWrapper';
 import GlobalTransitionOverlay from '@/components/atoms/animations/GlobalTransitionOverlay';
@@ -187,15 +184,6 @@ const App = () => {
                             />
 
                             <Route
-                                path='/dashboard/structure-analysis/list'
-                                element={
-                                    <PageWrapper>
-                                        <StructureAnalysisListing />
-                                    </PageWrapper>
-                                }
-                            />
-
-                            <Route
                                 path='/dashboard/analysis-configs/list'
                                 element={
                                     <PageWrapper>
@@ -205,14 +193,6 @@ const App = () => {
                             />
 
                             <Route
-                                path='/dashboard/dislocations/list'
-                                element={
-                                    <PageWrapper>
-                                        <DislocationsListing />
-                                    </PageWrapper>
-                                }
-                            />
-                            <Route
                                 path='/dashboard/trajectory/:trajectoryId/plugin/:pluginId/listing/:listingKey'
                                 element={
                                     <PageWrapper>
@@ -220,15 +200,7 @@ const App = () => {
                                     </PageWrapper>
                                 }
                             />
-                            <Route
-                                path='/dashboard/simulation-cells/list'
-                                element={
-                                    <PageWrapper>
-                                        <SimulationCellsListing />
-                                    </PageWrapper>
-                                }
-                            />
-                            
+                          
                             <Route
                                 path='/dashboard/studio/'
                                 element={
