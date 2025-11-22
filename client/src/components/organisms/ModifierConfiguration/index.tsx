@@ -59,7 +59,6 @@ const ModifierConfiguration = ({
                 label: argDef.label || key,
                 fieldKey: key
             };
-
             switch(argDef.type){
                 case 'select':
                     field.type = 'select';

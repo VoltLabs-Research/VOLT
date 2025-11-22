@@ -1,12 +1,16 @@
 import { Router } from 'express';
 import * as controllers from '@/controllers/plugins';
 import * as authMiddleware from '@/middlewares/authentication';
+import * as trajMiddleware from '@/middlewares/trajectory';
 
 const router = Router();
 
-// router.use(authMiddleware.protect);
+router.use(authMiddleware.protect);
 
 router.get('/manifests', controllers.getManifests);
-router.get('/:pluginId/modifier/:modifierId/trajectory/:trajectoryId', controllers.evaluateModifier);
+router.post(
+    '/:pluginId/modifier/:modifierId/trajectory/:id', 
+    trajMiddleware.checkTeamMembershipForTrajectory,
+    controllers.evaluateModifier);
 
 export default router;

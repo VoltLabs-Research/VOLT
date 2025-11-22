@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { catchAsync } from '@/utilities/runtime';
 import { getAnalysisQueue } from '@/queues';
-import { Analysis, Trajectory } from '@/models';
+import { Analysis } from '@/models';
 import PluginRegistry from '@/services/plugins/plugins-registry';
 import RuntimeError from '@/utilities/runtime-error';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
@@ -9,7 +9,7 @@ import TrajectoryFS from '@/services/trajectory-fs';
 
 // /api/plugins/:pluginId/modifier/:modifierId/trajectory/:trajectoryId { config }
 export const evaluateModifier = catchAsync(async (req: Request, res: Response, next : NextFunction) => {
-    const { pluginId, modifierId, trajectoryId } = req.params;
+    const { pluginId, modifierId, id: trajectoryId } = req.params;
     const { config } = req.body;
     const { trajectory } = res.locals;
 
@@ -21,7 +21,7 @@ export const evaluateModifier = catchAsync(async (req: Request, res: Response, n
     const analysis = await Analysis.create({
         plugin: pluginId,
         modifier: modifierId,
-        config: {},
+        config,
         trajectory: trajectoryId
     });
 
@@ -32,9 +32,10 @@ export const evaluateModifier = catchAsync(async (req: Request, res: Response, n
         const inputFile = await trajectoryFS.getDump(timestep);
         jobs.push({
             trajectoryId,
-            config: {},
+            config,
             inputFile,
             analysisId,
+            modifierId,
             plugin: pluginId
         });
     });

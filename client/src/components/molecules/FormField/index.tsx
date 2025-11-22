@@ -13,6 +13,7 @@ interface FormFieldProps {
     inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
     options?: string[];
     isLoading?: boolean;
+    renderInPortal?: boolean;
 }
 
 const FormField: React.FC<FormFieldProps> = ({
@@ -24,7 +25,7 @@ const FormField: React.FC<FormFieldProps> = ({
     inputProps,
     options,
     isLoading = false,
-    renderInPortal
+    renderInPortal = false
 }) => {
 
     const handleChange = (value: string | number | boolean) => {
@@ -34,7 +35,6 @@ const FormField: React.FC<FormFieldProps> = ({
     const renderInput = () => {
         switch (fieldType) {
             case 'select':
-                // Pass renderInPortal if present in props
                 return (
                     <Select
                         options={options || []}
