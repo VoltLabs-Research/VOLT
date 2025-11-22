@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { PiEngine } from 'react-icons/pi';
-import { IoIosStats } from "react-icons/io";
 import { CiImageOn } from 'react-icons/ci';
 import { useNavigate } from 'react-router';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
@@ -73,22 +72,6 @@ const CanvasSidebarModifiers = () => {
             title: 'Raster Frames',
             modifierId: 'raster',
             isPlugin: false
-        }, {
-            Icon: IoIosStats,
-            title: 'Analysis Metrics',
-            modifierId: 'compute-analysis-differences',
-            isLoading: !idRateSeries?.length,
-            isPlugin: false,
-            options: [{
-                title: 'Total Dislocation Segments',
-                modifierId: 'total-dislocation-segments'
-            }, {
-                title: 'Average Segment Length',
-                modifierId: 'average-segment-length'
-            }, {
-                title: 'Identification Rate',
-                modifierId: 'structure-identification-rate'
-            }]
         }, /*{
             Icon: GrFormViewHide,
             title: 'Dislocations Render Options',
