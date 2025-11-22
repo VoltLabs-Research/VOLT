@@ -6,6 +6,7 @@ import type { Trajectory } from '@/types/models';
 import usePluginStore, { type RenderableExposure } from '@/stores/plugins';
 import './CanvasSidebarScene.css';
 import DynamicIcon from '@/components/atoms/DynamicIcon';
+import useAnalysisConfigStore from '@/stores/analysis-config';
 
 interface CanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
@@ -15,12 +16,13 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     const setActiveScene = useModelStore((state) => state.setActiveScene);
     const activeScene = useModelStore((state) => state.activeScene);
     const getRenderableExposures = usePluginStore((state) => state.getRenderableExposures);
+    const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
 
     const [pluginExposures, setPluginExposures] = useState<RenderableExposure[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if(!trajectory?._id) return;
+        if(!trajectory?._id || !analysisConfig?._id) return;
 
         const loadExposures = async () => {
             setLoading(true);
@@ -35,7 +37,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         };
 
         loadExposures();
-    }, [trajectory?._id, getRenderableExposures]);
+    }, [trajectory?._id, analysisConfig, getRenderableExposures]);
 
     const defaultOptions = [{
         Icon: TbObjectScan,

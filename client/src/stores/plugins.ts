@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { api } from '@/api';
 import type { ApiResponse } from '@/types/api';
 import type { Exposure, Manifest, EntrypointArgument } from '@/types/stores/plugins';
+import useAnalysisConfigStore from './analysis-config';
 
 export type ManifestsByPluginId = Record<string, Manifest>;
 
@@ -129,31 +130,28 @@ const usePluginStore = create<PluginState>((set, get) => {
                 return renderableCache.get(cacheKey)!;
             }
 
-            const trajectory = await api.get<ApiResponse<any>>(`/trajectories/${trajectoryId}?populate=analysis`);
-            const analyses = trajectory.data.data.analysis;
+            const { analysisConfig } = useAnalysisConfigStore.getState();
+            if(!analysisConfig?._id) return [];
+            
             await get().fetchManifests();
             const { manifests } = get();
             const renderableExposures: RenderableExposure[] = [];
-            for(const analysis of analyses){
-                const { plugin: pluginId, modifier: modifierId, _id: analysisId } = analysis;
-                console.log(pluginId, modifierId, analysisId)
-                const manifest = manifests[pluginId];
-                if(!manifest) continue;
+            const { plugin, modifier } = analysisConfig;
+            const manifest = manifests[plugin];
+            if(!manifest) return [];
 
-                const modifier = manifest.modifiers?.[modifierId];
-                if(!modifier?.exposure) continue;
+            const modifierConfig = manifest.modifiers?.[modifier];
+            if(!modifierConfig?.exposure) return [];
 
-                console.log(modifier.exposure)
-                for(const [exposureId, exposure] of Object.entries(modifier.exposure)){
-                    if(exposure.canvas && exposure.export?.type === 'glb'){
-                        renderableExposures.push({
-                            ...exposure,
-                            pluginId,
-                            modifierId,
-                            analysisId,
-                            exposureId
-                        });      
-                    }
+            for(const [exposureId, exposure] of Object.entries(modifierConfig.exposure)){
+                if(exposure.canvas && exposure.export.type === 'glb'){
+                    renderableExposures.push({
+                        ...exposure,
+                        pluginId: plugin,
+                        modifierId: modifier,
+                        analysisId: analysisConfig._id,
+                        exposureId
+                    }); 
                 }
             }
             

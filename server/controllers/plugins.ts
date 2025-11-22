@@ -2,12 +2,10 @@ import { NextFunction, Request, Response } from 'express';
 import { catchAsync, slugify } from '@/utilities/runtime';
 import { getAnalysisQueue } from '@/queues';
 import { Analysis } from '@/models';
-import { Exposure } from '@/types/services/plugin';
 import PluginRegistry from '@/services/plugins/plugins-registry';
 import RuntimeError from '@/utilities/runtime-error';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import TrajectoryFS from '@/services/trajectory-fs';
-import ManifestService from '@/services/plugins/manifest-service';
 import { getStream, statObject } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
 
