@@ -14,6 +14,11 @@ router.get(
     trajMiddleware.checkTeamMembershipForTrajectory,
     controllers.getPluginExposureGLB);
 
+router.get(
+    '/listing/:pluginId/:listingKey/:id',
+    trajMiddleware.checkTeamMembershipForTrajectory,
+    controllers.getPluginListingDocuments);
+
 router.post(
     '/:pluginId/modifier/:modifierId/trajectory/:id', 
     trajMiddleware.checkTeamMembershipForTrajectory,

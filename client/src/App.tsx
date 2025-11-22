@@ -35,6 +35,7 @@ import HeadlessRasterizerView from './pages/protected/HeadlessRasterizerView';
 import Messages from './pages/protected/Messages';
 import StructureAnalysisListing from './pages/protected/StructureAnalysisListing';
 import DislocationsListing from './pages/protected/DislocationsListing';
+import PluginListing from './pages/protected/PluginListing';
 import SimulationCellsListing from './pages/protected/SimulationCellsListing';
 import AnalysisConfigsListing from './pages/protected/AnalysisConfigsListing';
 import PageWrapper from '@/components/atoms/animations/PageWrapper';
@@ -208,6 +209,14 @@ const App = () => {
                                 element={
                                     <PageWrapper>
                                         <DislocationsListing />
+                                    </PageWrapper>
+                                }
+                            />
+                            <Route
+                                path='/dashboard/trajectory/:trajectoryId/plugin/:pluginId/listing/:listingKey'
+                                element={
+                                    <PageWrapper>
+                                        <PluginListing />
                                     </PageWrapper>
                                 }
                             />

@@ -34,16 +34,16 @@ const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
 
     return (
         <div className='dashboard-stats-container'>
-            {cards
-                .filter(({ key }) => key !== 'dislocations')
-                .map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain }, index) => {
+            {cards.map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain }, index) => {
                 const iconKey = name.replace(/\s+/g, '');
                 const Icon = icons[iconKey] || HiOutlineServerStack;
                 const up = (lastMonthStatus ?? 0) >= 0;
+                const isClickable = Boolean(listingUrl && !listingUrl.includes(':trajectoryId'));
                 return (
                     <div 
-                        onClick={() => navigate(listingUrl)}
-                        className='dashboard-stat-container' 
+                        onClick={() => isClickable && listingUrl && navigate(listingUrl)}
+                        className='dashboard-stat-container'
+                        style={{ cursor: isClickable ? 'pointer' : 'default' }}
                         key={index}
                     >
                         <div className='dashboard-stat-left-container'>

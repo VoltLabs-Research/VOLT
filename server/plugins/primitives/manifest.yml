@@ -11,26 +11,15 @@ listing:
         aggregators:
             displayName: Dislocation Analysis
             count: true
-        trajectory: trajectory.name
-        identificationMode: Identification Mode
+        analysis.trajectory.name: Trajectory
+        analysis.config.identificationMode: Identification Mode
         timestep: Timestep
-        rmsd: analysis.config.rmsd
-        totalSegments: Segments
-        averageSegmentLength: Avg Seg. Length
-        totalLength: Total Length
-        totalPoints: Points
-        createdAt: Created At
-
-    # /dashboard/trajectory/{trajectoryId}/analysis/{analysisId}/structure-analysis/
-    dislocation-analysis_structure-analysis:
-        trajectory: trajectory.name
-        analysisMethod: Identification Mode
-        identificationRate: Identification Rate
-        identifiedStructures: Total Identified
-        unidentifiedStructures: Total Unidentified
-        totalAtoms: Total Atoms
-        timestep: Timestep
-        createdAt: Created At
+        analysis.config.rmsd: RMSD
+        metadata.count: Segments
+        summary.average_segment_length: Avg Seg. Length
+        summary.total_length: Total Length
+        summary.total_points: Points
+        analysis.createdAt: Created At
 
 modifiers:
     # Dislocation Analysis Modifier

@@ -1,0 +1,193 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import DocumentListing, { type ColumnConfig } from '@/components/organisms/DocumentListing';
+import { api } from '@/api';
+import type { ApiResponse } from '@/types/api';
+import formatTimeAgo from '@/utilities/formatTimeAgo';
+import { Skeleton } from '@mui/material';
+
+type ColumnDef = {
+    path: string;
+    label: string;
+};
+
+type ListingResponse = {
+    meta: {
+        displayName: string;
+        listingKey: string;
+        pluginId: string;
+        listingUrl?: string;
+        columns: ColumnDef[];
+    };
+    rows: any[];
+    page: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+};
+
+const getValueByPath = (obj: any, path: string) => {
+    if(!obj || !path) return undefined;
+    if(path.indexOf('.') === -1){
+        return obj?.[path];
+    }
+    return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj);
+};
+
+const formatCellValue = (value: any, path: string) => {
+    if(value === null || value === undefined){
+        return '—';
+    }
+
+    if(typeof value === 'number'){
+        return Number.isInteger(value) ? value.toLocaleString() : Number(value).toFixed(4).replace(/\.?0+$/, '');
+    }
+
+    if(typeof value === 'string'){
+        if(path.toLowerCase().includes('createdat') || path.toLowerCase().endsWith('date')){
+            return formatTimeAgo(value);
+        }
+        return value;
+    }
+
+    if(Array.isArray(value)){
+        return value.map((v) => formatCellValue(v, path)).join(', ');
+    }
+
+    if(typeof value === 'object'){
+        if('name' in value && typeof value.name === 'string'){
+            return String(value.name);
+        }
+        return JSON.stringify(value);
+    }
+
+    return String(value);
+};
+
+const normalizeRows = (rows: any[], columns: ColumnDef[]) => {
+    return rows.map((row) => {
+        const enriched = { ...row };
+        columns.forEach(({ path }) => {
+            const resolved = getValueByPath(row, path);
+            enriched[path] = formatCellValue(resolved, path);
+        });
+        if(!enriched._id){
+            enriched._id = row.timestep ?? row._objectKey ?? `row-${Math.random().toString(36).slice(2)}`;
+        }
+        return enriched;
+    });
+};
+
+const buildColumns = (columnDefs: ColumnDef[]): ColumnConfig[] => {
+    return columnDefs.map(({ path, label }) => ({
+        key: path,
+        title: label,
+        sortable: true,
+        render: (_value: any, row: any) => formatCellValue(getValueByPath(row, path), path),
+        skeleton: { variant: 'text', width: 120 }
+    }));
+};
+
+const PluginListing = () => {
+    const { pluginId, listingKey, trajectoryId } = useParams();
+    const [columns, setColumns] = useState<ColumnConfig[]>([]);
+    const [rows, setRows] = useState<any[]>([]);
+    const [meta, setMeta] = useState<{ displayName?: string; trajectoryName?: string } | null>(null);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const pageSize = 50;
+
+    const fetchPage = useCallback(async (nextPage: number) => {
+        if(!pluginId || !listingKey || !trajectoryId){
+            setError('Invalid listing parameters.');
+            return;
+        }
+
+        setError(null);
+        if(nextPage === 1){
+            setLoading(true);
+        }else{
+            setIsFetchingMore(true);
+        }
+
+        try{
+            const res = await api.get<ApiResponse<ListingResponse>>(
+                `/plugins/listing/${pluginId}/${listingKey}/${trajectoryId}`,
+                { params: { page: nextPage, limit: pageSize } }
+            );
+            const payload = res.data.data;
+            setMeta(payload.meta ?? null);
+
+            const normalizedRows = normalizeRows(payload.rows ?? [], payload.meta?.columns ?? []);
+            setColumns(buildColumns(payload.meta?.columns ?? []));
+
+            setRows((prev) => (nextPage === 1 ? normalizedRows : [...prev, ...normalizedRows]));
+            setPage(nextPage);
+            setHasMore(payload.hasMore ?? ((payload.page * payload.limit) < payload.total));
+        }catch(err: any){
+            const message = err?.response?.data?.message || err?.message || 'Failed to load listing.';
+            setError(message);
+        }finally{
+            setLoading(false);
+            setIsFetchingMore(false);
+        }
+    }, [listingKey, pluginId, trajectoryId]);
+
+    useEffect(() => {
+        setRows([]);
+        setColumns([]);
+        setMeta(null);
+        setPage(1);
+        setHasMore(false);
+
+        if(pluginId && listingKey && trajectoryId){
+            fetchPage(1);
+        }
+    }, [pluginId, listingKey, trajectoryId, fetchPage]);
+
+    const title = meta?.displayName ?? listingKey ?? 'Listing';
+    const trajectoryName = meta?.trajectoryName ?? trajectoryId ?? 'Trajectory';
+    const breadcrumbs = useMemo(() => {
+        const trail = ['Dashboard', 'Trajectories'];
+        trail.push(
+            meta?.trajectoryName ? (
+                meta.trajectoryName
+            ) : (
+                <Skeleton variant='text' width={160} sx={{ display: 'inline-block' }} />
+            )
+        );
+        trail.push(
+            meta?.displayName ? (
+                meta.displayName
+            ) : (
+                <Skeleton variant='text' width={200} sx={{ display: 'inline-block' }} />
+            )
+        );
+        return trail;
+    }, [meta, trajectoryId, listingKey]);
+
+    return (
+        <DocumentListing
+            title={title}
+            breadcrumbs={breadcrumbs}
+            columns={columns}
+            data={rows}
+            isLoading={loading}
+            emptyMessage={error ?? 'No documents found.'}
+            enableInfinite
+            hasMore={hasMore}
+            isFetchingMore={isFetchingMore}
+            onLoadMore={() => {
+                if(!loading && !isFetchingMore && hasMore){
+                    fetchPage(page + 1);
+                }
+            }}
+        />
+    );
+};
+
+export default PluginListing;
+

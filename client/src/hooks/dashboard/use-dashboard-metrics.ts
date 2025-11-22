@@ -109,7 +109,7 @@ const buildCard = (
     metricKey: string,
     baseLabels: string[],
     fallbackName: string,
-    fallbackUrl: string
+    fallbackUrl?: string
 ) => {
     const meta = data.meta?.[metricKey];
     const name = meta?.displayName ?? fallbackName;
@@ -216,7 +216,7 @@ export const useDashboardMetrics = (
             .filter((key) => !['trajectories', 'analysis'].includes(key));
 
         const dynamicCards = dynamicKeys.map((key) =>
-            buildCard(data, key, baseLabels, key, `/dashboard/plugins/${key}`)
+            buildCard(data, key, baseLabels, key)
         );
 
         return [...staticCards, ...dynamicCards];

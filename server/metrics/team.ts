@@ -50,16 +50,43 @@ export const getMetricsByTeamId = async (teamId: string) => {
     ];
 
     const analyses = await Analysis.find({ trajectory: { $in: trajectoryIds } })
-        .select('plugin modifier')
+        .select('_id plugin modifier trajectory')
         .lean();
     
     const pluginsByModifier = new Map<string, Set<string>>();
+    const pluginPointers = new Map<string, Map<string, { trajectoryId: string; analysisId: string }>>();
+    const pluginModifierAnalyses = new Map<string, Map<string, Array<{ trajectoryId: string; analysisId: string; createdAt?: string }>>>();
+
     for(const analysis of analyses){
         if(!analysis.plugin || !analysis.modifier) continue;
-        if(!pluginsByModifier.has(analysis.plugin)){
-            pluginsByModifier.set(analysis.plugin, new Set());
+        const pluginKey = String(analysis.plugin);
+        const modifierKey = String(analysis.modifier);
+        const trajectoryKey = (analysis.trajectory as any)?.toString?.() ?? String(analysis.trajectory ?? '');
+        const analysisKey = analysis._id?.toString?.() ?? '';
+        if(!trajectoryKey || !analysisKey) continue;
+
+        if(!pluginsByModifier.has(pluginKey)){
+            pluginsByModifier.set(pluginKey, new Set());
         }
-        pluginsByModifier.get(analysis.plugin)!.add(analysis.modifier);
+        pluginsByModifier.get(pluginKey)!.add(modifierKey);
+
+        const pointerMap = pluginPointers.get(pluginKey) ?? new Map<string, { trajectoryId: string; analysisId: string }>();
+        if(!pointerMap.has(modifierKey)){
+            pointerMap.set(modifierKey, { trajectoryId: trajectoryKey, analysisId: analysisKey });
+        }
+        pluginPointers.set(pluginKey, pointerMap);
+
+        const analysisMap =
+            pluginModifierAnalyses.get(pluginKey) ??
+            new Map<string, Array<{ trajectoryId: string; analysisId: string; createdAt?: string }>>();
+        const arr = analysisMap.get(modifierKey) ?? [];
+        arr.push({
+            trajectoryId: trajectoryKey,
+            analysisId: analysisKey,
+            createdAt: analysis.createdAt ? new Date(analysis.createdAt).toISOString() : undefined
+        });
+        analysisMap.set(modifierKey, arr);
+        pluginModifierAnalyses.set(pluginKey, analysisMap);
     }
 
     for(const [pluginId, modifiers] of pluginsByModifier.entries()){
@@ -74,13 +101,27 @@ export const getMetricsByTeamId = async (teamId: string) => {
         
         for(const listingKey of listingKeys){
             const entry = listingEntries[listingKey];
+            const modifierId = listingKey.split('_')[0];
+            const pointer = pluginPointers.get(pluginId)?.get(modifierId);
+            const analysisPointers =
+                pluginModifierAnalyses.get(pluginId)?.get(modifierId) ?? [];
+            const listingUrl = pointer
+                ? `/dashboard/trajectory/${pointer.trajectoryId}/plugin/${pluginId}/listing/${listingKey}`
+                : undefined;
+
+            if(!analysisPointers.length){
+                continue;
+            }
+
             aggregators.push({
                 agg: new MongoListingCountAggregator(
                     {
                         kind: 'listing',
                         listingKey,
                         pluginId,
-                        displayName: entry?.aggregators?.displayName ?? listingKey
+                        displayName: entry?.aggregators?.displayName ?? listingKey,
+                        listingUrl,
+                        analysisPointers
                     },
                     { metricKey: listingKey }
                 ),

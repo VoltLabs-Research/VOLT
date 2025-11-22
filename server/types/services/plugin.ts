@@ -9,6 +9,7 @@ export interface Manifest{
     homepage: string;
     entrypoint: Entrypoint;
     modifiers: Record<string, Modifier>;
+    listing?: Record<string, any>;
 
 };
 

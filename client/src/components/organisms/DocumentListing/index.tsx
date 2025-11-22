@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from 'react'
 import { RxDotsHorizontal } from 'react-icons/rx'
 import { RiListUnordered } from 'react-icons/ri'
 import DocumentListingTable from '@/components/molecules/DocumentListingTable'
+import { Skeleton } from '@mui/material'
 import './DocumentListing.css'
 
 // Helpers to support deep key access and robust search/sort across nested values
@@ -189,12 +190,20 @@ const DocumentListing = ({
                     <div className='breadcrumbs-container'>
                         {breadcrumbs.map((name, index) => (
                             <div className='breadcrumb-item-container' key={index}>
-                                <p className='breadcrumb-item-name'>{name}</p>
+                                {typeof name === 'string' ? (
+                                    <p className='breadcrumb-item-name'>{name}</p>
+                                ) : (
+                                    name
+                                )}
                             </div>
                         ))}
                     </div>
                     <div className='document-listing-header-title-container'>
-                        <h3 className='document-listing-header-title'>{title}</h3>
+                        {isLoading && !data.length ? (
+                            <Skeleton variant='text' width={220} height={32} />
+                        ) : (
+                            <h3 className='document-listing-header-title'>{title}</h3>
+                        )}
                         <i className='document-listing-header-icon-container'>
                             <RxDotsHorizontal />
                         </i>
