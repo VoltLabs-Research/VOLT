@@ -30,7 +30,17 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     }, [activeScene]);
 
     useEffect(() => {
-        if(!trajectory?._id || !analysisConfigId) return;
+        if(!trajectory?._id || !analysisConfigId) {
+            setLoading(false);
+            return;
+        }
+
+        // Don't load renderable models if trajectory has no analysis
+        if(!trajectory.analysis || trajectory.analysis.length === 0) {
+            setLoading(false);
+            setPluginExposures([]);
+            return;
+        }
 
         const loadExposures = async () => {
             setLoading(true);
@@ -46,7 +56,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         };
 
         loadExposures();
-    }, [trajectory?._id, analysisConfigId, getRenderableExposures]);
+    }, [trajectory?._id, trajectory?.analysis, analysisConfigId, getRenderableExposures]);
 
     useEffect(() => {
         if(loading || !analysisConfigId) return;
@@ -122,7 +132,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                             option={{
                                 Icon: option.Icon,
                                 title: option.title,
-                                modifierId: option?.pluginInfo?.modifierId
+                                modifierId: ''
                             }}
                         />
                     </div>
