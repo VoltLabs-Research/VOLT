@@ -26,6 +26,7 @@ import usePerformanceSettingsStore from '@/stores/editor/perfomance-settings';
 import useCameraSettings from '@/stores/editor/camera-config';
 import { useRendererSettings } from '@/stores/editor/renderer-settings';
 import useOrbitControlsSettings from '@/stores/editor/orbit-controls';
+import usePluginStore from '@/stores/plugins';
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
 import './Scene3D.css';
 
@@ -84,6 +85,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 
 	const activeScene = useModelStore((s) => s.activeScene);
 	const activeModel = useModelStore((s) => s.activeModel);
+	const manifests = usePluginStore((s) => s.manifests);
 
 	const toggleCanvasGrid = useEditorUIStore((s) => s.toggleCanvasGrid);
 	const toggleEditorWidgets = useEditorUIStore((s) => s.toggleEditorWidgets);
@@ -258,8 +260,51 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 		}
 	}, []);
 
-	const isDefectScene = useMemo(() => ['defect_mesh', 'interface_mesh'].includes(activeScene), [activeScene]);
-	const isTrajectoryScene = useMemo(() => ['trajectory', 'atoms_colored_by_type', 'dislocations'].includes(activeScene), [activeScene]);
+	/**
+	 * Determina el tipo de escena basándose en el exporter usado,
+	 * no en el nombre de la escena.
+	 * - MeshExporter -> Defect Scene (defect_mesh, interface_mesh)
+	 * - AtomisticExporter/DislocationExporter -> Trajectory Scene (trajectory, atoms_colored_by_type, dislocations)
+	 */
+	const { isDefectScene, isTrajectoryScene } = useMemo(() => {
+		// Para escenas default, usar el comportamiento antiguo basado en nombre
+		if (activeScene.source === 'default') {
+			const sceneType = activeScene.sceneType;
+			return {
+				isDefectScene: ['defect_mesh', 'interface_mesh'].includes(sceneType),
+				isTrajectoryScene: ['trajectory', 'atoms_colored_by_type', 'dislocations'].includes(sceneType)
+			};
+		}
+
+		// Para escenas de plugin, usar el exporter
+		if (activeScene.source === 'plugin') {
+			const { exposureId } = activeScene;
+			
+			// Buscar el manifest del plugin para obtener el exporter
+			for (const manifest of Object.values(manifests)) {
+				const modifiers = manifest.modifiers ?? {};
+				for (const modifier of Object.values(modifiers)) {
+					const exposure = modifier.exposure?.[exposureId];
+					if (exposure?.export) {
+						const exporterName = exposure.export.name;
+						
+						// MeshExporter -> Defect Scene
+						if (exporterName === 'MeshExporter') {
+							return { isDefectScene: true, isTrajectoryScene: false };
+						}
+						
+						// AtomisticExporter o DislocationExporter -> Trajectory Scene
+						if (exporterName === 'AtomisticExporter' || exporterName === 'DislocationExporter') {
+							return { isDefectScene: false, isTrajectoryScene: true };
+						}
+					}
+				}
+			}
+		}
+
+		// Fallback: no aplica ninguno
+		return { isDefectScene: false, isTrajectoryScene: false };
+	}, [activeScene, manifests]);
 
 	const canvasStyle = useMemo(() => ({
 		width: '100%',
