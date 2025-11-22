@@ -94,9 +94,9 @@ const buildColumns = (columnDefs: ColumnDef[], pluginId?: string, manifests?: an
         }
 
         return {
-            key: path,
-            title: label,
-            sortable: true,
+        key: path,
+        title: label,
+        sortable: true,
             render: (_value: any, row: any) => {
                 const value = getValueByPath(row, path);
                 if (isSelectField && value != null) {

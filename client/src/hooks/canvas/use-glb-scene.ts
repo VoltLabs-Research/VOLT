@@ -169,9 +169,7 @@ export default function useGlbScene(params: UseGlbSceneParams){
 
     // Model loading
     const getTargetUrl = useCallback((): string | null => {
-        console.log('Get Target URL:', activeScene)
         if(!activeModel || !activeScene) return null;
-        console.log('passed validation');
 
         if(activeScene.source === 'plugin'){
             const { analysisId, exposureId } = activeScene;

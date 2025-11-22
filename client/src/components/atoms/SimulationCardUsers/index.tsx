@@ -20,18 +20,10 @@
  * SOFTWARE.
  **/
 
-import React, { useEffect, useState, memo } from 'react';
+import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { socketService } from '@/services/socketio';
+import { useTrajectoryPresence, type CardPresenceUser } from '@/hooks/socket/use-trajectory-presence';
 import './SimulationCardUsers.css';
-
-export interface CardPresenceUser {
-    id: string;
-    email?: string;
-    firstName?: string;
-    lastName?: string;
-    isAnonymous: boolean;
-}
 
 interface SimulationCardUsersProps {
     trajectoryId: string;
@@ -51,146 +43,52 @@ const getInitialsFromUser = (user: CardPresenceUser): string => {
     return '?';
 };
 
-const getDisplayName = (user: CardPresenceUser): string => {
-    if (user.firstName && user.lastName) {
-        return `${user.firstName} ${user.lastName}`;
-    }
-    if (user.email) {
-        return user.email.split('@')[0];
-    }
-    return 'Anonymous';
-};
-
 const SimulationCardUsers: React.FC<SimulationCardUsersProps> = memo(({ trajectoryId }) => {
-    const [users, setUsers] = useState<CardPresenceUser[]>([]);
-    const [isConnected, setIsConnected] = useState(() => socketService.isConnected());
-
-    console.log(`[SimulationCardUsers] Component mounted for trajectory: ${trajectoryId}, isConnected: ${isConnected}`);
-
-    // Monitor connection status
-    useEffect(() => {
-        const unsubscribe = socketService.onConnectionChange((connected) => {
-            console.log(`[SimulationCardUsers] Connection changed: ${connected}`);
-            setIsConnected(connected);
-        });
-
-        return unsubscribe;
-    }, []);
-
-    // Subscribe to canvas AND raster presence for this trajectory
-    useEffect(() => {
-        if (!isConnected || !trajectoryId) {
-            console.log(`[SimulationCardUsers] Skipping subscription - isConnected: ${isConnected}, trajectoryId: ${trajectoryId}`);
-            return;
-        }
-
-        console.log(`[SimulationCardUsers] Setting up observers for trajectory: ${trajectoryId}`);
-
-        // Track canvas and raster users separately, then combine
-        let canvasUsers: CardPresenceUser[] = [];
-        let rasterUsers: CardPresenceUser[] = [];
-
-        const updateCombinedUsers = () => {
-            const combined = [...canvasUsers, ...rasterUsers];
-            // Deduplicate by user ID
-            const uniqueUsers = combined.filter((user, index, self) => 
-                index === self.findIndex(u => u.id === user.id)
-            );
-            console.log(`[SimulationCardUsers] Combined users for trajectory ${trajectoryId}:`, uniqueUsers);
-            setUsers(uniqueUsers);
-        };
-
-        // IMPORTANT: Register trajectory-specific listeners BEFORE observing to avoid race condition
-        // Listen for canvas users updates for THIS SPECIFIC trajectory
-        const canvasEventName = `canvas_users_update:${trajectoryId}`;
-        const unsubscribeCanvas = socketService.on(canvasEventName, (updatedUsers: CardPresenceUser[]) => {
-            console.log(`[SimulationCardUsers] Received ${canvasEventName}:`, updatedUsers);
-            canvasUsers = updatedUsers;
-            updateCombinedUsers();
-        });
-
-        // Listen for raster users updates for THIS SPECIFIC trajectory
-        const rasterEventName = `raster_users_update:${trajectoryId}`;
-        const unsubscribeRaster = socketService.on(rasterEventName, (updatedUsers: CardPresenceUser[]) => {
-            console.log(`[SimulationCardUsers] Received ${rasterEventName}:`, updatedUsers);
-            rasterUsers = updatedUsers;
-            updateCombinedUsers();
-        });
-
-        console.log(`[SimulationCardUsers] Observing canvas & raster presence for trajectory: ${trajectoryId}`);
-
-        // Use OBSERVE events instead of SUBSCRIBE (doesn't join main room, won't appear in user list)
-        socketService.emit('observe_canvas_presence', {
-            trajectoryId
-        }).then(() => {
-            console.log(`[SimulationCardUsers] Successfully observing canvas:${trajectoryId}`);
-        }).catch((error) => {
-            console.error('[SimulationCardUsers] Failed to observe canvas for card:', error);
-        });
-
-        socketService.emit('observe_raster_presence', {
-            trajectoryId
-        }).then(() => {
-            console.log(`[SimulationCardUsers] Successfully observing raster:${trajectoryId}`);
-        }).catch((error) => {
-            console.error('[SimulationCardUsers] Failed to observe raster for card:', error);
-        });
-
-        return () => {
-            console.log(`[SimulationCardUsers] Unsubscribing from trajectory: ${trajectoryId}`);
-            unsubscribeCanvas();
-            unsubscribeRaster();
-        };
-    }, [trajectoryId, isConnected]);
+    // Use centralized hook that prevents duplicate subscriptions
+    const { users } = useTrajectoryPresence(trajectoryId);
 
     // Show max 3 avatars in card
     const displayUsers = users.slice(0, 3);
     const extraCount = Math.max(0, users.length - 3);
 
     // Always render to keep useEffect subscriptions active, hide with CSS
-    if (!users || users.length === 0) {
-        return <div className='simulation-card-users' style={{ display: 'none' }} />;
+    if (users.length === 0) {
+        return null;
     }
 
     return (
-        <div className='simulation-card-users'>
-            <div className='card-users-avatars'>
-                <AnimatePresence mode='popLayout'>
-                    {displayUsers.map((user) => (
+        <div className="simulation-card-users">
+            <div className="card-users-avatars">
+                <AnimatePresence mode="popLayout">
+                    {displayUsers.map((user, index) => (
                         <motion.div
                             key={user.id}
-                            className='card-user-avatar-wrapper'
+                            className="card-user-avatar-wrapper"
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0, opacity: 0 }}
-                            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                            title={getDisplayName(user)}
+                            transition={{ delay: index * 0.05 }}
                         >
-                            <div className='card-user-avatar'>
-                                <span className='avatar-initials'>
-                                    {getInitialsFromUser(user)}
-                                </span>
-                                {user.isAnonymous && (
-                                    <div className='avatar-anonymous-badge'>?</div>
-                                )}
+                            <div className="card-user-avatar">
+                                <div className="avatar-initials">{getInitialsFromUser(user)}</div>
+                                {user.isAnonymous && <div className="avatar-anonymous-badge">?</div>}
                             </div>
                         </motion.div>
                     ))}
+                    {extraCount > 0 && (
+                        <motion.div
+                            key="extra"
+                            className="card-user-avatar-wrapper"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
+                        >
+                            <div className="card-user-avatar card-user-avatar-extra">
+                                <div className="avatar-initials">+{extraCount}</div>
+                            </div>
+                        </motion.div>
+                    )}
                 </AnimatePresence>
-
-                {extraCount > 0 && (
-                    <motion.div
-                        className='card-user-avatar-wrapper'
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
-                        title={`${extraCount} more users`}
-                    >
-                        <div className='card-user-avatar card-user-avatar-extra'>
-                            <span className='avatar-initials'>+{extraCount}</span>
-                        </div>
-                    </motion.div>
-                )}
             </div>
         </div>
     );

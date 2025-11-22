@@ -69,6 +69,11 @@ abstract class BaseSocketModule{
      * Join a room!
      */
     protected joinRoom(socket: Socket, room: string): void{
+        // Check if socket is already in the room to prevent duplicate joins
+        if(socket.rooms.has(room)){
+            // console.log(`[${this.name}] Socket ${socket.id} already in room: ${room} (skipping duplicate join)`);
+            return;
+        }
         socket.join(room);
         console.log(`[${this.name}] Socket ${socket.id} joined room: ${room}`);
     }
