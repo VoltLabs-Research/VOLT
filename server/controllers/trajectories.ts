@@ -35,7 +35,7 @@ import RuntimeError from '@/utilities/runtime-error';
 import HandlerFactory from '@/controllers/handler-factory';
 import archiver from 'archiver';
 import { v4 } from 'uuid';
-import { getObject, getStream, statObject } from '@/utilities/buckets';
+import { getStream, statObject } from '@/utilities/buckets';
 import { getTimestepPreview, sendImage } from '@/utilities/raster';
 import { SYS_BUCKETS } from '@/config/minio';
 

@@ -127,7 +127,10 @@ export default class Plugin{
 
         for(const exposureId of Object.keys(modifier.exposure)){
             const resultsPath = results[exposureId];
-            if(!resultsPath) return;
+            if(!resultsPath){
+                console.warn(`[${this.pluginName} plugin] skipping exposure "${exposureId}" for modifier "${modifierId}" – missing results file.`);
+                continue;
+            }
             await processor.evaluate(exposureId, timestep, resultsPath);
         }
     }

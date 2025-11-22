@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { catchAsync } from '@/utilities/runtime';
+import { catchAsync, slugify } from '@/utilities/runtime';
 import { getAnalysisQueue } from '@/queues';
 import { Analysis } from '@/models';
 import { Exposure } from '@/types/services/plugin';
@@ -8,6 +8,8 @@ import RuntimeError from '@/utilities/runtime-error';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import TrajectoryFS from '@/services/trajectory-fs';
 import ManifestService from '@/services/plugins/manifest-service';
+import { getStream, statObject } from '@/utilities/buckets';
+import { SYS_BUCKETS } from '@/config/minio';
 
 // /api/plugins/:pluginId/modifier/:modifierId/trajectory/:trajectoryId { config }
 export const evaluateModifier = catchAsync(async (req: Request, res: Response, next : NextFunction) => {
@@ -53,24 +55,28 @@ export const evaluateModifier = catchAsync(async (req: Request, res: Response, n
     })
 });
 
-// /api/plugins/exposures/:trajectoryId/ 
-export const getTrajectoryExposures = catchAsync(async (req: Request, res: Response) => {
+export const getPluginExposureGLB = catchAsync(async (req: Request, res: Response) => {
+    const { timestep, analysisId, exposureId } = req.params;
     const { trajectory } = res.locals;
     const trajectoryId = trajectory._id.toString();
-    const analysis = await Analysis.find({ trajectory: trajectoryId });
-    if(!analysis){
-        return res.status(200).json({ status: 'success', data: [] });
+    const exposureKey = slugify(exposureId);
+
+    try{
+        const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/${exposureKey}.glb`;
+        const stat = await statObject(objectName, SYS_BUCKETS.MODELS);
+        const stream = await getStream(objectName, SYS_BUCKETS.MODELS);
+        res.setHeader('Content-Type', 'model/gltf-binary');
+        res.setHeader('Content-Length', stat.size);
+        res.setHeader('Content-Disposition', `inline; filename="${exposureId}_${timestep}.glb"`);
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        stream.pipe(res);
+    }catch(err){
+        console.error('[getPluginExposureGLB] Error:', err);
+        return res.status(404).json({ 
+            status: 'error', 
+            data: { error: `GLB not found for exposure ${exposureId} at timestep ${timestep}` }
+        });
     }
-    const exposures: Exposure[] = [];
-    const promises = analysis.map(async ({ plugin, modifier }) => {
-        const manifestService = new ManifestService(plugin);
-        const manifest = await manifestService.get();
-        const modifierConfig = manifest.modifiers[modifier];
-        const exposureConfigs = Object.values(modifierConfig.exposure);
-        exposures.push(...exposureConfigs);
-    });
-    await Promise.all(promises);
-    return res.status(200).json({ status: 'success', data: exposures });
 });
 
 export const getManifests = catchAsync(async (req: Request, res: Response) => {

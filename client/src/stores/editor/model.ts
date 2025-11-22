@@ -3,7 +3,7 @@ import type { ModelStore } from '@/types/stores/editor/model';
 
 const initialState = {
     activeModel: null,
-    activeScene: 'trajectory',
+    activeScene: { sceneType: 'trajectory', source: 'default' },
     isModelLoading: false
 };
 

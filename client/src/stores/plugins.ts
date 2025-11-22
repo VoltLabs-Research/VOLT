@@ -5,6 +5,13 @@ import type { Exposure, Manifest, EntrypointArgument } from '@/types/stores/plug
 
 export type ManifestsByPluginId = Record<string, Manifest>;
 
+export interface RenderableExposure extends Exposure{
+    pluginId: string;
+    modifierId: string;
+    analysisId: string;
+    exposureId: string;
+};
+
 export interface PluginState{
     plugins: string[];
     manifests: ManifestsByPluginId;
@@ -13,7 +20,8 @@ export interface PluginState{
     fetchManifests: () => Promise<void>;
     getModifiers: () => ResolvedModifier[];
     getAvailableArguments: (pluginId: string, modifierId: string) => Record<string, EntrypointArgument>;
-    fetchTrajectoryExposures(trajectoryId: string): Promise<void>;
+    fetchTrajectoryExposures: (trajectoryId: string) => Promise<Exposure[]>;
+    getRenderableExposures: (trajectoryId: string) => Promise<RenderableExposure[]>;
 };
 
 export type ResolvedModifier = {
@@ -49,7 +57,7 @@ const usePluginStore = create<PluginState>((set, get) => {
     let lastModifiers: ResolvedModifier[] = [];
     
     const argsCache = new Map<string, Record<string, EntrypointArgument>>();
-    const exposuresCache = new Map<string, Exposure[]>();
+    const renderableCache = new Map<string, RenderableExposure[]>();
 
     return {
         plugins: [],
@@ -115,23 +123,43 @@ const usePluginStore = create<PluginState>((set, get) => {
             return availableArgs;
         },
 
-        async fetchTrajectoryExposures(trajectoryId){
-            const cacheKey = trajectoryId;
-            if(exposuresCache.has(cacheKey)){
-                return exposuresCache.get(cacheKey)!;
+        async getRenderableExposures(trajectoryId: string){
+            const cacheKey = `renderable-${trajectoryId}`;
+            if(renderableCache.has(cacheKey)){
+                return renderableCache.get(cacheKey)!;
             }
 
-            try{
-                const res = await api.get<ApiResponse<Exposure[]>>(`/plugins/exposures/${trajectoryId}`);
-                const exposures = res.data.data || [];
-                exposuresCache.set(cacheKey, exposures);
-                exposuresCache.set(cacheKey, exposures);
-                return exposures;
-            }catch(error){
-                console.error(`Failed to fetch exposures for trajectory ${trajectoryId}:`, error);
-                return [];
+            const trajectory = await api.get<ApiResponse<any>>(`/trajectories/${trajectoryId}?populate=analysis`);
+            const analyses = trajectory.data.data.analysis;
+            await get().fetchManifests();
+            const { manifests } = get();
+            const renderableExposures: RenderableExposure[] = [];
+            for(const analysis of analyses){
+                const { plugin: pluginId, modifier: modifierId, _id: analysisId } = analysis;
+                console.log(pluginId, modifierId, analysisId)
+                const manifest = manifests[pluginId];
+                if(!manifest) continue;
+
+                const modifier = manifest.modifiers?.[modifierId];
+                if(!modifier?.exposure) continue;
+
+                console.log(modifier.exposure)
+                for(const [exposureId, exposure] of Object.entries(modifier.exposure)){
+                    if(exposure.canvas && exposure.export?.type === 'glb'){
+                        renderableExposures.push({
+                            ...exposure,
+                            pluginId,
+                            modifierId,
+                            analysisId,
+                            exposureId
+                        });      
+                    }
+                }
             }
-        },
+            
+            renderableCache.set(cacheKey, renderableExposures);
+            return renderableExposures;
+        }
     };
 });
 

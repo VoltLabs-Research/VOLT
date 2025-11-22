@@ -95,11 +95,11 @@ modifiers:
                         smoothIterations: 8
                         generateNormals: true
                         enableDoubleSided: true
-                    material:
-                        baseColor: [1.0, 1.0, 1.0, 1.0]
-                        metallic: 0.0
-                        roughness: 0.0
-                        emissive: [0.0, 0.0, 0.0]
+                        material:
+                            baseColor: [1.0, 1.0, 1.0, 1.0]
+                            metallic: 0.0
+                            roughness: 0.0
+                            emissive: [0.0, 0.0, 0.0]
 
             simulation-cell:
                 results: simulation_cell.msgpack

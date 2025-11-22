@@ -9,9 +9,10 @@ router.use(authMiddleware.protect);
 
 router.get('/manifests', controllers.getManifests);
 
-router.get('/exposures/:id',
+router.get(
+    '/glb/:id/:analysisId/:exposureId/:timestep',
     trajMiddleware.checkTeamMembershipForTrajectory,
-    controllers.getTrajectoryExposures);
+    controllers.getPluginExposureGLB);
 
 router.post(
     '/:pluginId/modifier/:modifierId/trajectory/:id', 

@@ -8,12 +8,8 @@ export interface TrajectoryGLBs{
 }
 
 export type SceneObjectType = 
-    | 'trajectory' 
-    | 'dislocations' 
-    | 'defect_mesh'
-    | 'core_atoms' 
-    | 'interface_mesh' 
-    | 'atoms_colored_by_type';
+    | { sceneType: string; source: 'default' }
+    | { sceneType: string; source: 'plugin'; analysisId: string; exposureId: string };
 
 export interface ModelData{
     modelBounds?: null,
@@ -21,14 +17,14 @@ export interface ModelData{
 }
 
 export interface ModelState{
-    activeScene: string;
+    activeScene: SceneObjectType;
     activeModel: ModelData | null;
     isModelLoading: boolean;
 }
 
 export interface ModelActions{
     selectModel: (glbs: any) => void;
-    setGlbsWithoutLoading: (glbs: any) => void; // Nuevo método
+    setGlbsWithoutLoading: (glbs: any) => void;
     reset: () => void;
     setIsModelLoading: (loading: boolean) => void;
     setModelBounds: (modelBounds: any) => void;

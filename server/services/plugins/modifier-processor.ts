@@ -111,9 +111,7 @@ export default class ArtifactProcessor{
             throw new Error(`[${this.pluginName} plugin]: the "${handler}" method is not available in ${name}.`);
         }
 
-        const artifactKey = slugify(this.modifierId || name || 'modifier');
-
-        const objectName = `trajectory-${this.trajectoryId}/analysis-${this.analysisId}/glb/${timestep}/${artifactKey}.${type}`;
+        const objectName = `trajectory-${this.trajectoryId}/analysis-${this.analysisId}/glb/${timestep}/${exposureId}.${type}`;
         // @ts-ignore
         await exporter[handler](result, objectName, options);
     }

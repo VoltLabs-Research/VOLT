@@ -1,12 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { TbObjectScan } from 'react-icons/tb';
-import { PiAtomThin, PiLineSegmentThin, PiTriangleDashedThin } from 'react-icons/pi';
-import { SiTraefikmesh } from 'react-icons/si';
-import { IoIosColorFilter } from 'react-icons/io';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
-import useModelStore, { type SceneObjectType } from '@/stores/editor/model';
+import useModelStore from '@/stores/editor/model';
 import type { Trajectory } from '@/types/models';
+import usePluginStore, { type RenderableExposure } from '@/stores/plugins';
 import './CanvasSidebarScene.css';
+import DynamicIcon from '@/components/atoms/DynamicIcon';
 
 interface CanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
@@ -15,58 +14,73 @@ interface CanvasSidebarSceneProps {
 const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) => {
     const setActiveScene = useModelStore((state) => state.setActiveScene);
     const activeScene = useModelStore((state) => state.activeScene);
+    const getRenderableExposures = usePluginStore((state) => state.getRenderableExposures);
 
-    const options = [{
+    const [pluginExposures, setPluginExposures] = useState<RenderableExposure[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if(!trajectory?._id) return;
+
+        const loadExposures = async () => {
+            setLoading(true);
+            try{
+                const exposures = await getRenderableExposures(trajectory?._id);
+                setPluginExposures(exposures);
+            }catch(error){
+                console.error('Failed to load plugin exposures:', error);
+            }finally{
+                setLoading(false);
+            }
+        };
+
+        loadExposures();
+    }, [trajectory?._id, getRenderableExposures]);
+
+    const defaultOptions = [{
         Icon: TbObjectScan,
         title: 'Frame Atoms',
-        sceneType: 'trajectory',
-        isAvailable: trajectory?.availableModels?.atomicStructure ?? true
-    }, /*{
-        Icon: PiLineSegmentThin,
-        title: 'Dislocations',
-        sceneType: 'dislocations',
-        isAvailable: trajectory?.availableModels?.dislocations ?? true
-    }, {
-        Icon: SiTraefikmesh,
-        title: 'Defect Mesh',
-        sceneType: 'defect_mesh',
-        isAvailable: trajectory?.availableModels?.dislocations ?? true
-    }, {
-        Icon: PiAtomThin,
-        title: 'Dislocation Core Atoms',
-        sceneType: 'core_atoms',
-        isAvailable: trajectory?.availableModels?.dislocations ?? true
-    }, {
-        Icon: PiTriangleDashedThin,
-        title: 'Interface Mesh',
-        sceneType: 'interface_mesh',
-        isAvailable: trajectory?.availableModels?.dislocations ?? true
-    }, {
-        Icon: IoIosColorFilter,
-        title: 'Structure Identification',
-        sceneType: 'atoms_colored_by_type',
-        isAvailable: trajectory?.availableModels?.structureIdentification ?? true
-    }*/];
+        sceneType: { sceneType: 'trajectory', source: 'default' }
+    }];
 
-    const onSelect = (option: SceneObjectType) => {
+    const pluginOptions = pluginExposures.map((exposure) => ({
+        Icon: () => <DynamicIcon iconName={exposure.icon!} />,
+        title: exposure.displayName || exposure.exposureId,
+        sceneType: {
+            sceneType: exposure.exposureId,
+            source: 'plugin',
+            analysisId: exposure.analysisId,
+            exposureId: exposure.exposureId
+        },
+        pluginInfo: {
+            pluginId: exposure.pluginId,
+            modifierId: exposure.modifierId
+        }
+    }));
+
+    const allOptions = [...defaultOptions, ...pluginOptions];
+
+    const onSelect = (option: any) => {
+        console.log('Selected option:', option)
         setActiveScene(option.sceneType);
     };
 
     return (
         <div className='editor-sidebar-scene-container'>
             <div className='editor-sidebar-scene-options-container'>
-                {options.map((option, index) => (
+                {allOptions.map((option, index) => (
                     <div
-                        key={index}
-                        style={{
-                            opacity: option.isAvailable ? 1 : 0.4,
-                            pointerEvents: option.isAvailable ? 'auto' : 'none'
-                        }}
+                        key={`${option.sceneType.source}-${option.sceneType.sceneType}-${index}`}
                     >
                         <CanvasSidebarOption
-                            onSelect={onSelect}
-                            activeOption={activeScene}
-                            option={option}
+                            onSelect={() => onSelect(option)}
+                            activeOption={false}
+                            isLoading={false}
+                            option={{
+                                Icon: option.Icon,
+                                title: option.title,
+                                modifierId: option?.pluginInfo?.modifierId
+                            }}
                         />
                     </div>
                 ))}

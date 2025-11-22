@@ -36,6 +36,8 @@ import ModelLoader from '@/utilities/glb/scene/model-loader';
 import AnimationController from '@/utilities/glb/scene/animation-controller';
 import InteractionController from '@/utilities/glb/scene/interaction-controllers';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
+import useTrajectoryStore from '@/stores/trajectories';
+import usePlaybackStore from '@/stores/editor/playback';
 
 export default function useGlbScene(params: UseGlbSceneParams){
     const { scene, camera, gl, invalidate } = useThree();
@@ -45,6 +47,8 @@ export default function useGlbScene(params: UseGlbSceneParams){
     const setModelBounds = useModelStore((s) => s.setModelBounds);
     const setIsModelLoading = useModelStore((s) => s.setIsModelLoading);
     const activeScene = useModelStore((state) => state.activeScene);
+    const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
+    const trajectory = useTrajectoryStore((state) => state.trajectory);
 
     const stateRef = useRef<ExtendedSceneState>({
         model: null,
@@ -100,26 +104,26 @@ export default function useGlbScene(params: UseGlbSceneParams){
     
     const modelSetupManager = useRef(
         new ModelSetupManager(
-        stateRef.current,
-        params,
-        clippingManager,
-        referenceManager,
-        transformManager,
-        setModelBounds,
-        invalidate
+            stateRef.current,
+            params,
+            clippingManager,
+            referenceManager,
+            transformManager,
+            setModelBounds,
+            invalidate
         )
     ).current;
 
     const modelLoader = useRef(
         new ModelLoader(
-        stateRef.current,
-        scene,
-        resourceManager,
-        modelSetupManager,
-        setIsModelLoading,
-        invalidate,
-        logger,
-        setLoadingState
+            stateRef.current,
+            scene,
+            resourceManager,
+            modelSetupManager,
+            setIsModelLoading,
+            invalidate,
+            logger,
+            setLoadingState
         )
     ).current;
 
@@ -129,14 +133,14 @@ export default function useGlbScene(params: UseGlbSceneParams){
 
     const interactionController = useRef(
         new InteractionController(
-        stateRef.current,
-        camera,
-        scene,
-        gl,
-        raycaster,
-        groundPlane.current,
-        selectionManager,
-        transformManager
+            stateRef.current,
+            camera,
+            scene,
+            gl,
+            raycaster,
+            groundPlane.current,
+            selectionManager,
+            transformManager
         )
     ).current;
 
@@ -165,8 +169,22 @@ export default function useGlbScene(params: UseGlbSceneParams){
 
     // Model loading
     const getTargetUrl = useCallback((): string | null => {
-        if(!activeModel?.glbs || !activeScene) return null;
-        return activeModel.glbs[activeScene];
+        console.log('Get Target URL:', activeScene)
+        if(!activeModel || !activeScene) return null;
+        console.log('passed validation');
+
+        if(activeScene.source === 'plugin'){
+            const { analysisId, exposureId } = activeScene;
+            const timestep = currentTimestep;
+            if(!trajectory?._id || timestep === undefined) return null;
+            return `/plugins/glb/${trajectory._id}/${analysisId}/${exposureId}/${timestep}`;
+        }
+
+        if(activeScene.source === 'default'){
+            if(!activeModel.glbs) return null;
+            return activeModel.glbs[activeScene.sceneType];
+        }
+        return null
     }, [activeModel, activeScene]);
 
     const updateScene = useCallback(() => {
