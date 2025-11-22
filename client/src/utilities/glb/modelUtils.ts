@@ -15,6 +15,15 @@ type LoadModelsParams = {
     concurrency?: number;
     signal?: AbortSignal;
     onProgress?: (progress: number, metrics?: { bps: number }) => void;
+    /**
+     * Límite de frames a precargar. Si no se especifica, precarga todos.
+     * Útil para simulaciones grandes para evitar consumo excesivo de RAM.
+     */
+    maxFramesToPreload?: number;
+    /**
+     * Frame actual para precargar frames cercanos (+-maxFramesToPreload/2)
+     */
+    currentFrameIndex?: number;
 };
     
 export const buildGlbUrl = (
@@ -60,17 +69,35 @@ export const fetchModels = async (params: LoadModelsParams): Promise<TimelineGLB
         preloadBehavior = true,
         concurrency = 3,
         signal,
-        onProgress
+        onProgress,
+        maxFramesToPreload,
+        currentFrameIndex
     } = params;
 
     const unique = Array.from(new Set(timesteps)).sort((a, b) => a - b);
+    
+    // Determinar qué frames precargar
+    let framesToPreload = unique;
+    
+    if (maxFramesToPreload && maxFramesToPreload > 0 && currentFrameIndex !== undefined) {
+        // Precargar solo frames cercanos al actual
+        const halfWindow = Math.floor(maxFramesToPreload / 2);
+        const startIdx = Math.max(0, currentFrameIndex - halfWindow);
+        const endIdx = Math.min(unique.length, currentFrameIndex + halfWindow + 1);
+        framesToPreload = unique.slice(startIdx, endIdx);
+        
+        console.log(`[fetchModels] Smart preload: Loading ${framesToPreload.length}/${unique.length} frames (window: ${halfWindow} frames around index ${currentFrameIndex})`);
+    } else if (unique.length > 50) {
+        // Advertencia si se van a precargar muchos frames
+        console.warn(`[fetchModels] WARNING: Preloading ${unique.length} frames. This may consume significant memory. Consider using maxFramesToPreload parameter.`);
+    }
 
     const urlsByTs: TimelineGLBMap = {};
     for (const ts of unique) {
         urlsByTs[ts] = resolveGlbUrl(trajectoryId, ts, analysisId);
     }
 
-    if (!preloadBehavior || unique.length === 0) {
+    if (!preloadBehavior || framesToPreload.length === 0) {
         onProgress?.(0, { bps: 0 });
         return urlsByTs;
     }
@@ -78,7 +105,7 @@ export const fetchModels = async (params: LoadModelsParams): Promise<TimelineGLB
     const endpoint = (u: string) => `${import.meta.env.VITE_API_URL}/api${u}`;
     const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
 
-    const totalFiles = unique.length;
+    const totalFiles = framesToPreload.length;
     let completedFiles = 0;
     const partials = new Map<number, number>();
 
@@ -101,8 +128,8 @@ export const fetchModels = async (params: LoadModelsParams): Promise<TimelineGLB
         onProgress?.(p, { bps: speedBps });
     };
 
-    const queue = [...unique];
-    const workers = Array.from({ length: Math.min(concurrency, unique.length) }, () => (async () => {
+    const queue = [...framesToPreload];
+    const workers = Array.from({ length: Math.min(concurrency, framesToPreload.length) }, () => (async () => {
         while (queue.length) {
             if (signal?.aborted) return;
             const ts = queue.shift() as number;

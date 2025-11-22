@@ -15,7 +15,12 @@ export interface TimestepState {
 
 export interface TimestepActions {
     computeTimestepData: (trajectory: Trajectory | null, currentTimestep?: number, cacheBuster?: number) => void;
-    loadModels: (preloadBehavior?: boolean) => Promise<TimelineGLBMap>;
+    loadModels: (
+        preloadBehavior?: boolean,
+        onProgress?: (p: number, m?: { bps: number }) => void,
+        maxFramesToPreload?: number,
+        currentFrameIndex?: number
+    ) => Promise<TimelineGLBMap>;
     reset: () => void;
 }
 

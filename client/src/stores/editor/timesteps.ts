@@ -37,7 +37,12 @@ const createTimestepData = (timesteps: number[]): TimestepData => ({
 const useTimestepStore = create<TimestepStore>()((set, get) => ({
     ...initialState,
 
-    async loadModels(preloadBehavior?: boolean, onProgress?: (p: number, m?: { bps: number }) => void): Promise<TimelineGLBMap>{
+    async loadModels(
+        preloadBehavior?: boolean, 
+        onProgress?: (p: number, m?: { bps: number }) => void,
+        maxFramesToPreload?: number,
+        currentFrameIndex?: number
+    ): Promise<TimelineGLBMap>{
         const trajectory = useTrajectoryStore.getState().trajectory;
         const analysis = useAnalysisConfigStore.getState().analysisConfig;
         const { timesteps } = get().timestepData;
@@ -54,7 +59,9 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
             timesteps,
             preloadBehavior,
             concurrency: 6,
-            onProgress
+            onProgress,
+            maxFramesToPreload,
+            currentFrameIndex
         });
 
         return map;

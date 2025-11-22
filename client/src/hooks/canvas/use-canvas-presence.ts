@@ -41,8 +41,6 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
     const [rasterUsers, setRasterUsers] = useState<CanvasPresenceUser[]>([]);
     const [isConnected, setIsConnected] = useState(() => socketService.isConnected());
 
-    console.log(`[use-canvas-presence] Hook initialized - trajectoryId: ${trajectoryId}, isConnected: ${isConnected}, enabled: ${enabled}`);
-
     // Monitor connection status
     useEffect(() => {
         // Set initial state

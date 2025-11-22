@@ -37,10 +37,22 @@ const usePlaybackStore = create<PlaybackStore>()((set, get) => ({
                 if(!didPreload){
                     set({ isPreloading: true, preloadProgress: 0 });
                     try{
-                        await useTimestepStore.getState().loadModels(true, (p, m) => {
-                            const mbps = m?.bps != null ? (m.bps * 8) / 1_000_000 : null;
-                            set({ preloadProgress: p, downlinkMbps: mbps });
-                        });
+                        // Determinar límite inteligente de precarga
+                        const frameCount = timesteps.length;
+                        const maxFramesToPreload = frameCount > 30 ? 20 : undefined; // Solo precargar 20 frames si hay más de 30
+                        const currentFrameIndex = get().currentTimestep !== undefined 
+                            ? timesteps.indexOf(get().currentTimestep!)
+                            : 0;
+                        
+                        await useTimestepStore.getState().loadModels(
+                            true, 
+                            (p, m) => {
+                                const mbps = m?.bps != null ? (m.bps * 8) / 1_000_000 : null;
+                                set({ preloadProgress: p, downlinkMbps: mbps });
+                            },
+                            maxFramesToPreload,
+                            currentFrameIndex
+                        );
                     }catch{}
                     finally{
                         set({ isPreloading: false, didPreload: true });
