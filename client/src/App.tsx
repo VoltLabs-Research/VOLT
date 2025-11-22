@@ -21,31 +21,16 @@
 **/
 
 import { useMemo } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { setErrorNotificationHandler } from '@/api/error-notification';
-import Canvas from './pages/protected/Canvas';
-import Dashboard from './pages/protected/Dashboard';
-import SignUp from './pages/guest/SignUp';
-import SignIn from './pages/guest/SignIn';
-import ProtectedRoute from './components/atoms/ProtectedRoute';
-import DashboardLayout from './components/atoms/DashboardLayout';
-import Studio from './pages/protected/Studio';
-import HeadlessRasterizerView from './pages/protected/HeadlessRasterizerView';
-import Messages from './pages/protected/Messages';
-import PluginListing from './pages/protected/PluginListing';
-import AnalysisConfigsListing from './pages/protected/AnalysisConfigsListing';
-import PageWrapper from '@/components/atoms/animations/PageWrapper';
 import GlobalTransitionOverlay from '@/components/atoms/animations/GlobalTransitionOverlay';
 import Loader from '@/components/atoms/Loader';
 import LoadingShimmer from '@/components/atoms/animations/LoadingShimmer';
 import ToastContainer from '@/components/atoms/ToastContainer';
 import useAuthStore from '@/stores/authentication';
 import useToast from '@/hooks/ui/use-toast';
-import TrajectoriesListing from './pages/protected/TrajectoriesListing';
-import AccountSettings from './pages/protected/AccountSettings';
-import TeamInvitationPage from './pages/guest/TeamInvitationPage';
-import Clusters from './pages/protected/Clusters';
+import { renderPublicRoutes, renderProtectedRoutes, renderGuestRoutes } from '@/routes';
 
 const AuthLoadingOverlay = () => (
     <motion.div
@@ -97,7 +82,7 @@ const App = () => {
         minHeight: isDesktop ? undefined : '100svh',
         overflowX: 'hidden' as const,
         overflowY: isDesktop ? 'hidden' as const : 'auto' as const,
-    backgroundColor: 'var(--color-bg)',
+        backgroundColor: 'var(--color-bg)',
         scrollBehavior: 'smooth' as const,
         isolation: 'isolate' as const,
     }), [isDesktop]);
@@ -125,128 +110,9 @@ const App = () => {
                 onExitComplete={handleExitComplete}
             >
                 <Routes location={location} key={location.pathname}>
-                    {/* Rutas públicas para visualizar trayectorias (accesibles sin autenticación) */}
-                    <Route
-                        path='/canvas/:trajectoryId/'
-                        element={
-                            <PageWrapper>
-                                <Canvas />
-                            </PageWrapper>
-                        }
-                    />
-
-                    <Route
-                        path='/raster/:trajectoryId'
-                        element={
-                            <PageWrapper>
-                                <HeadlessRasterizerView />
-                            </PageWrapper>
-                        }
-                    />
-
-                    <Route
-                        path='/team-invitation/:token'
-                        element={
-                            <PageWrapper>
-                                <TeamInvitationPage />
-                            </PageWrapper>
-                        }
-                    />
-                    
-                    {/* Rutas protegidas que requieren autenticación */}
-                    <Route element={<ProtectedRoute mode='protect' />}>
-                        <Route element={<DashboardLayout />}>
-                            <Route
-                                path='/dashboard'
-                                element={
-                                    <PageWrapper>
-                                        <Dashboard />
-                                    </PageWrapper>
-                                }
-                            />
-
-                            <Route
-                                path='/dashboard/clusters'
-                                element={
-                                    <PageWrapper>
-                                        <Clusters />
-                                    </PageWrapper>
-                                }
-                            />
-
-                            <Route
-                                path='/dashboard/trajectories/list'
-                                element={
-                                    <PageWrapper>
-                                        <TrajectoriesListing />
-                                    </PageWrapper>
-                                }
-                            />
-
-                            <Route
-                                path='/dashboard/analysis-configs/list'
-                                element={
-                                    <PageWrapper>
-                                        <AnalysisConfigsListing />
-                                    </PageWrapper>
-                                }
-                            />
-
-                            <Route
-                                path='/dashboard/trajectory/:trajectoryId/plugin/:pluginId/listing/:listingKey'
-                                element={
-                                    <PageWrapper>
-                                        <PluginListing />
-                                    </PageWrapper>
-                                }
-                            />
-                          
-                            <Route
-                                path='/dashboard/studio/'
-                                element={
-                                    <PageWrapper>
-                                        <Studio />
-                                    </PageWrapper>
-                                }
-                            />
-                            <Route
-                                path='/dashboard/messages/'
-                                element={
-                                    <PageWrapper>
-                                        <Messages />
-                                    </PageWrapper>
-                                }
-                            />
-
-                            <Route
-                                path='/account/settings'
-                                element={
-                                    <PageWrapper>
-                                        <AccountSettings />
-                                    </PageWrapper>
-                                }
-                            />
-                        </Route>
-                    </Route>
-
-                    <Route element={<ProtectedRoute mode='guest' />}>
-                        <Route
-                            path='/auth/sign-up'
-                            element={
-                                <PageWrapper>
-                                    <SignUp />
-                                </PageWrapper>
-                            }
-                        />
-                        <Route
-                            path='/auth/sign-in'
-                            element={
-                                <PageWrapper>
-                                    <SignIn />
-                                </PageWrapper>
-                            }
-                        />
-                    </Route>
+                    {renderPublicRoutes()}
+                    {renderProtectedRoutes()}
+                    {renderGuestRoutes()}
                 </Routes>
             </AnimatePresence>
         </div>
