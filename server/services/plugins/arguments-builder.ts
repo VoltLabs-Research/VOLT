@@ -32,8 +32,17 @@ export default class ArgumentsBuilder{
         if(!def) return false;
         
         if(def.type === 'select'){
-            if(!def.values || !def.values.length) return false;
-            return def.values.includes(value);
+            const values = def.values;
+            if(Array.isArray(values)){
+                if(!values.length) return false;
+                return values.includes(value);
+            }
+
+            if(values && typeof values === 'object'){
+                return Object.prototype.hasOwnProperty.call(values, value);
+            }
+
+            return false;
         }
         
         if(def.type === 'number') return !Number.isNaN(Number(value));
@@ -50,9 +59,11 @@ export default class ArgumentsBuilder{
         const args: string[] = [];
         
         for(const argKey in this.argDefs){
-            if(!Object.prototype.hasOwnProperty.call(options, argKey)) continue;
+            const hasValue = Object.prototype.hasOwnProperty.call(options, argKey);
+            const rawValue = hasValue ? options[argKey] : this.argDefs[argKey].default;
+            if(rawValue === undefined || rawValue === null) continue;
 
-            const value = options[argKey] as string;
+            const value = rawValue as string;
             if(!(await this.isValidArg(argKey, value))) continue;
 
             // TODO: Check this!

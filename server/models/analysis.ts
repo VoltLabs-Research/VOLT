@@ -23,6 +23,8 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import { deleteByPrefix } from '@/utilities/buckets';
+import { SYS_BUCKETS } from '@/config/minio';
 
 export interface IAnalysis extends Document{
     plugin: string;
@@ -77,6 +79,51 @@ const AnalysisSchema: Schema<IAnalysis> = new Schema({
 
 AnalysisSchema.plugin(useInverseRelations);
 AnalysisSchema.plugin(useCascadeDelete);
+
+const deletePluginArtifacts = async (analysis: IAnalysis | null) => {
+    if(!analysis) return;
+    const analysisId = analysis._id?.toString();
+    if(!analysisId) return;
+
+    const trajectoryValue: any = analysis.trajectory;
+    const trajectoryId =
+        typeof trajectoryValue === 'string'
+            ? trajectoryValue
+            : (trajectoryValue?._id?.toString?.() ?? trajectoryValue?.toString?.());
+
+    if(!trajectoryId) return;
+
+    const prefix = [
+        'plugins',
+        `trajectory-${trajectoryId}`,
+        `analysis-${analysisId}`
+    ].join('/');
+
+    try{
+        await deleteByPrefix(SYS_BUCKETS.PLUGINS, prefix);
+    }catch(err){
+        console.error(`[Analysis] Failed to delete plugin artifacts for analysis ${analysisId}:`, err);
+    }
+};
+
+AnalysisSchema.pre('deleteOne', { document: true, query: false }, async function(next){
+    await deletePluginArtifacts(this as unknown as IAnalysis);
+    next();
+});
+
+AnalysisSchema.pre('findOneAndDelete', { document: false, query: true }, async function(next){
+    const doc = await this.model.findOne(this.getFilter());
+    if(doc){
+        await deletePluginArtifacts(doc as unknown as IAnalysis);
+    }
+    next();
+});
+
+AnalysisSchema.pre('deleteMany', { document: false, query: true }, async function(next){
+    const docs = await this.model.find(this.getFilter());
+    await Promise.all(docs.map((doc: any) => deletePluginArtifacts(doc)));
+    next();
+});
 
 const Analysis: Model<IAnalysis> = mongoose.model<IAnalysis>('Analysis', AnalysisSchema);
 
