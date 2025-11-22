@@ -541,6 +541,81 @@ bool DXAJsonExporter::writeAtomsMsgpack(const LammpsParser::Frame& frame,
     }
 }
 
+// Simplified version of writeAtomsMsgpack that doesn't require tracer, only StructureAnalysis
+bool DXAJsonExporter::writeAtomsSimpleMsgpack(const LammpsParser::Frame& frame,
+                                              const StructureAnalysis& structureAnalysis,
+                                              const std::vector<int>* structureTypes,
+                                              const std::string& filepath){
+    try{
+        std::ofstream of(filepath, std::ios::binary);
+        if(!of.is_open()) return false;
+
+        // Precompute type names and counts in a single pass without storing per-atom JSON.
+        std::vector<std::string> typeNames(frame.natoms);
+        std::unordered_map<std::string, uint32_t> counts;
+        typeNames.reserve(frame.natoms);
+
+        for(size_t i = 0; i < frame.natoms; ++i){
+            int t = 0;
+            if(structureTypes && i < structureTypes->size())
+                t = (*structureTypes)[i];
+            const std::string name = structureAnalysis.getStructureTypeName(t);
+            typeNames[i] = name;
+            counts[name]++;
+        }
+
+        // Write a map with keys = typeNames and values = arrays with fixed size counts[name].
+        MsgpackWriter w(of);
+        w.write_map_header(static_cast<uint32_t>(counts.size()));
+
+        // For deterministic order, iterate keys sorted to keep stable output.
+        std::vector<std::string> keys;
+        keys.reserve(counts.size());
+        for(auto& kv : counts) keys.push_back(kv.first);
+        std::sort(keys.begin(), keys.end());
+
+        // Build index lists per type lazily to avoid holding all atoms: we do one type at a time.
+        for(const auto& key : keys){
+            w.write_key(key);
+            const uint32_t size = counts[key];
+            w.write_array_header(size);
+
+            // Stream atoms of this type by scanning once.
+            uint32_t written = 0;
+            const size_t N = frame.natoms;
+            const size_t chunk = 1 << 20; // 1M scan window
+            for(size_t start = 0; start < N && written < size; start += chunk){
+                size_t end = std::min(N, start + chunk);
+                for(size_t i = start; i < end && written < size; ++i){
+                    if(typeNames[i] != key) continue;
+                    // atom object: { id, pos }
+                    w.write_map_header(2); // id, pos
+                    w.write_key("id");
+                    w.write_uint(static_cast<uint64_t>(i));
+                    w.write_key("pos");
+                    w.write_array_header(3);
+                    if(i < frame.positions.size()){
+                        const auto& p = frame.positions[i];
+                        w.write_double(p.x());
+                        w.write_double(p.y());
+                        w.write_double(p.z());
+                    }else{
+                        w.write_double(0.0);
+                        w.write_double(0.0);
+                        w.write_double(0.0);
+                    }
+                    written++;
+                }
+            }
+        }
+
+        of.flush();
+        return true;
+    }catch(...){
+        return false;
+    }
+}
+
 // Stream dislocations: similar shape as JSON currently produced, but encoded directly to MessagePack.
 // We iterate segments, clip with PBC, and flush per segment chunk. For large inputs, we optionally parallelize
 // chunk generation, then write results in order to keep stable output ordering.

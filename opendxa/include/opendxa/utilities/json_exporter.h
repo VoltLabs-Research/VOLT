@@ -43,6 +43,11 @@ public:
                            const std::string& filepath,
                            int threadCount = 1);
 
+    bool writeAtomsSimpleMsgpack(const LammpsParser::Frame& frame,
+                                 const StructureAnalysis& structureAnalysis,
+                                 const std::vector<int>* structureTypes,
+                                 const std::string& filepath);
+
     bool writeDislocationsMsgpack(const DislocationNetwork* network,
                                   const SimulationCell* simulationCell,
                                   const std::string& filepath,

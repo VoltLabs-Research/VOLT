@@ -127,6 +127,10 @@ modifiers:
                 icon: PiCirclesThreeLight
                 canvas: true
                 raster: true
+                export:
+                    name: AtomisticExporter
+                    handler: exportAtomsTypeToGLBMinIO
+                    type: glb
 
     # Polyhedral Template Matching Modifier
     polyhedral-template-matching:
@@ -149,6 +153,10 @@ modifiers:
                 icon: HiCubeTransparent
                 canvas: true
                 raster: true
+                export:
+                    name: AtomisticExporter
+                    handler: exportAtomsTypeToGLBMinIO
+                    type: glb
 
     # Diamond Identifier Modifier
     diamond-identifier:
@@ -169,6 +177,10 @@ modifiers:
                 icon: RiVipDiamondLine
                 canvas: true
                 raster: true
+                export:
+                    name: AtomisticExporter
+                    handler: exportAtomsTypeToGLBMinIO
+                    type: glb
 
 entrypoint:
     bin: opendxa
@@ -184,6 +196,10 @@ entrypoint:
                 CUBIC_DIAMOND: Cubic Diamond
                 HEX_DIAMOND: Hexagonal Diamond
                 SC: Simple Cubic
+            visibleWhen:
+                modifier:
+                    - dislocation-analysis
+                    - common-neighbor-analysis
 
         identificationMode:
             type: select
@@ -193,6 +209,8 @@ entrypoint:
                 PTM: Polyhedral Template Matching (PTM)
                 CNA: Common Neighbor Analysis (CNA)
                 DIAMOND: Diamond Identifier
+            visibleWhen:
+                modifier: dislocation-analysis
 
         maxTrialCircuitSize:
             type: number
@@ -201,6 +219,8 @@ entrypoint:
             min: 6
             max: 32
             step: 0.5
+            visibleWhen:
+                modifier: dislocation-analysis
 
         circuitStretchability:
             type: number
@@ -209,6 +229,8 @@ entrypoint:
             min: 1
             max: 32
             step: 0.5
+            visibleWhen:
+                modifier: dislocation-analysis
 
         rmsd:
             type: number
@@ -227,6 +249,8 @@ entrypoint:
             min: 0
             max: 32
             step: 1
+            visibleWhen:
+                modifier: dislocation-analysis
 
         lineSmoothingLevel:
             type: number
@@ -235,6 +259,8 @@ entrypoint:
             min: 0
             max: 32
             step: 0.5
+            visibleWhen:
+                modifier: dislocation-analysis
 
         linePointInterval:
             type: number
@@ -243,16 +269,22 @@ entrypoint:
             min: 0.1
             max: 10
             step: 0.1
+            visibleWhen:
+                modifier: dislocation-analysis
 
         onlyPerfectDislocations:
             type: boolean
             label: Only Perfect Dislocations
             default: false
+            visibleWhen:
+                modifier: dislocation-analysis
 
         markCoreAtoms:
             type: boolean
             label: Mark Core Atoms
             default: false
+            visibleWhen:
+                modifier: dislocation-analysis
 
         structureIdentificationOnly:
             type: boolean
