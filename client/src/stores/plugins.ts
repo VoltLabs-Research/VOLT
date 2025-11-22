@@ -22,7 +22,7 @@ export interface PluginState{
     getModifiers: () => ResolvedModifier[];
     getAvailableArguments: (pluginId: string, modifierId: string) => Record<string, EntrypointArgument>;
     fetchTrajectoryExposures: (trajectoryId: string) => Promise<Exposure[]>;
-    getRenderableExposures: (trajectoryId: string) => Promise<RenderableExposure[]>;
+    getRenderableExposures: (trajectoryId: string, analysisId?: string) => Promise<RenderableExposure[]>;
 };
 
 export type ResolvedModifier = {
@@ -124,19 +124,24 @@ const usePluginStore = create<PluginState>((set, get) => {
             return availableArgs;
         },
 
-        async getRenderableExposures(trajectoryId: string){
-            const cacheKey = `renderable-${trajectoryId}`;
+        async getRenderableExposures(trajectoryId: string, analysisId?: string){
+            const { analysisConfig } = useAnalysisConfigStore.getState();
+            const activeAnalysisId = analysisId ?? analysisConfig?._id;
+            const currentAnalysis = analysisConfig && analysisConfig._id === activeAnalysisId ? analysisConfig : null;
+            if(!activeAnalysisId || !currentAnalysis) return [];
+
+            const cacheKey = `renderable-${trajectoryId}-${activeAnalysisId}`;
             if(renderableCache.has(cacheKey)){
                 return renderableCache.get(cacheKey)!;
             }
 
-            const { analysisConfig } = useAnalysisConfigStore.getState();
-            if(!analysisConfig?._id) return [];
-            
             await get().fetchManifests();
             const { manifests } = get();
             const renderableExposures: RenderableExposure[] = [];
-            const { plugin, modifier } = analysisConfig;
+            const plugin = (currentAnalysis as any)?.plugin;
+            const modifier = (currentAnalysis as any)?.modifier;
+            if(!plugin || !modifier) return [];
+
             const manifest = manifests[plugin];
             if(!manifest) return [];
 
@@ -149,7 +154,7 @@ const usePluginStore = create<PluginState>((set, get) => {
                         ...exposure,
                         pluginId: plugin,
                         modifierId: modifier,
-                        analysisId: analysisConfig._id,
+                        analysisId: activeAnalysisId,
                         exposureId
                     }); 
                 }

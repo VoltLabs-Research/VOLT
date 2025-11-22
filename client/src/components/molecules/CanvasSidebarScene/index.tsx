@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { TbObjectScan } from 'react-icons/tb';
 import CanvasSidebarOption from '@/components/atoms/CanvasSidebarOption';
 import useModelStore from '@/stores/editor/model';
@@ -7,6 +7,7 @@ import usePluginStore, { type RenderableExposure } from '@/stores/plugins';
 import './CanvasSidebarScene.css';
 import DynamicIcon from '@/components/atoms/DynamicIcon';
 import useAnalysisConfigStore from '@/stores/analysis-config';
+import { Skeleton } from '@mui/material';
 
 interface CanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
@@ -19,15 +20,23 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
 
     const [pluginExposures, setPluginExposures] = useState<RenderableExposure[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    const analysisConfigId = analysisConfig?._id;
+    const activeSceneRef = useRef(activeScene);
 
     useEffect(() => {
-        if(!trajectory?._id || !analysisConfig?._id) return;
+        activeSceneRef.current = activeScene;
+    }, [activeScene]);
+
+    useEffect(() => {
+        if(!trajectory?._id || !analysisConfigId) return;
 
         const loadExposures = async () => {
             setLoading(true);
+            setPluginExposures([]);
             try{
-                const exposures = await getRenderableExposures(trajectory?._id);
+                const exposures = await getRenderableExposures(trajectory._id, analysisConfigId);
                 setPluginExposures(exposures);
             }catch(error){
                 console.error('Failed to load plugin exposures:', error);
@@ -37,7 +46,41 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         };
 
         loadExposures();
-    }, [trajectory?._id, analysisConfig, getRenderableExposures]);
+    }, [trajectory?._id, analysisConfigId, getRenderableExposures]);
+
+    useEffect(() => {
+        if(loading || !analysisConfigId) return;
+        const currentScene = activeSceneRef.current;
+        if(!currentScene || currentScene.source !== 'plugin') return;
+        if(currentScene.analysisId === analysisConfigId) return;
+
+        const matchingExposure = pluginExposures.find(
+            (exposure) => exposure.exposureId === currentScene.sceneType
+        );
+
+        if(matchingExposure){
+            setActiveScene({
+                sceneType: matchingExposure.exposureId,
+                source: 'plugin',
+                analysisId: matchingExposure.analysisId,
+                exposureId: matchingExposure.exposureId
+            });
+            return;
+        }
+
+        if(pluginExposures.length > 0){
+            const nextExposure = pluginExposures[0];
+            setActiveScene({
+                sceneType: nextExposure.exposureId,
+                source: 'plugin',
+                analysisId: nextExposure.analysisId,
+                exposureId: nextExposure.exposureId
+            });
+            return;
+        }
+
+        setActiveScene({ sceneType: 'trajectory', source: 'default' });
+    }, [analysisConfigId, loading, pluginExposures, setActiveScene]);
 
     const defaultOptions = [{
         Icon: TbObjectScan,
@@ -60,8 +103,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         }
     }));
 
-    const allOptions = [...defaultOptions, ...pluginOptions];
-
     const onSelect = (option: any) => {
         console.log('Selected option:', option)
         setActiveScene(option.sceneType);
@@ -70,7 +111,35 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     return (
         <div className='editor-sidebar-scene-container'>
             <div className='editor-sidebar-scene-options-container'>
-                {allOptions.map((option, index) => (
+                {defaultOptions.map((option, index) => (
+                    <div
+                        key={`${option.sceneType.source}-${option.sceneType.sceneType}-${index}`}
+                    >
+                        <CanvasSidebarOption
+                            onSelect={() => onSelect(option)}
+                            activeOption={false}
+                            isLoading={false}
+                            option={{
+                                Icon: option.Icon,
+                                title: option.title,
+                                modifierId: option?.pluginInfo?.modifierId
+                            }}
+                        />
+                    </div>
+                ))}
+
+                {loading && (
+                    Array.from({ length: 3 }).map((_, index) => (
+                        <Skeleton
+                            key={`plugin-exposure-skeleton-${index}`}
+                            variant="rounded"
+                            height={48}
+                            sx={{ width: '100%', mb: 1.5, borderRadius: 2 }}
+                        />
+                    ))
+                )}
+
+                {!loading && pluginOptions.map((option, index) => (
                     <div
                         key={`${option.sceneType.source}-${option.sceneType.sceneType}-${index}`}
                     >
