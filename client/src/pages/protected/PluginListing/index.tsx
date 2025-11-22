@@ -6,6 +6,7 @@ import type { ApiResponse } from '@/types/api';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import { Skeleton } from '@mui/material';
 import usePluginStore from '@/stores/plugins';
+import { RiDeleteBin6Line } from 'react-icons/ri';
 
 type ColumnDef = {
     path: string;
@@ -182,6 +183,39 @@ const PluginListing = () => {
         }
     }, [pluginId, listingKey, trajectoryId, fetchPage]);
 
+    const handleMenuAction = useCallback(async (action: string, item: any) => {
+        if (action === 'delete') {
+            // Get analysis ID from the row
+            const analysisId = item?.analysis?._id;
+            if (!analysisId) {
+                console.error('No analysis ID found for deletion');
+                return;
+            }
+
+            if (!window.confirm('Delete this analysis? This cannot be undone.')) return;
+
+            // Optimistic update: remove from UI
+            setRows((prev) => prev.filter((row) => row?.analysis?._id !== analysisId));
+
+            try {
+                await api.delete(`/analysis-config/${analysisId}`);
+            } catch (e) {
+                console.error('Failed to delete analysis:', e);
+                // Rollback: re-fetch data
+                fetchPage(1);
+            }
+        }
+    }, [fetchPage]);
+
+    const getMenuOptions = useCallback((item: any) => {
+        // Only show delete option if the row has an analysis
+        if (!item?.analysis?._id) return [];
+        
+        return [
+            ['Delete Analysis', RiDeleteBin6Line, () => handleMenuAction('delete', item)]
+        ];
+    }, [handleMenuAction]);
+
     const title = meta?.displayName ?? listingKey ?? 'Listing';
     const trajectoryName = meta?.trajectoryName ?? trajectoryId ?? 'Trajectory';
     const breadcrumbs = useMemo(() => {
@@ -219,6 +253,8 @@ const PluginListing = () => {
                     fetchPage(page + 1);
                 }
             }}
+            onMenuAction={handleMenuAction}
+            getMenuOptions={getMenuOptions}
         />
     );
 };

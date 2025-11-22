@@ -37,7 +37,7 @@ export const getAnalysisDislocations = async (req: Request, res: Response) => {
     try{
         const analysisConfigId = (req as any).params.id;
 
-        const analysis = await AnalysisConfig
+        const analysis = await Analysis
             .findById(analysisConfigId)
             .select('trajectory')
             .lean();
@@ -157,15 +157,15 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
                 { $count: 'total' }
             ];
             const [rows, countRows] = await Promise.all([
-                AnalysisConfig.aggregate(pipeline),
-                AnalysisConfig.aggregate(countPipeline)
+                Analysis.aggregate(pipeline),
+                Analysis.aggregate(countPipeline)
             ]);
             configs = rows as any[];
             total = (countRows?.[0]?.total as number) ?? 0;
         } else {
             const [rows, count] = await Promise.all([
-                AnalysisConfig.aggregate(pipeline),
-                AnalysisConfig.countDocuments({ trajectory: { $in: trajectoryIds } })
+                Analysis.aggregate(pipeline),
+                Analysis.countDocuments({ trajectory: { $in: trajectoryIds } })
             ]);
             configs = rows as any[];
             total = count as number;

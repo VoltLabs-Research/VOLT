@@ -21,7 +21,7 @@
 **/
 
 import { Request, Response, NextFunction } from 'express';
-import { AnalysisConfig, Team, Trajectory } from '@/models/index';
+import { Analysis, Team, Trajectory } from '@/models/index';
 
 // TODO:
 export const checkTeamMembershipForAnalysisTrajectory = async (
@@ -30,7 +30,7 @@ export const checkTeamMembershipForAnalysisTrajectory = async (
     next: NextFunction
 ) => {
     const { id } = req.params;
-    const analysisConfig = await AnalysisConfig.findById(id).select('trajectory');
+    const analysisConfig = await Analysis.findById(id).select('trajectory');
 
     if(!analysisConfig){
         return res.status(404).json({
