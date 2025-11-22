@@ -33,7 +33,7 @@ const ModifierConfiguration = ({
     const [config, setConfig] = useState<Record<string, any>>({});
     const [isLoading, setIsLoading] = useState(false);
     const hasAutoStarted = useRef(false);
-    const hasInitializedPreset = useRef(false);
+    const [hasInitializedPreset, setHasInitializedPreset] = useState(false);
     const configRef = useRef<Record<string, any>>({});
     const getAvailableArguments = usePluginStore((state) => state.getAvailableArguments);
     const manifests = usePluginStore((state) => state.manifests);
@@ -129,14 +129,14 @@ const ModifierConfiguration = ({
 
     // Inicializar config con presets al montar (solo una vez)
     useEffect(() => {
-        if (!hasInitializedPreset.current && modifierInfo?.preset) {
+        if (!hasInitializedPreset && modifierInfo?.preset) {
             const preset = modifierInfo.preset;
             if (Object.keys(preset).length > 0) {
                 setConfig((prev) => ({ ...preset, ...prev }));
             }
-            hasInitializedPreset.current = true;
+            setHasInitializedPreset(true);
         }
-    }, [modifierInfo]);
+    }, [modifierInfo, hasInitializedPreset]);
 
     const handleFieldChange = (key: string, value: any) => {
         setConfig((prev) => ({ ...prev, [key]: value }));
@@ -180,7 +180,7 @@ const ModifierConfiguration = ({
         // 4. Hay un trajectoryId
         // 5. El preset ya se inicializó O no hay preset
         const hasPreset = modifierInfo?.preset && Object.keys(modifierInfo.preset).length > 0;
-        const presetReady = !hasPreset || hasInitializedPreset.current;
+        const presetReady = !hasPreset || hasInitializedPreset;
 
         if (!hasAutoStarted.current && !isLoading && visibleFields.length === 0 && trajectoryId && presetReady) {
             hasAutoStarted.current = true;

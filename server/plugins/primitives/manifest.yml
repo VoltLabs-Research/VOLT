@@ -241,6 +241,7 @@ entrypoint:
             step: 0.01
             visibleWhen:
                 identificationMode: PTM
+                modifier: polyhedral-template-matching
 
         defectSmoothingLevel:
             type: number
