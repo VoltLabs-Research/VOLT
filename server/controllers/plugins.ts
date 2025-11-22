@@ -54,6 +54,20 @@ export const evaluateModifier = catchAsync(async (req: Request, res: Response, n
 
     const analysisId = analysis._id.toString();
     const trajectoryFS = new TrajectoryFS(trajectoryId);
+    
+    // Get manifest to generate descriptive job name
+    const manifest = await new ManifestService(pluginId).get();
+    const modifierConfig = manifest?.modifiers?.[modifierId];
+    
+    // Try to get displayName from exposure matching modifierId, or use first exposure
+    let modifierName = modifierId;
+    if(modifierConfig?.exposure){
+        const exposure = modifierConfig.exposure[modifierId] || Object.values(modifierConfig.exposure)[0];
+        modifierName = exposure?.displayName || modifierId;
+    }
+    
+    const trajectoryName = trajectory?.name || trajectoryId;
+    
     const jobs: AnalysisJob[] = [];
     const promises = trajectory!.frames.map(async ({ timestep }: any) => {
         const inputFile = await trajectoryFS.getDump(timestep);
@@ -72,7 +86,9 @@ export const evaluateModifier = catchAsync(async (req: Request, res: Response, n
             inputFile,
             analysisId,
             modifierId,
-            plugin: pluginId
+            plugin: pluginId,
+            name: modifierName,
+            message: `${trajectoryName} - Frame ${timestep}`
         });
     });
     
