@@ -28,7 +28,7 @@ import useLogger from '@/hooks/core/use-logger';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import useModelStore from '@/stores/editor/model';
 
-const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
+const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     const logger = useLogger('use-canvas-coordinator');
     // Create a ref for throttling logs
     const lastLogTimeRef = useRef(0);
@@ -52,13 +52,15 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId: string }) => {
 
     const resetModel = useModelStore((state) => state.reset);
 
-    // Load trajectory when hook is initialized
+    // Load trajectory when hook is initialized - only if trajectoryId is provided
     useEffect(() => {
-        if(trajectoryId && (!trajectory || trajectory?._id !== trajectoryId)){
+        if(!trajectoryId) return;
+        
+        if(!trajectory || trajectory?._id !== trajectoryId){
             logger.log(`Loading trajectory with ID: ${trajectoryId}`);
             getTrajectoryById(trajectoryId);
         }
-    }, [trajectoryId, isLoading, trajectory, getTrajectoryById]);
+    }, [trajectoryId, trajectory?._id, getTrajectoryById, logger]);
 
     // Handle automatically the selection for the first timestep when trajectory is loaded
     useEffect(() => {

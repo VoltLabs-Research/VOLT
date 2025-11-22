@@ -33,12 +33,6 @@ const useFileUpload = (
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const logger = useLogger('use-file-upload');
 
-    useEffect(() => {
-        if(onUploadSuccess){
-            onUploadSuccess();
-        }
-    }, [onUploadSuccess]);
-
     const uploadFiles = useCallback(async (
         filesWithPath: FileWithPath[],
         folderName: string
@@ -59,8 +53,13 @@ const useFileUpload = (
             logger.error('Upload failed', { error: err?.message });
             // Don't rethrow - let the trajectory be created anyway if it exists
             // Errors during processing should not affect the UI showing the card
+        }finally{
+            // Call success callback after upload attempt
+            if(onUploadSuccess){
+                onUploadSuccess();
+            }
         }
-    }, [uploadAndProcessTrajectory, selectedTeam]);
+    }, [uploadAndProcessTrajectory, selectedTeam, onUploadSuccess]);
 
     return {
         uploadFiles

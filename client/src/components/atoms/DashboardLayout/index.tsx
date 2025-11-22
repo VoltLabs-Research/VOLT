@@ -87,6 +87,9 @@ const DashboardLayout = () => {
         ['Clusters', TbBook, '/dashboard/clusters']
     ]), []);
     const searchQuery = useDashboardSearchStore((s) => s.query);
+    
+    // Track if teams have been fetched at least once
+    const [teamsInitialized, setTeamsInitialized] = useState(false);
 
     useEffect(() => {
         if(selectedTeam === null || trajectories.length) return;
@@ -95,19 +98,21 @@ const DashboardLayout = () => {
 
     useEffect(() => {
         if(teams.length) return;
-        getUserTeams();
+        getUserTeams().finally(() => setTeamsInitialized(true));
     }, []);
 
     // Force user to create a team if they don't belong to any
     // Wait for teams to finish loading first
     useEffect(() => {
+        // Only check after teams have been initialized (fetched at least once)
+        if (!teamsInitialized) return;
         if (isLoadingTeams) return; // Still loading, don't check yet
         
         if (teams.length === 0 && !showTeamCreator) {
             // User has no teams after loading, force team creation
             toggleTeamCreator();
         }
-    }, [isLoadingTeams, teams.length, showTeamCreator, toggleTeamCreator]);
+    }, [teamsInitialized, isLoadingTeams, teams.length, showTeamCreator, toggleTeamCreator]);
 
     // Initialize socket listener for notifications
     useEffect(() => {

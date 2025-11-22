@@ -123,7 +123,6 @@ const DashboardPage: React.FC = memo(() => {
                         )}
 
                         <Scene3D 
-                            key={`${selectedTeam?._id || 'no-team'}-${displayTrajectory?._id || 'no-trajectory'}`}
                             showGizmo={false}
                             ref={scene3DRef}
                             showCanvasGrid={false}
