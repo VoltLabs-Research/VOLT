@@ -13,6 +13,7 @@ export interface PluginState{
     fetchManifests: () => Promise<void>;
     getModifiers: () => ResolvedModifier[];
     getAvailableArguments: (pluginId: string, modifierId: string) => Record<string, EntrypointArgument>;
+    fetchTrajectoryExposures(trajectoryId: string): Promise<void>;
 };
 
 export type ResolvedModifier = {
@@ -48,6 +49,7 @@ const usePluginStore = create<PluginState>((set, get) => {
     let lastModifiers: ResolvedModifier[] = [];
     
     const argsCache = new Map<string, Record<string, EntrypointArgument>>();
+    const exposuresCache = new Map<string, Exposure[]>();
 
     return {
         plugins: [],
@@ -111,7 +113,25 @@ const usePluginStore = create<PluginState>((set, get) => {
 
             argsCache.set(cacheKey, availableArgs);
             return availableArgs;
-        }
+        },
+
+        async fetchTrajectoryExposures(trajectoryId){
+            const cacheKey = trajectoryId;
+            if(exposuresCache.has(cacheKey)){
+                return exposuresCache.get(cacheKey)!;
+            }
+
+            try{
+                const res = await api.get<ApiResponse<Exposure[]>>(`/plugins/exposures/${trajectoryId}`);
+                const exposures = res.data.data || [];
+                exposuresCache.set(cacheKey, exposures);
+                exposuresCache.set(cacheKey, exposures);
+                return exposures;
+            }catch(error){
+                console.error(`Failed to fetch exposures for trajectory ${trajectoryId}:`, error);
+                return [];
+            }
+        },
     };
 });
 

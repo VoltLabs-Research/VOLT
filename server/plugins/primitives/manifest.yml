@@ -56,7 +56,7 @@ modifiers:
 
             structure-identification:
                 results: atoms.msgpack
-                displayName: Polyhedral Template Matching (PTM)
+                displayName: Structure Identification
                 icon: HiCubeTransparent
                 canvas: true
                 raster: true

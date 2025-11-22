@@ -51,7 +51,7 @@ export default class PluginRegistry{
         const plugins = await this.discoverPluginDirs();
         const manifests: Record<string, Manifest> = {};
         const promises = plugins.map(async (plugin) => {
-            const service = new ManifestService(this.pluginsDir, plugin);
+            const service = new ManifestService(plugin, this.pluginsDir);
             manifests[plugin] = await service.get();
         });
         await Promise.all(promises);

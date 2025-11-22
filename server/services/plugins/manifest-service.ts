@@ -29,7 +29,7 @@ export default class ManifestService{
     private pluginDir: string;
     private resolver: ManifestResolver;
 
-    constructor(pluginsDir: string, pluginName: string){
+    constructor(pluginName: string, pluginsDir = process.env.PLUGINS_DIR || 'plugins'){
         this.pluginDir = path.join(pluginsDir, pluginName);
         this.resolver = new ManifestResolver(this.pluginDir);
     }

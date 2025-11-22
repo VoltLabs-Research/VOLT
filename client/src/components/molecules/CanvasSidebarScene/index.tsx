@@ -21,7 +21,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         title: 'Frame Atoms',
         sceneType: 'trajectory',
         isAvailable: trajectory?.availableModels?.atomicStructure ?? true
-    }, {
+    }, /*{
         Icon: PiLineSegmentThin,
         title: 'Dislocations',
         sceneType: 'dislocations',
@@ -46,7 +46,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         title: 'Structure Identification',
         sceneType: 'atoms_colored_by_type',
         isAvailable: trajectory?.availableModels?.structureIdentification ?? true
-    }];
+    }*/];
 
     const onSelect = (option: SceneObjectType) => {
         setActiveScene(option.sceneType);

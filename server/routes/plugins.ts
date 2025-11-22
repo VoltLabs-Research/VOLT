@@ -8,6 +8,11 @@ const router = Router();
 router.use(authMiddleware.protect);
 
 router.get('/manifests', controllers.getManifests);
+
+router.get('/exposures/:id',
+    trajMiddleware.checkTeamMembershipForTrajectory,
+    controllers.getTrajectoryExposures);
+
 router.post(
     '/:pluginId/modifier/:modifierId/trajectory/:id', 
     trajMiddleware.checkTeamMembershipForTrajectory,

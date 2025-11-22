@@ -50,7 +50,7 @@ export default class Plugin{
 
         this.pluginName = slugify(this.pluginName);
         this.context = new AnalysisContext(this.pluginName);
-        this.manifest = new ManifestService(this.pluginsDir, this.pluginName);
+        this.manifest = new ManifestService(this.pluginName, this.pluginsDir);
         this.cli = new CLIExec();
     }
 
