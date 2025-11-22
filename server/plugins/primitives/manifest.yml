@@ -8,6 +8,9 @@ homepage: https://github.com/rodyherrera/OpenDXA
 listing:
     # /dashboard/trajectory/{trajectoryId}/analysis/{analysisId}/dislocations/
     dislocation-analysis:
+        aggregators:
+            displayName: Dislocation Analysis
+            count: true
         trajectory: trajectory.name
         identificationMode: Identification Mode
         timestep: Timestep
@@ -19,7 +22,7 @@ listing:
         createdAt: Created At
 
     # /dashboard/trajectory/{trajectoryId}/analysis/{analysisId}/structure-analysis/
-    structure-analysis:
+    dislocation-analysis_structure-analysis:
         trajectory: trajectory.name
         analysisMethod: Identification Mode
         identificationRate: Identification Rate

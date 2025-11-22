@@ -1,19 +1,44 @@
+/**
+* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+**/
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/api';
 import type { ApiResponse } from '@/types/api';
 
-type MetricKey = 'structureAnalysis' | 'trajectories' | 'analysisConfigs' | 'dislocations';
+type MetricKey = 'trajectories' | 'analysis' | string;
+
+interface MetricsMetaEntry{
+    displayName?: string;
+    listingUrl?: string;
+}
 
 interface TrajectoryMetrics{
-    totals: Record<MetricKey, number>;
-    lastMonth: Record<MetricKey, number>;
+    totals: Record<string, number>;
+    lastMonth: Record<string, number>;
     weekly: {
         labels: string[];
-        structureAnalysis: number[];
-        trajectories: number[];
-    analysisConfigs?: number[];
-        dislocations: number[];
+        [series: string]: number[] | string[];
     };
+    meta?: Record<string, MetricsMetaEntry>;
 }
 
 type CacheEntry = { data: TrajectoryMetrics; fetchedAt: number };
@@ -79,9 +104,35 @@ const fetchOnce = (teamId?: string) => {
     return p;
 };
 
+const buildCard = (
+    data: TrajectoryMetrics,
+    metricKey: string,
+    baseLabels: string[],
+    fallbackName: string,
+    fallbackUrl: string
+) => {
+    const meta = data.meta?.[metricKey];
+    const name = meta?.displayName ?? fallbackName;
+    const listingUrl = meta?.listingUrl ?? fallbackUrl;
+
+    const rawSeries = toNumericArray((data.weekly as any)[metricKey] || []);
+    const padded = padSeries(baseLabels, rawSeries, 12);
+
+    return {
+        key: metricKey as MetricKey,
+        name,
+        listingUrl,
+        count: abbreviate(Number((data.totals as any)[metricKey]) || 0),
+        lastMonthStatus: Number((data.lastMonth as any)[metricKey]) || 0,
+        series: padded.series,
+        labels: padded.labels,
+        yDomain: withPaddingDomain(padded.series)
+    };
+};
+
 export const useDashboardMetrics = (
     teamId?: string,
-    opts?: { ttlMs?: number; force?: boolean; }
+    opts?: { ttlMs?: number; force?: boolean }
 ) => {
     const key = keyOf(teamId);
     const ttlMs = opts?.ttlMs ?? 5 * 60 * 1000;
@@ -92,7 +143,6 @@ export const useDashboardMetrics = (
     const abortRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
-        // Don't fetch if teamId is required but not provided
         if(!teamId){
             setLoading(true);
             setData(null);
@@ -118,22 +168,26 @@ export const useDashboardMetrics = (
         setLoading(true);
         setError(null);
 
-    (async () => {
+        (async () => {
             try{
-        const payload = await fetchOnce(teamId);
+                const payload = await fetchOnce(teamId);
                 if(controller.signal.aborted) return;
 
                 cache.set(key, { data: payload, fetchedAt: Date.now() });
                 setData(payload);
                 setError(null);
             }catch(err: any){
-        // Treat both local aborts and axios cancel-like errors as non-fatal
-        const isCanceled = controller.signal.aborted || err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError' || String(err?.message || '').toLowerCase() === 'canceled';
-        if(isCanceled){
-                    // Avoid a stuck spinner on aborts.
+                const isCanceled =
+                    controller.signal.aborted ||
+                    err?.code === 'ERR_CANCELED' ||
+                    err?.name === 'CanceledError' ||
+                    String(err?.message || '').toLowerCase() === 'canceled';
+
+                if(isCanceled){
                     setLoading(false);
                     return;
                 }
+
                 const message =
                     err?.response?.data?.message ||
                     err?.message ||
@@ -150,60 +204,22 @@ export const useDashboardMetrics = (
     }, [key, teamId, ttlMs, opts?.force]);
 
     const cards = useMemo(() => {
-    if(!data) return [] as any[];
-    const base = data.weekly.labels || [];
-    const sStruct = toNumericArray((data.weekly as any).structureAnalysis || []);
-    const sTraj = toNumericArray((data.weekly as any).trajectories || []);
-    const sCfg = toNumericArray((data.weekly as any).analysisConfigs || []);
-    const sDisl = toNumericArray((data.weekly as any).dislocations || []);
+        if(!data) return [];
+        const baseLabels = data.weekly.labels || [];
 
-        const ps = padSeries(base, sStruct, 12);
-        const pt = padSeries(base, sTraj, 12);
-    const pc = padSeries(base, sCfg, 12);
-    const pd = padSeries(base, sDisl, 12);
-
-        return [
-            {
-                key: 'structureAnalysis' as MetricKey,
-                name: 'Structure Analysis',
-                listingUrl: '/dashboard/structure-analysis/list',
-                count: abbreviate(Number(data.totals.structureAnalysis) || 0),
-                lastMonthStatus: Number(data.lastMonth.structureAnalysis) || 0,
-                series: ps.series,
-                labels: ps.labels,
-                yDomain: withPaddingDomain(ps.series)
-            },
-            {
-                key: 'trajectories' as MetricKey,
-                name: 'Trajectories',
-                listingUrl: '/dashboard/trajectories/list',
-                count: abbreviate(Number(data.totals.trajectories) || 0),
-                lastMonthStatus: Number(data.lastMonth.trajectories) || 0,
-                series: pt.series,
-                labels: pt.labels,
-                yDomain: withPaddingDomain(pt.series)
-            },
-            {
-                key: 'analysisConfigs' as MetricKey,
-                name: 'Analysis Configs',
-                listingUrl: '/dashboard/analysis-configs/list',
-                count: abbreviate(Number((data.totals as any).analysisConfigs) || 0),
-                lastMonthStatus: Number((data.lastMonth as any).analysisConfigs) || 0,
-                series: pc.series,
-                labels: pc.labels,
-                yDomain: withPaddingDomain(pc.series)
-            },
-            {
-                key: 'dislocations' as MetricKey,
-                name: 'Dislocations',
-                listingUrl: '/dashboard/dislocations/list',
-                count: abbreviate(Number(data.totals.dislocations) || 0),
-                lastMonthStatus: Number(data.lastMonth.dislocations) || 0,
-                series: pd.series,
-                labels: pd.labels,
-                yDomain: withPaddingDomain(pd.series)
-            }
+        const staticCards = [
+            buildCard(data, 'trajectories', baseLabels, 'Trajectories', '/dashboard/trajectories/list'),
+            buildCard(data, 'analysis', baseLabels, 'Analyses', '/dashboard/analysis-configs/list')
         ];
+
+        const dynamicKeys = Object.keys(data.totals)
+            .filter((key) => !['trajectories', 'analysis'].includes(key));
+
+        const dynamicCards = dynamicKeys.map((key) =>
+            buildCard(data, key, baseLabels, key, `/dashboard/plugins/${key}`)
+        );
+
+        return [...staticCards, ...dynamicCards];
     }, [data]);
 
     return { loading, error, data, cards };
