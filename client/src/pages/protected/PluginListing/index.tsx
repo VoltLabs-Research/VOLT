@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import DocumentListing, { type ColumnConfig } from '@/components/organisms/DocumentListing';
+import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/DocumentListing';
 import { api } from '@/api';
 import type { ApiResponse } from '@/types/api';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import { Skeleton } from '@mui/material';
+import usePluginStore from '@/stores/plugins';
 
 type ColumnDef = {
     path: string;
@@ -78,27 +79,52 @@ const normalizeRows = (rows: any[], columns: ColumnDef[]) => {
     });
 };
 
-const buildColumns = (columnDefs: ColumnDef[]): ColumnConfig[] => {
-    return columnDefs.map(({ path, label }) => ({
-        key: path,
-        title: label,
-        sortable: true,
-        render: (_value: any, row: any) => formatCellValue(getValueByPath(row, path), path),
-        skeleton: { variant: 'text', width: 120 }
-    }));
+const buildColumns = (columnDefs: ColumnDef[], pluginId?: string, manifests?: any): ColumnConfig[] => {
+    return columnDefs.map(({ path, label }) => {
+        // Check if this is an analysis.config field and if it's a select type
+        let isSelectField = false;
+        if (path.startsWith('analysis.config.') && pluginId && manifests?.[pluginId]) {
+            const argName = path.replace('analysis.config.', '');
+            const manifest = manifests[pluginId];
+            const argument = manifest?.entrypoint?.arguments?.[argName];
+            if (argument?.type === 'select') {
+                isSelectField = true;
+            }
+        }
+
+        return {
+            key: path,
+            title: label,
+            sortable: true,
+            render: (_value: any, row: any) => {
+                const value = getValueByPath(row, path);
+                if (isSelectField && value != null) {
+                    return <StatusBadge status={String(value)} />;
+                }
+                return formatCellValue(value, path);
+            },
+            skeleton: isSelectField 
+                ? { variant: 'rounded', width: 90, height: 24 }
+                : { variant: 'text', width: 120 }
+        };
+    });
 };
 
 const PluginListing = () => {
     const { pluginId, listingKey, trajectoryId } = useParams();
     const [columns, setColumns] = useState<ColumnConfig[]>([]);
     const [rows, setRows] = useState<any[]>([]);
-    const [meta, setMeta] = useState<{ displayName?: string; trajectoryName?: string } | null>(null);
+    const [meta, setMeta] = useState<{ displayName?: string; trajectoryName?: string; pluginId?: string } | null>(null);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const pageSize = 50;
+
+    // Get manifests from plugin store
+    const manifests = usePluginStore((s) => s.manifests);
+    const fetchManifests = usePluginStore((s) => s.fetchManifests);
 
     const fetchPage = useCallback(async (nextPage: number) => {
         if(!pluginId || !listingKey || !trajectoryId){
@@ -119,10 +145,11 @@ const PluginListing = () => {
                 { params: { page: nextPage, limit: pageSize } }
             );
             const payload = res.data.data;
-            setMeta(payload.meta ?? null);
+            const listingMeta = { ...payload.meta, pluginId: payload.meta?.pluginId };
+            setMeta(listingMeta ?? null);
 
             const normalizedRows = normalizeRows(payload.rows ?? [], payload.meta?.columns ?? []);
-            setColumns(buildColumns(payload.meta?.columns ?? []));
+            setColumns(buildColumns(payload.meta?.columns ?? [], payload.meta?.pluginId, manifests));
 
             setRows((prev) => (nextPage === 1 ? normalizedRows : [...prev, ...normalizedRows]));
             setPage(nextPage);
@@ -134,7 +161,14 @@ const PluginListing = () => {
             setLoading(false);
             setIsFetchingMore(false);
         }
-    }, [listingKey, pluginId, trajectoryId]);
+    }, [listingKey, pluginId, trajectoryId, manifests]);
+
+    // Fetch manifests on mount
+    useEffect(() => {
+        if (Object.keys(manifests).length === 0) {
+            fetchManifests();
+        }
+    }, [manifests, fetchManifests]);
 
     useEffect(() => {
         setRows([]);
