@@ -9,7 +9,6 @@ import useLogger from '@/hooks/core/use-logger';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import DynamicIcon from '@/components/atoms/DynamicIcon';
 import useEditorUIStore from '@/stores/ui/editor';
-import useModifiersStore from '@/stores/modifiers';
 import usePluginStore from '@/stores/plugins';
 import './CanvasSidebarModifiers.css';
 
@@ -19,13 +18,8 @@ const CanvasSidebarModifiers = () => {
     const toggleModifiers = useEditorUIStore((state) => state.toggleModifier);
     const modifiers = usePluginStore((state) => state.getModifiers());
     const fetchManifests = usePluginStore((state) => state.fetchManifests);
-
-    const structureIdentification = useModifiersStore((state) => state.structureIdentification);
-    const computeAnalyses = useModifiersStore((state) => state.computeAnalyses);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-
     const setShowRenderConfig = useEditorUIStore((state) => state.setShowRenderConfig);
-
     const idRateSeries = useTrajectoryStore((state) => state.idRateSeries);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const navigate = useNavigate();
@@ -49,11 +43,7 @@ const CanvasSidebarModifiers = () => {
         // Only for those who matter
         for(const modifier of justActivated){
             logger.log('Modifier:', modifier);
-            if(modifier === 'PTM' || modifier === 'CNA' || modifier === 'DIAMOND'){
-                structureIdentification(trajectory?._id, analysisConfig, modifier);
-            }else if(modifier === 'compute-analysis-differences'){
-                computeAnalyses(trajectory?._id);
-            }else if(modifier === 'raster'){
+            if(modifier === 'raster'){
                 navigate('/raster/' + trajectory._id);
             }else if(modifier === 'render-settings'){
                 setShowRenderConfig(true);
@@ -61,7 +51,7 @@ const CanvasSidebarModifiers = () => {
         }
 
         prevActiveRef.current = activeModifiers;
-    }, [activeModifiers, analysisConfig, structureIdentification, trajectory, logger]);
+    }, [activeModifiers, analysisConfig, trajectory, logger]);
 
     const allModifiers = useMemo(() => ([
         ...modifiers.map((mod) => ({

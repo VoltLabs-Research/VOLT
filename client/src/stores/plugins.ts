@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { api } from '@/api';
 import type { ApiResponse } from '@/types/api';
-import type { Exposure, Manifest } from '@/types/stores/plugins';
+import type { Exposure, Manifest, EntrypointArgument } from '@/types/stores/plugins';
 
 export type ManifestsByPluginId = Record<string, Manifest>;
 
@@ -12,6 +12,7 @@ export interface PluginState{
     loading: boolean;
     fetchManifests: () => Promise<void>;
     getModifiers: () => ResolvedModifier[];
+    getAvailableArguments: (pluginId: string, modifierId: string) => Record<string, EntrypointArgument>;
 };
 
 export type ResolvedModifier = {
@@ -45,6 +46,8 @@ const computeModifiers = (manifests: ManifestsByPluginId): ResolvedModifier[] =>
 const usePluginStore = create<PluginState>((set, get) => {
     let lastManifests: ManifestsByPluginId | null = null;
     let lastModifiers: ResolvedModifier[] = [];
+    
+    const argsCache = new Map<string, Record<string, EntrypointArgument>>();
 
     return {
         plugins: [],
@@ -86,6 +89,28 @@ const usePluginStore = create<PluginState>((set, get) => {
             lastModifiers = computeModifiers(manifests);
             console.log('LAST MODIFIERS:', lastModifiers);
             return lastModifiers;
+        }
+
+        getAvailableArguments(pluginId: string, modifierId: string){
+            const cacheKey = `${pluginId}:${modifierId}`;
+            if(argsCache.has(cacheKey)){
+                return argsCache.set(cacheKey)!;
+            }
+
+            const { manifests } = get();
+            const manifest = manifests[pluginId];
+            const modifier = manifest.modifiers?.[modifierId];
+            const preset = modifier?.preset || {};
+
+            const availableArgs: Record<string, EntrypointArgument> = {};
+            for(const [argKey, argDef] of Object.entries(manifest.entrypoint.arguments)){
+                if(!preset.hasOwnProperty(argKey)){
+                    availableArgs[argKey] = argDef;
+                }
+            }
+
+            argsCache.set(cacheKey, availableArgs);
+            return availableArgs;
         }
     };
 });

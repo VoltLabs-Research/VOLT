@@ -433,45 +433,6 @@ const ChartCard = ({
     );
 };
 
-const AverageSegmentLengthPlot = () => {
-    const avgSegmentSeries = useTrajectoryStore((s) => s.avgSegmentSeries);
-    const trajectory = useTrajectoryStore((s) => s.trajectory);
-    return avgSegmentSeries && (
-        <ChartCard
-            title="Average Segment Length"
-            xlabel="RMSD (Å)"
-            ylabel="Average Segment Length (Å)"
-            series={avgSegmentSeries}
-        />
-    );
-};
-
-const StructureIdentificationRatePlot = () => {
-    const idRateSeries = useTrajectoryStore((s) => s.idRateSeries);
-    const trajectory = useTrajectoryStore((s) => s.trajectory);
-    return idRateSeries && (
-        <ChartCard
-            title="Structure Identification Rate"
-            xlabel="RMSD (Å)"
-            ylabel="Identification Rate (%)"
-            series={idRateSeries}
-        />
-    );
-};
-
-const TotalDislocationSegmentsPlot = () => {
-    const dislocationsSeries = useTrajectoryStore((s) => s.dislocationSeries);
-
-    return dislocationsSeries && (
-        <ChartCard
-            title="Total Dislocation Segments"
-            xlabel="RMSD (Å)"
-            ylabel="Total Segments"
-            series={dislocationsSeries}
-        />
-    );
-};
-
 const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimestep, scene3DRef }) => {
     const showWidgets = useEditorUIStore((store) => store.showEditorWidgets);
     const activeModifiers = useEditorUIStore((store) => store.activeModifiers);
@@ -481,9 +442,6 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
         'dislocation-analysis-config': AnalysisConfiguration,
         'dislocation-results': DislocationResults,
         'render-options': RenderOptions,
-        'average-segment-length': AverageSegmentLengthPlot,
-        'structure-identification-rate': StructureIdentificationRatePlot,
-        'total-dislocation-segments': TotalDislocationSegmentsPlot
     }) as Record<string, React.ComponentType<any>>, []);
 
     const modifierComponents = useMemo(() => {
