@@ -152,6 +152,7 @@ entrypoint:
         crystalStructure: 
             type: select
             default: BCC
+            label: Crystal Structure
             values:
                 FCC: FCC (Face-Centered Cubic)
                 BCC: BCC (Body-Centered Cubic)

@@ -8,14 +8,14 @@ import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import DynamicIcon from '@/components/atoms/DynamicIcon';
-import useEditorUIStore from '@/stores/ui/editor';
+import useEditorUIStore, { type ActiveModifier } from '@/stores/ui/editor';
 import usePluginStore from '@/stores/plugins';
 import './CanvasSidebarModifiers.css';
 
 const CanvasSidebarModifiers = () => {
     const logger = useLogger('canvas-sidebar-modifiers');
     const activeModifiers = useEditorUIStore((state) => state.activeModifiers);
-    const toggleModifiers = useEditorUIStore((state) => state.toggleModifier);
+    const toggleModifier = useEditorUIStore((state) => state.toggleModifier);
     const modifiers = usePluginStore((state) => state.getModifiers());
     const fetchManifests = usePluginStore((state) => state.fetchManifests);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
@@ -25,7 +25,7 @@ const CanvasSidebarModifiers = () => {
     const navigate = useNavigate();
 
     // We save the previous state to detect which modifiers have just been activated
-    const prevActiveRef = useRef<string[]>(activeModifiers);
+    const prevActiveRef = useRef<ActiveModifier[]>(activeModifiers);
 
     useEffect(() => {
         fetchManifests();
@@ -37,41 +37,48 @@ const CanvasSidebarModifiers = () => {
             return;
         }
 
-        const prev = prevActiveRef.current;
-        const justActivated = activeModifiers.filter((modifier) => !prev.includes(modifier));
+        const prev = prevActiveRef.current.map(m => m.key);
+        const current = activeModifiers.map(m => m.key);
+        const justActivated = current.filter((key) => !prev.includes(key));
 
-        // Only for those who matter
-        for(const modifier of justActivated){
-            logger.log('Modifier:', modifier);
-            if(modifier === 'raster'){
+        for(const modifierKey of justActivated){
+            logger.log('Modifier activated:', modifierKey);
+            
+            if(modifierKey === 'raster'){
                 navigate('/raster/' + trajectory._id);
-            }else if(modifier === 'render-settings'){
+            } else if(modifierKey === 'render-settings'){
                 setShowRenderConfig(true);
             }
         }
 
         prevActiveRef.current = activeModifiers;
-    }, [activeModifiers, analysisConfig, trajectory, logger]);
+    }, [activeModifiers, analysisConfig, trajectory, logger, navigate, setShowRenderConfig]);
 
     const allModifiers = useMemo(() => ([
         ...modifiers.map((mod) => ({
             title: mod.exposure.displayName,
             modifierId: mod.modifierId,
-            Icon: () => <DynamicIcon iconName={mod.exposure.icon ?? ''} />
+            Icon: () => <DynamicIcon iconName={mod.exposure.icon ?? ''} />,
+            pluginId: mod.pluginId,
+            pluginModifierId: mod.modifierId,
+            isPlugin: true
         })),
         {
             Icon: PiEngine,
             title: 'Render Settings',
-            modifierId: 'render-settings'
+            modifierId: 'render-settings',
+            isPlugin: false
         }, {
             Icon: CiImageOn,
             title: 'Raster Frames',
-            modifierId: 'raster'
+            modifierId: 'raster',
+            isPlugin: false
         }, {
             Icon: IoIosStats,
             title: 'Analysis Metrics',
             modifierId: 'compute-analysis-differences',
             isLoading: !idRateSeries?.length,
+            isPlugin: false,
             options: [{
                 title: 'Total Dislocation Segments',
                 modifierId: 'total-dislocation-segments'
@@ -89,21 +96,31 @@ const CanvasSidebarModifiers = () => {
         }*/
     ]), [modifiers, idRateSeries?.length]);
 
+    const handleToggle = (option: any) => {
+        if(option.isPlugin){
+            toggleModifier(option.modifierId, option.pluginId, option.pluginModifierId);
+        } else {
+            toggleModifier(option.modifierId);
+        }
+    };
+
+    const isActive = (modifierId: string) => {
+        return activeModifiers.some(m => m.key === modifierId);
+    };
+
     return (
-        <>
-            <div className='editor-sidebar-scene-container'>
-                <div className='editor-sidebar-scene-options-container'>
-                    {allModifiers.map((option) => (
-                        <CanvasSidebarOption
-                            key={option.modifierId}
-                            option={option}
-                            isLoading={option.isLoading}
-                            activeOption={activeModifiers.includes(option.modifierId ? option.modifierId : '')}
-                            onSelect={(option) => toggleModifiers(option.modifierId)} />
-                    ))}
-                </div>
+        <div className='editor-sidebar-scene-container'>
+            <div className='editor-sidebar-scene-options-container'>
+                {allModifiers.map((option) => (
+                    <CanvasSidebarOption
+                        key={option.modifierId}
+                        option={option}
+                        isLoading={option.isLoading}
+                        activeOption={isActive(option.modifierId)}
+                        onSelect={handleToggle} />
+                ))}
             </div>
-        </>
+        </div>
     );
 };
 

@@ -1,0 +1,35 @@
+.modifier-configuration {
+    right: 2rem;
+    top: 6.5rem;
+}
+
+.modifier-configuration-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modifier-configuration-header-title {
+    font-weight: 500;
+}
+
+.modifier-configuration-body-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: 500px;
+    padding-right: 1rem;
+    overflow-y: scroll;
+}
+
+.modifier-configuration-no-fields {
+    color: #999;
+    font-size: 0.875rem;
+    font-style: italic;
+    padding: 1rem 0;
+    text-align: center;
+}
+
+.modifier-configuration .start-analysis-btn {
+    width: 100%;
+}

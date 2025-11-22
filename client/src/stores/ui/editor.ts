@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import type { EditorUIStore } from '@/types/stores/ui/editor';
 
+export interface ActiveModifier{
+    key: string;
+    pluginId?: string;
+    modifierId?: string;
+    type: 'legacy' | 'plugin';
+};
+
 const initialState = {
     showCanvasGrid: true,
     showEditorWidgets: true,
@@ -17,11 +24,24 @@ const useEditorUIStore = create<EditorUIStore>((set, get) => {
             set({ showRenderConfig: enabled });
         },
 
-        toggleModifier(modifier: string) {
-            const modifiers = new Set(get().activeModifiers);
-            if (modifiers.has(modifier)) modifiers.delete(modifier);
-            else modifiers.add(modifier);
-            set({ activeModifiers: Array.from(modifiers) });
+        toggleModifier(modifierKey: string, pluginId?: string, modifierId?: string) {
+            const modifiers = get().activeModifiers;
+            const existingIndex = modifiers.findIndex((m) => m.key === modifierKey);
+            if(existingIndex !== -1){
+                // remove if exists
+                set({
+                    activeModifiers: modifiers.filter((_, i) => i !== existingIndex)
+                });
+            }else{
+                // add new
+                const newModifier: ActiveModifier = {
+                    key: modifierKey,
+                    pluginId,
+                    modifierId,
+                    type: pluginId && modifierId ? 'plugin' : 'legacy'
+                };
+                set({ activeModifiers: [...modifiers, newModifier] });
+            }
         },
 
         toggleCanvasGrid() {

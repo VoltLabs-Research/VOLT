@@ -4,9 +4,8 @@
 
 import React, { useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PiAtomThin, PiLineSegmentsLight, PiDotsThreeVerticalBold, PiImagesSquareThin } from 'react-icons/pi';
+import { PiAtomThin, PiDotsThreeVerticalBold, PiImagesSquareThin } from 'react-icons/pi';
 import { RxTrash } from "react-icons/rx";
-import { CiShare1 } from "react-icons/ci";
 import { HiOutlineViewfinderCircle } from "react-icons/hi2";
 import { motion } from 'framer-motion';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
@@ -17,8 +16,6 @@ import SimulationCardUsers from '@/components/atoms/SimulationCardUsers';
 import useTrajectoryStore from '@/stores/trajectories';
 import useCardInteractions from '@/hooks/ui/interaction/use-card-interaction';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
-import useAnalysisConfigStore from '@/stores/analysis-config';
-import useModifiersStore from '@/stores/modifiers';
 import useRasterStore from '@/stores/raster';
 import './SimulationCard.css';
 
@@ -108,11 +105,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
 }) => {
     const navigate = useNavigate();
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
-    const dislocationAnalysis = useModifiersStore((state) => state.dislocationAnalysis);
-    const toggleTrajectorySelection = useTrajectoryStore((state) => state.toggleTrajectorySelection);
     const rasterize = useRasterStore((state) => state.rasterize);
-
-    const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
 
     const {
         previewBlobUrl,
@@ -149,14 +142,6 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
     };
 
     const handleShare = (): void => {
-    };
-
-    const handleDislocationAnalysis = async (): Promise<void> => {
-        try {
-            await dislocationAnalysis(trajectory._id, analysisConfig);
-        } catch (error: any) {
-            console.error('Dislocation analysis failed:', error);
-        }
     };
 
     const handleRasterize = useCallback(async () => {
@@ -303,7 +288,6 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                     options={[
                         ['View Scene', HiOutlineViewfinderCircle, handleViewScene],
                         ['Rasterize', PiImagesSquareThin, handleRasterize],
-                        ['Dislocation Analysis', PiLineSegmentsLight, handleDislocationAnalysis],
                         ['Delete', RxTrash, onDelete],
                     ]}
                 >

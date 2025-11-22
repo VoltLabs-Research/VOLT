@@ -89,12 +89,12 @@ const usePluginStore = create<PluginState>((set, get) => {
             lastModifiers = computeModifiers(manifests);
             console.log('LAST MODIFIERS:', lastModifiers);
             return lastModifiers;
-        }
+        },
 
         getAvailableArguments(pluginId: string, modifierId: string){
             const cacheKey = `${pluginId}:${modifierId}`;
             if(argsCache.has(cacheKey)){
-                return argsCache.set(cacheKey)!;
+                return argsCache.get(cacheKey)!;
             }
 
             const { manifests } = get();
