@@ -99,9 +99,12 @@ export default class ArtifactProcessor{
         if(!exportConfig) return;
 
         let { name, type, handler, options } = exportConfig;
-        if(exportConfig.type !== 'glb'){
+        if(!['glb', 'line-chart'].includes(exportConfig.type)){
             throw new Error(`[${this.pluginName} plugin]: the "${type}" (type is not yet supported (${this.modifierId} modifier).`);
         }
+
+        // Front-end will handle it
+        if(name === 'ChartExporter') return;    
 
         const exporter = this.getBuiltInExporter(name);
         if(!handler) handler = 'toGLBMinIO';

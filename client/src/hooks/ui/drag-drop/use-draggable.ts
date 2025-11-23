@@ -219,7 +219,6 @@ const useDraggable = (options: DraggableOptions = {}) => {
         const onPointerDown = (e: PointerEvent) => {
             if (!enabled || doubleClickToDrag) return;
             if (handle && handleTarget && e.target instanceof HTMLElement && !handleTarget.contains(e.target)) return;
-            e.preventDefault();
             startDragging(e.clientX, e.clientY, e.pointerId);
         };
         

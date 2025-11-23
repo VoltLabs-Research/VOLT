@@ -15,12 +15,17 @@ router.get(
     controllers.getPluginExposureGLB);
 
 router.get(
+    '/file/:id/:analysisId/:exposureId/:timestep/:filename',
+    trajMiddleware.checkTeamMembershipForTrajectory,
+    controllers.getPluginExposureFile);
+
+router.get(
     '/listing/:pluginId/:listingKey/:id',
     trajMiddleware.checkTeamMembershipForTrajectory,
     controllers.getPluginListingDocuments);
 
 router.post(
-    '/:pluginId/modifier/:modifierId/trajectory/:id', 
+    '/:pluginId/modifier/:modifierId/trajectory/:id',
     trajMiddleware.checkTeamMembershipForTrajectory,
     controllers.evaluateModifier);
 

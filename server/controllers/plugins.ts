@@ -127,6 +127,47 @@ export const getPluginExposureGLB = catchAsync(async (req: Request, res: Respons
     }
 });
 
+export const getPluginExposureFile = catchAsync(async (req: Request, res: Response) => {
+    const { timestep, analysisId, exposureId, filename } = req.params;
+    const { trajectory } = res.locals;
+    const trajectoryId = trajectory._id.toString();
+    const exposureKey = slugify(exposureId);
+
+    try {
+        // Files are stored as: plugins/trajectory-{id}/analysis-{id}/{exposureId}/timestep-{timestep}.msgpack
+        const objectName = [
+            'plugins',
+            `trajectory-${trajectoryId}`,
+            `analysis-${analysisId}`,
+            exposureId,
+            `timestep-${timestep}.msgpack`
+        ].join('/');
+
+        const stat = await statObject(objectName, SYS_BUCKETS.PLUGINS);
+        const stream = await getStream(objectName, SYS_BUCKETS.PLUGINS);
+
+        res.setHeader('Content-Length', stat.size);
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+
+        if (filename.endsWith('.msgpack')) {
+            res.setHeader('Content-Type', 'application/x-msgpack');
+        } else if (filename.endsWith('.json')) {
+            res.setHeader('Content-Type', 'application/json');
+        } else {
+            res.setHeader('Content-Type', 'application/octet-stream');
+        }
+
+        stream.pipe(res);
+    } catch (err) {
+        console.error('[getPluginExposureFile] Error:', err);
+        return res.status(404).json({
+            status: 'error',
+            data: { error: `File not found for exposure ${exposureId} at timestep ${timestep}` }
+        });
+    }
+});
+
 export const getPluginListingDocuments = catchAsync(async (req: Request, res: Response) => {
     const { pluginId, listingKey } = req.params as { pluginId: string; listingKey: string };
     const trajectory = res.locals.trajectory;

@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { EditorWidgetsProps } from '@/types/canvas';
 import useEditorUIStore from '@/stores/ui/editor';
 import EditorSidebar from '@/components/organisms/EditorSidebar';
@@ -31,10 +31,37 @@ import TimestepControls from '@/components/organisms/TimestepControls';
 import DislocationResults from '@/components/atoms/DislocationResults';
 import AnalysisConfigSelection from '@/components/molecules/AnalysisConfigSelection';
 import ModifierConfiguration from '@/components/organisms/ModifierConfiguration';
+import ChartViewer from '@/components/organisms/ChartViewer';
+import Draggable from '@/components/atoms/Draggable';
+import useModelStore from '@/stores/editor/model';
+import usePluginStore from '@/stores/plugins';
 
 const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimestep, scene3DRef }) => {
     const showWidgets = useEditorUIStore((store) => store.showEditorWidgets);
     const activeModifiers = useEditorUIStore((store) => store.activeModifiers);
+    const activeScene = useModelStore((state) => state.activeScene);
+    const manifests = usePluginStore((state) => state.manifests);
+
+    const activeExposure = useMemo(() => {
+        if (activeScene.source !== 'plugin') return null;
+        for (const manifest of Object.values(manifests)) {
+            const modifiers = manifest.modifiers ?? {};
+            for (const modifier of Object.values(modifiers)) {
+                const exposure = modifier.exposure?.[activeScene.exposureId];
+                if (exposure) return exposure;
+            }
+        }
+        return null;
+    }, [activeScene, manifests]);
+
+    const isChart = activeExposure?.export?.name === 'ChartExporter';
+    const [showChart, setShowChart] = useState(false);
+
+    useEffect(() => {
+        if (isChart) {
+            setShowChart(true);
+        }
+    }, [isChart]);
 
     const legacyModifiersMap = useMemo(() => ({
         'slice-plane': SlicePlane,
@@ -53,9 +80,9 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
             .filter(([, C]) => !!C);
     }, [legacyModifiers, legacyModifiersMap]);
 
-    
-    if(!showWidgets) return null;
-    
+
+    if (!showWidgets) return null;
+
     return (
         <>
             <EditorSidebar />
@@ -63,14 +90,40 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
             <SceneTopCenteredOptions scene3DRef={scene3DRef} />
             <AnalysisConfigSelection />
             {(trajectory && currentTimestep !== undefined) && <TimestepControls />}
-            
+
+            {isChart && showChart && (
+                <Draggable
+                    enabled={true}
+                    bounds='viewport'
+                    axis='both'
+                    doubleClickToDrag={false}
+                    handle='.chart-viewer-drag-area'
+                    scaleWhileDragging={0.98}
+                    minWidth={400}
+                    className='chart-viewer-drag-container'
+                    minHeight={300}
+                >
+                    <div className='chart-viewer-container primary-surface'>
+                        <ChartViewer
+                            trajectoryId={trajectory?._id}
+                            analysisId={(activeScene as any).analysisId}
+                            exposureId={(activeScene as any).exposureId}
+                            timestep={currentTimestep || 0}
+                            options={activeExposure?.export?.options}
+                            filename={activeExposure?.results}
+                            onClose={() => setShowChart(false)}
+                        />
+                    </div>
+                </Draggable>
+            )}
+
             {legacyComponents.map(([key, Comp]) => (
                 <Comp key={`modifier-${key}`} />
             ))}
-            
+
             {pluginModifiers.map((modifier) => {
-                if(!modifier.pluginId || !modifier.modifierId || !trajectory?._id) return null;
-                
+                if (!modifier.pluginId || !modifier.modifierId || !trajectory?._id) return null;
+
                 return (
                     <ModifierConfiguration
                         key={modifier.key}

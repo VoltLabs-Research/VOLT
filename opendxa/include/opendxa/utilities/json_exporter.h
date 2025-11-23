@@ -67,6 +67,11 @@ public:
 
     bool writeSimulationCellMsgpack(const SimulationCell& cell,
                                     const std::string& filepath);
+
+    bool writeRdfMsgpack(const std::vector<double>& rdfX,
+                         const std::vector<double>& rdfY,
+                         const std::string& filepath);
+
     json getInterfaceMeshData(
         const InterfaceMesh* interfaceMesh,
         const StructureAnalysis& structureAnalysis,

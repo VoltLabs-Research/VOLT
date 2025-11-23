@@ -878,6 +878,24 @@ bool DXAJsonExporter::writeSimulationCellMsgpack(const SimulationCell& cell,
     }catch(...){ return false; }
 }
 
+bool DXAJsonExporter::writeRdfMsgpack(const std::vector<double>& rdfX,
+                     const std::vector<double>& rdfY,
+                     const std::string& filepath){
+    try{
+        std::ofstream of(filepath, std::ios::binary);
+        if(!of.is_open()) return false;
+        
+        json j;
+        j["distance"] = rdfX;
+        j["g_r"] = rdfY;
+        
+        auto bytes = nlohmann::json::to_msgpack(j);
+        of.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+        of.flush();
+        return true;
+    }catch(...){ return false; }
+}
+
 json DXAJsonExporter::segmentToJson(const DislocationSegment* segment, bool includeDetailedInfo){
     json segmentJson;
     

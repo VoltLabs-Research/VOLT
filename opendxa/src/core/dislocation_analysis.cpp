@@ -352,6 +352,11 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
             ofs << std::setw(2) << result << std::endl;
             ofs.close();
             spdlog::info("Coordination analysis written to {}", coordPath);
+            
+            // Write RDF msgpack file
+            std::string rdfPath = outputFile + "_rdf.msgpack";
+            _jsonExporter.writeRdfMsgpack(rdfX, rdfY, rdfPath);
+            spdlog::info("RDF data written to {}", rdfPath);
         }
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(

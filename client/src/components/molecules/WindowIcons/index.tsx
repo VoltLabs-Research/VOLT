@@ -29,6 +29,7 @@ const IconCircle = ({ variant, title, onClick }: IconDef) => {
     };
 
     const handleClick = (e: React.MouseEvent) => {
+        console.log('WindowIcons handleClick called', variant);
         e.stopPropagation();
         e.preventDefault();
         onClick();
@@ -49,7 +50,7 @@ const IconCircle = ({ variant, title, onClick }: IconDef) => {
             onHoverStart={() => scaleMv.set(1.35)}
             onHoverEnd={() => scaleMv.set(1)}
             style={{ originX, originY, scale }}
-            whileTap={{ scale: 0.92 }}  
+            whileTap={{ scale: 0.92 }}
         />
     );
 };
@@ -61,11 +62,11 @@ interface WindowIconsProps {
     onMinimize?: () => void;
 }
 
-const WindowIcons: React.FC<WindowIconsProps> = ({ 
-    withBackground = false, 
-    onClose = () => {}, 
+const WindowIcons: React.FC<WindowIconsProps> = ({
+    withBackground = false,
+    onClose = () => { },
     onExpand,
-    onMinimize 
+    onMinimize
 }) => {
     const ICONS: IconDef[] = [{
         variant: 'close',
@@ -74,11 +75,11 @@ const WindowIcons: React.FC<WindowIconsProps> = ({
     }, {
         variant: 'minimize',
         title: 'Minimize',
-        onClick: onMinimize || (() => {})
+        onClick: onMinimize || (() => { })
     }, {
         variant: 'expand',
         title: 'Expand',
-        onClick: onExpand || (() => {})
+        onClick: onExpand || (() => { })
     }];
 
     return (
@@ -88,7 +89,7 @@ const WindowIcons: React.FC<WindowIconsProps> = ({
             aria-label='Window controls'
         >
             {ICONS.map((icon) => (
-                <IconCircle 
+                <IconCircle
                     key={icon.variant} {...icon} />
             ))}
         </div>

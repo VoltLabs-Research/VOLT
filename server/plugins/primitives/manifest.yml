@@ -181,6 +181,37 @@ modifiers:
             structure-identification-stats:
                 results: structure_stats.msgpack
 
+    # Coordination Analysis Modifier
+    coordination-analysis:
+        preset:
+            structureIdentificationOnly: false
+        analysisSelection:
+            title:
+                - path: config.cordinationCutoff
+                - path: config.coordinationBins
+                - path: createdAt
+            description:
+                - path: config.coordinationAnalysis
+        exposure:
+            coordination-analysis:
+                results: rdf.msgpack
+                displayName: Coordination Analysis
+                icon: PiGraph
+                canvas: true
+                export:
+                    name: ChartExporter
+                    type: line-chart
+                    options:
+                        title: Radial Distribution Function
+                        xAxis:
+                            label: Pair separation distance
+                            key: distance
+                        yAxis:
+                            label: g(r)
+                            key: g_r
+                        fill: true
+                        color: "#ff7f0e"
+
     # Diamond Identifier Modifier
     diamond-identifier:
         preset:
@@ -314,3 +345,27 @@ entrypoint:
         structureIdentificationOnly:
             type: boolean
             default: false
+
+        coordinationAnalysis:
+            type: boolean
+            default: true
+
+        cordinationCutoff:
+            type: number
+            label: Cutoff Radius
+            default: 3.2
+            min: 1.0
+            max: 20.0
+            step: 0.1
+            visibleWhen:
+                modifier: coordination-analysis
+
+        coordinationBins:
+            type: number
+            label: Number of Bins
+            default: 200
+            min: 10
+            max: 1000
+            step: 1
+            visibleWhen:
+                modifier: coordination-analysis

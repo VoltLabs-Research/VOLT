@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/Scene3D';
 import { useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
@@ -11,6 +11,7 @@ import PreloadingOverlay from '@/components/atoms/PreloadingOverlay';
 import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
 import usePlaybackStore from '@/stores/editor/playback';
+import usePluginStore from '@/stores/plugins';
 import Loader from '@/components/atoms/Loader';
 import './Canvas.css';
 
@@ -57,6 +58,7 @@ const EditorPage: React.FC = () => {
 
             <CanvasWidgets trajectory={trajectory} currentTimestep={currentTimestep} scene3DRef={scene3DRef} />
             <CanvasPresenceAvatars users={canvasUsers} />
+
             <Scene3D ref={scene3DRef} showCanvasGrid={showCanvasGrid}>
                 <TimestepViewer
                     scale={CANVAS_CONFIG.timestepViewerDefaults.scale}

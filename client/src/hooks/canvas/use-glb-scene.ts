@@ -38,8 +38,9 @@ import InteractionController from '@/utilities/glb/scene/interaction-controllers
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 import useTrajectoryStore from '@/stores/trajectories';
 import usePlaybackStore from '@/stores/editor/playback';
+import usePluginStore from '@/stores/plugins';
 
-export default function useGlbScene(params: UseGlbSceneParams){
+export default function useGlbScene(params: UseGlbSceneParams) {
     const { scene, camera, gl, invalidate } = useThree();
     const logger = useLogger('use-glb-scene');
 
@@ -49,6 +50,7 @@ export default function useGlbScene(params: UseGlbSceneParams){
     const activeScene = useModelStore((state) => state.activeScene);
     const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
+    const manifests = usePluginStore((state) => state.manifests);
 
     const stateRef = useRef<ExtendedSceneState>({
         model: null,
@@ -101,7 +103,7 @@ export default function useGlbScene(params: UseGlbSceneParams){
     const selectionManager = useRef(new SelectionManager(stateRef.current, scene, invalidate)).current;
     const transformManager = useRef(new TransformationManager(stateRef.current)).current;
     const resourceManager = useRef(new ResourceManager(stateRef.current, scene, invalidate)).current;
-    
+
     const modelSetupManager = useRef(
         new ModelSetupManager(
             stateRef.current,
@@ -157,39 +159,52 @@ export default function useGlbScene(params: UseGlbSceneParams){
 
     // Clipping planes setup
     useEffect(() => {
-        if(!gl) return;
+        if (!gl) return;
         clippingManager.setLocalClippingEnabled((params.sliceClippingPlanes?.length ?? 0) > 0);
     }, [gl, params.sliceClippingPlanes, clippingManager]);
 
     useEffect(() => {
-        if(!stateRef.current.isSetup || !stateRef.current.model) return;
+        if (!stateRef.current.isSetup || !stateRef.current.model) return;
         clippingManager.applyToModel(stateRef.current.model, params.sliceClippingPlanes);
         invalidate();
     }, [params.sliceClippingPlanes, invalidate, clippingManager]);
 
     // Model loading
     const getTargetUrl = useCallback((): string | null => {
-        if(!activeModel || !activeScene) return null;
+        if (!activeModel || !activeScene) return null;
 
-        if(activeScene.source === 'plugin'){
+        if (activeScene.source === 'plugin') {
             const { analysisId, exposureId } = activeScene;
             const timestep = currentTimestep;
-            if(!trajectory?._id || timestep === undefined) return null;
+            if (!trajectory?._id || timestep === undefined) return null;
+
+            // Check if this exposure is a chart (not a GLB)
+            for (const manifest of Object.values(manifests)) {
+                const modifiers = manifest.modifiers ?? {};
+                for (const modifier of Object.values(modifiers)) {
+                    const exposure = modifier.exposure?.[exposureId];
+                    if (exposure && exposure.export?.type === 'line-chart') {
+                        // This is a chart exposure, not a GLB
+                        return null;
+                    }
+                }
+            }
+
             return `/plugins/glb/${trajectory._id}/${analysisId}/${exposureId}/${timestep}`;
         }
 
-        if(activeScene.source === 'default'){
-            if(!activeModel.glbs) return null;
+        if (activeScene.source === 'default') {
+            if (!activeModel.glbs) return null;
             return activeModel.glbs[activeScene.sceneType];
         }
         return null
-    }, [activeModel, activeScene]);
+    }, [activeModel, activeScene, currentTimestep, trajectory, manifests]);
 
     const updateScene = useCallback(() => {
         const targetUrl = getTargetUrl();
-        if(targetUrl &&
-                targetUrl !== stateRef.current.lastLoadedUrl &&
-                !modelLoader.isLoading()){
+        if (targetUrl &&
+            targetUrl !== stateRef.current.lastLoadedUrl &&
+            !modelLoader.isLoading()) {
             modelLoader.load(targetUrl);
         }
     }, [getTargetUrl, modelLoader]);

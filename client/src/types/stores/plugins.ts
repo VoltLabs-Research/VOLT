@@ -1,18 +1,18 @@
-export type BuiltInExports = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter';
+export type BuiltInExports = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
 export type ArgType = 'select' | 'number' | 'boolean';
 
-export interface AnalysisSelectionField{
+export interface AnalysisSelectionField {
     path: string;
     label?: string;
     visibleWhen?: Record<string, any>;
 };
 
-export interface AnalysisSelectionConfig{
+export interface AnalysisSelectionConfig {
     title?: AnalysisSelectionField[];
     description?: AnalysisSelectionField[];
 };
 
-export interface Manifest{
+export interface Manifest {
     name: string;
     author: string;
     license: string;
@@ -23,14 +23,14 @@ export interface Manifest{
 
 };
 
-export interface ExposureExportConfig{
+export interface ExposureExportConfig {
     name: BuiltInExports;
     type: string;
     handler?: string;
     options: Record<string, any>;
 };
 
-export interface Exposure{
+export interface Exposure {
     results: string;
     iterable?: string;
     iterableChunkSize?: number;
@@ -41,13 +41,13 @@ export interface Exposure{
     export: ExposureExportConfig;
 };
 
-export interface Modifier{
+export interface Modifier {
     preset?: Record<string, any>;
     exposure: Record<string, Exposure>;
     analysisSelection?: AnalysisSelectionConfig;
 };
 
-export interface EntrypointArgument{
+export interface EntrypointArgument {
     type: ArgType;
     default?: any;
     values?: any;
@@ -55,15 +55,15 @@ export interface EntrypointArgument{
     max?: number;
     label?: string;
     step?: number;
-    visibleWhen: Record<string, any>;    
+    visibleWhen: Record<string, any>;
 };
 
-export interface Entrypoint{
+export interface Entrypoint {
     bin: string;
     arguments: Record<string, EntrypointArgument>;
 };
 
-export interface ModifierTransformContext{
+export interface ModifierTransformContext {
     pluginName: string;
     trajectoryId: string;
     analysisId: string;
