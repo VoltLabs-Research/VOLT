@@ -27,7 +27,7 @@ import ManifestService from '@/services/plugins/manifest-service';
 
 export const getMetricsByTeamId = async (teamId: string) => {
     const trajectories = await Trajectory.find({ team: teamId }).select('_id').lean();
-    if(!trajectories.length){
+    if (!trajectories.length) {
         return { totals: {}, lastMonth: {}, weekly: { labels: [] } };
     }
 
@@ -52,26 +52,26 @@ export const getMetricsByTeamId = async (teamId: string) => {
     const analyses = await Analysis.find({ trajectory: { $in: trajectoryIds } })
         .select('_id plugin modifier trajectory')
         .lean();
-    
+
     const pluginsByModifier = new Map<string, Set<string>>();
     const pluginPointers = new Map<string, Map<string, { trajectoryId: string; analysisId: string }>>();
     const pluginModifierAnalyses = new Map<string, Map<string, Array<{ trajectoryId: string; analysisId: string; createdAt?: string }>>>();
 
-    for(const analysis of analyses){
-        if(!analysis.plugin || !analysis.modifier) continue;
+    for (const analysis of analyses) {
+        if (!analysis.plugin || !analysis.modifier) continue;
         const pluginKey = String(analysis.plugin);
         const modifierKey = String(analysis.modifier);
         const trajectoryKey = (analysis.trajectory as any)?.toString?.() ?? String(analysis.trajectory ?? '');
         const analysisKey = analysis._id?.toString?.() ?? '';
-        if(!trajectoryKey || !analysisKey) continue;
+        if (!trajectoryKey || !analysisKey) continue;
 
-        if(!pluginsByModifier.has(pluginKey)){
+        if (!pluginsByModifier.has(pluginKey)) {
             pluginsByModifier.set(pluginKey, new Set());
         }
         pluginsByModifier.get(pluginKey)!.add(modifierKey);
 
         const pointerMap = pluginPointers.get(pluginKey) ?? new Map<string, { trajectoryId: string; analysisId: string }>();
-        if(!pointerMap.has(modifierKey)){
+        if (!pointerMap.has(modifierKey)) {
             pointerMap.set(modifierKey, { trajectoryId: trajectoryKey, analysisId: analysisKey });
         }
         pluginPointers.set(pluginKey, pointerMap);
@@ -89,27 +89,51 @@ export const getMetricsByTeamId = async (teamId: string) => {
         pluginModifierAnalyses.set(pluginKey, analysisMap);
     }
 
-    for(const [pluginId, modifiers] of pluginsByModifier.entries()){
+    for (const [pluginId, modifiers] of pluginsByModifier.entries()) {
         const manifest = await new ManifestService(pluginId).get();
         const listingEntries = manifest.listing ?? {};
         const listingKeys = Object.keys(listingEntries).filter((key) => {
             const entry = listingEntries[key];
-            if(!entry?.aggregators?.count) return false;
+            if (!entry?.aggregators?.count) return false;
+
+            if (entry.modifiers && Array.isArray(entry.modifiers)) {
+                return entry.modifiers.some((modId: string) => modifiers.has(modId));
+            }
+
             const modifierId = key.split('_')[0];
             return modifiers.has(modifierId);
         });
-        
-        for(const listingKey of listingKeys){
+
+        for (const listingKey of listingKeys) {
             const entry = listingEntries[listingKey];
-            const modifierId = listingKey.split('_')[0];
-            const pointer = pluginPointers.get(pluginId)?.get(modifierId);
-            const analysisPointers =
-                pluginModifierAnalyses.get(pluginId)?.get(modifierId) ?? [];
-            const listingUrl = pointer
-                ? `/dashboard/trajectory/${pointer.trajectoryId}/plugin/${pluginId}/listing/${listingKey}`
+
+            // Determine which modifiers contribute to this listing
+            let relevantModifiers: string[] = [];
+            if (entry.modifiers && Array.isArray(entry.modifiers)) {
+                relevantModifiers = entry.modifiers;
+            } else {
+                relevantModifiers = [listingKey.split('_')[0]];
+            }
+
+            // Collect all analysis pointers for these modifiers
+            const analysisPointers: Array<{ trajectoryId: string; analysisId: string; createdAt?: string }> = [];
+            let firstPointer: { trajectoryId: string; analysisId: string } | undefined;
+
+            for (const modId of relevantModifiers) {
+                const pointers = pluginModifierAnalyses.get(pluginId)?.get(modId);
+                if (pointers) {
+                    analysisPointers.push(...pointers);
+                    if (!firstPointer && pointers.length > 0) {
+                        firstPointer = { trajectoryId: pointers[0].trajectoryId, analysisId: pointers[0].analysisId };
+                    }
+                }
+            }
+
+            const listingUrl = firstPointer
+                ? `/dashboard/trajectory/${firstPointer.trajectoryId}/plugin/${pluginId}/listing/${listingKey}`
                 : undefined;
 
-            if(!analysisPointers.length){
+            if (!analysisPointers.length) {
                 continue;
             }
 

@@ -370,6 +370,7 @@ const AnalysisConfigSelection = () => {
                 className="analysis-config-select-container"
                 onChange={handleChange}
                 options={options}
+                showSelectionIcon={false}
                 disabled={!analysisList.length}
             />
         </EditorWidget>

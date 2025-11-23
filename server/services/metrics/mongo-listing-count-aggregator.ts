@@ -65,7 +65,7 @@ export type ListingMetrics = {
     meta?: Record<string, { displayName?: string; listingUrl?: string }>;
 };
 
-export default class MongoListingCountAggregator extends BaseListingAggregator{
+export default class MongoListingCountAggregator extends BaseListingAggregator {
     private totals = 0;
     private currMonth = 0;
     private prevMonth = 0;
@@ -74,77 +74,92 @@ export default class MongoListingCountAggregator extends BaseListingAggregator{
     constructor(
         private mode: AggregatorMode,
         config?: AggregatorConfig
-    ){
+    ) {
         super(config);
     }
 
-    private splitListingKey(key: string){
+    private splitListingKey(key: string) {
         const [modifierId, exposureId = modifierId] = key.split('_');
         return { modifierId, exposureId };
     }
 
-    private async getListingDefinition(){
-        if(this.mode.kind !== 'listing') return null;
+    private async getListingDefinition() {
+        if (this.mode.kind !== 'listing') return null;
 
         const manifest = await new ManifestService(this.mode.pluginId).get();
-        const entry: ListingEntry | undefined = manifest.listing?.[this.mode.listingKey];
-        if(!entry?.aggregators?.count) return null;
+        const entry: ListingEntry | any = manifest.listing?.[this.mode.listingKey];
+        if (!entry?.aggregators?.count) return null;
 
-        const [modifierId, ...rest] = this.mode.listingKey.split('_');
-        const exposureId = rest.length ? rest.join('_') : modifierId;
+        let modifierId: string;
+        let exposureId: string;
+
+        if (entry.modifiers && Array.isArray(entry.modifiers)) {
+            // For multi-modifier listings, we just need to validate that at least one modifier exists
+            // and we'll use the listing key as the default exposure ID base
+            const firstValidModifier = entry.modifiers.find((modId: string) => manifest.modifiers?.[modId]);
+            if (!firstValidModifier) return null;
+
+            modifierId = firstValidModifier;
+            exposureId = this.mode.listingKey;
+        } else {
+            const split = this.mode.listingKey.split('_');
+            modifierId = split[0];
+            const rest = split.slice(1);
+            exposureId = rest.length ? rest.join('_') : modifierId;
+
+            const modifierExists = manifest.modifiers?.[modifierId];
+            if (!modifierExists) return null;
+        }
+
         const exposureSlug = slugify(exposureId);
-
-        const modifierExists = manifest.modifiers?.[modifierId];
-        if(!modifierExists) return null;
-
         return { entry, modifierId, exposureSlug };
     }
 
-    private updateBuckets(createdAt: Date){
+    private updateBuckets(createdAt: Date) {
         this.totals += 1;
 
-        if(createdAt >= this.monthStart && createdAt < this.now){
+        if (createdAt >= this.monthStart && createdAt < this.now) {
             this.currMonth += 1;
-        }else if(createdAt >= this.prevMonthStart && createdAt < this.monthStart){
+        } else if (createdAt >= this.prevMonthStart && createdAt < this.monthStart) {
             this.prevMonth += 1;
         }
 
-        if(createdAt >= this.sinceDate){
+        if (createdAt >= this.sinceDate) {
             const key = this.toWeekKey(createdAt);
             this.weeklyCounts.set(key, (this.weeklyCounts.get(key) ?? 0) + 1);
         }
     }
 
-    private async collectFromModel(){
-        if(this.mode.kind !== 'model'){
+    private async collectFromModel() {
+        if (this.mode.kind !== 'model') {
             throw new Error('collectFromModel() only if kind === "model"');
         }
 
         const query = this.mode.buildQuery();
         const cursor = this.mode.model.find(query).select('createdAt').cursor();
-        for await(const doc of cursor as any){
+        for await (const doc of cursor as any) {
             const createdAt = (doc as any)?.createdAt as Date | undefined;
-            if(createdAt){
+            if (createdAt) {
                 this.updateBuckets(createdAt);
             }
         }
     }
 
-    private async collectFromListing(){
-        if(this.mode.kind !== 'listing') {
+    private async collectFromListing() {
+        if (this.mode.kind !== 'listing') {
             throw new Error('collectFromListing() only if kind === "listing"');
         }
 
-        if(!this.mode.analysisPointers?.length){
+        if (!this.mode.analysisPointers?.length) {
             return;
         }
 
         const definition = await this.getListingDefinition();
-        if(!definition){
+        if (!definition) {
             return;
         }
 
-        for(const pointer of this.mode.analysisPointers){
+        for (const pointer of this.mode.analysisPointers) {
             const prefix = [
                 'plugins',
                 `trajectory-${pointer.trajectoryId}`,
@@ -154,16 +169,16 @@ export default class MongoListingCountAggregator extends BaseListingAggregator{
 
             const keys = await listByPrefix(prefix, SYS_BUCKETS.PLUGINS);
             const createdAt = pointer.createdAt ? new Date(pointer.createdAt) : new Date();
-            for(const _key of keys){
+            for (const _key of keys) {
                 this.updateBuckets(createdAt);
             }
         }
     }
 
-    async collect(metricKey?: string){
-        if(this.mode.kind === 'model'){
+    async collect(metricKey?: string) {
+        if (this.mode.kind === 'model') {
             await this.collectFromModel();
-        }else{
+        } else {
             await this.collectFromListing();
         }
 
@@ -191,31 +206,31 @@ export default class MongoListingCountAggregator extends BaseListingAggregator{
         };
     }
 
-    static async merge(aggregators: Array<{ agg: MongoListingCountAggregator; key: string }>): Promise<ListingMetrics>{
+    static async merge(aggregators: Array<{ agg: MongoListingCountAggregator; key: string }>): Promise<ListingMetrics> {
         const totals: Record<string, number> = {};
         const lastMonth: Record<string, number> = {};
         const labelsSet = new Set<string>();
         const series: Record<string, Map<string, number>> = {};
 
         const mergeTotals = (source: Record<string, number>) => {
-            for(const [key, value] of Object.entries(source)){
+            for (const [key, value] of Object.entries(source)) {
                 totals[key] = (totals[key] ?? 0) + value;
             }
         };
 
         const mergeLastMonth = (source: Record<string, number>) => {
-            for(const [key, value] of Object.entries(source)){
+            for (const [key, value] of Object.entries(source)) {
                 lastMonth[key] = (lastMonth[key] ?? 0) + value;
             }
         };
 
         const meta: Record<string, { displayName?: string; listingUrl?: string }> = {};
-        for(const { agg, key } of aggregators){
+        for (const { agg, key } of aggregators) {
             const metrics = await agg.collect(key);
             mergeTotals(metrics.totals);
             mergeLastMonth(metrics.lastMonth);
 
-            if(metrics.meta){
+            if (metrics.meta) {
                 Object.assign(meta, metrics.meta);
             }
 
@@ -233,12 +248,12 @@ export default class MongoListingCountAggregator extends BaseListingAggregator{
 
         const sortedLabels = Array.from(labelsSet).sort();
         const weekly: ListingMetrics['weekly'] = { labels: sortedLabels };
-        for(const [key, map] of Object.entries(series)){
+        for (const [key, map] of Object.entries(series)) {
             weekly[key] = sortedLabels.map((label) => map.get(label) ?? 0);
         }
 
         return {
-            totals, 
+            totals,
             lastMonth,
             weekly,
             meta

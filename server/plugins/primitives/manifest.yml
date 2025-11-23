@@ -19,6 +19,23 @@ listing:
         summary.total_length: Total Length
         summary.total_points: Points
         analysis.createdAt: Created At
+        
+    structure-identification-stats:
+        modifiers:
+            - common-neighbor-analysis
+            - diamond-identifier
+            - polyhedral-template-matching
+            - dislocation-analysis
+        aggregators:
+            displayName: Structure Identification
+            count: true
+        trajectory: Trajectory
+        timestep: Timestep
+        analysis.config.identificationMode: Identification Mode
+        summary.total_identified: Identified
+        summary.total_unidentified: Unidentified
+        summary.identification_rate: Identification Rate
+        analysis.createdAt: Created At
 
 modifiers:
     # Dislocation Analysis Modifier
@@ -105,7 +122,7 @@ modifiers:
             simulation-cell:
                 results: simulation_cell.msgpack
 
-            structure-analysis:
+            structure-identification-stats:
                 results: structure_stats.msgpack
             
     # Common Neighbor Analysis Modifier
@@ -132,6 +149,9 @@ modifiers:
                     handler: exportAtomsTypeToGLBMinIO
                     type: glb
 
+            structure-identification-stats:
+                results: structure_stats.msgpack
+                
     # Polyhedral Template Matching Modifier
     polyhedral-template-matching:
         preset:
@@ -157,6 +177,9 @@ modifiers:
                     name: AtomisticExporter
                     handler: exportAtomsTypeToGLBMinIO
                     type: glb
+
+            structure-identification-stats:
+                results: structure_stats.msgpack
 
     # Diamond Identifier Modifier
     diamond-identifier:
@@ -200,6 +223,7 @@ entrypoint:
                 modifier:
                     - dislocation-analysis
                     - common-neighbor-analysis
+                    - diamond-identifier
 
         identificationMode:
             type: select
