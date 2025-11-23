@@ -33,6 +33,8 @@ interface InputProps {
     min?: string | number;
     max?: string | number;
     className?: string;
+    autoFocus?: boolean;
+    required?: boolean;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -44,7 +46,9 @@ const Input: React.FC<InputProps> = ({
     step,
     min,
     max,
-    className = ''
+    className = '',
+    autoFocus = false,
+    required = false
 }) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value;
@@ -62,6 +66,8 @@ const Input: React.FC<InputProps> = ({
             min={min}
             max={max}
             className={className}
+            autoFocus={autoFocus}
+            required={required}
         />
     );
 };

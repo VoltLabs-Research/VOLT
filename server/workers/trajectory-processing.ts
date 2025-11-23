@@ -42,7 +42,7 @@ const processSingleFrame = async (frameData: any, frameFilePath: string, traject
 };
 
 const processJob = async (job: TrajectoryProcessingJob) => {
-    if(!job || !job.jobId){
+    if (!job || !job.jobId) {
         throw new Error('Invalid job payload');
     }
 
@@ -52,8 +52,8 @@ const processJob = async (job: TrajectoryProcessingJob) => {
         `[Worker #${process.pid}] Start job ${job.jobId} ` +
         `(chunk ${job.chunkIndex + 1}/${job.totalChunks})`
     );
-    
-    try{
+
+    try {
         await Promise.all(files.map(({ frameData, frameFilePath }) => processSingleFrame(frameData, frameFilePath, trajectoryId)));
         parentPort?.postMessage({
             status: 'completed',
@@ -63,16 +63,15 @@ const processJob = async (job: TrajectoryProcessingJob) => {
         });
 
         logger.info(`[Worker #${process.pid}] Job ${job.jobId} completed OK.`);
-    }catch(error){
+    } catch (error) {
         logger.error(
-            `[Worker #${process.pid}] Job ${job.jobId} failed:`,
-            error
+            `[Worker #${process.pid}] Job ${job.jobId} failed: ${error}`
         );
 
         // Clean up leftover files (paralelo y sin bloquear)
         await Promise.all(
             files.map(({ frameFilePath }) =>
-                unlink(frameFilePath).catch(() => {})
+                unlink(frameFilePath).catch(() => { })
             )
         );
 
@@ -89,16 +88,16 @@ const main = () => {
     logger.info(`[Worker #${process.pid}] Worker started`);
 
     parentPort?.on('message', async ({ job }) => {
-        try{
+        try {
             await processJob(job);
-        }catch(error){
+        } catch (error) {
             logger.error(`[Worker #${process.pid}] Fatal worker error: ${error}`);
 
             parentPort?.postMessage({
                 status: 'failed',
                 jobId: job?.jobId || 'unknown',
                 error: error instanceof Error ? error.message : 'Unknown error'
-            }); 
+            });
         }
     });
 };

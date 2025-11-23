@@ -28,6 +28,7 @@ const router = express.Router();
 
 router.post('/sign-in', controller.signIn);
 router.post('/sign-up', controller.signUp);
+router.post('/check-email', controller.checkEmailExistence);
 
 router.use(middleware.protect);
 router.patch('/me/update/password/', controller.updateMyPassword);

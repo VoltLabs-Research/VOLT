@@ -22,6 +22,7 @@
 
 import type { ExecutionRecorder } from '@/services/plugins/modifier-processor';
 import { getMinioClient } from '@/config/minio';
+import logger from '@/logger';
 
 interface UploadedObject{
     bucket: string;

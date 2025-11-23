@@ -135,11 +135,11 @@ const signToken = (id: string): string => {
  */
 const createAndSendToken = async (res: Response, statusCode: number, user: IUser, req: Request): Promise<void> => {
     const token = signToken(user._id as string);
-    
+
     // Create session record
     const userAgent = req.get('User-Agent') || 'Unknown';
     const ip = req.ip || req.connection.remoteAddress || 'Unknown';
-    
+
     await Session.create({
         user: user._id,
         token,
@@ -150,7 +150,7 @@ const createAndSendToken = async (res: Response, statusCode: number, user: IUser
         action: 'login',
         success: true
     });
-    
+
     (user as any).password = undefined;
     (user as any).__v = undefined;
     res.status(statusCode).json({
@@ -180,13 +180,13 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
     const { email, password } = req.body;
     const userAgent = req.get('User-Agent') || 'Unknown';
     const ip = req.ip || req.connection.remoteAddress || 'Unknown';
-    
-    if(!email || !password){
+
+    if (!email || !password) {
         return next(new RuntimeError('Auth::Credentials::Missing', 400));
     }
-    
+
     const requestedUser = await User.findOne({ email }).select('+password');
-    if(!requestedUser || !(await requestedUser.isCorrectPassword(password, requestedUser.password))){
+    if (!requestedUser || !(await requestedUser.isCorrectPassword(password, requestedUser.password))) {
         // Track failed login attempt
         await Session.create({
             user: requestedUser?._id || null,
@@ -199,10 +199,10 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
             success: false,
             failureReason: !requestedUser ? 'User not found' : 'Invalid password'
         });
-        
+
         return next(new RuntimeError('Auth::Credentials::Invalid', 401));
     }
-    
+
     await createAndSendToken(res, 200, requestedUser, req);
 };
 
@@ -222,6 +222,22 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
     const { email, firstName, lastName, password } = req.body;
     const newUser = await User.create({ email, firstName, lastName, password });
     await createAndSendToken(res, 201, newUser, req);
+};
+
+/**
+ * Check if an email is already registered.
+ * 
+ * @param req - Express request containing `email` in the body.
+ * @param res - Express response used to send the existence status.
+ * @returns A Promise that resolves when the response has been sent.
+ */
+export const checkEmailExistence = async (req: Request, res: Response): Promise<void> => {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    res.status(200).json({
+        status: 'success',
+        data: { exists: !!user }
+    });
 };
 
 /**
@@ -251,13 +267,13 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
 export const updateMyPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const user = (req as any).user as IUser;
     const requestedUser = await User.findById(user.id).select('+password');
-    if(!requestedUser){
+    if (!requestedUser) {
         return next(new RuntimeError('Authentication::Update::UserNotFound', 404));
     }
-    if(!(await requestedUser.isCorrectPassword(req.body.passwordCurrent, requestedUser.password))){
+    if (!(await requestedUser.isCorrectPassword(req.body.passwordCurrent, requestedUser.password))) {
         return next(new RuntimeError('Authentication::Update::PasswordCurrentIncorrect', 400));
     }
-    if(await requestedUser.isCorrectPassword(req.body.passwordConfirm, requestedUser.password)){
+    if (await requestedUser.isCorrectPassword(req.body.passwordConfirm, requestedUser.password)) {
         return next(new RuntimeError('Authentication::Update::PasswordsAreSame', 400));
     }
     requestedUser.password = req.body.password;

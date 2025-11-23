@@ -3,13 +3,13 @@ import Loader from '@/components/atoms/Loader';
 import { useNavigate } from 'react-router';
 import './Button.css';
 
-const Button = ({ title, isLoading = false, className = '', to = null, onClick = () => {}, ...props }) => {
+const Button = ({ title = '', isLoading = false, className = '', to = null, onClick = () => { }, children, ...props }) => {
     const navigate = useNavigate();
 
     const handleClick = () => {
         onClick();
 
-        if(to){
+        if (to) {
             navigate(to);
         }
     };
@@ -25,7 +25,7 @@ const Button = ({ title, isLoading = false, className = '', to = null, onClick =
                     <Loader scale={0.6} />
                 </div>
             ) : (
-                <span className='button-text'>{title}</span>
+                children ? children : <span className='button-text'>{title}</span>
             )}
         </button>
     );

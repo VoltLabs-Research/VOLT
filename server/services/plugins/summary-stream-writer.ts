@@ -6,8 +6,9 @@ import { unlink } from 'node:fs/promises';
 import { WriteStream, createReadStream, createWriteStream } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import logger from '@/logger';
 
-export default class SummaryStreamWriter{
+export default class SummaryStreamWriter {
     private tmpPath: string;
     private stream: WriteStream | null = null;
     private hasData = false;
@@ -18,7 +19,7 @@ export default class SummaryStreamWriter{
         private analysisId: string,
         private artifactName: string,
         private timestep: number
-    ){
+    ) {
         const artifactKey = slugify(this.artifactName);
         this.tmpPath = path.join(
             os.tmpdir(),
@@ -26,38 +27,38 @@ export default class SummaryStreamWriter{
         );
     }
 
-    async append(chunk: unknown): Promise<void>{
-        if(!this.stream){
+    async append(chunk: unknown): Promise<void> {
+        if (!this.stream) {
             this.stream = createWriteStream(this.tmpPath);
         }
-        
+
         this.hasData = true;
         const buffer = encodeMsgpack(chunk);
         await new Promise<void>((resolve, reject) => {
             this.stream!.write(buffer, (err) => {
-                if(err) return reject(err);
+                if (err) return reject(err);
                 resolve();
             });
         });
     }
 
-    get wroteAny(): boolean{
+    get wroteAny(): boolean {
         return this.hasData;
     }
 
-    getTempPath(): string{
+    getTempPath(): string {
         return this.tmpPath;
     }
 
-    async finalizeAndUpload(): Promise<{ storageKey: string } | null>{
-        if(!this.hasData){
+    async finalizeAndUpload(): Promise<{ storageKey: string } | null> {
+        if (!this.hasData) {
             return null;
         }
 
-        if(this.stream){
+        if (this.stream) {
             await new Promise<void>((resolve, reject) => {
                 this.stream!.end((err: any) => {
-                    if(err) return reject(err);
+                    if (err) return reject(err);
                     resolve();
                 })
             });

@@ -20,6 +20,7 @@
 * SOFTWARE.
 **/
 
+import logger from '@/logger';
 import { listByPrefix, statObject } from '@/utilities/buckets';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';

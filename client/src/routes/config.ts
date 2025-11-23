@@ -31,7 +31,6 @@ import AnalysisConfigsListing from '@/pages/protected/AnalysisConfigsListing';
 import TrajectoriesListing from '@/pages/protected/TrajectoriesListing';
 import AccountSettings from '@/pages/protected/AccountSettings';
 import Clusters from '@/pages/protected/Clusters';
-import SignUp from '@/pages/guest/SignUp';
 import SignIn from '@/pages/guest/SignIn';
 import TeamInvitationPage from '@/pages/guest/TeamInvitationPage';
 
@@ -95,10 +94,6 @@ export const routesConfig: RouteGroup = {
     ],
 
     guest: [
-        {
-            path: '/auth/sign-up',
-            component: SignUp,
-        },
         {
             path: '/auth/sign-in',
             component: SignIn,
