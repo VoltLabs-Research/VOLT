@@ -37,7 +37,7 @@ const resolveValueByPath = (
 // /api/plugins/:pluginId/modifier/:modifierId/trajectory/:trajectoryId { config }
 export const evaluateModifier = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { pluginId, modifierId, id: trajectoryId } = req.params;
-    const { config } = req.body;
+    const { config, timestep } = req.body;
     const { trajectory } = res.locals;
 
     const registry = new PluginRegistry();
@@ -68,8 +68,21 @@ export const evaluateModifier = catchAsync(async (req: Request, res: Response, n
 
     const trajectoryName = trajectory?.name || trajectoryId;
 
+    let framesToProcess = trajectory!.frames;
+
+    if (modifierConfig?.singleFrameAnalysis) {
+        if (timestep === undefined) {
+            return next(new RuntimeError('Modifier::SingleFrameAnalysis::TimestepRequired', 400));
+        }
+        const targetFrame = framesToProcess.find((f: any) => f.timestep === Number(timestep));
+        if (!targetFrame) {
+            return next(new RuntimeError('Trajectory::Frame::NotFound', 404));
+        }
+        framesToProcess = [targetFrame];
+    }
+
     const jobs: AnalysisJob[] = [];
-    const promises = trajectory!.frames.map(async ({ timestep }: any) => {
+    const promises = framesToProcess.map(async ({ timestep }: any) => {
         const inputFile = await trajectoryFS.getDump(timestep);
         if (!inputFile) {
             throw new RuntimeError('Trajectory::Dump::NotFound', 404);
@@ -231,12 +244,20 @@ export const getPluginListingDocuments = catchAsync(async (req: Request, res: Re
         });
     }
 
-    const columns = Object.entries(listingDef)
-        .filter(([key]) => key !== 'aggregators' && key !== 'modifiers')
-        .map(([path, label]) => ({
-            path,
-            label: typeof label === 'string' ? label : String(label)
+    let columns: any[] = [];
+    if (listingDef.columns && Array.isArray(listingDef.columns)) {
+        columns = listingDef.columns.map((col: any) => ({
+            path: col.key,
+            label: col.label
         }));
+    } else {
+        columns = Object.entries(listingDef)
+            .filter(([key]) => key !== 'aggregators' && key !== 'modifiers' && key !== 'perFrameListing' && key !== 'columns')
+            .map(([path, label]) => ({
+                path,
+                label: typeof label === 'string' ? label : String(label)
+            }));
+    }
 
     const entryRecords: Array<{ key: string; analysis: any }> = [];
 
@@ -376,4 +397,71 @@ export const getManifests = catchAsync(async (req: Request, res: Response) => {
             pluginIds
         }
     });
+});
+
+export const getPerFrameListing = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const { id: trajectoryId, analysisId, exposureId, timestep } = req.params;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit as string) || 50));
+
+    const objectName = [
+        'plugins',
+        `trajectory-${trajectoryId}`,
+        `analysis-${analysisId}`,
+        exposureId,
+        `timestep-${timestep}.msgpack`
+    ].join('/');
+
+    try {
+        const analysis = await Analysis.findById(analysisId);
+        if (!analysis) {
+            return next(new RuntimeError('Analysis::NotFound', 404));
+        }
+
+        const manifest = await new ManifestService(analysis.plugin).get();
+        const modifier = manifest.modifiers[analysis.modifier];
+        const exposure = modifier.exposure[exposureId];
+        const iterableKey = exposure?.iterable || 'data';
+
+        const buffer = await getObject(objectName, SYS_BUCKETS.PLUGINS);
+        const payload = decodeMsgpack(buffer) as any;
+
+        let items: any[] = [];
+        if (Array.isArray(payload)) {
+            items = payload;
+        } else if (payload[iterableKey] && Array.isArray(payload[iterableKey])) {
+            items = payload[iterableKey];
+        } else if (payload.data && Array.isArray(payload.data)) {
+            items = payload.data;
+        } else {
+            // Fallback: find first array property
+            for (const key in payload) {
+                if (Array.isArray(payload[key])) {
+                    items = payload[key];
+                    break;
+                }
+            }
+        }
+
+        const total = items.length;
+        const offset = (page - 1) * limit;
+        const pagedItems = items.slice(offset, offset + limit);
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                rows: pagedItems,
+                page,
+                limit,
+                total,
+                hasMore: offset + pagedItems.length < total
+            }
+        });
+    } catch (err) {
+        console.error('[getPerFrameListing] Error:', err);
+        return res.status(404).json({
+            status: 'error',
+            data: { error: `Data not found for analysis ${analysisId}` }
+        });
+    }
 });

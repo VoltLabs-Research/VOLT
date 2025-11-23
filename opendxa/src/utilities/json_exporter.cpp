@@ -879,29 +879,125 @@ bool DXAJsonExporter::writeSimulationCellMsgpack(const SimulationCell& cell,
 }
 
 bool DXAJsonExporter::writeRdfMsgpack(const std::vector<double>& rdfX,
-                     const std::vector<double>& rdfY,
-                     const std::string& filepath){
+                         const std::vector<double>& rdfY,
+                         const std::string& filepath){
     try{
         std::ofstream of(filepath, std::ios::binary);
         if(!of.is_open()) return false;
-        
-        json j;
-        j["distance"] = rdfX;
-        j["g_r"] = rdfY;
-        
-        auto bytes = nlohmann::json::to_msgpack(j);
-        of.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+        MsgpackWriter w(of);
+
+        w.write_map_header(2);
+        w.write_key("distance");
+        w.write_array_header(rdfX.size());
+        for(double v : rdfX) w.write_double(v);
+
+        w.write_key("g_r");
+        w.write_array_header(rdfY.size());
+        for(double v : rdfY) w.write_double(v);
+
         of.flush();
         return true;
-    }catch(...){ return false; }
+    }catch(...){
+        return false;
+    }
+}
+
+bool DXAJsonExporter::writeAtomicStrainMsgpack(const AtomicStrainModifier::AtomicStrainEngine& engine,
+                                               const std::vector<int>& ids,
+                                               const std::string& filepath){
+    try{
+        std::ofstream of(filepath, std::ios::binary);
+        if(!of.is_open()) return false;
+        MsgpackWriter w(of);
+
+        auto shear = engine.shearStrains();
+        auto volumetric = engine.volumetricStrains();
+        auto strainProp = engine.strainTensors();
+        auto defgrad = engine.deformationGradients();
+        auto D2minProp = engine.nonaffineSquaredDisplacements();
+        auto invalid = engine.invalidParticles();
+
+        size_t n = ids.size();
+        
+        // Calculate summary stats
+        double totalShear = 0.0;
+        double totalVolumetric = 0.0;
+        double maxShear = 0.0;
+        int count = 0;
+
+        for(size_t i=0; i<n; ++i){
+             if(shear){
+                 double s = shear->getDouble(i);
+                 totalShear += s;
+                 if(s > maxShear) maxShear = s;
+             }
+             if(volumetric) totalVolumetric += volumetric->getDouble(i);
+             count++;
+        }
+
+        w.write_map_header(3); // metadata, summary, data
+
+        // Metadata
+        w.write_key("metadata");
+        w.write_map_header(2);
+        w.write_key("count"); w.write_uint(n);
+        w.write_key("num_invalid_particles"); w.write_uint(engine.numInvalidParticles());
+
+        // Summary
+        w.write_key("summary");
+        w.write_map_header(3);
+        w.write_key("average_shear_strain"); w.write_double(count > 0 ? totalShear / count : 0.0);
+        w.write_key("average_volumetric_strain"); w.write_double(count > 0 ? totalVolumetric / count : 0.0);
+        w.write_key("max_shear_strain"); w.write_double(maxShear);
+
+        // Data
+        w.write_key("data");
+        w.write_array_header(n);
+
+        for(size_t i=0; i<n; ++i){
+            // Count fields
+            int fields = 3; // id, shear, volumetric
+            if(strainProp) fields++;
+            if(defgrad) fields++;
+            if(D2minProp) fields++;
+            if(invalid) fields++;
+
+            w.write_map_header(fields);
+            
+            w.write_key("id"); w.write_int(ids[i]);
+            w.write_key("shear_strain"); w.write_double(shear ? shear->getDouble(i) : 0.0);
+            w.write_key("volumetric_strain"); w.write_double(volumetric ? volumetric->getDouble(i) : 0.0);
+
+            if(strainProp){
+                w.write_key("strain_tensor");
+                w.write_array_header(6);
+                for(int k=0; k<6; ++k) w.write_double(strainProp->getDoubleComponent(i, k));
+            }
+
+            if(defgrad){
+                w.write_key("deformation_gradient");
+                w.write_array_header(9);
+                for(int k=0; k<9; ++k) w.write_double(defgrad->getDoubleComponent(i, k));
+            }
+
+            if(D2minProp){
+                w.write_key("D2min"); w.write_double(D2minProp->getDouble(i));
+            }
+
+            if(invalid){
+                w.write_key("invalid"); w.write_bool(invalid->getInt(i) != 0);
+            }
+        }
+
+        of.flush();
+        return true;
+    }catch(...){
+        return false;
+    }
 }
 
 json DXAJsonExporter::segmentToJson(const DislocationSegment* segment, bool includeDetailedInfo){
     json segmentJson;
-    
-    if(!segment || segment->isDegenerate()){
-        return segmentJson;
-    }
     
     segmentJson["length"] = segment->calculateLength();
     

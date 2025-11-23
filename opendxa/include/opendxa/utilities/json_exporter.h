@@ -11,6 +11,7 @@
 #include <opendxa/analysis/burgers_circuit.h>
 #include <opendxa/core/lammps_parser.h>
 #include <opendxa/math/lin_alg.h>
+#include <opendxa/analysis/atomic_strain.h>
 
 namespace OpenDXA{
 
@@ -71,6 +72,10 @@ public:
     bool writeRdfMsgpack(const std::vector<double>& rdfX,
                          const std::vector<double>& rdfY,
                          const std::string& filepath);
+
+    bool writeAtomicStrainMsgpack(const AtomicStrainModifier::AtomicStrainEngine& engine,
+                                  const std::vector<int>& ids,
+                                  const std::string& filepath);
 
     json getInterfaceMeshData(
         const InterfaceMesh* interfaceMesh,

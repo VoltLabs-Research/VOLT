@@ -89,7 +89,8 @@ public:
     json computeAtomicStrain(
         const LammpsParser::Frame &currentFrame,
         const LammpsParser::Frame &refFrame,
-        Particles::ParticleProperty *positions
+        Particles::ParticleProperty *positions,
+        const std::string& outputFilename = ""
     );
 
 private:

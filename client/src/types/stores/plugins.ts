@@ -1,5 +1,5 @@
 export type BuiltInExports = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
-export type ArgType = 'select' | 'number' | 'boolean';
+export type ArgType = 'select' | 'number' | 'boolean' | 'trajectory-frame';
 
 export interface AnalysisSelectionField {
     path: string;
@@ -20,7 +20,7 @@ export interface Manifest {
     homepage: string;
     entrypoint: Entrypoint;
     modifiers: Record<string, Modifier>;
-
+    listing?: Record<string, any>;
 };
 
 export interface ExposureExportConfig {
@@ -45,6 +45,7 @@ export interface Modifier {
     preset?: Record<string, any>;
     exposure: Record<string, Exposure>;
     analysisSelection?: AnalysisSelectionConfig;
+    perFrameListing?: any;
 };
 
 export interface EntrypointArgument {

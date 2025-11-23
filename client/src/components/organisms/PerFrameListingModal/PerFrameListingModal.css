@@ -1,0 +1,67 @@
+.per-frame-listing-modal-container {
+    width: 1000px;
+    max-height: 70vh;
+    border-radius: .5rem;
+    background-color: var(--color-bg);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
+    transition: width 0.3s ease, height 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.per-frame-listing-modal-draggable {
+    position: fixed !important;
+    z-index: 9999999999;
+    top: 10%;
+    left: calc(50% - 500px);
+}
+
+.per-frame-listing-modal-draggable:has(.maximized) {
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+}
+
+.per-frame-listing-modal-container.maximized {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    border-radius: 0;
+}
+
+.per-frame-listing-modal-header-container {
+    display: flex;
+    gap: 1.5rem;
+    flex-direction: column;
+    padding: 1rem;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.per-frame-listing-modal-header-title {
+    font-size: 1.7rem;
+    font-weight: 300;
+    cursor: grab;
+}
+
+.per-frame-listing-modal-header-title:active {
+    cursor: grabbing;
+}
+
+.per-frame-listing-modal-body-container {
+    padding: 1rem;
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+}
+
+.per-frame-listing-modal-container .document-listing-table-row-container,
+.per-frame-listing-modal-container .document-listing-table-header-container {
+    padding: 1rem;
+}
+
+.per-frame-listing-modal-container .document-listing-table-header-container {
+    border-radius: 5rem;
+}

@@ -1,5 +1,5 @@
 export type BuiltInExports = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
-export type ArgType = 'select' | 'number' | 'boolean';
+export type ArgType = 'select' | 'number' | 'boolean' | 'trajectory-frame';
 export interface AnalysisSelectionField {
     path: string;
     label?: string;

@@ -37,6 +37,38 @@ listing:
         summary.identification_rate: Identification Rate
         analysis.createdAt: Created At
 
+    atomic-strain:
+        modifiers:
+            - atomic-strain
+        aggregators:
+            displayName: Atomic Strain
+            count: true
+        trajectory: Trajectory
+        timestep: Timestep
+        analysis.config.atomicStrainCutoff: Cutoff
+        summary.average_shear_strain: Avg Shear Strain
+        summary.max_shear_strain: Max Shear Strain
+        metadata.num_invalid_particles: Invalid Particles
+        analysis.createdAt: Created At
+        perFrameListing:
+            title: Atomic Strain Details
+            columns:
+                - key: id
+                  label: Atom ID
+                - key: shear_strain
+                  label: Shear Strain
+                  format: number
+                - key: volumetric_strain
+                  label: Volumetric Strain
+                  format: number
+                - key: D2min
+                  label: D2min
+                  format: number
+                - key: strain_tensor
+                  label: Strain Tensor
+                - key: deformation_gradient
+                  label: Deformation Gradient
+
 modifiers:
     # Dislocation Analysis Modifier
     dislocation-analysis:
@@ -236,6 +268,30 @@ modifiers:
                     handler: exportAtomsTypeToGLBMinIO
                     type: glb
 
+    # Atomic Strain Modifier
+    atomic-strain:
+        singleFrameAnalysis: true
+        preset:
+            coordinationAnalysis: false
+            structureIdentificationOnly: false
+            atomicStrainEnabled: true
+        analysisSelection:
+            title:
+                - path: config.atomicStrainCutoff
+                - path: createdAt
+            description:
+                - path: config.atomicStrainCalcStrainTensors
+                - path: config.atomicStrainCalcDeformationGradient
+                - path: config.atomicStrainCalcD2min
+        exposure:
+            atomic-strain:
+                results: atomic_strain.msgpack
+                iterable: atomic_strain
+                displayName: Atomic Strain Analysis
+                icon: PiAtomLight
+                canvas: false
+                raster: false
+
 entrypoint:
     bin: opendxa
     arguments:
@@ -369,3 +425,59 @@ entrypoint:
             step: 1
             visibleWhen:
                 modifier: coordination-analysis
+
+        atomicStrainEnabled:
+            type: boolean
+            default: true
+
+        atomicStrainCutoff:
+            type: number
+            label: Cutoff Radius
+            default: 3.0
+            min: 1.0
+            max: 20.0
+            step: 0.1
+            visibleWhen:
+                modifier: atomic-strain
+
+        atomicStrainEliminateCellDeformation:
+            type: boolean
+            label: Eliminate Cell Deformation
+            default: false
+            visibleWhen:
+                modifier: atomic-strain
+
+        atomicStrainAssumeUnwrapped:
+            type: boolean
+            label: Assume Unwrapped Coordinates
+            default: false
+            visibleWhen:
+                modifier: atomic-strain
+
+        atomicStrainCalcDeformationGradient:
+            type: boolean
+            label: Calculate Deformation Gradient
+            default: true
+            visibleWhen:
+                modifier: atomic-strain
+
+        referenceSource:
+            type: trajectory-frame
+            default: 0
+            label: Reference Frame
+            visibleWhen:
+                modifier: atomic-strain
+
+        atomicStrainCalcStrainTensors:
+            type: boolean
+            label: Calculate Strain Tensors
+            default: true
+            visibleWhen:
+                modifier: atomic-strain
+
+        atomicStrainCalcD2min:
+            type: boolean
+            label: Calculate D2min (Nonaffine Squared Displacement)
+            default: true
+            visibleWhen:
+                modifier: atomic-strain

@@ -27,13 +27,14 @@ import ManifestService from '@/services/plugins/manifest-service';
 import AnalysisContext from '@/services/plugins/modifier-context';
 import ArgumentsBuilder from '@/services/plugins/arguments-builder';
 import CLIExec from '@/services/cli-exec';
+import TrajectoryFS from '@/services/trajectory-fs';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
 
 type ResultFiles = Record<string, any>;
 
-export default class Plugin{
+export default class Plugin {
     private context: AnalysisContext;
     private manifest: ManifestService;
     private cli: CLIExec;
@@ -43,8 +44,8 @@ export default class Plugin{
         private trajectoryId: string,
         private analysisId: string,
         private pluginsDir = process.env.PLUGINS_DIR || ''
-    ){
-        if(!pluginsDir){
+    ) {
+        if (!pluginsDir) {
             throw new Error('PLUGINS_DIR is not defined.');
         }
 
@@ -54,15 +55,15 @@ export default class Plugin{
         this.cli = new CLIExec();
     }
 
-    private async getResultFiles(outputBase: string, modifierId: string): Promise<{ results: ResultFiles, generatedFiles: string[] }>{
+    private async getResultFiles(outputBase: string, modifierId: string): Promise<{ results: ResultFiles, generatedFiles: string[] }> {
         const { modifiers } = await this.manifest.get();
-        const  { exposure } = modifiers[modifierId];
+        const { exposure } = modifiers[modifierId];
         const results: ResultFiles = {};
         const generatedFiles: string[] = [];
-        for(const [exposureId, config] of Object.entries(exposure)){
+        for (const [exposureId, config] of Object.entries(exposure)) {
             const filePath = `${outputBase}_${config.results}`;
             const exists = await fileExists(filePath);
-            if(!exists) continue;
+            if (!exists) continue;
 
             console.log(`[${this.pluginName} plugin] reading file: ${filePath}`);
             results[exposureId] = filePath;
@@ -72,25 +73,45 @@ export default class Plugin{
         return { results, generatedFiles };
     }
 
-    private async buildArgs<T>(options: T): Promise<string[]>{
+    private async buildArgs<T>(options: any): Promise<string[]> {
         const { entrypoint } = await this.manifest.get();
+
+        // Pre-process options to resolve trajectory-frame arguments
+        const processedOptions = { ...options };
+        if (entrypoint.arguments) {
+            for (const [key, argDef] of Object.entries(entrypoint.arguments)) {
+                if (argDef.type === 'trajectory-frame' && options[key] !== undefined) {
+                    const timestep = Number(options[key]);
+                    if (!isNaN(timestep)) {
+                        const trajectoryFS = new TrajectoryFS(this.trajectoryId);
+                        const dumpFile = await trajectoryFS.getDump(timestep);
+                        if (dumpFile) {
+                            processedOptions[key] = dumpFile;
+                        } else {
+                            console.warn(`[${this.pluginName}] Could not find dump file for timestep ${timestep}`);
+                        }
+                    }
+                }
+            }
+        }
+
         const builder = new ArgumentsBuilder(entrypoint.arguments);
-        return builder.build(options);
+        return builder.build(processedOptions);
     }
 
-    private getTimestepFromFilename(filename: string): number{
+    private getTimestepFromFilename(filename: string): number {
         const match = filename.match(/\d+/g);
-        if(match){
+        if (match) {
             const timestepStr = match[match.length - 1];
             return parseInt(timestepStr, 10);
         }
         throw new Error(`Could not extract timestep from filename: ${filename}`);
     }
 
-    async evaluate<T>(inputFile: string, modifierId: string, options: T){
-        try{
+    async evaluate<T>(inputFile: string, modifierId: string, options: T) {
+        try {
             const cpuIntensiveTasksEnabled = process.env.CPU_INTENSIVE_TASKS !== 'false';
-            if(!cpuIntensiveTasksEnabled){
+            if (!cpuIntensiveTasksEnabled) {
                 throw new Error('CPUIntensiveTasks::Disabled');
             }
 
@@ -105,14 +126,14 @@ export default class Plugin{
             const timestep = this.getTimestepFromFilename(inputFile);
             await this.process(results, timestep, modifierId);
             await this.unlinkGeneratedFiles(generatedFiles);
-        }catch(err){
+        } catch (err) {
             console.error(`[${this.pluginName} plugin] failed to process ${inputFile}:`, err);
             await this.context.rollback();
             throw err;
         }
     }
 
-     async process(results: ResultFiles, timestep: number, modifierId: string){
+    async process(results: ResultFiles, timestep: number, modifierId: string) {
         const { modifiers } = await this.manifest.get();
         const modifier = modifiers[modifierId];
         const processor = new ArtifactProcessor(
@@ -125,24 +146,24 @@ export default class Plugin{
             this.context
         );
 
-        for(const exposureId of Object.keys(modifier.exposure)){
+        for (const exposureId of Object.keys(modifier.exposure)) {
             const resultsPath = results[exposureId];
-            if(!resultsPath){
+            if (!resultsPath) {
                 console.warn(`[${this.pluginName} plugin] skipping exposure "${exposureId}" for modifier "${modifierId}" – missing results file.`);
                 continue;
             }
             await processor.evaluate(exposureId, timestep, resultsPath);
         }
     }
-    
-    private async execute(inputFile: string, outputBase: string, opts: string[]){
+
+    private async execute(inputFile: string, outputBase: string, opts: string[]) {
         const { entrypoint } = await this.manifest.get();
         const args = [inputFile, outputBase, ...opts];
         const execPath = path.join(this.pluginsDir, this.pluginName, entrypoint.bin);
         await this.cli.run(execPath, args);
     }
 
-    private async unlinkGeneratedFiles(generatedFiles: string[]){
+    private async unlinkGeneratedFiles(generatedFiles: string[]) {
         await Promise.all(generatedFiles.map((file) => {
             fs.unlink(file).catch((err) => {
                 console.error(`Failed to delete file ${file}:`, err)

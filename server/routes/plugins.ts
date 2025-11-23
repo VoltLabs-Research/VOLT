@@ -24,6 +24,11 @@ router.get(
     trajMiddleware.checkTeamMembershipForTrajectory,
     controllers.getPluginListingDocuments);
 
+router.get(
+    '/per-frame-listing/:id/:analysisId/:exposureId/:timestep',
+    trajMiddleware.checkTeamMembershipForTrajectory,
+    controllers.getPerFrameListing);
+
 router.post(
     '/:pluginId/modifier/:modifierId/trajectory/:id',
     trajMiddleware.checkTeamMembershipForTrajectory,

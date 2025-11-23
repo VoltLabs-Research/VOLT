@@ -4,6 +4,7 @@ import FormField from '@/components/molecules/FormField';
 import EditorWidget from '@/components/organisms/EditorWidget';
 import Button from '@/components/atoms/Button';
 import usePluginStore from '@/stores/plugins';
+import useTrajectoryStore from '@/stores/trajectories';
 import { api } from '@/api';
 import './ModifierConfiguration.css';
 
@@ -17,6 +18,7 @@ interface ModifierConfigurationProps {
     onAnalysisStart?: () => void;
     onAnalysisSuccess?: (analysisId: string) => void;
     onAnalysisError?: (error: any) => void;
+    currentTimestep?: number;
 };
 
 const ModifierConfiguration = ({
@@ -28,7 +30,8 @@ const ModifierConfiguration = ({
     className = '',
     onAnalysisStart,
     onAnalysisSuccess,
-    onAnalysisError
+    onAnalysisError,
+    currentTimestep
 }: ModifierConfigurationProps) => {
     const [config, setConfig] = useState<Record<string, any>>({});
     const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +40,15 @@ const ModifierConfiguration = ({
     const configRef = useRef<Record<string, any>>({});
     const getAvailableArguments = usePluginStore((state) => state.getAvailableArguments);
     const manifests = usePluginStore((state) => state.manifests);
+
+    const trajectory = useTrajectoryStore((state) => state.trajectory);
+    const fetchTrajectory = useTrajectoryStore((state) => state.getTrajectoryById);
+
+    useEffect(() => {
+        if (trajectoryId && (!trajectory || trajectory._id !== trajectoryId)) {
+            fetchTrajectory(trajectoryId);
+        }
+    }, [trajectoryId, trajectory, fetchTrajectory]);
 
     // Mantener configRef sincronizado con config
     useEffect(() => {
@@ -77,11 +89,23 @@ const ModifierConfiguration = ({
                         field.selectProps = { renderInPortal: true };
                     break;
 
+                case 'trajectory-frame':
+                    field.type = 'select';
+                    field.options = (trajectory?.frames || []).map((frame: any, index: number) => ({
+                        value: String(frame.timestep),
+                        title: `Frame ${index + 1} (Time ${frame.timestep})`
+                    }));
+                    if (field.options.length === 0) {
+                        field.options = [{ value: '0', title: 'Default (First Frame)' }];
+                    }
+                    field.selectProps = { renderInPortal: true };
+                    break;
+
                 case 'number':
                     field.type = 'number';
                     field.inputProps = {
                         type: 'number',
-                        ste: argDef.step || 0.1,
+                        step: argDef.step || 0.1,
                         min: argDef.min,
                         max: argDef.max
                     };
@@ -103,7 +127,7 @@ const ModifierConfiguration = ({
             field.visibleWhen = argDef.visibleWhen;
             return field;
         });
-    }, [availableArguments, config]);
+    }, [availableArguments, config, trajectory]);
 
     const visibleFields = useMemo(() => {
         return configFields.filter((field) => {
@@ -157,7 +181,10 @@ const ModifierConfiguration = ({
 
             const response = await api.post(
                 `/plugins/${pluginId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
-                { config: finalConfig }
+                {
+                    config: finalConfig,
+                    timestep: currentTimestep
+                }
             );
             const analysisId = response.data?.data?.analysisId;
             onAnalysisSuccess?.(analysisId);
@@ -167,7 +194,7 @@ const ModifierConfiguration = ({
         } finally {
             setIsLoading(false);
         }
-    }, [pluginId, modifierId, trajectoryId, config, modifierInfo, onAnalysisStart, onAnalysisSuccess, onAnalysisError]);
+    }, [pluginId, modifierId, trajectoryId, config, modifierInfo, onAnalysisStart, onAnalysisSuccess, onAnalysisError, currentTimestep]);
 
     const displayTitle = title || modifierInfo?.displayName || 'Analysis Configuration';
 
@@ -198,7 +225,10 @@ const ModifierConfiguration = ({
 
                     const response = await api.post(
                         `/plugins/${pluginId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
-                        { config: finalConfig }
+                        {
+                            config: finalConfig,
+                            timestep: currentTimestep
+                        }
                     );
                     const analysisId = response.data?.data?.analysisId;
                     onAnalysisSuccess?.(analysisId);

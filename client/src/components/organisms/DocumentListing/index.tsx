@@ -64,8 +64,8 @@ export const MethodBadge = ({ method }: { method: string }) => {
         methodLower === 'cna'
             ? 'method-badge method-badge-green'
             : methodLower === 'ptm'
-            ? 'method-badge method-badge-purple'
-            : 'method-badge method-badge-gray'
+                ? 'method-badge method-badge-purple'
+                : 'method-badge method-badge-gray'
 
     return <span className={className}>{method}</span>
 }
@@ -87,17 +87,17 @@ export const StatusBadge = ({ status }: { status: string }) => {
         statusLower === 'ready'
             ? 'status-badge status-badge-green'
             : statusLower === 'processing'
-            ? 'status-badge status-badge-orange'
-            : statusLower === 'failed'
-            ? 'status-badge status-badge-red'
-            : 'status-badge status-badge-gray'
+                ? 'status-badge status-badge-orange'
+                : statusLower === 'failed'
+                    ? 'status-badge status-badge-red'
+                    : 'status-badge status-badge-gray'
 
     return <span className={className}>{status}</span>
 }
 
 type DocumentListingProps = {
     title: string
-    breadcrumbs?: string[]
+    breadcrumbs?: (string | React.ReactNode)[]
     columns: ColumnConfig[]
     data: any[]
     isLoading?: boolean
@@ -221,7 +221,7 @@ const DocumentListing = ({
                     <div className='document-listing-header-filters-container' />
                 </div>
             </div>
-        <div className='document-listing-body-container' ref={bodyRef}>
+            <div className='document-listing-body-container' ref={bodyRef}>
                 <DocumentListingTable
                     columns={columns}
                     data={sortedData}

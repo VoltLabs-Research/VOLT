@@ -161,7 +161,8 @@ void DislocationAnalysis::setAtomicStrainReferenceFrame(const LammpsParser::Fram
 json DislocationAnalysis::computeAtomicStrain(
     const LammpsParser::Frame& currentFrame,
     const LammpsParser::Frame& refFrame,
-    ParticleProperty* positions
+    ParticleProperty* positions,
+    const std::string& outputFilename
 ){
     if(currentFrame.natoms != refFrame.natoms){
         throw std::runtime_error("Cannot calculate atomic strain. Number of atoms in current and reference frames does not match.");
@@ -214,66 +215,95 @@ json DislocationAnalysis::computeAtomicStrain(
 
     engine.perform();
 
+    // Calculate summary stats
+    double totalShear = 0.0;
+    double totalVolumetric = 0.0;
+    double maxShear = 0.0;
+    int count = 0;
+    auto shear = engine.shearStrains();
+    auto volumetric = engine.volumetricStrains();
+    size_t n = currentFrame.positions.size();
+    for(size_t i=0; i<n; ++i){
+         if(shear){
+             double s = shear->getDouble(i);
+             totalShear += s;
+             if(s > maxShear) maxShear = s;
+         }
+         if(volumetric) totalVolumetric += volumetric->getDouble(i);
+         count++;
+    }
+
     json root;
     root["cutoff"] = _atomicStrainCutoff;
     root["num_invalid_particles"] = engine.numInvalidParticles();
-    root["atomic_strain"] = json::array();
+    root["summary"] = {
+        {"average_shear_strain", count > 0 ? totalShear / count : 0.0},
+        {"average_volumetric_strain", count > 0 ? totalVolumetric / count : 0.0},
+        {"max_shear_strain", maxShear}
+    };
 
-    auto shear = engine.shearStrains();
-    auto volumetric = engine.volumetricStrains();
-    auto strainProp = engine.strainTensors();
-    auto defgrad = engine.deformationGradients();
-    auto D2minProp = engine.nonaffineSquaredDisplacements();
-    auto invalid = engine.invalidParticles();
+    if(!outputFilename.empty()){
+        _jsonExporter.writeAtomicStrainMsgpack(engine, currentFrame.ids, outputFilename + "_atomic_strain.msgpack");
+        spdlog::info("Atomic strain data written to {}_atomic_strain.msgpack", outputFilename);
+        root["atomic_strain"] = json::array();
+    }else{
+        root["atomic_strain"] = json::array();
+        auto shear = engine.shearStrains();
+        auto volumetric = engine.volumetricStrains();
+        auto strainProp = engine.strainTensors();
+        auto defgrad = engine.deformationGradients();
+        auto D2minProp = engine.nonaffineSquaredDisplacements();
+        auto invalid = engine.invalidParticles();
 
-    for(std::size_t i = 0; i < currentFrame.positions.size(); i++){
-        json a;
-        a["id"] = currentFrame.ids[i];
-        a["shear_strain"] = shear ? shear->getDouble(i) : 0.0;
-        a["volumetric_strain"] = volumetric ? volumetric->getDouble(i) : 0.0;
+        for(std::size_t i = 0; i < currentFrame.positions.size(); i++){
+            json a;
+            a["id"] = currentFrame.ids[i];
+            a["shear_strain"] = shear ? shear->getDouble(i) : 0.0;
+            a["volumetric_strain"] = volumetric ? volumetric->getDouble(i) : 0.0;
 
-        // strain tensor [XX YY ZZ XY XZ YZ]
-        if(strainProp){
-            double xx = strainProp->getDoubleComponent(i, 0);
-            double yy = strainProp->getDoubleComponent(i, 1);
-            double zz = strainProp->getDoubleComponent(i, 2);
-            double yz = strainProp->getDoubleComponent(i, 3);
-            double xz = strainProp->getDoubleComponent(i, 4);
-            double xy = strainProp->getDoubleComponent(i, 5);
-            a["strain_tensor"] = { xx, yy, zz, xy, xz, yz };
+            if(strainProp){
+                double xx = strainProp->getDoubleComponent(i, 0);
+                double yy = strainProp->getDoubleComponent(i, 1);
+                double zz = strainProp->getDoubleComponent(i, 2);
+                double yz = strainProp->getDoubleComponent(i, 3);
+                double xz = strainProp->getDoubleComponent(i, 4);
+                double xy = strainProp->getDoubleComponent(i, 5);
+                a["strain_tensor"] = { xx, yy, zz, xy, xz, yz };
+            }
+            
+            if(defgrad){
+                double xx = defgrad->getDoubleComponent(i, 0); 
+                double yx = defgrad->getDoubleComponent(i, 1);
+                double zx = defgrad->getDoubleComponent(i, 2);
+                double xy = defgrad->getDoubleComponent(i, 3); 
+                double yy = defgrad->getDoubleComponent(i, 4);
+                double zy = defgrad->getDoubleComponent(i, 5); 
+                double xz = defgrad->getDoubleComponent(i, 6);
+                double yz = defgrad->getDoubleComponent(i, 7);
+                double zz = defgrad->getDoubleComponent(i, 8);
+                a["deformation_gradient"] = { xx, yx, zx, xy, yy, zy, xz, yz, zz };
+            }
+
+            if(D2minProp){
+                a["D2min"] = D2minProp->getDouble(i);
+            }else{
+                a["D2min"] = nullptr;
+            }
+
+            if(invalid){
+                a["invalid"] = (invalid->getInt(i) != 0);
+            }else{
+                a["invalid"] = false;
+            }
+
+            root["atomic_strain"].push_back(a);
         }
-        
-        // deformation gradient [XX YX ZX XY YY ZY XZ YZ ZZ]
-        if(defgrad){
-            double xx = defgrad->getDoubleComponent(i, 0); 
-            double yx = defgrad->getDoubleComponent(i, 1);
-            double zx = defgrad->getDoubleComponent(i, 2);
-            double xy = defgrad->getDoubleComponent(i, 3); 
-            double yy = defgrad->getDoubleComponent(i, 4);
-            double zy = defgrad->getDoubleComponent(i, 5); 
-            double xz = defgrad->getDoubleComponent(i, 6);
-            double yz = defgrad->getDoubleComponent(i, 7);
-            double zz = defgrad->getDoubleComponent(i, 8);
-            a["deformation_gradient"] = { xx, yx, zx, xy, yy, zy, xz, yz, zz };
-        }
-
-        if(D2minProp){
-            a["D2min"] = D2minProp->getDouble(i);
-        }else{
-            a["D2min"] = nullptr;
-        }
-
-        if(invalid){
-            a["invalid"] = (invalid->getInt(i) != 0);
-        }else{
-            a["invalid"] = false;
-        }
-
-        root["atomic_strain"].push_back(a);
     }
 
     return root; 
 }
+
+
 
 json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& outputFile){
     auto start_time = std::chrono::high_resolution_clock::now();
@@ -347,13 +377,6 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         result["rdf"]["y"] = rdfY;
         result["coordination"] = coord;
         if(!outputFile.empty()){
-            std::string coordPath = outputFile + "_coordination.json";
-            std::ofstream ofs(coordPath);
-            ofs << std::setw(2) << result << std::endl;
-            ofs.close();
-            spdlog::info("Coordination analysis written to {}", coordPath);
-            
-            // Write RDF msgpack file
             std::string rdfPath = outputFile + "_rdf.msgpack";
             _jsonExporter.writeRdfMsgpack(rdfX, rdfY, rdfPath);
             spdlog::info("RDF data written to {}", rdfPath);
@@ -369,15 +392,8 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     if(_atomicStrainEnabled){
         const LammpsParser::Frame &refFrame = _hasAtomicStrainReference ? _atomicStrainReferenceFrame : frame;
-        json strainJson = computeAtomicStrain(frame, refFrame, positions.get());
+        json strainJson = computeAtomicStrain(frame, refFrame, positions.get(), outputFile);
         result["atomic_strain"] = strainJson;
-        if(!outputFile.empty()){
-            std::string strainPath = outputFile + "_atomic_strain.json";
-            std::ofstream ofs(strainPath);
-            ofs << std::setw(2) << strainJson << std::endl;
-            ofs.close();
-            spdlog::info("Atomic strain data written to {}", strainPath);
-        }
         return result;
     }
 

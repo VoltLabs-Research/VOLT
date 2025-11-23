@@ -105,7 +105,7 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
                 >
                     <div className='chart-viewer-container primary-surface'>
                         <ChartViewer
-                            trajectoryId={trajectory?._id}
+                            trajectoryId={trajectory?._id || ''}
                             analysisId={(activeScene as any).analysisId}
                             exposureId={(activeScene as any).exposureId}
                             timestep={currentTimestep || 0}
@@ -130,6 +130,7 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
                         pluginId={modifier.pluginId}
                         modifierId={modifier.modifierId}
                         trajectoryId={trajectory._id}
+                        currentTimestep={currentTimestep}
                         className={`plugin-modifier-config-${modifier.modifierId}`}
                         onAnalysisSuccess={(analysisId) => {
                             console.log('Analysis started:', analysisId);
