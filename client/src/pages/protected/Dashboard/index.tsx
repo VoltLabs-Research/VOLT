@@ -20,7 +20,7 @@ import './Dashboard.css';
 
 const getGreeting = (): string => {
     const hour = new Date().getHours();
-    
+
     if (hour >= 5 && hour < 12) {
         return 'Good Morning';
     } else if (hour >= 12 && hour < 17) {
@@ -45,10 +45,10 @@ const DashboardPage: React.FC = memo(() => {
     useTrajectoryUpdates();
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoadingTrajectories = useTrajectoryStore((state) => state.isLoadingTrajectories);
-    
+
     // Memoize the first trajectory ID to prevent unnecessary hook reruns
     const firstTrajectoryId = useMemo(() => trajectories?.[0]?._id ?? undefined, [trajectories?.[0]?._id]);
-    
+
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId: firstTrajectoryId });
     const scene3DRef = useRef<Scene3DRef>(null)
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
@@ -57,14 +57,14 @@ const DashboardPage: React.FC = memo(() => {
     const isProcessing = useMemo(() => trajectories.some(t => t.status !== 'completed'), [trajectories]);
     const completedTrajectories = useMemo(() => trajectories.filter(t => t.status === 'completed'), [trajectories]);
     const lastCompletedTrajectory = completedTrajectories[0]; // Get most recent completed
-    
+
     // When processing, show last completed trajectory. Otherwise show first trajectory
     const displayTrajectory = useMemo(() => isProcessing && lastCompletedTrajectory ? lastCompletedTrajectory : trajectories[0], [isProcessing, lastCompletedTrajectory, trajectories]);
-    
+
     const hasNoTrajectories = !isLoadingTrajectories && trajectories.length === 0;
 
     const setBackgroundColor = useEnvironmentConfigStore((state) => state.setBackgroundColor);
-    
+
     const [isLight, setIsLight] = useState(() =>
         typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light'
     );
@@ -109,7 +109,7 @@ const DashboardPage: React.FC = memo(() => {
                                 <div className='badge-container scene-preview-name-badge primary-surface'>
                                     <p className='badge-text'>{trajectory.name}</p>
                                 </div>
-                                
+
                                 <div className='badge-container scene-preview-natoms-badge primary-surface'>
                                     <p className='badge-text'>
                                         {formatNumber((trajectory.frames || []).find((f: any) => f.timestep === currentTimestep)?.natoms ?? 0)} atoms
@@ -122,7 +122,7 @@ const DashboardPage: React.FC = memo(() => {
                             </>
                         )}
 
-                        <Scene3D 
+                        <Scene3D
                             showGizmo={false}
                             ref={scene3DRef}
                             showCanvasGrid={false}
@@ -136,7 +136,7 @@ const DashboardPage: React.FC = memo(() => {
 
                         {/* Blur overlay when processing */}
                         {isProcessing && (
-                            <div 
+                            <div
                                 style={{
                                     position: 'absolute',
                                     top: 0,
@@ -172,7 +172,7 @@ const DashboardPage: React.FC = memo(() => {
 
                 <div className='dashboard-body-right-container'>
                     <div className='dashboard-stats-wrapper'>
-                        <DashboardStats teamId={selectedTeam?._id} />
+                        <DashboardStats teamId={selectedTeam?._id} trajectoryId={displayTrajectory?._id} />
                     </div>
 
                     <SimulationGrid />

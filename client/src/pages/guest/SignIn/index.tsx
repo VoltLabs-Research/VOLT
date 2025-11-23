@@ -158,8 +158,8 @@ export default function AuthPage() {
                 Connect with<br />your VoltID
               </h2>
               <p className="hero-description">
-                Accelerate your research with our platform. Secure, scalable, and built for modern teams.
-              </p>
+Everything your research needs, in one place. Collaborate seamlessly and connect your scientific stack.
+                </p>
             </div>
           </div>
         </div>

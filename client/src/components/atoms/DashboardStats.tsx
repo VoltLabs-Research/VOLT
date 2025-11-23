@@ -9,8 +9,8 @@ import { useDashboardMetrics } from '@/hooks/dashboard/use-dashboard-metrics';
 import TinyLineChart from '@/components/atoms/TinyLineChart';
 import DashboardStatsSkeleton from '@/components/atoms/DashboardStatsSkeleton';
 
-const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
-    const { loading, error, cards } = useDashboardMetrics(teamId);
+const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ teamId, trajectoryId }) => {
+    const { loading, error, cards } = useDashboardMetrics(teamId, trajectoryId);
     const navigate = useNavigate();
 
     const icons: Record<string, React.ComponentType<any>> = {
@@ -20,11 +20,11 @@ const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
         Dislocations: PiLineSegments
     };
 
-    if(loading){
+    if (loading) {
         return <DashboardStatsSkeleton count={3} />;
     }
 
-    if(error){
+    if (error) {
         return (
             <div className='dashboard-stats-container'>
                 <div className='dashboard-error'>{error}</div>
@@ -40,7 +40,7 @@ const DashboardStats: React.FC<{ teamId?: string }> = ({ teamId }) => {
                 const up = (lastMonthStatus ?? 0) >= 0;
                 const isClickable = Boolean(listingUrl && !listingUrl.includes(':trajectoryId'));
                 return (
-                    <div 
+                    <div
                         onClick={() => isClickable && listingUrl && navigate(listingUrl)}
                         className='dashboard-stat-container'
                         style={{ cursor: isClickable ? 'pointer' : 'default' }}

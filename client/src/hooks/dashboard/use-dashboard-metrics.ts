@@ -23,6 +23,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/api';
 import type { ApiResponse } from '@/types/api';
+import usePluginStore from '@/stores/plugins';
 
 type MetricKey = 'trajectories' | 'analysis' | string;
 
@@ -134,6 +135,7 @@ const buildCard = (
 
 export const useDashboardMetrics = (
     teamId?: string,
+    trajectoryId?: string,
     opts?: { ttlMs?: number; force?: boolean }
 ) => {
     const key = keyOf(teamId);
@@ -143,6 +145,13 @@ export const useDashboardMetrics = (
     const [error, setError] = useState<string | null>(null);
 
     const abortRef = useRef<AbortController | null>(null);
+    const { manifests, fetchManifests } = usePluginStore();
+
+    useEffect(() => {
+        if (Object.keys(manifests).length === 0) {
+            fetchManifests();
+        }
+    }, [manifests, fetchManifests]);
 
     useEffect(() => {
         if (!teamId) {
@@ -221,19 +230,50 @@ export const useDashboardMetrics = (
             buildCard(data, key, baseLabels, key)
         );
 
-        const allCards = [...staticCards, ...dynamicCards];
+        let allCards = [...staticCards, ...dynamicCards];
 
         // Sort by rawCount descending to get top 3
         allCards.sort((a, b) => b.rawCount - a.rawCount);
 
         // Take top 3
-        const top3 = allCards.slice(0, 3);
+        allCards = allCards.slice(0, 3);
+
+        // If we have less than 3 cards, try to fill with available plugins
+        if (allCards.length < 3 && Object.keys(manifests).length > 0) {
+            for (const [pluginId, manifest] of Object.entries(manifests)) {
+                if (allCards.length >= 3) break;
+                if (!manifest.listing) continue;
+
+                const listingKey = Object.keys(manifest.listing)[0];
+                if (!listingKey) continue;
+
+                // Check if this plugin is already in the cards
+                const isAlreadyPresent = allCards.some(c => c.name === manifest.name);
+                if (isAlreadyPresent) continue;
+
+                // Create a fallback card
+                const fallbackCard = {
+                    key: `plugin-${pluginId}` as MetricKey,
+                    name: manifest.name,
+                    listingUrl: trajectoryId
+                        ? `/dashboard/trajectory/${trajectoryId}/plugin/${pluginId}/listing/${listingKey}`
+                        : undefined,
+                    count: '—',
+                    rawCount: 0,
+                    lastMonthStatus: 0,
+                    series: Array(12).fill(0),
+                    labels: baseLabels,
+                    yDomain: { min: 0, max: 1 }
+                };
+                allCards.push(fallbackCard);
+            }
+        }
 
         // Sort by rawCount ascending so the one with max count is last
-        top3.sort((a, b) => a.rawCount - b.rawCount);
+        allCards.sort((a, b) => a.rawCount - b.rawCount);
 
-        return top3;
-    }, [data]);
+        return allCards;
+    }, [data, manifests, trajectoryId]);
 
     return { loading, error, data, cards };
 };
