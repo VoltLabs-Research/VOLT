@@ -8,9 +8,10 @@ import { Response } from 'express';
 import { v4 } from 'uuid';
 import * as path from 'node:path';
 import { SYS_BUCKETS } from '@/config/minio';
+import logger from '@/logger';
 
 export const rasterizeGLBs = async (
-    prefix: string, 
+    prefix: string,
     prefixBucketName: string,
     bucketName: string,
     trajectory: ITrajectory,
@@ -18,21 +19,21 @@ export const rasterizeGLBs = async (
 ): Promise<void> => {
     const jobs: RasterizerJob[] = [];
     const keys = await listByPrefix(prefix, prefixBucketName);
-    
+
     const promises = keys.map(async (key) => {
         const filename = key.split('/').pop();
-        if(!filename) return;
+        if (!filename) return;
 
         const base = path.basename(filename, '.glb');
         const match = base.match(/\d+/g);
-        if(!match) {
-            console.warn('No timestep found in filename:', filename);
+        if (!match) {
+            logger.warn(`No timestep found in filename: ${filename}`);
             return;
         }
 
         const timestep = Number(match[match.length - 1]);
-        if(Number.isNaN(timestep)) {
-            console.warn('Invalid timestep parsed from filename:', filename);
+        if (Number.isNaN(timestep)) {
+            logger.warn(`Invalid timestep parsed from filename: ${filename}`);
             return;
         }
 
@@ -71,7 +72,7 @@ export const sendImage = (res: Response, etag: string, buffer: Buffer) => {
 };
 
 export const getTimestepPreview = async (
-    trajectoryId: string, 
+    trajectoryId: string,
     timestep: number
 ): Promise<{ buffer: Buffer, etag: string }> => {
     const objectName = `trajectory-${trajectoryId}/previews/timestep-${timestep}.png`;

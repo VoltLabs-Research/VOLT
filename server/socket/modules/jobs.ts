@@ -27,6 +27,7 @@ import { getTrajectoryProcessingQueue, getAnalysisQueue, getRasterizerQueue } fr
 import { BaseJob } from '@/types/queues/base-processing-queue';
 import { ClientData, ProcessingQueue } from '@/types/config/socket';
 import BaseSocketModule from '@/socket/base-socket-module';
+import logger from '@/logger';
 
 /**
  * Jobs feature module:
@@ -108,7 +109,7 @@ class JobsModule extends BaseSocketModule{
 
             ready.forEach((socket) => socket.emit('job_update', update));
         } catch (error) {
-            console.error(`[${this.name}] Error fetching sockets for team ${teamId}:`, error);
+            logger.error(`[${this.name}] Error fetching sockets for team ${teamId}: ${error}`);
             // Fallback: emit to room directly without filtering
             this.io.to(`team-${teamId}`).emit('job_update', update);
         }
@@ -196,14 +197,14 @@ class JobsModule extends BaseSocketModule{
     private async getJobsForTeam(teamId: string): Promise<BaseJob[]>{
         if(!teamId) return [];
         const startTime = Date.now();
-        console.log(`[Socket] Fetching fresh jobs for team ${teamId}...`);
+        logger.info(`[Socket] Fetching fresh jobs for team ${teamId}...`);
 
         const allQueues = this.getAllProcessingQueues();
         const teamJobsKey = `team:${teamId}:jobs`;
         const jobIds = await redis?.smembers(teamJobsKey);
 
         if(!jobIds?.length){
-            console.log(`[Socket] No jobs found in team index for team ${teamId}`);
+            logger.info(`[Socket] No jobs found in team index for team ${teamId}`);
             return [];   
         }
 
@@ -236,7 +237,7 @@ class JobsModule extends BaseSocketModule{
                 }
             }
 
-            console.log(`[Socket] Found ${jobs.length} jobs in ${name} queue for team ${teamId}`);
+            logger.info(`[Socket] Found ${jobs.length} jobs in ${name} queue for team ${teamId}`);
             return jobs;
         }));
 
@@ -254,7 +255,7 @@ class JobsModule extends BaseSocketModule{
             return tb - ta;  
         });
 
-        console.log(`[Socket] Fresh fetch completed for team ${teamId}: ${uniqueJobs.length} jobs in ${Date.now() - startTime}ms`);
+        logger.info(`[Socket] Fresh fetch completed for team ${teamId}: ${uniqueJobs.length} jobs in ${Date.now() - startTime}ms`);
         return uniqueJobs;
     }
 

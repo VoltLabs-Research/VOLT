@@ -21,6 +21,7 @@
 **/
 
 import { createRedisClient } from '@/config/redis';
+import logger from '@/logger';
 import { Server } from 'socket.io';
 
 const CHANNEL = 'job_updates';
@@ -30,9 +31,9 @@ export const initializeJobUpdatesListener = (io: Server) => {
 
     subscriber.subscribe(CHANNEL, (err, count) => {
         if (err) {
-            console.error(`[JobUpdatesListener] Failed to subscribe to ${CHANNEL}:`, err);
+            logger.error(`[JobUpdatesListener] Failed to subscribe to ${CHANNEL}: ${err}`);
         } else {
-            console.log(`[JobUpdatesListener] Subscribed to ${count} channel(s)`);
+            logger.info(`[JobUpdatesListener] Subscribed to ${count} channel(s)`);
         }
     });
 
@@ -41,7 +42,7 @@ export const initializeJobUpdatesListener = (io: Server) => {
 
         try {
             const { teamId, payload } = JSON.parse(message);
-            
+
             // Emit to all clients in the team room
             if (teamId && payload) {
                 // Check if this is a session completion event
@@ -53,8 +54,8 @@ export const initializeJobUpdatesListener = (io: Server) => {
                         completedAt: payload.completedAt,
                         timestamp: payload.timestamp || new Date().toISOString()
                     };
-                    
-                    console.log(`[JobUpdatesListener] Emitting session completion for trajectory ${payload.trajectoryId}`);
+
+                    logger.info(`[JobUpdatesListener] Emitting session completion for trajectory ${payload.trajectoryId}`);
                     io.to(`team-${teamId}`).emit('trajectory_session_completed', sessionCompleteEvent);
                     return;
                 }
@@ -82,12 +83,12 @@ export const initializeJobUpdatesListener = (io: Server) => {
                 io.to(`team-${teamId}`).emit('job_update', normalizedPayload);
             }
         } catch (error) {
-            console.error(`[JobUpdatesListener] Error processing message from ${CHANNEL}:`, error, 'Raw message:', message);
+            logger.error(`[JobUpdatesListener] Error processing message from ${CHANNEL}, Raw message: ${message}: ${error}`);
         }
     });
 
     subscriber.on('error', (err) => {
-        console.error(`[JobUpdatesListener] Redis subscriber error:`, err);
+        logger.error(`[JobUpdatesListener] Redis subscriber error: ${err}`);
     });
 
     return subscriber;

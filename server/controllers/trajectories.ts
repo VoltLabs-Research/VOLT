@@ -38,6 +38,7 @@ import { v4 } from 'uuid';
 import { getStream, statObject } from '@/utilities/buckets';
 import { getTimestepPreview, sendImage } from '@/utilities/raster';
 import { SYS_BUCKETS } from '@/config/minio';
+import logger from '@/logger';
 
 const factory = new HandlerFactory<any>({
     model: Trajectory as any,
@@ -93,9 +94,9 @@ export const deleteTrajectoryById = factory.deleteOne({
         const trajectoryPath = join(basePath, doc._id.toString());
         try{
             await rm(trajectoryPath, { recursive: true, force: true });
-            console.log(`Cleaned up trajectory files at: ${trajectoryPath}`);
+            logger.info(`Cleaned up trajectory files at: ${trajectoryPath}`);
         }catch(error){
-            console.warn(`Warning: Could not clean up files for trajectory ${doc._id}:`, error);
+            logger.warn(`Warning: Could not clean up files for trajectory ${doc._id}: ${error}`);
         }
     }
 });
@@ -320,7 +321,7 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
         await write('}');
         res.end();
     }catch(err: any){
-        console.error('getTrajectoryAtoms failed:', err);
+        logger.error(`getTrajectoryAtoms failed: ${err}`);
         if(!res.headersSent){
             return res.status(500).json({ status: 'error', data: { error: err?.message || 'Failed to parse atoms' } });
         }
@@ -368,7 +369,7 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
 
         stream.pipe(res);
     }catch(err){
-        console.error('[getTrajectoryGLB] Error:', err);
+        logger.error(`[getTrajectoryGLB] Error: ${err}`);
         return res.status(500).json({ status: 'error', data: { error: 'Internal server error' }});
     }
 };

@@ -34,6 +34,7 @@ import { initializeRedis } from '@config/redis';
 import { initializeMinio } from '@/config/minio';
 import MetricsModule from '@/socket/modules/metrics';
 import MetricsCollector from '@/services/metrics-collector';
+import logger from '@/logger';
 
 const SERVER_PORT = process.env.SERVER_PORT || 8000;
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
@@ -58,7 +59,7 @@ const shutodwn = async () => {
     // Stop metrics collection
     if (collectionInterval) clearInterval(collectionInterval);
     if (cleanupInterval) clearInterval(cleanupInterval);
-    
+
     await gateway.close();
     process.exit(0);
 };
@@ -68,40 +69,40 @@ server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
     await initializeRedis();
     await initializeMinio();
     await mongoConnector();
-    
+
     // Initialize metrics collector in background
     metricsCollector = new MetricsCollector();
-    
+
     // Start collecting metrics every second in background
     collectionInterval = setInterval(async () => {
         try {
             await metricsCollector.collect();
         } catch (error) {
-            console.error('[Server] Metrics collection error:', error);
+            logger.error(`[Server] Metrics collection error: ${error}`);
         }
     }, 1000);
-    
+
     // Clean old metrics from Redis every 24 hours
     cleanupInterval = setInterval(async () => {
         try {
             await metricsCollector.cleanOldMetrics();
-            console.log('[Server] Cleaned old metrics from Redis');
+            logger.info('[Server] Cleaned old metrics from Redis');
         } catch (error) {
-            console.error('[Server] Metrics cleanup error:', error);
+            logger.error(`[Server] Metrics cleanup error: ${error}`);
         }
     }, 24 * 60 * 60 * 1000);
-    
+
     // Run initial cleanup
-    metricsCollector.cleanOldMetrics().catch(err => 
-        console.error('[Server] Initial cleanup error:', err)
+    metricsCollector.cleanOldMetrics().catch(err =>
+        logger.error(`[Server] Initial cleanup error: ${err}`)
     );
-    
-    console.log('[Server] Background metrics collection started');
-    
+
+    logger.info('[Server] Background metrics collection started');
+
     // Now initialize the Socket Gateway with Redis already running
     await gateway.initialize(server);
-    
-    console.log(`Server running at http://${SERVER_HOST}:${SERVER_PORT}/`);
+
+    logger.info(`Server running at http://${SERVER_HOST}:${SERVER_PORT}/`);
 
     process.on('SIGTERM', shutodwn);
     process.on('SIGINT', shutodwn);

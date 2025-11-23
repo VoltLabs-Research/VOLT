@@ -383,7 +383,7 @@ class TrajectoryFS{
                     mtime: stat.lastModified
                 });
             }catch(err){
-                console.error(`Failed to stat GLB object ${key}:`, err);
+                logger.error(`Failed to stat GLB object ${key}: ${err}`);
             }
         }
 

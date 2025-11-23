@@ -5,7 +5,6 @@ import { decodeMultiStreamFromFile } from '@/utilities/msgpack-stream';
     const filePath = 'test.msgpack';
     try{
         const one = await readMsgpackFile(filePath);
-        console.log('== SINGLE MESSAGE ==');
         console.dir(one, { depth: null });
         return;
     }catch(err: any){
@@ -16,8 +15,6 @@ import { decodeMultiStreamFromFile } from '@/utilities/msgpack-stream';
 
     let i = 0;
     for await (const msg of decodeMultiStreamFromFile(filePath)){
-        console.log(`\n===== MESSAGE #${i} =====`);
-        console.dir(msg, { depth: null });
         i++;
     }
 })();

@@ -21,6 +21,7 @@
 **/
 
 import { createRedisClient } from '@/config/redis';
+import logger from '@/logger';
 import { Server } from 'socket.io';
 
 const CHANNEL = 'trajectory_updates';
@@ -30,9 +31,9 @@ export const initializeTrajectoryUpdatesListener = (io: Server) => {
 
     subscriber.subscribe(CHANNEL, (err, count) => {
         if (err) {
-            console.error(`[TrajectoryUpdatesListener] Failed to subscribe to ${CHANNEL}:`, err);
+            logger.error(`[TrajectoryUpdatesListener] Failed to subscribe to ${CHANNEL}: ${err}`);
         } else {
-            console.log(`[TrajectoryUpdatesListener] Subscribed to ${count} channel(s)`);
+            logger.info(`[TrajectoryUpdatesListener] Subscribed to ${count} channel(s)`);
         }
     });
 
@@ -41,10 +42,10 @@ export const initializeTrajectoryUpdatesListener = (io: Server) => {
 
         try {
             const { trajectoryId, status, teamId, updatedAt } = JSON.parse(message);
-            
+
             // Emit to all clients in the team room
             if (teamId && trajectoryId && status) {
-                console.log(`[TrajectoryUpdatesListener] Emitting trajectory update:`, { trajectoryId, status, updatedAt, teamId });
+                logger.info(`[TrajectoryUpdatesListener] Emitting trajectory update: ${JSON.stringify({ trajectoryId, status, updatedAt, teamId })}`);
                 io.to(`team-${teamId}`).emit('trajectory_status_updated', {
                     trajectoryId,
                     status,
@@ -53,12 +54,12 @@ export const initializeTrajectoryUpdatesListener = (io: Server) => {
                 });
             }
         } catch (error) {
-            console.error(`[TrajectoryUpdatesListener] Error processing message from ${CHANNEL}:`, error, 'Raw message:', message);
+            logger.error(`[TrajectoryUpdatesListener] Error processing message from ${CHANNEL}, Raw message: ${message}: ${error}`);
         }
     });
 
     subscriber.on('error', (err) => {
-        console.error(`[TrajectoryUpdatesListener] Redis subscriber error:`, err);
+        logger.error(`[TrajectoryUpdatesListener] Redis subscriber error: ${err}`);
     });
 
     return subscriber;

@@ -21,6 +21,7 @@
 **/
 
 import Redis from 'ioredis';
+import logger from '@/logger';
 
 const getRedisConfig = () => {
     const redisConfig = {
@@ -52,22 +53,22 @@ export const initializeRedis = (): Promise<void> => {
         redis = new Redis(getRedisConfig());
 
         redis.on('connect', () => {
-            console.log('Redis connected successfully');
+            logger.info('Redis connected successfully');
         });
 
         redis.on('error', (err) => {
-            console.error('Redis connection error:', err);
+            logger.error(`Redis connection error: ${err}`);
         });
 
         redis.on('ready', () => {
-            console.log('Redis is ready to accept commands');
+            logger.info('Redis is ready to accept commands');
             resolve();
         });
 
         // Add a timeout in case Redis never becomes ready
         setTimeout(() => {
             if (redis?.status !== 'ready') {
-                console.warn('Redis initialization timeout - continuing anyway');
+                logger.warn('Redis initialization timeout - continuing anyway');
                 resolve();
             }
         }, 5000);

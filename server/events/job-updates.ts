@@ -1,13 +1,14 @@
 import Redis from 'ioredis';
 import { createRedisClient } from '@/config/redis';
+import logger from '@/logger';
 
 const CHANNEL = 'job_updates';
 let pub: Redis | null = null;
 
 export const initJobUpdatesPublisher = async () => {
     if (pub) return pub;
-    pub = createRedisClient();  
-    pub.on('error', (e) => console.error('[pub] redis error:', e));
+    pub = createRedisClient();
+    pub.on('error', (e) => logger.error(`[pub] redis error: ${e}`));
     return pub;
 };
 

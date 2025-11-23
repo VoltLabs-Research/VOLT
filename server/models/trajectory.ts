@@ -30,6 +30,7 @@ import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 import { deleteByPrefix } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
+import logger from '@/logger';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
@@ -103,33 +104,33 @@ TrajectorySchema.plugin(useCascadeDelete);
 
 TrajectorySchema.index({ name: 'text', status: 'text' });
 
-TrajectorySchema.pre('findOneAndDelete', async function(next){
+TrajectorySchema.pre('findOneAndDelete', async function (next) {
     const trajectoryToDelete = await this.model.findOne(this.getFilter());
-    if(!trajectoryToDelete){
+    if (!trajectoryToDelete) {
         return next();
     }
 
     const trajectoryId = trajectoryToDelete._id.toString();
     const trajectoryPath = join(process.env.TRAJECTORY_DIR as string, trajectoryId);
 
-    try{
-        if(existsSync(trajectoryPath)){
-            console.log('Removing trajectory directory:', trajectoryPath);
+    try {
+        if (existsSync(trajectoryPath)) {
+            logger.info(`Removing trajectory directory: ${trajectoryPath}`);
             await rm(trajectoryPath, { recursive: true });
         }
 
         const objectName = `trajectory-${trajectoryId}`;
         const buckets = Object.values(SYS_BUCKETS);
-        for(const bucket of buckets){
-            try{
+        for (const bucket of buckets) {
+            try {
                 await deleteByPrefix(bucket, objectName);
-            }catch(err){
-                console.error(err)
+            } catch (err) {
+                logger.error(err)
             }
         }
 
         next();
-    }catch(error){
+    } catch (error) {
         next(error as Error);
     }
 });

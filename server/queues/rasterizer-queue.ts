@@ -25,6 +25,7 @@ import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
 import path from 'path';
 import { Trajectory } from '@/models';
+import logger from '@/logger';
 
 export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
     constructor(){
@@ -39,7 +40,7 @@ export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
         // Listen for job completion to update trajectory updatedAt
         this.on('jobCompleted', (data: any) => {
             this.onJobCompleted(data).catch(error => {
-                console.error('Unhandled error in rasterizer onJobCompleted handler:', error);
+                logger.error(`Unhandled error in rasterizer onJobCompleted handler: ${error}`);
             });
         });
     }
@@ -48,7 +49,7 @@ export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
         const job = data.job as RasterizerJob;
         
         try {
-            console.log(`Rasterizer job completed for trajectory ${job.trajectoryId}, updating trajectory updatedAt`);
+            logger.info(`Rasterizer job completed for trajectory ${job.trajectoryId}, updating trajectory updatedAt`);
             
             // Update trajectory to trigger preview refresh on client
             const trajectory = await Trajectory.findByIdAndUpdate(
@@ -58,10 +59,10 @@ export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
             );
 
             if (trajectory) {
-                console.log(`Updated trajectory ${job.trajectoryId} timestamp`);
+                logger.info(`Updated trajectory ${job.trajectoryId} timestamp`);
             }
         } catch (error) {
-            console.error(`Failed to update trajectory ${job.trajectoryId} after rasterizer completion:`, error);
+            logger.error(`Failed to update trajectory ${job.trajectoryId} after rasterizer completion: ${error}`);
         }
     }
 

@@ -83,7 +83,6 @@ export const getMyAccount = userFactory.getOne(withAuthenticatedUser());
 export const updateMyAccount = userFactory.updateOne(
     withAuthenticatedUser({
         beforeUpdate: async (data: any, req: Request, doc: IUser) => {
-            console.log(`Updating user: ${doc.email}`);
             return data;
         }
     })
@@ -94,13 +93,7 @@ export const updateMyAccount = userFactory.updateOne(
  * 
  * @public
  */
-export const deleteMyAccount = userFactory.deleteOne(
-    withAuthenticatedUser({
-        beforeDelete: async (doc: IUser, req: Request) => {
-            console.log(`Deleting user account: ${doc.email}`);
-        }
-    })
-);
+export const deleteMyAccount = userFactory.deleteOne();
 
 /**
  * Sign a JWT for a given user identifier.

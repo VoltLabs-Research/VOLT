@@ -26,6 +26,7 @@ import { unlink } from 'fs/promises';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import AtomisticExporter from '@/utilities/export/atoms';
 import '@config/env';
+import logger from '@/logger';
 
 const glbExporter = new AtomisticExporter();
 
@@ -47,7 +48,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
 
     const { files, trajectoryId } = job;
 
-    console.log(
+    logger.info(
         `[Worker #${process.pid}] Start job ${job.jobId} ` +
         `(chunk ${job.chunkIndex + 1}/${job.totalChunks})`
     );
@@ -61,9 +62,9 @@ const processJob = async (job: TrajectoryProcessingJob) => {
             totalChunks: job.totalChunks
         });
 
-        console.log(`[Worker #${process.pid}] Job ${job.jobId} completed OK.`);
+        logger.info(`[Worker #${process.pid}] Job ${job.jobId} completed OK.`);
     }catch(error){
-        console.error(
+        logger.error(
             `[Worker #${process.pid}] Job ${job.jobId} failed:`,
             error
         );
@@ -85,13 +86,13 @@ const processJob = async (job: TrajectoryProcessingJob) => {
 };
 
 const main = () => {
-    console.log(`[Worker #${process.pid}] Worker started`);
+    logger.info(`[Worker #${process.pid}] Worker started`);
 
     parentPort?.on('message', async ({ job }) => {
         try{
             await processJob(job);
         }catch(error){
-            console.error(`[Worker #${process.pid}] Fatal worker error:`, error);
+            logger.error(`[Worker #${process.pid}] Fatal worker error: ${error}`);
 
             parentPort?.postMessage({
                 status: 'failed',

@@ -1,4 +1,5 @@
 import { Client } from 'minio';
+import logger from '@/logger';
 
 let minioClient: Client | null = null;
 
@@ -40,7 +41,7 @@ export const ensureBucketExists = async (client: Client, bucket: string): Promis
     const exists = await client.bucketExists(bucket).catch(() => false);
     if(!exists){
         await client.makeBucket(bucket, '');
-        console.log(`[MinIO] OK: ${bucket}`);
+        logger.info(`[MinIO] OK: ${bucket}`);
     }
 };
 
@@ -62,7 +63,7 @@ export const initializeMinio = async (): Promise<void> => {
     for(const bucket of buckets){
         await ensureBucketExists(client, bucket);
     }
-    console.log('[MinIO] Complete initialization');
+    logger.info('[MinIO] Complete initialization');
 };
 
 export const getJSONFromBucket = async<T = any>(bucket: string, objectName: string): Promise<T> => {

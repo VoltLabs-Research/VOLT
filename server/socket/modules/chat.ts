@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { User, Chat, Message } from '@/models/index';
 import BaseSocketModule from '@/socket/base-socket-module';
 import { redis } from '@/config/redis';
+import logger from '@/logger';
 
 interface AuthenticatedSocket extends Socket {
     user?: any;
@@ -53,7 +54,7 @@ class ChatModule extends BaseSocketModule {
 
             return hasAccess;
         } catch (error) {
-            console.error('Redis cache error:', error);
+            logger.error(`Redis cache error: ${error}`);
             // Fallback a query directo si Redis falla
             return await this.verifyUserChatAccessDB(userId, chatId);
         }
@@ -109,7 +110,7 @@ class ChatModule extends BaseSocketModule {
 
             return true;
         } catch (error) {
-            console.error('Redis rate limit error:', error);
+            logger.error(`Redis rate limit error: ${error}`);
             return true; // Permitir en caso de error (fail open)
         }
     }
@@ -143,7 +144,7 @@ class ChatModule extends BaseSocketModule {
 
             return user;
         } catch (error) {
-            console.error('Redis user cache error:', error);
+            logger.error(`Redis user cache error: ${error}`);
             return await this.getUserInfoDB(userId);
         }
     }
@@ -179,7 +180,7 @@ class ChatModule extends BaseSocketModule {
                 }
             }
         } catch (error) {
-            console.error('Error invalidating chat cache:', error);
+            logger.error(`Error invalidating chat cache: ${error}`);
         }
     }
 
@@ -192,7 +193,7 @@ class ChatModule extends BaseSocketModule {
         try {
             await redis.del(`user:info:${userId}`);
         } catch (error) {
-            console.error('Error invalidating user cache:', error);
+            logger.error(`Error invalidating user cache: ${error}`);
         }
     }
 
@@ -207,7 +208,7 @@ class ChatModule extends BaseSocketModule {
         this.handleUserPresence(socket, 'online');
         this.joinRoom(socket, `user-${user._id}`);
         
-        console.log(`[ChatModule] User ${user.firstName} ${user.lastName} connected`);
+        logger.info(`[ChatModule] User ${user.firstName} ${user.lastName} connected`);
 
         // ✅ Join chat con Redis cache
         socket.on('join_chat', async (chatId: string) => {
@@ -295,9 +296,9 @@ class ChatModule extends BaseSocketModule {
                     chatId
                 });
 
-                console.log(`[ChatModule] Message sent in chat ${chatId}`);
+                logger.info(`[ChatModule] Message sent in chat ${chatId}`);
             } catch (error) {
-                console.error('Error sending message:', error);
+                logger.error(`Error sending message: ${error}`);
                 socket.emit('error', 'Failed to send message');
             }
         });
@@ -522,7 +523,7 @@ class ChatModule extends BaseSocketModule {
                     message: populatedMessage
                 });
             } catch (error) {
-                console.error('Socket toggle_reaction error:', error);
+                logger.error(`Socket toggle_reaction error: ${error}`);
             }
         });
 
@@ -634,7 +635,7 @@ class ChatModule extends BaseSocketModule {
         socket.on('disconnect', () => {
             if (socket.user) {
                 this.handleUserPresence(socket, 'offline');
-                console.log(`[ChatModule] User ${socket.user.firstName} disconnected`);
+                logger.info(`[ChatModule] User ${socket.user.firstName} disconnected`);
             }
         });
     }
@@ -661,9 +662,9 @@ class ChatModule extends BaseSocketModule {
                 this.io?.to(room).emit('user_presence_update', presenceData);
             });
 
-            console.log(`[ChatModule] User ${socket.user.firstName} is now ${status}`);
+            logger.info(`[ChatModule] User ${socket.user.firstName} is now ${status}`);
         } catch (error) {
-            console.error('Error handling user presence:', error);
+            logger.error(`Error handling user presence: ${error}`);
         }
     }
 }

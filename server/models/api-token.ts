@@ -87,8 +87,6 @@ const apiTokenSchema = new Schema<IApiToken>({
     }],
     expiresAt: {
         type: Date,
-        // TTL index
-        index: { expireAfterSeconds: 0 }
     },
     lastUsedAt: {
         type: Date,

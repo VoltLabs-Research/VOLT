@@ -24,6 +24,7 @@ import { Server, Socket } from 'socket.io';
 import { createRedisClient } from '@/config/redis';
 import BaseSocketModule from '@/socket/base-socket-module';
 import Redis from 'ioredis';
+import logger from '@/logger';
 
 /**
  * Socket module for real-time notifications.
@@ -38,7 +39,7 @@ export default class NotificationsSocketModule extends BaseSocketModule{
 
     async onInit(io: Server): Promise<void>{
         this.io = io;
-        console.log(`[${this.name}] Notifications socket module initialized`);
+        logger.info(`[${this.name}] Notifications socket module initialized`);
 
         this.subscriber = createRedisClient();
         await this.subscriber.subscribe('notification:created');
@@ -51,9 +52,9 @@ export default class NotificationsSocketModule extends BaseSocketModule{
 
                     // Emit to user's personal notification room
                     this.io!.to(`user:${userId}`).emit('new_notification', notification);
-                    console.log(`[${this.name}] Notification sent to user ${userId}`);
+                    logger.info(`[${this.name}] Notification sent to user ${userId}`);
                 }catch(error: any){
-                    console.error(`[${this.name}] Error processing notification event:`, error);
+                    logger.error(`[${this.name}] Error processing notification event: ${error}`);
                 }
             }
         });
@@ -65,10 +66,10 @@ export default class NotificationsSocketModule extends BaseSocketModule{
 
         const userRoom = `user:${user._id}`;
         socket.join(userRoom);
-        console.log(`[${this.name}] User ${user._id} joined notification room: ${userRoom}`);
+        logger.info(`[${this.name}] User ${user._id} joined notification room: ${userRoom}`);
 
         socket.on('disconnect', () => {
-            console.log(`[${this.name}] User ${user._id} left notification room`);
+            logger.info(`[${this.name}] User ${user._id} left notification room`);
         });
     }
 
@@ -78,6 +79,6 @@ export default class NotificationsSocketModule extends BaseSocketModule{
             await this.subscriber.quit();
         }
 
-        console.log(`[${this.name}] Notifications socket module shut down`);
+        logger.info(`[${this.name}] Notifications socket module shut down`);
     }
 }

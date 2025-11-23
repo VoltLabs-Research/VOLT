@@ -20,6 +20,7 @@
 * SOFTWARE.
 **/
 
+import logger from '@/logger';
 import mongoose, { Schema, Types } from 'mongoose';
 
 type InverseBehavior = 'addToSet' | 'push' | 'set' | 'pull';
@@ -114,7 +115,7 @@ schema.post('save', async function (doc: any, next) {
     for (const m of metas) {
         const RefModel = doc.model(m.refModel);
         if (!RefModel) {
-            console.warn(`[useInverseRelations] Modelo ${m.refModel} no encontrado`);
+            logger.warn(`[useInverseRelations] Modelo ${m.refModel} no encontrado`);
             continue;
         }
       const nowIds = asIdArray(doc[m.path], m.isArray).map((x: any) => x.toString());

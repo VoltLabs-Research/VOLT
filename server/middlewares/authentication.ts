@@ -23,8 +23,8 @@
 import jwt from 'jsonwebtoken';
 import { User, Session } from '@/models/index';
 import RuntimeError from '@/utilities/runtime-error';
-import { promisify } from 'util';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
+import logger from '@/logger';
 
 /**
  * Extracts and verifies a JWT token from the Authorization header, then retrieves
@@ -40,12 +40,12 @@ export const getUserByToken = async (token: string, next: NextFunction): Promise
     const decodedToken = jwt.verify(token, secret) as any;
     // Retrieve the user from the database
     const freshUser = await User.findById(decodedToken.id).select('-devices -__v');
-    if(!freshUser){
+    if (!freshUser) {
         next(new RuntimeError('Authentication::User::NotFound', 401));
         return;
     }
     // Check if the user's password has changed since the token was issued
-    if(await freshUser.isPasswordChangedAfterJWFWasIssued(decodedToken.iat)){
+    if (await freshUser.isPasswordChangedAfterJWFWasIssued(decodedToken.iat)) {
         next(new RuntimeError('Authentication::PasswordChanged', 401));
         return;
     }
@@ -62,24 +62,24 @@ export const getUserByToken = async (token: string, next: NextFunction): Promise
 */
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
     let token;
-    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
-    }else{
+    } else {
         return next(new RuntimeError('Authentication::Required', 401));
     }
-    
+
     // Check if session is active
     const session = await Session.findOne({ token, isActive: true });
     if (!session) {
         return next(new RuntimeError('Authentication::Session::Invalid', 401));
     }
-    
+
     const freshUser = await getUserByToken(token, next);
     (req as any).user = freshUser;
-    
+
     // Update last activity
     await Session.findByIdAndUpdate(session._id, { lastActivity: new Date() });
-    
+
     next();
 };
 
@@ -93,14 +93,14 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 */
 export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
     let token;
-    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
         try {
             const freshUser = await getUserByToken(token, next);
             (req as any).user = freshUser;
         } catch (error) {
             // Si hay error en la autenticación, simplemente continuamos sin usuario
-            console.log('Optional authentication failed:', error);
+            logger.info(`Optional authentication failed: ${error}`);
         }
     }
     next();
@@ -115,7 +115,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
 export const restrictTo = (...roles: string[]): RequestHandler => {
     return (req: Request, res: Response, next: NextFunction) => {
         // Check if the user role matches any allowed roles
-        if(!roles.includes((req as any).user.role)){
+        if (!roles.includes((req as any).user.role)) {
             return next(new RuntimeError('Authentication::Unauthorized', 403));
         }
         next();

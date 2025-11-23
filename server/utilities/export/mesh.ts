@@ -26,6 +26,7 @@ import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
 import taubinSmoothing from '@/utilities/export/taubin-smoothing';
 import { putObject } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
+import logger from '@/logger';
 
 class MeshExporter{
     public toGLBBuffer(
@@ -99,7 +100,7 @@ class MeshExporter{
         const vertexCount = points.length;
         const triangleCount = facets.length;
         
-        console.log(`Processing mesh: ${triangleCount} triangles, ${vertexCount} vertices.`);
+        logger.info(`Processing mesh: ${triangleCount} triangles, ${vertexCount} vertices.`);
         const positions = new Float32Array(vertexCount * 3);
         
         let minX = Infinity;

@@ -23,6 +23,7 @@
 import { Document, Model, PopulateOptions, FilterQuery, Query } from 'mongoose';
 import { filterObject } from '@utilities/runtime';
 import RuntimeError from '@/utilities/runtime-error';
+import logger from '@/logger';
 
 /**
  * Interface for the request query string 
@@ -211,7 +212,7 @@ class APIFeatures<T extends Document = Document>{
                 this.buffer.sort = { score: { $meta: 'textScore' } } as any;
             }
         }catch(error){
-            console.warn('APIFeatures: Text search failed, continuing without search');
+            logger.warn('APIFeatures: Text search failed, continuing without search');
         }
 
         return this;
@@ -232,7 +233,7 @@ class APIFeatures<T extends Document = Document>{
             const filteredQuery = filterObject(queryObject, ...this.fields);
             this.buffer.find = { ...this.buffer.find, ...filteredQuery };
         }catch(error){
-            console.warn('APIFeatures: Filtering failed, continuing without additional filters');
+            logger.warn('APIFeatures: Filtering failed, continuing without additional filters');
         }
 
         return this;
@@ -285,7 +286,7 @@ class APIFeatures<T extends Document = Document>{
                 this.buffer.select = selectedFields;
             }
         }catch(error){
-            console.warn('APIFeatures: Field selection failed, returning all fields');
+            logger.warn('APIFeatures: Field selection failed, returning all fields');
         }
 
         return this;

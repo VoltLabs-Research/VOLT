@@ -27,6 +27,7 @@ import { Trajectory } from '@/models';
 import { rasterizeGLBs } from '@/utilities/raster';
 import path from 'path';
 import { SYS_BUCKETS } from '@/config/minio';
+import logger from '@/logger';
 
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
     private firstChunkProcessed = new Set<string>();
@@ -46,7 +47,7 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
         // Listen for job completion to trigger preview generation
         this.on('jobCompleted', (data: any) => {
             this.onJobCompleted(data).catch(error => {
-                console.error('Unhandled error in onJobCompleted handler:', error);
+                logger.error(`Unhandled error in onJobCompleted handler: ${error}`);
             });
         });
     }
@@ -65,7 +66,7 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
         try{
             const firstFrame = job.files?.[0];
             if(!firstFrame || firstFrame.frameData?.timestep === undefined){
-                console.warn(`No first frame data found for trajectory ${job.trajectoryId}`);
+                logger.warn(`No first frame data found for trajectory ${job.trajectoryId}`);
                 return;
             }
 
@@ -79,10 +80,10 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
             if(job.sessionId){
                 const counterKey = `session:${job.sessionId}:remaining`;
                 await this.redis.incr(counterKey);
-                console.log(`Incremented session counter for rasterizer preview job for trajectory ${job.trajectoryId}`);
+                logger.info(`Incremented session counter for rasterizer preview job for trajectory ${job.trajectoryId}`);
             }
         }catch(error){
-            console.error(`Failed to queue preview generation for trajectory ${job.trajectoryId}:`, error);
+            logger.error(`Failed to queue preview generation for trajectory ${job.trajectoryId}: ${error}`);
             // Don't throw - trajectory processing shouldn't fail if preview generation fails
         }
     }
@@ -91,7 +92,7 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
         try{
             return JSON.parse(rawData) as TrajectoryProcessingJob;
         }catch(error){
-            console.error(`[${this.queueName}] Error deserializing job:`, error);
+            logger.error(`[${this.queueName}] Error deserializing job: ${error}`);
             throw new Error('Failed to deserialize job data');
         }
     }

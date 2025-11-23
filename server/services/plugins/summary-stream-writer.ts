@@ -78,7 +78,7 @@ export default class SummaryStreamWriter{
         });
 
         await unlink(this.tmpPath).catch((err) => {
-            console.error(`[${this.pluginName} plugin] failed to delete tmp summary ${this.tmpPath}:`, err);
+            logger.error(`[${this.pluginName} plugin] failed to delete tmp summary ${this.tmpPath}: ${err}`);
         });
 
         return { storageKey };

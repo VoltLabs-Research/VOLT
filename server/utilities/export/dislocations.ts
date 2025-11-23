@@ -20,9 +20,9 @@
 * SOFTWARE.
 **/
 
-import { 
-    DislocationExportOptions, 
-    ProcessedDislocationGeometry 
+import {
+    DislocationExportOptions,
+    ProcessedDislocationGeometry
 } from '@/types/utilities/export/dislocations';
 import { calculateDislocationType } from '@/utilities/dislocation-utils';
 import { assembleGLBToBuffer } from '@/utilities/export/utils';
@@ -30,14 +30,15 @@ import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
 import { computeBoundsFromPoints } from '@/utilities/export/bounds';
 import { putObject, getObject } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
+import logger from '@/logger';
 
-class DislocationExporter{
+class DislocationExporter {
     private createLineGeometry(
         points: [number, number, number][],
         lineWidth: number,
         tubularSegments: number = 8
-    ): { positions: number[]; normals: number[]; indices: number[] }{
-        if(points.length < 2){
+    ): { positions: number[]; normals: number[]; indices: number[] } {
+        if (points.length < 2) {
             return { positions: [], normals: [], indices: [] };
         }
 
@@ -46,15 +47,15 @@ class DislocationExporter{
         const indices: number[] = [];
 
         // Generate tubular geometry around the line
-        for(let i = 0; i < points.length - 1; i++){
+        for (let i = 0; i < points.length - 1; i++) {
             const p1 = points[i];
             const p2 = points[i + 1];
 
             // Calculate direction vector
             const dir = [p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]];
             const length = Math.sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
-            
-            if(length < 1e-6) continue;
+
+            if (length < 1e-6) continue;
 
             // Normalize direction
             dir[0] /= length;
@@ -63,7 +64,7 @@ class DislocationExporter{
 
             // Find perpendicular vectors
             let up = [0, 1, 0];
-            if(Math.abs(dir[1]) > 0.99){
+            if (Math.abs(dir[1]) > 0.99) {
                 up = [1, 0, 0];
             }
 
@@ -90,7 +91,7 @@ class DislocationExporter{
             const baseVertexIndex = positions.length / 3;
 
             // Generate vertices around the circle
-            for(let j = 0; j <= tubularSegments; j++){
+            for (let j = 0; j <= tubularSegments; j++) {
                 const angle = (j / tubularSegments) * Math.PI * 2;
                 const cos = Math.cos(angle);
                 const sin = Math.sin(angle);
@@ -108,25 +109,25 @@ class DislocationExporter{
 
                 // Add normals (pointing outward from the line)
                 const normalLength = Math.sqrt(offset[0] * offset[0] + offset[1] * offset[1] + offset[2] * offset[2]);
-                if(normalLength > 1e-6){
+                if (normalLength > 1e-6) {
                     const nx = offset[0] / normalLength;
                     const ny = offset[1] / normalLength;
                     const nz = offset[2] / normalLength;
                     normals.push(nx, ny, nz);
                     normals.push(nx, ny, nz);
-                }else{
+                } else {
                     normals.push(0, 1, 0);
                     normals.push(0, 1, 0);
                 }
             }
 
             // Generate indices for the tube
-            for(let j = 0; j < tubularSegments; j++){
+            for (let j = 0; j < tubularSegments; j++) {
                 const v1 = baseVertexIndex + j * 2;
                 const v2 = baseVertexIndex + j * 2 + 1;
                 const v3 = baseVertexIndex + (j + 1) * 2;
                 const v4 = baseVertexIndex + (j + 1) * 2 + 1;
-                
+
                 // Two triangles per quad
                 indices.push(v1, v2, v3);
                 indices.push(v3, v2, v4);
@@ -146,38 +147,38 @@ class DislocationExporter{
             '1/6<112>': [0.9, 0.5, 0.1, 1.0],
         };
     }
-        
+
     private processGeometry(
         dislocationData: any,
         options: Required<DislocationExportOptions>
     ): ProcessedDislocationGeometry {
         const { data } = dislocationData;
-        console.log(`Processing ${data.length} dislocation segments...`);
-        
+        logger.info(`Processing ${data.length} dislocation segments...`);
+
         let allPositions: number[] = [];
         let allNormals: number[] = [];
         let allIndices: number[] = [];
         let allColors: number[] = [];
 
-        const typeColors = options.colorByType ? 
+        const typeColors = options.colorByType ?
             { ...this.getDefaultTypeColors(), ...options.typeColors } :
             this.getDefaultTypeColors();
 
         let currentVertexOffset = 0;
         let validSegments = 0;
-        
+
         const typeStats: Record<string, number> = {};
-        
-        for(const segment of data){
-            if(!segment.points || segment.points.length < options.minSegmentPoints){
+
+        for (const segment of data) {
+            if (!segment.points || segment.points.length < options.minSegmentPoints) {
                 continue;
             }
 
             validSegments++;
-            
+
             const calculatedType = calculateDislocationType(segment);
             segment.type = calculatedType;
-            
+
             typeStats[calculatedType] = (typeStats[calculatedType] || 0) + 1;
 
             let geometry = this.createLineGeometry(
@@ -186,28 +187,28 @@ class DislocationExporter{
                 options.tubularSegments
             );
 
-            if(geometry.positions.length === 0) continue;
+            if (geometry.positions.length === 0) continue;
 
             allPositions.push(...geometry.positions);
             allNormals.push(...geometry.normals);
 
-            if(options.colorByType){
+            if (options.colorByType) {
                 const color = typeColors[calculatedType] || typeColors['default'];
                 const vertexCount = geometry.positions.length / 3;
-                for(let i = 0; i < vertexCount; i++){
+                for (let i = 0; i < vertexCount; i++) {
                     allColors.push(...color);
                 }
             }
 
-            for(const index of geometry.indices){
+            for (const index of geometry.indices) {
                 allIndices.push(index + currentVertexOffset);
             }
 
             currentVertexOffset += geometry.positions.length / 3;
         }
 
-        console.log(`Processed ${validSegments} valid segments.`);
-        console.log('Dislocation type distribution:', typeStats);
+        logger.info(`Processed ${validSegments} valid segments.`);
+        logger.info(`Dislocation type distribution: ${JSON.stringify(typeStats)}`);
 
         const positions = new Float32Array(allPositions);
         const normals = new Float32Array(allNormals);
@@ -215,7 +216,7 @@ class DislocationExporter{
         const colors = options.colorByType ? new Float32Array(allColors) : undefined;
 
         const allPoints: [number, number, number][] = [];
-        for(let i = 0; i < positions.length; i += 3){
+        for (let i = 0; i < positions.length; i += 3) {
             allPoints.push([positions[i], positions[i + 1], positions[i + 2]]);
         }
 
@@ -285,9 +286,9 @@ class DislocationExporter{
         try {
             const key = `${trajectoryId}/${analysisConfigId}/${timestep}.json`;
 
-            console.log(`[DislocationExporter] Rebuilding GLB from MinIO object: ${key}`);
+            logger.info(`[DislocationExporter] Rebuilding GLB from MinIO object: ${key}`);
             const storageObject = await getObject(key, SYS_BUCKETS.MODELS);
-            if(!storageObject){
+            if (!storageObject) {
                 throw new Error(`No dislocation object found in MinIO for key ${key}`);
             }
 
@@ -296,14 +297,14 @@ class DislocationExporter{
             const opts: Required<DislocationExportOptions> = {
                 lineWidth: options.lineWidth ?? 0.08,
                 tubularSegments: options.tubularSegments ?? 12,
-                minSegmentPoints: options.minSegmentPoints ?? 2, 
+                minSegmentPoints: options.minSegmentPoints ?? 2,
                 material: {
-                    baseColor: options.material?.baseColor ?? [1.0, 1.0, 1.0, 1.0], 
+                    baseColor: options.material?.baseColor ?? [1.0, 1.0, 1.0, 1.0],
                     metallic: options.material?.metallic ?? 0.1,
-                    roughness: options.material?.roughness ?? 0.3, 
+                    roughness: options.material?.roughness ?? 0.3,
                     emissive: options.material?.emissive ?? [0.0, 0.0, 0.0],
                 },
-                colorByType: options.colorByType ?? true, 
+                colorByType: options.colorByType ?? true,
                 typeColors: options.typeColors ?? {},
                 metadata: {
                     includeOriginalStats: options.metadata?.includeOriginalStats ?? true,
@@ -312,20 +313,20 @@ class DislocationExporter{
             };
 
             const processedGeometry = this.processGeometry(dislocationData, opts);
-            
+
             // Upload to MinIO instead of writing to filesystem
             const buffer = this.toGLBBuffer(dislocationData, options);
             await putObject(minioKey, SYS_BUCKETS.MODELS, buffer, { 'Content-Type': 'model/gltf-binary' });
 
-            console.log(`[DislocationExporter] GLB successfully rebuilt and uploaded to MinIO: ${minioKey}`);
-            console.log(`[DislocationExporter] Statistics: ${processedGeometry.triangleCount} triangles, ${processedGeometry.vertexCount} vertices`);
+            logger.info(`[DislocationExporter] GLB successfully rebuilt and uploaded to MinIO: ${minioKey}`);
+            logger.info(`[DislocationExporter] Statistics: ${processedGeometry.triangleCount} triangles, ${processedGeometry.vertexCount} vertices`);
 
         } catch (error) {
-            console.error(`[DislocationExporter] Failed to rebuild GLB from DB:`, error);
+            logger.error(`[DislocationExporter] Failed to rebuild GLB from DB: ${error}`);
             throw error;
         }
     }
-        
+
     // Removed toGLB method - use toGLBMinIO instead
 
     public toGLBBuffer(
@@ -337,7 +338,7 @@ class DislocationExporter{
             tubularSegments: options.tubularSegments ?? 12,
             minSegmentPoints: options.minSegmentPoints ?? 2,
             material: {
-                baseColor: options.material?.baseColor ?? [1.0, 1.0, 1.0, 1.0], 
+                baseColor: options.material?.baseColor ?? [1.0, 1.0, 1.0, 1.0],
                 metallic: options.material?.metallic ?? 0.1,
                 roughness: options.material?.roughness ?? 0.3,
                 emissive: options.material?.emissive ?? [0.0, 0.0, 0.0],
@@ -351,10 +352,10 @@ class DislocationExporter{
         };
 
         const processedGeometry = this.processGeometry(dislocationData, opts);
-        
+
         const useU16 = processedGeometry.vertexCount > 0 && processedGeometry.vertexCount <= 65535;
         const idx = useU16 ? new Uint16Array(processedGeometry.indices) : processedGeometry.indices;
-        
+
         const { glb, arrayBuffer } = buildPrimitiveGLB({
             positions: processedGeometry.positions,
             normals: processedGeometry.normals,
@@ -375,13 +376,13 @@ class DislocationExporter{
             },
             extras: opts.metadata.includeOriginalStats ? {
                 stats: {
-                vertexCount: processedGeometry.vertexCount,
-                triangleCount: processedGeometry.triangleCount,
-                segmentCount: processedGeometry.triangleCount / (opts.tubularSegments * 2)
+                    vertexCount: processedGeometry.vertexCount,
+                    triangleCount: processedGeometry.triangleCount,
+                    segmentCount: processedGeometry.triangleCount / (opts.tubularSegments * 2)
                 },
                 ...opts.metadata.customProperties
             } : opts.metadata.customProperties
-        }); 
+        });
 
         const accPos = glb.accessors[0];
         accPos.min = processedGeometry.bounds.min;

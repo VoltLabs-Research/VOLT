@@ -26,6 +26,7 @@ import RuntimeError from '@/utilities/runtime-error';
 import { catchAsync } from '@/utilities/runtime';
 import path from 'path';
 import fs from 'fs';
+import logger from '@/logger';
 
 /**
  * Get file as base64 for preview
@@ -45,7 +46,7 @@ export const getFileBase64 = catchAsync(async (req: Request, res: Response, next
 
     try {
         const filePath = path.join(process.cwd(), 'storage', 'uploads', 'chat-files', message.metadata.filePath);
-        
+
         // Check if file exists
         if (!fs.existsSync(filePath)) {
             throw new RuntimeError('File::NotFound', 404);
@@ -67,7 +68,7 @@ export const getFileBase64 = catchAsync(async (req: Request, res: Response, next
             }
         });
     } catch (error) {
-        console.error('Error reading file:', error);
+        logger.error(`Error reading file: ${error}`);
         throw new RuntimeError('File::ReadError', 500);
     }
 });

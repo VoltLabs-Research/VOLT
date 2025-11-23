@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import BaseSocketModule from '@/socket/base-socket-module';
 import MetricsCollector from '@/services/metrics-collector';
+import logger from '@/logger';
 
 export default class MetricsModule extends BaseSocketModule{
     private collector?: MetricsCollector;
@@ -22,13 +23,13 @@ export default class MetricsModule extends BaseSocketModule{
                     io.to('metrics-room').emit('metrics:update', metrics);
                 }
             }catch(error: any){
-                console.error('[Metrics Module] Broadcast error:', error);
+                logger.error(`[Metrics Module] Broadcast error: ${error}`);
             }
         }, 1000);
     }
 
     onConnection(socket: Socket): void{
-        console.log(`[Metrics Module] Client ${socket.id} connected`);
+        logger.info(`[Metrics Module] Client ${socket.id} connected`);
         
         socket.join('metrics-room');
         this.sendInitialMetrics(socket);
@@ -42,14 +43,14 @@ export default class MetricsModule extends BaseSocketModule{
                 
                 socket.emit('metrics:history', history || []);
             }catch(error: any){
-                console.error('[Metrics Module] Error fetching history:', error);
+                logger.error(`[Metrics Module] Error fetching history: ${error}`);
                 socket.emit('metrics:error', { message: 'Failed to fetch historical data' });
             }
         });
 
         // Handle client disconnect
         socket.on('disconnect', () => {
-            console.log(`[Metrics Module] Client ${socket.id} disconnected`);
+            logger.info(`[Metrics Module] Client ${socket.id} disconnected`);
         });
     }
 
@@ -60,12 +61,12 @@ export default class MetricsModule extends BaseSocketModule{
                 socket.emit('metrics:initial', latest);
             }
         }catch(error){
-            console.error('[Metrics Module] Error sending initial metrics:', error);
+            logger.error(`[Metrics Module] Error sending initial metrics: ${error}`);
         }
     }
 
     async onShutdown(): Promise<void>{
-        console.log('[Metrics Module] Shutting down...');
+        logger.info('[Metrics Module] Shutting down...');
 
         if(this.broadcastInterval){
             clearInterval(this.broadcastInterval);

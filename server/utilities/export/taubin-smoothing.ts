@@ -20,6 +20,8 @@
 * SOFTWARE.
 **/
 
+import logger from "@/logger";
+
 const taubinSmoothing = (
     positions: Float32Array,
     indices: Uint32Array,
@@ -30,7 +32,7 @@ const taubinSmoothing = (
     const lambda = 0.5;
     const mu = -0.52;
 
-    console.log(`Applying Taubin smoothing with ${iterations} iterations (lambda=${lambda}, mu=${mu})...`);
+    logger.info(`Applying Taubin smoothing with ${iterations} iterations (lambda=${lambda}, mu=${mu})...`);
 
     const vertexCount = positions.length / 3;
     const adjacency: Set<number>[] = Array.from({ length: vertexCount }, () => new Set());

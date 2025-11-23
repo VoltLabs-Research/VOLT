@@ -30,6 +30,7 @@ import '@config/env';
 import { configureApp } from '@utilities/bootstrap';
 import { apiTracker } from '@/middlewares/api-tracker';
 import { globalErrorHandler } from '@/middlewares/global-error-handler';
+import logger from '@/logger';
 
 const app = express();
 
@@ -46,7 +47,7 @@ const corsOptions = {
         if(allowedOrigins.includes(origin)){
             callback(null, true);
         }else{
-            console.log(`CORS blocked origin: ${origin}`);
+            logger.info(`CORS blocked origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },

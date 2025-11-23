@@ -1,4 +1,5 @@
 import { createRedisClient } from '@/config/redis';
+import logger from '@/logger';
 import type { INotification } from '@/types/models/notification';
 
 /**
@@ -23,6 +24,6 @@ export const publishNotificationCreated = async (userId: string, notification: I
         await redis.publish('notification:created', message);
         await redis.quit();
     } catch (error) {
-        console.error('Error publishing notification event:', error);
+        logger.error(`Error publishing notification event: ${error}`);
     }
 };

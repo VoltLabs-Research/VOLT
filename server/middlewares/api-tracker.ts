@@ -22,6 +22,7 @@
 
 import { Request, Response, NextFunction, request } from 'express';
 import { ApiTracker } from '@/models/index';
+import logger from '@/logger';
 
 /**
  * Extracts the real IP address from the request, considering various proxy headers.
@@ -120,7 +121,7 @@ export const apiTracker = async (req: Request, res: Response, next: NextFunction
 
         // Avoid blocking the response
         ApiTracker.create(requestData).catch((error) => {
-            console.error('Failed to save API tracker data:', error);
+            logger.error(`Failed to save API tracker data: ${error}`);
         });
 
         originalEnd.call(this, chunk, encoding);

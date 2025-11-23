@@ -8,6 +8,7 @@ import { createRedisClient } from '@/config/redis';
 import { User } from '@/models/index';
 import { initializeJobUpdatesListener } from '@/socket/job-updates-listener';
 import { initializeTrajectoryUpdatesListener } from '@/socket/trajectory-updates-listener';
+import logger from '@/logger';
 
 /**
  * Central gateway that:
@@ -73,7 +74,7 @@ class SocketGateway{
                 // Allow anonymous connections (for public trajectories)
                 if (!token) {
                     (socket as any).user = null;
-                    console.log(`[Socket Gateway] Anonymous user connected: ${socket.id}`);
+                    logger.info(`[Socket Gateway] Anonymous user connected: ${socket.id}`);
                     return next();
                 }
 
@@ -84,17 +85,17 @@ class SocketGateway{
                 if (!user) {
                     // Invalid token but allow anonymous access
                     (socket as any).user = null;
-                    console.log(`[Socket Gateway] User not found for token, allowing anonymous: ${socket.id}`);
+                    logger.info(`[Socket Gateway] User not found for token, allowing anonymous: ${socket.id}`);
                     return next();
                 }
 
                 (socket as any).user = user;
-                console.log(`[Socket Gateway] Authenticated user connected: ${user.firstName} ${user.lastName} (${socket.id})`);
+                logger.info(`[Socket Gateway] Authenticated user connected: ${user.firstName} ${user.lastName} (${socket.id})`);
                 next();
             } catch (error) {
                 // Token verification failed, allow anonymous access
                 (socket as any).user = null;
-                console.log(`[Socket Gateway] Token verification failed, allowing anonymous: ${socket.id}`);
+                logger.info(`[Socket Gateway] Token verification failed, allowing anonymous: ${socket.id}`);
                 next();
             }
         });
@@ -110,7 +111,7 @@ class SocketGateway{
         this.trajectoryUpdatesSubscriber = initializeTrajectoryUpdatesListener(this.io);
 
         this.io.on('connection', (socket: Socket) => {
-            console.log(`[Socket Gateway] Connected ${socket.id}`);
+            logger.info(`[Socket Gateway] Connected ${socket.id}`);
             for(const module of this.modules){
                 module.onConnection(socket);
             }
@@ -127,7 +128,7 @@ class SocketGateway{
         try{
             await Promise.all(this.modules.map((module) => module.onShutdown()));
         }catch(err: any){
-            console.error('[Socket Gateway] Module shutdown error', err);
+            logger.error(`[Socket Gateway] Module shutdown error ${err}`);
         }
 
         try{

@@ -27,6 +27,7 @@ import Plugin from '@/services/plugins/plugin';
 import mongoConnector from '@/utilities/mongo/mongo-connector';
 import path from 'node:path';
 import '@config/env';
+import logger from '@/logger';
 
 
 const processJob = async (job: AnalysisJob): Promise<void> => {
@@ -35,7 +36,7 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
     }
 
     try{
-        console.log(`[Worker #${process.pid}] Received job ${job.jobId}. Starting processing...`);
+        logger.info(`[Worker #${process.pid}] Received job ${job.jobId}. Starting processing...`);
         const plugin = new Plugin(
             job.plugin,
             job.trajectoryId,
@@ -61,9 +62,9 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
             jobId: job.jobId,
             result: null
         });
-        console.log(`[Worker #${process.pid}] Finished job ${job.trajectoryId} successfully.`);
+        logger.info(`[Worker #${process.pid}] Finished job ${job.trajectoryId} successfully.`);
     }catch(err: any){
-        console.error(`[Worker #${process.pid}] An error occurred while processing trajectory ${job.trajectoryId}:`, err);
+        logger.error(`[Worker #${process.pid}] An error occurred while processing trajectory ${job.trajectoryId}: ${err}`);
         await Analysis.updateOne({ _id: job.analysisId }, { status: 'failed', finishedAt: new Date() }).catch(() => { /** noop */ });
         
         parentPort?.postMessage({
@@ -77,9 +78,9 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
 const main = async () => {
     try{
         await mongoConnector();
-        console.log(`[Worker #${process.pid}] Connected to MongoDB and ready to process jobs.`);
+        logger.info(`[Worker #${process.pid}] Connected to MongoDB and ready to process jobs.`);
     }catch(dbError){
-        console.error(`[Worker #${process.pid}] Failed to connect to MongoDB. Worker will not be able to process jobs.`, dbError);
+        logger.error(`[Worker #${process.pid}] Failed to connect to MongoDB. Worker will not be able to process jobs: ${dbError}`);
         process.exit(1);
     }
 

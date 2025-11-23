@@ -20,6 +20,7 @@
 * SOFTWARE.
 **/
 
+import logger from '@/logger';
 import { spawn } from 'node:child_process';
 
 export interface CLIResult{
@@ -32,18 +33,18 @@ export default class CLIExec{
 
     run(execPath: string, args: string[]): Promise<CLIResult>{
         return new Promise(async (resolve, reject) => {
-            console.log(`[CLI Exec] ${execPath} ${args.join(' ')}`);
+            logger.info(`[CLI Exec] ${execPath} ${args.join(' ')}`);
             const child = spawn(execPath, args);
 
             let stderr = '';
             child.stderr.on('data', (data) => {
                 const message = data.toString().trim();
-                console.error(`[CLI Exec] error: ${message}`);
+                logger.error(`[CLI Exec] error: ${message}`);
                 stderr += message + '\n';
             });
 
             child.stdout.on('data', (data) => {
-                console.log(`[CLI Exec]: ${data.toString().trim()}`);
+                logger.info(`[CLI Exec]: ${data.toString().trim()}`);
             });
 
             child.on('close', (code) => {

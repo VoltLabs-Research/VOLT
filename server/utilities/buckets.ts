@@ -1,4 +1,5 @@
 import { getMinioClient } from '@/config/minio';
+import logger from '@/logger';
 import { ReadStream } from 'fs';
 import { stat, writeFile } from 'fs/promises';
 import { BucketItemStat, ItemBucketMetadata } from 'minio';
@@ -117,7 +118,7 @@ export const deleteByPrefix = async (bucket: string, prefix: string): Promise<vo
     const chunkSize = 1000;
     for(let i = 0; i < keys.length; i += chunkSize){
         const slice = keys.slice(i, i + chunkSize);
-        console.log(`[deleteByPrefix] Deleting ${slice.length} objects in bucket "${bucket}"...`);
+        logger.info(`[deleteByPrefix] Deleting ${slice.length} objects in bucket "${bucket}"...`);
         await client.removeObjects(bucket, slice);
     }
 };

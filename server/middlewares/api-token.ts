@@ -24,6 +24,7 @@ import { Request, Response, NextFunction } from 'express';
 import ApiToken from '@/models/api-token';
 import RuntimeError from '@/utilities/runtime-error';
 import crypto from 'crypto';
+import logger from '@/logger';
 
 /**
  * Middleware to validate API tokens
@@ -139,7 +140,7 @@ export const logApiTokenUsage = (req: Request, res: Response, next: NextFunction
     const apiToken = (req as any).apiToken;
     
     if (apiToken) {
-        console.log(`API Token ${apiToken.name} used for ${req.method} ${req.path}`);
+        logger.info(`API Token ${apiToken.name} used for ${req.method} ${req.path}`);
     }
     
     next();

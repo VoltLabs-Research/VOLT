@@ -22,6 +22,7 @@
 
 import '@/config/env';
 import { getMinioClient, initializeMinio } from '@/config/minio';
+import logger from '@/logger';
 
 const wipeMinIO = async () => {
     await initializeMinio();
@@ -32,16 +33,16 @@ const wipeMinIO = async () => {
         const objectsStream = client.listObjects(name, '', true);
         const objects: any[] = [];
 
-        for await (const obj of objectsStream){
+        for await (const obj of objectsStream) {
             objects.push({ name: obj.name });
         }
 
-        if(objects.length){
+        if (objects.length) {
             await client.removeObjects(name, objects);
         }
 
         await client.removeBucket(name);
-        console.log('[wipeMinIO]:', name, 'OK');
+        logger.info(`[wipeMinIO]: ${name} OK`);
     });
 
     await Promise.all(promises);

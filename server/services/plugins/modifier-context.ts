@@ -47,7 +47,7 @@ export default class AnalysisContext implements ExecutionRecorder{
         const client = getMinioClient();
         await Promise.all(this.uploadedObjects.map(({ bucket, key }) => {
             client.removeObject(bucket, key).catch((err) => {
-                console.error(`[${this.pluginName} plugin] failed to delete ${bucket}/${key}:`, err);
+                logger.error(`[${this.pluginName} plugin] failed to delete ${bucket}/${key}: ${err}`);
             });
         }));
 

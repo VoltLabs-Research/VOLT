@@ -83,8 +83,7 @@ const TeamInvitationSchema: Schema<ITeamInvitation> = new Schema({
     },
     expiresAt: {
         type: Date,
-        required: [true, 'TeamInvitation::ExpiresAt::Required'],
-        index: true
+        required: [true, 'TeamInvitation::ExpiresAt::Required']
     },
     acceptedAt: {
         type: Date

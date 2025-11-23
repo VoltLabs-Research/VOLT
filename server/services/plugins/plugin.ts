@@ -31,6 +31,7 @@ import TrajectoryFS from '@/services/trajectory-fs';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import logger from '@/logger';
 
 type ResultFiles = Record<string, any>;
 
@@ -65,7 +66,7 @@ export default class Plugin {
             const exists = await fileExists(filePath);
             if (!exists) continue;
 
-            console.log(`[${this.pluginName} plugin] reading file: ${filePath}`);
+            logger.info(`[${this.pluginName} plugin] reading file: ${filePath}`);
             results[exposureId] = filePath;
             generatedFiles.push(filePath);
         }
@@ -88,7 +89,7 @@ export default class Plugin {
                         if (dumpFile) {
                             processedOptions[key] = dumpFile;
                         } else {
-                            console.warn(`[${this.pluginName}] Could not find dump file for timestep ${timestep}`);
+                            logger.warn(`[${this.pluginName}] Could not find dump file for timestep ${timestep}`);
                         }
                     }
                 }
@@ -116,7 +117,7 @@ export default class Plugin {
             }
 
             const baseFilename = path.basename(inputFile);
-            console.log(`[${this.pluginName} plugin]: starting ${modifierId} processing for: ${baseFilename}`);
+            logger.info(`[${this.pluginName} plugin]: starting ${modifierId} processing for: ${baseFilename}`);
 
             const outputBase = path.join(os.tmpdir(), `opendxa-out-${Date.now()}-${baseFilename}`);
             const args = await this.buildArgs<T>(options);
@@ -127,7 +128,7 @@ export default class Plugin {
             await this.process(results, timestep, modifierId);
             await this.unlinkGeneratedFiles(generatedFiles);
         } catch (err) {
-            console.error(`[${this.pluginName} plugin] failed to process ${inputFile}:`, err);
+            logger.error(`[${this.pluginName} plugin] failed to process ${inputFile}: ${err}`);
             await this.context.rollback();
             throw err;
         }
@@ -149,7 +150,7 @@ export default class Plugin {
         for (const exposureId of Object.keys(modifier.exposure)) {
             const resultsPath = results[exposureId];
             if (!resultsPath) {
-                console.warn(`[${this.pluginName} plugin] skipping exposure "${exposureId}" for modifier "${modifierId}" – missing results file.`);
+                logger.warn(`[${this.pluginName} plugin] skipping exposure "${exposureId}" for modifier "${modifierId}" – missing results file.`);
                 continue;
             }
             await processor.evaluate(exposureId, timestep, resultsPath);
@@ -166,7 +167,7 @@ export default class Plugin {
     private async unlinkGeneratedFiles(generatedFiles: string[]) {
         await Promise.all(generatedFiles.map((file) => {
             fs.unlink(file).catch((err) => {
-                console.error(`Failed to delete file ${file}:`, err)
+                logger.error(`Failed to delete file ${file}: ${err}`)
             });
         }));
     }

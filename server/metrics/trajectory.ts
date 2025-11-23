@@ -21,6 +21,7 @@
 **/
 
 import HandlerFactory from '@/controllers/handler-factory';
+import logger from '@/logger';
 import { Analysis, Team, Trajectory } from "@/models";
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
@@ -64,7 +65,7 @@ export const getAnalysisDislocations = async (req: Request, res: Response) => {
             data: dislocations
         });
     }catch(err){
-        console.error('getAnalysisDislocations error:', err);
+        logger.error(`getAnalysisDislocations error: ${err}`);
         return res.status(500).json({
             status: 'error',
             data: { error: 'Internal Server Error' }
@@ -176,7 +177,7 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
             data: { configs, total, page: pageNum, limit: limitNum }
         });
     }catch(err){
-        console.error('listAnalysisConfigsByTeam error:', err);
+        logger.error(`listAnalysisConfigsByTeam error: ${err}`);
         return res.status(500).json({ status: 'error', data: { error: 'Internal Server Error' } });
     }
 };

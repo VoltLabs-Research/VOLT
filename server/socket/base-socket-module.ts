@@ -20,13 +20,14 @@
 * SOFTWARE.
 **/
 
+import logger from '@/logger';
 import { Server, Socket } from 'socket.io';
 
 /**
  * Base class for SocketIO feature modules.
  * Each module can hook into the lifecycle and register its own handlers.
  */
-abstract class BaseSocketModule{
+abstract class BaseSocketModule {
     /**
      * Optional name used for logging/metrics.
      */
@@ -37,7 +38,7 @@ abstract class BaseSocketModule{
      */
     protected io?: Server;
 
-    constructor(name: string){
+    constructor(name: string) {
         this.name = name;
     }
 
@@ -47,7 +48,7 @@ abstract class BaseSocketModule{
      * 
      * @param io The initialized SocketIO server.
      */
-    onInit(io: Server): void{
+    onInit(io: Server): void {
         this.io = io;
     }
 
@@ -57,33 +58,32 @@ abstract class BaseSocketModule{
      * 
      * @param socket Connected socket.
      */
-    onConnection(socket: Socket): void{}
+    onConnection(socket: Socket): void { }
 
     /**
      * Called during graceful shutdown.
      * Clean up timers, external subscriptions, etc.
      */
-    async onShutdown(): Promise<void>{}
+    async onShutdown(): Promise<void> { }
 
     /**
      * Join a room!
      */
-    protected joinRoom(socket: Socket, room: string): void{
+    protected joinRoom(socket: Socket, room: string): void {
         // Check if socket is already in the room to prevent duplicate joins
-        if(socket.rooms.has(room)){
-            // console.log(`[${this.name}] Socket ${socket.id} already in room: ${room} (skipping duplicate join)`);
+        if (socket.rooms.has(room)) {
             return;
         }
         socket.join(room);
-        console.log(`[${this.name}] Socket ${socket.id} joined room: ${room}`);
+        logger.info(`[${this.name}] Socket ${socket.id} joined room: ${room}`);
     }
 
     /**
      * Leave room!
      */
-    protected leaveRoom(socket: Socket, room: string): void{
+    protected leaveRoom(socket: Socket, room: string): void {
         socket.leave(room);
-        console.log(`[${this.name}] Socket ${socket.id} left room: ${room}`);
+        logger.info(`[${this.name}] Socket ${socket.id} left room: ${room}`);
     }
 
     /**
@@ -114,16 +114,16 @@ abstract class BaseSocketModule{
             updateEvent: string;
             userFromSocket?: (socket: Socket) => any
         }
-    ){
+    ) {
         socket.on(cfg.event, async (payload: TPayload) => {
             const prev = cfg.previousOf?.(payload);
-            if(prev){
+            if (prev) {
                 this.leaveRoom(socket, prev);
                 await this.broadcastPresence(prev, cfg.updateEvent, cfg.userFromSocket);
             }
 
             const room = cfg.roomOf(payload);
-            if(!room) return;
+            if (!room) return;
 
             cfg.setContext(socket, payload);
             this.joinRoom(socket, room);
@@ -146,10 +146,10 @@ abstract class BaseSocketModule{
         getRoomFromSocket: (socket: Socket) => string | undefined,
         updateEvent: string,
         userFromSocket?: (socket: Socket) => any
-    ){
+    ) {
         socket.on('disconnect', async () => {
             const room = getRoomFromSocket(socket);
-            if(room){
+            if (room) {
                 await this.broadcastPresence(room, updateEvent, userFromSocket);
             }
         });
@@ -167,13 +167,13 @@ abstract class BaseSocketModule{
         room: string,
         updateEvent: string,
         userFromSocket?: (socket: Socket) => any
-    ){
-        if(!this.io){
+    ) {
+        if (!this.io) {
             return;
         }
 
         const users = await this.collectPresence(room, userFromSocket);
-        console.log(`[${this.name}] Broadcasting presence to room ${room} with event ${updateEvent}: ${users.length} users`, users);
+        logger.info(`[${this.name}] Broadcasting presence to room ${room} with event ${updateEvent}: ${users.length} users - ${JSON.stringify(users)}`);
         this.io.to(room).emit(updateEvent, users);
 
         // Also broadcast to observer rooms with trajectory-specific event
@@ -182,7 +182,7 @@ abstract class BaseSocketModule{
             // Extract trajectoryId from room name (e.g., "canvas:123" -> "123")
             const trajectoryId = room.split(':')[1];
             const trajectorySpecificEvent = `${updateEvent}:${trajectoryId}`;
-            console.log(`[${this.name}] Also broadcasting to observer room: ${observerRoom} with event ${trajectorySpecificEvent}`);
+            logger.info(`[${this.name}] Also broadcasting to observer room: ${observerRoom} with event ${trajectorySpecificEvent}`);
             this.io.to(observerRoom).emit(trajectorySpecificEvent, users);
         }
     }
@@ -199,16 +199,16 @@ abstract class BaseSocketModule{
     protected async collectPresence(
         room: string,
         userFromSocket?: (socket: Socket) => any
-    ): Promise<any[]>{
-        if(!this.io) return [];
+    ): Promise<any[]> {
+        if (!this.io) return [];
 
         try {
             const sockets = await this.io.in(room).fetchSockets();
             const byId = new Map<string, any>();
 
-            for(const socket of sockets){
+            for (const socket of sockets) {
                 // Use custom extractor if provided, otherwise fall back to default
-                const presenceUser = userFromSocket 
+                const presenceUser = userFromSocket
                     ? userFromSocket(socket)
                     : (() => {
                         const user: any = (socket as any).user;
@@ -223,16 +223,16 @@ abstract class BaseSocketModule{
                     })();
 
                 const uid = presenceUser.id || socket.id;
-                if(!uid) continue;
+                if (!uid) continue;
 
-                if(!byId.has(uid)){
+                if (!byId.has(uid)) {
                     byId.set(uid, presenceUser);
                 }
             }
 
             return Array.from(byId.values());
         } catch (error) {
-            console.error(`[${this.name}] Error fetching sockets for room ${room}:`, error);
+            logger.error(`[${this.name}] Error fetching sockets for room ${room}: ${error}`);
             return [];
         }
     }

@@ -26,8 +26,9 @@ import { createInterface } from 'readline';
 import { once } from 'events';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { join } from 'path';
+import logger from '@/logger';
 
-interface ReadLargeFileOptions{
+interface ReadLargeFileOptions {
     maxLines?: number;
     encoding?: BufferEncoding;
     onLine?: (line: string, lineNumber: number) => void;
@@ -40,13 +41,13 @@ interface ReadLargeFileResult {
     metadata: Record<string, any>;
 }
 
-interface ReadBinaryFileOptions{
+interface ReadBinaryFileOptions {
     chunkSize?: number;
     onChunk?: (chunk: Buffer, bytesRead: number) => void;
     onProgress?: (bytesRead: number) => void;
 }
 
-interface ReadBinaryFileResult{
+interface ReadBinaryFileResult {
     buffer: Buffer;
     totalBytes: number;
     metadata: Record<string, any>
@@ -54,9 +55,9 @@ interface ReadBinaryFileResult{
 
 export const listGlbFiles = async (dir: string, out: string[] = []): Promise<string[]> => {
     const entries = await readdir(dir, { withFileTypes: true });
-    for(const e of entries){
-        if(!e.isFile()) continue;
-        if(!/\.(glb|gltf)$/i.test(e.name)) continue;
+    for (const e of entries) {
+        if (!e.isFile()) continue;
+        if (!/\.(glb|gltf)$/i.test(e.name)) continue;
         out.push(join(dir, e.name));
     }
     return out;
@@ -83,8 +84,8 @@ export const readBinaryFile = async (
         stream.on('data', (chunk: Buffer) => {
             bytesRead += chunk.length;
             chunks.push(chunk);
-            if(onChunk) onChunk(chunk, bytesRead);
-            if(onProgress && bytesRead % (10 * 1024 * 1024) < chunk.length){
+            if (onChunk) onChunk(chunk, bytesRead);
+            if (onProgress && bytesRead % (10 * 1024 * 1024) < chunk.length) {
                 onProgress(bytesRead);
             }
         });
@@ -96,17 +97,17 @@ export const readBinaryFile = async (
                 metadata
             })
         });
-        
+
         stream.on('error', reject);
     });
 };
 
 export const fileExists = async (filePath: string): Promise<boolean> => {
-    try{
+    try {
         await access(filePath, constants.F_OK);
         return true;
-    }catch(err: any){
-        if(err?.code === 'ENOENT'){
+    } catch (err: any) {
+        if (err?.code === 'ENOENT') {
             return false;
         }
 
@@ -115,31 +116,31 @@ export const fileExists = async (filePath: string): Promise<boolean> => {
 };
 
 export const copyFile = async (source: string, destination: string): Promise<void> => {
-    console.log(`Starting file copy: ${source} -> ${destination}`);
+    logger.info(`Starting file copy: ${source} -> ${destination}`);
 
-    try{
+    try {
         const sourceStats = await stat(source);
-        console.log(`Source file size: ${sourceStats.size} bytes (${(sourceStats.size / 1024 / 1024).toFixed(2)}MB)`);
+        logger.info(`Source file size: ${sourceStats.size} bytes (${(sourceStats.size / 1024 / 1024).toFixed(2)}MB)`);
 
-        if(sourceStats.size === 0){
+        if (sourceStats.size === 0) {
             throw new Error(`Source file is empty: ${source}`);
         }
 
         // Node.js built-in copyFile which is more reliable than streams for large files
         await fsCopyFile(source, destination);
-        
-        const destinationStats = await stat(destination);
-        console.log(`Destination file size: ${destinationStats.size} bytes (${(destinationStats.size / 1024 / 1024).toFixed(2)}MB)`);
 
-        if(destinationStats.size !== sourceStats.size){
+        const destinationStats = await stat(destination);
+        logger.info(`Destination file size: ${destinationStats.size} bytes (${(destinationStats.size / 1024 / 1024).toFixed(2)}MB)`);
+
+        if (destinationStats.size !== sourceStats.size) {
             throw new Error(`File copy incomplete: source ${sourceStats.size} bytes, destination ${destinationStats.size} bytes`);
         }
-    }catch(err){
-        console.error(`Error copying file from ${source} to ${destination}:`, err);
+    } catch (err) {
+        logger.error(`Error copying file from ${source} to ${destination}: ${err}`);
         // Clean up partial file if it exists
-        try{
+        try {
             await rm(destination);
-        }catch(cleanupError){}
+        } catch (cleanupError) { }
 
         throw err;
     }
@@ -171,17 +172,17 @@ export const readLargeFile = async (
             lineCount++;
 
             // Only keep the necessary lines in memory
-            if(lines.length < maxLines){
+            if (lines.length < maxLines) {
                 lines.push(line);
             }
 
             // Custom callback to process each line
-            if(onLine){
+            if (onLine) {
                 onLine(line, lineCount);
             }
 
             // Progress callback
-            if(onProgress && lineCount % 1000 === 0){
+            if (onProgress && lineCount % 1000 === 0) {
                 onProgress(lineCount);
             }
         });
@@ -201,7 +202,7 @@ export const readLargeFile = async (
 };
 
 export const writeChunk = async (stream: NodeJS.WritableStream, chunk: string) => {
-    if(!stream.write(chunk)){
+    if (!stream.write(chunk)) {
         await once(stream, 'drain');
     }
 };
@@ -215,16 +216,16 @@ export const writeGroupedJsonStreaming = async (filePath: string, data: AtomsGro
     await writeChunk(writeStream, '{');
     const keys = Object.keys(data);
 
-    for(let ki = 0; ki < keys.length; ki++){
+    for (let ki = 0; ki < keys.length; ki++) {
         const key = keys[ki];
         const arr = data[key] ?? [];
-        if(ki > 0) await writeChunk(writeStream, ',');
+        if (ki > 0) await writeChunk(writeStream, ',');
 
         await writeChunk(writeStream, JSON.stringify(key));
         await writeChunk(writeStream, ':[');
 
-        for(let i = 0; i < arr.length; i++){
-            if(i > 0) await writeChunk(writeStream, ',');
+        for (let i = 0; i < arr.length; i++) {
+            if (i > 0) await writeChunk(writeStream, ',');
             await writeChunk(writeStream, JSON.stringify(arr[i]));
         }
 

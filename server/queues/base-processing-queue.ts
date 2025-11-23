@@ -29,6 +29,7 @@ import { EventEmitter } from 'events';
 import { publishJobUpdate } from '@/events/job-updates';
 import { Trajectory } from '@/models';
 import useClusterId from '@/utilities/use-cluster-id';
+import logger from '@/logger';
 
 export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitter{
     protected readonly queueName: string;
@@ -137,7 +138,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
         const acquired = await this.redis.eval(lua, 1, lockKey, lockVal, String(ttlMs)) as number;
         if(acquired !== 1){
-            console.log(`[${this.queueName}] Startup recovery already running elsewhere, skipping.`);
+            logger.info(`[${this.queueName}] Startup recovery already running elsewhere, skipping.`);
             return;
         }
 
@@ -169,7 +170,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         `;
         const moved = await this.redis.eval(lua, 2, this.processingKey, this.queueKey) as number;
         if(moved && moved > 0){
-            console.log(`[${this.queueName}] Recovered ${moved} jobs from processing.`);
+            logger.info(`[${this.queueName}] Recovered ${moved} jobs from processing.`);
         }
         return moved || 0;
     }
@@ -237,7 +238,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         const sessionData = await this.redis.get(sessionKey);
         
         if (!sessionData) {
-            console.warn(`Session data not found for ${sessionId}`);
+            logger.warn(`Session data not found for ${sessionId}`);
             return;
         }
 
@@ -254,9 +255,9 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             };
             
             await publishJobUpdate(teamId, completedEvent);
-            console.log(`Session completed event emitted to team ${teamId} for trajectory ${trajectoryId}`);
+            logger.info(`Session completed event emitted to team ${teamId} for trajectory ${trajectoryId}`);
         } catch (error) {
-            console.error(`[${this.queueName}] Failed to emit session completed event:`, error);
+            logger.error(`[${this.queueName}] Failed to emit session completed event: ${error}`);
         }
     }
 
@@ -269,7 +270,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         };
         
         await publishJobUpdate(teamId, expiredEvent); 
-        console.log(`Session expired event emitted to team ${teamId}`);
+        logger.info(`Session expired event emitted to team ${teamId}`);
     }
 
     private async checkAndCleanupSession(job: T): Promise<void>{
@@ -291,7 +292,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 }, 10000);
             }
         }catch(error){
-            console.error(`Error checking session ${sessionId}:`, error);
+            logger.error(`Error checking session ${sessionId}: ${error}`);
             this.sessionsBeingCleaned.delete(sessionId);
         }
     }
@@ -351,7 +352,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         await this.redis.expire(retryCountKey, this.TTL);
         /*
         if(currentAttempt < maxAttempts){
-            console.log(`[${this.queueName}] Job ${job.jobId} failed. Attempt ${currentAttempt} of ${maxAttempts}. Re-queuing.`);
+            logger.info(`[${this.queueName}] Job ${job.jobId} failed. Attempt ${currentAttempt} of ${maxAttempts}. Re-queuing.`);
             const retryJob = {
                 ...job,
                 retries: currentAttempt
@@ -371,7 +372,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }
         */
         // If this part of the function is executed it means that the maximum attempt has been reached.
-        console.error(`[${this.queueName}] Job ${job.jobId} failed after ${maxAttempts} attempts. Removing from queue permanently.`);
+        logger.error(`[${this.queueName}] Job ${job.jobId} failed after ${maxAttempts} attempts. Removing from queue permanently.`);
             
         await this.setJobStatus(job.jobId, 'failed', { 
             ...job,
@@ -472,7 +473,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     }
 
     private async handleWorkerError(workerId: number, err: Error): Promise<void> {
-        console.error(`[${this.queueName}] Worker #${workerId} error:`, err);
+        logger.error(`[${this.queueName}] Worker #${workerId} error: ${err}`);
         await this.requeueJob(workerId, err.message);
         this.replaceWorker(workerId);
     }
@@ -500,7 +501,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     private handleWorkerExit(workerId: number, code: number): void {
         if(code !== 0){
-            console.error(`[${this.queueName}] Worker #${workerId} exited unexpectedly with code ${code}`);
+            logger.error(`[${this.queueName}] Worker #${workerId} exited unexpectedly with code ${code}`);
             this.requeueJob(workerId, `Worker exited with code ${code}`);
         }
         this.replaceWorker(workerId);
@@ -614,7 +615,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     try {
         const trajectory = await Trajectory.findById(data.trajectoryId);
         if (!trajectory) {
-            console.warn(`[${this.queueName}] Trajectory not found: ${data.trajectoryId}`);
+            logger.warn(`[${this.queueName}] Trajectory not found: ${data.trajectoryId}`);
             return;
         }
 
@@ -677,7 +678,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             }
         }
     } catch (error) {
-        console.error(`[${this.queueName}] Failed to update trajectory ${data.trajectoryId} status:`, error);
+        logger.error(`[${this.queueName}] Failed to update trajectory ${data.trajectoryId} status: ${error}`);
     }
 }
 
@@ -694,7 +695,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
             return JSON.parse(statusData);
         }catch(error){
-            console.error(`[${this.queueName}] Failed to get status for job ${jobId}:`, error);
+            logger.error(`[${this.queueName}] Failed to get status for job ${jobId}: ${error}`);
             return null;
         }
     }
@@ -744,7 +745,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 .lrem(this.processingKey, 1, rawData)
                 .exec();
         }catch(moveError){
-            console.error(`Critical: Failed to return job to queue:`, moveError);
+            logger.error(`Critical: Failed to return job to queue: ${moveError}`);
         }
     }
 
@@ -763,14 +764,14 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 // on to the next job in the batch.
                 await this.dispatchJob(rawData);
             }catch(error){
-                console.error(`[${this.queueName}] Critical error dispatching job, returning to queue.`, error);
+                logger.error(`[${this.queueName}] Critical error dispatching job, returning to queue: ${error}`);
                 await this.handleFailedJobDispatch(rawData);
             }
         }
     }
 
     private async startDispatchLoop(): Promise<void>{
-        console.log(`[${this.queueName}] Dispatcher started.`);
+        logger.info(`[${this.queueName}] Dispatcher started.`);
 
         while(!this.isShutdown){
             const backlog = await this.redis.llen(this.queueKey);

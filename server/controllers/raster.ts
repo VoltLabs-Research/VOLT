@@ -9,6 +9,7 @@ import { getTimestepPreview, rasterizeGLBs } from '@/utilities/raster';
 import { SYS_BUCKETS } from '@/config/minio';
 import TrajectoryFS from '@/services/trajectory-fs';
 import archiver from 'archiver';
+import logger from '@/logger';
 
 export const rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
@@ -103,7 +104,7 @@ export const getRasterFrameData = async (req: Request, res: Response) => {
     const { timestep, analysisId, model } = req.params;
     const frameNumber = Number(timestep);
 
-    if(!Number.isFinite(frameNumber)){
+    if (!Number.isFinite(frameNumber)) {
         return res.status(400).json({ status: 'error', message: 'Invalid timestep parameter' });
     }
 
@@ -130,7 +131,7 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
     const rasterDir = join(basePath, trajectoryId, 'raster');
 
     trajectory = await Trajectory.findOneAndUpdate(
-        { _id: trajectoryId }, 
+        { _id: trajectoryId },
         { $inc: { rasterSceneViews: 1 } },
         { new: true }
     );
@@ -143,18 +144,18 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
     const analysesData: Record<string, any> = {};
     const trajFS = new TrajectoryFS(trajectoryId);
 
-    for(const analysis of analyses){
+    for (const analysis of analyses) {
         const id = analysis._id.toString();
         const data: Record<string, any> = {
             ...analysis,
             frames: {}
         };
 
-        for(const { timestep } of trajectory.frames){
+        for (const { timestep } of trajectory.frames) {
             const models: Record<string, any> = {};
             const availableModels = await trajFS.listRasterAnalyses(timestep, id);
 
-            for(const model of availableModels){
+            for (const model of availableModels) {
                 const buffer = await readRasterModel(model, id, rasterDir, timestep);
                 models[model] = {
                     model,
@@ -193,7 +194,7 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
             analyses: analysesData
         }
     })
-    };
+};
 
 export const downloadRasterImagesArchive = async (req: Request, res: Response) => {
     const trajectory = res.locals?.trajectory;
@@ -222,7 +223,7 @@ export const downloadRasterImagesArchive = async (req: Request, res: Response) =
                         files.push(join(prevDir, e.name));
                     }
                 }
-            } catch {/* ignore */}
+            } catch {/* ignore */ }
         }
 
         if (analysisId) {
@@ -239,7 +240,7 @@ export const downloadRasterImagesArchive = async (req: Request, res: Response) =
                         files.push(join(frameDir, p.name));
                     }
                 }
-            } catch {/* ignore */}
+            } catch {/* ignore */ }
         }
 
         if (!files.length) {
@@ -258,16 +259,16 @@ export const downloadRasterImagesArchive = async (req: Request, res: Response) =
 
         const archive = archiver('zip', { zlib: { level: 0 } });
 
-        archive.on('warning', (err) => console.warn('archiver warning:', err));
+        archive.on('warning', (err) => logger.warn(`archiver warning: ${err}`));
         archive.on('error', (err) => {
-            console.error('archiver error:', err);
+            logger.error(`archiver error: ${err}`);
             if (!res.headersSent) {
                 res.status(500).json({
                     status: 'error',
                     data: { error: 'Failed to build raster images archive' }
                 });
             } else {
-                try { res.end(); } catch {}
+                try { res.end(); } catch { }
             }
         });
 
@@ -281,13 +282,13 @@ export const downloadRasterImagesArchive = async (req: Request, res: Response) =
         }
         await archive.finalize();
     } catch (err) {
-        console.error('downloadRasterImagesArchive error:', err);
+        logger.error(`downloadRasterImagesArchive error: ${err}`);
         if (!res.headersSent) {
             return res.status(500).json({
                 status: 'error',
                 data: { error: 'Failed to build raster images archive' }
             });
         }
-        try { res.end(); } catch {}
+        try { res.end(); } catch { }
     }
 };

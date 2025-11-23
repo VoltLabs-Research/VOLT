@@ -28,6 +28,7 @@ import TrajectoryFS from '@/services/trajectory-fs';
 import RuntimeError from '@/utilities/runtime-error';
 import { getStream } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
+import logger from '@/logger';
 
 type EntryType = 'file' | 'dir';
 
@@ -193,7 +194,7 @@ export const listTrajectoryFs = async (req: Request, res: Response) => {
                 }
             }
         }catch(err){
-            console.error('Failed to list GLBs from MinIO:', err);
+            logger.error(`Failed to list GLBs from MinIO: ${err}`);
         }
     }
 

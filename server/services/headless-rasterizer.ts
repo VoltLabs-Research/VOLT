@@ -741,7 +741,7 @@ class HeadlessRasterizer {
         try {
             return await io.read(this.opts.inputPath);
         } catch (err: any) {
-            console.error(err);
+            logger.error(err);
             throw err;
         }
     }

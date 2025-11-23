@@ -29,6 +29,7 @@ import https from 'https';
 import { exec } from 'child_process';
 import { redis } from '@/config/redis';
 import { promisify } from 'util';
+import logger from '@/logger';
 
 const execPromise = promisify(exec);
 
@@ -171,7 +172,7 @@ export default class MetricsCollector{
                 usagePercent
             };
         }catch(error: any){
-            console.error('Error getting disk metrics:', error);
+            logger.error(`Error getting disk metrics: ${error}`);
             return { total: 0, used: 0, free: 0, usagePercent: 0 };
         }
     }
@@ -331,7 +332,7 @@ export default class MetricsCollector{
                 total: Math.round((incoming + outgoing) * 10) / 10
             };
         }catch(error: any){
-            console.error('Error reading network stats:', error);
+            logger.error(`Error reading network stats: ${error}`);
             // Fallback to minimal values
             return {
                 incoming: 0,
@@ -368,7 +369,7 @@ export default class MetricsCollector{
                 latency: Math.max(0, latencyMs)
             };
         }catch(error: any){
-            console.error('Error collecting MongoDB metrics:', error);
+            logger.error(`Error collecting MongoDB metrics: ${error}`);
             return null;
         }
     }
@@ -468,7 +469,7 @@ export default class MetricsCollector{
                 writeIOPS
             };
         } catch (error: any) {
-            console.error('Error reading disk operations:', error);
+            logger.error(`Error reading disk operations: ${error}`);
             return { 
                 read: 0, 
                 write: 0, 
@@ -528,7 +529,7 @@ export default class MetricsCollector{
             await this.saveToRedis(metrics);
             return metrics;
         }catch(error: any){
-            console.error('Error collecting metrics:', error);
+            logger.error(`Error collecting metrics: ${error}`);
             throw error;
         }
     }
@@ -539,7 +540,7 @@ export default class MetricsCollector{
     private async saveToRedis(metrics: any){
         try{
             if(!redis){
-                console.warn('Redis not available, skipping Redis storage');
+                logger.warn('Redis not available, skipping Redis storage');
                 return;
             }
 
@@ -549,7 +550,7 @@ export default class MetricsCollector{
             // Add to sorted set with timestamp as score
             await redis.zadd(this.redisMetricsKey, timestamp, metricsJson);
         }catch(error: any){
-            console.error('Error saving to Redis:', error);
+            logger.error(`Error saving to Redis: ${error}`);
         }
     }
 
@@ -559,7 +560,7 @@ export default class MetricsCollector{
     async getMetricsFromRedis(hours: number = 24): Promise<any[]>{
         try{
             if(!redis){
-                console.warn('Redis not available');
+                logger.warn('Redis not available');
                 return [];
             }
 
@@ -574,7 +575,7 @@ export default class MetricsCollector{
 
             return metricsData.map((data: string) => JSON.parse(data));
         }catch(error: any){
-            console.error('Error reading from Redis:', error);
+            logger.error(`Error reading from Redis: ${error}`);
             return [];
         }
     }
@@ -585,7 +586,7 @@ export default class MetricsCollector{
     async getLatestFromRedis(): Promise<any | null>{
         try{
             if(!redis){
-                console.warn('Redis not available');
+                logger.warn('Redis not available');
                 return null;
             }
 
@@ -598,7 +599,7 @@ export default class MetricsCollector{
 
             return null;
         }catch(error: any){
-            console.error('Error reading latest from Redis:', error);
+            logger.error(`Error reading latest from Redis: ${error}`);
             return null;
         }
     }
@@ -614,11 +615,11 @@ export default class MetricsCollector{
             // Remove all metrics with score (timestamp) less than cutoffTime
             const removed = await redis.zremrangebyscore(this.redisMetricsKey, '-inf', cutoffTime);
             if(removed > 0){
-                console.log(`Cleaned ${removed} old metrics from Redis`);
+                logger.info(`Cleaned ${removed} old metrics from Redis`);
             }
             return removed;
         }catch(error: any){
-            console.error('Error cleaning old metrics:', error);
+            logger.error(`Error cleaning old metrics: ${error}`);
             return 0;
         }
     }

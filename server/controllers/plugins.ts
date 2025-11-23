@@ -10,6 +10,7 @@ import { getStream, statObject, listByPrefix, getObject } from '@/utilities/buck
 import { SYS_BUCKETS } from '@/config/minio';
 import ManifestService from '@/services/plugins/manifest-service';
 import { decode as decodeMsgpack } from '@msgpack/msgpack';
+import logger from '@/logger';
 
 const getValueByPath = (obj: any, path: string) => {
     if (!obj || !path) return undefined;
@@ -106,7 +107,6 @@ export const evaluateModifier = catchAsync(async (req: Request, res: Response, n
     });
 
     await Promise.all(promises);
-    console.log(jobs)
 
     const analysisQueue = getAnalysisQueue();
     analysisQueue.addJobs(jobs);
@@ -132,7 +132,7 @@ export const getPluginExposureGLB = catchAsync(async (req: Request, res: Respons
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         stream.pipe(res);
     } catch (err) {
-        console.error('[getPluginExposureGLB] Error:', err);
+        logger.error(`[getPluginExposureGLB] Error: ${err}`);
         return res.status(404).json({
             status: 'error',
             data: { error: `GLB not found for exposure ${exposureId} at timestep ${timestep}` }
@@ -173,7 +173,7 @@ export const getPluginExposureFile = catchAsync(async (req: Request, res: Respon
 
         stream.pipe(res);
     } catch (err) {
-        console.error('[getPluginExposureFile] Error:', err);
+        logger.error(`[getPluginExposureFile] Error: ${err}`);
         return res.status(404).json({
             status: 'error',
             data: { error: `File not found for exposure ${exposureId} at timestep ${timestep}` }
@@ -458,7 +458,7 @@ export const getPerFrameListing = catchAsync(async (req: Request, res: Response,
             }
         });
     } catch (err) {
-        console.error('[getPerFrameListing] Error:', err);
+        logger.error(`[getPerFrameListing] Error: ${err}`);
         return res.status(404).json({
             status: 'error',
             data: { error: `Data not found for analysis ${analysisId}` }

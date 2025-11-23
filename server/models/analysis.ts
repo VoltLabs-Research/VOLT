@@ -25,6 +25,7 @@ import useInverseRelations from '@/utilities/mongo/inverse-relations';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import { deleteByPrefix } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
+import logger from '@/logger';
 
 export interface IAnalysis extends Document{
     plugin: string;
@@ -102,7 +103,7 @@ const deletePluginArtifacts = async (analysis: IAnalysis | null) => {
     try{
         await deleteByPrefix(SYS_BUCKETS.PLUGINS, prefix);
     }catch(err){
-        console.error(`[Analysis] Failed to delete plugin artifacts for analysis ${analysisId}:`, err);
+        logger.error(`[Analysis] Failed to delete plugin artifacts for analysis ${analysisId}: ${err}`);
     }
 };
 
