@@ -3,6 +3,9 @@ import type { ColumnConfig } from '@/components/organisms/common/DocumentListing
 import EmptyState from '@/components/atoms/common/EmptyState';
 import { Skeleton } from '@mui/material';
 import { useEffect, useRef } from 'react';
+import { List, type ListImperativeAPI } from 'react-window';
+
+const ROW_HEIGHT = 48;
 
 const SkeletonRow = ({ columns }: { columns: ColumnConfig[] }) => {
     return (
@@ -25,23 +28,61 @@ const SkeletonRow = ({ columns }: { columns: ColumnConfig[] }) => {
     )
 };
 
+// Virtualized row component for react-window
+// react-window automatically provides: index, style, ariaAttributes
+// rowProps contains our custom props: data, columns, getMenuOptions, keyExtractor
+const VirtualizedRow = (props: any) => {
+    const { index, style, data, columns, getMenuOptions, keyExtractor } = props;
+    const item = data[index];
+    const rowKey = keyExtractor ? keyExtractor(item, index) : `item-${index}`;
+
+    return (
+        <div style={style}>
+            <ActionBasedFloatingContainer
+                key={rowKey}
+                options={getMenuOptions ? getMenuOptions(item) : []}
+                className='document-listing-table-row-container'
+                useCursorPosition={true}
+                deleteMenuStyle={true}
+            >
+                {columns.map((col: any, colIdx: number) => (
+                    <div
+                        className='document-listing-cell'
+                        data-label={col.title}
+                        key={`cell-${col.title}-${colIdx}`}
+                        title={String(item?.[col.key] ?? '')}
+                    >
+                        <span className='document-listing-cell-value'>
+                            {col.render
+                                ? col.render(item[col.key], item)
+                                : String(item[col.key] ?? '—')}
+                        </span>
+                    </div>
+                ))}
+            </ActionBasedFloatingContainer>
+        </div>
+    );
+};
+
 type InfiniteProps = {
-  enableInfinite?: boolean;
-  hasMore?: boolean;
-  onLoadMore?: () => void;
-  isFetchingMore?: boolean;
+    enableInfinite?: boolean;
+    hasMore?: boolean;
+    onLoadMore?: () => void;
+    isFetchingMore?: boolean;
     // How many skeleton rows to show when fetching more
     skeletonRowsCount?: number;
-  scrollContainerRef?: React.RefObject<HTMLElement> | null;
-  keyExtractor?: (item: any, index: number) => string | number;
-  emptyButtonText?: string;
-  onEmptyButtonClick?: () => void;
+    scrollContainerRef?: React.RefObject<HTMLElement> | null;
+    keyExtractor?: (item: any, index: number) => string | number;
+    emptyButtonText?: string;
+    onEmptyButtonClick?: () => void;
+    useVirtualization?: boolean;
+    listHeight?: number;
 }
 
 const DocumentListingTable = ({
-    columns, 
+    columns,
     data,
-    onCellClick = (_col: any) => {},
+    onCellClick = (_col: any) => { },
     getCellTitle = (col: any) => col.title,
     isLoading = false,
     getMenuOptions = undefined,
@@ -54,13 +95,17 @@ const DocumentListingTable = ({
     scrollContainerRef = null,
     keyExtractor,
     emptyButtonText,
-    onEmptyButtonClick
+    onEmptyButtonClick,
+    useVirtualization = true,
+    listHeight = 600
 }: any & InfiniteProps) => {
     const sentinelRef = useRef<HTMLDivElement | null>(null);
+    const virtualizationListRef = useRef<ListImperativeAPI | null>(null);
+    const lastScrollOffset = useRef(0);
 
     // Observe intersection of the sentinel within the provided scroll container
     useEffect(() => {
-        if (!enableInfinite) return;
+        if (!enableInfinite || useVirtualization) return;
         const root = scrollContainerRef && 'current' in scrollContainerRef ? (scrollContainerRef.current as any) : null;
         const sentinel = sentinelRef.current;
         if (!sentinel) return;
@@ -77,7 +122,24 @@ const DocumentListingTable = ({
 
         observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [enableInfinite, hasMore, isFetchingMore, onLoadMore, scrollContainerRef]);
+    }, [enableInfinite, hasMore, isFetchingMore, onLoadMore, scrollContainerRef, useVirtualization]);
+
+    // Handle infinite scroll for virtualized list
+    const handleScroll = (event: any) => {
+        if (!enableInfinite || !useVirtualization) return;
+
+        const target = event.target as HTMLElement;
+        const scrollOffset = target.scrollTop;
+        const totalHeight = data.length * ROW_HEIGHT;
+        const visibleHeight = listHeight;
+        const scrollThreshold = totalHeight - visibleHeight - 200; // 200px before end
+
+        // Only trigger when scrolling down
+        if (scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold && hasMore && !isFetchingMore) {
+            onLoadMore && onLoadMore();
+        }
+        lastScrollOffset.current = scrollOffset;
+    };
 
     const isInitialLoading = isLoading && data.length === 0;
     const hasNoData = data.length === 0;
@@ -90,7 +152,7 @@ const DocumentListingTable = ({
                     {columns.map((col: any, colIdx: number) => (
                         <div
                             className={`document-listing-cell header-cell ${col.sortable ? 'sortable' : ''}`}
-                            key={`header-${col.title}-${colIdx}`} 
+                            key={`header-${col.title}-${colIdx}`}
                             onClick={() => onCellClick(col)}
                         >
                             <h4 className='document-listing-cell-title'>
@@ -102,33 +164,53 @@ const DocumentListingTable = ({
             )}
 
             <div className='document-listing-table-body-container'>
-                {!hasNoData && data.map((item: any, idx: number) => {
-                    const rowKey = keyExtractor ? keyExtractor(item, idx) : `item-${idx}`;
-                    return (
-                    <ActionBasedFloatingContainer
-                        key={rowKey}
-                        options={getMenuOptions ? getMenuOptions(item) : []}
-                        className='document-listing-table-row-container'
-                        useCursorPosition={true}
-                        deleteMenuStyle={true}
-                    >
-                        {columns.map((col: any, colIdx: number) => (
-                            <div
-                                className='document-listing-cell'
-                                data-label={col.title}
-                                key={`cell-${col.title}-${colIdx}`}
-                                title={String(item?.[col.key] ?? '')}
-                            >
-                                <span className='document-listing-cell-value'>  
-                                    {col.render
-                                        ? col.render(item[col.key], item)
-                                        : String(item[col.key] ?? '—')}
-                                </span>
-                            </div>
-                        ))}
-                    </ActionBasedFloatingContainer>
-                    );
-                })}
+                {!hasNoData && useVirtualization && Array.isArray(data) ? (
+                    <div style={{ height: listHeight, overflow: 'auto' }} onScroll={(e) => handleScroll(e)}>
+                        <List
+                            listRef={virtualizationListRef}
+                            rowCount={data.length}
+                            rowHeight={ROW_HEIGHT}
+                            rowComponent={VirtualizedRow}
+                            rowProps={{
+                                data,
+                                columns,
+                                getMenuOptions,
+                                keyExtractor
+                            }}
+                        />
+                    </div>
+                ) : !hasNoData ? (
+                    // Non-virtualized rendering (fallback)
+                    <>
+                        {data.map((item: any, idx: number) => {
+                            const rowKey = keyExtractor ? keyExtractor(item, idx) : `item-${idx}`;
+                            return (
+                                <ActionBasedFloatingContainer
+                                    key={rowKey}
+                                    options={getMenuOptions ? getMenuOptions(item) : []}
+                                    className='document-listing-table-row-container'
+                                    useCursorPosition={true}
+                                    deleteMenuStyle={true}
+                                >
+                                    {columns.map((col: any, colIdx: number) => (
+                                        <div
+                                            className='document-listing-cell'
+                                            data-label={col.title}
+                                            key={`cell-${col.title}-${colIdx}`}
+                                            title={String(item?.[col.key] ?? '')}
+                                        >
+                                            <span className='document-listing-cell-value'>
+                                                {col.render
+                                                    ? col.render(item[col.key], item)
+                                                    : String(item[col.key] ?? '—')}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </ActionBasedFloatingContainer>
+                            );
+                        })}
+                    </>
+                ) : null}
 
                 {!hasNoData && enableInfinite && hasMore && isFetchingMore && (
                     Array.from({ length: skeletonRowsCount }).map((_, index) => (
@@ -136,8 +218,8 @@ const DocumentListingTable = ({
                     ))
                 )}
 
-                {/* Infinite scroll sentinel */}
-                {enableInfinite && <div ref={sentinelRef} style={{ height: 1 }} />}
+                {/* Infinite scroll sentinel (for non-virtualized) */}
+                {enableInfinite && !useVirtualization && <div ref={sentinelRef} style={{ height: 1 }} />}
 
                 {shouldShowEmptyState && (
                     <div className='document-listing-overlay-blur'>

@@ -29,18 +29,18 @@ const FrameAtomsTable = ({
     const [isMaximized, setIsMaximized] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-    const sentinelRef = useRef<HTMLDivElement | null>(null); 
+    const sentinelRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         setPage(initialPage);
         setAccRows([]);
         setLastAppendedPage(0);
     }, [trajectoryId, timestep, pageSize, initialPage]);
-    
+
     const { data, loading } = useFrameAtoms(trajectoryId, timestep, { page, pageSize });
 
     const typePalette = useMemo(() => [
-        '#1f77b4', 
+        '#1f77b4',
         '#ff7f0e',
         '#2ca02c',
         '#d62728',
@@ -63,10 +63,10 @@ const FrameAtomsTable = ({
     ], []);
 
     const typeToColor = (t?: number): string => {
-        if(!Number.isFinite) return '#888888';
+        if (!Number.isFinite) return '#888888';
         const type = Math.max(1, Math.floor(t as number));
-        if(type <= typePalette.length) return typePalette[type - 1];
-        const hue = ((type  - 1) * 47) % 360;
+        if (type <= typePalette.length) return typePalette[type - 1];
+        const hue = ((type - 1) * 47) % 360;
         return `hsl(${hue}deg 60% 55%)`;
     };
 
@@ -78,8 +78,8 @@ const FrameAtomsTable = ({
             skeleton: { variant: 'text', width: 60 },
             render: (v: number) => (
                 <span className='type-cell'>
-                <span className='type-color-swatch' style={{ backgroundColor: typeToColor(v) }} />
-                {v ?? ''}
+                    <span className='type-color-swatch' style={{ backgroundColor: typeToColor(v) }} />
+                    {v ?? ''}
                 </span>
             )
         },
@@ -88,9 +88,9 @@ const FrameAtomsTable = ({
         { key: 'z', title: 'Z', skeleton: { variant: 'text', width: 80 }, render: (v: number) => v?.toFixed?.(decimals) ?? String(v) },
     ], [decimals, typePalette]);
 
-  
+
     useEffect(() => {
-        if(!data?.positions) return;
+        if (!data?.positions) return;
         const currPage = data.page ?? page;
         const currPageSize = data.pageSize ?? pageSize;
         const startIndex = (currPage - 1) * currPageSize;
@@ -103,18 +103,18 @@ const FrameAtomsTable = ({
             z: pos[2],
         }));
 
-        if(currPage <= 1 || lastAppendedPage === 0){
+        if (currPage <= 1 || lastAppendedPage === 0) {
             setAccRows(newRows);
             setLastAppendedPage(currPage);
             return;
         }
-        
-        if(currPage > lastAppendedPage){
+
+        if (currPage > lastAppendedPage) {
             setAccRows(prev => [...prev, ...newRows]);
             setLastAppendedPage(currPage);
         }
-    }, [data, page, pageSize, lastAppendedPage]); 
-    
+    }, [data, page, pageSize, lastAppendedPage]);
+
     const rows = accRows;
 
     const total = data?.total ?? data?.natoms;
@@ -126,11 +126,11 @@ const FrameAtomsTable = ({
     useEffect(() => {
         const container = scrollContainerRef.current;
         const sentinel = sentinelRef.current;
-        if(!container || !sentinel) return;
+        if (!container || !sentinel) return;
         const observer = new IntersectionObserver(
             (entries) => {
                 const entry = entries[0];
-                if(entry.isIntersecting && hasMore && !loading){
+                if (entry.isIntersecting && hasMore && !loading) {
                     setPage((p) => p + 1);
                 }
             },
@@ -140,9 +140,15 @@ const FrameAtomsTable = ({
         return () => observer.disconnect();
     }, [hasMore, loading]);
 
+    const handleLoadMore = () => {
+        if (hasMore && !loading) {
+            setPage((p) => p + 1);
+        }
+    };
+
     const isInitialLoading = loading && rows.length === 0;
 
-    if(isMinimized) return null;
+    if (isMinimized) return null;
 
     return (
         <Draggable
@@ -159,7 +165,7 @@ const FrameAtomsTable = ({
         >
             <div className={`frame-atoms-table-container primary-surface ${isMaximized ? 'maximized' : ''}`}>
                 <div className='frame-atoms-table-header-container'>
-                    <WindowIcons 
+                    <WindowIcons
                         onClose={onClose}
                         onExpand={() => setIsMaximized(!isMaximized)}
                         onMinimize={() => setIsMinimized(true)}
@@ -167,12 +173,19 @@ const FrameAtomsTable = ({
                     <h3 className='frame-atoms-table-header-title'>Particles</h3>
                 </div>
 
-                <div className='frame-atoms-table-body-container' ref={scrollContainerRef}>
-                    <DocumentListingTable columns={columns} data={rows} isLoading={isInitialLoading} />
-                    <div style={{ padding: '0.5rem 1rem', opacity: 0.8 }}>
-                        {!isInitialLoading && loading ? 'Loading more...' : ''}
-                    </div>
-                    <div ref={sentinelRef} style={{ height: 1 }} />
+                <div className='frame-atoms-table-body-container'>
+                    <DocumentListingTable
+                        columns={columns}
+                        data={rows}
+                        isLoading={isInitialLoading}
+                        useVirtualization={true}
+                        listHeight={isMaximized ? window.innerHeight - 200 : 500}
+                        enableInfinite={true}
+                        hasMore={hasMore}
+                        onLoadMore={handleLoadMore}
+                        isFetchingMore={loading && rows.length > 0}
+                        keyExtractor={(item: any) => `particle-${item.idx}`}
+                    />
                 </div>
             </div>
         </Draggable>

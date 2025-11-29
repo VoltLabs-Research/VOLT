@@ -571,7 +571,7 @@ const HeadlessRasterizerView: React.FC = () => {
                 <FrameAtomsTable
                     trajectoryId={trajectory?._id}
                     timestep={currentTimestep as number}
-                    pageSize={100}
+                    pageSize={50_000}
                     initialPage={1}
                     decimals={3}
                     onClose={() => toggleTool('frame-particles')}
