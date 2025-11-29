@@ -14,13 +14,6 @@ router.get(
 );
 
 router.get(
-    '/:id/dislocations',
-    middleware.checkTeamMembershipForAnalysisTrajectory,
-    controller.getAnalysisDislocations
-
-)
-
-router.get(
     '/team/:teamId',
     authMiddleware.protect,
     controller.listAnalysisConfigsByTeam

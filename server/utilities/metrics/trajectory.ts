@@ -81,8 +81,6 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
       { $sort: { createdAt: -1 } },
       {
         $project: {
-          plugin: 1,
-          modifier: 1,
           crystalStructure: 1,
           identificationMode: 1,
           maxTrialCircuitSize: 1,
@@ -96,13 +94,10 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
           structureIdentificationOnly: 1,
           structureAnalysis: 1,
           simulationCell: 1,
-          totalFrames: { $ifNull: ['$totalFrames', 0] },
-          completedFrames: { $ifNull: ['$completedFrames', 0] },
-          startedAt: 1,
-          finishedAt: 1,
           createdAt: 1,
           trajectory: 1,
-          dislocationsCount: { $size: { $ifNull: ['$dislocations', []] } }
+          // TODO:
+          dislocationsCount: { $literal: 0 }
         }
       },
       { $skip: skip },
@@ -146,7 +141,7 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
       data: { configs, total, page: pageNum, limit: limitNum }
     });
   } catch (err) {
-    logger.error(`listAnalysissByTeam error: ${err}`);
+    logger.error(`listAnalysisConfigsByTeam error: ${err}`);
     return res.status(500).json({ status: 'error', data: { error: 'Internal Server Error' } });
   }
 };

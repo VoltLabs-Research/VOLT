@@ -27,9 +27,7 @@ import { isValidObjectId, Types } from 'mongoose';
 import { getTrajectoryProcessingQueue } from '@/queues';
 import { processTrajectoryFile } from '@/utilities/lammps';
 import { Trajectory, Team } from '@models/index';
-import { getMetricsByTeamId } from '@/metrics/team';
-import { getTrajectoryMetricsById } from '@/metrics/trajectory';
-
+import { getMetricsByTeamId } from '@/utilities/metrics/team';
 import TrajectoryFS from '@/services/trajectory-fs';
 import RuntimeError from '@/utilities/runtime-error';
 import HandlerFactory from '@/controllers/handler-factory';
@@ -174,16 +172,6 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
         status: 'success',
         data: typeMap
     });
-};
-
-export const getMetrics = async (req: Request, res: Response) => {
-    const id = (req.params as any).id || (req.params as any).trajectoryId;
-    if (!id) {
-        return res.status(400).json({ status: 'error', message: 'Trajectory id is required' });
-    }
-
-    const data = await getTrajectoryMetricsById(id);
-    return res.status(200).json({ status: 'success', data });
 };
 
 export const getTrajectoryPreview = async (req: Request, res: Response) => {
