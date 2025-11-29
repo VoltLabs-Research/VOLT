@@ -6,7 +6,7 @@ import useTeamStore from '@/stores/team/team';
 import Loader from '@/components/atoms/common/Loader';
 import useWindowsStore from '@/stores/ui/windows';
 import useToast from '@/hooks/ui/use-toast';
-import DraggableBinaryContainer from '../DraggableBinaryContainer';
+import DraggableBinaryContainer from '@/components/organisms/common/DraggableBinaryContainer';
 import './TeamCreator.css';
 
 interface TeamCreatorProps {

@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router';
 import { RiVipDiamondLine } from "react-icons/ri";
 import useDashboardMetrics from '@/hooks/dashboard/use-dashboard-metrics';
 import TinyLineChart from '@/components/atoms/common/TinyLineChart';
-import DashboardStatsSkeleton from '@/components/atoms/DashboardStatsSkeleton';
+import DashboardStatsSkeleton from '@/components/atoms/dashboard/DashboardStatsSkeleton';
 
 const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ teamId, trajectoryId }) => {
     const { loading, error, cards } = useDashboardMetrics(teamId, trajectoryId);

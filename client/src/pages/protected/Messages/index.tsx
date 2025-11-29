@@ -23,12 +23,12 @@
 import { useChatStore } from '@/stores/chat';
 import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
 import ChatSidebar from '@/components/molecules/chat/ChatSidebar';
-import ChatArea from '@/components/organisms/ChatArea';
 import CreateGroupModal from '@/components/molecules/chat/CreateGroupModal';
 import GroupManagementModal from '@/components/molecules/chat/GroupManagementModal';
 import AddMembersModal from '@/components/molecules/chat/AddMembersModal';
 import ManageAdminsModal from '@/components/molecules/chat/ManageAdminsModal';
 import EditGroupModal from '@/components/molecules/chat/EditGroupModal';
+import ChatArea from '@/components/organisms/chat/ChatArea';
 import './Messages.css';
 
 const MessagesPage = () => {

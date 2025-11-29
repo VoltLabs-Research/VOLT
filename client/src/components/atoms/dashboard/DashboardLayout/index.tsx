@@ -48,9 +48,9 @@ import useToast from '@/hooks/ui/use-toast';
 import { Skeleton } from '@mui/material';
 import type { IconType } from 'react-icons';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';
-import TeamCreator from '@/components/organisms/TeamCreator';
 import { IoIosAdd } from 'react-icons/io';
-import TeamInvitePanel from '@/components/organisms/TeamInvitePanel';
+import TeamCreator from '@/components/organisms/team/TeamCreator';
+import TeamInvitePanel from '@/components/organisms/team/TeamInvitePanel';
 import './DashboardLayout.css';
 
 const DashboardLayout = () => {

@@ -28,7 +28,6 @@ import TrajectoryVisibilityStatusFloatIcon from '@/components/atoms/scene/Trajec
 import SceneTopCenteredOptions from '@/components/atoms/scene/SceneTopCenteredOptions';
 import SlicePlane from '@/components/organisms/scene/SlicePlane';
 import TimestepControls from '@/components/organisms/scene/TimestepControls';
-import DislocationResults from '@/components/atoms/DislocationResults';
 import AnalysisConfigSelection from '@/components/molecules/common/AnalysisConfigSelection';
 import ModifierConfiguration from '@/components/organisms/form/ModifierConfiguration';
 import ChartViewer from '@/components/organisms/common/ChartViewer';
@@ -64,8 +63,7 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
     }, [isChart]);
 
     const legacyModifiersMap = useMemo(() => ({
-        'slice-plane': SlicePlane,
-        'dislocation-results': DislocationResults
+        'slice-plane': SlicePlane
     }) as Record<string, React.ComponentType<any>>, []);
 
     const { legacyModifiers, pluginModifiers } = useMemo(() => {

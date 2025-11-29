@@ -1,11 +1,11 @@
 import { MetricsCards } from '@/components/molecules/common/MetricsCards'
 import { ResponseTimeChart } from '@/components/molecules/clusters/ResponseTimeChart'
 import { ResourceUsage } from '@/components/molecules/clusters/ResourceUsage'
-import { ServerTable } from '@/components/organisms/ServerTable'
 import { TrafficOverview } from '@/components/molecules/clusters/TrafficOverview'
 import { CpuDistribution } from '@/components/molecules/clusters/CpuDistribution'
 import { DiskOperations } from '@/components/molecules/clusters/DiskOperations'
 import { DatabasePerformance } from '@/components/molecules/clusters/DatabasePerformance'
+import { ServerTable } from '@/components/organisms/clusters/ServerTable'
 import './Clusters.css'
 
 export default function DashboardPage() {

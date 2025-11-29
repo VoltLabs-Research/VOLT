@@ -10,12 +10,12 @@ import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import { formatNumber } from '@/components/organisms/common/DocumentListing';
 import { GoArrowRight } from 'react-icons/go';
 import SimulationGrid from '@/components/molecules/trajectory/SimulationGrid';
-import DashboardStats from '@/components/atoms/DashboardStats';
 import useTeamStore from '@/stores/team/team';
 import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
 import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';
 import useAuthStore from '@/stores/authentication';
 import useEnvironmentConfigStore from '@/stores/editor/environment-config';
+import DashboardStats from '@/components/atoms/dashboard/DashboardStats';
 import './Dashboard.css';
 
 const getGreeting = (): string => {
