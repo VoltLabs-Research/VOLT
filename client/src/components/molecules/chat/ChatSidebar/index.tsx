@@ -4,7 +4,7 @@ import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/chat';
 import { getInitials } from '@/utilities/guest';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
-import ChatListSkeleton from '@/components/atoms/messages/ChatListSkeleton';
+import ChatListSkeleton from '@/components/atoms/chat/messages/ChatListSkeleton';
 import useAuthStore from '@/stores/authentication';
 
 const ChatSidebar: React.FC = () => {

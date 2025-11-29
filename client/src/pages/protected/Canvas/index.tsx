@@ -1,18 +1,18 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react';
-import Scene3D, { type Scene3DRef } from '@/components/organisms/Scene3D';
+import Scene3D, { type Scene3DRef } from '@/components/organisms/scene/Scene3D';
 import { useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import TimestepViewer from '@/components/organisms/TimestepViewer';
+import TimestepViewer from '@/components/organisms/scene/TimestepViewer';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import useCanvasPresence from '@/hooks/canvas/use-canvas-presence';
-import CanvasWidgets from '@/components/atoms/CanvasWidgets';
-import CanvasPresenceAvatars from '@/components/atoms/CanvasPresenceAvatars';
-import PreloadingOverlay from '@/components/atoms/PreloadingOverlay';
+import CanvasWidgets from '@/components/atoms/scene/CanvasWidgets';
+import CanvasPresenceAvatars from '@/components/atoms/scene/CanvasPresenceAvatars';
+import PreloadingOverlay from '@/components/atoms/common/PreloadingOverlay';
 import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
 import usePlaybackStore from '@/stores/editor/playback';
 import usePluginStore from '@/stores/plugins';
-import Loader from '@/components/atoms/Loader';
+import Loader from '@/components/atoms/common/Loader';
 import './Canvas.css';
 
 const CANVAS_CONFIG = {

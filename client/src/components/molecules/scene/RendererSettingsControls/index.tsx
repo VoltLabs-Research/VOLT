@@ -2,8 +2,8 @@
 import React from 'react';
 import Select from '@/components/atoms/form/Select';
 import FormSchema from '@/components/atoms/form/FormSchema';
-import FormField from '@/components/molecules/FormField';
-import CollapsibleSection from '@/components/atoms/CollapsibleSection';
+import FormField from '@/components/molecules/form/FormField';
+import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import useRendererSettings from '@/stores/editor/renderer-settings';
 import { MdTune } from 'react-icons/md';
 

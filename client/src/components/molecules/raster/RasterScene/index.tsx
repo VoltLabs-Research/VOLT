@@ -1,7 +1,7 @@
 import React from 'react';
 import type { RasterSceneProps } from '@/types/raster';
 import AnalysisSelect from '@/components/atoms/raster/AnalysisSelect';
-import Loader from '@/components/atoms/Loader';
+import Loader from '@/components/atoms/common/Loader';
 import { Skeleton } from '@mui/material';
 import RasterSceneSkeleton from '@/components/atoms/raster/RasterSceneSkeleton';
 import { AnimatePresence, motion } from 'framer-motion';

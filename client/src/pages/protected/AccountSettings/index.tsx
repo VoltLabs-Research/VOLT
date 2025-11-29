@@ -3,11 +3,11 @@ import { TbUser, TbShield, TbCreditCard, TbFileText, TbActivity, TbLock, TbKey, 
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
 import { api } from '@/api';
-import LoginActivityModal from '@/components/molecules/LoginActivityModal';
-import ApiTokenModal from '@/components/molecules/ApiTokenModal';
-import ApiTokenList from '@/components/molecules/ApiTokenList';
-import WebhookModal from '@/components/molecules/WebhookModal';
-import WebhookList from '@/components/molecules/WebhookList';
+import LoginActivityModal from '@/components/molecules/auth/LoginActivityModal';
+import ApiTokenModal from '@/components/molecules/api-token/ApiTokenModal';
+import ApiTokenList from '@/components/molecules/api-token/ApiTokenList';
+import WebhookModal from '@/components/molecules/webhooks/WebhookModal';
+import WebhookList from '@/components/molecules/webhooks/WebhookList';
 import SettingsSidebar from '@/components/molecules/settings/SettingsSidebar';
 import GeneralSettings from '@/components/molecules/settings/GeneralSettings';
 import AuthenticationSettings from '@/components/molecules/settings/AuthenticationSettings';

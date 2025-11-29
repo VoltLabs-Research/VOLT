@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import EditorWidget from '@/components/organisms/EditorWidget';
+import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Select from '@/components/atoms/form/Select';
 import { useNavigate } from 'react-router';
 import { LuLayoutDashboard } from "react-icons/lu";
@@ -8,7 +8,7 @@ import { MdOutlineLightMode } from "react-icons/md";
 import { TbAugmentedReality2 } from "react-icons/tb";
 import { GoDownload } from "react-icons/go";
 import { CiShare1 } from "react-icons/ci";
-import type { Scene3DRef } from '@/components/organisms/Scene3D';
+import type { Scene3DRef } from '@/components/organisms/scene/Scene3D';
 import './SceneTopCenteredOptions.css';
 
 const ZOOM_PRESETS = [50, 75, 100, 125, 150, 200];

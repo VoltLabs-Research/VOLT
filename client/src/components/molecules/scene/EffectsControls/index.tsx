@@ -1,10 +1,10 @@
-import FormField from '@/components/molecules/FormField';
+import FormField from '@/components/molecules/form/FormField';
 import useEffectsConfigStore from '@/stores/editor/effects-config';
 import Select from '@/components/atoms/form/Select';
 import FormRow from '@/components/atoms/form/FormRow';
 import FormSection from '@/components/atoms/form/FormSection';
 import FormSchema from '@/components/atoms/form/FormSchema';
-import CollapsibleSection from '@/components/atoms/CollapsibleSection';
+import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import { MdAutoFixHigh } from 'react-icons/md';
 import './EffectsControls.css';
 

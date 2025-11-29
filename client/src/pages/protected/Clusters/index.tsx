@@ -1,11 +1,11 @@
-import { MetricsCards } from '@/components/molecules/MetricsCards'
-import { ResponseTimeChart } from '@/components/molecules/ResponseTimeChart'
-import { ResourceUsage } from '@/components/molecules/ResourceUsage'
+import { MetricsCards } from '@/components/molecules/common/MetricsCards'
+import { ResponseTimeChart } from '@/components/molecules/clusters/ResponseTimeChart'
+import { ResourceUsage } from '@/components/molecules/clusters/ResourceUsage'
 import { ServerTable } from '@/components/organisms/ServerTable'
-import { TrafficOverview } from '@/components/molecules/TrafficOverview'
-import { CpuDistribution } from '@/components/molecules/CpuDistribution'
-import { DiskOperations } from '@/components/molecules/DiskOperations'
-import { DatabasePerformance } from '@/components/molecules/DatabasePerformance'
+import { TrafficOverview } from '@/components/molecules/clusters/TrafficOverview'
+import { CpuDistribution } from '@/components/molecules/clusters/CpuDistribution'
+import { DiskOperations } from '@/components/molecules/clusters/DiskOperations'
+import { DatabasePerformance } from '@/components/molecules/clusters/DatabasePerformance'
 import './Clusters.css'
 
 export default function DashboardPage() {

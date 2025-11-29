@@ -1,8 +1,8 @@
 import React from 'react';
 import Select from '@/components/atoms/form/Select';
 import FormSchema from '@/components/atoms/form/FormSchema';
-import FormField from '@/components/molecules/FormField';
-import CollapsibleSection from '@/components/atoms/CollapsibleSection';
+import FormField from '@/components/molecules/form/FormField';
+import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import usePerformanceSettingsStore from '@/stores/editor/perfomance-settings';
 import { MdSpeed, MdHighQuality, MdTouchApp, MdTune } from 'react-icons/md';
 import { IoHardwareChipOutline } from 'react-icons/io5';

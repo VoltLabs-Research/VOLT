@@ -3,7 +3,7 @@ import FormInput from '@/components/atoms/form/FormInput';
 import { TbShield, TbX, TbKey, TbEdit, TbActivity, TbDots, TbCheck } from 'react-icons/tb';
 import Section from '@/components/atoms/settings/Section';
 import SectionHeader from '@/components/atoms/settings/SectionHeader';
-import StatusBadge from '@/components/atoms/StatusBadge';
+import StatusBadge from '@/components/atoms/common/StatusBadge';
 
 interface PasswordInfo { lastChanged?: string }
 

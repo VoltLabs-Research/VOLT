@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import EditorWidget from '@/components/organisms/EditorWidget';
+import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import type { RasterConfig } from '@/types/stores/plugins';
 import './BoxResults.css';
 

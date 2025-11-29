@@ -38,9 +38,9 @@ import {
 } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
-import Draggable from '@/components/atoms/Draggable';
-import WindowIcons from '@/components/molecules/WindowIcons';
-import Button from '@/components/atoms/Button';
+import Draggable from '@/components/atoms/common/Draggable';
+import WindowIcons from '@/components/molecules/common/WindowIcons';
+import Button from '@/components/atoms/common/Button';
 import FormInput from '@/components/atoms/form/FormInput';
 import './GroupManagementModal.css';
 

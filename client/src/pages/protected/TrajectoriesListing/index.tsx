@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { formatSize } from '@/utilities/scene-utils'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
-import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/DocumentListing'
+import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/common/DocumentListing'
 import useTrajectoryStore from '@/stores/trajectories'
 import useTeamStore from '@/stores/team/team'
 import formatTimeAgo from '@/utilities/formatTimeAgo'

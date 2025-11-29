@@ -1,8 +1,8 @@
 import React from 'react';
 import Select from '@/components/atoms/form/Select';
 import FormSchema from '@/components/atoms/form/FormSchema';
-import FormField from '@/components/molecules/FormField';
-import CollapsibleSection from '@/components/atoms/CollapsibleSection';
+import FormField from '@/components/molecules/form/FormField';
+import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import useCameraSettings from '@/stores/editor/camera-config';
 import { MdCameraAlt, MdViewInAr, MdTransform } from 'react-icons/md';
 import { IoCameraOutline } from 'react-icons/io5';

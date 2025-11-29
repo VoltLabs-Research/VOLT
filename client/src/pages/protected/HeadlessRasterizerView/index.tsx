@@ -40,11 +40,11 @@ import RasterHeader from '@/components/molecules/raster/RasterHeader';
 import SceneColumn from '@/components/molecules/raster/SceneColumn';
 import Thumbnails from '@/components/molecules/raster/Thumbnails';
 import MetricsBar from '@/components/molecules/raster/MetricsBar';
-import CursorShareLayer from '@/components/atoms/CursorShareLayer';
-import EmptyState from '@/components/atoms/EmptyState';
+import CursorShareLayer from '@/components/atoms/common/CursorShareLayer';
+import EmptyState from '@/components/atoms/common/EmptyState';
 import useRasterConnectedUsers from '@/hooks/raster/useRasterConnectedUsers';
-import FrameAtomsTable from '@/components/organisms/FrameAtomsTable';
-import TrajectoryFileExplorer from '@/components/organisms/TrajectoryFileExplorer';
+import FrameAtomsTable from '@/components/organisms/trajectory/FrameAtomsTable';
+import TrajectoryFileExplorer from '@/components/organisms/trajectory/TrajectoryFileExplorer';
 import './HeadlessRasterizerView.css';
 import './RasterMessages.css';
 

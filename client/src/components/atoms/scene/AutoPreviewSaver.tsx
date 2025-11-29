@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import type { Scene3DRef } from '@/components/organisms/Scene3D';
+import type { Scene3DRef } from '@/components/organisms/scene/Scene3D';
 
 interface AutoPreviewSaverProps{
     scene3DRef: React.RefObject<Scene3DRef>;

@@ -1,9 +1,9 @@
 import React from 'react';
 import useEnvironmentConfigStore from '@/stores/editor/environment-config';
 import FormSchema from '@/components/atoms/form/FormSchema';
-import FormField from '@/components/molecules/FormField';
+import FormField from '@/components/molecules/form/FormField';
 import Select from '@/components/atoms/form/Select';
-import CollapsibleSection from '@/components/atoms/CollapsibleSection';
+import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import { MdNature } from 'react-icons/md';
 
 const EnvironmentControls: React.FC = () => {

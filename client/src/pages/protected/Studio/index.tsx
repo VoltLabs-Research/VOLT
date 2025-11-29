@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-import DashboardContainer from '../../../components/atoms/DashboardContainer';
+import DashboardContainer from '../../../components/atoms/dashboard/DashboardContainer';
 
 const Studio = () => {
     return (

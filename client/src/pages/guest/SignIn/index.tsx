@@ -91,7 +91,7 @@ const WireframeBackground = () => {
   );
 };
 
-import Button from "@/components/atoms/Button";
+import Button from "@/components/atoms/common/Button";
 
 const Input = ({ className = '', ...props }: any) => (
   <input className={`form-input ${className}`} {...props} />

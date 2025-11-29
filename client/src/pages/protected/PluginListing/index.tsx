@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/DocumentListing';
+import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
 import { api } from '@/api';
 import type { ApiResponse } from '@/types/api';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import { Skeleton } from '@mui/material';
 import usePluginStore from '@/stores/plugins';
 import { RiDeleteBin6Line, RiListSettingsLine } from 'react-icons/ri';
-import PerFrameListingModal from '@/components/organisms/PerFrameListingModal';
+import PerFrameListingModal from '@/components/organisms/common/PerFrameListingModal';
 
 type ColumnDef = {
     path: string;

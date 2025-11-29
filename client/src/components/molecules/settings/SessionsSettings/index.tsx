@@ -2,7 +2,7 @@ import React from 'react';
 import { TbDeviceDesktop, TbCheck, TbX } from 'react-icons/tb';
 import Section from '@/components/atoms/settings/Section';
 import SectionHeader from '@/components/atoms/settings/SectionHeader';
-import StatusBadge from '@/components/atoms/StatusBadge';
+import StatusBadge from '@/components/atoms/common/StatusBadge';
 
 interface Session { _id: string; userAgent: string; ip: string; lastActivity: string }
 

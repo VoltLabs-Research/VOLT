@@ -21,8 +21,8 @@
 **/
 
 import { Route } from 'react-router-dom';
-import ProtectedRoute from '@/components/atoms/ProtectedRoute';
-import DashboardLayout from '@/components/atoms/DashboardLayout';
+import ProtectedRoute from '@/components/atoms/auth/ProtectedRoute';
+import DashboardLayout from '@/components/atoms/dashboard/DashboardLayout';
 import PageWrapper from '@/components/atoms/animations/PageWrapper';
 import { routesConfig } from './config';
 import type { RouteConfig } from './types';

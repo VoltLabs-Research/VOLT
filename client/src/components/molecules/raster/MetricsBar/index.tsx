@@ -2,7 +2,7 @@ import React from 'react';
 import type { MetricsBarProps } from '@/types/raster';
 import MetricsBarSkeleton from '@/components/atoms/raster/MetricsBarSkeleton';
 import MetricItem from '@/components/atoms/raster/MetricItem';
-import ToggleOption from '@/components/atoms/ToggleOption';
+import ToggleOption from '@/components/atoms/common/ToggleOption';
 import * as Icons from 'react-icons/pi';
 import * as HiIcons from 'react-icons/hi2';
 import * as RiIcons from 'react-icons/ri';

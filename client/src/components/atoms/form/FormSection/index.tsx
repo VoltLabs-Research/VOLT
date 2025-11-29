@@ -1,4 +1,4 @@
-import FormField from '@/components/molecules/FormField';
+import FormField from '@/components/molecules/form/FormField';
 import './FormSection.css';
 
 const FormSection = ({

@@ -1,4 +1,4 @@
-import IconButton from '@/components/atoms/IconButton';
+import IconButton from '@/components/atoms/common/IconButton';
 import type { Chat, Participant, Presence } from '@/types/chat';
 import { getInitials } from '@/utilities/guest';
 import { 

@@ -1,7 +1,7 @@
 import React from 'react';
 import FormSchema from '@/components/atoms/form/FormSchema';
-import FormField from '@/components/molecules/FormField';
-import CollapsibleSection from '@/components/atoms/CollapsibleSection';
+import FormField from '@/components/molecules/form/FormField';
+import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import useOrbitControlsSettings from '@/stores/editor/orbit-controls';
 import { MdRotateLeft } from 'react-icons/md';
 

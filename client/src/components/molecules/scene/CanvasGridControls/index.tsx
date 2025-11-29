@@ -1,7 +1,7 @@
 import React from 'react';
 import FormSchema from '@/components/atoms/form/FormSchema';
-import FormField from '@/components/molecules/FormField';
-import CollapsibleSection from '@/components/atoms/CollapsibleSection';
+import FormField from '@/components/molecules/form/FormField';
+import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import useCanvasGridSettings from '@/stores/editor/canvas-grid-settings';
 import { MdSettings, MdStraighten, MdOpacity, MdColorLens, MdTransform } from 'react-icons/md';
 import { IoGridOutline } from 'react-icons/io5';

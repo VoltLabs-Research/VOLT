@@ -21,7 +21,7 @@
 **/
 
 import { useChatStore } from '@/stores/chat';
-import DashboardContainer from '@/components/atoms/DashboardContainer';
+import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
 import ChatSidebar from '@/components/molecules/chat/ChatSidebar';
 import ChatArea from '@/components/organisms/ChatArea';
 import CreateGroupModal from '@/components/molecules/chat/CreateGroupModal';

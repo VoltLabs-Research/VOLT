@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Message } from '@/types/chat';
-import MessageSkeleton from '@/components/atoms/messages/MessagesSkeleton';
+import MessageSkeleton from '@/components/atoms/chat/messages/MessagesSkeleton';
 
 export type MessageListProps = {
     messages: Message[];

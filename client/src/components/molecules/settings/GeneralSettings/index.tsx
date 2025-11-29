@@ -1,10 +1,10 @@
 import React from 'react';
 import FormInput from '@/components/atoms/form/FormInput';
-import RecentActivity from '@/components/molecules/RecentActivity';
+import RecentActivity from '@/components/molecules/auth/RecentActivity';
 import { TbCheck, TbTrash, TbX, TbActivity } from 'react-icons/tb';
 import Section from '@/components/atoms/settings/Section';
 import SectionHeader from '@/components/atoms/settings/SectionHeader';
-import StatusBadge from '@/components/atoms/StatusBadge';
+import StatusBadge from '@/components/atoms/common/StatusBadge';
 
 interface GeneralSettingsProps {
     user: { firstName?: string; lastName?: string; email?: string } | null;

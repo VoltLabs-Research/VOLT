@@ -21,7 +21,7 @@
 **/
 
 import useAuthStore from '@/stores/authentication';
-import ActionBasedFloatingContainer from '@/components/organisms/ActionBasedFloatingContainer';
+import ActionBasedFloatingContainer from '@/components/organisms/common/ActionBasedFloatingContainer';
 import { CiLogout, CiSettings } from 'react-icons/ci';
 import { useNavigate } from 'react-router';
 import './SidebarUserAvatar.css';

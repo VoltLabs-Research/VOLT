@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { CiLock, CiUnlock } from "react-icons/ci";
-import EditorWidget from '@/components/organisms/EditorWidget';
+import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
 import './TrajectoryVisibilityStatusFloatIcon.css';
 
