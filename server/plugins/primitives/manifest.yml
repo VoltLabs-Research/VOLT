@@ -91,7 +91,31 @@ modifiers:
                 displayName: Dislocation Analysis
                 icon: PiLineSegmentThin
                 canvas: true
-                raster: true
+                raster:
+                    component: BoxResults
+                    title: "Dislocation Analysis"
+                    showLegend: true
+                    legendKey: "type"
+                    legendColors:
+                        edge: "#3b82f6"
+                        screw: "#ef4444"
+                        mixed: "#8b5cf6"
+                        loop: "#10b981"
+                    metrics:
+                        - key: "length"
+                          label: "Length"
+                          format: "decimal"
+                          decimals: 2
+                          unit: "Å"
+                        - key: "burgers.magnitude"
+                          label: "Magnitude"
+                          format: "decimal"
+                          decimals: 3
+                        - key: "burgers.fractional"
+                          label: "Burgers Vector"
+                        - key: "num_points"
+                          label: "Points"
+                          format: "number"
                 export:
                     name: DislocationExporter
                     type: glb
@@ -109,7 +133,28 @@ modifiers:
                 displayName: Structure Identification
                 icon: HiCubeTransparent
                 canvas: true
-                raster: true
+                raster:
+                    component: StatisticsResults
+                    title: "Structure Identification"
+                    nameKey: "name"
+                    valueKey: "count"
+                    percentageKey: "percentage"
+                    sortBy: "count"
+                    sortOrder: "desc"
+                    maxItems: 7
+                    showSummary: false
+                    colors:
+                        FCC: "rgb(102, 255, 102)"
+                        HCP: "rgb(255, 102, 102)"
+                        BCC: "rgb(102, 102, 255)"
+                        CUBIC_DIAMOND: "rgb(19, 160, 254)"
+                        CUBIC_DIAMOND_FIRST_NEIGH: "rgb(0, 254, 245)"
+                        CUBIC_DIAMOND_SECOND_NEIGH: "rgb(126, 254, 181)"
+                        HEX_DIAMOND_FIRST_NEIGH: "rgb(254, 220, 0)"
+                        HEX_DIAMOND_SECOND_NEIGH: "rgb(204, 229, 81)"
+                        HEX_DIAMOND: "rgb(254, 137, 0)"
+                        OTHER: "rgb(242, 242, 242)"
+                        DEFAULT: "rgb(128, 128, 128)"
                 export:
                     name: AtomisticExporter
                     handler: exportAtomsTypeToGLBMinIO

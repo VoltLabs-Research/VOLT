@@ -22,7 +22,7 @@ export interface PluginState {
     getModifiers: () => ResolvedModifier[];
     getAvailableArguments: (pluginId: string, modifierId: string) => Record<string, EntrypointArgument>;
     fetchTrajectoryExposures: (trajectoryId: string) => Promise<Exposure[]>;
-    getRenderableExposures: (trajectoryId: string, analysisId?: string) => Promise<RenderableExposure[]>;
+    getRenderableExposures: (trajectoryId: string, analysisId?: string, context?: 'canvas' | 'raster') => Promise<RenderableExposure[]>;
 };
 
 export type ResolvedModifier = {
@@ -124,13 +124,13 @@ const usePluginStore = create<PluginState>((set, get) => {
             return availableArgs;
         },
 
-        async getRenderableExposures(trajectoryId: string, analysisId?: string) {
+        async getRenderableExposures(trajectoryId: string, analysisId?: string, context: 'canvas' | 'raster' = 'canvas') {
             const { analysisConfig } = useAnalysisConfigStore.getState();
             const activeAnalysisId = analysisId ?? analysisConfig?._id;
             const currentAnalysis = analysisConfig && analysisConfig._id === activeAnalysisId ? analysisConfig : null;
             if (!activeAnalysisId || !currentAnalysis) return [];
 
-            const cacheKey = `renderable-${trajectoryId}-${activeAnalysisId}`;
+            const cacheKey = `renderable-${context}-${trajectoryId}-${activeAnalysisId}`;
             if (renderableCache.has(cacheKey)) {
                 return renderableCache.get(cacheKey)!;
             }
@@ -149,7 +149,10 @@ const usePluginStore = create<PluginState>((set, get) => {
             if (!modifierConfig?.exposure) return [];
 
             for (const [exposureId, exposure] of Object.entries(modifierConfig.exposure)) {
-                if (exposure.canvas && (exposure.export.type === 'glb' || exposure.export.type === 'line-chart')) {
+                // Filter based on context: canvas or raster
+                const isValidForContext = context === 'canvas' ? exposure.canvas : exposure.raster;
+
+                if (isValidForContext && (exposure.export?.type === 'glb' || exposure.export?.type === 'line-chart')) {
                     renderableExposures.push({
                         ...exposure,
                         pluginId: plugin,

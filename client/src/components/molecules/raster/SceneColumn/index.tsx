@@ -1,22 +1,21 @@
 import React from 'react';
 import type { SceneColumnProps } from '@/types/raster';
 import { motion } from 'framer-motion';
-import DislocationPanel from '@/components/atoms/raster/DislocationPanel';
+import RasterResultsRenderer from '@/components/atoms/raster/RasterResultsRenderer';
 import RasterScene from '../RasterScene';
-import StructureAnalysisPanel from '../StructureAnalysisPanel';
 
 const SceneColumn: React.FC<SceneColumnProps> = ({
   scene,
   dislocationData,
   isDislocationsLoading,
-  showDislocations,
+  activeExposures,
+  availableExposures,
   isPlaying,
   isLoading,
   trajectoryId,
   playbackControls,
   analysisSelect,
   modelRail,
-  showStructureAnalysis,
   configId,
   timestep,
   delay = 0,
@@ -25,19 +24,30 @@ const SceneColumn: React.FC<SceneColumnProps> = ({
 
   return (
     <motion.div
-      className={`raster-scene-column-container ${scene?.model === 'dislocations' && 'theme-dark'}`}
+      className={`raster-scene-column-  container ${scene?.model === 'dislocations' && 'theme-dark'}`}
       style={{ flex: 1, minWidth: 0 }}
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
     >
-      {showDislocations && (!!dislocationData || isDislocationsLoading) && (
-        <DislocationPanel dislocationData={dislocationData} isLoading={isDislocationsLoading} show />
-      )}
+      {availableExposures?.map((exposure) => {
+        if (!activeExposures[exposure.exposureId]) return null;
 
-      {showStructureAnalysis && timestep !== undefined && configId && (
-        <StructureAnalysisPanel configId={configId} timestep={timestep} show />
-      )}
+        // Render RasterResultsRenderer for any exposure with raster config
+        if (exposure.raster && timestep !== undefined && configId && trajectoryId) {
+          return (
+            <RasterResultsRenderer
+              key={exposure.exposureId}
+              exposure={exposure}
+              timestep={timestep}
+              analysisId={configId}
+              trajectoryId={trajectoryId}
+            />
+          );
+        }
+
+        return null;
+      })}
 
       <RasterScene
         scene={scene}

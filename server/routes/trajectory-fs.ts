@@ -22,22 +22,19 @@
 
 import { Router } from 'express';
 import * as controller from '@/controllers/trajectory-fs';
-import * as trajectoryMiddleware from '@/middlewares/trajectory';
 import * as authMiddleware from '@/middlewares/authentication';
 
 const router = Router();
 
 router.get(
-    '/:id/',
-    authMiddleware.optionalAuth,
-    trajectoryMiddleware.checkTeamMembershipForTrajectory,
+    '/',
+    authMiddleware.protect,
     controller.listTrajectoryFs
 );
 
 router.get(
-    '/:id/download',
-    authMiddleware.optionalAuth,
-    trajectoryMiddleware.checkTeamMembershipForTrajectory,
+    '/download',
+    authMiddleware.protect,
     controller.downloadTrajectoryFs
 );
 

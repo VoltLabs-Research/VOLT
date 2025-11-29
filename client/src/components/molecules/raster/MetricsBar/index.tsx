@@ -3,22 +3,28 @@ import type { MetricsBarProps } from '@/types/raster';
 import MetricsBarSkeleton from '@/components/atoms/raster/MetricsBarSkeleton';
 import MetricItem from '@/components/atoms/raster/MetricItem';
 import ToggleOption from '@/components/atoms/ToggleOption';
+import * as Icons from 'react-icons/pi';
+import * as HiIcons from 'react-icons/hi2';
+import * as RiIcons from 'react-icons/ri';
+import * as SiIcons from 'react-icons/si';
 
-const MetricsBar: React.FC<MetricsBarProps> = ({ 
-    items, 
-    isLoading, 
-    showDislocations, 
-    onToggleDislocations,
-    showStructureAnalysis = false,
-    onToggleStructureAnalysis,
-    showParticles = false,
-    onToggleParticles,
-    showFileExplorer = false,
-    onToggleFileExplorer,
-    showDislocationsComparison = false,
-    onToggleDislocationsComparison
+// Helper to resolve icon string to component
+const resolveIcon = (iconName?: string) => {
+    if (!iconName) return undefined;
+    // @ts-ignore
+    return Icons[iconName] || HiIcons[iconName] || RiIcons[iconName] || SiIcons[iconName];
+};
+
+const MetricsBar: React.FC<MetricsBarProps> = ({
+    items,
+    isLoading,
+    availableExposures,
+    activeExposures,
+    onToggleExposure,
+    tools,
+    onToggleTool
 }) => {
-    if(isLoading) return <MetricsBarSkeleton count={4} />;
+    if (isLoading) return <MetricsBarSkeleton count={4} />;
 
     return (
         <div className='raster-metrics-bar'>
@@ -27,40 +33,40 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                     <MetricItem key={item.key} {...item} />
                 ))}
 
-                <ToggleOption
-                    isVisible={showDislocations}
-                    className={`raster-metric-item modifier-result ${showDislocations ? "active" : ""}`}
-                    onToggle={onToggleDislocations}
-                    label='Dislocation Analysis'
-                />
+                {availableExposures.map((exposure) => {
+                    const Icon = resolveIcon(exposure.icon);
 
-                <ToggleOption
-                    isVisible={showStructureAnalysis}
-                    className={`raster-metric-item modifier-result ${showStructureAnalysis ? "active" : ""}`}
-                    onToggle={onToggleStructureAnalysis || (() => {})}
-                    label='Structure Analysis'
-                />
+                    return (
+                        <ToggleOption
+                            key={exposure.exposureId}
+                            isVisible={!!activeExposures[exposure.exposureId]}
+                            className={`raster-metric-item modifier-result ${activeExposures[exposure.exposureId] ? "active" : ""}`}
+                            onToggle={() => onToggleExposure(exposure.exposureId)}
+                            label={exposure.displayName}
+                            // @ts-ignore
+                            icon={Icon}
+                        />
+                    );
+                })}
 
-                <ToggleOption
-                    isVisible={showParticles}
-                    className={`raster-metric-item modifier-result ${showParticles ? "active" : ""}`}
-                    onToggle={onToggleParticles || (() => {})}
-                    label='Frame Particles'
-                />
+                {tools.map((tool) => {
+                    // If tool has an icon name, resolve it. 
+                    // Note: You might need to add icons to the tool definition or resolve them in parent.
+                    // For now assuming tool.icon is a string name like exposures.
+                    const Icon = resolveIcon(tool.icon);
 
-                <ToggleOption
-                    isVisible={showFileExplorer}
-                    className={`raster-metric-item modifier-result ${showFileExplorer ? "active" : ""}`}
-                    onToggle={onToggleFileExplorer}
-                    label='File Explorer'
-                />
-
-                <ToggleOption
-                    isVisible={showDislocationsComparison}
-                    className={`raster-metric-item modifier-result ${showDislocationsComparison ? "active" : ""}`}
-                    onToggle={onToggleDislocationsComparison || (() => {})}
-                    label='Compare Dislocations'
-                />
+                    return (
+                        <ToggleOption
+                            key={tool.id}
+                            isVisible={tool.isActive}
+                            className={`raster-metric-item modifier-result ${tool.isActive ? "active" : ""}`}
+                            onToggle={() => onToggleTool(tool.id)}
+                            label={tool.label}
+                            // @ts-ignore
+                            icon={Icon}
+                        />
+                    );
+                })}
             </div>
         </div>
     );

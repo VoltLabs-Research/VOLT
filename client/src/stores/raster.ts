@@ -41,12 +41,12 @@ const initialState: RasterState = {
 };
 
 const useRasterStore = create<RasterStore>((set, get) => {
-	const asyncAction = createAsyncAction(set, get);
+    const asyncAction = createAsyncAction(set, get);
 
-	return {
-		...initialState,
+    return {
+        ...initialState,
 
-        rasterize(id: string){
+        rasterize(id: string) {
             const req = api.post<ApiResponse<any>>(`/raster/${id}/glb/`);
 
             return asyncAction(() => req, {
@@ -55,51 +55,44 @@ const useRasterStore = create<RasterStore>((set, get) => {
             });
         },
 
-        async getRasterFrames(id: string){
+        async getRasterFrames(id: string) {
             set({ isLoading: true, error: null });
-            
-            try{
+
+            try {
                 const res = await api.get(`/raster/${id}/metadata`);
                 const { analyses, trajectory } = res.data.data;
 
                 console.log(analyses);
-                const analysesNames = Object.values(analyses).map((a: any) => ({
-                    _id: a._id,
-					name: `${a.identificationMode}${a.identificationMode === 'PTM' ? ` - RMSD: ${a.RMSD}` : ''}`,
-                    description: `Circuit Size: ${a.maxTrialCircuitSize} - Stretchability: ${a.circuitStretchability}`,
-                    RMSD: a.RMSD,
-                    maxTrialCircuitSize: a.maxTrialCircuitSize,
-                    circuitStretchability: a.circuitStretchability,
-                    identificationMode: a.identificationMode
-                }));
+                // Store complete analysis objects, not just partial data
+                const analysesNames = Object.values(analyses).map((a: any) => a);
 
                 // If no analyses but trajectory has frames, create a virtual "preview" analysis
                 let finalAnalyses = analyses;
                 let finalAnalysesNames = analysesNames;
-                
+
                 if (analysesNames.length === 0 && trajectory?.frames?.length > 0) {
                     const previewAnalysisId = '__preview__';
                     const previewFrames: Record<string, any> = {};
-                    
+
                     trajectory.frames.forEach((frame: any) => {
                         previewFrames[frame.timestep] = {
                             timestep: frame.timestep,
                             availableModels: ['preview']
                         };
                     });
-                    
+
                     finalAnalyses = {
                         [previewAnalysisId]: {
                             _id: previewAnalysisId,
                             frames: previewFrames
                         }
                     };
-                    
+
                     finalAnalysesNames = [{
                         _id: previewAnalysisId,
-                        name: 'Preview',
-                        description: 'Original trajectory preview',
-                        identificationMode: 'Preview'
+                        modifier: 'Preview',
+                        config: {},
+                        createdAt: new Date().toISOString()
                     }];
                 }
 
@@ -111,7 +104,7 @@ const useRasterStore = create<RasterStore>((set, get) => {
                     error: null,
                     selectedAnalysis: finalAnalysesNames.length > 0 ? finalAnalysesNames[0]._id : null
                 });
-            }catch(e: any){
+            } catch (e: any) {
                 set({
                     isLoading: false,
                     error: e?.message ?? 'Unknown error'
@@ -119,36 +112,36 @@ const useRasterStore = create<RasterStore>((set, get) => {
             }
         },
 
-        async getRasterFrame(trajectoryId, timestep, analysisId, model){
+        async getRasterFrame(trajectoryId, timestep, analysisId, model) {
             const cacheKey = get().getFrameCacheKey(timestep, analysisId, model);
 
             // Serve from cache if available
             const cached = get().frameCache?.[cacheKey];
-            if(cached){
+            if (cached) {
                 return cached;
             }
             set((state) => ({
                 loadingFrames: new Set(state.loadingFrames).add(cacheKey)
             }));
 
-            try{
+            try {
                 // Handle virtual preview analysis
                 const actualAnalysisId = analysisId === '__preview__' ? analysisId : analysisId;
-				const res = await api.get(`/raster/${trajectoryId}/frame-data/${timestep}/${actualAnalysisId}/${model}`);
+                const res = await api.get(`/raster/${trajectoryId}/frame-data/${timestep}/${actualAnalysisId}/${model}`);
                 const imageData = res.data?.data?.data;
 
                 set((state) => {
                     const loadingFrames = new Set(state.loadingFrames);
                     loadingFrames.delete(cacheKey);
                     const frameCache = { ...(state.frameCache || {}) } as Record<string, string>;
-                    if(imageData){
+                    if (imageData) {
                         frameCache[cacheKey] = imageData;
                     }
                     return { loadingFrames, frameCache }
                 });
 
                 return imageData ?? null;
-            }catch(e: any){
+            } catch (e: any) {
                 const errorMessage = e?.context?.serverMessage || e?.message || 'Error loading frame';
                 // Enhance context
                 if (e?.context) {
@@ -170,51 +163,51 @@ const useRasterStore = create<RasterStore>((set, get) => {
             }
         },
 
-        getFrameCacheKey(timestep: number, analysisId: string, model: string){
-			return `${timestep}-${analysisId}-${model}`;
+        getFrameCacheKey(timestep: number, analysisId: string, model: string) {
+            return `${timestep}-${analysisId}-${model}`;
         },
 
-        clearFrameCache(){
+        clearFrameCache() {
             // Clear in-flight markers and memory cache
-			set({ loadingFrames: new Set(), frameCache: {} });
+            set({ loadingFrames: new Set(), frameCache: {} });
         },
 
-    async preloadPriorizedFrames(trajectoryId, priorityModels, currentTimestep){
+        async preloadPriorizedFrames(trajectoryId, priorityModels, currentTimestep) {
             const { analyses, getFrameCacheKey, loadingFrames, isPreloading } = get();
-            
-            if(!analyses || !Object.keys(analyses).length || isPreloading) return;
+
+            if (!analyses || !Object.keys(analyses).length || isPreloading) return;
 
             set({ isPreloading: true, preloadProgress: 0 });
-            
+
             const tasks: PreloadTask[] = [];
-            for(const analysisId of Object.keys(analyses)){
+            for (const analysisId of Object.keys(analyses)) {
                 const frames = analyses[analysisId]?.frames || {};
-                for(const timestepStr of Object.keys(frames)){
+                for (const timestepStr of Object.keys(frames)) {
                     const timestep = parseInt(timestepStr, 10);
-                    if(!Number.isFinite(timestep)) continue;
+                    if (!Number.isFinite(timestep)) continue;
                     const models: string[] = frames[timestepStr]?.availableModels || [];
-                    for(const model of models){
+                    for (const model of models) {
                         const key = getFrameCacheKey(timestep, analysisId, model);
                         // Avoid duplicate concurrent requests withing the same run, 
                         // but do NOT cache results between runs.
-                        if(loadingFrames.has(key)) continue;
+                        if (loadingFrames.has(key)) continue;
 
                         // skip if we already have it cached
-                        if(get().frameCache?.[key]) continue;
+                        if (get().frameCache?.[key]) continue;
 
                         let score = 100;
                         // strongly prefer current and nearby frames, preview models, and priority models
-                        if(currentTimestep !== undefined){
+                        if (currentTimestep !== undefined) {
                             const d = Math.abs(timestep - currentTimestep);
-                            if(d === 0) score -= 90;
-                            else if(d <= 1) score -= 70;
-                            else if(d <= 3) score -= 50;
-                            else if(d <= 5) score -= 30;
+                            if (d === 0) score -= 90;
+                            else if (d <= 1) score -= 70;
+                            else if (d <= 3) score -= 50;
+                            else if (d <= 5) score -= 30;
                         }
-                        if(priorityModels.ml && model === priorityModels.ml) score -= 40;
-                        if(priorityModels.mr && model === priorityModels.mr) score -= 40;
-                        if(model === 'preview') score -= 25;
-                        if(model === 'dislocations') score -= 10;
+                        if (priorityModels.ml && model === priorityModels.ml) score -= 40;
+                        if (priorityModels.mr && model === priorityModels.mr) score -= 40;
+                        if (model === 'preview') score -= 25;
+                        if (model === 'dislocations') score -= 10;
 
                         tasks.push({ timestep, analysisId, model, score });
                     }
@@ -223,7 +216,7 @@ const useRasterStore = create<RasterStore>((set, get) => {
 
             tasks.sort((a, b) => a.score - b.score);
             const total = tasks.length;
-            if(!total){
+            if (!total) {
                 set({ isPreloading: false, preloadProgress: 100 });
                 return;
             }
@@ -231,11 +224,11 @@ const useRasterStore = create<RasterStore>((set, get) => {
             let done = 0;
             const runBatch = async (batch: PreloadTask[]) => {
                 await Promise.all(batch.map(async (task) => {
-                    try{
+                    try {
                         await get().getRasterFrame(trajectoryId, task.timestep, task.analysisId, task.model);
-                    }catch{
+                    } catch {
                         // ignore single task error
-                    }finally{
+                    } finally {
                         done++;
                         const progress = Math.round((done / total) * 100);
                         set({ preloadProgress: progress });
@@ -246,7 +239,7 @@ const useRasterStore = create<RasterStore>((set, get) => {
             // Increase concurrency dynamically based on hardware threads (fallback 8)
             const hw = (typeof navigator !== 'undefined' && (navigator as any).hardwareConcurrency) || 8;
             const chunk = Math.max(6, Math.min(16, hw));
-            for(let i = 0; i < tasks.length; i += chunk){
+            for (let i = 0; i < tasks.length; i += chunk) {
                 await runBatch(tasks.slice(i, i + chunk));
             }
 
@@ -256,10 +249,10 @@ const useRasterStore = create<RasterStore>((set, get) => {
             });
         },
 
-        async preloadAllFrames(trajectoryId: string){
+        async preloadAllFrames(trajectoryId: string) {
             return get().preloadPriorizedFrames(trajectoryId, {});
         }
-	};
+    };
 });
 
 export default useRasterStore;

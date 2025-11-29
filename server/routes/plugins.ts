@@ -20,6 +20,11 @@ router.get(
     controllers.getPluginExposureFile);
 
 router.get(
+    '/:pluginId/trajectory/:id/analysis/:analysisId/exposure/:exposureId/timestep/:timestep/file.msgpack',
+    trajMiddleware.checkTeamMembershipForTrajectory,
+    controllers.getPluginExposureFile);
+
+router.get(
     '/listing/:pluginId/:listingKey/:id',
     trajMiddleware.checkTeamMembershipForTrajectory,
     controllers.getPluginListingDocuments);

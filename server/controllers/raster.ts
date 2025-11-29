@@ -54,7 +54,7 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
 
     const analyses = await Analysis
         .find({ trajectory: trajectoryId })
-        .select('-createdAt -updatedAt -__v')
+        .select('-__v')
         .lean();
 
     const tfs = new TrajectoryFS(trajectoryId);
@@ -65,7 +65,7 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
         const framesMeta: Record<string, any> = {};
 
         for (const { timestep } of trajectory.frames) {
-            const types = await tfs.listRasterAnalyses(timestep, id);
+            const types = await tfs.listRasterAnalyses(trajectoryId, timestep, id);
             framesMeta[timestep] = {
                 timestep,
                 availableModels: ['preview', ...types]
@@ -73,14 +73,7 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
         }
 
         analysesMetadata[id] = {
-            _id: analysis._id,
-            name: analysis.name,
-            key: analysis.key,
-            plugin: analysis.plugin,
-            config: analysis.config,
-            status: analysis.status,
-            outputs: analysis.outputs,
-            exposure: analysis.exposure,
+            ...analysis,
             frames: framesMeta
         };
     }
@@ -153,7 +146,7 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
 
         for (const { timestep } of trajectory.frames) {
             const models: Record<string, any> = {};
-            const availableModels = await trajFS.listRasterAnalyses(timestep, id);
+            const availableModels = await trajFS.listRasterAnalyses(trajectoryId, timestep, id);
 
             for (const model of availableModels) {
                 const buffer = await readRasterModel(model, id, rasterDir, timestep);

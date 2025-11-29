@@ -21,391 +21,655 @@
 **/
 
 import logger from '@/logger';
-import { listByPrefix, statObject } from '@/utilities/buckets';
+import { listByPrefix, statObject, getStream } from '@/utilities/buckets';
+import { SYS_BUCKETS } from '@/config/minio';
+import { Trajectory, Analysis } from '@/models';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { Readable } from 'stream';
+import mime from 'mime-types';
+import RuntimeError from '@/utilities/runtime-error';
 
-type Media = 'raster' | 'glb' | 'both';
+export type EntryType = 'file' | 'dir';
 
-export interface MediaMaps{
+export interface FsEntry {
+    type: EntryType;
+    name: string;
+    relPath: string;
+    size?: number;
+    mtime?: string;
+    ext?: string | null;
+    mime?: string | false;
+}
+
+export type Media = 'raster' | 'glb' | 'both';
+
+export interface MediaMaps {
     raster?: Record<string, string>;
     glb?: Record<string, string>;
 }
 
-export interface PreviewsResult extends MediaMaps{
+export interface PreviewsResult extends MediaMaps {
     previewPng?: string | null;
 }
 
-export interface GetOptions{
+export interface GetOptions {
     media?: Media;
 }
 
-class TrajectoryFS{
-    readonly trajectoryId: string;
-    readonly root: string;
+class TrajectoryFS {
+    readonly userId: string | null;
+    readonly baseDir: string;
 
     constructor(
-        trajectoryId: string,
+        userId: string | null = null,
         baseDir = process.env.TRAJECTORY_DIR
-    ){
-        if(!baseDir){
+    ) {
+        if (!baseDir) {
             throw new Error('TRAJECTORY_DIR is not defined.')
         }
-        this.trajectoryId = trajectoryId;
-        this.root = path.resolve(baseDir, trajectoryId);
+        this.userId = userId;
+        this.baseDir = path.resolve(baseDir);
     }
 
-    private async isDir(p: string): Promise<boolean>{
-        try{
-            const stat = await fs.stat(p);
-            return stat.isDirectory();
-        }catch{
-            return false;
+    /**
+     * Lists contents of a virtual path.
+     * Path should be relative to the virtual root.
+     */
+    async list(virtualPath: string = ''): Promise<FsEntry[]> {
+        const cleanPath = virtualPath.replace(/^\/+/, '').replace(/\/+$/, '');
+        const parts = cleanPath ? cleanPath.split('/') : [];
+
+        // Root: list user's trajectories
+        if (parts.length === 0) {
+            return this.listUserTrajectories();
         }
-    }
 
-    private async isFile(p: string): Promise<boolean>{
-        try{
-            const stat = await fs.stat(p);
-            return stat.isFile();
-        }catch{
-            return false;
+        const trajectoryDir = parts[0];
+        const trajectoryId = trajectoryDir.replace(/^trajectory-/, '');
+
+        // trajectory-{id}/
+        if (parts.length === 1) {
+            return this.listTrajectoryRoot(trajectoryId);
         }
+
+        const subDir = parts[1];
+
+        // trajectory-{id}/dumps/
+        if (subDir === 'dumps') {
+            return this.listDumps(trajectoryId, parts.slice(2).join('/'));
+        }
+
+        // trajectory-{id}/raster/
+        if (subDir === 'raster') {
+            return this.listRaster(trajectoryId, parts.slice(2).join('/'));
+        }
+
+        // trajectory-{id}/analysis-{id}/
+        if (subDir.startsWith('analysis-')) {
+            const analysisId = subDir.replace(/^analysis-/, '');
+            return this.listAnalysis(trajectoryId, analysisId, parts.slice(2).join('/'));
+        }
+
+        throw new RuntimeError('PathNotFound', 404);
     }
 
-    private async readDir(p: string): Promise<string[]>{
-        try{
-            return await fs.readdir(p);
-        }catch{
+    /**
+     * Gets a read stream for a file.
+     */
+    async getReadStream(virtualPath: string): Promise<{ stream: Readable; size: number; contentType: string; filename: string }> {
+        const cleanPath = virtualPath.replace(/^\/+/, '').replace(/\/+$/, '');
+        const parts = cleanPath.split('/');
+
+        if (parts.length < 2) {
+            throw new RuntimeError('InvalidPath', 400);
+        }
+
+        const trajectoryId = parts[0].replace(/^trajectory-/, '');
+        const subDir = parts[1];
+
+        if (subDir === 'dumps') {
+            return this.getDumpStream(trajectoryId, parts.slice(2).join('/'));
+        }
+
+        if (subDir === 'raster') {
+            return this.getRasterStream(trajectoryId, parts.slice(2).join('/'));
+        }
+
+        if (subDir.startsWith('analysis-')) {
+            const analysisId = subDir.replace(/^analysis-/, '');
+            return this.getAnalysisStream(trajectoryId, analysisId, parts.slice(2).join('/'));
+        }
+
+        throw new RuntimeError('FileNotFound', 404);
+    }
+
+    // --- User Trajectories ---
+
+    private async listUserTrajectories(): Promise<FsEntry[]> {
+        if (!this.userId) {
+            throw new RuntimeError('Unauthorized', 401);
+        }
+
+        try {
+            const trajectories = await Trajectory.find({ createdBy: this.userId })
+                .select('_id name updatedAt')
+                .lean();
+
+            const results = await Promise.all(trajectories.map(async (traj: any) => {
+                const trajectoryId = traj._id.toString();
+
+                // Calculate total size: dumps + raster + all analyses
+                const dumpsSize = await this.calculateLocalDirSize(path.join(this.baseDir, trajectoryId, 'dumps'));
+                const rasterSize = await this.calculateMinioSize(`trajectory-${trajectoryId}/previews/`, SYS_BUCKETS.RASTERIZER);
+
+                // Get all analyses for this trajectory
+                const analyses = await Analysis.find({ trajectory: trajectoryId }).select('_id').lean();
+                let analysesSize = 0;
+                for (const analysis of analyses) {
+                    const analysisId = analysis._id.toString();
+                    const glbSize = await this.calculateMinioSize(`${trajectoryId}/${analysisId}/glb/`, SYS_BUCKETS.MODELS);
+                    const dataSize = await this.calculateMinioSize(`${trajectoryId}/${analysisId}/data/`, SYS_BUCKETS.MODELS);
+                    analysesSize += glbSize + dataSize;
+                }
+
+                return {
+                    type: 'dir' as EntryType,
+                    name: `trajectory-${trajectoryId}`,
+                    relPath: `trajectory-${trajectoryId}`,
+                    size: dumpsSize + rasterSize + analysesSize,
+                    mtime: traj.updatedAt?.toISOString() || new Date().toISOString()
+                };
+            }));
+
+            return results;
+        } catch (err) {
+            logger.error(`Failed to list user trajectories: ${err}`);
             return [];
         }
     }
 
-    private numSort(a: string, b: string): number{
-        const na = Number(a);
-        const nb = Number(b);
-        const anum = Number.isFinite(na);
-        const bnum = Number.isFinite(nb);
+    // --- Trajectory Root ---
 
-        if(anum && bnum) return na - nb;
-        if(anum && !bnum) return -1;
-        if(!anum && bnum) return 1;
+    private async listTrajectoryRoot(trajectoryId: string): Promise<FsEntry[]> {
+        const entries: FsEntry[] = [];
 
-        return a.localeCompare(b);
-    };
+        // Calculate dumps directory size
+        const dumpsSize = await this.calculateLocalDirSize(path.join(this.baseDir, trajectoryId, 'dumps'));
+        entries.push({
+            type: 'dir',
+            name: 'dumps',
+            relPath: `trajectory-${trajectoryId}/dumps`,
+            size: dumpsSize,
+            mtime: new Date().toISOString()
+        });
 
-    async getDump(frame: string | number): Promise<string | null>{
-        const p = path.join(this.dumpsDir(), String(frame));
-        const isFile = await this.isFile(p);
-        return isFile ? p : null;
-    }
+        // Calculate raster directory size
+        const rasterSize = await this.calculateMinioSize(`trajectory-${trajectoryId}/previews/`, SYS_BUCKETS.RASTERIZER);
+        entries.push({
+            type: 'dir',
+            name: 'raster',
+            relPath: `trajectory-${trajectoryId}/raster`,
+            size: rasterSize,
+            mtime: new Date().toISOString()
+        });
 
-    private previewsDir(media?: Exclude<Media, 'both'>): string{
-        return media 
-            ? path.join(this.root, 'previews', media)
-            : path.join(this.root, 'previews');
-    }
+        // List analyses
+        try {
+            const analyses = await Analysis.find({ trajectory: trajectoryId })
+                .select('_id name updatedAt')
+                .lean();
 
-    private analysisMediaDir(analysisId: string, media: Exclude<Media, 'both'>): string{
-        return path.join(this.root, analysisId, media);
-    }
+            for (const analysis of analyses) {
+                const analysisId = analysis._id.toString();
+                const glbSize = await this.calculateMinioSize(`${trajectoryId}/${analysisId}/glb/`, SYS_BUCKETS.MODELS);
+                const dataSize = await this.calculateMinioSize(`${trajectoryId}/${analysisId}/data/`, SYS_BUCKETS.MODELS);
 
-    private frameDir(analysisId: string, media: Exclude<Media, 'both'>, frame: string): string{
-        return path.join(this.analysisMediaDir(analysisId, media), frame);
-    }
-
-    private async collectFilesWithExt(dir: string, wantedExt: string): Promise<Record<string, string>>{
-        const out: Record<string, string> = {};
-
-        const isDir = await this.isDir(dir);
-        if(!isDir) return out;
-
-        const entries = await this.readDir(dir);
-        for(const name of entries){
-            const abs = path.join(dir, name);
-        
-            const isFile = await this.isFile(abs);
-            if(!isFile) continue;
-
-            const ext = path.extname(name).toLowerCase();
-            if(ext !== wantedExt) continue;
-
-            const base = path.basename(name, ext);
-            out[base] = abs;
+                entries.push({
+                    type: 'dir',
+                    name: `analysis-${analysisId}`,
+                    relPath: `trajectory-${trajectoryId}/analysis-${analysisId}`,
+                    size: glbSize + dataSize,
+                    mtime: (analysis as any).updatedAt?.toISOString() || new Date().toISOString()
+                });
+            }
+        } catch (err) {
+            logger.error(`Failed to list analyses: ${err}`);
         }
 
-        return out;
+        return entries;
     }
 
-    private async ensureDir(p: string): Promise<void>{
-        await fs.mkdir(p, { recursive: true });
+    // Helper: Calculate size of local directory
+    private async calculateLocalDirSize(dirPath: string): Promise<number> {
+        try {
+            const files = await fs.readdir(dirPath, { withFileTypes: true });
+            let totalSize = 0;
+
+            for (const file of files) {
+                const filePath = path.join(dirPath, file.name);
+                if (file.isFile()) {
+                    const stat = await fs.stat(filePath);
+                    totalSize += stat.size;
+                } else if (file.isDirectory()) {
+                    totalSize += await this.calculateLocalDirSize(filePath);
+                }
+            }
+
+            return totalSize;
+        } catch (err) {
+            return 0;
+        }
     }
-    
-    private async collectFramesForType(
-        analysisId: string,
-        media: Exclude<Media, 'both'>,
-        analysisType: string,
-        expectedExt: string
-    ): Promise<Record<string, string>>{
-        const mediaRoot = this.analysisMediaDir(analysisId, media);
-        const frames = await this.readDir(mediaRoot);
-        const result: Record<string, string> = {};
 
-        for(const frame of frames.sort(this.numSort)){
-            const fdir = path.join(mediaRoot, frame);
+    // Helper: Calculate size of MinIO prefix
+    private async calculateMinioSize(prefix: string, bucket: string): Promise<number> {
+        try {
+            const keys = await listByPrefix(prefix, bucket);
+            let totalSize = 0;
 
-            const isDir = await this.isDir(fdir);
-            if(!isDir) continue;
+            for (const key of keys) {
+                const stat = await statObject(key, bucket);
+                totalSize += stat.size;
+            }
 
-            const fpath = path.join(fdir, `${analysisType}${expectedExt}`);
-            const isFile = await this.isFile(fpath);
-            if(isFile){
-                result[frame] = fpath;
+            return totalSize;
+        } catch (err) {
+            return 0;
+        }
+    }
+
+    // --- Dumps ---
+
+    private async listDumps(trajectoryId: string, subPath: string): Promise<FsEntry[]> {
+        const absPath = path.join(this.baseDir, trajectoryId, 'dumps', subPath);
+
+        if (!absPath.startsWith(path.join(this.baseDir, trajectoryId, 'dumps'))) {
+            throw new RuntimeError('InvalidPath', 403);
+        }
+
+        try {
+            const stats = await fs.stat(absPath);
+            if (!stats.isDirectory()) {
+                throw new RuntimeError('NotADirectory', 400);
+            }
+
+            const files = await fs.readdir(absPath, { withFileTypes: true });
+            const entries: FsEntry[] = [];
+
+            for (const file of files) {
+                const entryAbs = path.join(absPath, file.name);
+                const entryRel = path.join(`trajectory-${trajectoryId}`, 'dumps', subPath, file.name);
+
+                if (file.isDirectory()) {
+                    entries.push({
+                        type: 'dir',
+                        name: file.name,
+                        relPath: entryRel,
+                        mtime: new Date().toISOString()
+                    });
+                } else if (file.isFile()) {
+                    const fstat = await fs.stat(entryAbs);
+                    const ext = path.extname(file.name);
+                    entries.push({
+                        type: 'file',
+                        name: file.name,
+                        relPath: entryRel,
+                        size: fstat.size,
+                        mtime: fstat.mtime.toISOString(),
+                        ext: ext,
+                        mime: mime.lookup(ext) || 'application/octet-stream'
+                    });
+                }
+            }
+            return entries;
+        } catch (err: any) {
+            if (err.code === 'ENOENT') return [];
+            throw err;
+        }
+    }
+
+    private async getDumpStream(trajectoryId: string, subPath: string) {
+        const absPath = path.join(this.baseDir, trajectoryId, 'dumps', subPath);
+
+        if (!absPath.startsWith(path.join(this.baseDir, trajectoryId, 'dumps'))) {
+            throw new RuntimeError('InvalidPath', 403);
+        }
+
+        try {
+            const stat = await fs.stat(absPath);
+            if (!stat.isFile()) throw new RuntimeError('NotAFile', 400);
+
+            const stream = (await fs.open(absPath, 'r')).createReadStream();
+            // @ts-ignore
+            return {
+                stream,
+                size: stat.size,
+                contentType: mime.lookup(absPath) || 'application/octet-stream',
+                filename: path.basename(absPath)
+            };
+        } catch (err: any) {
+            if (err.code === 'ENOENT') throw new RuntimeError('FileNotFound', 404);
+            throw err;
+        }
+    }
+
+    // --- Raster ---
+
+    private async listRaster(trajectoryId: string, subPath: string): Promise<FsEntry[]> {
+        // Raster images are stored as: trajectory-{id}/previews/timestep-{timestep}.png
+        const prefix = subPath ? `trajectory-${trajectoryId}/previews/${subPath}` : `trajectory-${trajectoryId}/previews/`;
+        return this.listMinioObjects(prefix, SYS_BUCKETS.RASTERIZER, `trajectory-${trajectoryId}/raster`, subPath);
+    }
+
+    private async getRasterStream(trajectoryId: string, subPath: string) {
+        const objectName = subPath.startsWith('trajectory-') ? subPath : `trajectory-${trajectoryId}/previews/${subPath}`;
+        return this.getMinioStream(objectName, SYS_BUCKETS.RASTERIZER);
+    }
+
+    // --- Analysis ---
+
+    private async listAnalysis(trajectoryId: string, analysisId: string, subPath: string): Promise<FsEntry[]> {
+        if (!subPath) {
+            // Root of analysis: show glb/ and data/ directories
+            const glbSize = await this.calculateMinioSize(`${trajectoryId}/${analysisId}/glb/`, SYS_BUCKETS.MODELS);
+            const dataSize = await this.calculateMinioSize(`${trajectoryId}/${analysisId}/data/`, SYS_BUCKETS.MODELS);
+
+            return [
+                {
+                    type: 'dir',
+                    name: 'glb',
+                    relPath: `trajectory-${trajectoryId}/analysis-${analysisId}/glb`,
+                    size: glbSize,
+                    mtime: new Date().toISOString()
+                },
+                {
+                    type: 'dir',
+                    name: 'data',
+                    relPath: `trajectory-${trajectoryId}/analysis-${analysisId}/data`,
+                    size: dataSize,
+                    mtime: new Date().toISOString()
+                }
+            ];
+        }
+
+        const parts = subPath.split('/');
+        const subDir = parts[0];
+
+        if (subDir === 'glb') {
+            return this.listAnalysisGLB(trajectoryId, analysisId, parts.slice(1).join('/'));
+        }
+
+        if (subDir === 'data') {
+            return this.listAnalysisData(trajectoryId, analysisId, parts.slice(1).join('/'));
+        }
+
+        throw new RuntimeError('PathNotFound', 404);
+    }
+
+    private async listAnalysisGLB(trajectoryId: string, analysisId: string, subPath: string): Promise<FsEntry[]> {
+        const prefix = subPath ? `${trajectoryId}/${analysisId}/glb/${subPath}/` : `${trajectoryId}/${analysisId}/glb/`;
+        return this.listMinioObjects(prefix, SYS_BUCKETS.MODELS, `trajectory-${trajectoryId}/analysis-${analysisId}/glb`, subPath);
+    }
+
+    private async listAnalysisData(trajectoryId: string, analysisId: string, subPath: string): Promise<FsEntry[]> {
+        const prefix = subPath ? `${trajectoryId}/${analysisId}/data/${subPath}/` : `${trajectoryId}/${analysisId}/data/`;
+        return this.listMinioObjects(prefix, SYS_BUCKETS.MODELS, `trajectory-${trajectoryId}/analysis-${analysisId}/data`, subPath);
+    }
+
+    private async getAnalysisStream(trajectoryId: string, analysisId: string, subPath: string) {
+        const parts = subPath.split('/');
+        const subDir = parts[0];
+
+        if (subDir === 'glb') {
+            const objectName = `${trajectoryId}/${analysisId}/glb/${parts.slice(1).join('/')}`;
+            return this.getMinioStream(objectName, SYS_BUCKETS.MODELS);
+        }
+
+        if (subDir === 'data') {
+            const objectName = `${trajectoryId}/${analysisId}/data/${parts.slice(1).join('/')}`;
+            return this.getMinioStream(objectName, SYS_BUCKETS.MODELS);
+        }
+
+        throw new RuntimeError('FileNotFound', 404);
+    }
+
+    // --- MinIO Helpers ---
+
+    private async listMinioObjects(prefix: string, bucket: string, virtualBase: string, subPath: string): Promise<FsEntry[]> {
+        try {
+            const allKeys = await listByPrefix(prefix, bucket);
+            const entries = new Map<string, FsEntry>();
+
+            for (const key of allKeys) {
+                const relToPrefix = key.substring(prefix.length);
+                const parts = relToPrefix.split('/').filter(Boolean);
+
+                if (parts.length === 0) continue;
+
+                const name = parts[0];
+
+                if (parts.length > 1) {
+                    if (!entries.has(name)) {
+                        entries.set(name, {
+                            type: 'dir',
+                            name: name,
+                            relPath: path.join(virtualBase, subPath, name),
+                            mtime: new Date().toISOString()
+                        });
+                    }
+                } else {
+                    const stat = await statObject(key, bucket);
+                    const ext = path.extname(name);
+                    entries.set(name, {
+                        type: 'file',
+                        name: name,
+                        relPath: path.join(virtualBase, subPath, name),
+                        size: stat.size,
+                        mtime: stat.lastModified.toISOString(),
+                        ext: ext,
+                        mime: mime.lookup(ext) || 'application/octet-stream'
+                    });
+                }
+            }
+
+            return Array.from(entries.values());
+        } catch (err) {
+            logger.error(`MinIO list error: ${err}`);
+            return [];
+        }
+    }
+
+    private async getMinioStream(objectName: string, bucket: string) {
+        try {
+            const stat = await statObject(objectName, bucket);
+            const stream = await getStream(objectName, bucket);
+            return {
+                stream,
+                size: stat.size,
+                contentType: mime.lookup(objectName) || 'application/octet-stream',
+                filename: path.basename(objectName)
+            };
+        } catch (err) {
+            throw new RuntimeError('FileNotFound', 404);
+        }
+    }
+
+    // --- Compatibility Methods for Legacy Code ---
+
+    /**
+     * Get dump file path for a specific frame
+     * @param trajectoryId Required for compatibility calls
+     * @param frame Frame number or timestep
+     */
+    async getDump(trajectoryId: string, frame: string | number): Promise<string | null> {
+        const dumpPath = path.join(this.baseDir, trajectoryId, 'dumps', String(frame));
+        try {
+            const stat = await fs.stat(dumpPath);
+            return stat.isFile() ? dumpPath : null;
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * Save dump file
+     * @param trajectoryId Required trajectoryId
+     * @param frame Frame number or timestep
+     * @param bufferOrSrc Buffer or source path
+     * @param overwrite Whether to overwrite existing file
+     */
+    async saveDump(trajectoryId: string, frame: string | number, bufferOrSrc: Buffer | string, overwrite = true): Promise<string> {
+        const destDir = path.join(this.baseDir, trajectoryId, 'dumps');
+        await fs.mkdir(destDir, { recursive: true });
+
+        const dest = path.join(destDir, String(frame));
+
+        if (!overwrite) {
+            try {
+                await fs.stat(dest);
+                return dest; // File exists, don't overwrite
+            } catch {
+                // File doesn't exist, continue
+            }
+        }
+
+        if (typeof bufferOrSrc === 'string') {
+            const data = await fs.readFile(bufferOrSrc);
+            await fs.writeFile(dest, data);
+        } else {
+            await fs.writeFile(dest, bufferOrSrc);
+        }
+
+        return dest;
+    }
+
+    /**
+     * Ensure directory structure exists for a trajectory
+     * @param trajectoryId Required trajectoryId
+     */
+    async ensureStructure(trajectoryId: string): Promise<void> {
+        const trajectoryRoot = path.join(this.baseDir, trajectoryId);
+        const dumpsDir = path.join(trajectoryRoot, 'dumps');
+
+        await fs.mkdir(trajectoryRoot, { recursive: true });
+        await fs.mkdir(dumpsDir, { recursive: true });
+    }
+
+    /**
+     * List raster analysis types for a specific frame
+     * Note: This is a stub - raster data is now only in MinIO
+     * @param trajectoryId Required trajectoryId
+     * @param frame Frame number
+     * @param analysisId Analysis ID
+     */
+    async listRasterAnalyses(trajectoryId: string, frame: number | string, analysisId: string): Promise<string[]> {
+        // Raster images are now in MinIO under trajectory-{id}/analysis-{id}/raster/
+        // For backward compatibility, return empty array as raster is handled differently now
+        return [];
+    }
+
+    /**
+     * Get analysis files (GLB or data)
+     * @param trajectoryId Required trajectoryId
+     * @param analysisId Analysis ID
+     * @param analysisType Type of analysis  
+     * @param options Media options
+     */
+    async getAnalysis(trajectoryId: string, analysisId: string, analysisType: string, options?: GetOptions): Promise<MediaMaps> {
+        const { raster, glb: wantGlb } = this.want(options?.media);
+        const result: MediaMaps = {};
+
+        if (wantGlb) {
+            // List GLB files from MinIO
+            const prefix = `${trajectoryId}/${analysisId}/glb/`;
+            try {
+                const glbKeys = await listByPrefix(prefix, SYS_BUCKETS.MODELS);
+                const frameMap: Record<string, string> = {};
+
+                for (const key of glbKeys) {
+                    const parts = key.split('/');
+                    if (parts.length >= 5) {
+                        const frame = parts[parts.length - 2];
+                        const filename = parts[parts.length - 1];
+                        const fileType = path.basename(filename, '.glb');
+
+                        if (!analysisType || fileType === analysisType) {
+                            frameMap[frame] = key;
+                        }
+                    }
+                }
+
+                const ordered: Record<string, string> = {};
+                const numSort = (a: string, b: string) => Number(a) - Number(b);
+                for (const k of Object.keys(frameMap).sort(numSort)) {
+                    ordered[k] = frameMap[k];
+                }
+                result.glb = ordered;
+            } catch (err) {
+                logger.error(`Failed to list analysis GLBs: ${err}`);
+                result.glb = {};
+            }
+        }
+
+        if (raster) {
+            // Raster is not stored per-analysis anymore, return empty
+            result.raster = {};
+        }
+
+        return result;
+    }
+
+    /**
+     * Get preview files for a trajectory
+     * @param trajectoryId Required trajectoryId
+     * @param options Media options
+     */
+    async getPreviews(trajectoryId: string, options?: GetOptions): Promise<PreviewsResult> {
+        const { glb: wantGlb } = this.want(options?.media);
+        const result: PreviewsResult = {};
+
+        if (wantGlb) {
+            const prefix = `trajectory-${trajectoryId}/previews/`;
+            try {
+                const glbKeys = await listByPrefix(prefix, SYS_BUCKETS.MODELS);
+                const map: Record<string, string> = {};
+
+                for (const key of glbKeys) {
+                    if (key.endsWith('.glb')) {
+                        const filename = key.split('/').pop();
+                        if (filename) {
+                            const match = filename.match(/timestep-(\d+)\.glb/);
+                            if (match) {
+                                const frame = match[1];
+                                map[frame] = key;
+                            }
+                        }
+                    }
+                }
+
+                const ordered: Record<string, string> = {};
+                const numSort = (a: string, b: string) => Number(a) - Number(b);
+                for (const k of Object.keys(map).sort(numSort)) {
+                    ordered[k] = map[k];
+                }
+                result.glb = ordered;
+            } catch (err) {
+                logger.error(`Failed to list preview GLBs: ${err}`);
+                result.glb = {};
             }
         }
 
         return result;
     }
 
-    private want(media?: Media): { raster: boolean, glb: boolean }{
+    private want(media?: Media): { raster: boolean, glb: boolean } {
         const m = media ?? 'both';
         return {
             raster: m === 'raster' || m === 'both',
             glb: m === 'glb' || m === 'both'
         };
     }
-
-    private dumpsDir(): string{
-        return path.join(this.root, 'dumps');
-    }
-
-    private async getPreviewPNG(){
-        const png = path.join(this.root, 'preview.png');
-        const isFile = await this.isFile(png);
-        return isFile ? png : null;
-    }
-
-    async getPreviews(options?: GetOptions): Promise<PreviewsResult>{
-        const { raster, glb } = this.want(options?.media);
-        const result: PreviewsResult = {};
-        result.previewPng = await this.getPreviewPNG();
-
-        if(raster){
-            const dir = this.previewsDir('raster');
-            const map = await this.collectFilesWithExt(dir, '.png');
-            const ordered: Record<string, string> = {};
-            for(const k of Object.keys(map).sort(this.numSort)){
-                ordered[k] = map[k];
-            }
-            result.raster = ordered;
-        }
-
-        if(glb){
-            // Read GLBs from MinIO instead of filesystem
-            // Path format: {trajectoryId}/previews/glb/{frame}.glb
-            const prefix = `${this.trajectoryId}/previews/glb/`;
-            const glbKeys = await listByPrefix(prefix, 'glbs');
-            const map: Record<string, string> = {};
-            
-            for(const key of glbKeys){
-                // Extract frame number from key
-                const filename = key.split('/').pop();
-                if(filename){
-                    const frame = path.basename(filename, '.glb');
-                    // Store MinIO key as the "path"
-                    map[frame] = key;
-                }
-            }
-
-            const ordered: Record<string, string> = {};
-            for(const k of Object.keys(map).sort(this.numSort)){
-                ordered[k] = map[k];
-            }
-            result.glb = ordered;
-        }
-
-        return result;
-    }
-
-    async ensureStructure(): Promise<void>{
-        await this.ensureDir(this.root);
-        await this.ensureDir(this.dumpsDir());
-        await this.ensureDir(this.previewsDir('raster'));
-        // GLBs are now in MinIO, no need to create glb directory
-    }
-
-    async getDumps(): Promise<Record<string, string>>{
-        const dir = this.dumpsDir();
-        const out: Record<string, string> = {};
-        const isDir = await this.isDir(dir);
-        if(!isDir) return out;
-
-        const items = await this.readDir(dir);
-        for(const name of items){
-            const abs = path.join(dir, name)
-            const isFile = await this.isFile(abs);
-            if(isFile){
-                out[name] = abs;
-            }
-        }
-
-        const ordered: Record<string, string> = {};
-        for(const k of Object.keys(out).sort(this.numSort)){
-            ordered[k] = out[k];
-        }
-        return ordered;
-    }
-
-    async saveDump(frame: string | number, bufferOrSrc: Buffer | string, overwrite = true): Promise<string>{
-        const destDir = this.dumpsDir();
-        await this.ensureDir(destDir);
-        const dest = path.join(destDir, String(frame));
-        const isFile = await this.isFile(dest);
-        if(!overwrite && isFile){
-            return dest;
-        }
-        if(typeof bufferOrSrc === 'string'){
-            const data = await fs.readFile(bufferOrSrc);
-            await fs.writeFile(dest, data);
-        }else{
-            await fs.writeFile(dest, bufferOrSrc);
-        }
-        return dest;
-    }
-
-    async listRasterAnalyses(
-        frame: number | string,
-        analysisId: string
-    ): Promise<string[]>{
-        // <trajectory_dir>/<trajectory_id>/<analysis_id>/raster/<frame>
-        const frameDir = path.join(this.root, analysisId, 'raster', String(frame));
-        const isDir = await this.isDir(frameDir);
-        if(!isDir) return [];
-
-        const entries = await this.readDir(frameDir);
-        const types = new Set<string>();
-
-        for(const name of entries){
-            const abs = path.join(frameDir, name);
-            const isFile = await this.isFile(abs);
-            if(!isFile) continue;
-
-            const analysisType = path.basename(name, '.png');
-            // TODO: add external exclude list
-            if(analysisType === 'interface_mesh') continue;
-            types.add(analysisType);
-        }
-
-        return Array.from(types);
-    }
-
-    async getAnalysis(analysisId: string, analysisType: string, options?: GetOptions): Promise<MediaMaps>{
-        const { raster, glb } = this.want(options?.media);
-        const result: MediaMaps = {};
-
-        if(raster){
-            result.raster = await this.collectFramesForType(analysisId, 'raster', analysisType, '.png');
-        }
-
-        if(glb){
-            // TODO: DUPLICATED CODE: Read GLBs from MinIO instead of filesystem
-            // Path format: {trajectoryId}/{analysisId}/glb/{frame}/{type}.glb
-            const prefix = `${this.trajectoryId}/${analysisId}/glb/`;
-            const glbKeys = await listByPrefix(prefix, 'glbs');
-            const frameMap: Record<string, string> = {};
-            
-            for(const key of glbKeys){
-                // Extract frame and type from key
-                // Example: trajectoryId/analysisId/glb/36000/defect_mesh.glb
-                const parts = key.split('/');
-                if(parts.length >= 5){
-                    const frame = parts[parts.length - 2];
-                    const filename = parts[parts.length - 1];
-                    const fileType = path.basename(filename, '.glb');
-                    
-                    // If analysisType is specified, filter by it
-                    if(!analysisType || fileType === analysisType){
-                        frameMap[frame] = key;
-                    }
-                }
-            }
-
-            const ordered: Record<string, string> = {};
-            for(const k of Object.keys(frameMap).sort(this.numSort)){
-                ordered[k] = frameMap[k];
-            }
-            result.glb = ordered;
-        }
-
-        return result;
-    }
-
-    /**
-     * Returns all GLB keys for a given analysis grouped by frame and type
-     */
-    async listAnalysisGlbKeys(analysisId: string): Promise<Record<string, Record<string, string>>>{
-        const prefix = `${this.trajectoryId}/${analysisId}/glb/`;
-        const glbKeys = await listByPrefix(prefix, 'glbs');
-        const result: Record<string, Record<string, string>> = {};
-
-        for(const key of glbKeys){
-            const parts = key.split('/');
-            if(parts.length < 5) continue;
-            const frame = parts[parts.length - 2];
-            const filename = parts[parts.length - 1];
-            const type = path.basename(filename, '.glb');
-            if(!frame || !type) continue;
-            if(!result[frame]){
-                result[frame] = {};
-            }
-            result[frame][type] = key;
-        }
-
-        return result;
-    }
-
-    /**
-     * Lists all GLB files in MinIO for this trajectory.
-     * Returns a virtual directory structure compatible with the file explorer.
-     */
-    async listGLBsVirtual(): Promise<{ path: string; size: number; mtime: Date }[]> {
-        const prefix = `${this.trajectoryId}/`;
-        const glbKeys = await listByPrefix(prefix, 'glbs');
-        const results: { path: string; size: number; mtime: Date }[] = [];
-
-        for(const key of glbKeys){
-            try{
-                const stat = await statObject(key, 'glbs');
-                // Remove trajectory ID prefix to make it relative
-                const relativePath = key.substring(prefix.length);
-                results.push({
-                    path: relativePath,
-                    size: stat.size,
-                    mtime: stat.lastModified
-                });
-            }catch(err){
-                logger.error(`Failed to stat GLB object ${key}: ${err}`);
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * Gets stat info for a GLB in MinIO.
-     */
-    async statGLBInMinIO(relativePath: string): Promise<{ size: number; mtime: Date } | null> {
-        const key = `${this.trajectoryId}/${relativePath}`;
-        try{
-            const stat = await statObject(key, 'glbs');
-            return {
-                size: stat.size,
-                mtime: stat.lastModified
-            };
-        }catch{
-            return null;
-        }
-    }
-};
+}
 
 export default TrajectoryFS;

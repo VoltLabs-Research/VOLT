@@ -35,18 +35,17 @@ export interface FsEntry {
     mime?: string | false;
 }
 
-interface FsListResponse{
-    trajectory: { id: string; name: string };
+interface FsListResponse {
+    trajectory: { id: string; name: string } | null;
     cwd: string;
     selected: string | null;
     breadcrumbs: Array<{ name: string; relPath: string }>;
     entries: FsEntry[];
 }
 
-interface HistoryItem{ cwd: string }
+interface HistoryItem { cwd: string }
 
-interface FileExplorerState{
-    trajectoryId: string | null;
+interface FileExplorerState {
     cwd: string;
     entries: FsEntry[];
     breadcrumbs: Array<{ name: string; relPath: string }>;
@@ -57,7 +56,7 @@ interface FileExplorerState{
     history: HistoryItem[];
     historyIndex: number;
 
-    init: (trajectoryId: string) => Promise<void>;
+    init: () => Promise<void>;
     open: (relPath?: string) => Promise<void>;
     enter: (name: string) => Promise<void>;
     up: () => Promise<void>;
@@ -68,13 +67,12 @@ interface FileExplorerState{
     download: (relPath: string) => Promise<void>;
     setShowHidden: (v: boolean) => Promise<void>;
 
-    _downloadFsFile: (trajectoryId: string, relPath: string) => Promise<any>;
-    _fetchFsList: (trajectoryId: string, path: string, showHidden: boolean) => Promise<any>;
+    _downloadFsFile: (relPath: string) => Promise<any>;
+    _fetchFsList: (path: string, showHidden: boolean) => Promise<any>;
     _gotoWithoutPush: (cwd: string) => Promise<void>;
 }
 
 const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
-    trajectoryId: null,
     cwd: '',
     entries: [],
     breadcrumbs: [{ name: 'root', relPath: '' }],
@@ -85,25 +83,24 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
 
     history: [{ cwd: '' }],
     historyIndex: 0,
-    
-    async _fetchFsList(trajectoryId: string, path = '', showHidden = false){
-        const res = await api<{ status: 'success', data: FsListResponse }>(`/trajectory-fs/${trajectoryId}/`, {
+
+    async _fetchFsList(path = '', showHidden = false) {
+        const res = await api.get<{ status: 'success', data: FsListResponse }>('/trajectory-fs/', {
             params: { path, hidden: showHidden }
         });
         return res.data.data;
     },
 
-    async _downloadFsFile(trajectoryId: string, relPath: string){
-        const res = await api.get(`/trajectory-fs/${trajectoryId}/download`, {
+    async _downloadFsFile(relPath: string) {
+        const res = await api.get('/trajectory-fs/download', {
             params: { path: relPath },
             responseType: 'blob'
         });
-        return res.data.data;
+        return res.data;
     },
 
-    async init(trajectoryId: string){
+    async init() {
         set({
-            trajectoryId,
             cwd: '',
             entries: [],
             breadcrumbs: [{ name: 'root', relPath: '' }],
@@ -115,16 +112,15 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
         await get().open('');
     },
 
-    async open(relPath: string = ''){
-        const { trajectoryId, showHidden } = get();
-        if(!trajectoryId) return;
+    async open(relPath: string = '') {
+        const { showHidden } = get();
         set({ loading: true, error: null });
-        try{
-            const data = await get()._fetchFsList(trajectoryId, relPath, showHidden);
+        try {
+            const data = await get()._fetchFsList(relPath, showHidden);
             set((state) => {
                 const newHist = state.history.slice(0, state.historyIndex + 1);
                 newHist.push({ cwd: data.cwd });
-                
+
                 return {
                     cwd: data.cwd,
                     entries: data.entries,
@@ -136,66 +132,61 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
                     historyIndex: newHist.length - 1
                 };
             });
-        }catch(e: any){
+        } catch (e: any) {
             const errorMessage = (e?.context?.serverMessage || e?.response?.data?.data?.error || e?.message) ?? 'Error loading files';
-            // Enhance context
             if (e?.context) {
-                e.context.trajectoryId = trajectoryId;
                 e.context.operation = 'listFiles';
             }
             set({ loading: false, error: errorMessage });
         }
     },
 
-    async enter(name: string){
+    async enter(name: string) {
         const { cwd } = get();
         const next = cwd ? `${cwd}/${name}` : name;
         await get().open(next);
     },
 
-    async up(){
+    async up() {
         const { cwd } = get();
-        if(!cwd) return;
+        if (!cwd) return;
         const parent = cwd.split('/').slice(0, -1).join('/');
-        await get().open(parent); 
+        await get().open(parent);
     },
 
-    async back(){
+    async back() {
         const { historyIndex, history } = get();
-        if(historyIndex <= 0) return;
+        if (historyIndex <= 0) return;
         const nextIndex = historyIndex - 1;
         const target = history[nextIndex].cwd;
         set({ historyIndex: nextIndex });
-        await get()._gotoWithoutPush(target);   
+        await get()._gotoWithoutPush(target);
     },
 
-    async forward(){
+    async forward() {
         const { historyIndex, history } = get();
-        if(historyIndex >= history.length - 1) return;
+        if (historyIndex >= history.length - 1) return;
         const nextIndex = historyIndex + 1;
         const target = history[nextIndex].cwd;
         set({ historyIndex: nextIndex });
         await get()._gotoWithoutPush(target);
     },
 
-    async refresh(){
+    async refresh() {
         const { cwd } = get();
         await get()._gotoWithoutPush(cwd);
     },
 
-    select(relPath: string | null){
+    select(relPath: string | null) {
         set({ selected: relPath });
     },
 
-    async download(relPath: string){
-        const { trajectoryId } = get();
-        if(!trajectoryId) return;
-
-        const blob = await get()._downloadFsFile(trajectoryId, relPath);
+    async download(relPath: string) {
+        const blob = await get()._downloadFsFile(relPath);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         const name = relPath.split('/').pop() || 'file';
-        
+
         a.href = url;
         a.download = name;
         document.body.appendChild(a);
@@ -206,17 +197,16 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
         URL.revokeObjectURL(url);
     },
 
-    async setShowHidden(v: boolean){
+    async setShowHidden(v: boolean) {
         set({ showHidden: v });
         await get().refresh();
     },
 
-    async _gotoWithoutPush(cwd: string){
-        const { trajectoryId, showHidden } = get();
-        if(!trajectoryId) return;
+    async _gotoWithoutPush(cwd: string) {
+        const { showHidden } = get();
         set({ loading: true, error: null });
-        try{
-            const data = await get()._fetchFsList(trajectoryId, cwd, showHidden);
+        try {
+            const data = await get()._fetchFsList(cwd, showHidden);
             set({
                 cwd: data.cwd,
                 entries: data.entries,
@@ -225,7 +215,7 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
                 loading: false,
                 error: null
             })
-        }catch(e: any){
+        } catch (e: any) {
             set({ loading: false, error: e?.response?.data?.data?.error || e?.message || 'Error loading files' });
         }
     }

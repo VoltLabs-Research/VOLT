@@ -85,7 +85,7 @@ export default class Plugin {
                     const timestep = Number(options[key]);
                     if (!isNaN(timestep)) {
                         const trajectoryFS = new TrajectoryFS(this.trajectoryId);
-                        const dumpFile = await trajectoryFS.getDump(timestep);
+                        const dumpFile = await trajectoryFS.getDump(this.trajectoryId, timestep);
                         if (dumpFile) {
                             processedOptions[key] = dumpFile;
                         } else {

@@ -3,31 +3,31 @@ import useTrajectoryFS, { type FsEntry } from '@/stores/trajectory-fs';
 import WindowIcons from '@/components/molecules/WindowIcons';
 import Draggable from '@/components/atoms/Draggable';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
-import { 
+import {
     LuLayoutList,
-    LuFolder, 
-    LuFile, 
-    LuRefreshCw, 
-    LuArrowLeft, 
-    LuArrowRight, 
+    LuFolder,
+    LuFile,
+    LuRefreshCw,
+    LuArrowLeft,
+    LuArrowRight,
     LuTrash,
     LuFolderPlus,
     LuSettings,
     LuArrowUp,
-    LuDownload } from 'react-icons/lu';
+    LuDownload
+} from 'react-icons/lu';
 import { Skeleton, Box, CircularProgress } from '@mui/material';
 import { formatSize } from '@/utilities/scene-utils';
 import { IoSearchOutline } from 'react-icons/io5';
 import './TrajectoryFileExplorer.css';
 
 type TrajectoryFileExplorerProps = {
-    trajectoryId: string;
     height?: number | string;
     onFileOpen?: (entry: FsEntry) => void;
     onClose?: () => void;
 };
 
-const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: TrajectoryFileExplorerProps) => {
+const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerProps) => {
     const [isMaximized, setIsMaximized] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -35,7 +35,7 @@ const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: Trajector
     const [previewFileName, setPreviewFileName] = useState<string>('');
     const [previewMaximized, setPreviewMaximized] = useState(false);
     const [previewMinimized, setPreviewMinimized] = useState(false);
-    
+
     const {
         cwd,
         entries,
@@ -81,11 +81,11 @@ const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: Trajector
         disabled: false
     }, {
         Icon: LuLayoutList,
-        onClick: () => {},
+        onClick: () => { },
         disabled: true
     }, {
         Icon: LuFolderPlus,
-        onclick: () => {},
+        onclick: () => { },
         disabled: true
     }];
 
@@ -98,35 +98,31 @@ const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: Trajector
     }];
 
     useEffect(() => {
-        if(trajectoryId){
-            init(trajectoryId);
-        }
-    }, [trajectoryId]);
+        init();
+    }, []);
 
     const loadImagePreview = async (entry: FsEntry) => {
-        if(!trajectoryId) return;
-        
         setPreviewLoading(true);
         setPreviewFileName(entry.name);
-        
+
         try {
             // Usar fetch directamente con la configuración correcta
             const token = localStorage.getItem('authToken');
             const API_BASE_URL = import.meta.env.VITE_API_URL + '/api';
-            
-            const response = await fetch(`${API_BASE_URL}/trajectory-fs/${trajectoryId}/download?path=${encodeURIComponent(entry.relPath)}`, {
+
+            const response = await fetch(`${API_BASE_URL}/trajectory-fs/download?path=${encodeURIComponent(entry.relPath)}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const blob = await response.blob();
-            
+
             // Convert blob to base64
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -156,7 +152,7 @@ const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: Trajector
 
     const handleDownloadPreview = () => {
         if (!previewImage || !previewFileName) return;
-        
+
         const a = document.createElement('a');
         a.href = previewImage;
         a.download = previewFileName;
@@ -166,17 +162,17 @@ const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: Trajector
     };
 
     const handleDoubleClick = (e: FsEntry) => {
-        if(e.type === 'dir'){
+        if (e.type === 'dir') {
             enter(e.name);
-        }else{
+        } else {
             // Check if file is a PNG image
             const isPNG = e.ext?.toLowerCase() === 'png' || e.name.toLowerCase().endsWith('.png');
-            
+
             if (isPNG) {
                 loadImagePreview(e);
-            } else if(onFileOpen){
+            } else if (onFileOpen) {
                 onFileOpen(e);
-            }else{
+            } else {
                 download(e.relPath);
             }
         }
@@ -213,244 +209,244 @@ const TrajectoryFileExplorer = ({ trajectoryId, onFileOpen, onClose }: Trajector
                 <Skeleton variant="text" width="80%" height={18} />
             </div>
         </div>
-        );
+    );
 
-    if(isMinimized) return null;
+    if (isMinimized) return null;
 
     return (
         <>
-        <Draggable 
-            className='trajectory-fs-container primary-surface'
-            enabled
-            bounds='viewport'
-            axis='both'
-            doubleClickToDrag={true}
-            handle='.trajectory-fs-nav-title'
-            scaleWhileDragging={0.95}
-            resizable={true}
-            minWidth={800}
-            minHeight={500}
-        >
-            <div className={`trajectory-fs-wrapper ${isMaximized ? 'maximized' : ''}`}>
-            <div className='trajectory-fs-left-container'>
-                <div className='trajectory-fs-left-top-container'>
-                    <WindowIcons 
-                        onClose={onClose}
-                        onExpand={() => setIsMaximized(!isMaximized)}
-                        onMinimize={() => setIsMinimized(true)}
-                    />
+            <Draggable
+                className='trajectory-fs-container primary-surface'
+                enabled
+                bounds='viewport'
+                axis='both'
+                doubleClickToDrag={true}
+                handle='.trajectory-fs-nav-title'
+                scaleWhileDragging={0.95}
+                resizable={true}
+                minWidth={800}
+                minHeight={500}
+            >
+                <div className={`trajectory-fs-wrapper ${isMaximized ? 'maximized' : ''}`}>
+                    <div className='trajectory-fs-left-container'>
+                        <div className='trajectory-fs-left-top-container'>
+                            <WindowIcons
+                                onClose={onClose}
+                                onExpand={() => setIsMaximized(!isMaximized)}
+                                onMinimize={() => setIsMinimized(true)}
+                            />
 
-                    <div className='trajectory-fs-nav-container'>
-                        <div className='trajectory-fs-nav'>
-                            <h3 className='trajectory-fs-nav-title'>Trajectories</h3>
-                            <div className='trajectory-fs-nav-items'>
-                                {['Dump Impact', 'SC Lattice Test', '1200K 17nm Strain 0'].map((title, index) => (
-                                    <div className='trajectory-fs-nav-item' key={index}>
-                                        <h3 className='trajectory-fs-nav-item-title'>{title}</h3>
+                            <div className='trajectory-fs-nav-container'>
+                                <div className='trajectory-fs-nav'>
+                                    <h3 className='trajectory-fs-nav-title'>Trajectories</h3>
+                                    <div className='trajectory-fs-nav-items'>
+                                        {['Dump Impact', 'SC Lattice Test', '1200K 17nm Strain 0'].map((title, index) => (
+                                            <div className='trajectory-fs-nav-item' key={index}>
+                                                <h3 className='trajectory-fs-nav-item-title'>{title}</h3>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className='trajectory-fs-left-bottom-container'>
+                            <div className='trajectory-fs-left-bottom-nav-container'>
+                                {bottomNavIcons.map(({ Icon, title }, index) => (
+                                    <div className='trajectory-fs-left-bottom-nav-icon-container' key={'bottom-icon-' + index}>
+                                        <i className='trajectory-fs-left-bottom-nav-icon'>
+                                            <Icon size={15} />
+                                        </i>
+                                        <p className='trajectory-fs-left-bottom-nav-title'>{title}</p>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className='trajectory-fs-left-bottom-container'>
-                    <div className='trajectory-fs-left-bottom-nav-container'>
-                        {bottomNavIcons.map(({ Icon, title }, index) => (
-                            <div className='trajectory-fs-left-bottom-nav-icon-container' key={'bottom-icon-' + index}>
-                                <i className='trajectory-fs-left-bottom-nav-icon'>
-                                    <Icon size={15} />
-                                </i>
-                                <p className='trajectory-fs-left-bottom-nav-title'>{title}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            <div className='trajectory-fs-right-container'>
-                <div className='trajectory-fs-right-header'>
-                    {headerIcons.map(({ Icon, onClick, disabled }, index) => (
-                        <i 
-                            className={`trajectory-fs-header-icon-container ${disabled ? 'is-disabled' : ''}`}
-                            onClick={onClick}
-                            key={index}
-                        >
-                            {loading ? <HeaderIconSkeleton /> : <Icon size={20} />}
-                        </i>
-                    ))}
-
-                    <div className='search-container trajectory-fs-search-container'>
-                        <i className='search-icon-container'>
-                            <IoSearchOutline />
-                        </i>
-
-                        <div className='search-breadcrumbs-container'>
-                            {loading ? (
-                                <BreadcrumbsSkeleton />
-                            ) : (
-                                breadcrumbs.map(({ name }, i) => (
-                                    <div className='search-breadcrumb-container' key={`${name}-${i}`}>
-                                        <p className='search-breadcrumb-name'>{name}</p>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-
-                    {headerRightIcons.map(({ Icon, onClick, disabled }, index) => (
-                        <i 
-                            className={`trajectory-fs-header-icon-container ${disabled ? 'is-disabled' : ''}`}
-                            onClick={onClick}
-                            key={index + '-right'}
-                        >
-                            {loading ? <HeaderIconSkeleton /> : <Icon size={20} />}
-                        </i>
-                    ))}
-                </div>
-                <div className='trajectory-fs-list-headrow'>
-                    {['name', 'type', 'size', 'Modified'].map((title, index) => (
-                        <div className={'trajectory-fs-list-column ' + title} key={index}>{title}</div>
-                    ))}
-                </div>
-                
-                <div className='trajectory-fs-list-body'>
-                    {loading ? (
-                        Array.from({ length: 30 }).map((_, i) => <FileRowSkeleton key={`s-${i}`} />)
-                    ) : entries.map((e) => (
-                        <div
-                            key={e.relPath}
-                            className={`trajectory-fs-list-row ${selected === e.relPath ? 'selected' : ''}`}
-                            onDoubleClick={() => handleDoubleClick(e)}
-                            onClick={() => select(e.relPath)}
-                        >
-                            <div className='trajectory-fs-list-column trajectory-fs-list-name-container'>
-                                <i className='trajectory-fs-file-icon-container'>
-                                    {e.type === 'dir' ? <LuFolder /> : <LuFile />}
-                                </i>
-
-                                <p className='trajectory-fs-file-name'>{e.name}</p>
-                            </div>
-
-                            <div className='trajectory-fs-list-column'>
-                                {e.type === 'dir' ? 'Folder' : e.ext || 'File'}
-                            </div>
-
-                            <div className='trajectory-fs-list-column'>
-                                {formatSize(e.size || 0)}
-                            </div>
-
-                            <div className='trajectory-fs-list-column'>
-                                {formatTimeAgo(e.mtime || '')}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-            </div>
-        </Draggable>
-
-        {(previewImage || previewLoading) && !previewMinimized && (
-            <Draggable
-                className='trajectory-fs-image-preview primary-surface'
-                enabled
-                bounds='viewport'
-                axis='both'
-                doubleClickToDrag={true}
-                handle='.trajectory-fs-preview-header'
-                scaleWhileDragging={0.98}
-                resizable={true}
-                minWidth={400}
-                minHeight={400}
-            >
-                <div className={`trajectory-fs-preview-wrapper ${previewMaximized ? 'maximized' : ''}`} style={{
-                    borderRadius: '8px',
-                    padding: '1rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '1rem',
-                }}>
-                    {/* Header con Window Icons */}
-                    <div 
-                        className='trajectory-fs-preview-header'
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.5rem',
-                            cursor: 'grab',
-                            userSelect: 'none',
-                        }}
-                    >
-                        {/* Window Icons */}
-                        <WindowIcons 
-                            onClose={closePreview}
-                            onExpand={() => setPreviewMaximized(!previewMaximized)}
-                            onMinimize={() => setPreviewMinimized(true)}
-                        />
-
-                        {/* File Info */}
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                            paddingBottom: '0.75rem',
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <LuFile size={20} />
-                                <span style={{ fontSize: '14px', fontWeight: 500 }}>
-                                    {previewFileName}
-                                </span>
-                            </div>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <i 
-                                    onClick={handleDownloadPreview}
-                                    style={{
-                                        cursor: 'pointer',
-                                        padding: '0.5rem',
-                                        borderRadius: '4px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                    className='trajectory-fs-preview-icon'
+                    <div className='trajectory-fs-right-container'>
+                        <div className='trajectory-fs-right-header'>
+                            {headerIcons.map(({ Icon, onClick, disabled }, index) => (
+                                <i
+                                    className={`trajectory-fs-header-icon-container ${disabled ? 'is-disabled' : ''}`}
+                                    onClick={onClick}
+                                    key={index}
                                 >
-                                    <LuDownload size={20} />
+                                    {loading ? <HeaderIconSkeleton /> : <Icon size={20} />}
                                 </i>
-                            </div>
-                        </div>
-                    </div>
+                            ))}
 
-                    {/* Image Content */}
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minWidth: '400px',
-                        minHeight: '400px',
-                        maxWidth: '80vw',
-                        maxHeight: '70vh',
-                    }}>
-                        {previewLoading ? (
-                            <CircularProgress />
-                        ) : previewImage ? (
-                            <img
-                                src={previewImage}
-                                alt={previewFileName}
-                                style={{
-                                    maxWidth: '100%',
-                                    maxHeight: '100%',
-                                    objectFit: 'contain',
-                                    borderRadius: '4px',
-                                }}
-                            />
-                        ) : (
-                            <span>No image to display</span>
-                        )}
+                            <div className='search-container trajectory-fs-search-container'>
+                                <i className='search-icon-container'>
+                                    <IoSearchOutline />
+                                </i>
+
+                                <div className='search-breadcrumbs-container'>
+                                    {loading ? (
+                                        <BreadcrumbsSkeleton />
+                                    ) : (
+                                        breadcrumbs.map(({ name }, i) => (
+                                            <div className='search-breadcrumb-container' key={`${name}-${i}`}>
+                                                <p className='search-breadcrumb-name'>{name}</p>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {headerRightIcons.map(({ Icon, onClick, disabled }, index) => (
+                                <i
+                                    className={`trajectory-fs-header-icon-container ${disabled ? 'is-disabled' : ''}`}
+                                    onClick={onClick}
+                                    key={index + '-right'}
+                                >
+                                    {loading ? <HeaderIconSkeleton /> : <Icon size={20} />}
+                                </i>
+                            ))}
+                        </div>
+                        <div className='trajectory-fs-list-headrow'>
+                            {['name', 'type', 'size', 'Modified'].map((title, index) => (
+                                <div className={'trajectory-fs-list-column ' + title} key={index}>{title}</div>
+                            ))}
+                        </div>
+
+                        <div className='trajectory-fs-list-body'>
+                            {loading ? (
+                                Array.from({ length: 30 }).map((_, i) => <FileRowSkeleton key={`s-${i}`} />)
+                            ) : entries.map((e) => (
+                                <div
+                                    key={e.relPath}
+                                    className={`trajectory-fs-list-row ${selected === e.relPath ? 'selected' : ''}`}
+                                    onDoubleClick={() => handleDoubleClick(e)}
+                                    onClick={() => select(e.relPath)}
+                                >
+                                    <div className='trajectory-fs-list-column trajectory-fs-list-name-container'>
+                                        <i className='trajectory-fs-file-icon-container'>
+                                            {e.type === 'dir' ? <LuFolder /> : <LuFile />}
+                                        </i>
+
+                                        <p className='trajectory-fs-file-name'>{e.name}</p>
+                                    </div>
+
+                                    <div className='trajectory-fs-list-column'>
+                                        {e.type === 'dir' ? 'Folder' : e.ext || 'File'}
+                                    </div>
+
+                                    <div className='trajectory-fs-list-column'>
+                                        {formatSize(e.size || 0)}
+                                    </div>
+
+                                    <div className='trajectory-fs-list-column'>
+                                        {formatTimeAgo(e.mtime || '')}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </Draggable>
-        )}
+
+            {(previewImage || previewLoading) && !previewMinimized && (
+                <Draggable
+                    className='trajectory-fs-image-preview primary-surface'
+                    enabled
+                    bounds='viewport'
+                    axis='both'
+                    doubleClickToDrag={true}
+                    handle='.trajectory-fs-preview-header'
+                    scaleWhileDragging={0.98}
+                    resizable={true}
+                    minWidth={400}
+                    minHeight={400}
+                >
+                    <div className={`trajectory-fs-preview-wrapper ${previewMaximized ? 'maximized' : ''}`} style={{
+                        borderRadius: '8px',
+                        padding: '1rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1rem',
+                    }}>
+                        {/* Header con Window Icons */}
+                        <div
+                            className='trajectory-fs-preview-header'
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.5rem',
+                                cursor: 'grab',
+                                userSelect: 'none',
+                            }}
+                        >
+                            {/* Window Icons */}
+                            <WindowIcons
+                                onClose={closePreview}
+                                onExpand={() => setPreviewMaximized(!previewMaximized)}
+                                onMinimize={() => setPreviewMinimized(true)}
+                            />
+
+                            {/* File Info */}
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                paddingBottom: '0.75rem',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <LuFile size={20} />
+                                    <span style={{ fontSize: '14px', fontWeight: 500 }}>
+                                        {previewFileName}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <i
+                                        onClick={handleDownloadPreview}
+                                        style={{
+                                            cursor: 'pointer',
+                                            padding: '0.5rem',
+                                            borderRadius: '4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                        className='trajectory-fs-preview-icon'
+                                    >
+                                        <LuDownload size={20} />
+                                    </i>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Image Content */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minWidth: '400px',
+                            minHeight: '400px',
+                            maxWidth: '80vw',
+                            maxHeight: '70vh',
+                        }}>
+                            {previewLoading ? (
+                                <CircularProgress />
+                            ) : previewImage ? (
+                                <img
+                                    src={previewImage}
+                                    alt={previewFileName}
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '100%',
+                                        objectFit: 'contain',
+                                        borderRadius: '4px',
+                                    }}
+                                />
+                            ) : (
+                                <span>No image to display</span>
+                            )}
+                        </div>
+                    </div>
+                </Draggable>
+            )}
         </>
     );
 };

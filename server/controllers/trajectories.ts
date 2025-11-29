@@ -72,14 +72,14 @@ export const updateTrajectoryById = factory.updateOne();
 
 export const getTrajectoryMetrics = async (req: Request, res: Response) => {
     const { teamId } = req.query;
-    
+
     if (!teamId || typeof teamId !== 'string') {
         return res.status(400).json({
             status: 'error',
             message: 'teamId query parameter is required'
         });
     }
-    
+
     const teamMetrics = await getMetricsByTeamId(teamId);
 
     return res.status(200).json({
@@ -92,10 +92,10 @@ export const deleteTrajectoryById = factory.deleteOne({
     beforeDelete: async (doc: any) => {
         const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
         const trajectoryPath = join(basePath, doc._id.toString());
-        try{
+        try {
             await rm(trajectoryPath, { recursive: true, force: true });
             logger.info(`Cleaned up trajectory files at: ${trajectoryPath}`);
-        }catch(error){
+        } catch (error) {
             logger.warn(`Warning: Could not clean up files for trajectory ${doc._id}: ${error}`);
         }
     }
@@ -107,8 +107,8 @@ export const getUserTrajectories = factory.getAll({
         const { teamId } = req.query;
 
         let teamQuery: any = { members: userId };
-        if(teamId && typeof teamId === 'string'){
-            if(!isValidObjectId(teamId)){
+        if (teamId && typeof teamId === 'string') {
+            if (!isValidObjectId(teamId)) {
                 throw new RuntimeError('Trajectory::Team::InvalidId', 400);
             }
             teamQuery._id = teamId;
@@ -116,7 +116,7 @@ export const getUserTrajectories = factory.getAll({
 
         const userTeams = await Team.find(teamQuery).select('_id');
 
-        if(teamId && userTeams.length === 0){
+        if (teamId && userTeams.length === 0) {
             return { _id: { $in: [] } };
         }
 
@@ -130,17 +130,17 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
     const trajectoryId = trajectory._id.toString();
     const analysisId = req.params.analysisId;
 
-    if(!trajectory){
+    if (!trajectory) {
         return res.status(400).json({
             status: 'error',
             data: { error: 'Trajectory not found in context' },
-        });  
+        });
     }
 
     const trajFS = new TrajectoryFS(trajectoryId);
 
-     const TYPES = [
-        'atoms_colored_by_type', 
+    const TYPES = [
+        'atoms_colored_by_type',
         'dislocations',
         'defect_mesh',
         'interface_mesh'
@@ -163,9 +163,9 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
     };
 
     for (const type of TYPES) {
-        const maps = await trajFS.getAnalysis(analysisId, type, { media: 'glb' });
+        const maps = await trajFS.getAnalysis(trajectoryId, analysisId, type, { media: 'glb' });
         const glbByFrame = maps.glb || {};
-        for(const frame of Object.keys(glbByFrame).sort((a, b) => Number(a) - Number(b))){
+        for (const frame of Object.keys(glbByFrame).sort((a, b) => Number(a) - Number(b))) {
             typeMap[type][frame] = toRel(glbByFrame[frame]);
         }
     }
@@ -177,9 +177,9 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
 };
 
 export const getMetrics = async (req: Request, res: Response) => {
-    const id = (req.params as any).id || (req.params as  any).trajectoryId;
+    const id = (req.params as any).id || (req.params as any).trajectoryId;
     if (!id) {
-      return res.status(400).json({ status: 'error', message: 'Trajectory id is required' });
+        return res.status(400).json({ status: 'error', message: 'Trajectory id is required' });
     }
 
     const data = await getTrajectoryMetricsById(id);
@@ -208,11 +208,11 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
 
     const trajectoryId = trajectory._id.toString();
 
-    try{
+    try {
         const trajFS = new TrajectoryFS(trajectoryId);
-        const frameFilePath = await trajFS.getDump(timestep);
+        const frameFilePath = await trajFS.getDump(trajectoryId, timestep);
 
-        if(!frameFilePath){
+        if (!frameFilePath) {
             return res.status(404).json({
                 status: 'error',
                 data: { error: 'Dump not found' }
@@ -229,12 +229,12 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
         const rl = createInterface({ input: stream, crlfDelay: Infinity });
 
         let natoms: number | null = null;
-    let headerCols: string[] = [];
+        let headerCols: string[] = [];
         let inAtoms = false;
         let wroteAny = false;
         let positionsOpened = false;
         let globalIndex = 0;
-    let typesPage: number[] = [];
+        let typesPage: number[] = [];
 
         const write = (chunk: string) => {
             if (!res.write(chunk)) return new Promise((r) => res.once('drain', r));
@@ -250,30 +250,30 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
         const colIndex = (name: string) => headerCols.findIndex((c) => c.toLowerCase() === name);
         const findIndexFrom = (cands: string[]) => cands.map(colIndex).find((i) => i !== -1) ?? -1;
 
-    let idxX = -1, idxY = -1, idxZ = -1, idxType = -1;
+        let idxX = -1, idxY = -1, idxZ = -1, idxType = -1;
 
-        for await (const line of rl){
+        for await (const line of rl) {
             const t = line.trim();
-            if(!t) continue;
+            if (!t) continue;
 
-            if(t === 'ITEM: NUMBER OF ATOMS'){
+            if (t === 'ITEM: NUMBER OF ATOMS') {
                 const { value: next } = await rl[Symbol.asyncIterator]().next();
-                if(typeof next === 'string'){
+                if (typeof next === 'string') {
                     const v = parseInt(next.trim(), 10);
-                    if(Number.isFinite(v)) natoms = v;
+                    if (Number.isFinite(v)) natoms = v;
                 }
                 continue;
             }
 
-            if(t.startsWith('ITEM: ATOMS')){
+            if (t.startsWith('ITEM: ATOMS')) {
                 headerCols = t.replace(/^ITEM:\s*ATOMS\s*/, '').trim().split(/\s+/);
-                idxX = findIndexFrom(['x','xu','xs','xsu']);
-                idxY = findIndexFrom(['y','yu','ys','ysu']);
-                idxZ = findIndexFrom(['z','zu','zs','zsu']);
-                idxType = findIndexFrom(['type','atom_type','atype']);
+                idxX = findIndexFrom(['x', 'xu', 'xs', 'xsu']);
+                idxY = findIndexFrom(['y', 'yu', 'ys', 'ysu']);
+                idxZ = findIndexFrom(['z', 'zu', 'zs', 'zsu']);
+                idxType = findIndexFrom(['type', 'atom_type', 'atype']);
                 inAtoms = true;
                 // Write natoms (if known) and open positions array
-                if(natoms != null){
+                if (natoms != null) {
                     await write(`"natoms": ${natoms},`);
                 }
                 await write('"positions":[');
@@ -281,24 +281,24 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
                 continue;
             }
 
-            if(t.startsWith('ITEM:') && inAtoms){
+            if (t.startsWith('ITEM:') && inAtoms) {
                 // ATOMS section ended
                 inAtoms = false;
                 break;
             }
 
-            if(inAtoms){
+            if (inAtoms) {
                 const parts = t.split(/\s+/);
-                if(parts.length < headerCols.length) continue;
-                if(idxX < 0 || idxY < 0 || idxZ < 0) continue;
+                if (parts.length < headerCols.length) continue;
+                if (idxX < 0 || idxY < 0 || idxZ < 0) continue;
                 const x = Number(parts[idxX]);
                 const y = Number(parts[idxY]);
                 const z = Number(parts[idxZ]);
-                if(!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
-                if(globalIndex >= startIndex && globalIndex < endIndex){
+                if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
+                if (globalIndex >= startIndex && globalIndex < endIndex) {
                     await write((wroteAny ? ',' : '') + `[${x},${y},${z}]`);
                     wroteAny = true;
-                    if(idxType !== -1){
+                    if (idxType !== -1) {
                         const t = Number(parts[idxType]);
                         typesPage.push(Number.isFinite(t) ? t : NaN);
                     }
@@ -307,30 +307,30 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
             }
         }
 
-        if(!positionsOpened){
+        if (!positionsOpened) {
             // No ATOMS parsed; still emit positions array key
             await write('"positions":[');
             positionsOpened = true;
         }
 
         await write(']');
-        if(typesPage.length){
+        if (typesPage.length) {
             await write(`, "types": [` + typesPage.map((v) => Number.isFinite(v) ? v : 'null').join(',') + `]`);
         }
         await write(`, "total": ${globalIndex}`);
         await write('}');
         res.end();
-    }catch(err: any){
+    } catch (err: any) {
         logger.error(`getTrajectoryAtoms failed: ${err}`);
-        if(!res.headersSent){
+        if (!res.headersSent) {
             return res.status(500).json({ status: 'error', data: { error: err?.message || 'Failed to parse atoms' } });
         }
-        try{ res.end(); }catch{}
+        try { res.end(); } catch { }
     }
 };
 
 export const getTrajectoryGLB = async (req: Request, res: Response) => {
-    try{
+    try {
         const { timestep, analysisId } = req.params;
         const { type } = req.query as { type?: string };
         const trajectory = res.locals.trajectory;
@@ -338,7 +338,7 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
         const trajFS = new TrajectoryFS(trajectoryId);
 
         let result = null;
-        
+
         // If analysisId is 'default' or no type specified, get from previews
         // Otherwise get from analysis
         // if(analysisId === 'default' || !type){
@@ -348,9 +348,9 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
         // }
 
         const objectName = `trajectory-${trajectoryId}/previews/timestep-${timestep}.glb`;
-        if(!objectName){
+        if (!objectName) {
             return res.status(404).json({
-                status: 'error',    
+                status: 'error',
                 data: { error: `GLB file for timestep ${timestep} not found (analysisId=${analysisId}, type=${type})` }
             });
         }
@@ -363,14 +363,14 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
         res.setHeader('Content-Length', stat.size);
         res.setHeader('Content-Disposition', `inline; filename="${trajectory.name}_${timestep}.glb"`);
 
-        if(analysisId === 'default' || !type){
+        if (analysisId === 'default' || !type) {
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         }
 
         stream.pipe(res);
-    }catch(err){
+    } catch (err) {
         logger.error(`[getTrajectoryGLB] Error: ${err}`);
-        return res.status(500).json({ status: 'error', data: { error: 'Internal server error' }});
+        return res.status(500).json({ status: 'error', data: { error: 'Internal server error' } });
     }
 };
 
@@ -379,15 +379,15 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
     const trajectoryId = trajectory._id.toString();
     const { analysisId, type } = req.params;
     const trajFS = new TrajectoryFS(trajectoryId);
-    const maps = await trajFS.getAnalysis(analysisId, type, { media: 'glb' });
+    const maps = await trajFS.getAnalysis(trajectoryId, analysisId, type, { media: 'glb' });
     const glbMap = maps.glb || {};
-    const frameFilter = req.query.frame ? String(req.query.frame): null;
+    const frameFilter = req.query.frame ? String(req.query.frame) : null;
 
     const glbKeys = Object.entries(glbMap)
         .filter(([frame]) => !frameFilter || frameFilter === frame)
         .map(([, key]) => key);
 
-    if(!glbKeys.length){
+    if (!glbKeys.length) {
         return res.status(404).json({
             status: 'error',
             data: { error: 'No GLB files found' }
@@ -403,20 +403,20 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
 
     const archive = archiver('zip', { zlib: { level: 0 } });
     archive.on('error', (err: any) => {
-        if(!res.headersSent){
+        if (!res.headersSent) {
             res.status(500).json({
                 status: 'error',
                 data: { error: 'Failed to build GLB archive' }
             });
-        }else{
+        } else {
             res.end();
         }
     });
 
     archive.pipe(res);
-    
+
     // Stream GLBs from MinIO into the archive
-    for(const glbKey of glbKeys){
+    for (const glbKey of glbKeys) {
         const name = glbKey.split('/').pop() || 'frame.glb';
         const stream = await getStream(glbKey, SYS_BUCKETS.MODELS);
         archive.append(stream, { name: `glb/${name}` });
@@ -435,21 +435,21 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     await mkdir(folderPath, { recursive: true });
 
     const trajFS = new TrajectoryFS(trajectoryIdStr, process.env.TRAJECTORY_DIR);
-    await trajFS.ensureStructure(); 
+    await trajFS.ensureStructure(trajectoryIdStr);
 
     const filePromises = files.map(async (file: any, i: number) => {
-        try{
+        try {
             const tempPath = join(folderPath, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
             await writeFile(tempPath, file.buffer);
-            try{
+            try {
                 const { frameInfo, isValid } = await processTrajectoryFile(tempPath, tempPath);
-                if(!frameInfo || !isValid){
-                    await rm(tempPath).catch(() => {});
+                if (!frameInfo || !isValid) {
+                    await rm(tempPath).catch(() => { });
                     return null;
                 }
 
-                const dumpAbsPath = await trajFS.saveDump(frameInfo.timestep, file.buffer, true);
-                await rm(tempPath).catch(() => {});
+                const dumpAbsPath = await trajFS.saveDump(trajectoryIdStr, frameInfo.timestep, file.buffer, true);
+                await rm(tempPath).catch(() => { });
 
                 const frameData = {
                     ...frameInfo
@@ -462,13 +462,13 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
                     originalSize: file.size,
                     originalName: file.originalname || `frame_${frameInfo.timestep}`
                 };
-            }catch(error){
-                await rm(tempPath).catch(() => {});
+            } catch (error) {
+                await rm(tempPath).catch(() => { });
                 return null;
             }
-        }catch(error){
+        } catch (error) {
             return null;
-        }finally{
+        } finally {
             file.buffer = null;
         }
     });
@@ -476,8 +476,8 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const results = await Promise.all(filePromises);
     const validFiles = (results.filter(Boolean) as any[]);
 
-    if(validFiles.length === 0){
-            await rm(folderPath, { recursive: true, force: true });
+    if (validFiles.length === 0) {
+        await rm(folderPath, { recursive: true, force: true });
         return next(new RuntimeError('Trajectory::NoValidFiles', 400));
     }
 
@@ -502,7 +502,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const CHUNK_SIZE = 20;
     const jobs: any[] = [];
 
-    for(let i = 0; i < validFiles.length; i += CHUNK_SIZE){
+    for (let i = 0; i < validFiles.length; i += CHUNK_SIZE) {
         const chunk = validFiles.slice(i, i + CHUNK_SIZE);
         jobs.push({
             jobId: v4(),
@@ -511,7 +511,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             totalChunks: Math.ceil(validFiles.length / CHUNK_SIZE),
             files: chunk.map(({ frameData, srcPath }) => ({
                 frameData,
-                frameFilePath: srcPath 
+                frameFilePath: srcPath
             })),
             teamId,
             name: 'Upload Trajectory',

@@ -23,6 +23,25 @@ export interface Manifest {
     listing?: Record<string, any>;
 };
 
+export interface BoxMetric {
+    key: string;
+    label: string;
+    format?: 'number' | 'percentage' | 'bytes' | 'decimal';
+    decimals?: number;
+    unit?: string;
+    color?: string;
+}
+
+export interface RasterConfig {
+    component: string;
+    title: string;
+    showLegend?: boolean;
+    legendKey?: string;
+    legendColors?: Record<string, string>;
+    metrics?: BoxMetric[];
+    [key: string]: any; // Allow additional component-specific configuration
+}
+
 export interface ExposureExportConfig {
     name: BuiltInExports;
     type: string;
@@ -37,7 +56,7 @@ export interface Exposure {
     displayName?: string;
     icon?: string;
     canvas?: boolean;
-    raster?: boolean;
+    raster?: boolean | RasterConfig; // Support both old and new schema
     export: ExposureExportConfig;
 };
 

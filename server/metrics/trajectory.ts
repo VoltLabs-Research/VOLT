@@ -27,159 +27,163 @@ import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 
 const factory = new HandlerFactory({
-    model: Analysis as any,
-    fields: [],
+  model: Analysis as any,
+  fields: [],
 });
 
 export const getAnalysisConfigById = factory.getOne();
 export const deleteAnalysisConfigById = factory.deleteOne();
 
 export const getAnalysisDislocations = async (req: Request, res: Response) => {
-    try{
-        const analysisConfigId = (req as any).params.id;
+  try {
+    const analysisConfigId = (req as any).params.id;
 
-        const analysis = await Analysis
-            .findById(analysisConfigId)
-            .select('trajectory')
-            .lean();
+    const analysis = await Analysis
+      .findById(analysisConfigId)
+      .select('trajectory')
+      .lean();
 
-        if(!analysis){
-            return res.status(404).json({
-                status: 'error',
-                data: { error: 'AnalysisConfig no encontrado' }
-            });
-        }
-
-        const trajectoryId = String(analysis.trajectory);
-        const prefix = `${trajectoryId}/${analysisConfigId}/`;
-
-        const objects = await listDislocationsByPrefix(prefix);
-
-        const dislocations = objects.map(({ key, data }) => ({
-            key,
-            ...data
-        }));
-
-        return res.status(200).json({
-            status: 'success',
-            data: dislocations
-        });
-    }catch(err){
-        logger.error(`getAnalysisDislocations error: ${err}`);
-        return res.status(500).json({
-            status: 'error',
-            data: { error: 'Internal Server Error' }
-        });
+    if (!analysis) {
+      return res.status(404).json({
+        status: 'error',
+        data: { error: 'AnalysisConfig no encontrado' }
+      });
     }
+
+    const trajectoryId = String(analysis.trajectory);
+    const prefix = `${trajectoryId}/${analysisConfigId}/`;
+
+    const objects = await listDislocationsByPrefix(prefix);
+
+    const dislocations = objects.map(({ key, data }) => ({
+      key,
+      ...data
+    }));
+
+    return res.status(200).json({
+      status: 'success',
+      data: dislocations
+    });
+  } catch (err) {
+    logger.error(`getAnalysisDislocations error: ${err}`);
+    return res.status(500).json({
+      status: 'error',
+      data: { error: 'Internal Server Error' }
+    });
+  }
 };
 
 // List analysis configs by team
 export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => {
-    try{
-        const userId = (req as any).user?.id;
-        const { teamId } = req.params as { teamId: string };
-        const { page = '1', limit = '20', q = '' } = req.query as Record<string, string>;
+  try {
+    const userId = (req as any).user?.id;
+    const { teamId } = req.params as { teamId: string };
+    const { page = '1', limit = '20', q = '' } = req.query as Record<string, string>;
 
-        const team = await Team.findOne({ _id: teamId, members: userId }).select('_id');
-        if(!team){
-            return res.status(403).json({ status: 'error', data: { error: 'Forbidden' } });
-        }
-
-        const trajectories = await Trajectory.find({ team: teamId }).select('_id name').lean();
-        const trajectoryIds = trajectories.map((t: any) => t._id);
-
-        const pageNum = Math.max(1, parseInt(page, 10) || 1);
-        const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
-        const skip = (pageNum - 1) * limitNum;
-
-        const query = typeof q === 'string' ? q.trim() : '';
-        const regex = query ? { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } : null;
-
-        // Build aggregation with optional search by identificationMode, crystalStructure, and trajectory name
-        const pipeline: any[] = [
-            { $match: { trajectory: { $in: trajectoryIds } } }
-        ];
-
-        // If searching, bring trajectory name early and apply $match
-        if (regex) {
-            pipeline.push(
-                { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
-                { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
-                { $match: {
-                    $or: [
-                        { identificationMode: regex },
-                        { crystalStructure: regex },
-                        { 'trajectoryDoc.name': regex }
-                    ]
-                } }
-            );
-        }
-
-        pipeline.push(
-            { $sort: { createdAt: -1 } },
-            { $project: {
-                crystalStructure: 1,
-                identificationMode: 1,
-                maxTrialCircuitSize: 1,
-                circuitStretchability: 1,
-                RMSD: 1,
-                defectMeshSmoothingLevel: 1,
-                lineSmoothingLevel: 1,
-                linePointInterval: 1,
-                onlyPerfectDislocations: 1,
-                markCoreAtoms: 1,
-                structureIdentificationOnly: 1,
-                structureAnalysis: 1,
-                simulationCell: 1,
-                createdAt: 1,
-                trajectory: 1,
-                // TODO:
-                dislocationsCount: { $literal: 0 }
-            }},
-            { $skip: skip },
-            { $limit: limitNum }
-        );
-
-        // Ensure trajectory name is attached regardless of search
-        pipeline.push(
-            { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
-            { $addFields: { trajectory: { $let: { vars: { t: { $arrayElemAt: ['$trajectoryDoc', 0] } }, in: { _id: '$$t._id', name: '$$t.name' } } } } },
-            { $project: { trajectoryDoc: 0 } }
-        );
-
-        let configs: any[] = [];
-        let total: number = 0;
-        if (regex) {
-            const countPipeline: any[] = [
-                { $match: { trajectory: { $in: trajectoryIds } } },
-                { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
-                { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
-                { $match: { $or: [ { identificationMode: regex }, { crystalStructure: regex }, { 'trajectoryDoc.name': regex } ] } },
-                { $count: 'total' }
-            ];
-            const [rows, countRows] = await Promise.all([
-                Analysis.aggregate(pipeline),
-                Analysis.aggregate(countPipeline)
-            ]);
-            configs = rows as any[];
-            total = (countRows?.[0]?.total as number) ?? 0;
-        } else {
-            const [rows, count] = await Promise.all([
-                Analysis.aggregate(pipeline),
-                Analysis.countDocuments({ trajectory: { $in: trajectoryIds } })
-            ]);
-            configs = rows as any[];
-            total = count as number;
-        }
-
-        return res.status(200).json({
-            status: 'success',
-            data: { configs, total, page: pageNum, limit: limitNum }
-        });
-    }catch(err){
-        logger.error(`listAnalysisConfigsByTeam error: ${err}`);
-        return res.status(500).json({ status: 'error', data: { error: 'Internal Server Error' } });
+    const team = await Team.findOne({ _id: teamId, members: userId }).select('_id');
+    if (!team) {
+      return res.status(403).json({ status: 'error', data: { error: 'Forbidden' } });
     }
+
+    const trajectories = await Trajectory.find({ team: teamId }).select('_id name').lean();
+    const trajectoryIds = trajectories.map((t: any) => t._id);
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const query = typeof q === 'string' ? q.trim() : '';
+    const regex = query ? { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } : null;
+
+    // Build aggregation with optional search by identificationMode, crystalStructure, and trajectory name
+    const pipeline: any[] = [
+      { $match: { trajectory: { $in: trajectoryIds } } }
+    ];
+
+    // If searching, bring trajectory name early and apply $match
+    if (regex) {
+      pipeline.push(
+        { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
+        { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
+        {
+          $match: {
+            $or: [
+              { identificationMode: regex },
+              { crystalStructure: regex },
+              { 'trajectoryDoc.name': regex }
+            ]
+          }
+        }
+      );
+    }
+
+    pipeline.push(
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          crystalStructure: 1,
+          identificationMode: 1,
+          maxTrialCircuitSize: 1,
+          circuitStretchability: 1,
+          RMSD: 1,
+          defectMeshSmoothingLevel: 1,
+          lineSmoothingLevel: 1,
+          linePointInterval: 1,
+          onlyPerfectDislocations: 1,
+          markCoreAtoms: 1,
+          structureIdentificationOnly: 1,
+          structureAnalysis: 1,
+          simulationCell: 1,
+          createdAt: 1,
+          trajectory: 1,
+          // TODO:
+          dislocationsCount: { $literal: 0 }
+        }
+      },
+      { $skip: skip },
+      { $limit: limitNum }
+    );
+
+    // Ensure trajectory name is attached regardless of search
+    pipeline.push(
+      { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
+      { $addFields: { trajectory: { $let: { vars: { t: { $arrayElemAt: ['$trajectoryDoc', 0] } }, in: { _id: '$$t._id', name: '$$t.name' } } } } },
+      { $project: { trajectoryDoc: 0 } }
+    );
+
+    let configs: any[] = [];
+    let total: number = 0;
+    if (regex) {
+      const countPipeline: any[] = [
+        { $match: { trajectory: { $in: trajectoryIds } } },
+        { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
+        { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
+        { $match: { $or: [{ identificationMode: regex }, { crystalStructure: regex }, { 'trajectoryDoc.name': regex }] } },
+        { $count: 'total' }
+      ];
+      const [rows, countRows] = await Promise.all([
+        Analysis.aggregate(pipeline),
+        Analysis.aggregate(countPipeline)
+      ]);
+      configs = rows as any[];
+      total = (countRows?.[0]?.total as number) ?? 0;
+    } else {
+      const [rows, count] = await Promise.all([
+        Analysis.aggregate(pipeline),
+        Analysis.countDocuments({ trajectory: { $in: trajectoryIds } })
+      ]);
+      configs = rows as any[];
+      total = count as number;
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      data: { configs, total, page: pageNum, limit: limitNum }
+    });
+  } catch (err) {
+    logger.error(`listAnalysisConfigsByTeam error: ${err}`);
+    return res.status(500).json({ status: 'error', data: { error: 'Internal Server Error' } });
+  }
 };
 
 
@@ -370,7 +374,10 @@ export const getTrajectoryMetricsById = async (trajectoryId: string): Promise<an
         : { min: null, max: null, avg: null },
       dimensionality: { is2D: scNum2D, is3D: scNum3D }
     }
-  };*/
+  };
 
-  return [metrics];
+  return metrics;*/
+
+  // Temporary return while function is commented out
+  return {};
 };

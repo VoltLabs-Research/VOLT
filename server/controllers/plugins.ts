@@ -84,7 +84,7 @@ export const evaluateModifier = catchAsync(async (req: Request, res: Response, n
 
     const jobs: AnalysisJob[] = [];
     const promises = framesToProcess.map(async ({ timestep }: any) => {
-        const inputFile = await trajectoryFS.getDump(timestep);
+        const inputFile = await trajectoryFS.getDump(trajectoryId, timestep);
         if (!inputFile) {
             throw new RuntimeError('Trajectory::Dump::NotFound', 404);
         }
@@ -141,7 +141,8 @@ export const getPluginExposureGLB = catchAsync(async (req: Request, res: Respons
 });
 
 export const getPluginExposureFile = catchAsync(async (req: Request, res: Response) => {
-    const { timestep, analysisId, exposureId, filename } = req.params;
+    const { timestep, analysisId, exposureId } = req.params;
+    const filename = req.params.filename || 'file.msgpack'; // Default filename if not provided
     const { trajectory } = res.locals;
     const trajectoryId = trajectory._id.toString();
     const exposureKey = slugify(exposureId);

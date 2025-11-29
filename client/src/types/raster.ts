@@ -1,7 +1,8 @@
 import type { IconType } from 'react-icons/lib';
 import { type User } from '@/types/models';
+import type { RenderableExposure } from '@/stores/plugins';
 
-export interface Scene{
+export interface Scene {
     frame: number;
     model: string;
     data?: string;
@@ -10,26 +11,26 @@ export interface Scene{
     isUnavailable?: boolean;
 }
 
-export interface FrameObject{
+export interface FrameObject {
     [modelName: string]: Scene;
 }
 
-export interface MetricEntry{
+export interface MetricEntry {
     key: string;
     label: string;
     value: string | number;
     icon: IconType;
 }
 
-export interface PlaybackControlsProps{
+export interface PlaybackControlsProps {
     isPlaying: boolean;
     onPlayPause: () => void;
 }
 
-export interface AnalysisSelectProps{
-    analysesNames: { 
-        _id: string; 
-        name: string; 
+export interface AnalysisSelectProps {
+    analysesNames: {
+        _id: string;
+        name: string;
         description?: string;
         RMSD?: number;
         maxTrialCircuitSize?: number;
@@ -40,13 +41,13 @@ export interface AnalysisSelectProps{
     isLoading?: boolean;
 }
 
-export interface ModelRailProps{
+export interface ModelRailProps {
     modelsForCurrentFrame: Scene[];
     selectedModel: string;
     onModelChange: (model: string) => void;
 }
 
-export interface RasterSceneProps{
+export interface RasterSceneProps {
     scene: Scene | null;
     trajectoryId?: string;
     disableAnimation?: boolean;
@@ -56,7 +57,7 @@ export interface RasterSceneProps{
     modelRail: ModelRailProps;
 }
 
-export interface HeaderProps{
+export interface HeaderProps {
     trajectory: any;
     isLoading: boolean;
     onGoBack: () => void;
@@ -65,7 +66,7 @@ export interface HeaderProps{
     connectedUsers?: User[];
 }
 
-export interface ThumbnailsProps{
+export interface ThumbnailsProps {
     timeline: number[];
     selectedFrameIndex: number;
     isPlaying: boolean;
@@ -74,28 +75,29 @@ export interface ThumbnailsProps{
     getThumbnailScene: (timestep: number) => Scene | null;
 }
 
-export interface MetricsBarProps{
+export interface RasterTool {
+    id: string;
+    label: string;
+    icon?: string; // Icon name to be resolved
+    isActive: boolean;
+}
+
+export interface MetricsBarProps {
     items: MetricEntry[];
     isLoading: boolean;
-    showDislocations: boolean;
-    onToggleDislocations: () => void;
-    showStructureAnalysis?: boolean;
-    onToggleStructureAnalysis?: () => void;
-    showParticles?: boolean;
-    onToggleParticles?: () => void;
-    showFileExplorer?: boolean;
-    onToggleFileExplorer?: () => void;
-    showDislocationsComparison?: boolean;
-    onToggleDislocationsComparison?: () => void;
+
+    // Dynamic exposures
+    availableExposures: RenderableExposure[];
+    activeExposures: Record<string, boolean>;
+    onToggleExposure: (exposureId: string) => void;
+
+    // Dynamic tools
+    tools: RasterTool[];
+    onToggleTool: (toolId: string) => void;
 }
 
-export interface DislocationPanelProps{
-    dislocationData: any;
-    show: boolean;
-    isLoading: boolean;
-}
 
-export interface ThumbnailItemProps{
+export interface ThumbnailItemProps {
     scene: Scene;
     timestep: number;
     index: number;
@@ -105,18 +107,18 @@ export interface ThumbnailItemProps{
     onClick: (index: number) => void;
 }
 
-export interface SceneColumnProps{
+export interface SceneColumnProps {
     trajectoryId?: string;
     scene: Scene | null;
     dislocationData: any;
     isDislocationsLoading: boolean;
-    showDislocations: boolean;
+    activeExposures: Record<string, boolean>;
+    availableExposures: RenderableExposure[];
     isPlaying: boolean;
     isLoading: boolean;
     playbackControls: PlaybackControlsProps;
     analysisSelect: AnalysisSelectProps;
     modelRail: ModelRailProps;
-    showStructureAnalysis?: boolean;
     configId?: string;
     timestep?: number;
     delay?: number;
