@@ -5,7 +5,7 @@ import { FaArrowUpLong, FaArrowDownLong } from 'react-icons/fa6';
 import { GoArrowRight } from 'react-icons/go';
 import { useNavigate } from 'react-router';
 import { RiVipDiamondLine } from "react-icons/ri";
-import { useDashboardMetrics } from '@/hooks/dashboard/use-dashboard-metrics';
+import useDashboardMetrics from '@/hooks/dashboard/use-dashboard-metrics';
 import TinyLineChart from '@/components/atoms/TinyLineChart';
 import DashboardStatsSkeleton from '@/components/atoms/DashboardStatsSkeleton';
 
