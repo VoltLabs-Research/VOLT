@@ -86,6 +86,82 @@ export const getTrajectoryMetrics = async (req: Request, res: Response) => {
     });
 };
 
+export const getMetrics = async (req: Request, res: Response) => {
+    const trajectory = res.locals.trajectory;
+
+    if (!trajectory) {
+        return res.status(400).json({
+            status: 'error',
+            data: { error: 'Trajectory not found in context' }
+        });
+    }
+
+    const trajectoryId = trajectory._id.toString();
+    const trajFS = new TrajectoryFS(trajectoryId);
+
+    try {
+        // Calculate filesystem size (dumps directory)
+        const dumpsPath = join(process.env.TRAJECTORY_DIR as string, trajectoryId, 'dumps');
+        const dumpsSize = await trajFS['calculateLocalDirSize'](dumpsPath);
+
+        // Calculate MinIO sizes across all buckets
+        let minioSize = 0;
+
+        // RASTERIZER bucket: trajectory-{id}/previews/ (PNG raster images)
+        const rasterSize = await trajFS['calculateMinioSize'](`trajectory-${trajectoryId}/previews/`, SYS_BUCKETS.RASTERIZER);
+        minioSize += rasterSize;
+
+        // MODELS bucket: trajectory-{id}/previews/ (GLB preview models)
+        const previewGlbSize = await trajFS['calculateMinioSize'](`trajectory-${trajectoryId}/previews/`, SYS_BUCKETS.MODELS);
+        minioSize += previewGlbSize;
+
+        // MODELS bucket: per-analysis GLB and data files
+        const { Analysis } = await import('@models/index');
+        const analyses = await Analysis.find({ trajectory: trajectoryId }).select('_id').lean();
+
+        for (const analysis of analyses) {
+            const analysisId = analysis._id.toString();
+            const glbSize = await trajFS['calculateMinioSize'](`${trajectoryId}/${analysisId}/glb/`, SYS_BUCKETS.MODELS);
+            const dataSize = await trajFS['calculateMinioSize'](`${trajectoryId}/${analysisId}/data/`, SYS_BUCKETS.MODELS);
+            minioSize += glbSize + dataSize;
+        }
+
+        // PLUGINS bucket: plugins/trajectory-{id}/
+        const pluginsSize = await trajFS['calculateMinioSize'](`plugins/trajectory-${trajectoryId}/`, SYS_BUCKETS.PLUGINS);
+        minioSize += pluginsSize;
+
+        // Total storage size
+        const totalSizeBytes = dumpsSize + minioSize;
+
+        // Get frame count
+        const totalFrames = trajectory.frames?.length || 0;
+
+        // Get analysis count
+        const totalAnalyses = analyses.length;
+
+        return res.status(200).json({
+            status: 'success',
+            data: {
+                frames: {
+                    totalFrames
+                },
+                files: {
+                    totalSizeBytes
+                },
+                structureAnalysis: {
+                    totalDocs: totalAnalyses
+                }
+            }
+        });
+    } catch (err: any) {
+        logger.error(`[getMetrics] Error calculating metrics for trajectory ${trajectoryId}: ${err}`);
+        return res.status(500).json({
+            status: 'error',
+            data: { error: 'Failed to calculate trajectory metrics' }
+        });
+    }
+};
+
 export const deleteTrajectoryById = factory.deleteOne({
     beforeDelete: async (doc: any) => {
         const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
