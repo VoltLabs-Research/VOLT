@@ -1,12 +1,12 @@
-/* BoxResults Component Styles */
-
 .box-results-container {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    padding: 1rem;
     background: var(--bg-secondary);
     border-radius: 8px;
+    max-height: 400px;
+    position: absolute;
+    bottom: 0;
 }
 
 .box-results-header-container {
@@ -41,7 +41,7 @@
 }
 
 .type-legend-text {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
 }
 
@@ -90,10 +90,9 @@
 .box-result-data-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.5rem;
 }
 
-.box-result-data {
+.box-result-data-content{
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -143,4 +142,24 @@
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+
+.box-result-data.as-record-title{
+    display: flex; 
+    align-items: center;
+    gap: 1rem;
+
+    .data-label, .data-value{
+        font-size: 1rem;
+        font-family: inherit;
+    }
+}
+
+.box-result-data.as-record-title::before{
+    content: '';
+    width: 3px;
+    height: 70%;
+    border-radius: 5rem;
+    display: inline-block;
+    background-color: #dadada;
 }

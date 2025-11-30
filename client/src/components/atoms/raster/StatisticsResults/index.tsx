@@ -16,6 +16,18 @@ export interface StatisticsResultsProps {
 const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) => {
     // Transform data if it's an object with keys as type names
     const processData = (): any[] => {
+        // Check if data has structure_types (from C++ backend structure statistics)
+        if (data?.structure_types && typeof data.structure_types === 'object') {
+            // Transform structure_types object into array format
+            // Example: { FCC: { count: 500, percentage: 50.0 }, HCP: { count: 300, percentage: 30.0 } }
+            // becomes: [{ name: 'FCC', count: 500, percentage: 50.0 }, { name: 'HCP', count: 300, percentage: 30.0 }]
+            return Object.entries(data.structure_types).map(([name, typeInfo]: [string, any]) => ({
+                name,
+                count: typeInfo.count || 0,
+                percentage: typeInfo.percentage || 0
+            }));
+        }
+
         // Check if data has a 'types' or 'statistics' array already
         if (data?.types || data?.statistics || data?.groups) {
             return data.types || data.statistics || data.groups;
@@ -25,7 +37,7 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
         // Example: { FCC: [...], HCP: [...], OTHER: [...] } 
         // becomes: [{ name: 'FCC', count: X, percentage: Y }, ...]
         if (typeof data === 'object' && !Array.isArray(data)) {
-            const entries = Object.entries(data).filter(([key, value]) =>
+            const entries = Object.entries(data).filter(([_key, value]) =>
                 Array.isArray(value) || typeof value === 'number'
             );
 
@@ -133,3 +145,4 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
 };
 
 export default StatisticsResults;
+    

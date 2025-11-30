@@ -1,12 +1,10 @@
-/* StatisticsResults Component Styles */
-
-.statistics-results-container {
+.statistics-results-container{
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border-radius: 8px;
+    gap: .3rem;
+    background-color: transparent;
+    backdrop-filter: none;
+    border: none;
 }
 
 .statistics-results-header {
@@ -16,7 +14,7 @@
 }
 
 .statistics-results-title {
-    font-size: 1.125rem;
+    font-size: .9rem;
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
@@ -25,14 +23,12 @@
 .statistics-type-legend {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
 }
 
 .type-legend-item {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.5rem;
     background: var(--bg-primary);
     border-radius: 6px;
     transition: all 0.2s;
@@ -44,14 +40,14 @@
 }
 
 .type-legend-color {
-    width: 16px;
-    height: 16px;
+    width: 10px;
+    height: 10px;
     border-radius: 4px;
     flex-shrink: 0;
 }
 
 .type-legend-text {
-    font-size: 0.9375rem;
+    font-size: 0.75rem;
     color: var(--text-primary);
     font-weight: 500;
 }

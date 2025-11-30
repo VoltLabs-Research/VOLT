@@ -94,14 +94,10 @@ modifiers:
                 raster:
                     component: BoxResults
                     title: "Dislocation Analysis"
-                    showLegend: true
-                    legendKey: "type"
-                    legendColors:
-                        edge: "#3b82f6"
-                        screw: "#ef4444"
-                        mixed: "#8b5cf6"
-                        loop: "#10b981"
                     metrics:
+                        - key: "segment_id"
+                          label: "Segment Id #"
+                          as_record_title: true
                         - key: "length"
                           label: "Length"
                           format: "decimal"
@@ -135,7 +131,6 @@ modifiers:
                 canvas: true
                 raster:
                     component: StatisticsResults
-                    title: "Structure Identification"
                     nameKey: "name"
                     valueKey: "count"
                     percentageKey: "percentage"
