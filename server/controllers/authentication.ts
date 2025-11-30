@@ -134,7 +134,7 @@ const signToken = (id: string): string => {
  * @public
  */
 const createAndSendToken = async (res: Response, statusCode: number, user: IUser, req: Request): Promise<void> => {
-    const token = signToken(user._id as string);
+    const token = signToken(String(user._id));
 
     // Create session record
     const userAgent = req.get('User-Agent') || 'Unknown';
@@ -186,7 +186,7 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
     }
 
     const requestedUser = await User.findOne({ email }).select('+password');
-    if (!requestedUser || !(await requestedUser.isCorrectPassword(password, requestedUser.password))) {
+    if (!requestedUser || (requestedUser.password && !(await requestedUser.isCorrectPassword(password, requestedUser.password)))) {
         // Track failed login attempt
         await Session.create({
             user: requestedUser?._id || null,
@@ -270,13 +270,50 @@ export const updateMyPassword = async (req: Request, res: Response, next: NextFu
     if (!requestedUser) {
         return next(new RuntimeError('Authentication::Update::UserNotFound', 404));
     }
-    if (!(await requestedUser.isCorrectPassword(req.body.passwordCurrent, requestedUser.password))) {
+    if (!(await requestedUser.isCorrectPassword(req.body.passwordCurrent, requestedUser.password!))) {
         return next(new RuntimeError('Authentication::Update::PasswordCurrentIncorrect', 400));
     }
-    if (await requestedUser.isCorrectPassword(req.body.passwordConfirm, requestedUser.password)) {
+    if (await requestedUser.isCorrectPassword(req.body.passwordConfirm, requestedUser.password!)) {
         return next(new RuntimeError('Authentication::Update::PasswordsAreSame', 400));
     }
     requestedUser.password = req.body.password;
     await requestedUser.save();
     await createAndSendToken(res, 200, requestedUser, req);
+};
+
+/**
+ * Handle OAuth callback from providers (GitHub, Google, Microsoft)
+ * 
+ * @param req - Express request with authenticated user from Passport
+ * @param res - Express response to redirect with token
+ * @returns A Promise that redirects to frontend with JWT token
+ * 
+ * @remarks
+ * - User is already authenticated by Passport strategy
+ * - Generates JWT and redirects to frontend success page with token in query
+ * 
+ * @public
+ */
+export const oauthCallback = async (req: Request, res: Response): Promise<void> => {
+    const user = req.user as IUser;
+    const token = signToken(String(user._id));
+
+    // Create session record
+    const userAgent = req.get('User-Agent') || 'Unknown';
+    const ip = req.ip || req.connection.remoteAddress || 'Unknown';
+
+    await Session.create({
+        user: user._id,
+        token,
+        userAgent,
+        ip,
+        isActive: true,
+        lastActivity: new Date(),
+        action: 'oauth_login',
+        success: true
+    });
+
+    // Redirect to frontend with token
+    const frontendUrl = process.env.OAUTH_SUCCESS_REDIRECT || 'http://localhost:3000/auth/oauth/success';
+    res.redirect(`${frontendUrl}?token=${token}`);
 };

@@ -1,0 +1,87 @@
+.oauth-callback-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #09090b;
+    /* zinc-950 */
+    position: relative;
+    overflow: hidden;
+}
+
+.oauth-background-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(120px);
+    opacity: 0.5;
+}
+
+.blob-blue {
+    top: -20%;
+    left: -10%;
+    width: 50%;
+    height: 50%;
+    background-color: rgba(59, 130, 246, 0.1);
+    /* blue-500/10 */
+}
+
+.blob-purple {
+    top: 20%;
+    right: -10%;
+    width: 40%;
+    height: 40%;
+    background-color: rgba(168, 85, 247, 0.1);
+    /* purple-500/10 */
+}
+
+.oauth-card {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 28rem;
+    /* max-w-md */
+    padding: 2rem;
+    background-color: rgba(24, 24, 27, 0.5);
+    /* zinc-900/50 */
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(39, 39, 42, 0.5);
+    /* zinc-800/50 */
+    border-radius: 1rem;
+    /* rounded-2xl */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    text-align: center;
+}
+
+.oauth-status-icon {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.oauth-title {
+    font-size: 1.5rem;
+    /* text-2xl */
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.oauth-description {
+    color: #a1a1aa;
+    /* zinc-400 */
+}
+
+/* Animations */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin-slow {
+    animation: spin 3s linear infinite;
+}

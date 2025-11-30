@@ -31,7 +31,7 @@ export interface ISession {
     isActive: boolean;
     lastActivity: Date;
     // Login activity fields
-    action: 'login' | 'logout' | 'failed_login';
+    action: 'login' | 'logout' | 'failed_login' | 'oauth_login';
     success: boolean;
     failureReason?: string;
     createdAt: Date;
@@ -42,12 +42,12 @@ const SessionSchema: Schema<ISession> = new Schema({
     user: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: [function(this: any){ return this.action !== 'failed_login'; }, 'Session::User::Required']
+        required: [function (this: any) { return this.action !== 'failed_login'; }, 'Session::User::Required']
     },
     token: {
         type: String,
         // Allow missing token on failed logins
-        required: [function(this: any){ return this.action !== 'failed_login'; }, 'Session::Token::Required']
+        required: [function (this: any) { return this.action !== 'failed_login'; }, 'Session::Token::Required']
     },
     userAgent: {
         type: String,
@@ -71,7 +71,7 @@ const SessionSchema: Schema<ISession> = new Schema({
     action: {
         type: String,
         required: [true, 'Session::Action::Required'],
-        enum: ['login', 'logout', 'failed_login'],
+        enum: ['login', 'logout', 'failed_login', 'oauth_login'],
         default: 'login'
     },
     success: {

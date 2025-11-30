@@ -25,7 +25,7 @@ import { ITeam } from '@models/team';
 
 export interface IUser extends Document {
     email: string;
-    password: string;
+    password?: string; // Optional for OAuth users
     role: 'user' | 'admin';
     teams: ITeam[];
     passwordChangedAt?: Date;
@@ -35,6 +35,11 @@ export interface IUser extends Document {
     lastName: string;
     createdAt: Date;
     updatedAt: Date;
+
+    // OAuth fields
+    oauthProvider?: 'github' | 'google' | 'microsoft' | null;
+    oauthId?: string;
+    avatar?: string;
 
     isCorrectPassword(candidatePassword: string, userPassword: string): Promise<boolean>;
     isPasswordChangedAfterJWFWasIssued(JWTTimeStamp: number): boolean;

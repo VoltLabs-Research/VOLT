@@ -23,12 +23,23 @@
 import express from 'express';
 import * as controller from '@controllers/authentication';
 import * as middleware from '@middlewares/authentication';
+import passport from '@config/passport';
 
 const router = express.Router();
 
 router.post('/sign-in', controller.signIn);
 router.post('/sign-up', controller.signUp);
 router.post('/check-email', controller.checkEmailExistence);
+
+// OAuth routes
+router.get('/github', passport.authenticate('github', { session: false, scope: ['user:email'] }));
+router.get('/github/callback', passport.authenticate('github', { session: false, failureRedirect: '/auth/error' }), controller.oauthCallback);
+
+router.get('/google', passport.authenticate('google', { session: false, scope: ['profile', 'email'] }));
+router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: '/auth/error' }), controller.oauthCallback);
+
+router.get('/microsoft', passport.authenticate('microsoft', { session: false, scope: ['user.read'] }));
+router.get('/microsoft/callback', passport.authenticate('microsoft', { session: false, failureRedirect: '/auth/error' }), controller.oauthCallback);
 
 router.use(middleware.protect);
 router.patch('/me/update/password/', controller.updateMyPassword);

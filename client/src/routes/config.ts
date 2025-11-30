@@ -33,6 +33,7 @@ import AccountSettings from '@/pages/protected/AccountSettings';
 import Clusters from '@/pages/protected/Clusters';
 import SignIn from '@/pages/guest/SignIn';
 import TeamInvitationPage from '@/pages/guest/TeamInvitationPage';
+import OAuthCallback from '@/pages/guest/OAuthCallback';
 
 export const routesConfig: RouteGroup = {
     public: [
@@ -47,6 +48,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/team-invitation/:token',
             component: TeamInvitationPage,
+        },
+        {
+            path: '/auth/oauth/success',
+            component: OAuthCallback,
         },
     ],
 

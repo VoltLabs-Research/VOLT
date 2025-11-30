@@ -25,7 +25,8 @@ import helmet from 'helmet';
 import bodyParser from 'body-parser';
 import compression from 'compression';
 import cors from 'cors';
-import '@config/env';
+import '@config/env'; // Load env variables FIRST
+import passport from '@config/passport'; // Import passport config after env is loaded
 
 import { configureApp } from '@utilities/bootstrap';
 import { apiTracker } from '@/middlewares/api-tracker';
@@ -122,7 +123,8 @@ configureApp({
             }
         }),
         bodyParser.json(),
-        bodyParser.urlencoded({ extended: true })
+        bodyParser.urlencoded({ extended: true }),
+        passport.initialize() // Initialize Passport for OAuth
     ],
     errorHandler: globalErrorHandler
 });

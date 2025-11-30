@@ -39,7 +39,10 @@ const UserSchema: Schema<IUser> = new Schema({
     },
     password: {
         type: String,
-        required: [true, 'User::Password::Required'],
+        required: function (this: IUser) {
+            // Password only required for non-OAuth users
+            return !this.oauthProvider;
+        },
         minlength: [8, 'User::Password::MinLength'],
         maxlength: [16, 'User::Password::MaxLength'],
         select: false
@@ -71,30 +74,48 @@ const UserSchema: Schema<IUser> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Team',
         cascade: 'pull'
-    }]
+    }],
+    // OAuth fields
+    oauthProvider: {
+        type: String,
+        enum: ['github', 'google', 'microsoft', null],
+        default: null
+    },
+    oauthId: {
+        type: String,
+        sparse: true // Allow null values but enforce uniqueness when present
+    },
+    avatar: {
+        type: String,
+        default: null
+    }
 }, {
     timestamps: true
 });
 
 UserSchema.plugin(useCascadeDelete);
 UserSchema.index({ email: 'text' });
+UserSchema.index({ oauthProvider: 1, oauthId: 1 }, { unique: true, sparse: true });
 
-UserSchema.pre('save', async function(this: IUser & { isNew: boolean }, next) {
-    if(!this.isModified('password')) return next();
+UserSchema.pre('save', async function (this: IUser & { isNew: boolean }, next) {
+    if (!this.isModified('password')) return next();
+
+    // Skip password hashing for OAuth users without password
+    if (!this.password) return next();
 
     this.password = await bcrypt.hash(this.password, 12);
 
-    if(!this.isNew){
+    if (!this.isNew) {
         this.passwordChangedAt = new Date(Date.now() - 1000);
     }
 
     next();
 });
 
-UserSchema.post('save', async function(doc, next){
+UserSchema.post('save', async function (doc, next) {
     // Can we use this.isNew?
     const isNewUser = this.createdAt.getTime() === this.updatedAt.getTime();
-    if(isNewUser){
+    if (isNewUser) {
         const capitalizedFirstName = this.firstName.charAt(0).toUpperCase() + this.firstName.slice(1);
         const newTeam = await Team.create({
             name: `${capitalizedFirstName}'s Team`,
@@ -103,7 +124,7 @@ UserSchema.post('save', async function(doc, next){
         });
 
         await mongoose.model('User').findByIdAndUpdate(this._id, {
-            $push: { teams: newTeam._id } 
+            $push: { teams: newTeam._id }
         });
 
         await Notification.create([
@@ -124,12 +145,12 @@ UserSchema.post('save', async function(doc, next){
     next();
 });
 
-UserSchema.methods.isCorrectPassword = function(candidatePassword: string): Promise<boolean> {
+UserSchema.methods.isCorrectPassword = function (candidatePassword: string): Promise<boolean> {
     return bcrypt.compare(candidatePassword, this.password);
 };
 
-UserSchema.methods.isPasswordChangedAfterJWFWasIssued = function(jwtTimestamp: number): boolean {
-    if(this.passwordChangedAt){
+UserSchema.methods.isPasswordChangedAfterJWFWasIssued = function (jwtTimestamp: number): boolean {
+    if (this.passwordChangedAt) {
         const changedTimestamp = Math.floor(this.passwordChangedAt.getTime() / 1000);
         return jwtTimestamp < changedTimestamp;
     }
