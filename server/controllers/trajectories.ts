@@ -37,6 +37,7 @@ import { getStream, statObject } from '@/utilities/buckets';
 import { getTimestepPreview, sendImage } from '@/utilities/raster';
 import { SYS_BUCKETS } from '@/config/minio';
 import DumpStorage from '@/services/dump-storage';
+import * as os from 'node:os';
 import logger from '@/logger';
 
 const factory = new HandlerFactory<any>({
@@ -101,9 +102,10 @@ export const getMetrics = async (req: Request, res: Response) => {
     const trajFS = new TrajectoryFS(trajectoryId);
 
     try {
-        // Calculate filesystem size (dumps are now in MinIO, not filesystem)
-        // Keep this for legacy/migration purposes
-        const dumpsPath = join(process.env.TRAJECTORY_DIR as string, trajectoryId, 'dumps');
+        // Calculate filesystem size (legacy dumps from before MinIO migration)
+        // New uploads go directly to MinIO via worker migration
+        const trajectoryDir = process.env.TRAJECTORY_DIR || join(os.tmpdir(), 'opendxa-trajectories');
+        const dumpsPath = join(trajectoryDir, trajectoryId, 'dumps');
         let dumpsSize = 0;
         try {
             dumpsSize = await trajFS['calculateLocalDirSize'](dumpsPath);
@@ -184,14 +186,14 @@ export const deleteTrajectoryById = factory.deleteOne({
             logger.warn(`Warning: Could not clean up MinIO dumps for trajectory ${trajectoryId}: ${error}`);
         }
 
-        // Clean up legacy filesystem dumps if they exist
-        const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-        const trajectoryPath = join(basePath, trajectoryId);
+        // Clean up temporary filesystem files if they exist
+        const trajectoryDir = process.env.TRAJECTORY_DIR || join(os.tmpdir(), 'opendxa-trajectories');
+        const trajectoryPath = join(trajectoryDir, trajectoryId);
         try {
             await rm(trajectoryPath, { recursive: true, force: true });
-            logger.info(`Cleaned up filesystem directory: ${trajectoryPath}`);
+            logger.info(`Cleaned up temp directory: ${trajectoryPath}`);
         } catch (error) {
-            logger.warn(`Warning: Could not clean up filesystem for trajectory ${trajectoryId}: ${error}`);
+            logger.warn(`Warning: Could not clean up temp files for trajectory ${trajectoryId}: ${error}`);
         }
     }
 });
@@ -516,10 +518,13 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
 
     const trajectoryId = new Types.ObjectId();
     const trajectoryIdStr = trajectoryId.toString();
-    const folderPath = join(process.env.TRAJECTORY_DIR as string, trajectoryIdStr);
+
+    // Use temp directory for temporary processing before MinIO upload
+    const tempBaseDir = join(os.tmpdir(), 'opendxa-trajectories');
+    const folderPath = join(tempBaseDir, trajectoryIdStr);
     await mkdir(folderPath, { recursive: true });
 
-    const trajFS = new TrajectoryFS(trajectoryIdStr, process.env.TRAJECTORY_DIR);
+    const trajFS = new TrajectoryFS(trajectoryIdStr, tempBaseDir);
     await trajFS.ensureStructure(trajectoryIdStr);
 
     const filePromises = files.map(async (file: any, i: number) => {

@@ -26,6 +26,7 @@ import { SYS_BUCKETS } from '@/config/minio';
 import { Trajectory, Analysis } from '@/models';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import * as os from 'node:os';
 import { Readable } from 'stream';
 import mime from 'mime-types';
 import RuntimeError from '@/utilities/runtime-error';
@@ -64,7 +65,7 @@ class TrajectoryFS {
 
     constructor(
         userId: string | null = null,
-        baseDir = process.env.TRAJECTORY_DIR
+        baseDir = process.env.TRAJECTORY_DIR || path.join(os.tmpdir(), 'opendxa-trajectories')
     ) {
         if (!baseDir) {
             throw new Error('TRAJECTORY_DIR is not defined.')

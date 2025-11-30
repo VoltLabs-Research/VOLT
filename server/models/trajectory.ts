@@ -21,9 +21,10 @@
 **/
 
 import mongoose, { Schema, Model } from 'mongoose';
+import * as fs from 'fs';
+import * as os from 'node:os';
 import { rm } from 'fs/promises';
-import { existsSync } from 'fs';
-import { join } from 'path';
+import path from 'path';
 // @ts-ignore
 import type { ITrajectory, ITimestepInfo } from '@types/models/trajectory';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
@@ -112,11 +113,13 @@ TrajectorySchema.pre('findOneAndDelete', async function (next) {
     }
 
     const trajectoryId = trajectoryToDelete._id.toString();
-    const trajectoryPath = join(process.env.TRAJECTORY_DIR as string, trajectoryId);
+    const { existsSync } = fs;
+    const trajectoryDir = process.env.TRAJECTORY_DIR || path.join(os.tmpdir(), 'opendxa-trajectories');
+    const trajectoryPath = path.join(trajectoryDir, trajectoryId);
 
     try {
         if (existsSync(trajectoryPath)) {
-            logger.info(`Removing trajectory directory: ${trajectoryPath}`);
+            logger.info(`Removing temp trajectory directory: ${trajectoryPath}`);
             await rm(trajectoryPath, { recursive: true });
         }
 
