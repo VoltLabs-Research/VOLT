@@ -263,12 +263,12 @@ class SSHService {
             const writeStream = createWriteStream(localPath);
             const readStream = sftp.createReadStream(remotePath);
 
-            readStream.on('error', (err) => {
+            readStream.on('error', (err: Error) => {
                 writeStream.close();
                 reject(err);
             });
 
-            writeStream.on('error', (err) => {
+            writeStream.on('error', (err: Error) => {
                 reject(err);
             });
 
@@ -281,18 +281,80 @@ class SSHService {
     }
 
     /**
+     * Calculate total size of a directory recursively
+     */
+    async calculateDirectorySize(connection: ISSHConnection, remotePath: string): Promise<number> {
+        const { sftp } = await this.getConnection(connection);
+        let totalSize = 0;
+
+        const calculateRecursive = async (dir: string) => {
+            return new Promise<void>((resolve, reject) => {
+                sftp.readdir(dir, async (err: Error | undefined, list: any[]) => {
+                    if (err) return reject(err);
+                    try {
+                        for (const item of list) {
+                            const itemPath = path.posix.join(dir, item.filename);
+                            if (item.attrs.isDirectory()) {
+                                await calculateRecursive(itemPath);
+                            } else {
+                                totalSize += item.attrs.size;
+                            }
+                        }
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            });
+        };
+
+        await calculateRecursive(remotePath);
+        return totalSize;
+    }
+
+    /**
      * Download a directory recursively from SSH to local path
      */
-    async downloadDirectory(connection: ISSHConnection, remotePath: string, localPath: string): Promise<string[]> {
+    /**
+     * Download a directory recursively from SSH to local path with parallel execution
+     */
+    async downloadDirectory(
+        connection: ISSHConnection,
+        remotePath: string,
+        localPath: string,
+        onProgress?: (progress: { total: number, downloaded: number, currentFile: string }) => void
+    ): Promise<string[]> {
         const { sftp } = await this.getConnection(connection);
         const downloadedFiles: string[] = [];
+        let totalSize = 0;
+        let downloadedSize = 0;
+        const CONCURRENCY_LIMIT = 5;
 
         // Ensure local directory exists
         await fs.mkdir(localPath, { recursive: true });
 
-        const downloadRecursive = async (remoteDir: string, localDir: string) => {
+        // Calculate total size first if progress callback is provided
+        if (onProgress) {
+            try {
+                totalSize = await this.calculateDirectorySize(connection, remotePath);
+            } catch (error) {
+                logger.warn(`Failed to calculate directory size: ${error}`);
+            }
+        }
+
+        // 1. Collect all files to download first
+        interface FileToDownload {
+            remotePath: string;
+            localPath: string;
+            size: number;
+            filename: string;
+        }
+
+        const filesToDownload: FileToDownload[] = [];
+
+        const collectFiles = async (remoteDir: string, localDir: string) => {
             return new Promise<void>((resolveDir, rejectDir) => {
-                sftp.readdir(remoteDir, async (err, list) => {
+                sftp.readdir(remoteDir, async (err: Error | undefined, list: any[]) => {
                     if (err) return rejectDir(err);
 
                     try {
@@ -302,20 +364,13 @@ class SSHService {
 
                             if (item.attrs.isDirectory()) {
                                 await fs.mkdir(localItemPath, { recursive: true });
-                                await downloadRecursive(itemRemotePath, localItemPath);
+                                await collectFiles(itemRemotePath, localItemPath);
                             } else {
-                                await new Promise<void>((resolveFile, rejectFile) => {
-                                    const writeStream = createWriteStream(localItemPath);
-                                    const readStream = sftp.createReadStream(itemRemotePath);
-
-                                    readStream.on('error', rejectFile);
-                                    writeStream.on('error', rejectFile);
-                                    writeStream.on('finish', () => {
-                                        downloadedFiles.push(localItemPath);
-                                        resolveFile();
-                                    });
-
-                                    readStream.pipe(writeStream);
+                                filesToDownload.push({
+                                    remotePath: itemRemotePath,
+                                    localPath: localItemPath,
+                                    size: item.attrs.size,
+                                    filename: item.filename
                                 });
                             }
                         }
@@ -327,7 +382,73 @@ class SSHService {
             });
         };
 
-        await downloadRecursive(remotePath, localPath);
+        await collectFiles(remotePath, localPath);
+
+        // 2. Download files in parallel with concurrency limit
+        const downloadFile = async (file: FileToDownload) => {
+            return new Promise<void>((resolveFile, rejectFile) => {
+                const writeStream = createWriteStream(file.localPath);
+                const readStream = sftp.createReadStream(file.remotePath);
+                readStream.on('data', (chunk: Buffer) => {
+                    downloadedSize += chunk.length;
+                    if (onProgress) {
+                        onProgress({
+                            total: totalSize,
+                            downloaded: downloadedSize,
+                            currentFile: file.filename
+                        });
+                    }
+                });
+
+                readStream.on('error', (err: Error) => {
+                    writeStream.close();
+                    rejectFile(err);
+                });
+
+                writeStream.on('error', (err: Error) => {
+                    rejectFile(err);
+                });
+
+                writeStream.on('finish', () => {
+                    downloadedFiles.push(file.localPath);
+                    resolveFile();
+                });
+
+                readStream.pipe(writeStream);
+            });
+        };
+
+        // Simple concurrency control
+        const queue = [...filesToDownload];
+        const activePromises: Promise<void>[] = [];
+
+        // Initial fill
+        while (queue.length > 0 && activePromises.length < CONCURRENCY_LIMIT) {
+            const file = queue.shift();
+            if (file) {
+                const p = downloadFile(file).then(() => {
+                    activePromises.splice(activePromises.indexOf(p), 1);
+                });
+                activePromises.push(p);
+            }
+        }
+
+        // Process rest
+        while (queue.length > 0 || activePromises.length > 0) {
+            if (queue.length > 0 && activePromises.length < CONCURRENCY_LIMIT) {
+                const file = queue.shift();
+                if (file) {
+                    const p = downloadFile(file).then(() => {
+                        activePromises.splice(activePromises.indexOf(p), 1);
+                    });
+                    activePromises.push(p);
+                }
+            } else {
+                // Wait for at least one to finish
+                await Promise.race(activePromises);
+            }
+        }
+
         return downloadedFiles;
     }
 }

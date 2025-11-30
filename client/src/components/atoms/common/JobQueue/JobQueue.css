@@ -1,4 +1,4 @@
-.job-container{
+.job-container {
     width: 100%;
     display: flex;
     justify-content: space-between;
@@ -8,13 +8,13 @@
     padding: 1rem;
 }
 
-.job-left-container{
+.job-left-container {
     display: flex;
     align-items: center;
     gap: 1rem;
 }
 
-.job-icon-container{
+.job-icon-container {
     min-width: 1.8rem;
     min-height: 1.8rem;
     border-radius: 12px;
@@ -24,14 +24,14 @@
     border: 1px solid var(--color-border-soft);
 }
 
-.job-status-info{
+.job-status-info {
     display: flex;
     flex-direction: column;
     gap: .5rem;
     align-items: center;
 }
 
-.job-status-badge{
+.job-status-badge {
     padding: .45rem .9rem;
     border-radius: 999px;
     font-size: 12px;
@@ -43,20 +43,20 @@
     border: 1px solid var(--color-border-soft);
 }
 
-.job-info-container{
+.job-info-container {
     display: flex;
     flex-direction: column;
     gap: .2rem;
 }
 
-.job-name{
+.job-name {
     font-size: .9rem;
     font-weight: 600;
     letter-spacing: .15px;
     color: var(--color-text-primary);
 }
 
-.job-message{
+.job-message {
     font-weight: 500;
     font-size: .85rem;
     color: var(--color-text-secondary);
@@ -64,85 +64,147 @@
 
 /* Completed */
 /* Softer, pastel-ish accents with subtle tints */
-.job-container.completed path{ stroke: #2ecc71; }
+.job-container.completed path {
+    stroke: #2ecc71;
+}
 
-.job-container.completed .job-icon-container{ border-color: rgba(46, 204, 113, .35); }
+.job-container.completed .job-icon-container {
+    border-color: rgba(46, 204, 113, .35);
+}
 
 .job-container.completed .job-status-badge,
 .job-container.completed .job-icon-container,
-.job-container.completed .job-message{ color: #9ae6b4; }
+.job-container.completed .job-message {
+    color: #9ae6b4;
+}
 
-.job-container.completed .job-status-badge, 
-.job-container.completed .job-icon-container{ background-color: rgba(46, 204, 113, .08); }
+.job-container.completed .job-status-badge,
+.job-container.completed .job-icon-container {
+    background-color: rgba(46, 204, 113, .08);
+}
 
 /* Running */
-.job-container.running path{ stroke: #60a5fa; }
+.job-container.running path {
+    stroke: #60a5fa;
+}
 
-.job-container.running .job-icon-container{ border-color: rgba(96, 165, 250, .35); }
+.job-container.running .job-icon-container {
+    border-color: rgba(96, 165, 250, .35);
+}
 
 .job-container.running .job-status-badge,
 .job-container.running .job-icon-container,
-.job-container.running .job-message{ color: #bfdbfe; }
+.job-container.running .job-message {
+    color: #bfdbfe;
+}
 
-.job-container.running .job-status-badge, 
-.job-container.running .job-icon-container{ background-color: rgba(96, 165, 250, .08); }
+.job-container.running .job-status-badge,
+.job-container.running .job-icon-container {
+    background-color: rgba(96, 165, 250, .08);
+}
 
 /* Queued */
-.job-container.queued path{ stroke: #fbbf24; }
+.job-container.queued path {
+    stroke: #fbbf24;
+}
 
-.job-container.queued .job-icon-container{ border-color: rgba(251, 191, 36, .35); }
+.job-container.queued .job-icon-container {
+    border-color: rgba(251, 191, 36, .35);
+}
 
 .job-container.queued .job-status-badge,
 .job-container.queued .job-icon-container,
-.job-container.queued .job-message{ color: #fde68a; }
+.job-container.queued .job-message {
+    color: #fde68a;
+}
 
-.job-container.queued .job-status-badge, 
-.job-container.queued .job-icon-container{ background-color: rgba(251, 191, 36, .08); }
+.job-container.queued .job-status-badge,
+.job-container.queued .job-icon-container {
+    background-color: rgba(251, 191, 36, .08);
+}
 
 /* Retrying */
-.job-container.retrying path{ stroke: #fb923c; }
+.job-container.retrying path {
+    stroke: #fb923c;
+}
 
-.job-container.retrying .job-icon-container{ border-color: rgba(251, 146, 60, .35); }
+.job-container.retrying .job-icon-container {
+    border-color: rgba(251, 146, 60, .35);
+}
 
 .job-container.retrying .job-status-badge,
 .job-container.retrying .job-icon-container,
-.job-container.retrying .job-message{ color: #fed7aa; }
+.job-container.retrying .job-message {
+    color: #fed7aa;
+}
 
-.job-container.retrying .job-status-badge, 
-.job-container.retrying .job-icon-container{ background-color: rgba(251, 146, 60, .08); }
+.job-container.retrying .job-status-badge,
+.job-container.retrying .job-icon-container {
+    background-color: rgba(251, 146, 60, .08);
+}
 
 /* Queued After Failure */
-.job-container.queued_after_failure path{ stroke: #ef4444; }
+.job-container.queued_after_failure path {
+    stroke: #ef4444;
+}
 
-.job-container.queued_after_failure .job-icon-container{ border-color: rgba(239, 68, 68, .35); }
+.job-container.queued_after_failure .job-icon-container {
+    border-color: rgba(239, 68, 68, .35);
+}
 
 .job-container.queued_after_failure .job-status-badge,
 .job-container.queued_after_failure .job-icon-container,
-.job-container.queued_after_failure .job-message{ color: #fecaca; }
+.job-container.queued_after_failure .job-message {
+    color: #fecaca;
+}
 
-.job-container.queued_after_failure .job-status-badge, 
-.job-container.queued_after_failure .job-icon-container{ background-color: rgba(239, 68, 68, .08); }
+.job-container.queued_after_failure .job-status-badge,
+.job-container.queued_after_failure .job-icon-container {
+    background-color: rgba(239, 68, 68, .08);
+}
 
 /* Failed */
-.job-container.failed path{ stroke: #f87171; }
+.job-container.failed path {
+    stroke: #f87171;
+}
 
-.job-container.failed .job-icon-container{ border-color: rgba(248, 113, 113, .35); }
+.job-container.failed .job-icon-container {
+    border-color: rgba(248, 113, 113, .35);
+}
 
 .job-container.failed .job-status-badge,
 .job-container.failed .job-icon-container,
-.job-container.failed .job-message{ color: #fecaca; }
+.job-container.failed .job-message {
+    color: #fecaca;
+}
 
-.job-container.failed .job-status-badge, 
-.job-container.failed .job-icon-container{ background-color: rgba(248, 113, 113, .08); }
+.job-container.failed .job-status-badge,
+.job-container.failed .job-icon-container {
+    background-color: rgba(248, 113, 113, .08);
+}
 
 /* Unknown */
-.job-container.unknown path{ stroke: #9ca3af; }
+.job-container.unknown path {
+    stroke: #9ca3af;
+}
 
-.job-container.unknown .job-icon-container{ border-color: rgba(156, 163, 175, .35); }
+.job-container.unknown .job-icon-container {
+    border-color: rgba(156, 163, 175, .35);
+}
 
 .job-container.unknown .job-status-badge,
 .job-container.unknown .job-icon-container,
-.job-container.unknown .job-message{ color: #e5e7eb; }
+.job-container.unknown .job-message {
+    color: #e5e7eb;
+}
 
-.job-container.unknown .job-status-badge, 
-.job-container.unknown .job-icon-container{ background-color: rgba(156, 163, 175, .08); }
+.job-container.unknown .job-status-badge,
+.job-container.unknown .job-icon-container {
+    background-color: rgba(156, 163, 175, .08);
+}
+
+.job-progress {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}

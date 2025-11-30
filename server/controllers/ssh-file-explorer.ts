@@ -28,9 +28,11 @@ import { mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import * as os from 'node:os';
 import { Types } from 'mongoose';
-import { createTrajectoryFromProcessedFiles, processLocalDumpFiles } from '@/utilities/trajectory-processing';
+import { v4 } from 'uuid';
+import { createRedisClient } from '@/config/redis';
+import { processAndCreateTrajectory } from '@/controllers/trajectories';
 import logger from '@/logger';
-import { readdir } from 'fs/promises';
+import path from 'path';
 
 export const listSSHFiles = async (req: Request, res: Response) => {
     const user = (req as any).user;
@@ -98,6 +100,31 @@ export const importTrajectoryFromSSH = async (req: Request, res: Response) => {
     const tempBaseDir = join(os.tmpdir(), 'opendxa-trajectories');
     const localFolder = join(tempBaseDir, trajectoryIdStr);
 
+    // Setup Redis publisher for progress updates
+    const publisher = createRedisClient();
+    const jobId = v4();
+    const sessionId = v4();
+    const sessionStartTime = new Date().toISOString();
+
+    const publishProgress = (status: string, progress: number, message?: string) => {
+        const payload = {
+            jobId,
+            status,
+            progress,
+            chunkIndex: 0,
+            totalChunks: 1,
+            name: 'SSH Import',
+            message: message || `Importing ${name || 'trajectory'}...`,
+            trajectoryId: trajectoryIdStr,
+            sessionId,
+            sessionStartTime,
+            timestamp: new Date().toISOString(),
+            queueType: 'ssh-import',
+            type: 'ssh_import'
+        };
+        publisher.publish('job_updates', JSON.stringify({ teamId, payload }));
+    };
+
     try {
         const connection = await SSHConnection.findOne({
             _id: connectionId,
@@ -110,7 +137,10 @@ export const importTrajectoryFromSSH = async (req: Request, res: Response) => {
 
         await mkdir(localFolder, { recursive: true });
 
-        // Get file stats to determine if it's a file or directory
+        // Initial status
+        publishProgress('running', 0, 'Connecting to SSH server...');
+
+        // Get file stats
         const fileStats = await SSHService.getFileStats(connection, remotePath);
 
         if (!fileStats) {
@@ -118,17 +148,30 @@ export const importTrajectoryFromSSH = async (req: Request, res: Response) => {
         }
 
         let localFiles: string[] = [];
+        const trajectoryName = name || fileStats.name || 'SSH Import';
+
+        publishProgress('running', 5, 'Downloading files...');
 
         if (fileStats.isDirectory) {
-            // Download entire directory
+            // Download entire directory with progress
             logger.info(`Downloading directory from SSH: ${remotePath}`);
-            localFiles = await SSHService.downloadDirectory(connection, remotePath, localFolder);
+            localFiles = await SSHService.downloadDirectory(
+                connection,
+                remotePath,
+                localFolder,
+                (progress) => {
+                    // Map download progress (5% to 80%)
+                    const percentage = 5 + Math.round((progress.downloaded / progress.total) * 75);
+                    publishProgress('running', percentage, `Downloading: ${progress.currentFile} (${Math.round(progress.downloaded / 1024 / 1024)}MB / ${Math.round(progress.total / 1024 / 1024)}MB)`);
+                }
+            );
         } else {
             // Download single file
             logger.info(`Downloading file from SSH: ${remotePath}`);
             const localFilePath = join(localFolder, fileStats.name);
             await SSHService.downloadFile(connection, remotePath, localFilePath);
             localFiles = [localFilePath];
+            publishProgress('running', 80, 'Download complete');
         }
 
         if (localFiles.length === 0) {
@@ -136,42 +179,39 @@ export const importTrajectoryFromSSH = async (req: Request, res: Response) => {
             throw new RuntimeError('SSH::Import::NoFiles', 400);
         }
 
-        // Filter only dump files (typically .dump, .lammpstrj, or no extension)
-        const dumpFiles = localFiles.filter(file => {
-            const ext = file.split('.').pop()?.toLowerCase();
-            return !ext || ext === 'dump' || ext === 'lammpstrj' || ext === 'lammps';
-        });
+        publishProgress('running', 85, 'Processing files...');
 
-        if (dumpFiles.length === 0) {
-            await rm(localFolder, { recursive: true, force: true });
-            throw new RuntimeError('SSH::Import::NoDumpFiles', 400);
-        }
+        // Prepare files for processAndCreateTrajectory
+        // We need to map local paths to the expected format
+        const filesToProcess = localFiles.map(filePath => ({
+            path: filePath,
+            originalname: path.basename(filePath),
+            size: 0 // Size will be read from file system if needed
+        }));
 
-        logger.info(`Processing ${dumpFiles.length} dump files from SSH`);
-
-        // Process dump files
-        const processedFiles = await processLocalDumpFiles(dumpFiles, trajectoryIdStr, localFolder);
-
-        if (processedFiles.length === 0) {
-            await rm(localFolder, { recursive: true, force: true });
-            throw new RuntimeError('Trajectory::NoValidFiles', 400);
-        }
-
-        // Create trajectory using shared utility
-        const trajectoryName = name || fileStats.name || 'SSH Import';
-        const newTrajectory = await createTrajectoryFromProcessedFiles({
-            name: trajectoryName,
+        // Use the shared logic to process files and create trajectory
+        // This will also queue the processing jobs
+        const newTrajectory = await processAndCreateTrajectory(
+            filesToProcess,
             teamId,
-            userId,
-            processedFiles,
-            folderPath: localFolder
-        });
+            userId.toString(),
+            trajectoryName,
+            localFolder,
+            async () => {
+                await rm(localFolder, { recursive: true, force: true });
+            }
+        );
+
+        publishProgress('completed', 100, 'Import successful');
 
         res.status(201).json({
             status: 'success',
             data: newTrajectory
         });
     } catch (err: any) {
+        // Publish failed status
+        publishProgress('failed', 0, err.message || 'Import failed');
+
         // Clean up on error
         try {
             await rm(localFolder, { recursive: true, force: true });
@@ -184,5 +224,8 @@ export const importTrajectoryFromSSH = async (req: Request, res: Response) => {
         }
         logger.error(`Failed to import trajectory from SSH: ${err.message}`);
         throw new RuntimeError('SSH::Import::Error', 500);
+    } finally {
+        // Close redis publisher
+        publisher.quit();
     }
 };

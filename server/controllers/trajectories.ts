@@ -501,54 +501,72 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
     await archive.finalize();
 };
 
-export const createTrajectory = async (req: Request, res: Response, next: NextFunction) => {
-    const { files, teamId } = (res as any).locals.data;
-    const userId = (req as any).user._id;
-
+export const processAndCreateTrajectory = async (
+    files: any[],
+    teamId: string,
+    userId: string,
+    trajectoryName: string,
+    folderPath: string,
+    cleanupCallback?: () => Promise<void>
+) => {
     const trajectoryId = new Types.ObjectId();
     const trajectoryIdStr = trajectoryId.toString();
 
     // Use temp directory for temporary processing before MinIO upload
     const tempBaseDir = join(os.tmpdir(), 'opendxa-trajectories');
-    const folderPath = join(tempBaseDir, trajectoryIdStr);
-    await mkdir(folderPath, { recursive: true });
+    // If folderPath is not provided (e.g. direct upload), create one
+    const workingDir = folderPath || join(tempBaseDir, trajectoryIdStr);
+    if (!folderPath) await mkdir(workingDir, { recursive: true });
 
     const trajFS = new TrajectoryVFS(trajectoryIdStr, tempBaseDir);
     await trajFS.ensureStructure(trajectoryIdStr);
 
     const filePromises = files.map(async (file: any, i: number) => {
         try {
-            const tempPath = join(folderPath, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
-            await writeFile(tempPath, file.buffer);
+            // If file has a path (from SSH), use it. Otherwise write buffer to temp file.
+            let tempPath = file.path;
+            if (!tempPath && file.buffer) {
+                tempPath = join(workingDir, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+                await writeFile(tempPath, file.buffer);
+            }
+
             try {
                 const { frameInfo, isValid } = await processTrajectoryFile(tempPath);
                 if (!frameInfo || !isValid) {
-                    await rm(tempPath).catch(() => { });
+                    if (!file.path) await rm(tempPath).catch(() => { });
                     return null;
                 }
 
-                const dumpAbsPath = await trajFS.saveDump(trajectoryIdStr, frameInfo.timestep, file.buffer, true);
-                await rm(tempPath).catch(() => { });
+                // If file.buffer exists, we can use it directly. If not (SSH), read from tempPath.
+                let buffer = file.buffer;
+                if (!buffer) {
+                    const { readFile } = await import('fs/promises');
+                    buffer = await readFile(tempPath);
+                }
+
+                const dumpAbsPath = await trajFS.saveDump(trajectoryIdStr, frameInfo.timestep, buffer, true);
+
+                // Clean up temp file if we created it
+                if (!file.path) await rm(tempPath).catch(() => { });
 
                 const frameData = {
                     ...frameInfo
-                    // GLBs are now stored in MinIO, not in frame data
                 };
 
                 return {
                     frameData,
                     srcPath: dumpAbsPath,
-                    originalSize: file.size,
-                    originalName: file.originalname || `frame_${frameInfo.timestep}`
+                    originalSize: file.size || buffer.length,
+                    originalName: file.originalname || file.name || `frame_${frameInfo.timestep}`
                 };
             } catch (error) {
-                await rm(tempPath).catch(() => { });
+                if (!file.path) await rm(tempPath).catch(() => { });
                 return null;
             }
         } catch (error) {
             return null;
         } finally {
-            file.buffer = null;
+            if (file.buffer) file.buffer = null;
         }
     });
 
@@ -556,14 +574,14 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const validFiles = (results.filter(Boolean) as any[]);
 
     if (validFiles.length === 0) {
-        await rm(folderPath, { recursive: true, force: true });
-        return next(new RuntimeError('Trajectory::NoValidFiles', 400));
+        if (cleanupCallback) await cleanupCallback();
+        else await rm(workingDir, { recursive: true, force: true });
+        throw new RuntimeError('Trajectory::NoValidFiles', 400);
     }
 
     const totalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
     const frames = validFiles.map(f => f.frameData);
 
-    const trajectoryName = (req.body.originalFolderName || 'Untitled Trajectory') as string;
     const newTrajectory = await Trajectory.create({
         _id: trajectoryId,
         name: trajectoryName,
@@ -580,6 +598,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const trajectoryProcessingQueue = getTrajectoryProcessingQueue();
     const CHUNK_SIZE = 20;
     const jobs: any[] = [];
+    const sessionId = v4(); // Generate a session ID for tracking this batch
 
     for (let i = 0; i < validFiles.length; i += CHUNK_SIZE) {
         const chunk = validFiles.slice(i, i + CHUNK_SIZE);
@@ -595,16 +614,38 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             teamId,
             name: 'Upload Trajectory',
             message: trajectoryName,
-            folderPath,
-            tempFolderPath: folderPath
+            folderPath: workingDir,
+            tempFolderPath: workingDir,
+            sessionId, // Pass session ID
+            sessionStartTime: new Date().toISOString()
         });
     }
 
-    // Add all jobs at once to ensure they share the same sessionId
+    // Add all jobs at once
     trajectoryProcessingQueue.addJobs(jobs);
 
-    res.status(201).json({
-        status: 'success',
-        data: newTrajectory
-    });
+    return newTrajectory;
+};
+
+export const createTrajectory = async (req: Request, res: Response, next: NextFunction) => {
+    const { files, teamId } = (res as any).locals.data;
+    const userId = (req as any).user._id;
+    const trajectoryName = (req.body.originalFolderName || 'Untitled Trajectory') as string;
+
+    try {
+        const newTrajectory = await processAndCreateTrajectory(
+            files,
+            teamId,
+            userId.toString(),
+            trajectoryName,
+            '' // No pre-existing folder path for direct upload
+        );
+
+        res.status(201).json({
+            status: 'success',
+            data: newTrajectory
+        });
+    } catch (error) {
+        next(error);
+    }
 };

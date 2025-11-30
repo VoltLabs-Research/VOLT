@@ -51,12 +51,12 @@ const JobQueue = ({ job }: { job: Job }) => {
         }
     };
 
-    if(!(job.status in statusConfig)) return;
+    if (!(job.status in statusConfig)) return;
 
     const IconComponent = statusConfig[job.status].icon;
 
     return (
-         <div className={'job-container '.concat(job.status)}>
+        <div className={'job-container '.concat(job.status)}>
             <div className='job-left-container'>
                 <i className='job-icon-container'>
                     {IconComponent}
@@ -75,6 +75,11 @@ const JobQueue = ({ job }: { job: Job }) => {
             </div>
 
             <div className='job-status-info'>
+                {(job.progress !== undefined && job.progress > 0 && job.status === 'running') && (
+                    <span className='job-progress'>
+                        {job.progress}%
+                    </span>
+                )}
                 <span className='job-status-badge'>
                     {job.status}
                 </span>
