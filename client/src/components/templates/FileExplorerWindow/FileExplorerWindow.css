@@ -1,16 +1,11 @@
-.trajectory-fs-container{
+.file-explorer-container {
     position: fixed !important;
-    z-index: 9999999999;
+    z-index: 2147483646;
+    /* Max safe integer - 1 */
     top: 10%;
-    width: 500px !important;
 }
 
-.trajectory-fs-image-preview{
-    position: fixed !important;
-    z-index: 99999999999;
-}
-
-.trajectory-fs-image-preview:has(.maximized){
+.file-explorer-container:has(.maximized) {
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
@@ -18,39 +13,7 @@
     transform: none !important;
 }
 
-.trajectory-fs-preview-wrapper{
-    width: auto;
-    height: auto;
-    transition: width 0.3s ease, height 0.3s ease;
-}
-
-.trajectory-fs-preview-wrapper.maximized{
-    width: 100% !important;
-    height: 100% !important;
-    border-radius: 0 !important;
-}
-
-.trajectory-fs-preview-header:active{
-    cursor: grabbing !important;
-}
-
-.trajectory-fs-preview-icon{
-    transition: opacity 0.2s ease;
-}
-
-.trajectory-fs-preview-icon:hover{
-    opacity: 0.7;
-}
-
-.trajectory-fs-container:has(.maximized){
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    transform: none !important;
-}
-
-.trajectory-fs-wrapper{
+.file-explorer-wrapper {
     height: 600px;
     width: 1000px;
     display: flex;
@@ -59,23 +22,23 @@
     transition: width 0.3s ease, height 0.3s ease;
 }
 
-.trajectory-fs-wrapper.maximized{
+.file-explorer-wrapper.maximized {
     width: 100% !important;
     height: 100% !important;
     border-radius: 0;
 }
 
-.search-breadcrumbs-container{
+.search-breadcrumbs-container {
     display: flex;
     align-items: center;
 }
 
-.search-breadcrumb-container{
+.search-breadcrumb-container {
     display: flex;
     align-items: center;
 }
 
-.trajectory-fs-left-top-container{
+.file-explorer-left-top-container {
     padding: 1rem;
     display: flex;
     min-width: 220px;
@@ -84,46 +47,42 @@
     gap: 3rem;
 }
 
-.trajectory-fs-header-icon-container.is-disabled{
+.file-explorer-header-icon-container.is-disabled {
     opacity: .4;
 }
 
-.trajectory-fs-left-bottom-nav-container{
+.file-explorer-left-bottom-nav-container {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
 }
 
-.trajectory-fs-left-bottom-nav-icon-container{
+.file-explorer-left-bottom-nav-icon-container {
     display: flex;
     align-items: center;
     cursor: pointer;
     gap: 1rem;
 }
 
-.trajectory-fs-left-bottom-nav-icon-container:hover{
+.file-explorer-left-bottom-nav-icon-container:hover {
     opacity: .8;
 }
 
-.trajectory-fs-left-bottom-nav-title{
+.file-explorer-left-bottom-nav-title {
     font-size: .95rem;
 }
 
-.trajectory-fs-left-bottom-container{
+.file-explorer-left-bottom-container {
     padding: 1rem;
 }
 
-.trajectory-fs-cluster-details{
-    font-size: .8rem;
-}
-
-.trajectory-fs-left-container{
+.file-explorer-left-container {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }
 
-.trajectory-fs-right-container{
+.file-explorer-right-container {
     height: 100%;
     width: 80%;
     padding: 1rem;
@@ -132,52 +91,52 @@
     gap: .5rem;
 }
 
-.trajectory-fs-nav{
+.file-explorer-nav {
     display: flex;
     flex-direction: column;
     gap: .5rem;
 }
 
-.trajectory-fs-nav-items{
+.file-explorer-nav-items {
     display: flex;
     flex-direction: column;
     gap: .2rem;
 }
 
-.trajectory-fs-nav-title{
+.file-explorer-nav-title {
     font-size: .9rem;
     font-weight: 500;
     cursor: grab;
     user-select: none;
 }
 
-.trajectory-fs-nav-title:active{
+.file-explorer-nav-title:active {
     cursor: grabbing;
 }
 
-.trajectory-fs-nav-item-title{
+.file-explorer-nav-item-title {
     font-size: .8rem;
     font-weight: 400;
 }
 
-.trajectory-fs-nav-item{
+.file-explorer-nav-item {
     padding: .4rem .6rem;
     border-radius: .35rem;
     transition: background-color 0.2s ease, opacity 0.2s ease;
 }
 
-.trajectory-fs-nav-item:hover{
+.file-explorer-nav-item:hover {
     background-color: rgba(255, 255, 255, 0.05);
     opacity: 0.9;
 }
 
-.trajectory-fs-nav-item.active{
+.file-explorer-nav-item.active {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-
-.trajectory-fs-list-headrow{
+.file-explorer-list-headrow {
     display: grid;
+    /* Default grid, can be overridden inline or via specific class if needed */
     grid-template-columns: 6fr 2fr 2fr 2fr;
     gap: 8px;
     padding: 8px 10px;
@@ -185,8 +144,9 @@
     box-sizing: border-box;
 }
 
-.trajectory-fs-list-row{
+.file-explorer-list-row {
     display: grid;
+    /* Default grid */
     grid-template-columns: 6fr 2fr 2fr 2fr;
     gap: 8px;
     padding: 8px 10px;
@@ -194,35 +154,34 @@
     cursor: default;
 }
 
-.trajectory-fs-list-body{
+.file-explorer-list-body {
     height: 100%;
     overflow-y: scroll;
     flex: 1 1 auto;
     min-height: 0;
 }
 
-.trajectory-fs-list-name-container{
+.file-explorer-list-name-container {
     display: flex;
     align-items: center;
     gap: .5rem;
 }
 
-.trajectory-fs-list-headrow .trajectory-fs-list-column{
+.file-explorer-list-headrow .file-explorer-list-column {
     text-transform: capitalize;
 }
 
-
-.trajectory-fs-list-body .trajectory-fs-list-row:hover{
+.file-explorer-list-body .file-explorer-list-row:hover {
     cursor: pointer;
     opacity: .8;
 }
 
-.trajectory-fs-right-header{
+.file-explorer-right-header {
     display: flex;
     gap: 2rem;
 }
 
-.trajectory-fs-search-container{
+.file-explorer-search-container {
     width: -webkit-fill-available;
     border-radius: .5rem;
     height: 2rem;
@@ -232,11 +191,11 @@
     gap: .8rem;
 }
 
-.search-breadcrumb-name{
+.search-breadcrumb-name {
     font-size: .85rem;
 }
 
-.search-breadcrumb-container:not(:last-child)::after{
+.search-breadcrumb-container:not(:last-child)::after {
     content: " / ";
     margin: 0 .4rem;
     font-size: .7rem;

@@ -35,18 +35,18 @@ import logger from '@/logger';
 const app = express();
 
 const corsOptions = {
-    origin: function (origin: string | undefined, callback: Function){
-        if(!origin) return callback(null, true);
+    origin: function (origin: string | undefined, callback: Function) {
+        if (!origin) return callback(null, true);
 
-        const allowedOrigins = process.env.NODE_ENV === 'production' 
+        const allowedOrigins = process.env.NODE_ENV === 'production'
             ? [process.env.CLIENT_HOST as string]
             : [
                 process.env.CLIENT_DEV_HOST as string
-              ];
-        
-        if(allowedOrigins.includes(origin)){
+            ];
+
+        if (allowedOrigins.includes(origin)) {
             callback(null, true);
-        }else{
+        } else {
             logger.info(`CORS blocked origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
@@ -95,7 +95,9 @@ configureApp({
         'sessions',
         'password',
         'webhooks',
-        'chat'
+        'chat',
+        'ssh-connections',
+        'ssh-file-explorer'
     ],
     middlewares: [
         apiTracker,
@@ -111,7 +113,7 @@ configureApp({
                     url.endsWith('.png') ||
                     url.endsWith('.glb') ||
                     url.endsWith('.zip')
-                ){
+                ) {
                     return false;
                 }
                 // Default filter

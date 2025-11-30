@@ -1,15 +1,20 @@
 import { create } from 'zustand';
 
 const initialState = {
-    showTeamCreator: false
+    showTeamCreator: false,
+    showSSHFileExplorer: false
 };
 
-const useWindowsStore= create<any>((set, get) => {
+const useWindowsStore = create<any>((set, get) => {
     return {
         ...initialState,
-        
-        toggleTeamCreator(){
+
+        toggleTeamCreator() {
             set({ showTeamCreator: !get().showTeamCreator });
+        },
+
+        toggleSSHFileExplorer() {
+            set({ showSSHFileExplorer: !get().showSSHFileExplorer });
         }
     };
 });

@@ -51,6 +51,7 @@ import useDashboardSearchStore from '@/stores/ui/dashboard-search';
 import { IoIosAdd } from 'react-icons/io';
 import TeamCreator from '@/components/organisms/team/TeamCreator';
 import TeamInvitePanel from '@/components/organisms/team/TeamInvitePanel';
+import SSHFileExplorer from '@/components/organisms/ssh/SSHFileExplorer';
 import './DashboardLayout.css';
 
 const DashboardLayout = () => {
@@ -64,6 +65,8 @@ const DashboardLayout = () => {
     const { showError, showSuccess } = useToast();
     const toggleTeamCreator = useWindowsStore((state) => state.toggleTeamCreator);
     const showTeamCreator = useWindowsStore((state) => state.showTeamCreator);
+    const toggleSSHFileExplorer = useWindowsStore((state) => state.toggleSSHFileExplorer);
+    const showSSHFileExplorer = useWindowsStore((state) => state.showSSHFileExplorer);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
@@ -87,17 +90,17 @@ const DashboardLayout = () => {
         ['Clusters', TbBook, '/dashboard/clusters']
     ]), []);
     const searchQuery = useDashboardSearchStore((s) => s.query);
-    
+
     // Track if teams have been fetched at least once
     const [teamsInitialized, setTeamsInitialized] = useState(false);
 
     useEffect(() => {
-        if(selectedTeam === null || trajectories.length) return;
+        if (selectedTeam === null || trajectories.length) return;
         getTrajectories(selectedTeam._id);
-    }, [selectedTeam]);   
+    }, [selectedTeam]);
 
     useEffect(() => {
-        if(teams.length) return;
+        if (teams.length) return;
         getUserTeams().finally(() => setTeamsInitialized(true));
     }, []);
 
@@ -107,7 +110,7 @@ const DashboardLayout = () => {
         // Only check after teams have been initialized (fetched at least once)
         if (!teamsInitialized) return;
         if (isLoadingTeams) return; // Still loading, don't check yet
-        
+
         if (teams.length === 0 && !showTeamCreator) {
             // User has no teams after loading, force team creation
             toggleTeamCreator();
@@ -153,7 +156,7 @@ const DashboardLayout = () => {
     }, [teams, searchParams, setSearchParams, setSelectedTeam]);
 
     useEffect(() => {
-        if(notifOpen) {
+        if (notifOpen) {
             fetch({ force: true });
         } else {
             // Clear observed notifications when closing panel
@@ -162,10 +165,10 @@ const DashboardLayout = () => {
     }, [notifOpen]);
 
     useEffect(() => {
-        if(!notifOpen) return;
+        if (!notifOpen) return;
         const onDoc = (e: MouseEvent) => {
-            if(!bellWrapperRef.current) return;
-            if(!bellWrapperRef.current.contains(e.target as Node)){
+            if (!bellWrapperRef.current) return;
+            if (!bellWrapperRef.current.contains(e.target as Node)) {
                 setNotifOpen(false);
             }
         };
@@ -185,7 +188,7 @@ const DashboardLayout = () => {
                     if (entry.isIntersecting) {
                         const notificationId = entry.target.getAttribute('data-notification-id');
                         const isRead = entry.target.getAttribute('data-notification-read') === 'true';
-                        
+
                         if (notificationId && !isRead && !observedNotificationsRef.current.has(notificationId)) {
                             observedNotificationsRef.current.add(notificationId);
                             // Mark as read after a short delay to ensure user saw it
@@ -212,10 +215,10 @@ const DashboardLayout = () => {
     }, [notifOpen, notificationList, markAsRead]);
 
     useEffect(() => {
-        if(!mobileMenuOpen) return;
+        if (!mobileMenuOpen) return;
         const onDoc = (e: MouseEvent) => {
-            if(!mobileMenuWrapperRef.current) return;
-            if(!mobileMenuWrapperRef.current.contains(e.target as Node)){
+            if (!mobileMenuWrapperRef.current) return;
+            if (!mobileMenuWrapperRef.current.contains(e.target as Node)) {
                 setMobileMenuOpen(false);
             }
         };
@@ -234,8 +237,25 @@ const DashboardLayout = () => {
         return () => clearTimeout(id);
     }, [localQuery, setSearchQuery]);
 
+    // Keyboard shortcut for SSH File Explorer (Ctrl+I)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Handle both 'i' and 'I' (case-insensitive)
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
+                if (e.repeat) return; // Prevent multiple toggles when holding key
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('SSH File Explorer shortcut triggered!');
+                toggleSSHFileExplorer();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [toggleSSHFileExplorer]);
+
     // Convert teams to Select options
-    const teamOptions = useMemo(() => 
+    const teamOptions = useMemo(() =>
         teams.map(team => ({
             value: team._id,
             title: team.name,
@@ -247,7 +267,7 @@ const DashboardLayout = () => {
     const handleTeamChange = (teamId: string) => {
         // Only proceed if it's actually a different team
         if (selectedTeam?._id === teamId) return;
-        
+
         // Clean up team-dependent states
         const { reset: resetTrajectories } = useTrajectoryStore.getState();
         const { clearFrameCache } = useRasterStore.getState();
@@ -258,7 +278,7 @@ const DashboardLayout = () => {
         const { reset: resetPlayback } = usePlaybackStore.getState();
         const { reset: resetEditorUI } = useEditorUIStore.getState();
         const { reset: resetRenderConfig } = useRenderConfigStore.getState();
-        
+
         // Clear all team-dependent data
         resetTrajectories();
         clearFrameCache();
@@ -269,10 +289,10 @@ const DashboardLayout = () => {
         resetPlayback();
         resetEditorUI();
         resetRenderConfig();
-        
+
         // Set the new selected team
         setSelectedTeam(teamId);
-        
+
         // Update URL with new team
         setSearchParams({ team: teamId });
     };
@@ -280,7 +300,7 @@ const DashboardLayout = () => {
     const handleLeaveTeam = async (teamId: string) => {
         try {
             await leaveTeam(teamId);
-            
+
             // Get the state after leaving
             const state = useTeamStore.getState();
             const remainingTeams = state.teams;
@@ -290,7 +310,7 @@ const DashboardLayout = () => {
             if (currentSelected?._id === teamId && remainingTeams.length > 0) {
                 const newTeamId = remainingTeams[0]._id;
                 setSelectedTeam(newTeamId);
-                
+
                 // Reset all team-dependent states
                 const { reset: resetTrajectories } = useTrajectoryStore.getState();
                 const { clearFrameCache } = useRasterStore.getState();
@@ -301,7 +321,7 @@ const DashboardLayout = () => {
                 const { reset: resetPlayback } = usePlaybackStore.getState();
                 const { reset: resetEditorUI } = useEditorUIStore.getState();
                 const { reset: resetRenderConfig } = useRenderConfigStore.getState();
-                
+
                 resetTrajectories();
                 clearFrameCache();
                 resetAnalysisConfig();
@@ -311,7 +331,7 @@ const DashboardLayout = () => {
                 resetPlayback();
                 resetEditorUI();
                 resetRenderConfig();
-                
+
                 // Update URL with new team
                 setSearchParams({ team: newTeamId });
             }
@@ -351,7 +371,7 @@ const DashboardLayout = () => {
                             </div>
                             <div className='mobile-dropdown-section'>
                                 <nav className='mobile-nav-list'>
-                                    {navItems.map(([ name, Icon, to ], index) => (
+                                    {navItems.map(([name, Icon, to], index) => (
                                         <button key={`mdrop-${index}`} className={`mobile-nav-item ${(index === 0) ? 'is-selected' : ''}`} onClick={() => { navigate(to); setMobileMenuOpen(false); }}>
                                             <i className='mobile-nav-icon'><Icon /></i>
                                             <span className='mobile-nav-name'>{name}</span>
@@ -364,11 +384,11 @@ const DashboardLayout = () => {
                                     <Select
                                         options={teamOptions}
                                         value={selectedTeam?._id || null}
-                                onChange={(v) => { handleTeamChange(v); setMobileMenuOpen(false); }}
+                                        onChange={(v) => { handleTeamChange(v); setMobileMenuOpen(false); }}
                                         placeholder="Select team"
                                         className="team-select"
-                                maxListWidth={300}
-                                renderInPortal
+                                        maxListWidth={300}
+                                        renderInPortal
                                     />
                                 </div>
                                 <div onClick={() => { toggleTeamCreator(); setMobileMenuOpen(false); }} className='badge-container as-icon-container over-light-bg'>
@@ -379,8 +399,8 @@ const DashboardLayout = () => {
                     )}
                 </div>
                 <nav className='navigation-container'>
-                    {navItems.map(([ name, Icon, to ], index) => (
-                        <div 
+                    {navItems.map(([name, Icon, to], index) => (
+                        <div
                             className={`navigation-item-container ${(index === 0) ? 'is-selected' : ''}`}
                             key={index}
                             onClick={() => navigate(to)}
@@ -388,8 +408,8 @@ const DashboardLayout = () => {
                             <i className='navigation-item-icon'>
                                 <Icon />
                             </i>
-                            <p className='navigation-item-name'>{name}</p>                           
-                        </div> 
+                            <p className='navigation-item-name'>{name}</p>
+                        </div>
                     ))}
                 </nav>
 
@@ -405,8 +425,8 @@ const DashboardLayout = () => {
                             onChange={(e) => setLocalQuery(e.target.value)}
                         />
                     </div>
-                    
-                    <div 
+
+                    <div
                         ref={teamSelectorRef}
                         className='team-selector-container'
                     >
@@ -430,7 +450,7 @@ const DashboardLayout = () => {
                         <GoPersonAdd size={20} />
                     </button>
 
-                    <div 
+                    <div
                         onClick={toggleTeamCreator}
                         className='badge-container as-icon-container over-light-bg'
                     >
@@ -470,12 +490,12 @@ const DashboardLayout = () => {
                                                 <div className='dashboard-notifications-empty'>No notifications</div>
                                             )}
                                             {notificationList.map((n) => (
-                                                <div 
-                                                    key={n._id} 
-                                                    className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`} 
+                                                <div
+                                                    key={n._id}
+                                                    className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`}
                                                     data-notification-id={n._id}
                                                     data-notification-read={n.read}
-                                                    onClick={() => { if(n.link) navigate(n.link); setNotifOpen(false); }}
+                                                    onClick={() => { if (n.link) navigate(n.link); setNotifOpen(false); }}
                                                 >
                                                     <div className='dashboard-notification-title'>{n.title}</div>
                                                     <div className='dashboard-notification-content'>{n.content}</div>
@@ -493,13 +513,25 @@ const DashboardLayout = () => {
             </section>
 
             {/* Floating dropdown replaces side panel */}
-                
+
             <Outlet />
 
             <ShortcutsModal />
-            
+
+            {showSSHFileExplorer && (
+                <SSHFileExplorer
+                    onClose={toggleSSHFileExplorer}
+                    onImportSuccess={() => {
+                        // Refresh trajectories after import
+                        if (selectedTeam) {
+                            getTrajectories(selectedTeam._id);
+                        }
+                    }}
+                />
+            )}
+
             {selectedTeam && (
-                <TeamInvitePanel 
+                <TeamInvitePanel
                     isOpen={invitePanelOpen}
                     onClose={() => setInvitePanelOpen(false)}
                     teamName={selectedTeam.name}
