@@ -21,25 +21,22 @@
 **/
 
 import { TimestepInfo } from '@/types/utilities/lammps';
-import { readLargeFile, copyFile } from '@/utilities/fs';
+import { readLargeFile } from '@/utilities/fs';
 
 /**
- * Reads a (potentially large) LAMMPS dump file, performs a lightweight
- * validation pass, extracts basic timestep metadata, and copies the file
- * to a target path.
+ * Reads a (potentially large) LAMMPS dump file and performs a lightweight
+ * validation pass, extracting basic timestep metadata.
  * 
  * The read uses a bounded scan (`maxLines: 10000`) to avoid excessive
  * memory usage while checking for the presence of required LAMMPS items.
  * 
  * @param trajectoryPath - Absolute or relative path to the input LAMMPS dump.
- * @param outputPath - Destination path where the file will be copied.
- * @returns A promise resolving to anobject.
+ * @returns A promise resolving to an object with frame info and validation status.
  */
 export const processTrajectoryFile = async (
-    trajectoryPath: string,
-    outputPath: string
+    trajectoryPath: string
 ): Promise<any> => {
-    try{
+    try {
         let timestepFound = false;
         let frameInfo: any = null;
 
@@ -47,7 +44,7 @@ export const processTrajectoryFile = async (
             // Limit lines for validation to avoid memory issues
             maxLines: 10000,
             onLine: (line) => {
-                if(!timestepFound && line.includes('TIMESTEP')){
+                if (!timestepFound && line.includes('TIMESTEP')) {
                     timestepFound = true;
                 }
             }
@@ -56,14 +53,13 @@ export const processTrajectoryFile = async (
         frameInfo = extractTimestepInfo(result.lines);
         const isValid = isValidLammpsFile(result.lines);
 
-        await copyFile(trajectoryPath, outputPath);
         return {
             frameInfo,
             totalLines: result.totalLines,
             timestepFound,
             isValid
         };
-    }catch(err){
+    } catch (err) {
         throw err;
     }
 };
@@ -78,36 +74,36 @@ export const extractTimestepInfo = (lines: string[]): TimestepInfo | null => {
     let timestep: number | null = null;
     let natoms: number | null = null;
     const boxBounds = { xlo: 0, xhi: 0, ylo: 0, yhi: 0, zlo: 0, zhi: 0 };
-    
-    for(let i = 0; i < lines.length; i++){
+
+    for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        if(line === 'ITEM: TIMESTEP'){
+        if (line === 'ITEM: TIMESTEP') {
             const nextLine = lines[i + 1];
-            if(nextLine){
+            if (nextLine) {
                 timestep = parseInt(nextLine.trim());
             }
         }
 
-        if(line === 'ITEM: NUMBER OF ATOMS'){
+        if (line === 'ITEM: NUMBER OF ATOMS') {
             const nextLine = lines[i + 1];
-            if(nextLine){
+            if (nextLine) {
                 natoms = parseInt(nextLine.trim());
             }
         }
 
-        if(line.startsWith('ITEM: BOX BOUNDS')){
-            for(let j = 1; j <= 3; j++){
+        if (line.startsWith('ITEM: BOX BOUNDS')) {
+            for (let j = 1; j <= 3; j++) {
                 const boundLine = lines[i + j];
-                if(boundLine){
+                if (boundLine) {
                     const bounds = boundLine.trim().split(/\s+/).map(Number);
-                    if(bounds.length >= 2){
-                        if(j === 1){
+                    if (bounds.length >= 2) {
+                        if (j === 1) {
                             boxBounds.xlo = bounds[0];
                             boxBounds.xhi = bounds[1];
-                        }else if(j === 2){
+                        } else if (j === 2) {
                             boxBounds.ylo = bounds[0];
                             boxBounds.yhi = bounds[1];
-                        }else if(j === 3){
+                        } else if (j === 3) {
                             boxBounds.zlo = bounds[0];
                             boxBounds.zhi = bounds[1];
                         }
@@ -117,7 +113,7 @@ export const extractTimestepInfo = (lines: string[]): TimestepInfo | null => {
         }
     }
 
-    if(timestep !== null && natoms !== null){
+    if (timestep !== null && natoms !== null) {
         return { timestep, natoms, boxBounds };
     }
 
@@ -138,7 +134,7 @@ export const isValidLammpsFile = (lines: string[]): boolean => {
         'ITEM: BOX BOUNDS',
         'ITEM: ATOMS'
     ];
-    
+
     const content = lines.join('\n');
     return requiredItems.every((item) => content.includes(item));
 };

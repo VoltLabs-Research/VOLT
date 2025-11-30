@@ -6,7 +6,8 @@ let minioClient: Client | null = null;
 export const SYS_BUCKETS = {
     MODELS: 'opendxa-models',
     RASTERIZER: 'opendxa-rasterizer',
-    PLUGINS: 'opendxa-plugins'
+    PLUGINS: 'opendxa-plugins',
+    DUMPS: 'opendxa-dumps'
 };
 
 const createClient = (): Client => {
@@ -17,7 +18,7 @@ const createClient = (): Client => {
     const accessKey = process.env.MINIO_ACCESS_KEY;
     const secretKey = process.env.MINIO_SECRET_KEY;
 
-    if(!accessKey || !secretKey){
+    if (!accessKey || !secretKey) {
         throw new Error('[MinIO] MINIO_ACCESS_KEY o MINIO_SECRET_KEY not in .env');
     }
 
@@ -31,7 +32,7 @@ const createClient = (): Client => {
 };
 
 export const getMinioClient = (): Client => {
-    if(!minioClient){
+    if (!minioClient) {
         minioClient = createClient();
     }
     return minioClient;
@@ -39,7 +40,7 @@ export const getMinioClient = (): Client => {
 
 export const ensureBucketExists = async (client: Client, bucket: string): Promise<void> => {
     const exists = await client.bucketExists(bucket).catch(() => false);
-    if(!exists){
+    if (!exists) {
         await client.makeBucket(bucket, '');
         logger.info(`[MinIO] OK: ${bucket}`);
     }
@@ -60,7 +61,7 @@ export const putObject = async (bucketName: string, objectName: string, payload:
 export const initializeMinio = async (): Promise<void> => {
     const client = getMinioClient();
     const buckets = Object.values(SYS_BUCKETS);
-    for(const bucket of buckets){
+    for (const bucket of buckets) {
         await ensureBucketExists(client, bucket);
     }
     logger.info('[MinIO] Complete initialization');
@@ -70,7 +71,7 @@ export const getJSONFromBucket = async<T = any>(bucket: string, objectName: stri
     const client = getMinioClient();
     const stream = await client.getObject(bucket, objectName);
     const chunks: Buffer[] = [];
-    for await(const chunk of stream){
+    for await (const chunk of stream) {
         chunks.push(chunk);
     }
     const buffer = Buffer.concat(chunks);

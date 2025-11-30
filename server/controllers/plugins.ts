@@ -10,6 +10,7 @@ import { getStream, statObject, listByPrefix, getObject } from '@/utilities/buck
 import { SYS_BUCKETS } from '@/config/minio';
 import ManifestService from '@/services/plugins/manifest-service';
 import { decode as decodeMsgpack } from '@msgpack/msgpack';
+import DumpStorage from '@/services/dump-storage';
 import logger from '@/logger';
 
 const getValueByPath = (obj: any, path: string) => {
@@ -84,7 +85,7 @@ export const evaluateModifier = catchAsync(async (req: Request, res: Response, n
 
     const jobs: AnalysisJob[] = [];
     const promises = framesToProcess.map(async ({ timestep }: any) => {
-        const inputFile = await trajectoryFS.getDump(trajectoryId, timestep);
+        const inputFile = await DumpStorage.getDump(trajectoryId, timestep);
         if (!inputFile) {
             throw new RuntimeError('Trajectory::Dump::NotFound', 404);
         }

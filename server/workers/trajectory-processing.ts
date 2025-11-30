@@ -25,20 +25,34 @@ import { parentPort } from 'worker_threads';
 import { unlink } from 'fs/promises';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import AtomisticExporter from '@/utilities/export/atoms';
+import DumpStorage from '@/services/dump-storage';
 import '@config/env';
 import logger from '@/logger';
 
 const glbExporter = new AtomisticExporter();
 
 const processSingleFrame = async (frameData: any, frameFilePath: string, trajectoryId: string) => {
-    // TODO: function for get object name
+    // Generate GLB from the local dump file
     const objectName = `trajectory-${trajectoryId}/previews/timestep-${frameData.timestep}.glb`;
-
     await glbExporter.toGLBMinIO(
         frameFilePath,
         objectName,
         extractTimestepInfo
     );
+
+    // After GLB is created, migrate the dump to MinIO and clean up filesystem
+    try {
+        const timestep = frameData.timestep;
+        const buffer = await import('fs/promises').then(fs => fs.readFile(frameFilePath));
+        await DumpStorage.saveDump(trajectoryId, timestep, buffer);
+
+        // Delete the local file
+        await unlink(frameFilePath);
+        logger.info(`[Worker #${process.pid}] Migrated dump ${timestep} to MinIO and cleaned up filesystem`);
+    } catch (err) {
+        logger.error(`[Worker #${process.pid}] Failed to migrate dump to MinIO: ${err}`);
+        // Don't fail the job if migration fails, just log it
+    }
 };
 
 const processJob = async (job: TrajectoryProcessingJob) => {

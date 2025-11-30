@@ -30,6 +30,7 @@ import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 import { deleteByPrefix } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
+import DumpStorage from '@/services/dump-storage';
 import logger from '@/logger';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
@@ -119,8 +120,17 @@ TrajectorySchema.pre('findOneAndDelete', async function (next) {
             await rm(trajectoryPath, { recursive: true });
         }
 
+        // Clean up MinIO dumps
+        try {
+            await DumpStorage.deleteDumps(trajectoryId);
+            logger.info(`Cleaned up MinIO dumps for trajectory: ${trajectoryId}`);
+        } catch (err) {
+            logger.error(`Failed to clean up dumps: ${err}`);
+        }
+
+        // Clean up other MinIO buckets
         const objectName = `trajectory-${trajectoryId}`;
-        const buckets = Object.values(SYS_BUCKETS);
+        const buckets = Object.values(SYS_BUCKETS).filter(b => b !== SYS_BUCKETS.DUMPS);
         for (const bucket of buckets) {
             try {
                 await deleteByPrefix(bucket, objectName);

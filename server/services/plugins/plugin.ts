@@ -28,6 +28,7 @@ import AnalysisContext from '@/services/plugins/modifier-context';
 import ArgumentsBuilder from '@/services/plugins/arguments-builder';
 import CLIExec from '@/services/cli-exec';
 import TrajectoryFS from '@/services/trajectory-fs';
+import DumpStorage from '@/services/dump-storage';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
@@ -84,8 +85,7 @@ export default class Plugin {
                 if (argDef.type === 'trajectory-frame' && options[key] !== undefined) {
                     const timestep = Number(options[key]);
                     if (!isNaN(timestep)) {
-                        const trajectoryFS = new TrajectoryFS(this.trajectoryId);
-                        const dumpFile = await trajectoryFS.getDump(this.trajectoryId, timestep);
+                        const dumpFile = await DumpStorage.getDump(this.trajectoryId, timestep);
                         if (dumpFile) {
                             processedOptions[key] = dumpFile;
                         } else {

@@ -36,6 +36,7 @@ import { v4 } from 'uuid';
 import { getStream, statObject } from '@/utilities/buckets';
 import { getTimestepPreview, sendImage } from '@/utilities/raster';
 import { SYS_BUCKETS } from '@/config/minio';
+import DumpStorage from '@/services/dump-storage';
 import logger from '@/logger';
 
 const factory = new HandlerFactory<any>({
@@ -100,9 +101,18 @@ export const getMetrics = async (req: Request, res: Response) => {
     const trajFS = new TrajectoryFS(trajectoryId);
 
     try {
-        // Calculate filesystem size (dumps directory)
+        // Calculate filesystem size (dumps are now in MinIO, not filesystem)
+        // Keep this for legacy/migration purposes
         const dumpsPath = join(process.env.TRAJECTORY_DIR as string, trajectoryId, 'dumps');
-        const dumpsSize = await trajFS['calculateLocalDirSize'](dumpsPath);
+        let dumpsSize = 0;
+        try {
+            dumpsSize = await trajFS['calculateLocalDirSize'](dumpsPath);
+        } catch {
+            // Ignore if directory doesn't exist
+        }
+
+        // Calculate MinIO dump storage
+        const minioDumpsSize = await DumpStorage.calculateSize(trajectoryId);
 
         // Calculate MinIO sizes across all buckets
         let minioSize = 0;
@@ -130,8 +140,8 @@ export const getMetrics = async (req: Request, res: Response) => {
         const pluginsSize = await trajFS['calculateMinioSize'](`plugins/trajectory-${trajectoryId}/`, SYS_BUCKETS.PLUGINS);
         minioSize += pluginsSize;
 
-        // Total storage size
-        const totalSizeBytes = dumpsSize + minioSize;
+        // Total storage size (including both filesystem legacy dumps and MinIO dumps)
+        const totalSizeBytes = dumpsSize + minioDumpsSize + minioSize;
 
         // Get frame count
         const totalFrames = trajectory.frames?.length || 0;
@@ -164,13 +174,24 @@ export const getMetrics = async (req: Request, res: Response) => {
 
 export const deleteTrajectoryById = factory.deleteOne({
     beforeDelete: async (doc: any) => {
+        const trajectoryId = doc._id.toString();
+
+        // Clean up MinIO dumps
+        try {
+            await DumpStorage.deleteDumps(trajectoryId);
+            logger.info(`Cleaned up MinIO dumps for trajectory: ${trajectoryId}`);
+        } catch (error) {
+            logger.warn(`Warning: Could not clean up MinIO dumps for trajectory ${trajectoryId}: ${error}`);
+        }
+
+        // Clean up legacy filesystem dumps if they exist
         const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
-        const trajectoryPath = join(basePath, doc._id.toString());
+        const trajectoryPath = join(basePath, trajectoryId);
         try {
             await rm(trajectoryPath, { recursive: true, force: true });
-            logger.info(`Cleaned up trajectory files at: ${trajectoryPath}`);
+            logger.info(`Cleaned up filesystem directory: ${trajectoryPath}`);
         } catch (error) {
-            logger.warn(`Warning: Could not clean up files for trajectory ${doc._id}: ${error}`);
+            logger.warn(`Warning: Could not clean up filesystem for trajectory ${trajectoryId}: ${error}`);
         }
     }
 });
@@ -506,7 +527,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             const tempPath = join(folderPath, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
             await writeFile(tempPath, file.buffer);
             try {
-                const { frameInfo, isValid } = await processTrajectoryFile(tempPath, tempPath);
+                const { frameInfo, isValid } = await processTrajectoryFile(tempPath);
                 if (!frameInfo || !isValid) {
                     await rm(tempPath).catch(() => { });
                     return null;

@@ -29,6 +29,7 @@ import * as path from 'node:path';
 import { Readable } from 'stream';
 import mime from 'mime-types';
 import RuntimeError from '@/utilities/runtime-error';
+import DumpStorage from '@/services/dump-storage';
 
 export type EntryType = 'file' | 'dir';
 
@@ -160,7 +161,7 @@ class TrajectoryFS {
                 const trajectoryId = traj._id.toString();
 
                 // Calculate total size: dumps + raster + all analyses
-                const dumpsSize = await this.calculateLocalDirSize(path.join(this.baseDir, trajectoryId, 'dumps'));
+                const dumpsSize = await DumpStorage.calculateSize(trajectoryId);
                 const rasterSize = await this.calculateMinioSize(`trajectory-${trajectoryId}/previews/`, SYS_BUCKETS.RASTERIZER);
 
                 // Get all analyses for this trajectory
@@ -194,8 +195,8 @@ class TrajectoryFS {
     private async listTrajectoryRoot(trajectoryId: string): Promise<FsEntry[]> {
         const entries: FsEntry[] = [];
 
-        // Calculate dumps directory size
-        const dumpsSize = await this.calculateLocalDirSize(path.join(this.baseDir, trajectoryId, 'dumps'));
+        // Calculate dumps directory size from MinIO
+        const dumpsSize = await DumpStorage.calculateSize(trajectoryId);
         entries.push({
             type: 'dir',
             name: 'dumps',
@@ -282,75 +283,57 @@ class TrajectoryFS {
     // --- Dumps ---
 
     private async listDumps(trajectoryId: string, subPath: string): Promise<FsEntry[]> {
-        const absPath = path.join(this.baseDir, trajectoryId, 'dumps', subPath);
-
-        if (!absPath.startsWith(path.join(this.baseDir, trajectoryId, 'dumps'))) {
-            throw new RuntimeError('InvalidPath', 403);
+        // Dumps are now stored flat in MinIO, no subdirectories
+        if (subPath) {
+            return []; // No subdirectories in MinIO dump storage
         }
 
         try {
-            const stats = await fs.stat(absPath);
-            if (!stats.isDirectory()) {
-                throw new RuntimeError('NotADirectory', 400);
-            }
-
-            const files = await fs.readdir(absPath, { withFileTypes: true });
+            const timesteps = await DumpStorage.listDumps(trajectoryId);
             const entries: FsEntry[] = [];
 
-            for (const file of files) {
-                const entryAbs = path.join(absPath, file.name);
-                const entryRel = path.join(`trajectory-${trajectoryId}`, 'dumps', subPath, file.name);
-
-                if (file.isDirectory()) {
-                    entries.push({
-                        type: 'dir',
-                        name: file.name,
-                        relPath: entryRel,
-                        mtime: new Date().toISOString()
-                    });
-                } else if (file.isFile()) {
-                    const fstat = await fs.stat(entryAbs);
-                    const ext = path.extname(file.name);
+            for (const timestep of timesteps) {
+                const objectName = `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`;
+                try {
+                    const stat = await statObject(objectName, SYS_BUCKETS.DUMPS);
                     entries.push({
                         type: 'file',
-                        name: file.name,
-                        relPath: entryRel,
-                        size: fstat.size,
-                        mtime: fstat.mtime.toISOString(),
-                        ext: ext,
-                        mime: mime.lookup(ext) || 'application/octet-stream'
+                        name: timestep, // Just the timestep number as name
+                        relPath: `trajectory-${trajectoryId}/dumps/${timestep}`,
+                        size: stat.size,
+                        mtime: stat.lastModified.toISOString(),
+                        ext: '.dump.gz',
+                        mime: 'application/gzip'
                     });
+                } catch (err) {
+                    logger.warn(`Failed to stat dump ${objectName}: ${err}`);
                 }
             }
+
             return entries;
-        } catch (err: any) {
-            if (err.code === 'ENOENT') return [];
-            throw err;
+        } catch (err) {
+            logger.error(`Failed to list dumps for trajectory ${trajectoryId}: ${err}`);
+            return [];
         }
     }
 
     private async getDumpStream(trajectoryId: string, subPath: string) {
-        const absPath = path.join(this.baseDir, trajectoryId, 'dumps', subPath);
-
-        if (!absPath.startsWith(path.join(this.baseDir, trajectoryId, 'dumps'))) {
-            throw new RuntimeError('InvalidPath', 403);
-        }
+        // subPath is the timestep number
+        const timestep = subPath;
 
         try {
-            const stat = await fs.stat(absPath);
-            if (!stat.isFile()) throw new RuntimeError('NotAFile', 400);
+            const stream = await DumpStorage.getDumpStream(trajectoryId, timestep);
+            const objectName = `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`;
+            const stat = await statObject(objectName, SYS_BUCKETS.DUMPS);
 
-            const stream = (await fs.open(absPath, 'r')).createReadStream();
-            // @ts-ignore
             return {
                 stream,
-                size: stat.size,
-                contentType: mime.lookup(absPath) || 'application/octet-stream',
-                filename: path.basename(absPath)
+                size: stat.size, // Compressed size
+                contentType: 'text/plain', // Decompressed stream is plain text
+                filename: timestep
             };
         } catch (err: any) {
-            if (err.code === 'ENOENT') throw new RuntimeError('FileNotFound', 404);
-            throw err;
+            throw new RuntimeError('FileNotFound', 404);
         }
     }
 
@@ -503,13 +486,19 @@ class TrajectoryFS {
      * @param frame Frame number or timestep
      */
     async getDump(trajectoryId: string, frame: string | number): Promise<string | null> {
-        const dumpPath = path.join(this.baseDir, trajectoryId, 'dumps', String(frame));
+        // Check filesystem first (for dumps being processed)
+        const fsPath = path.join(this.baseDir, trajectoryId, 'dumps', String(frame));
         try {
-            const stat = await fs.stat(dumpPath);
-            return stat.isFile() ? dumpPath : null;
+            const stat = await fs.stat(fsPath);
+            if (stat.isFile()) {
+                return fsPath;
+            }
         } catch {
-            return null;
+            // Not in filesystem, check MinIO
         }
+
+        // Fall back to MinIO (for migrated dumps)
+        return await DumpStorage.getDump(trajectoryId, frame);
     }
 
     /**
@@ -520,6 +509,7 @@ class TrajectoryFS {
      * @param overwrite Whether to overwrite existing file
      */
     async saveDump(trajectoryId: string, frame: string | number, bufferOrSrc: Buffer | string, overwrite = true): Promise<string> {
+        // Save to filesystem first for worker processing compatibility
         const destDir = path.join(this.baseDir, trajectoryId, 'dumps');
         await fs.mkdir(destDir, { recursive: true });
 
@@ -534,14 +524,36 @@ class TrajectoryFS {
             }
         }
 
+        let data: Buffer;
         if (typeof bufferOrSrc === 'string') {
-            const data = await fs.readFile(bufferOrSrc);
-            await fs.writeFile(dest, data);
+            data = await fs.readFile(bufferOrSrc);
         } else {
-            await fs.writeFile(dest, bufferOrSrc);
+            data = bufferOrSrc;
         }
 
+        await fs.writeFile(dest, data);
         return dest;
+    }
+
+    /**
+     * Migrate a dump from filesystem to MinIO (for post-processing migration)
+     * @param trajectoryId Trajectory ID
+     * @param frame Frame number
+     */
+    async migrateDumpToMinIO(trajectoryId: string, frame: string | number): Promise<void> {
+        const fsPath = path.join(this.baseDir, trajectoryId, 'dumps', String(frame));
+
+        try {
+            const data = await fs.readFile(fsPath);
+            await DumpStorage.saveDump(trajectoryId, frame, data);
+
+            // Delete from filesystem after successful upload
+            await fs.unlink(fsPath);
+            logger.info(`Migrated dump ${frame} to MinIO for trajectory ${trajectoryId}`);
+        } catch (err) {
+            logger.error(`Failed to migrate dump ${frame} for trajectory ${trajectoryId}: ${err}`);
+            throw err;
+        }
     }
 
     /**
