@@ -39,7 +39,7 @@ export const getChats = catchAsync(async (req: Request, res: Response) => {
             { members: user._id }
         ]
     }).select('_id');
-    
+
     const teamIds = userTeams.map((team) => team._id);
 
     // Get all chats for these teams
@@ -53,7 +53,7 @@ export const getChats = catchAsync(async (req: Request, res: Response) => {
         .populate('lastMessage')
         .populate('team', 'name')
         .sort({ lastMessageAt: -1 });
-    
+
     res.status(200).json({
         status: 'success',
         data: chats
@@ -66,7 +66,7 @@ export const getChats = catchAsync(async (req: Request, res: Response) => {
 export const getOrCreateChat = catchAsync(async (req: Request, res: Response) => {
     const user = (req as any).user;
     const { participantId, teamId } = req.params;
-    
+
     // Find existig chat or create new one
     let chat = await Chat.findOne({
         participants: { $all: [user._id, participantId] },
@@ -77,12 +77,12 @@ export const getOrCreateChat = catchAsync(async (req: Request, res: Response) =>
         .populate('createdBy', 'firstName lastName email')
         .populate('lastMessage')
         .populate('team', 'name');
-    
-    if(!chat){
+
+    if (!chat) {
         chat = await Chat.create({
             participants: [user._id, participantId],
             team: teamId,
-            isActive: true 
+            isActive: true
         });
 
         await chat.populate('participants', 'firstName lastName email');
@@ -111,7 +111,7 @@ export const getChatMessages = catchAsync(async (req: Request, res: Response) =>
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit));
-    
+
     res.status(200).json({
         status: 'success',
         // Return in chronological order
@@ -135,7 +135,7 @@ export const sendMessage = catchAsync(async (req: Request, res: Response) => {
         messageType,
         metadata,
         // Sender has read their own message
-        readBy: [user._id] 
+        readBy: [user._id]
     });
 
     await message.populate('sender', 'firstName lastName email');
@@ -215,9 +215,9 @@ export const getTeamMembers = catchAsync(async (req: Request, res: Response) => 
             { owner: user._id },
             { members: user._id }
         ]
-    }).populate('owner members', 'firstName lastName email');  
+    }).populate('owner members', 'firstName lastName email');
 
-    if(!team){
+    if (!team) {
         throw new RuntimeError('Team::NotFound', 404);
     }
 
@@ -238,29 +238,40 @@ export const getTeamMembers = catchAsync(async (req: Request, res: Response) => 
  */
 export const uploadFile = catchAsync(async (req: Request, res: Response) => {
     // Handle file upload
-    uploadSingleFile(req, res, (err) => {
-        if(err){
+    uploadSingleFile(req, res, async (err) => {
+        if (err) {
             return res.status(400).json({ status: 'error', message: err.message });
         }
 
-        if(!req.file){
+        if (!req.file) {
             return res.status(400).json({
                 status: 'error',
                 message: 'No file uploaded'
             });
         }
 
-        const fileUrl = getFileUrl(req.file.filename);
+        try {
+            // Upload to MinIO
+            const { uploadToMinIO } = await import('@/middlewares/file-upload');
+            const filename = await uploadToMinIO(req.file.buffer, req.file.originalname, req.file.mimetype);
+            const fileUrl = getFileUrl(filename);
+
             res.status(200).json({
-            status: 'success',
-            data: {
-                filename: req.file.filename,
-                originalName: req.file.originalname,
-                size: req.file.size,
-                mimetype: req.file.mimetype,
-                url: fileUrl
-            }
-        });
+                status: 'success',
+                data: {
+                    filename,
+                    originalName: req.file.originalname,
+                    size: req.file.size,
+                    mimetype: req.file.mimetype,
+                    url: fileUrl
+                }
+            });
+        } catch (uploadErr: any) {
+            return res.status(500).json({
+                status: 'error',
+                message: `Failed to upload file: ${uploadErr.message}`
+            });
+        }
     });
 });
 
@@ -277,7 +288,7 @@ export const sendFileMessage = catchAsync(async (req: Request, res: Response) =>
         chat: chatId,
         sender: user._id,
         // Use original filename as content
-        content: originalName, 
+        content: originalName,
         messageType: 'file',
         metadata: {
             fileName: originalName,
@@ -287,7 +298,7 @@ export const sendFileMessage = catchAsync(async (req: Request, res: Response) =>
             filePath: filename
         },
         // Sender has read their own message
-        readBy: [user._id] 
+        readBy: [user._id]
     });
 
     await message.populate('sender', 'firstName lastName email');

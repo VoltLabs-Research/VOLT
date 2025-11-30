@@ -15,7 +15,7 @@
 * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* LIABILITY, WHETHER IN AN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 **/
@@ -24,8 +24,9 @@ import { Request, Response, NextFunction } from 'express';
 import { Chat, Message } from '@/models/index';
 import RuntimeError from '@/utilities/runtime-error';
 import { catchAsync } from '@/utilities/runtime';
-import path from 'path';
-import fs from 'fs';
+import { getObject } from '@/utilities/buckets';
+import { SYS_BUCKETS } from '@/config/minio';
+import { getMinIOObjectName } from '@/middlewares/file-upload';
 import logger from '@/logger';
 
 /**
@@ -45,15 +46,10 @@ export const getFileBase64 = catchAsync(async (req: Request, res: Response, next
     }
 
     try {
-        const filePath = path.join(process.cwd(), 'storage', 'uploads', 'chat-files', message.metadata.filePath);
+        const objectName = getMinIOObjectName(message.metadata.filePath);
 
-        // Check if file exists
-        if (!fs.existsSync(filePath)) {
-            throw new RuntimeError('File::NotFound', 404);
-        }
-
-        // Read file and convert to base64
-        const fileBuffer = fs.readFileSync(filePath);
+        // Get file from MinIO
+        const fileBuffer = await getObject(objectName, SYS_BUCKETS.PLUGINS);
         const base64 = fileBuffer.toString('base64');
         const mimeType = message.metadata.fileType || 'application/octet-stream';
         const dataUrl = `data:${mimeType};base64,${base64}`;
@@ -68,7 +64,7 @@ export const getFileBase64 = catchAsync(async (req: Request, res: Response, next
             }
         });
     } catch (error) {
-        logger.error(`Error reading file: ${error}`);
+        logger.error(`Error reading file from MinIO: ${error}`);
         throw new RuntimeError('File::ReadError', 500);
     }
 });

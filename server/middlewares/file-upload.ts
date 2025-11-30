@@ -23,24 +23,11 @@
 import multer from 'multer';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs';
+import { putObject } from '@/utilities/buckets';
+import { SYS_BUCKETS } from '@/config/minio';
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(process.cwd(), 'storage', 'uploads', 'chat-files');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Configure storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadsDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueName = `${uuidv4()}-${Date.now()}${path.extname(file.originalname)}`;
-        cb(null, uniqueName);
-    }
-});
+// Use memory storage - files will be uploaded directly to MinIO
+const storage = multer.memoryStorage();
 
 // File filter for allowed types
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
@@ -89,12 +76,30 @@ export const uploadFile = multer({
 // Middleware for single file upload
 export const uploadSingleFile = uploadFile.single('file');
 
-// Helper function to get file URL
+/**
+ * Upload file buffer to MinIO and return the object name
+ * @param buffer File buffer from multer
+ * @param originalName Original filename
+ * @param mimetype File mime type
+ * @returns MinIO object name
+ */
+export const uploadToMinIO = async (buffer: Buffer, originalName: string, mimetype: string): Promise<string> => {
+    const uniqueName = `${uuidv4()}-${Date.now()}${path.extname(originalName)}`;
+    const objectName = `chat-files/${uniqueName}`;
+
+    await putObject(objectName, SYS_BUCKETS.PLUGINS, buffer, {
+        'Content-Type': mimetype
+    });
+
+    return uniqueName;
+};
+
+// Helper function to get file URL (for backward compatibility)
 export const getFileUrl = (filename: string) => {
     return `/api/chat/files/${filename}`;
 };
 
-// Helper function to get file path
-export const getFilePath = (filename: string) => {
-    return path.join(uploadsDir, filename);
+// Helper function to get MinIO object name
+export const getMinIOObjectName = (filename: string) => {
+    return `chat-files/${filename}`;
 };
