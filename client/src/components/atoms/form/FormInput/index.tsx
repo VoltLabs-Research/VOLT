@@ -21,19 +21,37 @@
 **/
 
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
 import './FormInput.css';
 
-const FormInput = ({ label, ...props }) => {
+interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+    label?: string;
+    error?: string;
+    showError?: boolean;
+    variant?: 'default' | 'auth'; // 'default' for settings forms, 'auth' for sign-in forms
+}
+
+const FormInput: React.FC<FormInputProps> = ({ label, error, showError = true, variant = 'default', className = '', ...props }) => {
+    const variantClass = variant === 'auth' ? 'form-input-auth' : '';
 
     return (
-        <div className='form-input-wrapper-container'>
-            <label className='form-input-label-container'>
-                <h3 className='form-input-label'>{label}</h3>
-            </label>
+        <div className={`form-input-wrapper-container ${variantClass}`}>
+            {label && (
+                <label className='form-input-label-container'>
+                    <h3 className='form-input-label'>{label}</h3>
+                </label>
+            )}
 
-            <div className='form-input-container'>
-                <input className='form-input' {...props} />
+            <div className={`form-input-container ${error ? 'form-input-error' : ''} ${variantClass}`}>
+                <input className={`form-input ${className}`} {...props} />
             </div>
+
+            {error && showError && (
+                <div className="form-error-message">
+                    <AlertCircle size={12} />
+                    <span>{error}</span>
+                </div>
+            )}
         </div>
     );
 };

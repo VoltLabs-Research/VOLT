@@ -36,12 +36,12 @@ interface ErrorResponse {
  */
 const extractErrorCode = (error: Error | RuntimeError): string | null => {
     const message = error.message || '';
-    
+
     // If message contains :: separators, it's likely an error code
     if (message.includes('::')) {
         return message;
     }
-    
+
     // Otherwise return null to use default handling
     return null;
 };
@@ -56,77 +56,86 @@ export const globalErrorHandler = (
     res: Response,
     next: NextFunction
 ): void => {
-    // Set default status code
+    // Default values
     let statusCode = 500;
-    let code: string | undefined;
-    let message = err.message || 'Internal Server Error';
+    let code = 'Internal::Server::Error';
+    let message = 'An unexpected error occurred';
+    let details: any = undefined;
 
-    // Check if it's a RuntimeError with status code
+    // Handle RuntimeError
     if (err instanceof RuntimeError) {
-        statusCode = err.statusCode || 500;
-        const extractedCode = extractErrorCode(err);
-        code = extractedCode || message;
-    } else {
-        // Try to extract code from regular Error message
-        const extractedCode = extractErrorCode(err);
-        code = extractedCode || message;
+        statusCode = err.statusCode;
+        code = err.code;
+        message = err.message;
     }
-
-    // Handle MongoDB validation errors
-    if (err.name === 'ValidationError') {
+    // Handle Mongoose Validation Error
+    else if (err.name === 'ValidationError') {
         statusCode = 400;
-        // Extract validation messages from MongoDB error
+        code = 'Validation::Failed';
+        message = 'Validation failed for one or more fields';
+
         const validationErrors = (err as any).errors || {};
-        const errorMessages: string[] = [];
-        
+        details = {};
+
         for (const field in validationErrors) {
-            const fieldError = validationErrors[field];
-            // Use the validation message if available (set in schema validators)
-            if (fieldError.message) {
-                errorMessages.push(fieldError.message);
-                // If this is the first error message and it looks like our error code format
-                if (errorMessages.length === 1 && fieldError.message.includes('::')) {
-                    code = fieldError.message;
-                }
-            }
+            details[field] = validationErrors[field].message;
         }
-        
-        message = errorMessages.join(', ') || 'Validation Error';
     }
-
-    // Handle MongoDB duplicate key errors
-    if (err.name === 'MongoServerError' && (err as any).code === 11000) {
+    // Handle Mongoose Duplicate Key Error
+    else if (err.name === 'MongoServerError' && (err as any).code === 11000) {
         statusCode = 409;
-        code = code || 'Database::DuplicateKey';
+        code = 'Database::DuplicateKey';
         message = 'A record with this value already exists';
-    }
 
-    // Handle MongoDB CastError
-    if (err.name === 'CastError') {
+        // Extract the duplicate field if possible
+        const keyPattern = (err as any).keyPattern;
+        if (keyPattern) {
+            details = { field: Object.keys(keyPattern)[0] };
+        }
+    }
+    // Handle Mongoose Cast Error (Invalid ID)
+    else if (err.name === 'CastError') {
         statusCode = 400;
-        code = code || 'Database::InvalidId';
-        message = 'Invalid ID format';
+        code = 'Database::InvalidId';
+        message = 'Invalid resource identifier format';
+        details = {
+            path: (err as any).path,
+            value: (err as any).value
+        };
+    }
+    // Handle JWT Errors
+    else if (err.name === 'JsonWebTokenError') {
+        statusCode = 401;
+        code = 'Auth::InvalidToken';
+        message = 'Invalid authentication token';
+    }
+    else if (err.name === 'TokenExpiredError') {
+        statusCode = 401;
+        code = 'Auth::TokenExpired';
+        message = 'Authentication token has expired';
+    }
+    // Handle generic Errors
+    else {
+        message = err.message || message;
     }
 
-    // Build response
-    const errorResponse: any = {
-        status: 'error',
-        message,
-        statusCode,
+    // Build standardized response
+    const response: any = {
+        status: statusCode,
+        code
     };
 
-    // Include error code in response
-    if (code) {
-        errorResponse.code = code;
+    if (details) {
+        response.details = details;
     }
 
-    // In development, include the full error
+    // Include stack trace in development
     if (process.env.NODE_ENV === 'development') {
-        errorResponse.error = err;
-        if ((err as any).stack) {
-            errorResponse.stack = (err as any).stack;
-        }
+        response.stack = err.stack;
+        response.rawError = err;
+        // Keep message in dev for easier debugging
+        response.message = message;
     }
 
-    res.status(statusCode).json(errorResponse);
+    res.status(statusCode).json(response);
 };

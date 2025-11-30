@@ -4,12 +4,18 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'Auth::Credentials::Invalid': 'Email or password are incorrect',
     'Auth::Username::MinLength': 'Username must be at least 4 characters long',
     'Auth::Username::MaxLength': 'Username cannot exceed 16 characters',
+    'Auth::InvalidToken': 'Invalid authentication token',
+    'Auth::TokenExpired': 'Authentication token has expired',
     'Authentication::User::NotFound': 'User not found',
     'Authentication::User::ValidationError': 'User validation error',
     'Authentication::User::AccessDenied': 'Access denied',
     'Authentication::Update::UserNotFound': 'User not found',
     'Authentication::Update::PasswordCurrentIncorrect': 'Current password is incorrect',
     'Authentication::Update::PasswordsAreSame': 'New password cannot be the same as current password',
+
+    // Validation errors
+    'Validation::Failed': 'Validation failed for one or more fields',
+    'Internal::Server::Error': 'An unexpected error occurred',
 
     // User errors
     'User::Email::Required': 'Email is required',

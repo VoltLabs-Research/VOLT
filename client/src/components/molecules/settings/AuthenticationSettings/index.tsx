@@ -1,9 +1,10 @@
 import React from 'react';
 import FormInput from '@/components/atoms/form/FormInput';
-import { TbShield, TbX, TbKey, TbEdit, TbActivity, TbDots, TbCheck } from 'react-icons/tb';
+import { TbShield, TbX, TbKey, TbEdit, TbActivity, TbDots } from 'react-icons/tb';
 import Section from '@/components/atoms/settings/Section';
 import SectionHeader from '@/components/atoms/settings/SectionHeader';
 import StatusBadge from '@/components/atoms/common/StatusBadge';
+import { useFormValidation } from '@/hooks/useFormValidation';
 
 interface PasswordInfo { lastChanged?: string }
 
@@ -30,10 +31,38 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
     setPasswordForm,
     isChangingPassword,
     onSubmitPassword,
-    loginActivities,
-    loginActivityLoading,
     onOpenLoginActivity
 }) => {
+    const { errors, validate, checkField } = useFormValidation({
+        currentPassword: { required: true, message: 'Current password is required' },
+        newPassword: {
+            required: true,
+            minLength: 8,
+            maxLength: 16,
+            message: 'Password must be between 8 and 16 characters'
+        },
+        confirmPassword: {
+            required: true,
+            validate: (value, formData) => value === formData?.newPassword || 'Passwords do not match'
+        }
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (validate(passwordForm)) {
+            onSubmitPassword(e);
+        }
+    };
+
+    const handlePasswordChange = (field: keyof typeof passwordForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setPasswordForm(prev => ({ ...prev, [field]: value }));
+
+        // For confirmPassword, we need the newPassword value
+        const formData = field === 'confirmPassword' ? { newPassword: passwordForm.newPassword } : undefined;
+        checkField(field, value, formData);
+    };
+
     return (
         <div className='settings-content'>
             <Section>
@@ -77,15 +106,36 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
 
                         {showPasswordForm && (
                             <div className='password-form'>
-                                <form onSubmit={onSubmitPassword}>
+                                <form onSubmit={handleSubmit}>
                                     <div className='form-group'>
-                                        <FormInput type='password' label='Current Password' value={passwordForm.currentPassword} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))} required />
+                                        <FormInput
+                                            type='password'
+                                            label='Current Password'
+                                            value={passwordForm.currentPassword}
+                                            onChange={handlePasswordChange('currentPassword')}
+                                            required
+                                            error={errors.currentPassword}
+                                        />
                                     </div>
                                     <div className='form-group'>
-                                        <FormInput type='password' label='New Password' value={passwordForm.newPassword} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))} required minLength={8} />
+                                        <FormInput
+                                            type='password'
+                                            label='New Password'
+                                            value={passwordForm.newPassword}
+                                            onChange={handlePasswordChange('newPassword')}
+                                            required
+                                            error={errors.newPassword}
+                                        />
                                     </div>
                                     <div className='form-group'>
-                                        <FormInput type='password' label='Confirm New Password' value={passwordForm.confirmPassword} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))} required />
+                                        <FormInput
+                                            type='password'
+                                            label='Confirm New Password'
+                                            value={passwordForm.confirmPassword}
+                                            onChange={handlePasswordChange('confirmPassword')}
+                                            required
+                                            error={errors.confirmPassword}
+                                        />
                                     </div>
                                     <div className='form-actions'>
                                         <button type='button' className='action-button secondary' onClick={() => setShowPasswordForm(false)}>Cancel</button>

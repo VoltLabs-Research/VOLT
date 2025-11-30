@@ -23,18 +23,17 @@
 import { useState, useEffect } from 'react';
 import { useChatStore } from '@/stores/chat';
 import { useChat } from '@/hooks/chat/useChat';
-import { 
-    IoPeopleOutline, 
-    IoPersonAddOutline, 
-    IoShieldOutline, 
+import {
+    IoPeopleOutline,
+    IoPersonAddOutline,
+    IoShieldOutline,
     IoExitOutline,
     IoSettingsOutline,
     IoSearchOutline,
     IoArrowBackOutline,
     IoLockClosedOutline,
     IoStarOutline,
-    IoCheckmarkCircleOutline,
-    IoInformationCircleOutline
+    IoCheckmarkCircleOutline
 } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
@@ -42,12 +41,13 @@ import Draggable from '@/components/atoms/common/Draggable';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import Button from '@/components/atoms/common/Button';
 import FormInput from '@/components/atoms/form/FormInput';
+import { useFormValidation } from '@/hooks/useFormValidation';
 import './GroupManagementModal.css';
 
 const GroupManagementModal = () => {
-    const { 
-        currentChat, 
-        setShowGroupManagement, 
+    const {
+        currentChat,
+        setShowGroupManagement,
         editGroupName,
         editGroupDescription,
         setEditGroupName,
@@ -59,15 +59,20 @@ const GroupManagementModal = () => {
     const user = useAuthStore((store) => store.user);
     const [isLoading, setIsLoading] = useState(false);
     const [activeSection, setActiveSection] = useState<'general' | 'members' | 'administrators'>('members');
-    
+
     // Add Members states
     const [showAddMembers, setShowAddMembers] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-    
+
     // Manage Admins states
     const [showManageAdmins, setShowManageAdmins] = useState(false);
     const [selectedAdmins, setSelectedAdmins] = useState<string[]>([]);
+
+    const { errors, validateField, checkField, clearError } = useFormValidation({
+        editGroupName: { required: true, minLength: 3, maxLength: 50, message: 'Group name must be between 3 and 50 characters' },
+        editGroupDescription: { maxLength: 250, message: 'Description cannot exceed 250 characters' }
+    });
 
     if (!currentChat || !currentChat.isGroup) return null;
 
@@ -84,7 +89,7 @@ const GroupManagementModal = () => {
 
     const handleLeaveGroup = async () => {
         if (!confirm('Are you sure you want to leave this group?')) return;
-        
+
         setIsLoading(true);
         try {
             await leaveGroup(currentChat._id);
@@ -99,10 +104,14 @@ const GroupManagementModal = () => {
     // Auto-save when user stops typing
     useEffect(() => {
         const timeoutId = setTimeout(() => {
-            if (editGroupName.trim() && editGroupName !== currentChat?.groupName) {
+            // Validate before saving
+            const nameError = validateField('editGroupName', editGroupName);
+            const descError = validateField('editGroupDescription', editGroupDescription);
+
+            if (!nameError && !descError && editGroupName.trim() && editGroupName !== currentChat?.groupName) {
                 updateGroupInfo(
-                    currentChat._id, 
-                    editGroupName.trim(), 
+                    currentChat._id,
+                    editGroupName.trim(),
                     editGroupDescription.trim()
                 );
             }
@@ -121,7 +130,7 @@ const GroupManagementModal = () => {
 
     const handleAddSelectedMembers = async () => {
         if (selectedMembers.length === 0) return;
-        
+
         setIsLoading(true);
         try {
             await addUsersToGroup(currentChat!._id, selectedMembers);
@@ -135,8 +144,8 @@ const GroupManagementModal = () => {
     };
 
     const toggleMemberSelection = (memberId: string) => {
-        setSelectedMembers(prev => 
-            prev.includes(memberId) 
+        setSelectedMembers(prev =>
+            prev.includes(memberId)
                 ? prev.filter(id => id !== memberId)
                 : [...prev, memberId]
         );
@@ -152,19 +161,19 @@ const GroupManagementModal = () => {
 
     const handleSaveAdmins = async () => {
         if (!currentChat) return;
-        
+
         setIsLoading(true);
         try {
             // Get current admin IDs
             const currentAdminIds = currentChat.admins?.map(admin => admin._id) || [];
-            
+
             // Find members to add as admins
-            const membersToAdd = selectedAdmins.filter(adminId => 
+            const membersToAdd = selectedAdmins.filter(adminId =>
                 !currentAdminIds.includes(adminId)
             );
-            
+
             // Find members to remove from admins
-            const membersToRemove = currentAdminIds.filter(adminId => 
+            const membersToRemove = currentAdminIds.filter(adminId =>
                 !selectedAdmins.includes(adminId)
             );
 
@@ -188,8 +197,8 @@ const GroupManagementModal = () => {
     };
 
     const toggleAdminSelection = (adminId: string) => {
-        setSelectedAdmins(prev => 
-            prev.includes(adminId) 
+        setSelectedAdmins(prev =>
+            prev.includes(adminId)
                 ? prev.filter(id => id !== adminId)
                 : [...prev, adminId]
         );
@@ -213,6 +222,16 @@ const GroupManagementModal = () => {
         }
     ];
 
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setEditGroupName(e.target.value);
+        checkField('editGroupName', e.target.value);
+    };
+
+    const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setEditGroupDescription(e.target.value);
+        checkField('editGroupDescription', e.target.value);
+    };
+
     const renderContent = () => {
         switch (activeSection) {
             case 'general':
@@ -223,22 +242,28 @@ const GroupManagementModal = () => {
                                 <h3 className='group-management-section-title'>Group Information</h3>
                             </div>
                             <div className='group-management-form'>
-                                <FormInput
-                                    label='Group Name'
-                                    value={editGroupName}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditGroupName(e.target.value)}
-                                    placeholder='Enter group name'
-                                    required
-                                    disabled={isLoading}
-                                />
-                                
-                                <FormInput
-                                    label='Group Description'
-                                    value={editGroupDescription}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditGroupDescription(e.target.value)}
-                                    placeholder='Enter group description (optional)'
-                                    disabled={isLoading}
-                                />
+                                <div>
+                                    <FormInput
+                                        label='Group Name'
+                                        value={editGroupName}
+                                        onChange={handleNameChange}
+                                        placeholder='Enter group name'
+                                        required
+                                        disabled={isLoading}
+                                        error={errors.editGroupName}
+                                    />
+                                </div>
+
+                                <div>
+                                    <FormInput
+                                        label='Group Description'
+                                        value={editGroupDescription}
+                                        onChange={handleDescriptionChange}
+                                        placeholder='Enter group description (optional)'
+                                        disabled={isLoading}
+                                        error={errors.editGroupDescription}
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -280,13 +305,13 @@ const GroupManagementModal = () => {
                                     )}
                                 </div>
                             )}
-                            
+
                             {!showAddMembers ? (
                                 <div className='group-management-members-list'>
                                     {currentChat.participants.map((member) => {
                                         const isMemberAdmin = currentChat.admins?.some(admin => admin._id === member._id) || false;
                                         const isMemberOwner = currentChat.createdBy?._id === member._id;
-                                        
+
                                         return (
                                             <div key={member._id} className='group-management-member'>
                                                 <div className='group-management-member-avatar'>
@@ -312,7 +337,7 @@ const GroupManagementModal = () => {
                             ) : (
                                 <div className='group-management-add-members'>
                                     <div className='group-management-add-members-header'>
-                                        <div 
+                                        <div
                                             className='group-management-back-button'
                                             onClick={() => {
                                                 setShowAddMembers(false);
@@ -340,7 +365,7 @@ const GroupManagementModal = () => {
 
                                     <div className='group-management-available-members'>
                                         {(() => {
-                                            const availableMembers = teamMembers.filter(member => 
+                                            const availableMembers = teamMembers.filter(member =>
                                                 !currentChat?.participants.some(participant => participant._id === member._id) &&
                                                 member._id !== user?._id
                                             );
@@ -354,10 +379,10 @@ const GroupManagementModal = () => {
                                                 <div className='group-management-members-list'>
                                                     {filteredMembers.map((member) => {
                                                         const isSelected = selectedMembers.includes(member._id);
-                                                        
+
                                                         return (
-                                                            <div 
-                                                                key={member._id} 
+                                                            <div
+                                                                key={member._id}
                                                                 className={`group-management-member ${isSelected ? 'selected' : ''}`}
                                                                 onClick={() => toggleMemberSelection(member._id)}
                                                             >
@@ -431,7 +456,7 @@ const GroupManagementModal = () => {
                                     )}
                                 </div>
                             )}
-                            
+
                             {!showManageAdmins ? (
                                 <div className='group-management-admins-list'>
                                     {/* Owner */}
@@ -474,7 +499,7 @@ const GroupManagementModal = () => {
                             ) : (
                                 <div className='group-management-manage-admins'>
                                     <div className='group-management-manage-admins-header'>
-                                        <div 
+                                        <div
                                             className='group-management-back-button'
                                             onClick={() => {
                                                 setShowManageAdmins(false);
@@ -514,10 +539,10 @@ const GroupManagementModal = () => {
                                                 .map((member) => {
                                                     const isSelected = selectedAdmins.includes(member._id);
                                                     const isCurrentAdmin = currentChat.admins?.some(admin => admin._id === member._id) || false;
-                                                    
+
                                                     return (
-                                                        <div 
-                                                            key={member._id} 
+                                                        <div
+                                                            key={member._id}
                                                             className={`group-management-admin ${isSelected ? 'selected' : ''} ${isCurrentAdmin ? 'current-admin' : ''}`}
                                                             onClick={() => toggleAdminSelection(member._id)}
                                                         >
@@ -588,7 +613,7 @@ const GroupManagementModal = () => {
                             <h3 className='group-management-nav-title'>Group Settings</h3>
                             <div className='group-management-nav-items'>
                                 {navigationItems.map((item) => (
-                                    <div 
+                                    <div
                                         key={item.id}
                                         className={`group-management-nav-item ${activeSection === item.id ? 'active' : ''}`}
                                         onClick={() => setActiveSection(item.id as any)}

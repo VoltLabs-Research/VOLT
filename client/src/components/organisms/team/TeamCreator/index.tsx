@@ -7,6 +7,7 @@ import Loader from '@/components/atoms/common/Loader';
 import useWindowsStore from '@/stores/ui/windows';
 import useToast from '@/hooks/ui/use-toast';
 import DraggableBinaryContainer from '@/components/organisms/common/DraggableBinaryContainer';
+import { useFormValidation } from '@/hooks/useFormValidation';
 import './TeamCreator.css';
 
 interface TeamCreatorProps {
@@ -20,8 +21,21 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
     const [isSubmitting, setIsSubmitting] = useState(false);
     const toggleTeamCreator = useWindowsStore((state) => state.toggleTeamCreator);
     const { showError } = useToast();
-    
+
     const { createTeam, isLoading, error, clearError } = useTeamStore();
+
+    const { errors, validate, checkField, clearError: clearValidationError } = useFormValidation({
+        teamName: {
+            required: true,
+            minLength: 3,
+            maxLength: 50,
+            message: 'Team name must be between 3 and 50 characters'
+        },
+        teamDescription: {
+            maxLength: 250,
+            message: 'Description cannot exceed 250 characters'
+        }
+    });
 
     const handleClose = () => {
         if (isRequired) {
@@ -34,8 +48,8 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
-        if (!teamName.trim()) {
+
+        if (!validate({ teamName, teamDescription })) {
             return;
         }
 
@@ -47,11 +61,11 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
                 name: teamName.trim(),
                 description: teamDescription.trim() || undefined
             });
-            
+
             // Reset form
             setTeamName('');
             setTeamDescription('');
-            
+
             // Close modal if onClose is provided
             onClose?.();
         } catch (err) {
@@ -65,10 +79,12 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTeamName(e.target.value);
         if (error) clearError();
+        checkField('teamName', e.target.value);
     };
 
     const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTeamDescription(e.target.value);
+        checkField('teamDescription', e.target.value);
     };
 
     return (
@@ -87,14 +103,15 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
                 placeholder='Team name'
                 required
                 disabled={isLoading || isSubmitting}
+                error={errors.teamName}
             />
-            
             <FormInput
                 label='Description (optional)'
                 value={teamDescription}
                 onChange={handleDescriptionChange}
                 placeholder='Team description'
                 disabled={isLoading || isSubmitting}
+                error={errors.teamDescription}
             />
 
             {(isLoading || isSubmitting) ? (
@@ -107,7 +124,9 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
                     className='black-on-light sm'
                     title={'Continue'}
                     disabled={!teamName.trim() || isLoading || isSubmitting}
-                />
+                >
+                    Continue
+                </Button>
             )}
         </DraggableBinaryContainer>
     );

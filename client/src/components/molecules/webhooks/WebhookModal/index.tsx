@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { TbX, TbWebhook, TbGlobe, TbActivity } from 'react-icons/tb';
+import { TbX, TbWebhook } from 'react-icons/tb';
 import type { Webhook, CreateWebhookData, UpdateWebhookData } from '@/types/models/webhook';
 import { WEBHOOK_EVENTS } from '@/types/models/webhook';
+import { useFormValidation } from '@/hooks/useFormValidation';
 import './WebhookModal.css';
 
 interface WebhookModalProps {
@@ -27,8 +28,17 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const { errors, validate, checkField } = useFormValidation({
+        name: { required: true, message: 'Webhook name is required' },
+        url: {
+            required: true,
+            pattern: /^https?:\/\/.+/,
+            message: 'Please enter a valid URL (http/https)'
+        }
+    });
+
     useEffect(() => {
-        if (mode === 'edit' && webhook) {
+        if (webhook) {
             setFormData({
                 name: webhook.name,
                 url: webhook.url,
@@ -38,21 +48,21 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
             setFormData({
                 name: '',
                 url: '',
-                events: ['trajectory.created']
+                events: []
             });
         }
-        setError(null);
-    }, [mode, webhook, isOpen]);
+    }, [webhook]);
+
+    const handleInputChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setFormData(prev => ({ ...prev, [field]: value }));
+        checkField(field, value);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.name.trim() || !formData.url.trim()) {
-            setError('Name and URL are required');
-            return;
-        }
 
-        if (!/^https?:\/\/.+/.test(formData.url)) {
-            setError('URL must be a valid HTTP/HTTPS URL');
+        if (!validate(formData)) {
             return;
         }
 
@@ -125,10 +135,11 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
                                 id="name"
                                 type="text"
                                 value={formData.name}
-                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                onChange={(e) => handleInputChange('name', e.target.value)}
                                 placeholder="e.g., Production Webhook, Development Webhook"
-                                required
+                                className={errors.name ? 'error' : ''}
                             />
+                            {errors.name && <span className="text-xs text-red-500 mt-1">{errors.name}</span>}
                         </div>
 
                         <div className="webhook-form-group">
@@ -137,10 +148,11 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
                                 id="url"
                                 type="url"
                                 value={formData.url}
-                                onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
+                                onChange={(e) => handleInputChange('url', e.target.value)}
                                 placeholder="https://your-server.com/webhook"
-                                required
+                                className={errors.url ? 'error' : ''}
                             />
+                            {errors.url && <span className="text-xs text-red-500 mt-1">{errors.url}</span>}
                         </div>
 
                         <div className="webhook-form-group">
@@ -174,8 +186,8 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
                         <button type="button" onClick={onClose} className="webhook-modal-cancel">
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             className="webhook-modal-save"
                             disabled={loading}
                         >

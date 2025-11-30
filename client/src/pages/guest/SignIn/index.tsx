@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import api from "@/api";
 import useAuthStore from "@/stores/authentication";
+import { useFormValidation } from "@/hooks/useFormValidation";
+import FormInput from "@/components/atoms/form/FormInput";
 import {
   Github,
   LayoutGrid,
@@ -93,10 +95,6 @@ const WireframeBackground = () => {
 
 import Button from "@/components/atoms/common/Button";
 
-const Input = ({ className = '', ...props }: any) => (
-  <input className={`form-input ${className}`} {...props} />
-);
-
 export default function AuthPage() {
   const navigate = useNavigate();
   const { signIn, signUp, user, isLoading } = useAuthStore();
@@ -108,6 +106,36 @@ export default function AuthPage() {
   const [lastName, setLastName] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
 
+  const { errors, validate, checkField, clearError } = useFormValidation({
+    email: {
+      required: true,
+      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      message: 'Please enter a valid email address'
+    },
+    password: {
+      required: true,
+      minLength: 8,
+      maxLength: 16,
+      message: 'Password must be between 8 and 16 characters'
+    },
+    firstName: {
+      required: true,
+      minLength: 4,
+      maxLength: 16,
+      message: 'First name must be between 4 and 16 characters'
+    },
+    lastName: {
+      required: true,
+      minLength: 4,
+      maxLength: 16,
+      message: 'Last name must be between 4 and 16 characters'
+    },
+    passwordConfirm: {
+      required: true,
+      validate: (value, formData) => value === formData?.password || 'Passwords do not match'
+    }
+  });
+
   useEffect(() => {
     if (user) {
       navigate("/dashboard");
@@ -118,7 +146,9 @@ export default function AuthPage() {
     e.preventDefault();
 
     try {
-      if (step === "email" && email) {
+      if (step === "email") {
+        if (!validate({ email }, ['email'])) return;
+
         const { data } = await api.post('/auth/check-email', { email });
         if (data.data.exists) {
           setStep("password");
@@ -126,13 +156,24 @@ export default function AuthPage() {
           setStep("register");
         }
       } else if (step === "password") {
+        if (!validate({ email, password }, ['email', 'password'])) return;
         await signIn({ email, password });
       } else if (step === "register") {
+        if (!validate({ email, firstName, lastName, password, passwordConfirm }, ['email', 'firstName', 'lastName', 'password', 'passwordConfirm'])) return;
         await signUp({ email, firstName, lastName, password, passwordConfirm });
       }
     } catch (error) {
       console.error("Authentication error:", error);
     }
+  };
+
+  const handleInputChange = (setter: (val: string) => void, field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setter(value);
+
+    // For passwordConfirm, we need the current password value
+    const formData = field === 'passwordConfirm' ? { password } : undefined;
+    checkField(field, value, formData);
   };
 
   return (
@@ -158,8 +199,8 @@ export default function AuthPage() {
                 Connect with<br />your VoltID
               </h2>
               <p className="hero-description">
-Everything your research needs, in one place. Collaborate seamlessly and connect your scientific stack.
-                </p>
+                Everything your research needs, in one place. Collaborate seamlessly and connect your scientific stack.
+              </p>
             </div>
           </div>
         </div>
@@ -227,17 +268,21 @@ Everything your research needs, in one place. Collaborate seamlessly and connect
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="input-group">
-                      <div className="input-icon">
-                        <Mail size={18} />
+                    <div>
+                      <div className="input-group">
+                        <div className="input-icon">
+                          <Mail size={18} />
+                        </div>
+                        <FormInput
+                          variant="auth"
+                          value={email}
+                          onChange={handleInputChange(setEmail, 'email')}
+                          placeholder="name@example.com"
+                          type="email"
+                          autoFocus
+                          error={errors.email}
+                        />
                       </div>
-                      <Input
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="name@example.com"
-                        type="email"
-                        autoFocus
-                      />
                     </div>
                     <Button type="submit" isLoading={isLoading} className="btn btn-primary">
                       Continue
@@ -264,27 +309,35 @@ Everything your research needs, in one place. Collaborate seamlessly and connect
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4 form-sign-up">
-                    <Input
+                    <FormInput
+                      variant="auth"
                       value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                      onChange={handleInputChange(setFirstName, 'firstName')}
                       placeholder="First Name"
+                      error={errors.firstName}
                     />
-                    <Input
+                    <FormInput
+                      variant="auth"
                       value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      onChange={handleInputChange(setLastName, 'lastName')}
                       placeholder="Last Name"
+                      error={errors.lastName}
                     />
-                    <Input
+                    <FormInput
+                      variant="auth"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={handleInputChange(setPassword, 'password')}
                       placeholder="Password"
                       type="password"
+                      error={errors.password}
                     />
-                    <Input
+                    <FormInput
+                      variant="auth"
                       value={passwordConfirm}
-                      onChange={(e) => setPasswordConfirm(e.target.value)}
+                      onChange={handleInputChange(setPasswordConfirm, 'passwordConfirm')}
                       placeholder="Confirm Password"
                       type="password"
+                      error={errors.passwordConfirm}
                     />
                     <Button type="submit" isLoading={isLoading} className="btn btn-primary">
                       Create Account
@@ -316,15 +369,19 @@ Everything your research needs, in one place. Collaborate seamlessly and connect
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="input-group">
-                      <div className="input-icon"><Lock size={18} /></div>
-                      <Input
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Password"
-                        type="password"
-                        autoFocus
-                      />
+                    <div>
+                      <div className="input-group">
+                        <div className="input-icon"><Lock size={18} /></div>
+                        <FormInput
+                          variant="auth"
+                          value={password}
+                          onChange={handleInputChange(setPassword, 'password')}
+                          placeholder="Password"
+                          type="password"
+                          autoFocus
+                          error={errors.password}
+                        />
+                      </div>
                     </div>
                     <Button type="submit" isLoading={isLoading} className="btn btn-primary">
                       Sign In

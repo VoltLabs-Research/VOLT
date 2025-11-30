@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import FormInput from '@/components/atoms/form/FormInput';
 import RecentActivity from '@/components/molecules/auth/RecentActivity';
 import { TbCheck, TbTrash, TbX, TbActivity } from 'react-icons/tb';
 import Section from '@/components/atoms/settings/Section';
 import SectionHeader from '@/components/atoms/settings/SectionHeader';
 import StatusBadge from '@/components/atoms/common/StatusBadge';
+import { useFormValidation } from '@/hooks/useFormValidation';
 
 interface GeneralSettingsProps {
     user: { firstName?: string; lastName?: string; email?: string } | null;
@@ -16,6 +17,41 @@ interface GeneralSettingsProps {
 }
 
 const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpdating, updateError, onFieldChange, onDeleteAccount }) => {
+    const [formData, setFormData] = useState({
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email
+    });
+
+    const { errors, validate, checkField } = useFormValidation({
+        firstName: { required: true, minLength: 4, maxLength: 16, message: 'First name must be between 4 and 16 characters' },
+        lastName: { required: true, minLength: 4, maxLength: 16, message: 'Last name must be between 4 and 16 characters' },
+        email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email address' }
+    });
+
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                email: user.email || ''
+            });
+        }
+    }, [user]);
+
+    const handleInputChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setFormData(prev => ({ ...prev, [field]: value }));
+
+        // Validate the field
+        const errorMessage = checkField(field, value);
+
+        // Only propagate to parent (and trigger server update) if there's no validation error
+        if (!errorMessage) {
+            onFieldChange(field, value);
+        }
+    };
+
     return (
         <div className='settings-content'>
             <Section className='profile-section'>
@@ -51,11 +87,12 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
 
                     <div className='form-row'>
                         <div className='form-field-container'>
-                            <FormInput 
+                            <FormInput
                                 value={userData.firstName}
                                 label='First name'
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onFieldChange('firstName', e.target.value)}
+                                onChange={handleInputChange('firstName')}
                                 disabled={isUpdating}
+                                error={errors.firstName}
                             />
                             {isUpdating && (
                                 <div className='update-indicator'>
@@ -68,8 +105,9 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
                             <FormInput
                                 value={userData.lastName}
                                 label='Last name'
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onFieldChange('lastName', e.target.value)}
+                                onChange={handleInputChange('lastName')}
                                 disabled={isUpdating}
+                                error={errors.lastName}
                             />
                             {isUpdating && (
                                 <div className='update-indicator'>
@@ -80,11 +118,12 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
                         </div>
                     </div>
                     <div className='form-field-container'>
-                        <FormInput 
+                        <FormInput
                             value={userData.email}
                             label='Email address'
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onFieldChange('email', e.target.value)}
+                            onChange={handleInputChange('email')}
                             disabled={isUpdating}
+                            error={errors.email}
                         />
                         {isUpdating && (
                             <div className='update-indicator'>

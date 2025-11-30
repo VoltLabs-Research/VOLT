@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TbX, TbServer, TbCheck, TbX as TbXIcon } from 'react-icons/tb';
 import useSSHConnections, { type CreateSSHConnectionData, type UpdateSSHConnectionData, type SSHConnection } from '@/stores/ssh-connections';
+import { useFormValidation } from '@/hooks/useFormValidation';
 import './SSHConnectionModal.css';
 
 interface SSHConnectionModalProps {
@@ -30,12 +31,29 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
 
     const { createConnection, updateConnection, testConnection } = useSSHConnections();
 
+    const { errors, validate, checkField, clearError } = useFormValidation({
+        name: { required: true, message: 'Connection name is required' },
+        host: { required: true, message: 'Host is required' },
+        port: {
+            required: true,
+            validate: (value) => {
+                const port = parseInt(value);
+                return !isNaN(port) && port > 0 && port <= 65535 || 'Port must be between 1 and 65535';
+            }
+        },
+        username: { required: true, message: 'Username is required' },
+        password: {
+            required: mode === 'create',
+            message: 'Password is required'
+        }
+    });
+
     useEffect(() => {
         if (mode === 'edit' && connection) {
             setFormData({
                 name: connection.name,
                 host: connection.host,
-                port: connection.port,
+                port: connection.port.toString(), // Ensure port is string
                 username: connection.username,
                 password: '' // Don't populate password for security
             });
@@ -43,7 +61,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
             setFormData({
                 name: '',
                 host: '',
-                port: 22,
+                port: '22', // Ensure port is string
                 username: '',
                 password: ''
             });
@@ -52,16 +70,16 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
         setTestResult(null);
     }, [mode, connection, isOpen]);
 
+    const handleInputChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setFormData(prev => ({ ...prev, [field]: value }));
+        checkField(field, value);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!formData.name.trim() || !formData.host.trim() || !formData.username.trim()) {
-            setError('Name, host, and username are required');
-            return;
-        }
-
-        if (mode === 'create' && !formData.password.trim()) {
-            setError('Password is required');
+        if (!validate(formData)) {
             return;
         }
 
@@ -143,10 +161,11 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                                 id="name"
                                 type="text"
                                 value={formData.name}
-                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                onChange={(e) => handleInputChange('name', e.target.value)}
                                 placeholder="e.g., Production Server, Lab Computer"
-                                required
+                                className={errors.name ? 'error' : ''}
                             />
+                            {errors.name && <span className="ssh-connection-field-error">{errors.name}</span>}
                         </div>
 
                         <div className="ssh-connection-form-group">
@@ -155,10 +174,11 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                                 id="host"
                                 type="text"
                                 value={formData.host}
-                                onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
+                                onChange={(e) => handleInputChange('host', e.target.value)}
                                 placeholder="hostname or IP address"
-                                required
+                                className={errors.host ? 'error' : ''}
                             />
+                            {errors.host && <span className="ssh-connection-field-error">{errors.host}</span>}
                         </div>
 
                         <div className="ssh-connection-form-group">
@@ -167,11 +187,13 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                                 id="port"
                                 type="number"
                                 value={formData.port}
-                                onChange={(e) => setFormData(prev => ({ ...prev, port: parseInt(e.target.value) || 22 }))}
+                                onChange={(e) => handleInputChange('port', parseInt(e.target.value) || 0)}
                                 min="1"
                                 max="65535"
+                                className={errors.port ? 'error' : ''}
                             />
                             <small>Default: 22</small>
+                            {errors.port && <span className="ssh-connection-field-error">{errors.port}</span>}
                         </div>
 
                         <div className="ssh-connection-form-group">
@@ -180,10 +202,11 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                                 id="username"
                                 type="text"
                                 value={formData.username}
-                                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                                onChange={(e) => handleInputChange('username', e.target.value)}
                                 placeholder="SSH username"
-                                required
+                                className={errors.username ? 'error' : ''}
                             />
+                            {errors.username && <span className="ssh-connection-field-error">{errors.username}</span>}
                         </div>
 
                         <div className="ssh-connection-form-group">
@@ -192,10 +215,11 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                                 id="password"
                                 type="password"
                                 value={formData.password}
-                                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                                onChange={(e) => handleInputChange('password', e.target.value)}
                                 placeholder={mode === 'edit' ? 'Leave empty to keep current' : 'SSH password'}
-                                required={mode === 'create'}
+                                className={errors.password ? 'error' : ''}
                             />
+                            {errors.password && <span className="ssh-connection-field-error">{errors.password}</span>}
                         </div>
 
                         {mode === 'edit' && connection && (

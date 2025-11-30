@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { TbX, TbKey, TbCalendar, TbShield } from 'react-icons/tb';
-import { formatDistanceToNow, isValid } from 'date-fns';
+import { TbX, TbKey } from 'react-icons/tb';
 import type { ApiToken, CreateTokenData, UpdateTokenData } from '@/types/models/api-token';
 import { API_TOKEN_PERMISSIONS } from '@/types/models/api-token';
+import { useFormValidation } from '@/hooks/useFormValidation';
 import './ApiTokenModal.css';
 
 interface ApiTokenModalProps {
@@ -29,36 +29,46 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const { errors, validate, checkField } = useFormValidation({
+        name: { required: true, message: 'Token name is required' }
+    });
+
     useEffect(() => {
         if (mode === 'edit' && token) {
             setFormData({
                 name: token.name,
                 description: token.description || '',
                 permissions: token.permissions,
-                expiresAt: token.expiresAt ? new Date(token.expiresAt).toISOString().slice(0, 16) : ''
+                expiresAt: token.expiresAt ? new Date(token.expiresAt).toISOString().split('T')[0] : ''
             });
         } else {
             setFormData({
                 name: '',
                 description: '',
-                permissions: ['read:trajectories'],
+                permissions: [],
                 expiresAt: ''
             });
         }
         setError(null);
-    }, [mode, token, isOpen]);
+    }, [token, isOpen, mode]); // Re-added mode and isOpen as they were in the original and the instruction didn't explicitly remove them from dependencies, only the body logic.
+
+    const handleInputChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const value = e.target.value;
+        setFormData(prev => ({ ...prev, [field]: value }));
+        checkField(field, value);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.name.trim()) {
-            setError('Token name is required');
+
+        if (!validate(formData)) {
             return;
         }
 
         try {
             setLoading(true);
             setError(null);
-            
+
             const submitData = {
                 ...formData,
                 expiresAt: formData.expiresAt ? new Date(formData.expiresAt).toISOString() : undefined
@@ -130,10 +140,11 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
                                 id="name"
                                 type="text"
                                 value={formData.name}
-                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                onChange={(e) => handleInputChange('name', e.target.value)}
                                 placeholder="e.g., Production API, Development API"
-                                required
+                                className={errors.name ? 'error' : ''}
                             />
+                            {errors.name && <span className="text-xs text-red-500 mt-1">{errors.name}</span>}
                         </div>
 
                         <div className="api-token-form-group">
@@ -189,8 +200,8 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
                         <button type="button" onClick={onClose} className="api-token-modal-cancel">
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             className="api-token-modal-save"
                             disabled={loading}
                         >

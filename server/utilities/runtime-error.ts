@@ -20,12 +20,14 @@
 * SOFTWARE.
 **/
 
-class RuntimeError extends Error{
+class RuntimeError extends Error {
     statusCode: number;
+    code: string;
 
-    constructor(message: string, statusCode: number){
+    constructor(message: string, statusCode: number, code: string = 'Internal::Error') {
         super(message);
         this.statusCode = statusCode;
+        this.code = code;
         Error.captureStackTrace(this, this.constructor);
     }
 };
