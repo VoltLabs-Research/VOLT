@@ -23,7 +23,6 @@
 import type { RouteGroup } from './types';
 import Canvas from '@/pages/protected/Canvas';
 import Dashboard from '@/pages/protected/Dashboard';
-import Studio from '@/pages/protected/Studio';
 import HeadlessRasterizerView from '@/pages/protected/HeadlessRasterizerView';
 import Messages from '@/pages/protected/Messages';
 import PluginListing from '@/pages/protected/PluginListing';
@@ -34,6 +33,8 @@ import Clusters from '@/pages/protected/Clusters';
 import SignIn from '@/pages/guest/SignIn';
 import TeamInvitationPage from '@/pages/guest/TeamInvitationPage';
 import OAuthCallback from '@/pages/guest/OAuthCallback';
+import Containers from '@/pages/protected/Containers';
+import ContainerDetails from '@/pages/protected/ContainerDetails';
 
 export const routesConfig: RouteGroup = {
     public: [
@@ -67,6 +68,16 @@ export const routesConfig: RouteGroup = {
             requiresLayout: true,
         },
         {
+            path: '/dashboard/containers',
+            component: Containers,
+            requiresLayout: true,
+        },
+        {
+            path: '/dashboard/containers/:id',
+            component: ContainerDetails,
+            requiresLayout: true,
+        },
+        {
             path: '/dashboard/trajectories/list',
             component: TrajectoriesListing,
             requiresLayout: true,
@@ -79,11 +90,6 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/trajectory/:trajectoryId/plugin/:pluginId/listing/:listingKey',
             component: PluginListing,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/studio/',
-            component: Studio,
             requiresLayout: true,
         },
         {

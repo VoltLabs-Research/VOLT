@@ -1,6 +1,7 @@
 import { v4 } from 'uuid';
 import { api } from '@/api';
 
+// TODO: CHECK FOR DUPLICATED CODE
 export type GuestUser = {
     id: string;
     firstName: string;
@@ -44,27 +45,17 @@ export const getOrCreateGuestUser = async (): Promise<GuestUser> => {
         };
     }
 
-    try {
-        const response = await api.get(`/auth/guest-identity?seed=${uid}`);
-        const { firstName } = response.data.data;
+    const response = await api.get(`/auth/guest-identity?seed=${uid}`);
+    const { firstName } = response.data.data;
 
-        // Cache the name
-        localStorage.setItem(`${GUEST_KEY}_name`, firstName);
+    // Cache the name
+    localStorage.setItem(`${GUEST_KEY}_name`, firstName);
 
-        return {
-            id: 'guest:' + uid,
-            firstName,
-            color: hslFromUid(uid)
-        };
-    } catch (error) {
-        console.error('Failed to fetch guest identity:', error);
-        // Fallback to a simple ID-based name if API fails
-        return {
-            id: 'guest:' + uid,
-            firstName: `Guest ${uid.slice(0, 4)}`,
-            color: hslFromUid(uid)
-        };
-    }
+    return {
+        id: 'guest:' + uid,
+        firstName,
+        color: hslFromUid(uid)
+    };
 };
 
 export const getInitials = (firstName?: string, lastName?: string) => {

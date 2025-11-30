@@ -27,13 +27,12 @@ interface TeamInvitePanelProps {
     onClose: () => void;
     teamName: string;
     teamId: string;
-    triggerRef?: React.RefObject<HTMLDivElement>;
+    triggerRef?: React.RefObject<HTMLElement | null>;
 }
 
 const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     isOpen,
     onClose,
-    teamName,
     teamId,
     triggerRef
 }) => {
@@ -43,8 +42,6 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     const [loading, setLoading] = useState(false);
     const [loadingMembers, setLoadingMembers] = useState(true);
     const [buttonState, setButtonState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-    const [error, setError] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const { showError, showSuccess } = useToast();
@@ -122,13 +119,11 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
         if (!email.trim()) return;
 
-        setError(null);
-        setSuccessMessage(null);
+        setButtonState('idle');
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email.trim())) {
             const errorMsg = 'Invalid email format';
-            setError(errorMsg);
             showError(errorMsg);
             setButtonState('error');
             setTimeout(() => setButtonState('idle'), 2000);
@@ -137,7 +132,6 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
         if (members.find(m => m.email === email.trim())) {
             const errorMsg = 'This email is already invited';
-            setError(errorMsg);
             showError(errorMsg);
             setButtonState('error');
             setTimeout(() => setButtonState('idle'), 2000);
@@ -155,17 +149,14 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             setMembers([...members, { email: email.trim(), role: 'Can view' }]);
             setEmail('');
             const successMsg = `Invitation sent to ${email.trim()}`;
-            setSuccessMessage(successMsg);
             showSuccess(successMsg);
             setButtonState('success');
 
             setTimeout(() => {
-                setSuccessMessage(null);
                 setButtonState('idle');
             }, 2500);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-            setError(errorMessage);
             showError(errorMessage);
             setButtonState('error');
             setTimeout(() => setButtonState('idle'), 2000);

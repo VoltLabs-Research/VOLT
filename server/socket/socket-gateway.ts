@@ -8,6 +8,7 @@ import { createRedisClient } from '@/config/redis';
 import { User } from '@/models/index';
 import { initializeJobUpdatesListener } from '@/socket/job-updates-listener';
 import { initializeTrajectoryUpdatesListener } from '@/socket/trajectory-updates-listener';
+import ContainerModule from '@/socket/modules/containers';
 import logger from '@/logger';
 
 /**
@@ -16,7 +17,7 @@ import logger from '@/logger';
  * - Attaches the Redis adapter for multi-node setups.
  * - Registers feature modules and forwards connection events to them.
  */
-class SocketGateway{
+class SocketGateway {
     private io?: Server;
     private adapterPub?: Redis;
     private adapterSub?: Redis;
@@ -27,17 +28,17 @@ class SocketGateway{
 
     constructor(
         private corsOrigins: string[] = [
-        process.env.CLIENT_DEV_HOST as string,
-        process.env.CLIENT_HOST as string,
+            process.env.CLIENT_DEV_HOST as string,
+            process.env.CLIENT_HOST as string,
         ],
         private pingTimeout = 60_000,
         private pingInterval = 25_000
-    ){}
+    ) { }
 
     /**
      * Register a feature module (before initialize()).
      */
-    register(module: BaseSocketModule): this{
+    register(module: BaseSocketModule): this {
         this.modules.push(module);
         return this;
     }
@@ -45,8 +46,8 @@ class SocketGateway{
     /**
      * Initialize Socket.IO on top of the HTTP server and set up Redis adapter.
      */
-    async initialize(server: http.Server): Promise<Server>{
-        if(this.initialized && this.io) return this.io;
+    async initialize(server: http.Server): Promise<Server> {
+        if (this.initialized && this.io) return this.io;
 
         this.io = new Server(server, {
             cors: {
@@ -60,7 +61,7 @@ class SocketGateway{
 
         this.adapterPub = createRedisClient();
         this.adapterSub = createRedisClient();
-        
+
         // Configure Redis adapter with extended timeout for fetchSockets
         this.io.adapter(createAdapter(this.adapterPub, this.adapterSub, {
             requestsTimeout: 10000, // 10 seconds timeout for fetchSockets operations
@@ -70,7 +71,7 @@ class SocketGateway{
         this.io.use(async (socket, next) => {
             try {
                 const token = socket.handshake.auth?.token;
-                
+
                 // Allow anonymous connections (for public trajectories)
                 if (!token) {
                     (socket as any).user = null;
@@ -80,7 +81,7 @@ class SocketGateway{
 
                 const secret = process.env.SECRET_KEY as string;
                 const decoded = jwt.verify(token, secret) as any;
-                
+
                 const user = await User.findById(decoded.id).select('-password');
                 if (!user) {
                     // Invalid token but allow anonymous access
@@ -100,7 +101,7 @@ class SocketGateway{
             }
         });
 
-        for(const module of this.modules){
+        for (const module of this.modules) {
             module.onInit(this.io);
         }
 
@@ -112,10 +113,12 @@ class SocketGateway{
 
         this.io.on('connection', (socket: Socket) => {
             logger.info(`[Socket Gateway] Connected ${socket.id}`);
-            for(const module of this.modules){
+            for (const module of this.modules) {
                 module.onConnection(socket);
             }
         });
+
+        this.register(new ContainerModule());
 
         this.initialized = true;
         return this.io;
@@ -124,38 +127,38 @@ class SocketGateway{
     /**
      * Graceful shutdown: close io, adapter redis, and notify modules.
      */
-    async close(): Promise<void>{
-        try{
+    async close(): Promise<void> {
+        try {
             await Promise.all(this.modules.map((module) => module.onShutdown()));
-        }catch(err: any){
+        } catch (err: any) {
             logger.error(`[Socket Gateway] Module shutdown error ${err}`);
         }
 
-        try{
+        try {
             await new Promise<void>((res) => {
-                if(this.io){
+                if (this.io) {
                     this.io.close(() => res());
-                }else{
+                } else {
                     res();
                 }
             });
-        }catch{}
+        } catch { }
 
-        try{
+        try {
             await this.adapterPub?.quit();
-        }catch{}
+        } catch { }
 
-        try{
+        try {
             await this.adapterSub?.quit();
-        }catch{}
+        } catch { }
 
-        try{
+        try {
             await this.jobUpdatesSubscriber?.quit();
-        }catch{}
+        } catch { }
 
-        try{
+        try {
             await this.trajectoryUpdatesSubscriber?.quit();
-        }catch{}
+        } catch { }
 
         this.io = undefined;
         this.adapterPub = undefined;
@@ -168,8 +171,8 @@ class SocketGateway{
     /**
      * Return the initialized SocketIO server.
      */
-    getIO(): Server{
-        if(!this.io){
+    getIO(): Server {
+        if (!this.io) {
             throw new Error('SocketIO not initialized');
         }
 

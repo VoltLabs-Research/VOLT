@@ -27,7 +27,7 @@ import { User, Trajectory } from '@/models/index';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 
-const TeamSchema: Schema<ITeam> = new Schema({
+const TeamSchema = new Schema({
     name: {
         type: String,
         required: [true, 'Team::Name::Required'],
@@ -51,6 +51,16 @@ const TeamSchema: Schema<ITeam> = new Schema({
         ref: 'User',
         inverse: { path: 'teams', behavior: 'addToSet' },
         cascade: 'pull'
+    }],
+    invitations: [{
+        type: Schema.Types.ObjectId,
+        ref: 'TeamInvitation',
+        cascade: 'delete'
+    }],
+    containers: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Container',
+        cascade: 'delete'
     }],
     trajectories: [{
         type: Schema.Types.ObjectId,

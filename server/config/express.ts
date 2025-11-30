@@ -98,7 +98,8 @@ configureApp({
         'webhooks',
         'chat',
         'ssh-connections',
-        'ssh-file-explorer'
+        'ssh-file-explorer',
+        'containers'
     ],
     middlewares: [
         apiTracker,

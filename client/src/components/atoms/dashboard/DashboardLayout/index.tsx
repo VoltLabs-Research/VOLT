@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { TbCube3dSphere } from "react-icons/tb";
-import { IoSearchOutline, IoSettingsOutline, IoMenuOutline } from "react-icons/io5";
+import { IoSearchOutline, IoSettingsOutline, IoMenuOutline, IoCubeOutline } from "react-icons/io5";
 import { TbBook } from 'react-icons/tb';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { IoNotificationsOutline } from "react-icons/io5";
@@ -85,8 +85,8 @@ const DashboardLayout = () => {
     const notificationList = useMemo(() => notifications, [notifications]);
     const navItems: Array<[string, IconType, string]> = useMemo(() => ([
         ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
+        ['Containers', IoCubeOutline, '/dashboard/containers'],
         ['Messages', CiChat1, '/dashboard/messages'],
-        ['Studio', TbCube3dSphere, ''],
         ['Clusters', TbBook, '/dashboard/clusters']
     ]), []);
     const searchQuery = useDashboardSearchStore((s) => s.query);
