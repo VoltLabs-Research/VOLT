@@ -106,7 +106,7 @@ export const importTrajectoryFromSSH = async (req: Request, res: Response) => {
     const sessionId = v4();
     const sessionStartTime = new Date().toISOString();
 
-    const publishProgress = (status: string, progress: number, message?: string) => {
+    const publishProgress = async (status: string, progress: number, message?: string) => {
         const payload = {
             jobId,
             status,
@@ -122,7 +122,15 @@ export const importTrajectoryFromSSH = async (req: Request, res: Response) => {
             queueType: 'ssh-import',
             type: 'ssh_import'
         };
-        publisher.publish('job_updates', JSON.stringify({ teamId, payload }));
+
+        // Publish real-time update
+        await publisher.publish('job_updates', JSON.stringify({ teamId, payload }));
+
+        // Persist state for initial fetch (TTL 1 hour)
+        const pipeline = publisher.pipeline();
+        pipeline.sadd(`team:${teamId}:jobs`, jobId);
+        pipeline.setex(`ssh-import:status:${jobId}`, 3600, JSON.stringify({ ...payload, teamId }));
+        await pipeline.exec();
     };
 
     try {

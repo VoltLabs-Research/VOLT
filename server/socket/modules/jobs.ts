@@ -34,26 +34,26 @@ import logger from '@/logger';
  *  - Handles team subscription flow with initial snapshot + buffered updates.
  *  - Provides a public API to emit job updates onto the domain bus.
  */
-class JobsModule extends BaseSocketModule{
+class JobsModule extends BaseSocketModule {
     // Local buffer while a client is doing initial fetch
     private initializingClients = new Map<string, ClientData>();
 
-    constructor(){
+    constructor() {
         super('JobsModule');
     }
 
-    onInit(io: Server): void{
+    onInit(io: Server): void {
         this.io = io;
     }
 
-    onConnection(socket: Socket): void{
+    onConnection(socket: Socket): void {
         socket.on('subscribe_to_team', async ({ teamId, previousTeamId }) => {
-            if(previousTeamId){
+            if (previousTeamId) {
                 this.leaveRoom(socket, `team-${previousTeamId}`);
             }
 
             this.initializingClients.delete(socket.id);
-            if(!teamId) return;
+            if (!teamId) return;
 
             this.initializingClients.set(socket.id, {
                 teamId,
@@ -80,21 +80,21 @@ class JobsModule extends BaseSocketModule{
     /**
      * Publish a job update to the domain bus (all pods receive it).
      */
-    async emitJobUpdate(teamId: string, payload: any): Promise<void>{
-        if(!teamId || !payload) return;
+    async emitJobUpdate(teamId: string, payload: any): Promise<void> {
+        if (!teamId || !payload) return;
         await publishJobUpdate(teamId, payload);
     }
 
     /**
      * Re-emit a job update to local sockets (called by whoever listens to Pub/Sub).
      */
-    async reemitLocal(teamId: string, jobData: any): Promise<void>{
-        if(!this.io){
+    async reemitLocal(teamId: string, jobData: any): Promise<void> {
+        if (!this.io) {
             return;
         }
 
         const update = this.normalizeUpdate(jobData);
-        if(this.hasAnyInitializingForTeam(teamId)){
+        if (this.hasAnyInitializingForTeam(teamId)) {
             this.addPendingUpdate(teamId, update);
             return;
         }
@@ -102,7 +102,7 @@ class JobsModule extends BaseSocketModule{
         try {
             const sockets = await this.io.in(`team-${teamId}`).fetchSockets();
             const ready = sockets.filter((socket) => !this.initializingClients.has(socket.id));
-            if(ready.length === 0){
+            if (ready.length === 0) {
                 this.addPendingUpdate(teamId, update);
                 return;
             }
@@ -121,9 +121,9 @@ class JobsModule extends BaseSocketModule{
      * @param teamId Team identifier.
      * @returns `true` if at least one socket is initializing; otherwise `false`.
      */
-    private hasAnyInitializingForTeam(teamId: string): boolean{
-        for(const client of this.initializingClients.values()){
-            if(client.teamId === teamId){
+    private hasAnyInitializingForTeam(teamId: string): boolean {
+        for (const client of this.initializingClients.values()) {
+            if (client.teamId === teamId) {
                 return true;
             }
         }
@@ -140,12 +140,12 @@ class JobsModule extends BaseSocketModule{
      * @remarks
      * - Caps buffer per socket at 1000 entries, trimming to the last 50 if exceeded.
      */
-    private addPendingUpdate(teamId: string, jobData: any): void{
-        for(const client of this.initializingClients.values()){
-            if(client.teamId !== teamId) continue;
+    private addPendingUpdate(teamId: string, jobData: any): void {
+        for (const client of this.initializingClients.values()) {
+            if (client.teamId !== teamId) continue;
 
             client.pendingUpdates.push(jobData);
-            if(client.pendingUpdates.length > 1000){
+            if (client.pendingUpdates.length > 1000) {
                 client.pendingUpdates = client.pendingUpdates.slice(-50);
             }
         }
@@ -156,19 +156,19 @@ class JobsModule extends BaseSocketModule{
      * 
      * @param socketId Socket identifier
      */
-    private async sendPendingUpdates(socketId: string): Promise<void>{
-        if(!this.io) return;
+    private async sendPendingUpdates(socketId: string): Promise<void> {
+        if (!this.io) return;
 
         const client = this.initializingClients.get(socketId);
-        if(!client || client.pendingUpdates.length === 0) return;
+        if (!client || client.pendingUpdates.length === 0) return;
 
         const socket = this.io.sockets.sockets.get(socketId);
-        if(!socket) return;
+        if (!socket) return;
 
         const batchSize = 10;
-        for(let i  = 0; i < client.pendingUpdates.length; i += batchSize){
+        for (let i = 0; i < client.pendingUpdates.length; i += batchSize) {
             client.pendingUpdates.slice(i, i + batchSize).forEach((update) => socket.emit('job_update', update));
-            if(i + batchSize < client.pendingUpdates.length){
+            if (i + batchSize < client.pendingUpdates.length) {
                 await new Promise((resolve) => setTimeout(resolve, 10));
             }
         }
@@ -183,7 +183,9 @@ class JobsModule extends BaseSocketModule{
         return [
             { name: 'trajectory', queue: getTrajectoryProcessingQueue() },
             { name: 'analysis', queue: getAnalysisQueue() },
-            { name: 'raster', queue: getRasterizerQueue() }
+            { name: 'raster', queue: getRasterizerQueue() },
+            // Virtual queue for SSH imports
+            { name: 'ssh-import', queue: { queueKey: 'ssh-import' } as any }
         ];
     }
 
@@ -194,8 +196,8 @@ class JobsModule extends BaseSocketModule{
      * @param teamId Team identifier.
      * @returns Array of unique jobs (deduplicated by `jobId`, newest timestamp wins).
      */
-    private async getJobsForTeam(teamId: string): Promise<BaseJob[]>{
-        if(!teamId) return [];
+    private async getJobsForTeam(teamId: string): Promise<BaseJob[]> {
+        if (!teamId) return [];
         const startTime = Date.now();
         logger.info(`[Socket] Fetching fresh jobs for team ${teamId}...`);
 
@@ -203,9 +205,9 @@ class JobsModule extends BaseSocketModule{
         const teamJobsKey = `team:${teamId}:jobs`;
         const jobIds = await redis?.smembers(teamJobsKey);
 
-        if(!jobIds?.length){
+        if (!jobIds?.length) {
             logger.info(`[Socket] No jobs found in team index for team ${teamId}`);
-            return [];   
+            return [];
         }
 
         const queueResults = await Promise.all(allQueues.map(async ({ name, queue }) => {
@@ -213,18 +215,18 @@ class JobsModule extends BaseSocketModule{
             const batchSize = 500;
             const jobs: BaseJob[] = [];
 
-            for(let i = 0; i < statusKeys.length; i += batchSize){
+            for (let i = 0; i < statusKeys.length; i += batchSize) {
                 const batchKeys = statusKeys.slice(i, i + batchSize);
 
                 const pipeline = redis?.pipeline();
                 batchKeys.forEach((k) => pipeline?.get(k));
                 const results = (await pipeline?.exec()) || [];
 
-                for(const [_, value] of results){
-                    if(!value) continue;
+                for (const [_, value] of results) {
+                    if (!value) continue;
 
                     const data = JSON.parse(value as string);
-                    if(data.teamId !== teamId) continue;
+                    if (data.teamId !== teamId) continue;
 
                     jobs.push({
                         jobId: data.jobId,
@@ -242,17 +244,17 @@ class JobsModule extends BaseSocketModule{
         }));
 
         const jobMap = new Map<string, BaseJob>();
-        for(const job of queueResults.flat()){
+        for (const job of queueResults.flat()) {
             const prev = jobMap.get(job.jobId);
             const tNew = (job as any).timestamp ? new Date((job as any).timestamp).getTime() : 0;
             const tPrev = (prev as any)?.timestamp ? new Date((prev as any).timestamp).getTime() : 0;
-            if(!prev || tNew > tPrev) jobMap.set(job.jobId, job);
+            if (!prev || tNew > tPrev) jobMap.set(job.jobId, job);
         }
 
         const uniqueJobs = Array.from(jobMap.values()).sort((a, b) => {
             const ta = (a as any).timestamp ? new Date((a as any).timestamp).getTime() : 0;
             const tb = (b as any).timestamp ? new Date((b as any).timestamp).getTime() : 0;
-            return tb - ta;  
+            return tb - ta;
         });
 
         logger.info(`[Socket] Fresh fetch completed for team ${teamId}: ${uniqueJobs.length} jobs in ${Date.now() - startTime}ms`);
