@@ -27,7 +27,7 @@ import ManifestService from '@/services/plugins/manifest-service';
 import AnalysisContext from '@/services/plugins/modifier-context';
 import ArgumentsBuilder from '@/services/plugins/arguments-builder';
 import CLIExec from '@/services/cli-exec';
-import TrajectoryFS from '@/services/trajectory-fs';
+import TrajectoryVFS from '@/services/trajectory-vfs';
 import DumpStorage from '@/services/dump-storage';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';

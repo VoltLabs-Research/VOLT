@@ -5,7 +5,7 @@ import { Analysis } from '@/models';
 import PluginRegistry from '@/services/plugins/plugins-registry';
 import RuntimeError from '@/utilities/runtime-error';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
-import TrajectoryFS from '@/services/trajectory-fs';
+import TrajectoryVFS from '@/services/trajectory-vfs';
 import { getStream, statObject, listByPrefix, getObject } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
 import ManifestService from '@/services/plugins/manifest-service';
@@ -55,7 +55,7 @@ export const evaluateModifier = catchAsync(async (req: Request, res: Response, n
     });
 
     const analysisId = analysis._id.toString();
-    const trajectoryFS = new TrajectoryFS(trajectoryId);
+    const trajectoryFS = new TrajectoryVFS(trajectoryId);
 
     // Get manifest to generate descriptive job name
     const manifest = await new ManifestService(pluginId).get();

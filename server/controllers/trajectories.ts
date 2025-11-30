@@ -28,7 +28,7 @@ import { getTrajectoryProcessingQueue } from '@/queues';
 import { processTrajectoryFile } from '@/utilities/lammps';
 import { Trajectory, Team } from '@models/index';
 import { getMetricsByTeamId } from '@/utilities/metrics/team';
-import TrajectoryFS from '@/services/trajectory-fs';
+import TrajectoryVFS from '@/services/trajectory-vfs';
 import RuntimeError from '@/utilities/runtime-error';
 import HandlerFactory from '@/controllers/handler-factory';
 import archiver from 'archiver';
@@ -99,20 +99,9 @@ export const getMetrics = async (req: Request, res: Response) => {
     }
 
     const trajectoryId = trajectory._id.toString();
-    const trajFS = new TrajectoryFS(trajectoryId);
+    const trajFS = new TrajectoryVFS(trajectoryId);
 
     try {
-        // Calculate filesystem size (legacy dumps from before MinIO migration)
-        // New uploads go directly to MinIO via worker migration
-        const trajectoryDir = process.env.TRAJECTORY_DIR || join(os.tmpdir(), 'opendxa-trajectories');
-        const dumpsPath = join(trajectoryDir, trajectoryId, 'dumps');
-        let dumpsSize = 0;
-        try {
-            dumpsSize = await trajFS['calculateLocalDirSize'](dumpsPath);
-        } catch {
-            // Ignore if directory doesn't exist
-        }
-
         // Calculate MinIO dump storage
         const minioDumpsSize = await DumpStorage.calculateSize(trajectoryId);
 
@@ -142,8 +131,8 @@ export const getMetrics = async (req: Request, res: Response) => {
         const pluginsSize = await trajFS['calculateMinioSize'](`plugins/trajectory-${trajectoryId}/`, SYS_BUCKETS.PLUGINS);
         minioSize += pluginsSize;
 
-        // Total storage size (including both filesystem legacy dumps and MinIO dumps)
-        const totalSizeBytes = dumpsSize + minioDumpsSize + minioSize;
+        // Total storage size (all in MinIO now)
+        const totalSizeBytes = minioDumpsSize + minioSize;
 
         // Get frame count
         const totalFrames = trajectory.frames?.length || 0;
@@ -234,7 +223,7 @@ export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
         });
     }
 
-    const trajFS = new TrajectoryFS(trajectoryId);
+    const trajFS = new TrajectoryVFS(trajectoryId);
 
     const TYPES = [
         'atoms_colored_by_type',
@@ -296,7 +285,7 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
     const trajectoryId = trajectory._id.toString();
 
     try {
-        const trajFS = new TrajectoryFS(trajectoryId);
+        const trajFS = new TrajectoryVFS(trajectoryId);
         const frameFilePath = await trajFS.getDump(trajectoryId, timestep);
 
         if (!frameFilePath) {
@@ -422,7 +411,7 @@ export const getTrajectoryGLB = async (req: Request, res: Response) => {
         const { type } = req.query as { type?: string };
         const trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
-        const trajFS = new TrajectoryFS(trajectoryId);
+        const trajFS = new TrajectoryVFS(trajectoryId);
 
         let result = null;
 
@@ -465,7 +454,7 @@ export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) 
     const trajectory = res.locals.trajectory;
     const trajectoryId = trajectory._id.toString();
     const { analysisId, type } = req.params;
-    const trajFS = new TrajectoryFS(trajectoryId);
+    const trajFS = new TrajectoryVFS(trajectoryId);
     const maps = await trajFS.getAnalysis(trajectoryId, analysisId, type, { media: 'glb' });
     const glbMap = maps.glb || {};
     const frameFilter = req.query.frame ? String(req.query.frame) : null;
@@ -524,7 +513,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
     const folderPath = join(tempBaseDir, trajectoryIdStr);
     await mkdir(folderPath, { recursive: true });
 
-    const trajFS = new TrajectoryFS(trajectoryIdStr, tempBaseDir);
+    const trajFS = new TrajectoryVFS(trajectoryIdStr, tempBaseDir);
     await trajFS.ensureStructure(trajectoryIdStr);
 
     const filePromises = files.map(async (file: any, i: number) => {

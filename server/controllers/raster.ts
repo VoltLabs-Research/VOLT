@@ -7,7 +7,7 @@ import { readdir } from 'fs/promises';
 import { Analysis, Trajectory } from '@/models';
 import { getTimestepPreview, rasterizeGLBs } from '@/utilities/raster';
 import { SYS_BUCKETS } from '@/config/minio';
-import TrajectoryFS from '@/services/trajectory-fs';
+import TrajectoryVFS from '@/services/trajectory-vfs';
 import archiver from 'archiver';
 import logger from '@/logger';
 
@@ -37,7 +37,7 @@ export const readRasterModel = async (
     trajectoryId: string,
     frame: number
 ): Promise<Buffer> => {
-    const trajFS = new TrajectoryFS(trajectoryId.toString());
+    const trajFS = new TrajectoryVFS(trajectoryId.toString());
     const absPath = join(trajFS.root, analysisId, 'raster', String(frame), `${modelType}.png`);
     return readFile(absPath);
 };
@@ -57,7 +57,7 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
         .select('-__v')
         .lean();
 
-    const tfs = new TrajectoryFS(trajectoryId);
+    const tfs = new TrajectoryVFS(trajectoryId);
     const analysesMetadata: Record<string, any> = {};
 
     for (const analysis of analyses) {
@@ -135,7 +135,7 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
         .lean();
 
     const analysesData: Record<string, any> = {};
-    const trajFS = new TrajectoryFS(trajectoryId);
+    const trajFS = new TrajectoryVFS(trajectoryId);
 
     for (const analysis of analyses) {
         const id = analysis._id.toString();
@@ -203,7 +203,7 @@ export const downloadRasterImagesArchive = async (req: Request, res: Response) =
     }
 
     try {
-        const tfs = new TrajectoryFS(trajectoryId);
+        const tfs = new TrajectoryVFS(trajectoryId);
         const wantPreview = includePreview === '1' || includePreview === 'true';
         const files: string[] = [];
 

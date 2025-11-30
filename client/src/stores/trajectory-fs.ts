@@ -85,14 +85,14 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
     historyIndex: 0,
 
     async _fetchFsList(path = '', showHidden = false) {
-        const res = await api.get<{ status: 'success', data: FsListResponse }>('/trajectory-fs/', {
+        const res = await api.get<{ status: 'success', data: FsListResponse }>('/trajectory-vfs/', {
             params: { path, hidden: showHidden }
         });
         return res.data.data;
     },
 
     async _downloadFsFile(relPath: string) {
-        const res = await api.get('/trajectory-fs/download', {
+        const res = await api.get('/trajectory-vfs/download', {
             params: { path: relPath },
             responseType: 'blob'
         });

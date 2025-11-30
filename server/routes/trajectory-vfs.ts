@@ -21,7 +21,7 @@
 **/
 
 import { Router } from 'express';
-import * as controller from '@/controllers/trajectory-fs';
+import * as controller from '@/controllers/trajectory-vfs';
 import * as authMiddleware from '@/middlewares/authentication';
 
 const router = Router();

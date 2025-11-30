@@ -21,7 +21,7 @@
 **/
 
 import { Request, Response } from 'express';
-import TrajectoryFS from '@/services/trajectory-fs';
+import TrajectoryVFS from '@/services/trajectory-vfs';
 import RuntimeError from '@/utilities/runtime-error';
 
 const breadcrumbsOf = (rel: string) => {
@@ -44,7 +44,7 @@ export const listTrajectoryFs = async (req: Request, res: Response) => {
     const userId = user._id || user.id;
     const pathParam = String(req.query.path || '');
 
-    const trajFS = new TrajectoryFS(userId);
+    const trajFS = new TrajectoryVFS(userId);
 
     try {
         const entries = await trajFS.list(pathParam);
@@ -77,7 +77,7 @@ export const downloadTrajectoryFs = async (req: Request, res: Response) => {
     const userId = user._id || user.id;
     const pathParam = String(req.query.path || '');
 
-    const trajFS = new TrajectoryFS(userId);
+    const trajFS = new TrajectoryVFS(userId);
 
     try {
         const { stream, size, contentType, filename } = await trajFS.getReadStream(pathParam);

@@ -88,7 +88,7 @@ configureApp({
         'raster',
         'trajectories',
         'notifications',
-        'trajectory-fs',
+        'trajectory-vfs',
         'auth',
         'api-tokens',
         'api-tracker',

@@ -110,7 +110,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
             const token = localStorage.getItem('authToken');
             const API_BASE_URL = import.meta.env.VITE_API_URL + '/api';
 
-            const response = await fetch(`${API_BASE_URL}/trajectory-fs/download?path=${encodeURIComponent(entry.relPath)}`, {
+            const response = await fetch(`${API_BASE_URL}/trajectory-vfs/download?path=${encodeURIComponent(entry.relPath)}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`

@@ -59,7 +59,7 @@ export interface GetOptions {
     media?: Media;
 }
 
-class TrajectoryFS {
+class TrajectoryVFS {
     readonly userId: string | null;
     readonly baseDir: string;
 
@@ -240,28 +240,6 @@ class TrajectoryFS {
         }
 
         return entries;
-    }
-
-    // Helper: Calculate size of local directory
-    private async calculateLocalDirSize(dirPath: string): Promise<number> {
-        try {
-            const files = await fs.readdir(dirPath, { withFileTypes: true });
-            let totalSize = 0;
-
-            for (const file of files) {
-                const filePath = path.join(dirPath, file.name);
-                if (file.isFile()) {
-                    const stat = await fs.stat(filePath);
-                    totalSize += stat.size;
-                } else if (file.isDirectory()) {
-                    totalSize += await this.calculateLocalDirSize(filePath);
-                }
-            }
-
-            return totalSize;
-        } catch (err) {
-            return 0;
-        }
     }
 
     // Helper: Calculate size of MinIO prefix
@@ -685,4 +663,4 @@ class TrajectoryFS {
     }
 }
 
-export default TrajectoryFS;
+export default TrajectoryVFS;
