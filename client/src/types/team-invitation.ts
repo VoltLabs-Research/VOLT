@@ -8,6 +8,9 @@ export interface TeamInvitation {
     };
     invitedBy: {
         email: string;
+        firstName?: string;
+        lastName?: string;
+        avatar?: string;
     };
     email: string;
     token: string;

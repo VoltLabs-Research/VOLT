@@ -73,14 +73,23 @@ const HeadlessRasterizerView: React.FC = () => {
     const user = useAuthStore((state) => state.user);
     const connectedUsers = useRasterConnectedUsers(trajectoryId);
 
+    const [guestUser, setGuestUser] = useState<any>(null);
+
+    useEffect(() => {
+        if (user) return;
+        getOrCreateGuestUser().then(setGuestUser);
+    }, [user]);
+
     const cursorUser: any = useMemo(() => {
-        if (!user) return undefined;
-        const u: any = { id: String(user._id ?? 'anon'), color: '#8A63D2' };
-        if (user.firstName) u.firstName = user.firstName;
-        if (user.lastName) u.lastName = user.lastName;
-        if (user.email) u.email = user.email;
-        return getOrCreateGuestUser();
-    }, [user?._id, user?.firstName, user?.lastName, user?.email]);
+        if (user) {
+            const u: any = { id: String(user._id ?? 'anon'), color: '#8A63D2' };
+            if (user.firstName) u.firstName = user.firstName;
+            if (user.lastName) u.lastName = user.lastName;
+            if (user.email) u.email = user.email;
+            return u;
+        }
+        return guestUser;
+    }, [user, guestUser]);
 
     const [leftAnalysis, setLeftAnalysis] = useState<string | null>(null);
     const [rightAnalysis, setRightAnalysis] = useState<string | null>(null);
@@ -430,14 +439,10 @@ const HeadlessRasterizerView: React.FC = () => {
     useEffect(() => {
         if (!trajectory?._id || !trajectoryId) return;
 
-        const presenceUser = user && user._id
-            ? {
-                id: String(user._id),
-                ...(user.firstName ? { firstName: user.firstName } : {}),
-                ...(user.lastName ? { lastName: user.lastName } : {}),
-                ...(user.email ? { email: user.email } : {})
-            }
-            : getOrCreateGuestUser();
+        // Wait for cursorUser to be ready (either from auth or guest fetch)
+        if (!cursorUser) return;
+
+        const presenceUser = cursorUser;
 
         const key = `${trajectory._id}:${presenceUser.id}`;
         if (subscribedKeyRef.current === key) return;
@@ -445,7 +450,7 @@ const HeadlessRasterizerView: React.FC = () => {
         const prevTrajectory = subscribedKeyRef.current?.split(':')[0];
         socketService.subscribeToTrajectory(trajectory._id, presenceUser, prevTrajectory);
         subscribedKeyRef.current = key;
-    }, [trajectory?._id, trajectoryId, user?._id, user?.firstName, user?.lastName, user?.email]);
+    }, [trajectory?._id, trajectoryId, cursorUser]);
 
     const leftScene = useRasterFrame(
         trajectoryId,

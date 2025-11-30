@@ -7,7 +7,8 @@ export const SYS_BUCKETS = {
     MODELS: 'opendxa-models',
     RASTERIZER: 'opendxa-rasterizer',
     PLUGINS: 'opendxa-plugins',
-    DUMPS: 'opendxa-dumps'
+    DUMPS: 'opendxa-dumps',
+    AVATARS: 'opendxa-avatars'
 };
 
 const createClient = (): Client => {
@@ -42,6 +43,21 @@ export const ensureBucketExists = async (client: Client, bucket: string): Promis
     const exists = await client.bucketExists(bucket).catch(() => false);
     if (!exists) {
         await client.makeBucket(bucket, '');
+        // Set public policy for avatars bucket
+        if (bucket === SYS_BUCKETS.AVATARS) {
+            const policy = {
+                Version: '2012-10-17',
+                Statement: [
+                    {
+                        Effect: 'Allow',
+                        Principal: { AWS: ['*'] },
+                        Action: ['s3:GetObject'],
+                        Resource: [`arn:aws:s3:::${bucket}/*`]
+                    }
+                ]
+            };
+            await client.setBucketPolicy(bucket, JSON.stringify(policy));
+        }
         logger.info(`[MinIO] OK: ${bucket}`);
     }
 };
@@ -56,6 +72,24 @@ export const putObject = async (bucketName: string, objectName: string, payload:
         body.length,
         { 'Content-Type': 'application/json' }
     );
+};
+
+export const uploadFile = async (bucketName: string, objectName: string, buffer: Buffer, contentType: string): Promise<void> => {
+    const client = getMinioClient();
+    await client.putObject(
+        bucketName,
+        objectName,
+        buffer,
+        buffer.length,
+        { 'Content-Type': contentType }
+    );
+};
+
+export const getFileUrl = (bucketName: string, objectName: string): string => {
+    const endPoint = process.env.MINIO_ENDPOINT || 'localhost';
+    const port = process.env.MINIO_PORT ?? 9000;
+    const protocol = process.env.MINIO_USE_SSL === 'true' ? 'https' : 'http';
+    return `${protocol}://${endPoint}:${port}/${bucketName}/${objectName}`;
 };
 
 export const initializeMinio = async (): Promise<void> => {

@@ -27,6 +27,8 @@ import { Strategy as MicrosoftStrategy } from 'passport-microsoft';
 import { User } from '@/models/index';
 import { IUser } from '@/types/models/user';
 
+import { generateRandomName } from '@/utilities/name-generator';
+
 /**
  * Configure GitHub OAuth Strategy
  */
@@ -64,11 +66,13 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
                             await user.save();
                         } else {
                             // Create new user
-                            const names = profile.displayName?.split(' ') || ['github', 'user'];
+                            const { firstName, lastName } = generateRandomName(profile.id);
+                            const names = profile.displayName?.split(' ') || [];
+
                             user = await User.create({
                                 email,
-                                firstName: names[0] || 'github',
-                                lastName: names.slice(1).join(' ') || 'user',
+                                firstName: names[0] || firstName,
+                                lastName: names.slice(1).join(' ') || lastName,
                                 oauthProvider: 'github',
                                 oauthId: profile.id,
                                 avatar: profile.photos?.[0]?.value
@@ -122,10 +126,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                             await user.save();
                         } else {
                             // Create new user
+                            const { firstName, lastName } = generateRandomName(profile.id);
+
                             user = await User.create({
                                 email,
-                                firstName: profile.name?.givenName || 'google',
-                                lastName: profile.name?.familyName || 'user',
+                                firstName: profile.name?.givenName || firstName,
+                                lastName: profile.name?.familyName || lastName,
                                 oauthProvider: 'google',
                                 oauthId: profile.id,
                                 avatar: profile.photos?.[0]?.value
@@ -179,10 +185,12 @@ if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
                             await user.save();
                         } else {
                             // Create new user
+                            const { firstName, lastName } = generateRandomName(profile.id);
+
                             user = await User.create({
                                 email,
-                                firstName: profile.name?.givenName || 'microsoft',
-                                lastName: profile.name?.familyName || 'user',
+                                firstName: profile.name?.givenName || firstName,
+                                lastName: profile.name?.familyName || lastName,
                                 oauthProvider: 'microsoft',
                                 oauthId: profile.id
                             });

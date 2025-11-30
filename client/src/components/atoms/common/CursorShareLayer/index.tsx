@@ -24,7 +24,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { socketService } from '@/services/socketio';
 import { getOrCreateGuestUser } from '@/utilities/guest';
 
-interface Cursor{
+interface Cursor {
     id: string;
     x: number;
     y: number;
@@ -45,7 +45,7 @@ interface Cursor{
     clickRipples: Array<{ x: number; y: number; timestamp: number; id: string }>;
 }
 
-interface CursorShareLayerProps{
+interface CursorShareLayerProps {
     roomName?: string;
     user?: any;
     className?: string;
@@ -59,7 +59,7 @@ interface CursorShareLayerProps{
     size?: number;
 }
 
-    const clamp = (n: number, min: number, max: number) => {
+const clamp = (n: number, min: number, max: number) => {
     return Math.min(max, Math.max(min, n));
 };
 
@@ -72,8 +72,8 @@ const cssHsl = (h: number, s: number, l: number, a = 1) => {
 // Identity-based color
 const hasH = (seed: string) => {
     let h = 0;
-    for(let i = 0; i < seed.length; i++){
-        h = (h * 31 + seed.charCodeAt(i )) >>> 0;
+    for (let i = 0; i < seed.length; i++) {
+        h = (h * 31 + seed.charCodeAt(i)) >>> 0;
     }
 
     return h % 360;
@@ -83,13 +83,13 @@ const parseToHsl = (color: string | undefined, fallbackhue: number, vividness: n
     const s = 22 + vividness * 28;
     const l = 58 + vividness * 10;
     // If user provided a color, lightly desaturate via blending by converting to a CSS var stack
-    if(!color){
+    if (!color) {
         return {
             base: cssHsl(fallbackhue, s, l),
             halo: cssHsl(fallbackhue, s, l, 0.25),
             line: cssHsl(fallbackhue, s, l, 0.45)
         };
-    }    
+    }
     // We cannot reliably convert arbitrary CSS color to HSL here without a canvas; treat it as-it but reduce alpha
     return {
         base: color,
@@ -131,7 +131,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
 
             next.forEach((cursor, id) => {
                 const gone = now - cursor.lastSeen > 5000;
-                if(gone){
+                if (gone) {
                     next.delete(id);
                     changed = true;
                     return;
@@ -143,14 +143,14 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
                 const isMoving = distance > 0.08;
 
                 let newTrail = cursor.trail;
-                if(isMoving && enableTrails && !reduced){
+                if (isMoving && enableTrails && !reduced) {
                     newTrail = [
                         ...newTrail,
                         { x: cursor.x, y: cursor.y, opacity: 1, timestamp: now }
                     ]
                         .filter((p) => now - p.timestamp < 800)
                         .slice(-maxTrailLength);
-                }else if(!enableTrails || reduced){
+                } else if (!enableTrails || reduced) {
                     newTrail = [];
                 }
 
@@ -161,13 +161,13 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
 
                 const newRipples = cursor.clickRipples.filter((r) => now - r.timestamp < 700);
 
-                if(
+                if (
                     newX !== cursor.x ||
                     newY !== cursor.y ||
                     isMoving !== cursor.isMoving ||
                     newTrail.length !== cursor.trail.length ||
                     newRipples.length !== cursor.clickRipples.length
-                ){
+                ) {
                     next.set(id, { ...cursor, x: newX, y: newY, isMoving, trail: newTrail, clickRipples: newRipples });
                     changed = true;
                 }
@@ -183,14 +183,14 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
         lastUpdateRef.current = performance.now();
         animationFrameRef.current = requestAnimationFrame(animate);
         return () => {
-            animationFrameRef.current && cancelAnimationFrame(animationFrameRef.current);  
+            animationFrameRef.current && cancelAnimationFrame(animationFrameRef.current);
         };
     }, [animate]);
 
     useEffect(() => {
         const recompute = () => {
             const rect = containerRef.current?.getBoundingClientRect();
-            if(!rect) return;
+            if (!rect) return;
             setCursors((prev) => {
                 const next = new Map(prev);
                 return next;
@@ -198,28 +198,30 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
         };
 
         window.addEventListener('resize', recompute);
-        if(window.visualViewport){
+        if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', recompute);
-            window.visualViewport.addEventListener('scroll', recompute);     
+            window.visualViewport.addEventListener('scroll', recompute);
         }
 
         return () => {
             window.removeEventListener('resize', recompute);
-            if(window.visualViewport){
+            if (window.visualViewport) {
                 window.visualViewport.removeEventListener('resize', recompute);
-                window.visualViewport.removeEventListener('scroll', recompute);  
+                window.visualViewport.removeEventListener('scroll', recompute);
             }
         };
     }, []);
 
     useEffect(() => {
-        if(!roomName) return;
+        if (!roomName) return;
 
-        const joinUser = user ?? getOrCreateGuestUser();
-
-        socketService
-            .emit('cursor:join', { room: roomName, user: joinUser })
-            .catch(err => console.error('Failed to join cursor room:', err));
+        const initCursor = async () => {
+            const joinUser = user ?? await getOrCreateGuestUser();
+            socketService
+                .emit('cursor:join', { room: roomName, user: joinUser })
+                .catch(err => console.error('Failed to join cursor room:', err));
+        };
+        initCursor();
 
         const offMove = socketService.on('cursor:move', (data: any) => {
             setCursors((prev) => {
@@ -232,7 +234,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
                 const y = rect ? clamp(data.ny, 0, 1) * rect.height : 0;
 
                 next.set(data.id, {
-                  id: data.id,
+                    id: data.id,
                     x: existing?.x ?? x,
                     y: existing?.y ?? y,
                     targetX: x,
@@ -254,7 +256,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
             setCursors((prev) => {
                 const next = new Map(prev);
                 const existing = next.get(data.id);
-                if(existing){
+                if (existing) {
                     const rect = containerRef.current?.getBoundingClientRect();
                     const x = rect ? clamp(data.nx, 0, 1) * rect.width : 0;
                     const y = rect ? clamp(data.ny, 0, 1) * rect.height : 0;
@@ -287,24 +289,24 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
     }, [roomName, user, vividness]);
 
     const handleMouseMove = (e: React.MouseEvent) => {
-        if(!roomName || !containerRef.current) return;
+        if (!roomName || !containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
         const nx = clamp((e.clientX - rect.left) / (rect.width || 1), 0, 1);
         const ny = clamp((e.clientY - rect.top) / (rect.height || 1), 0, 1);
         socketService
-                .emit('cursor:move', { room: roomName, nx, ny, ts: Date.now(), velocity: 0, angle: 0 })
-                .catch((err) => console.error('Failed to send cursor move:', err));
+            .emit('cursor:move', { room: roomName, nx, ny, ts: Date.now(), velocity: 0, angle: 0 })
+            .catch((err) => console.error('Failed to send cursor move:', err));
     };
 
     const handleClick = (e: React.MouseEvent) => {
-        if(!roomName || !containerRef.current) return;
-        if(!enableRipples) return;
+        if (!roomName || !containerRef.current) return;
+        if (!enableRipples) return;
         const rect = containerRef.current.getBoundingClientRect();
         const nx = clamp((e.clientX - rect.left) / (rect.width || 1), 0, 1);
         const ny = clamp((e.clientY - rect.top) / (rect.height || 1), 0, 1);
         socketService
             .emit('cursor:click', { room: roomName, nx, ny, ts: Date.now() })
-            .catch((err) => console.error('Failed to send cursor click:', err));    
+            .catch((err) => console.error('Failed to send cursor click:', err));
     };
 
     const cursorsArray = Array.from(cursors.values());
@@ -344,7 +346,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
                                     filter: 'blur(0.2px)',
                                     mixBlendMode: 'plus-lighter',
                                 }}
-                            />  
+                            />
                         ))}
 
                         <div

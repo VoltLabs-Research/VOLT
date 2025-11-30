@@ -4,11 +4,47 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { IoCheckmarkCircle, IoCloseCircle, IoPeopleOutline, IoMailOutline, IoTimeOutline, IoShieldCheckmarkOutline } from 'react-icons/io5';
+import { IoCheckmarkCircle, IoCloseCircle } from 'react-icons/io5';
 import { Skeleton } from '@mui/material';
 import { api } from '@/api';
 import type { TeamInvitation } from '@/types/team-invitation';
 import './TeamInvitationPage.css';
+
+/* Add these styles to TeamInvitationPage.css if not present, or create the file */
+/* 
+.invited-by {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 24px;
+    color: var(--text-secondary);
+}
+
+.inviter-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.inviter-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.inviter-initials {
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+}
+*/
 
 const TeamInvitationPage: React.FC = () => {
     const { token } = useParams<{ token: string }>();
@@ -167,7 +203,7 @@ const TeamInvitationPage: React.FC = () => {
                     </div>
 
                     <div className='invitation-actions'>
-                        <button 
+                        <button
                             className='action-btn accept-btn'
                             onClick={handleAccept}
                             disabled={actionLoading}
@@ -175,7 +211,7 @@ const TeamInvitationPage: React.FC = () => {
                             <IoCheckmarkCircle size={20} />
                             {actionLoading ? 'Accepting...' : 'Accept Invitation'}
                         </button>
-                        <button 
+                        <button
                             className='action-btn reject-btn'
                             onClick={handleReject}
                             disabled={actionLoading}

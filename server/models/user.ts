@@ -112,6 +112,23 @@ UserSchema.pre('save', async function (this: IUser & { isNew: boolean }, next) {
     next();
 });
 
+UserSchema.pre('save', async function (this: IUser & { isNew: boolean }, next) {
+    if (this.isNew && !this.avatar) {
+        try {
+            // Generate default avatar using email as seed
+            const { AvatarService } = await import('@services/avatar');
+            this.avatar = await AvatarService.generateAndUploadDefaultAvatar(
+                this._id.toString(),
+                this.email
+            );
+        } catch (error) {
+            console.error('Failed to generate default avatar:', error);
+            // Don't block user creation if avatar generation fails
+        }
+    }
+    next();
+});
+
 UserSchema.post('save', async function (doc, next) {
     // Can we use this.isNew?
     const isNewUser = this.createdAt.getTime() === this.updatedAt.getTime();

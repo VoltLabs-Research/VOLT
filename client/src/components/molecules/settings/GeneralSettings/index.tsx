@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import FormInput from '@/components/atoms/form/FormInput';
 import RecentActivity from '@/components/molecules/auth/RecentActivity';
-import { TbCheck, TbTrash, TbX, TbActivity } from 'react-icons/tb';
+import { TbCheck, TbTrash, TbX, TbActivity, TbCamera } from 'react-icons/tb';
+import { api } from '@/api';
 import Section from '@/components/atoms/settings/Section';
 import SectionHeader from '@/components/atoms/settings/SectionHeader';
 import StatusBadge from '@/components/atoms/common/StatusBadge';
 import { useFormValidation } from '@/hooks/useFormValidation';
+import './GeneralSettings.css';
 
 interface GeneralSettingsProps {
-    user: { firstName?: string; lastName?: string; email?: string } | null;
+    user: { firstName?: string; lastName?: string; email?: string; avatar?: string } | null;
     userData: { firstName: string; lastName: string; email: string };
     isUpdating: boolean;
     updateError: string | null;
@@ -22,6 +24,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
         lastName: userData.lastName,
         email: userData.email
     });
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
     const { errors, validate, checkField } = useFormValidation({
         firstName: { required: true, minLength: 4, maxLength: 16, message: 'First name must be between 4 and 16 characters' },
@@ -52,14 +55,69 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
         }
     };
 
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type and size
+        if (!file.type.startsWith('image/')) {
+            alert('Please upload an image file');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size must be less than 5MB');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        try {
+            setIsUploadingAvatar(true);
+            await api.patch('/auth/me', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            // Refresh page to show new avatar (or update context if available)
+            window.location.reload();
+        } catch (error) {
+            console.error('Failed to upload avatar:', error);
+            alert('Failed to upload avatar. Please try again.');
+        } finally {
+            setIsUploadingAvatar(false);
+        }
+    };
+
     return (
         <div className='settings-content'>
             <Section className='profile-section'>
                 <div className='profile-header'>
                     <div className='profile-avatar'>
-                        <div className='avatar-circle'>
-                            {user?.firstName?.[0]}{user?.lastName?.[0]}
+                        <div className='profile-avatar-container' onClick={() => document.getElementById('avatar-upload')?.click()}>
+                            {user?.avatar ? (
+                                <img src={user.avatar} alt="Profile" className="profile-avatar-img" />
+                            ) : (
+                                <div className='avatar-circle'>
+                                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+                                </div>
+                            )}
+                            <div className='profile-avatar-overlay'>
+                                {isUploadingAvatar ? (
+                                    <TbActivity className="animate-spin" size={24} />
+                                ) : (
+                                    <TbCamera size={24} />
+                                )}
+                            </div>
                         </div>
+                        <input
+                            type="file"
+                            id="avatar-upload"
+                            className="avatar-upload-input"
+                            accept="image/*"
+                            onChange={handleAvatarUpload}
+                            disabled={isUploadingAvatar}
+                        />
                     </div>
                     <div className='profile-info'>
                         <h2 className='profile-name'>{user?.firstName} {user?.lastName}</h2>

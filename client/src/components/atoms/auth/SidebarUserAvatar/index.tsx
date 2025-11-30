@@ -27,10 +27,10 @@ import { useNavigate } from 'react-router';
 import './SidebarUserAvatar.css';
 
 // TODO: USER AVATAR SHOULD BE A NEW COMPONENT
-const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUsername = false, onClick = () => {} }) => {
+const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUsername = false, onClick = () => { } }) => {
     const { user, signOut } = useAuthStore();
     const navigate = useNavigate();
-    
+
     // Si no hay usuario autenticado, mostrar una interfaz genérica o nada
     if (!user) {
         return null;
@@ -44,11 +44,15 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
             ]}
         >
             <div className='sidebar-user-container' onClick={onClick}>
-                <div 
+                <div
                     className='sidebar-user-avatar-container'
                     data-avatarrounded={avatarrounded}
                 >
-                    <span className='sidebar-user-avatar'>{user.firstName?.[0] || '?'}</span>
+                    {user.avatar ? (
+                        <img src={user.avatar} alt="User Avatar" className='sidebar-user-avatar-img' />
+                    ) : (
+                        <span className='sidebar-user-avatar'>{user.firstName?.[0] || '?'}</span>
+                    )}
                 </div>
 
                 <div className='sidebar-user-details-container'>

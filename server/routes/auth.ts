@@ -24,8 +24,23 @@ import express from 'express';
 import * as controller from '@controllers/authentication';
 import * as middleware from '@middlewares/authentication';
 import passport from '@config/passport';
+import multer from 'multer';
 
 const router = express.Router();
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(null, false);
+        }
+    }
+});
 
 router.post('/sign-in', controller.signIn);
 router.post('/sign-up', controller.signUp);
@@ -44,8 +59,10 @@ router.get('/microsoft/callback', passport.authenticate('microsoft', { session: 
 router.use(middleware.protect);
 router.patch('/me/update/password/', controller.updateMyPassword);
 
-router.route('/me')
-    .get(controller.getMyAccount)
+router.get('/me', controller.getMyAccount); // Changed from chained route to direct GET
+router.get('/guest-identity', controller.getGuestIdentity); // Added new route
+
+router.route('/me') // The chained route for /me now only handles PATCH and DELETE
     .patch(controller.updateMyAccount)
     .delete(controller.deleteMyAccount);
 

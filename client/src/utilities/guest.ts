@@ -1,4 +1,5 @@
 import { v4 } from 'uuid';
+import { api } from '@/api';
 
 export type GuestUser = {
     id: string;
@@ -6,37 +7,14 @@ export type GuestUser = {
     color: string;
 };
 
-const ANIMALS = [
-    'Axolotl',
-    'Panda',
-    'Red Panda',
-    'Koala',,
-    'Otter',
-    'Dolphin',
-    'Fox',
-    'Hedgehog',
-    'Llama',
-    'Sloth',
-    'Toucan',
-    'Capybara',
-    'Quokka',
-    'Narwhal',
-    'Octopus',
-    'Penguin',
-    'Raccoon',
-    'Tiger',
-    'Turtle',
-    'Whale',
-];
-
 const GUEST_KEY = 'guest_uid_v1';
 
 const hash = (str: string): number => {
     let h = 2166136261 >>> 0;
-    for(let i = 0; i < str.length; i++){
+    for (let i = 0; i < str.length; i++) {
         h ^= str.charCodeAt(i);
         // FNV-1a
-        h = Math.imul(h, 16777619) >>> 0; 
+        h = Math.imul(h, 16777619) >>> 0;
     }
     return h >>> 0;
 };
@@ -48,24 +26,44 @@ const hslFromUid = (uid: string) => {
     return `hsl(${h} ${s}% ${l}%)`;
 };
 
-const pickAnimal = (uid: string) => {
-    const idx = hash('animal:' + uid) % ANIMALS.length;
-    const animal = ANIMALS[idx];
-    return { name: animal };
-};
-
-export const getOrCreateGuestUser = (): GuestUser => {
+export const getOrCreateGuestUser = async (): Promise<GuestUser> => {
     let uid = localStorage.getItem(GUEST_KEY);
-    if(!uid){
+    if (!uid) {
         uid = v4().slice(0, 12);
         localStorage.setItem(GUEST_KEY, uid);
     }
 
-    const animal = pickAnimal(uid);
-    return {
-        id: 'guest:' + uid,
-        firstName: `${animal.name}`,
-        color: hslFromUid(uid)
+    // Try to get cached name first
+    const cachedName = localStorage.getItem(`${GUEST_KEY}_name`);
+
+    if (cachedName) {
+        return {
+            id: 'guest:' + uid,
+            firstName: cachedName,
+            color: hslFromUid(uid)
+        };
+    }
+
+    try {
+        const response = await api.get(`/auth/guest-identity?seed=${uid}`);
+        const { firstName } = response.data.data;
+
+        // Cache the name
+        localStorage.setItem(`${GUEST_KEY}_name`, firstName);
+
+        return {
+            id: 'guest:' + uid,
+            firstName,
+            color: hslFromUid(uid)
+        };
+    } catch (error) {
+        console.error('Failed to fetch guest identity:', error);
+        // Fallback to a simple ID-based name if API fails
+        return {
+            id: 'guest:' + uid,
+            firstName: `Guest ${uid.slice(0, 4)}`,
+            color: hslFromUid(uid)
+        };
     }
 };
 

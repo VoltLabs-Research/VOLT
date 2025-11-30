@@ -48,11 +48,11 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     const panelRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const { showError, showSuccess } = useToast();
-    
+
     // Use positioning hook for intelligent positioning
     const { styles, setInitialPosition } = usePositioning(
-        triggerRef,
-        panelRef,
+        triggerRef as React.RefObject<HTMLElement>,
+        panelRef as React.RefObject<HTMLDivElement>,
         isOpen
     );
 
@@ -60,12 +60,12 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     useEffect(() => {
         const fetchMembers = async () => {
             if (!isOpen || !teamId) return;
-            
+
             setLoadingMembers(true);
             try {
                 const response = await api.get(`/teams/${teamId}/members`);
                 const membersData = response.data.data.members;
-                
+
                 // Map members to the expected format
                 const formattedMembers: TeamMember[] = membersData?.map((member: any) => ({
                     email: member.email || member._id,
@@ -73,7 +73,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     role: 'Can edit',
                     avatar: member.avatar || member.username?.charAt(0).toUpperCase() || member.email?.charAt(0).toUpperCase()
                 })) || [];
-                
+
                 setMembers(formattedMembers);
             } catch (err) {
                 console.error('Error fetching team members:', err);
@@ -81,7 +81,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 setLoadingMembers(false);
             }
         };
-        
+
         fetchMembers();
     }, [isOpen, teamId]);
 
@@ -121,10 +121,10 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         if ('key' in e) e.preventDefault();
 
         if (!email.trim()) return;
-            
+
         setError(null);
         setSuccessMessage(null);
-        
+
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email.trim())) {
             const errorMsg = 'Invalid email format';
@@ -158,7 +158,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             setSuccessMessage(successMsg);
             showSuccess(successMsg);
             setButtonState('success');
-            
+
             setTimeout(() => {
                 setSuccessMessage(null);
                 setButtonState('idle');
@@ -179,7 +179,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             await api.post(`/teams/${teamId}/members/remove`, {
                 email: emailToRemove
             });
-            
+
             setMembers(members.filter(m => m.email !== emailToRemove));
             showSuccess(`Member ${emailToRemove} removed successfully`);
         } catch (err) {
@@ -193,8 +193,8 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             handleRemoveMember(email);
             return;
         }
-        
-        setMembers(members.map(m => 
+
+        setMembers(members.map(m =>
             m.email === email ? { ...m, role: newRole } : m
         ));
     };
@@ -212,7 +212,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div 
+        <div
             ref={panelRef}
             className='team-invite-panel'
             style={styles as React.CSSProperties}
@@ -242,7 +242,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                         className='team-invite-search-input'
                         disabled={loading}
                     />
-                    <button 
+                    <button
                         className={`team-invite-invite-btn team-invite-invite-btn--${buttonState}`}
                         onClick={handleAddMember}
                         disabled={loading}
@@ -294,11 +294,19 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                         members.map((member) => (
                             <div key={member.email} className='team-invite-member-item'>
                                 <div className='team-invite-member-info'>
-                                    <div 
+                                    <div
                                         className='team-invite-avatar'
-                                        style={{ backgroundColor: getAvatarColor(member.email) }}
+                                        style={{ backgroundColor: member.avatar ? 'transparent' : getAvatarColor(member.email) }}
                                     >
-                                        {member.avatar || getInitials(member.email)}
+                                        {member.avatar ? (
+                                            <img
+                                                src={member.avatar}
+                                                alt={member.name || member.email}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                            />
+                                        ) : (
+                                            getInitials(member.email)
+                                        )}
                                     </div>
                                     <div className='team-invite-member-details'>
                                         <p className='team-invite-member-name'>{member.name || member.email}</p>

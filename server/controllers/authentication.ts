@@ -240,6 +240,85 @@ export const checkEmailExistence = async (req: Request, res: Response): Promise<
     });
 };
 
+const filterObj = (obj: any, ...allowedFields: string[]) => {
+    const newObj: any = {};
+    Object.keys(obj).forEach(el => {
+        if (allowedFields.includes(el)) newObj[el] = obj[el];
+    });
+    return newObj;
+};
+
+/**
+ * Update the authenticated user's own profile data.
+ * 
+ * @param req - Express request containing `req.user` (from auth middleware) and update fields in `body`.
+ * @param res - Express response used to send the updated user data.
+ * @param next - Express next function to propagate errors.
+ * @returns A Promise that resolves when the response has been sent.
+ * 
+ * @remarks
+ * - Allows updating `firstName`, `lastName`, `email`, and `avatar`.
+ * - Filters out other fields to prevent unauthorized updates.
+ * - Handles avatar file upload if `req.file` is present.
+ * 
+ * @public
+ */
+export const updateMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    // 1) Ensure user is authenticated
+    if (!req.user) {
+        return next(new RuntimeError('Authentication::User::NotFound', 401));
+    }
+
+    // 2) Filtered out unwanted fields names that are not allowed to be updated
+    const filteredBody = filterObj(req.body, 'firstName', 'lastName', 'email');
+
+    // Handle avatar upload
+    if (req.file) {
+        try {
+            const { AvatarService } = await import('@services/avatar');
+            const avatarUrl = await AvatarService.uploadCustomAvatar(
+                (req.user as any)._id.toString(),
+                req.file.buffer,
+                req.file.mimetype
+            );
+            filteredBody.avatar = avatarUrl;
+        } catch (error) {
+            return next(new RuntimeError('Authentication::Update::AvatarUploadFailed', 500));
+        }
+    }
+
+    // 3) Update user document
+    const updatedUser = await User.findByIdAndUpdate((req.user as any)._id, filteredBody, {
+        new: true,
+        runValidators: true
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            user: updatedUser
+        }
+    });
+};
+
+export const getGuestIdentity = (req: Request, res: Response, next: NextFunction) => {
+    const { seed } = req.query;
+    if (!seed || typeof seed !== 'string') {
+        return next(new RuntimeError('Authentication::Guest::SeedRequired', 400));
+    }
+
+    const { generateRandomName } = require('@utilities/name-generator');
+    const { firstName, lastName } = generateRandomName(seed);
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            firstName,
+            lastName
+        }
+    });
+};
+
 /**
  * Update the authenticated user's password after validating the current password.
  * 

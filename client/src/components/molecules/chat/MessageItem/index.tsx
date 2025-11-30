@@ -42,9 +42,13 @@ const MessageItem: React.FC<MessageItemProps> = ({
         <div className={`chat-message ${isOwn ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''} ${showAvatar ? 'with-avatar' : ''}`}>
             {showAvatar && (
                 <div className='chat-message-avatar'>
-                    <span className='chat-avatar-initial'>
-                        {sender?.firstName?.[0]?.toUpperCase() || '?'}
-                    </span>
+                    {sender?.avatar ? (
+                        <img src={sender.avatar} alt="Sender Avatar" className='chat-avatar-img' />
+                    ) : (
+                        <span className='chat-avatar-initial'>
+                            {sender?.firstName?.[0]?.toUpperCase() || '?'}
+                        </span>
+                    )}
                 </div>
             )}
             <div className='chat-message-wrapper'>
@@ -54,43 +58,43 @@ const MessageItem: React.FC<MessageItemProps> = ({
                     </div>
                 )}
                 <div className='chat-message-content'>
-                {isDeleted ? (
-                    <p className='chat-message-text deleted-message'>This message was deleted</p>
-                ) : isFile ? (
-                    <FileMessage currentChatId={currentChatId} msg={msg} />
-                ) : (
-                    <TextMessage msg={msg} onSave={(content) => onEdit(msg._id, content)} />
-                )}
-
-                {!isDeleted && (
-                <>
-                    <MessageControls
-                        isOwn={isOwn}
-                        onOpenReactions={() => onToggleReactions(msg._id)}
-                        onOpenOptions={() => onToggleOptions(msg._id)}
-                        isOptionsOpen={isOptionsOpen}
-                        onEdit={() => onEdit(msg._id, msg.content)}
-                        onDelete={() => onDelete(msg._id)}
-                    />
-                    {isReactionsOpen && (
-                        <div className='chat-message-reactions-menu'>
-                            {['👍','❤️','😂','😮','😢','😡'].map(e =>
-                            <button key={e} className='chat-reaction-btn' onClick={() => {
-                                onToggleReaction(msg._id, e);
-                                onToggleReactions(msg._id);
-                            }}>{e}</button>
-                            )}
-                        </div>
+                    {isDeleted ? (
+                        <p className='chat-message-text deleted-message'>This message was deleted</p>
+                    ) : isFile ? (
+                        <FileMessage currentChatId={currentChatId} msg={msg} />
+                    ) : (
+                        <TextMessage msg={msg} onSave={(content) => onEdit(msg._id, content)} />
                     )}
-                    <ReactionsBar
-                        reactions={msg.reactions}
-                        onToggle={(emoji) => onToggleReaction(msg._id, emoji)}
-                    />
-                </>
-                )}
 
-                <div className='chat-message-time'>{formatTimeAgo(msg.createdAt)}</div>
-            </div>
+                    {!isDeleted && (
+                        <>
+                            <MessageControls
+                                isOwn={isOwn}
+                                onOpenReactions={() => onToggleReactions(msg._id)}
+                                onOpenOptions={() => onToggleOptions(msg._id)}
+                                isOptionsOpen={isOptionsOpen}
+                                onEdit={() => onEdit(msg._id, msg.content)}
+                                onDelete={() => onDelete(msg._id)}
+                            />
+                            {isReactionsOpen && (
+                                <div className='chat-message-reactions-menu'>
+                                    {['👍', '❤️', '😂', '😮', '😢', '😡'].map(e =>
+                                        <button key={e} className='chat-reaction-btn' onClick={() => {
+                                            onToggleReaction(msg._id, e);
+                                            onToggleReactions(msg._id);
+                                        }}>{e}</button>
+                                    )}
+                                </div>
+                            )}
+                            <ReactionsBar
+                                reactions={msg.reactions}
+                                onToggle={(emoji) => onToggleReaction(msg._id, emoji)}
+                            />
+                        </>
+                    )}
+
+                    <div className='chat-message-time'>{formatTimeAgo(msg.createdAt)}</div>
+                </div>
             </div>
         </div>
     )

@@ -20,7 +20,7 @@
 * SOFTWARE.
 **/
 
-export interface Team{
+export interface Team {
     _id: string;
     name: string;
     description?: string;
@@ -31,18 +31,19 @@ export interface Team{
     updatedAt: string;
 }
 
-export interface User{
+export interface User {
     _id: string;
     email: string;
     firstName: string;
     lastName: string;
     team: (Team | string)[];
     role: 'user' | 'admin';
+    avatar?: string;
     createdAt: string;
     updatedAt: string;
 }
 
-export interface BoxBounds{
+export interface BoxBounds {
     xlo: number;
     xhi: number;
     ylo: number;
@@ -51,18 +52,18 @@ export interface BoxBounds{
     zhi: number;
 }
 
-export interface TimestepInfo{
+export interface TimestepInfo {
     timestep: number;
     natoms: number;
     boxBounds: BoxBounds;
 }
 
-export interface TrajectoryStats{
+export interface TrajectoryStats {
     totalFiles: number;
     totalSize: number;
 }
 
-export interface Trajectory{
+export interface Trajectory {
     _id: string;
     name: string;
     team: Team | string;
@@ -85,7 +86,7 @@ export interface Trajectory{
     };
 }
 
-export interface Notification{
+export interface Notification {
     _id: string;
     recipient: User | string;
     title: string;
