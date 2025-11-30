@@ -38,4 +38,10 @@ router.get(
     controller.downloadTrajectoryFs
 );
 
+router.get(
+    '/trajectories',
+    authMiddleware.protect,
+    controller.listUserTrajectories
+);
+
 export default router;

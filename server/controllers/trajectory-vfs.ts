@@ -23,6 +23,7 @@
 import { Request, Response } from 'express';
 import TrajectoryVFS from '@/services/trajectory-vfs';
 import RuntimeError from '@/utilities/runtime-error';
+import { Trajectory, User } from '@/models';
 
 const breadcrumbsOf = (rel: string) => {
     const parts = rel.split('/').filter(Boolean);
@@ -92,5 +93,62 @@ export const downloadTrajectoryFs = async (req: Request, res: Response) => {
             throw err;
         }
         throw new RuntimeError('DownloadError', 500);
+    }
+};
+
+export const listUserTrajectories = async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user) {
+        throw new RuntimeError('Unauthorized', 401);
+    }
+
+    const userId = user._id || user.id;
+
+    try {
+        // Fetch user with teams populated
+        const userWithTeams = await User.findById(userId).populate('teams').lean();
+
+        if (!userWithTeams || !userWithTeams.teams) {
+            return res.status(200).json({
+                status: 'success',
+                data: {
+                    trajectories: []
+                }
+            });
+        }
+
+        // Extract team IDs
+        const teamIds = (userWithTeams.teams as any[]).map(team => team._id);
+
+        // Fetch all trajectories belonging to these teams
+        const trajectories = await Trajectory.find({
+            team: { $in: teamIds }
+        })
+            .select('_id name team status createdAt updatedAt')
+            .populate('team', 'name')
+            .sort({ updatedAt: -1 })
+            .lean();
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                trajectories: trajectories.map(traj => ({
+                    id: traj._id.toString(),
+                    name: traj.name,
+                    status: traj.status,
+                    team: {
+                        id: (traj.team as any)._id.toString(),
+                        name: (traj.team as any).name
+                    },
+                    createdAt: traj.createdAt,
+                    updatedAt: traj.updatedAt
+                }))
+            }
+        });
+    } catch (err: any) {
+        if (err instanceof RuntimeError) {
+            throw err;
+        }
+        throw new RuntimeError('FetchTrajectoriesError', 500);
     }
 };

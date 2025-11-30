@@ -35,6 +35,18 @@ export interface FsEntry {
     mime?: string | false;
 }
 
+export interface TrajectoryInfo {
+    id: string;
+    name: string;
+    status: string;
+    team: {
+        id: string;
+        name: string;
+    };
+    createdAt: string;
+    updatedAt: string;
+}
+
 interface FsListResponse {
     trajectory: { id: string; name: string } | null;
     cwd: string;
@@ -55,6 +67,9 @@ interface FileExplorerState {
     showHidden: boolean;
     history: HistoryItem[];
     historyIndex: number;
+    trajectories: TrajectoryInfo[];
+    loadingTrajectories: boolean;
+    currentTrajectoryId: string | null;
 
     init: () => Promise<void>;
     open: (relPath?: string) => Promise<void>;
@@ -66,9 +81,12 @@ interface FileExplorerState {
     select: (relPath: string | null) => void;
     download: (relPath: string) => Promise<void>;
     setShowHidden: (v: boolean) => Promise<void>;
+    fetchTrajectories: () => Promise<void>;
+    navigateToTrajectory: (trajectoryId: string) => Promise<void>;
 
     _downloadFsFile: (relPath: string) => Promise<any>;
     _fetchFsList: (path: string, showHidden: boolean) => Promise<any>;
+    _fetchTrajectories: () => Promise<TrajectoryInfo[]>;
     _gotoWithoutPush: (cwd: string) => Promise<void>;
 }
 
@@ -80,6 +98,9 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
     loading: false,
     error: null,
     showHidden: false,
+    trajectories: [],
+    loadingTrajectories: false,
+    currentTrajectoryId: null,
 
     history: [{ cwd: '' }],
     historyIndex: 0,
@@ -99,6 +120,11 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
         return res.data;
     },
 
+    async _fetchTrajectories() {
+        const res = await api.get<{ status: 'success', data: { trajectories: TrajectoryInfo[] } }>('/trajectory-vfs/trajectories');
+        return res.data.data.trajectories;
+    },
+
     async init() {
         set({
             cwd: '',
@@ -107,8 +133,10 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
             selected: null,
             history: [{ cwd: '' }],
             historyIndex: 0,
-            error: null
+            error: null,
+            currentTrajectoryId: null
         });
+        await get().fetchTrajectories();
         await get().open('');
     },
 
@@ -200,6 +228,22 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
     async setShowHidden(v: boolean) {
         set({ showHidden: v });
         await get().refresh();
+    },
+
+    async fetchTrajectories() {
+        set({ loadingTrajectories: true });
+        try {
+            const trajectories = await get()._fetchTrajectories();
+            set({ trajectories, loadingTrajectories: false });
+        } catch (e: any) {
+            console.error('Error fetching trajectories:', e);
+            set({ trajectories: [], loadingTrajectories: false });
+        }
+    },
+
+    async navigateToTrajectory(trajectoryId: string) {
+        set({ currentTrajectoryId: trajectoryId });
+        await get().open(trajectoryId);
     },
 
     async _gotoWithoutPush(cwd: string) {

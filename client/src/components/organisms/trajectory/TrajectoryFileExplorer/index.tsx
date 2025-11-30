@@ -46,6 +46,9 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
         showHidden,
         historyIndex,
         history,
+        trajectories,
+        loadingTrajectories,
+        currentTrajectoryId,
         init,
         open,
         enter,
@@ -55,7 +58,8 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
         refresh,
         select,
         download,
-        setShowHidden
+        setShowHidden,
+        navigateToTrajectory
     } = useTrajectoryFS();
 
     const canBack = historyIndex > 0;
@@ -211,6 +215,12 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
         </div>
     );
 
+    const TrajectoryItemSkeleton = () => (
+        <div className='trajectory-fs-nav-item'>
+            <Skeleton variant="text" width="80%" height={18} />
+        </div>
+    );
+
     if (isMinimized) return null;
 
     return (
@@ -240,11 +250,26 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                                 <div className='trajectory-fs-nav'>
                                     <h3 className='trajectory-fs-nav-title'>Trajectories</h3>
                                     <div className='trajectory-fs-nav-items'>
-                                        {['Dump Impact', 'SC Lattice Test', '1200K 17nm Strain 0'].map((title, index) => (
-                                            <div className='trajectory-fs-nav-item' key={index}>
-                                                <h3 className='trajectory-fs-nav-item-title'>{title}</h3>
+                                        {loadingTrajectories ? (
+                                            Array.from({ length: 5 }).map((_, i) => (
+                                                <TrajectoryItemSkeleton key={`skeleton-${i}`} />
+                                            ))
+                                        ) : trajectories.length === 0 ? (
+                                            <div className='trajectory-fs-nav-item'>
+                                                <h3 className='trajectory-fs-nav-item-title' style={{ opacity: 0.5 }}>No trajectories available</h3>
                                             </div>
-                                        ))}
+                                        ) : (
+                                            trajectories.map((traj) => (
+                                                <div
+                                                    className={`trajectory-fs-nav-item ${currentTrajectoryId === traj.id ? 'active' : ''}`}
+                                                    key={traj.id}
+                                                    onClick={() => navigateToTrajectory(traj.id)}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <h3 className='trajectory-fs-nav-item-title'>{traj.name}</h3>
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
                             </div>

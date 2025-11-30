@@ -160,6 +160,22 @@
     font-weight: 400;
 }
 
+.trajectory-fs-nav-item{
+    padding: .4rem .6rem;
+    border-radius: .35rem;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.trajectory-fs-nav-item:hover{
+    background-color: rgba(255, 255, 255, 0.05);
+    opacity: 0.9;
+}
+
+.trajectory-fs-nav-item.active{
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+
 .trajectory-fs-list-headrow{
     display: grid;
     grid-template-columns: 6fr 2fr 2fr 2fr;
