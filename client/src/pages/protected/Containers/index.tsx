@@ -1,18 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    Plus,
-    Search,
-    RefreshCw,
-    Box,
-    Play,
-    Square,
-    Terminal
-} from 'lucide-react';
+import { Play, Square, Terminal, Box, Plus } from 'lucide-react';
+import { RiDeleteBin6Line, RiEyeLine, RiTerminalLine } from 'react-icons/ri';
 import { api } from '@/api';
 import useToast from '@/hooks/ui/use-toast';
-import CreateContainerModal from '@/components/organisms/containers/CreateContainerModal';
+import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
 import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
+import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
+import useDashboardSearchStore from '@/stores/ui/dashboard-search';
+import formatTimeAgo from '@/utilities/formatTimeAgo';
 import './Containers.css';
 
 interface Container {
@@ -26,38 +22,39 @@ interface Container {
         name: string;
     };
     createdAt: string;
+    ports?: Array<{ public: number; private: number }>;
 }
 
 const Containers: React.FC = () => {
     const [containers, setContainers] = useState<Container[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [terminalContainer, setTerminalContainer] = useState<Container | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
     const { showSuccess, showError } = useToast();
     const navigate = useNavigate();
+    const searchQuery = useDashboardSearchStore((s) => s.query);
 
-    const fetchContainers = async () => {
+    const fetchContainers = useCallback(async () => {
         try {
-            const response = await api.get('/containers');
+            const response = await api.get('/containers', {
+                params: { q: searchQuery }
+            });
             setContainers(response.data.data.containers);
         } catch (error) {
             console.error('Failed to fetch containers:', error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchQuery]);
 
     useEffect(() => {
         fetchContainers();
         const interval = setInterval(fetchContainers, 5000);
         return () => clearInterval(interval);
-    }, []);
+    }, [fetchContainers]);
 
-    const handleControl = async (e: React.MouseEvent, id: string, action: 'start' | 'stop') => {
-        e.stopPropagation();
+    const handleControl = async (container: Container, action: 'start' | 'stop') => {
         try {
-            await api.post(`/containers/${id}/control`, { action });
+            await api.post(`/containers/${container._id}/control`, { action });
             showSuccess(`Container ${action}ed successfully`);
             fetchContainers();
         } catch (error: any) {
@@ -65,142 +62,159 @@ const Containers: React.FC = () => {
         }
     };
 
-    const handleCardClick = (id: string) => {
-        navigate(`/dashboard/containers/${id}`);
+    const handleDelete = async (container: Container) => {
+        if (!window.confirm(`Are you sure you want to delete container "${container.name}"?`)) {
+            return;
+        }
+        try {
+            await api.delete(`/containers/${container._id}`);
+            showSuccess('Container deleted successfully');
+            fetchContainers();
+        } catch (error: any) {
+            showError(error.response?.data?.message || 'Failed to delete container');
+        }
     };
 
-    const filteredContainers = containers.filter(c =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.image.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const handleMenuAction = useCallback(async (action: string, item: Container) => {
+        switch (action) {
+            case 'view':
+                navigate(`/dashboard/containers/${item._id}`);
+                break;
+            case 'terminal':
+                if (item.status === 'running') {
+                    setTerminalContainer(item);
+                } else {
+                    showError('Container must be running to open terminal');
+                }
+                break;
+            case 'start':
+                await handleControl(item, 'start');
+                break;
+            case 'stop':
+                await handleControl(item, 'stop');
+                break;
+            case 'delete':
+                await handleDelete(item);
+                break;
+        }
+    }, [navigate, showError]);
+
+    const getMenuOptions = useCallback((item: Container) => {
+        const options: any[] = [
+            ['View Details', RiEyeLine, () => handleMenuAction('view', item)]
+        ];
+
+        if (item.status === 'running') {
+            options.push(
+                ['Open Terminal', RiTerminalLine, () => handleMenuAction('terminal', item)],
+                ['Stop', Square, () => handleMenuAction('stop', item)]
+            );
+        } else {
+            options.push(['Start', Play, () => handleMenuAction('start', item)]);
+        }
+
+        options.push(['Delete', RiDeleteBin6Line, () => handleMenuAction('delete', item)]);
+
+        return options;
+    }, [handleMenuAction]);
+
+    const StatusBadgeContainer = ({ status }: { status: string }) => {
+        const statusLower = status.toLowerCase();
+        // Map Docker container states to our badge system
+        const statusMap: Record<string, string> = {
+            running: 'ready',
+            exited: 'failed',
+            stopped: 'failed',
+            created: 'processing',
+            restarting: 'processing',
+            paused: 'processing',
+            dead: 'failed',
+            removing: 'processing'
+        };
+        return <StatusBadge status={statusMap[statusLower] || 'processing'} />;
+    };
+
+    const columns: ColumnConfig[] = useMemo(() => [
+        {
+            title: 'Name',
+            key: 'name',
+            sortable: true,
+            render: (value, row) => (
+                <div className='container-name-cell'>
+                    <div className='container-icon-small'>
+                        <Box size={16} />
+                    </div>
+                    <div className='container-name-content'>
+                        <span className='container-name-text'>{value}</span>
+                        <span className='container-id-text'>{row.containerId?.substring(0, 12)}</span>
+                    </div>
+                </div>
+            ),
+            skeleton: { variant: 'text', width: 180 }
+        },
+        {
+            title: 'Status',
+            key: 'status',
+            sortable: true,
+            render: (value) => <StatusBadgeContainer status={value} />,
+            skeleton: { variant: 'rounded', width: 80, height: 24 }
+        },
+        {
+            title: 'Image',
+            key: 'image',
+            sortable: true,
+            render: (value) => <span className='container-image-text'>{value}</span>,
+            skeleton: { variant: 'text', width: 150 }
+        },
+        {
+            title: 'Ports',
+            key: 'ports',
+            render: (value) => {
+                if (!value || value.length === 0) return <span className='text-muted'>—</span>;
+                const port = value[0];
+                return (
+                    <span className='container-port-text'>
+                        {port.private} → {port.public}
+                    </span>
+                );
+            },
+            skeleton: { variant: 'text', width: 100 }
+        },
+        {
+            title: 'Created',
+            key: 'createdAt',
+            sortable: true,
+            render: (value) => (
+                <span className='text-muted' title={new Date(value).toLocaleString()}>
+                    {formatTimeAgo(value)}
+                </span>
+            ),
+            skeleton: { variant: 'text', width: 90 }
+        }
+    ], []);
 
     return (
-        <div className='containers-page'>
-            <div className='containers-header'>
-                <div className='header-content'>
-                    <h1>Containers</h1>
-                    <p>Manage and monitor your containerized applications.</p>
-                </div>
-                <div className='header-actions'>
-                    <button className='icon-btn' onClick={fetchContainers} title="Refresh">
-                        <RefreshCw size={20} />
-                    </button>
-                    <button className='primary-btn' onClick={() => navigate('/dashboard/containers/new')}>
-                        <Plus size={20} />
-                        <span>New Container</span>
-                    </button>
-                </div>
+        <DashboardContainer pageName='Containers' className='containers-page-wrapper'>
+            <div className='containers-listing-header'>
+                <button 
+                    className='new-container-btn' 
+                    onClick={() => navigate('/dashboard/containers/new')}
+                >
+                    <Plus size={18} />
+                    <span>New Container</span>
+                </button>
             </div>
 
-            <div className='containers-controls'>
-                <div className='search-wrapper'>
-                    <Search className='search-icon' size={18} />
-                    <input
-                        type="text"
-                        placeholder="Search containers..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-            </div>
-
-            <div className='containers-table-wrapper'>
-                <table className='containers-table'>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Image</th>
-                            <th>Created</th>
-                            <th className='actions-col'>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr>
-                                <td colSpan={5} className='loading-cell'>Loading containers...</td>
-                            </tr>
-                        ) : filteredContainers.length === 0 ? (
-                            <tr>
-                                <td colSpan={5} className='empty-cell'>
-                                    <div className='empty-state'>
-                                        <Box size={32} />
-                                        <p>No containers found</p>
-                                        <button className='text-btn' onClick={() => navigate('/dashboard/containers/new')}>
-                                            Create one now
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ) : (
-                            filteredContainers.map(container => (
-                                <tr
-                                    key={container._id}
-                                    onClick={() => handleCardClick(container._id)}
-                                    className='container-row'
-                                >
-                                    <td className='name-cell'>
-                                        <div className='name-wrapper'>
-                                            <div className='container-icon'>
-                                                <Box size={16} />
-                                            </div>
-                                            <div>
-                                                <span className='container-name'>{container.name}</span>
-                                                <span className='container-id'>{container.containerId.substring(0, 12)}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className={`status-badge ${container.status}`}>
-                                            <span className='status-dot'></span>
-                                            {container.status}
-                                        </div>
-                                    </td>
-                                    <td className='monospace'>{container.image}</td>
-                                    <td className='text-muted'>{new Date(container.createdAt).toLocaleDateString()}</td>
-                                    <td className='actions-cell'>
-                                        <div className='row-actions'>
-                                            {container.status !== 'running' ? (
-                                                <button
-                                                    className='action-icon start'
-                                                    onClick={(e) => handleControl(e, container._id, 'start')}
-                                                    title="Start"
-                                                >
-                                                    <Play size={16} />
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    className='action-icon stop'
-                                                    onClick={(e) => handleControl(e, container._id, 'stop')}
-                                                    title="Stop"
-                                                >
-                                                    <Square size={16} />
-                                                </button>
-                                            )}
-                                            <button
-                                                className='action-icon terminal'
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setTerminalContainer(container);
-                                                }}
-                                                disabled={container.status !== 'running'}
-                                                title="Terminal"
-                                            >
-                                                <Terminal size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            <CreateContainerModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                onSuccess={fetchContainers}
+            <DocumentListing
+                title={`Containers (${containers.length})`}
+                breadcrumbs={['Dashboard', 'Containers']}
+                columns={columns}
+                data={containers}
+                isLoading={loading}
+                onMenuAction={handleMenuAction}
+                getMenuOptions={getMenuOptions}
+                emptyMessage='No containers found. Create one to get started.'
+                keyExtractor={(item) => item._id}
             />
 
             {terminalContainer && (
@@ -209,7 +223,7 @@ const Containers: React.FC = () => {
                     onClose={() => setTerminalContainer(null)}
                 />
             )}
-        </div>
+        </DashboardContainer>
     );
 };
 
