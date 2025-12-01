@@ -99,7 +99,8 @@ configureApp({
         'chat',
         'ssh-connections',
         'ssh-file-explorer',
-        'containers'
+        'containers',
+        'system'
     ],
     middlewares: [
         apiTracker,

@@ -36,7 +36,7 @@ export interface User {
     email: string;
     firstName: string;
     lastName: string;
-    team: (Team | string)[];
+    teams: (Team | string)[];
     role: 'user' | 'admin';
     avatar?: string;
     createdAt: string;

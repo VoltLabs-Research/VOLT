@@ -57,7 +57,7 @@ const Containers: React.FC = () => {
     const handleControl = async (e: React.MouseEvent, id: string, action: 'start' | 'stop') => {
         e.stopPropagation();
         try {
-            await api.post(`/ containers / ${id}/control`, { action });
+            await api.post(`/containers/${id}/control`, { action });
             showSuccess(`Container ${action}ed successfully`);
             fetchContainers();
         } catch (error: any) {
@@ -85,7 +85,7 @@ const Containers: React.FC = () => {
                     <button className='icon-btn' onClick={fetchContainers} title="Refresh">
                         <RefreshCw size={20} />
                     </button>
-                    <button className='primary-btn' onClick={() => setIsCreateModalOpen(true)}>
+                    <button className='primary-btn' onClick={() => navigate('/dashboard/containers/new')}>
                         <Plus size={20} />
                         <span>New Container</span>
                     </button>
@@ -126,7 +126,7 @@ const Containers: React.FC = () => {
                                     <div className='empty-state'>
                                         <Box size={32} />
                                         <p>No containers found</p>
-                                        <button className='text-btn' onClick={() => setIsCreateModalOpen(true)}>
+                                        <button className='text-btn' onClick={() => navigate('/dashboard/containers/new')}>
                                             Create one now
                                         </button>
                                     </div>

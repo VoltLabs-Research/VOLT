@@ -6,8 +6,10 @@ export interface IContainer extends Document {
     name: string;
     image: string;
     containerId: string;
-    team: mongoose.Types.ObjectId;
+    team?: mongoose.Types.ObjectId;
     status: string;
+    memory: number;
+    cpus: number;
     env: Array<{ key: string; value: string }>;
     ports: Array<{ private: number; public: number }>;
     createdBy: mongoose.Types.ObjectId;
@@ -15,7 +17,7 @@ export interface IContainer extends Document {
     updatedAt: Date;
 }
 
-const ContainerSchema: Schema<IContainer> = new Schema({
+const ContainerSchema = new Schema<IContainer>({
     name: {
         type: String,
         required: [true, 'Container::Name::Required'],
@@ -34,7 +36,7 @@ const ContainerSchema: Schema<IContainer> = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: [true, 'Container::Team::Required']
+        required: false
     },
     status: {
         type: String,

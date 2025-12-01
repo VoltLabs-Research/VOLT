@@ -10,7 +10,14 @@ export const getAllContainers = catchAsync(async (req: Request, res: Response, n
     const userTeams = await Team.find({ members: (req.user as any)._id });
     const teamIds = userTeams.map(t => t._id);
 
-    const containers = await Container.find({ team: { $in: teamIds } })
+    // Include containers without team (legacy) that were created by the user
+    const containers = await Container.find({
+        $or: [
+            { team: { $in: teamIds } },
+            { team: null, createdBy: (req.user as any)._id },
+            { team: { $exists: false }, createdBy: (req.user as any)._id }
+        ]
+    })
         .populate('team', 'name')
         .populate('createdBy', 'firstName lastName email');
 
@@ -112,9 +119,16 @@ export const controlContainer = catchAsync(async (req: Request, res: Response, n
     }
 
     // Verify access
-    const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-    if (!team) {
-        return next(new RuntimeError('Container::AccessDenied', 403));
+    if (container.team) {
+        const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
+        if (!team) {
+            return next(new RuntimeError('Container::AccessDenied', 403));
+        }
+    } else {
+        // Legacy container without team - verify ownership
+        if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
+            return next(new RuntimeError('Container::AccessDenied', 403));
+        }
     }
 
     if (action === 'start') {
@@ -146,9 +160,16 @@ export const deleteContainer = catchAsync(async (req: Request, res: Response, ne
     }
 
     // Verify access
-    const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-    if (!team) {
-        return next(new RuntimeError('Container::AccessDenied', 403));
+    if (container.team) {
+        const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
+        if (!team) {
+            return next(new RuntimeError('Container::AccessDenied', 403));
+        }
+    } else {
+        // Legacy container without team - verify ownership
+        if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
+            return next(new RuntimeError('Container::AccessDenied', 403));
+        }
     }
 
     // Stop and remove from Docker
@@ -182,8 +203,15 @@ export const restartContainer = catchAsync(async (req: Request, res: Response, n
     if (!container) return next(new RuntimeError('Container::NotFound', 404));
 
     // Verify access
-    const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-    if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
+    if (container.team) {
+        const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
+        if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
+    } else {
+        // Legacy container without team - verify ownership
+        if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
+            return next(new RuntimeError('Container::AccessDenied', 403));
+        }
+    }
 
     await dockerService.stopContainer(container.containerId);
     await dockerService.startContainer(container.containerId);
@@ -205,8 +233,15 @@ export const getContainerFiles = catchAsync(async (req: Request, res: Response, 
     if (!container) return next(new RuntimeError('Container::NotFound', 404));
 
     // Verify access
-    const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-    if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
+    if (container.team) {
+        const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
+        if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
+    } else {
+        // Legacy container without team - verify ownership
+        if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
+            return next(new RuntimeError('Container::AccessDenied', 403));
+        }
+    }
 
     // Use ls -la to get file details
     // Format: permissions links owner group size date time name
@@ -250,8 +285,15 @@ export const readContainerFile = catchAsync(async (req: Request, res: Response, 
     if (!container) return next(new RuntimeError('Container::NotFound', 404));
 
     // Verify access
-    const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-    if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
+    if (container.team) {
+        const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
+        if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
+    } else {
+        // Legacy container without team - verify ownership
+        if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
+            return next(new RuntimeError('Container::AccessDenied', 403));
+        }
+    }
 
     const content = await dockerService.execCommand(container.containerId, ['cat', path]);
 
@@ -291,8 +333,15 @@ export const updateContainer = catchAsync(async (req: Request, res: Response, ne
     if (!container) return next(new RuntimeError('Container::NotFound', 404));
 
     // Verify access
-    const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-    if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
+    if (container.team) {
+        const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
+        if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
+    } else {
+        // Legacy container without team - verify ownership
+        if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
+            return next(new RuntimeError('Container::AccessDenied', 403));
+        }
+    }
 
     // 1. Stop and remove old container
     try {

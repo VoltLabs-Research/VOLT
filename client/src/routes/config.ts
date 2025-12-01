@@ -35,6 +35,7 @@ import TeamInvitationPage from '@/pages/guest/TeamInvitationPage';
 import OAuthCallback from '@/pages/guest/OAuthCallback';
 import Containers from '@/pages/protected/Containers';
 import ContainerDetails from '@/pages/protected/ContainerDetails';
+import CreateContainer from '@/pages/protected/CreateContainer';
 
 export const routesConfig: RouteGroup = {
     public: [
@@ -70,6 +71,11 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/containers',
             component: Containers,
+            requiresLayout: true,
+        },
+        {
+            path: '/dashboard/containers/new',
+            component: CreateContainer,
             requiresLayout: true,
         },
         {
