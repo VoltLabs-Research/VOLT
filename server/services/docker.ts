@@ -104,6 +104,18 @@ class DockerService {
         return this.docker.getContainer(containerId);
     }
 
+    async getContainerProcesses(containerId: string) {
+        try {
+            const container = this.docker.getContainer(containerId);
+            // Request specific columns to match the UI requirements:
+            // pid, comm (program), args (command), nlwp (threads), user, rss (mem), pcpu (cpu%)
+            const processes = await container.top({ ps_args: '-o pid,comm,args,nlwp,user,rss,pcpu' });
+            return processes;
+        } catch (error: any) {
+            throw new RuntimeError(`Docker::Top::${error.message}`, 500);
+        }
+    }
+
     async execCommand(containerId: string, command: string[]) {
         try {
             const container = this.docker.getContainer(containerId);

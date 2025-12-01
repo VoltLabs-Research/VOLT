@@ -67,7 +67,9 @@ export const createContainer = catchAsync(async (req: Request, res: Response, ne
         Env,
         ExposedPorts,
         HostConfig: {
-            PortBindings
+            PortBindings,
+            Memory: (req.body.memory || 512) * 1024 * 1024, // Convert MB to Bytes
+            NanoCpus: (req.body.cpus || 1) * 1000000000 // Convert to NanoCPUs
         },
         Tty: true,
         Cmd: ['tail', '-f', '/dev/null']
@@ -84,6 +86,8 @@ export const createContainer = catchAsync(async (req: Request, res: Response, ne
         status: containerInfo.State.Status,
         env: env || [],
         ports: ports || [],
+        memory: req.body.memory || 512,
+        cpus: req.body.cpus || 1,
         createdBy: (req.user as any)._id
     });
 
@@ -257,6 +261,19 @@ export const readContainerFile = catchAsync(async (req: Request, res: Response, 
     });
 });
 
+export const getContainerProcesses = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const container = await Container.findById(id);
+    if (!container) return next(new RuntimeError('Container::NotFound', 404));
+
+    const processes = await dockerService.getContainerProcesses(container.containerId);
+
+    res.status(200).json({
+        status: 'success',
+        data: { processes }
+    });
+});
+
 import { terminalManager } from '@/services/terminal';
 
 // WebSocket handler for terminal
@@ -304,7 +321,9 @@ export const updateContainer = catchAsync(async (req: Request, res: Response, ne
         Env,
         ExposedPorts,
         HostConfig: {
-            PortBindings
+            PortBindings,
+            Memory: (req.body.memory || container.memory || 512) * 1024 * 1024,
+            NanoCpus: (req.body.cpus || container.cpus || 1) * 1000000000
         },
         Tty: true,
         Cmd: ['tail', '-f', '/dev/null']
@@ -319,6 +338,8 @@ export const updateContainer = catchAsync(async (req: Request, res: Response, ne
     container.status = containerInfo.State.Status;
     container.env = env || [];
     container.ports = ports || [];
+    if (req.body.memory) container.memory = req.body.memory;
+    if (req.body.cpus) container.cpus = req.body.cpus;
     await container.save();
 
     res.status(200).json({

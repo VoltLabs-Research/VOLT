@@ -1,0 +1,125 @@
+.processes-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.processes-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--background-secondary);
+}
+
+.processes-header h3 {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--foreground);
+}
+
+.refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--foreground);
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+    background: var(--hover);
+}
+
+.processes-table-wrapper {
+    flex: 1;
+    overflow: auto;
+}
+
+.processes-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.processes-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background: var(--background-secondary);
+    border-bottom: 1px solid var(--border);
+    color: var(--muted-foreground);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+}
+
+.processes-table td {
+    padding: 0.625rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--foreground);
+    font-size: 0.8125rem;
+}
+
+.processes-table tr:last-child td {
+    border-bottom: none;
+}
+
+.processes-table tr:hover {
+    background: var(--hover);
+}
+
+.program-cell {
+    color: #10b981;
+    /* Green for program name */
+    font-weight: 500;
+}
+
+.command-cell {
+    color: var(--muted-foreground);
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.monospace {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.processes-loading,
+.processes-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted-foreground);
+    gap: 1rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.retry-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}

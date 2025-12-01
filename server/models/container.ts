@@ -40,6 +40,14 @@ const ContainerSchema: Schema<IContainer> = new Schema({
         type: String,
         default: 'created'
     },
+    memory: {
+        type: Number,
+        default: 512 // MB
+    },
+    cpus: {
+        type: Number,
+        default: 1
+    },
     env: [{
         key: String,
         value: String

@@ -14,6 +14,8 @@ interface EditContainerModalProps {
 const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose, container, onSuccess }) => {
     const [env, setEnv] = useState<{ key: string; value: string }[]>([]);
     const [ports, setPorts] = useState<{ private: number; public: number }[]>([]);
+    const [memory, setMemory] = useState<number>(512);
+    const [cpus, setCpus] = useState<number>(1);
     const [loading, setLoading] = useState(false);
     const { showSuccess, showError } = useToast();
 
@@ -21,6 +23,8 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
         if (container) {
             setEnv(container.env || []);
             setPorts(container.ports || []);
+            setMemory(container.memory || 512);
+            setCpus(container.cpus || 1);
         }
     }, [container]);
 
@@ -46,7 +50,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
         e.preventDefault();
         setLoading(true);
         try {
-            await api.patch(`/containers/${container._id}`, { env, ports });
+            await api.patch(`/containers/${container._id}`, { env, ports, memory, cpus });
             showSuccess('Container updated successfully');
             onSuccess();
             onClose();

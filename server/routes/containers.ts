@@ -15,5 +15,6 @@ router.post('/:id/restart', containerController.restartContainer);
 router.patch('/:id', containerController.updateContainer);
 router.get('/:id/files', containerController.getContainerFiles);
 router.get('/:id/read', containerController.readContainerFile);
+router.get('/:id/top', containerController.getContainerProcesses);
 
 export default router;

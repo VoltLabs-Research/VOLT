@@ -15,6 +15,7 @@ import {
     Clock,
     Hash,
     Layers,
+    Activity,
     Globe
 } from 'lucide-react';
 import {
@@ -30,6 +31,7 @@ import { api } from '@/api';
 import useToast from '@/hooks/ui/use-toast';
 import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
 import ContainerFileExplorer from '@/components/organisms/containers/ContainerFileExplorer';
+import ContainerProcesses from '@/components/organisms/containers/ContainerProcesses';
 import EditContainerModal from '@/components/organisms/containers/EditContainerModal';
 import './ContainerDetails.css';
 
@@ -41,7 +43,7 @@ const ContainerDetails: React.FC = () => {
     const [container, setContainer] = useState<any>(null);
     const [statsHistory, setStatsHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'storage' | 'settings'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'processes' | 'logs' | 'storage' | 'settings'>('overview');
     const [actionLoading, setActionLoading] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -79,7 +81,6 @@ const ContainerDetails: React.FC = () => {
             const res = await api.get(`/containers/${containerId}/stats`);
             const newStats = res.data.data.stats;
 
-            // Calculate CPU %
             // Calculate CPU %
             let cpuPercent = 0;
             const cpuDelta = newStats.cpu_stats.cpu_usage.total_usage - newStats.precpu_stats.cpu_usage.total_usage;
@@ -160,248 +161,206 @@ const ContainerDetails: React.FC = () => {
     if (!container) return null;
 
     return (
-        <div className="details-page">
-            <div className="details-header">
-                <div className="header-top">
+        <div className="details-page-layout">
+            <div className="details-sidebar">
+                <div className="sidebar-header-details">
                     <button onClick={() => navigate('/dashboard/containers')} className="back-link">
-                        <ArrowLeft size={16} />
-                        Back to Containers
+                        <ArrowLeft size={16} /> Back
                     </button>
-                    <div className="header-actions">
-                        {container.status !== 'running' ? (
-                            <button
-                                onClick={() => handleAction('start')}
-                                disabled={actionLoading}
-                                className="action-btn start"
-                            >
-                                <Play size={16} /> Start
-                            </button>
-                        ) : (
-                            <>
-                                <button
-                                    onClick={() => handleAction('restart')}
-                                    disabled={actionLoading}
-                                    className="action-btn"
-                                >
-                                    <RefreshCw size={16} /> Restart
-                                </button>
-                                <button
-                                    onClick={() => handleAction('stop')}
-                                    disabled={actionLoading}
-                                    className="action-btn stop"
-                                >
-                                    <Square size={16} /> Stop
-                                </button>
-                            </>
-                        )}
-                        {container.ports?.[0] && (
-                            <a
-                                href={`http://localhost:${container.ports[0].public}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="visit-btn"
-                            >
-                                Visit <ExternalLink size={14} />
-                            </a>
-                        )}
-                    </div>
-                </div>
-
-                <div className="header-main">
-                    <div className="title-section">
-                        <div className="container-icon">
-                            <Box size={32} />
+                    <div className="container-identity">
+                        <div className="container-icon-large">
+                            <Box size={24} />
                         </div>
-                        <div>
-                            <h1>{container.name}</h1>
-                            <div className="meta-row">
-                                <span className="meta-item">
-                                    <span className={`status-dot ${container.status}`}></span>
-                                    {container.status}
-                                </span>
-                                <span className="meta-item monospace">
-                                    {container.containerId.substring(0, 12)}
-                                    <Copy
-                                        size={12}
-                                        className="copy-icon"
-                                        onClick={() => copyToClipboard(container.containerId)}
-                                    />
-                                </span>
-                                <span className="meta-item">{container.image}</span>
-                            </div>
+                        <div className="identity-text">
+                            <h2>{container.name}</h2>
+                            <span className={`status-badge ${container.status}`}>{container.status}</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="tabs-nav">
+                <nav className="sidebar-nav">
                     <button
-                        className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+                        className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
                         onClick={() => setActiveTab('overview')}
                     >
-                        Overview
+                        <Layers size={18} /> Overview
                     </button>
                     <button
-                        className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`}
+                        className={`nav-item ${activeTab === 'processes' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('processes')}
+                    >
+                        <Activity size={18} /> Processes
+                    </button>
+                    <button
+                        className={`nav-item ${activeTab === 'logs' ? 'active' : ''}`}
                         onClick={() => setActiveTab('logs')}
                     >
-                        Logs
+                        <Terminal size={18} /> Terminal & Logs
                     </button>
                     <button
-                        className={`tab-btn ${activeTab === 'storage' ? 'active' : ''}`}
+                        className={`nav-item ${activeTab === 'storage' ? 'active' : ''}`}
                         onClick={() => setActiveTab('storage')}
                     >
-                        Storage
+                        <Folder size={18} /> Files & Storage
                     </button>
                     <button
-                        className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+                        className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
                         onClick={() => setActiveTab('settings')}
                     >
-                        Settings
+                        <Settings size={18} /> Settings
                     </button>
+                </nav>
+
+                <div className="sidebar-actions">
+                    {container.status !== 'running' ? (
+                        <button onClick={() => handleAction('start')} disabled={actionLoading} className="action-btn start">
+                            <Play size={16} /> Start Container
+                        </button>
+                    ) : (
+                        <>
+                            <button onClick={() => handleAction('restart')} disabled={actionLoading} className="action-btn">
+                                <RefreshCw size={16} /> Restart
+                            </button>
+                            <button onClick={() => handleAction('stop')} disabled={actionLoading} className="action-btn stop">
+                                <Square size={16} /> Stop
+                            </button>
+                        </>
+                    )}
+                    {container.ports?.[0] && (
+                        <a href={`http://localhost:${container.ports[0].public}`} target="_blank" rel="noopener noreferrer" className="visit-btn">
+                            Visit App <ExternalLink size={14} />
+                        </a>
+                    )}
                 </div>
             </div>
 
-            <div className="details-content">
+            <div className="details-content-area">
                 {activeTab === 'overview' && (
-                    <div className="tab-pane overview-pane">
-                        <div className="info-grid">
-                            <div className="info-card">
-                                <div className="card-header-small">
-                                    <Clock size={16} /> Uptime
-                                </div>
-                                <div className="card-value">
-                                    {container.status === 'running'
-                                        ? calculateUptime(container.createdAt) // Ideally use startedAt if available
-                                        : 'Not running'}
-                                </div>
-                            </div>
-                            <div className="info-card">
-                                <div className="card-header-small">
-                                    <Layers size={16} /> Image
-                                </div>
-                                <div className="card-value monospace small">
-                                    {container.image}
-                                </div>
-                            </div>
-                            <div className="info-card">
-                                <div className="card-header-small">
-                                    <Hash size={16} /> ID
-                                </div>
-                                <div className="card-value monospace small">
-                                    {container.containerId.substring(0, 12)}
-                                </div>
-                            </div>
-                            <div className="info-card">
-                                <div className="card-header-small">
-                                    <Globe size={16} /> Ports
-                                </div>
-                                <div className="card-value small">
-                                    {container.ports?.length > 0
-                                        ? container.ports.map((p: any) => `${p.public}:${p.private}`).join(', ')
-                                        : 'None'}
-                                </div>
+                    <div className="content-pane">
+                        <div className="pane-header">
+                            <h2>Overview</h2>
+                            <div className="meta-tags">
+                                <span className="tag monospace">ID: {container.containerId.substring(0, 12)}</span>
+                                <span className="tag">Image: {container.image}</span>
+                                <span className="tag">Created: {new Date(container.createdAt).toLocaleDateString()}</span>
                             </div>
                         </div>
 
                         <div className="stats-grid">
                             <div className="stat-card">
-                                <h3>CPU Usage</h3>
+                                <div className="card-header-row">
+                                    <h3>CPU Usage</h3>
+                                    <span className="limit-badge">Limit: {container.cpus || 1} vCPU</span>
+                                </div>
                                 <div className="chart-wrapper">
                                     <ResponsiveContainer width="100%" height={250}>
                                         <AreaChart data={statsHistory}>
                                             <defs>
                                                 <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#0070f3" stopOpacity={0.3} />
+                                                    <stop offset="5%" stopColor="#0070f3" stopOpacity={0.4} />
                                                     <stop offset="95%" stopColor="#0070f3" stopOpacity={0} />
                                                 </linearGradient>
                                             </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.5} />
                                             <XAxis
                                                 dataKey="time"
                                                 stroke="var(--muted-foreground)"
-                                                fontSize={12}
+                                                fontSize={11}
                                                 tickLine={false}
                                                 axisLine={false}
                                                 minTickGap={30}
+                                                dy={10}
                                             />
                                             <YAxis
                                                 stroke="var(--muted-foreground)"
-                                                fontSize={12}
+                                                fontSize={11}
                                                 tickLine={false}
                                                 axisLine={false}
                                                 tickFormatter={(value) => `${value.toFixed(1)}%`}
                                                 domain={[0, 'auto']}
+                                                dx={-10}
                                             />
                                             <Tooltip
                                                 contentStyle={{
                                                     backgroundColor: 'var(--card)',
                                                     borderColor: 'var(--border)',
-                                                    borderRadius: '8px',
-                                                    color: 'var(--foreground)'
+                                                    borderRadius: '12px',
+                                                    color: 'var(--foreground)',
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                                                 }}
-                                                itemStyle={{ color: 'var(--foreground)' }}
+                                                itemStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
                                                 formatter={(value: number) => [`${value.toFixed(2)}%`, 'CPU Usage']}
-                                                labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}
+                                                labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '0.5rem', fontSize: '0.8rem' }}
+                                                cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
                                             />
                                             <Area
                                                 type="monotone"
                                                 dataKey="cpu"
                                                 stroke="#0070f3"
-                                                strokeWidth={2}
+                                                strokeWidth={3}
                                                 fillOpacity={1}
                                                 fill="url(#colorCpu)"
-                                                isAnimationActive={false}
+                                                isAnimationActive={true}
+                                                animationDuration={1000}
                                             />
                                         </AreaChart>
                                     </ResponsiveContainer>
                                 </div>
                             </div>
                             <div className="stat-card">
-                                <h3>Memory Usage</h3>
+                                <div className="card-header-row">
+                                    <h3>Memory Usage</h3>
+                                    <span className="limit-badge">Limit: {container.memory || 512} MB</span>
+                                </div>
                                 <div className="chart-wrapper">
                                     <ResponsiveContainer width="100%" height={250}>
                                         <AreaChart data={statsHistory}>
                                             <defs>
                                                 <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                                                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                                                 </linearGradient>
                                             </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.5} />
                                             <XAxis
                                                 dataKey="time"
                                                 stroke="var(--muted-foreground)"
-                                                fontSize={12}
+                                                fontSize={11}
                                                 tickLine={false}
                                                 axisLine={false}
                                                 minTickGap={30}
+                                                dy={10}
                                             />
                                             <YAxis
                                                 stroke="var(--muted-foreground)"
-                                                fontSize={12}
+                                                fontSize={11}
                                                 tickLine={false}
                                                 axisLine={false}
                                                 tickFormatter={(value) => `${Math.round(value)} MB`}
+                                                dx={-10}
                                             />
                                             <Tooltip
                                                 contentStyle={{
                                                     backgroundColor: 'var(--card)',
                                                     borderColor: 'var(--border)',
-                                                    borderRadius: '8px',
-                                                    color: 'var(--foreground)'
+                                                    borderRadius: '12px',
+                                                    color: 'var(--foreground)',
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                                                 }}
-                                                itemStyle={{ color: 'var(--foreground)' }}
+                                                itemStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
                                                 formatter={(value: number) => [`${value.toFixed(2)} MB`, 'Memory Usage']}
-                                                labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}
+                                                labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '0.5rem', fontSize: '0.8rem' }}
+                                                cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
                                             />
                                             <Area
                                                 type="monotone"
                                                 dataKey="memory"
-                                                stroke="#10b981"
-                                                strokeWidth={2}
+                                                stroke="#8b5cf6"
+                                                strokeWidth={3}
                                                 fillOpacity={1}
                                                 fill="url(#colorMem)"
-                                                isAnimationActive={false}
+                                                isAnimationActive={true}
+                                                animationDuration={1000}
                                             />
                                         </AreaChart>
                                     </ResponsiveContainer>
@@ -409,26 +368,57 @@ const ContainerDetails: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="env-section">
-                            <h3>Environment Variables</h3>
-                            <div className="env-grid">
-                                {container.env && container.env.length > 0 ? (
-                                    container.env.map((e: any, i: number) => (
-                                        <div key={i} className="env-item">
-                                            <span className="env-key">{e.key}</span>
-                                            <span className="env-value">{e.value}</span>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <p className="text-muted">No environment variables configured.</p>
-                                )}
+                        <div className="config-grid">
+                            <div className="config-card">
+                                <h3>Environment Variables</h3>
+                                <div className="env-list">
+                                    {container.env && container.env.length > 0 ? (
+                                        container.env.map((e: any, i: number) => (
+                                            <div key={i} className="env-row">
+                                                <span className="env-key">{e.key}</span>
+                                                <span className="env-val">{e.value}</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="empty-text">No environment variables</p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="config-card">
+                                <h3>Port Bindings</h3>
+                                <div className="port-list">
+                                    {container.ports && container.ports.length > 0 ? (
+                                        container.ports.map((p: any, i: number) => (
+                                            <div key={i} className="port-row">
+                                                <span className="port-private">{p.private}/tcp</span>
+                                                <span className="arrow">→</span>
+                                                <span className="port-public">localhost:{p.public}</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="empty-text">No ports exposed</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
 
+                {activeTab === 'processes' && (
+                    <div className="content-pane full-height">
+                        {container.status === 'running' ? (
+                            <ContainerProcesses containerId={container._id} />
+                        ) : (
+                            <div className="placeholder-state">
+                                <Activity size={48} />
+                                <p>Container must be running to view processes</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {activeTab === 'logs' && (
-                    <div className="tab-pane full-height">
+                    <div className="content-pane full-height">
                         {container.status === 'running' ? (
                             <ContainerTerminal
                                 container={container}
@@ -445,7 +435,7 @@ const ContainerDetails: React.FC = () => {
                 )}
 
                 {activeTab === 'storage' && (
-                    <div className="tab-pane full-height">
+                    <div className="content-pane full-height">
                         {container.status === 'running' ? (
                             <ContainerFileExplorer containerId={container._id} />
                         ) : (
@@ -458,11 +448,12 @@ const ContainerDetails: React.FC = () => {
                 )}
 
                 {activeTab === 'settings' && (
-                    <div className="tab-pane settings-pane">
+                    <div className="content-pane settings-pane">
+                        <h2>Settings</h2>
                         <div className="settings-card">
                             <div className="card-header">
-                                <h3>Configuration</h3>
-                                <p>Update environment variables and port bindings.</p>
+                                <h3>Configuration & Resources</h3>
+                                <p>Update environment variables, ports, and resource limits (CPU/RAM).</p>
                             </div>
                             <div className="card-body">
                                 <button
