@@ -191,9 +191,19 @@ export const getContainerStats = catchAsync(async (req: Request, res: Response, 
     if (!container) return next(new RuntimeError('Container::NotFound', 404));
 
     const stats = await dockerService.getContainerStats(container.containerId);
+    
+    // Also include configured limits for comparison
+    const limits = {
+        memory: container.memory * 1024 * 1024, // MB to Bytes
+        cpus: container.cpus
+    };
+    
     res.status(200).json({
         status: 'success',
-        data: { stats }
+        data: { 
+            stats,
+            limits 
+        }
     });
 });
 

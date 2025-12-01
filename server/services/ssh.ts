@@ -22,149 +22,140 @@
 
 import { Client, SFTPWrapper } from 'ssh2';
 import { ISSHConnection } from '@/models/ssh-connection';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { createWriteStream, createReadStream } from 'fs';
+import { createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
 import logger from '@/logger';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 
-export interface SSHFileEntry {
+export interface SSHConnection{
+    client: Client;
+    sftp: SFTPWrapper;
+};
+
+export interface SSHFileEntry{
     name: string;
     path: string;
     isDirectory: boolean;
     size: number;
     mtime: Date;
-}
+};
 
-export interface SSHConnectionConfig {
+export interface FileTask{
+    remote: string;
+    local: string;
+    size: number;
+    filename: string;
+};
+
+export interface SSHConnectionConfig{
     host: string;
     port: number;
     username: string;
     password: string;
-}
+    readyTimeout?: number;
+    keepaliveInterval?: number;
+};
 
-class SSHService {
-    private connections: Map<string, { client: Client, sftp?: SFTPWrapper, lastUsed: number, config: SSHConnectionConfig }> = new Map();
-    private readonly IDLE_TIMEOUT = 1000 * 60 * 5; // 5 minutes
+export interface CachedConnection{
+    client: Client;
+    sftp: SFTPWrapper;
+    lastUsed: number;
+    configHash: string;
+    isClosing: boolean;
+};
 
-    constructor() {
-        // Periodic cleanup of idle connections
-        setInterval(() => this.cleanupIdleConnections(), 1000 * 60);
+export interface DownloadProgress{
+    totalBytes: number;
+    downloadedBytes: number;
+    currentFile: string;
+    percent: number;
+};
+
+class SSHService{
+    private connections: Map<string, CachedConnection> = new Map();
+    // thundering herd protection
+    private connectionPromises: Map<string, Promise<SSHConnection>> = new Map();
+    // 5 minutes
+    private readonly IDLE_TIMEOUT = 1000 * 60 * 5;
+    private readonly CONNECT_TIMEOUT = 20000;
+    private readonly MAX_RETRIES = 2;
+    private readonly DOWNLOAD_CONCURRENCY = 10;
+
+    constructor(){
+        // Periodic cleaning of inactive connections
+        setInterval(() => this.cleanupIdleConnections(), 1000 * 60);        
     }
 
-    private cleanupIdleConnections() {
+    private cleanupIdleConnections(){
         const now = Date.now();
-        for (const [id, conn] of this.connections.entries()) {
-            if (now - conn.lastUsed > this.IDLE_TIMEOUT) {
-                logger.info(`Closing idle SSH connection: ${id}`);
-                conn.client.end();
-                this.connections.delete(id);
+        for(const [id, conn] of this.connections.entries()){
+            if(!conn.isClosing && (now - conn.lastUsed > this.IDLE_TIMEOUT)){
+                this.closeConnection(id);
             }
         }
     }
 
-    /**
-     * Create SSH connection configuration from SSHConnection model
-     */
-    private createConfig(connection: ISSHConnection): SSHConnectionConfig {
+    private closeConnection(connectionId: string){
+        const conn = this.connections.get(connectionId);
+        if(conn){
+            logger.info(`Closing idle SSH connection: ${connectionId}`);
+            conn.isClosing = true;
+            try{
+                conn.client.end();
+            }catch(e){
+                // ignore
+            }
+            this.connections.delete(connectionId);
+        }
+    }
+
+    private getConfigHash(config: SSHConnectionConfig): string{
+        return `${config.host}:${config.port}:${config.username}:${config.password.length}`;
+    }
+
+    private createConfig(connection: ISSHConnection): SSHConnectionConfig{
         return {
             host: connection.host,
             port: connection.port,
             username: connection.username,
-            password: connection.getPassword()
+            password: connection.getPassword(),
+            readyTimeout: this.CONNECT_TIMEOUT,
+            keepaliveInterval: 10000
         };
     }
 
-    /**
-     * Get or create an SSH connection
-     */
-    private async getConnection(connection: ISSHConnection): Promise<{ client: Client, sftp: SFTPWrapper }> {
-        const connectionId = connection._id.toString();
-        const cached = this.connections.get(connectionId);
-        const config = this.createConfig(connection);
+    private async executeWithRetry<T>(
+        connection: ISSHConnection, 
+        operation: (sftp: SFTPWrapper) => Promise<T>, 
+        attempt = 1
+    ): Promise<T>{
+        try{
+            const { sftp } = await this.getConnection(connection);
+            return await operation(sftp);
+        }catch(error: any){
+            const shouldRetry = attempt <= this.MAX_RETRIES && 
+                (error.code === 'ECONNRESET' || error.message.includes('No SFTP') || !error.code);
 
-        // Check if cached connection is valid and config hasn't changed
-        if (cached) {
-            // Simple check if config changed (e.g. password updated)
-            const configChanged = JSON.stringify(cached.config) !== JSON.stringify(config);
-
-            if (!configChanged) {
-                cached.lastUsed = Date.now();
-                if (cached.sftp) {
-                    return { client: cached.client, sftp: cached.sftp };
-                }
-                // If client exists but no SFTP (shouldn't happen with this logic, but safe fallback)
-            } else {
-                // Config changed, close old connection
-                cached.client.end();
-                this.connections.delete(connectionId);
-            }
+            if(!shouldRetry) throw error;
+            logger.warn(`Retrying SSH operation (Attempt ${attempt}/${this.MAX_RETRIES}) for ${connection.host}`);
+            // force reconnection by clearing cache
+            const connectionId = connection._id.toString();
+            this.closeConnection(connectionId);
+            // backoff
+            await new Promise((r) => setTimeout(r, 500 * attempt));
+            return this.executeWithRetry(connection, operation, attempt + 1);
         }
-
-        return new Promise((resolve, reject) => {
-            const client = new Client();
-            const timeout = setTimeout(() => {
-                client.end();
-                this.connections.delete(connectionId);
-                reject(new Error('Connection timeout'));
-            }, 20000);
-
-            client.on('ready', () => {
-                client.sftp((err, sftp) => {
-                    clearTimeout(timeout);
-                    if (err) {
-                        client.end();
-                        return reject(err);
-                    }
-
-                    // Cache the connection
-                    this.connections.set(connectionId, {
-                        client,
-                        sftp,
-                        lastUsed: Date.now(),
-                        config
-                    });
-
-                    resolve({ client, sftp });
-                });
-            });
-
-            client.on('error', (err) => {
-                clearTimeout(timeout);
-                logger.error(`SSH connection error for ${connection.name}: ${err.message}`);
-                this.connections.delete(connectionId);
-                // Don't reject here if it's an existing connection error, 
-                // the caller will handle the failure and retry or fail.
-            });
-
-            client.on('end', () => {
-                this.connections.delete(connectionId);
-            });
-
-            client.on('close', () => {
-                this.connections.delete(connectionId);
-            });
-
-            try {
-                client.connect(config);
-            } catch (err) {
-                clearTimeout(timeout);
-                reject(err);
-            }
-        });
     }
 
-    /**
-     * Test SSH connection
-     */
-    async testConnection(connection: ISSHConnection): Promise<boolean> {
-        // For testing, we force a new connection to verify credentials
+    async testConnection(connection: ISSHConnection): Promise<boolean>{
         const config = this.createConfig(connection);
+        const client = new Client();
 
         return new Promise((resolve, reject) => {
-            const client = new Client();
             const timeout = setTimeout(() => {
                 client.end();
-                reject(new Error('Connection timeout'));
+                reject(new Error('Connection timeout during test'));
             }, 10000);
 
             client.on('ready', () => {
@@ -175,7 +166,7 @@ class SSHService {
 
             client.on('error', (err) => {
                 clearTimeout(timeout);
-                logger.error(`SSH connection test failed: ${err.message}`);
+                client.end();
                 reject(err);
             });
 
@@ -183,274 +174,281 @@ class SSHService {
         });
     }
 
-    /**
-     * List files and directories at the given remote path
-     */
-    async listFiles(connection: ISSHConnection, remotePath: string = '.'): Promise<SSHFileEntry[]> {
-        try {
-            const { sftp } = await this.getConnection(connection);
-
+    async listFiles(connection: ISSHConnection, remotePath: string = '.'): Promise<SSHFileEntry[]>{
+        return this.executeWithRetry(connection, async (sftp) => {
             return new Promise((resolve, reject) => {
                 sftp.readdir(remotePath, (err, list) => {
-                    if (err) return reject(err);
-
-                    const entries: SSHFileEntry[] = list.map(item => ({
+                    if(err) return reject(err);
+                    
+                    const entries: SSHFileEntry[] = list.map((item) => ({
                         name: item.filename,
                         path: path.posix.join(remotePath, item.filename),
                         isDirectory: item.attrs.isDirectory(),
                         size: item.attrs.size,
-                        mtime: new Date(item.attrs.mtime * 1000)
+                        mtime: new Date(item.attrs.mtime * 1000)  
                     }));
 
                     resolve(entries);
                 });
             });
-        } catch (error) {
-            // If connection failed, try to reconnect once (handled by getConnection logic if we clear cache)
-            // But getConnection already creates new if missing.
-            // If it failed, it might be stale.
-            const connectionId = connection._id.toString();
-            if (this.connections.has(connectionId)) {
-                this.connections.get(connectionId)?.client.end();
-                this.connections.delete(connectionId);
-                // Retry once
-                return this.listFiles(connection, remotePath);
-            }
-            throw error;
-        }
+        });
     }
 
-    /**
-     * Get file stats
-     */
-    async getFileStats(connection: ISSHConnection, remotePath: string): Promise<SSHFileEntry | null> {
-        try {
-            const { sftp } = await this.getConnection(connection);
-
-            return new Promise((resolve, reject) => {
+    async getFileStats(connection: ISSHConnection, remotePath: string): Promise<SSHFileEntry | null>{
+        return this.executeWithRetry(connection, async (sftp) => {
+            return new Promise((resolve) => {
                 sftp.stat(remotePath, (err, stats) => {
-                    if (err) return resolve(null);
-
-                    const entry: SSHFileEntry = {
+                    if(err) return resolve(null);
+                    resolve({
                         name: path.posix.basename(remotePath),
                         path: remotePath,
                         isDirectory: stats.isDirectory(),
                         size: stats.size,
                         mtime: new Date(stats.mtime * 1000)
-                    };
-
-                    resolve(entry);
+                    });
                 });
             });
-        } catch (error) {
-            const connectionId = connection._id.toString();
-            if (this.connections.has(connectionId)) {
-                this.connections.get(connectionId)?.client.end();
-                this.connections.delete(connectionId);
-                return this.getFileStats(connection, remotePath);
-            }
-            throw error;
-        }
-    }
-
-    /**
-     * Download a single file from SSH to local path
-     */
-    async downloadFile(connection: ISSHConnection, remotePath: string, localPath: string): Promise<void> {
-        const { sftp } = await this.getConnection(connection);
-
-        return new Promise((resolve, reject) => {
-            const writeStream = createWriteStream(localPath);
-            const readStream = sftp.createReadStream(remotePath);
-
-            readStream.on('error', (err: Error) => {
-                writeStream.close();
-                reject(err);
-            });
-
-            writeStream.on('error', (err: Error) => {
-                reject(err);
-            });
-
-            writeStream.on('finish', () => {
-                resolve();
-            });
-
-            readStream.pipe(writeStream);
         });
     }
 
-    /**
-     * Calculate total size of a directory recursively
-     */
-    async calculateDirectorySize(connection: ISSHConnection, remotePath: string): Promise<number> {
-        const { sftp } = await this.getConnection(connection);
-        let totalSize = 0;
-
-        const calculateRecursive = async (dir: string) => {
-            return new Promise<void>((resolve, reject) => {
-                sftp.readdir(dir, async (err: Error | undefined, list: any[]) => {
-                    if (err) return reject(err);
-                    try {
-                        for (const item of list) {
-                            const itemPath = path.posix.join(dir, item.filename);
-                            if (item.attrs.isDirectory()) {
-                                await calculateRecursive(itemPath);
-                            } else {
-                                totalSize += item.attrs.size;
-                            }
-                        }
-                        resolve();
-                    } catch (error) {
-                        reject(error);
-                    }
-                });
-            });
-        };
-
-        await calculateRecursive(remotePath);
-        return totalSize;
+    async downloadFile(connection: ISSHConnection, remotePath: string, localPath: string): Promise<void>{
+        return this.executeWithRetry(connection, async (sftp) => {
+            // ensure local dir
+            await fs.mkdir(path.dirname(localPath), { recursive: true });
+            await pipeline(sftp.createReadStream(remotePath), createWriteStream(localPath));
+        });
     }
 
-    /**
-     * Download a directory recursively from SSH to local path
-     */
-    /**
-     * Download a directory recursively from SSH to local path with parallel execution
-     */
+    async calculateDirectorySize(connection: ISSHConnection, remotePath: string): Promise<number>{
+        return this.executeWithRetry(connection, async (sftp) => {
+            let totalSize = 0;
+            // array as a queue to avoid deep stack recursion (stack overflow)
+            const queue = [remotePath];
+            while(queue.length > 0){
+                const currentDir = queue.shift()!;
+                try{
+                    const list = await new Promise<any[]>((resolve, reject) => {
+                        sftp.readdir(currentDir, (err, list) => err ? reject(err) : resolve(list));
+                    });
+                    for(const item of list){
+                        const itemPath = path.posix.join(currentDir, item.filename);
+                        if(item.attrs.isDirectory()){
+                            queue.push(itemPath);
+                        }else{
+                            totalSize += item.attrs.size;
+                        }
+                    }
+                }catch(e){
+                    logger.warn(`Error reading directory ${currentDir} during size calculation: ${e}`);
+                }
+            }
+
+            return totalSize;
+        });
+    }
+
     async downloadDirectory(
         connection: ISSHConnection,
         remotePath: string,
         localPath: string,
-        onProgress?: (progress: { total: number, downloaded: number, currentFile: string }) => void
-    ): Promise<string[]> {
+        onProgress?: (progress: DownloadProgress) => void
+    ): Promise<string[]>{
         const { sftp } = await this.getConnection(connection);
-        const downloadedFiles: string[] = [];
-        let totalSize = 0;
-        let downloadedSize = 0;
-        const CONCURRENCY_LIMIT = 5;
+        const downloadFiles: string[] = [];
 
-        // Ensure local directory exists
-        await fs.mkdir(localPath, { recursive: true });
+        let totalBytes = 0;
+        let downloadedBytes = 0;
 
-        // Calculate total size first if progress callback is provided
-        if (onProgress) {
-            try {
-                totalSize = await this.calculateDirectorySize(connection, remotePath);
-            } catch (error) {
+        if(onProgress){
+            try{
+                totalBytes = await this.calculateDirectorySize(connection, remotePath);
+            }catch(error){
                 logger.warn(`Failed to calculate directory size: ${error}`);
             }
         }
 
-        // 1. Collect all files to download first
-        interface FileToDownload {
-            remotePath: string;
-            localPath: string;
-            size: number;
-            filename: string;
+        const tasks: FileTask[] = [];
+        const dirQueue = [{ remote: remotePath, local: localPath }];
+
+        await fs.mkdir(localPath, { recursive: true });
+
+        while(dirQueue.length > 0){
+            const { remote, local } = dirQueue.shift()!;
+            try{
+                // TODO: duplicated code with SSHService.downloadFile
+                const list = await new Promise<any[]>((resolve, reject) => {
+                    sftp.readdir(remote, (err, l) => err ? reject(err) : resolve(l));
+                });
+
+                for(const item of list){
+                    const itemRemote = path.posix.join(remote, item.filename);
+                    const itemLocal = path.join(local, item.filename);
+                    
+                    if(item.attrs.isDirectory()){
+                        await fs.mkdir(itemLocal, { recursive: true });
+                        dirQueue.push({ remote: itemRemote, local: itemLocal });
+                    }else{
+                        tasks.push({
+                            remote: itemRemote,
+                            local: itemLocal,
+                            size: item.attrs.size,
+                            filename: item.filename
+                        });
+                    }
+                }
+            }catch(err){
+                logger.error(`Error reading dir ${remote}: ${err}`);
+                throw err;
+            }
         }
 
-        const filesToDownload: FileToDownload[] = [];
+        const downloadWorker = async (task: FileTask) => {
+            return new Promise<void>((resolve, reject) => {
+                const readStream = sftp.createReadStream(task.remote);
+                const writeStream = createWriteStream(task.local);
 
-        const collectFiles = async (remoteDir: string, localDir: string) => {
-            return new Promise<void>((resolveDir, rejectDir) => {
-                sftp.readdir(remoteDir, async (err: Error | undefined, list: any[]) => {
-                    if (err) return rejectDir(err);
-
-                    try {
-                        for (const item of list) {
-                            const itemRemotePath = path.posix.join(remoteDir, item.filename);
-                            const localItemPath = path.join(localDir, item.filename);
-
-                            if (item.attrs.isDirectory()) {
-                                await fs.mkdir(localItemPath, { recursive: true });
-                                await collectFiles(itemRemotePath, localItemPath);
-                            } else {
-                                filesToDownload.push({
-                                    remotePath: itemRemotePath,
-                                    localPath: localItemPath,
-                                    size: item.attrs.size,
-                                    filename: item.filename
-                                });
-                            }
-                        }
-                        resolveDir();
-                    } catch (error) {
-                        rejectDir(error);
-                    }
-                });
-            });
-        };
-
-        await collectFiles(remotePath, localPath);
-
-        // 2. Download files in parallel with concurrency limit
-        const downloadFile = async (file: FileToDownload) => {
-            return new Promise<void>((resolveFile, rejectFile) => {
-                const writeStream = createWriteStream(file.localPath);
-                const readStream = sftp.createReadStream(file.remotePath);
                 readStream.on('data', (chunk: Buffer) => {
-                    downloadedSize += chunk.length;
-                    if (onProgress) {
+                    downloadedBytes += chunk.length;
+                    if(onProgress){
                         onProgress({
-                            total: totalSize,
-                            downloaded: downloadedSize,
-                            currentFile: file.filename
+                            totalBytes,
+                            downloadedBytes,
+                            currentFile: task.filename,
+                            percent: totalBytes > 0 ? Math.round((downloadedBytes / totalBytes) * 100) : 0
                         });
                     }
                 });
 
-                readStream.on('error', (err: Error) => {
+                readStream.pipe(writeStream);
+
+                readStream.on('error', (err: any) => {
                     writeStream.close();
-                    rejectFile(err);
+                    reject(err);
                 });
 
-                writeStream.on('error', (err: Error) => {
-                    rejectFile(err);
-                });
+                writeStream.on('error', (err) => reject(err));
 
                 writeStream.on('finish', () => {
-                    downloadedFiles.push(file.localPath);
-                    resolveFile();
+                    downloadFiles.push(task.local);
+                    resolve();
                 });
-
-                readStream.pipe(writeStream);
             });
         };
 
-        // Simple concurrency control
-        const queue = [...filesToDownload];
-        const activePromises: Promise<void>[] = [];
+        const runQueue = async () => {
+            const results: Promise<void>[] = [];
+            const executing: Promise<void>[] = [];
 
-        // Initial fill
-        while (queue.length > 0 && activePromises.length < CONCURRENCY_LIMIT) {
-            const file = queue.shift();
-            if (file) {
-                const p = downloadFile(file).then(() => {
-                    activePromises.splice(activePromises.indexOf(p), 1);
+            for(const task of tasks){
+                const promise = downloadWorker(task);
+                results.push(promise);
+                
+                const e: Promise<void> = promise.then(() => {
+                    executing.splice(executing.indexOf(e), 1);
                 });
-                activePromises.push(p);
-            }
-        }
+                executing.push(e);
 
-        // Process rest
-        while (queue.length > 0 || activePromises.length > 0) {
-            if (queue.length > 0 && activePromises.length < CONCURRENCY_LIMIT) {
-                const file = queue.shift();
-                if (file) {
-                    const p = downloadFile(file).then(() => {
-                        activePromises.splice(activePromises.indexOf(p), 1);
-                    });
-                    activePromises.push(p);
+                if(executing.length >= this.DOWNLOAD_CONCURRENCY){
+                    await Promise.race(executing);
                 }
-            } else {
-                // Wait for at least one to finish
-                await Promise.race(activePromises);
             }
+
+            return Promise.all(results);
+        };
+
+        try{
+            await runQueue();
+        }catch(error){
+            logger.error(`Error during batch download: ${error}`);
+            throw error;
         }
 
-        return downloadedFiles;
+        return downloadFiles;
     }
-}
 
-export default new SSHService();
+    private async getConnection(connection: ISSHConnection): Promise<SSHConnection>{
+        const connectionId = connection._id.toString();
+        const config = this.createConfig(connection);
+        const configHash = this.getConfigHash(config);
+
+        const cached = this.connections.get(connectionId);
+        if(cached){
+            if(cached.configHash === configHash && !cached.isClosing){
+                cached.lastUsed = Date.now();
+                return { client: cached.client, sftp: cached.sftp };
+            }
+
+            this.closeConnection(connectionId);
+        }
+
+        // promise sharing
+        if(this.connectionPromises.has(connectionId)){
+            return this.connectionPromises.get(connectionId)!;
+        }
+
+        // create new connection
+        const connectPromise = new Promise<SSHConnection>((resolve, reject) => {
+            const client = new Client();
+
+            const timeoutTimer = setTimeout(() => {
+                client.destroy();
+                reject(new Error(`Connection timeout after ${this.CONNECT_TIMEOUT}ms`));
+            }, this.CONNECT_TIMEOUT + 1000);
+
+            client.on('ready', () => {
+                client.sftp((err, sftp) => {
+                    clearTimeout(timeoutTimer);
+                    if(err){
+                        client.end();
+                        return reject(err);
+                    }
+
+                    // save to cache
+                    this.connections.set(connectionId, {
+                        client,
+                        sftp,
+                        lastUsed: Date.now(),
+                        configHash,
+                        isClosing: false
+                    });
+
+                    resolve({ client, sftp });
+                });
+            });
+
+            client.on('error', (err) => {
+                clearTimeout(timeoutTimer);
+                logger.error(`SSH Error (${connection.host}): ${err.message}`);
+            });
+
+            client.on('close', () => {
+                this.connections.delete(connectionId);
+                this.connectionPromises.delete(connectionId);
+            });
+
+            try{
+                client.connect(config);
+            }catch(err){
+                clearTimeout(timeoutTimer);
+                reject(err);
+            }
+        });
+
+        // save the promise so others can reuse it while connecting 
+        this.connectionPromises.set(connectionId, connectPromise);
+
+        try{
+            const result = await connectPromise;
+            return result;
+        }catch(error){
+            this.connections.delete(connectionId);
+            throw error;
+        }finally{
+            this.connectionPromises.delete(connectionId);
+        }
+    }
+};
+
+const sshService = new SSHService();
+
+export default sshService;

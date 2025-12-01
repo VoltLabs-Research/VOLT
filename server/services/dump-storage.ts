@@ -20,333 +20,213 @@
  * SOFTWARE.
  **/
 
-import { putObject, getObject, listByPrefix, objectExists, statObject, getStream } from '@/utilities/buckets';
+import { putObject, getStream, listByPrefix, objectExists, deleteByPrefix } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
+import { pipeline } from 'node:stream/promises';
+import { Readable } from 'node:stream';
+import { randomUUID } from 'node:crypto';
+import logger from '@/logger';
 import * as zlib from 'node:zlib';
 import * as fs from 'node:fs/promises';
+import * as fsNative from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { promisify } from 'node:util';
-import { Readable, pipeline } from 'stream';
-import { createReadStream, createWriteStream } from 'fs';
-import logger from '@/logger';
 
-const gzip = promisify(zlib.gzip);
-const gunzip = promisify(zlib.gunzip);
+type DumpInput = Buffer | string;
 
-/**
- * Service for managing compressed LAMMPS dump files in MinIO.
- * Dumps are stored with gzip compression to reduce storage costs.
- * 
- * Optimizations:
- * - Streaming compression (no full buffering)
- * - Fast compression level (1) for speed
- * - Parallel multipart uploads for large files
- * - Smart caching with TTL
- */
-export default class DumpStorage {
-    // Use level 1 for fastest compression (still ~50-60% reduction, but 3-5x faster than level 6)
-    private static readonly COMPRESSION_LEVEL = 1;
-    private static readonly CACHE_DIR = path.join(os.tmpdir(), 'opendxa-dumps-cache');
-    private static readonly CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
-    private static readonly LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10MB
+export default class DumpStorage{
+    private static readonly COMPRESSION_LEVEL = zlib.constants.Z_BEST_SPEED;
+    private static readonly CACHE_DIR = path.join(os.tmpdir(), 'volterra-dumps-cache');
+    private static readonly TEMP_DIR = path.join(os.tmpdir(), 'volterra-temp-uploads');
+    private static readonly CACHE_TTL_MS = 30 * 60 * 1000;
+    private static readonly RAM_THRESHOLD = 4 * 1024 * 1024;
+    private static pendingRequests = new Map<string, Promise<string | null>>();
 
-    /**
-     * Get MinIO object name for a dump file
-     */
-    private static getObjectName(trajectoryId: string, timestep: string | number): string {
+    private static async ensureDirs(): Promise<void>{
+        await Promise.all([
+            fs.mkdir(this.CACHE_DIR, { recursive: true }),
+            fs.mkdir(this.TEMP_DIR, { recursive: true })
+        ]);
+    }
+
+    private static getObjectName(trajectoryId: string, timestep: string | number): string{
         return `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`;
     }
 
-    /**
-     * Get cache file path for a decompressed dump
-     */
-    private static getCachePath(trajectoryId: string, timestep: string | number): string {
+    private static getCachePath(trajectoryId: string, timestep: string | number): string{
         return path.join(this.CACHE_DIR, trajectoryId, `${timestep}.dump`);
     }
 
-    /**
-     * Ensure cache directory exists
-     */
-    private static async ensureCacheDir(): Promise<void> {
-        try {
-            await fs.mkdir(this.CACHE_DIR, { recursive: true });
-        } catch (err) {
-            logger.warn(`Failed to create cache directory: ${err}`);
-        }
-    }
-
-    /**
-     * Check if cache file is still fresh (within TTL)
-     */
-    private static async isCacheFresh(cachePath: string): Promise<boolean> {
-        try {
-            const stats = await fs.stat(cachePath);
-            const age = Date.now() - stats.mtimeMs;
-            return age < this.CACHE_TTL_MS;
-        } catch {
-            return false;
-        }
-    }
-
-    /**
-     * Save a dump file to MinIO with streaming compression
-     * @param trajectoryId Trajectory ID
-     * @param timestep Timestep number
-     * @param data Buffer or file path containing the dump data
-     * @returns Promise resolving to the MinIO object name
-     */
     static async saveDump(
         trajectoryId: string,
         timestep: string | number,
-        data: Buffer | string
-    ): Promise<string> {
+        data: DumpInput
+    ): Promise<string>{
         const objectName = this.getObjectName(trajectoryId, timestep);
         const startTime = Date.now();
 
-        try {
-            // For large files or file paths, use streaming
-            if (typeof data === 'string' || (Buffer.isBuffer(data) && data.length > this.LARGE_FILE_THRESHOLD)) {
-                await this.saveDumpStreaming(objectName, data);
-            } else {
-                // For small buffers, direct compression is faster
-                const compressed = await gzip(data, { level: this.COMPRESSION_LEVEL });
+        try{
+            // Small Buffer -> Compress in RAM -> Upload
+            if(Buffer.isBuffer(data) && data.length <= this.RAM_THRESHOLD){
+                const compressed = zlib.gzipSync(data, { level: this.COMPRESSION_LEVEL });
                 await putObject(objectName, SYS_BUCKETS.DUMPS, compressed, {
                     'Content-Type': 'application/gzip',
                     'Content-Encoding': 'gzip'
                 });
-
-                const duration = Date.now() - startTime;
-                const ratio = Math.round((1 - compressed.length / data.length) * 100);
-                logger.info(`Saved dump ${objectName}: ${data.length} -> ${compressed.length} bytes (${ratio}% reduction) in ${duration}ms`);
+                this.logMetrics(objectName, data.length, compressed.length, startTime);
+                return objectName;
             }
 
+            // Large Buffer of File Path -> Stream to Temp File -> Upload -> Delete Temp
+            // We use a temp file to calculate exact size and avoid buffering large streams in RAM.
+            await this.ensureDirs();
+            const tempFilePath = path.join(this.TEMP_DIR, `${randomUUID()}.gz`);
+            let inputSize = 0;
+
+            const sourceStream = typeof data === 'string'
+                ? fsNative.createReadStream(data)
+                : Readable.from(data);
+            
+            // Measure input size while streaming
+            sourceStream.on('data', (chunk: DumpInput) => {
+                inputSize += chunk.length;
+            });
+
+            const gzip = zlib.createGzip({ level: this.COMPRESSION_LEVEL });
+            const dest = fsNative.createWriteStream(tempFilePath);
+
+            // Compress to disk
+            await pipeline(sourceStream, gzip, dest);
+
+            // Upload the compressed file
+            const stats = await fs.stat(tempFilePath);
+            const uploadStream = fsNative.createReadStream(tempFilePath);
+            await putObject(objectName, SYS_BUCKETS.DUMPS, uploadStream, {
+                'Content-Type': 'application/gzip',
+                'Content-Encoding': 'gzip',
+                'Content-Length': stats.size 
+            });
+            this.logMetrics(objectName, inputSize, stats.size, startTime);
+
+            // Cleanup
+            await fs.unlink(tempFilePath).catch(() => {});
             return objectName;
-        } catch (err) {
-            logger.error(`Failed to save dump ${objectName}: ${err}`);
-            throw err;
+        }catch(error){
+            logger.error(`Failed to save dump ${objectName}: ${error}`);
+            throw error;
         }
     }
 
     /**
-     * Save dump using streaming compression (for large files)
+     * Retrieving with Thundering Herd Protection.
+     * If 10 requests come for the same file, only 1 download triggers.
      */
-    private static async saveDumpStreaming(objectName: string, data: Buffer | string): Promise<void> {
-        return new Promise(async (resolve, reject) => {
-            const startTime = Date.now();
-            let inputSize = 0;
-            let outputSize = 0;
-
-            try {
-                // Create stream source
-                const sourceStream = typeof data === 'string'
-                    ? createReadStream(data)
-                    : Readable.from(data);
-
-                // Create gzip stream with fast compression
-                const gzipStream = zlib.createGzip({ level: this.COMPRESSION_LEVEL });
-
-                // Collect compressed chunks for upload
-                const chunks: Buffer[] = [];
-
-                gzipStream.on('data', (chunk) => {
-                    chunks.push(chunk);
-                    outputSize += chunk.length;
-                });
-
-                gzipStream.on('end', async () => {
-                    try {
-                        const compressed = Buffer.concat(chunks);
-                        await putObject(objectName, SYS_BUCKETS.DUMPS, compressed, {
-                            'Content-Type': 'application/gzip',
-                            'Content-Encoding': 'gzip'
-                        });
-
-                        const duration = Date.now() - startTime;
-                        const ratio = inputSize > 0 ? Math.round((1 - outputSize / inputSize) * 100) : 0;
-                        logger.info(`Streamed dump ${objectName}: ${inputSize} -> ${outputSize} bytes (${ratio}% reduction) in ${duration}ms`);
-                        resolve();
-                    } catch (err) {
-                        reject(err);
-                    }
-                });
-
-                gzipStream.on('error', reject);
-
-                // Count input size
-                sourceStream.on('data', (chunk: Buffer) => {
-                    inputSize += chunk.length;
-                });
-
-                // Pipe: source -> gzip -> chunks
-                sourceStream.pipe(gzipStream);
-            } catch (err) {
-                reject(err);
-            }
-        });
-    }
-
-    /**
-     * Get a dump file as a local file path (with smart caching)
-     * @param trajectoryId Trajectory ID
-     * @param timestep Timestep number
-     * @returns Promise resolving to local file path, or null if not found
-     */
-    static async getDump(trajectoryId: string, timestep: string | number): Promise<string | null> {
+    static async getDump(trajectoryId: string, timestep: string | number): Promise<string | null>{
         const objectName = this.getObjectName(trajectoryId, timestep);
         const cachePath = this.getCachePath(trajectoryId, timestep);
-        const startTime = Date.now();
+        const cacheKey = `${trajectoryId}:${timestep}`;
 
-        // Check cache first (with TTL)
-        try {
-            if (await this.isCacheFresh(cachePath)) {
-                logger.info(`Cache HIT for ${objectName} (${Date.now() - startTime}ms)`);
-                return cachePath;
-            }
-        } catch {
-            // Cache miss or error
-        }
-
-        try {
-            const exists = await objectExists(objectName, SYS_BUCKETS.DUMPS);
-            if (!exists) {
-                return null;
-            }
-
-            // Download and decompress with streaming
-            await this.getDumpStreaming(objectName, cachePath);
-
-            const duration = Date.now() - startTime;
-            logger.info(`Cache MISS for ${objectName}, decompressed to cache in ${duration}ms`);
+        // Check valid cache on disk
+        if(await this.isCacheValid(cachePath)){
+            // Update access time (LRU behavior)
+            fs.utimes(cachePath, new Date(), new Date()).catch(() => {});
             return cachePath;
-        } catch (err) {
-            logger.error(`Failed to get dump ${objectName}: ${err}`);
+        }
+
+        // Check if already downloading (promise locking)
+        if(this.pendingRequests.has(cacheKey)){
+            return this.pendingRequests.get(cacheKey)!;
+        }
+
+        // Start new download/decompression
+        const downloadTask = this.executeDownload(objectName, cachePath, cacheKey);
+        this.pendingRequests.set(cacheKey, downloadTask);
+        return downloadTask;
+    }
+    
+    private static async executeDownload(
+        objectName: string,
+        cachePath: string,
+        cacheKey: string
+    ): Promise<string | null>{
+        try{
+            const exists = await objectExists(objectName, SYS_BUCKETS.DUMPS);
+            if(!exists) return null;
+
+            await this.ensureDirs();
+            const cacheDir = path.dirname(cachePath);
+            await fs.mkdir(cacheDir, { recursive: true });
+
+            const startTime = Date.now();
+            const remoteStream = await getStream(objectName, SYS_BUCKETS.DUMPS);
+            const gunzip = zlib.createGunzip();
+            const fileWriter = fsNative.createWriteStream(cachePath);
+
+            // Stream Pipeline: Remote -> Decompress -> Disk
+            await pipeline(remoteStream, gunzip, fileWriter);
+            logger.info(`Downloaded & Decompressed ${objectName} in ${Date.now() - startTime}ms`);
+            return cachePath;
+        }catch(err){
+            // If failed, delete partial file
+            await fs.unlink(cachePath).catch(() => {});
+            logger.error(`Error processing ${objectName}: ${err}`);
             return null;
+        }finally{
+            // Unlock
+            this.pendingRequests.delete(cacheKey);
         }
     }
 
-    /**
-     * Download and decompress dump using streaming (faster, less memory)
-     */
-    private static async getDumpStreaming(objectName: string, cachePath: string): Promise<void> {
-        return new Promise(async (resolve, reject) => {
-            try {
-                await this.ensureCacheDir();
-                const cacheDir = path.dirname(cachePath);
-                await fs.mkdir(cacheDir, { recursive: true });
-
-                const stream = await getStream(objectName, SYS_BUCKETS.DUMPS);
-                const gunzipStream = zlib.createGunzip();
-                const writeStream = createWriteStream(cachePath);
-
-                pipeline(stream, gunzipStream, writeStream, (err) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve();
-                    }
-                });
-            } catch (err) {
-                reject(err);
-            }
-        });
-    }
-
-    /**
-     * Get a dump file as a readable stream (decompressed on-the-fly)
-     * @param trajectoryId Trajectory ID
-     * @param timestep Timestep number
-     * @returns Promise resolving to a readable stream
-     */
-    static async getDumpStream(trajectoryId: string, timestep: string | number): Promise<Readable> {
+    static async getDumpStream(trajectoryId: string, timestep: string | number): Promise<Readable>{
         const objectName = this.getObjectName(trajectoryId, timestep);
         const stream = await getStream(objectName, SYS_BUCKETS.DUMPS);
-        const gunzipStream = zlib.createGunzip();
-        return stream.pipe(gunzipStream);
+        return stream.pipe(zlib.createGunzip());
     }
 
-    /**
-     * Check if a dump exists
-     * @param trajectoryId Trajectory ID
-     * @param timestep Timestep number
-     * @returns Promise resolving to true if dump exists
-     */
-    static async exists(trajectoryId: string, timestep: string | number): Promise<boolean> {
-        const objectName = this.getObjectName(trajectoryId, timestep);
-        return await objectExists(objectName, SYS_BUCKETS.DUMPS);
-    }
-
-    /**
-     * List all dumps for a trajectory
-     * @param trajectoryId Trajectory ID
-     * @returns Promise resolving to array of timesteps
-     */
-    static async listDumps(trajectoryId: string): Promise<string[]> {
+    static async listDumps(trajectoryId: string): Promise<string[]>{
         const prefix = `trajectory-${trajectoryId}/`;
         const objectNames = await listByPrefix(prefix, SYS_BUCKETS.DUMPS);
-
-        const timesteps: string[] = [];
-        for (const name of objectNames) {
-            const match = name.match(/timestep-(\d+)\.dump\.gz$/);
-            if (match) {
-                timesteps.push(match[1]);
-            }
-        }
-
-        return timesteps.sort((a, b) => Number(a) - Number(b));
+        
+        return objectNames
+            .map(name => {
+                const match = name.match(/timestep-(\d+)\.dump\.gz$/);
+                return match ? match[1] : null;
+            })
+            .filter((t): t is string => t !== null)
+            .sort((a, b) => Number(a) - Number(b));
     }
 
-    /**
-     * Calculate total storage size for dumps of a trajectory
-     * @param trajectoryId Trajectory ID
-     * @returns Promise resolving to total size in bytes
-     */
-    static async calculateSize(trajectoryId: string): Promise<number> {
+    static async deleteDumps(trajectoryId: string): Promise<void>{
         const prefix = `trajectory-${trajectoryId}/`;
-        const objectNames = await listByPrefix(prefix, SYS_BUCKETS.DUMPS);
-
-        let totalSize = 0;
-        for (const name of objectNames) {
-            try {
-                const stat = await statObject(name, SYS_BUCKETS.DUMPS);
-                totalSize += stat.size;
-            } catch (err) {
-                logger.warn(`Failed to get size for ${name}: ${err}`);
-            }
-        }
-
-        return totalSize;
+        await Promise.all([
+            deleteByPrefix(SYS_BUCKETS.DUMPS, prefix),
+            fs.rm(path.join(this.CACHE_DIR, trajectoryId), { recursive: true, force: true })
+        ]);
+        logger.info(`Deleted dumps for trajectory ${trajectoryId}`);
     }
 
-    /**
-     * Delete all dumps for a trajectory
-     * @param trajectoryId Trajectory ID
-     */
-    static async deleteDumps(trajectoryId: string): Promise<void> {
-        const { deleteByPrefix } = await import('@/utilities/buckets');
-        const prefix = `trajectory-${trajectoryId}/`;
-        await deleteByPrefix(SYS_BUCKETS.DUMPS, prefix);
-
-        // Clean up cache
-        const cacheDir = path.join(this.CACHE_DIR, trajectoryId);
-        try {
-            await fs.rm(cacheDir, { recursive: true, force: true });
-            logger.info(`Cleaned up cache for trajectory ${trajectoryId}`);
-        } catch (err) {
-            logger.warn(`Failed to clean cache for trajectory ${trajectoryId}: ${err}`);
+    private static async isCacheValid(filePath: string): Promise<boolean>{
+        try{
+            const stats = await fs.stat(filePath);
+            return (Date.now() - stats.mtimeMs) < this.CACHE_TTL_MS;
+        }catch{
+            return false;
         }
     }
 
-    /**
-     * Clear the entire cache directory
-     */
-    static async clearCache(): Promise<void> {
-        try {
+    private static logMetrics(name: string, original: number, compressed: number, start: number) {
+        const duration = Date.now() - start;
+        const ratio = original > 0 ? ((1 - compressed / original) * 100).toFixed(1) : '0';
+        logger.info(`Saved ${name} | Size: ${original} -> ${compressed} (${ratio}%) | Time: ${duration}ms`);
+    }
+
+    static async pruneCache(): Promise<void>{
+        try{
             await fs.rm(this.CACHE_DIR, { recursive: true, force: true });
-            await this.ensureCacheDir();
-            logger.info('Cleared dump cache');
-        } catch (err) {
-            logger.warn(`Failed to clear cache: ${err}`);
+            await fs.rm(this.TEMP_DIR, { recursive: true, force: true });
+            logger.info('Dump cache pruned');
+        }catch(error){
+            logger.warn(`Cache prune failed: ${error}`);
         }
     }
-}
+};

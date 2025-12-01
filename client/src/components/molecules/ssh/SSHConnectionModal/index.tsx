@@ -17,10 +17,16 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
     connection,
     mode
 }) => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        name: string;
+        host: string;
+        port: string | number;
+        username: string;
+        password: string;
+    }>({
         name: '',
         host: '',
-        port: 22,
+        port: '22',
         username: '',
         password: ''
     });
@@ -70,8 +76,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
         setTestResult(null);
     }, [mode, connection, isOpen]);
 
-    const handleInputChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
+    const handleInputChange = (field: keyof typeof formData, value: string | number) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         checkField(field, value);
     };
@@ -88,12 +93,16 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
             setError(null);
 
             if (mode === 'create') {
-                await createConnection(formData as CreateSSHConnectionData);
+                const createData: CreateSSHConnectionData = {
+                    ...formData,
+                    port: typeof formData.port === 'string' ? parseInt(formData.port) : formData.port
+                };
+                await createConnection(createData);
             } else if (connection) {
                 const updateData: UpdateSSHConnectionData = {
                     name: formData.name,
                     host: formData.host,
-                    port: formData.port,
+                    port: typeof formData.port === 'string' ? parseInt(formData.port) : formData.port,
                     username: formData.username
                 };
                 // Only include password if it was changed
@@ -187,7 +196,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                                 id="port"
                                 type="number"
                                 value={formData.port}
-                                onChange={(e) => handleInputChange('port', parseInt(e.target.value) || 0)}
+                                onChange={(e) => handleInputChange('port', e.target.value)}
                                 min="1"
                                 max="65535"
                                 className={errors.port ? 'error' : ''}

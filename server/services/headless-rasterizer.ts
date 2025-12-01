@@ -26,17 +26,11 @@ import { createCanvas } from 'canvas';
 import {
     Document,
     NodeIO,
-    WebIO,
-    Accessor,
     Primitive,
-    Mesh,
     Node as GNode,
 } from '@gltf-transform/core';
 import logger from '@/logger';
 import { mat4, vec3, vec4 } from 'gl-matrix';
-import { createWriteStream } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
-import path from 'path';
 
 /**
  * 3D vertex with color.

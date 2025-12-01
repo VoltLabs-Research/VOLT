@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
+import { catchAsync } from '@/utilities/runtime';
 import MetricsCollector from '@/services/metrics-collector';
-import catchAsync from '@/utilities/catch-async';
 
 const metricsCollector = new MetricsCollector();
 
