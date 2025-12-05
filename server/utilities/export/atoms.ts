@@ -22,11 +22,12 @@
 
 import { Document, Accessor } from '@gltf-transform/core';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
-import { readLargeFile } from '@/utilities/fs';
 import { applyQuantizeAndMeshopt, writeGLBToBuffer } from '@/utilities/export/gltf-pipeline';
 import { putObject } from '@/utilities/buckets';
 import encodeMorton from '@/utilities/export/morton';
 import { SYS_BUCKETS } from '@/config/minio';
+import TrajectoryParserFactory from '@/parsers/factory';
+import { ParseResult } from '@/types/parser';
 
 /**
  * Options that control quantization and compression of the exported GLB.
@@ -92,124 +93,18 @@ export default class AtomisticExporter{
         'OTHER': [242, 242, 242]
     };
 
-    private async parseToTypedArrays(
-        filePath: string,
-        extractTimestepInfo: Function
-    ): Promise<{
-        timestepInfo: any;
+    private async parseToTypedArrays(filePath: string): Promise<{
         positions: Float32Array;
         types: Uint16Array;
         min: [number, number, number];
         max: [number, number, number];
     }> {
-        let inAtoms = false;
-        let headerCols: string[] = [];
-        let headerColsLower: string[] = [];
-        let idxType = -1;
-        let idxX = -1;
-        let idxY = -1;
-        let idxZ = -1;
-
-        const headLines: string[] = [];
-        const positionsArray: number[] = [];
-        const typesArray: number[] = [];
-
-        let minX = Number.POSITIVE_INFINITY;
-        let minY = Number.POSITIVE_INFINITY;
-        let minZ = Number.POSITIVE_INFINITY;
-        let maxX = Number.NEGATIVE_INFINITY;
-        let maxY = Number.NEGATIVE_INFINITY;
-        let maxZ = Number.NEGATIVE_INFINITY;
-
-        await readLargeFile(filePath, {
-            onLine: (line: string) => {
-                if(headLines.length < 1000){
-                    headLines.push(line);
-                }
-
-                const t = line.trim();
-                if(!t) return;
-
-                if(t.startsWith('ITEM: ATOMS')){
-                    headerCols = t.replace(/^ITEM:\s*ATOMS\s*/, '').trim().split(/\s+/);
-                    headerColsLower = headerCols.map((c) => c.toLowerCase());
-
-                    const colIndex = (names: string[]): number => {
-                        for(let i = 0; i < names.length; i++){
-                            const idx = headerColsLower.indexOf(names[i]);
-                            if(idx !== -1) return idx;
-                        }
-                        return -1;
-                    };
-
-                    idxType = colIndex(['type']);
-                    idxX = colIndex(['x', 'xu', 'xs', 'xsu']);
-                    idxY = colIndex(['y', 'yu', 'ys', 'ysu']);
-                    idxZ = colIndex(['z', 'zu', 'zs', 'zsu']);
-
-                    if(idxType < 0 || idxX < 0 || idxY < 0 || idxZ < 0){
-                        throw new Error(`Unsupported ATOMS columns: ${headerCols.join(' ')}`);
-                    }
-
-                    inAtoms = true;
-                    return;
-                }
-
-                if(t.startsWith('ITEM:')){
-                    inAtoms = false;
-                    return;
-                }
-
-                if(!inAtoms) return;
-
-                const parts = t.split(/\s+/);
-                if(parts.length < headerCols.length) return;
-
-                const typeVal = (+parts[idxType]) | 0;
-                const x = +parts[idxX];
-                const y = +parts[idxY];
-                const z = +parts[idxZ];
-
-                typesArray.push(typeVal);
-                positionsArray.push(x, y, z);
-
-                if(x < minX) minX = x;
-                if(y < minY) minY = y;
-                if(z < minZ) minZ = z;
-                if(x > maxX) maxX = x;
-                if(y > maxY) maxY = y;
-                if(z > maxZ) maxZ = z;
-            }
-        });
-
-        const count = typesArray.length;
-        if(count === 0){
-            throw new Error('No atoms found');
-        }
-
-        const timestepInfo = extractTimestepInfo(headLines);
-        if(!timestepInfo){
-            throw new Error('Can not extract TIMESTEP');
-        }
-
-        const positions = new Float32Array(count * 3);
-        const types = new Uint16Array(count);
-
-        let srcPos = 0;
-        for(let i = 0; i < count; i++){
-            const base = i * 3;
-            types[i] = typesArray[i];
-            positions[base] = positionsArray[srcPos++];
-            positions[base + 1] = positionsArray[srcPos++];
-            positions[base + 2] = positionsArray[srcPos++];
-        }
-
+        const parsed: ParseResult = await TrajectoryParserFactory.parse(filePath);
         return {
-            timestepInfo,
-            positions,
-            types,
-            min: [minX, minY, minZ],
-            max: [maxX, maxY, maxZ]
+            positions: parsed.positions,
+            types: parsed.types,
+            min: parsed.min,
+            max: parsed.max
         };
     }
 
@@ -332,15 +227,13 @@ export default class AtomisticExporter{
 
     public async toGLBBuffer(
         filePath: string,
-        extractTimestepInfo: Function,
-        opts: CompressionOptions = {}
+        optsOrLegacy?: CompressionOptions | Function,
+        maybeOpts?: CompressionOptions
     ): Promise<Buffer> {
+        const opts = (typeof optsOrLegacy === 'function') ? (maybeOpts ?? {}) : (optsOrLegacy ?? {});
         const mortonBits = Math.max(1, opts.maxMortonBitsPerAxis ?? 10);
 
-        const { positions, types, min, max } = await this.parseToTypedArrays(
-            filePath,
-            extractTimestepInfo
-        );
+        const { positions, types, min, max } = await this.parseToTypedArrays(filePath);
 
         const extent = {
             x: Math.max(1e-20, max[0] - min[0]),
@@ -446,10 +339,10 @@ export default class AtomisticExporter{
     public async toGLBMinIO(
         filePath: string,
         minioObjectName: string,
-        extractTimestepInfo: Function,
-        opts: CompressionOptions = {}
+        optsOrLegacy?: CompressionOptions | Function
     ): Promise<void> {
-        const buffer = await this.toGLBBuffer(filePath, extractTimestepInfo, opts);
+        const opts = (typeof optsOrLegacy === 'function') ? {} : (optsOrLegacy ?? {});
+        const buffer = await this.toGLBBuffer(filePath, opts);
         await putObject(minioObjectName, SYS_BUCKETS.MODELS, buffer, { 'Content-Type': 'model/gltf-binary' });
     }
 

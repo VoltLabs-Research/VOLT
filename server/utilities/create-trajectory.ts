@@ -2,7 +2,7 @@ import DumpStorage from '@/services/dump-storage';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { Types } from 'mongoose';
 import { v4 } from 'uuid';
-import { processTrajectoryFile } from '@/utilities/lammps';
+import TrajectoryParserFactory from '@/parsers/factory';
 import { Trajectory } from '@/models';
 import { getTrajectoryProcessingQueue } from '@/queues';
 import * as fs from 'node:fs/promises';
@@ -39,10 +39,12 @@ const createTrajectory = async (files: any[], teamId: string, userId: string, tr
             await fs.writeFile(tempPath, file.buffer);
         }
 
-        // Parse LAMMPS header 
-        const { frameInfo, isValid } = await processTrajectoryFile(tempPath);
-        if(!frameInfo || !isValid){
-            // Invalid file, cleanup and skip
+        // Parse and validate using the centralized factory
+        let frameInfo;
+        try{
+            const parsed = await TrajectoryParserFactory.parse(tempPath);
+            frameInfo = parsed.metadata;
+        }catch(err){
             if(!file.path) await fs.rm(tempPath).catch(() => {});
             return null;
         }

@@ -24,7 +24,6 @@ import { parentPort } from 'node:worker_threads';
 import { createWriteStream } from 'node:fs';
 import { unlink } from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
-import { extractTimestepInfo } from '@/utilities/lammps';
 import { performance } from 'node:perf_hooks';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import { v4 as uuidv4 } from 'uuid';
@@ -89,8 +88,7 @@ const processCloudFrame = async (
 
         await exporter.toGLBMinIO(
             tempFilePath,
-            targetObjectName,
-            extractTimestepInfo
+            targetObjectName
         );
 
         const duration = (performance.now() - start).toFixed(2);

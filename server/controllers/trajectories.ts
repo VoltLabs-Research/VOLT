@@ -29,13 +29,13 @@ import { listByPrefix, statObject } from '@/utilities/buckets';
 import { getTimestepPreview, sendImage } from '@/utilities/raster';
 import { SYS_BUCKETS } from '@/config/minio';
 import { catchAsync } from '@/utilities/runtime/runtime';
-import { createInterface } from 'node:readline';
 import { getMetricsByTeamId } from '@/utilities/metrics/team';
 import processAndCreateTrajectory from '@/utilities/create-trajectory';
 import TrajectoryVFS from '@/services/trajectory-vfs';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import HandlerFactory from '@/controllers/handler-factory';
 import DumpStorage from '@/services/dump-storage';
+import TrajectoryParserFactory from '@/parsers/factory';
 import archiver from 'archiver';
 import logger from '@/logger';
 import * as os from 'node:os';
@@ -167,7 +167,7 @@ export const getTrajectoryPreview = async (req: Request, res: Response) => {
     return sendImage(res, etag, buffer);
 };
 
-// Stream atom positions [x,y,z] for a given timestep by parsing the stored LAMMPS dump file (paginated)
+// Return atom positions/types for a timestep using the centralized parser
 export const getTrajectoryAtoms = async (req: Request, res: Response) => {
     const { timestep } = req.params as any;
     const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
@@ -178,112 +178,44 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
     const trajectoryId = trajectory._id.toString();
 
     try {
-        const vfs = new TrajectoryVFS(trajectoryId);
-        const { stream: dataStream } = await vfs.getReadStream(`trajectory-${trajectoryId}/dumps/${timestep}`);
+        const dumpPath = await DumpStorage.getDump(trajectoryId, timestep);
+        if(!dumpPath){
+            throw new RuntimeError('FileNotFound', 404);
+        }
 
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Transfer-Encoding', 'chunked');
+        const parsed = await TrajectoryParserFactory.parse(dumpPath);
+        const total = parsed.metadata.natoms;
+        const limit = Math.min(endIndex, total);
 
-        const rl = createInterface({ input: dataStream, crlfDelay: Infinity });
-
-        let natoms: number | null = null;
-        let headerCols: string[] = [];
-        let inAtoms = false;
-        let wroteAny = false;
-        let positionsOpened = false;
-        let globalIndex = 0;
-        let typesPage: number[] = [];
-
-        const write = (chunk: string) => {
-            if (!res.write(chunk)) return new Promise((r) => res.once('drain', r));
-            return Promise.resolve();
-        };
-
-        // Start JSON
-        await write('{');
-        await write(`"timestep": ${Number(timestep) || 0},`);
-        await write(`"page": ${page},`);
-        await write(`"pageSize": ${pageSize},`);
-
-        const colIndex = (name: string) => headerCols.findIndex((c) => c.toLowerCase() === name);
-        const findIndexFrom = (cands: string[]) => cands.map(colIndex).find((i) => i !== -1) ?? -1;
-
-        let idxX = -1, idxY = -1, idxZ = -1, idxType = -1;
-
-        for await (const line of rl) {
-            const t = line.trim();
-            if (!t) continue;
-
-            if (t === 'ITEM: NUMBER OF ATOMS') {
-                const { value: next } = await rl[Symbol.asyncIterator]().next();
-                if (typeof next === 'string') {
-                    const v = parseInt(next.trim(), 10);
-                    if (Number.isFinite(v)) natoms = v;
-                }
-                continue;
-            }
-
-            if (t.startsWith('ITEM: ATOMS')) {
-                headerCols = t.replace(/^ITEM:\s*ATOMS\s*/, '').trim().split(/\s+/);
-                idxX = findIndexFrom(['x', 'xu', 'xs', 'xsu']);
-                idxY = findIndexFrom(['y', 'yu', 'ys', 'ysu']);
-                idxZ = findIndexFrom(['z', 'zu', 'zs', 'zsu']);
-                idxType = findIndexFrom(['type', 'atom_type', 'atype']);
-                inAtoms = true;
-                // Write natoms (if known) and open positions array
-                if (natoms != null) {
-                    await write(`"natoms": ${natoms},`);
-                }
-                await write('"positions":[');
-                positionsOpened = true;
-                continue;
-            }
-
-            if (t.startsWith('ITEM:') && inAtoms) {
-                // ATOMS section ended
-                inAtoms = false;
-                break;
-            }
-
-            if (inAtoms) {
-                const parts = t.split(/\s+/);
-                if (parts.length < headerCols.length) continue;
-                if (idxX < 0 || idxY < 0 || idxZ < 0) continue;
-                const x = Number(parts[idxX]);
-                const y = Number(parts[idxY]);
-                const z = Number(parts[idxZ]);
-                if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
-                if (globalIndex >= startIndex && globalIndex < endIndex) {
-                    await write((wroteAny ? ',' : '') + `[${x},${y},${z}]`);
-                    wroteAny = true;
-                    if (idxType !== -1) {
-                        const t = Number(parts[idxType]);
-                        typesPage.push(Number.isFinite(t) ? t : NaN);
-                    }
-                }
-                globalIndex++;
+        const positionsPage: number[][] = [];
+        const typesPage: number[] = [];
+        for(let i = startIndex; i < limit; i++){
+            const base = i * 3;
+            positionsPage.push([
+                parsed.positions[base],
+                parsed.positions[base + 1],
+                parsed.positions[base + 2]
+            ]);
+            if(parsed.types){
+                typesPage.push(parsed.types[i]);
             }
         }
 
-        if (!positionsOpened) {
-            // No ATOMS parsed; still emit positions array key
-            await write('"positions":[');
-            positionsOpened = true;
-        }
-
-        await write(']');
-        if (typesPage.length) {
-            await write(`, "types": [` + typesPage.map((v) => Number.isFinite(v) ? v : 'null').join(',') + `]`);
-        }
-        await write(`, "total": ${globalIndex}`);
-        await write('}');
-        res.end();
+        return res.status(200).json({
+            timestep: parsed.metadata.timestep || Number(timestep) || 0,
+            page,
+            pageSize,
+            natoms: parsed.metadata.natoms,
+            positions: positionsPage,
+            types: typesPage.length ? typesPage : undefined,
+            total
+        });
     } catch (err: any) {
         logger.error(`getTrajectoryAtoms failed: ${err}`);
-        if (!res.headersSent) {
-            return res.status(500).json({ status: 'error', data: { error: err?.message || 'Failed to parse atoms' } });
-        }
-        try { res.end(); } catch { }
+        return res.status(err?.statusCode || 500).json({
+            status: 'error',
+            data: { error: err?.message || 'Failed to parse atoms' }
+        });
     }
 };
 
