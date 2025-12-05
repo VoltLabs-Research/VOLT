@@ -26,7 +26,7 @@ import { SYS_BUCKETS } from '@/config/minio';
 import { Trajectory, Analysis } from '@/models';
 import { FsEntry, VFSReadStream } from '@/types/services/trajectory-vfs';
 import mime from 'mime-types';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 import DumpStorage from '@/services/dump-storage';
 import QuickCache from '@/utilities/perf/quick-cache';
 import pLimit from '@/utilities/perf/p-limit';

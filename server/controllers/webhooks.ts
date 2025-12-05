@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { catchAsync } from '@/utilities/runtime';
+import { catchAsync } from '@/utilities/runtime/runtime';
 import { Webhook } from '@/models/index';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 
 export const getMyWebhooks = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const user = (req as any).user;

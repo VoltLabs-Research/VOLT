@@ -22,8 +22,8 @@
 
 import { SYS_BUCKETS } from '@/config/minio';
 import { putObject } from '@/utilities/buckets';
-import { slugify } from '@/utilities/runtime';
-import { encodeMsgpack, readMsgpackFile } from '@/utilities/msgpack';
+import { slugify } from '@/utilities/runtime/runtime';
+import { encodeMsgpack, readMsgpackFile } from '@/utilities/msgpack/msgpack';
 import DislocationExporter from '@/utilities/export/dislocations';
 import MeshExporter from '@/utilities/export/mesh';
 import SummaryStreamWriter from './summary-stream-writer';
@@ -31,7 +31,7 @@ import AtomisticExporter from '@/utilities/export/atoms';
 import path from 'node:path';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
-import { decodeArrayStreamFromFile } from '@/utilities/msgpack-iterable';
+import { decodeArrayStreamFromFile } from '@/utilities/msgpack/msgpack-iterable';
 import { BuiltInExports, Modifier, ModifierTransformContext, ModifierTransformer } from '@/types/services/plugin';
 
 export interface ExecutionRecorder{

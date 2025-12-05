@@ -1,7 +1,7 @@
 import { ITrajectory } from '@/types/models/trajectory';
 import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
 import { listByPrefix, downloadObject, getObject } from '@/utilities/buckets';
-import { createTempDir } from '@/utilities/runtime';
+import { createTempDir } from '@/utilities/runtime/runtime';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
 import { getRasterizerQueue } from '@/queues';
 import { Response } from 'express';

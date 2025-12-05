@@ -22,7 +22,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Session } from '@/models/index';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 
 /**
  * Get all active sessions for the authenticated user

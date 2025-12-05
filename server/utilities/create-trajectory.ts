@@ -1,5 +1,5 @@
 import DumpStorage from '@/services/dump-storage';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 import { Types } from 'mongoose';
 import { v4 } from 'uuid';
 import { processTrajectoryFile } from '@/utilities/lammps';

@@ -21,7 +21,7 @@
  **/
 
 import { Request, Response, NextFunction } from 'express';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 
 interface ErrorResponse {
     status: string;

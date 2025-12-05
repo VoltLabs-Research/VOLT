@@ -22,8 +22,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Chat, Message } from '@/models/index';
-import RuntimeError from '@/utilities/runtime-error';
-import { catchAsync } from '@/utilities/runtime';
+import RuntimeError from '@/utilities/runtime/runtime-error';
+import { catchAsync } from '@/utilities/runtime/runtime';
 import { getObject } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
 import { getMinIOObjectName } from '@/middlewares/file-upload';

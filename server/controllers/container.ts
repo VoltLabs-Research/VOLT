@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { Container, Team } from '@/models/index';
 import { dockerService } from '@/services/docker';
-import RuntimeError from '@/utilities/runtime-error';
-import { catchAsync } from '@/utilities/runtime';
+import RuntimeError from '@/utilities/runtime/runtime-error';
+import { catchAsync } from '@/utilities/runtime/runtime';
 import { Socket } from 'socket.io';
 
 export const getAllContainers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {

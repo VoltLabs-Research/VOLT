@@ -22,7 +22,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Team } from '@models/index';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 
 export const checkTeamMembership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const teamId = req.params.id;

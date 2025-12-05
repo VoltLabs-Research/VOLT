@@ -26,7 +26,7 @@ import ManifestService from '@/services/plugins/manifest-service';
 import { Model, Types } from 'mongoose';
 import { listByPrefix } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
-import { slugify } from '@/utilities/runtime';
+import { slugify } from '@/utilities/runtime/runtime';
 
 export type ListingEntry = {
     aggregators?: {

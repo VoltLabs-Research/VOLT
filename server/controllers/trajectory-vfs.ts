@@ -22,7 +22,7 @@
 
 import { Request, Response } from 'express';
 import TrajectoryVFS from '@/services/trajectory-vfs';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 import { Trajectory, User } from '@/models';
 
 const breadcrumbsOf = (rel: string) => {

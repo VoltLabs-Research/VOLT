@@ -22,8 +22,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Chat, User, Team } from '@/models/index';
-import RuntimeError from '@/utilities/runtime-error';
-import { catchAsync } from '@/utilities/runtime';
+import RuntimeError from '@/utilities/runtime/runtime-error';
+import { catchAsync } from '@/utilities/runtime/runtime';
 import mongoose from 'mongoose';
 
 /**

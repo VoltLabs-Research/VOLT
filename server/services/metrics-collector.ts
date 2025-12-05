@@ -23,7 +23,7 @@
 import os from 'os';
 import mongoose from 'mongoose';
 import fs from 'fs/promises';
-import useClusterId from '@/utilities/use-cluster-id';
+import useClusterId from '@/utilities/runtime/use-cluster-id';
 import http from 'http';
 import https from 'https';
 import { exec } from 'child_process';

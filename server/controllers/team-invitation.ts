@@ -22,7 +22,7 @@
 
 import { Request, Response } from 'express';
 import { TeamInvitation, User, Team, Notification } from '@/models/index';
-import { catchAsync } from '@/utilities/runtime';
+import { catchAsync } from '@/utilities/runtime/runtime';
 import createHttpError from 'http-errors';
 import { publishNotificationCreated } from '@/events/notification-events';
 import { publishNotificationCreated } from '@/events/notification-events';

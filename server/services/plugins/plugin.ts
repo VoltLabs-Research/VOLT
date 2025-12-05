@@ -21,7 +21,7 @@
  */
 
 import { fileExists } from '@/utilities/fs';
-import { slugify } from '@/utilities/runtime';
+import { slugify } from '@/utilities/runtime/runtime';
 import ArtifactProcessor from '@/services/plugins/modifier-processor';
 import ManifestService from '@/services/plugins/manifest-service';
 import AnalysisContext from '@/services/plugins/modifier-context';

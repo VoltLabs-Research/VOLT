@@ -22,7 +22,7 @@
 
 import { Request, Response } from 'express';
 import SSHConnection, { ISSHConnection } from '@/models/ssh-connection';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 import SSHService from '@/services/ssh';
 import logger from '@/logger';
 

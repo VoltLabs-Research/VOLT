@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { Document, Model, FilterQuery, PopulateOptions } from 'mongoose';
-import { catchAsync, filterObject, checkIfSlugOrId } from '@utilities/runtime';
+import { catchAsync, filterObject, checkIfSlugOrId } from '@/utilities/runtime/runtime';
 import APIFeatures from '@/utilities/api-features';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 
 /**
  * Interface for API response structure 

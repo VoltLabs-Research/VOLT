@@ -22,7 +22,7 @@
 
 import jwt from 'jsonwebtoken';
 import { User, Session } from '@/models/index';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import logger from '@/logger';
 

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { join, resolve, basename } from 'path';
 import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
-import { catchAsync } from '@/utilities/runtime';
+import { catchAsync } from '@/utilities/runtime/runtime';
 import { readFile } from 'fs/promises';;
 import { readdir } from 'fs/promises';
 import { Analysis, Trajectory } from '@/models';

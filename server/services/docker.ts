@@ -1,5 +1,5 @@
 import Docker, { Container, ContainerCreateOptions, ContainerInspectInfo, ContainerStats } from 'dockerode';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 import logger from '@/logger';
 
 // Security limit for executive exits (before OOM Crash) - 10 MB

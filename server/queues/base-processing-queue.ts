@@ -29,7 +29,7 @@ import { Worker } from 'worker_threads';
 import { EventEmitter } from 'events';
 import { publishJobUpdate } from '@/events/job-updates';
 import { Trajectory } from '@/models';
-import useClusterId from '@/utilities/use-cluster-id';
+import useClusterId from '@/utilities/runtime/use-cluster-id';
 import logger from '@/logger';
 
 export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitter {

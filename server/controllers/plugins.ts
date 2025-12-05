@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
-import { catchAsync, slugify } from '@/utilities/runtime';
+import { catchAsync, slugify } from '@/utilities/runtime/runtime';
 import { getAnalysisQueue } from '@/queues';
 import { Analysis } from '@/models';
 import PluginRegistry from '@/services/plugins/plugins-registry';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import TrajectoryVFS from '@/services/trajectory-vfs';
 import { getStream, statObject, listByPrefix, getObject } from '@/utilities/buckets';

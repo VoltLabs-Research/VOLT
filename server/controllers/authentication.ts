@@ -25,7 +25,7 @@ import { IUser } from '@/types/models/user';
 import HandlerFactory from '@/controllers/handler-factory';
 import { User, Session } from '@models/index';
 import jwt, { type Secret, type SignOptions } from 'jsonwebtoken';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 
 const userFactory = new HandlerFactory({
     model: User,

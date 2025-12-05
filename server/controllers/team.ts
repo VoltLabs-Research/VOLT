@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Team, User } from '@models/index';
 import HandlerFactory from '@/controllers/handler-factory';
-import { catchAsync } from '@/utilities/runtime';
+import { catchAsync } from '@/utilities/runtime/runtime';
 import createHttpError from 'http-errors';
 
 const factory = new HandlerFactory({

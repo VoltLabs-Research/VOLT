@@ -1,6 +1,6 @@
 import { SYS_BUCKETS } from '@/config/minio';
-import { encodeMsgpack } from '@/utilities/msgpack';
-import { slugify } from '@/utilities/runtime';
+import { encodeMsgpack } from '@/utilities/msgpack/msgpack';
+import { slugify } from '@/utilities/runtime/runtime';
 import { putObject } from '@/utilities/buckets';
 import { unlink } from 'node:fs/promises';
 import { WriteStream, createReadStream, createWriteStream } from 'node:fs';

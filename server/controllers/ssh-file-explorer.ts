@@ -23,7 +23,7 @@
 import { Request, Response } from 'express';
 import SSHConnection from '@/models/ssh-connection';
 import SSHService from '@/services/ssh';
-import RuntimeError from '@/utilities/runtime-error';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 import { mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import * as os from 'node:os';
@@ -175,7 +175,7 @@ export const importTrajectoryFromSSH = async (req: Request, res: Response) => {
             );
         } else {
             // Download single file
-            logger.info(`Downloading file from SSH: ${remotePath}`);
+            logger.info(`Downl      oading file from SSH: ${remotePath}`);
             const localFilePath = join(localFolder, fileStats.name);
             await SSHService.downloadFile(connection, remotePath, localFilePath);
             localFiles = [localFilePath];

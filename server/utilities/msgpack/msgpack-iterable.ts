@@ -1,4 +1,4 @@
-import { decodeMultiStreamFromFile } from '@/utilities/msgpack-stream';
+import { decodeMultiStreamFromFile } from '@/utilities/msgpack/msgpack-stream';
 
 export interface DecodeArrayStreamOptions{
     iterableKey?: string;

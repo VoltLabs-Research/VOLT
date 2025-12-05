@@ -22,8 +22,8 @@
 
 import { Request, Response } from 'express';
 import { Chat, Message, Team } from '@/models/index';
-import RuntimeError from '@/utilities/runtime-error';
-import { catchAsync } from '@/utilities/runtime';
+import RuntimeError from '@/utilities/runtime/runtime-error';
+import { catchAsync } from '@/utilities/runtime/runtime';
 import { uploadSingleFile, getFileUrl } from '@/middlewares/file-upload';
 
 /**

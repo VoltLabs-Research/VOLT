@@ -21,8 +21,8 @@
  */
 
 import { Document, Model, PopulateOptions, FilterQuery, Query } from 'mongoose';
-import { filterObject } from '@utilities/runtime';
-import RuntimeError from '@/utilities/runtime-error';
+import { filterObject } from '@/utilities/runtime/runtime';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 import logger from '@/logger';
 
 /**
