@@ -85,13 +85,6 @@ router.get(
 );
 
 router.get(
-    '/:id/glb/',
-    authMiddleware.optionalAuth,
-    middleware.checkTeamMembershipForTrajectory,
-    controller.listTrajectoryGLBFiles
-);
-
-router.get(
     '/:id/glb-archive',
     authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory,

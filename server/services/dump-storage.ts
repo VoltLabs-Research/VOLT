@@ -20,12 +20,13 @@
  * SOFTWARE.
  */
 
-import { putObject, getStream, listByPrefix, objectExists, deleteByPrefix } from '@/utilities/buckets';
+import { putObject, getStream, listByPrefix, objectExists, deleteByPrefix, statObject } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
 import logger from '@/logger';
+import pLimit from '@/utilities/perf/p-limit';
 import * as zlib from 'node:zlib';
 import * as fs from 'node:fs/promises';
 import * as fsNative from 'node:fs';
@@ -41,6 +42,7 @@ export default class DumpStorage{
     private static readonly CACHE_TTL_MS = 30 * 60 * 1000;
     private static readonly RAM_THRESHOLD = 4 * 1024 * 1024;
     private static pendingRequests = new Map<string, Promise<string | null>>();
+    private static storageLimit = pLimit(50);
 
     private static async ensureDirs(): Promise<void>{
         await Promise.all([
@@ -174,6 +176,30 @@ export default class DumpStorage{
         }finally{
             // Unlock
             this.pendingRequests.delete(cacheKey);
+        }
+    }
+
+    static async calculateSize(trajectoryId: string): Promise<number>{
+        const prefix = `trajectory-${trajectoryId}/`;
+        try{
+            const keys = await listByPrefix(prefix, SYS_BUCKETS.DUMPS);
+            if(keys.length === 0) return 0;
+            // Controlled parallel statObject (max 50 concurrent)
+            // This avoids the sequential TCP handshake of using a `for` loop.
+            const sizes = await Promise.all(keys.map((key) => this.storageLimit(async () => {
+                if(!key.endsWith('.dump.gz')) return 0;
+                try{
+                    const stat = await statObject(key, SYS_BUCKETS.DUMPS);
+                    return stat.size;
+                }catch{
+                    return 0;
+                }
+            })));
+
+            return sizes.reduce((acc: number, curr: number) => acc + curr, 0);
+        }catch(error){
+            logger.error(`Failed to calculate size for trajectory ${trajectoryId}: ${error}`);
+            return 0;
         }
     }
 

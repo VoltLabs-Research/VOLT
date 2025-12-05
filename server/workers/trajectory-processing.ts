@@ -1,57 +1,72 @@
 /**
  * Copyright (c) 2025, The Volterra Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * TRAJECTORY PROCESSING WORKER - CLOUD NATIVE VERSION
  */
 
 import { extractTimestepInfo } from '@/utilities/lammps';
-import { parentPort } from 'worker_threads';
-import { unlink } from 'fs/promises';
+import { unlink, writeFile } from 'fs/promises';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import AtomisticExporter from '@/utilities/export/atoms';
 import DumpStorage from '@/services/dump-storage';
 import '@config/env';
 import logger from '@/logger';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { v4 as uuidv4 } from 'uuid';
+import { parentPort } from 'node:worker_threads';
 
 const glbExporter = new AtomisticExporter();
 
 const processSingleFrame = async (frameData: any, frameFilePath: string, trajectoryId: string) => {
-    // Generate GLB from the local dump file
-    const objectName = `trajectory-${trajectoryId}/previews/timestep-${frameData.timestep}.glb`;
-    await glbExporter.toGLBMinIO(
-        frameFilePath,
-        objectName,
-        extractTimestepInfo
-    );
+    let localProcessingPath = frameFilePath;
+    let isTempFile = false;
 
-    // After GLB is created, migrate the dump to MinIO and clean up filesystem
     try {
-        const timestep = frameData.timestep;
-        const buffer = await import('fs/promises').then(fs => fs.readFile(frameFilePath));
-        await DumpStorage.saveDump(trajectoryId, timestep, buffer);
+        // 1. Detectar si el archivo está en MinIO (Cloud-First Architecture)
+        if (frameFilePath.startsWith('minio://')) {
+            // El controlador ya subió el dump. Necesitamos descargarlo temporalmente
+            // para que el exportador (que suele usar herramientas CLI) pueda leerlo.
+            const tempFileName = `proc_${trajectoryId}_${frameData.timestep}_${uuidv4()}.dump`;
+            localProcessingPath = path.join(os.tmpdir(), tempFileName);
+            
+            // Descargar stream desde DumpStorage y escribir en disco local
+            const stream = await DumpStorage.getDumpStream(trajectoryId, frameData.timestep);
+            await writeFile(localProcessingPath, stream);
+            isTempFile = true;
+        }
 
-        // Delete the local file
-        await unlink(frameFilePath);
-        logger.info(`[Worker #${process.pid}] Migrated dump ${timestep} to MinIO and cleaned up filesystem`);
+        // 2. Generar GLB y subirlo directamente a MinIO (Bucket MODELS)
+        // Nota: glbExporter.toGLBMinIO se encarga de la subida del GLB resultante.
+        const objectName = `trajectory-${trajectoryId}/previews/timestep-${frameData.timestep}.glb`;
+        
+        await glbExporter.toGLBMinIO(
+            localProcessingPath,
+            objectName,
+            extractTimestepInfo
+        );
+
+        // 3. Limpieza
+        if (isTempFile) {
+            await unlink(localProcessingPath).catch(() => {});
+        } else {
+            // Compatibilidad Legacy: Si el archivo venía de una ruta local (no minio://),
+            // asumimos que el worker es responsable de limpiarlo si ya no se necesita.
+            // (Aunque con el nuevo controlador, esto raramente ocurrirá).
+            await unlink(frameFilePath).catch(() => {});
+        }
+
+        // NOTA: Ya NO llamamos a DumpStorage.saveDump aquí.
+        // El controlador ya se encargó de la persistencia del Dump crudo.
+
     } catch (err) {
-        logger.error(`[Worker #${process.pid}] Failed to migrate dump to MinIO: ${err}`);
-        // Don't fail the job if migration fails, just log it
+        logger.error(`[Worker #${process.pid}] Failed to process frame ${frameData.timestep}: ${err}`);
+        
+        // Asegurar limpieza en caso de error
+        if (isTempFile && localProcessingPath) {
+            await unlink(localProcessingPath).catch(() => {});
+        }
+        
+        throw err; // Re-lanzar para que processJob lo capture
     }
 };
 
@@ -68,7 +83,11 @@ const processJob = async (job: TrajectoryProcessingJob) => {
     );
 
     try {
-        await Promise.all(files.map(({ frameData, frameFilePath }) => processSingleFrame(frameData, frameFilePath, trajectoryId)));
+        // Procesar frames en paralelo (limitado por el tamaño del chunk del controlador, usualmente 20)
+        await Promise.all(files.map(({ frameData, frameFilePath }) => 
+            processSingleFrame(frameData, frameFilePath, trajectoryId)
+        ));
+
         parentPort?.postMessage({
             status: 'completed',
             jobId: job.jobId,
@@ -80,13 +99,6 @@ const processJob = async (job: TrajectoryProcessingJob) => {
     } catch (error) {
         logger.error(
             `[Worker #${process.pid}] Job ${job.jobId} failed: ${error}`
-        );
-
-        // Clean up leftover files (paralelo y sin bloquear)
-        await Promise.all(
-            files.map(({ frameFilePath }) =>
-                unlink(frameFilePath).catch(() => { })
-            )
         );
 
         parentPort?.postMessage({

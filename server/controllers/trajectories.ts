@@ -21,7 +21,7 @@
  */
 
 import { NextFunction, Request, Response } from 'express';
-import { join, resolve } from 'path';
+import { join } from 'path';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { isValidObjectId, Types } from 'mongoose';
 import { getTrajectoryProcessingQueue } from '@/queues';
@@ -33,12 +33,14 @@ import RuntimeError from '@/utilities/runtime-error';
 import HandlerFactory from '@/controllers/handler-factory';
 import archiver from 'archiver';
 import { v4 } from 'uuid';
-import { getStream, statObject } from '@/utilities/buckets';
+import { getStream, listByPrefix, statObject } from '@/utilities/buckets';
 import { getTimestepPreview, sendImage } from '@/utilities/raster';
 import { SYS_BUCKETS } from '@/config/minio';
 import DumpStorage from '@/services/dump-storage';
 import * as os from 'node:os';
 import logger from '@/logger';
+import { catchAsync } from '@/utilities/runtime';
+import { createInterface } from 'node:readline';
 
 const factory = new HandlerFactory<any>({
     model: Trajectory as any,
@@ -88,92 +90,40 @@ export const getTrajectoryMetrics = async (req: Request, res: Response) => {
     });
 };
 
-export const getMetrics = async (req: Request, res: Response) => {
+export const getMetrics = catchAsync(async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
-
-    if (!trajectory) {
-        return res.status(400).json({
-            status: 'error',
-            data: { error: 'Trajectory not found in context' }
-        });
-    }
-
     const trajectoryId = trajectory._id.toString();
-    const trajFS = new TrajectoryVFS(trajectoryId);
+    const vfs = new TrajectoryVFS(trajectoryId);
+    
+    const rootEntries = await vfs.list(`trajectory-${trajectoryId}`);
+    let vfsTotalSize = rootEntries.reduce((acc, entry) => acc + (entry.size || 0), 0);
 
-    try {
-        // Calculate MinIO dump storage
-        const minioDumpsSize = await DumpStorage.calculateSize(trajectoryId);
-
-        // Calculate MinIO sizes across all buckets
-        let minioSize = 0;
-
-        // RASTERIZER bucket: trajectory-{id}/previews/ (PNG raster images)
-        const rasterSize = await trajFS['calculateMinioSize'](`trajectory-${trajectoryId}/previews/`, SYS_BUCKETS.RASTERIZER);
-        minioSize += rasterSize;
-
-        // MODELS bucket: trajectory-{id}/previews/ (GLB preview models)
-        const previewGlbSize = await trajFS['calculateMinioSize'](`trajectory-${trajectoryId}/previews/`, SYS_BUCKETS.MODELS);
-        minioSize += previewGlbSize;
-
-        // MODELS bucket: per-analysis GLB and data files
-        const { Analysis } = await import('@models/index');
-        const analyses = await Analysis.find({ trajectory: trajectoryId }).select('_id').lean();
-
-        for (const analysis of analyses) {
-            const analysisId = analysis._id.toString();
-            const glbSize = await trajFS['calculateMinioSize'](`${trajectoryId}/${analysisId}/glb/`, SYS_BUCKETS.MODELS);
-            const dataSize = await trajFS['calculateMinioSize'](`${trajectoryId}/${analysisId}/data/`, SYS_BUCKETS.MODELS);
-            minioSize += glbSize + dataSize;
-        }
-
-        // PLUGINS bucket: plugins/trajectory-{id}/
-        const pluginsSize = await trajFS['calculateMinioSize'](`plugins/trajectory-${trajectoryId}/`, SYS_BUCKETS.PLUGINS);
-        minioSize += pluginsSize;
-
-        // Total storage size (all in MinIO now)
-        const totalSizeBytes = minioDumpsSize + minioSize;
-
-        // Get frame count
-        const totalFrames = trajectory.frames?.length || 0;
-
-        // Get analysis count
-        const totalAnalyses = analyses.length;
-
-        return res.status(200).json({
-            status: 'success',
-            data: {
-                frames: {
-                    totalFrames
-                },
-                files: {
-                    totalSizeBytes
-                },
-                structureAnalysis: {
-                    totalDocs: totalAnalyses
-                }
-            }
-        });
-    } catch (err: any) {
-        logger.error(`[getMetrics] Error calculating metrics for trajectory ${trajectoryId}: ${err}`);
-        return res.status(500).json({
-            status: 'error',
-            data: { error: 'Failed to calculate trajectory metrics' }
-        });
+    let pluginsSize = 0;
+    const pluginKeys = await listByPrefix(`plugins/trajectory-${trajectoryId}/`, SYS_BUCKETS.PLUGINS);
+    for(const key of pluginKeys){
+        const stat = await statObject(key, SYS_BUCKETS.PLUGINS);
+        pluginsSize += stat.size;
     }
-};
+
+    const totalSizeBytes = vfsTotalSize + pluginsSize;
+    const totalFrames = trajectory.frames?.length || 0;
+    const totalAnalyses = rootEntries.filter((e) => e.name.startsWith('analysis-')).length;
+
+    return res.status(200).json({
+        status: 'success',
+        data: {
+            frames: { totalFrames },
+            files: { totalSizeBytes },
+            analyses: { totalAnalyses }
+        }
+    });
+});
 
 export const deleteTrajectoryById = factory.deleteOne({
     beforeDelete: async (doc: any) => {
         const trajectoryId = doc._id.toString();
 
-        // Clean up MinIO dumps
-        try {
-            await DumpStorage.deleteDumps(trajectoryId);
-            logger.info(`Cleaned up MinIO dumps for trajectory: ${trajectoryId}`);
-        } catch (error) {
-            logger.warn(`Warning: Could not clean up MinIO dumps for trajectory ${trajectoryId}: ${error}`);
-        }
+        await DumpStorage.deleteDumps(trajectoryId);
 
         // Clean up temporary filesystem files if they exist
         const trajectoryDir = process.env.TRAJECTORY_DIR || join(os.tmpdir(), 'opendxa-trajectories');
@@ -211,57 +161,6 @@ export const getUserTrajectories = factory.getAll({
     }
 });
 
-export const listTrajectoryGLBFiles = async (req: Request, res: Response) => {
-    const trajectory = res.locals.trajectory;
-    const trajectoryId = trajectory._id.toString();
-    const analysisId = req.params.analysisId;
-
-    if (!trajectory) {
-        return res.status(400).json({
-            status: 'error',
-            data: { error: 'Trajectory not found in context' },
-        });
-    }
-
-    const trajFS = new TrajectoryVFS(trajectoryId);
-
-    const TYPES = [
-        'atoms_colored_by_type',
-        'dislocations',
-        'defect_mesh',
-        'interface_mesh'
-    ] as const;
-
-    // MinIO keys are already in the format we need, just extract the relative part
-    const toRel = (minioKey: string) => {
-        // MinIO key format: {trajectoryId}/{analysisId}/glb/{frame}/{type}.glb
-        // We want: {analysisId}/glb/{frame}/{type}.glb
-        const parts = minioKey.split('/');
-        // Remove trajectoryId (first part)
-        return parts.slice(1).join('/');
-    };
-
-    const typeMap: Record<string, Record<string, string>> = {
-        atoms_colored_by_type: {},
-        dislocations: {},
-        defect_mesh: {},
-        interface_mesh: {}
-    };
-
-    for (const type of TYPES) {
-        const maps = await trajFS.getAnalysis(trajectoryId, analysisId, type, { media: 'glb' });
-        const glbByFrame = maps.glb || {};
-        for (const frame of Object.keys(glbByFrame).sort((a, b) => Number(a) - Number(b))) {
-            typeMap[type][frame] = toRel(glbByFrame[frame]);
-        }
-    }
-
-    return res.status(200).json({
-        status: 'success',
-        data: typeMap
-    });
-};
-
 export const getTrajectoryPreview = async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     // TODO: maybe it's not efficient
@@ -278,31 +177,16 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const trajectory = (res as any).locals.trajectory;
-    if (!trajectory) {
-        return res.status(400).json({ status: 'error', data: { error: 'Trajectory not found in context' } });
-    }
-
     const trajectoryId = trajectory._id.toString();
 
     try {
-        const trajFS = new TrajectoryVFS(trajectoryId);
-        const frameFilePath = await trajFS.getDump(trajectoryId, timestep);
-
-        if (!frameFilePath) {
-            return res.status(404).json({
-                status: 'error',
-                data: { error: 'Dump not found' }
-            });
-        }
+        const vfs = new TrajectoryVFS(trajectoryId);
+        const { stream: dataStream } = await vfs.getReadStream(`trajectory-${trajectoryId}/dumps/${timestep}`);
 
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Transfer-Encoding', 'chunked');
 
-        const { createReadStream } = await import('fs');
-        const { createInterface } = await import('readline');
-
-        const stream = createReadStream(frameFilePath, { encoding: 'utf8' });
-        const rl = createInterface({ input: stream, crlfDelay: Infinity });
+        const rl = createInterface({ input: dataStream, crlfDelay: Infinity });
 
         let natoms: number | null = null;
         let headerCols: string[] = [];
@@ -405,101 +289,68 @@ export const getTrajectoryAtoms = async (req: Request, res: Response) => {
     }
 };
 
-export const getTrajectoryGLB = async (req: Request, res: Response) => {
-    try {
-        const { timestep, analysisId } = req.params;
-        const { type } = req.query as { type?: string };
-        const trajectory = res.locals.trajectory;
-        const trajectoryId = trajectory._id.toString();
-        const trajFS = new TrajectoryVFS(trajectoryId);
-
-        let result = null;
-
-        // If analysisId is 'default' or no type specified, get from previews
-        // Otherwise get from analysis
-        // if(analysisId === 'default' || !type){
-        //    result = await trajFS.getPreviews({ media: 'glb' });
-        // }else{
-        //     result = await trajFS.getAnalysis(analysisId, type, { media: 'glb' });
-        // }
-
-        const objectName = `trajectory-${trajectoryId}/previews/timestep-${timestep}.glb`;
-        if (!objectName) {
-            return res.status(404).json({
-                status: 'error',
-                data: { error: `GLB file for timestep ${timestep} not found (analysisId=${analysisId}, type=${type})` }
-            });
-        }
-
-        // Get GLB from MinIO
-        const stat = await statObject(objectName, SYS_BUCKETS.MODELS);
-        const stream = await getStream(objectName, SYS_BUCKETS.MODELS);
-
-        res.setHeader('Content-Type', 'model/gltf-binary');
-        res.setHeader('Content-Length', stat.size);
-        res.setHeader('Content-Disposition', `inline; filename="${trajectory.name}_${timestep}.glb"`);
-
-        if (analysisId === 'default' || !type) {
-            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        }
-
-        stream.pipe(res);
-    } catch (err) {
-        logger.error(`[getTrajectoryGLB] Error: ${err}`);
-        return res.status(500).json({ status: 'error', data: { error: 'Internal server error' } });
+export const getTrajectoryGLB = catchAsync(async (req: Request, res: Response) => {
+    const { timestep, analysisId } = req.params;
+    const { type } = req.query as { type?: string };
+    const trajectory = res.locals.trajectory;
+    const trajectoryId = trajectory._id.toString();
+    const vfs = new TrajectoryVFS(trajectoryId);
+    
+    let virtualPath = '';
+    
+    if (analysisId === 'default' || !type) {
+        virtualPath = `trajectory-${trajectoryId}/previews/timestep-${timestep}.glb`;
+    } else {
+        const glbFiles = await vfs.list(`trajectory-${trajectoryId}/analysis-${analysisId}/glb`);
+        const match = glbFiles.find(f => f.name.includes(type) && f.name.includes(timestep));
+        
+        if (!match) throw new RuntimeError('FileNotFound', 404);
+        virtualPath = match.relPath;
     }
-};
 
-export const downloadTrajectoryGLBArchive = async (req: Request, res: Response) => {
+    const { stream, size, filename } = await vfs.getReadStream(virtualPath);
+
+    res.setHeader('Content-Type', 'model/gltf-binary');
+    res.setHeader('Content-Length', size);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    if (analysisId === 'default') res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    
+    stream.pipe(res);
+});
+
+export const downloadTrajectoryGLBArchive = catchAsync(async (req: Request, res: Response) => {
     const trajectory = res.locals.trajectory;
     const trajectoryId = trajectory._id.toString();
     const { analysisId, type } = req.params;
-    const trajFS = new TrajectoryVFS(trajectoryId);
-    const maps = await trajFS.getAnalysis(trajectoryId, analysisId, type, { media: 'glb' });
-    const glbMap = maps.glb || {};
+    const vfs = new TrajectoryVFS(trajectoryId);
+
+    const entries = await vfs.list(`trajectory-${trajectoryId}/analysis-${analysisId}/glb`);
     const frameFilter = req.query.frame ? String(req.query.frame) : null;
 
-    const glbKeys = Object.entries(glbMap)
-        .filter(([frame]) => !frameFilter || frameFilter === frame)
-        .map(([, key]) => key);
-
-    if (!glbKeys.length) {
-        return res.status(404).json({
-            status: 'error',
-            data: { error: 'No GLB files found' }
-        });
-    }
-
-    const filename = String(trajectory.anme || trajectoryId).replace(/[^a-z0-9_\-]+/gi, '_');
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}_${analysisId}_${type}.zip"`);
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-
-    const archive = archiver('zip', { zlib: { level: 0 } });
-    archive.on('error', (err: any) => {
-        if (!res.headersSent) {
-            res.status(500).json({
-                status: 'error',
-                data: { error: 'Failed to build GLB archive' }
-            });
-        } else {
-            res.end();
-        }
+    const filesToZip = entries.filter(e => {
+        if(e.type !== 'file') return false;
+        if(frameFilter && !e.name.includes(frameFilter)) return false;
+        return true;
     });
 
+    if (!filesToZip.length) return res.status(404).json({ status: 'error', data: { error: 'No files found' } });
+
+    const filename = String(trajectory.name || trajectoryId).replace(/[^a-z0-9_\-]+/gi, '_');
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}_${analysisId}.zip"`);
+    
+    const archive = archiver('zip', { zlib: { level: 0 } });
+    archive.on('error', () => { if(!res.headersSent) res.status(500).end(); });
     archive.pipe(res);
 
-    // Stream GLBs from MinIO into the archive
-    for (const glbKey of glbKeys) {
-        const name = glbKey.split('/').pop() || 'frame.glb';
-        const stream = await getStream(glbKey, SYS_BUCKETS.MODELS);
-        archive.append(stream, { name: `glb/${name}` });
+    // 2. Stream de cada archivo al ZIP
+    for (const file of filesToZip) {
+        const { stream } = await vfs.getReadStream(file.relPath);
+        archive.append(stream, { name: `glb/${file.name}` });
     }
 
     await archive.finalize();
-};
+});
 
 export const processAndCreateTrajectory = async (
     files: any[],
@@ -517,9 +368,6 @@ export const processAndCreateTrajectory = async (
     // If folderPath is not provided (e.g. direct upload), create one
     const workingDir = folderPath || join(tempBaseDir, trajectoryIdStr);
     if (!folderPath) await mkdir(workingDir, { recursive: true });
-
-    const trajFS = new TrajectoryVFS(trajectoryIdStr, tempBaseDir);
-    await trajFS.ensureStructure(trajectoryIdStr);
 
     const filePromises = files.map(async (file: any, i: number) => {
         try {
@@ -544,7 +392,7 @@ export const processAndCreateTrajectory = async (
                     buffer = await readFile(tempPath);
                 }
 
-                const dumpAbsPath = await trajFS.saveDump(trajectoryIdStr, frameInfo.timestep, buffer, true);
+                await DumpStorage.saveDump(trajectoryIdStr, frameInfo.timestep, buffer);
 
                 // Clean up temp file if we created it
                 if (!file.path) await rm(tempPath).catch(() => { });
@@ -555,7 +403,7 @@ export const processAndCreateTrajectory = async (
 
                 return {
                     frameData,
-                    srcPath: dumpAbsPath,
+                    srcPath: `minio://${trajectoryIdStr}/${frameInfo.timestep}`,
                     originalSize: file.size || buffer.length,
                     originalName: file.originalname || file.name || `frame_${frameInfo.timestep}`
                 };
@@ -616,7 +464,7 @@ export const processAndCreateTrajectory = async (
             message: trajectoryName,
             folderPath: workingDir,
             tempFolderPath: workingDir,
-            sessionId, // Pass session ID
+            sessionId,
             sessionStartTime: new Date().toISOString()
         });
     }
@@ -638,7 +486,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             teamId,
             userId.toString(),
             trajectoryName,
-            '' // No pre-existing folder path for direct upload
+            '' 
         );
 
         res.status(201).json({

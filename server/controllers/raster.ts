@@ -31,17 +31,6 @@ export const rasterizeFrames = catchAsync(async (req: Request, res: Response) =>
     return res.status(200).json({ status: 'succes' });
 });
 
-export const readRasterModel = async (
-    modelType: string,
-    analysisId: string,
-    trajectoryId: string,
-    frame: number
-): Promise<Buffer> => {
-    const trajFS = new TrajectoryVFS(trajectoryId.toString());
-    const absPath = join(trajFS.root, analysisId, 'raster', String(frame), `${modelType}.png`);
-    return readFile(absPath);
-};
-
 export const getRasterFrameMetadata = async (req: Request, res: Response) => {
     let trajectory = res.locals.trajectory;
     const trajectoryId = trajectory._id.toString();
@@ -57,32 +46,32 @@ export const getRasterFrameMetadata = async (req: Request, res: Response) => {
         .select('-__v')
         .lean();
 
-    const tfs = new TrajectoryVFS(trajectoryId);
+    const vfs = new TrajectoryVFS(trajectoryId);
     const analysesMetadata: Record<string, any> = {};
 
-    for (const analysis of analyses) {
+    for(const analysis of analyses){
         const id = String(analysis._id);
         const framesMeta: Record<string, any> = {};
 
-        for (const { timestep } of trajectory.frames) {
-            const types = await tfs.listRasterAnalyses(trajectoryId, timestep, id);
+        const rasterFiles = await vfs.list(`trajectory-${trajectoryId}/analysis-${id}/raster`);
+
+        for(const { timestep } of trajectory.frames){
+            const relevantFiles = rasterFiles.filter(f => f.name.startsWith(`${timestep}`) || f.relPath.includes(`/${timestep}/`));
+            const models = relevantFiles.map(f => {
+                const base = f.name.replace('.png', '').replace(`${timestep}_`, '').replace(`${timestep}/`, '');
+                return base;
+            });
+
             framesMeta[timestep] = {
                 timestep,
-                availableModels: ['preview', ...types]
+                availableModels: ['preview', ...models]
             };
-        }
 
-        analysesMetadata[id] = {
-            ...analysis,
-            frames: framesMeta
-        };
+            analysesMetadata[id] = { ...analysis, frames: framesMeta };
+        }
     }
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.setHeader('Surrogate-Control', 'no-store');
-    res.setHeader('Vary', 'Authorization');
     res.setHeader('ETag', `"raster-meta-${trajectoryId}-${trajectory.rasterSceneViews}"`);
 
     return res.status(200).json({
@@ -97,28 +86,44 @@ export const getRasterFrameData = async (req: Request, res: Response) => {
     const { timestep, analysisId, model } = req.params;
     const frameNumber = Number(timestep);
 
-    if (!Number.isFinite(frameNumber)) {
-        return res.status(400).json({ status: 'error', message: 'Invalid timestep parameter' });
+    if (!Number.isFinite(frameNumber)) return res.status(400).json({ status: 'error', message: 'Invalid timestep' });
+
+    try {
+        let buffer: Buffer;
+
+        if (model === 'preview' || !analysisId || analysisId === 'undefined') {
+            const resPreview = await getTimestepPreview(trajectoryId, frameNumber);
+            buffer = resPreview.buffer;
+        } else {
+            const vfs = new TrajectoryVFS(trajectoryId);
+            const virtualPath = `trajectory-${trajectoryId}/analysis-${analysisId}/raster/${timestep}_${model}.png`;
+            const { stream } = await vfs.getReadStream(virtualPath);
+            buffer = await streamToBuffer(stream);
+        }
+
+        const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
+        
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); 
+        res.setHeader('ETag', `"frame-${trajectoryId}-${frameNumber}-${model}-${analysisId}"`);
+        
+        return res.status(200).json({
+            status: 'success',
+            data: { model, frame: frameNumber, analysisId, data: base64 }
+        });
+    } catch (err) {
+        return res.status(404).json({ status: 'error', message: 'Raster image not found' });
     }
-
-    /*if(model === 'preview'){
-        const { buffer, etag } = await getTimestepPreview(trajectoryId, frameNumber);
-    }else{
-        // buff = await readRasterModel(model, analysisId, trajectoryId, frameNumber);
-    }*/
-    const { buffer } = await getTimestepPreview(trajectoryId, frameNumber);
-    const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
-
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.setHeader('ETag', `"frame-data-${trajectory._id}-${frameNumber}-${model}-${analysisId}"`);
-    return res.status(200).json({
-        status: 'success',
-        data: { model, frame: frameNumber, analysisId, data: base64 }
-    });
 };
 
+
+/**
+ * DEPRECATED / HEAVY LOAD: Devuelve TODOS los frames en base64 en un solo JSON gigante.
+ * Esto matará la RAM del servidor con trayectorias grandes.
+ * Recomendación: Usar paginación o carga bajo demanda (Lazy Loading) en el frontend.
+ * Mantengo la lógica adaptada a VFS pero ten cuidado.
+ */
 export const getRasterizedFrames = async (req: Request, res: Response) => {
-    let trajectory = res.locals.trajectory;
+   /* let trajectory = res.locals.trajectory;
     const trajectoryId = trajectory._id.toString();
     const basePath = resolve(process.cwd(), process.env.TRAJECTORY_DIR as string);
     const rasterDir = join(basePath, trajectoryId, 'raster');
@@ -186,102 +191,87 @@ export const getRasterizedFrames = async (req: Request, res: Response) => {
             trajectory,
             analyses: analysesData
         }
-    })
+    })*/
 };
+
 
 export const downloadRasterImagesArchive = async (req: Request, res: Response) => {
     const trajectory = res.locals?.trajectory;
     const trajectoryId = trajectory._id.toString();
     const { analysisId, model, includePreview } = req.query as {
-        analysisId?: string;
-        model?: string;
-        includePreview?: string;
+        analysisId?: string; model?: string; includePreview?: string;
     };
 
-    if (!trajectory) {
-        return res.status(400).json({ status: 'error', data: { error: 'Trajectory not found' } });
-    }
+    if (!trajectory) return res.status(400).json({ status: 'error', data: { error: 'Trajectory not found' } });
 
     try {
         const tfs = new TrajectoryVFS(trajectoryId);
         const wantPreview = includePreview === '1' || includePreview === 'true';
-        const files: string[] = [];
+        
+        const filesToArchive: Array<{ path: string, name: string }> = [];
 
+        // 1. Collect Previews
         if (wantPreview) {
-            const prevDir = join(tfs.root, 'previews', 'raster');
             try {
-                const prevs = await readdir(prevDir, { withFileTypes: true });
-                for (const e of prevs) {
-                    if (e.isFile() && e.name.endsWith('.png')) {
-                        files.push(join(prevDir, e.name));
+                const previews = await tfs.list(`trajectory-${trajectoryId}/raster`);
+                for (const p of previews) {
+                    if (p.type === 'file' && p.name.endsWith('.png')) {
+                        filesToArchive.push({ path: p.relPath, name: `previews/${p.name}` });
                     }
                 }
-            } catch {/* ignore */ }
+            } catch { /* ignore if empty */ }
         }
 
         if (analysisId) {
-            const analysisRasterRoot = join(tfs.root, analysisId, 'raster');
             try {
-                const frames = await readdir(analysisRasterRoot, { withFileTypes: true });
-                for (const f of frames) {
-                    if (!f.isDirectory()) continue;
-                    const frameDir = join(analysisRasterRoot, f.name);
-                    const pngs = await readdir(frameDir, { withFileTypes: true });
-                    for (const p of pngs) {
-                        if (!p.isFile() || !p.name.endsWith('.png')) continue;
-                        if (model && p.name !== `${model}.png`) continue;
-                        files.push(join(frameDir, p.name));
-                    }
+                const rasterFiles = await tfs.list(`trajectory-${trajectoryId}/analysis-${analysisId}/raster`);
+                for (const f of rasterFiles) {
+                    if (f.type !== 'file' || !f.name.endsWith('.png')) continue;
+                    // Filtro opcional por modelo
+                    if (model && !f.name.includes(model)) continue;
+                    
+                    filesToArchive.push({ path: f.relPath, name: `analysis/${f.name}` });
                 }
-            } catch {/* ignore */ }
+            } catch { /* ignore */ }
         }
 
-        if (!files.length) {
-            return res.status(404).json({
-                status: 'error',
-                data: { error: 'No raster images found with the given filters' }
-            });
+        if (!filesToArchive.length) {
+            return res.status(404).json({ status: 'error', data: { error: 'No images found' } });
         }
 
         const filenameSafe = String(trajectory.name || trajectoryId).replace(/[^a-z0-9_\-]+/gi, '_');
         res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="${filenameSafe}_raster_images.zip"`);
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
+        res.setHeader('Content-Disposition', `attachment; filename="${filenameSafe}_raster.zip"`);
 
-        const archive = archiver('zip', { zlib: { level: 0 } });
-
-        archive.on('warning', (err) => logger.warn(`archiver warning: ${err}`));
+        const archive = archiver('zip', { zlib: { level: 0 } }); 
         archive.on('error', (err) => {
-            logger.error(`archiver error: ${err}`);
-            if (!res.headersSent) {
-                res.status(500).json({
-                    status: 'error',
-                    data: { error: 'Failed to build raster images archive' }
-                });
-            } else {
-                try { res.end(); } catch { }
-            }
+             logger.error(`Zip error: ${err}`);
+             if(!res.headersSent) res.status(500).end();
         });
 
         archive.pipe(res);
-        files.sort((a, b) => a.localeCompare(b));
-        for (const abs of files) {
-            const rel = abs.startsWith(tfs.root)
-                ? abs.slice(tfs.root.length).replace(/^[/\\]/, '')
-                : basename(abs);
-            archive.file(abs, { name: rel });
+
+        for (const file of filesToArchive) {
+            try {
+                const { stream } = await tfs.getReadStream(file.path);
+                archive.append(stream, { name: file.name });
+            } catch (e) {
+                logger.warn(`Skipping missing file in archive: ${file.path}`);
+            }
         }
+
         await archive.finalize();
+
     } catch (err) {
-        logger.error(`downloadRasterImagesArchive error: ${err}`);
-        if (!res.headersSent) {
-            return res.status(500).json({
-                status: 'error',
-                data: { error: 'Failed to build raster images archive' }
-            });
-        }
-        try { res.end(); } catch { }
+        logger.error(`Download Raster Error: ${err}`);
+        if (!res.headersSent) res.status(500).json({ error: 'Archive creation failed' });
     }
 };
+
+async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+        chunks.push(Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
+}

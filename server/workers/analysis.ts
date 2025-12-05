@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { parentPort } from 'worker_threads';
+import { parentPort } from 'node:worker_threads';
 import { Analysis } from '@/models';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import Plugin from '@/services/plugins/plugin';
