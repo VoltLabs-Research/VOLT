@@ -1,33 +1,33 @@
 import { Socket } from 'socket.io';
-import { dockerService } from './docker';
-import { Container } from '@/models/index';
+import { dockerService } from '@/services/docker';
+import { Container } from '@/models';
 
-interface TerminalSession {
+export interface TerminalSession{
     stream: any;
     exec: any;
-    history: string;
-    sockets: Set<Socket>;
+    history: Buffer[];
+    historySize: number;
+    activeConnections: number;
     cleanupTimer: NodeJS.Timeout | null;
-}
+};
 
-class TerminalManager {
+class TerminalManager{
     private sessions: Map<string, TerminalSession> = new Map();
-    private readonly HISTORY_LIMIT = 10000; // Keep last 10KB of history
+    private readonly HISTORY_LIMIT_BYTES = 10000;
 
-    async attach(socket: Socket, containerId: string) {
+    async attach(socket: Socket, containerId: string){
+        socket.join(containerId);
         let session = this.sessions.get(containerId);
 
-        if (!session) {
-            // Create new session
-            try {
+        if(!session){
+            try{
                 const containerDoc = await Container.findById(containerId);
-                if (!containerDoc) {
+                if(!containerDoc){
                     socket.emit('container:error', 'Container not found');
                     return;
                 }
 
                 const container = dockerService.getContainer(containerDoc.containerId);
-
                 const exec = await container.exec({
                     AttachStdin: true,
                     AttachStdout: true,
@@ -38,66 +38,68 @@ class TerminalManager {
                 });
 
                 const stream = await exec.start({ hijack: true, stdin: true });
-
                 session = {
                     stream,
                     exec,
-                    history: '',
-                    sockets: new Set(),
+                    history: [],
+                    historySize: 0,
+                    activeConnections: 0,
                     cleanupTimer: null
                 };
 
                 this.sessions.set(containerId, session);
-
-                // Handle PTY output
                 stream.on('data', (chunk: Buffer) => {
-                    const data = chunk.toString('utf8');
+                    const data = chunk.toString('utf-8');
+                    socket.nsp.to(containerId).emit('container:terminal:data', data);
+                    if(session){
+                        session.history.push(chunk);
+                        session.historySize += chunk.length;
 
-                    // Update history
-                    session!.history += data;
-                    if (session!.history.length > this.HISTORY_LIMIT) {
-                        session!.history = session!.history.slice(-this.HISTORY_LIMIT);
+                        while(session.historySize > this.HISTORY_LIMIT_BYTES && session.history.length > 0){
+                            const removedChunk = session.history.shift();
+                            if(removedChunk){
+                                session.historySize -= removedChunk.length;
+                            }
+                        }
                     }
-
-                    // Broadcast to all connected sockets
-                    session!.sockets.forEach(s => {
-                        s.emit('container:terminal:data', data);
-                    });
                 });
 
                 stream.on('end', () => {
                     this.cleanupSession(containerId);
                 });
 
-            } catch (error: any) {
+                stream.on('error', (err: any) => {
+                    socket.nsp.to(containerId).emit('container:error', 'Stream error: ' + err.message);
+                    this.cleanupSession(containerId);
+                });
+            }catch(error: any){
                 socket.emit('container:error', error.message);
-                return;
+                socket.leave(containerId);
+                return;  
             }
         }
 
-        // Add socket to session
-        if (session.cleanupTimer) {
+        if(session.cleanupTimer){
             clearTimeout(session.cleanupTimer);
             session.cleanupTimer = null;
         }
 
-        session.sockets.add(socket);
+        session.activeConnections++;
 
-        // Send history to new client
-        if (session.history) {
-            socket.emit('container:terminal:data', session.history);
+        if(session.history.length > 0){
+            const combinedHistory = Buffer.concat(session.history).toString('utf8');
+            socket.emit('container:terminal:data', combinedHistory);
         }
 
-        // Handle socket input
         const onInput = (input: string) => {
-            if (session && session.stream) {
+            if(session && session.stream && !session.stream.destroyed){
                 session.stream.write(input);
             }
         };
 
         const onResize = (size: { rows: number, cols: number }) => {
-            if (session && session.exec) {
-                session.exec.resize(size);
+            if(session && session.exec){
+                session.exec.resize(size).catch(() => {});
             }
         };
 
@@ -110,50 +112,48 @@ class TerminalManager {
         socket.on('container:terminal:detach', onDisconnect);
         socket.on('disconnect', onDisconnect);
 
-        // Store cleanup function on socket to remove listeners later if needed
         (socket as any)._terminalCleanup = () => {
             socket.off('container:terminal:input', onInput);
             socket.off('container:terminal:resize', onResize);
             socket.off('container:terminal:detach', onDisconnect);
             socket.off('disconnect', onDisconnect);
+            socket.leave(containerId); 
         };
     }
 
-    detach(socket: Socket, containerId: string) {
-        const session = this.sessions.get(containerId);
-        if (!session) return;
-
-        session.sockets.delete(socket);
-
-        // Clean up socket listeners
-        if ((socket as any)._terminalCleanup) {
+    detach(socket: Socket, containerId: string){
+        if((socket as any)._terminalCleanup){
             (socket as any)._terminalCleanup();
             delete (socket as any)._terminalCleanup;
         }
 
-        if (session.sockets.size === 0) {
-            // Schedule session cleanup
+        const session = this.sessions.get(containerId);
+        if(!session) return;
+
+        session.activeConnections--;
+        if(session.activeConnections <= 0){
+            session.activeConnections = 0;
             session.cleanupTimer = setTimeout(() => {
                 this.cleanupSession(containerId);
-            }, 5000); // 5 seconds grace period
+            }, 5000);
         }
     }
 
-    private cleanupSession(containerId: string) {
+    private cleanupSession(containerId: string){
         const session = this.sessions.get(containerId);
-        if (!session) return;
+        if(!session) return;
+        if(session.activeConnections > 0) return;
 
-        // If sockets reconnected during grace period, abort
-        if (session.sockets.size > 0) return;
-
-        try {
-            session.stream.end();
-        } catch (e) {
-            // Ignore
+        try{
+            session.stream.removeAllListeners();
+            session.stream.destroy();
+            session.exec = null;
+            session.history = [];
+        }catch(e){
+            console.error(`Error cleaning up session ${containerId}`, e);
         }
-
         this.sessions.delete(containerId);
     }
-}
+};
 
 export const terminalManager = new TerminalManager();

@@ -1,4 +1,4 @@
-# cloc --fullpath --not-match-d="$(grep -v '^#' tools/.clocignore | paste -sd '|' -)" .
+# cloc --fullpath --not-match-f="package-lock.json" --not-match-d="$(grep -v '^#' tools/.clocignore | paste -sd '|' -)" .
 node_modules
 build
 build-debug

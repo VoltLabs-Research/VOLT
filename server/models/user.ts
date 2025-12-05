@@ -57,7 +57,7 @@ const UserSchema: Schema<IUser> = new Schema({
     firstName: {
         type: String,
         minlength: [4, 'User::FirstName::MinLength'],
-        maxlength: [16, 'User::FirstName::MaxLength'],
+        maxlength: [64, 'User::FirstName::MaxLength'],
         required: [true, 'User::Username::Required'],
         lowercase: true,
         trim: true
@@ -65,7 +65,7 @@ const UserSchema: Schema<IUser> = new Schema({
     lastName: {
         type: String,
         minlength: [4, 'User::LastName::MinLength'],
-        maxlength: [16, 'User::LastName::MaxLength'],
+        maxlength: [64, 'User::LastName::MaxLength'],
         required: [true, 'User::LastName::Required'],
         lowercase: true,
         trim: true

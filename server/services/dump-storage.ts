@@ -1,5 +1,5 @@
 /**
- * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+ * Copyright (c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- **/
+ */
 
 import { putObject, getStream, listByPrefix, objectExists, deleteByPrefix } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
