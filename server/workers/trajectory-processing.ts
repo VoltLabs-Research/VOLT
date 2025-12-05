@@ -1,105 +1,144 @@
 /**
  * Copyright (c) 2025, The Volterra Authors. All rights reserved.
- * TRAJECTORY PROCESSING WORKER - CLOUD NATIVE VERSION
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
+import { parentPort } from 'node:worker_threads';
+import { createWriteStream } from 'node:fs';
+import { unlink } from 'node:fs/promises';
+import { pipeline } from 'node:stream/promises';
 import { extractTimestepInfo } from '@/utilities/lammps';
-import { unlink, writeFile } from 'fs/promises';
+import { performance } from 'node:perf_hooks';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
+import { v4 as uuidv4 } from 'uuid';
+import logger from '@/logger';
 import AtomisticExporter from '@/utilities/export/atoms';
 import DumpStorage from '@/services/dump-storage';
-import '@config/env';
-import logger from '@/logger';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { v4 as uuidv4 } from 'uuid';
-import { parentPort } from 'node:worker_threads';
+import '@config/env';
 
-const glbExporter = new AtomisticExporter();
+const exporter = new AtomisticExporter();
 
-const processSingleFrame = async (frameData: any, frameFilePath: string, trajectoryId: string) => {
-    let localProcessingPath = frameFilePath;
-    let isTempFile = false;
+/**
+ * Downloads the raw LAMMPS dump stream from the storage service to a transient local file.
+ * Uses Node.js streaming pipeline for optimal RAM usage.
+ * 
+ * @param trajectoryId - The ID of the trajectory.
+ * @param timestep - The specific timestep to fetch.
+ * @param destinationPath - The ephemeral path where the file will be written.
+ */
+const downloadFromStorage = async (
+    trajectoryId: string,
+    timestep: number,
+    destinationPath: string
+): Promise<void> => {
+    // Fetches the read stream from MinIO via the centralized service
+    const readStream = await DumpStorage.getDumpStream(trajectoryId, timestep);
+    const writeStream = createWriteStream(destinationPath);
 
-    try {
-        // 1. Detectar si el archivo está en MinIO (Cloud-First Architecture)
-        if (frameFilePath.startsWith('minio://')) {
-            // El controlador ya subió el dump. Necesitamos descargarlo temporalmente
-            // para que el exportador (que suele usar herramientas CLI) pueda leerlo.
-            const tempFileName = `proc_${trajectoryId}_${frameData.timestep}_${uuidv4()}.dump`;
-            localProcessingPath = path.join(os.tmpdir(), tempFileName);
-            
-            // Descargar stream desde DumpStorage y escribir en disco local
-            const stream = await DumpStorage.getDumpStream(trajectoryId, frameData.timestep);
-            await writeFile(localProcessingPath, stream);
-            isTempFile = true;
-        }
+    // Pipes the download directly to disk, avoiding memory buffering
+    await pipeline(readStream, writeStream);
+};
 
-        // 2. Generar GLB y subirlo directamente a MinIO (Bucket MODELS)
-        // Nota: glbExporter.toGLBMinIO se encarga de la subida del GLB resultante.
-        const objectName = `trajectory-${trajectoryId}/previews/timestep-${frameData.timestep}.glb`;
-        
-        await glbExporter.toGLBMinIO(
-            localProcessingPath,
-            objectName,
+/**
+ * Processes a single frame following the Cloud Native Protocol.
+ * 
+ * @param frameInfo - Metadata containing the timestep.
+ * @param frameUri - The source URI (minio://...).
+ * @param trajectoryId - The ID of the trajectory.
+ */
+const processCloudFrame = async (
+    frameInfo: { timestep: number },
+    frameUri: string,
+    trajectoryId: string
+): Promise<void> => {
+    const start = performance.now();
+
+    if(!frameUri.startsWith('minio://')){
+        throw new Error(`Invalid Protocol: Worker expects 'minio://' URI, received '${frameUri}'.`);
+    }
+
+    // Unique temp file for this specific process/thread
+    const tempFileName = `cloud_proc_${trajectoryId}_${frameInfo.timestep}_${uuidv4()}.dump`;
+    const tempFilePath = path.join(os.tmpdir(), tempFileName);
+
+    try{
+        // Download. We ignore the path in the URI and use the ID/Timestep to query the Storage Service safely.
+        await downloadFromStorage(trajectoryId, frameInfo.timestep, tempFilePath);
+
+        // Convert & Upload. The exporter reads the temp file, generates GLB, and pushes it to the 'previews' bucket path.
+        const targetObjectName = `trajectory-${trajectoryId}/previews/timestep-${frameInfo.timestep}.glb`;
+
+        await exporter.toGLBMinIO(
+            tempFilePath,
+            targetObjectName,
             extractTimestepInfo
         );
 
-        // 3. Limpieza
-        if (isTempFile) {
-            await unlink(localProcessingPath).catch(() => {});
-        } else {
-            // Compatibilidad Legacy: Si el archivo venía de una ruta local (no minio://),
-            // asumimos que el worker es responsable de limpiarlo si ya no se necesita.
-            // (Aunque con el nuevo controlador, esto raramente ocurrirá).
-            await unlink(frameFilePath).catch(() => {});
-        }
-
-        // NOTA: Ya NO llamamos a DumpStorage.saveDump aquí.
-        // El controlador ya se encargó de la persistencia del Dump crudo.
-
-    } catch (err) {
-        logger.error(`[Worker #${process.pid}] Failed to process frame ${frameData.timestep}: ${err}`);
-        
-        // Asegurar limpieza en caso de error
-        if (isTempFile && localProcessingPath) {
-            await unlink(localProcessingPath).catch(() => {});
-        }
-        
-        throw err; // Re-lanzar para que processJob lo capture
+        const duration = (performance.now() - start).toFixed(2);
+        logger.debug(`[Worker ${process.pid}] Frame ${frameInfo.timestep} processed in ${duration}ms`);
+    }catch(err){
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.error(`[Worker ${process.pid}] Frame ${frameInfo.timestep} Failed: ${msg}`);
+        // Propagate error to fail the Promise
+        throw err;
+    }finally{
+        // Guaranteed Cleanup. We intentionally suppress unlink errors to avoid crashing 
+        // the worker flow on cleanup issues.
+        await unlink(tempFilePath).catch(() => {});
     }
 };
 
+/**
+ * Process the entire chunk of files in parallel.
+ */
 const processJob = async (job: TrajectoryProcessingJob) => {
-    if (!job || !job.jobId) {
-        throw new Error('Invalid job payload');
+    if(!job?.jobId){
+        throw new Error('MissingJobId');
     }
 
     const { files, trajectoryId } = job;
+    const start = performance.now();
 
     logger.info(
-        `[Worker #${process.pid}] Start job ${job.jobId} ` +
-        `(chunk ${job.chunkIndex + 1}/${job.totalChunks})`
+        `[Worker #${process.pid}] Start Job ${job.jobId} | ` +
+        `Files: ${files.length} | Chunk: ${job.chunkIndex + 1}/${job.totalChunks}`
     );
 
-    try {
-        // Procesar frames en paralelo (limitado por el tamaño del chunk del controlador, usualmente 20)
-        await Promise.all(files.map(({ frameData, frameFilePath }) => 
-            processSingleFrame(frameData, frameFilePath, trajectoryId)
-        ));
-
+    try{
+        // Fire all frame processors simultaneously.
+        // If any frame fails, Promise.all rejects immediately marking the chunk as failed.
+        await Promise.all(
+            files.map(file => processCloudFrame(file.frameInfo, file.frameFilePath, trajectoryId)));
+        const totalTime = (performance.now() - start).toFixed(2);
+        logger.info(`[Worker #${process.pid}] Job ${job.jobId} Success | Duration: ${totalTime}ms`);
         parentPort?.postMessage({
             status: 'completed',
             jobId: job.jobId,
             chunkIndex: job.chunkIndex,
-            totalChunks: job.totalChunks
+            totalChunks: job.totalChunks,
+            duration: totalTime
         });
-
-        logger.info(`[Worker #${process.pid}] Job ${job.jobId} completed OK.`);
-    } catch (error) {
-        logger.error(
-            `[Worker #${process.pid}] Job ${job.jobId} failed: ${error}`
-        );
+    }catch(error){
+        logger.error(`[Worker #${process.pid}] Job ${job.jobId} Failed: ${error}`);
 
         parentPort?.postMessage({
             status: 'failed',
@@ -110,19 +149,21 @@ const processJob = async (job: TrajectoryProcessingJob) => {
     }
 };
 
+/**
+ * Worker Entry Point
+ */
 const main = () => {
-    logger.info(`[Worker #${process.pid}] Worker started`);
+    logger.info(`[Worker #${process.pid}] Online - Strict Cloud Native Mode`);
 
-    parentPort?.on('message', async ({ job }) => {
-        try {
-            await processJob(job);
-        } catch (error) {
-            logger.error(`[Worker #${process.pid}] Fatal worker error: ${error}`);
-
+    parentPort?.on('message', async (message: { job: TrajectoryProcessingJob }) => {
+        try{
+            if(message.job) await processJob(message.job);
+        }catch(error){
+            logger.error(`[Worker #${process.pid}] Fatal Exception: ${error}`);
             parentPort?.postMessage({
                 status: 'failed',
-                jobId: job?.jobId || 'unknown',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                jobId: message.job?.jobId || 'unknown',
+                error: 'Fatal worker exception'
             });
         }
     });

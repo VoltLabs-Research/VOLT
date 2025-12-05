@@ -22,25 +22,23 @@
 
 import { NextFunction, Request, Response } from 'express';
 import { join } from 'path';
-import { mkdir, rm, writeFile } from 'fs/promises';
-import { isValidObjectId, Types } from 'mongoose';
-import { getTrajectoryProcessingQueue } from '@/queues';
-import { processTrajectoryFile } from '@/utilities/lammps';
+import { rm } from 'fs/promises';
+import { isValidObjectId } from 'mongoose';
 import { Trajectory, Team } from '@models/index';
+import { listByPrefix, statObject } from '@/utilities/buckets';
+import { getTimestepPreview, sendImage } from '@/utilities/raster';
+import { SYS_BUCKETS } from '@/config/minio';
+import { catchAsync } from '@/utilities/runtime';
+import { createInterface } from 'node:readline';
 import { getMetricsByTeamId } from '@/utilities/metrics/team';
+import processAndCreateTrajectory from '@/utilities/create-trajectory';
 import TrajectoryVFS from '@/services/trajectory-vfs';
 import RuntimeError from '@/utilities/runtime-error';
 import HandlerFactory from '@/controllers/handler-factory';
-import archiver from 'archiver';
-import { v4 } from 'uuid';
-import { getStream, listByPrefix, statObject } from '@/utilities/buckets';
-import { getTimestepPreview, sendImage } from '@/utilities/raster';
-import { SYS_BUCKETS } from '@/config/minio';
 import DumpStorage from '@/services/dump-storage';
-import * as os from 'node:os';
+import archiver from 'archiver';
 import logger from '@/logger';
-import { catchAsync } from '@/utilities/runtime';
-import { createInterface } from 'node:readline';
+import * as os from 'node:os';
 
 const factory = new HandlerFactory<any>({
     model: Trajectory as any,
@@ -352,129 +350,6 @@ export const downloadTrajectoryGLBArchive = catchAsync(async (req: Request, res:
     await archive.finalize();
 });
 
-export const processAndCreateTrajectory = async (
-    files: any[],
-    teamId: string,
-    userId: string,
-    trajectoryName: string,
-    folderPath: string,
-    cleanupCallback?: () => Promise<void>
-) => {
-    const trajectoryId = new Types.ObjectId();
-    const trajectoryIdStr = trajectoryId.toString();
-
-    // Use temp directory for temporary processing before MinIO upload
-    const tempBaseDir = join(os.tmpdir(), 'opendxa-trajectories');
-    // If folderPath is not provided (e.g. direct upload), create one
-    const workingDir = folderPath || join(tempBaseDir, trajectoryIdStr);
-    if (!folderPath) await mkdir(workingDir, { recursive: true });
-
-    const filePromises = files.map(async (file: any, i: number) => {
-        try {
-            // If file has a path (from SSH), use it. Otherwise write buffer to temp file.
-            let tempPath = file.path;
-            if (!tempPath && file.buffer) {
-                tempPath = join(workingDir, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
-                await writeFile(tempPath, file.buffer);
-            }
-
-            try {
-                const { frameInfo, isValid } = await processTrajectoryFile(tempPath);
-                if (!frameInfo || !isValid) {
-                    if (!file.path) await rm(tempPath).catch(() => { });
-                    return null;
-                }
-
-                // If file.buffer exists, we can use it directly. If not (SSH), read from tempPath.
-                let buffer = file.buffer;
-                if (!buffer) {
-                    const { readFile } = await import('fs/promises');
-                    buffer = await readFile(tempPath);
-                }
-
-                await DumpStorage.saveDump(trajectoryIdStr, frameInfo.timestep, buffer);
-
-                // Clean up temp file if we created it
-                if (!file.path) await rm(tempPath).catch(() => { });
-
-                const frameData = {
-                    ...frameInfo
-                };
-
-                return {
-                    frameData,
-                    srcPath: `minio://${trajectoryIdStr}/${frameInfo.timestep}`,
-                    originalSize: file.size || buffer.length,
-                    originalName: file.originalname || file.name || `frame_${frameInfo.timestep}`
-                };
-            } catch (error) {
-                if (!file.path) await rm(tempPath).catch(() => { });
-                return null;
-            }
-        } catch (error) {
-            return null;
-        } finally {
-            if (file.buffer) file.buffer = null;
-        }
-    });
-
-    const results = await Promise.all(filePromises);
-    const validFiles = (results.filter(Boolean) as any[]);
-
-    if (validFiles.length === 0) {
-        if (cleanupCallback) await cleanupCallback();
-        else await rm(workingDir, { recursive: true, force: true });
-        throw new RuntimeError('Trajectory::NoValidFiles', 400);
-    }
-
-    const totalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
-    const frames = validFiles.map(f => f.frameData);
-
-    const newTrajectory = await Trajectory.create({
-        _id: trajectoryId,
-        name: trajectoryName,
-        team: teamId,
-        createdBy: userId,
-        frames,
-        status: 'processing',
-        stats: {
-            totalFiles: validFiles.length,
-            totalSize
-        }
-    });
-
-    const trajectoryProcessingQueue = getTrajectoryProcessingQueue();
-    const CHUNK_SIZE = 20;
-    const jobs: any[] = [];
-    const sessionId = v4(); // Generate a session ID for tracking this batch
-
-    for (let i = 0; i < validFiles.length; i += CHUNK_SIZE) {
-        const chunk = validFiles.slice(i, i + CHUNK_SIZE);
-        jobs.push({
-            jobId: v4(),
-            trajectoryId: newTrajectory._id.toString(),
-            chunkIndex: Math.floor(i / CHUNK_SIZE),
-            totalChunks: Math.ceil(validFiles.length / CHUNK_SIZE),
-            files: chunk.map(({ frameData, srcPath }) => ({
-                frameData,
-                frameFilePath: srcPath
-            })),
-            teamId,
-            name: 'Upload Trajectory',
-            message: trajectoryName,
-            folderPath: workingDir,
-            tempFolderPath: workingDir,
-            sessionId,
-            sessionStartTime: new Date().toISOString()
-        });
-    }
-
-    // Add all jobs at once
-    trajectoryProcessingQueue.addJobs(jobs);
-
-    return newTrajectory;
-};
-
 export const createTrajectory = async (req: Request, res: Response, next: NextFunction) => {
     const { files, teamId } = (res as any).locals.data;
     const userId = (req as any).user._id;
@@ -485,8 +360,7 @@ export const createTrajectory = async (req: Request, res: Response, next: NextFu
             files,
             teamId,
             userId.toString(),
-            trajectoryName,
-            '' 
+            trajectoryName
         );
 
         res.status(201).json({

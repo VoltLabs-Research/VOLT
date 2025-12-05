@@ -65,12 +65,12 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
 
         try{
             const firstFrame = job.files?.[0];
-            if(!firstFrame || firstFrame.frameData?.timestep === undefined){
+            if(!firstFrame || firstFrame.frameInfo?.timestep === undefined){
                 logger.warn(`No first frame data found for trajectory ${job.trajectoryId}`);
                 return;
             }
 
-            const frameGLB = `trajectory-${job.trajectoryId}/previews/timestep-${firstFrame.frameData.timestep}.glb`;
+            const frameGLB = `trajectory-${job.trajectoryId}/previews/timestep-${firstFrame.frameInfo.timestep}.glb`;
             const trajectory = await Trajectory.findById(job.trajectoryId);
             if(!trajectory) throw Error('Trajectory::NotFound');
             

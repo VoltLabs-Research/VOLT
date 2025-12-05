@@ -7,7 +7,7 @@ export interface TrajectoryProcessingJob extends BaseJob {
     sessionStartTime?: string;
     files: {
         // TO DO:
-        frameData: any;
+        frameInfo: any;
         frameFilePath: string;
     }[];
     folderPath: string;

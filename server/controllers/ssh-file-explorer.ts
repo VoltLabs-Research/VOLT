@@ -30,7 +30,7 @@ import * as os from 'node:os';
 import { Types } from 'mongoose';
 import { v4 } from 'uuid';
 import { createRedisClient } from '@/config/redis';
-import { processAndCreateTrajectory } from '@/controllers/trajectories';
+import createTrajectory from '@/utilities/create-trajectory';
 import logger from '@/logger';
 import path from 'path';
 
@@ -199,15 +199,11 @@ export const importTrajectoryFromSSH = async (req: Request, res: Response) => {
 
         // Use the shared logic to process files and create trajectory
         // This will also queue the processing jobs
-        const newTrajectory = await processAndCreateTrajectory(
+        const newTrajectory = await createTrajectory(
             filesToProcess,
             teamId,
             userId.toString(),
-            trajectoryName,
-            localFolder,
-            async () => {
-                await rm(localFolder, { recursive: true, force: true });
-            }
+            trajectoryName
         );
 
         publishProgress('completed', 100, 'Import successful');
