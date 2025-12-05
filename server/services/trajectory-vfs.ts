@@ -33,26 +33,50 @@ import pLimit from '@/utilities/perf/p-limit';
 import * as path from 'node:path';
 import * as os from 'node:os';
 
-// Concurrent calls to MinIO/DB at 50 to avoid I/O overload
+/**
+ * Concurrency limiter for I/O operations (MinIO/MongoDB).
+ * Limits concurrent promises to 50 to prevent file descriptor exhaustion or network timeouts.
+ */
 const ioLimit = pLimit(50);
-// 10 min cache for sizes
+
+/**
+ * In-memory cache for directory size calculations.
+ * Used to avoid expensive recursive S3 list/stat operations on repeated requests.
+ */
 const sizeCache = new QuickCache<number>(1000 * 60 * 10);
 
+/**
+ * A Virtual File System (VFS) implementation for Trajectories.
+ * 
+ * This class abstracts the complexity of retrieving data from distributed sources
+ * (MongoDB metadata, MinIO object storage, and DumpStorage) and presents them
+ * as a unified, navigable directory structure.
+ */
 export default class TrajectoryVFS{
+    /** The ID of the user accessing the VFS. */
     readonly userId: string | null;
-    readonly baseDir: string;
 
+    /**
+     * Creates a new instance of the Trajectory VFS.
+     * 
+     * @param userId - The ID of the user context. If provided, listings may be filtered by ownership.
+     */
     constructor(
-        userId: string | null = null,
-        baseDir = process.env.TRAJECTORY_DIR || path.join(os.tmpdir(), 'opendxa-trajectories')
+        userId: string | null = null
     ){
-        if(!baseDir){
-            throw new Error('TRAJECTORY_DIR is not defined.');
-        }
         this.userId = userId;
-        this.baseDir = path.resolve(baseDir);
     }
 
+    /**
+     * Lists the contents of a directory at the given virtual path.
+     * 
+     * This method acts as a router, delegating the listing logic to specific 
+     * internal methods based on the depth and components of the path.
+     * 
+     * @param virtualPath - The virtual path to list (e.g., /trajector-123/dumps/). Defaults to root.
+     * @returns A promise resolving to an array of {@link FsEntry} objects representing files and directories.
+     * @throws {RuntimeError} 404 if the path does not exist.
+     */
     async list(virtualPath: string = ''): Promise<FsEntry[]>{
         const { parts, trajectoryId, analysisId, subSystem, remainingPath } = this.parsePath(virtualPath);
         // If root (/), then list user trajectories
@@ -79,6 +103,14 @@ export default class TrajectoryVFS{
         throw new RuntimeError('PathNotFound', 404);
     }
 
+    /**
+     * Retrieves a readable stream for a file at the given virtual path.
+     * 
+     * @param virtualPath - The full virtual path to the file.
+     * @returns A promise resolving to a {@link VFSReadStream} containing the data stream and metadata.
+     * @throws {RuntimeError} 400 if the path is invalid.
+     * @throws {RuntimeError} 404 if the file is not found in the backing storage.
+     */
     async getReadStream(virtualPath: string): Promise<VFSReadStream>{
         const { trajectoryId, analysisId, subSystem, remainingPath } = this.parsePath(virtualPath);
         if(!trajectoryId || !subSystem) throw new RuntimeError('InvalidPath', 400);
@@ -91,6 +123,12 @@ export default class TrajectoryVFS{
         throw new RuntimeError('FileNotFound', 404);
     }
 
+    /**
+     * Lists all trajectories belonging to the current `userId`.
+     * Maps MongoDB documents to virtual directory entries.
+     * 
+     * @internal
+     */
     private async listUserTrajectories(): Promise<FsEntry[]>{
         if(!this.userId) throw new RuntimeError('Unauthorized', 401);
         try{
@@ -108,6 +146,12 @@ export default class TrajectoryVFS{
         }
     }
 
+    /**
+     * Lists the root subsystems of a specific trajectory (dumps, raster, analyses).
+     * 
+     * @param trajectoryId - The ID of the trajectory to inspect.
+     * @internal
+     */
     private async listTrajectoryRoot(trajectoryId: string): Promise<FsEntry[]>{
         // Fetch of root stats
         const [dumpsSize, rasterSize, analyses] = await Promise.all([
@@ -130,6 +174,13 @@ export default class TrajectoryVFS{
         return [...entries, ...analysisEntries];
     }
 
+    /**
+     * Lists the standard subfolders for a specific analysis (glb, data).
+     * 
+     * @param trajectoryId - The parent trajectory ID.
+     * @param analysisId - The analysis ID.
+     * @internal
+     */
     private async listAnalysisRoot(trajectoryId: string, analysisId: string): Promise<FsEntry[]>{
         const [glbSize, dataSize] = await Promise.all([
             this.calculatePrefixSize(SYS_BUCKETS.MODELS, `${trajectoryId}/${analysisId}/glb/`),
@@ -142,8 +193,13 @@ export default class TrajectoryVFS{
     }
 
     /**
-     * List objects from any bucket/prefix and maps them to FsEntry.
-     * Automatically handles folders vs files structure.
+     * Generic helper to list objects from a MinIO bucket and map them to virtual FsEntries.
+     * Separates results into "Folders" (prefixes) and "Files" (objects).
+     * 
+     * @param bucket - The MinIO bucket name.
+     * @param prefix - The prefix to search within.
+     * @param virtualBase - The virtual path corresponding to this prefix.
+     * @internal
      */
     private async _listMinioPrefix(bucket: string, prefix: string, virtualBase: string): Promise<FsEntry[]>{
         // Ensure prefix ends with / for a directory listing logic
@@ -191,7 +247,8 @@ export default class TrajectoryVFS{
     }
 
     /**
-     * Streams any object from MinIO with generic stats
+     * Streams an object directly from MinIO and retrieves its metadata.
+     * @internal
      */
     private async _streamMinioObject(bucket: string, key: string){
         try{
@@ -207,6 +264,11 @@ export default class TrajectoryVFS{
         }
     }
 
+    /**
+     * Lists simulation dump files.
+     * Dumps are stored in a flat structure but mapped virtually here.
+     * @internal
+     */
     private async listDumps(trajectoryId: string, subPath: string): Promise<FsEntry[]>{
         // Dumps are flat
         if(subPath) return [];
@@ -250,6 +312,13 @@ export default class TrajectoryVFS{
         }
     }
 
+    /**
+     * Parses a virtual path string into its semantic components.
+     * 
+     * @param virtualPath - The raw path string.
+     * @returns An object containing the parsed IDs, subsystem type, and remaining path.
+     * @internal
+     */
     private parsePath(virtualPath: string){
         const clean = virtualPath.replace(/^\/+|\/+$/g, '');
         const parts = clean ? clean.split('/') : [];
@@ -268,6 +337,10 @@ export default class TrajectoryVFS{
         return { parts, trajectoryId, subSystem, analysisId, remainingPath };
     }
 
+    /**
+     * Maps a virtual subsystem to a physical MinIO bucket and prefix.
+     * @internal
+     */
     private getMinioConfig(
         trajectoryId: string, 
         subSystem: string,
@@ -288,6 +361,11 @@ export default class TrajectoryVFS{
         return null;
     }
 
+    /**
+     * Calculates the total size of a trajectory (dumps + raster + analyses).
+     * Uses sizeCache to improve perfomance.
+     * @internal
+     */
     private async calculateTrajectorySize(trajectoryId: string): Promise<number>{
         const key = `traj_${trajectoryId}`;
         const cache = sizeCache.get(key);
@@ -310,6 +388,10 @@ export default class TrajectoryVFS{
         return total;
     }
 
+    /**
+     * Calculates the size of a specific analysis (glb + data).
+     * @internal
+     */
     private async calculateAnalysisSize(trajectoryId: string, analysisId: string): Promise<number>{
         const key = `ana_${trajectoryId}_${analysisId}`;
         const cache = sizeCache.get(key);
@@ -325,6 +407,11 @@ export default class TrajectoryVFS{
         return total;
     }
 
+    /**
+     * Calculates the size of all objects sharing a specific MinIO prefix.
+     * Batches requests in chunk of 100 to avoid IO limit issues.
+     * @internal
+     */
     private async calculatePrefixSize(bucket: string, prefix: string): Promise<number>{
         const key = `sz_${bucket}_${prefix}`;
         const cache = sizeCache.get(key);

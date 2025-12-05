@@ -29,7 +29,6 @@ import path from 'node:path';
 import '@config/env';
 import logger from '@/logger';
 
-
 const processJob = async (job: AnalysisJob): Promise<void> => {
     if(!job){
         throw new Error('No job data received in message.');
