@@ -24,76 +24,63 @@ import { Request, Response, NextFunction } from 'express';
 import { User } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 
-/**
- * Change user password
- */
-export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const userId = (req as any).user._id;
-        const { currentPassword, newPassword, confirmPassword } = req.body;
+export default class PasswordController {
+    public changePassword = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user._id;
+            const { currentPassword, newPassword, confirmPassword } = req.body;
 
-        // Validate input
-        if (!currentPassword || !newPassword || !confirmPassword) {
-            return next(new RuntimeError('Password::Validation::MissingFields', 400));
-        }
-
-        if (newPassword !== confirmPassword) {
-            return next(new RuntimeError('Password::Validation::PasswordsDoNotMatch', 400));
-        }
-
-        if (newPassword.length < 8) {
-            return next(new RuntimeError('Password::Validation::PasswordTooShort', 400));
-        }
-
-        // Get user with password
-        const user = await User.findById(userId).select('+password');
-        if (!user) {
-            return next(new RuntimeError('Password::User::NotFound', 404));
-        }
-
-        // Verify current password
-        if (!(await user.isCorrectPassword(currentPassword, user.password))) {
-            return next(new RuntimeError('Password::CurrentPassword::Incorrect', 400));
-        }
-
-        // Check if new password is different from current
-        if (await user.isCorrectPassword(newPassword, user.password)) {
-            return next(new RuntimeError('Password::NewPassword::SameAsCurrent', 400));
-        }
-
-        // Update password
-        user.password = newPassword;
-        await user.save();
-
-        res.status(200).json({
-            status: 'success',
-            message: 'Password changed successfully'
-        });
-    } catch (error) {
-        next(new RuntimeError('Password::ChangePassword::Failed', 500));
-    }
-};
-
-/**
- * Get password information (last changed date)
- */
-export const getPasswordInfo = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const userId = (req as any).user._id;
-        
-        const user = await User.findById(userId).select('passwordChangedAt');
-        if (!user) {
-            return next(new RuntimeError('Password::User::NotFound', 404));
-        }
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                lastChanged: user.passwordChangedAt || user.createdAt || new Date(),
-                hasPassword: !!user.password
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                return next(new RuntimeError('Password::Validation::MissingFields', 400));
             }
-        });
-    } catch (error) {
-        next(new RuntimeError('Password::GetInfo::Failed', 500));
-    }
-};
+
+            if (newPassword !== confirmPassword) {
+                return next(new RuntimeError('Password::Validation::PasswordsDoNotMatch', 400));
+            }
+
+            if (newPassword.length < 8) {
+                return next(new RuntimeError('Password::Validation::PasswordTooShort', 400));
+            }
+
+            const user = await User.findById(userId).select('+password');
+            if (!user) {
+                return next(new RuntimeError('Password::User::NotFound', 404));
+            }
+
+            if (!(await user.isCorrectPassword(currentPassword, user.password))) {
+                return next(new RuntimeError('Password::CurrentPassword::Incorrect', 400));
+            }
+
+            if (await user.isCorrectPassword(newPassword, user.password)) {
+                return next(new RuntimeError('Password::NewPassword::SameAsCurrent', 400));
+            }
+
+            user.password = newPassword;
+            await user.save();
+
+            res.status(200).json({ status: 'success', message: 'Password changed successfully' });
+        } catch (error) {
+            next(new RuntimeError('Password::ChangePassword::Failed', 500));
+        }
+    };
+
+    public getPasswordInfo = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user._id;
+            const user = await User.findById(userId).select('passwordChangedAt');
+            if (!user) {
+                return next(new RuntimeError('Password::User::NotFound', 404));
+            }
+
+            res.status(200).json({
+                status: 'success',
+                data: {
+                    lastChanged: user.passwordChangedAt || user.createdAt || new Date(),
+                    hasPassword: !!user.password
+                }
+            });
+        } catch (error) {
+            next(new RuntimeError('Password::GetInfo::Failed', 500));
+        }
+    };
+}

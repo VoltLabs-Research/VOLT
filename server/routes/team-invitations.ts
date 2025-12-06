@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import * as controller from '@controllers/team-invitation';
+import TeamInvitationController from '@controllers/team-invitation';
 import * as authMiddleware from '@middlewares/authentication';
 
 const router = Router();
+const controller = new TeamInvitationController();
 
 // Public route - Get invitation details (for unauthenticated users viewing email link)
 router.get('/details/:token', controller.getInvitationDetails);

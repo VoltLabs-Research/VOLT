@@ -21,11 +21,12 @@
  */
 
 import { Router } from 'express';
-import * as controller from '@/controllers/raster';
+import RasterController from '@/controllers/raster';
 import * as trajectoryMiddleware from '@/middlewares/trajectory';
 import * as authMiddleware from '@/middlewares/authentication';
 
 const router = Router();
+const controller = new RasterController();
 
 // Usar autenticación opcional para permitir acceso público a rutas GET
 router.get(

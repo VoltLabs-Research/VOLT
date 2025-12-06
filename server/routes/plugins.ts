@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import * as controllers from '@/controllers/plugins';
+import PluginsController from '@/controllers/plugins';
 import * as authMiddleware from '@/middlewares/authentication';
 import * as trajMiddleware from '@/middlewares/trajectory';
 
 const router = Router();
+const controllers = new PluginsController();
 
 router.use(authMiddleware.protect);
 

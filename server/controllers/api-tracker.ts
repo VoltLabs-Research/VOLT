@@ -20,24 +20,25 @@
  * SOFTWARE.
  */
 
+import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { FilterQuery } from 'mongoose';
 import { ApiTracker } from '@/models/index';
 import type { IApiTracker } from '@/models/api-tracker';
-import HandlerFactory from '@/controllers/handler-factory';
+import BaseController from '@/controllers/base-controller';
 
-const apiTrackerHandler = new HandlerFactory<IApiTracker>({
-    model: ApiTracker,
-    fields: ['method', 'url', 'ip', 'userAgent', 'statusCode', 'responseTime', 'createdAt'],
-    errorMessages: {
-        default: {
-            notFound: 'ApiTracker::NotFound',
-            unauthorized: 'ApiTracker::Unauthorized'
-        }
+export default class ApiTrackerController extends BaseController<IApiTracker>{
+    constructor(){
+        super(ApiTracker, {
+            resourceName: 'ApiTracker',
+            fields: ['method', 'url', 'ip', 'userAgent', 'statusCode', 'responseTime', 'requestBody', 'queryParams', 'headers', 'createdAt']
+        });
     }
-});
 
-// Export the getAll method with custom filter for user's own data
-export const getMyApiStats = apiTrackerHandler.getAll({
-    customFilter: (req) => {
+    protected async getFilter(req: Request): Promise<FilterQuery<IApiTracker>>{
         return { user: (req as any).user._id };
     }
-});
+
+    public getMyApiStats: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
+        return this.getAll(req, res, next);
+    };
+}

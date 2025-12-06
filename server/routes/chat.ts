@@ -21,7 +21,7 @@
  */
 
 import { Router } from 'express';
-import { getFileBase64 } from '@/controllers/file-preview';
+import FilePreviewController from '@/controllers/file-preview';
 import {
     verifyChatAccess, 
     verifyTeamAccess, 
@@ -30,10 +30,13 @@ import {
     loadMessage } from '@/middlewares/chat';
 
 import * as auth from '@/middlewares/authentication';
-import * as controller from '@/controllers/chat';
-import * as group from '@/controllers/group-chat';
+import ChatController from '@/controllers/chat';
+import GroupChatController from '@/controllers/group-chat';
 
 const router = Router();
+const previewController = new FilePreviewController();
+const controller = new ChatController();
+const group = new GroupChatController();
 
 router.use(auth.protect);
 
@@ -86,7 +89,7 @@ router.post('/:chatId/send-file',
 
 router.get('/:chatId/messages/:messageId/preview',
     verifyChatAccess,
-    getFileBase64
+    previewController.getFileBase64
 );
 
 router.post('/groups', group.createGroupChat);

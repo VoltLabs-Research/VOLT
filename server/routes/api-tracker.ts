@@ -22,13 +22,14 @@
 
 import { Router } from 'express';
 import { protect } from '@/middlewares/authentication';
-import { getMyApiStats } from '@/controllers/api-tracker';
+import ApiTrackerController from '@/controllers/api-tracker';
 
 const router = Router();
+const controller = new ApiTrackerController();
 
 // All routes require authentication
 router.use(protect);
 
-router.get('/my-stats', getMyApiStats);
+router.get('/my-stats', controller.getMyApiStats);
 
 export default router;

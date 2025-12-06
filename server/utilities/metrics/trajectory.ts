@@ -20,18 +20,10 @@
  * SOFTWARE.
  */
 
-import HandlerFactory from '@/controllers/handler-factory';
 import logger from '@/logger';
 import { Analysis, Team, Trajectory } from "@/models";
 import { Request, Response } from 'express';
 
-const factory = new HandlerFactory({
-  model: Analysis as any,
-  fields: [],
-});
-
-export const getAnalysisConfigById = factory.getOne();
-export const deleteAnalysisConfigById = factory.deleteOne();
 
 // List analysis configs by team
 export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => {

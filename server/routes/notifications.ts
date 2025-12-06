@@ -4,9 +4,10 @@
 
 import { Router } from 'express';
 import * as authMiddleware from '@middlewares/authentication';
-import * as controller from '@controllers/notification';
+import NotificationController from '@controllers/notification';
 
 const router = Router();
+const controller = new NotificationController();
 
 router.use(authMiddleware.protect);
 

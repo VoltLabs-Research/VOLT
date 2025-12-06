@@ -25,7 +25,6 @@ import { Strategy as GitHubStrategy } from 'passport-github2';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as MicrosoftStrategy } from 'passport-microsoft';
 import { User } from '@/models/index';
-import { IUser } from '@/types/models/user';
 
 import { generateRandomName } from '@/utilities/runtime/name-generator';
 

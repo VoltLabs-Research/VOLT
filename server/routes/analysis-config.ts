@@ -1,28 +1,29 @@
 import { Router } from 'express';
-import * as controller from '@/controllers/analysis-config';
+import AnalysisConfigController from '@/controllers/analysis-config';
 import * as middleware from '@/middlewares/analysis-config';
 import * as authMiddleware from '@/middlewares/authentication';
 
 const router = Router();
+const controller = new AnalysisConfigController();
 
 // Allow public access for public trajectories while supporting authenticated users
 router.use(authMiddleware.optionalAuth);
 router.get(
     '/:id',
     middleware.checkTeamMembershipForAnalysisTrajectory,
-    controller.getAnalysisConfigById
+    controller.getOne
 );
 
 router.get(
     '/team/:teamId',
     authMiddleware.protect,
-    controller.listAnalysisConfigsByTeam
+    controller.listByTeam
 )
 
 router.delete(
     '/:id',
     middleware.checkTeamMembershipForAnalysisTrajectory,
-    controller.deleteAnalysisConfigById
+    controller.deleteOne
 )
 
 export default router;

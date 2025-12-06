@@ -22,15 +22,16 @@
 
 import { Router } from 'express';
 import { protect } from '@/middlewares/authentication';
-import { getMySessions, getMyLoginActivity, revokeSession, revokeAllOtherSessions } from '@/controllers/session';
+import SessionController from '@/controllers/session';
 
 const router = Router();
+const controller = new SessionController();
 
 router.use(protect);
 
-router.get('/', getMySessions);
-router.get('/activity', getMyLoginActivity);
-router.delete('/:id', revokeSession);
-router.delete('/all/others', revokeAllOtherSessions);
+router.get('/', controller.getMySessions);
+router.get('/activity', controller.getMyLoginActivity);
+router.delete('/:id', controller.revokeSession);
+router.delete('/all/others', controller.revokeAllOtherSessions);
 
 export default router;

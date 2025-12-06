@@ -21,12 +21,13 @@
  */
 
 import { Router } from 'express';
+import TrajectoryController from '@controllers/trajectories';
 import multer, { FileFilterCallback } from 'multer';
-import * as controller from '@controllers/trajectories';
 import * as middleware from '@middlewares/trajectory';
 import * as authMiddleware from '@middlewares/authentication';
 
 const router = Router();
+const controller = new TrajectoryController();
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -43,69 +44,69 @@ const upload = multer({
 router.route('/')
     .get(
         authMiddleware.protect,
-        controller.getUserTrajectories
+        controller.getAll
     )
     .post(
         authMiddleware.protect,
         upload.array('trajectoryFiles'), 
         middleware.processAndValidateUpload,
-        controller.createTrajectory
+        controller.create
     );
 
 router.get(
     '/:id/glb/:timestep/:analysisId', 
     authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory, 
-    controller.getTrajectoryGLB
+    controller.getGLB
 );
 
 router.get(
     '/:id/atoms/:timestep',
     authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory,
-    controller.getTrajectoryAtoms
+    controller.getAtoms
 );
 
 router.get(
     '/metrics/:id',
     middleware.checkTeamMembershipForTrajectory, 
-    controller.getMetrics
+    controller.getSingleMetrics
 )
 
 router.get(
     '/metrics',
-    controller.getTrajectoryMetrics
+    controller.getTeamMetrics
 );
 
 router.get(
     '/:id/preview',
     authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory,
-    controller.getTrajectoryPreview
+    controller.getPreview
 );
 
 router.get(
     '/:id/glb-archive',
     authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory,
-    controller.downloadTrajectoryGLBArchive
+    controller.downloadGLBArchive
 );
 
 router.route('/:id')
     .get(
         authMiddleware.optionalAuth,
         middleware.checkTeamMembershipForTrajectory, 
-        controller.getTrajectoryById
+        controller.getOne
     )
     .patch(
         authMiddleware.protect,
         middleware.requireTeamMembershipForTrajectory,
-        controller.updateTrajectoryById
+        controller.updateOne
     )
     .delete(
         authMiddleware.protect,
         middleware.requireTeamMembershipForTrajectory,
-        controller.deleteTrajectoryById
+        controller.deleteOne
     );
 
 export default router;

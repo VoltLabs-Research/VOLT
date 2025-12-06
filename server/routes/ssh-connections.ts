@@ -21,10 +21,11 @@
  */
 
 import { Router } from 'express';
-import * as controller from '@/controllers/ssh-connections';
+import SSHConnectionsController from '@/controllers/ssh-connections';
 import * as authMiddleware from '@/middlewares/authentication';
 
 const router = Router();
+const controller = new SSHConnectionsController();
 
 router.get(
     '/',

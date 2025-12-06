@@ -21,10 +21,11 @@
  */
 
 import { Router } from 'express';
-import * as controller from '@/controllers/api-tokens';
+import ApiTokenController from '@/controllers/api-tokens';
 import * as middleware from '@/middlewares/authentication';
 
 const router = Router();
+const controller = new ApiTokenController();
 
 router.use(middleware.protect);
 

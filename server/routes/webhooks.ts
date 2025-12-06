@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import * as controller from '@/controllers/webhooks';
+import WebhooksController from '@/controllers/webhooks';
 import * as middleware from '@/middlewares/authentication';
 
 const router = Router();
+const controller = new WebhooksController();
 
 router.use(middleware.protect);
 

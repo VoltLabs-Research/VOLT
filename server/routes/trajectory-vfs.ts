@@ -21,10 +21,11 @@
  */
 
 import { Router } from 'express';
-import * as controller from '@/controllers/trajectory-vfs';
+import TrajectoryVfsController from '@/controllers/trajectory-vfs';
 import * as authMiddleware from '@/middlewares/authentication';
 
 const router = Router();
+const controller = new TrajectoryVfsController();
 
 router.get(
     '/',

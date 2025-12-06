@@ -36,119 +36,118 @@ const breadcrumbsOf = (rel: string) => {
     return crumbs;
 };
 
-export const listTrajectoryFs = async (req: Request, res: Response) => {
-    const user = (req as any).user;
-    if (!user) {
-        throw new RuntimeError('Unauthorized', 401);
-    }
-
-    const userId = user._id || user.id;
-    const pathParam = String(req.query.path || '');
-
-    const trajFS = new TrajectoryVFS(userId);
-
-    try {
-        const entries = await trajFS.list(pathParam);
-        const breadcrumbs = breadcrumbsOf(pathParam);
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                trajectory: null,
-                cwd: pathParam,
-                selected: null,
-                breadcrumbs,
-                entries
-            }
-        });
-    } catch (err: any) {
-        if (err instanceof RuntimeError) {
-            throw err;
+export default class TrajectoryVfsController {
+    public listTrajectoryFs = async (req: Request, res: Response) => {
+        const user = (req as any).user;
+        if (!user) {
+            throw new RuntimeError('Unauthorized', 401);
         }
-        throw new RuntimeError('FileSystemError', 500);
-    }
-};
 
-export const downloadTrajectoryFs = async (req: Request, res: Response) => {
-    const user = (req as any).user;
-    if (!user) {
-        throw new RuntimeError('Unauthorized', 401);
-    }
+        const userId = user._id || user.id;
+        const pathParam = String(req.query.path || '');
 
-    const userId = user._id || user.id;
-    const pathParam = String(req.query.path || '');
+        const trajFS = new TrajectoryVFS(userId);
 
-    const trajFS = new TrajectoryVFS(userId);
+        try {
+            const entries = await trajFS.list(pathParam);
+            const breadcrumbs = breadcrumbsOf(pathParam);
 
-    try {
-        const { stream, size, contentType, filename } = await trajFS.getReadStream(pathParam);
-
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Content-Length', size);
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-        stream.pipe(res);
-    } catch (err: any) {
-        if (err instanceof RuntimeError) {
-            throw err;
-        }
-        throw new RuntimeError('DownloadError', 500);
-    }
-};
-
-export const listUserTrajectories = async (req: Request, res: Response) => {
-    const user = (req as any).user;
-    if (!user) {
-        throw new RuntimeError('Unauthorized', 401);
-    }
-
-    const userId = user._id || user.id;
-
-    try {
-        // Fetch user with teams populated
-        const userWithTeams = await User.findById(userId).populate('teams').lean();
-
-        if (!userWithTeams || !userWithTeams.teams) {
-            return res.status(200).json({
+            res.status(200).json({
                 status: 'success',
                 data: {
-                    trajectories: []
+                    trajectory: null,
+                    cwd: pathParam,
+                    selected: null,
+                    breadcrumbs,
+                    entries
                 }
             });
-        }
-
-        // Extract team IDs
-        const teamIds = (userWithTeams.teams as any[]).map(team => team._id);
-
-        // Fetch all trajectories belonging to these teams
-        const trajectories = await Trajectory.find({
-            team: { $in: teamIds }
-        })
-            .select('_id name team status createdAt updatedAt')
-            .populate('team', 'name')
-            .sort({ updatedAt: -1 })
-            .lean();
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                trajectories: trajectories.map(traj => ({
-                    id: traj._id.toString(),
-                    name: traj.name,
-                    status: traj.status,
-                    team: {
-                        id: (traj.team as any)._id.toString(),
-                        name: (traj.team as any).name
-                    },
-                    createdAt: traj.createdAt,
-                    updatedAt: traj.updatedAt
-                }))
+        } catch (err: any) {
+            if (err instanceof RuntimeError) {
+                throw err;
             }
-        });
-    } catch (err: any) {
-        if (err instanceof RuntimeError) {
-            throw err;
+            throw new RuntimeError('FileSystemError', 500);
         }
-        throw new RuntimeError('FetchTrajectoriesError', 500);
-    }
-};
+    };
+
+    public downloadTrajectoryFs = async (req: Request, res: Response) => {
+        const user = (req as any).user;
+        if (!user) {
+            throw new RuntimeError('Unauthorized', 401);
+        }
+
+        const userId = user._id || user.id;
+        const pathParam = String(req.query.path || '');
+
+        const trajFS = new TrajectoryVFS(userId);
+
+        try {
+            const { stream, size, contentType, filename } = await trajFS.getReadStream(pathParam);
+
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Length', size);
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+            stream.pipe(res);
+        } catch (err: any) {
+            if (err instanceof RuntimeError) {
+                throw err;
+            }
+            throw new RuntimeError('DownloadError', 500);
+        }
+    };
+
+    public listUserTrajectories = async (req: Request, res: Response) => {
+        const user = (req as any).user;
+        if (!user) {
+            throw new RuntimeError('Unauthorized', 401);
+        }
+
+        const userId = user._id || user.id;
+
+        try {
+            const userWithTeams = await User.findById(userId).populate('teams').lean();
+
+            if (!userWithTeams || !userWithTeams.teams) {
+                return res.status(200).json({
+                    status: 'success',
+                    data: {
+                        trajectories: []
+                    }
+                });
+            }
+
+            const teamIds = (userWithTeams.teams as any[]).map(team => team._id);
+
+            const trajectories = await Trajectory.find({
+                team: { $in: teamIds }
+            })
+                .select('_id name team status createdAt updatedAt')
+                .populate('team', 'name')
+                .sort({ updatedAt: -1 })
+                .lean();
+
+            res.status(200).json({
+                status: 'success',
+                data: {
+                    trajectories: trajectories.map(traj => ({
+                        id: traj._id.toString(),
+                        name: traj.name,
+                        status: traj.status,
+                        team: {
+                            id: (traj.team as any)._id.toString(),
+                            name: (traj.team as any).name
+                        },
+                        createdAt: traj.createdAt,
+                        updatedAt: traj.updatedAt
+                    }))
+                }
+            });
+        } catch (err: any) {
+            if (err instanceof RuntimeError) {
+                throw err;
+            }
+            throw new RuntimeError('FetchTrajectoriesError', 500);
+        }
+    };
+}

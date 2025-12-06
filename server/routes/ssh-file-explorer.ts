@@ -21,10 +21,11 @@
  */
 
 import { Router } from 'express';
-import * as controller from '@/controllers/ssh-file-explorer';
+import SSHFileExplorerController from '@/controllers/ssh-file-explorer';
 import * as authMiddleware from '@/middlewares/authentication';
 
 const router = Router();
+const controller = new SSHFileExplorerController();
 
 router.get(
     '/list',

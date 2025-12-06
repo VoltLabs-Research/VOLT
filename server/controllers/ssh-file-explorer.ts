@@ -34,202 +34,193 @@ import createTrajectory from '@/utilities/create-trajectory';
 import logger from '@/logger';
 import path from 'path';
 
-export const listSSHFiles = async (req: Request, res: Response) => {
-    const user = (req as any).user;
-    if (!user) {
-        throw new RuntimeError('Unauthorized', 401);
-    }
-
-    const userId = user._id || user.id;
-    const { connectionId, path } = req.query;
-
-    if (!connectionId || typeof connectionId !== 'string') {
-        throw new RuntimeError('SSH::ConnectionId::Required', 400);
-    }
-
-    try {
-        const connection = await SSHConnection.findOne({
-            _id: connectionId,
-            user: userId
-        }).select('+encryptedPassword');
-
-        if (!connection) {
-            throw new RuntimeError('SSHConnection::NotFound', 404);
+export default class SSHFileExplorerController {
+    public listSSHFiles = async (req: Request, res: Response) => {
+        const user = (req as any).user;
+        if (!user) {
+            throw new RuntimeError('Unauthorized', 401);
         }
 
-        const remotePath = typeof path === 'string' ? path : '.';
-        const files = await SSHService.listFiles(connection, remotePath);
+        const userId = user._id || user.id;
+        const { connectionId, path } = req.query;
 
-        res.status(200).json({
-            status: 'success',
-            data: {
-                cwd: remotePath,
-                entries: files.map(f => ({
-                    type: f.isDirectory ? 'dir' : 'file',
-                    name: f.name,
-                    relPath: f.path,
-                    size: f.size,
-                    mtime: f.mtime.toISOString()
-                }))
+        if (!connectionId || typeof connectionId !== 'string') {
+            throw new RuntimeError('SSH::ConnectionId::Required', 400);
+        }
+
+        try {
+            const connection = await SSHConnection.findOne({
+                _id: connectionId,
+                user: userId
+            }).select('+encryptedPassword');
+
+            if (!connection) {
+                throw new RuntimeError('SSHConnection::NotFound', 404);
             }
-        });
-    } catch (err: any) {
-        if (err instanceof RuntimeError) {
-            throw err;
+
+            const remotePath = typeof path === 'string' ? path : '.';
+            const files = await SSHService.listFiles(connection, remotePath);
+
+            res.status(200).json({
+                status: 'success',
+                data: {
+                    cwd: remotePath,
+                    entries: files.map(f => ({
+                        type: f.isDirectory ? 'dir' : 'file',
+                        name: f.name,
+                        relPath: f.path,
+                        size: f.size,
+                        mtime: f.mtime.toISOString()
+                    }))
+                }
+            });
+        } catch (err: any) {
+            if (err instanceof RuntimeError) {
+                throw err;
+            }
+            logger.error(`Failed to list SSH files: ${err.message}`);
+            throw new RuntimeError('SSH::ListFiles::Error', 500);
         }
-        logger.error(`Failed to list SSH files: ${err.message}`);
-        throw new RuntimeError('SSH::ListFiles::Error', 500);
-    }
-};
-
-export const importTrajectoryFromSSH = async (req: Request, res: Response) => {
-    const user = (req as any).user;
-    if (!user) {
-        throw new RuntimeError('Unauthorized', 401);
-    }
-
-    const userId = user._id || user.id;
-    const { connectionId, remotePath, teamId, name } = req.body;
-
-    if (!connectionId || !remotePath || !teamId) {
-        throw new RuntimeError('SSH::Import::MissingFields', 400);
-    }
-
-    const trajectoryId = new Types.ObjectId();
-    const trajectoryIdStr = trajectoryId.toString();
-    const tempBaseDir = join(os.tmpdir(), 'opendxa-trajectories');
-    const localFolder = join(tempBaseDir, trajectoryIdStr);
-
-    // Setup Redis publisher for progress updates
-    const publisher = createRedisClient();
-    const jobId = v4();
-    const sessionId = v4();
-    const sessionStartTime = new Date().toISOString();
-
-    const publishProgress = async (status: string, progress: number, message?: string) => {
-        const payload = {
-            jobId,
-            status,
-            progress,
-            chunkIndex: 0,
-            totalChunks: 1,
-            name: 'SSH Import',
-            message: message || `Importing ${name || 'trajectory'}...`,
-            trajectoryId: trajectoryIdStr,
-            sessionId,
-            sessionStartTime,
-            timestamp: new Date().toISOString(),
-            queueType: 'ssh-import',
-            type: 'ssh_import'
-        };
-
-        // Publish real-time update
-        await publisher.publish('job_updates', JSON.stringify({ teamId, payload }));
-
-        // Persist state for initial fetch (TTL 1 hour)
-        const pipeline = publisher.pipeline();
-        pipeline.sadd(`team:${teamId}:jobs`, jobId);
-        pipeline.setex(`ssh-import:status:${jobId}`, 3600, JSON.stringify({ ...payload, teamId }));
-        await pipeline.exec();
     };
 
-    try {
-        const connection = await SSHConnection.findOne({
-            _id: connectionId,
-            user: userId
-        }).select('+encryptedPassword');
-
-        if (!connection) {
-            throw new RuntimeError('SSHConnection::NotFound', 404);
+    public importTrajectoryFromSSH = async (req: Request, res: Response) => {
+        const user = (req as any).user;
+        if (!user) {
+            throw new RuntimeError('Unauthorized', 401);
         }
 
-        await mkdir(localFolder, { recursive: true });
+        const userId = user._id || user.id;
+        const { connectionId, remotePath, teamId, name } = req.body;
 
-        // Initial status
-        publishProgress('running', 0, 'Connecting to SSH server...');
-
-        // Get file stats
-        const fileStats = await SSHService.getFileStats(connection, remotePath);
-
-        if (!fileStats) {
-            throw new RuntimeError('SSH::Path::NotFound', 404);
+        if (!connectionId || !remotePath || !teamId) {
+            throw new RuntimeError('SSH::Import::MissingFields', 400);
         }
 
-        let localFiles: string[] = [];
-        const trajectoryName = name || fileStats.name || 'SSH Import';
+        const trajectoryId = new Types.ObjectId();
+        const trajectoryIdStr = trajectoryId.toString();
+        const tempBaseDir = join(os.tmpdir(), 'opendxa-trajectories');
+        const localFolder = join(tempBaseDir, trajectoryIdStr);
 
-        publishProgress('running', 5, 'Downloading files...');
+        const publisher = createRedisClient();
+        const jobId = v4();
+        const sessionId = v4();
+        const sessionStartTime = new Date().toISOString();
 
-        if (fileStats.isDirectory) {
-            // Download entire directory with progress
-            logger.info(`Downloading directory from SSH: ${remotePath}`);
-            localFiles = await SSHService.downloadDirectory(
-                connection,
-                remotePath,
-                localFolder,
-                (progress) => {
-                    // Map download progress (5% to 80%)
-                    const percentage = 5 + Math.round((progress.downloaded / progress.total) * 75);
-                    publishProgress('running', percentage, `Downloading: ${progress.currentFile} (${Math.round(progress.downloaded / 1024 / 1024)}MB / ${Math.round(progress.total / 1024 / 1024)}MB)`);
-                }
-            );
-        } else {
-            // Download single file
-            logger.info(`Downl      oading file from SSH: ${remotePath}`);
-            const localFilePath = join(localFolder, fileStats.name);
-            await SSHService.downloadFile(connection, remotePath, localFilePath);
-            localFiles = [localFilePath];
-            publishProgress('running', 80, 'Download complete');
-        }
+        const publishProgress = async (status: string, progress: number, message?: string) => {
+            const payload = {
+                jobId,
+                status,
+                progress,
+                chunkIndex: 0,
+                totalChunks: 1,
+                name: 'SSH Import',
+                message: message || `Importing ${name || 'trajectory'}...`,
+                trajectoryId: trajectoryIdStr,
+                sessionId,
+                sessionStartTime,
+                timestamp: new Date().toISOString(),
+                queueType: 'ssh-import',
+                type: 'ssh_import'
+            };
 
-        if (localFiles.length === 0) {
-            await rm(localFolder, { recursive: true, force: true });
-            throw new RuntimeError('SSH::Import::NoFiles', 400);
-        }
+            await publisher.publish('job_updates', JSON.stringify({ teamId, payload }));
 
-        publishProgress('running', 85, 'Processing files...');
+            const pipeline = publisher.pipeline();
+            pipeline.sadd(`team:${teamId}:jobs`, jobId);
+            pipeline.setex(`ssh-import:status:${jobId}`, 3600, JSON.stringify({ ...payload, teamId }));
+            await pipeline.exec();
+        };
 
-        // Prepare files for processAndCreateTrajectory
-        // We need to map local paths to the expected format
-        const filesToProcess = localFiles.map(filePath => ({
-            path: filePath,
-            originalname: path.basename(filePath),
-            size: 0 // Size will be read from file system if needed
-        }));
-
-        // Use the shared logic to process files and create trajectory
-        // This will also queue the processing jobs
-        const newTrajectory = await createTrajectory(
-            filesToProcess,
-            teamId,
-            userId.toString(),
-            trajectoryName
-        );
-
-        publishProgress('completed', 100, 'Import successful');
-
-        res.status(201).json({
-            status: 'success',
-            data: newTrajectory
-        });
-    } catch (err: any) {
-        // Publish failed status
-        publishProgress('failed', 0, err.message || 'Import failed');
-
-        // Clean up on error
         try {
-            await rm(localFolder, { recursive: true, force: true });
-        } catch (cleanupErr) {
-            logger.error(`Failed to cleanup after SSH import error: ${cleanupErr}`);
-        }
+            const connection = await SSHConnection.findOne({
+                _id: connectionId,
+                user: userId
+            }).select('+encryptedPassword');
 
-        if (err instanceof RuntimeError) {
-            throw err;
+            if (!connection) {
+                throw new RuntimeError('SSHConnection::NotFound', 404);
+            }
+
+            await mkdir(localFolder, { recursive: true });
+
+            publishProgress('running', 0, 'Connecting to SSH server...');
+
+            const fileStats = await SSHService.getFileStats(connection, remotePath);
+
+            if (!fileStats) {
+                throw new RuntimeError('SSH::Path::NotFound', 404);
+            }
+
+            let localFiles: string[] = [];
+            const trajectoryName = name || fileStats.name || 'SSH Import';
+
+            publishProgress('running', 5, 'Downloading files...');
+
+            if (fileStats.isDirectory) {
+                logger.info(`Downloading directory from SSH: ${remotePath}`);
+                localFiles = await SSHService.downloadDirectory(
+                    connection,
+                    remotePath,
+                    localFolder,
+                    (progress) => {
+                        const percentage = 5 + Math.round((progress.downloaded / progress.total) * 75);
+                        publishProgress(
+                            'running',
+                            percentage,
+                            `Downloading: ${progress.currentFile} (${Math.round(progress.downloaded / 1024 / 1024)}MB / ${Math.round(progress.total / 1024 / 1024)}MB)`
+                        );
+                    }
+                );
+            } else {
+                logger.info(`Downloading file from SSH: ${remotePath}`);
+                const localFilePath = join(localFolder, fileStats.name);
+                await SSHService.downloadFile(connection, remotePath, localFilePath);
+                localFiles = [localFilePath];
+                publishProgress('running', 80, 'Download complete');
+            }
+
+            if (localFiles.length === 0) {
+                await rm(localFolder, { recursive: true, force: true });
+                throw new RuntimeError('SSH::Import::NoFiles', 400);
+            }
+
+            publishProgress('running', 85, 'Processing files...');
+
+            const filesToProcess = localFiles.map(filePath => ({
+                path: filePath,
+                originalname: path.basename(filePath),
+                size: 0
+            }));
+
+            const newTrajectory = await createTrajectory(
+                filesToProcess,
+                teamId,
+                userId.toString(),
+                trajectoryName
+            );
+
+            publishProgress('completed', 100, 'Import successful');
+
+            res.status(201).json({
+                status: 'success',
+                data: newTrajectory
+            });
+        } catch (err: any) {
+            publishProgress('failed', 0, err.message || 'Import failed');
+
+            try {
+                await rm(localFolder, { recursive: true, force: true });
+            } catch (cleanupErr) {
+                logger.error(`Failed to cleanup after SSH import error: ${cleanupErr}`);
+            }
+
+            if (err instanceof RuntimeError) {
+                throw err;
+            }
+            logger.error(`Failed to import trajectory from SSH: ${err.message}`);
+            throw new RuntimeError('SSH::Import::Error', 500);
+        } finally {
+            publisher.quit();
         }
-        logger.error(`Failed to import trajectory from SSH: ${err.message}`);
-        throw new RuntimeError('SSH::Import::Error', 500);
-    } finally {
-        // Close redis publisher
-        publisher.quit();
-    }
-};
+    };
+}

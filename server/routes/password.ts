@@ -22,13 +22,14 @@
 
 import { Router } from 'express';
 import { protect } from '@/middlewares/authentication';
-import { changePassword, getPasswordInfo } from '@/controllers/password';
+import PasswordController from '@/controllers/password';
 
 const router = Router();
+const controller = new PasswordController();
 
 router.use(protect);
 
-router.get('/info', getPasswordInfo);
-router.put('/change', changePassword);
+router.get('/info', controller.getPasswordInfo);
+router.put('/change', controller.changePassword);
 
 export default router;

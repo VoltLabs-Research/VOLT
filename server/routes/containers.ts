@@ -1,8 +1,9 @@
 import express from 'express';
-import * as containerController from '@/controllers/container';
+import ContainerController from '@/controllers/container';
 import { protect } from '@/middlewares/authentication';
 
 const router = express.Router();
+const containerController = new ContainerController();
 
 router.use(protect);
 

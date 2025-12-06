@@ -1,8 +1,9 @@
 import express from 'express';
-import * as systemController from '@/controllers/system';
+import SystemController from '@/controllers/system';
 import { protect } from '@/middlewares/authentication';
 
 const router = express.Router();
+const systemController = new SystemController();
 
 router.use(protect);
 

@@ -23,13 +23,6 @@
 import { Request, Response, NextFunction } from 'express';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 
-interface ErrorResponse {
-    status: string;
-    message: string;
-    code?: string;
-    statusCode: number;
-}
-
 /**
  * Extracts error code from error message (format: "Category::Subcategory::Type")
  * or uses the error message as the code if it's already in that format

@@ -1,11 +1,14 @@
 import { Server, Socket } from 'socket.io';
 import BaseSocketModule from '@/socket/base-socket-module';
-import { handleContainerTerminal } from '@/controllers/container';
+import ContainerController from '@/controllers/container';
 import logger from '@/logger';
 
 class ContainerModule extends BaseSocketModule {
+    private containerController: ContainerController;
+
     constructor() {
         super('ContainerModule');
+        this.containerController = new ContainerController();
     }
 
     onInit(io: Server): void {
@@ -19,7 +22,7 @@ class ContainerModule extends BaseSocketModule {
         }
 
         // Delegate to controller handler
-        handleContainerTerminal(socket);
+        this.containerController.handleContainerTerminal(socket);
 
         logger.info(`[ContainerModule] Initialized for user ${user.firstName} ${user.lastName}`);
     }

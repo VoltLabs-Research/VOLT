@@ -21,12 +21,13 @@
  */
 
 import express from 'express';
-import * as controller from '@controllers/authentication';
+import AuthController from '@controllers/authentication';
 import * as middleware from '@middlewares/authentication';
 import passport from '@config/passport';
 import multer from 'multer';
 
 const router = express.Router();
+const controller = new AuthController();
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -44,7 +45,7 @@ const upload = multer({
 
 router.post('/sign-in', controller.signIn);
 router.post('/sign-up', controller.signUp);
-router.post('/check-email', controller.checkEmailExistence);
+router.post('/check-email', controller.checkEmail);
 
 // OAuth routes
 router.get('/github', passport.authenticate('github', { session: false, scope: ['user:email'] }));
@@ -57,7 +58,7 @@ router.get('/microsoft', passport.authenticate('microsoft', { session: false, sc
 router.get('/microsoft/callback', passport.authenticate('microsoft', { session: false, failureRedirect: '/auth/error' }), controller.oauthCallback);
 
 router.use(middleware.protect);
-router.patch('/me/update/password/', controller.updateMyPassword);
+router.patch('/me/update/password/', controller.updatePassword);
 
 router.get('/me', controller.getMyAccount); // Changed from chained route to direct GET
 router.get('/guest-identity', controller.getGuestIdentity); // Added new route

@@ -24,99 +24,101 @@ import { Request, Response, NextFunction } from 'express';
 import { Session } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 
-/**
- * Get all active sessions for the authenticated user
- */
-export const getMySessions = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const userId = (req as any).user._id;
-        
-        const sessions = await Session.find({ 
-            user: userId, 
-            isActive: true 
-        }).sort({ lastActivity: -1 });
+export default class SessionController {
+    /**
+     * Get all active sessions for the authenticated user
+     */
+    public getMySessions = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user._id;
 
-        res.status(200).json({
-            status: 'success',
-            results: sessions.length,
-            data: sessions
-        });
-    } catch (error) {
-        next(new RuntimeError('Session::GetSessions::Failed', 500));
-    }
-};
+            const sessions = await Session.find({
+                user: userId,
+                isActive: true
+            }).sort({ lastActivity: -1 });
 
-/**
- * Get login activity for the authenticated user
- */
-export const getMyLoginActivity = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const userId = (req as any).user._id;
-        const limit = parseInt(req.query.limit as string) || 20;
-        
-        const activities = await Session.find({ user: userId })
-            .sort({ createdAt: -1 })
-            .limit(limit);
-
-        res.status(200).json({
-            status: 'success',
-            results: activities.length,
-            data: activities
-        });
-    } catch (error) {
-        next(new RuntimeError('Session::GetLoginActivity::Failed', 500));
-    }
-};
-
-/**
- * Revoke a specific session
- */
-export const revokeSession = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const userId = (req as any).user._id;
-        const sessionId = req.params.id;
-
-        const session = await Session.findOneAndUpdate(
-            { _id: sessionId, user: userId },
-            { isActive: false },
-            { new: true }
-        );
-
-        if (!session) {
-            return next(new RuntimeError('Session::NotFound', 404));
+            res.status(200).json({
+                status: 'success',
+                results: sessions.length,
+                data: sessions
+            });
+        } catch (error) {
+            next(new RuntimeError('Session::GetSessions::Failed', 500));
         }
+    };
 
-        res.status(200).json({
-            status: 'success',
-            data: session
-        });
-    } catch (error) {
-        next(new RuntimeError('Session::RevokeSession::Failed', 500));
-    }
-};
+    /**
+     * Get login activity for the authenticated user
+     */
+    public getMyLoginActivity = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user._id;
+            const limit = parseInt(req.query.limit as string) || 20;
 
-/**
- * Revoke all other sessions (keep current one)
- */
-export const revokeAllOtherSessions = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const userId = (req as any).user._id;
-        const currentToken = req.headers.authorization?.split(' ')[1];
+            const activities = await Session.find({ user: userId })
+                .sort({ createdAt: -1 })
+                .limit(limit);
 
-        await Session.updateMany(
-            { 
-                user: userId, 
-                token: { $ne: currentToken },
-                isActive: true 
-            },
-            { isActive: false }
-        );
+            res.status(200).json({
+                status: 'success',
+                results: activities.length,
+                data: activities
+            });
+        } catch (error) {
+            next(new RuntimeError('Session::GetLoginActivity::Failed', 500));
+        }
+    };
 
-        res.status(200).json({
-            status: 'success',
-            message: 'All other sessions have been revoked'
-        });
-    } catch (error) {
-        next(new RuntimeError('Session::RevokeAllOtherSessions::Failed', 500));
-    }
-};
+    /**
+     * Revoke a specific session
+     */
+    public revokeSession = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user._id;
+            const sessionId = req.params.id;
+
+            const session = await Session.findOneAndUpdate(
+                { _id: sessionId, user: userId },
+                { isActive: false },
+                { new: true }
+            );
+
+            if (!session) {
+                return next(new RuntimeError('Session::NotFound', 404));
+            }
+
+            res.status(200).json({
+                status: 'success',
+                data: session
+            });
+        } catch (error) {
+            next(new RuntimeError('Session::RevokeSession::Failed', 500));
+        }
+    };
+
+    /**
+     * Revoke all other sessions (keep current one)
+     */
+    public revokeAllOtherSessions = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user._id;
+            const currentToken = req.headers.authorization?.split(' ')[1];
+
+            await Session.updateMany(
+                {
+                    user: userId,
+                    token: { $ne: currentToken },
+                    isActive: true
+                },
+                { isActive: false }
+            );
+
+            res.status(200).json({
+                status: 'success',
+                message: 'All other sessions have been revoked'
+            });
+        } catch (error) {
+            next(new RuntimeError('Session::RevokeAllOtherSessions::Failed', 500));
+        }
+    };
+}

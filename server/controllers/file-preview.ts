@@ -29,41 +29,35 @@ import { SYS_BUCKETS } from '@/config/minio';
 import { getMinIOObjectName } from '@/middlewares/file-upload';
 import logger from '@/logger';
 
-/**
- * Get file as base64 for preview
- */
-export const getFileBase64 = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const { chatId, messageId } = req.params;
+export default class FilePreviewController {
+    public getFileBase64 = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const { chatId, messageId } = req.params;
 
-    // Find the message
-    const message = await Message.findOne({ _id: messageId, chat: chatId });
-    if (!message) {
-        throw new RuntimeError('Message::NotFound', 404);
-    }
+        const message = await Message.findOne({ _id: messageId, chat: chatId });
+        if (!message) throw new RuntimeError('Message::NotFound', 404);
+        if (message.messageType !== 'file' || !message.metadata?.filePath) {
+            throw new RuntimeError('File::NotFound', 404);
+        }
 
-    if (message.messageType !== 'file' || !message.metadata?.filePath) {
-        throw new RuntimeError('File::NotFound', 404);
-    }
+        try {
+            const objectName = getMinIOObjectName(message.metadata.filePath);
+            const fileBuffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, objectName);
+            const base64 = fileBuffer.toString('base64');
+            const mimeType = message.metadata.fileType || 'application/octet-stream';
+            const dataUrl = `data:${mimeType};base64,${base64}`;
 
-    try {
-        const objectName = getMinIOObjectName(message.metadata.filePath);
-
-        const fileBuffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, objectName);
-        const base64 = fileBuffer.toString('base64');
-        const mimeType = message.metadata.fileType || 'application/octet-stream';
-        const dataUrl = `data:${mimeType};base64,${base64}`;
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                dataUrl,
-                fileName: message.metadata.fileName,
-                fileType: message.metadata.fileType,
-                fileSize: message.metadata.fileSize
-            }
-        });
-    } catch (error) {
-        logger.error(`Error reading file from MinIO: ${error}`);
-        throw new RuntimeError('File::ReadError', 500);
-    }
-});
+            res.status(200).json({
+                status: 'success',
+                data: {
+                    dataUrl,
+                    fileName: message.metadata.fileName,
+                    fileType: message.metadata.fileType,
+                    fileSize: message.metadata.fileSize
+                }
+            });
+        } catch (error) {
+            logger.error(`Error reading file from MinIO: ${error}`);
+            throw new RuntimeError('File::ReadError', 500);
+        }
+    });
+}
