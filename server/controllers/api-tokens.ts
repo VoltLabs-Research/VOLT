@@ -83,22 +83,13 @@ export default class ApiTokenController {
     });
 
     public getApiToken = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-        const user = (req as any).user;
-        const { id } = req.params;
-
-        const token = await ApiToken.findOne({ _id: id, createdBy: user.id });
-        if (!token) return next(new RuntimeError('ApiToken::NotFound', 404));
-
+        const token = res.locals.apiToken;
         res.status(200).json({ status: 'success', data: token });
     });
 
     public updateApiToken = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-        const user = (req as any).user;
-        const { id } = req.params;
         const { name, description, permissions, isActive } = req.body;
-
-        const token = await ApiToken.findOne({ _id: id, createdBy: user.id });
-        if (!token) return next(new RuntimeError('ApiToken::NotFound', 404));
+        const token = res.locals.apiToken;
 
         if (name !== undefined) token.name = name;
         if (description !== undefined) token.description = description;
@@ -115,22 +106,13 @@ export default class ApiTokenController {
     });
 
     public deleteApiToken = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-        const user = (req as any).user;
-        const { id } = req.params;
-
-        const token = await ApiToken.findOne({ _id: id, createdBy: user.id });
-        if (!token) return next(new RuntimeError('ApiToken::NotFound', 404));
-
-        await ApiToken.findByIdAndDelete(id);
+        const token = res.locals.apiToken;
+        await token.deleteOne();
         res.status(204).json({ status: 'success', data: null });
     });
 
     public regenerateApiToken = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-        const user = (req as any).user;
-        const { id } = req.params;
-
-        const token = await ApiToken.findOne({ _id: id, createdBy: user.id });
-        if (!token) return next(new RuntimeError('ApiToken::NotFound', 404));
+        const token = res.locals.apiToken;
 
         const newToken = `opendxa_${crypto.randomBytes(32).toString('hex')}`;
         token.token = newToken;

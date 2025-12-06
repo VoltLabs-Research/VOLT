@@ -11,6 +11,8 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "strict": true,
+    "noEmit": true,
+    "outDir": "dist",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true

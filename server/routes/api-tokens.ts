@@ -23,25 +23,55 @@
 import { Router } from 'express';
 import ApiTokenController from '@/controllers/api-tokens';
 import * as middleware from '@/middlewares/authentication';
+import * as apiTokenMiddleware from '@/middlewares/api-token';
 
 const router = Router();
 const controller = new ApiTokenController();
+
+// Valid permissions for validation
+const validPermissions = [
+    'read:trajectories',
+    'write:trajectories',
+    'delete:trajectories',
+    'read:analysis',
+    'write:analysis',
+    'delete:analysis',
+    'read:teams',
+    'write:teams',
+    'admin:all'
+];
 
 router.use(middleware.protect);
 
 router.route('/')
     .get(controller.getMyApiTokens)
-    .post(controller.createApiToken);
+    .post(
+        apiTokenMiddleware.validateApiTokenPermissionsInBody(validPermissions),
+        controller.createApiToken
+    );
 
 router.route('/stats')
     .get(controller.getApiTokenStats);
 
 router.route('/:id')
-    .get(controller.getApiToken)
-    .patch(controller.updateApiToken)
-    .delete(controller.deleteApiToken);
+    .get(
+        apiTokenMiddleware.loadAndVerifyApiTokenOwnership,
+        controller.getApiToken
+    )
+    .patch(
+        apiTokenMiddleware.loadAndVerifyApiTokenOwnership,
+        apiTokenMiddleware.validateApiTokenPermissionsInBody(validPermissions),
+        controller.updateApiToken
+    )
+    .delete(
+        apiTokenMiddleware.loadAndVerifyApiTokenOwnership,
+        controller.deleteApiToken
+    );
 
 router.route('/:id/regenerate')
-    .post(controller.regenerateApiToken);
+    .post(
+        apiTokenMiddleware.loadAndVerifyApiTokenOwnership,
+        controller.regenerateApiToken
+    );
 
 export default router;

@@ -36,14 +36,9 @@ export default class TeamController extends BaseController<any>{
 
     public getMembers = catchAsync(async (req: Request, res: Response) => {
         const teamId = req.params.id;
-        const userId = (req as any).user._id;
-
         const team = await Team.findById(teamId).populate('members', 'email username avatar firstName lastName');
+        
         if(!team) throw new RuntimeError('Team::NotFound', 404);
-
-        if(!team.members.some((m) => m._id.toString() === userId.toString())){
-            throw new RuntimeError('Team::AccessDenied', 403);
-        }
         
         res.status(200).json({
             status: 'success', data: { members: team.members }
@@ -51,16 +46,9 @@ export default class TeamController extends BaseController<any>{
     });
 
     public leaveTeam = catchAsync(async (req: Request, res: Response) => {
-        const teamId = req.params.id;
         const userId = (req as any).user._id;
-
-        const team = await Team.findById(teamId);
-        if(!team) throw new RuntimeError('Team::NotFound', 404);
-
-        // TODO: MIDDLEWARE
-        if(!team.members.some((m) => m.toString() === userId.toString())){
-            throw new RuntimeError('Team::AccessDenied', 403);
-        }
+        const team = res.locals.team;
+        const teamId = team._id;
 
         // If owner, delete team
         if(team.owner.toString() === userId.toString()){
@@ -72,7 +60,7 @@ export default class TeamController extends BaseController<any>{
         }
 
         // Remove members
-        team.members = team.members.filter((m) => m.toString() !== userId.toString());
+        team.members = team.members.filter((m: any) => m.toString() !== userId.toString());
         await team.save();
 
         // Remove from user's team list
@@ -84,14 +72,7 @@ export default class TeamController extends BaseController<any>{
     public removeMember = catchAsync(async (req: Request, res: Response) => {
         const teamId = req.params.id;
         const { email } = req.body;
-        const userId = (req as any).user._id;
-        
-        const team = await Team.findById(teamId);
-        if(!team) throw new RuntimeError('Team::NotFound', 404);
-
-        if(team.owner.toString() !== userId.toString()){
-            throw new RuntimeError('Team::OnlyOwnerCanRemoveMembers', 403);
-        }
+        const team = res.locals.team;
 
         const userToRemove = await User.findOne({ email });
         if(!userToRemove) throw new RuntimeError('User::NotFound', 404);
@@ -100,7 +81,7 @@ export default class TeamController extends BaseController<any>{
             throw new RuntimeError('Team::CannotRemoveOwner', 403);
         }
 
-        if(!team.members.some(m => m.toString() === userToRemove._id.toString())){
+        if(!team.members.some((m: any) => m.toString() === userToRemove._id.toString())){
             throw new RuntimeError('Team::UserNotAMember', 400);
         }
 

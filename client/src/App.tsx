@@ -21,7 +21,7 @@
  */
 
 import { useMemo } from 'react';
-import { Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { setErrorNotificationHandler } from '@/api/error-notification';
 import GlobalTransitionOverlay from '@/components/atoms/animations/GlobalTransitionOverlay';
@@ -110,6 +110,8 @@ const App = () => {
                 onExitComplete={handleExitComplete}
             >
                 <Routes location={location} key={location.pathname}>
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
                     {renderPublicRoutes()}
                     {renderProtectedRoutes()}
                     {renderGuestRoutes()}

@@ -23,6 +23,8 @@
 import { Router } from 'express';
 import SSHFileExplorerController from '@/controllers/ssh-file-explorer';
 import * as authMiddleware from '@/middlewares/authentication';
+import * as sshMiddleware from '@/middlewares/ssh-connection';
+import * as validationMiddleware from '@/middlewares/validation';
 
 const router = Router();
 const controller = new SSHFileExplorerController();
@@ -30,12 +32,16 @@ const controller = new SSHFileExplorerController();
 router.get(
     '/list',
     authMiddleware.protect,
+    sshMiddleware.loadAndVerifySSHConnection,
     controller.listSSHFiles
 );
 
 router.post(
     '/import',
     authMiddleware.protect,
+    sshMiddleware.validateSSHImportFields,
+    validationMiddleware.verifyTeamMembershipByTeamId,
+    sshMiddleware.loadAndVerifySSHConnection,
     controller.importTrajectoryFromSSH
 );
 

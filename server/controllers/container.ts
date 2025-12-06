@@ -39,10 +39,8 @@ export default class ContainerController {
     });
 
     public createContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { name, image, teamId, env, ports } = req.body;
-
-        const team = await Team.findOne({ _id: teamId, members: (req.user as any)._id });
-        if (!team) return next(new RuntimeError('Container::Team::AccessDenied', 403));
+        const { name, image, env, ports } = req.body;
+        const team = res.locals.team;
 
         const Env = env ? env.map((e: any) => `${e.key}=${e.value}`) : [];
         const PortBindings: Record<string, any> = {};
@@ -92,18 +90,8 @@ export default class ContainerController {
     });
 
     public controlContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { id } = req.params;
         const { action } = req.body;
-
-        const container = await Container.findById(id);
-        if (!container) return next(new RuntimeError('Container::NotFound', 404));
-
-        if (container.team) {
-            const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-            if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
-        } else if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
-            return next(new RuntimeError('Container::AccessDenied', 403));
-        }
+        const container = res.locals.container;
 
         if (action === 'start') {
             await dockerService.startContainer(container.containerId);
@@ -121,16 +109,7 @@ export default class ContainerController {
     });
 
     public deleteContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { id } = req.params;
-        const container = await Container.findById(id);
-        if (!container) return next(new RuntimeError('Container::NotFound', 404));
-
-        if (container.team) {
-            const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-            if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
-        } else if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
-            return next(new RuntimeError('Container::AccessDenied', 403));
-        }
+        const container = res.locals.container;
 
         await dockerService.stopContainer(container.containerId);
         await dockerService.removeContainer(container.containerId);
@@ -140,9 +119,7 @@ export default class ContainerController {
     });
 
     public getContainerStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { id } = req.params;
-        const container = await Container.findById(id);
-        if (!container) return next(new RuntimeError('Container::NotFound', 404));
+        const container = res.locals.container;
 
         const stats = await dockerService.getContainerStats(container.containerId);
         const limits = {
@@ -154,16 +131,7 @@ export default class ContainerController {
     });
 
     public restartContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { id } = req.params;
-        const container = await Container.findById(id);
-        if (!container) return next(new RuntimeError('Container::NotFound', 404));
-
-        if (container.team) {
-            const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-            if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
-        } else if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
-            return next(new RuntimeError('Container::AccessDenied', 403));
-        }
+        const container = res.locals.container;
 
         await dockerService.stopContainer(container.containerId);
         await dockerService.startContainer(container.containerId);
@@ -175,17 +143,8 @@ export default class ContainerController {
     });
 
     public getContainerFiles = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { id } = req.params;
         const { path = '/' } = req.query;
-        const container = await Container.findById(id);
-        if (!container) return next(new RuntimeError('Container::NotFound', 404));
-
-        if (container.team) {
-            const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-            if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
-        } else if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
-            return next(new RuntimeError('Container::AccessDenied', 403));
-        }
+        const container = res.locals.container;
 
         const output = await dockerService.execCommand(container.containerId, ['ls', '-la', String(path)]);
         const lines = output.split('\n').slice(1);
@@ -210,29 +169,16 @@ export default class ContainerController {
     });
 
     public readContainerFile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { id } = req.params;
         const { path } = req.query;
         if (!path || typeof path !== 'string') return next(new RuntimeError('Container::File::PathRequired', 400));
-
-        const container = await Container.findById(id);
-        if (!container) return next(new RuntimeError('Container::NotFound', 404));
-
-        if (container.team) {
-            const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-            if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
-        } else if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
-            return next(new RuntimeError('Container::AccessDenied', 403));
-        }
-
+        
+        const container = res.locals.container;
         const content = await dockerService.execCommand(container.containerId, ['cat', path]);
         res.status(200).json({ status: 'success', data: { content } });
     });
 
     public getContainerProcesses = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { id } = req.params;
-        const container = await Container.findById(id);
-        if (!container) return next(new RuntimeError('Container::NotFound', 404));
-
+        const container = res.locals.container;
         const processes = await dockerService.getContainerProcesses(container.containerId);
         res.status(200).json({ status: 'success', data: { processes } });
     });
@@ -244,18 +190,8 @@ export default class ContainerController {
     };
 
     public updateContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { id } = req.params;
         const { env, ports } = req.body;
-
-        const container = await Container.findById(id);
-        if (!container) return next(new RuntimeError('Container::NotFound', 404));
-
-        if (container.team) {
-            const team = await Team.findOne({ _id: container.team, members: (req.user as any)._id });
-            if (!team) return next(new RuntimeError('Container::AccessDenied', 403));
-        } else if (container.createdBy.toString() !== (req.user as any)._id.toString()) {
-            return next(new RuntimeError('Container::AccessDenied', 403));
-        }
+        const container = res.locals.container;
 
         try {
             await dockerService.stopContainer(container.containerId);

@@ -17,7 +17,7 @@ router.route('/:id')
     .delete(middleware.checkTeamOwnership, controller.deleteOne);
 
 // Leave team endpoint
-router.post('/:id/leave', controller.leaveTeam);
+router.post('/:id/leave', middleware.checkTeamMembership, controller.leaveTeam);
 
 // Get team members
 router.get('/:id/members', middleware.checkTeamMembership, controller.getMembers);

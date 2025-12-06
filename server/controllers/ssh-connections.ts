@@ -28,12 +28,7 @@ import logger from '@/logger';
 
 export default class SSHConnectionsController {
     public getUserSSHConnections = async (req: Request, res: Response) => {
-        const user = (req as any).user;
-        if (!user) {
-            throw new RuntimeError('Unauthorized', 401);
-        }
-
-        const userId = user._id || user.id;
+        const userId = (req as any).user._id || (req as any).user.id;
 
         try {
             const connections = await SSHConnection.find({ user: userId })
@@ -54,17 +49,8 @@ export default class SSHConnectionsController {
     };
 
     public createSSHConnection = async (req: Request, res: Response) => {
-        const user = (req as any).user;
-        if (!user) {
-            throw new RuntimeError('Unauthorized', 401);
-        }
-
-        const userId = user._id || user.id;
+        const userId = (req as any).user._id || (req as any).user.id;
         const { name, host, port, username, password } = req.body;
-
-        if (!name || !host || !username || !password) {
-            throw new RuntimeError('SSHConnection::MissingFields', 400);
-        }
 
         try {
             const connection = new SSHConnection({
@@ -97,24 +83,10 @@ export default class SSHConnectionsController {
     };
 
     public updateSSHConnection = async (req: Request, res: Response) => {
-        const user = (req as any).user;
-        if (!user) {
-            throw new RuntimeError('Unauthorized', 401);
-        }
-
-        const userId = user._id || user.id;
-        const { id } = req.params;
         const { name, host, port, username, password } = req.body;
+        const connection = res.locals.sshConnection;
 
         try {
-            const connection = await SSHConnection.findOne({
-                _id: id,
-                user: userId
-            }).select('+encryptedPassword');
-
-            if (!connection) {
-                throw new RuntimeError('SSHConnection::NotFound', 404);
-            }
 
             if (name) connection.name = name;
             if (host) connection.host = host;
@@ -142,23 +114,9 @@ export default class SSHConnectionsController {
     };
 
     public deleteSSHConnection = async (req: Request, res: Response) => {
-        const user = (req as any).user;
-        if (!user) {
-            throw new RuntimeError('Unauthorized', 401);
-        }
-
-        const userId = user._id || user.id;
-        const { id } = req.params;
+        const connection = res.locals.sshConnection;
 
         try {
-            const connection = await SSHConnection.findOneAndDelete({
-                _id: id,
-                user: userId
-            });
-
-            if (!connection) {
-                throw new RuntimeError('SSHConnection::NotFound', 404);
-            }
 
             res.status(200).json({
                 status: 'success',
@@ -174,24 +132,9 @@ export default class SSHConnectionsController {
     };
 
     public testSSHConnection = async (req: Request, res: Response) => {
-        const user = (req as any).user;
-        if (!user) {
-            throw new RuntimeError('Unauthorized', 401);
-        }
-
-        const userId = user._id || user.id;
-        const { id } = req.params;
+        const connection = res.locals.sshConnection;
 
         try {
-            const connection = await SSHConnection.findOne({
-                _id: id,
-                user: userId
-            }).select('+encryptedPassword');
-
-            if (!connection) {
-                throw new RuntimeError('SSHConnection::NotFound', 404);
-            }
-
             const isValid = await SSHService.testConnection(connection);
 
             res.status(200).json({

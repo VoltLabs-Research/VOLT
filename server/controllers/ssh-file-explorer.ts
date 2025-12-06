@@ -36,28 +36,10 @@ import path from 'path';
 
 export default class SSHFileExplorerController {
     public listSSHFiles = async (req: Request, res: Response) => {
-        const user = (req as any).user;
-        if (!user) {
-            throw new RuntimeError('Unauthorized', 401);
-        }
-
-        const userId = user._id || user.id;
-        const { connectionId, path } = req.query;
-
-        if (!connectionId || typeof connectionId !== 'string') {
-            throw new RuntimeError('SSH::ConnectionId::Required', 400);
-        }
+        const { path } = req.query;
+        const connection = res.locals.sshConnection;
 
         try {
-            const connection = await SSHConnection.findOne({
-                _id: connectionId,
-                user: userId
-            }).select('+encryptedPassword');
-
-            if (!connection) {
-                throw new RuntimeError('SSHConnection::NotFound', 404);
-            }
-
             const remotePath = typeof path === 'string' ? path : '.';
             const files = await SSHService.listFiles(connection, remotePath);
 
@@ -84,17 +66,9 @@ export default class SSHFileExplorerController {
     };
 
     public importTrajectoryFromSSH = async (req: Request, res: Response) => {
-        const user = (req as any).user;
-        if (!user) {
-            throw new RuntimeError('Unauthorized', 401);
-        }
-
-        const userId = user._id || user.id;
-        const { connectionId, remotePath, teamId, name } = req.body;
-
-        if (!connectionId || !remotePath || !teamId) {
-            throw new RuntimeError('SSH::Import::MissingFields', 400);
-        }
+        const userId = (req as any).user._id || (req as any).user.id;
+        const { remotePath, teamId, name } = req.body;
+        const connection = res.locals.sshConnection;
 
         const trajectoryId = new Types.ObjectId();
         const trajectoryIdStr = trajectoryId.toString();
@@ -132,15 +106,6 @@ export default class SSHFileExplorerController {
         };
 
         try {
-            const connection = await SSHConnection.findOne({
-                _id: connectionId,
-                user: userId
-            }).select('+encryptedPassword');
-
-            if (!connection) {
-                throw new RuntimeError('SSHConnection::NotFound', 404);
-            }
-
             await mkdir(localFolder, { recursive: true });
 
             publishProgress('running', 0, 'Connecting to SSH server...');

@@ -145,3 +145,39 @@ export const logApiTokenUsage = (req: Request, res: Response, next: NextFunction
     
     next();
 };
+
+/**
+ * Middleware to load and verify API token ownership
+ */
+export const loadAndVerifyApiTokenOwnership = async (req: Request, res: Response, next: NextFunction) => {
+    const userId = (req as any).user._id || (req as any).user.id;
+    const { id } = req.params;
+
+    try {
+        const token = await ApiToken.findOne({ _id: id, createdBy: userId });
+
+        if (!token) {
+            return next(new RuntimeError('ApiToken::NotFound', 404));
+        }
+
+        res.locals.apiToken = token;
+        next();
+    } catch (err: any) {
+        return next(new RuntimeError('ApiToken::LoadError', 500));
+    }
+};
+
+/**
+ * Middleware to validate API token permissions in request body
+ */
+export const validateApiTokenPermissionsInBody = (validPermissions: string[]) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const { permissions } = req.body;
+
+        if (permissions && !permissions.every((p: string) => validPermissions.includes(p))) {
+            return next(new RuntimeError('ApiToken::InvalidPermissions', 400));
+        }
+
+        next();
+    };
+};

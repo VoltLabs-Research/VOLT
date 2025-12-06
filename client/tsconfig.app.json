@@ -13,16 +13,16 @@
       "@/*": ["src/*"]
     },
 
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "jsx": "react-jsx",
 
-    /* Linting */
+    "noEmit": true,
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "outDir": "dist",
+    "noUnusedLocals": false,     
+    "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"]

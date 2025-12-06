@@ -23,6 +23,7 @@
 import { Router } from 'express';
 import SSHConnectionsController from '@/controllers/ssh-connections';
 import * as authMiddleware from '@/middlewares/authentication';
+import * as sshMiddleware from '@/middlewares/ssh-connection';
 
 const router = Router();
 const controller = new SSHConnectionsController();
@@ -36,24 +37,28 @@ router.get(
 router.post(
     '/',
     authMiddleware.protect,
+    sshMiddleware.validateSSHConnectionFields,
     controller.createSSHConnection
 );
 
 router.patch(
     '/:id',
     authMiddleware.protect,
+    sshMiddleware.loadAndVerifySSHConnection,
     controller.updateSSHConnection
 );
 
 router.delete(
     '/:id',
     authMiddleware.protect,
+    sshMiddleware.loadAndVerifySSHConnection,
     controller.deleteSSHConnection
 );
 
 router.post(
     '/:id/test',
     authMiddleware.protect,
+    sshMiddleware.loadAndVerifySSHConnection,
     controller.testSSHConnection
 );
 
