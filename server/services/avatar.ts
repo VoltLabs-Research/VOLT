@@ -1,4 +1,5 @@
-import { SYS_BUCKETS, uploadFile, getFileUrl } from '@/config/minio';
+import { SYS_BUCKETS } from '@/config/minio';
+import { putObject, getObjectURL } from '@/utilities/buckets';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
 import Identicon from 'identicon.js';
@@ -34,14 +35,10 @@ export class AvatarService{
         try{
             const { buffer, mimeType, extension } = this.generateIdenticon(seed);
             const fileName = `${userId}_default.${extension}`;
-            await uploadFile(
-                SYS_BUCKETS.AVATARS,
-                fileName,
-                buffer,
-                mimeType
-            );
-
-            return getFileUrl(SYS_BUCKETS.AVATARS, fileName);
+            await putObject(fileName, SYS_BUCKETS.AVATARS, buffer, {
+                'Content-Type': mimeType
+            });
+            return getObjectURL(SYS_BUCKETS.AVATARS, fileName);
         }catch(error){
             logger.error(`AvatarService::Default::Error generating for ${userId}: ${error}`);
             throw error;
@@ -62,13 +59,10 @@ export class AvatarService{
 
             // Generate name with timestamp for cache busting and upload
             const fileName = `${userId}_${Date.now()}.webp`;
-            await uploadFile(
-                SYS_BUCKETS.AVATARS,
-                fileName,
-                processedBuffer,
-                'image/webp'
-            );
-            return getFileUrl(SYS_BUCKETS.AVATARS, fileName);
+            await putObject(fileName, SYS_BUCKETS.AVATARS, processedBuffer, {
+                'Content-Type': 'image/webp'
+            });
+            return getObjectURL(SYS_BUCKETS.AVATARS, fileName);
         }catch(error){
             logger.error(`AvatarService::Custom::Error uploading for ${userId}: ${error}`);
             throw error;

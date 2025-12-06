@@ -1,5 +1,5 @@
-import { readMsgpackFile } from '@/utilities/msgpack';
-import { decodeMultiStreamFromFile } from '@/utilities/msgpack-stream';
+import { readMsgpackFile } from '@/utilities/msgpack/msgpack';
+import { decodeMultiStreamFromFile } from '@/utilities/msgpack/msgpack-stream';
 
 (async () => {
     const filePath = 'test.msgpack';

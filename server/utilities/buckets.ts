@@ -122,3 +122,10 @@ export const deleteByPrefix = async (bucket: string, prefix: string): Promise<vo
         await client.removeObjects(bucket, slice);
     }
 };
+
+export const getObjectURL = (bucketName: string, objectName: string) => {
+    const endpoint = process.env.MINIO_ENDPOINT || 'localhost';
+    const port = process.env.MINIO_PORT ?? 9000;
+    const protocol = process.env.MINIO_USE_SSL === 'true' ? 'https' : 'http';
+    return `${protocol}://${endpoint}:${port}/${bucketName}/${objectName}`;
+};
