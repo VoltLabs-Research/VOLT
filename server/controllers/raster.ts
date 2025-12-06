@@ -5,7 +5,7 @@ import { catchAsync } from '@/utilities/runtime/runtime';
 import { readFile } from 'fs/promises';;
 import { readdir } from 'fs/promises';
 import { Analysis, Trajectory } from '@/models';
-import { getTimestepPreview, rasterizeGLBs } from '@/utilities/raster';
+import { getTimestepPreview, rasterizeGLBs } from '@/utilities/export/raster';
 import { SYS_BUCKETS } from '@/config/minio';
 import TrajectoryVFS from '@/services/trajectory-vfs';
 import archiver from 'archiver';

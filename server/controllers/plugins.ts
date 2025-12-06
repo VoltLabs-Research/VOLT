@@ -6,7 +6,7 @@ import PluginRegistry from '@/services/plugins/plugins-registry';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import TrajectoryVFS from '@/services/trajectory-vfs';
-import { getStream, statObject, listByPrefix, getObject } from '@/utilities/buckets';
+import storage from '@/services/storage';
 import { SYS_BUCKETS } from '@/config/minio';
 import ManifestService from '@/services/plugins/manifest-service';
 import { decode as decodeMsgpack } from '@msgpack/msgpack';
@@ -125,8 +125,8 @@ export const getPluginExposureGLB = catchAsync(async (req: Request, res: Respons
 
     try {
         const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/${exposureKey}.glb`;
-        const stat = await statObject(objectName, SYS_BUCKETS.MODELS);
-        const stream = await getStream(objectName, SYS_BUCKETS.MODELS);
+        const stat = await storage.getStat(SYS_BUCKETS.MODELS, objectName);
+        const stream = await storage.getStream(SYS_BUCKETS.MODELS, objectName);
         res.setHeader('Content-Type', 'model/gltf-binary');
         res.setHeader('Content-Length', stat.size);
         res.setHeader('Content-Disposition', `inline; filename="${exposureId}_${timestep}.glb"`);
@@ -158,8 +158,8 @@ export const getPluginExposureFile = catchAsync(async (req: Request, res: Respon
             `timestep-${timestep}.msgpack`
         ].join('/');
 
-        const stat = await statObject(objectName, SYS_BUCKETS.PLUGINS);
-        const stream = await getStream(objectName, SYS_BUCKETS.PLUGINS);
+        const stat = await storage.getStat(SYS_BUCKETS.PLUGINS, objectName);
+        const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, objectName);
 
         res.setHeader('Content-Length', stat.size);
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
@@ -305,12 +305,8 @@ export const getPluginListingDocuments = catchAsync(async (req: Request, res: Re
             exposureSlug
         ].join('/');
 
-        const objectKeys = await listByPrefix(prefix, SYS_BUCKETS.PLUGINS);
-        for (const key of objectKeys) {
-            entryRecords.push({
-                key,
-                analysis: analysisReserved
-            });
+        for await(const key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, prefix)){
+            entryRecords.push({ key, analysis: analysisReserved });
         }
     }
 
@@ -332,7 +328,7 @@ export const getPluginListingDocuments = catchAsync(async (req: Request, res: Re
 
     const rows = [];
     for (const { key, analysis: analysisReserved } of pagedEntries) {
-        const buffer = await getObject(key, SYS_BUCKETS.PLUGINS);
+        const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, key);
         const payload = decodeMsgpack(buffer) as any;
         const row: Record<string, any> = { ...payload };
 
@@ -425,7 +421,7 @@ export const getPerFrameListing = catchAsync(async (req: Request, res: Response,
         const exposure = modifier.exposure[exposureId];
         const iterableKey = exposure?.iterable || 'data';
 
-        const buffer = await getObject(objectName, SYS_BUCKETS.PLUGINS);
+        const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, objectName);
         const payload = decodeMsgpack(buffer) as any;
 
         let items: any[] = [];

@@ -20,11 +20,11 @@
  * SOFTWARE.
  */
 
-import { putObject, getStream, listByPrefix, objectExists, deleteByPrefix, statObject } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
+import storage from '@/services/storage';
 import logger from '@/logger';
 import pLimit from '@/utilities/perf/p-limit';
 import * as zlib from 'node:zlib';
@@ -71,7 +71,7 @@ export default class DumpStorage{
             // Small Buffer -> Compress in RAM -> Upload
             if(Buffer.isBuffer(data) && data.length <= this.RAM_THRESHOLD){
                 const compressed = zlib.gzipSync(data, { level: this.COMPRESSION_LEVEL });
-                await putObject(objectName, SYS_BUCKETS.DUMPS, compressed, {
+                await storage.put(SYS_BUCKETS.DUMPS, objectName, compressed, {
                     'Content-Type': 'application/gzip',
                     'Content-Encoding': 'gzip'
                 });
@@ -103,7 +103,7 @@ export default class DumpStorage{
             // Upload the compressed file
             const stats = await fs.stat(tempFilePath);
             const uploadStream = fsNative.createReadStream(tempFilePath);
-            await putObject(objectName, SYS_BUCKETS.DUMPS, uploadStream, {
+            await storage.put(SYS_BUCKETS.DUMPS, objectName, uploadStream, {
                 'Content-Type': 'application/gzip',
                 'Content-Encoding': 'gzip',
                 'Content-Length': stats.size 
@@ -152,7 +152,7 @@ export default class DumpStorage{
         cacheKey: string
     ): Promise<string | null>{
         try{
-            const exists = await objectExists(objectName, SYS_BUCKETS.DUMPS);
+            const exists = await storage.exists(SYS_BUCKETS.DUMPS, objectName);
             if(!exists) return null;
 
             await this.ensureDirs();
@@ -160,7 +160,7 @@ export default class DumpStorage{
             await fs.mkdir(cacheDir, { recursive: true });
 
             const startTime = Date.now();
-            const remoteStream = await getStream(objectName, SYS_BUCKETS.DUMPS);
+            const remoteStream = await storage.getBuffer(SYS_BUCKETS.DUMPS, objectName);
             const gunzip = zlib.createGunzip();
             const fileWriter = fsNative.createWriteStream(cachePath);
 
@@ -181,51 +181,64 @@ export default class DumpStorage{
 
     static async calculateSize(trajectoryId: string): Promise<number>{
         const prefix = `trajectory-${trajectoryId}/`;
-        try{
-            const keys = await listByPrefix(prefix, SYS_BUCKETS.DUMPS);
-            if(keys.length === 0) return 0;
-            // Controlled parallel statObject (max 50 concurrent)
-            // This avoids the sequential TCP handshake of using a `for` loop.
-            const sizes = await Promise.all(keys.map((key) => this.storageLimit(async () => {
-                if(!key.endsWith('.dump.gz')) return 0;
+        let totalSize = 0;
+        
+        const pendingTasks: Promise<number>[] = [];
+        const BATCH_SIZE = 50;
+
+        for await(const key of storage.listByPrefix(SYS_BUCKETS.DUMPS, prefix)){
+            if(!key.endsWith('.dump.gz')) continue;
+
+            const task = this.storageLimit(async () => {
                 try{
-                    const stat = await statObject(key, SYS_BUCKETS.DUMPS);
+                    const stat = await storage.getStat(SYS_BUCKETS.DUMPS, key);
                     return stat.size;
-                }catch{
+                }catch(e){
                     return 0;
                 }
-            })));
+            });
 
-            return sizes.reduce((acc: number, curr: number) => acc + curr, 0);
-        }catch(error){
-            logger.error(`Failed to calculate size for trajectory ${trajectoryId}: ${error}`);
-            return 0;
+            pendingTasks.push(task);
+
+            if(pendingTasks.length >= BATCH_SIZE){
+                const results = await Promise.all(pendingTasks);
+                totalSize += results.reduce((acc, size) => acc + size, 0);
+                pendingTasks.length = 0;
+            }
         }
+
+        if(pendingTasks.length > 0){
+            const results = await Promise.all(pendingTasks);
+            totalSize += results.reduce((acc, size) => acc + size, 0);
+        }
+        
+        return totalSize;
     }
 
     static async getDumpStream(trajectoryId: string, timestep: string | number): Promise<Readable>{
         const objectName = this.getObjectName(trajectoryId, timestep);
-        const stream = await getStream(objectName, SYS_BUCKETS.DUMPS);
-        return stream.pipe(zlib.createGunzip());
+        const rawStream = await storage.getStream(SYS_BUCKETS.DUMPS, objectName);
+        return rawStream.pipe(zlib.createGunzip());
     }
 
     static async listDumps(trajectoryId: string): Promise<string[]>{
         const prefix = `trajectory-${trajectoryId}/`;
-        const objectNames = await listByPrefix(prefix, SYS_BUCKETS.DUMPS);
+        const timesteps: string[] = [];
         
-        return objectNames
-            .map(name => {
-                const match = name.match(/timestep-(\d+)\.dump\.gz$/);
-                return match ? match[1] : null;
-            })
-            .filter((t): t is string => t !== null)
-            .sort((a, b) => Number(a) - Number(b));
+        for await(const name of storage.listByPrefix(SYS_BUCKETS.DUMPS, prefix)){
+            const match = name.match(/timestep-(\d+)\.dump\.gz$/);
+            if(match){
+                timesteps.push(match[1]);
+            }
+        }
+
+        return timesteps.sort((a, b) => Number(a) - Number(b));
     }
 
     static async deleteDumps(trajectoryId: string): Promise<void>{
         const prefix = `trajectory-${trajectoryId}/`;
         await Promise.all([
-            deleteByPrefix(SYS_BUCKETS.DUMPS, prefix),
+            storage.deleteByPrefix(SYS_BUCKETS.DUMPS, prefix),
             fs.rm(path.join(this.CACHE_DIR, trajectoryId), { recursive: true, force: true })
         ]);
         logger.info(`Deleted dumps for trajectory ${trajectoryId}`);

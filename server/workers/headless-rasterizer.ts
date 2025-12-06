@@ -23,8 +23,8 @@
 import { parentPort } from 'node:worker_threads';
 import { performance } from 'node:perf_hooks';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
-import { putObject } from '@/utilities/buckets';
 import { initializeMinio, SYS_BUCKETS } from '@/config/minio';
+import storage from '@/services/storage';
 import HeadlessRasterizer from '@/services/headless-rasterizer';
 import logger from '@/logger';
 import * as fs from 'node:fs/promises';
@@ -53,7 +53,7 @@ const processJob = async (job: RasterizerJob): Promise<void> => {
         }
 
         const objectName = `trajectory-${job.trajectoryId}/previews/timestep-${job.timestep}.png`;
-        await putObject(objectName, SYS_BUCKETS.RASTERIZER, buffer, {
+        await storage.put(SYS_BUCKETS.RASTERIZER, objectName, buffer, {
             'Content-Type': CONTENT_TYPE,
             'Cache-Control': CACHE_CONTROL
         });

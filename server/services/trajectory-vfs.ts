@@ -20,16 +20,16 @@
  * SOFTWARE.
  */
 
-import logger from '@/logger';
-import { listByPrefix, statObject, getStream } from '@/utilities/buckets';
-import { SYS_BUCKETS } from '@/config/minio';
-import { Trajectory, Analysis } from '@/models';
-import { FsEntry, VFSReadStream } from '@/types/services/trajectory-vfs';
 import mime from 'mime-types';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import DumpStorage from '@/services/dump-storage';
+import logger from '@/logger';
+import storage from '@/services/storage';
 import QuickCache from '@/utilities/perf/quick-cache';
 import pLimit from '@/utilities/perf/p-limit';
+import { SYS_BUCKETS } from '@/config/minio';
+import { Trajectory, Analysis } from '@/models';
+import { FsEntry, VFSReadStream } from '@/types/services/trajectory-vfs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 
@@ -205,12 +205,11 @@ export default class TrajectoryVFS{
         // Ensure prefix ends with / for a directory listing logic
         const searchPrefix = prefix.endsWith('/') || prefix === '' ? prefix : prefix + '/';
         try{
-            const keys = await listByPrefix(searchPrefix, bucket);
             const dirs = new Set<string>();
             const files: string[] = [];
 
             // Pre-classification (cpu bound)
-            for(const key of keys){
+            for await(const key of storage.listByPrefix(bucket, searchPrefix)){
                 const rel = key.substring(searchPrefix.length);
                 const slashIdx = rel.indexOf('/');
                 if(slashIdx > -1) dirs.add(rel.substring(0, slashIdx));
@@ -223,7 +222,7 @@ export default class TrajectoryVFS{
             // Stat for files (network bound)
             const fileEntries = await Promise.all(files.map((key) => ioLimit(async () => {
                 try{
-                    const stat = await statObject(key, bucket);
+                    const stat = await storage.getStat(bucket, key);
                     const name = path.basename(key);
                     return {
                         type: 'file',
@@ -252,7 +251,7 @@ export default class TrajectoryVFS{
      */
     private async _streamMinioObject(bucket: string, key: string){
         try{
-            const [stat, stream] = await Promise.all([statObject(key, bucket), getStream(key, bucket)]);
+            const [stat, stream] = await Promise.all([storage.getStat(bucket, key), storage.getStream(bucket, key)]);
             return {
                 stream,
                 size: stat.size,
@@ -277,7 +276,7 @@ export default class TrajectoryVFS{
             const entries = await Promise.all(timesteps.map((ts) => ioLimit(async () => {
                 const obj = `trajectory-${trajectoryId}/timestep-${ts}.dump.gz`;
                 try{
-                    const stat = await statObject(obj, SYS_BUCKETS.DUMPS);
+                    const stat = await storage.getStat(SYS_BUCKETS.DUMPS, obj);
                     return {
                         type: 'file', 
                         name: ts, 
@@ -300,7 +299,7 @@ export default class TrajectoryVFS{
     private async getDumpStream(trajectoryId: string, timestep: string){
         try{
             const stream = await DumpStorage.getDumpStream(trajectoryId, timestep);
-            const stat = await statObject(`trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`, SYS_BUCKETS.DUMPS);
+            const stat = await storage.getStat(SYS_BUCKETS.DUMPS, `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`);
             return {
                 stream,
                 size: stat.size,
@@ -417,27 +416,36 @@ export default class TrajectoryVFS{
         const cache = sizeCache.get(key);
         if(cache !== undefined) return cache;
 
-        try{
-            const keys = await listByPrefix(prefix, bucket);
-            let total = 0;
-            // Batch processing for memory safety
-            const chunk = 100;
-            for(let i = 0; i < keys.length; i += chunk){
-                const sizes = await Promise.all(keys.slice(i, i + chunk).map((key) => ioLimit(async () => {
-                    try{
-                        const st = await statObject(key, bucket);
-                        return st.size;
-                    }catch{
-                        return 0;
-                    }
-                })));
-                total += sizes.reduce((a: number, b: number) => a + b, 0);
+        let total = 0;
+        const BATCH_SIZE = 100;
+        const pendingTasks: Promise<number>[] = [];
+
+        for await(const objectName of storage.listByPrefix(bucket, prefix)){
+            const task = ioLimit(async () => {
+                try{
+                    const stat = await storage.getStat(bucket, objectName);
+                    return stat.size;
+                }catch{
+                    return 0;
+                }
+            });
+
+            pendingTasks.push(task);
+
+            if(pendingTasks.length >= BATCH_SIZE){
+                const sizes = await Promise.all(pendingTasks);
+                total += sizes.reduce((acc, val) => acc + val, 0);
+                pendingTasks.length = 0;
             }
-            sizeCache.set(key, total);
-            return total;
-        }catch{
-            return 0;
         }
+
+        if(pendingTasks.length > 0){
+            const sizes = await Promise.all(pendingTasks);
+            total += sizes.reduce((acc, val) => acc + val, 0);
+        }
+        
+        sizeCache.set(key, total);
+        return total;
     }
 
     private createDirEntry(name: string, relPath: string, size: number = 0, date?: any): FsEntry{

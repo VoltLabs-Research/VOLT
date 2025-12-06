@@ -23,7 +23,7 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
-import { deleteByPrefix } from '@/utilities/buckets';
+import storage from '@/services/storage';
 import { SYS_BUCKETS } from '@/config/minio';
 import logger from '@/logger';
 
@@ -101,7 +101,7 @@ const deletePluginArtifacts = async (analysis: IAnalysis | null) => {
     ].join('/');
 
     try{
-        await deleteByPrefix(SYS_BUCKETS.PLUGINS, prefix);
+        await storage.deleteByPrefix(SYS_BUCKETS.PLUGINS, prefix);
     }catch(err){
         logger.error(`[Analysis] Failed to delete plugin artifacts for analysis ${analysisId}: ${err}`);
     }

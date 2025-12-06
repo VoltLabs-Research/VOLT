@@ -23,8 +23,8 @@
 import { Document, Accessor } from '@gltf-transform/core';
 import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { applyQuantizeAndMeshopt, writeGLBToBuffer } from '@/utilities/export/gltf-pipeline';
-import { putObject } from '@/utilities/buckets';
 import encodeMorton from '@/utilities/export/morton';
+import storage from '@/services/storage';
 import { SYS_BUCKETS } from '@/config/minio';
 import TrajectoryParserFactory from '@/parsers/factory';
 import { ParseResult } from '@/types/parser';
@@ -343,7 +343,9 @@ export default class AtomisticExporter{
     ): Promise<void> {
         const opts = (typeof optsOrLegacy === 'function') ? {} : (optsOrLegacy ?? {});
         const buffer = await this.toGLBBuffer(filePath, opts);
-        await putObject(minioObjectName, SYS_BUCKETS.MODELS, buffer, { 'Content-Type': 'model/gltf-binary' });
+        await storage.put(SYS_BUCKETS.MODELS, minioObjectName, buffer, {
+            'Content-Type': 'model/gltf-binary'
+        });
     }
 
     public async exportAtomsTypeToGLBBuffer(
@@ -448,6 +450,8 @@ export default class AtomisticExporter{
         opts: CompressionOptions = {}
     ): Promise<void> {
         const buffer = await this.exportAtomsTypeToGLBBuffer(atomsByType, opts);
-        await putObject(minioObjectName, SYS_BUCKETS.MODELS, buffer, { 'Content-Type': 'model/gltf-binary' });
+        await storage.put(minioObjectName, SYS_BUCKETS.MODELS, buffer, {
+            'Content-Type': 'model/gltf-binary'
+        });
     }
 };

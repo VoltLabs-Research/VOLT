@@ -27,7 +27,7 @@ import { Strategy as MicrosoftStrategy } from 'passport-microsoft';
 import { User } from '@/models/index';
 import { IUser } from '@/types/models/user';
 
-import { generateRandomName } from '@/utilities/name-generator';
+import { generateRandomName } from '@/utilities/runtime/name-generator';
 
 /**
  * Configure GitHub OAuth Strategy

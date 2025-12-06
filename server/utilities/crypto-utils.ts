@@ -25,9 +25,7 @@ import * as crypto from 'crypto';
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const SALT_LENGTH = 64;
-const TAG_LENGTH = 16;
 const KEY_LENGTH = 32;
-const ITERATIONS = 100000;
 
 /**
  * Get encryption key from environment variable
@@ -36,8 +34,8 @@ const ITERATIONS = 100000;
 const getEncryptionKey = (): Buffer => {
     const keyString = process.env.SSH_ENCRYPTION_KEY;
 
-    if (!keyString) {
-        if (process.env.NODE_ENV === 'production') {
+    if(!keyString){
+        if(process.env.NODE_ENV === 'production'){
             throw new Error('SSH_ENCRYPTION_KEY environment variable is required in production');
         }
         // Development fallback - DO NOT USE IN PRODUCTION
@@ -54,7 +52,7 @@ const getEncryptionKey = (): Buffer => {
  * Returns: salt:iv:encrypted:authTag (all base64 encoded)
  */
 export const encrypt = (text: string): string => {
-    try {
+    try{
         const salt = crypto.randomBytes(SALT_LENGTH);
         const iv = crypto.randomBytes(IV_LENGTH);
         const key = getEncryptionKey();
@@ -73,7 +71,7 @@ export const encrypt = (text: string): string => {
             encrypted,
             authTag.toString('base64')
         ].join(':');
-    } catch (error: any) {
+    }catch(error: any){
         throw new Error(`Encryption failed: ${error.message}`);
     }
 };
@@ -83,10 +81,10 @@ export const encrypt = (text: string): string => {
  * Expects format: salt:iv:encrypted:authTag (all base64 encoded)
  */
 export const decrypt = (encryptedText: string): string => {
-    try {
+    try{
         const parts = encryptedText.split(':');
 
-        if (parts.length !== 4) {
+        if(parts.length !== 4){
             throw new Error('Invalid encrypted text format');
         }
 
@@ -103,7 +101,7 @@ export const decrypt = (encryptedText: string): string => {
         decrypted += decipher.final('utf8');
 
         return decrypted;
-    } catch (error: any) {
+    }catch(error: any){
         throw new Error(`Decryption failed: ${error.message}`);
     }
 };

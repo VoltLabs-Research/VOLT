@@ -21,10 +21,9 @@
  */
 
 import BaseListingAggregator, { AggregatorConfig } from '@/services/metrics/base-listing-aggregator';
-import Analysis from '@/models/analysis';
 import ManifestService from '@/services/plugins/manifest-service';
-import { Model, Types } from 'mongoose';
-import { listByPrefix } from '@/utilities/buckets';
+import storage from '@/services/storage';
+import { Model } from 'mongoose';
 import { SYS_BUCKETS } from '@/config/minio';
 import { slugify } from '@/utilities/runtime/runtime';
 
@@ -167,9 +166,8 @@ export default class MongoListingCountAggregator extends BaseListingAggregator {
                 definition.exposureSlug
             ].join('/');
 
-            const keys = await listByPrefix(prefix, SYS_BUCKETS.PLUGINS);
             const createdAt = pointer.createdAt ? new Date(pointer.createdAt) : new Date();
-            for (const _key of keys) {
+            for await(const _key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, prefix)) {
                 this.updateBuckets(createdAt);
             }
         }

@@ -21,10 +21,10 @@
  */
 
 import { SYS_BUCKETS } from '@/config/minio';
-import { putObject } from '@/utilities/buckets';
 import { slugify } from '@/utilities/runtime/runtime';
 import { encodeMsgpack, readMsgpackFile } from '@/utilities/msgpack/msgpack';
 import DislocationExporter from '@/utilities/export/dislocations';
+import storage from '@/services/storage';
 import MeshExporter from '@/utilities/export/mesh';
 import SummaryStreamWriter from './summary-stream-writer';
 import AtomisticExporter from '@/utilities/export/atoms';
@@ -130,7 +130,7 @@ export default class ArtifactProcessor{
         ].join('/');
 
         const stream = fs.createReadStream(filePath);
-        await putObject(storageKey, SYS_BUCKETS.PLUGINS, stream, {
+        await storage.put(SYS_BUCKETS.PLUGINS, storageKey, stream, {
             'Content-Type': 'application/msgpack'
         });
         this.recorder.recordUpload(SYS_BUCKETS.PLUGINS, storageKey);
@@ -154,7 +154,7 @@ export default class ArtifactProcessor{
         };
 
         const buffer = encodeMsgpack(payload);
-        await putObject(storageKey, SYS_BUCKETS.PLUGINS, buffer, {
+        await storage.put(SYS_BUCKETS.PLUGINS, storageKey, buffer, {
             'Content-Type': 'application/msgpack'
         });
         this.recorder.recordUpload(SYS_BUCKETS.PLUGINS, storageKey);

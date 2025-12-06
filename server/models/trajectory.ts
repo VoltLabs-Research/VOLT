@@ -29,7 +29,7 @@ import path from 'path';
 import type { ITrajectory, ITimestepInfo } from '@types/models/trajectory';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
-import { deleteByPrefix } from '@/utilities/buckets';
+import storage from '@/services/storage';
 import { SYS_BUCKETS } from '@/config/minio';
 import DumpStorage from '@/services/dump-storage';
 import logger from '@/logger';
@@ -136,7 +136,7 @@ TrajectorySchema.pre('findOneAndDelete', async function (next) {
         const buckets = Object.values(SYS_BUCKETS).filter(b => b !== SYS_BUCKETS.DUMPS);
         for (const bucket of buckets) {
             try {
-                await deleteByPrefix(bucket, objectName);
+                await storage.deleteByPrefix(bucket, objectName);
             } catch (err) {
                 logger.error(err)
             }

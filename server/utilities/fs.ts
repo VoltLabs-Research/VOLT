@@ -20,11 +20,9 @@
  * SOFTWARE.
  */
 
-import { createReadStream, createWriteStream } from 'fs';
+import { createReadStream } from 'fs';
 import { access, stat, copyFile as fsCopyFile, rm, readdir, constants } from 'fs/promises';
 import { createInterface } from 'readline';
-import { once } from 'events';
-import { AtomsGroupedByType } from '@/types/utilities/export/atoms';
 import { join } from 'path';
 import logger from '@/logger';
 

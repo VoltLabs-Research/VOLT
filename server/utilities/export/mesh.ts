@@ -24,7 +24,7 @@ import { Mesh, DefectMeshExportOptions, ProcessedMesh } from '@/types/utilities/
 import { assembleGLBToBuffer } from '@/utilities/export/utils';
 import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
 import taubinSmoothing from '@/utilities/export/taubin-smoothing';
-import { putObject } from '@/utilities/buckets';
+import storage from '@/services/storage';
 import { SYS_BUCKETS } from '@/config/minio';
 import logger from '@/logger';
 
@@ -92,7 +92,9 @@ class MeshExporter{
         options: DefectMeshExportOptions = {}
     ): Promise<void>{
         const buffer = this.toGLBBuffer(mesh, options);
-        await putObject(minioObjectName, SYS_BUCKETS.MODELS, buffer, { 'Content-Type': 'model/gltf-binary' });
+        await storage.put(SYS_BUCKETS.MODELS, minioObjectName, buffer, {
+            'Content-Type': 'model/gltf-binary'
+        });
     }
 
     private processMeshGeometry(mesh: Mesh, options: Required<DefectMeshExportOptions>): ProcessedMesh{

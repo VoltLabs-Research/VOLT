@@ -28,8 +28,8 @@ import { calculateDislocationType } from '@/utilities/dislocation-utils';
 import { assembleGLBToBuffer } from '@/utilities/export/utils';
 import { buildPrimitiveGLB } from '@/utilities/export/build-primitive';
 import { computeBoundsFromPoints } from '@/utilities/export/bounds';
-import { putObject, getObject } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
+import storage from '@/services/storage';
 import logger from '@/logger';
 
 class DislocationExporter {
@@ -287,7 +287,7 @@ class DislocationExporter {
             const key = `${trajectoryId}/${analysisConfigId}/${timestep}.json`;
 
             logger.info(`[DislocationExporter] Rebuilding GLB from MinIO object: ${key}`);
-            const storageObject = await getObject(key, SYS_BUCKETS.MODELS);
+            const storageObject = await storage.getBuffer(SYS_BUCKETS.MODELS, key);
             if (!storageObject) {
                 throw new Error(`No dislocation object found in MinIO for key ${key}`);
             }
@@ -316,7 +316,9 @@ class DislocationExporter {
 
             // Upload to MinIO instead of writing to filesystem
             const buffer = this.toGLBBuffer(dislocationData, options);
-            await putObject(minioKey, SYS_BUCKETS.MODELS, buffer, { 'Content-Type': 'model/gltf-binary' });
+            await storage.put(SYS_BUCKETS.MODELS, minioKey, buffer, {
+                'Content-Type': 'model/gltf-binary'
+            });
 
             logger.info(`[DislocationExporter] GLB successfully rebuilt and uploaded to MinIO: ${minioKey}`);
             logger.info(`[DislocationExporter] Statistics: ${processedGeometry.triangleCount} triangles, ${processedGeometry.vertexCount} vertices`);
@@ -397,7 +399,9 @@ class DislocationExporter {
         options: DislocationExportOptions = {}
     ): Promise<void> {
         const buffer = this.toGLBBuffer(dislocationData, options);
-        await putObject(minioObjectName, SYS_BUCKETS.MODELS, buffer, { 'Content-Type': 'model/gltf-binary' });
+        await storage.put(SYS_BUCKETS.MODELS, minioObjectName, buffer, {
+            'Content-Type': 'model/gltf-binary'
+        });
     }
 };
 

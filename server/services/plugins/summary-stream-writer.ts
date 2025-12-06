@@ -1,9 +1,9 @@
 import { SYS_BUCKETS } from '@/config/minio';
 import { encodeMsgpack } from '@/utilities/msgpack/msgpack';
 import { slugify } from '@/utilities/runtime/runtime';
-import { putObject } from '@/utilities/buckets';
 import { unlink } from 'node:fs/promises';
 import { WriteStream, createReadStream, createWriteStream } from 'node:fs';
+import storage from '@/services/storage';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import logger from '@/logger';
@@ -74,7 +74,7 @@ export default class SummaryStreamWriter {
         ].join('/');
 
         const readStream = createReadStream(this.tmpPath);
-        await putObject(storageKey, SYS_BUCKETS.PLUGINS, readStream, {
+        await storage.put(SYS_BUCKETS.PLUGINS, storageKey, readStream, {
             'Content-Type': 'application/msgpack'
         });
 

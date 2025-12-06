@@ -21,10 +21,10 @@
 **/
 
 import { Request, Response, NextFunction } from 'express';
-import { Chat, Message } from '@/models/index';
+import { Message } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import storage from '@/services/storage';
 import { catchAsync } from '@/utilities/runtime/runtime';
-import { getObject } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
 import { getMinIOObjectName } from '@/middlewares/file-upload';
 import logger from '@/logger';
@@ -48,8 +48,7 @@ export const getFileBase64 = catchAsync(async (req: Request, res: Response, next
     try {
         const objectName = getMinIOObjectName(message.metadata.filePath);
 
-        // Get file from MinIO
-        const fileBuffer = await getObject(objectName, SYS_BUCKETS.PLUGINS);
+        const fileBuffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, objectName);
         const base64 = fileBuffer.toString('base64');
         const mimeType = message.metadata.fileType || 'application/octet-stream';
         const dataUrl = `data:${mimeType};base64,${base64}`;

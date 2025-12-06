@@ -22,12 +22,12 @@
 
 import multer from 'multer';
 import path from 'path';
+import storage from '@/services/storage';
 import { v4 as uuidv4 } from 'uuid';
-import { putObject } from '@/utilities/buckets';
 import { SYS_BUCKETS } from '@/config/minio';
 
 // Use memory storage - files will be uploaded directly to MinIO
-const storage = multer.memoryStorage();
+const memStorage = multer.memoryStorage();
 
 // File filter for allowed types
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
@@ -65,7 +65,7 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
 
 // Configure multer
 export const uploadFile = multer({
-    storage,
+    storage: memStorage,
     fileFilter,
     limits: {
         fileSize: 50 * 1024 * 1024, // 50MB limit
@@ -87,7 +87,7 @@ export const uploadToMinIO = async (buffer: Buffer, originalName: string, mimety
     const uniqueName = `${uuidv4()}-${Date.now()}${path.extname(originalName)}`;
     const objectName = `chat-files/${uniqueName}`;
 
-    await putObject(objectName, SYS_BUCKETS.PLUGINS, buffer, {
+    await storage.put(SYS_BUCKETS.PLUGINS, objectName, buffer, {
         'Content-Type': mimetype
     });
 

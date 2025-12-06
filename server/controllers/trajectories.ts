@@ -23,10 +23,9 @@
 import { NextFunction, Request, Response } from 'express';
 import { join } from 'path';
 import { rm } from 'fs/promises';
-import { isValidObjectId } from 'mongoose';
+import { isValidObjectId, plugin } from 'mongoose';
 import { Trajectory, Team } from '@models/index';
-import { listByPrefix, statObject } from '@/utilities/buckets';
-import { getTimestepPreview, sendImage } from '@/utilities/raster';
+import { getTimestepPreview, sendImage } from '@/utilities/export/raster';
 import { SYS_BUCKETS } from '@/config/minio';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { getMetricsByTeamId } from '@/utilities/metrics/team';
@@ -37,6 +36,7 @@ import HandlerFactory from '@/controllers/handler-factory';
 import DumpStorage from '@/services/dump-storage';
 import TrajectoryParserFactory from '@/parsers/factory';
 import archiver from 'archiver';
+import storage from '@/services/storage';
 import logger from '@/logger';
 import * as os from 'node:os';
 
@@ -97,9 +97,8 @@ export const getMetrics = catchAsync(async (req: Request, res: Response) => {
     let vfsTotalSize = rootEntries.reduce((acc, entry) => acc + (entry.size || 0), 0);
 
     let pluginsSize = 0;
-    const pluginKeys = await listByPrefix(`plugins/trajectory-${trajectoryId}/`, SYS_BUCKETS.PLUGINS);
-    for(const key of pluginKeys){
-        const stat = await statObject(key, SYS_BUCKETS.PLUGINS);
+    for await(const key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, `plugins/trajectory-${trajectoryId}/`)){
+        const stat = await storage.getStat(SYS_BUCKETS.PLUGINS, key);
         pluginsSize += stat.size;
     }
 
