@@ -44,13 +44,6 @@ router.get(
 );
 
 router.get(
-    '/:id/glb/',
-    authMiddleware.optionalAuth,
-    trajectoryMiddleware.checkTeamMembershipForTrajectory,
-    controller.getRasterizedFrames
-);
-
-router.get(
     '/:id/images-archive',
     authMiddleware.optionalAuth,
     trajectoryMiddleware.checkTeamMembershipForTrajectory,

@@ -48,7 +48,6 @@
     "dockerode": "^4.0.9",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
-    "gl": "^8.1.6",
     "gl-matrix": "^3.4.4",
     "helmet": "^8.1.0",
     "identicon.js": "^2.3.3",
