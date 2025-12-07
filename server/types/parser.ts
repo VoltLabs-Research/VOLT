@@ -9,6 +9,7 @@ export interface FrameMetadata{
         zlo: number;
         zhi: number;
     };
+    headers: string[];
 };
 
 export interface ParseResult{

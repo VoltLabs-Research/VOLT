@@ -326,6 +326,11 @@ modifiers:
         exposure:
             atomic-strain:
                 results: atomic_strain.msgpack
+                perAtomProperties:
+                    - shear_strain
+                    - volumetric_strain
+                    - strain_tensor
+                    - deformation_gradient
                 iterable: atomic_strain
                 displayName: Atomic Strain Analysis
                 icon: PiAtomLight

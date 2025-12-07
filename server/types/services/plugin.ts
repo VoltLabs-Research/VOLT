@@ -38,6 +38,7 @@ export interface Exposure {
     icon?: string;
     canvas?: boolean;
     raster?: boolean;
+    perAtomProperties?: string[];
     export: ExposureExportConfig;
 };
 

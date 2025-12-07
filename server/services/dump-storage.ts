@@ -160,7 +160,7 @@ export default class DumpStorage{
             await fs.mkdir(cacheDir, { recursive: true });
 
             const startTime = Date.now();
-            const remoteStream = await storage.getBuffer(SYS_BUCKETS.DUMPS, objectName);
+            const remoteStream = await storage.getStream(SYS_BUCKETS.DUMPS, objectName);
             const gunzip = zlib.createGunzip();
             const fileWriter = fsNative.createWriteStream(cachePath);
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { PiEngine } from 'react-icons/pi';
 import { CiImageOn } from 'react-icons/ci';
+import { IoColorPalette } from 'react-icons/io5';
 import { useNavigate } from 'react-router';
 import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
 import useTrajectoryStore from '@/stores/trajectories';
@@ -62,6 +63,12 @@ const CanvasSidebarModifiers = () => {
             pluginModifierId: mod.modifierId,
             isPlugin: true
         })),
+        {
+            Icon: IoColorPalette,
+            title: 'Color Coding',
+            modifierId: 'color-coding',
+            isPlugin: false
+        },
         {
             Icon: PiEngine,
             title: 'Render Settings',

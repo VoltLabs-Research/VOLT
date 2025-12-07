@@ -44,7 +44,7 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
         await plugin.evaluate(job.inputFile, job.modifierId, job.config);
 
         // TODO: This should be more robust; besides, there's an existing function for this.
-        const frameNumber = Number(path.basename(job.inputFile));
+        const frameNumber = parseInt(path.basename(job.inputFile), 10);
 
         const update = {
             $inc: { completedFrames: 1 },

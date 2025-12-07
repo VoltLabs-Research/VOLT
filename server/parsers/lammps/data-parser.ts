@@ -73,7 +73,7 @@ export default class LammpsDataParser extends BaseParser{
             throw new Error('InvalidLammpsDataFile');
         }
 
-        return { timestep: 0, natoms, boxBounds };
+        return { timestep: 0, natoms, boxBounds, headers: [] };
     }
 
     isAtomSection(line: string): boolean{
@@ -112,6 +112,10 @@ export default class LammpsDataParser extends BaseParser{
             currentTokenIdx++;
         }
         this.pushAtom(type, x, y, z);
+    }
+
+    getColumns(): string[]{
+        return [];
     }
 
     private detectAtomStyle(firstLine: string){

@@ -39,11 +39,9 @@ export default abstract class BaseParser{
      */
     abstract isAtomSection(line: string, lineIndex: number): boolean;
 
-    public async parse(filePath: string): Promise<ParseResult>{
-        // Read header to get metadata 
+    public async getHeaderLines(filePath: string): Promise<string[]>{
         const headerLines: string[] = [];
-        let metadata: FrameMetadata | null = null;
-
+        
         await readLargeFile(filePath, {
             maxLines: 1000,
             onLine: (line: string) => headerLines.push(line)
@@ -52,6 +50,14 @@ export default abstract class BaseParser{
         if(!this.canParse(headerLines)){
             throw new Error('FileFormatNotRecognizedByParser');
         }
+        
+        return headerLines;
+    }
+
+    public async parse(filePath: string): Promise<ParseResult>{
+        // Read header to get metadata 
+        const headerLines = await this.getHeaderLines(filePath);
+        let metadata: FrameMetadata | null = null;
 
         metadata = this.extractMetadata(headerLines);
         this.allocateBuffers(metadata.natoms);

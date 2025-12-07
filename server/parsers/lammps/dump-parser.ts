@@ -7,6 +7,7 @@ export default class LammpsDumpParser extends BaseParser{
     private idxX = -1;
     private idxY = -1;
     private idxZ = -1;
+    private headers: string[] = [];
 
     private maxColumnIndex = 0;
 
@@ -69,17 +70,17 @@ export default class LammpsDumpParser extends BaseParser{
             throw new Error('InvalidLammpsDumpsFormat');
         }
 
-        return { timestep, natoms, boxBounds };
+        return { timestep, natoms, boxBounds, headers: this.headers };
     }
 
     private mapColumns(headerLine: string){
-        const cols = headerLine.replace(/^ITEM:\s*ATOMS\s*/, '')
+        this.headers = headerLine.replace(/^ITEM:\s*ATOMS\s*/, '')
             .trim()
             .split(/\s+/)
             .map(c => c.toLowerCase());
-        this.idxType = cols.findIndex((c) => c === 'type');
+        this.idxType = this.headers.findIndex((c) => c === 'type');
         
-        const findCoord = (suffixes: string[]) => cols.findIndex((c) => suffixes.includes(c));
+        const findCoord = (suffixes: string[]) => this.headers.findIndex((c) => suffixes.includes(c));
         this.idxX = findCoord(['x', 'xu', 'xs']);
         this.idxY = findCoord(['y', 'yu', 'ys']);
         this.idxZ = findCoord(['z', 'zu', 'zs']);

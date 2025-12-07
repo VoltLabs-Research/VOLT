@@ -34,6 +34,7 @@ import ChartViewer from '@/components/organisms/common/ChartViewer';
 import Draggable from '@/components/atoms/common/Draggable';
 import useModelStore from '@/stores/editor/model';
 import usePluginStore from '@/stores/plugins';
+import ColorCoding from '@/components/organisms/scene/ColorCoding';
 
 const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimestep, scene3DRef }) => {
     const showWidgets = useEditorUIStore((store) => store.showEditorWidgets);
@@ -63,7 +64,8 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
     }, [isChart]);
 
     const legacyModifiersMap = useMemo(() => ({
-        'slice-plane': SlicePlane
+        'slice-plane': SlicePlane,
+        'color-coding': ColorCoding
     }) as Record<string, React.ComponentType<any>>, []);
 
     const { legacyModifiers, pluginModifiers } = useMemo(() => {
