@@ -46,29 +46,21 @@ export default class ColorCodingController{
             return next(new RuntimeError('ColorCoding::MissingParams', 400));
         }
 
-        let min = Infinity;
-        let max = -Infinity;
+        let min = Infinity, max = -Infinity;
+        const propName = String(property);
 
         if(type === 'modifier'){
             const modifierData = await getModifierAnalysis(trajectoryId, analysisId, String(exposureId), String(timestep));
             const atomsData = (modifierData as any).data || modifierData;
-            const values = getPropertyByAtoms(atomsData, String(property));
-            
+            const values = getPropertyByAtoms(atomsData, propName);
+
             if(values){
-                if(values instanceof Map){
-                    for(const val of values.values()){
-                        if(!isNaN(val) && isFinite(val)){
-                            if(val < min) min = val;
-                            if(val > max) max = val;
-                        }
-                    }
-                }else{
-                    for(let i = 0; i < values.length; i++){
-                        const val = values[i];
-                        if(!isNaN(val) && isFinite(val)){
-                            if(val < min) min = val;
-                            if(val > max) max = val;
-                        }
+                for(let i = 0; i < values.length; i++){
+                    const value = values[i];
+                    // value === value is NaN check 
+                    if(value === value && value < Infinity && value > -Infinity){
+                        if(value < min) min = value;
+                        if(value > max) max = value;
                     }
                 }
             }
@@ -77,47 +69,16 @@ export default class ColorCodingController{
             if(!dumpPath){
                 return next(new RuntimeError('ColorCoding::DumpNotFound', 404));
             }
-
             const parser = new LammpsDumpParser();
-            const headerLines = await parser.getHeaderLines(dumpPath);
-            const { headers } = parser.extractMetadata(headerLines);
-            const colIdx = headers.indexOf(String(property));
-
-            if(colIdx === -1){
-                return next(new RuntimeError('ColorCoding::PropertyNotFound', 404));
-            }
-
-            let inAtomsSection = false;
-            await readLargeFile(dumpPath, {
-                maxLines: 0,
-                onLine: (line) => {
-                    if(line.startsWith('ITEM: ATOMS')){
-                        inAtomsSection = true;
-                        return;
-                    }
-                    if(!inAtomsSection) return;
-                    if(line.startsWith('ITEM:')){
-                        inAtomsSection = false;
-                        return;
-                    }
-
-                    const parts = line.trim().split(/\s+/);
-                    const val = parseFloat(parts[colIdx]);
-                    if(!isNaN(val)){
-                        if(val < min) min = val;
-                        if(val > max) max = val;
-                    }
-                }
-            });
+            const stats = await parser.getStatsForProperty(dumpPath, propName);
+            min = stats.min;
+            max = stats.max;
         }
 
         if(min === Infinity) min = 0;
         if(max === -Infinity) max = 0;
-
-        res.status(200).json({
-            status: 'success',
-            data: { min, max }
-        });
+        
+        res.status(200).json({ status: 'success', data: { min, max } });
     });
 
     public create = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -141,18 +102,25 @@ export default class ColorCodingController{
         }
 
         const exporter = new AtomisticExporter();
-        let externalValues: Float32Array | Map<number, number> | undefined;
+        let externalValues: Float32Array | undefined;
 
         if(exposureId){
             const modifierData = await getModifierAnalysis(trajectoryId, analysisId, exposureId, String(timestep));
-            // Extract the 'data' array if it exists, otherwise use modifierData as is
             const atomsData = (modifierData as any).data || modifierData;
             externalValues = getPropertyByAtoms(atomsData, property);
         }
 
-        await exporter.exportColoredByProperty(dumpPath, objectName, property, 
-            Number(startValue), Number(endValue), gradient, {}, externalValues);    
-        
+        await exporter.exportColoredByProperty(
+            dumpPath,
+            objectName,
+            property,
+            Number(startValue),
+            Number(endValue),
+            gradient,
+            {},
+            externalValues
+        );
+
         res.status(200).json({ status: 'success' });
     });
 

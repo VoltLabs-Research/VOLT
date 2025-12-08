@@ -1,5 +1,6 @@
 import BaseParser from '@/parsers/base-parser';
 import { FrameMetadata } from '@/types/parser';
+import { readLargeFile } from '@/utilities/fs';
 
 export default class LammpsDumpParser extends BaseParser{
     // Column indices
@@ -73,6 +74,50 @@ export default class LammpsDumpParser extends BaseParser{
         }
 
         return { timestep, natoms, boxBounds, headers: this.headers };
+    }
+
+    // TODO: implement in base parser
+    public async getStatsForProperty(filePath: string, property: string): Promise<{ min: number; max: number }>{
+        const headerLines = await this.getHeaderLines(filePath);
+        this.extractMetadata(headerLines);
+        const propIdx = this.headers.findIndex((c) => c === property.toLowerCase());
+        if(propIdx === -1){
+            throw new Error(`Property ${property} not found in dump file headers.`);
+        }
+
+        let min = Infinity, max = -Infinity;
+        let inAtomsSection = false;
+
+        await readLargeFile(filePath, {
+            onLine: (line) => {
+                const trimmedLine = line.trim();
+                if(trimmedLine.startsWith('ITEM: ATOMS')){
+                    inAtomsSection = true;
+                    return;
+                }
+
+                if(trimmedLine.startsWith('ITEM:')){
+                    inAtomsSection = false;
+                    return;
+                }
+
+                if(inAtomsSection){
+                    this.scanner.load(line);
+                    this.scanner.jump(propIdx);
+                    const value = this.scanner.nextFloat();
+                    // TODO: duplicated validation
+                    if(value === value && value < Infinity && value > -Infinity){
+                        if(value < min) min = value;
+                        if(value > max) max = value;
+                    }
+                }
+            }
+        });
+
+        return { 
+            min: min === Infinity ? 0 : min, 
+            max: max === -Infinity ? 0 : max 
+        };
     }
 
     private mapColumns(headerLine: string){

@@ -256,54 +256,54 @@ export default class AtomisticExporter{
         endValue: number,
         gradientName: string,
         opts: CompressionOptions = {},
-        externalValues?: Float32Array | Map<number, number>
+        externalValues?: Float32Array
     ): Promise<void>{
         const parseOptions: any = {};
-        if(!externalValues){
-            parseOptions.properties = [property];
-        } else if (externalValues instanceof Map) {
+        // If there are external values, we need the dump IDs to cross-reference them.
+        if(externalValues){
             parseOptions.includeIds = true;
+        }else{
+            parseOptions.properties = [property];
         }
-
         const parsed = await TrajectoryParserFactory.parse(filePath, parseOptions);
-        
-        let propertyValues: Float32Array;
         const natoms = parsed.metadata.natoms;
 
-        if(externalValues){
-            if(externalValues instanceof Map){
-                if(!parsed.ids){
-                    throw new Error('Atom IDs required for external values mapping but not found in dump file');
-                }
+        const lut = GradientFactory.getGradientLUT(gradientName);
+        const lutMaxIndex = GradientFactory.LUT_SIZE - 1;
 
-                propertyValues = new Float32Array(natoms);
-                for(let i = 0; i < natoms; i++){
-                    const id = parsed.ids[i];
-                    propertyValues[i] = externalValues.get(id) ?? 0;
-                }
-            }else{
-                propertyValues = externalValues;
-            }
+        const range = endValue - startValue;
+        const invRange = range !== 0 ? 1 / range : 0;
+        const colors = new Float32Array(natoms * 3);
+
+        let getValue: (index: number) => number;
+        if(externalValues){
+            if(!parsed.ids) throw new Error('Atom IDs required for external values mapping');
+            const ids = parsed.ids;
+            const extVals = externalValues;
+            getValue = (i: number) => {
+                const atomId = ids[i];
+                return extVals[atomId];
+            };
         }else{
-            if(!parsed.properties || !parsed.properties[property]){
-                throw new Error(`Property ${property} not found in file`);
-            }
-            propertyValues = parsed.properties[property];
+            const propertyValues = parsed.properties![property];
+            getValue = (i: number) => {
+                return propertyValues[i];
+            };
         }
 
-        const colors = new Float32Array(natoms * 3);
-        const getGradientColor = GradientFactory.getGradientFunction(gradientName);
-        const range = endValue - startValue;
-        
         for(let i = 0; i < natoms; i++){
-            let value = propertyValues[i];
-            let t = (value - startValue) / (range || 1);
-            t = Math.max(0, Math.min(1, t));
-            const [r, g, b] = getGradientColor(t);
-            const idx = i * 3;
-            colors[idx] = r;
-            colors[idx + 1] = g;
-            colors[idx + 2] = b;
+            const value = getValue(i);
+            let t = (value - startValue) * invRange;
+            if(t < 0) t = 0;
+            else if(t > 1) t = 1;
+            else if(!(t === t)) t = 0;
+
+            const lutIndex = (t * lutMaxIndex) | 0;
+            const colorBase = lutIndex * 3;
+            const destBase = i * 3;
+            colors[destBase] = lut[colorBase];
+            colors[destBase + 1] = lut[colorBase + 1];
+            colors[destBase + 2] = lut[colorBase + 2];
         }
 
         const glbBuffer = await this.createGLB(

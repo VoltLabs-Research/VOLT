@@ -49,35 +49,43 @@ export const getModifierAnalysis = async (
     return data;
 };
 
-export const getPropertyByAtoms = (data: any, property: string): Float32Array | Map<number, number> | undefined => {
-    let values = undefined;
-
-    if(Array.isArray(data)){
-        values = new Map<number, number>();
-        for(let i = 0; i < data.length; i++){
-            const item = data[i];
-            let propValue: number;
-            
-            // Handle array properties (e.g., strain_tensor, deformation_gradient)
-            if(Array.isArray(item[property])){
-                // Calculate the magnitude/norm of the array
-                const arr = item[property] as number[];
-                propValue = Math.sqrt(arr.reduce((sum, val) => sum + val * val, 0));
-            }else{
-                propValue = Number(item[property]);
-                // Skip if not a valid number
-                if(isNaN(propValue)){
-                    continue;
-                }
-            }
-            
-            // TODO: item.id is the atom_id, should be a rule 
-            // for the development of new plugins
-            values.set(item.id, propValue);
-        }
-    }else if(data[property]){
-        values = data[property];
+export const getPropertyByAtoms = (data: any, property: string): Float32Array | undefined => {
+    if(data[property] && (data[property] instanceof Float32Array || Array.isArray(data[property]))){
+        return data[property] instanceof Float32Array
+            ? data[property]
+            : new Float32Array(data[property]);
     }
 
-    return values;
+    if(Array.isArray(data)){
+        let maxId = 0;
+        const len = data.length;
+        for(let i = 0; i < len; i++){
+            const id = data[i].id;
+            if(id > maxId) maxId = id;
+        }
+
+        const values = new Float32Array(maxId + 1);
+        const firstItem = data[0];
+        const isVector = Array.isArray(firstItem?.[property]);
+
+        for(let i = 0; i < len; i++){
+            const item = data[i];
+            const id = item.id;
+
+            if(isVector){
+                // calculate Euclidean magnitude
+                const arr = item[property] as number[];
+                let sum = 0;
+                for(let k = 0; k < arr.length; k++){
+                    sum += arr[k] * arr[k];
+                }
+                values[id] = Math.sqrt(sum);
+            }else{
+                values[id] = Number(item[property]);
+            }
+        }
+        return values;
+    }
+
+    return undefined;
 };

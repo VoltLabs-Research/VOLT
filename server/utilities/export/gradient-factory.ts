@@ -24,7 +24,31 @@ export type RGB = [number, number, number];
 export type GradientFunction = (t: number) => RGB;
 
 export default class GradientFactory{
-    public static getGradientFunction(name: string): GradientFunction{
+    private static lutCache: Map<string, Float32Array> = new Map();
+    public static readonly LUT_SIZE = 1024;
+
+    public static getGradientLUT(name: string): Float32Array{
+        if(this.lutCache.has(name)){
+            return this.lutCache.get(name)!;
+        }
+
+        const lut = new Float32Array(this.LUT_SIZE * 3);
+        const func = this.resolveFunction(name);
+
+        for(let i = 0; i < this.LUT_SIZE; i++){
+            const t = i / (this.LUT_SIZE - 1);
+            const [r, g, b] = func(t);
+            const idx = i * 3;
+            lut[idx] = r;
+            lut[idx + 1] = g;
+            lut[idx + 2] = b;
+        }
+
+        this.lutCache.set(name, lut);
+        return lut;
+    }
+
+    private static resolveFunction(name: string): GradientFunction{
         switch(name){
             case 'Viridis': return GradientFactory.viridis;
             case 'Plasma': return GradientFactory.plasma;
