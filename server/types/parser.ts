@@ -16,6 +16,13 @@ export interface ParseResult{
     metadata: FrameMetadata;
     positions: Float32Array;
     types: Uint16Array;
+    ids?: Uint32Array;
+    properties?: { [name: string]: Float32Array };
     min: [number, number, number];
     max: [number, number, number];
 };
+
+export interface ParseOptions {
+    includeIds?: boolean;
+    properties?: string[];
+}

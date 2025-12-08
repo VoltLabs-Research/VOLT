@@ -1,6 +1,6 @@
 import React from 'react';
 import Input from '@/components/atoms/form/Input';
-import Select from '@/components/atoms/form/Select';
+import Select, { type SelectOption } from '@/components/atoms/form/Select';
 import LiquidToggle from '@/components/atoms/form/LiquidToggle';
 import './FormField.css';
 
@@ -11,7 +11,7 @@ interface FormFieldProps {
     fieldValue: string | number | boolean;
     onFieldChange: (key: string, value: any) => void;
     inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
-    options?: string[];
+    options?: SelectOption[];
     isLoading?: boolean;
     renderInPortal?: boolean;
 }

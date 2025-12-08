@@ -9,7 +9,7 @@ interface UseFramePropertiesProps{
 
 const useFrameProperties = ({ analysisId, frame, trajectoryId }: UseFramePropertiesProps) => {
     const [isLoading, setIsLoading] = useState(true);
-    const [properties, setProperties] = useState([]);
+    const [properties, setProperties] = useState<{ base: string[], modifiers: Record<string, string[]> }>({ base: [], modifiers: {} });
 
     const getProps = async () => {
         setIsLoading(true);

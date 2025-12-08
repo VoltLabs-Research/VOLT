@@ -1,5 +1,5 @@
 import { readLargeFile } from '@/utilities/fs';
-import { ParseResult, FrameMetadata } from '@/types/parser';
+import { ParseResult, FrameMetadata, ParseOptions } from '@/types/parser';
 import { StringScanner } from '@/utilities/string-scanner';
 
 export default abstract class BaseParser{
@@ -8,7 +8,10 @@ export default abstract class BaseParser{
     // Mutable buffers
     protected positions: Float32Array | null = null;
     protected types: Uint16Array | null = null;
+    protected ids: Uint32Array | null = null;
+    protected propertyBuffers: { [name: string]: Float32Array } = {};
     protected atomCursor = 0;
+    protected parseOptions: ParseOptions = {};
 
     // Bounding Box state
     protected minX = Infinity;
@@ -54,7 +57,8 @@ export default abstract class BaseParser{
         return headerLines;
     }
 
-    public async parse(filePath: string): Promise<ParseResult>{
+    public async parse(filePath: string, options: ParseOptions = {}): Promise<ParseResult>{
+        this.parseOptions = options;
         // Read header to get metadata 
         const headerLines = await this.getHeaderLines(filePath);
         let metadata: FrameMetadata | null = null;
@@ -91,29 +95,63 @@ export default abstract class BaseParser{
             throw new Error('NoAtomsParsed');
         }
 
-        return {
+        const result: ParseResult = {
             metadata,
             positions: this.positions!,
             types: this.types!,
             min: [this.minX, this.minY, this.minZ],
             max: [this.maxX, this.maxY, this.maxZ]
         };
+
+        if (this.ids) {
+            result.ids = this.ids;
+        }
+
+        if (Object.keys(this.propertyBuffers).length > 0) {
+            result.properties = this.propertyBuffers;
+        }
+
+        return result;
     }
 
     protected allocateBuffers(natoms: number){
         // 1M atoms = ~12MB RAM for coords, ~2MB for types.
         this.positions = new Float32Array(natoms * 3);
         this.types = new Uint16Array(natoms);
+        
+        if (this.parseOptions.includeIds) {
+            this.ids = new Uint32Array(natoms);
+        }
+
+        if (this.parseOptions.properties) {
+            for (const prop of this.parseOptions.properties) {
+                this.propertyBuffers[prop] = new Float32Array(natoms);
+            }
+        }
+
         this.atomCursor = 0;
     }
 
-    protected pushAtom(type: number, x: number, y: number, z: number){
+    protected pushAtom(type: number, x: number, y: number, z: number, id?: number, props?: { [name: string]: number }){
         const idx = this.atomCursor;
         const pidx = idx * 3;
         this.types![idx] = type;
         this.positions![pidx] = x;
         this.positions![pidx + 1] = y;
         this.positions![pidx + 2] = z;
+
+        if (this.ids && id !== undefined) {
+            this.ids[idx] = id;
+        }
+
+        if (props) {
+            for (const [key, value] of Object.entries(props)) {
+                if (this.propertyBuffers[key]) {
+                    this.propertyBuffers[key][idx] = value;
+                }
+            }
+        }
+
         // Bounding box update
         if(x < this.minX) this.minX = x;
         if(x > this.maxX) this.maxX = x;

@@ -193,6 +193,13 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             return `/plugins/glb/${trajectory._id}/${analysisId}/${exposureId}/${timestep}`;
         }
 
+        if(activeScene.source === 'color-coding'){
+            const { property, startValue, endValue, gradient, analysisId, exposureId } = activeScene;
+            let url = `/color-coding/${trajectory._id}/${analysisId}/?property=${property}&startValue=${startValue}&endValue=${endValue}&gradient=${gradient}&timestep=${currentTimestep}`;
+            if(exposureId) url += `&exposureId=${exposureId}`;
+            return url;
+        }
+
         if (activeScene.source === 'default') {
             if (!activeModel.glbs) return null;
             return activeModel.glbs[activeScene.sceneType];

@@ -7,6 +7,8 @@ export default class LammpsDumpParser extends BaseParser{
     private idxX = -1;
     private idxY = -1;
     private idxZ = -1;
+    private idxId = -1;
+    private propertyIndices: { [name: string]: number } = {};
     private headers: string[] = [];
 
     private maxColumnIndex = 0;
@@ -85,11 +87,31 @@ export default class LammpsDumpParser extends BaseParser{
         this.idxY = findCoord(['y', 'yu', 'ys']);
         this.idxZ = findCoord(['z', 'zu', 'zs']);
 
+        if (this.parseOptions.includeIds) {
+            this.idxId = this.headers.findIndex((c) => c === 'id');
+        }
+
+        if (this.parseOptions.properties) {
+            for (const prop of this.parseOptions.properties) {
+                const idx = this.headers.findIndex((c) => c === prop.toLowerCase());
+                if (idx !== -1) {
+                    this.propertyIndices[prop] = idx;
+                }
+            }
+        }
+
         if(this.idxType < 0 || this.idxX < 0 || this.idxY < 0 || this.idxZ < 0){
             throw new Error('MissingRequiredColumnsInDumpFile');
         }
 
-        this.maxColumnIndex = Math.max(this.idxType, this.idxX, this.idxY, this.idxZ);
+        this.maxColumnIndex = Math.max(
+            this.idxType, 
+            this.idxX, 
+            this.idxY, 
+            this.idxZ, 
+            this.idxId,
+            ...Object.values(this.propertyIndices)
+        );
     }
 
     isAtomSection(line: string): boolean{
@@ -107,21 +129,51 @@ export default class LammpsDumpParser extends BaseParser{
         let currentTokenIdx = 0;
         let type = 0;
         let x = 0.0, y = 0.0, z = 0.0;
+        let id: number | undefined;
+        const props: { [name: string]: number } = {};
 
         while(currentTokenIdx <= this.maxColumnIndex){
+            let val: number | undefined;
+            let read = false;
+
             if(currentTokenIdx === this.idxType){
                 type = this.scanner.nextInt();
+                val = type;
+                read = true;
             }else if(currentTokenIdx === this.idxX){
                 x = this.scanner.nextFloat();
+                val = x;
+                read = true;
             }else if(currentTokenIdx === this.idxY){
                 y = this.scanner.nextFloat();
+                val = y;
+                read = true;
             }else if(currentTokenIdx === this.idxZ){
                 z = this.scanner.nextFloat();
-            }else{
+                val = z;
+                read = true;
+            }else if(currentTokenIdx === this.idxId){
+                id = this.scanner.nextInt();
+                val = id;
+                read = true;
+            }
+
+            for (const propName in this.propertyIndices) {
+                if (this.propertyIndices[propName] === currentTokenIdx) {
+                    if (!read) {
+                        val = this.scanner.nextFloat();
+                        read = true;
+                    }
+                    props[propName] = val!;
+                }
+            }
+
+            if (!read) {
                 this.scanner.jump(1);
             }
+            
             currentTokenIdx++;
         }
-        this.pushAtom(type, x, y, z);
+        this.pushAtom(type, x, y, z, id, props);
     }
 };

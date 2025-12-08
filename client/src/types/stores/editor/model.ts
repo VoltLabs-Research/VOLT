@@ -7,9 +7,30 @@ export interface TrajectoryGLBs{
     atoms_colored_by_type: string;
 }
 
-export type SceneObjectType = 
-    | { sceneType: string; source: 'default' }
-    | { sceneType: string; source: 'plugin'; analysisId: string; exposureId: string };
+export type DefaultScene = {
+    sceneType: string;
+    source: 'default';
+};
+
+export type PluginScene = {
+    sceneType: string;
+    source: 'plugin';
+    analysisId: string;
+    exposureId: string;
+};
+
+export type ColorCodingScene = {
+    sceneType: string;
+    source: 'color-coding';
+    analysisId: string;
+    exposureId: string;
+    property: string;
+    startValue: string;
+    endValue: string;
+    gradient: string;
+};
+
+export type SceneObjectType = DefaultScene | PluginScene | ColorCodingScene;
 
 export interface ModelData{
     modelBounds?: null,

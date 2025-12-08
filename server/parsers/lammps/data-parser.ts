@@ -2,6 +2,7 @@ import BaseParser from '@/parsers/base-parser';
 import { FrameMetadata } from '@/types/parser';
 
 export default class LammpsDataParser extends BaseParser{
+    private idxId = 0;
     private idxType = -1;
     private idxX = -1;
     private idxY = -1;
@@ -90,15 +91,17 @@ export default class LammpsDataParser extends BaseParser{
             this.detectAtomStyle(line);
         }
 
-        this.scanner.jump(1);
+        let id = 0;
         let type = 0;
         let x = 0.0, y = 0.0, z = 0.0;
 
-        let currentTokenIdx = 1;
-        const maxIdx = Math.max(this.idxType, this.idxX, this.idxY, this.idxZ);
+        let currentTokenIdx = 0;
+        const maxIdx = Math.max(this.idxId, this.idxType, this.idxX, this.idxY, this.idxZ);
 
         while(currentTokenIdx <= maxIdx){
-            if(currentTokenIdx === this.idxType){
+            if(currentTokenIdx === this.idxId){
+                id = this.scanner.nextInt();
+            }else if(currentTokenIdx === this.idxType){
                 type = this.scanner.nextInt();
             }else if(currentTokenIdx === this.idxX){
                 x = this.scanner.nextFloat();
@@ -111,7 +114,7 @@ export default class LammpsDataParser extends BaseParser{
             }
             currentTokenIdx++;
         }
-        this.pushAtom(type, x, y, z);
+        this.pushAtom(type, x, y, z, id);
     }
 
     getColumns(): string[]{
@@ -121,6 +124,7 @@ export default class LammpsDataParser extends BaseParser{
     private detectAtomStyle(firstLine: string){
         const tokens = firstLine.trim().split(/\s+/);
         const colCount = tokens.length;
+        this.idxId = 0;
         this.idxType = 1;
         this.idxX = 2;
         this.idxY = 3;

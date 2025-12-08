@@ -267,15 +267,6 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	 * - AtomisticExporter/DislocationExporter -> Trajectory Scene (trajectory, atoms_colored_by_type, dislocations)
 	 */
 	const { isDefectScene, isTrajectoryScene } = useMemo(() => {
-		// Para escenas default, usar el comportamiento antiguo basado en nombre
-		if (activeScene.source === 'default') {
-			const sceneType = activeScene.sceneType;
-			return {
-				isDefectScene: ['defect_mesh', 'interface_mesh'].includes(sceneType),
-				isTrajectoryScene: ['trajectory', 'atoms_colored_by_type', 'dislocations'].includes(sceneType)
-			};
-		}
-
 		// Para escenas de plugin, usar el exporter
 		if (activeScene.source === 'plugin') {
 			const { exposureId } = activeScene;

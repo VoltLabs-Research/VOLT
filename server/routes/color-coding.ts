@@ -13,4 +13,13 @@ router.get(
     controller.getProperties
 );
 
+router.get(
+    '/stats/:trajectoryId/:analysisId',
+    controller.getStats
+);
+
+router.route('/:trajectoryId/:analysisId/')
+    .get(controller.get)
+    .post(controller.create);
+
 export default router;

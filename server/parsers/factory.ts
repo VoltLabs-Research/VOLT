@@ -2,12 +2,13 @@ import BaseParser from '@/parsers/base-parser';
 import LammpsDumpParser from '@/parsers/lammps/dump-parser';
 import LammpsDataParser from '@/parsers/lammps/data-parser';
 import { readLargeFile } from '@/utilities/fs';
+import { ParseOptions } from '@/types/parser';
 
 export default class TrajectoryParserFactory{
     /**
      * Automatically detects the file format and returns a fully populated ParseResult.
      */
-    public static async parse(filePath: string){
+    public static async parse(filePath: string, options?: ParseOptions){
         // Peek at header
         const headerLines: string[] = [];
         await readLargeFile(filePath, {
@@ -25,6 +26,6 @@ export default class TrajectoryParserFactory{
             throw new Error('UnsupportedTrajectoryFormat');
         }
         
-        return parser.parse(filePath);
+        return parser.parse(filePath, options);
     }
 };

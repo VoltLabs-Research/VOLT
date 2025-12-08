@@ -189,6 +189,203 @@ export default class AtomisticExporter{
         }
     }
 
+    private async createGLB(
+        positions: Float32Array,
+        min: [number, number, number],
+        max: [number, number, number],
+        opts: CompressionOptions,
+        colors?: Float32Array
+    ): Promise<Uint8Array> {
+        const extent = {
+            x: Math.max(1e-20, max[0] - min[0]),
+            y: Math.max(1e-20, max[1] - min[1]),
+            z: Math.max(1e-20, max[2] - min[2])
+        };
+
+        const doc = new Document();
+        const buffer = doc.createBuffer('bin');
+
+        const posAcc = doc
+            .createAccessor('POSITION')
+            .setArray(positions)
+            .setType(Accessor.Type.VEC3)
+            .setBuffer(buffer);
+
+        const prim = doc
+            .createPrimitive()
+            .setAttribute('POSITION', posAcc)
+            .setMode(0);
+
+        if(colors){
+            const colAcc = doc
+                .createAccessor('COLOR_0')
+                .setArray(colors)
+                .setType(Accessor.Type.VEC3)
+                .setBuffer(buffer);
+            prim.setAttribute('COLOR_0', colAcc);
+        }
+
+        const mesh = doc.createMesh('AtomsByProperty').addPrimitive(prim);
+        const node = doc.createNode('Frame').setMesh(mesh);
+        doc.createScene('Scene').addChild(node);
+
+        doc.createMaterial('PointMat');
+
+        await applyQuantizeAndMeshopt(
+            doc,
+            {
+                quantization: {
+                    positionBits: opts.quantization?.positionBits ?? 15,
+                    colorBits: opts.quantization?.colorBits ?? 8
+                },
+                epsilon: opts.epsilon,
+                requireExtensions: true
+            },
+            extent
+        );
+
+        return writeGLBToBuffer(doc);
+    }
+
+    public async exportColoredByProperty(
+        filePath: string,
+        minioObjectName: string,
+        property: string,
+        startValue: number,
+        endValue: number,
+        gradientName: string,
+        opts: CompressionOptions = {},
+        externalValues?: Float32Array | Map<number, number>
+    ): Promise<void>{
+        const parseOptions: any = {};
+        if(!externalValues){
+            parseOptions.properties = [property];
+        } else if (externalValues instanceof Map) {
+            parseOptions.includeIds = true;
+        }
+
+        const parsed = await TrajectoryParserFactory.parse(filePath, parseOptions);
+        
+        let propertyValues: Float32Array;
+        const natoms = parsed.metadata.natoms;
+
+        if(externalValues){
+            if(externalValues instanceof Map){
+                if(!parsed.ids){
+                    throw new Error('Atom IDs required for external values mapping but not found in dump file');
+                }
+
+                propertyValues = new Float32Array(natoms);
+                for(let i = 0; i < natoms; i++){
+                    const id = parsed.ids[i];
+                    propertyValues[i] = externalValues.get(id) ?? 0;
+                }
+            }else{
+                propertyValues = externalValues;
+            }
+        }else{
+            if(!parsed.properties || !parsed.properties[property]){
+                throw new Error(`Property ${property} not found in file`);
+            }
+            propertyValues = parsed.properties[property];
+        }
+
+        const colors = new Float32Array(natoms * 3);
+        const getGradientColor = this.getGradientFunction(gradientName);
+        const range = endValue - startValue;
+        
+        for(let i = 0; i < natoms; i++){
+            let value = propertyValues[i];
+            let t = (value - startValue) / (range || 1);
+            t = Math.max(0, Math.min(1, t));
+            const [r, g, b] = getGradientColor(t);
+            const idx = i * 3;
+            colors[idx] = r;
+            colors[idx + 1] = g;
+            colors[idx + 2] = b;
+        }
+
+        const glbBuffer = await this.createGLB(
+            parsed.positions,
+            parsed.min,
+            parsed.max,
+            opts,
+            colors
+        );
+
+        await storage.put(SYS_BUCKETS.MODELS, minioObjectName, Buffer.from(glbBuffer), {
+            'Content-Type': 'model/gltf-binary'
+        });
+    }
+
+    // TODO: separate this responsability from this class
+    private getGradientFunction(name: string): (t: number) => [number, number, number]{
+        switch(name){
+            case 'Viridis': return this.viridis;
+            case 'Plasma': return this.plasma;
+            case 'Blue-Red': return this.blueRed;
+            case 'Grayscale': return this.grayScale;
+            default: return this.viridis;
+        }
+    }
+
+    private viridis(t: number): [number, number, number]{
+        const c0 = [0.267004, 0.004874, 0.329415];
+        const c1 = [0.127568, 0.566949, 0.550556];
+        const c2 = [0.993248, 0.906157, 0.143936];
+
+        if(t < 0.5){
+            const localT = t * 2;
+            return [
+                c0[0] + (c1[0] - c0[0]) * localT,
+                c0[1] + (c1[1] - c0[1]) * localT,
+                c0[2] + (c1[2] - c0[2]) * localT
+            ];
+        }
+
+        const localT = (t - 0.5) * 2;
+        return [
+            c1[0] + (c2[0] - c1[0]) * localT,
+            c1[1] + (c2[1] - c1[1]) * localT,
+            c1[2] + (c2[2] - c1[2]) * localT
+        ];
+    }
+
+    private plasma(t: number): [number, number, number]{
+        const c0 = [0.050383, 0.029803, 0.527975];
+        const c1 = [0.798216, 0.280197, 0.469538];
+        const c2 = [0.940015, 0.975158, 0.131326];
+        if(t < 0.5){
+            const localT = t * 2;
+            return [
+                c0[0] + (c1[0] - c0[0]) * localT,
+                c0[1] + (c1[1] - c0[1]) * localT,
+                c0[2] + (c1[2] - c0[2]) * localT
+            ];
+        }
+
+        const localT = (t - 0.5) * 2;
+        return [
+            c1[0] + (c2[0] - c1[0]) * localT,
+            c1[1] + (c2[1] - c1[1]) * localT,
+            c1[2] + (c2[2] - c1[2]) * localT
+        ];
+    }
+
+    private blueRed(t: number): [number, number, number]{
+        // Blue -> White -> Red
+        if(t < 0.5){
+            const localT = t * 2;
+            return [localT, localT, 1];
+        }
+        const localT = (t - 0.5) * 2;
+        return [1, 1 - localT, 1 - localT];
+    }
+
+    private grayScale(t: number): [number, number, number]{
+        return [t, t, t];
+    }
+
     private static countingSortByType(idx: Uint32Array, types: Uint16Array): void{
         const n = idx.length;
         if(n <= 1) return;
