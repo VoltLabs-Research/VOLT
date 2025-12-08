@@ -28,6 +28,7 @@ import storage from '@/services/storage';
 import { SYS_BUCKETS } from '@/config/minio';
 import TrajectoryParserFactory from '@/parsers/factory';
 import { ParseResult } from '@/types/parser';
+import GradientFactory from './gradient-factory';
 
 /**
  * Options that control quantization and compression of the exported GLB.
@@ -291,7 +292,7 @@ export default class AtomisticExporter{
         }
 
         const colors = new Float32Array(natoms * 3);
-        const getGradientColor = this.getGradientFunction(gradientName);
+        const getGradientColor = GradientFactory.getGradientFunction(gradientName);
         const range = endValue - startValue;
         
         for(let i = 0; i < natoms; i++){
@@ -316,74 +317,6 @@ export default class AtomisticExporter{
         await storage.put(SYS_BUCKETS.MODELS, minioObjectName, Buffer.from(glbBuffer), {
             'Content-Type': 'model/gltf-binary'
         });
-    }
-
-    // TODO: separate this responsability from this class
-    private getGradientFunction(name: string): (t: number) => [number, number, number]{
-        switch(name){
-            case 'Viridis': return this.viridis;
-            case 'Plasma': return this.plasma;
-            case 'Blue-Red': return this.blueRed;
-            case 'Grayscale': return this.grayScale;
-            default: return this.viridis;
-        }
-    }
-
-    private viridis(t: number): [number, number, number]{
-        const c0 = [0.267004, 0.004874, 0.329415];
-        const c1 = [0.127568, 0.566949, 0.550556];
-        const c2 = [0.993248, 0.906157, 0.143936];
-
-        if(t < 0.5){
-            const localT = t * 2;
-            return [
-                c0[0] + (c1[0] - c0[0]) * localT,
-                c0[1] + (c1[1] - c0[1]) * localT,
-                c0[2] + (c1[2] - c0[2]) * localT
-            ];
-        }
-
-        const localT = (t - 0.5) * 2;
-        return [
-            c1[0] + (c2[0] - c1[0]) * localT,
-            c1[1] + (c2[1] - c1[1]) * localT,
-            c1[2] + (c2[2] - c1[2]) * localT
-        ];
-    }
-
-    private plasma(t: number): [number, number, number]{
-        const c0 = [0.050383, 0.029803, 0.527975];
-        const c1 = [0.798216, 0.280197, 0.469538];
-        const c2 = [0.940015, 0.975158, 0.131326];
-        if(t < 0.5){
-            const localT = t * 2;
-            return [
-                c0[0] + (c1[0] - c0[0]) * localT,
-                c0[1] + (c1[1] - c0[1]) * localT,
-                c0[2] + (c1[2] - c0[2]) * localT
-            ];
-        }
-
-        const localT = (t - 0.5) * 2;
-        return [
-            c1[0] + (c2[0] - c1[0]) * localT,
-            c1[1] + (c2[1] - c1[1]) * localT,
-            c1[2] + (c2[2] - c1[2]) * localT
-        ];
-    }
-
-    private blueRed(t: number): [number, number, number]{
-        // Blue -> White -> Red
-        if(t < 0.5){
-            const localT = t * 2;
-            return [localT, localT, 1];
-        }
-        const localT = (t - 0.5) * 2;
-        return [1, 1 - localT, 1 - localT];
-    }
-
-    private grayScale(t: number): [number, number, number]{
-        return [t, t, t];
     }
 
     private static countingSortByType(idx: Uint32Array, types: Uint16Array): void{
