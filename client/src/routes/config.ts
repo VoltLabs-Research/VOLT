@@ -36,6 +36,7 @@ import OAuthCallback from '@/pages/guest/OAuthCallback';
 import Containers from '@/pages/protected/Containers';
 import ContainerDetails from '@/pages/protected/ContainerDetails';
 import CreateContainer from '@/pages/protected/CreateContainer';
+import PluginBuilder from '@/pages/protected/PluginBuilder';
 
 export const routesConfig: RouteGroup = {
     public: [
@@ -92,6 +93,11 @@ export const routesConfig: RouteGroup = {
             path: '/dashboard/analysis-configs/list',
             component: AnalysisConfigsListing,
             requiresLayout: true,
+        },
+        {
+            path: '/dashboard/plugin/builder',
+            component: PluginBuilder,
+            requiresLayout: false
         },
         {
             path: '/dashboard/trajectory/:trajectoryId/plugin/:pluginId/listing/:listingKey',
