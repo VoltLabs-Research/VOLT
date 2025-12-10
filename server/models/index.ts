@@ -12,3 +12,4 @@ export { default as TeamInvitation } from '@/models/team-invitation';
 export { default as Trajectory } from '@/models/trajectory';
 export { default as Notification } from '@/models/notification';
 export { default as Container } from '@/models/container';
+export { default as Plugin } from '@/models/plugin';
