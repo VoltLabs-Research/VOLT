@@ -17,6 +17,11 @@ const ARGUMENT_TYPE_SELECT_OPTIONS = ARGUMENT_TYPE_OPTIONS.map(opt => ({
     title: opt.label
 }));
 
+const BOOLEAN_OPTIONS = [
+    { value: 'true', title: 'True' },
+    { value: 'false', title: 'False' }
+];
+
 const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const argumentsData = (node.data?.arguments || { arguments: [] }) as IArgumentsData;
@@ -27,6 +32,28 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
             i === index ? { ...arg, [field]: value } : arg
         );
         updateNodeData(node.id, { arguments: { arguments: updatedArgs } });
+    };
+
+    const updateArgumentOption = (argIndex: number, optionIndex: number, field: 'key' | 'label', value: string) => {
+        const arg = args[argIndex];
+        const options = arg.options || [];
+        const updatedOptions = options.map((opt, i) => 
+            i === optionIndex ? { ...opt, [field]: value } : opt
+        );
+        updateArgument(argIndex, 'options', updatedOptions);
+    };
+
+    const addOption = (argIndex: number) => {
+        const arg = args[argIndex];
+        const options = arg.options || [];
+        const newOption = { key: `option_${options.length + 1}`, label: `Option ${options.length + 1}` };
+        updateArgument(argIndex, 'options', [...options, newOption]);
+    };
+
+    const removeOption = (argIndex: number, optionIndex: number) => {
+        const arg = args[argIndex];
+        const options = arg.options || [];
+        updateArgument(argIndex, 'options', options.filter((_, i) => i !== optionIndex));
     };
 
     const addArgument = () => {
@@ -75,14 +102,45 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                         onFieldChange={(_, value) => updateArgument(index, 'type', value)}
                         options={ARGUMENT_TYPE_SELECT_OPTIONS}
                     />
+                    
+                    {/* Default Value - conditional based on type */}
+                    {arg.type === 'boolean' ? (
+                        <FormField
+                            label='Default Value'
+                            fieldKey='default'
+                            fieldType='select'
+                            fieldValue={String(arg.default ?? 'false')}
+                            onFieldChange={(_, value) => updateArgument(index, 'default', value === 'true')}
+                            options={BOOLEAN_OPTIONS}
+                        />
+                    ) : (
+                        <FormField
+                            label='Default Value'
+                            fieldKey='default'
+                            fieldType='input'
+                            fieldValue={arg.default ?? ''}
+                            onFieldChange={(_, value) => updateArgument(index, 'default', arg.type === 'number' ? Number(value) : value)}
+                            inputProps={{ 
+                                placeholder: 'Default value',
+                                type: arg.type === 'number' ? 'number' : 'text'
+                            }}
+                        />
+                    )}
+
+                    {/* Value - always show */}
                     <FormField
-                        label='Default Value'
-                        fieldKey='default'
+                        label='Value'
+                        fieldKey='value'
                         fieldType='input'
-                        fieldValue={arg.default ?? ''}
-                        onFieldChange={(_, value) => updateArgument(index, 'default', value)}
-                        inputProps={{ placeholder: 'Default value' }}
+                        fieldValue={arg.value ?? ''}
+                        onFieldChange={(_, value) => updateArgument(index, 'value', arg.type === 'number' ? Number(value) : value)}
+                        inputProps={{ 
+                            placeholder: 'Optional value',
+                            type: arg.type === 'number' ? 'number' : 'text'
+                        }}
                     />
+
+                    {/* Number-specific fields */}
                     {(arg.type === 'number') && (
                         <>
                             <FormField
@@ -111,6 +169,72 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                             />
                         </>
                     )}
+
+                    {/* Select-specific fields - options */}
+                    {arg.type === 'select' && (
+                        <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: 'var(--gray-50)', borderRadius: '6px' }}>
+                            <h5 style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--gray-700)', marginBottom: '0.5rem' }}>Options</h5>
+                            {(arg.options || []).map((option, optIndex) => (
+                                <div key={optIndex} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'flex-end' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <FormField
+                                            label='Key'
+                                            fieldKey='key'
+                                            fieldType='input'
+                                            fieldValue={option.key || ''}
+                                            onFieldChange={(_, value) => updateArgumentOption(index, optIndex, 'key', value)}
+                                            inputProps={{ placeholder: 'option_key' }}
+                                        />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <FormField
+                                            label='Label'
+                                            fieldKey='label'
+                                            fieldType='input'
+                                            fieldValue={option.label || ''}
+                                            onFieldChange={(_, value) => updateArgumentOption(index, optIndex, 'label', value)}
+                                            inputProps={{ placeholder: 'Option Label' }}
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => removeOption(index, optIndex)}
+                                        style={{
+                                            padding: '0.5rem',
+                                            background: 'var(--red-50)',
+                                            border: '1px solid var(--red-200)',
+                                            borderRadius: '4px',
+                                            color: 'var(--red-600)',
+                                            cursor: 'pointer',
+                                            marginBottom: '0.25rem'
+                                        }}
+                                    >
+                                        <TbTrash size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                onClick={() => addOption(index)}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.5rem',
+                                    background: 'var(--gray-100)',
+                                    border: '1px solid var(--gray-300)',
+                                    borderRadius: '4px',
+                                    color: 'var(--gray-700)',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.25rem'
+                                }}
+                            >
+                                <TbPlus size={12} />
+                                Add Option
+                            </button>
+                        </div>
+                    )}
+
                     <button 
                         className='node-editor-delete-btn' 
                         onClick={() => removeArgument(index)}
