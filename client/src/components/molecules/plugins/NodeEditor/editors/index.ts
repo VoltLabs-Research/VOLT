@@ -4,3 +4,6 @@ export { default as ContextEditor } from './ContextEditor';
 export { default as ForEachEditor } from './ForEachEditor';
 export { default as EntrypointEditor } from './EntrypointEditor';
 export { default as ExposureEditor } from './ExposureEditor';
+export { default as SchemaEditor } from './SchemaEditor';
+export { default as VisualizersEditor } from './VisualizersEditor';
+export { default as ExportEditor } from './ExportEditor';

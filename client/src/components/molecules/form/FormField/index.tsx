@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import Input from '@/components/atoms/form/Input';
 import Select, { type SelectOption } from '@/components/atoms/form/Select';
 import LiquidToggle from '@/components/atoms/form/LiquidToggle';
+import usePluginBuilderStore from '@/stores/plugin-builder';
+import { getAvailableExpressions } from '@/utilities/plugins/expression-utils';
+import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import './FormField.css';
 
 interface FormFieldProps {
@@ -14,7 +17,18 @@ interface FormFieldProps {
     options?: SelectOption[];
     isLoading?: boolean;
     renderInPortal?: boolean;
+    // Expression support (for plugin builder)
+    expressionEnabled?: boolean;
+    expressionNodeId?: string;
+    expressionMultiline?: boolean;
+    expressionRows?: number;
 }
+
+// Stable selectors outside component
+const selectNodes = (state: ReturnType<typeof usePluginBuilderStore.getState>) => state.nodes;
+const selectEdges = (state: ReturnType<typeof usePluginBuilderStore.getState>) => state.edges;
+const emptyArray: never[] = [];
+const selectEmpty = () => emptyArray;
 
 const FormField: React.FC<FormFieldProps> = ({
     label,
@@ -25,12 +39,30 @@ const FormField: React.FC<FormFieldProps> = ({
     inputProps,
     options,
     isLoading = false,
-    renderInPortal = false
+    renderInPortal = false,
+    expressionEnabled = false,
+    expressionNodeId,
+    expressionMultiline = false,
+    expressionRows = 3
 }) => {
+    // Only subscribe to store if expressions are enabled - use stable selectors
+    const nodes = usePluginBuilderStore(expressionEnabled ? selectNodes : selectEmpty);
+    const edges = usePluginBuilderStore(expressionEnabled ? selectEdges : selectEmpty);
 
     const handleChange = (value: string | number | boolean) => {
         onFieldChange(fieldKey, value);
     };
+
+    // Create expression autocomplete config if enabled
+    const expressionAutocomplete = useMemo(() => {
+        if (!expressionEnabled || !expressionNodeId) return undefined;
+        
+        return {
+            nodeId: expressionNodeId,
+            getExpressions: (nodeId: string) => getAvailableExpressions(nodeId, nodes, edges),
+            getNodeConfig: (nodeType: string) => NODE_CONFIGS[nodeType as keyof typeof NODE_CONFIGS] || null
+        };
+    }, [expressionEnabled, expressionNodeId, nodes, edges]);
 
     const renderInput = () => {
         switch (fieldType) {
@@ -72,6 +104,9 @@ const FormField: React.FC<FormFieldProps> = ({
                         value={String(fieldValue)}
                         onChange={handleChange}
                         className='labeled-input'
+                        multiline={expressionMultiline}
+                        rows={expressionRows}
+                        expressionAutocomplete={expressionAutocomplete}
                     />
                 );
         }

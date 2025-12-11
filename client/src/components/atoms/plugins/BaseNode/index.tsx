@@ -33,7 +33,7 @@ const BaseNode: React.FC<BaseNodeProps> = memo(({
                     <DynamicIcon iconName={config.icon} />
                 </span>
                 <div className='workflow-node-header-content'>
-                    <h3 className='workflow-node-header-title'>{data.name || config.label}</h3>
+                    <h3 className='workflow-node-header-title'>{(data.name as string) || config.label}</h3>
                     <p className='workflow-node-header-type'>{config.label}</p>
                 </div>
             </div>

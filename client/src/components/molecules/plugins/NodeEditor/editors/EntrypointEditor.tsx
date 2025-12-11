@@ -2,22 +2,17 @@ import React from 'react';
 import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
-import usePluginBuilderStore from '@/stores/plugin-builder';
+import { useNodeData } from '@/hooks/plugins/use-node-data';
 import type { IEntrypointData } from '@/types/plugin';
 
 interface EntrypointEditorProps {
     node: Node;
 }
 
-const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
-    const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
-    const entrypoint = (node.data?.entrypoint || { binary: '', arguments: '' }) as IEntrypointData;
+const DEFAULT_ENTRYPOINT: Partial<IEntrypointData> = { binary: '', arguments: '' };
 
-    const handleFieldChange = (key: string, value: any) => {
-        updateNodeData(node.id, {
-            entrypoint: { ...entrypoint, [key]: value }
-        });
-    };
+const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
+    const { data: entrypoint, updateField, nodeId } = useNodeData(node, 'entrypoint', DEFAULT_ENTRYPOINT);
 
     return (
         <>
@@ -27,16 +22,22 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
                     fieldKey='binary'
                     fieldType='input'
                     fieldValue={entrypoint.binary || ''}
-                    onFieldChange={handleFieldChange}
-                    inputProps={{ placeholder: 'python, ovito, ...' }}
+                    onFieldChange={updateField}
+                    inputProps={{ placeholder: 'analysis.py, processor, ...' }}
+                    expressionEnabled
+                    expressionNodeId={nodeId}
                 />
                 <FormField
-                    label='Arguments'
+                    label='Command Arguments'
                     fieldKey='arguments'
                     fieldType='input'
                     fieldValue={entrypoint.arguments || ''}
-                    onFieldChange={handleFieldChange}
-                    inputProps={{ placeholder: '--input ${context.file}' }}
+                    onFieldChange={updateField}
+                    inputProps={{ placeholder: '{{ forEach.currentValue }} --output {{ forEach.outputPath }}' }}
+                    expressionEnabled
+                    expressionNodeId={nodeId}
+                    expressionMultiline
+                    expressionRows={3}
                 />
             </CollapsibleSection>
 
@@ -46,7 +47,7 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
                     fieldKey='timeout'
                     fieldType='input'
                     fieldValue={entrypoint.timeout ?? ''}
-                    onFieldChange={(key, value) => handleFieldChange(key, Number(value) || undefined)}
+                    onFieldChange={(key, value) => updateField(key, Number(value) || undefined)}
                     inputProps={{ type: 'number', placeholder: '30000' }}
                 />
             </CollapsibleSection>

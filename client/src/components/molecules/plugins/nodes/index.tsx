@@ -6,6 +6,9 @@ import ContextNode from './ContextNode';
 import ForEachNode from './ForEachNode';
 import EntrypointNode from './EntrypointNode';
 import ExposureNode from './ExposureNode';
+import SchemaNode from './SchemaNode';
+import VisualizersNode from './VisualizersNode';
+import ExportNode from './ExportNode';
 
 export const nodeTypes: NodeTypes = {
     [NodeType.MODIFIER]: ModifierNode,
@@ -13,7 +16,10 @@ export const nodeTypes: NodeTypes = {
     [NodeType.CONTEXT]: ContextNode,
     [NodeType.FOREACH]: ForEachNode,
     [NodeType.ENTRYPOINT]: EntrypointNode,
-    [NodeType.EXPOSURE]: ExposureNode
+    [NodeType.EXPOSURE]: ExposureNode,
+    [NodeType.SCHEMA]: SchemaNode,
+    [NodeType.VISUALIZERS]: VisualizersNode,
+    [NodeType.EXPORT]: ExportNode
 };
 
 export {
@@ -22,5 +28,8 @@ export {
     ContextNode,
     ForEachNode,
     EntrypointNode,
-    ExposureNode
+    ExposureNode,
+    SchemaNode,
+    VisualizersNode,
+    ExportNode
 };

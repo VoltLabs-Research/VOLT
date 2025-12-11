@@ -2,22 +2,17 @@ import React from 'react';
 import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
-import usePluginBuilderStore from '@/stores/plugin-builder';
+import { useNodeData } from '@/hooks/plugins/use-node-data';
 import type { IModifierData } from '@/types/plugin';
 
 interface ModifierEditorProps {
     node: Node;
 }
 
-const ModifierEditor: React.FC<ModifierEditorProps> = ({ node }) => {
-    const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
-    const modifier = (node.data?.modifier || {}) as Partial<IModifierData>;
+const DEFAULT_MODIFIER: Partial<IModifierData> = {};
 
-    const handleFieldChange = (key: string, value: any) => {
-        updateNodeData(node.id, {
-            modifier: { ...modifier, [key]: value }
-        });
-    };
+const ModifierEditor: React.FC<ModifierEditorProps> = ({ node }) => {
+    const { data: modifier, updateField } = useNodeData(node, 'modifier', DEFAULT_MODIFIER);
 
     return (
         <>
@@ -27,7 +22,7 @@ const ModifierEditor: React.FC<ModifierEditorProps> = ({ node }) => {
                     fieldKey='name'
                     fieldType='input'
                     fieldValue={modifier.name || ''}
-                    onFieldChange={handleFieldChange}
+                    onFieldChange={updateField}
                     inputProps={{ placeholder: 'My Plugin' }}
                 />
                 <FormField
@@ -35,7 +30,7 @@ const ModifierEditor: React.FC<ModifierEditorProps> = ({ node }) => {
                     fieldKey='version'
                     fieldType='input'
                     fieldValue={modifier.version || ''}
-                    onFieldChange={handleFieldChange}
+                    onFieldChange={updateField}
                     inputProps={{ placeholder: '1.0.0' }}
                 />
                 <FormField
@@ -43,7 +38,7 @@ const ModifierEditor: React.FC<ModifierEditorProps> = ({ node }) => {
                     fieldKey='description'
                     fieldType='input'
                     fieldValue={modifier.description || ''}
-                    onFieldChange={handleFieldChange}
+                    onFieldChange={updateField}
                     inputProps={{ placeholder: 'Plugin description...' }}
                 />
             </CollapsibleSection>
@@ -54,7 +49,7 @@ const ModifierEditor: React.FC<ModifierEditorProps> = ({ node }) => {
                     fieldKey='author'
                     fieldType='input'
                     fieldValue={modifier.author || ''}
-                    onFieldChange={handleFieldChange}
+                    onFieldChange={updateField}
                     inputProps={{ placeholder: 'Your name' }}
                 />
                 <FormField
@@ -62,7 +57,7 @@ const ModifierEditor: React.FC<ModifierEditorProps> = ({ node }) => {
                     fieldKey='license'
                     fieldType='input'
                     fieldValue={modifier.license || ''}
-                    onFieldChange={handleFieldChange}
+                    onFieldChange={updateField}
                     inputProps={{ placeholder: 'MIT' }}
                 />
                 <FormField
@@ -70,7 +65,7 @@ const ModifierEditor: React.FC<ModifierEditorProps> = ({ node }) => {
                     fieldKey='homepage'
                     fieldType='input'
                     fieldValue={modifier.homepage || ''}
-                    onFieldChange={handleFieldChange}
+                    onFieldChange={updateField}
                     inputProps={{ placeholder: 'https://...' }}
                 />
             </CollapsibleSection>
@@ -81,7 +76,7 @@ const ModifierEditor: React.FC<ModifierEditorProps> = ({ node }) => {
                     fieldKey='icon'
                     fieldType='input'
                     fieldValue={modifier.icon || ''}
-                    onFieldChange={handleFieldChange}
+                    onFieldChange={updateField}
                     inputProps={{ placeholder: 'Icon name or URL' }}
                 />
             </CollapsibleSection>

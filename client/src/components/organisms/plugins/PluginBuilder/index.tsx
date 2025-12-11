@@ -9,6 +9,7 @@ import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import Sidebar from '@/components/organisms/common/Sidebar';
 import PaletteItem from '@/components/atoms/plugins/PaletetteItem';
 import NodeEditor from '@/components/molecules/plugins/NodeEditor';
+import EditableTag from '@/components/atoms/common/EditableTag';
 import { TbArrowLeft } from 'react-icons/tb';
 import './PluginBuilder.css';
 import '@xyflow/react/dist/style.css';
@@ -53,6 +54,28 @@ const PluginBuilder = () => {
     // Suscripción separada para el sidebar
     const selectedNode = usePluginBuilderStore((state) => state.selectedNode);
     const selectNode = usePluginBuilderStore((state) => state.selectNode);
+    const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
+
+    // Get the Modifier node to sync plugin name
+    const modifierNode = useMemo(() => {
+        return nodes.find(n => n.type === NodeType.MODIFIER);
+    }, [nodes]);
+
+    const pluginName = useMemo(() => {
+        const modifierData = modifierNode?.data as { modifier?: { name?: string } } | undefined;
+        return modifierData?.modifier?.name || 'New Plugin';
+    }, [modifierNode]);
+
+    const handlePluginNameChange = useCallback((newName: string) => {
+        if (modifierNode) {
+            // Update existing Modifier node
+            const currentData = modifierNode.data as { modifier?: Record<string, any> } | undefined;
+            updateNodeData(modifierNode.id, {
+                modifier: { ...currentData?.modifier, name: newName }
+            });
+        }
+        // If no Modifier node exists, the name will be applied when one is created
+    }, [modifierNode, updateNodeData]);
 
     const onDragOver = useCallback((event: React.DragEvent) => {
         event.preventDefault();
@@ -117,7 +140,13 @@ const PluginBuilder = () => {
                             <h3 className='plugin-sidebar-title'>{selectedNodeConfig?.label || 'Node'}</h3>
                         </div>
                     ) : (
-                        <h3 className='plugin-sidebar-title'>New Plugin</h3>
+                        <EditableTag
+                            as='h3'
+                            className='plugin-sidebar-title'
+                            onSave={handlePluginNameChange}
+                            title='Double-click to edit plugin name'
+                            children={pluginName}
+                        />
                     )}
                 </Sidebar.Header>
                 

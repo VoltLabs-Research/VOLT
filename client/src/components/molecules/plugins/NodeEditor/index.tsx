@@ -10,7 +10,10 @@ import {
     ContextEditor,
     ForEachEditor,
     EntrypointEditor,
-    ExposureEditor
+    ExposureEditor,
+    SchemaEditor,
+    VisualizersEditor,
+    ExportEditor
 } from './editors';
 import './NodeEditor.css';
 
@@ -24,7 +27,10 @@ const EDITOR_COMPONENTS: Partial<Record<NodeType, React.FC<{ node: Node }>>> = {
     [NodeType.CONTEXT]: ContextEditor,
     [NodeType.FOREACH]: ForEachEditor,
     [NodeType.ENTRYPOINT]: EntrypointEditor,
-    [NodeType.EXPOSURE]: ExposureEditor
+    [NodeType.EXPOSURE]: ExposureEditor,
+    [NodeType.SCHEMA]: SchemaEditor,
+    [NodeType.VISUALIZERS]: VisualizersEditor,
+    [NodeType.EXPORT]: ExportEditor
 };
 
 const NodeEditor: React.FC<NodeEditorProps> = ({ node }) => {

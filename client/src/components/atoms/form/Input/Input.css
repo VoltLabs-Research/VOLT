@@ -20,3 +20,204 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Expression autocomplete wrapper */
+.input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.input-wrapper .labeled-input {
+    width: 100%;
+}
+
+.input--has-expression {
+    border-color: var(--primary-300) !important;
+    background: linear-gradient(135deg, var(--primary-50) 0%, var(--input-bg) 100%) !important;
+}
+
+.expression-badge {
+    position: absolute;
+    top: 50%;
+    right: 0.5rem;
+    transform: translateY(-50%);
+    padding: 0.15rem 0.4rem;
+    background: var(--primary-500);
+    color: white;
+    font-size: 0.6rem;
+    font-weight: 600;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    pointer-events: none;
+}
+
+/* Dropdown Styles */
+.expression-dropdown {
+    min-width: 320px;
+    max-width: 450px;
+    max-height: 350px;
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--gray-700);
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.expression-dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: var(--gray-800);
+    border-bottom: 1px solid var(--gray-700);
+}
+
+.expression-dropdown-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--gray-300);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.expression-dropdown-hint {
+    font-size: 0.65rem;
+    color: var(--gray-500);
+}
+
+.expression-dropdown-content {
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.expression-group {
+    margin-bottom: 0.5rem;
+}
+
+.expression-group:last-child {
+    margin-bottom: 0;
+}
+
+.expression-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    background: var(--gray-800);
+    border-radius: 4px;
+    margin-bottom: 0.25rem;
+}
+
+.expression-group-icon {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+.expression-group-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gray-200);
+    flex: 1;
+}
+
+.expression-group-type {
+    font-size: 0.65rem;
+    color: var(--gray-500);
+    background: var(--gray-700);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+}
+
+.expression-item {
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+
+.expression-item:hover,
+.expression-item--selected {
+    background: var(--gray-800);
+}
+
+.expression-item--selected {
+    background: var(--primary-900);
+    outline: 1px solid var(--primary-600);
+}
+
+.expression-item-main {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.expression-item-path {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--primary-300);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.expression-item-type {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    font-weight: 500;
+    text-transform: lowercase;
+}
+
+.expression-item-type--string {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.expression-item-type--number {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+}
+
+.expression-item-type--boolean {
+    background: rgba(249, 115, 22, 0.2);
+    color: #f97316;
+}
+
+.expression-item-type--array {
+    background: rgba(168, 85, 247, 0.2);
+    color: #a855f7;
+}
+
+.expression-item-type--object {
+    background: rgba(236, 72, 153, 0.2);
+    color: #ec4899;
+}
+
+.expression-item-type--any {
+    background: rgba(156, 163, 175, 0.2);
+    color: #9ca3af;
+}
+
+.expression-item-description {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--gray-500);
+    margin-top: 0.2rem;
+}
+
+.expression-empty {
+    padding: 1rem;
+    text-align: center;
+}
+
+.expression-empty p {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--gray-300);
+    margin: 0 0 0.25rem 0;
+}
+
+.expression-empty span {
+    font-size: 0.7rem;
+    color: var(--gray-500);
+}

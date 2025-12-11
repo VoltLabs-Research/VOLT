@@ -23,9 +23,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './EditableTag.css';
 
-const EditableTag = React.memo(({ as: Tag, onSave, children, className, ...rest }) => {
+interface EditableTagProps {
+    as: keyof React.JSX.IntrinsicElements;
+    onSave: (newValue: string) => void;
+    children: React.ReactNode;
+    className?: string;
+    title?: string;
+    [key: string]: any;
+}
+
+const EditableTag: React.FC<EditableTagProps> = React.memo(({ as: Tag, onSave, children, className, ...rest }) => {
     const [isEditing, setIsEditing] = useState(false);
-    const elementRef = useRef(null);
+    const elementRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
         if (isEditing && elementRef.current) {
@@ -46,20 +55,20 @@ const EditableTag = React.memo(({ as: Tag, onSave, children, className, ...rest 
     const handleSave = () => {
         setIsEditing(false);
         const newText = elementRef.current?.innerText.trim();
-        if (newText && newText !== children) {
+        if (newText && newText !== String(children)) {
             onSave(newText);
         } else if (elementRef.current) {
-            elementRef.current.innerText = children;
+            elementRef.current.innerText = String(children);
         }
     };
 
-    const handleKeyDown = (event) => {
+    const handleKeyDown = (event: React.KeyboardEvent) => {
         if (event.key === 'Enter') {
             event.preventDefault();
             handleSave();
         } else if (event.key === 'Escape') {
             if (elementRef.current) {
-                elementRef.current.innerText = children;
+                elementRef.current.innerText = String(children);
             }
             setIsEditing(false);
         }
@@ -67,7 +76,7 @@ const EditableTag = React.memo(({ as: Tag, onSave, children, className, ...rest 
 
     return (
         <Tag
-            ref={elementRef}
+            ref={elementRef as React.RefObject<any>}
             className={`${className || ''} ${isEditing ? 'is-editing' : ''}`}
             contentEditable={isEditing}
             onDoubleClick={enableEditing}

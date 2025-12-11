@@ -2,22 +2,17 @@ import React from 'react';
 import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
-import usePluginBuilderStore from '@/stores/plugin-builder';
+import { useNodeData } from '@/hooks/plugins/use-node-data';
 import type { IForEachData } from '@/types/plugin';
 
 interface ForEachEditorProps {
     node: Node;
 }
 
-const ForEachEditor: React.FC<ForEachEditorProps> = ({ node }) => {
-    const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
-    const forEach: IForEachData = node.data?.forEach || { iterableSource: '' };
+const DEFAULT_FOREACH: IForEachData = { iterableSource: '' };
 
-    const handleFieldChange = (key: string, value: any) => {
-        updateNodeData(node.id, {
-            forEach: { ...forEach, [key]: value }
-        });
-    };
+const ForEachEditor: React.FC<ForEachEditorProps> = ({ node }) => {
+    const { data: forEach, updateField, nodeId } = useNodeData(node, 'forEach', DEFAULT_FOREACH);
 
     return (
         <CollapsibleSection title='Iteration' defaultExpanded>
@@ -26,8 +21,10 @@ const ForEachEditor: React.FC<ForEachEditorProps> = ({ node }) => {
                 fieldKey='iterableSource'
                 fieldType='input'
                 fieldValue={forEach.iterableSource || ''}
-                onFieldChange={handleFieldChange}
-                inputProps={{ placeholder: 'context.dumps' }}
+                onFieldChange={updateField}
+                inputProps={{ placeholder: '{{ Context.trajectory_dumps }}' }}
+                expressionEnabled
+                expressionNodeId={nodeId}
             />
         </CollapsibleSection>
     );

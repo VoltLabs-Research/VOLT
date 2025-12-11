@@ -2,48 +2,49 @@ import React from 'react';
 import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
-import usePluginBuilderStore from '@/stores/plugin-builder';
+import { useNodeData } from '@/hooks/plugins/use-node-data';
 import type { IExposureData } from '@/types/plugin';
 
 interface ExposureEditorProps {
     node: Node;
 }
 
-const ExposureEditor: React.FC<ExposureEditorProps> = ({ node }) => {
-    const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
-    const exposure = (node.data?.exposure || { name: '', results: '' }) as IExposureData;
+const DEFAULT_EXPOSURE: IExposureData = { name: '', results: '' };
 
-    const handleFieldChange = (key: string, value: any) => {
-        updateNodeData(node.id, {
-            exposure: { ...exposure, [key]: value }
-        });
-    };
+const ExposureEditor: React.FC<ExposureEditorProps> = ({ node }) => {
+    const { data: exposure, updateField, nodeId } = useNodeData(node, 'exposure', DEFAULT_EXPOSURE);
 
     return (
         <CollapsibleSection title='Results Exposure' defaultExpanded>
             <FormField
-                label='Name'
+                label='Exposure Name'
                 fieldKey='name'
                 fieldType='input'
                 fieldValue={exposure.name || ''}
-                onFieldChange={handleFieldChange}
-                inputProps={{ placeholder: 'results' }}
+                onFieldChange={updateField}
+                inputProps={{ placeholder: 'analysis_results' }}
+                expressionEnabled
+                expressionNodeId={nodeId}
             />
             <FormField
-                label='Results Path'
+                label='Results File Suffix'
                 fieldKey='results'
                 fieldType='input'
                 fieldValue={exposure.results || ''}
-                onFieldChange={handleFieldChange}
-                inputProps={{ placeholder: 'output.json' }}
+                onFieldChange={updateField}
+                inputProps={{ placeholder: 'results.msgpack' }}
+                expressionEnabled
+                expressionNodeId={nodeId}
             />
             <FormField
-                label='Iterable'
+                label='Iterable Path'
                 fieldKey='iterable'
                 fieldType='input'
                 fieldValue={exposure.iterable || ''}
-                onFieldChange={handleFieldChange}
-                inputProps={{ placeholder: 'Optional iterable key' }}
+                onFieldChange={updateField}
+                inputProps={{ placeholder: 'data.atoms' }}
+                expressionEnabled
+                expressionNodeId={nodeId}
             />
         </CollapsibleSection>
     );
