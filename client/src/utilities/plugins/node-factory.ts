@@ -1,5 +1,5 @@
 import { Exporter, ModifierContext, NodeType } from '@/types/plugin';
-import type { Node } from 'reactflow';
+import type { Node } from '@xyflow/react';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 
 let nodeIdCounter = 0;

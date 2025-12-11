@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import useSSHFileExplorer from '@/stores/ssh-file-explorer';
 import useSSHConnections, { type SSHConnection } from '@/stores/ssh-connections';
 import useTeamStore from '@/stores/team/team';
-import FileExplorerWindow from '@/components/templates/FileExplorerWindow';
+import FileExplorerWindow from '@/components/organisms/trajectory/FileExplorerWindow';
 import SSHConnectionModal from '@/components/molecules/ssh/SSHConnectionModal';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import {

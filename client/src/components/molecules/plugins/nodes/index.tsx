@@ -1,4 +1,4 @@
-import type { NodeTypes } from 'reactflow';
+import type { NodeTypes } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
 import ModifierNode from './ModifierNode';
 import ArgumentsNode from './ArgumentsNode';

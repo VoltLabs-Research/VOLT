@@ -1,5 +1,5 @@
 import React, { memo, type ReactNode } from 'react';
-import { Handle, Position, type NodeProps } from 'reactflow';
+import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
@@ -38,9 +38,11 @@ const BaseNode: React.FC<BaseNodeProps> = memo(({
                 </div>
             </div>
 
+            {/*
             <div className='workflow-node-body-container'>
                 {children}
             </div>
+            */}
 
             {config.outputs !== 0 && (
                 <Handle

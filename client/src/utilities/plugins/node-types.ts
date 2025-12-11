@@ -17,7 +17,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
     [NodeType.MODIFIER]: {
         type: NodeType.MODIFIER,
         label: 'Modifier',
-        icon: '',
+        icon: 'TbPlugConnected',
         description: 'Plugin metadata and configuration',
         inputs: 0,
         outputs: 1,
@@ -29,7 +29,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
     [NodeType.ARGUMENTS]: {
         type: NodeType.ARGUMENTS,
         label: 'Arguments',
-        icon: '',
+        icon: 'TbBrackets',
         description: 'CLI arguments definition',
         inputs: 1,
         outputs: 1,
@@ -41,7 +41,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
     [NodeType.CONTEXT]: {
         type: NodeType.CONTEXT,
         label: 'Context',
-        icon: '',
+        icon: 'TbDatabase',
         description: 'Data source selection',
         inputs: 1,
         outputs: 1,
@@ -53,7 +53,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
     [NodeType.FOREACH]: {
         type: NodeType.FOREACH,
         label: 'ForEach',
-        icon: '',
+        icon: 'TbRepeat',
         description: 'Iterate over data source',
         inputs: 1,
         outputs: 1,
@@ -65,7 +65,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
     [NodeType.ENTRYPOINT]: {
         type: NodeType.ENTRYPOINT,
         label: 'Entrypoint',
-        icon: '',
+        icon: 'TbPlayerPlay',
         description: 'Binary execution',
         inputs: 1,
         outputs: -1,
@@ -77,7 +77,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
     [NodeType.EXPOSURE]: {
         type: NodeType.EXPOSURE,
         label: 'Exposure',
-        icon: '',
+        icon: 'TbEye',
         description: 'Results exposure',
         inputs: 1,
         outputs: 1,
@@ -89,7 +89,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
     [NodeType.SCHEMA]: {
         type: NodeType.SCHEMA,
         label: 'Schema',
-        icon: '',
+        icon: 'TbSchema',
         description: 'Data structure definition',
         inputs: 1,
         outputs: 1,
@@ -101,7 +101,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
     [NodeType.VISUALIZERS]: {
         type: NodeType.VISUALIZERS,
         label: 'Visualizers',
-        icon: '',
+        icon: 'TbChartDots3',
         description: 'Visualization configuration',
         inputs: 1,
         outputs: 1,
@@ -113,7 +113,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
     [NodeType.EXPORT]: {
         type: NodeType.EXPORT,
         label: 'Export',
-        icon: '',
+        icon: 'TbFileExport',
         description: 'Export to GLB/other formats',
         inputs: 1,
         outputs: 0,

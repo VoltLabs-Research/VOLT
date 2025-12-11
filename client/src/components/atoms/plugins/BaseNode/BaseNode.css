@@ -1,0 +1,18 @@
+.workflow-node{
+    background-color: var(--color-bg);
+    border-radius: .5rem;
+    padding: 1rem 1.5rem;
+    border: 1px solid var(--color-border-soft);
+}
+
+.workflow-node-header-container{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.workflow-node-header-content{
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+}

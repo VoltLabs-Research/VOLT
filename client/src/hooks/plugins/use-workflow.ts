@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import type { Node, Edge, Connection, NodeChange, EdgeChange } from 'reactflow';
-import { useNodesState, useEdgesState, addEdge } from 'reactflow';
+import type { Node, Edge, Connection, NodeChange, EdgeChange } from '@xyflow/react';
+import { useNodesState, useEdgesState, addEdge } from '@xyflow/react';
 import { NodeType, type IWorkflow } from '@/types/plugin';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import { createNode } from '@/utilities/plugins/node-factory';
@@ -9,7 +9,7 @@ export interface UseWorkflowReturn{
     nodes: Node[];
     edges: Edge[];
     selectedNode: Node | null;
-    onEdgesChange(changes: NodeChange[]): void;
+    onNodesChange(changes: NodeChange[]): void;
     onEdgesChange(changes: EdgeChange[]): void;
     onConnect(connection: Connection): void;
     onNodeClick(event: React.MouseEvent, node: Node): void;
@@ -180,7 +180,6 @@ const useWorkflow = (initialWorkflow?: IWorkflow): UseWorkflowReturn => {
         edges,
         selectedNode,
         onNodesChange,
-        // @ts-ignore
         onEdgesChange,
         onConnect,
         onNodeClick,

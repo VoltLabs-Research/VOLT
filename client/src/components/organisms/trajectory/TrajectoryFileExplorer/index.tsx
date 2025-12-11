@@ -3,7 +3,7 @@ import useTrajectoryFS, { type FsEntry } from '@/stores/trajectory-vfs';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import Draggable from '@/components/atoms/common/Draggable';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
-import FileExplorerWindow from '@/components/templates/FileExplorerWindow';
+import FileExplorerWindow from '@/components/organisms/trajectory/FileExplorerWindow';
 import {
     LuLayoutList,
     LuFolder,

@@ -1,12 +1,12 @@
-import React from 'react';
+import { ReactFlowProvider } from '@xyflow/react';
+import PluginBuilder from '@/components/organisms/plugins/PluginBuilder';
 
-const PluginBuilder = () => {
-
+const PluginBuilderPage = () => {
     return (
-        <main className='plugin-builder-container'>
-            <h1>Hello world</h1>
-        </main>
+        <ReactFlowProvider>
+            <PluginBuilder />
+        </ReactFlowProvider>
     );
 };
 
-export default PluginBuilder;
+export default PluginBuilderPage;
