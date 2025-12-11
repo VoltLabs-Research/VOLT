@@ -24,6 +24,10 @@
     gap: 0.75rem;
 }
 
+.react-flow__attribution{
+    display: none !important;
+}
+
 .plugin-sidebar-back-btn {
     display: flex;
     align-items: center;

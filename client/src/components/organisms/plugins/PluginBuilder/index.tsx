@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Background, ReactFlow, type ReactFlowInstance } from '@xyflow/react';
+import { useShallow } from 'zustand/react/shallow';
 import { nodeTypes } from '@/components/molecules/plugins/nodes';
 import { NodeType } from '@/types/plugin';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
@@ -12,22 +13,46 @@ import { TbArrowLeft } from 'react-icons/tb';
 import './PluginBuilder.css';
 import '@xyflow/react/dist/style.css';
 
+const nodeTypesList = Object.values(NODE_CONFIGS);
+
+const PaletteContent: React.FC<{ onDragStart: (e: React.DragEvent, type: NodeType) => void }> = ({ onDragStart }) => (
+    <div className='plugin-builder-palette-list-container'>
+        {nodeTypesList.map((config) => (
+            <PaletteItem config={config} onDragStart={onDragStart} key={config.type} />
+        ))}
+    </div>
+);
+
+const OptionsContent = () => (
+    <div className="plugin-builder-options-placeholder">
+        <p>Select a node or add global plugin options here.</p>
+    </div>
+);
+
 const PluginBuilder = () => {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [activeTab, setActiveTab] = useState('Palette');
 
-    const nodes = usePluginBuilderStore((state) => state.nodes);
-    const edges = usePluginBuilderStore((state) => state.edges);
+    // Suscripciones optimizadas con useShallow para el canvas
+    const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onNodeClick, onPaneClick, addNode, validateConnection } = 
+        usePluginBuilderStore(
+            useShallow((state) => ({
+                nodes: state.nodes,
+                edges: state.edges,
+                onNodesChange: state.onNodesChange,
+                onEdgesChange: state.onEdgesChange,
+                onConnect: state.onConnect,
+                onNodeClick: state.onNodeClick,
+                onPaneClick: state.onPaneClick,
+                addNode: state.addNode,
+                validateConnection: state.validateConnection
+            }))
+        );
+
+    // Suscripción separada para el sidebar
     const selectedNode = usePluginBuilderStore((state) => state.selectedNode);
     const selectNode = usePluginBuilderStore((state) => state.selectNode);
-    const onNodesChange = usePluginBuilderStore((state) => state.onNodesChange);
-    const onEdgesChange = usePluginBuilderStore((state) => state.onEdgesChange);
-    const onConnect = usePluginBuilderStore((state) => state.onConnect);
-    const onNodeClick = usePluginBuilderStore((state) => state.onNodeClick);
-    const onPaneClick = usePluginBuilderStore((state) => state.onPaneClick);
-    const addNode = usePluginBuilderStore((state) => state.addNode);
-    const validateConnection = usePluginBuilderStore((state) => state.validateConnection);
 
     const onDragOver = useCallback((event: React.DragEvent) => {
         event.preventDefault();
@@ -54,39 +79,24 @@ const PluginBuilder = () => {
     const isValidConnection = useCallback((connection: any) => {
         return validateConnection(connection);
     }, [validateConnection]);
-    
-    const nodeTypesList = Object.values(NODE_CONFIGS);
 
-    const handleClearSelection = () => {
+    const handleClearSelection = useCallback(() => {
         selectNode(null);
-    };
+    }, [selectNode]);
 
-    const PaletteTag = () => (
-        <div className='plugin-builder-palette-list-container'>
-            {nodeTypesList.map((config) => (
-                <PaletteItem config={config} onDragStart={onDragStart} key={config.type} />
-            ))}
-        </div>
-    );
-
-    const OptionsTag = () => (
-        <div className="plugin-builder-options-placeholder">
-            <p>Select a node or add global plugin options here.</p>
-        </div>
-    );
-
-    const SIDEBAR_TAGS = [
+    // Memoizar SIDEBAR_TAGS para evitar recreación en cada render
+    const SIDEBAR_TAGS = useMemo(() => [
         {
             id: "Palette",
             name: "Palette",
-            Component: PaletteTag
+            Component: () => <PaletteContent onDragStart={onDragStart} />
         },
         {
             id: "Options",
             name: "Options",
-            Component: OptionsTag
+            Component: OptionsContent
         }
-    ];
+    ], [onDragStart]);
 
     const selectedNodeConfig = selectedNode ? NODE_CONFIGS[selectedNode.type as NodeType] : null;
 
@@ -143,7 +153,7 @@ const PluginBuilder = () => {
                         style: { stroke: '#64748b', strokeWidth: 2 }
                     }}
                 >
-                    <Background color='#3d3d3dff' gap={16} size={0.8} />
+                    <Background bgColor='#080808ff' color='#3d3d3dff' gap={16} size={0.8} />
                 </ReactFlow>
             </div>
         </div>

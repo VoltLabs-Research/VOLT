@@ -13,7 +13,7 @@ interface CollapsibleSectionProps {
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   title,
   children,
-  defaultExpanded = false,
+  defaultExpanded = false,  
   className = ''
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);

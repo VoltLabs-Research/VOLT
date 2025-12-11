@@ -47,7 +47,7 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
         <>
             {args.map((arg, index) => (
                 <CollapsibleSection 
-                    key={`${arg.argument}-${index}`} 
+                    key={index}
                     title={arg.label || arg.argument || `Argument ${index + 1}`}
                     defaultExpanded={index === 0}
                 >
