@@ -14,4 +14,35 @@
     gap: 1.5rem;
     overflow: scroll;
     padding: 2rem;
+    /* TODO: */
+    height: 64vh;
+}
+
+.plugin-sidebar-header-back {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.plugin-sidebar-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.plugin-sidebar-back-btn:hover {
+    background: var(--gray-200);
+    border-color: var(--gray-400);
+}
+
+.plugin-sidebar-title {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
 }

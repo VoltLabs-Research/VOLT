@@ -1,8 +1,8 @@
 import { LuPanelRight } from "react-icons/lu";
 
 interface SidebarHeaderProps {
-    collapsed: boolean;
-    onToggle: () => void;
+    collapsed?: boolean;
+    onToggle?: () => void;
     children: React.ReactNode;
 }
 

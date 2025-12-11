@@ -3,34 +3,31 @@ import { Background, ReactFlow, type ReactFlowInstance } from '@xyflow/react';
 import { nodeTypes } from '@/components/molecules/plugins/nodes';
 import { NodeType } from '@/types/plugin';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
-import useWorkflow from '@/hooks/plugins/use-workflow';
-import EditorWidget from '@/components/organisms/scene/EditorWidget';
-import DynamicIcon from '@/components/atoms/common/DynamicIcon';
+import usePluginBuilderStore from '@/stores/plugin-builder';
 import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import Sidebar from '@/components/organisms/common/Sidebar';
-import '@xyflow/react/dist/style.css';
-import './PluginBuilder.css';
 import PaletteItem from '@/components/atoms/plugins/PaletetteItem';
+import NodeEditor from '@/components/molecules/plugins/NodeEditor';
+import { TbArrowLeft } from 'react-icons/tb';
+import './PluginBuilder.css';
+import '@xyflow/react/dist/style.css';
 
 const PluginBuilder = () => {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [activeTab, setActiveTab] = useState('Palette');
 
-    const {
-        nodes,
-        edges,
-        selectedNode,
-        onNodesChange,
-        onConnect,
-        onNodeClick,
-        addNode,
-        onEdgesChange,
-        updateNodeData,
-        deleteNode,
-        getWorkflow,
-        validateConnection
-    } = useWorkflow();
+    const nodes = usePluginBuilderStore((state) => state.nodes);
+    const edges = usePluginBuilderStore((state) => state.edges);
+    const selectedNode = usePluginBuilderStore((state) => state.selectedNode);
+    const selectNode = usePluginBuilderStore((state) => state.selectNode);
+    const onNodesChange = usePluginBuilderStore((state) => state.onNodesChange);
+    const onEdgesChange = usePluginBuilderStore((state) => state.onEdgesChange);
+    const onConnect = usePluginBuilderStore((state) => state.onConnect);
+    const onNodeClick = usePluginBuilderStore((state) => state.onNodeClick);
+    const onPaneClick = usePluginBuilderStore((state) => state.onPaneClick);
+    const addNode = usePluginBuilderStore((state) => state.addNode);
+    const validateConnection = usePluginBuilderStore((state) => state.validateConnection);
 
     const onDragOver = useCallback((event: React.DragEvent) => {
         event.preventDefault();
@@ -60,10 +57,14 @@ const PluginBuilder = () => {
     
     const nodeTypesList = Object.values(NODE_CONFIGS);
 
+    const handleClearSelection = () => {
+        selectNode(null);
+    };
+
     const PaletteTag = () => (
         <div className='plugin-builder-palette-list-container'>
             {nodeTypesList.map((config) => (
-                <PaletteItem config={config} onDragStart={onDragStart} />
+                <PaletteItem config={config} onDragStart={onDragStart} key={config.type} />
             ))}
         </div>
     );
@@ -74,26 +75,40 @@ const PluginBuilder = () => {
         </div>
     );
 
-     const SIDEBAR_TAGS = [
+    const SIDEBAR_TAGS = [
         {
             id: "Palette",
             name: "Palette",
-            Component: PaletteTag,
-            props: {}
+            Component: PaletteTag
         },
         {
             id: "Options",
             name: "Options",
-            Component: OptionsTag,
-            props: {}
+            Component: OptionsTag
         }
     ];
 
+    const selectedNodeConfig = selectedNode ? NODE_CONFIGS[selectedNode.type as NodeType] : null;
+
     return (
         <div className='plugin-builder-container'>
-            <Sidebar tags={SIDEBAR_TAGS} activeTag={activeTab} className='primary-surface'>
+            <Sidebar 
+                tags={SIDEBAR_TAGS} 
+                activeTag={activeTab} 
+                className='primary-surface'
+                overrideContent={selectedNode ? <NodeEditor node={selectedNode} /> : null}
+            >
                 <Sidebar.Header>
-                    <h3 className='plugin-sidebar-title'>New Plugin</h3>
+                    {selectedNode ? (
+                        <div className='plugin-sidebar-header-back'>
+                            <button className='plugin-sidebar-back-btn' onClick={handleClearSelection}>
+                                <TbArrowLeft size={18} />
+                            </button>
+                            <h3 className='plugin-sidebar-title'>{selectedNodeConfig?.label || 'Node'}</h3>
+                        </div>
+                    ) : (
+                        <h3 className='plugin-sidebar-title'>New Plugin</h3>
+                    )}
                 </Sidebar.Header>
                 
                 <Sidebar.Bottom>
@@ -115,6 +130,7 @@ const PluginBuilder = () => {
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
                     onNodeClick={onNodeClick}
+                    onPaneClick={onPaneClick}
                     onInit={setReactFlowInstance}
                     onDragOver={onDragOver}
                     onDrop={onDrop}
