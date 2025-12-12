@@ -21,13 +21,13 @@
  */
 
 import { parentPort } from 'node:worker_threads';
-import { Analysis } from '@/models';
+import { Analysis, Plugin } from '@/models';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
-import Plugin from '@/services/plugins/plugin';
+import PluginWorkflowEngine from '@/services/plugin-workflow-engine';
 import mongoConnector from '@/utilities/mongo/mongo-connector';
 import path from 'node:path';
-import '@config/env';
 import logger from '@/logger';
+import '@config/env';
 
 const processJob = async (job: AnalysisJob): Promise<void> => {
     if(!job){
@@ -36,13 +36,19 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
 
     try{
         logger.info(`[Worker #${process.pid}] Received job ${job.jobId}. Starting processing...`);
-        const plugin = new Plugin(
-            job.plugin,
+        const plugin = await Plugin.findOne({ slug: job.plugin });
+        if(!plugin){
+            throw new Error(`Plugin not found: ${job.plugin}`);
+        }
+
+        const engine = new PluginWorkflowEngine();
+        await engine.execute(
+            plugin,
             job.trajectoryId,
             job.analysisId,
+            job.config || {}
         );
-        await plugin.evaluate(job.inputFile, job.modifierId, job.config);
-
+        
         // TODO: This should be more robust; besides, there's an existing function for this.
         const frameNumber = parseInt(path.basename(job.inputFile), 10);
 

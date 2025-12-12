@@ -21,11 +21,13 @@
  */
 
 import BaseListingAggregator, { AggregatorConfig } from '@/services/metrics/base-listing-aggregator';
-import ManifestService from '@/services/plugins/manifest-service';
+import Plugin from '@/models/plugin';
+import { NodeType } from '@/types/models/plugin';
 import storage from '@/services/storage';
 import { Model } from 'mongoose';
 import { SYS_BUCKETS } from '@/config/minio';
 import { slugify } from '@/utilities/runtime/runtime';
+
 
 export type ListingEntry = {
     aggregators?: {
@@ -77,41 +79,20 @@ export default class MongoListingCountAggregator extends BaseListingAggregator {
         super(config);
     }
 
-    private splitListingKey(key: string) {
-        const [modifierId, exposureId = modifierId] = key.split('_');
-        return { modifierId, exposureId };
-    }
-
     private async getListingDefinition() {
-        if (this.mode.kind !== 'listing') return null;
+        if(this.mode.kind !== 'listing') return null;
+        
+        const plugin = await Plugin.findOne({ slug: this.mode.pluginId });
+        if(!plugin) return null;
 
-        const manifest = await new ManifestService(this.mode.pluginId).get();
-        const entry: ListingEntry | any = manifest.listing?.[this.mode.listingKey];
-        if (!entry?.aggregators?.count) return null;
+        // Find the exposure node matching the listing key (TODO: workflow-utils)
+        const exposureNode = plugin.workflow.nodes.find((node: any) =>
+            node.type === NodeType.EXPOSURE && node.name === this.mode.listingKey);
 
-        let modifierId: string;
-        let exposureId: string;
+        if(!exposureNode) return null;
+        const exposureSlug = slugify(this.mode.listingKey);
 
-        if (entry.modifiers && Array.isArray(entry.modifiers)) {
-            // For multi-modifier listings, we just need to validate that at least one modifier exists
-            // and we'll use the listing key as the default exposure ID base
-            const firstValidModifier = entry.modifiers.find((modId: string) => manifest.modifiers?.[modId]);
-            if (!firstValidModifier) return null;
-
-            modifierId = firstValidModifier;
-            exposureId = this.mode.listingKey;
-        } else {
-            const split = this.mode.listingKey.split('_');
-            modifierId = split[0];
-            const rest = split.slice(1);
-            exposureId = rest.length ? rest.join('_') : modifierId;
-
-            const modifierExists = manifest.modifiers?.[modifierId];
-            if (!modifierExists) return null;
-        }
-
-        const exposureSlug = slugify(exposureId);
-        return { entry, modifierId, exposureSlug };
+        return { exposureSlug };
     }
 
     private updateBuckets(createdAt: Date) {
