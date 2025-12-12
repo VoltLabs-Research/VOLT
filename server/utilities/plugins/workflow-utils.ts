@@ -104,7 +104,7 @@ export const parseArgumentString = (str: string): string[] => {
     return args.filter(Boolean);
 };
 
-const topologicalSort = (workflow: IWorkflow): IWorkflowNode[] => {
+export const topologicalSort = (workflow: IWorkflow): IWorkflowNode[] => {
     const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
     const inDegree = new Map<string, number>();
     const adjacency = new Map<string, string[]>();

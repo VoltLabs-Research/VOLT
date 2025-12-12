@@ -1,45 +1,6 @@
 import { IPlugin, IPluginModel, IWorkflow, IWorkflowNode } from '@/types/models/modifier';
+import { ArgumentType, NodeType, ModifierContext, Exporter, ExportType, PluginStatus } from '@/types/models/plugin';
 import mongoose, { Schema } from 'mongoose';
-
-export enum NodeType{
-    MODIFIER = 'modifier',
-    ARGUMENTS = 'arguments',
-    CONTEXT = 'context',
-    FOREACH = 'forEach',
-    ENTRYPOINT = 'entrypoint',
-    EXPOSURE = 'exposure',
-    SCHEMA = 'schema',
-    VISUALIZERS = 'visualizers',
-    EXPORT = 'export'
-};
-
-export enum ArgumentType{
-    SELECT = 'select',
-    NUMBER = 'number',
-    FRAME = 'frame',
-    BOOLEAN = 'boolean',
-    STRING = 'string'
-};
-
-export enum ModifierContext{
-    TRAJECTORY_DUMPS = 'trajectory_dumps'
-};
-
-export enum Exporter{
-    ATOMISTIC = 'AtomisticExporter',
-    MESH = 'MeshExporter',
-    DISLOCATION = 'DislocationExporter'
-};
-
-export enum ExportType{
-    GLB = 'glb'
-};
-
-export enum PluginStatus{
-    DRAFT = 'draft',
-    PUBLISHED = 'published',
-    DISABLED = 'disabled'
-};
 
 const ArgumentOptionSchema = new Schema({
     key: {
@@ -136,6 +97,18 @@ const EntrypointDataSchema = new Schema({
         type: String,
         required: true
     },
+    // MinIO object path for the uploaded binary
+    binaryObjectPath: {
+        type: String
+    },
+    // Original filename when uploaded
+    binaryFileName: {
+        type: String
+    },
+    // SHA256 hash of binary for caching
+    binaryHash: {
+        type: String
+    },
     arguments: {
         type: String,
         required: true
@@ -157,6 +130,10 @@ const ExposureDataSchema = new Schema({
     },
     iterable: {
         type: String
+    },
+    perAtomProperties: {
+        type: [String],
+        default: []
     }
 });
 
@@ -164,7 +141,7 @@ const SchemaDataSchema = new Schema({
     definition: {
         type: Schema.Types.Mixed,
         required: true
-    } 
+    }
 });
 
 const VisualizersDataSchema = new Schema({
@@ -175,6 +152,10 @@ const VisualizersDataSchema = new Schema({
     raster: {
         type: Boolean,
         default: false
+    },
+    listingTitle: {
+        type: String,
+        default: ''
     },
     listing: {
         type: Schema.Types.Mixed
@@ -213,7 +194,7 @@ const PositionSchema = new Schema({
 
 const NodeDataSchema = new Schema({
     modifier: ModifierDataSchema,
-    arguments: ArgumentDefinitionSchema,
+    arguments: ArgumentsDataSchema,
     context: ContextDataSchema,
     forEach: ForEachDataSchema,
     entrypoint: EntrypointDataSchema,
@@ -225,10 +206,6 @@ const NodeDataSchema = new Schema({
 
 const WorkflowNodeSchema = new Schema({
     id: {
-        type: String,
-        required: true
-    },
-    name: {
         type: String,
         required: true
     },
@@ -328,40 +305,72 @@ PluginSchema.index({ status: 1 });
 PluginSchema.index({ createdBy: 1 });
 PluginSchema.index({ createdAt: -1 });
 
-PluginSchema.statics.getNodeById = function(workflow: IWorkflow, nodeId: string): IWorkflowNode | undefined{
+PluginSchema.statics.getNodeById = function (workflow: IWorkflow, nodeId: string): IWorkflowNode | undefined {
     return workflow.nodes.find((node) => node.id === nodeId);
 };
 
-PluginSchema.statics.getNodeByName = function(workflow: IWorkflow, name: string): IWorkflowNode | undefined{
-    return workflow.nodes.find((node) => node.name === name);
-};
-
-PluginSchema.statics.getChildNodes = function(workflow: IWorkflow, nodeId: string): IWorkflowNode[]{
+PluginSchema.statics.getChildNodes = function (workflow: IWorkflow, nodeId: string): IWorkflowNode[] {
     const childIds = workflow.edges.filter((edge) => edge.source === nodeId).map((edge) => edge.target);
     return workflow.nodes.filter((node) => childIds.includes(node.id));
 };
 
-PluginSchema.statics.getParentNodes = function(workflow: IWorkflow, nodeId: string): IWorkflowNode[]{
+PluginSchema.statics.getParentNodes = function (workflow: IWorkflow, nodeId: string): IWorkflowNode[] {
     const parentIds = workflow.edges.filter((edge) => edge.target === nodeId).map((edge) => edge.source);
     return workflow.nodes.filter((node) => parentIds.includes(node.id));
 };
 
-PluginSchema.statics.getNodesByType = function(workflow: IWorkflow, type: NodeType): IWorkflowNode[]{
+PluginSchema.statics.getNodesByType = function (workflow: IWorkflow, type: NodeType): IWorkflowNode[] {
     return workflow.nodes.filter((node) => node.type === type);
 };
 
-PluginSchema.virtual('modifier').get(function(){
+PluginSchema.virtual('modifier').get(function () {
     const modifierNode = this.workflow?.nodes?.find((node) => node.type === NodeType.MODIFIER);
     return modifierNode?.data?.modifier || null;
 });
 
-PluginSchema.virtual('exposures').get(function(){
-    return this.workflow?.nodes?.filter((node) => node.type === NodeType.EXPOSURE)
-        ?.map((node) => ({
-            nodeId: node.id,
-            nodeName: node.name,
-            ...node.data?.exposure
-        }));
+// Helper to find a descendant node by type
+const findDescendantByType = (workflow: IWorkflow, nodeId: string, type: NodeType): IWorkflowNode | null => {
+    if (!workflow.edges || !workflow.nodes) return null;
+
+    const visited = new Set<string>();
+    const queue = [nodeId];
+
+    while (queue.length > 0) {
+        const currentId = queue.shift()!;
+        if (visited.has(currentId)) continue;
+        visited.add(currentId);
+
+        const childEdges = workflow.edges.filter((edge) => edge.source === currentId);
+        for (const edge of childEdges) {
+            const childNode = workflow.nodes.find((node) => node.id === edge.target);
+            if (childNode?.type === type) return childNode;
+            if (childNode) queue.push(edge.target);
+        }
+    }
+    return null;
+};
+
+PluginSchema.virtual('exposures').get(function () {
+    if (!this.workflow?.nodes) return [];
+
+    return this.workflow.nodes
+        .filter((node) => node.type === NodeType.EXPOSURE)
+        .map((node) => {
+            const visualizersNode = findDescendantByType(this.workflow as any, node.id, NodeType.VISUALIZERS);
+            const exportNode = findDescendantByType(this.workflow as any, node.id, NodeType.EXPORT);
+
+            return {
+                nodeId: node.id,
+                ...node.data?.exposure,
+                visualizers: visualizersNode?.data?.visualizers,
+                export: exportNode?.data?.export
+            };
+        });
+});
+
+PluginSchema.virtual('arguments').get(function () {
+    const argumentsNode = this.workflow?.nodes?.find((node) => node.type === NodeType.ARGUMENTS);
+    return argumentsNode?.data?.arguments?.arguments || [];
 });
 
 const Plugin = mongoose.model<IPlugin, IPluginModel>('Plugin', PluginSchema);

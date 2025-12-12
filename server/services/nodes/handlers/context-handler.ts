@@ -1,4 +1,4 @@
-import { NodeType, ModifierContext } from '@/models/plugin';
+import { NodeType, ModifierContext } from '@/types/models/plugin';
 import { IWorkflowNode } from '@/types/models/modifier';
 import { NodeHandler, ExecutionContext } from '@/services/nodes/node-registry';
 import { T, NodeOutputSchema } from '@/services/nodes/schema-types';

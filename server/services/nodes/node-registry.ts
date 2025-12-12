@@ -1,4 +1,4 @@
-import { NodeType } from '@/models/plugin';
+import { NodeType } from '@/types/models/plugin';
 import { IWorkflowNode, IWorkflowEdge } from '@/types/models/modifier';
 import { NodeOutputSchema } from '@/services/nodes/schema-types';
 import logger from '@/logger';
