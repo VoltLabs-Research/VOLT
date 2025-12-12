@@ -1,4 +1,4 @@
-import { NodeType } from '@/models/plugin';
+import { NodeType } from '@/types/models/plugin';
 import { IWorkflow, IWorkflowNode } from '@/types/models/modifier';
 
 /**
