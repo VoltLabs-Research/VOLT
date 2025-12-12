@@ -1,6 +1,5 @@
 import { NodeType } from '@/models/plugin';
 import { IWorkflow, IWorkflowNode } from '@/types/models/modifier';
-import logger from '@/logger';
 
 /**
  * Find immediate parent node of specified type
@@ -71,4 +70,74 @@ export const findDescendantByType = (nodeId: string, workflow: IWorkflow, type: 
     }
 
     return null;
+};
+
+export const getNestedValue = (obj: any, path: string): any => {
+    return path.split('.').reduce((acc, key) => acc?.[key], obj);
+}
+
+// TODO: String Scanner class here maybe?
+export const parseArgumentString = (str: string): string[] => {
+    const args: string[] = [];
+    let current = '';
+    let inQuote = false;
+    let quoteChar = '';
+
+    for(const char of str){
+        if((char === '"' || char === "'") && !inQuote){
+            inQuote = true;
+            quoteChar = char;
+        }else if(char === quoteChar && inQuote){
+            inQuote = false;
+            quoteChar = '';
+        }else if(char === ' ' && !inQuote){
+            if(current){
+                args.push(current);
+                current = '';
+            }
+        }else{
+            current += char;
+        }
+    }
+
+    if(current) args.push(current);
+    return args.filter(Boolean);
+};
+
+const topologicalSort = (workflow: IWorkflow): IWorkflowNode[] => {
+    const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
+    const inDegree = new Map<string, number>();
+    const adjacency = new Map<string, string[]>();
+
+    for(const node of workflow.nodes){
+        inDegree.set(node.id, 0);
+        adjacency.set(node.id, []);
+    }
+
+    for(const edge of workflow.edges){
+        const adj = adjacency.get(edge.source) || [];
+        adj.push(edge.target);
+        adjacency.set(edge.source, adj);
+        inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
+    }
+
+    const queue: string[] = [];
+    for(const [id, degree] of inDegree){
+        if(degree === 0) queue.push(id);
+    }
+
+    const result: IWorkflowNode[] = [];
+    while(queue.length > 0){
+        const nodeId = queue.shift()!;
+        const node = nodeMap.get(nodeId);
+        if(node) result.push(node);
+
+        for(const neighbor of adjacency.get(nodeId) || []){
+            const newDegree = (inDegree.get(neighbor) || 0) - 1;
+            inDegree.set(neighbor, newDegree);
+            if(newDegree === 0) queue.push(neighbor);
+        }
+    }
+
+    return result;
 };
