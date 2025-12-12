@@ -1,32 +1,31 @@
-import { Analysis } from '@/models';
-import ManifestService from '@/services/plugins/manifest-service';
-import RuntimeError from '@/utilities/runtime/runtime-error';
-import storage from '@/services/storage';
+import { Analysis, Plugin } from '@/models';
+import { NodeType } from '@/types/models/plugin';
 import { SYS_BUCKETS } from '@/config/minio';
 import { decode } from '@msgpack/msgpack';
+import storage from '@/services/storage';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 
 export const getModifierPerAtomProps = async (analysisId: string): Promise<Record<string, string[]>> => {
     const props: Record<string, string[]> = {};
-
     const analysis = await Analysis.findById(analysisId);
     if(!analysis) throw new RuntimeError('Analysis::NotFound', 404);
 
-    const manifest = await new ManifestService(analysis.plugin).get();
-    const modifier = manifest.modifiers?.[analysis.modifier];
+    const plugin = await Plugin.findOne({ slug: analysis.plugin });
+    if(!plugin) throw new RuntimeError('Plugin::NotFound', 404);
 
-    if(!modifier) throw new RuntimeError('Analysis::Modifier::NotFound', 404);
-    for(const [key, exposure] of Object.entries(modifier.exposure)){
-        if(exposure.perAtomProperties && Array.isArray(exposure.perAtomProperties)){
-            props[key] = exposure.perAtomProperties;
+    const exposureNodes = plugin.workflow.nodes.filter((node) => node.type === NodeType.EXPOSURE);
+    for(const exposureNode of exposureNodes){
+        const exposureData = exposureNode.data?.exposure;
+        if(exposureData){
+            props[exposureNode.id] = exposureData.perAtomProperties || [];
         }
     }
-
     return props;
-};
+};  
 
 export const getModifierAnalysis = async (
     trajectoryId: string,
-    analysisId: string, 
+    analysisId: string,
     exposureId: string,
     timestep: string
 ): Promise<string[]> => {
@@ -34,18 +33,19 @@ export const getModifierAnalysis = async (
     const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, key);
     let data: any = decode(buffer);
 
-    // Check if we need to unwrap an iterable key
+    // check if we need to unwrap an iterable key
     const analysis = await Analysis.findById(analysisId);
     if(analysis){
-        const manifest = await new ManifestService(analysis.plugin).get();
-        const modifier = manifest.modifiers?.[analysis.modifier];
-        const exposure = modifier?.exposure?.[exposureId];
-
-        if(exposure && exposure.iterable && data[exposure.iterable]){
-            data = data[exposure.iterable];
+        const plugin = await Plugin.findOne({ slug: analysis.plugin });
+        if(plugin){
+            // TODO: workflow-utils?
+            const exposureNode = plugin.workflow.nodes.find((node: any) => node.type === NodeType.EXPOSURE && node.id === exposureId);
+            const iterableKey = exposureNode?.data?.exposure?.iterable;
+            if(iterableKey && data[iterableKey]){
+                data = data[iterableKey];
+            }
         }
     }
-
     return data;
 };
 
@@ -71,9 +71,8 @@ export const getPropertyByAtoms = (data: any, property: string): Float32Array | 
         for(let i = 0; i < len; i++){
             const item = data[i];
             const id = item.id;
-
             if(isVector){
-                // calculate Euclidean magnitude
+                // calculate Eucliean magnitude
                 const arr = item[property] as number[];
                 let sum = 0;
                 for(let k = 0; k < arr.length; k++){
