@@ -18,7 +18,6 @@ import path from 'path';
 import BaseController from './base-controller';
 import nodeRegistry from '@/services/nodes/node-registry';
 import workflowValidator from '@/services/nodes/workflow-validator';
-import { IAnalysis } from '@/models/analysis';
 import { 
     buildNodeMap, 
     buildParentMap, 

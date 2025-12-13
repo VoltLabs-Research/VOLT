@@ -83,7 +83,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
         outputs: 1,
         allowedConnections: {
             from: [NodeType.ENTRYPOINT],
-            to: [NodeType.SCHEMA, NodeType.EXPORT]
+            to: [NodeType.SCHEMA, NodeType.EXPORT, NodeType.VISUALIZERS]
         }
     },
     [NodeType.SCHEMA]: {
