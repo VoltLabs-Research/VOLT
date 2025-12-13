@@ -28,7 +28,7 @@ export default class RasterController {
         return res.status(200).json({ status: 'succes' });
     });
 
-    public getRasterFrameMetadata = async (req: Request, res: Response) => {
+    public getRasterFrameMetadata = catchAsync(async (req: Request, res: Response) => {
         let trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
 
@@ -75,9 +75,9 @@ export default class RasterController {
             status: 'success',
             data: { trajectory, analyses: analysesMetadata }
         });
-    };
+    });
 
-    public getRasterFrameData = async (req: Request, res: Response) => {
+    public getRasterFrameData = catchAsync(async (req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
         const { timestep, analysisId, model } = req.params;
@@ -110,9 +110,9 @@ export default class RasterController {
         } catch (err) {
             return res.status(404).json({ status: 'error', message: 'Raster image not found' });
         }
-    };
+    });
 
-    public downloadRasterImagesArchive = async (req: Request, res: Response) => {
+    public downloadRasterImagesArchive = catchAsync(async (req: Request, res: Response) => {
         const trajectory = res.locals?.trajectory;
         const trajectoryId = trajectory._id.toString();
         const { analysisId, model, includePreview } = req.query as {
@@ -184,7 +184,7 @@ export default class RasterController {
             logger.error(`Download Raster Error: ${err}`);
             if (!res.headersSent) res.status(500).json({ error: 'Archive creation failed' });
         }
-    };
+    });
 
     private async streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
         const chunks: Buffer[] = [];

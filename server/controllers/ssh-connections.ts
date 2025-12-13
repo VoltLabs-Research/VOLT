@@ -24,10 +24,11 @@ import { Request, Response } from 'express';
 import SSHConnection from '@/models/ssh-connection';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import SSHService from '@/services/ssh';
+import { catchAsync } from '@/utilities/runtime/runtime';
 import logger from '@/logger';
 
 export default class SSHConnectionsController {
-    public getUserSSHConnections = async (req: Request, res: Response) => {
+    public getUserSSHConnections = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id || (req as any).user.id;
 
         try {
@@ -46,9 +47,9 @@ export default class SSHConnectionsController {
             logger.error(`Failed to fetch SSH connections: ${err.message}`);
             throw new RuntimeError('SSHConnection::FetchError', 500);
         }
-    };
+    });
 
-    public createSSHConnection = async (req: Request, res: Response) => {
+    public createSSHConnection = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id || (req as any).user.id;
         const { name, host, port, username, password } = req.body;
 
@@ -80,9 +81,9 @@ export default class SSHConnectionsController {
             logger.error(`Failed to create SSH connection: ${err.message}`);
             throw new RuntimeError('SSHConnection::CreateError', 500);
         }
-    };
+    });
 
-    public updateSSHConnection = async (req: Request, res: Response) => {
+    public updateSSHConnection = catchAsync(async (req: Request, res: Response) => {
         const { name, host, port, username, password } = req.body;
         const connection = res.locals.sshConnection;
 
@@ -111,9 +112,9 @@ export default class SSHConnectionsController {
             logger.error(`Failed to update SSH connection: ${err.message}`);
             throw new RuntimeError('SSHConnection::UpdateError', 500);
         }
-    };
+    });
 
-    public deleteSSHConnection = async (req: Request, res: Response) => {
+    public deleteSSHConnection = catchAsync(async (req: Request, res: Response) => {
         const connection = res.locals.sshConnection;
 
         try {
@@ -129,9 +130,9 @@ export default class SSHConnectionsController {
             logger.error(`Failed to delete SSH connection: ${err.message}`);
             throw new RuntimeError('SSHConnection::DeleteError', 500);
         }
-    };
+    });
 
-    public testSSHConnection = async (req: Request, res: Response) => {
+    public testSSHConnection = catchAsync(async (req: Request, res: Response) => {
         const connection = res.locals.sshConnection;
 
         try {
@@ -157,5 +158,5 @@ export default class SSHConnectionsController {
                 }
             });
         }
-    };
+    });
 }

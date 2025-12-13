@@ -23,6 +23,7 @@
 import { Request, Response } from 'express';
 import TrajectoryVFS from '@/services/trajectory-vfs';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { catchAsync } from '@/utilities/runtime/runtime';
 import { Trajectory, User } from '@/models';
 
 const breadcrumbsOf = (rel: string) => {
@@ -37,7 +38,7 @@ const breadcrumbsOf = (rel: string) => {
 };
 
 export default class TrajectoryVfsController {
-    public listTrajectoryFs = async (req: Request, res: Response) => {
+    public listTrajectoryFs = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         if (!user) {
             throw new RuntimeError('Unauthorized', 401);
@@ -68,9 +69,9 @@ export default class TrajectoryVfsController {
             }
             throw new RuntimeError('FileSystemError', 500);
         }
-    };
+    });
 
-    public downloadTrajectoryFs = async (req: Request, res: Response) => {
+    public downloadTrajectoryFs = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         if (!user) {
             throw new RuntimeError('Unauthorized', 401);
@@ -95,9 +96,9 @@ export default class TrajectoryVfsController {
             }
             throw new RuntimeError('DownloadError', 500);
         }
-    };
+    });
 
-    public listUserTrajectories = async (req: Request, res: Response) => {
+    public listUserTrajectories = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         if (!user) {
             throw new RuntimeError('Unauthorized', 401);
@@ -149,5 +150,5 @@ export default class TrajectoryVfsController {
             }
             throw new RuntimeError('FetchTrajectoriesError', 500);
         }
-    };
+    });
 }

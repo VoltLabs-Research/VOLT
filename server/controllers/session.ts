@@ -23,12 +23,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { Session } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { catchAsync } from '@/utilities/runtime/runtime';
 
 export default class SessionController {
     /**
      * Get all active sessions for the authenticated user
      */
-    public getMySessions = async (req: Request, res: Response, next: NextFunction) => {
+    public getMySessions = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req as any).user._id;
 
@@ -45,12 +46,12 @@ export default class SessionController {
         } catch (error) {
             next(new RuntimeError('Session::GetSessions::Failed', 500));
         }
-    };
+    });
 
     /**
      * Get login activity for the authenticated user
      */
-    public getMyLoginActivity = async (req: Request, res: Response, next: NextFunction) => {
+    public getMyLoginActivity = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req as any).user._id;
             const limit = parseInt(req.query.limit as string) || 20;
@@ -67,12 +68,12 @@ export default class SessionController {
         } catch (error) {
             next(new RuntimeError('Session::GetLoginActivity::Failed', 500));
         }
-    };
+    });
 
     /**
      * Revoke a specific session
      */
-    public revokeSession = async (req: Request, res: Response, next: NextFunction) => {
+    public revokeSession = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req as any).user._id;
             const sessionId = req.params.id;
@@ -94,12 +95,12 @@ export default class SessionController {
         } catch (error) {
             next(new RuntimeError('Session::RevokeSession::Failed', 500));
         }
-    };
+    });
 
     /**
      * Revoke all other sessions (keep current one)
      */
-    public revokeAllOtherSessions = async (req: Request, res: Response, next: NextFunction) => {
+    public revokeAllOtherSessions = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req as any).user._id;
             const currentToken = req.headers.authorization?.split(' ')[1];
@@ -120,5 +121,5 @@ export default class SessionController {
         } catch (error) {
             next(new RuntimeError('Session::RevokeAllOtherSessions::Failed', 500));
         }
-    };
+    });
 }

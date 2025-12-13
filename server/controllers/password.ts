@@ -23,9 +23,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { User } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { catchAsync } from '@/utilities/runtime/runtime';
 
 export default class PasswordController {
-    public changePassword = async (req: Request, res: Response, next: NextFunction) => {
+    public changePassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req as any).user._id;
             const { currentPassword, newPassword, confirmPassword } = req.body;
@@ -62,9 +63,9 @@ export default class PasswordController {
         } catch (error) {
             next(new RuntimeError('Password::ChangePassword::Failed', 500));
         }
-    };
+    });
 
-    public getPasswordInfo = async (req: Request, res: Response, next: NextFunction) => {
+    public getPasswordInfo = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req as any).user._id;
             const user = await User.findById(userId).select('passwordChangedAt');
@@ -82,5 +83,5 @@ export default class PasswordController {
         } catch (error) {
             next(new RuntimeError('Password::GetInfo::Failed', 500));
         }
-    };
+    });
 }

@@ -24,6 +24,7 @@ import { Request, Response } from 'express';
 import SSHConnection from '@/models/ssh-connection';
 import SSHService from '@/services/ssh';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { catchAsync } from '@/utilities/runtime/runtime';
 import { mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import * as os from 'node:os';
@@ -35,7 +36,7 @@ import logger from '@/logger';
 import path from 'path';
 
 export default class SSHFileExplorerController {
-    public listSSHFiles = async (req: Request, res: Response) => {
+    public listSSHFiles = catchAsync(async (req: Request, res: Response) => {
         const { path } = req.query;
         const connection = res.locals.sshConnection;
 
@@ -63,9 +64,9 @@ export default class SSHFileExplorerController {
             logger.error(`Failed to list SSH files: ${err.message}`);
             throw new RuntimeError('SSH::ListFiles::Error', 500);
         }
-    };
+    });
 
-    public importTrajectoryFromSSH = async (req: Request, res: Response) => {
+    public importTrajectoryFromSSH = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id || (req as any).user.id;
         const { remotePath, teamId, name } = req.body;
         const connection = res.locals.sshConnection;
@@ -187,5 +188,5 @@ export default class SSHFileExplorerController {
         } finally {
             publisher.quit();
         }
-    };
+    });
 }
