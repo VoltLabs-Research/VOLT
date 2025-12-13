@@ -40,10 +40,10 @@ const ExposureEditor: React.FC<ExposureEditorProps> = ({ node }) => {
             <FormField
                 label='Icon'
                 fieldKey='icon'
-                fieldType='input'
+                fieldType='iconSelect'
                 fieldValue={exposure.icon || ''}
                 onFieldChange={updateField}
-                inputProps={{ placeholder: 'FiActivity' }}
+                renderInPortal
             />
             <FormField
                 label='Results File Suffix'

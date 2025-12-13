@@ -74,10 +74,10 @@ const ModifierEditor: React.FC<ModifierEditorProps> = ({ node }) => {
                 <FormField
                     label='Icon'
                     fieldKey='icon'
-                    fieldType='input'
+                    fieldType='iconSelect'
                     fieldValue={modifier.icon || ''}
                     onFieldChange={updateField}
-                    inputProps={{ placeholder: 'Icon name or URL' }}
+                    renderInPortal
                 />
             </CollapsibleSection>
         </>

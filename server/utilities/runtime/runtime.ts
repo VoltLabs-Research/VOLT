@@ -48,7 +48,7 @@ export const slugify = (value: string) => value
     .replace(/^-+/, '')
     .replace(/-+$/, '');
 
-export const createTempDir = async(prefix: string = 'opendxa-'): Promise<string> => {
+export const createTempDir = async(prefix: string = 'opendxa-'): Promise<string> =>{
     const tempDir = await mkdtemp(join(tmpdir(), prefix));
     return tempDir;
 };
