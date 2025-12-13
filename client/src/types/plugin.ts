@@ -1,4 +1,4 @@
-export enum NodeType{
+export enum NodeType {
     MODIFIER = 'modifier',
     ARGUMENTS = 'arguments',
     CONTEXT = 'context',
@@ -10,7 +10,7 @@ export enum NodeType{
     EXPORT = 'export'
 };
 
-export enum ArgumentType{
+export enum ArgumentType {
     SELECT = 'select',
     NUMBER = 'number',
     FRAME = 'frame',
@@ -18,32 +18,32 @@ export enum ArgumentType{
     STRING = 'string'
 };
 
-export enum ModifierContext{
+export enum ModifierContext {
     TRAJECTORY_DUMPS = 'trajectory_dumps'
 };
 
-export enum Exporter{
+export enum Exporter {
     ATOMISTIC = 'AtomisticExporter',
     MESH = 'MeshExporter',
     DISLOCATION = 'DislocationExporter'
 };
 
-export enum ExportType{
+export enum ExportType {
     GLB = 'glb'
 };
 
-export enum PluginStatus{
+export enum PluginStatus {
     DRAFT = 'draft',
     PUBLISHED = 'published',
     DISABLED = 'disabled'
 };
 
-export interface IArgumentOption{
+export interface IArgumentOption {
     key: string;
     label: string;
 };
 
-export interface IArgumentDefinition{
+export interface IArgumentDefinition {
     argument: string;
     type: ArgumentType;
     label: string;
@@ -55,7 +55,7 @@ export interface IArgumentDefinition{
     step?: number;
 };
 
-export interface IModifierData{
+export interface IModifierData {
     name: string;
     icon?: string;
     author?: string;
@@ -65,47 +65,52 @@ export interface IModifierData{
     description?: string;
 };
 
-export interface IArgumentsData{
+export interface IArgumentsData {
     arguments: IArgumentDefinition[];
 };
 
-export interface IContextData{
+export interface IContextData {
     source: ModifierContext;
 };
 
-export interface IForEachData{
+export interface IForEachData {
     iterableSource: string;
 };
 
-export interface IEntrypointData{
+export interface IEntrypointData {
     binary: string;
+    binaryObjectPath?: string;
+    binaryFileName?: string;
+    binaryHash?: string;
     arguments: string;
     timeout?: number;
 };
 
-export interface IExposureData{
+export interface IExposureData {
     name: string;
     results: string;
     iterable?: string;
+    perAtomProperties?: string[];
 };
 
-export interface ISchemaData{
+export interface ISchemaData {
     definition: Record<string, any>;
 };
 
-export interface IVisualizersData{
+export interface IVisualizersData {
     canvas?: boolean;
     raster?: boolean;
+    listingTitle?: string;
     listing?: Record<string, string>;
 };
 
-export interface IExportData{
+export interface IExportData {
     exporter: Exporter,
     type: ExportType;
     options?: Record<string, any>;
 };
 
-export interface INodeData{
+export interface INodeData {
     modifier?: IModifierData;
     arguments?: IArgumentsData;
     context?: IContextData;
@@ -117,9 +122,8 @@ export interface INodeData{
     export?: IExportData;
 };
 
-export interface IWorkflowNode{
+export interface IWorkflowNode {
     id: string;
-    name: string;
     type: NodeType;
     position: {
         x: number;
@@ -128,7 +132,7 @@ export interface IWorkflowNode{
     data: INodeData;
 };
 
-export interface IWorkflowEdge{
+export interface IWorkflowEdge {
     id: string;
     source: string;
     sourceHandle?: string;
@@ -136,7 +140,7 @@ export interface IWorkflowEdge{
     targetHandle?: string;
 };
 
-export interface IWorkflow{
+export interface IWorkflow {
     nodes: IWorkflowNode[];
     edges: IWorkflowEdge[];
     viewport?: {

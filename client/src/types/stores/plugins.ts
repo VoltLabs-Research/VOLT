@@ -1,27 +1,16 @@
 export type BuiltInExports = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
-export type ArgType = 'select' | 'number' | 'boolean' | 'trajectory-frame';
 
-export interface AnalysisSelectionField {
-    path: string;
-    label?: string;
-    visibleWhen?: Record<string, any>;
-};
-
-export interface AnalysisSelectionConfig {
-    title?: AnalysisSelectionField[];
-    description?: AnalysisSelectionField[];
-};
-
-export interface Manifest {
-    name: string;
-    author: string;
-    license: string;
-    version: string;
-    homepage: string;
-    entrypoint: Entrypoint;
-    modifiers: Record<string, Modifier>;
-    listing?: Record<string, any>;
-};
+export interface PluginArgument {
+    argument: string;
+    type: 'select' | 'number' | 'boolean' | 'string' | 'frame';
+    label: string;
+    default?: any;
+    value?: any;
+    options?: Array<{ key: string; label: string }>;
+    min?: number;
+    max?: number;
+    step?: number;
+}
 
 export interface BoxMetric {
     key: string;
@@ -39,59 +28,25 @@ export interface RasterConfig {
     legendKey?: string;
     legendColors?: Record<string, string>;
     metrics?: BoxMetric[];
-    [key: string]: any; // Allow additional component-specific configuration
+    [key: string]: any;
 }
 
-export interface ExposureExportConfig {
-    name: BuiltInExports;
+export interface ExportConfig {
+    exporter: BuiltInExports;
     type: string;
-    handler?: string;
-    options: Record<string, any>;
-};
+    options?: Record<string, any>;
+}
 
-export interface Exposure {
+export interface ExposureData {
+    name: string;
     results: string;
     iterable?: string;
-    iterableChunkSize?: number;
-    displayName?: string;
-    icon?: string;
+    perAtomProperties?: string[];
+}
+
+export interface VisualizersData {
     canvas?: boolean;
-    raster?: boolean | RasterConfig; // Support both old and new schema
-    export: ExposureExportConfig;
-};
-
-export interface Modifier {
-    preset?: Record<string, any>;
-    exposure: Record<string, Exposure>;
-    analysisSelection?: AnalysisSelectionConfig;
-    perFrameListing?: any;
-};
-
-export interface EntrypointArgument {
-    type: ArgType;
-    default?: any;
-    values?: any;
-    min?: number;
-    max?: number;
-    label?: string;
-    step?: number;
-    visibleWhen: Record<string, any>;
-};
-
-export interface Entrypoint {
-    bin: string;
-    arguments: Record<string, EntrypointArgument>;
-};
-
-export interface ModifierTransformContext {
-    pluginName: string;
-    trajectoryId: string;
-    analysisId: string;
-    timestep: number;
-    modifier: Modifier;
-    filePath: string;
-    exposureId: string;
-    exposure: Exposure;
-};
-
-export type ModifierTransformer = (ctx: ModifierTransformContext) => Promise<any | null> | any | null;
+    raster?: boolean | RasterConfig;
+    listingTitle?: string;
+    listing?: Record<string, string>;
+}
