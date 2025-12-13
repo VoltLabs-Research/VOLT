@@ -5,9 +5,9 @@ import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 /**
  * Hook to manage node data for plugin builder editors.
  * Eliminates duplicated boilerplate across all editor components.
- * 
+ *
  * @param node - The ReactFlow node
- * @param dataKey - The key in node.data to manage (e.g., 'context', 'forEach', 'entrypoint')
+ * @param dataKey - The key in node.data to manage(e.g., 'context', 'forEach', 'entrypoint')
  * @param defaultValue - Default value if the data doesn't exist
  */
 export function useNodeData<T extends Record<string, any>>(
@@ -30,9 +30,8 @@ export function useNodeData<T extends Record<string, any>>(
 
     const data = useMemo(() => {
         const nodeData = storeNode?.data || node.data;
-        return ((nodeData as Record<string, any>)?.[dataKey] || defaultValue) as T;
+        return((nodeData as Record<string, any>)?.[dataKey] || defaultValue) as T;
     }, [storeNode?.data, node.data, dataKey, defaultValue]);
-
 
     const updateField = useCallback((key: string, value: any) => {
         updateNodeData(node.id, {
@@ -62,10 +61,10 @@ export function useNodeData<T extends Record<string, any>>(
 /**
  * Hook to manage key-value operations for nested objects in node data.
  * Used by KeyValueEditor in ExportEditor, VisualizersEditor, etc.
- * 
+ *
  * @param updateParent - Function to update the parent object
  * @param entries - Current key-value entries
- * @param defaultKeyPrefix - Prefix for auto-generated keys (e.g., 'option', 'column')
+ * @param defaultKeyPrefix - Prefix for auto-generated keys(e.g., 'option', 'column')
  * @param defaultValue - Default value for new entries
  */
 export function useKeyValueHandlers(
@@ -75,9 +74,9 @@ export function useKeyValueHandlers(
     defaultValue: string = ''
 ) {
     const handleKeyChange = useCallback((oldKey: string, newKey: string) => {
-        if (oldKey === newKey || !newKey.trim()) return;
+        if(oldKey === newKey || !newKey.trim()) return;
         const newEntries: Record<string, string> = {};
-        for (const [k, v] of Object.entries(entries)) {
+        for(const [k, v] of Object.entries(entries)) {
             newEntries[k === oldKey ? newKey : k] = v;
         }
         updateParent(newEntries);
@@ -90,7 +89,7 @@ export function useKeyValueHandlers(
     const handleAdd = useCallback(() => {
         let counter = 1;
         let newKey = `${defaultKeyPrefix}_${counter}`;
-        while (entries[newKey] !== undefined) {
+        while(entries[newKey] !== undefined){
             counter++;
             newKey = `${defaultKeyPrefix}_${counter}`;
         }

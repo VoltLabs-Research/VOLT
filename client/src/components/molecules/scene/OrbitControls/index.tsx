@@ -73,17 +73,17 @@ const OrbitControls: React.FC = () => {
 		rows: [
 			{ label: 'Min Distance', min: 0.001, max: Math.max(10, maxDistance), step: 0.001, get: () => minDistance, set: (v: number) => set({ minDistance: v }), format: (v: number) => v.toFixed(3) },
 			{ label: 'Max Distance', min: Math.max(0.001, minDistance + 0.001), max: 100000, step: 0.1, get: () => maxDistance, set: (v: number) => set({ maxDistance: v }), format: (v: number) => v.toFixed(1) },
-			{ label: 'Min Polar (rad)', min: 0, max: Math.PI, step: 0.001, get: () => minPolarAngle, set: (v: number) => set({ minPolarAngle: v }), format: (v: number) => v.toFixed(3) },
-			{ label: 'Max Polar (rad)', min: 0, max: Math.PI, step: 0.001, get: () => maxPolarAngle, set: (v: number) => set({ maxPolarAngle: v }), format: (v: number) => v.toFixed(3) },
-			{ label: 'Min Azimuth (rad)', min: -Math.PI, max: Math.PI, step: 0.001, get: () => minAzimuthAngle, set: (v: number) => set({ minAzimuthAngle: v }), format: (v: number) => v.toFixed(3) },
-			{ label: 'Max Azimuth (rad)', min: -Math.PI, max: Math.PI, step: 0.001, get: () => maxAzimuthAngle, set: (v: number) => set({ maxAzimuthAngle: v }), format: (v: number) => v.toFixed(3) }
+			{ label: 'Min Polar(rad)', min: 0, max: Math.PI, step: 0.001, get: () => minPolarAngle, set: (v: number) => set({ minPolarAngle: v }), format: (v: number) => v.toFixed(3) },
+			{ label: 'Max Polar(rad)', min: 0, max: Math.PI, step: 0.001, get: () => maxPolarAngle, set: (v: number) => set({ maxPolarAngle: v }), format: (v: number) => v.toFixed(3) },
+			{ label: 'Min Azimuth(rad)', min: -Math.PI, max: Math.PI, step: 0.001, get: () => minAzimuthAngle, set: (v: number) => set({ minAzimuthAngle: v }), format: (v: number) => v.toFixed(3) },
+			{ label: 'Max Azimuth(rad)', min: -Math.PI, max: Math.PI, step: 0.001, get: () => maxAzimuthAngle, set: (v: number) => set({ maxAzimuthAngle: v }), format: (v: number) => v.toFixed(3) }
 		],
 		extras: null
 	};
 
 	const targetSection = {
 		key: 'target',
-		title: 'Target (Z-up)',
+		title: 'Target(Z-up)',
 		enabled: true,
 		onToggle: () => {},
 		rows: [
@@ -94,9 +94,9 @@ const OrbitControls: React.FC = () => {
 		extras: null
 	};
 
-	return (
-		<CollapsibleSection 
-			title="Orbit Controls" 
+	return(
+		<CollapsibleSection
+			title="Orbit Controls"
 			icon={<MdRotateLeft size={16} />}
 		>
 			<div style={{ display: 'grid', gap: 12 }}>

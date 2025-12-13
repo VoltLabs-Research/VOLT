@@ -35,7 +35,7 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
     expressionEnabled = false,
     expressionNodeId
 }) => {
-    return (
+    return(
         <div className="kv-editor">
             {description && (
                 <p className="kv-editor-description">{description}</p>

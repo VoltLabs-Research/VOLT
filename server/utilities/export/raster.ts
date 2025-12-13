@@ -10,21 +10,21 @@ import * as path from 'node:path';
 import { SYS_BUCKETS } from '@/config/minio';
 import logger from '@/logger';
 
-export const rasterizeGLBs = async (
+export const rasterizeGLBs = async(
     prefix: string,
     prefixBucketName: string,
     bucketName: string,
     trajectory: ITrajectory,
     opts: Partial<HeadlessRasterizerOptions> = {}
-): Promise<void> => {
+): Promise<void> =>{
     const jobs: RasterizerJob[] = [];
     const CONCURRENCY_LIMIT = 10;
     const pendingTasks: Promise<void>[] = [];
-    
-    for await(const key of storage.listByPrefix(prefixBucketName, prefix)){
+
+    for await (const key of storage.listByPrefix(prefixBucketName, prefix)){
         const filename = key.split('/').pop();
         if(!filename) continue;
-        
+
         const base = path.basename(filename, '.glb');
         const match = base.match(/\d+/g);
 
@@ -32,14 +32,14 @@ export const rasterizeGLBs = async (
             logger.warn(`No timestep found in filename: ${filename}`);
             continue;
         }
-        
+
         const timestep = Number(match[match.length - 1]);
         if(Number.isNaN(timestep)){
             logger.warn(`Invalid timestep parsed: ${filename}`);
             continue;
         }
 
-        const task = async () => {
+        const task = async() => {
             try{
                 // Create unique temp dir for this specific frame
                 const tempDir = await createTempDir();
@@ -51,11 +51,11 @@ export const rasterizeGLBs = async (
                     trajectoryId: trajectory._id.toString(),
                     teamId: trajectory.team._id.toString(),
                     timestep,
-                    name: 'Headless Rasterizer (Preview)',
+                    name: 'Headless Rasterizer(Preview)',
                     message: `${trajectory.name} - Preview frame ${timestep}`,
                     opts: {
                         inputPath: tempPath,
-                        ...opts
+                            ...opts
                     }
                 });
             }catch(error){
@@ -91,7 +91,7 @@ export const sendImage = (res: Response, etag: string, buffer: Buffer) => {
     })
 };
 
-export const getTimestepPreview = async (
+export const getTimestepPreview = async(
     trajectoryId: string,
     timestep: number
 ): Promise<{ buffer: Buffer, etag: string }> => {

@@ -11,12 +11,12 @@ export async function *decodeMultiStream(
 ): AsyncIterable<unknown>{
     const decoder = new Decoder<unknown>(options);
     const byteSrc = (async function*(){
-        for await(const chunk of src){
+        for await (const chunk of src){
             yield chunk as Uint8Array;
         }
     })();
 
-    for await(const value of decoder.decodeStream(byteSrc)){
+    for await (const value of decoder.decodeStream(byteSrc)){
         yield value;
     }
 };
@@ -27,7 +27,7 @@ export async function *decodeMultiStreamFromFile(
 ): AsyncIterable<unknown>{
     const stream = createReadStream(filePath) as unknown as Readable & AsyncIterable<Uint8Array>;
     const src = (async function*(): AsyncIterable<ChunkLike>{
-        for await(const chunk of stream){
+        for await (const chunk of stream){
             yield chunk as Uint8Array;
         }
     })();

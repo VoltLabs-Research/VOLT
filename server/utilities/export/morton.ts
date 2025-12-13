@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -22,9 +22,9 @@
 
 /**
  * Expands a 10-bit integer so that its bits are separated by two zeros,
- * preparing it for 3D morton (Z-order) interleaving.
- * 
- * @param v - Integer to expand (only the lower `bits` are considered, tipically <= 10).
+ * preparing it for 3D morton(Z-order) interleaving.
+ *
+ * @param v - Integer to expand(only the lower `bits` are considered, tipically <= 10).
  * @returns The integer with its bits laid out as `00b9 00b8 ... 00b1 00b0` pattern.
  */
 const splitBy3 = (v: number) => {
@@ -36,17 +36,17 @@ const splitBy3 = (v: number) => {
 };
 
 /**
- * Encodes normalized 3D coordinates into a Morton (Z-order) code.
- * 
+ * Encodes normalized 3D coordinates into a Morton(Z-order) code.
+ *
  * @param nx - Normalized x in `[0, 1]`.
  * @param ny - Normalized y in `[0, 1]`.
  * @param nz - Normalized z in `[0, 1]`.
- * @param bits - Bit depth per axis (default: `10`). Must satisfy `3 * bits ≤ 32` for 32-bit outputs.
+ * @param bits - Bit depth per axis(default: `10`). Must satisfy `3 * bits ≤ 32` for 32-bit outputs.
  * @returns Unsigned 32-bit Morton code with interleaved x/y/z bits.
  */
 const encodeMorton = (nx: number, ny: number, nz: number, bits = 10): number => {
     const maxv = (1 << bits) - 1;
-    
+
     // Quantize and clamp to integer grid
     let xi = Math.max(0, Math.min(maxv, (nx * maxv) | 0));
     let yi = Math.max(0, Math.min(maxv, (ny * maxv) | 0));
@@ -57,7 +57,7 @@ const encodeMorton = (nx: number, ny: number, nz: number, bits = 10): number => 
     const yy = splitBy3(yi);
     const zz = splitBy3(zi);
 
-    return (xx | (yy << 1) | (zz << 2)) >>> 0;
+    return(xx | (yy << 1) | (zz << 2)) >>> 0;
 };
 
 export default encodeMorton;

@@ -16,7 +16,7 @@ const NodePalette = ({ onDragStart }: NodePaletteProps) => {
         onDragStart(event, config.type);
     }
 
-    return (
+    return(
         <div className='node-palette-container'>
             <div className='node-palette-header-container'>
                 <h3 className='node-palette-header-title'>Nodes</h3>

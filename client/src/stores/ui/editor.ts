@@ -52,7 +52,7 @@ const useEditorUIStore = create<EditorUIStore>((set, get) => {
             set({ showEditorWidgets: !get().showEditorWidgets });
         },
 
-        setSceneInteracting(isInteracting: boolean) { 
+        setSceneInteracting(isInteracting: boolean) {
             set({ isSceneInteracting: isInteracting });
         },
 

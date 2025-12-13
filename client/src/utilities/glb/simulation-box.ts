@@ -36,13 +36,13 @@ export const ensureSimulationBox = (state: SceneState, scene: THREE.Scene, box: 
             depthWrite: false,
             side: THREE.DoubleSide
         });
-        
+
         const mesh = new THREE.Mesh(geometry, material);
-        
+
         mesh.name = 'SimInvisibleRaycastBox';
         mesh.visible = true;
         mesh.renderOrder = -1;
-        
+
         scene.add(mesh);
         state.simBoxMesh = mesh;
         state.simBoxBaseSize = size.clone();
@@ -51,13 +51,13 @@ export const ensureSimulationBox = (state: SceneState, scene: THREE.Scene, box: 
         const simulationBox = state.simBoxMesh!;
         const currentBox = state.simBoxSize!;
         if(Math.abs(currentBox.x - size.x) > EPS ||
-            Math.abs(currentBox.y - size.y) > EPS || 
+            Math.abs(currentBox.y - size.y) > EPS ||
             Math.abs(currentBox.z - size.z) > EPS
         ){
             simulationBox.geometry.dispose();
             simulationBox.geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
             simulationBox.scale.set(1, 1, 1);
-            
+
             state.simBoxBaseSize = size.clone();
             state.simBoxSize = size.clone();
         }
@@ -101,9 +101,9 @@ export const startSizeAnimAfterRotation = (state: SceneState, scene: THREE.Scene
 };
 
 export const runSizeAnimationStep = (state: SceneState, now: number) => {
-    if(!state.sizeAnimActive || 
-        !state.selection || 
-        !state.sizeAnimFrom || 
+    if(!state.sizeAnimActive ||
+        !state.selection ||
+        !state.sizeAnimFrom ||
         !state.sizeAnimTo){
         return false;
     }

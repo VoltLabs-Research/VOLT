@@ -23,7 +23,7 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
   stats,
   statsLoading = false
 }) => {
-  return (
+  return(
     <div className="chart-container">
       <div className="chart-header">
         <div className="chart-title-group">

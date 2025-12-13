@@ -6,16 +6,16 @@ import ModelRailItem from '../ModelRailItem';
 const ModelRail: React.FC<ModelRailProps> = ({ modelsForCurrentFrame, selectedModel, onModelChange }) => {
   const [open, setOpen] = useState(false);
 
-  if (!modelsForCurrentFrame || !modelsForCurrentFrame.length) return null;
+  if(!modelsForCurrentFrame || !modelsForCurrentFrame.length) return null;
 
   const { selectedThumb, restThumbs } = useMemo(() => {
     const sel = modelsForCurrentFrame.find((s) => s.model === selectedModel) || modelsForCurrentFrame[0];
     return { selectedThumb: sel, restThumbs: modelsForCurrentFrame.filter((s) => s.model !== sel.model) };
   }, [modelsForCurrentFrame, selectedModel]);
 
-  if (!selectedThumb) return null;
+  if(!selectedThumb) return null;
 
-  return (
+  return(
     <motion.div
       className="raster-rail-container"
       style={{ width: 132 }}

@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -170,7 +170,6 @@ export default class AtomisticExporter{
                 count[bucket]++;
             }
 
-
             let sum = 0;
             for(let i = 0; i < RADIX; i++){
                 const c = count[i];
@@ -196,7 +195,7 @@ export default class AtomisticExporter{
         max: [number, number, number],
         opts: CompressionOptions,
         colors?: Float32Array
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array>{
         const extent = {
             x: Math.max(1e-20, max[0] - min[0]),
             y: Math.max(1e-20, max[1] - min[1]),
@@ -359,7 +358,7 @@ export default class AtomisticExporter{
         filePath: string,
         optsOrLegacy?: CompressionOptions | Function,
         maybeOpts?: CompressionOptions
-    ): Promise<Buffer> {
+    ): Promise<Buffer>{
         const opts = (typeof optsOrLegacy === 'function') ? (maybeOpts ?? {}) : (optsOrLegacy ?? {});
         const mortonBits = Math.max(1, opts.maxMortonBitsPerAxis ?? 10);
 
@@ -470,7 +469,7 @@ export default class AtomisticExporter{
         filePath: string,
         minioObjectName: string,
         optsOrLegacy?: CompressionOptions | Function
-    ): Promise<void> {
+    ): Promise<void>{
         const opts = (typeof optsOrLegacy === 'function') ? {} : (optsOrLegacy ?? {});
         const buffer = await this.toGLBBuffer(filePath, opts);
         await storage.put(SYS_BUCKETS.MODELS, minioObjectName, buffer, {
@@ -481,7 +480,7 @@ export default class AtomisticExporter{
     public async exportAtomsTypeToGLBBuffer(
         atomsByType: AtomsGroupedByType,
         opts: CompressionOptions = {}
-    ): Promise<Buffer> {
+    ): Promise<Buffer>{
         const totalAtoms = Object.values(atomsByType).reduce((s, list) => s + list.length, 0);
         const positions = new Float32Array(totalAtoms * 3);
         const colors = new Float32Array(totalAtoms * 3);
@@ -514,12 +513,12 @@ export default class AtomisticExporter{
                 colors[idxBase + 1] = rgb[1];
                 colors[idxBase + 2] = rgb[2];
 
-                if (x < minX) minX = x;
-                if (y < minY) minY = y;
-                if (z < minZ) minZ = z;
-                if (x > maxX) maxX = x;
-                if (y > maxY) maxY = y;
-                if (z > maxZ) maxZ = z;
+                if(x < minX) minX = x;
+                if(y < minY) minY = y;
+                if(z < minZ) minZ = z;
+                if(x > maxX) maxX = x;
+                if(y > maxY) maxY = y;
+                if(z > maxZ) maxZ = z;
             }
 
             cursor += atoms.length;
@@ -578,7 +577,7 @@ export default class AtomisticExporter{
         atomsByType: AtomsGroupedByType,
         minioObjectName: string,
         opts: CompressionOptions = {}
-    ): Promise<void> {
+    ): Promise<void>{
         const buffer = await this.exportAtomsTypeToGLBBuffer(atomsByType, opts);
         await storage.put(minioObjectName, SYS_BUCKETS.MODELS, buffer, {
             'Content-Type': 'model/gltf-binary'

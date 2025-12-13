@@ -9,7 +9,7 @@ export interface EnvironmentConfigState extends FogConfig{
     backgroundColor: string;
     backgroundType: 'color' | 'environment';
     environmentPreset: string;
-    toneMappingExposure: number;    
+    toneMappingExposure: number;
 }
 
 export interface EnvironmentConfigActions{
@@ -19,7 +19,7 @@ export interface EnvironmentConfigActions{
     setFogConfig: (config: Partial<FogConfig>) => void;
     setToneMappingExposure: (exposure: number) => void;
     reset: () => void;
-}   
+}
 
 export type EnvironmentConfigStore = EnvironmentConfigState & EnvironmentConfigActions;
 

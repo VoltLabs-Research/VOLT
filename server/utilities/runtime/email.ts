@@ -52,7 +52,7 @@ export async function sendEmailNotification({
     fromName = "No Reply",
     replyTo,
     attachments,
-}: SendEmailArgs): Promise<void> {
+}: SendEmailArgs): Promise<void>{
     const transporter = getTransporter();
     const fromUser = process.env.SMTP_AUTH_USER!;
 

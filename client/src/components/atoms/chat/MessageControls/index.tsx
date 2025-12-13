@@ -1,7 +1,7 @@
-import { 
-    IoHappyOutline, 
-    IoEllipsisVerticalOutline, 
-    IoCreateOutline, 
+import {
+    IoHappyOutline,
+    IoEllipsisVerticalOutline,
+    IoCreateOutline,
     IoTrashOutline } from 'react-icons/io5';
 
 export type MessageControlsProps = {
@@ -21,9 +21,9 @@ const MessageControls = ({
     onEdit,
     onDelete
 }: MessageControlsProps) => {
-    return (
+    return(
         <div className='chat-message-controls'>
-            <button 
+            <button
                 className='chat-message-reaction-btn'
                 onClick={onOpenReactions}
             >
@@ -48,7 +48,7 @@ const MessageControls = ({
                                 <IoCreateOutline/> Edit
                             </button>
                             <button
-                                className='chat-message-option danger' 
+                                className='chat-message-option danger'
                                 onClick={onDelete}
                             >
                                 <IoTrashOutline/> Delete

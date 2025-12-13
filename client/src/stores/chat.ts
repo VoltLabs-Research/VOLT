@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -111,7 +111,7 @@ interface ChatStore {
     editMessage: (messageId: string, content: string) => Promise<void>;
     deleteMessage: (messageId: string) => Promise<void>;
     toggleReaction: (messageId: string, emoji: string) => Promise<void>;
-    
+
     // Group management
     createGroupChat: (teamId: string, groupName: string, groupDescription: string, participantIds: string[]) => Promise<void>;
     addUsersToGroup: (chatId: string, userIds: string[]) => Promise<void>;
@@ -176,7 +176,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         messages: [...state.messages, message]
     })),
     updateMessage: (messageId, updates) => set((state) => ({
-        messages: state.messages.map(msg => 
+        messages: state.messages.map(msg =>
             msg._id === messageId ? { ...msg, ...updates } : msg
         )
     })),
@@ -194,45 +194,45 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     setConnected: (connected) => set({ isConnected: connected }),
 
     // API Actions
-    loadChats: async () => {
+    loadChats: async() => {
         set({ isLoadingChats: true });
-        try {
+        try{
             const chats = await chatApi.getChats();
             set({ chats, isLoadingChats: false });
-        } catch (error: any) {
+        }catch(error: any){
             console.error('Failed to load chats');
             set({ isLoadingChats: false });
         }
     },
 
-    loadTeamMembers: async (teamId) => {
-        try {
+    loadTeamMembers: async(teamId) => {
+        try{
             const members = await chatApi.getTeamMembers(teamId);
             set({ teamMembers: members });
-        } catch (error: any) {
+        }catch(error: any){
             console.error('Failed to load team members:');
         }
     },
 
-    loadMessages: async (chatId) => {
+    loadMessages: async(chatId) => {
         set({ isLoadingMessages: true });
-        try {
+        try{
             const messages = await chatApi.getChatMessages(chatId);
             set({ messages, isLoadingMessages: false });
-        } catch (error: any) {
+        }catch(error: any){
             console.error('Failed to load messages');
             set({ isLoadingMessages: false });
         }
     },
 
-    sendMessage: async (content, messageType = 'text', metadata) => {
+    sendMessage: async(content, messageType = 'text', metadata) => {
         const { currentChat } = get();
-        if (!currentChat) return;
+        if(!currentChat) return;
 
-        try {
+        try{
             // Use socket to send message for real-time communication
             const { socketService } = await import('@/services/socketio');
-            if (socketService.isConnected()) {
+            if(socketService.isConnected()) {
                 socketService.emit('send_message', {
                     chatId: currentChat._id,
                     content,
@@ -241,81 +241,81 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 }).catch((error: any) => {
                     console.error('Failed to send message:');
                 });
-            } else {
+            }else{
                 console.error('Socket not connected - cannot send message');
             }
-        } catch (error: any) {
+        }catch(error: any){
             console.error('Failed to send message');
         }
     },
 
-    sendFileMessage: async (file) => {
+    sendFileMessage: async(file) => {
         const { currentChat } = get();
-        if (!currentChat) return;
+        if(!currentChat) return;
 
-        try {
+        try{
             // Upload file first
             const fileData = await chatApi.uploadFile(currentChat._id, file);
-            
+
             // Use socket to send file message for real-time communication
             const { socketService } = await import('@/services/socketio');
-            if (socketService.isConnected()) {
+            if(socketService.isConnected()) {
                 socketService.emit('send_file_message', {
                     chatId: currentChat._id,
-                    ...fileData
+                        ...fileData
                 }).catch((error) => {
                     console.error('Failed to send file message:', error);
                 });
-            } else {
+            }else{
                 console.error('Socket not connected');
             }
-        } catch (error) {
+        }catch(error){
             console.error('Failed to send file message:', error);
         }
     },
 
-    editMessage: async (messageId, content) => {
+    editMessage: async(messageId, content) => {
         const { currentChat } = get();
-        if (!currentChat) {
+        if(!currentChat){
             return;
         }
-        try {
+        try{
             const updated = await chatApi.editMessage(currentChat._id, messageId, content);
             set((state) => ({
                 messages: state.messages.map(m => m._id === messageId ? updated : m)
             }));
-            if (socketService.isConnected()) {
+            if(socketService.isConnected()) {
                 socketService.emit('edit_message', { chatId: currentChat._id, messageId, content }).catch(() => {});
             }
-        } catch (error: any) {
+        }catch(error: any){
             console.error('Failed to edit message');
         }
     },
 
-    deleteMessage: async (messageId) => {
+    deleteMessage: async(messageId) => {
         const { currentChat, messages } = get();
-        if (!currentChat) {
+        if(!currentChat){
             return;
         }
-        
+
         // Find the message to delete for optimistic update
         const messageToDelete = messages.find(m => m._id === messageId);
-        if (!messageToDelete) {
+        if(!messageToDelete){
             console.error('Message not found for deletion');
             return;
         }
-        
+
         // Apply optimistic update immediately
         set((state) => ({
             messages: state.messages.map(m => m._id === messageId ? { ...m, deleted: true } : m)
         }));
-        
-        try {
+
+        try{
             await chatApi.deleteMessage(currentChat._id, messageId);
-            if (socketService.isConnected()) {
+            if(socketService.isConnected()) {
                 socketService.emit('delete_message', { chatId: currentChat._id, messageId }).catch(() => {});
             }
-        } catch (error) {
+        }catch(error){
             console.error('Failed to delete message:', error);
             // Revert optimistic update on error
             set((state) => ({
@@ -324,17 +324,17 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         }
     },
 
-    toggleReaction: async (messageId, emoji) => {
+    toggleReaction: async(messageId, emoji) => {
         const { currentChat, messages } = get();
-        if (!currentChat) {
+        if(!currentChat){
             console.error('No current chat found');
             return;
         }
         console.log('Store toggleReaction called:', messageId, emoji, currentChat._id);
-        
+
         // Optimistic update
         const currentMessage = messages.find(m => m._id === messageId);
-        if (!currentMessage) {
+        if(!currentMessage){
             console.error('Message not found for optimistic update');
             return;
         }
@@ -343,7 +343,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         // Get user from auth store
         const authStore = useAuthStore.getState();
         const currentUser = authStore.user;
-        if (!currentUser) {
+        if(!currentUser){
             console.error('User not found');
             return;
         }
@@ -359,7 +359,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         })).filter(reaction => reaction.users.length > 0);
 
         // Check if user is removing their current reaction
-        const currentUserReaction = currentReactions.find(reaction => 
+        const currentUserReaction = currentReactions.find(reaction =>
             reaction.users.some(u => {
                 const uId = typeof u === 'string' ? u : u._id;
                 return uId === userId;
@@ -367,34 +367,34 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         );
 
         let newReactions;
-        if (currentUserReaction && currentUserReaction.emoji === emoji) {
+        if(currentUserReaction && currentUserReaction.emoji === emoji){
             // User is removing their current reaction
             newReactions = filteredReactions;
             console.log('Optimistic: User removing their current reaction');
-        } else {
-            // User is adding a new reaction (or changing their reaction)
+        }else{
+            // User is adding a new reaction(or changing their reaction)
             const existingEmojiIndex = filteredReactions.findIndex(r => r.emoji === emoji);
-            
-            if (existingEmojiIndex !== -1) {
-                // Add user to existing emoji reaction (only if not already there)
+
+            if(existingEmojiIndex !== -1){
+                // Add user to existing emoji reaction(only if not already there)
                 const existingUsers = filteredReactions[existingEmojiIndex].users;
                 const userAlreadyExists = existingUsers.some(u => {
                     const uId = typeof u === 'string' ? u : u._id;
                     return uId === userId;
                 });
-                
-                if (!userAlreadyExists) {
+
+                if(!userAlreadyExists){
                     filteredReactions[existingEmojiIndex].users.push(userId);
                 }
                 newReactions = filteredReactions;
                 console.log('Optimistic: Added user to existing emoji reaction');
-            } else {
+            }else{
                 // Create new emoji reaction - ensure no duplicates by checking if emoji already exists
                 const emojiAlreadyExists = filteredReactions.some(r => r.emoji === emoji);
-                if (!emojiAlreadyExists) {
+                if(!emojiAlreadyExists){
                     newReactions = [...filteredReactions, { emoji, users: [userId] }];
                     console.log('Optimistic: Created new emoji reaction');
-                } else {
+                }else{
                     // This shouldn't happen, but fallback to filtered reactions
                     newReactions = filteredReactions;
                     console.log('Optimistic: Emoji already exists, using filtered reactions');
@@ -404,25 +404,25 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
         // Apply optimistic update immediately
         set((state) => ({
-            messages: state.messages.map(m => 
-                m._id === messageId 
+            messages: state.messages.map(m =>
+                m._id === messageId
                     ? { ...m, reactions: newReactions }
                     : m
             )
         }));
 
-        try {
+        try{
             // Use only socket for real-time reactions
-            if (socketService.isConnected()) {
+            if(socketService.isConnected()) {
                 socketService.emit('toggle_reaction', { chatId: currentChat._id, messageId, emoji }).catch(() => {});
-            } else {
+            }else{
                 console.error('Socket not connected');
                 // Revert optimistic update if socket is not connected
                 set((state) => ({
                     messages: state.messages.map(m => m._id === messageId ? currentMessage : m)
                 }));
             }
-        } catch (error) {
+        }catch(error){
             console.error('Failed to toggle reaction:', error);
             // Revert optimistic update on error
             set((state) => ({
@@ -432,106 +432,106 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
 
     // Group management
-    createGroupChat: async (teamId, groupName, groupDescription, participantIds) => {
-        try {
+    createGroupChat: async(teamId, groupName, groupDescription, participantIds) => {
+        try{
             const groupChat = await chatApi.createGroupChat(teamId, groupName, groupDescription, participantIds);
             set((state) => ({
                 chats: [...state.chats, groupChat]
             }));
-            if (socketService.isConnected()) {
+            if(socketService.isConnected()) {
                 socketService.emit('group_created', { chatId: groupChat._id }).catch(() => {});
             }
-        } catch (error) {
+        }catch(error){
             console.error('Failed to create group chat:', error);
         }
     },
 
-    addUsersToGroup: async (chatId, userIds) => {
-        try {
+    addUsersToGroup: async(chatId, userIds) => {
+        try{
             const updatedChat = await chatApi.addUsersToGroup(chatId, userIds);
             set((state) => ({
                 chats: state.chats.map(c => c._id === chatId ? updatedChat : c),
                 currentChat: state.currentChat?._id === chatId ? updatedChat : state.currentChat
             }));
-            if (socketService.isConnected()) {
+            if(socketService.isConnected()) {
                 socketService.emit('users_added_to_group', { chatId, userIds }).catch(() => {});
             }
-        } catch (error) {
+        }catch(error){
             console.error('Failed to add users to group:', error);
         }
     },
 
-    removeUsersFromGroup: async (chatId, userIds) => {
-        try {
+    removeUsersFromGroup: async(chatId, userIds) => {
+        try{
             const updatedChat = await chatApi.removeUsersFromGroup(chatId, userIds);
             set((state) => ({
                 chats: state.chats.map(c => c._id === chatId ? updatedChat : c),
                 currentChat: state.currentChat?._id === chatId ? updatedChat : state.currentChat
             }));
-            if (socketService.isConnected()) {
+            if(socketService.isConnected()) {
                 socketService.emit('users_removed_from_group', { chatId, userIds }).catch(() => {});
             }
-        } catch (error) {
+        }catch(error){
             console.error('Failed to remove users from group:', error);
         }
     },
 
-    updateGroupInfo: async (chatId, groupName, groupDescription) => {
-        try {
+    updateGroupInfo: async(chatId, groupName, groupDescription) => {
+        try{
             const updatedChat = await chatApi.updateGroupInfo(chatId, groupName, groupDescription);
             set((state) => ({
                 chats: state.chats.map(c => c._id === chatId ? updatedChat : c),
                 currentChat: state.currentChat?._id === chatId ? updatedChat : state.currentChat
             }));
-            if (socketService.isConnected()) {
+            if(socketService.isConnected()) {
                 socketService.emit('group_info_updated', { chatId, groupName, groupDescription }).catch(() => {});
             }
-        } catch (error) {
+        }catch(error){
             console.error('Failed to update group info:', error);
         }
     },
 
-    updateGroupAdmins: async (chatId, userIds, action) => {
-        try {
+    updateGroupAdmins: async(chatId, userIds, action) => {
+        try{
             const updatedChat = await chatApi.updateGroupAdmins(chatId, userIds, action);
             set((state) => ({
                 chats: state.chats.map(c => c._id === chatId ? updatedChat : c),
                 currentChat: state.currentChat?._id === chatId ? updatedChat : state.currentChat
             }));
-        } catch (error) {
+        }catch(error){
             console.error('Failed to update group admins:', error);
         }
     },
 
-    leaveGroup: async (chatId) => {
-        try {
+    leaveGroup: async(chatId) => {
+        try{
             await chatApi.leaveGroup(chatId);
             set((state) => ({
                 chats: state.chats.filter(c => c._id !== chatId),
                 currentChat: state.currentChat?._id === chatId ? null : state.currentChat
             }));
-            if (socketService.isConnected()) {
+            if(socketService.isConnected()) {
                 const { user } = useAuthStore.getState();
                 socketService.emit('user_left_group', { chatId, userId: user?._id }).catch(() => {});
             }
-        } catch (error) {
+        }catch(error){
             console.error('Failed to leave group:', error);
         }
     },
 
-    markAsRead: async (chatId) => {
-        try {
+    markAsRead: async(chatId) => {
+        try{
             await chatApi.markMessagesAsRead(chatId);
-        } catch (error) {
+        }catch(error){
             console.error('Failed to mark messages as read:', error);
         }
     },
 
-    getOrCreateChat: async (teamId, participantId) => {
-        try {
+    getOrCreateChat: async(teamId, participantId) => {
+        try{
             const chat = await chatApi.getOrCreateChat(teamId, participantId);
             return chat;
-        } catch (error) {
+        }catch(error){
             console.error('Failed to get or create chat:', error);
             throw error;
         }
@@ -539,7 +539,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     // Socket Actions
     joinChat: (chatId) => {
-        if (socketService.isConnected()) {
+        if(socketService.isConnected()) {
             socketService.emit('join_chat', chatId).catch((error) => {
                 console.error('Failed to join chat:', error);
             });
@@ -547,7 +547,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
 
     leaveChat: (chatId) => {
-        if (socketService.isConnected()) {
+        if(socketService.isConnected()) {
             socketService.emit('leave_chat', chatId).catch((error) => {
                 console.error('Failed to leave chat:', error);
             });
@@ -555,7 +555,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
 
     startTyping: (chatId) => {
-        if (socketService.isConnected()) {
+        if(socketService.isConnected()) {
             socketService.emit('typing_start', { chatId }).catch((error) => {
                 console.error('Failed to start typing:', error);
             });
@@ -563,7 +563,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
 
     stopTyping: (chatId) => {
-        if (socketService.isConnected()) {
+        if(socketService.isConnected()) {
             socketService.emit('typing_stop', { chatId }).catch((error) => {
                 console.error('Failed to stop typing:', error);
             });
@@ -588,19 +588,19 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     setGroupDescription: (description) => set({ groupDescription: description }),
     setEditGroupName: (name) => set({ editGroupName: name }),
     setEditGroupDescription: (description) => set({ editGroupDescription: description }),
-    
+
     toggleMemberSelection: (memberId) => set((state) => ({
         selectedMembers: state.selectedMembers.includes(memberId)
             ? state.selectedMembers.filter(id => id !== memberId)
             : [...state.selectedMembers, memberId]
     })),
-    
+
     toggleAdminSelection: (adminId) => set((state) => ({
         selectedAdmins: state.selectedAdmins.includes(adminId)
             ? state.selectedAdmins.filter(id => id !== adminId)
             : [...state.selectedAdmins, adminId]
     })),
-    
+
     resetModalStates: () => set({
         showTeamMembers: false,
         showCreateGroup: false,

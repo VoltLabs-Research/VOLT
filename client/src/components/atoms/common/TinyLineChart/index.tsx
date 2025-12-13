@@ -24,7 +24,7 @@ const TinyLineChart: React.FC<Props> = ({ lineColor, xLabels, pData, yDomain, wi
 
     const areaColor = alpha(lineColor, 0.25);
 
-    return (
+    return(
         <LineChart
             width={width}
             height={height}

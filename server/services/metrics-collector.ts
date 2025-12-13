@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -37,7 +37,7 @@ type ServerStatus = 'Healthy' | 'Warning' | 'Critical';
 
 interface NetworkCheck{
     bytes: { received: number; sent: number };
-    timestamp: number; 
+    timestamp: number;
 };
 
 interface CPUTimes{
@@ -96,7 +96,7 @@ export default class MetricsCollector{
     private getCPUCoresUsage(): number[]{
         const cpus = os.cpus();
 
-        // Calculate current time for each core 
+        // Calculate current time for each core
         // TODO: Duplicated code
         const currentTimes = cpus.map((cpu) => {
             let total = 0;
@@ -123,7 +123,7 @@ export default class MetricsCollector{
             const totalDelta = current.total - last.total;
 
             if(totalDelta === 0) return 0;
-            
+
             const usage = 100 - (100 * idleDelta / totalDelta);
             return Math.min(100, Math.max(0, Math.round(usage)));
         });
@@ -159,12 +159,12 @@ export default class MetricsCollector{
         try{
             const { stdout } = await execPromise('df -B1 / | tail -1');
             const parts = stdout.trim().split(/\s+/);
-            
+
             const total = parseInt(parts[1]) || 0;
             const used = parseInt(parts[2]) || 0;
             const available = parseInt(parts[3]) || 0;
             const usagePercent = parseInt(parts[4]?.replace('%', '')) || 0;
-            
+
             return {
                 total: Math.round((total / (1024 ** 3)) * 100) / 100,
                 used: Math.round((used / (1024 ** 3)) * 100) / 100,
@@ -269,7 +269,7 @@ export default class MetricsCollector{
             let totalRx = 0;
             let totalTx = 0;
 
-            // Parse network interfaces (skip header lines)
+            // Parse network interfaces(skip header lines)
             for(let i = 2; i < lines.length; i++){
                 const line = lines[i].trim();
                 if(!line) continue;
@@ -362,8 +362,8 @@ export default class MetricsCollector{
                 // Microseconds to ms
                 ? Math.round(readLatency.latency / readLatency.ops / 1000)
                 : 0;
-            
-            return {
+
+            return{
                 connections: serverStatus.connections?.current || 0,
                 queries,
                 latency: Math.max(0, latencyMs)
@@ -373,7 +373,7 @@ export default class MetricsCollector{
             return null;
         }
     }
-    
+
     /**
      * Get disk operations metrics
      */
@@ -393,17 +393,17 @@ export default class MetricsCollector{
                 if(parts.length < 14) continue;
 
                 const deviceName = parts[2];
-                
-                // Only physical disks (not partitions)
+
+                // Only physical disks(not partitions)
                 if(!/^(sd[a-z]|nvme\d+n\d+|vd[a-z]|hd[a-z])$/.test(deviceName)) continue;
-                
-                // Skip ALL partitions (nvme0n1p1, sda1, vda2, etc.)
+
+                // Skip ALL partitions(nvme0n1p1, sda1, vda2, etc.)
                 if(/\d+$/.test(deviceName) && !/^nvme\d+n\d+$/.test(deviceName)) continue;
 
                 // /proc/diskstats columns:
                 // [3] reads completed
                 // [5] sectors read
-                // [7] writes completed  
+                // [7] writes completed
                 // [9] sectors written
                 totalReadOps += parseInt(parts[3]) || 0;
                 totalReadSectors += parseInt(parts[5]) || 0;
@@ -420,7 +420,7 @@ export default class MetricsCollector{
                     writeSectors: totalWriteSectors,
                     timestamp: currentTime
                 };
-                return { 
+                return {
                     read: 0,
                     write: 0,
                     speed: 0
@@ -428,24 +428,24 @@ export default class MetricsCollector{
             }
 
             const timeDiff = (currentTime - this.lastDiskIO.timestamp) / 1000;
-            
+
             // Prevent division by zero
             if(timeDiff <= 0){
                 return { read: 0, write: 0, speed: 0 };
             }
-            
-            // Calculate IOPS (operations per second)
+
+            // Calculate IOPS(operations per second)
             const readOpsDelta = Math.max(0, totalReadOps - this.lastDiskIO.reads);
             const writeOpsDelta = Math.max(0, totalWriteOps - this.lastDiskIO.writes);
             const readIOPS = Math.round(readOpsDelta / timeDiff);
             const writeIOPS = Math.round(writeOpsDelta / timeDiff);
-            
+
             // Calculate throughput in MB/s
             // Standard sector size is 512 bytes
             const SECTOR_SIZE = 512;
             const readSectorsDelta = Math.max(0, totalReadSectors - this.lastDiskIO.readSectors);
             const writeSectorsDelta = Math.max(0, totalWriteSectors - this.lastDiskIO.writeSectors);
-            
+
             const readMBps = ((readSectorsDelta * SECTOR_SIZE) / (1024 * 1024)) / timeDiff;
             const writeMBps = ((writeSectorsDelta * SECTOR_SIZE) / (1024 * 1024)) / timeDiff;
 
@@ -459,7 +459,7 @@ export default class MetricsCollector{
             };
 
             return {
-                // MB/s (2 decimals)
+                // MB/s(2 decimals)
                 read: Math.round(readMBps * 100) / 100,
                 write: Math.round(writeMBps * 100) / 100,
                 // Total IOPS
@@ -468,11 +468,11 @@ export default class MetricsCollector{
                 readIOPS,
                 writeIOPS
             };
-        } catch (error: any) {
+        }catch(error: any){
             logger.error(`Error reading disk operations: ${error}`);
-            return { 
-                read: 0, 
-                write: 0, 
+            return {
+                read: 0,
+                write: 0,
                 speed: 0,
                 readIOPS: 0,
                 writeIOPS: 0
@@ -590,7 +590,7 @@ export default class MetricsCollector{
                 return null;
             }
 
-            // Get the most recent metrics (highest score)
+            // Get the most recent metrics(highest score)
             const metrics = await redis.zrevrange(this.redisMetricsKey, 0, 0);
 
             if(metrics && metrics.length > 0){
@@ -605,14 +605,14 @@ export default class MetricsCollector{
     }
 
     /**
-     * Clean old metrics from Redis (older than TTL)
+     * Clean old metrics from Redis(older than TTL)
      */
     async cleanOldMetrics(): Promise<number>{
         try{
             if(!redis) return 0;
-            // Calculate cutoff timestamp (current time - TTL)
+            // Calculate cutoff timestamp(current time - TTL)
             const cutoffTime = Date.now() - (this.metricsTTL * 1000);
-            // Remove all metrics with score (timestamp) less than cutoffTime
+            // Remove all metrics with score(timestamp) less than cutoffTime
             const removed = await redis.zremrangebyscore(this.redisMetricsKey, '-inf', cutoffTime);
             if(removed > 0){
                 logger.info(`Cleaned ${removed} old metrics from Redis`);

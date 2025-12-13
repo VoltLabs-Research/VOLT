@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -25,13 +25,13 @@ import { Team } from '@models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 
-export const checkTeamMembership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const checkTeamMembership = async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
     const teamId = req.params.id;
     const userId = (req as any).user._id;
 
     const team = await Team.findOne({ _id: teamId, members: userId });
 
-    if (!team) {
+    if(!team){
         return next(new RuntimeError(ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 403));
     }
 
@@ -40,13 +40,13 @@ export const checkTeamMembership = async (req: Request, res: Response, next: Nex
     next();
 };
 
-export const checkTeamOwnership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const checkTeamOwnership = async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
     const teamId = req.params.id;
     const userId = (req as any).user._id;
 
     const team = await Team.findOne({ _id: teamId, owner: userId });
 
-    if (!team) {
+    if(!team){
         return next(new RuntimeError(ErrorCodes.TEAM_OWNERSHIP_FORBIDDEN, 403));
     }
 

@@ -25,7 +25,7 @@ export default class TrajectoryParserFactory{
         }else{
             throw new Error('UnsupportedTrajectoryFormat');
         }
-        
+
         return parser.parse(filePath, options);
     }
 };

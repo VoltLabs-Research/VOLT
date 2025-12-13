@@ -28,14 +28,14 @@ const EffectsControls = () => {
     const sections = [
         {
             key: 'ssao',
-            title: 'SSAO (Screen Space Ambient Occlusion)',
+            title: 'SSAO(Screen Space Ambient Occlusion)',
             enabled: ssao.enabled,
             onToggle: (enabled: boolean) => setSSAOEffect({ enabled }),
             rows: [
                 {
-                    label: 'Intensity', 
-                    min: 0, 
-                    max: 20, 
+                    label: 'Intensity',
+                    min: 0,
+                    max: 20,
                     step: 0.5,
                     value: ssao.intensity,
                     onChange: (intensity: number) => setSSAOEffect({ intensity }),
@@ -57,26 +57,26 @@ const EffectsControls = () => {
             rows: [
                 {
                     label: 'Intensity',
-                    min: 0, 
-                    max: 3, 
+                    min: 0,
+                    max: 3,
                     step: 0.1,
                     value: bloom.intensity,
                     onChange: (intensity: number) => setBloomEffect({ intensity }),
                     format: (v: number) => v.toFixed(1)
                 },
                 {
-                    label: 'Threshold', 
-                    min: 0, 
-                    max: 2, 
+                    label: 'Threshold',
+                    min: 0,
+                    max: 2,
                     step: 0.01,
                     value: bloom.luminanceThreshold,
                     onChange: (luminanceThreshold: number) => setBloomEffect({ luminanceThreshold }),
                     format: (v: number) => v.toFixed(2)
                 },
                 {
-                    label: 'Smoothing', 
-                    min: 0, 
-                    max: 0.1, 
+                    label: 'Smoothing',
+                    min: 0,
+                    max: 0.1,
                     step: 0.001,
                     value: bloom.luminanceSmoothing,
                     onChange: (luminanceSmoothing: number) => setBloomEffect({ luminanceSmoothing }),
@@ -99,18 +99,18 @@ const EffectsControls = () => {
             onToggle: (enabled: boolean) => setChromaticAberration({ enabled }),
             rows: [
                 {
-                    label: 'Offset X', 
-                    min: -0.01, 
-                    max: 0.01, 
+                    label: 'Offset X',
+                    min: -0.01,
+                    max: 0.01,
                     step: 0.001,
                     value: chromaticAberration.offset[0],
                     onChange: (x: number) => setChromaticAberration({ offset: [x, chromaticAberration.offset[1]] }),
                     format: (v: number) => v.toFixed(3)
                 },
                 {
-                    label: 'Offset Y', 
-                    min: -0.01, 
-                    max: 0.01, 
+                    label: 'Offset Y',
+                    min: -0.01,
+                    max: 0.01,
                     step: 0.001,
                     value: chromaticAberration.offset[1],
                     onChange: (y: number) => setChromaticAberration({ offset: [chromaticAberration.offset[0], y] }),
@@ -125,18 +125,18 @@ const EffectsControls = () => {
             onToggle: (enabled: boolean) => setVignette({ enabled }),
             rows: [
                 {
-                    label: 'Offset', 
-                    min: 0, 
-                    max: 1, 
+                    label: 'Offset',
+                    min: 0,
+                    max: 1,
                     step: 0.01,
                     value: vignette.offset,
                     onChange: (offset: number) => setVignette({ offset }),
                     format: (v: number) => v.toFixed(2)
                 },
                 {
-                    label: 'Darkness', 
-                    min: 0, 
-                    max: 1, 
+                    label: 'Darkness',
+                    min: 0,
+                    max: 1,
                     step: 0.01,
                     value: vignette.darkness,
                     onChange: (darkness: number) => setVignette({ darkness }),
@@ -160,27 +160,27 @@ const EffectsControls = () => {
             onToggle: (enabled: boolean) => setDepthOfField({ enabled }),
             rows: [
                 {
-                    label: 'Focus Distance', 
-                    min: 0.001, 
-                    max: 1, 
+                    label: 'Focus Distance',
+                    min: 0.001,
+                    max: 1,
                     step: 0.001,
                     value: depthOfField.focusDistance,
                     onChange: (focusDistance: number) => setDepthOfField({ focusDistance }),
                     format: (v: number) => v.toFixed(3)
                 },
                 {
-                    label: 'Focal Length', 
-                    min: 0.1, 
-                    max: 2, 
+                    label: 'Focal Length',
+                    min: 0.1,
+                    max: 2,
                     step: 0.01,
                     value: depthOfField.focalLength,
                     onChange: (focalLength: number) => setDepthOfField({ focalLength }),
                     format: (v: number) => v.toFixed(2)
                 },
                 {
-                    label: 'Bokeh Scale', 
-                    min: 0.1, 
-                    max: 5, 
+                    label: 'Bokeh Scale',
+                    min: 0.1,
+                    max: 5,
                     step: 0.1,
                     value: depthOfField.bokehScale,
                     onChange: (bokehScale: number) => setDepthOfField({ bokehScale }),
@@ -195,8 +195,8 @@ const EffectsControls = () => {
             onToggle: (enabled: boolean) => setSepia({ enabled }),
             rows: [
                 {
-                    label: 'Intensity', 
-                    min: 0, 
+                    label: 'Intensity',
+                    min: 0,
                     max: 2,
                     step: 0.01,
                     value: sepia.intensity,
@@ -223,14 +223,14 @@ const EffectsControls = () => {
         }
     ];
 
-    return (
-        <CollapsibleSection 
-            title="Post-Processing Effects" 
+    return(
+        <CollapsibleSection
+            title="Post-Processing Effects"
             icon={<MdAutoFixHigh size={16} />}
         >
             <div style={{ display: 'grid', gap: 12 }}>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>SSAO (Screen Space Ambient Occlusion)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>SSAO(Screen Space Ambient Occlusion)</div>
                     <FormSchema sections={[sections[0]]} />
                 </div>
                 <div>

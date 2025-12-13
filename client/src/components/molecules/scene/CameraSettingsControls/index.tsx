@@ -58,7 +58,7 @@ const CameraSettingsControls: React.FC = () => {
         onToggle: () => {},
         rows: [
             {
-                label: 'FOV (°)',
+                label: 'FOV(°)',
                 min: 10,
                 max: 120,
                 step: 1,
@@ -206,7 +206,7 @@ const CameraSettingsControls: React.FC = () => {
 
     const transformSection = {
         key: 'transform',
-        title: 'Transform (Z-up)',
+        title: 'Transform(Z-up)',
         enabled: true,
         onToggle: () => {},
         rows: [
@@ -269,14 +269,14 @@ const CameraSettingsControls: React.FC = () => {
 
     const sections = [
         projectionSection,
-        ...(type === 'perspective' ? [perspectiveSection] : []),
-        ...(type === 'orthographic' ? [orthographicSection] : []),
+            ...(type === 'perspective' ? [perspectiveSection] : []),
+            ...(type === 'orthographic' ? [orthographicSection] : []),
         transformSection
     ];
 
-    return (
-        <CollapsibleSection 
-            title="Camera Settings" 
+    return(
+        <CollapsibleSection
+            title="Camera Settings"
             icon={<MdCameraAlt size={16} />}
         >
             <div style={{ display: 'grid', gap: 12 }}>

@@ -2,10 +2,10 @@ import React from 'react';
 import './AuthOptions.css';
 
 const AuthOptions = () => {
-    return (
+    return(
         <div className='side-image-form-opts-container'>
             <div className='auth-remember-me-container'>
-                <input 
+                <input
                     type='checkbox'
                     checked={true}
                     name='remember-me' />

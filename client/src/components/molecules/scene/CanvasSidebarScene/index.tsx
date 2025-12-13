@@ -30,19 +30,19 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     }, [activeScene]);
 
     useEffect(() => {
-        if(!trajectory?._id || !analysisConfigId) {
+        if(!trajectory?._id || !analysisConfigId){
             setLoading(false);
             return;
         }
 
         // Don't load renderable models if trajectory has no analysis
-        if(!trajectory.analysis || trajectory.analysis.length === 0) {
+        if(!trajectory.analysis || trajectory.analysis.length === 0){
             setLoading(false);
             setPluginExposures([]);
             return;
         }
 
-        const loadExposures = async () => {
+        const loadExposures = async() => {
             setLoading(true);
             setPluginExposures([]);
             try{
@@ -118,7 +118,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         setActiveScene(option.sceneType);
     };
 
-    return (
+    return(
         <div className='editor-sidebar-scene-container'>
             <div className='editor-sidebar-scene-options-container'>
                 {defaultOptions.map((option, index) => (

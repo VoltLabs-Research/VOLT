@@ -23,7 +23,7 @@ const DynamicEffects = () => {
         noise
     } = useEffectsConfigStore();
 
-    const hasAnyEffect = ssao.enabled || bloom.enabled || chromaticAberration.enabled || vignette.enabled || 
+    const hasAnyEffect = ssao.enabled || bloom.enabled || chromaticAberration.enabled || vignette.enabled ||
                     depthOfField.enabled || sepia.enabled || noise.enabled;
 
     const caOffsetVec = useMemo(() => new Vector2(
@@ -31,7 +31,7 @@ const DynamicEffects = () => {
         chromaticAberration.offset[1]
     ), [chromaticAberration.offset[0], chromaticAberration.offset[1]]);
 
-    return (
+    return(
         <>
             {hasAnyEffect && (
                 <EffectComposer
@@ -104,7 +104,7 @@ const DynamicEffects = () => {
                         />
                     )}
                 </EffectComposer>
-            )}  
+            )}
         </>
     );
 };

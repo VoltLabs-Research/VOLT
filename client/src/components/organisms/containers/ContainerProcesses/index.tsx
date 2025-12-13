@@ -12,10 +12,10 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchProcesses = async () => {
+    const fetchProcesses = async() => {
         setLoading(true);
         setError(null);
-        try {
+        try{
             const data = await containerApi.getProcesses(containerId) as any;
             // containerApi.getProcesses returns the processes object directly
             // with { Titles: string[], Processes: string[][] }
@@ -34,33 +34,33 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
             });
 
             setProcesses(mapped);
-        } catch (err: any) {
+        }catch(err: any){
             setError('Failed to load processes. Container might be stopped.');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
     const formatMemory = (kbStr: string) => {
         const kb = parseInt(kbStr, 10);
-        if (isNaN(kb)) return kbStr;
-        if (kb > 1024 * 1024) return `${(kb / 1024 / 1024).toFixed(1)}G`;
-        if (kb > 1024) return `${(kb / 1024).toFixed(0)}M`;
+        if(isNaN(kb)) return kbStr;
+        if(kb > 1024 * 1024) return `${(kb / 1024 / 1024).toFixed(1)}G`;
+        if(kb > 1024) return `${(kb / 1024).toFixed(0)}M`;
         return `${kb}K`;
     };
 
     useEffect(() => {
         fetchProcesses();
         const interval = setInterval(fetchProcesses, 3000);
-        return () => clearInterval(interval);
+        return() => clearInterval(interval);
     }, [containerId]);
 
-    if (loading && processes.length === 0) {
+    if(loading && processes.length === 0){
         return <div className="processes-loading">Loading processes...</div>;
     }
 
-    if (error) {
-        return (
+    if(error){
+        return(
             <div className="processes-error">
                 <Activity size={48} />
                 <p>{error}</p>
@@ -69,7 +69,7 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
         );
     }
 
-    return (
+    return(
         <div className="processes-container">
             <div className="processes-header">
                 <h3>Running Processes</h3>

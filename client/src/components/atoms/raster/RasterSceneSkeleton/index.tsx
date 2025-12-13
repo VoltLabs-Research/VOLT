@@ -1,19 +1,19 @@
 import React from 'react';
 import { Skeleton } from '@mui/material';
 
-function useIsMobile(breakpointPx: number = 768) {
+function useIsMobile(breakpointPx: number = 768){
     const [isMobile, setIsMobile] = React.useState<boolean>(() =>
         typeof window !== 'undefined' ? window.innerWidth <= breakpointPx : false
     );
 
     React.useEffect(() => {
-        if (typeof window === 'undefined') return;
+        if(typeof window === 'undefined') return;
         const mq = window.matchMedia(`(max-width: ${breakpointPx}px)`);
         const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
         // Initialize & subscribe
         setIsMobile(mq.matches);
         mq.addEventListener?.('change', onChange);
-        return () => mq.removeEventListener?.('change', onChange);
+        return() => mq.removeEventListener?.('change', onChange);
     }, [breakpointPx]);
 
     return isMobile;
@@ -25,7 +25,7 @@ const RasterSceneSkeleton: React.FC = () => {
     const frameWidth = isMobile ? 'min(22vw, 44vw)' : 'min(5vw, 44vw)';
     const playbackWidth = isMobile ? 'min(32vw, 60vw)' : 'min(8vw, 60vw)';
 
-    return (
+    return(
         <figure className='raster-scene-container' style={{ flex: 1, minWidth: 0 }}>
             <div className='raster-scene-main'>
                 <Skeleton
@@ -52,7 +52,7 @@ const RasterSceneSkeleton: React.FC = () => {
                 />
             </div>
 
-            {/* Frame index skeleton (responsive) */}
+            {/* Frame index skeleton(responsive) */}
             <div className='raster-skel raster-skel-frame'>
                 <Skeleton
                     variant='rounded'
@@ -66,7 +66,7 @@ const RasterSceneSkeleton: React.FC = () => {
                 />
             </div>
 
-            {/* Playback controls skeleton (responsive) */}
+            {/* Playback controls skeleton(responsive) */}
             <div className='raster-skel raster-skel-playback'>
                 <Skeleton
                     variant='rounded'

@@ -52,32 +52,32 @@ const ContainerDetails: React.FC = () => {
     }, [id]);
 
     useEffect(() => {
-        if (container && container.status === 'running') {
+        if(container && container.status === 'running'){
             const interval = setInterval(() => fetchStats(container._id), 2000);
-            return () => clearInterval(interval);
+            return() => clearInterval(interval);
         }
     }, [container]);
 
-    const fetchContainer = async () => {
-        try {
+    const fetchContainer = async() => {
+        try{
             const containers = await containerApi.getAll();
             const found = containers.find((c: any) => c._id === id);
-            if (found) {
+            if(found){
                 setContainer(found);
-            } else {
+            }else{
                 showError('Container not found');
                 navigate('/dashboard/containers');
             }
-        } catch (error) {
+        }catch(error){
             showError('Failed to fetch container details');
             navigate('/dashboard/containers');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
-    const fetchStats = async (containerId: string) => {
-        try {
+    const fetchStats = async(containerId: string) => {
+        try{
             const newStats = await containerApi.getStats(containerId);
 
             let cpuPercent = 0;
@@ -85,7 +85,7 @@ const ContainerDetails: React.FC = () => {
             const systemDelta = newStats.cpu_stats.system_cpu_usage - newStats.precpu_stats.system_cpu_usage;
             const onlineCpus = newStats.cpu_stats.online_cpus || newStats.cpu_stats.cpu_usage.percpu_usage?.length || 1;
 
-            if (systemDelta > 0 && cpuDelta > 0) {
+            if(systemDelta > 0 && cpuDelta > 0){
                 cpuPercent = (cpuDelta / systemDelta) * onlineCpus * 100;
             }
 
@@ -100,17 +100,17 @@ const ContainerDetails: React.FC = () => {
                 return updated.slice(-30);
             });
 
-        } catch (error) {
+        }catch(error){
             console.error('Failed to fetch stats', error);
         }
     };
 
-    const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete') => {
-        if (!container) return;
+    const handleAction = async(action: 'start' | 'stop' | 'restart' | 'delete') => {
+        if(!container) return;
         setActionLoading(true);
-        try {
-            if (action === 'delete') {
-                if (!window.confirm('Are you sure you want to delete this container?')) {
+        try{
+            if(action === 'delete'){
+                if(!window.confirm('Are you sure you want to delete this container?')) {
                     setActionLoading(false);
                     return;
                 }
@@ -120,17 +120,17 @@ const ContainerDetails: React.FC = () => {
                 return;
             }
 
-            if (action === 'restart') {
+            if(action === 'restart'){
                 await containerApi.restart(container._id);
-            } else {
+            }else{
                 await containerApi.control(container._id, action);
             }
 
             showSuccess(`Container ${action}ed successfully`);
             fetchContainer();
-        } catch (error: any) {
+        }catch(error: any){
             showError(error.response?.data?.message || `Failed to ${action} container`);
-        } finally {
+        }finally{
             setActionLoading(false);
         }
     };
@@ -149,15 +149,15 @@ const ContainerDetails: React.FC = () => {
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-        if (days > 0) return `${days}d ${hours}h`;
-        if (hours > 0) return `${hours}h ${minutes}m`;
+        if(days > 0) return `${days}d ${hours}h`;
+        if(hours > 0) return `${hours}h ${minutes}m`;
         return `${minutes}m`;
     };
 
-    if (loading) return <div className="loading-spinner">Loading...</div>;
-    if (!container) return null;
+    if(loading) return <div className="loading-spinner">Loading...</div>;
+    if(!container) return null;
 
-    return (
+    return(
         <div className="details-page-layout">
             <div className="details-sidebar">
                 <div className="sidebar-header-details">
@@ -450,7 +450,7 @@ const ContainerDetails: React.FC = () => {
                         <div className="settings-card">
                             <div className="card-header">
                                 <h3>Configuration & Resources</h3>
-                                <p>Update environment variables, ports, and resource limits (CPU/RAM).</p>
+                                <p>Update environment variables, ports, and resource limits(CPU/RAM).</p>
                             </div>
                             <div className="card-body">
                                 <button

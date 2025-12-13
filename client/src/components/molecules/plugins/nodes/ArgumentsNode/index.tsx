@@ -10,7 +10,7 @@ const ArgumentsNode = memo((props: NodeProps) => {
     const presetCount = args.filter((a: any) => a.value !== undefined).length;
     const configurableCount = args.length - presetCount;
 
-    return (
+    return(
         <BaseNode {...props} nodeType={NodeType.ARGUMENTS}>
             <div className='workflow-node-field-container'>
                 <h3 className='workflow-node-field-label'>Arguments</h3>

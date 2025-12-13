@@ -32,12 +32,12 @@ const CreateGroupModal = () => {
         groupDescription: { maxLength: 250, message: 'Description cannot exceed 250 characters' }
     });
 
-    const handleCreateGroup = async () => {
-        if (!validate({ groupName, groupDescription })) return;
-        if (selectedMembers.length === 0 || !selectedTeam) return; // Kept original validation
+    const handleCreateGroup = async() => {
+        if(!validate({ groupName, groupDescription })) return;
+        if(selectedMembers.length === 0 || !selectedTeam) return; // Kept original validation
 
         setIsLoading(true);
-        try {
+        try{
             await createGroupChat( // Changed from createGroup to createGroupChat to match existing hook usage
                 selectedTeam._id, // Kept selectedTeam._id as it was in the original createGroupChat call
                 groupName.trim(),
@@ -48,9 +48,9 @@ const CreateGroupModal = () => {
             setGroupDescription('');
             setSelectedMembers([]);
             setShowCreateGroup(false);
-        } catch (error) {
+        }catch(error){
             console.error('Failed to create group:', error);
-        } finally {
+        }finally{
             setIsLoading(false);
         }
     };
@@ -65,7 +65,7 @@ const CreateGroupModal = () => {
         checkField('groupDescription', e.target.value);
     };
 
-    return (
+    return(
         <DraggableBinaryContainer
             title='Create New Group'
             description="Create a new group chat with your team members."
@@ -90,7 +90,7 @@ const CreateGroupModal = () => {
                         label='Group Description'
                         value={groupDescription}
                         onChange={handleDescriptionChange}
-                        placeholder='Enter group description (optional)'
+                        placeholder='Enter group description(optional)'
                         error={errors.groupDescription}
                     />
                 </div>
@@ -104,7 +104,7 @@ const CreateGroupModal = () => {
                             member._id !== user?._id &&
                             self.findIndex(m => m._id === member._id) === index
                         )
-                        .map((member) => (
+                            .map((member) => (
                             <div
                                 key={member._id}
                                 className={`create-group-member ${selectedMembers.includes(member._id) ? 'selected' : ''}`}

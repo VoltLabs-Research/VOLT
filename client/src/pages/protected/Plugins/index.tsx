@@ -19,9 +19,9 @@ const PluginsListing = () => {
 
     const searchQuery = useDashboardSearchStore((s) => s.query);
 
-    const fetchPlugins = useCallback(async (pageNum: number, append: boolean = false) => {
+    const fetchPlugins = useCallback(async(pageNum: number, append: boolean = false) => {
         setIsLoading(true);
-        try {
+        try{
             const res = await pluginApi.getPlugins({ page: pageNum, limit, search: searchQuery });
             const plugins = res.data ?? [];
             const totalCount = res.results?.total ?? plugins.length;
@@ -29,9 +29,9 @@ const PluginsListing = () => {
             setData((prev) => (append ? [...prev, ...plugins] : plugins));
             setTotal(totalCount);
             setPage(pageNum);
-        } catch (e) {
+        }catch(e){
             console.error('Failed to fetch plugins:', e);
-        } finally {
+        }finally{
             setIsLoading(false);
         }
     }, [limit, searchQuery]);
@@ -40,29 +40,29 @@ const PluginsListing = () => {
         fetchPlugins(1, false);
     }, [fetchPlugins]);
 
-    const handleMenuAction = useCallback(async (action: string, item: IPluginRecord) => {
-        switch (action) {
+    const handleMenuAction = useCallback(async(action: string, item: IPluginRecord) => {
+        switch(action){
             case 'edit':
                 navigate(`/dashboard/plugins/builder?id=${item._id}`);
                 break;
             case 'publish':
-                try {
+                try{
                     await pluginApi.publishPlugin(item._id);
                     setData((prev) =>
                         prev.map((p) =>
                             p._id === item._id ? { ...p, status: PluginStatus.PUBLISHED } : p
                         )
                     );
-                } catch (e) {
+                }catch(e){
                     console.error('Failed to publish plugin:', e);
                 }
                 break;
             case 'delete':
-                if (!window.confirm('Delete this plugin? This cannot be undone.')) return;
+                if(!window.confirm('Delete this plugin? This cannot be undone.')) return;
                 setData((prev) => prev.filter((x) => x._id !== item._id));
-                try {
+                try{
                     await pluginApi.deletePlugin(item._id);
-                } catch (e) {
+                }catch(e){
                     setData((prev) => {
                         const exists = prev.find((x) => x._id === item._id);
                         return exists ? prev : [item, ...prev];
@@ -77,7 +77,7 @@ const PluginsListing = () => {
             ['Edit', RiEditLine, () => handleMenuAction('edit', item)]
         ];
 
-        if (item.status !== 'published') {
+        if(item.status !== 'published'){
             options.push(['Publish', TbRocket, () => handleMenuAction('publish', item)]);
         }
 
@@ -180,7 +180,7 @@ const PluginsListing = () => {
         </button>
     ], [handleCreateNew]);
 
-    return (
+    return(
         <DocumentListing
             title='Plugins'
             breadcrumbs={breadcrumbsWithAction}

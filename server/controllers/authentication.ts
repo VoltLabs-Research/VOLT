@@ -10,7 +10,7 @@ import { AvatarService } from '@/services/avatar';
 import { generateRandomName } from '@/utilities/runtime/name-generator';
 
 export default class AuthController extends BaseController<IUser> {
-    constructor() {
+    constructor(){
         super(User, {
             resourceName: 'User',
             fields: ['firstName', 'lastName', 'email', 'avatar']
@@ -20,21 +20,21 @@ export default class AuthController extends BaseController<IUser> {
     /**
      * Handle file uploads for avatar
      */
-    protected async onBeforeUpdate(data: Partial<IUser>, req: Request): Promise<Partial<IUser>> {
-        if (req.file) {
-            try {
+    protected async onBeforeUpdate(data: Partial<IUser>, req: Request): Promise<Partial<IUser>>{
+        if(req.file){
+            try{
                 const avatarUrl = await AvatarService.uploadCustomAvatar(
                     (req as any).user._id.toString(),
                     req.file.buffer);
                 data.avatar = avatarUrl;
-            } catch (error) {
+            }catch(error){
                 throw new RuntimeError(ErrorCodes.AUTHENTICATION_UPDATE_AVATAR_FAILED, 500);
             }
         }
         return data;
     }
 
-    private signToken(id: string): string {
+    private signToken(id: string): string{
         const secret: Secret = process.env.SECRET_KEY as Secret;
         const raw = process.env.JWT_EXPIRATION_DAYS;
         const expiresIn = raw && /^\d+$/.test(raw) ? Number(raw) : (raw || '7d');
@@ -57,8 +57,7 @@ export default class AuthController extends BaseController<IUser> {
             success: true
         });
 
-        // Remove sensitive data
-        (user as any).password = undefined;
+        // Remove sensitive data(user as any).password = undefined;
         (user as any).__v = undefined;
 
         res.status(statusCode).json({
@@ -67,18 +66,18 @@ export default class AuthController extends BaseController<IUser> {
         });
     }
 
-    public signUp = catchAsync(async (req: Request, res: Response) => {
+    public signUp = catchAsync(async(req: Request, res: Response) => {
         const { email, firstName, lastName, password } = req.body;
         const newUser = await User.create({ email, firstName, lastName, password });
         await this.createAndSendToken(res, 201, newUser, req);
     });
 
-    public signIn = catchAsync(async (req: Request, res: Response) => {
+    public signIn = catchAsync(async(req: Request, res: Response) => {
         const { email, password } = req.body;
-        if (!email || !password) throw new RuntimeError(ErrorCodes.AUTH_CREDENTIALS_MISSING, 400);
+        if(!email || !password) throw new RuntimeError(ErrorCodes.AUTH_CREDENTIALS_MISSING, 400);
 
         const user = await User.findOne({ email }).select('+password');
-        if (!user || !(await user.isCorrectPassword(password, user.password!))) {
+        if(!user || !(await user.isCorrectPassword(password, user.password!))) {
             await Session.create({
                 user: user?._id || null,
                 token: null,
@@ -96,7 +95,7 @@ export default class AuthController extends BaseController<IUser> {
         await this.createAndSendToken(res, 200, user, req);
     });
 
-    public checkEmail = catchAsync(async (req: Request, res: Response) => {
+    public checkEmail = catchAsync(async(req: Request, res: Response) => {
         const { email } = req.body;
         const user = await User.findOne({ email });
         res.status(200).json({
@@ -105,7 +104,7 @@ export default class AuthController extends BaseController<IUser> {
         });
     });
 
-    public oauthCallback = catchAsync(async (req: Request, res: Response) => {
+    public oauthCallback = catchAsync(async(req: Request, res: Response) => {
         const user = req.user as IUser;
         const token = this.signToken(String(user._id));
 
@@ -124,9 +123,9 @@ export default class AuthController extends BaseController<IUser> {
         res.redirect(`${frontendUrl}?token=${token}`);
     });
 
-    public getGuestIdentity = catchAsync(async (req: Request, res: Response) => {
+    public getGuestIdentity = catchAsync(async(req: Request, res: Response) => {
         const { seed } = req.query;
-        if (!seed || typeof seed !== 'string') throw new RuntimeError(ErrorCodes.AUTHENTICATION_GUEST_SEED_REQUIRED, 400);
+        if(!seed || typeof seed !== 'string') throw new RuntimeError(ErrorCodes.AUTHENTICATION_GUEST_SEED_REQUIRED, 400);
 
         const { firstName, lastName } = generateRandomName(seed);
 
@@ -136,12 +135,12 @@ export default class AuthController extends BaseController<IUser> {
         });
     });
 
-    public updatePassword = catchAsync(async (req: Request, res: Response) => {
+    public updatePassword = catchAsync(async(req: Request, res: Response) => {
         const user = (req as any).user as IUser;
         const userWithPwd = await User.findById(user.id).select('+password');
-        if (!userWithPwd) throw new RuntimeError(ErrorCodes.USER_NOT_FOUND, 404);
+        if(!userWithPwd) throw new RuntimeError(ErrorCodes.USER_NOT_FOUND, 404);
 
-        if (!(await userWithPwd.isCorrectPassword(req.body.passwordCurrent, userWithPwd.password!))) {
+        if(!(await userWithPwd.isCorrectPassword(req.body.passwordCurrent, userWithPwd.password!))) {
             throw new RuntimeError(ErrorCodes.AUTHENTICATION_UPDATE_PASSWORD_INCORRECT, 400);
         }
 

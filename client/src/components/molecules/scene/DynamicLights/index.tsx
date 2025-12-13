@@ -49,7 +49,7 @@ const DynamicLights: React.FC = () => {
         lookAt: st.rectArea.lookAt as [number, number, number]
     }), [st.rectArea.color, st.rectArea.position, st.rectArea.lookAt]);
 
-    return (
+    return(
         <>
             {st.directional.enabled && (
                 <directionalLight
@@ -66,11 +66,11 @@ const DynamicLights: React.FC = () => {
                     shadow-camera-near={st.directional.camNear as any}
                     shadow-camera-far={st.directional.camFar as any}
                     ref={(r: any) => {
-                        if (st.directional.helper && r) {
-                            if (!dirHelperRef.current) dirHelperRef.current = new DirectionalLightHelper(r, 2);
+                        if(st.directional.helper && r){
+                            if(!dirHelperRef.current) dirHelperRef.current = new DirectionalLightHelper(r, 2);
                             r.add(dirHelperRef.current);
                             dirHelperRef.current.update();
-                        } else if (dirHelperRef.current && r) {
+                        }else if(dirHelperRef.current && r){
                             r.remove(dirHelperRef.current);
                         }
                     }}
@@ -85,11 +85,11 @@ const DynamicLights: React.FC = () => {
                     decay={st.point.decay}
                     castShadow={st.point.castShadow}
                     ref={(r: any) => {
-                        if (st.point.helper && r) {
-                            if (!pHelperRef.current) pHelperRef.current = new PointLightHelper(r, 1);
+                        if(st.point.helper && r){
+                            if(!pHelperRef.current) pHelperRef.current = new PointLightHelper(r, 1);
                             r.add(pHelperRef.current);
                             pHelperRef.current.update();
-                        } else if (pHelperRef.current && r) {
+                        }else if(pHelperRef.current && r){
                             r.remove(pHelperRef.current);
                         }
                     }}
@@ -107,11 +107,11 @@ const DynamicLights: React.FC = () => {
                     castShadow={st.spot.castShadow}
                     target-position={spot.target as any}
                     ref={(r: any) => {
-                        if (st.spot.helper && r) {
-                            if (!sHelperRef.current) sHelperRef.current = new SpotLightHelper(r);
+                        if(st.spot.helper && r){
+                            if(!sHelperRef.current) sHelperRef.current = new SpotLightHelper(r);
                             r.add(sHelperRef.current);
                             sHelperRef.current.update();
-                        } else if (sHelperRef.current && r) {
+                        }else if(sHelperRef.current && r){
                             r.remove(sHelperRef.current);
                         }
                     }}
@@ -125,11 +125,11 @@ const DynamicLights: React.FC = () => {
                     intensity={st.hemisphere.intensity}
                     position={hemi.position}
                     ref={(r: any) => {
-                        if (st.hemisphere.helper && r) {
-                            if (!hHelperRef.current) hHelperRef.current = new HemisphereLightHelper(r, 2);
+                        if(st.hemisphere.helper && r){
+                            if(!hHelperRef.current) hHelperRef.current = new HemisphereLightHelper(r, 2);
                             r.add(hHelperRef.current);
                             hHelperRef.current.update();
-                        } else if (hHelperRef.current && r) {
+                        }else if(hHelperRef.current && r){
                             r.remove(hHelperRef.current);
                         }
                     }}
@@ -144,7 +144,7 @@ const DynamicLights: React.FC = () => {
                     height={st.rectArea.height}
                     position={rect.position}
                     ref={(r: RectAreaLight | null) => {
-                        if (r) r.lookAt(...rect.lookAt);
+                        if(r) r.lookAt(...rect.lookAt);
                     }}
                 />
             )}

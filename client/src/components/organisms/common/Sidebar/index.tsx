@@ -31,7 +31,7 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
     const bottom = React.Children.toArray(children).find((child) => child.type === SidebarBottom);
 
     useEffect(() => {
-        if (window.innerWidth <= MOBILE_BREAKPOINT) {
+        if(window.innerWidth <= MOBILE_BREAKPOINT){
             setCollapsed(true);
         }
     }, []);
@@ -48,7 +48,7 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
         })
         : null;
 
-    return (
+    return(
         <motion.aside
             className={`editor-sidebar-wrapper ${className}`}
             data-collapsed={collapsed}
@@ -68,7 +68,7 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
                         <>
                             <div className='editor-sidebar-options-wrapper-container'>
                                 <div className='editor-sidebar-options-container'>
-                                    {tags.map(tag => (
+                                  {tags.map(tag => (
                                         <CanvasSidebarTab option={tag.name} key={tag.id} />
                                     ))}
                                 </div>

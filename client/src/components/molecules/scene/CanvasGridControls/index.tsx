@@ -32,22 +32,22 @@ const CanvasGridControls: React.FC = () => {
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
                 <div>
-                    <FormField 
-                        fieldKey="enabled" 
-                        label="Enabled" 
-                        fieldType="checkbox" 
-                        fieldValue={enabled} 
-                        onFieldChange={(_, v) => settings.setEnabled(Boolean(v))} 
+                    <FormField
+                        fieldKey="enabled"
+                        label="Enabled"
+                        fieldType="checkbox"
+                        fieldValue={enabled}
+                        onFieldChange={(_, v) => settings.setEnabled(Boolean(v))}
                     />
                     <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Show/hide the canvas grid</div>
                 </div>
                 <div>
-                    <FormField 
-                        fieldKey="infiniteGrid" 
-                        label="Infinite Grid" 
-                        fieldType="checkbox" 
-                        fieldValue={infiniteGrid} 
-                        onFieldChange={(_, v) => settings.setInfiniteGrid(Boolean(v))} 
+                    <FormField
+                        fieldKey="infiniteGrid"
+                        label="Infinite Grid"
+                        fieldType="checkbox"
+                        fieldValue={infiniteGrid}
+                        onFieldChange={(_, v) => settings.setInfiniteGrid(Boolean(v))}
                     />
                     <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Extend grid infinitely in all directions</div>
                 </div>
@@ -148,24 +148,24 @@ const CanvasGridControls: React.FC = () => {
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
                 <div>
-                    <FormField 
-                        fieldKey="sectionColor" 
-                        label="Section Color" 
-                        fieldType="color" 
-                        fieldValue={sectionColor} 
-                        onFieldChange={(_, v) => settings.setSectionColor(String(v))} 
+                    <FormField
+                        fieldKey="sectionColor"
+                        label="Section Color"
+                        fieldType="color"
+                        fieldValue={sectionColor}
+                        onFieldChange={(_, v) => settings.setSectionColor(String(v))}
                     />
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Color of major grid lines (sections)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Color of major grid lines(sections)</div>
                 </div>
                 <div>
-                    <FormField 
-                        fieldKey="cellColor" 
-                        label="Cell Color" 
-                        fieldType="color" 
-                        fieldValue={cellColor} 
-                        onFieldChange={(_, v) => settings.setCellColor(String(v))} 
+                    <FormField
+                        fieldKey="cellColor"
+                        label="Cell Color"
+                        fieldType="color"
+                        fieldValue={cellColor}
+                        onFieldChange={(_, v) => settings.setCellColor(String(v))}
                     />
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Color of minor grid lines (cells)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Color of minor grid lines(cells)</div>
                 </div>
             </div>
         )
@@ -205,7 +205,7 @@ const CanvasGridControls: React.FC = () => {
                 format: (v: number) => v.toFixed(1)
             },
             {
-                label: 'Rotation X (rad)',
+                label: 'Rotation X(rad)',
                 min: -Math.PI,
                 max: Math.PI,
                 step: 0.1,
@@ -214,7 +214,7 @@ const CanvasGridControls: React.FC = () => {
                 format: (v: number) => v.toFixed(2)
             },
             {
-                label: 'Rotation Y (rad)',
+                label: 'Rotation Y(rad)',
                 min: -Math.PI,
                 max: Math.PI,
                 step: 0.1,
@@ -223,7 +223,7 @@ const CanvasGridControls: React.FC = () => {
                 format: (v: number) => v.toFixed(2)
             },
             {
-                label: 'Rotation Z (rad)',
+                label: 'Rotation Z(rad)',
                 min: -Math.PI,
                 max: Math.PI,
                 step: 0.1,
@@ -235,9 +235,9 @@ const CanvasGridControls: React.FC = () => {
         extras: null
     };
 
-    return (
-        <CollapsibleSection 
-            title="Canvas Grid" 
+    return(
+        <CollapsibleSection
+            title="Canvas Grid"
             icon={<IoGridOutline size={16} />}
         >
             <div style={{ display: 'grid', gap: 12 }}>

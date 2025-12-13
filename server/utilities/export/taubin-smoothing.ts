@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -28,11 +28,11 @@ const taubinSmoothing = (
     iterations: number
 ): void => {
     if(iterations <= 0) return;
-    
+
     const lambda = 0.5;
     const mu = -0.52;
 
-    logger.info(`Applying Taubin smoothing with ${iterations} iterations (lambda=${lambda}, mu=${mu})...`);
+    logger.info(`Applying Taubin smoothing with ${iterations} iterations(lambda=${lambda}, mu=${mu})...`);
 
     const vertexCount = positions.length / 3;
     const adjacency: Set<number>[] = Array.from({ length: vertexCount }, () => new Set());
@@ -50,7 +50,7 @@ const taubinSmoothing = (
 
     for(let iter = 0; iter < iterations; iter++){
         // Calculate P' = P + lambda * L(P), where L(P) is the Laplacian vector.
-        for (let i = 0; i < vertexCount; i++) {
+        for(let i = 0; i < vertexCount; i++){
             const neighbors = Array.from(adjacency[i]);
             const i3 = i * 3;
 

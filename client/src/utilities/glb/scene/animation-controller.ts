@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -56,7 +56,7 @@ export default class AnimationController{
 
     private updateSimulationBox(): void{
         if(!this.state.model) return;
-        
+
         // simbox centered to model
         const worldBox = new Box3().setFromObject(this.state.model);
         const center = new Vector3();
@@ -107,7 +107,7 @@ export default class AnimationController{
 
     private handleActiveRotation(): void{
         if(this.state.isRotating) return;
-        
+
         if(this.state.selection){
             const baseGeo = this.state.selection.base.geometry as EdgesGeometry;
             baseGeo.computeBoundingBox();

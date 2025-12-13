@@ -24,24 +24,24 @@ export const useChat = () => {
     // Load chats and team members
     useEffect(() => {
         if(!selectedTeamId) return;
-        
+
         console.log('[Chat] Loading chats for team:', selectedTeamId);
 
         store.loadChats();
         store.loadTeamMembers(selectedTeamId);
     }, [selectedTeamId, store.loadChats, store.loadTeamMembers]);
 
-    // Register socket manager (singleton)
+    // Register socket manager(singleton)
     useEffect(() => {
         const manager = ChatSocketManager.getInstance();
         manager.register(currentChatIdRef);
 
-        return () => manager.unregister();
+        return() => manager.unregister();
     }, []);
 
     // Cleanup on unmount
     useEffect(() => {
-        return () => {
+        return() => {
             console.log('[Chat] Component unmounting, cleaning up resources');
 
             if(typingTimeoutRef.current){
@@ -58,7 +58,7 @@ export const useChat = () => {
         };
     }, [store.leaveChat]);
 
-    const selectChat = useCallback(async (chat: any) => {
+    const selectChat = useCallback(async(chat: any) => {
         if(selectingChatRef.current || store.currentChat?._id == chat._id) return;
 
         selectingChatRef.current = true;
@@ -95,7 +95,7 @@ export const useChat = () => {
         }
     }, [store.currentChat?._id]);
 
-    const startChatWithMember = useCallback(async (member: any) => {
+    const startChatWithMember = useCallback(async(member: any) => {
         if(!selectedTeamId) return;
 
         try{
@@ -106,7 +106,7 @@ export const useChat = () => {
         }
     }, [selectedTeamId, store, selectChat]);
 
-    const handleSendMessage = useCallback(async (content: string) => {
+    const handleSendMessage = useCallback(async(content: string) => {
         if(!content.trim() || !store.currentChat?._id) return;
 
         try{

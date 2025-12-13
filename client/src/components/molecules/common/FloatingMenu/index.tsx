@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -44,7 +44,7 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
 
     useEffect(() => {
         const root = document.documentElement;
-        
+
         // Set initial theme
         const initialTheme = root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
         setTheme(initialTheme);
@@ -56,7 +56,7 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
         });
 
         observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-        return () => observer.disconnect();
+        return() => observer.disconnect();
     }, []);
 
     if(!isVisible){
@@ -64,14 +64,14 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
     }
 
     const getThemeColors = () => {
-        if (theme === 'light') {
+        if(theme === 'light'){
             return {
                 bg: 'rgba(255, 255, 255, 0.95)',
                 border: 'rgba(0, 0, 0, 0.1)',
                 text: '#1c1c1e',
                 itemHover: 'rgba(0, 0, 0, 0.04)'
             };
-        } else {
+        }else{
             return {
                 bg: '#181818',
                 border: '#2a2a2a',
@@ -93,7 +93,7 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
         display: 'flex',
         gap: '1rem',
         flexDirection: 'column',
-        ...styles
+            ...styles
     };
 
     return createPortal(
@@ -103,15 +103,15 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
             className={className}
         >
             {options.map((option, index) => {
-                if (Array.isArray(option)) {
+                if(Array.isArray(option)) {
                     const [name, Icon, onClick] = option;
-                    return (
+                    return(
                         <div
                             key={index}
                             className={`floating-menu-item ${deleteMenuStyle ? 'delete-menu-item' : ''}`}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (onItemClick) {
+                                if(onItemClick){
                                     onItemClick(onClick, e);
                                     return;
                                 }
@@ -143,8 +143,8 @@ const FloatingMenu: React.FC<ExtendedFloatingMenuProps> = ({
                             <span>{name}</span>
                         </div>
                     );
-                } else {
-                    return (
+                }else{
+                    return(
                         <FloatingMenuItem
                             key={option.id || index}
                             name={option.label}

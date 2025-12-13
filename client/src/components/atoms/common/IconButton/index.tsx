@@ -6,7 +6,7 @@ type IconButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const IconButton = ({ label, children, className = '', ...rest }: IconButtonProps) => {
-    return (
+    return(
         <button
             type="button"
             aria-label={label}

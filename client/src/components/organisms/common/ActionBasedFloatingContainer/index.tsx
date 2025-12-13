@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -19,7 +19,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 
 import React from 'react';
 import useFloatingContainer from '@/hooks/ui/positioning/use-floating-container';
@@ -50,11 +49,11 @@ const ActionBasedFloatingContainer: React.FC<ExtendedFloatingContainerProps> = (
         handleOptionClick,
     } = useFloatingContainer({ useCursorPosition });
 
-    const finalMenuClassName = deleteMenuStyle 
+    const finalMenuClassName = deleteMenuStyle
         ? `${menuClassName || ''} delete-menu-style`.trim()
         : menuClassName;
 
-    return (
+    return(
         <>
             <div
                 onClick={handleToggle}
@@ -63,7 +62,7 @@ const ActionBasedFloatingContainer: React.FC<ExtendedFloatingContainerProps> = (
             >
                 {children}
             </div>
-        
+
             <FloatingMenu
                 isVisible={isVisible}
                 menuRef={menuRef}
@@ -71,7 +70,7 @@ const ActionBasedFloatingContainer: React.FC<ExtendedFloatingContainerProps> = (
                 options={options}
                 onItemClick={handleOptionClick}
                 className={finalMenuClassName}
-                portalTarget={portalTarget} 
+                portalTarget={portalTarget}
                 deleteMenuStyle={deleteMenuStyle}
             />
         </>

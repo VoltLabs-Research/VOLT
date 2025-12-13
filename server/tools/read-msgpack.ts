@@ -1,7 +1,7 @@
 import { readMsgpackFile } from '@/utilities/msgpack/msgpack';
 import { decodeMultiStreamFromFile } from '@/utilities/msgpack/msgpack-stream';
 
-(async () => {
+(async() => {
     const filePath = 'test.msgpack';
     try{
         const one = await readMsgpackFile(filePath);

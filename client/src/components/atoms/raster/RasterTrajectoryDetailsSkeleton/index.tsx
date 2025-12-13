@@ -2,7 +2,7 @@ import React from 'react';
 import { Skeleton } from '@mui/material';
 
 const RasterTrajectoryDetailsSkeleton: React.FC = () => {
-    return (
+    return(
         <>
             <Skeleton
                 variant='rounded'

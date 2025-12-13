@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -23,7 +23,7 @@
 import logger from '@/logger';
 import mongoose from 'mongoose';
 
-const mongoConnector = async () => {
+const mongoConnector = async() => {
     const {
         NODE_ENV,
         PRODUCTION_DATABASE,
@@ -34,7 +34,7 @@ const mongoConnector = async () => {
     const databaseName = NODE_ENV === 'production' ? PRODUCTION_DATABASE : DEVELOPMENT_DATABASE;
     const uri = `${MONGO_URI}/${databaseName}`;
 
-    logger.info(`Connecting to MongoDB (${databaseName})...`);
+    logger.info(`Connecting to MongoDB(${databaseName})...`);
 
     mongoose.set('strictQuery', false);
     mongoose.set('strictPopulate', false);
@@ -51,10 +51,10 @@ const mongoConnector = async () => {
         retryWrites: true
     };
 
-    try {
+    try{
         await mongoose.connect(uri, options);
-        logger.info(`Connected to MongoDB (${databaseName})!`);
-    } catch (error) {
+        logger.info(`Connected to MongoDB(${databaseName})!`);
+    }catch(error){
         logger.error(`Error connecting to MongoDB: ${error}`);
     }
 };

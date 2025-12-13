@@ -1,5 +1,5 @@
 /**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+* Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
 */
 
 import React, { useState, useEffect } from 'react';
@@ -11,8 +11,8 @@ import type { TeamInvitation } from '@/types/team-invitation';
 import './TeamInvitationPage.css';
 
 /* Add these styles to TeamInvitationPage.css if not present, or create the file */
-/* 
-.invited-by {
+/*
+    .invited-by {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -21,7 +21,7 @@ import './TeamInvitationPage.css';
     color: var(--text-secondary);
 }
 
-.inviter-avatar {
+    .inviter-avatar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -33,13 +33,13 @@ import './TeamInvitationPage.css';
     flex-shrink: 0;
 }
 
-.inviter-avatar img {
+    .inviter-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.inviter-initials {
+    .inviter-initials {
     color: white;
     font-weight: 600;
     font-size: 14px;
@@ -55,27 +55,27 @@ const TeamInvitationPage: React.FC = () => {
     const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
-        const fetchInvitation = async () => {
-            try {
+        const fetchInvitation = async() => {
+            try{
                 const details = await teamApi.invitations.getDetails(token!);
                 setInvitation(details as unknown as TeamInvitation);
-            } catch (err: any) {
+            }catch(err: any){
                 setError(err?.message || 'An error occurred');
-            } finally {
+            }finally{
                 setLoading(false);
             }
         };
 
-        if (token) {
+        if(token){
             fetchInvitation();
         }
     }, [token]);
 
-    const handleAccept = async () => {
-        if (!token) return;
+    const handleAccept = async() => {
+        if(!token) return;
 
         setActionLoading(true);
-        try {
+        try{
             await teamApi.invitations.accept(token);
 
             setError(null);
@@ -83,18 +83,18 @@ const TeamInvitationPage: React.FC = () => {
             setTimeout(() => {
                 navigate(`/dashboard?team=${invitation?.team._id}`);
             }, 2000);
-        } catch (err: any) {
+        }catch(err: any){
             setError(err?.message || 'An error occurred');
-        } finally {
+        }finally{
             setActionLoading(false);
         }
     };
 
-    const handleReject = async () => {
-        if (!token) return;
+    const handleReject = async() => {
+        if(!token) return;
 
         setActionLoading(true);
-        try {
+        try{
             await teamApi.invitations.reject(token);
 
             setError(null);
@@ -102,15 +102,15 @@ const TeamInvitationPage: React.FC = () => {
             setTimeout(() => {
                 navigate('/dashboard');
             }, 2000);
-        } catch (err: any) {
+        }catch(err: any){
             setError(err?.message || 'An error occurred');
-        } finally {
+        }finally{
             setActionLoading(false);
         }
     };
 
-    if (loading) {
-        return (
+    if(loading){
+        return(
             <div className='team-invitation-page'>
                 <div className='team-invitation-container'>
                     <Skeleton variant='rectangular' width={150} height={30} sx={{ borderRadius: '100px', mb: 2.5, mx: 'auto' }} />
@@ -131,8 +131,8 @@ const TeamInvitationPage: React.FC = () => {
         );
     }
 
-    if (error || !invitation) {
-        return (
+    if(error || !invitation){
+        return(
             <div className='team-invitation-page'>
                 <div className='team-invitation-container error'>
                     <IoCloseCircle size={64} className='error-icon' />
@@ -149,8 +149,8 @@ const TeamInvitationPage: React.FC = () => {
     const expiresAt = new Date(invitation.expiresAt);
     const isExpired = new Date() > expiresAt;
 
-    if (isExpired) {
-        return (
+    if(isExpired){
+        return(
             <div className='team-invitation-page'>
                 <div className='team-invitation-container error'>
                     <IoCloseCircle size={64} className='error-icon' />
@@ -164,7 +164,7 @@ const TeamInvitationPage: React.FC = () => {
         );
     }
 
-    return (
+    return(
         <div className='team-invitation-page'>
             <div className='team-invitation-container'>
                 <div className='team-invitation-header'>

@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -36,15 +36,15 @@ const useFloatingMenu = (): UseFloatingMenuReturn => {
     const menuRef = useRef<HTMLDivElement>(null);
     const [isVisible, setIsVisible] = useState<boolean>(false);
 
-    const toggle = useCallback((): void => {
+    const toggle = useCallback((): void =>{
         setIsVisible((prev) => !prev);
     }, []);
 
-    const hide = useCallback((): void => {
+    const hide = useCallback((): void =>{
         setIsVisible(false);
     }, []);
 
-    const show = useCallback((): void => {
+    const show = useCallback((): void =>{
         setIsVisible(true);
     }, []);
 
@@ -62,13 +62,12 @@ const useFloatingMenu = (): UseFloatingMenuReturn => {
 
         if(isVisible){
             document.addEventListener('mousedown', handleClickOutside as EventListener);
-            
-            return () => {
+
+            return() => {
                 document.removeEventListener('mousedown', handleClickOutside as EventListener);
             };
         }
     }, [isVisible, hide]);
-
 
     return {
         triggerRef,

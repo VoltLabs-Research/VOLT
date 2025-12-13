@@ -76,7 +76,7 @@ export const attachPointerEvents = (params: {
     glCanvas.addEventListener('pointermove', handlePointerMove);
     glCanvas.addEventListener('pointerup', handlePointerUp);
 
-    return () => {
+    return() => {
         glCanvas.removeEventListener('pointerdown', handlePointerDown);
         glCanvas.removeEventListener('pointermove', handlePointerMove);
         glCanvas.removeEventListener('pointerup', handlePointerUp);
@@ -118,11 +118,10 @@ export const attachKeyboard = (params: {
 
     const handleKeyUp = (_event: KeyboardEvent) => {};
 
-
   window.addEventListener('keydown', handleKeyDown);
   window.addEventListener('keyup', handleKeyUp);
 
-    return () => {
+    return() => {
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('keyup', handleKeyUp);
     };

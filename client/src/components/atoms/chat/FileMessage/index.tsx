@@ -16,9 +16,9 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
 
     useEffect(() => {
         if(!isImage || !currentChatId) return;
-        
+
         let cancelled = false;
-        const run = async () => {
+        const run = async() => {
             try{
                 const res = await chatApi.getFilePreview(currentChatId, msg._id);
                 if(!cancelled){
@@ -41,13 +41,13 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
 
         run();
 
-        return () => {
+        return() => {
             cancelled = true;
         }
     }, [isImage, currentChatId, msg._id]);
 
     if(isImage){
-        return (
+        return(
             <div className='chat-image-message'>
                 {preview ? (
                     <img src={preview} alt={meta.fileName} className='chat-image-preview' />
@@ -70,7 +70,7 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
         );
     }
 
-    return (
+    return(
         <div className='chat-file-info'>
             <div className='chat-file-icon'><IoDocumentOutline /></div>
             <div className='chat-file-details'>

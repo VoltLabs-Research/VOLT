@@ -34,7 +34,7 @@ export const useServerMetrics = () => {
             setIsHistoryLoaded(true);
         });
 
-        return () => {
+        return() => {
             unsubscribeConnection();
             unsubscribeInitial();
             unsubscribeUpdate();

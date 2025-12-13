@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -43,13 +43,13 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
     const plugins = usePluginStore((state) => state.plugins);
 
     const activeExposure = useMemo(() => {
-        if (activeScene.source !== 'plugin') return null;
+        if(activeScene.source !== 'plugin') return null;
         const { exposureId } = activeScene;
 
-        for (const plugin of plugins) {
+        for(const plugin of plugins){
             // Find exposure node
             const exposureNode = plugin.workflow.nodes.find((n: any) => n.id === exposureId);
-            if (!exposureNode) continue;
+            if(!exposureNode) continue;
 
             // Find connected export node
             const exportNode = plugin.workflow.nodes.find((n: any) =>
@@ -74,7 +74,7 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
     const [showChart, setShowChart] = useState(false);
 
     useEffect(() => {
-        if (isChart) {
+        if(isChart){
             setShowChart(true);
         }
     }, [isChart]);
@@ -96,10 +96,9 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
             .filter(([, C]) => !!C);
     }, [legacyModifiers, legacyModifiersMap]);
 
+    if(!showWidgets) return null;
 
-    if (!showWidgets) return null;
-
-    return (
+    return(
         <>
             <EditorSidebar />
             <TrajectoryVisibilityStatusFloatIcon />
@@ -138,9 +137,9 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
             ))}
 
             {pluginModifiers.map((modifier) => {
-                if (!modifier.pluginId || !modifier.modifierId || !trajectory?._id) return null;
+                if(!modifier.pluginId || !modifier.modifierId || !trajectory?._id) return null;
 
-                return (
+                return(
                     <ModifierConfiguration
                         key={modifier.key}
                         pluginId={modifier.pluginId}

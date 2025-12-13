@@ -14,7 +14,7 @@ const VisualizersNode = memo((props: NodeProps) => {
         visualizers.raster && 'Raster'
     ].filter(Boolean).join(', ') || 'None';
 
-    return (
+    return(
         <BaseNode {...props} nodeType={NodeType.VISUALIZERS}>
             <NodeField label='Enabled' value={enabledVisualizers} />
             <NodeField label='Listing Columns' value={`${listingCount} columns`} />

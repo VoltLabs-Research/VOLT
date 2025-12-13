@@ -12,7 +12,7 @@ const FormRow = ({
     className,
 }) => {
 
-    return (
+    return(
         <div className={`form-control-row ${className ?? ''}`}>
             <label className='labeled-input-label'>{label}</label>
 

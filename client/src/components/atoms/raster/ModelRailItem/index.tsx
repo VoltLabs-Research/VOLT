@@ -22,17 +22,17 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
         scene.frame,
         scene.analysisId,
         scene.model,
-        'high' 
+        'high'
     );
 
     const displayScene = loadedScene || scene;
     const hasData = (displayScene?.data !== undefined) || (scene.data !== undefined);
     const isUnavailable = displayScene?.isUnavailable;
-    
+
     const showSkeleton = isLoading && !hasData;
 
-    if (isSelected) {
-        return (
+    if(isSelected){
+        return(
             <motion.div
                 key={`sel-${scene.frame}-${scene.model}`}
                 className='raster-analysis-scene selected'
@@ -107,7 +107,7 @@ const ModelRailItem: React.FC<ModelRailItemProps> = ({
         );
     }
 
-    return (
+    return(
         <motion.div
             key={`opt-${scene.frame}-${scene.model}`}
             className='raster-analysis-scene'

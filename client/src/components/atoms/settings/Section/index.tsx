@@ -6,7 +6,7 @@ interface SectionProps {
 }
 
 const Section: React.FC<SectionProps> = ({ children, className = '' }) => {
-    return (
+    return(
         <div className={`settings-section ${className}`}>
             {children}
         </div>
@@ -14,5 +14,3 @@ const Section: React.FC<SectionProps> = ({ children, className = '' }) => {
 };
 
 export default Section;
-
-

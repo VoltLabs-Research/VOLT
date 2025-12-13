@@ -6,7 +6,7 @@ const useLogger = (componentName: string) => {
 
     useEffect(() => {
         loggerRef.current.log('Mounted');
-        return () => {
+        return() => {
             loggerRef.current.log('Unmounted');
         };
     }, []);

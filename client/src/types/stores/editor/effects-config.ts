@@ -113,7 +113,7 @@ export interface TiltShiftConfig{
     rotation: number;
     focusArea: number;
     feather: number;
-    kernelSize: number;    
+    kernelSize: number;
 }
 
 export interface EffectsConfigState{
@@ -138,7 +138,6 @@ export interface EffectsConfigActions{
 }
 
 export type EffectsConfigStore = EffectsConfigState & EffectsConfigActions;
-
 
 export const SSAO_EFFECT_DEFAULT: SSAOEffectConfig = {
     enabled: false,

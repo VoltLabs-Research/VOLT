@@ -1,8 +1,8 @@
 /**
- * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+ * Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -30,13 +30,13 @@ interface SimulationCardUsersProps {
 }
 
 const getInitialsFromUser = (user: CardPresenceUser): string => {
-    if (user.firstName && user.lastName) {
-        return (user.firstName[0] + user.lastName[0]).toUpperCase();
+    if(user.firstName && user.lastName){
+        return(user.firstName[0] + user.lastName[0]).toUpperCase();
     }
-    if (user.email) {
+    if(user.email){
         const parts = user.email.split('@')[0].split('.');
-        if (parts.length >= 2) {
-            return (parts[0][0] + parts[1][0]).toUpperCase();
+        if(parts.length >= 2){
+            return(parts[0][0] + parts[1][0]).toUpperCase();
         }
         return user.email[0].toUpperCase();
     }
@@ -52,11 +52,11 @@ const SimulationCardUsers: React.FC<SimulationCardUsersProps> = memo(({ trajecto
     const extraCount = Math.max(0, users.length - 3);
 
     // Always render to keep useEffect subscriptions active, hide with CSS
-    if (users.length === 0) {
+    if(users.length === 0){
         return null;
     }
 
-    return (
+    return(
         <div className="simulation-card-users">
             <div className="card-users-avatars">
                 <AnimatePresence mode="popLayout">

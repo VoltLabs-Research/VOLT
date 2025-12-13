@@ -27,7 +27,7 @@ const CanvasSidebarModifiers = () => {
     const prevActiveRef = useRef<ActiveModifier[]>(activeModifiers);
 
     useEffect(() => {
-        if (!trajectory?._id) {
+        if(!trajectory?._id){
             prevActiveRef.current = activeModifiers;
             return;
         }
@@ -36,12 +36,12 @@ const CanvasSidebarModifiers = () => {
         const current = activeModifiers.map(m => m.key);
         const justActivated = current.filter((key) => !prev.includes(key));
 
-        for (const modifierKey of justActivated) {
+        for(const modifierKey of justActivated){
             logger.log('Modifier activated:', modifierKey);
 
-            if (modifierKey === 'raster') {
+            if(modifierKey === 'raster'){
                 navigate('/raster/' + trajectory._id);
-            } else if (modifierKey === 'render-settings') {
+            }else if(modifierKey === 'render-settings'){
                 setShowRenderConfig(true);
             }
         }
@@ -78,9 +78,9 @@ const CanvasSidebarModifiers = () => {
     ]), [modifiers, idRateSeries?.length]);
 
     const handleToggle = (option: any) => {
-        if (option.isPlugin) {
+        if(option.isPlugin){
             toggleModifier(option.modifierId, option.pluginId, option.pluginModifierId);
-        } else {
+        }else{
             toggleModifier(option.modifierId);
         }
     };
@@ -89,7 +89,7 @@ const CanvasSidebarModifiers = () => {
         return activeModifiers.some(m => m.key === modifierId);
     };
 
-    return (
+    return(
         <div className='editor-sidebar-scene-container'>
             <div className='editor-sidebar-scene-options-container'>
                 {allModifiers.map((option) => (

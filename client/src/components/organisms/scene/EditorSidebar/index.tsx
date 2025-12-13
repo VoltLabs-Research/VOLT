@@ -52,10 +52,10 @@ const EditorSidebar = () => {
         }
     ];
 
-    return (
-        <Sidebar 
-            tags={SCENE_TAGS} 
-            activeTag={activeSidebarTab} 
+    return(
+        <Sidebar
+            tags={SCENE_TAGS}
+            activeTag={activeSidebarTab}
             overrideContent={showRenderConfig ? <RenderConfig /> : null}
             showCollapseButton
         >

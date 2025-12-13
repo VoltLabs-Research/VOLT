@@ -7,20 +7,20 @@ export const extractFolderName = (fullPath: string): string | null => {
     return pathParts.length > 0 ? pathParts[0] : null;
 };
 
-export const processFileSystemEntry = async (entry: any): Promise<{ files: FileWithPath[], folderName: string | null }> => {
+export const processFileSystemEntry = async(entry: any): Promise<{ files: FileWithPath[], folderName: string | null }> => {
     const logger = new Logger('process-file-system-entry');
     const files: FileWithPath[] = [];
     let folderName: string | null = null;
 
-    const processEntry = async (currentEntry: any): Promise<void> => {
+    const processEntry = async(currentEntry: any): Promise<void> =>{
         if(currentEntry.isFile){
             try{
                 const file = await new Promise<File>((resolve, reject) => {
                     currentEntry.file(resolve, reject);
                 });
 
-                const relativePath = currentEntry.fullPath.startsWith('/') 
-                    ? currentEntry.fullPath.slice(1) 
+                const relativePath = currentEntry.fullPath.startsWith('/')
+                    ? currentEntry.fullPath.slice(1)
                     : currentEntry.fullPath;
 
                 files.push({ file, path: relativePath });

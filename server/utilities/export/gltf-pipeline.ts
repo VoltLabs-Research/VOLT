@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -30,13 +30,13 @@ import { MeshoptEncoder } from 'meshoptimizer';
  */
 export type QuantizeMeshoptOptions = {
     quantization?: {
-        /** Bit depth for POSITION attributes (default: 15). */
+        /** Bit depth for POSITION attributes(default: 15). */
         positionBits?: number;
-        /** Bit depth for COLOR_0 attributes (default: 8). */
+        /** Bit depth for COLOR_0 attributes(default: 8). */
         colorBits?: number;
     };
-    /** 
-     * Maximum allowable spatial error (in model units) used to infer `positionBits`
+    /**
+     * Maximum allowable spatial error(in model units) used to infer `positionBits`
      * when `extent` is provided to {@link applyQuantizeAndMeshopt}.
      */
     epsilon?: number;
@@ -50,9 +50,9 @@ export type QuantizeMeshoptOptions = {
 /**
  * Computes the number of quantization bits for positions given a bounding box
  * extent and an error tolerance.
- * 
+ *
  * @param extent - Axis-aligned extent of the mesh `{ x, y, z }`.
- * @param epsilon - Maximum tolerated spatial error (model units).
+ * @param epsilon - Maximum tolerated spatial error(model units).
  * @returns The position bit depth clamped to **[8..16]**.
  */
 const bitsFromEpsilon = (extent: { x: number, y: number, z: number }, epsilon: number): number => {
@@ -65,16 +65,16 @@ const bitsFromEpsilon = (extent: { x: number, y: number, z: number }, epsilon: n
 
 /**
  * Applies **KHR-style attribute quantization** and **EXT_meshopt_compression** to a glTF document.
- * 
+ *
  * @param doc - The glTF-Transform {@link Document} to transform.
  * @param opts - {@link QuantizeMeshoptOptions} controlling precision and extension requirements.
  * @param extent - Optional axis-aligned extent `{ x, y, z }` of the model, needed for epsilon-based bit inference.
  */
-export const applyQuantizeAndMeshopt = async (
-    doc: Document, 
-    opts: QuantizeMeshoptOptions, 
+export const applyQuantizeAndMeshopt = async(
+    doc: Document,
+    opts: QuantizeMeshoptOptions,
     extent?: { x: number, y: number, z: number }
-): Promise<void> => {
+): Promise<void> =>{
     let pos = opts.quantization?.positionBits ?? 15;
     const col = opts.quantization?.colorBits ?? 8;
 
@@ -97,8 +97,8 @@ export const applyQuantizeAndMeshopt = async (
  * @param doc - The glTF-Transform {@link Document} to serialize.
  * @returns Buffer containing the GLB binary data.
  */
-export const writeGLBToBuffer = async (doc: Document): Promise<Buffer> => {
-    const io = new NodeIO() 
+export const writeGLBToBuffer = async(doc: Document): Promise<Buffer> =>{
+    const io = new NodeIO()
         .registerExtensions([EXTMeshoptCompression])
         .registerDependencies({ 'meshopt.encoder': MeshoptEncoder })
 

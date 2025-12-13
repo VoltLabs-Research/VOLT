@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { 
-    PerformancePreset, 
+import type {
+    PerformancePreset,
     PerformanceSettingsState,
-    PerformanceSettingsStore 
+    PerformanceSettingsStore
 } from '@/types/stores/editor/perfomance-settings';
 
 const presets: Record<PerformancePreset, PerformanceSettingsState> = {
@@ -50,12 +50,11 @@ const presets: Record<PerformancePreset, PerformanceSettingsState> = {
     }
 };
 
-
 const initial = presets.battery;
-    
+
 // Clean up any incorrect powerPreference values from localStorage
 const cleanPowerPreference = (state: PerformanceSettingsState): PerformanceSettingsState => {
-    if (state.canvas.powerPreference === 'high-perfomance') {
+    if(state.canvas.powerPreference === 'high-perfomance'){
         return {
             ...state,
             canvas: {
@@ -72,10 +71,10 @@ const pickDpr = (
     { interacting, boostScreenshot }: { interacting?: boolean; boostScreenshot?: boolean }
 ): number | [number, number] => {
     const { dpr, interactionDegrade } = s;
-    if (dpr.mode === 'fixed') {
+    if(dpr.mode === 'fixed'){
         return dpr.fixed;
     }
-    if (boostScreenshot) {
+    if(boostScreenshot){
         return [dpr.max, dpr.max];
     }
     const min = interacting && interactionDegrade.enabled ? Math.min(dpr.interactionMin, dpr.min) : dpr.min;
@@ -122,9 +121,9 @@ const usePerformanceSettingsStore = create<PerformanceSettingsStore>()(
                 interactionDegrade: s.interactionDegrade
             }),
             onRehydrateStorage: () => (state) => {
-                if (state) {
+                if(state){
                     const cleanedState = cleanPowerPreference(state);
-                    if (cleanedState !== state) {
+                    if(cleanedState !== state){
                         set(() => cleanedState);
                     }
                 }

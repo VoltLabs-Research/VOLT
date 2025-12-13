@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -22,8 +22,8 @@
 
 import { useState, useEffect } from 'react';
 import { useChatStore } from '@/stores/chat';
-import { 
-    IoCloseOutline, 
+import {
+    IoCloseOutline,
     IoCheckmarkOutline,
     IoSearchOutline
 } from 'react-icons/io5';
@@ -31,11 +31,11 @@ import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
 
 const AddMembersModal = () => {
-    const { 
-        currentChat, 
-        teamMembers, 
+    const {
+        currentChat,
+        teamMembers,
         selectedMembers,
-        setShowAddMembers, 
+        setShowAddMembers,
         setSelectedMembers,
         toggleMemberSelection,
         addUsersToGroup,
@@ -47,13 +47,13 @@ const AddMembersModal = () => {
 
     // Load team members when modal opens
     useEffect(() => {
-        if (currentChat?.team?._id) {
+        if(currentChat?.team?._id){
             loadTeamMembers(currentChat.team._id);
         }
     }, [currentChat, loadTeamMembers]);
 
     // Filter out members who are already in the group
-    const availableMembers = teamMembers.filter(member => 
+    const availableMembers = teamMembers.filter(member =>
         !currentChat?.participants.some(participant => participant._id === member._id) &&
         member._id !== user?._id
     );
@@ -64,17 +64,17 @@ const AddMembersModal = () => {
         return fullName.includes(searchQuery.toLowerCase());
     });
 
-    const handleAddMembers = async () => {
-        if (selectedMembers.length === 0) return;
-        
+    const handleAddMembers = async() => {
+        if(selectedMembers.length === 0) return;
+
         setIsLoading(true);
-        try {
+        try{
             await addUsersToGroup(currentChat!._id, selectedMembers);
             setSelectedMembers([]);
             setShowAddMembers(false);
-        } catch (error) {
+        }catch(error){
             console.error('Failed to add members:', error);
-        } finally {
+        }finally{
             setIsLoading(false);
         }
     };
@@ -84,21 +84,21 @@ const AddMembersModal = () => {
         setShowAddMembers(false);
     };
 
-    if (!currentChat || !currentChat.isGroup) return null;
+    if(!currentChat || !currentChat.isGroup) return null;
 
-    return (
+    return(
         <div className='chat-group-management-modal'>
             <div className='chat-group-management-content'>
                 <div className='chat-group-management-header'>
                     <h3>Add Members</h3>
-                    <button 
+                    <button
                         className='chat-close-modal'
                         onClick={handleClose}
                     >
                         <IoCloseOutline />
                     </button>
                 </div>
-                
+
                 <div className='chat-group-management-body'>
                     {/* Search */}
                     <div className='chat-add-members-search'>
@@ -125,10 +125,10 @@ const AddMembersModal = () => {
                             <div className='chat-add-members-members'>
                                 {filteredMembers.map((member) => {
                                     const isSelected = selectedMembers.includes(member._id);
-                                    
-                                    return (
-                                        <div 
-                                            key={member._id} 
+
+                                    return(
+                                        <div
+                                            key={member._id}
                                             className={`chat-add-members-member ${isSelected ? 'selected' : ''}`}
                                             onClick={() => toggleMemberSelection(member._id)}
                                         >
@@ -164,13 +164,13 @@ const AddMembersModal = () => {
 
                     {/* Actions */}
                     <div className='chat-group-management-actions'>
-                        <button 
+                        <button
                             className='chat-group-management-cancel'
                             onClick={handleClose}
                         >
                             Cancel
                         </button>
-                        <button 
+                        <button
                             className='chat-group-management-add'
                             onClick={handleAddMembers}
                             disabled={selectedMembers.length === 0 || isLoading}

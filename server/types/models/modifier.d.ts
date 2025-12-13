@@ -161,7 +161,7 @@ export interface IPluginModel extends Model<IPlugin> {
     getNodesByType(workflow: IWorkflow, type: NodeType): IWorkflowNode[];
 };
 
-export interface IPlugin extends Document {
+export interface IPlugin extends Document{
     slug: string;
     workflow: IWorkflow;
     status: PluginStatus;

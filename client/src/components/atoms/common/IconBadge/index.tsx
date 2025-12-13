@@ -6,7 +6,7 @@ interface IconBadgeProps {
 }
 
 const IconBadge: React.FC<IconBadgeProps> = ({ children, size = 40 }) => {
-    return (
+    return(
         <div className='icon-badge' style={{ width: size, height: size }}>
             {children}
         </div>
@@ -14,5 +14,3 @@ const IconBadge: React.FC<IconBadgeProps> = ({ children, size = 40 }) => {
 };
 
 export default IconBadge;
-
-

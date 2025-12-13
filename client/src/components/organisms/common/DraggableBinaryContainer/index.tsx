@@ -16,7 +16,7 @@ interface DraggableBinaryContainerProps{
 
 const DraggableBinaryContainer: React.FC<DraggableBinaryContainerProps> = ({ title, handleSubmit, description, onClose, bg, children, isRequired = false }) => {
     const [showRequiredMessage, setShowRequiredMessage] = useState(false);
-    
+
     // Use useMemo to calculate center position only once
     const initialPos = useMemo(() => {
         const containerWidth = 1000; // Match CSS width
@@ -29,15 +29,15 @@ const DraggableBinaryContainer: React.FC<DraggableBinaryContainerProps> = ({ tit
     const containerRef = useRef<HTMLDivElement>(null);
 
     const handleBackdropClick = (e: React.MouseEvent) => {
-        if (isRequired) {
+        if(isRequired){
             setShowRequiredMessage(true);
             setTimeout(() => setShowRequiredMessage(false), 3000);
             return;
         }
         onClose?.();
     };
-    
-    return (
+
+    return(
         <>
             <motion.div
                 initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
@@ -58,8 +58,8 @@ const DraggableBinaryContainer: React.FC<DraggableBinaryContainerProps> = ({ tit
                     pointerEvents: isRequired ? 'none' : 'auto',
                 }}
             />
-            <Draggable 
-                className='team-creator-container primary-surface' 
+            <Draggable
+                className='team-creator-container primary-surface'
                 initial={initialPos}
                 style={{
                     position: 'fixed',
@@ -69,7 +69,7 @@ const DraggableBinaryContainer: React.FC<DraggableBinaryContainerProps> = ({ tit
                     pointerEvents: 'auto',
                 }}
             >
-                <WindowIcons 
+                <WindowIcons
                     onClose={isRequired ? () => {
                         setShowRequiredMessage(true);
                         setTimeout(() => setShowRequiredMessage(false), 3000);
@@ -110,7 +110,7 @@ const DraggableBinaryContainer: React.FC<DraggableBinaryContainerProps> = ({ tit
                         <h3 className='team-creator-title'>{title}</h3>
                         <p className='team-creator-description'>{description}</p>
                     </div>
-                    
+
                     <form onSubmit={handleSubmit} className='team-creator-body-container'>
                         {children}
                     </form>

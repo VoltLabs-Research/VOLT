@@ -7,7 +7,7 @@ declare module 'identicon.js' {
         format?: 'svg' | 'png';
     }
 
-    export default class Identicon {
+    export default class Identicon{
         constructor(hash: string, options?: IdenticonOptions);
         toString(): string;
     }

@@ -1,8 +1,8 @@
 /**
- * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+ * Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -31,7 +31,7 @@ import { generateRandomName } from '@/utilities/runtime/name-generator';
 /**
  * Configure GitHub OAuth Strategy
  */
-if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+if(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET){
     passport.use(
         new GitHubStrategy(
             {
@@ -40,10 +40,10 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
                 callbackURL: process.env.GITHUB_CALLBACK_URL!,
                 scope: ['user:email']
             },
-            async (_accessToken: string, _refreshToken: string, profile: any, done: (error: any, user?: any) => void) => {
-                try {
+            async(_accessToken: string, _refreshToken: string, profile: any, done: (error: any, user?: any) => void) => {
+                try{
                     const email = profile.emails?.[0]?.value;
-                    if (!email) {
+                    if(!email){
                         return done(new Error('No email found in GitHub profile'), undefined);
                     }
 
@@ -53,17 +53,17 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
                         oauthId: profile.id
                     });
 
-                    if (!user) {
+                    if(!user){
                         // Check if user exists with this email
                         user = await User.findOne({ email });
 
-                        if (user) {
+                        if(user){
                             // Link GitHub account to existing user
                             user.oauthProvider = 'github';
                             user.oauthId = profile.id;
                             user.avatar = profile.photos?.[0]?.value || user.avatar;
                             await user.save();
-                        } else {
+                        }else{
                             // Create new user
                             const { firstName, lastName } = generateRandomName(profile.id);
                             const names = profile.displayName?.split(' ') || [];
@@ -80,7 +80,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
                     }
 
                     return done(null, user);
-                } catch (error) {
+                }catch(error){
                     return done(error as Error, undefined);
                 }
             }
@@ -91,7 +91,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
 /**
  * Configure Google OAuth Strategy
  */
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+if(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET){
     passport.use(
         new GoogleStrategy(
             {
@@ -100,10 +100,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                 callbackURL: process.env.GOOGLE_CALLBACK_URL!,
                 scope: ['profile', 'email']
             },
-            async (_accessToken: string, _refreshToken: string, profile: any, done: (error: any, user?: any) => void) => {
-                try {
+            async(_accessToken: string, _refreshToken: string, profile: any, done: (error: any, user?: any) => void) => {
+                try{
                     const email = profile.emails?.[0]?.value;
-                    if (!email) {
+                    if(!email){
                         return done(new Error('No email found in Google profile'), undefined);
                     }
 
@@ -113,17 +113,17 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                         oauthId: profile.id
                     });
 
-                    if (!user) {
+                    if(!user){
                         // Check if user exists with this email
                         user = await User.findOne({ email });
 
-                        if (user) {
+                        if(user){
                             // Link Google account to existing user
                             user.oauthProvider = 'google';
                             user.oauthId = profile.id;
                             user.avatar = profile.photos?.[0]?.value || user.avatar;
                             await user.save();
-                        } else {
+                        }else{
                             // Create new user
                             const { firstName, lastName } = generateRandomName(profile.id);
 
@@ -139,7 +139,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                     }
 
                     return done(null, user);
-                } catch (error) {
+                }catch(error){
                     return done(error as Error, undefined);
                 }
             }
@@ -150,7 +150,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 /**
  * Configure Microsoft OAuth Strategy
  */
-if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
+if(process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET){
     passport.use(
         new MicrosoftStrategy(
             {
@@ -159,10 +159,10 @@ if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
                 callbackURL: process.env.MICROSOFT_CALLBACK_URL!,
                 scope: ['user.read']
             },
-            async (_accessToken: string, _refreshToken: string, profile: any, done: (error: any, user?: any) => void) => {
-                try {
+            async(_accessToken: string, _refreshToken: string, profile: any, done: (error: any, user?: any) => void) => {
+                try{
                     const email = profile.emails?.[0]?.value || profile._json?.mail || profile._json?.userPrincipalName;
-                    if (!email) {
+                    if(!email){
                         return done(new Error('No email found in Microsoft profile'), undefined);
                     }
 
@@ -172,17 +172,17 @@ if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
                         oauthId: profile.id
                     });
 
-                    if (!user) {
+                    if(!user){
                         // Check if user exists with this email
                         user = await User.findOne({ email });
 
-                        if (user) {
+                        if(user){
                             // Link Microsoft account to existing user
                             user.oauthProvider = 'microsoft';
                             user.oauthId = profile.id;
                             user.avatar = user.avatar; // Microsoft doesn't provide photo in basic scope
                             await user.save();
-                        } else {
+                        }else{
                             // Create new user
                             const { firstName, lastName } = generateRandomName(profile.id);
 
@@ -197,7 +197,7 @@ if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
                     }
 
                     return done(null, user);
-                } catch (error) {
+                }catch(error){
                     return done(error as Error, undefined);
                 }
             }
@@ -215,11 +215,11 @@ passport.serializeUser((user: any, done) => {
 /**
  * Deserialize user from session
  */
-passport.deserializeUser(async (id: string, done) => {
-    try {
+passport.deserializeUser(async(id: string, done) => {
+    try{
         const user = await User.findById(id);
         done(null, user);
-    } catch (error) {
+    }catch(error){
         done(error, null);
     }
 });

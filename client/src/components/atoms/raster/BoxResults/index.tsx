@@ -21,11 +21,11 @@ const formatValue = (value: any, format?: string, decimals: number = 2): string 
         case 'percentage':
             return typeof value === 'number' ? `${(value * 100).toFixed(decimals)}%` : String(value);
         case 'bytes':
-            if (typeof value !== 'number') return String(value);
+            if(typeof value !== 'number') return String(value);
             const units = ['B', 'KB', 'MB', 'GB'];
             let size = value;
             let unitIndex = 0;
-            while (size >= 1024 && unitIndex < units.length - 1) {
+            while(size >= 1024 && unitIndex < units.length - 1){
                 size /= 1024;
                 unitIndex++;
             }
@@ -40,7 +40,7 @@ const getValueByPath = (obj: any, path: string): any => {
 };
 
 const BoxResults = ({ data, config, onItemSelect }: BoxResultsProps) => {
-    return (
+    return(
         <EditorWidget draggable={false} className='box-results-container'>
             <div className='box-results-header-container'>
                 <h3 className='box-results-header-title'>{config.title}</h3>
@@ -57,7 +57,7 @@ const BoxResults = ({ data, config, onItemSelect }: BoxResultsProps) => {
                             {config.metrics?.map((metric) => {
                                 const value = getValueByPath(item, metric.key);
                                 const formattedValue = formatValue(value, metric.format, metric.decimals);
-                                return (
+                                return(
                                     <div key={metric.key} className={`box-result-data ${metric.as_record_title ? 'as-record-title' : ''}`}>
                                         <div className='box-result-data-content'>
                                             <span className='data-label'>{metric.label}</span>

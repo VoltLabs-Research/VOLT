@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -24,7 +24,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Trajectory, Team } from '@/models/index';
 
 // Strict variant for write operations: always require team membership, regardless of public status
-export const requireTeamMembershipForTrajectory = async (req: Request, res: Response, next: NextFunction) => {
+export const requireTeamMembershipForTrajectory = async(req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params as any;
     const userId = (req as any).user?.id;
     const trajectory = await Trajectory.findById(id);
@@ -43,9 +43,9 @@ export const requireTeamMembershipForTrajectory = async (req: Request, res: Resp
     next();
 };
 
-export const processAndValidateUpload = async (req: Request, res: Response, next: NextFunction) => {
+export const processAndValidateUpload = async(req: Request, res: Response, next: NextFunction) => {
     const files = req.files as Express.Multer.File[];
-    if(!files || files.length === 0) {
+    if(!files || files.length === 0){
         return res.status(400).json({
             status: 'error',
             data: { error: 'No files uploaded' }
@@ -68,7 +68,7 @@ export const processAndValidateUpload = async (req: Request, res: Response, next
     next();
 };
 
-export const checkTeamMembershipForTrajectory = async (req: Request, res: Response, next: NextFunction) => {
+export const checkTeamMembershipForTrajectory = async(req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const trajectory = await Trajectory.findById(id);
     if(!trajectory){
@@ -78,14 +78,14 @@ export const checkTeamMembershipForTrajectory = async (req: Request, res: Respon
         });
     }
 
-    if(trajectory.isPublic) {
+    if(trajectory.isPublic){
         res.locals.trajectory = trajectory;
         res.locals.isPublicAccess = true;
         return next();
     }
 
     const userId = (req as any).user?.id;
-    if(!userId) {
+    if(!userId){
         return res.status(401).json({
             status: 'error',
             data: { error: 'Authentication required to access private trajectory' }

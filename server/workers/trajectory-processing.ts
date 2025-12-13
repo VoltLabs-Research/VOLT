@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -39,16 +39,16 @@ const exporter = new AtomisticExporter();
 /**
  * Downloads the raw LAMMPS dump stream from the storage service to a transient local file.
  * Uses Node.js streaming pipeline for optimal RAM usage.
- * 
+ *
  * @param trajectoryId - The ID of the trajectory.
  * @param timestep - The specific timestep to fetch.
  * @param destinationPath - The ephemeral path where the file will be written.
  */
-const downloadFromStorage = async (
+const downloadFromStorage = async(
     trajectoryId: string,
     timestep: number,
     destinationPath: string
-): Promise<void> => {
+): Promise<void> =>{
     // Fetches the read stream from MinIO via the centralized service
     const readStream = await DumpStorage.getDumpStream(trajectoryId, timestep);
     const writeStream = createWriteStream(destinationPath);
@@ -59,16 +59,16 @@ const downloadFromStorage = async (
 
 /**
  * Processes a single frame following the Cloud Native Protocol.
- * 
+ *
  * @param frameInfo - Metadata containing the timestep.
- * @param frameUri - The source URI (minio://...).
+ * @param frameUri - The source URI(minio://...).
  * @param trajectoryId - The ID of the trajectory.
  */
-const processCloudFrame = async (
+const processCloudFrame = async(
     frameInfo: { timestep: number },
     frameUri: string,
     trajectoryId: string
-): Promise<void> => {
+): Promise<void> =>{
     const start = performance.now();
 
     if(!frameUri.startsWith('minio://')){
@@ -99,7 +99,7 @@ const processCloudFrame = async (
         // Propagate error to fail the Promise
         throw err;
     }finally{
-        // Guaranteed Cleanup. We intentionally suppress unlink errors to avoid crashing 
+        // Guaranteed Cleanup. We intentionally suppress unlink errors to avoid crashing
         // the worker flow on cleanup issues.
         await unlink(tempFilePath).catch(() => {});
     }
@@ -108,7 +108,7 @@ const processCloudFrame = async (
 /**
  * Process the entire chunk of files in parallel.
  */
-const processJob = async (job: TrajectoryProcessingJob) => {
+const processJob = async(job: TrajectoryProcessingJob) => {
     if(!job?.jobId){
         throw new Error('MissingJobId');
     }
@@ -153,7 +153,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
 const main = () => {
     logger.info(`[Worker #${process.pid}] Online - Strict Cloud Native Mode`);
 
-    parentPort?.on('message', async (message: { job: TrajectoryProcessingJob }) => {
+    parentPort?.on('message', async(message: { job: TrajectoryProcessingJob }) => {
         try{
             if(message.job) await processJob(message.job);
         }catch(error){

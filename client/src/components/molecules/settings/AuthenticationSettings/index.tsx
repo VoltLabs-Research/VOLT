@@ -49,7 +49,7 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (validate(passwordForm)) {
+        if(validate(passwordForm)) {
             onSubmitPassword(e);
         }
     };
@@ -63,7 +63,7 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
         checkField(field, value, formData);
     };
 
-    return (
+    return(
         <div className='settings-content'>
             <Section>
                 <SectionHeader title='Security Settings' description='Manage your account security and authentication methods' />
@@ -170,5 +170,3 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
 };
 
 export default AuthenticationSettings;
-
-

@@ -7,7 +7,7 @@ const FormSection = ({
     onToggle,
     children
 }) => {
-    return (
+    return(
         <div className='form-control-section'>
             <div className='form-control-top-container'>
                 <FormField

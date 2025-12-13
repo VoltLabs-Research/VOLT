@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -113,7 +113,7 @@ export const readAccessor = (
     return { array: out, componentCount, componentType: acc.componentType };
 };
 
-export const parseGLB = async (inputFilePath: string, isMeshGLB: boolean = false): Promise<any> => {
+export const parseGLB = async(inputFilePath: string, isMeshGLB: boolean = false): Promise<any> =>{
     const file = await readFile(inputFilePath);
     const dataView = new DataView(file.buffer, file.byteOffset, file.byteLength);
     let offset = 0;
@@ -220,19 +220,19 @@ export const assembleGLBToBuffer = (glbJson: any, binaryBuffer: ArrayBuffer): Bu
     const dataView = new DataView(glbBuffer);
     let byteOffset = 0;
 
-    dataView.setUint32(byteOffset, 0x46546C67, true); 
+    dataView.setUint32(byteOffset, 0x46546C67, true);
     byteOffset += 4;
 
-    dataView.setUint32(byteOffset, 2, true); 
+    dataView.setUint32(byteOffset, 2, true);
     byteOffset += 4;
 
-    dataView.setUint32(byteOffset, totalLength, true); 
+    dataView.setUint32(byteOffset, totalLength, true);
     byteOffset += 4;
 
-    dataView.setUint32(byteOffset, jsonTotalLength, true); 
+    dataView.setUint32(byteOffset, jsonTotalLength, true);
     byteOffset += 4;
 
-    dataView.setUint32(byteOffset, 0x4E4F534A, true); 
+    dataView.setUint32(byteOffset, 0x4E4F534A, true);
     byteOffset += 4;
 
     const jsonUint8Array = new TextEncoder().encode(jsonString);
@@ -243,10 +243,10 @@ export const assembleGLBToBuffer = (glbJson: any, binaryBuffer: ArrayBuffer): Bu
         dataView.setUint8(byteOffset++, 0x20);
     }
 
-    dataView.setUint32(byteOffset, binaryTotalLength, true); 
+    dataView.setUint32(byteOffset, binaryTotalLength, true);
     byteOffset += 4;
 
-    dataView.setUint32(byteOffset, 0x004E4942, true); 
+    dataView.setUint32(byteOffset, 0x004E4942, true);
     byteOffset += 4;
 
     new Uint8Array(glbBuffer, byteOffset).set(new Uint8Array(binaryBuffer));

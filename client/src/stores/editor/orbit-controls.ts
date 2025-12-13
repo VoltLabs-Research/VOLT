@@ -27,7 +27,7 @@ const INITIAL: OrbitControlsState = {
 const useOrbitControlsSettings = create<OrbitControlsStore>()(
 	persist(
 		(set) => ({
-			...INITIAL,
+      ...INITIAL,
 			set: (partial) => set((s) => ({ ...s, ...partial })),
 			setTarget: (t) => set(() => ({ target: t })),
 			reset: () => set(() => INITIAL)

@@ -18,10 +18,10 @@ export default class LammpsDataParser extends BaseParser{
 
     extractMetadata(lines: string[]): FrameMetadata{
         let natoms = 0;
-        const boxBounds = { 
-            xlo: 0, xhi: 0, 
-            ylo: 0, yhi: 0, 
-            zlo: 0, zhi: 0 
+        const boxBounds = {
+            xlo: 0, xhi: 0,
+            ylo: 0, yhi: 0,
+            zlo: 0, zhi: 0
         };
 
         let foundNatoms = false;
@@ -65,7 +65,7 @@ export default class LammpsDataParser extends BaseParser{
                 if(parts.length >= 2){
                     boxBounds.zlo = parseFloat(parts[0]);
                     boxBounds.zhi = parseFloat(parts[1]);
-                    foundZ = true;  
+                    foundZ = true;
                 }
             }
         }
@@ -80,7 +80,7 @@ export default class LammpsDataParser extends BaseParser{
     isAtomSection(line: string): boolean{
         const l = line.trim();
         if(/^[A-Z]/.test(l) && !/^Atoms/i.test(l)) return false;
-        
+
         return /^Atoms/i.test(l);
     }
 

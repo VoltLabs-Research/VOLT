@@ -132,7 +132,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         const { nodes, edges } = get();
         const { source, target } = connection;
         if((!source || !target) || (source === target)) return false;
-        
+
         const sourceNode = nodes.find((node: Node) => node.id === source);
         const targetNode = nodes.find((node: Node) => node.id === target);
         if(!sourceNode || !targetNode) return false;
@@ -142,7 +142,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         const sourceConfig = NODE_CONFIGS[sourceNode.type as NodeType];
         const targetConfig = NODE_CONFIGS[targetNode.type as NodeType];
         if(!sourceConfig || !targetConfig) return false;
-        
+
         const canConnectByType = sourceConfig.allowedConnections.to.includes(targetNode.type as NodeType);
         if(!canConnectByType) return false;
 
@@ -172,7 +172,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
             target: connection.target!,
             sourceHandle: connection.sourceHandle ?? undefined,
             targetHandle: connection.targetHandle ?? undefined,
-            ...DEFAULT_EDGE_STYLE,
+                ...DEFAULT_EDGE_STYLE,
         };
         set((state) => ({ edges: addEdge(edge, state.edges) }));
     },
@@ -180,7 +180,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
     onNodeClick(event: unknown, node: Node<PluginNodeData>){
         set({ selectedNode: node });
     },
-    
+
     onPaneClick(){
         set({ selectedNode: null });
     },
@@ -196,7 +196,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
 
     updateNodeData(nodeId: string, data: Partial<PluginNodeData>){
         set((state) => {
-            const nodes = state.nodes.map((node) => 
+            const nodes = state.nodes.map((node) =>
                 node.id === nodeId ? { ...node, data: { ...(node.data ?? {}), ...data } } : node);
 
             const selectedNode =
@@ -267,7 +267,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
                 target: edge.target,
                 sourceHandle: edge.sourceHandle ?? undefined,
                 targetHandle: edge.targetHandle ?? undefined,
-                ...DEFAULT_EDGE_STYLE,
+                    ...DEFAULT_EDGE_STYLE,
             })),
 
             selectedNode: null,
@@ -332,7 +332,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
             set({ isLoading: false, loadError: msg });
         }
     },
-    
+
     async validateCurrentWorkflow(): Promise<any>{
         const { getWorkflow } = get();
         set({ isValidating: true });
@@ -354,12 +354,12 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
             return result;
         }
     },
-    
+
     async publishPlugin(){
         const { currentPlugin, validateCurrentWorkflow } = get();
         if(!currentPlugin?._id){
             set({ saveError: 'Plugin must be saved before publishing' });
-            return null; 
+            return null;
         }
 
         const validation = await validateCurrentWorkflow();
@@ -381,7 +381,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         }catch(err){
             const msg = getErrorMessage(err, 'Failed to publish plugin');
             set({ isSaving: false, saveError: msg });
-            return null;  
+            return null;
         }
     }
 }));

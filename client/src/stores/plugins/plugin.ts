@@ -124,7 +124,7 @@ const buildWorkflowIndex = (plugin: IPluginRecord): WorkflowIndex => {
         const type = node.type as NodeType;
         const arr = nodesByType.get(type);
         if(arr) arr.push(node.id);
-        else nodesByType.set(type, [node.id]);        
+        else nodesByType.set(type, [node.id]);
     }
 
     for(const edge of edges){
@@ -144,7 +144,7 @@ const getIndexForPlugin = (plugin: IPluginRecord): WorkflowIndex => {
 
     const cacheKey = plugin._id;
     const entryKey = `${plugin._id}:${versionSignal}`;
-    
+
     const cached = workflowIndexCache.get(cacheKey);
     if(cached?.key === entryKey) return cached.index;
 
@@ -175,7 +175,7 @@ const usePluginStore = create<PluginState>((set, get) => ({
 
         if(inFlightFetch) return inFlightFetch;
 
-        inFlightFetch = (async () => {
+        inFlightFetch = (async() => {
             if(get().loading) return;
             set({ loading: true, error: null });
 
@@ -194,7 +194,7 @@ const usePluginStore = create<PluginState>((set, get) => ({
                 inFlightFetch = null;
             }
         })();
-        
+
         return inFlightFetch;
     },
 
@@ -208,7 +208,7 @@ const usePluginStore = create<PluginState>((set, get) => ({
             const idx = getIndexForPlugin(plugin);
             const modifierIds = idx.nodesByType.get(NodeType.MODIFIER) ?? [];
             const modifierNode = modifierIds.length ? idx.nodeById.get(modifierIds[0]) : undefined;
-            const modifierData = (modifierNode?.data?.modifier || {}) as IModifierData;
+            const modifierData = (modifierNode?.data?.modifier ||{}) as IModifierData;
 
             return {
                 pluginId: plugin._id,
@@ -222,7 +222,7 @@ const usePluginStore = create<PluginState>((set, get) => ({
 
         return lastModifiers;
     },
-    
+
     getPluginArguments(pluginSlug: string): PluginArgument[]{
         const plugin = get().pluginsBySlug[pluginSlug];
         if(!plugin) return [];

@@ -18,7 +18,7 @@ const PluginBuilderPage = () => {
         }
     }, [pluginId, loadPluginById, clearWorkflow]);
 
-    return (
+    return(
         <ReactFlowProvider>
             <PluginBuilder />
         </ReactFlowProvider>

@@ -5,7 +5,7 @@ import githubLogo from '@/assets/images/github-logo.png';
 import './ThirdPartySignIn.css';
 
 const ThirdPartySignIn = () => {
-    return (
+    return(
         <>
           <div className='auth-third-party-account-container'>
                 <i className='auth-third-party-account-icon-container'>

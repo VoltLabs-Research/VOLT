@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -30,23 +30,23 @@ export const initializeJobUpdatesListener = (io: Server) => {
     const subscriber = createRedisClient();
 
     subscriber.subscribe(CHANNEL, (err, count) => {
-        if (err) {
+        if(err){
             logger.error(`[JobUpdatesListener] Failed to subscribe to ${CHANNEL}: ${err}`);
-        } else {
+        }else{
             logger.info(`[JobUpdatesListener] Subscribed to ${count} channel(s)`);
         }
     });
 
     subscriber.on('message', (channel: string, message: string) => {
-        if (channel !== CHANNEL) return;
+        if(channel !== CHANNEL) return;
 
-        try {
+        try{
             const { teamId, payload } = JSON.parse(message);
 
             // Emit to all clients in the team room
-            if (teamId && payload) {
+            if(teamId && payload){
                 // Check if this is a session completion event
-                if (payload.type === 'session_completed') {
+                if(payload.type === 'session_completed'){
                     const sessionCompleteEvent = {
                         trajectoryId: payload.trajectoryId,
                         sessionId: payload.sessionId,
@@ -75,14 +75,14 @@ export const initializeJobUpdatesListener = (io: Server) => {
                     timestamp: payload.timestamp || new Date().toISOString(),
                     queueType: payload.queueType || 'unknown',
                     type: payload.type,
-                    ...(payload.error && { error: payload.error }),
-                    ...(payload.result && { result: payload.result }),
-                    ...(payload.processingTimeMs && { processingTimeMs: payload.processingTimeMs })
+                        ...(payload.error && { error: payload.error }),
+                        ...(payload.result && { result: payload.result }),
+                        ...(payload.processingTimeMs && { processingTimeMs: payload.processingTimeMs })
                 };
 
                 io.to(`team-${teamId}`).emit('job_update', normalizedPayload);
             }
-        } catch (error) {
+        }catch(error){
             logger.error(`[JobUpdatesListener] Error processing message from ${CHANNEL}, Raw message: ${message}: ${error}`);
         }
     });

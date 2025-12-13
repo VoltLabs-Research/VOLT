@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -57,24 +57,24 @@ const initialState: TrajectoryState = {
     isRasterLoading: false
 };
 
-export function dataURLToBlob(dataURL: string): Blob {
+export function dataURLToBlob(dataURL: string): Blob{
     const [header, data] = dataURL.split(',');
     const isBase64 = /;base64/i.test(header);
     const mimeMatch = header.match(/data:([^;]+)/i);
     const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
 
-    if (isBase64) {
+    if(isBase64){
         const byteString = atob(data);
         const len = byteString.length;
         const u8 = new Uint8Array(len);
-        for (let i = 0; i < len; i++) u8[i] = byteString.charCodeAt(i);
+        for(let i = 0; i < len; i++) u8[i] = byteString.charCodeAt(i);
         return new Blob([u8], { type: mime });
-    } else {
+    }else{
         return new Blob([decodeURIComponent(data)], { type: mime });
     }
 }
 
-export function dataURLToObjectURL(dataURL: string): string {
+export function dataURLToObjectURL(dataURL: string): string{
     const blob = dataURLToBlob(dataURL);
     return URL.createObjectURL(blob);
 }
@@ -116,7 +116,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const key = keyForTeam(teamId);
             const force = !!opts?.force;
             const cached = get().cache[key];
-            if (cached && !force) {
+            if(cached && !force){
                 set({ trajectories: cached, isLoading: false, error: null });
                 return Promise.resolve();
             }
@@ -143,11 +143,11 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         getStructureAnalysis: (teamId: string, opts?: { force?: boolean }) => {
             const force = !!opts?.force;
             const cached = get().analysisCache[teamId];
-            if (cached && !force) {
+            if(cached && !force){
                 set({ structureAnalysis: cached, isLoading: false, error: null });
                 return Promise.resolve();
             }
-            return asyncAction(async () => {
+            return asyncAction(async() => {
                 const structureAnalysisApi = await import('@/services/structure-analysis');
                 return structureAnalysisApi.getStructureAnalysisByTeam(teamId);
             }, {
@@ -181,10 +181,10 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 }
             }),
 
-        createTrajectory: async (formData: FormData, teamId?: string) => {
+        createTrajectory: async(formData: FormData, teamId?: string) => {
             const currentFileCount = get().uploadingFileCount;
             set({ uploadingFileCount: currentFileCount + 1, error: null });
-            try {
+            try{
                 const newTrajectory = await trajectoryApi.create(formData);
                 const key = keyForTeam(teamId);
                 const currentList = get().cache[key] || get().trajectories;
@@ -197,7 +197,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     uploadingFileCount: Math.max(0, get().uploadingFileCount - 1),
                     error: null
                 });
-            } catch (error: any) {
+            }catch(error: any){
                 const errorMessage = extractErrorMessage(error, 'Error uploading trajectory');
                 set({
                     uploadingFileCount: Math.max(0, get().uploadingFileCount - 1),
@@ -207,21 +207,21 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             }
         },
 
-        updateTrajectoryById: async (id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => {
+        updateTrajectoryById: async(id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => {
             const originalState = {
                 trajectories: get().trajectories,
                 trajectory: get().trajectory,
                 cache: get().cache
             };
             set(updateTrajectoryInList(id, data));
-            try {
+            try{
                 await trajectoryApi.update(id, data);
                 const nextCache: Record<string, Trajectory[]> = {};
                 Object.entries(get().cache).forEach(([k, arr]) => {
                     nextCache[k] = arr.map(t => t._id === id ? { ...t, ...data } as Trajectory : t);
                 });
                 set({ cache: nextCache });
-            } catch (error: any) {
+            }catch(error: any){
                 set(originalState);
                 const errorMessage = extractErrorMessage(error, 'Failed to update trajectory');
                 set({ error: errorMessage });
@@ -229,7 +229,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             }
         },
 
-        deleteTrajectoryById: async (id: string, teamId?: string) => {
+        deleteTrajectoryById: async(id: string, teamId?: string) => {
             const originalState = {
                 trajectories: get().trajectories,
                 trajectory: get().trajectory,
@@ -241,9 +241,9 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const currentList = get().cache[key] || [];
             const updated = currentList.filter(t => t._id !== id);
             set({ cache: { ...get().cache, [key]: updated } });
-            try {
+            try{
                 await trajectoryApi.delete(id);
-            } catch (error: any) {
+            }catch(error: any){
                 set(originalState);
                 set({ error: extractErrorMessage(error, 'Failed to delete trajectory') });
                 throw error;
@@ -260,9 +260,9 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             });
         },
 
-        deleteSelectedTrajectories: async () => {
+        deleteSelectedTrajectories: async() =>{
             const { selectedTrajectories } = get();
-            if (selectedTrajectories.length === 0) return;
+            if(selectedTrajectories.length === 0) return;
             const idsToDelete = [...selectedTrajectories];
             set({ selectedTrajectories: [] });
             const deletePromises = idsToDelete.map(id =>
@@ -284,20 +284,20 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const pageSize = opts?.pageSize ?? 100000;
             const cacheKey = `${trajectoryId}:${timestep}:${page}:${pageSize}`;
             const cached = get().atomsCache?.[cacheKey];
-            if (cached && !force) {
+            if(cached && !force){
                 return cached;
             }
 
-            try {
+            try{
                 const payload = await trajectoryApi.getAtoms(trajectoryId, timestep, { page, pageSize });
-                if (!payload) {
+                if(!payload){
                     return null;
                 }
                 set((state) => ({
                     atomsCache: { ...(state.atomsCache || {}), [cacheKey]: payload }
                 }));
                 return payload;
-            } catch (e: any) {
+            }catch(e: any){
                 const errorMessage = extractErrorMessage(e, 'Error loading frame atoms');
                 console.error('Failed to load frame atoms:', errorMessage);
                 return null;
@@ -308,8 +308,8 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const force = !!opts?.force;
             const current = get().trajectoryMetrics as any;
 
-            // Evita refetch si ya tenemos métricas de esa trayectoria (a menos que force)
-            if (current && current?.trajectory?._id === id && !force) {
+            // Evita refetch si ya tenemos métricas de esa trayectoria(a menos que force)
+            if(current && current?.trajectory?._id === id && !force){
                 return Promise.resolve();
             }
 

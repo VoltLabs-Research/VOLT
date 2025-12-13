@@ -19,15 +19,15 @@ const AnalysisConfigSelection = () => {
     const selectedId = analysisConfig?._id ?? '';
 
     useEffect(() => {
-        if (plugins.length === 0) {
+        if(plugins.length === 0){
             fetchPlugins();
         }
     }, [plugins, fetchPlugins]);
 
     const handleChange = useCallback((configId: string) => {
-        if (!analysisList.length) return;
+        if(!analysisList.length) return;
         const config = analysisList.find(({ _id }) => _id === configId);
-        if (config) updateAnalysisConfig(config);
+        if(config) updateAnalysisConfig(config);
     }, [analysisList, updateAnalysisConfig]);
 
     // Build options from analysis list using modifiers from plugins
@@ -46,9 +46,9 @@ const AnalysisConfigSelection = () => {
         });
     }, [analysisList, getModifiers]);
 
-    if (isLoading) return null;
+    if(isLoading) return null;
 
-    return (
+    return(
         <EditorWidget className="analysis-config-selection-container">
             <Select
                 onDark={true}

@@ -14,17 +14,17 @@ const ChatSidebar: React.FC = () => {
     const user = useAuthStore((store) => store.user);
     const { teamMembers, startChatWithMember, chats, isLoadingChats, selectChat, currentChat } = useChat();
     const { setShowCreateGroup } = useChatStore();
-    
+
     // Filter chats based on search query
     const filteredChats = chats.filter(chat => {
-        if (!searchQuery) return true;
+        if(!searchQuery) return true;
         const participant = chat.participants.find(p => p._id !== user?._id);
-        if (!participant) return false;
+        if(!participant) return false;
         const name = `${participant.firstName} ${participant.lastName}`.toLowerCase();
         return name.includes(searchQuery.toLowerCase());
     });
 
-    return (
+    return(
         <div className='chat-sidebar-container'>
             <div className='chat-sidebar-header-container'>
                 <h3 className='chat-sidebar-header-title'>Messages</h3>
@@ -33,21 +33,21 @@ const ChatSidebar: React.FC = () => {
                         <i className='chat-sidebar-search-icon-container'>
                             <IoSearchOutline />
                         </i>
-                        <input 
+                        <input
                             placeholder='Search people or messages...'
                             className='chat-sidebar-search-input'
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <button 
+                    <button
                         className='chat-new-chat-button'
                         onClick={() => setShowTeamMembers(!showTeamMembers)}
                         title='Start new chat'
                     >
                         <IoPersonAddOutline />
                     </button>
-                    <button 
+                    <button
                         className='chat-new-group-button'
                         onClick={() => setShowCreateGroup(true)}
                         title='Create group'
@@ -62,12 +62,12 @@ const ChatSidebar: React.FC = () => {
                 <div className='chat-team-members-container'>
                     <h4 className='chat-team-members-title'>Team Members</h4>
                     {teamMembers
-                        .filter((member, index, self) => 
+                        .filter((member, index, self) =>
                             self.findIndex(m => m._id === member._id) === index
                         )
-                        .map((member) => (
-                        <div 
-                            key={member._id} 
+                            .map((member) => (
+                        <div
+                            key={member._id}
                             className='chat-team-member-item'
                             onClick={() => {
                                 startChatWithMember(member);
@@ -102,15 +102,15 @@ const ChatSidebar: React.FC = () => {
                 ) : (
                     filteredChats.map((chat) => {
                         const isGroup = chat.isGroup;
-                        const displayName = isGroup ? chat.groupName : 
-                            chat.participants.find(p => p._id !== user?._id)?.firstName + ' ' + 
+                        const displayName = isGroup ? chat.groupName :
+                            chat.participants.find(p => p._id !== user?._id)?.firstName + ' ' +
                             chat.participants.find(p => p._id !== user?._id)?.lastName;
-                        
-                        if (!displayName) return null;
 
-                        return (
-                            <div 
-                                key={chat._id} 
+                        if(!displayName) return null;
+
+                        return(
+                            <div
+                                key={chat._id}
                                 className={`chat-conversation-item ${currentChat?._id === chat._id ? 'active' : ''}`}
                                 onClick={() => selectChat(chat)}
                             >

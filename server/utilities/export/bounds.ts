@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -40,9 +40,9 @@ export const computeBoundsFromFlat = (positions: ArrayLike<number>, stride = 3) 
         const z = +positions[i + 2];
 
         if(x < minX) minX = x;
-        if(y < minY) minY = y; 
+        if(y < minY) minY = y;
         if(z < minZ) minZ = z;
-        if(x > maxX) maxX = x; 
+        if(x > maxX) maxX = x;
         if(y > maxY) maxY = y;
         if(z > maxZ) maxZ = z;
     }
@@ -70,11 +70,11 @@ export const computeBoundsFromPoints = (points: [number, number, number][]): Bou
     let maxZ = -Infinity;
 
     for(const [x, y, z] of points){
-        if(x < minX) minX = x; 
-        if(y < minY) minY = y; 
+        if(x < minX) minX = x;
+        if(y < minY) minY = y;
         if(z < minZ) minZ = z;
-        if(x > maxX) maxX = x; 
-        if(y > maxY) maxY = y; 
+        if(x > maxX) maxX = x;
+        if(y > maxY) maxY = y;
         if(z > maxZ) maxZ = z;
     }
 

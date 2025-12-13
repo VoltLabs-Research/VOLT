@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -34,9 +34,9 @@ interface LoginActivityModalProps {
 const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose }) => {
     const { activities, loading, error, refetch } = useLoginActivity(50);
 
-    if (!isOpen) return null;
+    if(!isOpen) return null;
 
-    return (
+    return(
         <div className="login-activity-modal-overlay" onClick={onClose}>
             <div className="login-activity-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="login-activity-modal-header">
@@ -45,7 +45,7 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose
                         <h2>Login Activity</h2>
                     </div>
                     <div className="login-activity-modal-actions">
-                        <button 
+                        <button
                             className="action-button refresh"
                             onClick={refetch}
                             disabled={loading}
@@ -97,18 +97,18 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose
                                     <div className="activity-content">
                                         <div className="activity-header">
                                             <span className="activity-title">
-                                                {activity.action === 'login' ? 'Successful Login' : 
-                                                 activity.action === 'failed_login' ? 'Failed Login Attempt' : 
+                                                {activity.action === 'login' ? 'Successful Login' :
+                                                 activity.action === 'failed_login' ? 'Failed Login Attempt' :
                                                  'Logout'}
                                             </span>
                                             <span className="activity-time">
                                                 {(() => {
-                                                    try {
+                                                    try{
                                                         const date = new Date(activity.createdAt);
-                                                        return isValid(date) ? 
-                                                            formatDistanceToNow(date, { addSuffix: true }) : 
+                                                        return isValid(date) ?
+                                                            formatDistanceToNow(date, { addSuffix: true }) :
                                                             'Unknown time';
-                                                    } catch {
+                                                    } catch{
                                                         return 'Unknown time';
                                                     }
                                                 })()}

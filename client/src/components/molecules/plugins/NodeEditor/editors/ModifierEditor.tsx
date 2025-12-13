@@ -14,7 +14,7 @@ const DEFAULT_MODIFIER: Partial<IModifierData> = {};
 const ModifierEditor: React.FC<ModifierEditorProps> = ({ node }) => {
     const { data: modifier, updateField } = useNodeData(node, 'modifier', DEFAULT_MODIFIER);
 
-    return (
+    return(
         <>
             <CollapsibleSection title='Plugin Info' defaultExpanded>
                 <FormField

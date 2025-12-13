@@ -13,7 +13,7 @@ export interface DraggableOptions{
     scaleWhileDragging?: number;
     onDragStart?: (pos: { x: number; y: number }) => void;
     onDrag?: (pos: { x: number; y: number }) => void;
-    onDragEnd?: (pos: { x: number; y: number }) => void;   
+    onDragEnd?: (pos: { x: number; y: number }) => void;
 }
 
 export interface DraggableHandle{
@@ -54,7 +54,7 @@ const useDraggable = (options: DraggableOptions = {}) => {
 
     const applyTransform = useCallback((x: number, y: number, scale = 1) => {
         const el = nodeRef.current;
-        if (!el) return;
+        if(!el) return;
         lastScaleRef.current = scale;
         el.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
     }, []);
@@ -71,7 +71,7 @@ const useDraggable = (options: DraggableOptions = {}) => {
 
     const clampToBounds = useCallback((x: number, y: number) => {
         const el = nodeRef.current;
-        if (!el || !bounds || !originRef.current) return { x, y };
+        if(!el || !bounds || !originRef.current) return { x, y };
 
         let rect: DOMRect | { left: number; top: number; right: number; bottom: number; width: number; height: number } | null = null;
 
@@ -99,14 +99,14 @@ const useDraggable = (options: DraggableOptions = {}) => {
         const maxY = rect.bottom - (origin.top + origin.height);
 
         const clampedX = Math.min(Math.max(x, Math.min(minX, maxX)), Math.max(minX, maxX));
-        const clampedY = Math.min(Math.max(y, Math.min(minY, maxY)), Math.max(minY, maxY)); 
+        const clampedY = Math.min(Math.max(y, Math.min(minY, maxY)), Math.max(minY, maxY));
 
         return { x: clampedX, y: clampedY };
     }, [bounds]);
 
     const measureOrigin = useCallback(() => {
         const el = nodeRef.current;
-        if (!el) return;
+        if(!el) return;
         const prev = el.style.transform;
         el.style.transform = `translate(${posRef.current.x}px, ${posRef.current.y}px) scale(1)`;
         const r = el.getBoundingClientRect();
@@ -117,7 +117,7 @@ const useDraggable = (options: DraggableOptions = {}) => {
     const setPosition = useCallback((x: number, y: number) => {
         let nx = axis === 'y' ? posRef.current.x : x;
         let ny = axis === 'x' ? posRef.current.y : y;
-        
+
         ({ x: nx, y: ny } = clampToBounds(nx, ny));
         ({ x: nx, y: ny } = snapToGrid(nx, ny));
 
@@ -129,7 +129,7 @@ const useDraggable = (options: DraggableOptions = {}) => {
     const resetPosition = useCallback(() => {
         posRef.current = { x: 0, y: 0 };
         applyTransform(0, 0, 1);
-        measureOrigin(); 
+        measureOrigin();
     }, [applyTransform, measureOrigin]);
 
     const getPosition = useCallback(() => ({ ...posRef.current }), []);
@@ -148,7 +148,7 @@ const useDraggable = (options: DraggableOptions = {}) => {
 
         if(pointerId !== undefined){
             pointerIdRef.current = pointerId;
-            try { el.setPointerCapture(pointerId); } catch {}
+            try{ el.setPointerCapture(pointerId); } catch {}
         }else{
             pointerIdRef.current = null;
         }
@@ -213,18 +213,18 @@ const useDraggable = (options: DraggableOptions = {}) => {
 
             return null;
         };
-        
+
         const handleTarget = resolveHandleTarget();
 
         const onPointerDown = (e: PointerEvent) => {
-            if (!enabled || doubleClickToDrag) return;
-            if (handle && handleTarget && e.target instanceof HTMLElement && !handleTarget.contains(e.target)) return;
+            if(!enabled || doubleClickToDrag) return;
+            if(handle && handleTarget && e.target instanceof HTMLElement && !handleTarget.contains(e.target)) return;
             startDragging(e.clientX, e.clientY, e.pointerId);
         };
-        
+
         const onDoubleClick = (e: MouseEvent) => {
-            if (!enabled || !doubleClickToDrag) return;
-            if (handle && handleTarget && e.target instanceof HTMLElement && !handleTarget.contains(e.target)) return;
+            if(!enabled || !doubleClickToDrag) return;
+            if(handle && handleTarget && e.target instanceof HTMLElement && !handleTarget.contains(e.target)) return;
             e.preventDefault();
             startDragging(e.clientX, e.clientY);
         };
@@ -240,7 +240,7 @@ const useDraggable = (options: DraggableOptions = {}) => {
         const onResize = () => {
             measureOrigin();
             const clamped = clampToBounds(posRef.current.x, posRef.current.y);
-            if (clamped.x !== posRef.current.x || clamped.y !== posRef.current.y) {
+            if(clamped.x !== posRef.current.x || clamped.y !== posRef.current.y){
                 posRef.current = clamped;
                 applyTransform(clamped.x, clamped.y, 1);
             }
@@ -248,7 +248,7 @@ const useDraggable = (options: DraggableOptions = {}) => {
 
         window.addEventListener('resize', onResize);
 
-        return () => {
+        return() => {
             el.removeEventListener('pointerdown', onPointerDown);
             el.removeEventListener('dblclick', onDoubleClick);
             window.removeEventListener('pointermove', onMove);

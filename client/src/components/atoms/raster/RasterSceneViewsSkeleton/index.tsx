@@ -2,7 +2,7 @@ import React from 'react';
 import { Skeleton } from '@mui/material';
 
 const RasterSceneViewsSkeleton: React.FC = () => {
-    return (
+    return(
         <div className='raster-scene-header-views-container'>
             <i className='raster-scene-header-views-icon-container'>
                 <Skeleton

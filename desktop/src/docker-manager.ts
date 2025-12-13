@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -91,23 +91,23 @@ export default class DockerManager{
 
         return new Promise((resolve) => {
             console.log('[DockerManager] Starting services via Compose...');
-            
+
             const composeProcess = spawn(
                 'docker',
                 ['compose', '-p', this.projectName, 'up', '-d', '--remove-orphans'],
                 { cwd: this.projectRoot, shell: true }
             );
-           
+
             composeProcess.stdout?.on('data', (d) => console.log(`[Compose] ${d.toString().trim()}`));
             composeProcess.stderr?.on('data', (d) => console.error(`[Compose Status] ${d.toString().trim()}`));
 
-            composeProcess.on('close', async (code) => {
+            composeProcess.on('close', async(code) => {
                 if(code === 0){
                     console.log('[DockerManager] Compose command executed. Waiting for health checks...');
                     const healthy = await this.waitForServices();
                     resolve(healthy);
                 }else{
-                    console.error(`[DockerManager] Failed to start services (exit code: ${code})`);
+                    console.error(`[DockerManager] Failed to start services(exit code: ${code})`);
                     resolve(false);
                 }
             });
@@ -177,7 +177,7 @@ export default class DockerManager{
         }
     }
 
-    private async cleanupOldContainers(): Promise<void> {
+    private async cleanupOldContainers(): Promise<void>{
         console.log('[DockerManager] Checking for conflicting containers...');
         for(const name of this.containerNames){
             try{

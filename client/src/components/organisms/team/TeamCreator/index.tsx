@@ -38,7 +38,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
     });
 
     const handleClose = () => {
-        if (isRequired) {
+        if(isRequired){
             showError('You must create a team to continue.');
             return;
         }
@@ -46,17 +46,17 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
         onClose?.();
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async(e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!validate({ teamName, teamDescription })) {
+        if(!validate({ teamName, teamDescription })) {
             return;
         }
 
         setIsSubmitting(true);
         clearError();
 
-        try {
+        try{
             await createTeam({
                 name: teamName.trim(),
                 description: teamDescription.trim() || undefined
@@ -68,9 +68,9 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
 
             // Close modal if onClose is provided
             onClose?.();
-        } catch (err) {
+        }catch(err){
             console.error('Failed to create team:', err);
-        } finally {
+        }finally{
             setIsSubmitting(false);
             toggleTeamCreator();
         }
@@ -78,7 +78,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTeamName(e.target.value);
-        if (error) clearError();
+        if(error) clearError();
         checkField('teamName', e.target.value);
     };
 
@@ -87,7 +87,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
         checkField('teamDescription', e.target.value);
     };
 
-    return (
+    return(
         <DraggableBinaryContainer
             title='Create a new team'
             description="When you create an account, you're assigned a personal team. You can create new teams to manage your trajectories and work with others."
@@ -106,7 +106,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
                 error={errors.teamName}
             />
             <FormInput
-                label='Description (optional)'
+                label='Description(optional)'
                 value={teamDescription}
                 onChange={handleDescriptionChange}
                 placeholder='Team description'

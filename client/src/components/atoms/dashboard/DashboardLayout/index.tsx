@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -95,23 +95,23 @@ const DashboardLayout = () => {
     const [teamsInitialized, setTeamsInitialized] = useState(false);
 
     useEffect(() => {
-        if (selectedTeam === null || trajectories.length) return;
+        if(selectedTeam === null || trajectories.length) return;
         getTrajectories(selectedTeam._id);
     }, [selectedTeam]);
 
     useEffect(() => {
-        if (teams.length) return;
+        if(teams.length) return;
         getUserTeams().finally(() => setTeamsInitialized(true));
     }, []);
 
     // Force user to create a team if they don't belong to any
     // Wait for teams to finish loading first
     useEffect(() => {
-        // Only check after teams have been initialized (fetched at least once)
-        if (!teamsInitialized) return;
-        if (isLoadingTeams) return; // Still loading, don't check yet
+        // Only check after teams have been initialized(fetched at least once)
+        if(!teamsInitialized) return;
+        if(isLoadingTeams) return; // Still loading, don't check yet
 
-        if (teams.length === 0 && !showTeamCreator) {
+        if(teams.length === 0 && !showTeamCreator){
             // User has no teams after loading, force team creation
             toggleTeamCreator();
         }
@@ -127,28 +127,28 @@ const DashboardLayout = () => {
 
     // Handle team query param and localStorage synchronization
     useEffect(() => {
-        if (!teams.length) return;
+        if(!teams.length) return;
 
         const urlTeamId = searchParams.get('team');
         const storedTeamId = localStorage.getItem('selectedTeamId');
 
         // If URL has team param and it's different from localStorage, update localStorage
-        if (urlTeamId && urlTeamId !== storedTeamId) {
+        if(urlTeamId && urlTeamId !== storedTeamId){
             const team = teams.find(t => t._id === urlTeamId);
-            if (team) {
+            if(team){
                 localStorage.setItem('selectedTeamId', urlTeamId);
                 setSelectedTeam(urlTeamId);
             }
         }
         // If no URL param but localStorage exists, update URL
-        else if (!urlTeamId && storedTeamId) {
+        else if(!urlTeamId && storedTeamId){
             const team = teams.find(t => t._id === storedTeamId);
-            if (team) {
+            if(team){
                 setSearchParams({ team: storedTeamId });
             }
         }
         // If no URL param and no localStorage, set first team
-        else if (!urlTeamId && !storedTeamId && teams.length > 0) {
+        else if(!urlTeamId && !storedTeamId && teams.length > 0){
             const firstTeam = teams[0];
             setSearchParams({ team: firstTeam._id });
             localStorage.setItem('selectedTeamId', firstTeam._id);
@@ -156,40 +156,40 @@ const DashboardLayout = () => {
     }, [teams, searchParams, setSearchParams, setSelectedTeam]);
 
     useEffect(() => {
-        if (notifOpen) {
+        if(notifOpen){
             fetch({ force: true });
-        } else {
+        }else{
             // Clear observed notifications when closing panel
             observedNotificationsRef.current.clear();
         }
     }, [notifOpen]);
 
     useEffect(() => {
-        if (!notifOpen) return;
+        if(!notifOpen) return;
         const onDoc = (e: MouseEvent) => {
-            if (!bellWrapperRef.current) return;
-            if (!bellWrapperRef.current.contains(e.target as Node)) {
+            if(!bellWrapperRef.current) return;
+            if(!bellWrapperRef.current.contains(e.target as Node)) {
                 setNotifOpen(false);
             }
         };
         document.addEventListener('mousedown', onDoc);
-        return () => document.removeEventListener('mousedown', onDoc);
+        return() => document.removeEventListener('mousedown', onDoc);
     }, [notifOpen]);
 
     // Mark notifications as read when they become visible
     useEffect(() => {
-        if (!notifOpen || !notificationBodyRef.current) {
+        if(!notifOpen || !notificationBodyRef.current){
             return;
         }
 
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
+                    if(entry.isIntersecting){
                         const notificationId = entry.target.getAttribute('data-notification-id');
                         const isRead = entry.target.getAttribute('data-notification-read') === 'true';
 
-                        if (notificationId && !isRead && !observedNotificationsRef.current.has(notificationId)) {
+                        if(notificationId && !isRead && !observedNotificationsRef.current.has(notificationId)) {
                             observedNotificationsRef.current.add(notificationId);
                             // Mark as read after a short delay to ensure user saw it
                             setTimeout(() => {
@@ -209,21 +209,21 @@ const DashboardLayout = () => {
         const notificationItems = notificationBodyRef.current.querySelectorAll('.dashboard-notification-item');
         notificationItems.forEach((item) => observer.observe(item));
 
-        return () => {
+        return() => {
             observer.disconnect();
         };
     }, [notifOpen, notificationList, markAsRead]);
 
     useEffect(() => {
-        if (!mobileMenuOpen) return;
+        if(!mobileMenuOpen) return;
         const onDoc = (e: MouseEvent) => {
-            if (!mobileMenuWrapperRef.current) return;
-            if (!mobileMenuWrapperRef.current.contains(e.target as Node)) {
+            if(!mobileMenuWrapperRef.current) return;
+            if(!mobileMenuWrapperRef.current.contains(e.target as Node)) {
                 setMobileMenuOpen(false);
             }
         };
         document.addEventListener('mousedown', onDoc);
-        return () => document.removeEventListener('mousedown', onDoc);
+        return() => document.removeEventListener('mousedown', onDoc);
     }, [mobileMenuOpen]);
     const setSearchQuery = useDashboardSearchStore((s) => s.setQuery);
     const [localQuery, setLocalQuery] = useState(searchQuery);
@@ -234,15 +234,15 @@ const DashboardLayout = () => {
     // Debounce updates to global query to reduce re-renders/network chatter
     useEffect(() => {
         const id = setTimeout(() => setSearchQuery(localQuery), 300);
-        return () => clearTimeout(id);
+        return() => clearTimeout(id);
     }, [localQuery, setSearchQuery]);
 
-    // Keyboard shortcut for SSH File Explorer (Ctrl+I)
+    // Keyboard shortcut for SSH File Explorer(Ctrl+I)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Handle both 'i' and 'I' (case-insensitive)
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
-                if (e.repeat) return; // Prevent multiple toggles when holding key
+            if((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
+                if(e.repeat) return; // Prevent multiple toggles when holding key
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('SSH File Explorer shortcut triggered!');
@@ -251,7 +251,7 @@ const DashboardLayout = () => {
         };
 
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        return() => window.removeEventListener('keydown', handleKeyDown);
     }, [toggleSSHFileExplorer]);
 
     // Convert teams to Select options
@@ -266,7 +266,7 @@ const DashboardLayout = () => {
     // Handle team selection change
     const handleTeamChange = (teamId: string) => {
         // Only proceed if it's actually a different team
-        if (selectedTeam?._id === teamId) return;
+        if(selectedTeam?._id === teamId) return;
 
         // Clean up team-dependent states
         const { reset: resetTrajectories } = useTrajectoryStore.getState();
@@ -297,8 +297,8 @@ const DashboardLayout = () => {
         setSearchParams({ team: teamId });
     };
 
-    const handleLeaveTeam = async (teamId: string) => {
-        try {
+    const handleLeaveTeam = async(teamId: string) => {
+        try{
             await leaveTeam(teamId);
 
             // Get the state after leaving
@@ -307,7 +307,7 @@ const DashboardLayout = () => {
             const currentSelected = state.selectedTeam;
 
             // If the left team was the selected one, switch to the first available team
-            if (currentSelected?._id === teamId && remainingTeams.length > 0) {
+            if(currentSelected?._id === teamId && remainingTeams.length > 0){
                 const newTeamId = remainingTeams[0]._id;
                 setSelectedTeam(newTeamId);
 
@@ -337,13 +337,13 @@ const DashboardLayout = () => {
             }
 
             showSuccess(`Left team successfully`);
-        } catch (err: any) {
+        }catch(err: any){
             const errorMessage = err?.message || 'Failed to leave team';
             showError(errorMessage);
         }
     };
 
-    return (
+    return(
         <main className='dashboard-main'>
             {showTeamCreator && (
                 <TeamCreator isRequired={teams.length === 0} />
@@ -495,7 +495,7 @@ const DashboardLayout = () => {
                                                     className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`}
                                                     data-notification-id={n._id}
                                                     data-notification-read={n.read}
-                                                    onClick={() => { if (n.link) navigate(n.link); setNotifOpen(false); }}
+                                                    onClick={() => { if(n.link) navigate(n.link); setNotifOpen(false); }}
                                                 >
                                                     <div className='dashboard-notification-title'>{n.title}</div>
                                                     <div className='dashboard-notification-content'>{n.content}</div>
@@ -523,7 +523,7 @@ const DashboardLayout = () => {
                     onClose={toggleSSHFileExplorer}
                     onImportSuccess={() => {
                         // Refresh trajectories after import
-                        if (selectedTeam) {
+                        if(selectedTeam){
                             getTrajectories(selectedTeam._id);
                         }
                     }}

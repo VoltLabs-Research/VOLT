@@ -58,17 +58,17 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         }
     }), [resetModel]);
 
-    const shouldRenderCamera = useMemo(() => 
-        autoFit && modelBounds, 
+    const shouldRenderCamera = useMemo(() =>
+        autoFit && modelBounds,
         [autoFit, modelBounds]
     );
 
-    return (
+    return(
         <>
             {shouldRenderCamera && (
-                <CameraManager 
-                    modelBounds={modelBounds || undefined} 
-                    orbitControlsRef={orbitControlsRef} 
+                <CameraManager
+                    modelBounds={modelBounds || undefined}
+                    orbitControlsRef={orbitControlsRef}
                     face='ny'
                 />
             )}

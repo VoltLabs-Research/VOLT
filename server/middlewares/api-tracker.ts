@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -75,7 +75,7 @@ const sanitizeData = (data: any): any => {
 
     const sanitized = { ...data };
     for(const key in sanitized){
-        if (sensitiveKeys.some(sensitiveKey => 
+        if(sensitiveKeys.some(sensitiveKey =>
             key.toLowerCase().includes(sensitiveKey.toLowerCase())
         )) {
             sanitized[key] = '[REDACTED]';
@@ -89,7 +89,7 @@ const sanitizeData = (data: any): any => {
  * Global API tracking middleware that logs all API requests.
  * This middleware should be applied early in the middleware stack.
  */
-export const apiTracker = async (req: Request, res: Response, next: NextFunction) => {
+export const apiTracker = async(req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
 
     // Store original end method to capture response time.

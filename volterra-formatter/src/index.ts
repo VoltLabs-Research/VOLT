@@ -35,7 +35,7 @@ interface FormatOptions{
 // parallel batches
 const BATCH_SIZE = 50;
 
-const processFile = async (file: string, options: FormatOptions): Promise<{ file: string, changed: boolen }> => {
+const processFile = async (file: string, options: FormatOptions): Promise<{ file: string, changed: boolean }> => {
     const content = await fs.readFile(file, 'utf-8');
     const formatted = formatCode(content);
     const changed = content !== formatted;

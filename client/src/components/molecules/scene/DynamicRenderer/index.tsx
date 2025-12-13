@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import {
-    ACESFilmicToneMapping, 
-    CineonToneMapping, 
-    LinearSRGBColorSpace, 
-    LinearToneMapping, 
-    NoToneMapping, 
-    PCFShadowMap, 
-    PCFSoftShadowMap, 
-    ReinhardToneMapping, 
-    SRGBColorSpace, 
-    VSMShadowMap, 
+    ACESFilmicToneMapping,
+    CineonToneMapping,
+    LinearSRGBColorSpace,
+    LinearToneMapping,
+    NoToneMapping,
+    PCFShadowMap,
+    PCFSoftShadowMap,
+    ReinhardToneMapping,
+    SRGBColorSpace,
+    VSMShadowMap,
     BasicShadowMap } from 'three';
 import { useRendererSettings } from '@/stores/editor/renderer-settings';
 

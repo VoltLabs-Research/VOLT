@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -113,7 +113,7 @@ class WorkerGLBLoader{
                     this.pendingRequests.delete(id);
                 }
                 break;
-                
+
             case 'error':
                 request.reject(new Error(error || 'Unknown worker error'));
                 this.pendingRequests.delete(id);
@@ -121,7 +121,7 @@ class WorkerGLBLoader{
         }
     }
 
-    private handleWorkerError(error: ErrorEvent): void {
+    private handleWorkerError(error: ErrorEvent): void{
         console.error('A critical error occurred in the GLB worker:', error.message);
         this.pendingRequests.forEach(({ reject }) => reject(new Error('Worker encountered a critical error.')));
         this.pendingRequests.clear();
@@ -136,7 +136,7 @@ class WorkerGLBLoader{
         if(this.cache.has(url)){
             return this.cache.get(url)!.then((model) => model.clone(true));
         }
-        
+
         const loadPromise = new Promise<THREE.Group>((resolve, reject) => {
             this.initializeWorker();
             if(!this.worker){
@@ -144,7 +144,7 @@ class WorkerGLBLoader{
             }
 
             const id = v4();
-            this.pendingRequests.set(id, { id, resolve: resolve as (value: THREE.Group | void) => void, reject, onProgress });
+            this.pendingRequests.set(id, { id, resolve: resolve as(value: THREE.Group | void) => void, reject, onProgress });
             this.worker.postMessage({ id, type: 'load', url, token });
         });
 
@@ -152,10 +152,10 @@ class WorkerGLBLoader{
         return loadPromise.then((model) => model.clone(true));
     }
 
-    public async preloadGLBs(urls: string[], token?: string): Promise<void> {
+    public async preloadGLBs(urls: string[], token?: string): Promise<void>{
         this.initializeWorker();
         if(urls.length === 0 || !this.worker) return;
-        
+
         const id = v4();
         return new Promise<void>((resolve, reject) => {
             this.pendingRequests.set(id, { id, resolve: resolve as any, reject, onProgress: undefined });
@@ -183,13 +183,13 @@ class WorkerGLBLoader{
 
 const workerLoader = WorkerGLBLoader.getInstance();
 
-export const loadGLB = async (url: string, onProgress?: (progress: number) => void): Promise<THREE.Group> => {
-    try {
+export const loadGLB = async(url: string, onProgress?: (progress: number) => void): Promise<THREE.Group> => {
+    try{
         const response = await api.get<ArrayBuffer>(url, {
             responseType: 'arraybuffer',
             onDownloadProgress: (evt) => {
                 const total = evt.total ?? 0;
-                if (total > 0 && onProgress) {
+                if(total > 0 && onProgress){
                     onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
                 }
             }
@@ -200,12 +200,12 @@ export const loadGLB = async (url: string, onProgress?: (progress: number) => vo
         // Parse with GLTF loader
         return new Promise<THREE.Group>((resolve, reject) => {
             const gltfLoader = new GLTFLoader();
-            try {
+            try{
                 const dracoLoader = new DRACOLoader();
                 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
                 gltfLoader.setDRACOLoader(dracoLoader);
                 gltfLoader.setMeshoptDecoder(MeshoptDecoder);
-            } catch (error) {
+            }catch(error){
                 console.error('Failed to set up GLTF decoders:', error);
             }
 
@@ -220,7 +220,7 @@ export const loadGLB = async (url: string, onProgress?: (progress: number) => vo
                 }
             );
         });
-    } catch (error) {
+    }catch(error){
         throw error instanceof Error ? error : new Error(String(error));
     }
 };

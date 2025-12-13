@@ -9,7 +9,7 @@ const SchemaNode = memo((props: NodeProps) => {
     const schema = data.schema || {};
     const fieldCount = Object.keys(schema.definition || {}).length;
 
-    return (
+    return(
         <BaseNode {...props} nodeType={NodeType.SCHEMA}>
             <NodeField label='Fields' value={`${fieldCount} defined`} />
         </BaseNode>

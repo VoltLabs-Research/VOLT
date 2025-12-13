@@ -30,7 +30,7 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
   const isUnavailable = display?.isUnavailable;
   const isLoading = isActive ? false : (loadingFrame || (scene.isLoading && !hasData));
 
-  return (
+  return(
     <motion.div
       key={`thumb-${timestep}-${scene.model}`}
       className={`raster-thumbnail-container ${isActive ? 'active' : ''}`}

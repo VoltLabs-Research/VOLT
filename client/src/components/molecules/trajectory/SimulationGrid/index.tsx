@@ -15,7 +15,7 @@ const SimulationGrid = memo(() => {
     const selectedTrajectories = useTrajectoryStore((state) => state.selectedTrajectories);
     const deleteSelectedTrajectories = useTrajectoryStore((state) => state.deleteSelectedTrajectories);
     const toggleTrajectorySelectionStore = useTrajectoryStore((state) => state.toggleTrajectorySelection);
-    
+
     const toggleTrajectorySelection = useCallback((id: string) => {
         toggleTrajectorySelectionStore(id);
     }, [toggleTrajectorySelectionStore]);
@@ -39,26 +39,26 @@ const SimulationGrid = memo(() => {
 
         window.addEventListener('keydown', handleKeyDown);
 
-        return () => {
+        return() => {
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [selectedTrajectories.length, deleteSelectedTrajectories]);
 
-    if (hasEmptyState) {
+    if(hasEmptyState){
         return <EmptyState
             title='No Trajectories Yet'
             description='Get started by uploading your first simulation trajectory file to visualize and analyze atomic structures.' />
     }
 
-    return (
+    return(
         <div className='trajectories-container' ref={parent as React.MutableRefObject<HTMLDivElement | null>}>
             {(isLoading || uploadingFileCount > 0) && (
                 <SimulationSkeletonCard n={uploadingFileCount > 0 ? uploadingFileCount : 8} />
             )}
 
             {trajectories.map((trajectory) => (
-                <SimulationCard 
-                    key={trajectory._id} 
+                <SimulationCard
+                    key={trajectory._id}
                     trajectory={trajectory}
                     isSelected={selectedTrajectories.includes(trajectory._id)}
                     onSelect={toggleTrajectorySelection}

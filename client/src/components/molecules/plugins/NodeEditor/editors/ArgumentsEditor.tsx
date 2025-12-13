@@ -12,7 +12,7 @@ interface ArgumentsEditorProps {
     node: Node;
 }
 
-// Convert to SelectOption format (value, title)
+// Convert to SelectOption format(value, title)
 const ARGUMENT_TYPE_SELECT_OPTIONS = ARGUMENT_TYPE_OPTIONS.map(opt => ({
     value: opt.value,
     title: opt.label
@@ -29,42 +29,42 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
     const args = argumentsData.arguments || [];
 
     const updateArgument = useCallback((index: number, field: string, value: any) => {
-        const updatedArgs = args.map((arg, i) => 
+        const updatedArgs = args.map((arg, i) =>
             i === index ? { ...arg, [field]: value } : arg
         );
         updateNodeData(node.id, { arguments: { arguments: updatedArgs } });
     }, [args, node.id, updateNodeData]);
 
     // Helpers to convert between array of {key, label} and [string, string][]
-    const optionsToEntries = (options: Array<{ key: string; label: string }> = []): [string, string][] => 
+    const optionsToEntries = (options: Array<{ key: string; label: string }> = []): [string, string][] =>
         options.map(opt => [opt.key, opt.label]);
 
     const entriesToOptions = (entries: [string, string][]): Array<{ key: string; label: string }> =>
         entries.map(([key, label]) => ({ key, label }));
 
-    const handleOptionKeyChange = useCallback((argIndex: number, options: Array<{ key: string; label: string }>) => 
+    const handleOptionKeyChange = useCallback((argIndex: number, options: Array<{ key: string; label: string }>) =>
         (oldKey: string, newKey: string) => {
-            const updated = options.map(opt => 
+            const updated = options.map(opt =>
                 opt.key === oldKey ? { ...opt, key: newKey } : opt
             );
             updateArgument(argIndex, 'options', updated);
         }, [updateArgument]);
 
-    const handleOptionValueChange = useCallback((argIndex: number, options: Array<{ key: string; label: string }>) => 
+    const handleOptionValueChange = useCallback((argIndex: number, options: Array<{ key: string; label: string }>) =>
         (key: string, value: string) => {
-            const updated = options.map(opt => 
+            const updated = options.map(opt =>
                 opt.key === key ? { ...opt, label: value } : opt
             );
             updateArgument(argIndex, 'options', updated);
         }, [updateArgument]);
 
-    const handleAddOption = useCallback((argIndex: number, options: Array<{ key: string; label: string }>) => 
+    const handleAddOption = useCallback((argIndex: number, options: Array<{ key: string; label: string }>) =>
         () => {
             const newOption = { key: `option_${options.length + 1}`, label: `Option ${options.length + 1}` };
             updateArgument(argIndex, 'options', [...options, newOption]);
         }, [updateArgument]);
 
-    const handleRemoveOption = useCallback((argIndex: number, options: Array<{ key: string; label: string }>) => 
+    const handleRemoveOption = useCallback((argIndex: number, options: Array<{ key: string; label: string }>) =>
         (key: string) => {
             updateArgument(argIndex, 'options', options.filter(opt => opt.key !== key));
         }, [updateArgument]);
@@ -83,10 +83,10 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
         updateNodeData(node.id, { arguments: { arguments: updatedArgs } });
     }, [args, node.id, updateNodeData]);
 
-    return (
+    return(
         <>
             {args.map((arg, index) => (
-                <CollapsibleSection 
+                <CollapsibleSection
                     key={index}
                     title={arg.label || arg.argument || `Argument ${index + 1}`}
                     defaultExpanded={index === 0}
@@ -115,7 +115,7 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                         onFieldChange={(_, value) => updateArgument(index, 'type', value)}
                         options={ARGUMENT_TYPE_SELECT_OPTIONS}
                     />
-                    
+
                     {/* Default Value - conditional based on type */}
                     {arg.type === 'boolean' ? (
                         <FormField
@@ -142,7 +142,7 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                             fieldType='input'
                             fieldValue={arg.default ?? ''}
                             onFieldChange={(_, value) => updateArgument(index, 'default', arg.type === 'number' ? Number(value) : value)}
-                            inputProps={{ 
+                            inputProps={{
                                 placeholder: 'Default value',
                                 type: arg.type === 'number' ? 'number' : 'text'
                             }}
@@ -161,7 +161,7 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                             onFieldChange={(_, value) => updateArgument(index, 'value', value)}
                             options={[
                                 { value: '', title: '-- No value --' },
-                                ...arg.options.map(opt => ({ value: opt.key, title: opt.label }))
+                                    ...arg.options.map(opt => ({ value: opt.key, title: opt.label }))
                             ]}
                         />
                     ) : (
@@ -171,7 +171,7 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                             fieldType='input'
                             fieldValue={arg.value ?? ''}
                             onFieldChange={(_, value) => updateArgument(index, 'value', arg.type === 'number' ? Number(value) : value)}
-                            inputProps={{ 
+                            inputProps={{
                                 placeholder: 'Optional value',
                                 type: arg.type === 'number' ? 'number' : 'text'
                             }}
@@ -229,8 +229,8 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                         </div>
                     )}
 
-                    <button 
-                        className='node-editor-delete-btn' 
+                    <button
+                        className='node-editor-delete-btn'
                         onClick={() => removeArgument(index)}
                         style={{ marginTop: '0.5rem' }}
                     >
@@ -240,11 +240,11 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                 </CollapsibleSection>
             ))}
 
-            <button 
-                className='node-editor-delete-btn' 
+            <button
+                className='node-editor-delete-btn'
                 onClick={addArgument}
-                style={{ 
-                    background: 'var(--gray-100)', 
+                style={{
+                    background: 'var(--gray-100)',
                     borderColor: 'var(--gray-300)',
                     color: 'var(--gray-700)'
                 }}

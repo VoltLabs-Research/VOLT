@@ -11,21 +11,21 @@ const data = [
 ]
 
 const getColor = (percentage: number) => {
-  if (percentage >= 85) return 'url(#storageCritical)'
-  if (percentage >= 70) return 'url(#storageWarning)'
+  if(percentage >= 85) return 'url(#storageCritical)'
+  if(percentage >= 70) return 'url(#storageWarning)'
   return 'url(#storageNormal)'
 }
 
 const getSolidColor = (percentage: number) => {
-  if (percentage >= 85) return '#FF453A'
-  if (percentage >= 70) return '#FF9F0A'
+  if(percentage >= 85) return '#FF453A'
+  if(percentage >= 70) return '#FF9F0A'
   return '#0A84FF'
 }
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
+  if(active && payload && payload.length){
     const data = payload[0].payload
-    return (
+    return(
       <div className="storage-tooltip">
         <p className="storage-tooltip-label">{data.name}</p>
         <p className="storage-tooltip-item">
@@ -40,12 +40,12 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null
 }
 
-export function StorageUsage() {
+export function StorageUsage(){
   const totalUsed = data.reduce((sum, d) => sum + d.used, 0)
   const totalCapacity = data.reduce((sum, d) => sum + d.total, 0)
   const totalPercentage = Math.round((totalUsed / totalCapacity) * 100)
-  
-  return (
+
+  return(
     <div className="storage-usage-container">
       <div className="storage-usage-header">
         <div className="storage-usage-title-group">
@@ -76,18 +76,18 @@ export function StorageUsage() {
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-          <XAxis 
-            dataKey="name" 
-            stroke="rgba(255,255,255,0.4)" 
+          <XAxis
+            dataKey="name"
+            stroke="rgba(255,255,255,0.4)"
             style={{ fontSize: '12px' }}
           />
-          <YAxis 
-            stroke="rgba(255,255,255,0.4)" 
+          <YAxis
+            stroke="rgba(255,255,255,0.4)"
             style={{ fontSize: '12px' }}
             tickFormatter={(value) => `${value}GB`}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend 
+          <Legend
             wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
             content={() => (
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', fontSize: '12px' }}>

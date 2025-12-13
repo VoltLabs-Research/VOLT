@@ -9,36 +9,36 @@ interface AuthenticatedSocket extends Socket {
     rateLimits?: Map<string, number[]>;
 }
 
-class ChatModule extends BaseSocketModule {
+class ChatModule extends BaseSocketModule{
     private readonly CACHE_TTL = {
         CHAT_PERMISSION: 300,      // 5 minutos
         USER_INFO: 600,            // 10 minutos
         RATE_LIMIT: 60             // 1 minuto
     };
 
-    constructor() {
+    constructor(){
         super('ChatModule');
     }
 
-    onInit(io: Server): void {
+    onInit(io: Server): void{
         this.io = io;
     }
 
     /**
      * ✅ Verificar permisos con Redis cache
      */
-    private async verifyUserChatAccess(userId: string, chatId: string): Promise<boolean> {
-        if (!redis) {
+    private async verifyUserChatAccess(userId: string, chatId: string): Promise<boolean>{
+        if(!redis){
             // Fallback sin caché si Redis no disponible
             return await this.verifyUserChatAccessDB(userId, chatId);
         }
 
         const cacheKey = `chat:permission:${userId}:${chatId}`;
-        
-        try {
+
+        try{
             // ✅ Check Redis cache first
             const cached = await redis.get(cacheKey);
-            if (cached !== null) {
+            if(cached !== null){
                 return cached === '1';
             }
 
@@ -53,7 +53,7 @@ class ChatModule extends BaseSocketModule {
             );
 
             return hasAccess;
-        } catch (error) {
+        }catch(error){
             logger.error(`Redis cache error: ${error}`);
             // Fallback a query directo si Redis falla
             return await this.verifyUserChatAccessDB(userId, chatId);
@@ -63,7 +63,7 @@ class ChatModule extends BaseSocketModule {
     /**
      * Query DB para verificar acceso
      */
-    private async verifyUserChatAccessDB(userId: string, chatId: string): Promise<boolean> {
+    private async verifyUserChatAccessDB(userId: string, chatId: string): Promise<boolean>{
         const hasAccess = await Chat.exists({
             _id: chatId,
             participants: userId,
@@ -76,29 +76,29 @@ class ChatModule extends BaseSocketModule {
     }
 
     /**
-     * ✅ Rate limiting con Redis (más robusto)
+     * ✅ Rate limiting con Redis(más robusto)
      */
     private async checkRateLimit(
-        userId: string, 
-        event: string, 
+        userId: string,
+        event: string,
         maxPerMinute: number = 30
-    ): Promise<boolean> {
-        if (!redis) {
-            return true; // Permitir si Redis no disponible (o implementar fallback local)
+    ): Promise<boolean>{
+        if(!redis){
+            return true; // Permitir si Redis no disponible(o implementar fallback local)
         }
 
         const key = `rate:${event}:${userId}`;
         const now = Date.now();
 
-        try {
+        try{
             // ✅ Usar Redis Sorted Set para rate limiting preciso
-            // Remover entradas antiguas (> 1 minuto)
+            // Remover entradas antiguas(> 1 minuto)
             await redis.zremrangebyscore(key, 0, now - 60000);
 
             // Contar requests recientes
             const count = await redis.zcard(key);
 
-            if (count >= maxPerMinute) {
+            if(count >= maxPerMinute){
                 return false; // Rate limit exceeded
             }
 
@@ -109,9 +109,9 @@ class ChatModule extends BaseSocketModule {
             await redis.expire(key, 60);
 
             return true;
-        } catch (error) {
+        }catch(error){
             logger.error(`Redis rate limit error: ${error}`);
-            return true; // Permitir en caso de error (fail open)
+            return true; // Permitir en caso de error(fail open)
         }
     }
 
@@ -119,22 +119,22 @@ class ChatModule extends BaseSocketModule {
      * ✅ Obtener info de usuario con Redis cache
      */
     private async getUserInfo(userId: string) {
-        if (!redis) {
+        if(!redis){
             return await this.getUserInfoDB(userId);
         }
 
         const cacheKey = `user:info:${userId}`;
 
-        try {
+        try{
             // Check cache
             const cached = await redis.get(cacheKey);
-            if (cached) {
+            if(cached){
                 return JSON.parse(cached);
             }
 
             // Query DB
             const user = await this.getUserInfoDB(userId);
-            if (user) {
+            if(user){
                 await redis.setex(
                     cacheKey,
                     this.CACHE_TTL.USER_INFO,
@@ -143,7 +143,7 @@ class ChatModule extends BaseSocketModule {
             }
 
             return user;
-        } catch (error) {
+        }catch(error){
             logger.error(`Redis user cache error: ${error}`);
             return await this.getUserInfoDB(userId);
         }
@@ -159,27 +159,27 @@ class ChatModule extends BaseSocketModule {
     }
 
     /**
-     * ✅ Invalidar caché de chat (multi-server safe)
+     * ✅ Invalidar caché de chat(multi-server safe)
      */
-    private async invalidateChatCache(chatId: string, userIds?: string[]): Promise<void> {
-        if (!redis) return;
+    private async invalidateChatCache(chatId: string, userIds?: string[]): Promise<void>{
+        if(!redis) return;
 
-        try {
-            if (userIds) {
+        try{
+            if(userIds){
                 // Invalidar solo para usuarios específicos
                 const keys = userIds.map(userId => `chat:permission:${userId}:${chatId}`);
-                if (keys.length > 0) {
+                if(keys.length > 0){
                     await redis.del(...keys);
                 }
-            } else {
+            }else{
                 // Invalidar todos los permisos de este chat
                 const pattern = `chat:permission:*:${chatId}`;
                 const keys = await redis.keys(pattern);
-                if (keys.length > 0) {
+                if(keys.length > 0){
                     await redis.del(...keys);
                 }
             }
-        } catch (error) {
+        }catch(error){
             logger.error(`Error invalidating chat cache: ${error}`);
         }
     }
@@ -187,19 +187,19 @@ class ChatModule extends BaseSocketModule {
     /**
      * ✅ Invalidar caché de usuario
      */
-    private async invalidateUserCache(userId: string): Promise<void> {
-        if (!redis) return;
+    private async invalidateUserCache(userId: string): Promise<void>{
+        if(!redis) return;
 
-        try {
+        try{
             await redis.del(`user:info:${userId}`);
-        } catch (error) {
+        }catch(error){
             logger.error(`Error invalidating user cache: ${error}`);
         }
     }
 
-    onConnection(socket: AuthenticatedSocket): void {
+    onConnection(socket: AuthenticatedSocket): void{
         const user = (socket as any).user;
-        if (!user) {
+        if(!user){
             socket.emit('error', 'Not authenticated');
             return;
         }
@@ -207,19 +207,19 @@ class ChatModule extends BaseSocketModule {
         socket.user = user;
         this.handleUserPresence(socket, 'online');
         this.joinRoom(socket, `user-${user._id}`);
-        
+
         logger.info(`[ChatModule] User ${user.firstName} ${user.lastName} connected`);
 
         // ✅ Join chat con Redis cache
-        socket.on('join_chat', async (chatId: string) => {
-            if (!socket.user) return;
+        socket.on('join_chat', async(chatId: string) => {
+            if(!socket.user) return;
 
             const hasAccess = await this.verifyUserChatAccess(
-                socket.user._id.toString(), 
+                socket.user._id.toString(),
                 chatId
             );
 
-            if (!hasAccess) {
+            if(!hasAccess){
                 socket.emit('error', 'Chat not found or access denied');
                 return;
             }
@@ -229,13 +229,13 @@ class ChatModule extends BaseSocketModule {
         });
 
         // ✅ Send message con Redis rate limiting
-        socket.on('send_message', async (data: { 
-            chatId: string; 
-            content: string; 
-            messageType?: string; 
-            metadata?: any 
+        socket.on('send_message', async(data: {
+            chatId: string;
+            content: string;
+            messageType?: string;
+            metadata?: any
         }) => {
-            if (!socket.user) return;
+            if(!socket.user) return;
 
             // ✅ Redis rate limiting
             const allowed = await this.checkRateLimit(
@@ -244,21 +244,21 @@ class ChatModule extends BaseSocketModule {
                 30
             );
 
-            if (!allowed) {
+            if(!allowed){
                 socket.emit('error', 'Rate limit exceeded. Max 30 messages per minute.');
                 return;
             }
 
-            try {
+            try{
                 const { chatId, content, messageType = 'text', metadata } = data;
 
                 // ✅ Verificar acceso con Redis cache
                 const hasAccess = await this.verifyUserChatAccess(
-                    socket.user._id.toString(), 
+                    socket.user._id.toString(),
                     chatId
                 );
 
-                if (!hasAccess) {
+                if(!hasAccess){
                     socket.emit('error', 'Chat not found or access denied');
                     return;
                 }
@@ -273,13 +273,13 @@ class ChatModule extends BaseSocketModule {
                     readBy: [socket.user._id]
                 });
 
-                // Update chat (fire and forget)
+                // Update chat(fire and forget)
                 Chat.findByIdAndUpdate(chatId, {
                     lastMessage: message._id,
                     lastMessageAt: new Date()
                 }).exec();
 
-                // Agregar sender info desde socket.user (sin populate)
+                // Agregar sender info desde socket.user(sin populate)
                 const messageWithSender = {
                     ...message.toObject(),
                     sender: {
@@ -297,22 +297,22 @@ class ChatModule extends BaseSocketModule {
                 });
 
                 logger.info(`[ChatModule] Message sent in chat ${chatId}`);
-            } catch (error) {
+            }catch(error){
                 logger.error(`Error sending message: ${error}`);
                 socket.emit('error', 'Failed to send message');
             }
         });
 
         // ✅ Send file message
-        socket.on('send_file_message', async (data: { 
-            chatId: string; 
-            filename: string; 
-            originalName: string; 
-            size: number; 
-            mimetype: string; 
-            url: string 
+        socket.on('send_file_message', async(data: {
+            chatId: string;
+            filename: string;
+            originalName: string;
+            size: number;
+            mimetype: string;
+            url: string
         }) => {
-            if (!socket.user) return;
+            if(!socket.user) return;
 
             const allowed = await this.checkRateLimit(
                 socket.user._id.toString(),
@@ -320,20 +320,20 @@ class ChatModule extends BaseSocketModule {
                 10
             );
 
-            if (!allowed) {
+            if(!allowed){
                 socket.emit('error', 'Rate limit exceeded. Max 10 files per minute.');
                 return;
             }
 
-            try {
+            try{
                 const { chatId, filename, originalName, size, mimetype, url } = data;
 
                 const hasAccess = await this.verifyUserChatAccess(
-                    socket.user._id.toString(), 
+                    socket.user._id.toString(),
                     chatId
                 );
 
-                if (!hasAccess) {
+                if(!hasAccess){
                     socket.emit('error', 'Chat not found or access denied');
                     return;
                 }
@@ -372,18 +372,18 @@ class ChatModule extends BaseSocketModule {
                     message: messageWithSender,
                     chatId
                 });
-            } catch (error) {
+            }catch(error){
                 socket.emit('error', 'Failed to send file message');
             }
         });
 
         // ✅ Edit message
-        socket.on('edit_message', async (data: { 
-            chatId: string; 
-            messageId: string; 
-            content: string 
+        socket.on('edit_message', async(data: {
+            chatId: string;
+            messageId: string;
+            content: string
         }) => {
-            if (!socket.user) return;
+            if(!socket.user) return;
 
             const allowed = await this.checkRateLimit(
                 socket.user._id.toString(),
@@ -391,21 +391,21 @@ class ChatModule extends BaseSocketModule {
                 20
             );
 
-            if (!allowed) {
+            if(!allowed){
                 socket.emit('error', 'Rate limit exceeded');
                 return;
             }
 
-            try {
+            try{
                 const { chatId, messageId, content } = data;
-                
-                const message = await Message.findOne({ 
-                    _id: messageId, 
+
+                const message = await Message.findOne({
+                    _id: messageId,
                     chat: chatId,
                     sender: socket.user._id
                 });
 
-                if (!message) {
+                if(!message){
                     socket.emit('error', 'Message not found or access denied');
                     return;
                 }
@@ -424,27 +424,27 @@ class ChatModule extends BaseSocketModule {
                     }
                 };
 
-                this.io?.to(`chat-${chatId}`).emit('message_edited', { 
-                    chatId, 
-                    message: messageWithSender 
+                this.io?.to(`chat-${chatId}`).emit('message_edited', {
+                    chatId,
+                    message: messageWithSender
                 });
-            } catch (error) {
+            }catch(error){
                 socket.emit('error', 'Failed to edit message');
             }
         });
 
         // ✅ Delete message
-        socket.on('delete_message', async (data: { chatId: string; messageId: string }) => {
-            if (!socket.user) return;
+        socket.on('delete_message', async(data: { chatId: string; messageId: string }) => {
+            if(!socket.user) return;
 
-            try {
+            try{
                 const { chatId, messageId } = data;
-                
+
                 const result = await Message.updateOne(
-                    { 
-                        _id: messageId, 
+                    {
+                        _id: messageId,
                         chat: chatId,
-                        sender: socket.user._id 
+                        sender: socket.user._id
                     },
                     {
                         $set: {
@@ -455,21 +455,21 @@ class ChatModule extends BaseSocketModule {
                     }
                 );
 
-                if (result.modifiedCount > 0) {
+                if(result.modifiedCount > 0){
                     this.io?.to(`chat-${chatId}`).emit('message_deleted', { chatId, messageId });
                 }
-            } catch (error) {
+            }catch(error){
                 socket.emit('error', 'Failed to delete message');
             }
         });
 
         // ✅ Toggle reaction
-        socket.on('toggle_reaction', async (data: { 
-            chatId: string; 
-            messageId: string; 
-            emoji: string 
+        socket.on('toggle_reaction', async(data: {
+            chatId: string;
+            messageId: string;
+            emoji: string
         }) => {
-            if (!socket.user) return;
+            if(!socket.user) return;
 
             const allowed = await this.checkRateLimit(
                 socket.user._id.toString(),
@@ -477,13 +477,13 @@ class ChatModule extends BaseSocketModule {
                 60
             );
 
-            if (!allowed) return;
+            if(!allowed) return;
 
-            try {
+            try{
                 const { chatId, messageId, emoji } = data;
                 const message: any = await Message.findOne({ _id: messageId, chat: chatId });
-                if (!message) return;
-                
+                if(!message) return;
+
                 const reactions = message.reactions || [];
                 const userIdStr = socket.user._id.toString();
 
@@ -492,21 +492,21 @@ class ChatModule extends BaseSocketModule {
                     users: reaction.users.filter((u: any) => u.toString() !== userIdStr)
                 })).filter((reaction: any) => reaction.users.length > 0);
 
-                const currentUserReaction = reactions.find((reaction: any) => 
+                const currentUserReaction = reactions.find((reaction: any) =>
                     reaction.users.some((u: any) => u.toString() === userIdStr)
                 );
 
-                if (currentUserReaction && currentUserReaction.emoji === emoji) {
+                if(currentUserReaction && currentUserReaction.emoji === emoji){
                     message.reactions = filteredReactions;
-                } else {
+                }else{
                     const existingEmojiIndex = filteredReactions.findIndex((r: any) => r.emoji === emoji);
-                    
-                    if (existingEmojiIndex !== -1) {
+
+                    if(existingEmojiIndex !== -1){
                         filteredReactions[existingEmojiIndex].users.push(socket.user._id);
-                    } else {
+                    }else{
                         filteredReactions.push({ emoji, users: [socket.user._id] });
                     }
-                    
+
                     message.reactions = filteredReactions;
                 }
 
@@ -518,28 +518,28 @@ class ChatModule extends BaseSocketModule {
                     .populate('sender', 'firstName lastName email')
                     .lean();
 
-                this.io?.to(`chat-${chatId}`).emit('reaction_updated', { 
-                    chatId, 
+                this.io?.to(`chat-${chatId}`).emit('reaction_updated', {
+                    chatId,
                     message: populatedMessage
                 });
-            } catch (error) {
+            }catch(error){
                 logger.error(`Socket toggle_reaction error: ${error}`);
             }
         });
 
         // ✅ Mark read
-        socket.on('mark_read', async (data: { chatId: string }) => {
-            if (!socket.user) return;
+        socket.on('mark_read', async(data: { chatId: string }) => {
+            if(!socket.user) return;
 
-            try {
+            try{
                 const { chatId } = data;
 
                 const hasAccess = await this.verifyUserChatAccess(
-                    socket.user._id.toString(), 
+                    socket.user._id.toString(),
                     chatId
                 );
 
-                if (!hasAccess) return;
+                if(!hasAccess) return;
 
                 const result = await Message.updateMany(
                     {
@@ -552,7 +552,7 @@ class ChatModule extends BaseSocketModule {
                     }
                 );
 
-                if (result.modifiedCount > 0) {
+                if(result.modifiedCount > 0){
                     this.io?.to(`chat-${chatId}`).emit('messages_read', {
                         chatId,
                         readBy: socket.user._id,
@@ -560,14 +560,14 @@ class ChatModule extends BaseSocketModule {
                         count: result.modifiedCount
                     });
                 }
-            } catch (error) {
+            }catch(error){
                 socket.emit('error', 'Failed to mark messages as read');
             }
         });
 
-        // Typing indicators (sin cambios)
+        // Typing indicators(sin cambios)
         socket.on('typing_start', (data: { chatId: string }) => {
-            if (!socket.user) return;
+            if(!socket.user) return;
             socket.to(`chat-${data.chatId}`).emit('user_typing', {
                 chatId: data.chatId,
                 userId: socket.user._id,
@@ -577,7 +577,7 @@ class ChatModule extends BaseSocketModule {
         });
 
         socket.on('typing_stop', (data: { chatId: string }) => {
-            if (!socket.user) return;
+            if(!socket.user) return;
             socket.to(`chat-${data.chatId}`).emit('user_typing', {
                 chatId: data.chatId,
                 userId: socket.user._id,
@@ -587,65 +587,65 @@ class ChatModule extends BaseSocketModule {
         });
 
         // ✅ Group events con invalidación de Redis cache
-        socket.on('users_added_to_group', async (data: { chatId: string; userIds: string[] }) => {
-            if (!socket.user) return;
-            
+        socket.on('users_added_to_group', async(data: { chatId: string; userIds: string[] }) => {
+            if(!socket.user) return;
+
             await this.invalidateChatCache(data.chatId, data.userIds);
-            
-            this.io?.to(`chat-${data.chatId}`).emit('users_added_to_group', { 
-                chatId: data.chatId, 
+
+            this.io?.to(`chat-${data.chatId}`).emit('users_added_to_group', {
+                chatId: data.chatId,
                 userIds: data.userIds,
                 addedBy: socket.user._id
             });
         });
 
-        socket.on('users_removed_from_group', async (data: { chatId: string; userIds: string[] }) => {
-            if (!socket.user) return;
-            
+        socket.on('users_removed_from_group', async(data: { chatId: string; userIds: string[] }) => {
+            if(!socket.user) return;
+
             await this.invalidateChatCache(data.chatId, data.userIds);
-            
-            this.io?.to(`chat-${data.chatId}`).emit('users_removed_from_group', { 
-                chatId: data.chatId, 
+
+            this.io?.to(`chat-${data.chatId}`).emit('users_removed_from_group', {
+                chatId: data.chatId,
                 userIds: data.userIds,
                 removedBy: socket.user._id
             });
         });
 
         socket.on('group_info_updated', (data: { chatId: string; groupName?: string; groupDescription?: string }) => {
-            if (!socket.user) return;
-            this.io?.to(`chat-${data.chatId}`).emit('group_info_updated', { 
-                chatId: data.chatId, 
+            if(!socket.user) return;
+            this.io?.to(`chat-${data.chatId}`).emit('group_info_updated', {
+                chatId: data.chatId,
                 groupName: data.groupName,
                 groupDescription: data.groupDescription,
                 updatedBy: socket.user._id
             });
         });
 
-        socket.on('user_left_group', async (data: { chatId: string; userId: string }) => {
-            if (!socket.user) return;
-            
+        socket.on('user_left_group', async(data: { chatId: string; userId: string }) => {
+            if(!socket.user) return;
+
             await this.invalidateChatCache(data.chatId, [data.userId]);
-            
-            this.io?.to(`chat-${data.chatId}`).emit('user_left_group', { 
-                chatId: data.chatId, 
+
+            this.io?.to(`chat-${data.chatId}`).emit('user_left_group', {
+                chatId: data.chatId,
                 userId: data.userId
             });
         });
 
         socket.on('disconnect', () => {
-            if (socket.user) {
+            if(socket.user){
                 this.handleUserPresence(socket, 'offline');
                 logger.info(`[ChatModule] User ${socket.user.firstName} disconnected`);
             }
         });
     }
 
-    private async handleUserPresence(socket: AuthenticatedSocket, status: 'online' | 'offline'): Promise<void> {
-        if (!socket.user) return;
+    private async handleUserPresence(socket: AuthenticatedSocket, status: 'online' | 'offline'): Promise<void>{
+        if(!socket.user) return;
 
         const userId = socket.user._id.toString();
-        
-        try {
+
+        try{
             const userChats = await Chat.find({
                 participants: userId,
                 isActive: true
@@ -663,7 +663,7 @@ class ChatModule extends BaseSocketModule {
             });
 
             logger.info(`[ChatModule] User ${socket.user.firstName} is now ${status}`);
-        } catch (error) {
+        }catch(error){
             logger.error(`Error handling user presence: ${error}`);
         }
     }

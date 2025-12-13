@@ -244,8 +244,8 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'ApiTracker::Url::Required': 'URL is required',
     'ApiTracker::Ip::Required': 'IP address is required',
     'ApiTracker::StatusCode::Required': 'Status code is required',
-    'ApiTracker::StatusCode::Min': 'Invalid status code (minimum: 100)',
-    'ApiTracker::StatusCode::Max': 'Invalid status code (maximum: 599)',
+    'ApiTracker::StatusCode::Min': 'Invalid status code(minimum: 100)',
+    'ApiTracker::StatusCode::Max': 'Invalid status code(maximum: 599)',
     'ApiTracker::ResponseTime::Required': 'Response time is required',
     'ApiTracker::ResponseTime::Min': 'Response time cannot be negative',
 
@@ -269,7 +269,7 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     // Service errors
     'CpuIntensiveTasks::Disabled': 'Analysis operations are temporarily disabled on this server. Please try again later or contact your administrator.',
 
-    // HTTP errors (generic fallbacks)
+    // HTTP errors(generic fallbacks)
     'Http::400': 'Bad Request',
     'Http::401': 'Unauthorized - Please sign in again',
     'Http::403': 'Forbidden',

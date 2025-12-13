@@ -8,7 +8,7 @@ interface StatusBadgeProps {
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ variant = 'neutral', children }) => {
-    return (
+    return(
         <span className={`status-badge ${variant}`}>
             {children}
         </span>
@@ -16,5 +16,3 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ variant = 'neutral', children
 };
 
 export default StatusBadge;
-
-

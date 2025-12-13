@@ -21,12 +21,12 @@ class ContextHandler implements NodeHandler{
 
     async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
         const source = node.data.context?.source;
-        
+
         if(source === ModifierContext.TRAJECTORY_DUMPS){
             const timesteps = await DumpStorage.listDumps(context.trajectoryId);
             const trajectory = await Trajectory.findById(context.trajectoryId).lean();
-            
-            const dumpPromises = timesteps.map(async (timestep) => {
+
+            const dumpPromises = timesteps.map(async(timestep) => {
                 const dumpPath = await DumpStorage.getDump(context.trajectoryId, timestep);
                 return { path: dumpPath, frame: parseInt(timestep, 10) };
             });

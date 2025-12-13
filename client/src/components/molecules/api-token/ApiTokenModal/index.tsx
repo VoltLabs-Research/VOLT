@@ -34,14 +34,14 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
     });
 
     useEffect(() => {
-        if (mode === 'edit' && token) {
+        if(mode === 'edit' && token){
             setFormData({
                 name: token.name,
                 description: token.description || '',
                 permissions: token.permissions,
                 expiresAt: token.expiresAt ? new Date(token.expiresAt).toISOString().split('T')[0] : ''
             });
-        } else {
+        }else{
             setFormData({
                 name: '',
                 description: '',
@@ -58,14 +58,14 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
         checkField(field, value);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async(e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!validate(formData)) {
+        if(!validate(formData)) {
             return;
         }
 
-        try {
+        try{
             setLoading(true);
             setError(null);
 
@@ -76,20 +76,20 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
 
             await onSave(submitData);
             onClose();
-        } catch (err: any) {
+        }catch(err: any){
             setError(err.message || 'Failed to save token');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
     const handlePermissionChange = (permission: string, checked: boolean) => {
-        if (checked) {
+        if(checked){
             setFormData(prev => ({
                 ...prev,
                 permissions: [...prev.permissions, permission]
             }));
-        } else {
+        }else{
             setFormData(prev => ({
                 ...prev,
                 permissions: prev.permissions.filter(p => p !== permission)
@@ -111,9 +111,9 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
         }));
     };
 
-    if (!isOpen) return null;
+    if(!isOpen) return null;
 
-    return (
+    return(
         <div className="api-token-modal-overlay">
             <div className="api-token-modal">
                 <div className="api-token-modal-header">

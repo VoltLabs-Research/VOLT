@@ -1,6 +1,6 @@
 const SidebarBottom = ({ children }) => {
 
-    return (
+    return(
         <div className='editor-sidebar-bottom-container'>
             {children}
         </div>

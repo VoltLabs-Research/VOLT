@@ -38,7 +38,7 @@ export const setupInterceptors = (axiosInstance: AxiosInstance): void => {
             return Promise.reject(error);
         }
         const classifiedError = classifyError(error);
-        
+
         notifyApiError(classifiedError);
         return Promise.reject(classifiedError);
     });

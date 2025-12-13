@@ -17,7 +17,7 @@ interface GetNotificationsParams {
 }
 
 const notificationApi = {
-    async getAll(params?: GetNotificationsParams): Promise<Notification[]> {
+    async getAll(params?: GetNotificationsParams): Promise<Notification[]>{
         const response = await api.get<ApiResponse<Notification[]>>('/notifications', { params });
         return response.data.data;
     }

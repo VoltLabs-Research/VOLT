@@ -32,7 +32,7 @@ const useTemplateAutocomplete = (currentNodeId?: string): AutocompleteSuggestion
     return useMemo(() => {
         if(!schemas) return [];
 
-        // get all ancstors nodes (nodes that execute before current)
+        // get all ancstors nodes(nodes that execute before current)
         // TODO: maybe duplicated code
         const ancestorIds = new Set<string>();
         if(currentNodeId){
@@ -68,7 +68,7 @@ const useTemplateAutocomplete = (currentNodeId?: string): AutocompleteSuggestion
  * Filter suggestions based on user input
  */
 export const filterSuggestions = (
-    suggestions: AutocompleteSuggestion[], 
+    suggestions: AutocompleteSuggestion[],
     query: string
 ): AutocompleteSuggestion[] => {
     if(!query) return suggestions;

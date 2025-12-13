@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -34,20 +34,20 @@ type OutMeta = {
 
 const OUT_INDEX = new WeakMap<any, Map<string, OutMeta[]>>();
 
-function getIndex(base: any) {
+function getIndex(base: any){
     let idx = OUT_INDEX.get(base);
-    if (!idx) {
+    if(!idx){
         idx = new Map<string, OutMeta[]>();
         OUT_INDEX.set(base, idx);
     }
     return idx;
 }
 
-function buildOutIndex(base: any) {
+function buildOutIndex(base: any){
     const idx = getIndex(base);
     idx.clear();
 
-    for (const modelName of base.modelNames()) {
+    for(const modelName of base.modelNames()) {
         const M = base.model(modelName);
         const metas: OutMeta[] = [];
 
@@ -62,11 +62,11 @@ function buildOutIndex(base: any) {
                     behavior: (inverse?.behavior ?? 'addToSet') as InverseBehavior
                 });
             };
-            if (opts.ref) {
+            if(opts.ref){
                 const isArray = schemaType.instance === 'Array';
                 pushMeta(opts.ref as string, isArray, opts.inverse);
             }
-            if (Array.isArray(opts.type) && opts.type[0]?.ref) {
+            if(Array.isArray(opts.type) && opts.type[0]?.ref) {
                 pushMeta(opts.type[0].ref as string, true, opts.type[0].inverse);
             }
         });
@@ -75,25 +75,25 @@ function buildOutIndex(base: any) {
     }
 }
 
-function getOutMeta(base: any, localModelName: string): OutMeta[] {
+function getOutMeta(base: any, localModelName: string): OutMeta[]{
     const idx = getIndex(base);
-    if (idx.size === 0) buildOutIndex(base);
+    if(idx.size === 0) buildOutIndex(base);
     return idx.get(localModelName) ?? [];
 }
 
 const asIdArray = (val: any, isArray: boolean): Types.ObjectId[] => {
-    if (isArray) return (val ?? []).filter(Boolean);
+    if(isArray) return(val ?? []).filter(Boolean);
     return val ? [val] : [];
 }
 
 const useInverseRelations = (schema: Schema) => {
-    schema.pre('save', async function (next) {
+    schema.pre('save', async function(next) {
         const doc: any = this;
-        if (doc.isNew) return next();
+        if(doc.isNew) return next();
 
-        const base = doc.constructor.base; 
+        const base = doc.constructor.base;
         const metas = getOutMeta(base, doc.constructor.modelName).filter(m => m.inversePath);
-        if (metas.length === 0) return next();
+        if(metas.length === 0) return next();
 
         const select: any = {};
         metas.forEach(m => (select[m.path] = 1));
@@ -101,27 +101,27 @@ const useInverseRelations = (schema: Schema) => {
         doc.$locals.__prevRefs = prev ?? {};
         next();
     });
-// Dentro de useInverseRelations (reemplaza el bloque de diffs por esto)
-schema.post('save', async function (doc: any, next) {
-  try {
+// Dentro de useInverseRelations(reemplaza el bloque de diffs por esto)
+schema.post('save', async function(doc: any, next) {
+  try{
     const base = doc.constructor.base;
     const metas = getOutMeta(base, doc.constructor.modelName).filter(m => m.inversePath);
-    if (metas.length === 0) return next();
+    if(metas.length === 0) return next();
 
     const session = doc.$session?.();
     const prevRefs = doc.$locals?.__prevRefs ?? {};
     const ops: Promise<any>[] = [];
 
-    for (const m of metas) {
+    for(const m of metas){
         const RefModel = doc.model(m.refModel);
-        if (!RefModel) {
+        if(!RefModel){
             logger.warn(`[useInverseRelations] Modelo ${m.refModel} no encontrado`);
             continue;
         }
       const nowIds = asIdArray(doc[m.path], m.isArray).map((x: any) => x.toString());
       const prevIds = asIdArray(prevRefs[m.path], m.isArray).map((x: any) => x.toString());
 
-      if (m.behavior === 'addToSet' && nowIds.length) {
+      if(m.behavior === 'addToSet' && nowIds.length){
         ops.push(
           RefModel.updateMany(
             { _id: { $in: nowIds }, [m.inversePath!]: { $ne: doc._id } },
@@ -129,7 +129,7 @@ schema.post('save', async function (doc: any, next) {
             { session }
           )
         );
-      } else if (m.behavior === 'set' && nowIds.length) {
+      }else if(m.behavior === 'set' && nowIds.length){
         ops.push(
           RefModel.updateMany(
             { _id: { $in: nowIds } },
@@ -140,7 +140,7 @@ schema.post('save', async function (doc: any, next) {
       }
 
       const toRemove = prevIds.filter(id => !nowIds.includes(id));
-      if (toRemove.length) {
+      if(toRemove.length){
         ops.push(
           RefModel.updateMany(
             { _id: { $in: toRemove } },
@@ -153,7 +153,7 @@ schema.post('save', async function (doc: any, next) {
 
     await Promise.all(ops);
     next();
-  } catch (e) {
+  }catch(e){
     next(e as any);
   }
 });

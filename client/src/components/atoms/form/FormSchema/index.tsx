@@ -30,7 +30,7 @@ export interface FormSchemaProps {
 }
 
 const FormSchema: React.FC<FormSchemaProps> = ({ sections, className }) => {
-    return (
+    return(
         <div className={className}>
             {sections.map((s) => (
                 <FormSection
@@ -43,7 +43,7 @@ const FormSchema: React.FC<FormSchemaProps> = ({ sections, className }) => {
                         const value = 'get' in r ? r.get() : r.value;
                         const onChange = 'set' in r ? r.set : r.onChange;
 
-                        return (
+                        return(
                             <FormRow
                                 key={`${s.key}-${r.label}`}
                                 label={r.label}

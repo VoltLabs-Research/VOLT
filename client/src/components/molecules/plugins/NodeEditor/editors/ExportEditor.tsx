@@ -11,7 +11,7 @@ interface ExportEditorProps {
     node: Node;
 }
 
-// Convert to SelectOption format (value, title)
+// Convert to SelectOption format(value, title)
 const EXPORTER_SELECT_OPTIONS = EXPORTER_OPTIONS.map(opt => ({
     value: opt.value,
     title: opt.label
@@ -44,23 +44,23 @@ const ExportEditor: React.FC<ExportEditorProps> = ({ node }) => {
         setJsonValue(value);
 
         // Try to parse and validate
-        try {
+        try{
             const parsed = JSON.parse(value);
             updateExport('options', parsed);
-        } catch (e) {
+        }catch(e){
             setJsonError('Invalid JSON syntax');
         }
     }, [updateExport]);
 
     // Update local state when options change from outside
     React.useEffect(() => {
-        // Only update if there's no error (user isn't actively editing with invalid JSON)
-        if (!jsonError) {
+        // Only update if there's no error(user isn't actively editing with invalid JSON)
+        if(!jsonError){
             setJsonValue(optionsJson);
         }
     }, [optionsJson, jsonError]);
 
-    return (
+    return(
         <>
             <CollapsibleSection title='Export Configuration' defaultExpanded>
                 <FormField

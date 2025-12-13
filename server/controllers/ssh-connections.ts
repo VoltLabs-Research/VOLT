@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -28,11 +28,11 @@ import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import logger from '@/logger';
 
-export default class SSHConnectionsController {
-    public getUserSSHConnections = catchAsync(async (req: Request, res: Response) => {
+export default class SSHConnectionsController{
+    public getUserSSHConnections = catchAsync(async(req: Request, res: Response) => {
         const userId = (req as any).user._id || (req as any).user.id;
 
-        try {
+        try{
             const connections = await SSHConnection.find({ user: userId })
                 .select('-encryptedPassword')
                 .sort({ createdAt: -1 })
@@ -44,17 +44,17 @@ export default class SSHConnectionsController {
                     connections
                 }
             });
-        } catch (err: any) {
+        }catch(err: any){
             logger.error(`Failed to fetch SSH connections: ${err.message}`);
             throw new RuntimeError(ErrorCodes.SSH_CONNECTION_FETCH_ERROR, 500);
         }
     });
 
-    public createSSHConnection = catchAsync(async (req: Request, res: Response) => {
+    public createSSHConnection = catchAsync(async(req: Request, res: Response) => {
         const userId = (req as any).user._id || (req as any).user.id;
         const { name, host, port, username, password } = req.body;
 
-        try {
+        try{
             const connection = new SSHConnection({
                 name,
                 host,
@@ -75,8 +75,8 @@ export default class SSHConnectionsController {
                     connection: connectionData
                 }
             });
-        } catch (err: any) {
-            if (err.message === 'SSHConnection::Name::Duplicate') {
+        }catch(err: any){
+            if(err.message === 'SSHConnection::Name::Duplicate'){
                 throw new RuntimeError(ErrorCodes.SSH_CONNECTION_NAME_DUPLICATE, 400);
             }
             logger.error(`Failed to create SSH connection: ${err.message}`);
@@ -84,17 +84,17 @@ export default class SSHConnectionsController {
         }
     });
 
-    public updateSSHConnection = catchAsync(async (req: Request, res: Response) => {
+    public updateSSHConnection = catchAsync(async(req: Request, res: Response) => {
         const { name, host, port, username, password } = req.body;
         const connection = res.locals.sshConnection;
 
-        try {
+        try{
 
-            if (name) connection.name = name;
-            if (host) connection.host = host;
-            if (port) connection.port = port;
-            if (username) connection.username = username;
-            if (password) connection.setPassword(password);
+            if(name) connection.name = name;
+            if(host) connection.host = host;
+            if(port) connection.port = port;
+            if(username) connection.username = username;
+            if(password) connection.setPassword(password);
 
             await connection.save();
 
@@ -106,8 +106,8 @@ export default class SSHConnectionsController {
                     connection: connectionData
                 }
             });
-        } catch (err: any) {
-            if (err instanceof RuntimeError) {
+        }catch(err: any){
+            if(err instanceof RuntimeError){
                 throw err;
             }
             logger.error(`Failed to update SSH connection: ${err.message}`);
@@ -115,17 +115,17 @@ export default class SSHConnectionsController {
         }
     });
 
-    public deleteSSHConnection = catchAsync(async (req: Request, res: Response) => {
+    public deleteSSHConnection = catchAsync(async(req: Request, res: Response) => {
         const connection = res.locals.sshConnection;
 
-        try {
+        try{
 
             res.status(200).json({
                 status: 'success',
                 data: null
             });
-        } catch (err: any) {
-            if (err instanceof RuntimeError) {
+        }catch(err: any){
+            if(err instanceof RuntimeError){
                 throw err;
             }
             logger.error(`Failed to delete SSH connection: ${err.message}`);
@@ -133,10 +133,10 @@ export default class SSHConnectionsController {
         }
     });
 
-    public testSSHConnection = catchAsync(async (req: Request, res: Response) => {
+    public testSSHConnection = catchAsync(async(req: Request, res: Response) => {
         const connection = res.locals.sshConnection;
 
-        try {
+        try{
             const isValid = await SSHService.testConnection(connection);
 
             res.status(200).json({
@@ -145,8 +145,8 @@ export default class SSHConnectionsController {
                     valid: isValid
                 }
             });
-        } catch (err: any) {
-            if (err instanceof RuntimeError) {
+        }catch(err: any){
+            if(err instanceof RuntimeError){
                 throw err;
             }
             logger.error(`SSH connection test failed: ${err.message}`);

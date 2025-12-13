@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -41,13 +41,13 @@ const TimestepSlider: React.FC<TimestepSliderProps> = ({
 }) => {
     const currentIndex = availableTimesteps.indexOf(currentTimestep);
     const safeCurrentIndex = currentIndex !== -1 ? currentIndex : 0;
-    
+
     const minIndex = 0;
     const maxIndex = availableTimesteps.length - 1;
 
     const handleSliderChange = (index: number) => {
         const roundedIndex = Math.round(index);
-        if (roundedIndex >= 0 && roundedIndex < availableTimesteps.length) {
+        if(roundedIndex >= 0 && roundedIndex < availableTimesteps.length){
             const selectedTimestep = availableTimesteps[roundedIndex];
             onTimestepChange(selectedTimestep);
         }
@@ -55,7 +55,7 @@ const TimestepSlider: React.FC<TimestepSliderProps> = ({
 
     const progress = maxIndex > 0 ? (safeCurrentIndex / maxIndex) * 100 : 0;
 
-    return (
+    return(
         <div className='editor-timesteps-controls-slider'>
             <Slider
                 min={minIndex}

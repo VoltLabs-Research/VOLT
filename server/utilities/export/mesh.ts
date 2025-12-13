@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -36,7 +36,7 @@ class MeshExporter{
         const opts: Required<DefectMeshExportOptions> = {
             generateNormals: options.generateNormals ?? true,
             enableDoubleSided: options.enableDoubleSided ?? true,
-            smoothIterations: options.smoothIterations ?? 0, 
+            smoothIterations: options.smoothIterations ?? 0,
             material: {
                 baseColor: options.material?.baseColor ?? [0.0, 0.8, 1.0, 1.0],
                 metallic: options.material?.metallic ?? 0.1,
@@ -53,7 +53,7 @@ class MeshExporter{
         const useU16 = processedMesh.vertexCount > 0 && processedMesh.vertexCount <= 65535;
         const indices = useU16 ? new Uint16Array(processedMesh.indices) : processedMesh.indices;
 
-        const { glb, arrayBuffer } = buildPrimitiveGLB({
+        const{ glb, arrayBuffer } = buildPrimitiveGLB({
             positions: processedMesh.positions,
             normals: processedMesh.normals,
             indices,
@@ -75,7 +75,7 @@ class MeshExporter{
                     vertexCount: processedMesh.vertexCount,
                     triangleCount: processedMesh.triangleCount,
                 },
-                ...opts.metadata.customProperties
+                    ...opts.metadata.customProperties
             } : opts.metadata.customProperties
         });
 
@@ -101,10 +101,10 @@ class MeshExporter{
         const { points, facets } = mesh.data;
         const vertexCount = points.length;
         const triangleCount = facets.length;
-        
+
         logger.info(`Processing mesh: ${triangleCount} triangles, ${vertexCount} vertices.`);
         const positions = new Float32Array(vertexCount * 3);
-        
+
         let minX = Infinity;
         let maxX = -Infinity;
         let minY = Infinity;
@@ -125,10 +125,10 @@ class MeshExporter{
             positions[o + 2] = z;
 
             if(x < minX) minX = x;
-            if(y < minY) minY = y; 
+            if(y < minY) minY = y;
             if(z < minZ) minZ = z;
-            if(x > maxX) maxX = x; 
-            if(y > maxY) maxY = y; 
+            if(x > maxX) maxX = x;
+            if(y > maxY) maxY = y;
             if(z > maxZ) maxZ = z;
         }
 
@@ -150,7 +150,7 @@ class MeshExporter{
             const c = Number(v[2]);
 
             if(!Number.isInteger(a) || !Number.isInteger(b) || !Number.isInteger(c)){
-                throw new Error(`Facet ${i} contains non-integer indices: [${a}, ${b}, ${c}]`); 
+                throw new Error(`Facet ${i} contains non-integer indices: [${a}, ${b}, ${c}]`);
             }
 
             if(a < 0 || b < 0 || c < 0 || a >= vertexCount || b >= vertexCount || c >= vertexCount){
@@ -188,16 +188,16 @@ class MeshExporter{
             const ny = (e1z * e2x) - (e1x * e2z);
             const nz = (e1x * e2y) - (e1y * e2x);
 
-            normals[p0] += nx; normals[p0 + 1] += ny; 
+            normals[p0] += nx; normals[p0 + 1] += ny;
             normals[p0 + 2] += nz;
-            
-            normals[p1] += nx; normals[p1 + 1] += ny; 
+
+            normals[p1] += nx; normals[p1 + 1] += ny;
             normals[p1 + 2] += nz;
-            
-            normals[p2] += nx; normals[p2 + 1] += ny; 
+
+            normals[p2] += nx; normals[p2 + 1] += ny;
             normals[p2 + 2] += nz;
         }
-         
+
         for(let i = 0; i < normals.length; i += 3){
             const nx = normals[i];
             const ny = normals[i + 1];
@@ -205,19 +205,19 @@ class MeshExporter{
 
             const len = Math.hypot(nx, ny, nz);
             if(len > 1e-6){
-                normals[i] /= len; 
-                normals[i + 1] /= len; 
-                normals[i + 2] /= len; 
+                normals[i] /= len;
+                normals[i + 1] /= len;
+                normals[i + 2] /= len;
             }else{
-                normals[i] = 0; 
-                normals[i + 1] = 0; 
+                normals[i] = 0;
+                normals[i + 1] = 0;
                 normals[i + 2] = 1;
             }
         }
 
-        const bounds = { 
+        const bounds = {
             min: [minX, minY, minZ] as [number, number, number],
-            max: [maxX, maxY, maxZ] as [number, number, number] 
+            max: [maxX, maxY, maxZ] as [number, number, number]
         };
 
         return { positions, normals, indices, vertexCount, triangleCount, bounds };

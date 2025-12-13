@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -56,9 +56,9 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
         'audio/mp3'
     ];
 
-    if (allowedTypes.includes(file.mimetype)) {
+    if(allowedTypes.includes(file.mimetype)) {
         cb(null, true);
-    } else {
+    }else{
         cb(new Error('File type not allowed'));
     }
 };
@@ -83,7 +83,7 @@ export const uploadSingleFile = uploadFile.single('file');
  * @param mimetype File mime type
  * @returns MinIO object name
  */
-export const uploadToMinIO = async (buffer: Buffer, originalName: string, mimetype: string): Promise<string> => {
+export const uploadToMinIO = async(buffer: Buffer, originalName: string, mimetype: string): Promise<string> =>{
     const uniqueName = `${uuidv4()}-${Date.now()}${path.extname(originalName)}`;
     const objectName = `chat-files/${uniqueName}`;
 
@@ -94,7 +94,7 @@ export const uploadToMinIO = async (buffer: Buffer, originalName: string, mimety
     return uniqueName;
 };
 
-// Helper function to get file URL (for backward compatibility)
+// Helper function to get file URL(for backward compatibility)
 export const getFileUrl = (filename: string) => {
     return `/api/chat/files/${filename}`;
 };

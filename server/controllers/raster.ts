@@ -8,8 +8,8 @@ import TrajectoryVFS from '@/services/trajectory-vfs';
 import archiver from 'archiver';
 import logger from '@/logger';
 
-export default class RasterController {
-    public rasterizeFrames = catchAsync(async (req: Request, res: Response) => {
+export default class RasterController{
+    public rasterizeFrames = catchAsync(async(req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
         const opts: Partial<HeadlessRasterizerOptions> = req.body ?? {};
@@ -18,7 +18,7 @@ export default class RasterController {
         await rasterizeGLBs(trajectoryPreviews, SYS_BUCKETS.MODELS, SYS_BUCKETS.RASTERIZER, trajectory, opts);
 
         const analyses = await Analysis.find({ trajectory: trajectoryId }).lean();
-        const promises = analyses.map(async (analysis) => {
+        const promises = analyses.map(async(analysis) => {
             const analysisId = analysis._id.toString();
             const analysisPreviews = `trajectory-${trajectoryId}/plugins/${analysis.plugin}/${analysis.modifier}/analisis-${analysisId}`;
             await rasterizeGLBs(analysisPreviews, SYS_BUCKETS.MODELS, SYS_BUCKETS.RASTERIZER, trajectory, opts);
@@ -28,7 +28,7 @@ export default class RasterController {
         return res.status(200).json({ status: 'succes' });
     });
 
-    public getRasterFrameMetadata = catchAsync(async (req: Request, res: Response) => {
+    public getRasterFrameMetadata = catchAsync(async(req: Request, res: Response) => {
         let trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
 
@@ -46,13 +46,13 @@ export default class RasterController {
         const vfs = new TrajectoryVFS(trajectoryId);
         const analysesMetadata: Record<string, any> = {};
 
-        for (const analysis of analyses) {
+        for(const analysis of analyses){
             const id = String(analysis._id);
             const framesMeta: Record<string, any> = {};
 
             const rasterFiles = await vfs.list(`trajectory-${trajectoryId}/analysis-${id}/raster`);
 
-            for (const { timestep } of trajectory.frames) {
+            for(const { timestep } of trajectory.frames){
                 const relevantFiles = rasterFiles.filter(f => f.name.startsWith(`${timestep}`) || f.relPath.includes(`/${timestep}/`));
                 const models = relevantFiles.map(f => {
                     const base = f.name.replace('.png', '').replace(`${timestep}_`, '').replace(`${timestep}/`, '');
@@ -77,21 +77,21 @@ export default class RasterController {
         });
     });
 
-    public getRasterFrameData = catchAsync(async (req: Request, res: Response) => {
+    public getRasterFrameData = catchAsync(async(req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
         const { timestep, analysisId, model } = req.params;
         const frameNumber = Number(timestep);
 
-        if (!Number.isFinite(frameNumber)) return res.status(400).json({ status: 'error', message: 'Invalid timestep' });
+        if(!Number.isFinite(frameNumber)) return res.status(400).json({ status: 'error', message: 'Invalid timestep' });
 
-        try {
+        try{
             let buffer: Buffer;
 
-            if (model === 'preview' || !analysisId || analysisId === 'undefined') {
+            if(model === 'preview' || !analysisId || analysisId === 'undefined'){
                 const resPreview = await getTimestepPreview(trajectoryId, frameNumber);
                 buffer = resPreview.buffer;
-            } else {
+            }else{
                 const vfs = new TrajectoryVFS(trajectoryId);
                 const virtualPath = `trajectory-${trajectoryId}/analysis-${analysisId}/raster/${timestep}_${model}.png`;
                 const { stream } = await vfs.getReadStream(virtualPath);
@@ -107,31 +107,31 @@ export default class RasterController {
                 status: 'success',
                 data: { model, frame: frameNumber, analysisId, data: base64 }
             });
-        } catch (err) {
+        }catch(err){
             return res.status(404).json({ status: 'error', message: 'Raster image not found' });
         }
     });
 
-    public downloadRasterImagesArchive = catchAsync(async (req: Request, res: Response) => {
+    public downloadRasterImagesArchive = catchAsync(async(req: Request, res: Response) => {
         const trajectory = res.locals?.trajectory;
         const trajectoryId = trajectory._id.toString();
         const { analysisId, model, includePreview } = req.query as {
             analysisId?: string; model?: string; includePreview?: string;
         };
 
-        if (!trajectory) return res.status(400).json({ status: 'error', data: { error: 'Trajectory not found' } });
+        if(!trajectory) return res.status(400).json({ status: 'error', data: { error: 'Trajectory not found' } });
 
-        try {
+        try{
             const tfs = new TrajectoryVFS(trajectoryId);
             const wantPreview = includePreview === '1' || includePreview === 'true';
 
             const filesToArchive: Array<{ path: string, name: string }> = [];
 
-            if (wantPreview) {
-                try {
+            if(wantPreview){
+                try{
                     const previews = await tfs.list(`trajectory-${trajectoryId}/raster`);
-                    for (const p of previews) {
-                        if (p.type === 'file' && p.name.endsWith('.png')) {
+                    for(const p of previews){
+                        if(p.type === 'file' && p.name.endsWith('.png')) {
                             filesToArchive.push({ path: p.relPath, name: `previews/${p.name}` });
                         }
                     }
@@ -140,12 +140,12 @@ export default class RasterController {
                 }
             }
 
-            if (analysisId) {
-                try {
+            if(analysisId){
+                try{
                     const rasterFiles = await tfs.list(`trajectory-${trajectoryId}/analysis-${analysisId}/raster`);
-                    for (const f of rasterFiles) {
-                        if (f.type !== 'file' || !f.name.endsWith('.png')) continue;
-                        if (model && !f.name.includes(model)) continue;
+                    for(const f of rasterFiles){
+                        if(f.type !== 'file' || !f.name.endsWith('.png')) continue;
+                        if(model && !f.name.includes(model)) continue;
 
                         filesToArchive.push({ path: f.relPath, name: `analysis/${f.name}` });
                     }
@@ -154,7 +154,7 @@ export default class RasterController {
                 }
             }
 
-            if (!filesToArchive.length) {
+            if(!filesToArchive.length){
                 return res.status(404).json({ status: 'error', data: { error: 'No images found' } });
             }
 
@@ -165,28 +165,28 @@ export default class RasterController {
             const archive = archiver('zip', { zlib: { level: 0 } });
             archive.on('error', (err) => {
                 logger.error(`Zip error: ${err}`);
-                if (!res.headersSent) res.status(500).end();
+                if(!res.headersSent) res.status(500).end();
             });
 
             archive.pipe(res);
 
-            for (const file of filesToArchive) {
-                try {
+            for(const file of filesToArchive){
+                try{
                     const { stream } = await tfs.getReadStream(file.path);
                     archive.append(stream, { name: file.name });
-                } catch (e) {
+                }catch(e){
                     logger.warn(`Skipping missing file in archive: ${file.path}`);
                 }
             }
 
             await archive.finalize();
-        } catch (err) {
+        }catch(err){
             logger.error(`Download Raster Error: ${err}`);
-            if (!res.headersSent) res.status(500).json({ error: 'Archive creation failed' });
+            if(!res.headersSent) res.status(500).json({ error: 'Archive creation failed' });
         }
     });
 
-    private async streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+    private async streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer>{
         const chunks: Buffer[] = [];
         for await (const chunk of stream) {
             chunks.push(Buffer.from(chunk));

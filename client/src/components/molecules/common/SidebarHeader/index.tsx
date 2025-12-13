@@ -7,7 +7,7 @@ interface SidebarHeaderProps {
 }
 
 const SidebarHeader = ({ collapsed, onToggle, children }: SidebarHeaderProps) => {
-    return (
+    return(
         <div className="editor-sidebar-header-container">
             <div className="editor-sidebar-header-content">
                 {children}
@@ -17,8 +17,8 @@ const SidebarHeader = ({ collapsed, onToggle, children }: SidebarHeaderProps) =>
                 className="editor-sidebar-toggle-btn"
                 onClick={onToggle}
             >
-                <LuPanelRight 
-                    className={`editor-sidebar-toggle-icon ${collapsed ? "rotated" : ""}`} 
+                <LuPanelRight
+                    className={`editor-sidebar-toggle-icon ${collapsed ? "rotated" : ""}`}
                 />
             </button>
         </div>

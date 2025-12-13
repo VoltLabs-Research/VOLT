@@ -25,7 +25,7 @@ const ExposureEditor: React.FC<ExposureEditorProps> = ({ node }) => {
         updateField('perAtomProperties', props);
     }, [updateField]);
 
-    return (
+    return(
         <CollapsibleSection title='Results Exposure' defaultExpanded>
             <FormField
                 label='Exposure Name'

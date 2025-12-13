@@ -8,7 +8,7 @@ const ModifierNode = memo((props: NodeProps) => {
     const { data } = props;
     const modifier = data.modifier || {};
 
-    return (
+    return(
         <BaseNode {...props} nodeType={NodeType.MODIFIER}>
             <NodeField label='Name' value={modifier.name} />
             <NodeField label='Version' value={modifier.version} />

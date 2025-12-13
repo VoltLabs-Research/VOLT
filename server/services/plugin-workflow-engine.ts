@@ -26,7 +26,7 @@ interface ExposureResult{
 export default class PluginWorkflowEngine{
     private pluginsDir: string;
 
-    constructor(pluginsDir: string = process.env.PLUGINS_DIR || 'plugins') {
+    constructor(pluginsDir: string = process.env.PLUGINS_DIR || 'plugins'){
         this.pluginsDir = pluginsDir;
     }
 
@@ -77,7 +77,7 @@ export default class PluginWorkflowEngine{
 
             const exposureData = exposureNode.data.exposure!;
             const firstSuccess = exposureOutput.results.find((r: any) => !r.error);
-            
+
             results.push({
                 exposureName: exposureData.name,
                 nodeId: exposureNode.id,

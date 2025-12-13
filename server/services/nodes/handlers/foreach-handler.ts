@@ -17,14 +17,14 @@ class ForEachHandler implements NodeHandler {
         }
     };
 
-    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>> {
+    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
         let ref = node.data.forEach?.iterableSource;
-        if (!ref) throw new Error('ForEach::IterableSource::Required');
+        if(!ref) throw new Error('ForEach::IterableSource::Required');
 
         ref = ref.replace(/^\{\{\s*/, '').replace(/\s*\}\}$/, '');
         const items = resolveReference(ref, context);
 
-        if (!Array.isArray(items)) {
+        if(!Array.isArray(items)) {
             logger.error(`[ForEachHandler] Source '${ref}' resolved to non-array: ${typeof items}`);
             throw new Error('ForEach::IterableSource::NotAnArray');
         }

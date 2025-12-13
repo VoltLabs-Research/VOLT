@@ -15,7 +15,7 @@ export default class MetricsModule extends BaseSocketModule{
     onInit(io: Server): void{
         // Only broadcast metrics to connected clients every second from Redis
         // NOTE: Collection happens in server.ts background process
-        this.broadcastInterval = setInterval(async () => {
+        this.broadcastInterval = setInterval(async() => {
             try{
                 // Get latest metrics from Redis for real-time updates
                 const metrics = await this.collector?.getLatestFromRedis();
@@ -30,17 +30,17 @@ export default class MetricsModule extends BaseSocketModule{
 
     onConnection(socket: Socket): void{
         logger.info(`[Metrics Module] Client ${socket.id} connected`);
-        
+
         socket.join('metrics-room');
         this.sendInitialMetrics(socket);
 
         // Handle requests for historical data
-        socket.on('metrics:history', async (minutes: number = 15) => {
+        socket.on('metrics:history', async(minutes: number = 15) => {
             try{
                 // Convert minutes to hours compatibility with existing methods
                 const hours = minutes / 60;
                 const history = await this.collector?.getMetricsFromRedis(hours);
-                
+
                 socket.emit('metrics:history', history || []);
             }catch(error: any){
                 logger.error(`[Metrics Module] Error fetching history: ${error}`);

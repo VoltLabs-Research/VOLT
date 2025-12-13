@@ -11,7 +11,7 @@ const pLimit = (concurrency: number) => {
 
     return <T>(fn: () => Promise<T>): Promise<T> => {
         return new Promise((resolve, reject) => {
-            const run = async () => {
+            const run = async() => {
                 activeCount++;
                 try{
                     resolve(await fn());

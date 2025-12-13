@@ -13,16 +13,16 @@ const JobsHistoryViewer: React.FC = memo(() => {
 
     const dynamicStyles: React.CSSProperties = {};
 
-    return (
+    return(
         <>
-            <div 
-                ref={containerRef} 
-                className={containerClasses} 
+            <div
+                ref={containerRef}
+                className={containerClasses}
                 style={dynamicStyles}
             >
                 <div className='jobs-history-expanded-content'>
-                    <div 
-                        ref={headerRef} 
+                    <div
+                        ref={headerRef}
                         className={headerClasses}
                         style={{ touchAction: 'none' }}
                     >
@@ -31,7 +31,7 @@ const JobsHistoryViewer: React.FC = memo(() => {
                             <span className='jobs-history-subtitle'>The listed processes are queued and executed given the cluster load.</span>
                         </div>
                     </div>
-                    <div 
+                    <div
                         ref={bodyRef}
                         className='jobs-history-viewer-body-enhanced'
                     >

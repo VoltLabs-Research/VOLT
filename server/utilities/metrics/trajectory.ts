@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -24,16 +24,15 @@ import logger from '@/logger';
 import { Analysis, Team, Trajectory } from "@/models";
 import { Request, Response } from 'express';
 
-
 // List analysis configs by team
-export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => {
-  try {
+export const listAnalysisConfigsByTeam = async(req: Request, res: Response) => {
+  try{
     const userId = (req as any).user?.id;
     const { teamId } = req.params as { teamId: string };
     const { page = '1', limit = '20', q = '' } = req.query as Record<string, string>;
 
     const team = await Team.findOne({ _id: teamId, members: userId }).select('_id');
-    if (!team) {
+    if(!team){
       return res.status(403).json({ status: 'error', data: { error: 'Forbidden' } });
     }
 
@@ -45,7 +44,7 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
     const skip = (pageNum - 1) * limitNum;
 
     const query = typeof q === 'string' ? q.trim() : '';
-    const regex = query ? { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } : null;
+    const regex = query ?{ $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } : null;
 
     // Build aggregation with optional search by identificationMode, crystalStructure, and trajectory name
     const pipeline: any[] = [
@@ -53,7 +52,7 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
     ];
 
     // If searching, bring trajectory name early and apply $match
-    if (regex) {
+    if(regex){
       pipeline.push(
         { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
         { $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } },
@@ -105,7 +104,7 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
 
     let configs: any[] = [];
     let total: number = 0;
-    if (regex) {
+    if(regex){
       const countPipeline: any[] = [
         { $match: { trajectory: { $in: trajectoryIds } } },
         { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
@@ -119,7 +118,7 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
       ]);
       configs = rows as any[];
       total = (countRows?.[0]?.total as number) ?? 0;
-    } else {
+    }else{
       const [rows, count] = await Promise.all([
         Analysis.aggregate(pipeline),
         Analysis.countDocuments({ trajectory: { $in: trajectoryIds } })
@@ -132,7 +131,7 @@ export const listAnalysisConfigsByTeam = async (req: Request, res: Response) => 
       status: 'success',
       data: { configs, total, page: pageNum, limit: limitNum }
     });
-  } catch (err) {
+  }catch(err){
     logger.error(`listAnalysisConfigsByTeam error: ${err}`);
     return res.status(500).json({ status: 'error', data: { error: 'Internal Server Error' } });
   }

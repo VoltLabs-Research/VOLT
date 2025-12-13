@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -93,32 +93,32 @@ export interface StructureAnalysesByConfigResponse {
     };
 }
 
-export const getStructureAnalysisByTeam = async (
+export const getStructureAnalysisByTeam = async(
     teamId: string,
     params: StructureAnalysisQueryParams = {}
-): Promise<StructureAnalysesByTeamResponse> => {
+): Promise<StructureAnalysesByTeamResponse> =>{
     const response = await api.get(`/structure-analysis/team/${teamId}`, { params });
     return response.data;
 };
 
-export const getStructureAnalysesByTrajectory = async (
+export const getStructureAnalysesByTrajectory = async(
     trajectoryId: string,
     params: StructureAnalysisQueryParams = {}
-): Promise<StructureAnalysesResponse> => {
+): Promise<StructureAnalysesResponse> =>{
     const response = await api.get(`/structure-analysis/trajectory/${trajectoryId}`, { params });
     return response.data;
 };
 
-export const getStructureAnalysesByConfig = async (
+export const getStructureAnalysesByConfig = async(
     configId: string
-): Promise<StructureAnalysesByConfigResponse> => {
+): Promise<StructureAnalysesByConfigResponse> =>{
     const response = await api.get(`/structure-analysis/config/${configId}`);
     return response.data;
 };
 
-export const getStructureAnalysisById = async (
+export const getStructureAnalysisById = async(
     analysisId: string
-): Promise<StructureAnalysisResponse> => {
+): Promise<StructureAnalysisResponse> =>{
     const response = await api.get(`/structure-analysis/${analysisId}`);
     return response.data;
 };

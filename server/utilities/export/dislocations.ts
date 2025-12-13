@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -32,13 +32,13 @@ import { SYS_BUCKETS } from '@/config/minio';
 import storage from '@/services/storage';
 import logger from '@/logger';
 
-class DislocationExporter {
+class DislocationExporter{
     private createLineGeometry(
         points: [number, number, number][],
         lineWidth: number,
         tubularSegments: number = 8
     ): { positions: number[]; normals: number[]; indices: number[] } {
-        if (points.length < 2) {
+        if(points.length < 2){
             return { positions: [], normals: [], indices: [] };
         }
 
@@ -47,7 +47,7 @@ class DislocationExporter {
         const indices: number[] = [];
 
         // Generate tubular geometry around the line
-        for (let i = 0; i < points.length - 1; i++) {
+        for(let i = 0; i < points.length - 1; i++){
             const p1 = points[i];
             const p2 = points[i + 1];
 
@@ -55,7 +55,7 @@ class DislocationExporter {
             const dir = [p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]];
             const length = Math.sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
 
-            if (length < 1e-6) continue;
+            if(length < 1e-6) continue;
 
             // Normalize direction
             dir[0] /= length;
@@ -64,11 +64,11 @@ class DislocationExporter {
 
             // Find perpendicular vectors
             let up = [0, 1, 0];
-            if (Math.abs(dir[1]) > 0.99) {
+            if(Math.abs(dir[1]) > 0.99) {
                 up = [1, 0, 0];
             }
 
-            // Right vector (cross product)
+            // Right vector(cross product)
             const right = [
                 dir[1] * up[2] - dir[2] * up[1],
                 dir[2] * up[0] - dir[0] * up[2],
@@ -81,7 +81,7 @@ class DislocationExporter {
             right[1] /= rightLength;
             right[2] /= rightLength;
 
-            // Up vector (cross product of dir and right)
+            // Up vector(cross product of dir and right)
             up = [
                 dir[1] * right[2] - dir[2] * right[1],
                 dir[2] * right[0] - dir[0] * right[2],
@@ -91,7 +91,7 @@ class DislocationExporter {
             const baseVertexIndex = positions.length / 3;
 
             // Generate vertices around the circle
-            for (let j = 0; j <= tubularSegments; j++) {
+            for(let j = 0; j <= tubularSegments; j++){
                 const angle = (j / tubularSegments) * Math.PI * 2;
                 const cos = Math.cos(angle);
                 const sin = Math.sin(angle);
@@ -107,22 +107,22 @@ class DislocationExporter {
                 positions.push(p1[0] + offset[0], p1[1] + offset[1], p1[2] + offset[2]);
                 positions.push(p2[0] + offset[0], p2[1] + offset[1], p2[2] + offset[2]);
 
-                // Add normals (pointing outward from the line)
+                // Add normals(pointing outward from the line)
                 const normalLength = Math.sqrt(offset[0] * offset[0] + offset[1] * offset[1] + offset[2] * offset[2]);
-                if (normalLength > 1e-6) {
+                if(normalLength > 1e-6){
                     const nx = offset[0] / normalLength;
                     const ny = offset[1] / normalLength;
                     const nz = offset[2] / normalLength;
                     normals.push(nx, ny, nz);
                     normals.push(nx, ny, nz);
-                } else {
+                }else{
                     normals.push(0, 1, 0);
                     normals.push(0, 1, 0);
                 }
             }
 
             // Generate indices for the tube
-            for (let j = 0; j < tubularSegments; j++) {
+            for(let j = 0; j < tubularSegments; j++){
                 const v1 = baseVertexIndex + j * 2;
                 const v2 = baseVertexIndex + j * 2 + 1;
                 const v3 = baseVertexIndex + (j + 1) * 2;
@@ -137,7 +137,7 @@ class DislocationExporter {
         return { positions, normals, indices };
     }
 
-    private getDefaultTypeColors(): Record<string, [number, number, number, number]> {
+    private getDefaultTypeColors(): Record<string, [number, number, number, number]>{
         return {
             'Other': [0.95, 0.1, 0.1, 1.0],
             '1/2<111>': [0.1, 0.9, 0.1, 1.0],
@@ -151,7 +151,7 @@ class DislocationExporter {
     private processGeometry(
         dislocationData: any,
         options: Required<DislocationExportOptions>
-    ): ProcessedDislocationGeometry {
+    ): ProcessedDislocationGeometry{
         const { data } = dislocationData;
         logger.info(`Processing ${data.length} dislocation segments...`);
 
@@ -169,8 +169,8 @@ class DislocationExporter {
 
         const typeStats: Record<string, number> = {};
 
-        for (const segment of data) {
-            if (!segment.points || segment.points.length < options.minSegmentPoints) {
+        for(const segment of data){
+            if(!segment.points || segment.points.length < options.minSegmentPoints){
                 continue;
             }
 
@@ -187,20 +187,20 @@ class DislocationExporter {
                 options.tubularSegments
             );
 
-            if (geometry.positions.length === 0) continue;
+            if(geometry.positions.length === 0) continue;
 
             allPositions.push(...geometry.positions);
             allNormals.push(...geometry.normals);
 
-            if (options.colorByType) {
+            if(options.colorByType){
                 const color = typeColors[calculatedType] || typeColors['default'];
                 const vertexCount = geometry.positions.length / 3;
-                for (let i = 0; i < vertexCount; i++) {
+                for(let i = 0; i < vertexCount; i++){
                     allColors.push(...color);
                 }
             }
 
-            for (const index of geometry.indices) {
+            for(const index of geometry.indices){
                 allIndices.push(index + currentVertexOffset);
             }
 
@@ -216,7 +216,7 @@ class DislocationExporter {
         const colors = options.colorByType ? new Float32Array(allColors) : undefined;
 
         const allPoints: [number, number, number][] = [];
-        for (let i = 0; i < positions.length; i += 3) {
+        for(let i = 0; i < positions.length; i += 3){
             allPoints.push([positions[i], positions[i + 1], positions[i + 2]]);
         }
 
@@ -235,7 +235,7 @@ class DislocationExporter {
 
     // Removed createGLB method - use toGLBBuffer instead
 
-    private convertStorageFormatToDislocationFormat(storage: any): any {
+    private convertStorageFormatToDislocationFormat(storage: any): any{
         const dislocationSegments = storage.dislocations.map((segment: any) => ({
             segment_id: segment.segmentId,
             type: segment.type,
@@ -282,13 +282,13 @@ class DislocationExporter {
         trajectoryId: string,
         minioKey: string,
         options: DislocationExportOptions = {}
-    ): Promise<void> {
-        try {
+    ): Promise<void>{
+        try{
             const key = `${trajectoryId}/${analysisConfigId}/${timestep}.json`;
 
             logger.info(`[DislocationExporter] Rebuilding GLB from MinIO object: ${key}`);
             const storageObject = await storage.getBuffer(SYS_BUCKETS.MODELS, key);
-            if (!storageObject) {
+            if(!storageObject){
                 throw new Error(`No dislocation object found in MinIO for key ${key}`);
             }
 
@@ -323,7 +323,7 @@ class DislocationExporter {
             logger.info(`[DislocationExporter] GLB successfully rebuilt and uploaded to MinIO: ${minioKey}`);
             logger.info(`[DislocationExporter] Statistics: ${processedGeometry.triangleCount} triangles, ${processedGeometry.vertexCount} vertices`);
 
-        } catch (error) {
+        }catch(error){
             logger.error(`[DislocationExporter] Failed to rebuild GLB from DB: ${error}`);
             throw error;
         }
@@ -334,7 +334,7 @@ class DislocationExporter {
     public toGLBBuffer(
         dislocationData: any,
         options: DislocationExportOptions = {}
-    ): Buffer {
+    ): Buffer{
         const opts: Required<DislocationExportOptions> = {
             lineWidth: options.lineWidth ?? 0.08,
             tubularSegments: options.tubularSegments ?? 12,
@@ -358,7 +358,7 @@ class DislocationExporter {
         const useU16 = processedGeometry.vertexCount > 0 && processedGeometry.vertexCount <= 65535;
         const idx = useU16 ? new Uint16Array(processedGeometry.indices) : processedGeometry.indices;
 
-        const { glb, arrayBuffer } = buildPrimitiveGLB({
+        const{ glb, arrayBuffer } = buildPrimitiveGLB({
             positions: processedGeometry.positions,
             normals: processedGeometry.normals,
             colors: processedGeometry.colors,
@@ -382,7 +382,7 @@ class DislocationExporter {
                     triangleCount: processedGeometry.triangleCount,
                     segmentCount: processedGeometry.triangleCount / (opts.tubularSegments * 2)
                 },
-                ...opts.metadata.customProperties
+                    ...opts.metadata.customProperties
             } : opts.metadata.customProperties
         });
 
@@ -397,7 +397,7 @@ class DislocationExporter {
         dislocationData: any,
         minioObjectName: string,
         options: DislocationExportOptions = {}
-    ): Promise<void> {
+    ): Promise<void>{
         const buffer = this.toGLBBuffer(dislocationData, options);
         await storage.put(SYS_BUCKETS.MODELS, minioObjectName, buffer, {
             'Content-Type': 'model/gltf-binary'

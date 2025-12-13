@@ -8,7 +8,7 @@ const ExposureNode = memo((props: NodeProps) => {
     const { data } = props;
     const exposure = data.exposure || {};
 
-    return (
+    return(
         <BaseNode {...props} nodeType={NodeType.EXPOSURE} nodeTitle={exposure.name}>
             <NodeField label='Name' value={exposure.name} />
             <NodeField label='Results File' value={exposure.results} code />

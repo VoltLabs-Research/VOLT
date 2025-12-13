@@ -8,8 +8,8 @@ import { DatabasePerformance } from '@/components/molecules/clusters/DatabasePer
 import { ServerTable } from '@/components/organisms/clusters/ServerTable'
 import './Clusters.css'
 
-export default function DashboardPage() {
-  return (
+export default function DashboardPage(){
+  return(
     <div className="clusters-page">
       <main className="clusters-main">
           <MetricsCards />

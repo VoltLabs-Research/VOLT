@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -26,34 +26,34 @@ import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
 
-export default class PasswordController {
-    public changePassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        try {
+export default class PasswordController{
+    public changePassword = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+        try{
             const userId = (req as any).user._id;
             const { currentPassword, newPassword, confirmPassword } = req.body;
 
-            if (!currentPassword || !newPassword || !confirmPassword) {
+            if(!currentPassword || !newPassword || !confirmPassword){
                 return next(new RuntimeError(ErrorCodes.PASSWORD_VALIDATION_MISSING_FIELDS, 400));
             }
 
-            if (newPassword !== confirmPassword) {
+            if(newPassword !== confirmPassword){
                 return next(new RuntimeError(ErrorCodes.PASSWORD_VALIDATION_MISMATCH, 400));
             }
 
-            if (newPassword.length < 8) {
+            if(newPassword.length < 8){
                 return next(new RuntimeError(ErrorCodes.PASSWORD_VALIDATION_TOO_SHORT, 400));
             }
 
             const user = await User.findById(userId).select('+password');
-            if (!user) {
+            if(!user){
                 return next(new RuntimeError(ErrorCodes.PASSWORD_USER_NOT_FOUND, 404));
             }
 
-            if (!(await user.isCorrectPassword(currentPassword, user.password))) {
+            if(!(await user.isCorrectPassword(currentPassword, user.password))) {
                 return next(new RuntimeError(ErrorCodes.PASSWORD_CURRENT_INCORRECT, 400));
             }
 
-            if (await user.isCorrectPassword(newPassword, user.password)) {
+            if(await user.isCorrectPassword(newPassword, user.password)) {
                 return next(new RuntimeError(ErrorCodes.PASSWORD_SAME_AS_CURRENT, 400));
             }
 
@@ -61,16 +61,16 @@ export default class PasswordController {
             await user.save();
 
             res.status(200).json({ status: 'success', message: 'Password changed successfully' });
-        } catch (error) {
+        }catch(error){
             next(new RuntimeError(ErrorCodes.PASSWORD_CHANGE_FAILED, 500));
         }
     });
 
-    public getPasswordInfo = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        try {
+    public getPasswordInfo = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+        try{
             const userId = (req as any).user._id;
             const user = await User.findById(userId).select('passwordChangedAt');
-            if (!user) {
+            if(!user){
                 return next(new RuntimeError(ErrorCodes.PASSWORD_USER_NOT_FOUND, 404));
             }
 
@@ -81,7 +81,7 @@ export default class PasswordController {
                     hasPassword: !!user.password
                 }
             });
-        } catch (error) {
+        }catch(error){
             next(new RuntimeError(ErrorCodes.PASSWORD_GET_INFO_FAILED, 500));
         }
     });

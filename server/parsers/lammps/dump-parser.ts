@@ -114,9 +114,9 @@ export default class LammpsDumpParser extends BaseParser{
             }
         });
 
-        return { 
-            min: min === Infinity ? 0 : min, 
-            max: max === -Infinity ? 0 : max 
+        return {
+            min: min === Infinity ? 0 : min,
+            max: max === -Infinity ? 0 : max
         };
     }
 
@@ -126,20 +126,20 @@ export default class LammpsDumpParser extends BaseParser{
             .split(/\s+/)
             .map(c => c.toLowerCase());
         this.idxType = this.headers.findIndex((c) => c === 'type');
-        
+
         const findCoord = (suffixes: string[]) => this.headers.findIndex((c) => suffixes.includes(c));
         this.idxX = findCoord(['x', 'xu', 'xs']);
         this.idxY = findCoord(['y', 'yu', 'ys']);
         this.idxZ = findCoord(['z', 'zu', 'zs']);
 
-        if (this.parseOptions.includeIds) {
+        if(this.parseOptions.includeIds){
             this.idxId = this.headers.findIndex((c) => c === 'id');
         }
 
-        if (this.parseOptions.properties) {
-            for (const prop of this.parseOptions.properties) {
+        if(this.parseOptions.properties){
+            for(const prop of this.parseOptions.properties){
                 const idx = this.headers.findIndex((c) => c === prop.toLowerCase());
-                if (idx !== -1) {
+                if(idx !== -1){
                     this.propertyIndices[prop] = idx;
                 }
             }
@@ -150,12 +150,12 @@ export default class LammpsDumpParser extends BaseParser{
         }
 
         this.maxColumnIndex = Math.max(
-            this.idxType, 
-            this.idxX, 
-            this.idxY, 
-            this.idxZ, 
+            this.idxType,
+            this.idxX,
+            this.idxY,
+            this.idxZ,
             this.idxId,
-            ...Object.values(this.propertyIndices)
+                ...Object.values(this.propertyIndices)
         );
     }
 
@@ -170,7 +170,7 @@ export default class LammpsDumpParser extends BaseParser{
 
     parseAtomLine(line: string): void{
         this.scanner.load(line);
-        
+
         let currentTokenIdx = 0;
         let type = 0;
         let x = 0.0, y = 0.0, z = 0.0;
@@ -203,9 +203,9 @@ export default class LammpsDumpParser extends BaseParser{
                 read = true;
             }
 
-            for (const propName in this.propertyIndices) {
-                if (this.propertyIndices[propName] === currentTokenIdx) {
-                    if (!read) {
+            for(const propName in this.propertyIndices){
+                if(this.propertyIndices[propName] === currentTokenIdx){
+                    if(!read){
                         val = this.scanner.nextFloat();
                         read = true;
                     }
@@ -213,10 +213,10 @@ export default class LammpsDumpParser extends BaseParser{
                 }
             }
 
-            if (!read) {
+            if(!read){
                 this.scanner.jump(1);
             }
-            
+
             currentTokenIdx++;
         }
         this.pushAtom(type, x, y, z, id, props);

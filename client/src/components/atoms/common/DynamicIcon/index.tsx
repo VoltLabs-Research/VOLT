@@ -18,7 +18,7 @@ const isRenderableComponent = (x: unknown): x is IconType => {
 const moduleCache = new Map<IconLib, Promise<Record<string, unknown>>>();
 const iconCache = new Map<string, IconType>();
 
-const resolveIcon = async (iconName: string, fallback: IconType): Promise<IconType> => {
+const resolveIcon = async(iconName: string, fallback: IconType): Promise<IconType> =>{
     if(!iconName) return fallback;
 
     const cached = iconCache.get(iconName);
@@ -53,7 +53,7 @@ export type DynamicIconProps = IconBaseProps & {
 const DynamicIcon = memo(function DynamicProps({
     iconName,
     fallback = GrStatusUnknown,
-    ...iconProps
+        ...iconProps
 }: DynamicIconProps){
     const [Icon, setIcon] = useState<IconType>(() => fallback);
 
@@ -66,7 +66,7 @@ const DynamicIcon = memo(function DynamicProps({
             if(alive) setIcon(() => Resolved);
         });
 
-        return () => {
+        return() => {
             alive = false;
         };
     }, [iconName, fallback]);

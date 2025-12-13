@@ -31,13 +31,13 @@ export interface GetApiTrackerParams {
 }
 
 const apiTrackerApi = {
-    async getMyStats(params?: GetApiTrackerParams): Promise<ApiTrackerStats> {
+    async getMyStats(params?: GetApiTrackerParams): Promise<ApiTrackerStats>{
         const queryParams = new URLSearchParams();
-        if (params?.limit) queryParams.append('limit', params.limit.toString());
-        if (params?.page) queryParams.append('page', params.page.toString());
-        if (params?.sort) queryParams.append('sort', params.sort);
-        if (params?.method) queryParams.append('method', params.method);
-        if (params?.statusCode) queryParams.append('statusCode', params.statusCode.toString());
+        if(params?.limit) queryParams.append('limit', params.limit.toString());
+        if(params?.page) queryParams.append('page', params.page.toString());
+        if(params?.sort) queryParams.append('sort', params.sort);
+        if(params?.method) queryParams.append('method', params.method);
+        if(params?.statusCode) queryParams.append('statusCode', params.statusCode.toString());
 
         const response = await api.get<{ status: string; data: ApiTrackerStats }>(
             `/api-tracker/my-stats?${queryParams.toString()}`

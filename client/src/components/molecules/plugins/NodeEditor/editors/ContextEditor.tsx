@@ -10,7 +10,7 @@ interface ContextEditorProps {
     node: Node;
 }
 
-// Convert to SelectOption format (value, title)
+// Convert to SelectOption format(value, title)
 const CONTEXT_SELECT_OPTIONS = CONTEXT_OPTIONS.map(opt => ({
     value: opt.value,
     title: opt.label
@@ -21,7 +21,7 @@ const DEFAULT_CONTEXT: IContextData = { source: 'trajectory_dumps' as ModifierCo
 const ContextEditor: React.FC<ContextEditorProps> = ({ node }) => {
     const { data: context, updateField } = useNodeData(node, 'context', DEFAULT_CONTEXT);
 
-    return (
+    return(
         <CollapsibleSection title='Data Source' defaultExpanded>
             <FormField
                 label='Source'

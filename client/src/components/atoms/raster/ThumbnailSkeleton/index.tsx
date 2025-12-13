@@ -2,13 +2,13 @@ import React from 'react';
 import { Skeleton } from '@mui/material';
 
 const ThumbnailSkeleton: React.FC = () => {
-    return (
+    return(
         <div className='raster-thumbnail-container' style={{ position: 'relative' }}>
-            <Skeleton 
-                variant='rectangular' 
-                animation='wave' 
+            <Skeleton
+                variant='rectangular'
+                animation='wave'
                 width={280}
-                height={160} 
+                height={160}
                 sx={{
                     borderRadius: '0.75rem',
                     bgcolor: 'rgba(255, 255, 255, 0.06)'

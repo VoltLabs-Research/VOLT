@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -28,13 +28,13 @@ import { ErrorCodes } from '@/constants/error-codes';
 
 /**
  * Middleware to validate MongoDB ObjectId from route params
- * @param paramName The name of the param to validate (defaults to 'id')
+ * @param paramName The name of the param to validate(defaults to 'id')
  */
 export const validateObjectId = (paramName: string = 'id') => {
-    return (req: Request, res: Response, next: NextFunction) => {
+    return(req: Request, res: Response, next: NextFunction) => {
         const id = req.params[paramName];
 
-        if (!id || !isValidObjectId(id)) {
+        if(!id || !isValidObjectId(id)) {
             return next(new RuntimeError(ErrorCodes.VALIDATION_INVALID_OBJECT_ID, 400));
         }
 
@@ -45,32 +45,32 @@ export const validateObjectId = (paramName: string = 'id') => {
 /**
  * Middleware to verify team membership by teamId in query or body
  */
-export const verifyTeamMembershipByTeamId = async (req: Request, res: Response, next: NextFunction) => {
+export const verifyTeamMembershipByTeamId = async(req: Request, res: Response, next: NextFunction) => {
     const teamId = req.body.teamId || req.query.teamId || req.params.teamId;
     const userId = (req as any).user?._id || (req as any).user?.id;
 
-    if (!userId) {
+    if(!userId){
         return next(new RuntimeError(ErrorCodes.AUTH_UNAUTHORIZED, 401));
     }
 
-    if (!teamId) {
+    if(!teamId){
         return next(new RuntimeError(ErrorCodes.TEAM_ID_REQUIRED, 400));
     }
 
-    if (!isValidObjectId(teamId)) {
+    if(!isValidObjectId(teamId)) {
         return next(new RuntimeError(ErrorCodes.VALIDATION_INVALID_TEAM_ID, 400));
     }
 
-    try {
+    try{
         const team = await Team.findOne({ _id: teamId, members: userId });
 
-        if (!team) {
+        if(!team){
             return next(new RuntimeError(ErrorCodes.TEAM_ACCESS_DENIED, 403));
         }
 
         res.locals.team = team;
         next();
-    } catch (err: any) {
+    }catch(err: any){
         return next(new RuntimeError(ErrorCodes.TEAM_LOAD_ERROR, 500));
     }
 };
@@ -80,10 +80,10 @@ export const verifyTeamMembershipByTeamId = async (req: Request, res: Response, 
  * @param fields Array of required field names
  */
 export const validateRequiredFields = (fields: string[]) => {
-    return (req: Request, res: Response, next: NextFunction) => {
+    return(req: Request, res: Response, next: NextFunction) => {
         const missingFields = fields.filter(field => !req.body[field]);
 
-        if (missingFields.length > 0) {
+        if(missingFields.length > 0){
             return next(new RuntimeError(
                 ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
                 400
@@ -101,7 +101,7 @@ export const validateRequiredFields = (fields: string[]) => {
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
     const user = (req as any).user;
 
-    if (!user) {
+    if(!user){
         return next(new RuntimeError(ErrorCodes.AUTH_UNAUTHORIZED, 401));
     }
 
@@ -112,8 +112,8 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
  * Generic middleware to load a resource and verify ownership
  * @param Model The Mongoose model
  * @param resourceName The name for error messages
- * @param ownerField The field name for the owner (default: 'createdBy')
- * @param localField The field name in res.locals to store the resource (default: lowercase resourceName)
+ * @param ownerField The field name for the owner(default: 'createdBy')
+ * @param localField The field name in res.locals to store the resource(default: lowercase resourceName)
  */
 export const loadAndVerifyOwnership = (
     Model: any,
@@ -121,21 +121,21 @@ export const loadAndVerifyOwnership = (
     ownerField: string = 'createdBy',
     localField?: string
 ) => {
-    return async (req: Request, res: Response, next: NextFunction) => {
+    return async(req: Request, res: Response, next: NextFunction) => {
         const userId = (req as any).user._id || (req as any).user.id;
         const { id } = req.params;
 
-        try {
+        try{
             const resource = await Model.findOne({ _id: id, [ownerField]: userId });
 
-            if (!resource) {
+            if(!resource){
                 return next(new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404));
             }
 
             const fieldName = localField || resourceName.toLowerCase();
             res.locals[fieldName] = resource;
             next();
-        } catch (err: any) {
+        }catch(err: any){
             return next(new RuntimeError(ErrorCodes.RESOURCE_LOAD_ERROR, 500));
         }
     };

@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -88,9 +88,9 @@ export default class DumpStorage{
             const sourceStream = typeof data === 'string'
                 ? fsNative.createReadStream(data)
                 : Readable.from(data);
-            
+
             // Measure input size while streaming
-            sourceStream.on('data', (chunk: DumpInput) => {
+            sourceStream.on('data', (chunk: DumpInput) =>{
                 inputSize += chunk.length;
             });
 
@@ -106,7 +106,7 @@ export default class DumpStorage{
             await storage.put(SYS_BUCKETS.DUMPS, objectName, uploadStream, {
                 'Content-Type': 'application/gzip',
                 'Content-Encoding': 'gzip',
-                'Content-Length': stats.size 
+                'Content-Length': stats.size
             });
             this.logMetrics(objectName, inputSize, stats.size, startTime);
 
@@ -130,12 +130,12 @@ export default class DumpStorage{
 
         // Check valid cache on disk
         if(await this.isCacheValid(cachePath)){
-            // Update access time (LRU behavior)
+            // Update access time(LRU behavior)
             fs.utimes(cachePath, new Date(), new Date()).catch(() => {});
             return cachePath;
         }
 
-        // Check if already downloading (promise locking)
+        // Check if already downloading(promise locking)
         if(this.pendingRequests.has(cacheKey)){
             return this.pendingRequests.get(cacheKey)!;
         }
@@ -145,7 +145,7 @@ export default class DumpStorage{
         this.pendingRequests.set(cacheKey, downloadTask);
         return downloadTask;
     }
-    
+
     private static async executeDownload(
         objectName: string,
         cachePath: string,
@@ -182,14 +182,14 @@ export default class DumpStorage{
     static async calculateSize(trajectoryId: string): Promise<number>{
         const prefix = `trajectory-${trajectoryId}/`;
         let totalSize = 0;
-        
+
         const pendingTasks: Promise<number>[] = [];
         const BATCH_SIZE = 50;
 
-        for await(const key of storage.listByPrefix(SYS_BUCKETS.DUMPS, prefix)){
+        for await (const key of storage.listByPrefix(SYS_BUCKETS.DUMPS, prefix)){
             if(!key.endsWith('.dump.gz')) continue;
 
-            const task = this.storageLimit(async () => {
+            const task = this.storageLimit(async() => {
                 try{
                     const stat = await storage.getStat(SYS_BUCKETS.DUMPS, key);
                     return stat.size;
@@ -211,7 +211,7 @@ export default class DumpStorage{
             const results = await Promise.all(pendingTasks);
             totalSize += results.reduce((acc, size) => acc + size, 0);
         }
-        
+
         return totalSize;
     }
 
@@ -224,8 +224,8 @@ export default class DumpStorage{
     static async listDumps(trajectoryId: string): Promise<string[]>{
         const prefix = `trajectory-${trajectoryId}/`;
         const timesteps: string[] = [];
-        
-        for await(const name of storage.listByPrefix(SYS_BUCKETS.DUMPS, prefix)){
+
+        for await (const name of storage.listByPrefix(SYS_BUCKETS.DUMPS, prefix)){
             const match = name.match(/timestep-(\d+)\.dump\.gz$/);
             if(match){
                 timesteps.push(match[1]);
@@ -247,7 +247,7 @@ export default class DumpStorage{
     private static async isCacheValid(filePath: string): Promise<boolean>{
         try{
             const stats = await fs.stat(filePath);
-            return (Date.now() - stats.mtimeMs) < this.CACHE_TTL_MS;
+            return(Date.now() - stats.mtimeMs) < this.CACHE_TTL_MS;
         }catch{
             return false;
         }

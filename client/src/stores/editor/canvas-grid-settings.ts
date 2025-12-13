@@ -88,4 +88,3 @@ const useCanvasGridSettings = create<CanvasGridSettingsStore>()(
 );
 
 export default useCanvasGridSettings;
-

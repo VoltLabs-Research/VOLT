@@ -1,8 +1,8 @@
 /**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+* Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
+* of this software and associated documentation files(the "Software"), to deal
 * in the Software without restriction, including without limitation the rights
 * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 * copies of the Software, and to permit persons to whom the Software is
@@ -30,17 +30,17 @@ import { getMinIOObjectName } from '@/middlewares/file-upload';
 import { ErrorCodes } from '@/constants/error-codes';
 import logger from '@/logger';
 
-export default class FilePreviewController {
-    public getFileBase64 = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export default class FilePreviewController{
+    public getFileBase64 = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const { chatId, messageId } = req.params;
 
         const message = await Message.findOne({ _id: messageId, chat: chatId });
-        if (!message) throw new RuntimeError(ErrorCodes.MESSAGE_NOT_FOUND, 404);
-        if (message.messageType !== 'file' || !message.metadata?.filePath) {
+        if(!message) throw new RuntimeError(ErrorCodes.MESSAGE_NOT_FOUND, 404);
+        if(message.messageType !== 'file' || !message.metadata?.filePath){
             throw new RuntimeError(ErrorCodes.FILE_NOT_FOUND, 404);
         }
 
-        try {
+        try{
             const objectName = getMinIOObjectName(message.metadata.filePath);
             const fileBuffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, objectName);
             const base64 = fileBuffer.toString('base64');
@@ -56,7 +56,7 @@ export default class FilePreviewController {
                     fileSize: message.metadata.fileSize
                 }
             });
-        } catch (error) {
+        }catch(error){
             logger.error(`Error reading file from MinIO: ${error}`);
             throw new RuntimeError(ErrorCodes.FILE_READ_ERROR, 500);
         }

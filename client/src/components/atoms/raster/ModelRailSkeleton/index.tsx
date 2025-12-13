@@ -12,7 +12,7 @@ const ModelRailSkeleton: React.FC<ModelRailSkeletonProps> = ({
     height = 84,
     isSelected = false
 }) => {
-    return (
+    return(
         <Skeleton
             variant='rounded'
             animation='wave'
@@ -20,8 +20,8 @@ const ModelRailSkeleton: React.FC<ModelRailSkeletonProps> = ({
             height={height}
             sx={{
                 borderRadius: '0.75rem',
-                bgcolor: isSelected 
-                    ? 'rgba(255, 255, 255, 0.12)' 
+                bgcolor: isSelected
+                    ? 'rgba(255, 255, 255, 0.12)'
                     : 'rgba(255, 255, 255, 0.08)',
                 border: isSelected ? '1px solid var(--accent)' : 'none',
                 flexShrink: 0

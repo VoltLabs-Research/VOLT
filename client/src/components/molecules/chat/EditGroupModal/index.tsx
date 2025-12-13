@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -23,18 +23,18 @@
 import { useEffect } from 'react';
 import { useChatStore } from '@/stores/chat';
 import { useChat } from '@/hooks/chat/useChat';
-import { 
-    IoCloseOutline, 
+import {
+    IoCloseOutline,
     IoCreateOutline
 } from 'react-icons/io5';
 import useAuthStore from '@/stores/authentication';
 
 const EditGroupModal = () => {
-    const { 
-        currentChat, 
+    const {
+        currentChat,
         editGroupName,
         editGroupDescription,
-        setShowEditGroup, 
+        setShowEditGroup,
         setEditGroupName,
         setEditGroupDescription,
         updateGroupInfo
@@ -42,36 +42,36 @@ const EditGroupModal = () => {
     const user = useAuthStore((store) => store.user);
     const [isLoading, setIsLoading] = React.useState(false);
 
-    if (!currentChat || !currentChat.isGroup) return null;
+    if(!currentChat || !currentChat.isGroup) return null;
 
     const isAdmin = currentChat.admins?.some(admin => admin._id === user?._id) || false;
     const isOwner = currentChat.createdBy?._id === user?._id;
-    
+
     // Only show if user is admin or owner
-    if (!isAdmin && !isOwner) return null;
+    if(!isAdmin && !isOwner) return null;
 
     // Initialize form with current group data
     useEffect(() => {
-        if (currentChat) {
+        if(currentChat){
             setEditGroupName(currentChat.groupName || '');
             setEditGroupDescription(currentChat.groupDescription || '');
         }
     }, [currentChat, setEditGroupName, setEditGroupDescription]);
 
-    const handleSaveGroup = async () => {
-        if (!editGroupName.trim()) return;
-        
+    const handleSaveGroup = async() => {
+        if(!editGroupName.trim()) return;
+
         setIsLoading(true);
-        try {
+        try{
             await updateGroupInfo(
-                currentChat._id, 
-                editGroupName.trim(), 
+                currentChat._id,
+                editGroupName.trim(),
                 editGroupDescription.trim()
             );
             setShowEditGroup(false);
-        } catch (error) {
+        }catch(error){
             console.error('Failed to update group:', error);
-        } finally {
+        }finally{
             setIsLoading(false);
         }
     };
@@ -80,19 +80,19 @@ const EditGroupModal = () => {
         setShowEditGroup(false);
     };
 
-    return (
+    return(
         <div className='chat-group-management-modal'>
             <div className='chat-group-management-content'>
                 <div className='chat-group-management-header'>
                     <h3>Edit Group</h3>
-                    <button 
+                    <button
                         className='chat-close-modal'
                         onClick={handleClose}
                     >
                         <IoCloseOutline />
                     </button>
                 </div>
-                
+
                 <div className='chat-group-management-body'>
                     {/* Group Info Form */}
                     <div className='chat-edit-group-form'>
@@ -119,7 +119,7 @@ const EditGroupModal = () => {
                             </label>
                             <textarea
                                 className='chat-edit-group-textarea'
-                                placeholder='Enter group description (optional)'
+                                placeholder='Enter group description(optional)'
                                 value={editGroupDescription}
                                 onChange={(e) => setEditGroupDescription(e.target.value)}
                                 maxLength={200}
@@ -156,13 +156,13 @@ const EditGroupModal = () => {
 
                     {/* Actions */}
                     <div className='chat-group-management-actions'>
-                        <button 
+                        <button
                             className='chat-group-management-cancel'
                             onClick={handleClose}
                         >
                             Cancel
                         </button>
-                        <button 
+                        <button
                             className='chat-group-management-save'
                             onClick={handleSaveGroup}
                             disabled={!editGroupName.trim() || isLoading}

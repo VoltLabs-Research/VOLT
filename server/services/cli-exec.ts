@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -32,7 +32,7 @@ export default class CLIExec{
     constructor(){}
 
     run(execPath: string, args: string[]): Promise<CLIResult>{
-        return new Promise(async (resolve, reject) => {
+        return new Promise(async(resolve, reject) => {
             logger.info(`[CLI Exec] ${execPath} ${args.join(' ')}`);
             const child = spawn(execPath, args);
 

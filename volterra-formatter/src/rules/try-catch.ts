@@ -20,25 +20,30 @@
  * SOFTWARE.
  */
 
-export function formatAsyncAwait(code: string): string {
+export function formatTryCatch(code: string): string {
     let result = code;
 
-    // async function name () -> async function name()
-    result = result.replace(/\basync\s+function\s+(\w+)\s*\(/g, 'async function $1(');
+    // try { -> try{
+    result = result.replace(/\btry[ \t]+\{/g, 'try{');
 
-    // async function name() { -> async function name(){
-    result = result.replace(/(async\s+function\s+\w+\([^)]*\))\s+\{/g, '$1{');
-    result = result.replace(/(async\s+function\s+\w+\([^)]*\))\s*\n\s*\{/g, '$1{');
+    // Fix } catch pattern - no line breaks
+    // } \n catch(e) { -> }catch(e){
+    result = result.replace(/\}[ \t]*\n[ \t]*catch[ \t]*\(/g, '}catch(');
+    result = result.replace(/\}[ \t]+catch[ \t]*\(/g, '}catch(');
 
-    // async () => { -> async() is wrong, keep async () for arrow
-    // But async method(){ in class
-    result = result.replace(/\basync\s+(\w+)\s*\(/g, 'async $1(');
+    // Remove space before ( in catch - same line only
+    // catch (e) -> catch(e)
+    result = result.replace(/\bcatch[ \t]+\(/g, 'catch(');
 
-    // "for await(" must become "for await (" because forawait is invalid
-    // First, normalize any incorrect spacing
-    result = result.replace(/\bfor\s+await\s*\(/g, 'for await (');
-    // Ensure no space before for
-    result = result.replace(/\bfor\s+await/g, 'for await');
+    // Remove space before { in catch - same line only
+    // catch(e) { -> catch(e){
+    result = result.replace(/(catch\([^)]*\))[ \t]+\{/g, '$1{');
+    result = result.replace(/(catch\([^)]*\))[ \t]*\n[ \t]*\{/g, '$1{');
+
+    // Fix } finally { pattern
+    result = result.replace(/\}[ \t]*\n[ \t]*finally[ \t]*\{/g, '}finally{');
+    result = result.replace(/\}[ \t]+finally[ \t]*\{/g, '}finally{');
+    result = result.replace(/\bfinally[ \t]+\{/g, 'finally{');
 
     return result;
 }

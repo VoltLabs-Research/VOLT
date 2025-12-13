@@ -39,7 +39,7 @@ export const getMinioClient = (): Client => {
     return minioClient;
 };
 
-export const ensureBucketExists = async (client: Client, bucket: string): Promise<void> => {
+export const ensureBucketExists = async(client: Client, bucket: string): Promise<void> =>{
     const exists = await client.bucketExists(bucket).catch(() => false);
     if(!exists){
         await client.makeBucket(bucket, '');
@@ -60,7 +60,7 @@ export const ensureBucketExists = async (client: Client, bucket: string): Promis
     }
 };
 
-export const initializeMinio = async (): Promise<void> => {
+export const initializeMinio = async(): Promise<void> =>{
     const client = getMinioClient();
     const buckets = Object.values(SYS_BUCKETS);
     for(const bucket of buckets){

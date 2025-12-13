@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "description": "Custom code formatter for Volterra project style",
   "type": "module",
-  "main": "dist/index.js",
-  "bin": {
-    "volterra-format": "./bin/format.js"
-  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

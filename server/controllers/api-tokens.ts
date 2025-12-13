@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -27,7 +27,7 @@ import { ErrorCodes } from '@/constants/error-codes';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import crypto from 'crypto';
 
-export default class ApiTokenController {
+export default class ApiTokenController{
     private readonly validPermissions = [
         'read:trajectories',
         'write:trajectories',
@@ -40,7 +40,7 @@ export default class ApiTokenController {
         'admin:all'
     ];
 
-    public getMyApiTokens = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public getMyApiTokens = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const user = (req as any).user;
         const tokens = await ApiToken.findByUser(user.id);
 
@@ -51,11 +51,11 @@ export default class ApiTokenController {
         });
     });
 
-    public createApiToken = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public createApiToken = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const user = (req as any).user;
         const { name, description, permissions, expiresAt } = req.body;
 
-        if (permissions && !permissions.every((p: string) => this.validPermissions.includes(p))) {
+        if(permissions && !permissions.every((p: string) => this.validPermissions.includes(p))) {
             return next(new RuntimeError(ErrorCodes.API_TOKEN_INVALID_PERMISSIONS, 400));
         }
 
@@ -83,36 +83,36 @@ export default class ApiTokenController {
         });
     });
 
-    public getApiToken = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public getApiToken = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const token = res.locals.apiToken;
         res.status(200).json({ status: 'success', data: token });
     });
 
-    public updateApiToken = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public updateApiToken = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const { name, description, permissions, isActive } = req.body;
         const token = res.locals.apiToken;
 
-        if (name !== undefined) token.name = name;
-        if (description !== undefined) token.description = description;
-        if (permissions !== undefined) {
-            if (!permissions.every((p: string) => this.validPermissions.includes(p))) {
+        if(name !== undefined) token.name = name;
+        if(description !== undefined) token.description = description;
+        if(permissions !== undefined){
+            if(!permissions.every((p: string) => this.validPermissions.includes(p))) {
                 return next(new RuntimeError(ErrorCodes.API_TOKEN_INVALID_PERMISSIONS, 400));
             }
             token.permissions = permissions;
         }
-        if (isActive !== undefined) token.isActive = isActive;
+        if(isActive !== undefined) token.isActive = isActive;
 
         await token.save();
         res.status(200).json({ status: 'success', data: token });
     });
 
-    public deleteApiToken = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public deleteApiToken = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const token = res.locals.apiToken;
         await token.deleteOne();
         res.status(204).json({ status: 'success', data: null });
     });
 
-    public regenerateApiToken = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public regenerateApiToken = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const token = res.locals.apiToken;
 
         const newToken = `opendxa_${crypto.randomBytes(32).toString('hex')}`;
@@ -130,17 +130,17 @@ export default class ApiTokenController {
         });
     });
 
-    public validateApiToken = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public validateApiToken = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if(!authHeader || !authHeader.startsWith('Bearer ')) {
             return next(new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401));
         }
 
         const token = authHeader.substring(7);
         const apiToken = await ApiToken.findByToken(token);
-        if (!apiToken) return next(new RuntimeError(ErrorCodes.API_TOKEN_INVALID, 401));
-        if (!apiToken.isActive) return next(new RuntimeError(ErrorCodes.API_TOKEN_INACTIVE, 401));
-        if (apiToken.isExpired()) return next(new RuntimeError(ErrorCodes.API_TOKEN_EXPIRED, 401));
+        if(!apiToken) return next(new RuntimeError(ErrorCodes.API_TOKEN_INVALID, 401));
+        if(!apiToken.isActive) return next(new RuntimeError(ErrorCodes.API_TOKEN_INACTIVE, 401));
+        if(apiToken.isExpired()) return next(new RuntimeError(ErrorCodes.API_TOKEN_EXPIRED, 401));
 
         await apiToken.updateLastUsed();
         (req as any).apiToken = apiToken;
@@ -149,17 +149,17 @@ export default class ApiTokenController {
     });
 
     public checkApiTokenPermission = (requiredPermission: string) => {
-        return (req: Request, res: Response, next: NextFunction) => {
+        return(req: Request, res: Response, next: NextFunction) => {
             const apiToken = (req as any).apiToken;
-            if (!apiToken) return next(new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401));
-            if (!apiToken.hasPermission(requiredPermission)) {
+            if(!apiToken) return next(new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401));
+            if(!apiToken.hasPermission(requiredPermission)) {
                 return next(new RuntimeError(ErrorCodes.API_TOKEN_INSUFFICIENT_PERMISSIONS, 403));
             }
             next();
         };
     };
 
-    public getApiTokenStats = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public getApiTokenStats = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const user = (req as any).user;
 
         const stats = await ApiToken.aggregate([

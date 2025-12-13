@@ -7,7 +7,7 @@ interface SectionHeaderProps {
 }
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({ title, description, children }) => {
-    return (
+    return(
         <div className='section-header'>
             <div className='section-header-content'>
                 <h3 className='section-title'>{title}</h3>
@@ -23,5 +23,3 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ title, description, child
 };
 
 export default SectionHeader;
-
-

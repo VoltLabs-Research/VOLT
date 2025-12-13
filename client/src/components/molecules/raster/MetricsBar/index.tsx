@@ -10,7 +10,7 @@ import * as SiIcons from 'react-icons/si';
 
 // Helper to resolve icon string to component
 const resolveIcon = (iconName?: string) => {
-    if (!iconName) return undefined;
+    if(!iconName) return undefined;
     // @ts-ignore
     return Icons[iconName] || HiIcons[iconName] || RiIcons[iconName] || SiIcons[iconName];
 };
@@ -24,9 +24,9 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
     tools,
     onToggleTool
 }) => {
-    if (isLoading) return <MetricsBarSkeleton count={4} />;
+    if(isLoading) return <MetricsBarSkeleton count={4} />;
 
-    return (
+    return(
         <div className='raster-metrics-bar'>
             <div className='raster-metrics-list'>
                 {items.map((item) => (
@@ -36,7 +36,7 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                 {availableExposures.map((exposure) => {
                     const Icon = resolveIcon(exposure.icon);
 
-                    return (
+                    return(
                         <ToggleOption
                             key={exposure.exposureId}
                             isVisible={!!activeExposures[exposure.exposureId]}
@@ -50,12 +50,12 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                 })}
 
                 {tools.map((tool) => {
-                    // If tool has an icon name, resolve it. 
+                    // If tool has an icon name, resolve it.
                     // Note: You might need to add icons to the tool definition or resolve them in parent.
                     // For now assuming tool.icon is a string name like exposures.
                     const Icon = resolveIcon(tool.icon);
 
-                    return (
+                    return(
                         <ToggleOption
                             key={tool.id}
                             isVisible={tool.isActive}

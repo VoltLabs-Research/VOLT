@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -55,16 +55,16 @@ let metricsCollector: MetricsCollector;
 let collectionInterval: NodeJS.Timeout;
 let cleanupInterval: NodeJS.Timeout;
 
-const shutodwn = async () => {
+const shutodwn = async() => {
     // Stop metrics collection
-    if (collectionInterval) clearInterval(collectionInterval);
-    if (cleanupInterval) clearInterval(cleanupInterval);
+    if(collectionInterval) clearInterval(collectionInterval);
+    if(cleanupInterval) clearInterval(cleanupInterval);
 
     await gateway.close();
     process.exit(0);
 };
 
-server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
+server.listen(SERVER_PORT as number, SERVER_HOST, async() => {
     // Initialize Redis BEFORE the Socket Gateway and wait for it to be ready
     await initializeRedis();
     await initializeMinio();
@@ -74,20 +74,20 @@ server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
     metricsCollector = new MetricsCollector();
 
     // Start collecting metrics every second in background
-    collectionInterval = setInterval(async () => {
-        try {
+    collectionInterval = setInterval(async() => {
+        try{
             await metricsCollector.collect();
-        } catch (error) {
+        }catch(error){
             logger.error(`[Server] Metrics collection error: ${error}`);
         }
     }, 1000);
 
     // Clean old metrics from Redis every 24 hours
-    cleanupInterval = setInterval(async () => {
-        try {
+    cleanupInterval = setInterval(async() => {
+        try{
             await metricsCollector.cleanOldMetrics();
             logger.info('[Server] Cleaned old metrics from Redis');
-        } catch (error) {
+        }catch(error){
             logger.error(`[Server] Metrics cleanup error: ${error}`);
         }
     }, 24 * 60 * 60 * 1000);

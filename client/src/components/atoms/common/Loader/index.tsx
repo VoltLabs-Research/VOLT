@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -26,11 +26,11 @@ import './Loader.css';
 const Loader = ({ scale }) => {
     const loaderItems = Array.from({ length: 12 }, (_, index) => index + 1);
 
-    return (
+    return(
         <div className='Loader-Container'>
             <div className='Loader' style={{ transform: 'scale(' + scale + ')' }}>
                 {loaderItems.map((item) => (
-                    <div 
+                    <div
                         key={item}
                         className={`Loader-Item Loader-Item-${item}`} />
                 ))}

@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -30,7 +30,7 @@ const useCanvasState = (trajectoryId: string | undefined) => {
     const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
     const setCurrentTimestep = usePlaybackStore((state) => state.setCurrentTimestep);
     const isModelLoading = useModelStore((state) => state.isModelLoading);
-    
+
     const { trajectory, loadTrajectory } = useTrajectoryManager();
     const computeTimestepData = useTimestepStore((state) => state.computeTimestepData);
 
@@ -39,16 +39,15 @@ const useCanvasState = (trajectoryId: string | undefined) => {
 
     const selectTrajectory = useCallback((newTrajectory: any) => {
         computeTimestepData(newTrajectory);
-        
-        if (newTrajectory?.frames?.length > 0) {
+
+        if(newTrajectory?.frames?.length > 0){
             const firstTimestep = newTrajectory.frames
                 .map((frame: any) => frame.timestep)
                 .sort((a: number, b: number) => a - b)[0];
-            
+
             setCurrentTimestep(firstTimestep);
         }
     }, [setCurrentTimestep]);
-
 
     useEffect(() => {
         selectTrajectory(null);
@@ -56,19 +55,19 @@ const useCanvasState = (trajectoryId: string | undefined) => {
     }, [selectTrajectory]);
 
     useEffect(() => {
-        if (!trajectoryId) return;
-        
+        if(!trajectoryId) return;
+
         const currentTrajectoryId = trajectory?._id;
         const isSameTrajectory = currentTrajectoryId === trajectoryId && trajectory;
         const isAlreadyLoaded = isInitialLoadDone.current && trajectoryIdRef.current === trajectoryId;
 
-        if (isSameTrajectory || isAlreadyLoaded) return;
+        if(isSameTrajectory || isAlreadyLoaded) return;
 
         trajectoryIdRef.current = trajectoryId;
         isInitialLoadDone.current = true;
 
         loadTrajectory(trajectoryId).then((loadedTrajectory) => {
-            if (loadedTrajectory) {
+            if(loadedTrajectory){
                 selectTrajectory(loadedTrajectory);
             }
         });

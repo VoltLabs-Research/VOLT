@@ -152,7 +152,7 @@ const PerformanceSettingsControls: React.FC = () => {
                 format: (v: number) => v.toFixed(2)
             },
             {
-                label: 'Perf Debounce (ms)',
+                label: 'Perf Debounce(ms)',
                 min: 0,
                 max: 300,
                 step: 5,
@@ -182,7 +182,7 @@ const PerformanceSettingsControls: React.FC = () => {
         onToggle: () => {},
         rows: [
             {
-                label: 'Interaction Debounce (ms)',
+                label: 'Interaction Debounce(ms)',
                 min: 0,
                 max: 400,
                 step: 5,
@@ -211,9 +211,9 @@ const PerformanceSettingsControls: React.FC = () => {
         )
     };
 
-    return (
-        <CollapsibleSection 
-            title="Performance Settings" 
+    return(
+        <CollapsibleSection
+            title="Performance Settings"
             icon={<MdSpeed size={16} />}
         >
             <div style={{ display: 'grid', gap: 12 }}>
@@ -227,7 +227,7 @@ const PerformanceSettingsControls: React.FC = () => {
                 <div>
                     <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <IoHardwareChipOutline size={14} />
-                        Device Pixel Ratio (DPR)
+                        Device Pixel Ratio(DPR)
                     </div>
                     <FormSchema sections={[dprSection]} />
                 </div>

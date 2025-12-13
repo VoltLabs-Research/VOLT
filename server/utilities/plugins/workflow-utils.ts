@@ -15,7 +15,7 @@ export const findParentByType = (nodeId: string, workflow: IWorkflow, type: Node
 };
 
 /**
- * Find any ancestor node of specified type (BFS)
+ * Find any ancestor node of specified type(BFS)
  */
 export const findAncestorByType = (nodeId: string, workflow: IWorkflow, type: NodeType): IWorkflowNode | null => {
     const visited = new Set<string>();
@@ -50,12 +50,12 @@ export const findChildByType = (nodeId: string, workflow: IWorkflow, type: NodeT
 };
 
 /**
- * Find descendant node of specified type (BFS)
+ * Find descendant node of specified type(BFS)
  */
 export const findDescendantByType = (nodeId: string, workflow: IWorkflow, type: NodeType): IWorkflowNode | null => {
     const visited = new Set<string>();
     const queue= [nodeId];
-    
+
     while(queue.length > 0){
         const currentId = queue.shift()!;
         if(visited.has(currentId)) continue;

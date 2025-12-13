@@ -28,7 +28,7 @@ export default abstract class BaseParser{
     abstract canParse(headerLines: string[]): boolean;
 
     /**
-     * Extracts metadata (natoms, bounds) from header to pre-allocate buffers.
+     * Extracts metadata(natoms, bounds) from header to pre-allocate buffers.
      */
     abstract extractMetadata(lines: string[]): FrameMetadata;
 
@@ -44,7 +44,7 @@ export default abstract class BaseParser{
 
     public async getHeaderLines(filePath: string): Promise<string[]>{
         const headerLines: string[] = [];
-        
+
         await readLargeFile(filePath, {
             maxLines: 1000,
             onLine: (line: string) => headerLines.push(line)
@@ -53,13 +53,13 @@ export default abstract class BaseParser{
         if(!this.canParse(headerLines)){
             throw new Error('FileFormatNotRecognizedByParser');
         }
-        
+
         return headerLines;
     }
 
     public async parse(filePath: string, options: ParseOptions = {}): Promise<ParseResult>{
         this.parseOptions = options;
-        // Read header to get metadata 
+        // Read header to get metadata
         const headerLines = await this.getHeaderLines(filePath);
         let metadata: FrameMetadata | null = null;
 
@@ -103,11 +103,11 @@ export default abstract class BaseParser{
             max: [this.maxX, this.maxY, this.maxZ]
         };
 
-        if (this.ids) {
+        if(this.ids){
             result.ids = this.ids;
         }
 
-        if (Object.keys(this.propertyBuffers).length > 0) {
+        if(Object.keys(this.propertyBuffers).length > 0) {
             result.properties = this.propertyBuffers;
         }
 
@@ -118,13 +118,13 @@ export default abstract class BaseParser{
         // 1M atoms = ~12MB RAM for coords, ~2MB for types.
         this.positions = new Float32Array(natoms * 3);
         this.types = new Uint16Array(natoms);
-        
-        if (this.parseOptions.includeIds) {
+
+        if(this.parseOptions.includeIds){
             this.ids = new Uint32Array(natoms);
         }
 
-        if (this.parseOptions.properties) {
-            for (const prop of this.parseOptions.properties) {
+        if(this.parseOptions.properties){
+            for(const prop of this.parseOptions.properties){
                 this.propertyBuffers[prop] = new Float32Array(natoms);
             }
         }
@@ -140,13 +140,13 @@ export default abstract class BaseParser{
         this.positions![pidx + 1] = y;
         this.positions![pidx + 2] = z;
 
-        if (this.ids && id !== undefined) {
+        if(this.ids && id !== undefined){
             this.ids[idx] = id;
         }
 
-        if (props) {
-            for (const [key, value] of Object.entries(props)) {
-                if (this.propertyBuffers[key]) {
+        if(props){
+            for(const [key, value] of Object.entries(props)) {
+                if(this.propertyBuffers[key]){
                     this.propertyBuffers[key][idx] = value;
                 }
             }

@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -36,12 +36,12 @@ import logger from '@/logger';
 import path from 'path';
 import { ErrorCodes } from '@/constants/error-codes';
 
-export default class SSHFileExplorerController {
-    public listSSHFiles = catchAsync(async (req: Request, res: Response) => {
+export default class SSHFileExplorerController{
+    public listSSHFiles = catchAsync(async(req: Request, res: Response) => {
         const { path } = req.query;
         const connection = res.locals.sshConnection;
 
-        try {
+        try{
             const remotePath = typeof path === 'string' ? path : '.';
             const files = await SSHService.listFiles(connection, remotePath);
 
@@ -58,8 +58,8 @@ export default class SSHFileExplorerController {
                     }))
                 }
             });
-        } catch (err: any) {
-            if (err instanceof RuntimeError) {
+        }catch(err: any){
+            if(err instanceof RuntimeError){
                 throw err;
             }
             logger.error(`Failed to list SSH files: ${err.message}`);
@@ -67,7 +67,7 @@ export default class SSHFileExplorerController {
         }
     });
 
-    public importTrajectoryFromSSH = catchAsync(async (req: Request, res: Response) => {
+    public importTrajectoryFromSSH = catchAsync(async(req: Request, res: Response) => {
         const userId = (req as any).user._id || (req as any).user.id;
         const { remotePath, teamId, name } = req.body;
         const connection = res.locals.sshConnection;
@@ -82,7 +82,7 @@ export default class SSHFileExplorerController {
         const sessionId = v4();
         const sessionStartTime = new Date().toISOString();
 
-        const publishProgress = async (status: string, progress: number, message?: string) => {
+        const publishProgress = async(status: string, progress: number, message?: string) => {
             const payload = {
                 jobId,
                 status,
@@ -107,14 +107,14 @@ export default class SSHFileExplorerController {
             await pipeline.exec();
         };
 
-        try {
+        try{
             await mkdir(localFolder, { recursive: true });
 
             publishProgress('running', 0, 'Connecting to SSH server...');
 
             const fileStats = await SSHService.getFileStats(connection, remotePath);
 
-            if (!fileStats) {
+            if(!fileStats){
                 throw new RuntimeError(ErrorCodes.SSH_PATH_NOT_FOUND, 404);
             }
 
@@ -123,7 +123,7 @@ export default class SSHFileExplorerController {
 
             publishProgress('running', 5, 'Downloading files...');
 
-            if (fileStats.isDirectory) {
+            if(fileStats.isDirectory){
                 logger.info(`Downloading directory from SSH: ${remotePath}`);
                 localFiles = await SSHService.downloadDirectory(
                     connection,
@@ -138,7 +138,7 @@ export default class SSHFileExplorerController {
                         );
                     }
                 );
-            } else {
+            }else{
                 logger.info(`Downloading file from SSH: ${remotePath}`);
                 const localFilePath = join(localFolder, fileStats.name);
                 await SSHService.downloadFile(connection, remotePath, localFilePath);
@@ -146,7 +146,7 @@ export default class SSHFileExplorerController {
                 publishProgress('running', 80, 'Download complete');
             }
 
-            if (localFiles.length === 0) {
+            if(localFiles.length === 0){
                 await rm(localFolder, { recursive: true, force: true });
                 throw new RuntimeError(ErrorCodes.SSH_IMPORT_NO_FILES, 400);
             }
@@ -172,21 +172,21 @@ export default class SSHFileExplorerController {
                 status: 'success',
                 data: newTrajectory
             });
-        } catch (err: any) {
+        }catch(err: any){
             publishProgress('failed', 0, err.message || 'Import failed');
 
-            try {
+            try{
                 await rm(localFolder, { recursive: true, force: true });
-            } catch (cleanupErr) {
+            }catch(cleanupErr){
                 logger.error(`Failed to cleanup after SSH import error: ${cleanupErr}`);
             }
 
-            if (err instanceof RuntimeError) {
+            if(err instanceof RuntimeError){
                 throw err;
             }
             logger.error(`Failed to import trajectory from SSH: ${err.message}`);
             throw new RuntimeError(ErrorCodes.SSH_IMPORT_ERROR, 500);
-        } finally {
+        }finally{
             publisher.quit();
         }
     });

@@ -67,7 +67,7 @@ const Select: React.FC<SelectProps> = ({
             if(!(clickedInsideRoot || clickedInsideList)) setOpen(false);
         };
 		document.addEventListener('mousedown', onDocumentMouseDown);
-		return () => {
+		return() => {
 			document.removeEventListener('mousedown', onDocumentMouseDown);
 		};
 	}, []);
@@ -97,7 +97,7 @@ const Select: React.FC<SelectProps> = ({
         updatePosition();
         window.addEventListener('resize', updatePosition);
         window.addEventListener('scroll', updatePosition, true);
-        return () => {
+        return() => {
             window.removeEventListener('resize', updatePosition);
             window.removeEventListener('scroll', updatePosition, true);
         };
@@ -176,7 +176,7 @@ const Select: React.FC<SelectProps> = ({
 	const listboxId = `${uid}-listbox`;
 	const activeId = highlightedIndex >= 0 ? `${uid}-opt-${highlightedIndex}` : undefined;
 
-	return (
+	return(
 		<div
 			ref={rootRef}
 			className={`rh-select ${open ? 'is-open' : ''} ${onDark ? 'on-dark' : ''} ${disabled ? 'is-disabled' : ''} ${className}`}
@@ -227,7 +227,7 @@ const Select: React.FC<SelectProps> = ({
                         const isSelected = i === selectedIndex;
                         const isActive = i === highlightedIndex;
                         const isHovered = i === hoveredIndex;
-                        return (
+                        return(
                             <div
                                 id={`${uid}-opt-${i}`}
                                 key={opt.value}
@@ -292,7 +292,7 @@ const Select: React.FC<SelectProps> = ({
                         const isSelected = i === selectedIndex;
                         const isActive = i === highlightedIndex;
                         const isHovered = i === hoveredIndex;
-                        return (
+                        return(
                             <div
                                 id={`${uid}-opt-${i}`}
                                 key={opt.value}

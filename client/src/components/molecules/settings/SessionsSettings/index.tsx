@@ -14,7 +14,7 @@ interface SessionsSettingsProps {
 }
 
 const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, revokeSession, revokeAllOtherSessions }) => {
-    return (
+    return(
         <div className='settings-content'>
             <Section>
                 <SectionHeader title='Active Sessions' description='Manage your active login sessions across devices' />
@@ -30,7 +30,7 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
                     </div>
                 ) : (
                     <div className='sessions-list'>
-                        {sessions.map((session, index) => (
+                      {sessions.map((session, index) => (
                             <div key={session._id} className={`session-item ${index === 0 ? 'current' : ''}`}>
                                 <div className='session-info'>
                                     <div className='session-icon'>
@@ -77,5 +77,3 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
 };
 
 export default SessionsSettings;
-
-

@@ -1,8 +1,8 @@
 /**
- * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+ * Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -45,7 +45,7 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
     useEffect(() => {
         // Set initial state
         setIsConnected(socketService.isConnected());
-        
+
         const unsubscribe = socketService.onConnectionChange((connected) => {
             console.log(`[use-canvas-presence] Connection status changed: ${connected}`);
             setIsConnected(connected);
@@ -55,7 +55,7 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
     }, []);
 
     useEffect(() => {
-        if (!enabled || !trajectoryId || !isConnected) {
+        if(!enabled || !trajectoryId || !isConnected){
             console.log(`[use-canvas-presence] Skipping canvas subscription - enabled: ${enabled}, trajectoryId: ${trajectoryId}, isConnected: ${isConnected}`);
             return;
         }
@@ -78,10 +78,10 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
             setCanvasUsers(users);
         });
 
-        return () => {
+        return() => {
             console.log(`[use-canvas-presence] Cleanup: Unsubscribing from canvas: ${trajectoryId}`);
             unsubscribeCanvas();
-            
+
             // Emit unsubscribe event to backend
             socketService.emit('unsubscribe_from_canvas', {
                 trajectoryId
@@ -94,7 +94,7 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
     }, [trajectoryId, enabled, isConnected]);
 
     useEffect(() => {
-        if (!enabled || !trajectoryId || !isConnected) {
+        if(!enabled || !trajectoryId || !isConnected){
             console.log(`[use-canvas-presence] Skipping raster subscription - enabled: ${enabled}, trajectoryId: ${trajectoryId}, isConnected: ${isConnected}`);
             return;
         }
@@ -116,10 +116,10 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
             setRasterUsers(users);
         });
 
-        return () => {
+        return() => {
             console.log(`[use-canvas-presence] Cleanup: Unsubscribing from raster: ${trajectoryId}`);
             unsubscribeRaster();
-            
+
             // Emit unsubscribe event to backend
             socketService.emit('unsubscribe_from_raster', {
                 trajectoryId

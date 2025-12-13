@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -38,16 +38,16 @@ const ProcessingLoader: React.FC<ProcessingLoaderProps> = ({
     className = '',
     showProgress = false
 }) => {
-    if (!isVisible) return null;
+    if(!isVisible) return null;
 
-    return (
+    return(
         <div className={`processing-loader-container ${className}`}>
             <div className="processing-loader-spinner" />
             <div className="processing-loader-content">
                 <p className="processing-loader-text">{message}</p>
                 {showProgress && completionRate > 0 && (
                     <div className="processing-loader-progress-bar">
-                        <div 
+                        <div
                             className="processing-loader-progress-fill"
                             style={{ width: `${Math.min(completionRate * 100, 100)}%` }}
                         />

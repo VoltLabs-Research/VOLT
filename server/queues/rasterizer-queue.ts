@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -45,12 +45,12 @@ export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
         });
     }
 
-    private async onJobCompleted(data: any): Promise<void> {
+    private async onJobCompleted(data: any): Promise<void>{
         const job = data.job as RasterizerJob;
-        
-        try {
+
+        try{
             logger.info(`Rasterizer job completed for trajectory ${job.trajectoryId}, updating trajectory updatedAt`);
-            
+
             // Update trajectory to trigger preview refresh on client
             const trajectory = await Trajectory.findByIdAndUpdate(
                 job.trajectoryId,
@@ -58,15 +58,15 @@ export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
                 { new: true }
             );
 
-            if (trajectory) {
+            if(trajectory){
                 logger.info(`Updated trajectory ${job.trajectoryId} timestamp`);
             }
-        } catch (error) {
+        }catch(error){
             logger.error(`Failed to update trajectory ${job.trajectoryId} after rasterizer completion: ${error}`);
         }
     }
 
-    protected deserializeJob(rawData: string): RasterizerJob {
+    protected deserializeJob(rawData: string): RasterizerJob{
         return JSON.parse(rawData) as RasterizerJob;
     }
 }

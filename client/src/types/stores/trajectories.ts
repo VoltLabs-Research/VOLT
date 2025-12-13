@@ -11,7 +11,7 @@ export interface TrajectoryState {
     analysisStats: object;
     rasterData: object;
     isAnalysisLoading: boolean;
-    rasterObjectUrlCache: Record<string, Record<string, string>>; 
+    rasterObjectUrlCache: Record<string, Record<string, string>>;
     rasterCache: Record<string, RasterPage>;
     isRasterLoading: boolean;
     isLoadingTrajectories: boolean;

@@ -33,18 +33,18 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
         url: {
             required: true,
             pattern: /^https?:\/\/.+/,
-            message: 'Please enter a valid URL (http/https)'
+            message: 'Please enter a valid URL(http/https)'
         }
     });
 
     useEffect(() => {
-        if (webhook) {
+        if(webhook){
             setFormData({
                 name: webhook.name,
                 url: webhook.url,
                 events: webhook.events
             });
-        } else {
+        }else{
             setFormData({
                 name: '',
                 url: '',
@@ -59,32 +59,32 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
         checkField(field, value);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async(e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!validate(formData)) {
+        if(!validate(formData)) {
             return;
         }
 
-        try {
+        try{
             setLoading(true);
             setError(null);
             await onSave(formData);
             onClose();
-        } catch (err: any) {
+        }catch(err: any){
             setError(err.message || 'Failed to save webhook');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
     const handleEventChange = (event: string, checked: boolean) => {
-        if (checked) {
+        if(checked){
             setFormData(prev => ({
                 ...prev,
                 events: [...prev.events, event]
             }));
-        } else {
+        }else{
             setFormData(prev => ({
                 ...prev,
                 events: prev.events.filter(e => e !== event)
@@ -106,9 +106,9 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
         }));
     };
 
-    if (!isOpen) return null;
+    if(!isOpen) return null;
 
-    return (
+    return(
         <div className="webhook-modal-overlay">
             <div className="webhook-modal">
                 <div className="webhook-modal-header">

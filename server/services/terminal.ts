@@ -75,7 +75,7 @@ class TerminalManager{
             }catch(error: any){
                 socket.emit('container:error', error.message);
                 socket.leave(containerId);
-                return;  
+                return;
             }
         }
 
@@ -117,14 +117,14 @@ class TerminalManager{
             socket.off('container:terminal:resize', onResize);
             socket.off('container:terminal:detach', onDisconnect);
             socket.off('disconnect', onDisconnect);
-            socket.leave(containerId); 
+            socket.leave(containerId);
         };
     }
 
     detach(socket: Socket, containerId: string){
         if((socket as any)._terminalCleanup){
             (socket as any)._terminalCleanup();
-            delete (socket as any)._terminalCleanup;
+            delete(socket as any)._terminalCleanup;
         }
 
         const session = this.sessions.get(containerId);

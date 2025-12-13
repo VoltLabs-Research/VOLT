@@ -14,7 +14,7 @@ interface VisualizersEditorProps {
 const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const visualizersData = (node.data?.visualizers || { canvas: false, raster: false, listing: {} }) as IVisualizersData;
-    
+
     const { canvas = false, raster = false, listing = {} } = visualizersData;
 
     const updateVisualizer = useCallback((field: string, value: any) => {
@@ -25,21 +25,21 @@ const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
         updateVisualizer('listing', newListing);
     }, [updateVisualizer]);
 
-    const { entries, handleAdd, handleRemove, handleKeyChange, handleValueChange } = 
+    const { entries, handleAdd, handleRemove, handleKeyChange, handleValueChange } =
         useKeyValueHandlers(updateListing, listing, 'column', 'Column Title');
 
-    return (
+    return(
         <>
             <CollapsibleSection title='Visualization Options' defaultExpanded>
                 <FormField
-                    label='Enable Canvas (3D Viewer)'
+                    label='Enable Canvas(3D Viewer)'
                     fieldKey='canvas'
                     fieldType='checkbox'
                     fieldValue={canvas}
                     onFieldChange={(_, value) => updateVisualizer('canvas', value)}
                 />
                 <FormField
-                    label='Enable Raster (2D Images)'
+                    label='Enable Raster(2D Images)'
                     fieldKey='raster'
                     fieldType='checkbox'
                     fieldValue={raster}

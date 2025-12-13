@@ -5,10 +5,10 @@ import { useState, useEffect } from 'react'
 import { ChartContainer } from '@/components/atoms/common/ChartContainer'
 import './TrafficOverview.css'
 
-function formatNetworkSpeed(kbs: number): string {
-  if (kbs < 1) return `${(kbs * 1024).toFixed(0)} B/s`;
-  if (kbs < 1024) return `${kbs.toFixed(1)} KB/s`;
-  if (kbs < 1024 * 1024) return `${(kbs / 1024).toFixed(2)} MB/s`;
+function formatNetworkSpeed(kbs: number): string{
+  if(kbs < 1) return `${(kbs * 1024).toFixed(0)} B/s`;
+  if(kbs < 1024) return `${kbs.toFixed(1)} KB/s`;
+  if(kbs < 1024 * 1024) return `${(kbs / 1024).toFixed(2)} MB/s`;
   return `${(kbs / (1024 * 1024)).toFixed(2)} GB/s`;
 }
 
@@ -22,8 +22,8 @@ interface DataPoint {
 }
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    return (
+  if(active && payload && payload.length){
+    return(
       <div className="traffic-tooltip">
         <p className="traffic-tooltip-label">{payload[0].payload.time}</p>
         {payload.map((entry: any, index: number) => (
@@ -37,17 +37,17 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null
 }
 
-export function TrafficOverview() {
+export function TrafficOverview(){
   const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics()
   const [data, setData] = useState<DataPoint[]>([])
-  
+
   // Preload with historical data
   useEffect(() => {
-    if (isHistoryLoaded && metricsHistory.length > 0 && data.length === 0) {
+    if(isHistoryLoaded && metricsHistory.length > 0 && data.length === 0){
       console.log('[TrafficOverview] Preloading with', metricsHistory.length, 'historical points')
       const historicalData = metricsHistory
-        .slice(-MAX_POINTS)
-        .map(m => {
+          .slice(-MAX_POINTS)
+          .map(m => {
           const timestamp = new Date(m.timestamp)
           const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')}`
           return {
@@ -63,10 +63,10 @@ export function TrafficOverview() {
 
   // Update with real-time metrics
   useEffect(() => {
-    if (metrics && data.length > 0) {
+    if(metrics && data.length > 0){
       const timestamp = new Date()
       const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')}`
-      
+
       setData(prevData => {
         const newData = [...prevData, {
           time: timeStr,
@@ -74,7 +74,7 @@ export function TrafficOverview() {
           outgoing: metrics.network.outgoing,
           total: metrics.network.incoming + metrics.network.outgoing
         }]
-        
+
         // Keep only the last MAX_POINTS
         return newData.slice(-MAX_POINTS)
       })
@@ -97,32 +97,32 @@ export function TrafficOverview() {
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <YAxis 
-          stroke="var(--muted-foreground)" 
+        <YAxis
+          stroke="var(--muted-foreground)"
           style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}
           tickFormatter={(value) => `${value}M`}
         />
         <Tooltip content={<CustomTooltip />} />
-        <Legend 
+        <Legend
           wrapperStyle={{ fontSize: '12px', paddingTop: '20px', color: 'var(--foreground)' }}
           iconType="circle"
         />
-        <Area 
-          type="monotone" 
-          dataKey="incoming" 
-          stroke="#0A84FF" 
+        <Area
+          type="monotone"
+          dataKey="incoming"
+          stroke="#0A84FF"
           strokeWidth={2}
-          fillOpacity={1} 
+          fillOpacity={1}
           fill="url(#colorIncoming)"
           name="Incoming"
           isAnimationActive={false}
         />
-        <Area 
-          type="monotone" 
-          dataKey="outgoing" 
-          stroke="#30D158" 
+        <Area
+          type="monotone"
+          dataKey="outgoing"
+          stroke="#30D158"
           strokeWidth={2}
-          fillOpacity={1} 
+          fillOpacity={1}
           fill="url(#colorOutgoing)"
           name="Outgoing"
           isAnimationActive={false}
@@ -134,7 +134,7 @@ export function TrafficOverview() {
   const peakTraffic = data.length > 0 ? formatNetworkSpeed(Math.max(...data.map(d => d.total))) : '0 B/s'
   const avgTraffic = data.length > 0 ? formatNetworkSpeed(data.reduce((sum, d) => sum + d.total, 0) / data.length) : '0 B/s'
 
-  return (
+  return(
     <ChartContainer
       icon={Activity}
       title="Network Traffic"

@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -143,7 +143,7 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
     async open(relPath: string = '') {
         const { showHidden } = get();
         set({ loading: true, error: null });
-        try {
+        try{
             const data = await get()._fetchFsList(relPath, showHidden);
             set((state) => {
                 const newHist = state.history.slice(0, state.historyIndex + 1);
@@ -160,9 +160,9 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
                     historyIndex: newHist.length - 1
                 };
             });
-        } catch (e: any) {
+        }catch(e: any){
             const errorMessage = (e?.context?.serverMessage || e?.response?.data?.data?.error || e?.message) ?? 'Error loading files';
-            if (e?.context) {
+            if(e?.context){
                 e.context.operation = 'listFiles';
             }
             set({ loading: false, error: errorMessage });
@@ -177,14 +177,14 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
 
     async up() {
         const { cwd } = get();
-        if (!cwd) return;
+        if(!cwd) return;
         const parent = cwd.split('/').slice(0, -1).join('/');
         await get().open(parent);
     },
 
     async back() {
         const { historyIndex, history } = get();
-        if (historyIndex <= 0) return;
+        if(historyIndex <= 0) return;
         const nextIndex = historyIndex - 1;
         const target = history[nextIndex].cwd;
         set({ historyIndex: nextIndex });
@@ -193,7 +193,7 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
 
     async forward() {
         const { historyIndex, history } = get();
-        if (historyIndex >= history.length - 1) return;
+        if(historyIndex >= history.length - 1) return;
         const nextIndex = historyIndex + 1;
         const target = history[nextIndex].cwd;
         set({ historyIndex: nextIndex });
@@ -232,10 +232,10 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
 
     async fetchTrajectories() {
         set({ loadingTrajectories: true });
-        try {
+        try{
             const trajectories = await get()._fetchTrajectories();
             set({ trajectories, loadingTrajectories: false });
-        } catch (e: any) {
+        }catch(e: any){
             console.error('Error fetching trajectories:', e);
             set({ trajectories: [], loadingTrajectories: false });
         }
@@ -249,7 +249,7 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
     async _gotoWithoutPush(cwd: string) {
         const { showHidden } = get();
         set({ loading: true, error: null });
-        try {
+        try{
             const data = await get()._fetchFsList(cwd, showHidden);
             set({
                 cwd: data.cwd,
@@ -259,7 +259,7 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
                 loading: false,
                 error: null
             })
-        } catch (e: any) {
+        }catch(e: any){
             set({ loading: false, error: e?.response?.data?.data?.error || e?.message || 'Error loading files' });
         }
     }

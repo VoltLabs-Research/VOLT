@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -53,7 +53,7 @@ const SidePositionedContainer: React.FC<SidePositionedContainerProps> = ({
 
     // Calculate position relative to reference element
     const calculatePosition = () => {
-        if (!referenceElement || !containerRef.current) return;
+        if(!referenceElement || !containerRef.current) return;
 
         const referenceRect = referenceElement.getBoundingClientRect();
         const containerRect = containerRef.current.getBoundingClientRect();
@@ -64,40 +64,40 @@ const SidePositionedContainer: React.FC<SidePositionedContainerProps> = ({
         let side: 'left' | 'right' = 'right';
 
         // Determine which side to show based on available space
-        if (preferredSide === 'auto') {
+        if(preferredSide === 'auto'){
             const spaceRight = window.innerWidth - referenceRect.right - padding;
             const spaceLeft = referenceRect.left - padding;
-            
-            if (spaceRight >= maxWidth || spaceRight > spaceLeft) {
+
+            if(spaceRight >= maxWidth || spaceRight > spaceLeft){
                 // Show on the right
                 x = referenceRect.right + offset;
                 side = 'right';
-            } else {
+            }else{
                 // Show on the left
                 x = referenceRect.left - maxWidth - offset;
                 side = 'left';
             }
-        } else if (preferredSide === 'right') {
+        }else if(preferredSide === 'right'){
             x = referenceRect.right + offset;
             side = 'right';
-        } else {
+        }else{
             x = referenceRect.left - maxWidth - offset;
             side = 'left';
         }
 
         // Adjust horizontal position to prevent overflow
-        if (x < padding) {
+        if(x < padding){
             x = padding;
         }
-        if (x + maxWidth > window.innerWidth - padding) {
+        if(x + maxWidth > window.innerWidth - padding){
             x = window.innerWidth - maxWidth - padding;
         }
 
         // Adjust vertical position to prevent overflow
-        if (y < padding) {
+        if(y < padding){
             y = padding;
         }
-        if (y + maxHeight > window.innerHeight - padding) {
+        if(y + maxHeight > window.innerHeight - padding){
             y = window.innerHeight - maxHeight - padding;
         }
 
@@ -106,28 +106,28 @@ const SidePositionedContainer: React.FC<SidePositionedContainerProps> = ({
 
     // Update position when container becomes visible or reference changes
     useEffect(() => {
-        if (isVisible && referenceElement) {
+        if(isVisible && referenceElement){
             // Small delay to ensure container is rendered
             const timer = setTimeout(calculatePosition, 10);
-            return () => clearTimeout(timer);
+            return() => clearTimeout(timer);
         }
     }, [isVisible, referenceElement, preferredSide, offset, maxWidth, maxHeight]);
 
     // Handle clicks outside the container
     useEffect(() => {
-        if (!isVisible) return;
+        if(!isVisible) return;
 
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as Element;
-            
+
             // Don't close if clicking inside the container
-            if (containerRef.current && containerRef.current.contains(target)) {
+            if(containerRef.current && containerRef.current.contains(target)) {
                 return;
             }
 
-            // Don't close if clicking on other modals or dropdowns (but allow closing on regular page elements)
+            // Don't close if clicking on other modals or dropdowns(but allow closing on regular page elements)
             const isOtherModal = target.closest('[role="dialog"], [role="menu"], [role="listbox"], .modal, .dropdown, .popover');
-            if (isOtherModal && !containerRef.current?.contains(isOtherModal)) {
+            if(isOtherModal && !containerRef.current?.contains(isOtherModal)) {
                 return;
             }
 
@@ -136,24 +136,24 @@ const SidePositionedContainer: React.FC<SidePositionedContainerProps> = ({
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return() => document.removeEventListener('mousedown', handleClickOutside);
     }, [isVisible, onClose]);
 
     // Handle escape key
     useEffect(() => {
-        if (!isVisible) return;
+        if(!isVisible) return;
 
         const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
+            if(e.key === 'Escape'){
                 onClose();
             }
         };
 
         document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
+        return() => document.removeEventListener('keydown', handleEscape);
     }, [isVisible, onClose]);
 
-    if (!isVisible) return null;
+    if(!isVisible) return null;
 
     const styles: React.CSSProperties = {
         position: 'fixed',
@@ -167,7 +167,7 @@ const SidePositionedContainer: React.FC<SidePositionedContainerProps> = ({
     };
 
     return createPortal(
-        <div 
+        <div
             ref={containerRef}
             className={`side-positioned-container ${className}`}
             style={styles}

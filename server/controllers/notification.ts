@@ -1,5 +1,5 @@
 /**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+* Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
 */
 
 import { Request, Response, NextFunction, RequestHandler } from 'express';
@@ -28,7 +28,7 @@ export default class NotificationController extends BaseController<INotification
     };
 
     /**
-     * Marks a notification as read (id comes from route param).
+     * Marks a notification as read(id comes from route param).
      */
     public markNotificationRead: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
         req.body = { read: true };

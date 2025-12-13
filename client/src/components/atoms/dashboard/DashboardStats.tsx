@@ -20,26 +20,26 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
         Dislocations: PiLineSegments
     };
 
-    if (loading) {
+    if(loading){
         return <DashboardStatsSkeleton count={3} />;
     }
 
-    if (error) {
-        return (
+    if(error){
+        return(
             <div className='dashboard-stats-container'>
                 <div className='dashboard-error'>{error}</div>
             </div>
         );
     }
 
-    return (
+    return(
         <div className='dashboard-stats-container'>
             {cards.map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain }, index) => {
                 const iconKey = name.replace(/\s+/g, '');
                 const Icon = icons[iconKey] || HiOutlineServerStack;
                 const up = (lastMonthStatus ?? 0) >= 0;
                 const isClickable = Boolean(listingUrl && !listingUrl.includes(':trajectoryId'));
-                return (
+                return(
                     <div
                         onClick={() => isClickable && listingUrl && navigate(listingUrl)}
                         className='dashboard-stat-container'

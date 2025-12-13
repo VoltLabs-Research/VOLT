@@ -68,7 +68,7 @@ class WorkflowValidator{
                     errors.push('Modifier node must have a name');
                 }
                 break;
-            
+
             case NodeType.ENTRYPOINT:
                 if(!node?.data?.entrypoint?.binary){
                     errors.push('Entrypoint node must have a binary path');

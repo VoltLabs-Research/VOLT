@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -26,12 +26,12 @@ import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
 
-export default class SessionController {
+export default class SessionController{
     /**
      * Get all active sessions for the authenticated user
      */
-    public getMySessions = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        try {
+    public getMySessions = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+        try{
             const userId = (req as any).user._id;
 
             const sessions = await Session.find({
@@ -44,7 +44,7 @@ export default class SessionController {
                 results: sessions.length,
                 data: sessions
             });
-        } catch (error) {
+        }catch(error){
             next(new RuntimeError(ErrorCodes.SESSION_GET_SESSIONS_FAILED, 500));
         }
     });
@@ -52,8 +52,8 @@ export default class SessionController {
     /**
      * Get login activity for the authenticated user
      */
-    public getMyLoginActivity = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        try {
+    public getMyLoginActivity = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+        try{
             const userId = (req as any).user._id;
             const limit = parseInt(req.query.limit as string) || 20;
 
@@ -66,7 +66,7 @@ export default class SessionController {
                 results: activities.length,
                 data: activities
             });
-        } catch (error) {
+        }catch(error){
             next(new RuntimeError(ErrorCodes.SESSION_GET_LOGIN_ACTIVITY_FAILED, 500));
         }
     });
@@ -74,8 +74,8 @@ export default class SessionController {
     /**
      * Revoke a specific session
      */
-    public revokeSession = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        try {
+    public revokeSession = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+        try{
             const userId = (req as any).user._id;
             const sessionId = req.params.id;
 
@@ -85,7 +85,7 @@ export default class SessionController {
                 { new: true }
             );
 
-            if (!session) {
+            if(!session){
                 return next(new RuntimeError(ErrorCodes.SESSION_NOT_FOUND, 404));
             }
 
@@ -93,16 +93,16 @@ export default class SessionController {
                 status: 'success',
                 data: session
             });
-        } catch (error) {
+        }catch(error){
             next(new RuntimeError(ErrorCodes.SESSION_REVOKE_FAILED, 500));
         }
     });
 
     /**
-     * Revoke all other sessions (keep current one)
+     * Revoke all other sessions(keep current one)
      */
-    public revokeAllOtherSessions = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        try {
+    public revokeAllOtherSessions = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+        try{
             const userId = (req as any).user._id;
             const currentToken = req.headers.authorization?.split(' ')[1];
 
@@ -119,7 +119,7 @@ export default class SessionController {
                 status: 'success',
                 message: 'All other sessions have been revoked'
             });
-        } catch (error) {
+        }catch(error){
             next(new RuntimeError(ErrorCodes.SESSION_REVOKE_ALL_FAILED, 500));
         }
     });

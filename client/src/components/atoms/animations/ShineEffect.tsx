@@ -8,7 +8,7 @@ interface ShineEffectProps {
 const ShineEffect = ({ isSameLayout }: ShineEffectProps) => {
     if(isSameLayout) return null;
 
-    return (
+    return(
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 0.18, 0] }}

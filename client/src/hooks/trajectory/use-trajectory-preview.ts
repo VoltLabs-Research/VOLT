@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -51,14 +51,13 @@ const loadingPromises = new Map<string, Promise<string | null>>();
 const CACHE_MAX_AGE = 30 * 60 * 1000;
 setInterval(() => {
     const now = Date.now();
-    for (const [key, value] of previewCache.entries()) {
-        if (now - value.timestamp > CACHE_MAX_AGE) {
+    for(const [key, value] of previewCache.entries()) {
+        if(now - value.timestamp > CACHE_MAX_AGE){
             URL.revokeObjectURL(value.blobUrl);
             previewCache.delete(key);
         }
     }
 }, 10 * 60 * 1000);
-
 
 const useTrajectoryPreview = ({
     trajectoryId,
@@ -78,35 +77,35 @@ const useTrajectoryPreview = ({
         return `${trajId}:${new Date(updated).getTime()}`;
     }, []);
 
-    const getPreviewFromCacheOrServer = useCallback(async (
+    const getPreviewFromCacheOrServer = useCallback(async(
         trajId: string,
         updated: string
-    ): Promise<string | null> => {
+    ): Promise<string | null> =>{
         const cacheKey = getCacheKey(trajId, updated);
 
         const cached = previewCache.get(cacheKey);
-        if (cached && cached.updatedAt === updated) {
+        if(cached && cached.updatedAt === updated){
             logger.log('Using cached preview:', cacheKey);
             return cached.blobUrl;
         }
 
-        if (loadingPromises.has(cacheKey)) {
+        if(loadingPromises.has(cacheKey)) {
             logger.log('Waiting for existing load:', cacheKey);
             const existingPromise = loadingPromises.get(cacheKey);
             return existingPromise || null;
         }
 
-        for (const [key, value] of previewCache.entries()) {
-            if (key.startsWith(`${trajId}:`)) {
+        for(const [key, value] of previewCache.entries()) {
+            if(key.startsWith(`${trajId}:`)) {
                 logger.log('Cleaning old cache for trajectory:', key);
                 URL.revokeObjectURL(value.blobUrl);
                 previewCache.delete(key);
             }
         }
 
-        const loadPromise = (async (): Promise<string | null> => {
-            try {
-                logger.log('Loading preview from server (cache-busted):', cacheKey);
+        const loadPromise = (async(): Promise<string | null> =>{
+            try{
+                logger.log('Loading preview from server(cache-busted):', cacheKey);
                 const cacheBuster = new URLSearchParams({
                     t: Date.now().toString(),
                     updated: new Date(updated).getTime().toString(),
@@ -127,7 +126,7 @@ const useTrajectoryPreview = ({
                     timeout: 15000
                 });
 
-                if (!base64Data || typeof base64Data !== 'string') {
+                if(!base64Data || typeof base64Data !== 'string'){
                     throw new Error('Invalid base64 response from server');
                 }
 
@@ -137,12 +136,12 @@ const useTrajectoryPreview = ({
 
                 const binaryString = atob(base64Content);
                 const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
+                for(let i = 0; i < binaryString.length; i++){
                     bytes[i] = binaryString.charCodeAt(i);
                 }
 
                 const blob = new Blob([bytes], { type: 'image/png' });
-                if (blob.size === 0) {
+                if(blob.size === 0){
                     throw new Error('Empty or invalid image data');
                 }
 
@@ -154,10 +153,10 @@ const useTrajectoryPreview = ({
                 });
 
                 return blobUrl;
-            } catch (err: any) {
+            }catch(err: any){
                 logger.error('API Error loading preview');
                 throw err;
-            } finally {
+            }finally{
                 loadingPromises.delete(cacheKey);
             }
         })();
@@ -168,7 +167,7 @@ const useTrajectoryPreview = ({
 
     const cleanup = useCallback(() => {
         // Cancel ongoing request
-        if (currentRequestRef.current) {
+        if(currentRequestRef.current){
             currentRequestRef.current.abort();
             currentRequestRef.current = null;
         }
@@ -177,9 +176,9 @@ const useTrajectoryPreview = ({
         setLastLoadedKey(null);
     }, []);
 
-    const loadPreview = useCallback(async () => {
+    const loadPreview = useCallback(async() => {
         // Do not load if disabled
-        if (!enabled) {
+        if(!enabled){
             setPreviewBlobUrl(null);
             setLastLoadedKey(null);
             setIsLoading(false);
@@ -188,40 +187,40 @@ const useTrajectoryPreview = ({
 
         const currentKey = getCacheKey(trajectoryId, updatedAt);
 
-        if (currentKey === lastLoadedKey && previewBlobUrl) {
+        if(currentKey === lastLoadedKey && previewBlobUrl){
             setIsLoading(false);
             return;
         }
 
         // Cancel any ongoing request
-        if (currentRequestRef.current) {
+        if(currentRequestRef.current){
             currentRequestRef.current.abort();
         }
 
         const abortController = new AbortController();
         currentRequestRef.current = abortController;
 
-        try {
+        try{
             setIsLoading(true);
             setError(false);
 
             const blobUrl = await getPreviewFromCacheOrServer(trajectoryId, updatedAt);
 
             // Check if component is still mounted and request wan't cancelled
-            if (!mountedRef.current || abortController.signal.aborted) {
+            if(!mountedRef.current || abortController.signal.aborted){
                 return;
             }
 
-            if (!blobUrl) {
+            if(!blobUrl){
                 throw new Error('No preview URL returned');
             }
 
             setPreviewBlobUrl(blobUrl);
             setLastLoadedKey(currentKey);
 
-        } catch (err: any) {
+        }catch(err: any){
             // Don't set error state if request was cancelled
-            if (err.name === 'CanceledError' || err.name === 'Aborterror') {
+            if(err.name === 'CanceledError' || err.name === 'Aborterror'){
                 logger.log('Preview request cancelled', { trajectoryId, updatedAt });
                 return;
             }
@@ -230,12 +229,12 @@ const useTrajectoryPreview = ({
             setError(true);
             setPreviewBlobUrl(null);
             setLastLoadedKey(null);
-        } finally {
-            if (mountedRef.current) {
+        }finally{
+            if(mountedRef.current){
                 setIsLoading(false);
             }
 
-            if (currentRequestRef.current === abortController) {
+            if(currentRequestRef.current === abortController){
                 currentRequestRef.current = null;
             }
         }
@@ -251,7 +250,7 @@ const useTrajectoryPreview = ({
 
         const currentKey = getCacheKey(trajectoryId, updatedAt);
         const cached = previewCache.get(currentKey);
-        if (cached) {
+        if(cached){
             logger.log('Force retry: clearing cache for', currentKey);
             URL.revokeObjectURL(cached.blobUrl);
             previewCache.delete(currentKey);
@@ -264,7 +263,7 @@ const useTrajectoryPreview = ({
     // Detectar cambios en updatedAt y recargar preview
     useEffect(() => {
         logger.log('useTrajectoryPreview effect - updatedAt changed:', { updatedAt, enabled, trajectoryId });
-        if (enabled && trajectoryId) {
+        if(enabled && trajectoryId){
             logger.log('Triggering preview reload for updatedAt:', updatedAt);
             loadPreviewRef.current();
         }
@@ -273,7 +272,7 @@ const useTrajectoryPreview = ({
     useEffect(() => {
         mountedRef.current = true;
 
-        return () => {
+        return() => {
             mountedRef.current = false;
             cleanup();
         };
@@ -291,8 +290,8 @@ const useTrajectoryPreview = ({
 export const clearTrajectoryPreviewCache = (trajectoryId: string) => {
     const logger = new Logger('clear-trajectory-preview-cache');
     logger.log('Clearing cache for trajectory:', trajectoryId);
-    for (const [key, value] of previewCache.entries()) {
-        if (key.startsWith(`${trajectoryId}:`)) {
+    for(const [key, value] of previewCache.entries()) {
+        if(key.startsWith(`${trajectoryId}:`)) {
             URL.revokeObjectURL(value.blobUrl);
             previewCache.delete(key);
         }

@@ -75,7 +75,7 @@ const AccountSettings: React.FC = () => {
 
     // Initialize user data when user changes
     useEffect(() => {
-        if (user) {
+        if(user){
             setUserData({
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
@@ -99,8 +99,8 @@ const AccountSettings: React.FC = () => {
     }, []);
 
     // Update user data on server
-    const updateUserOnServer = async (field: string, value: string) => {
-        try {
+    const updateUserOnServer = async(field: string, value: string) => {
+        try{
             setIsUpdating(true);
             setUpdateError(null);
 
@@ -109,19 +109,19 @@ const AccountSettings: React.FC = () => {
             // Update local state with server response
             setUserData(prev => ({ ...prev, [field]: value }));
             console.log(`Successfully updated ${field} on server:`, value);
-        } catch (error: any) {
+        }catch(error: any){
             console.error('Error updating user data:', error);
             setUpdateError(`Failed to update ${field}. Please try again.`);
 
             // Revert local state on error
-            if (user) {
+            if(user){
                 setUserData({
                     firstName: user.firstName || '',
                     lastName: user.lastName || '',
                     email: user.email || ''
                 });
             }
-        } finally {
+        }finally{
             setIsUpdating(false);
         }
     };
@@ -137,7 +137,7 @@ const AccountSettings: React.FC = () => {
         }, 1000);
 
         // Clear previous timeout
-        return () => clearTimeout(timeoutId);
+        return() => clearTimeout(timeoutId);
     };
 
     // Handle theme toggle
@@ -147,9 +147,9 @@ const AccountSettings: React.FC = () => {
         localStorage.setItem('theme', theme);
     };
 
-    const handlePasswordChange = async (e: React.FormEvent) => {
+    const handlePasswordChange = async(e: React.FormEvent) => {
         e.preventDefault();
-        try {
+        try{
             await changePassword(passwordForm);
             setShowPasswordForm(false);
             setPasswordForm({
@@ -159,7 +159,7 @@ const AccountSettings: React.FC = () => {
             });
             // Refresh password info after successful change
             await getPasswordInfo();
-        } catch (error: any) {
+        }catch(error: any){
             const errorContext = {
                 endpoint: '/auth/change-password',
                 method: 'POST',
@@ -184,11 +184,11 @@ const AccountSettings: React.FC = () => {
         setShowApiTokenModal(true);
     };
 
-    const handleDeleteToken = async (token: ApiToken) => {
-        if (window.confirm(`Are you sure you want to delete the token "${token.name}"? This action cannot be undone.`)) {
-            try {
+    const handleDeleteToken = async(token: ApiToken) => {
+        if(window.confirm(`Are you sure you want to delete the token "${token.name}"? This action cannot be undone.`)) {
+            try{
                 await deleteToken(token._id);
-            } catch (error: any) {
+            }catch(error: any){
                 const errorContext = {
                     endpoint: `/api-tokens/${token._id}`,
                     method: 'DELETE',
@@ -203,11 +203,11 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    const handleRegenerateToken = async (token: ApiToken) => {
-        if (window.confirm(`Are you sure you want to regenerate the token "${token.name}"? The old token will be invalidated.`)) {
-            try {
+    const handleRegenerateToken = async(token: ApiToken) => {
+        if(window.confirm(`Are you sure you want to regenerate the token "${token.name}"? The old token will be invalidated.`)) {
+            try{
                 await regenerateToken(token._id);
-            } catch (error: any) {
+            }catch(error: any){
                 const errorContext = {
                     endpoint: `/api-tokens/${token._id}/regenerate`,
                     method: 'POST',
@@ -222,15 +222,15 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    const handleApiTokenSave = async (data: CreateTokenData | UpdateTokenData) => {
-        try {
-            if (apiTokenModalMode === 'create') {
+    const handleApiTokenSave = async(data: CreateTokenData | UpdateTokenData) => {
+        try{
+            if(apiTokenModalMode === 'create'){
                 await createToken(data as CreateTokenData);
-            } else {
+            }else{
                 await updateToken(selectedToken!._id, data as UpdateTokenData);
             }
             setShowApiTokenModal(false);
-        } catch (error: any) {
+        }catch(error: any){
             throw error;
         }
     };
@@ -247,11 +247,11 @@ const AccountSettings: React.FC = () => {
         setShowWebhookModal(true);
     };
 
-    const handleDeleteWebhook = async (webhook: Webhook) => {
-        if (window.confirm(`Are you sure you want to delete the webhook "${webhook.name}"? This action cannot be undone.`)) {
-            try {
+    const handleDeleteWebhook = async(webhook: Webhook) => {
+        if(window.confirm(`Are you sure you want to delete the webhook "${webhook.name}"? This action cannot be undone.`)) {
+            try{
                 await deleteWebhook(webhook._id);
-            } catch (error: any) {
+            }catch(error: any){
                 const errorContext = {
                     endpoint: `/webhooks/${webhook._id}`,
                     method: 'DELETE',
@@ -266,11 +266,11 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    const handleTestWebhook = async (webhook: Webhook) => {
-        try {
+    const handleTestWebhook = async(webhook: Webhook) => {
+        try{
             await testWebhook(webhook._id);
             alert('Webhook test sent successfully!');
-        } catch (error: any) {
+        }catch(error: any){
             const errorContext = {
                 endpoint: `/webhooks/${webhook._id}/test`,
                 method: 'POST',
@@ -285,22 +285,22 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    const handleWebhookSave = async (data: CreateWebhookData | UpdateWebhookData) => {
-        try {
-            if (webhookModalMode === 'create') {
+    const handleWebhookSave = async(data: CreateWebhookData | UpdateWebhookData) => {
+        try{
+            if(webhookModalMode === 'create'){
                 await createWebhook(data as CreateWebhookData);
-            } else {
+            }else{
                 await updateWebhook(selectedWebhook!._id, data as UpdateWebhookData);
             }
             setShowWebhookModal(false);
-        } catch (error: any) {
+        }catch(error: any){
             throw error;
         }
     };
 
     // Handle account deletion
     const handleDeleteAccount = () => {
-        if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+        if(window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
             // Here you would typically call an API to delete the account
             console.log('Account deletion requested');
             // For now, just show an alert
@@ -325,9 +325,9 @@ const AccountSettings: React.FC = () => {
     ];
 
     const renderContent = () => {
-        switch (activeSection) {
+        switch(activeSection){
             case 'General':
-                return (
+                return(
                     <GeneralSettings
                         user={user}
                         userData={userData}
@@ -338,7 +338,7 @@ const AccountSettings: React.FC = () => {
                     />
                 );
             case 'Authentication':
-                return (
+                return(
                     <AuthenticationSettings
                         isLoadingPasswordInfo={isLoadingPasswordInfo}
                         passwordInfo={passwordInfo}
@@ -354,7 +354,7 @@ const AccountSettings: React.FC = () => {
                     />
                 );
             case 'Theme':
-                return (
+                return(
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <div className='section-header'>
@@ -405,7 +405,7 @@ const AccountSettings: React.FC = () => {
                     </div>
                 );
             case 'Notifications':
-                return (
+                return(
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <div className='section-header'>
@@ -466,7 +466,7 @@ const AccountSettings: React.FC = () => {
                     </div>
                 );
             case 'Sessions':
-                return (
+                return(
                     <SessionsSettings
                         sessions={sessions}
                         loading={sessionsLoading}
@@ -475,7 +475,7 @@ const AccountSettings: React.FC = () => {
                     />
                 );
             case 'Data & Export':
-                return (
+                return(
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <div className='section-header'>
@@ -520,7 +520,7 @@ const AccountSettings: React.FC = () => {
                     </div>
                 );
             case 'Advanced':
-                return (
+                return(
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <div className='section-header'>
@@ -565,7 +565,7 @@ const AccountSettings: React.FC = () => {
                     </div>
                 );
             case 'Integrations':
-                return (
+                return(
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <div className='section-header'>
@@ -657,7 +657,7 @@ const AccountSettings: React.FC = () => {
                     </div>
                 );
             case 'Billing Information':
-                return (
+                return(
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <div className='section-header'>
@@ -673,7 +673,7 @@ const AccountSettings: React.FC = () => {
                     </div>
                 );
             case 'Invoices':
-                return (
+                return(
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <div className='section-header'>
@@ -689,7 +689,7 @@ const AccountSettings: React.FC = () => {
                     </div>
                 );
             case 'Privacy':
-                return (
+                return(
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <div className='section-header'>
@@ -734,7 +734,7 @@ const AccountSettings: React.FC = () => {
                     </div>
                 );
             case 'Tokens':
-                return (
+                return(
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <div className='section-header'>
@@ -770,7 +770,7 @@ const AccountSettings: React.FC = () => {
                     </div>
                 );
             case 'Webhooks':
-                return (
+                return(
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <div className='section-header'>
@@ -806,7 +806,7 @@ const AccountSettings: React.FC = () => {
                     </div>
                 );
             default:
-                return (
+                return(
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <h2 className='settings-section-title'>{activeSection}</h2>
@@ -822,7 +822,7 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    return (
+    return(
         <>
             <div className='account-settings-container'>
                 <div className='account-settings-layout'>

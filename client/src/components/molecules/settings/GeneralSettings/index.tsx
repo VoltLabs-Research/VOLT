@@ -33,7 +33,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
     });
 
     useEffect(() => {
-        if (user) {
+        if(user){
             setFormData({
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
@@ -49,22 +49,22 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
         // Validate the field
         const errorMessage = checkField(field, value);
 
-        // Only propagate to parent (and trigger server update) if there's no validation error
-        if (!errorMessage) {
+        // Only propagate to parent(and trigger server update) if there's no validation error
+        if(!errorMessage){
             onFieldChange(field, value);
         }
     };
 
-    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAvatarUpload = async(e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+        if(!file) return;
 
         // Validate file type and size
-        if (!file.type.startsWith('image/')) {
+        if(!file.type.startsWith('image/')) {
             alert('Please upload an image file');
             return;
         }
-        if (file.size > 5 * 1024 * 1024) {
+        if(file.size > 5 * 1024 * 1024){
             alert('File size must be less than 5MB');
             return;
         }
@@ -72,20 +72,20 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
         const formData = new FormData();
         formData.append('avatar', file);
 
-        try {
+        try{
             setIsUploadingAvatar(true);
             await authApi.updateMe(formData); // Refactored to use authApi.updateMe
-            // Refresh page to show new avatar (or update context if available)
+            // Refresh page to show new avatar(or update context if available)
             window.location.reload();
-        } catch (error) {
+        }catch(error){
             console.error('Failed to upload avatar:', error);
             alert('Failed to upload avatar. Please try again.');
-        } finally {
+        }finally{
             setIsUploadingAvatar(false);
         }
     };
 
-    return (
+    return(
         <div className='settings-content'>
             <Section className='profile-section'>
                 <div className='profile-header'>
@@ -214,5 +214,3 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
 };
 
 export default GeneralSettings;
-
-

@@ -7,14 +7,14 @@ import { BALANCED_EASING } from '@/utilities/animation';
 const GlobalTransitionOverlay = () => {
     const location = useLocation();
     const currentLayoutKey = getLayoutKey(location.pathname);
-    const isSameLayout = useMemo(() => 
-        detectSameLayout(currentLayoutKey, 'globalPreviousLayoutKey'), 
+    const isSameLayout = useMemo(() =>
+        detectSameLayout(currentLayoutKey, 'globalPreviousLayoutKey'),
         [currentLayoutKey]
     );
 
     if(isSameLayout) return null;
 
-    return (
+    return(
         <motion.div
             key={location.key}
             initial={{ opacity: 0.5 }}

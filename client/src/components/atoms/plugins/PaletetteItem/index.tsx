@@ -11,8 +11,8 @@ interface PaletteItemProps{
 
 const PaletteItem = ({ config, onDragStart }: PaletteItemProps) => {
 
-    return (
-        <div 
+    return(
+        <div
             className='plugin-palette-item-container'
             draggable
             onDragStart={(e) => onDragStart(e, config.type)}

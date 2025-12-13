@@ -40,36 +40,36 @@ export const useWebhooks = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchWebhooks = async () => {
-        try {
+    const fetchWebhooks = async() => {
+        try{
             setLoading(true);
             setError(null);
             const data = await webhookApi.getAll?.() as any || [];
             setWebhooks(data);
-        } catch (err: any) {
+        }catch(err: any){
             console.error('Failed to fetch webhooks');
             setError(err.response?.data?.message || 'Failed to fetch webhooks');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
-    const fetchStats = async () => {
-        try {
+    const fetchStats = async() => {
+        try{
             const data = await webhookApi.getStats?.() as any || null;
             setStats(data);
-        } catch (err: any) {
+        }catch(err: any){
             console.error('Failed to fetch webhook stats:', err);
         }
     };
 
-    const createWebhook = async (webhookData: CreateWebhookData): Promise<Webhook> => {
-        try {
+    const createWebhook = async(webhookData: CreateWebhookData): Promise<Webhook> =>{
+        try{
             const result = await webhookApi.create({ url: webhookData.url, events: webhookData.events });
             await fetchWebhooks();
             await fetchStats();
             return result as Webhook;
-        } catch (err: any) {
+        }catch(err: any){
             console.error('Failed to create webhook');
             const errorMessage = err.response?.data?.message || 'Failed to create webhook';
             setError(errorMessage);
@@ -77,13 +77,13 @@ export const useWebhooks = () => {
         }
     };
 
-    const updateWebhook = async (id: string, webhookData: UpdateWebhookData): Promise<Webhook> => {
-        try {
+    const updateWebhook = async(id: string, webhookData: UpdateWebhookData): Promise<Webhook> =>{
+        try{
             const result = await webhookApi.update?.(id, webhookData) as any;
             await fetchWebhooks();
             await fetchStats();
             return result;
-        } catch (err: any) {
+        }catch(err: any){
             console.error('Failed to update webhook');
             const errorMessage = err.response?.data?.message || 'Failed to update webhook';
             setError(errorMessage);
@@ -91,12 +91,12 @@ export const useWebhooks = () => {
         }
     };
 
-    const deleteWebhook = async (id: string): Promise<void> => {
-        try {
+    const deleteWebhook = async(id: string): Promise<void> =>{
+        try{
             await webhookApi.delete(id);
             await fetchWebhooks();
             await fetchStats();
-        } catch (err: any) {
+        }catch(err: any){
             console.error('Failed to delete webhook');
             const errorMessage = err.response?.data?.message || 'Failed to delete webhook';
             setError(errorMessage);
@@ -104,10 +104,10 @@ export const useWebhooks = () => {
         }
     };
 
-    const testWebhook = async (id: string): Promise<void> => {
-        try {
+    const testWebhook = async(id: string): Promise<void> =>{
+        try{
             await webhookApi.test(id);
-        } catch (err: any) {
+        }catch(err: any){
             console.error('Failed to test webhook');
             const errorMessage = err.response?.data?.message || 'Failed to test webhook';
             setError(errorMessage);

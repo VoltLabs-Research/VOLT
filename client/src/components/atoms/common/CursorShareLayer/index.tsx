@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -72,7 +72,7 @@ const cssHsl = (h: number, s: number, l: number, a = 1) => {
 // Identity-based color
 const hasH = (seed: string) => {
     let h = 0;
-    for (let i = 0; i < seed.length; i++) {
+    for(let i = 0; i < seed.length; i++){
         h = (h * 31 + seed.charCodeAt(i)) >>> 0;
     }
 
@@ -83,7 +83,7 @@ const parseToHsl = (color: string | undefined, fallbackhue: number, vividness: n
     const s = 22 + vividness * 28;
     const l = 58 + vividness * 10;
     // If user provided a color, lightly desaturate via blending by converting to a CSS var stack
-    if (!color) {
+    if(!color){
         return {
             base: cssHsl(fallbackhue, s, l),
             halo: cssHsl(fallbackhue, s, l, 0.25),
@@ -131,7 +131,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
 
             next.forEach((cursor, id) => {
                 const gone = now - cursor.lastSeen > 5000;
-                if (gone) {
+                if(gone){
                     next.delete(id);
                     changed = true;
                     return;
@@ -143,14 +143,14 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
                 const isMoving = distance > 0.08;
 
                 let newTrail = cursor.trail;
-                if (isMoving && enableTrails && !reduced) {
+                if(isMoving && enableTrails && !reduced){
                     newTrail = [
                         ...newTrail,
                         { x: cursor.x, y: cursor.y, opacity: 1, timestamp: now }
                     ]
                         .filter((p) => now - p.timestamp < 800)
                         .slice(-maxTrailLength);
-                } else if (!enableTrails || reduced) {
+                }else if(!enableTrails || reduced){
                     newTrail = [];
                 }
 
@@ -161,13 +161,13 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
 
                 const newRipples = cursor.clickRipples.filter((r) => now - r.timestamp < 700);
 
-                if (
+                if(
                     newX !== cursor.x ||
                     newY !== cursor.y ||
                     isMoving !== cursor.isMoving ||
                     newTrail.length !== cursor.trail.length ||
                     newRipples.length !== cursor.clickRipples.length
-                ) {
+                ){
                     next.set(id, { ...cursor, x: newX, y: newY, isMoving, trail: newTrail, clickRipples: newRipples });
                     changed = true;
                 }
@@ -182,7 +182,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
     useEffect(() => {
         lastUpdateRef.current = performance.now();
         animationFrameRef.current = requestAnimationFrame(animate);
-        return () => {
+        return() => {
             animationFrameRef.current && cancelAnimationFrame(animationFrameRef.current);
         };
     }, [animate]);
@@ -190,7 +190,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
     useEffect(() => {
         const recompute = () => {
             const rect = containerRef.current?.getBoundingClientRect();
-            if (!rect) return;
+            if(!rect) return;
             setCursors((prev) => {
                 const next = new Map(prev);
                 return next;
@@ -198,14 +198,14 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
         };
 
         window.addEventListener('resize', recompute);
-        if (window.visualViewport) {
+        if(window.visualViewport){
             window.visualViewport.addEventListener('resize', recompute);
             window.visualViewport.addEventListener('scroll', recompute);
         }
 
-        return () => {
+        return() => {
             window.removeEventListener('resize', recompute);
-            if (window.visualViewport) {
+            if(window.visualViewport){
                 window.visualViewport.removeEventListener('resize', recompute);
                 window.visualViewport.removeEventListener('scroll', recompute);
             }
@@ -213,9 +213,9 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
     }, []);
 
     useEffect(() => {
-        if (!roomName) return;
+        if(!roomName) return;
 
-        const initCursor = async () => {
+        const initCursor = async() => {
             const joinUser = user ?? await getOrCreateGuestUser();
             socketService
                 .emit('cursor:join', { room: roomName, user: joinUser })
@@ -256,7 +256,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
             setCursors((prev) => {
                 const next = new Map(prev);
                 const existing = next.get(data.id);
-                if (existing) {
+                if(existing){
                     const rect = containerRef.current?.getBoundingClientRect();
                     const x = rect ? clamp(data.nx, 0, 1) * rect.width : 0;
                     const y = rect ? clamp(data.ny, 0, 1) * rect.height : 0;
@@ -281,7 +281,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
             })
         });
 
-        return () => {
+        return() => {
             offMove();
             offClick();
             offLeft();
@@ -289,7 +289,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
     }, [roomName, user, vividness]);
 
     const handleMouseMove = (e: React.MouseEvent) => {
-        if (!roomName || !containerRef.current) return;
+        if(!roomName || !containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
         const nx = clamp((e.clientX - rect.left) / (rect.width || 1), 0, 1);
         const ny = clamp((e.clientY - rect.top) / (rect.height || 1), 0, 1);
@@ -299,8 +299,8 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
     };
 
     const handleClick = (e: React.MouseEvent) => {
-        if (!roomName || !containerRef.current) return;
-        if (!enableRipples) return;
+        if(!roomName || !containerRef.current) return;
+        if(!enableRipples) return;
         const rect = containerRef.current.getBoundingClientRect();
         const nx = clamp((e.clientX - rect.left) / (rect.width || 1), 0, 1);
         const ny = clamp((e.clientY - rect.top) / (rect.height || 1), 0, 1);
@@ -314,7 +314,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
     const mainDot = 12 * baseScale;
     const trailDot = 3 * baseScale;
 
-    return (
+    return(
         <div
             ref={containerRef}
             onMouseMove={handleMouseMove}
@@ -325,7 +325,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
             {cursorsArray.map((cursor) => {
                 const hue = hasH(cursor.id);
                 const { base, halo, line } = parseToHsl(cursor.user?.color, hue, vividness);
-                return (
+                return(
                     <div key={cursor.id}>
                         {enableTrails && cursor.trail.map((p, i) => (
                             <div
@@ -414,7 +414,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
                             const rect = containerRef.current?.getBoundingClientRect();
                             const rx = rect ? r.x * rect.width : 0;
                             const ry = rect ? r.y * rect.height : 0;
-                            return (
+                            return(
                                 <div
                                     key={r.id}
                                     style={{
@@ -441,7 +441,7 @@ const CursorShareLayer: React.FC<CursorShareLayerProps> = ({
             })}
 
             <style>{`
-                @media (prefers-reduced-motion: reduce) {
+                @media(prefers-reduced-motion: reduce) {
                 div { transition: none !important; animation: none !important; }
                 }
             `}</style>

@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -25,31 +25,31 @@ import { TeamInvitation, Team } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 
-export const loadInvitationByToken = async (req: Request, res: Response, next: NextFunction) => {
+export const loadInvitationByToken = async(req: Request, res: Response, next: NextFunction) => {
     const { token } = req.params;
 
-    if (!token) {
+    if(!token){
         return next(new RuntimeError(ErrorCodes.TEAM_INVITATION_TOKEN_REQUIRED, 400));
     }
 
-    try {
+    try{
         const invitation = await TeamInvitation.findOne({ token });
 
-        if (!invitation) {
+        if(!invitation){
             return next(new RuntimeError(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 404));
         }
 
-        if (invitation.status !== 'pending') {
+        if(invitation.status !== 'pending'){
             return next(new RuntimeError(ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED, 400));
         }
 
-        if (new Date() > invitation.expiresAt) {
+        if(new Date() > invitation.expiresAt) {
             return next(new RuntimeError(ErrorCodes.TEAM_INVITATION_EXPIRED, 400));
         }
 
         res.locals.invitation = invitation;
         next();
-    } catch (err: any) {
+    }catch(err: any){
         return next(new RuntimeError(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 500));
     }
 };
@@ -58,39 +58,39 @@ export const verifyInvitationRecipient = (req: Request, res: Response, next: Nex
     const invitation = res.locals.invitation;
     const userId = (req as any).user?._id;
 
-    if (!invitation) {
+    if(!invitation){
         return next(new RuntimeError(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 404));
     }
 
-    if (invitation.invitedUser?.toString() !== userId?.toString()) {
+    if(invitation.invitedUser?.toString() !== userId?.toString()) {
         return next(new RuntimeError(ErrorCodes.TEAM_INVITATION_UNAUTHORIZED, 403));
     }
 
     next();
 };
 
-export const verifyTeamOwnership = async (req: Request, res: Response, next: NextFunction) => {
+export const verifyTeamOwnership = async(req: Request, res: Response, next: NextFunction) => {
     const { teamId } = req.params;
     const userId = (req as any).user?._id;
 
-    if (!teamId) {
+    if(!teamId){
         return next(new RuntimeError(ErrorCodes.TEAM_ID_REQUIRED, 400));
     }
 
-    try {
+    try{
         const team = await Team.findById(teamId);
 
-        if (!team) {
+        if(!team){
             return next(new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404));
         }
 
-        if (team.owner.toString() !== userId?.toString()) {
+        if(team.owner.toString() !== userId?.toString()) {
             return next(new RuntimeError(ErrorCodes.TEAM_INVITATION_OWNER_ONLY, 403));
         }
 
         res.locals.team = team;
         next();
-    } catch (err: any) {
+    }catch(err: any){
         return next(new RuntimeError(ErrorCodes.TEAM_LOAD_ERROR, 500));
     }
 };
@@ -98,12 +98,12 @@ export const verifyTeamOwnership = async (req: Request, res: Response, next: Nex
 export const validateInvitationBody = (req: Request, res: Response, next: NextFunction) => {
     const { email, role } = req.body;
 
-    if (!email || !role) {
+    if(!email || !role){
         return next(new RuntimeError(ErrorCodes.TEAM_INVITATION_EMAIL_ROLE_REQUIRED, 400));
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.toLowerCase())) {
+    if(!emailRegex.test(email.toLowerCase())) {
         return next(new RuntimeError(ErrorCodes.TEAM_INVITATION_INVALID_EMAIL, 400));
     }
 

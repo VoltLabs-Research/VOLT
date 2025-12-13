@@ -54,8 +54,8 @@ export class AvatarService{
                     // do not stretch small images
                     withoutEnlargement: true
                 })
-                .webp({ quality: this.COMPRESSION_QUALITY_PCT })
-                .toBuffer();
+                    .webp({ quality: this.COMPRESSION_QUALITY_PCT })
+                    .toBuffer();
 
             // Generate name with timestamp for cache busting and upload
             const fileName = `${userId}_${Date.now()}.webp`;

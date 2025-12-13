@@ -2,7 +2,7 @@
  * Show API error notifications
  * This is called from the API interceptor when an error occurs
  * Shows user-friendly messages to end users while logging full context for debugging
- * 
+ *
  * Implements error deduplication to avoid showing the same error multiple times
  */
 
@@ -28,45 +28,45 @@ const DEDUP_WINDOW_MS = 5000; // 5 second window for considering errors as conse
  */
 const shouldShowError = (message: string): boolean => {
   const now = Date.now();
-  
+
   // Clean up old entries outside the dedup window
-  while (errorHistory.length > 0 && now - errorHistory[0].timestamp > DEDUP_WINDOW_MS) {
+  while(errorHistory.length > 0 && now - errorHistory[0].timestamp > DEDUP_WINDOW_MS){
     errorHistory.shift();
   }
-  
+
   // Count consecutive occurrences of the same message
   let consecutiveCount = 0;
-  for (let i = errorHistory.length - 1; i >= 0; i--) {
-    if (errorHistory[i].message === message) {
+  for(let i = errorHistory.length - 1; i >= 0; i--){
+    if(errorHistory[i].message === message){
       consecutiveCount++;
-    } else {
+    }else{
       break;
     }
   }
-  
+
   // If we've already shown this error 2 times consecutively, don't show it again
-  if (consecutiveCount >= MAX_CONSECUTIVE_SAME_ERROR) {
+  if(consecutiveCount >= MAX_CONSECUTIVE_SAME_ERROR){
     return false;
   }
-  
+
   // Update history or add new entry
   const lastEntry = errorHistory[errorHistory.length - 1];
-  if (lastEntry && lastEntry.message === message && now - lastEntry.timestamp < DEDUP_WINDOW_MS) {
+  if(lastEntry && lastEntry.message === message && now - lastEntry.timestamp < DEDUP_WINDOW_MS){
     lastEntry.count++;
     lastEntry.timestamp = now;
-  } else {
+  }else{
     errorHistory.push({
       message,
       timestamp: now,
       count: 1
     });
   }
-  
+
   // Keep history size manageable
-  if (errorHistory.length > MAX_HISTORY) {
+  if(errorHistory.length > MAX_HISTORY){
     errorHistory.shift();
   }
-  
+
   return true;
 };
 
@@ -82,25 +82,25 @@ export const clearErrorHistory = () => {
 };
 
 export const notifyApiError = (error: any) => {
-  if (!showErrorNotification) return;
+  if(!showErrorNotification) return;
 
   // Don't notify for certain status codes that are handled separately
-  if (error.response?.status === 401 || error.response?.status === 403) {
+  if(error.response?.status === 401 || error.response?.status === 403){
     return; // Auth errors are handled separately by the app
   }
 
   // Use user-friendly message for UI
   const userMessage = error.getUserMessage();
-  
+
   // Check if we should show this error
-  if (!shouldShowError(userMessage)) {
+  if(!shouldShowError(userMessage)) {
     // Log to console that we're suppressing this duplicate error
-    console.warn('Duplicate error suppressed (shown 2+ times):', userMessage);
+    console.warn('Duplicate error suppressed(shown 2+ times):', userMessage);
     return;
   }
-  
+
   // Keep technical details for debugging only
-  const details = {
+  const details ={
     originalError: error.originalError?.message,
   };
 

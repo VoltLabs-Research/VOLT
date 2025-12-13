@@ -11,7 +11,7 @@ const useRasterConnectedUsers = (trajectoryId?: string) => {
     // Monitor connection status
     useEffect(() => {
         setIsConnected(socketService.isConnected());
-        
+
         const unsubscribe = socketService.onConnectionChange((connected) => {
             console.log(`[useRasterConnectedUsers] Connection status changed: ${connected}`);
             setIsConnected(connected);
@@ -21,14 +21,14 @@ const useRasterConnectedUsers = (trajectoryId?: string) => {
     }, []);
 
     useEffect(() => {
-        if (!trajectoryId || !isConnected) {
+        if(!trajectoryId || !isConnected){
             console.log(`[useRasterConnectedUsers] Skipping subscription - trajectoryId: ${trajectoryId}, isConnected: ${isConnected}`);
             return;
         }
 
         console.log(`[useRasterConnectedUsers] Subscribing to raster for trajectory: ${trajectoryId}`);
 
-        // Subscribe to raster presence (main room, not observer)
+        // Subscribe to raster presence(main room, not observer)
         socketService.emit('subscribe_to_raster', {
             trajectoryId
         }).then(() => {
@@ -44,10 +44,10 @@ const useRasterConnectedUsers = (trajectoryId?: string) => {
 
         const unsubscribe = socketService.on('raster_users_update', handleUsersUpdate);
 
-        return () => {
+        return() => {
             console.log(`[useRasterConnectedUsers] Cleanup: Unsubscribing from raster: ${trajectoryId}`);
             unsubscribe();
-            
+
             // Emit unsubscribe event to backend
             socketService.emit('unsubscribe_from_raster', {
                 trajectoryId

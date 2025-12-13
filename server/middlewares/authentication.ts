@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -33,20 +33,20 @@ import logger from '@/logger';
  *
  * @param {string} token - The JWT token to verify and decode.
  * @returns {Promise<object>} - The user object if found, otherwise throws an error.
- * @throws {RuntimeError} - If the user is not found or password has changed after 
+ * @throws {RuntimeError} - If the user is not found or password has changed after
  *                          the token was issued.
 */
-export const getUserByToken = async (token: string, next: NextFunction): Promise<any | undefined> => {
+export const getUserByToken = async(token: string, next: NextFunction): Promise<any | undefined> =>{
     const secret = process.env.SECRET_KEY as string;
     const decodedToken = jwt.verify(token, secret) as any;
     // Retrieve the user from the database
     const freshUser = await User.findById(decodedToken.id).select('-devices -__v');
-    if (!freshUser) {
+    if(!freshUser){
         next(new RuntimeError(ErrorCodes.AUTHENTICATION_USER_NOT_FOUND, 401));
         return;
     }
     // Check if the user's password has changed since the token was issued
-    if (await freshUser.isPasswordChangedAfterJWFWasIssued(decodedToken.iat)) {
+    if(await freshUser.isPasswordChangedAfterJWFWasIssued(decodedToken.iat)) {
         next(new RuntimeError(ErrorCodes.AUTHENTICATION_PASSWORD_CHANGED, 401));
         return;
     }
@@ -61,17 +61,17 @@ export const getUserByToken = async (token: string, next: NextFunction): Promise
  * @param {NextFunction} next - Express next function to continue.
  * @throws {RuntimeError} - If no token provided or if authentication fails.
 */
-export const protect = async (req: Request, res: Response, next: NextFunction) => {
+export const protect = async(req: Request, res: Response, next: NextFunction) => {
     let token;
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
-    } else {
+    }else{
         return next(new RuntimeError(ErrorCodes.AUTHENTICATION_REQUIRED, 401));
     }
 
     // Check if session is active
     const session = await Session.findOne({ token, isActive: true });
-    if (!session) {
+    if(!session){
         return next(new RuntimeError(ErrorCodes.AUTHENTICATION_SESSION_INVALID, 401));
     }
 
@@ -92,14 +92,14 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
  * @param {Response} res - The Express response object.
  * @param {NextFunction} next - Express next function to continue.
 */
-export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
+export const optionalAuth = async(req: Request, res: Response, next: NextFunction) => {
     let token;
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
-        try {
+        try{
             const freshUser = await getUserByToken(token, next);
             (req as any).user = freshUser;
-        } catch (error) {
+        }catch(error){
             // Si hay error en la autenticación, simplemente continuamos sin usuario
             logger.info(`Optional authentication failed: ${error}`);
         }
@@ -114,9 +114,9 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
  * @returns {RequestHandler} - Express middleware function.
 */
 export const restrictTo = (...roles: string[]): RequestHandler => {
-    return (req: Request, res: Response, next: NextFunction) => {
+    return(req: Request, res: Response, next: NextFunction) => {
         // Check if the user role matches any allowed roles
-        if (!roles.includes((req as any).user.role)) {
+        if(!roles.includes((req as any).user.role)) {
             return next(new RuntimeError(ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 403));
         }
         next();

@@ -50,7 +50,7 @@ const useCameraSettings = create<CameraSettingsStore>()(persist((set) => ({
     setCamera: (partial) =>
         set((state) => {
             const next = deepMerge(state, partial as any);
-            if (next.type !== 'perspective' && next.type !== 'orthographic') {
+            if(next.type !== 'perspective' && next.type !== 'orthographic'){
                 next.type = 'perspective';
             }
             return {

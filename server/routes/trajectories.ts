@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -36,7 +36,7 @@ const upload = multer({
         fileSize: process.env.MAX_FILE_SIZE ? Number(process.env.MAX_FILE_SIZE) : undefined,
         files: process.env.MAX_FILES ? Number(process.env.MAX_FILES) : undefined
     },
-    fileFilter: (req, file, cb: FileFilterCallback) => {
+    fileFilter: (req, file, cb: FileFilterCallback) =>{
         cb(null, true);
     }
 });
@@ -46,17 +46,17 @@ router.route('/')
         authMiddleware.protect,
         controller.getAll
     )
-    .post(
+        .post(
         authMiddleware.protect,
-        upload.array('trajectoryFiles'), 
+        upload.array('trajectoryFiles'),
         middleware.processAndValidateUpload,
         controller.create
     );
 
 router.get(
-    '/:id/glb/:timestep/:analysisId', 
+    '/:id/glb/:timestep/:analysisId',
     authMiddleware.optionalAuth,
-    middleware.checkTeamMembershipForTrajectory, 
+    middleware.checkTeamMembershipForTrajectory,
     controller.getGLB
 );
 
@@ -69,7 +69,7 @@ router.get(
 
 router.get(
     '/metrics/:id',
-    middleware.checkTeamMembershipForTrajectory, 
+    middleware.checkTeamMembershipForTrajectory,
     controller.getSingleMetrics
 )
 
@@ -95,15 +95,15 @@ router.get(
 router.route('/:id')
     .get(
         authMiddleware.optionalAuth,
-        middleware.checkTeamMembershipForTrajectory, 
+        middleware.checkTeamMembershipForTrajectory,
         controller.getOne
     )
-    .patch(
+        .patch(
         authMiddleware.protect,
         middleware.requireTeamMembershipForTrajectory,
         controller.updateOne
     )
-    .delete(
+        .delete(
         authMiddleware.protect,
         middleware.requireTeamMembershipForTrajectory,
         controller.deleteOne

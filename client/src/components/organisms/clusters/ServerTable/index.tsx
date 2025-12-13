@@ -5,27 +5,27 @@ import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
 import './ServerTable.css'
 
-function formatNetworkSpeed(kbs: number): string {
-  if (kbs < 1) return `${(kbs * 1024).toFixed(0)} B/s`;
-  if (kbs < 1024) return `${kbs.toFixed(1)} KB/s`;
-  if (kbs < 1024 * 1024) return `${(kbs / 1024).toFixed(2)} MB/s`;
+function formatNetworkSpeed(kbs: number): string{
+  if(kbs < 1) return `${(kbs * 1024).toFixed(0)} B/s`;
+  if(kbs < 1024) return `${kbs.toFixed(1)} KB/s`;
+  if(kbs < 1024 * 1024) return `${(kbs / 1024).toFixed(2)} MB/s`;
   return `${(kbs / (1024 * 1024)).toFixed(2)} GB/s`;
 }
 
-export function ServerTable() {
+export function ServerTable(){
   const { metrics, isHistoryLoaded } = useServerMetrics()
   const [selectedServer, setSelectedServer] = useState<any | null>(null)
 
   const isLoading = !metrics || !isHistoryLoaded
 
   const server = useMemo(() => {
-    if (!metrics) return null
-    
+    if(!metrics) return null
+
     // Calculate real CPU usage from cores
     const cpuUsage = metrics.cpu.coresUsage && metrics.cpu.coresUsage.length > 0
       ? Math.round(metrics.cpu.coresUsage.reduce((sum, val) => sum + val, 0) / metrics.cpu.coresUsage.length)
       : Math.round(metrics.cpu.usage)
-    
+
     // Calculate uptime in days, hours, minutes
     const uptimeSeconds = metrics.uptime;
     const uptimeDays = Math.floor(uptimeSeconds / 86400);
@@ -48,7 +48,7 @@ export function ServerTable() {
     }
   }, [metrics])
 
-  return (
+  return(
     <>
       {selectedServer && (
         <ServerDetails server={selectedServer} onClose={() => setSelectedServer(null)} />
@@ -133,7 +133,7 @@ export function ServerTable() {
                   <div className="server-table-metric">
                     <div className="server-table-bar-group">
                       {[...Array(5)].map((_, i) => (
-                        <div 
+                        <div
                           key={i}
                           className={`server-table-bar ${i < Math.floor(server.cpu / 20) ? 'server-table-bar-active' : ''}`}
                         />
@@ -146,7 +146,7 @@ export function ServerTable() {
                   <div className="server-table-metric">
                     <div className="server-table-bar-group">
                       {[...Array(5)].map((_, i) => (
-                        <div 
+                        <div
                           key={i}
                           className={`server-table-bar ${i < Math.floor(server.memory / 20) ? 'server-table-bar-active' : ''}`}
                         />
@@ -159,7 +159,7 @@ export function ServerTable() {
                   <div className="server-table-metric">
                     <div className="server-table-bar-group">
                       {[...Array(5)].map((_, i) => (
-                        <div 
+                        <div
                           key={i}
                           className={`server-table-bar ${i < Math.floor(server.diskUsagePercent / 20) ? 'server-table-bar-active' : ''}`}
                         />

@@ -66,11 +66,11 @@ class ExposureHandler implements NodeHandler{
                 });
             }catch(error: any){
                 logger.error(`[ExposureHandler] Failed for item ${item.index}: ${error.message}`);
-                exposureResults.push({ 
-                    index: item.index, 
-                    name: config.name, 
-                    error: error.message, 
-                    data: null 
+                exposureResults.push({
+                    index: item.index,
+                    name: config.name,
+                    error: error.message,
+                    data: null
                 });
             }
         }

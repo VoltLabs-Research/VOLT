@@ -1,8 +1,8 @@
 /**
- * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+ * Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -31,13 +31,13 @@ interface PresenceUser {
     isAnonymous: boolean;
 }
 
-class CanvasPresenceModule extends BaseSocketModule {
-    constructor() {
+class CanvasPresenceModule extends BaseSocketModule{
+    constructor(){
         super('CanvasPresenceModule');
     }
 
-    onConnection(socket: Socket): void {
-        // Subscribe to trajectory canvas view (for actual viewers)
+    onConnection(socket: Socket): void{
+        // Subscribe to trajectory canvas view(for actual viewers)
         this.wirePresenceSubscription(socket, {
             event: 'subscribe_to_canvas',
             roomOf: (payload: { trajectoryId?: string }) => {
@@ -45,7 +45,7 @@ class CanvasPresenceModule extends BaseSocketModule {
                 //console.log(`[${this.name}] Canvas room determined: ${room} for trajectory: ${payload.trajectoryId}`);
                 return room;
             },
-            previousOf: (payload: { trajectoryId?: string; previousTrajectoryId?: string }) => 
+            previousOf: (payload: { trajectoryId?: string; previousTrajectoryId?: string }) =>
                 payload.previousTrajectoryId ? `canvas:${payload.previousTrajectoryId}` : undefined,
             setContext: (socket, payload: { trajectoryId?: string; user?: any }) => {
                 socket.data.trajectoryId = payload.trajectoryId;
@@ -62,14 +62,14 @@ class CanvasPresenceModule extends BaseSocketModule {
         });
 
         // Handle explicit canvas unsubscribe
-        socket.on('unsubscribe_from_canvas', async (payload: { trajectoryId?: string }) => {
-            if (!payload.trajectoryId) return;
+        socket.on('unsubscribe_from_canvas', async(payload: { trajectoryId?: string }) => {
+            if(!payload.trajectoryId) return;
 
             const canvasRoom = `canvas:${payload.trajectoryId}`;
             //console.log(`[${this.name}] Socket ${socket.id} unsubscribing from canvas: ${canvasRoom}`);
-            
+
             this.leaveRoom(socket, canvasRoom);
-            
+
             // Clear context
             socket.data.trajectoryId = undefined;
             socket.data.viewType = undefined;
@@ -78,14 +78,14 @@ class CanvasPresenceModule extends BaseSocketModule {
             await this.broadcastPresence(canvasRoom, 'canvas_users_update', (s) => this.extractPresenceUser(s));
         });
 
-        // Observer subscription (for dashboard cards - doesn't join main room)
-        socket.on('observe_canvas_presence', async (payload: { trajectoryId?: string }) => {
-            if (!payload.trajectoryId) return;
+        // Observer subscription(for dashboard cards - doesn't join main room)
+        socket.on('observe_canvas_presence', async(payload: { trajectoryId?: string }) => {
+            if(!payload.trajectoryId) return;
 
             const observerRoom = `canvas-observer:${payload.trajectoryId}`;
             const mainRoom = `canvas:${payload.trajectoryId}`;
-            
-            // Join observer room (separate from main canvas room)
+
+            // Join observer room(separate from main canvas room)
             this.joinRoom(socket, observerRoom);
             socket.data.observing = payload.trajectoryId;
             socket.data.observerType = 'canvas';
@@ -97,14 +97,14 @@ class CanvasPresenceModule extends BaseSocketModule {
             socket.emit(`canvas_users_update:${payload.trajectoryId}`, users);
         });
 
-        // Subscribe to raster view (for actual viewers)
+        // Subscribe to raster view(for actual viewers)
         this.wirePresenceSubscription(socket, {
             event: 'subscribe_to_raster',
-            roomOf: (payload: { trajectoryId?: string; rasterId?: string }) => 
+            roomOf: (payload: { trajectoryId?: string; rasterId?: string }) =>
                 payload.rasterId ? `raster:${payload.rasterId}` : payload.trajectoryId ? `raster:${payload.trajectoryId}` : undefined,
             previousOf: (payload: { rasterId?: string; previousRasterId?: string; trajectoryId?: string; previousTrajectoryId?: string }) => {
-                if (payload.previousRasterId) return `raster:${payload.previousRasterId}`;
-                if (payload.previousTrajectoryId) return `raster:${payload.previousTrajectoryId}`;
+                if(payload.previousRasterId) return `raster:${payload.previousRasterId}`;
+                if(payload.previousTrajectoryId) return `raster:${payload.previousTrajectoryId}`;
                 return undefined;
             },
             setContext: (socket, payload: { trajectoryId?: string; rasterId?: string; user?: any }) => {
@@ -118,17 +118,17 @@ class CanvasPresenceModule extends BaseSocketModule {
         });
 
         // Handle explicit raster unsubscribe
-        socket.on('unsubscribe_from_raster', async (payload: { trajectoryId?: string; rasterId?: string }) => {
-            const rasterRoom = payload.rasterId 
-                ? `raster:${payload.rasterId}` 
+        socket.on('unsubscribe_from_raster', async(payload: { trajectoryId?: string; rasterId?: string }) => {
+            const rasterRoom = payload.rasterId
+                ? `raster:${payload.rasterId}`
                 : payload.trajectoryId ? `raster:${payload.trajectoryId}` : null;
 
-            if (!rasterRoom) return;
+            if(!rasterRoom) return;
 
             //console.log(`[${this.name}] Socket ${socket.id} unsubscribing from raster: ${rasterRoom}`);
-            
+
             this.leaveRoom(socket, rasterRoom);
-            
+
             // Clear context
             socket.data.trajectoryId = undefined;
             socket.data.rasterId = undefined;
@@ -138,14 +138,14 @@ class CanvasPresenceModule extends BaseSocketModule {
             await this.broadcastPresence(rasterRoom, 'raster_users_update', (s) => this.extractPresenceUser(s));
         });
 
-        // Observer subscription for raster (for dashboard cards)
-        socket.on('observe_raster_presence', async (payload: { trajectoryId?: string }) => {
-            if (!payload.trajectoryId) return;
+        // Observer subscription for raster(for dashboard cards)
+        socket.on('observe_raster_presence', async(payload: { trajectoryId?: string }) => {
+            if(!payload.trajectoryId) return;
 
             const observerRoom = `raster-observer:${payload.trajectoryId}`;
             const mainRoom = `raster:${payload.trajectoryId}`;
-            
-            // Join observer room (separate from main raster room)
+
+            // Join observer room(separate from main raster room)
             this.joinRoom(socket, observerRoom);
             socket.data.observingRaster = payload.trajectoryId;
             socket.data.observerType = 'raster';
@@ -158,39 +158,39 @@ class CanvasPresenceModule extends BaseSocketModule {
         });
 
         // Handle disconnect for both canvas and raster
-        socket.on('disconnect', async () => {
+        socket.on('disconnect', async() => {
             // Broadcast presence update for canvas room if socket was in canvas
-            if (socket.data?.trajectoryId && socket.data?.viewType === 'canvas') {
+            if(socket.data?.trajectoryId && socket.data?.viewType === 'canvas'){
                 const canvasRoom = `canvas:${socket.data.trajectoryId}`;
                 const observerRoom = `canvas-observer:${socket.data.trajectoryId}`;
-                
+
                 // Broadcast to main room
                 await this.broadcastPresence(canvasRoom, 'canvas_users_update', (s) => this.extractPresenceUser(s));
-                
+
                 // Also broadcast to observers
-                if (this.io) {
+                if(this.io){
                     const users = await this.collectPresence(canvasRoom, (s) => this.extractPresenceUser(s));
                     this.io.to(observerRoom).emit('canvas_users_update', users);
                 }
             }
 
             // Broadcast presence update for raster room if socket was in raster
-            if (socket.data?.viewType === 'raster') {
-                const rasterRoom = socket.data?.rasterId 
-                    ? `raster:${socket.data.rasterId}` 
-                    : socket.data?.trajectoryId ? `raster:${socket.data.trajectoryId}` 
+            if(socket.data?.viewType === 'raster'){
+                const rasterRoom = socket.data?.rasterId
+                    ? `raster:${socket.data.rasterId}`
+                    : socket.data?.trajectoryId ? `raster:${socket.data.trajectoryId}`
                     : null;
-                
-                if (rasterRoom) {
+
+                if(rasterRoom){
                     const observerRoom = socket.data?.rasterId
                         ? `raster-observer:${socket.data.rasterId}`
                         : `raster-observer:${socket.data.trajectoryId}`;
-                    
+
                     // Broadcast to main room
                     await this.broadcastPresence(rasterRoom, 'raster_users_update', (s) => this.extractPresenceUser(s));
-                    
+
                     // Also broadcast to observers
-                    if (this.io) {
+                    if(this.io){
                         const users = await this.collectPresence(rasterRoom, (s) => this.extractPresenceUser(s));
                         this.io.to(observerRoom).emit('raster_users_update', users);
                     }
@@ -202,7 +202,7 @@ class CanvasPresenceModule extends BaseSocketModule {
     /**
      * Extract presence user data from socket, handling both authenticated and anonymous users
      */
-    private extractPresenceUser(socket: Socket): PresenceUser {
+    private extractPresenceUser(socket: Socket): PresenceUser{
         const user = (socket as any).user;
         const isAnonymous = !user || !user._id;
 

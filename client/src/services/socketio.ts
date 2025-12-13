@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -135,7 +135,7 @@ class SocketIOService{
 
         if(existingSubscription){
             // Already subscribed, don't add duplicate
-            return () => {
+            return() => {
                 this.off(event, callback);
             };
         }
@@ -147,7 +147,7 @@ class SocketIOService{
             this.socket.on(event, callback);
         }
 
-        // Unsubscribe function
+        // Return unsubscribe function
         return () => {
             this.off(event, callback);
         };
@@ -206,7 +206,7 @@ class SocketIOService{
 
     public onConnectionChange(listener: (connected: boolean) => void): () => void{
         this.connectionListeners.push(listener);
-        return () => {
+        return() => {
             this.connectionListeners = this.connectionListeners.filter((l) => l !== listener);
         };
     }
@@ -221,18 +221,16 @@ class SocketIOService{
         this.socket.emit('subscribe_to_team', { teamId, previousTeamId });
     }
 
-
-
     public updateAuth(auth: Record<string, any>): void{
         this.options.auth = { ...this.options.auth, ...auth };
-        
+
         if(this.socket?.connected){
             this.disconnect();
             this.connect().catch(this.logger.error);
         }
     }
 
-    public getCurrentToken(): string | null {
+    public getCurrentToken(): string | null{
         return this.options.auth?.token || null;
     }
 
@@ -273,7 +271,7 @@ class SocketIOService{
         // so we need to re-register all listeners. However, we should NOT
         // call socket.on() if the listeners were already set up by the initial
         // connect() call. We only need this for reconnections.
-        
+
         // Socket.io automatically clears listeners on disconnect, so we can
         // safely re-add all subscriptions from our subscription list
         this.subscriptions.forEach((sub) => {
@@ -296,7 +294,7 @@ class SocketIOService{
 
 // Initialize socket service with token if available
 const getInitialAuth = () => {
-    try {
+    try{
         const token = localStorage.getItem('authToken');
         return token ? { token } : {};
     } catch {

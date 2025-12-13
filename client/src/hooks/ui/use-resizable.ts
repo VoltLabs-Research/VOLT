@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -83,7 +83,7 @@ const useResizable = ({
             handle.addEventListener('mousedown', startResizing);
             handle.addEventListener('touchstart', startResizing, { passive: false });
 
-            return () => {
+            return() => {
                 handle.removeEventListener('mousedown', startResizing);
                 handle.removeEventListener('touchstart', startResizing);
             };
@@ -101,11 +101,11 @@ const useResizable = ({
             const deltaY = startPosRef.current.y - clientY;
             const heightChangeVh = (deltaY / window.innerHeight) * 100;
             const newHeight = Math.max(minSize.height, Math.min(maxSize.height, startSizeRef.current.height + heightChangeVh));
-            
+
             requestAnimationFrame(() => {
                 if(elementRef.current){
                     elementRef.current.style.width = `${newWidth}vw`;
-                    elementRef.current.style.height = `${newHeight}vh`;   
+                    elementRef.current.style.height = `${newHeight}vh`;
                 }
             });
         };
@@ -141,7 +141,7 @@ const useResizable = ({
             document.addEventListener('touchend', stopResizing);
         }
 
-        return () => {
+        return() => {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', stopResizing);
             document.removeEventListener('touchmove', handleTouchMove);

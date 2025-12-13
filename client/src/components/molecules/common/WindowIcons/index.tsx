@@ -35,7 +35,7 @@ const IconCircle = ({ variant, title, onClick }: IconDef) => {
         onClick();
     };
 
-    return (
+    return(
         <motion.div
             className={`window-icon-circle ${variant}`}
             title={title}
@@ -82,7 +82,7 @@ const WindowIcons: React.FC<WindowIconsProps> = ({
         onClick: onExpand || (() => { })
     }];
 
-    return (
+    return(
         <div
             className={`window-icons-container ${withBackground ? 'with-background' : ''}`}
             role='toolbar'

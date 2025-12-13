@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -55,7 +55,7 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     // Load trajectory when hook is initialized - only if trajectoryId is provided
     useEffect(() => {
         if(!trajectoryId) return;
-        
+
         if(!trajectory || trajectory?._id !== trajectoryId){
             logger.log(`Loading trajectory with ID: ${trajectoryId}`);
             getTrajectoryById(trajectoryId);
@@ -65,30 +65,30 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     // Handle automatically the selection for the first timestep when trajectory is loaded
     useEffect(() => {
         logger.log(`Canvas coordinator effect: trajectory=${!!trajectory}, currentTimestep=${currentTimestep}, frames=${trajectory?.frames?.length || 0}`);
-        
+
         // Only run this effect if we have a trajectory but no current timestep
         if(!trajectory || currentTimestep !== undefined) return;
-        
+
         // Make sure we have frames to work with
-        if(!trajectory.frames || trajectory.frames.length === 0) {
+        if(!trajectory.frames || trajectory.frames.length === 0){
             logger.log('No frames available in trajectory');
             return;
         }
-        
+
         // Find the first timestep by sorting all available timesteps
         const frames = trajectory.frames || [];
         const timesteps = frames
             .map((frame: any) => frame.timestep)
             .filter((ts: any) => ts !== undefined && ts !== null);
-            
+
         // Sort numerically to ensure we get the lowest value
         const sortedTimesteps = [...timesteps].sort((a: number, b: number) => a - b);
-        
-        if(sortedTimesteps.length > 0) {
+
+        if(sortedTimesteps.length > 0){
             const firstTimestep = sortedTimesteps[0];
             logger.log(`Setting initial timestep: ${firstTimestep}`);
             setCurrentTimestep(firstTimestep);
-            
+
             // If trajectory has analysis configs, then select the most recent
             if((trajectory.analysis ?? []).length >= 1){
                 const config = trajectory.analysis[trajectory.analysis.length - 1];
@@ -116,7 +116,7 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
             logger.log(`Trajectory rendering completed, forcing GLB reload for ${trajectory._id}`);
             // Reset model to clear cache
             resetModel();
-            // Then recompute to reload the GLB with cache buster (timestamp to break cache)
+            // Then recompute to reload the GLB with cache buster(timestamp to break cache)
             setTimeout(() => {
                 computeTimestepData(trajectory, currentTimestep, Date.now());
             }, 100);
@@ -126,12 +126,12 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     useEffect(() => {
         // Throttle console logging to avoid excessive rendering and console spam
         const now = Date.now();
-        
+
         // Only log every 1000ms to avoid flooding the console
-        if (now - lastLogTimeRef.current > 1000) {
+        if(now - lastLogTimeRef.current > 1000){
             lastLogTimeRef.current = now;
         }
-        
+
         if(trajectory?._id && currentTimestep !== undefined){
             // Only log when computing, which is less frequent than render cycles
             computeTimestepData(trajectory, currentTimestep);
@@ -139,13 +139,13 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     }, [trajectory?._id, currentTimestep, computeTimestepData]);
 
     useEffect(() => {
-        return () => {
+        return() => {
             resetPlayback();
             resetTimestep();
             clearCurrentTrajectory();
         };
     }, [resetPlayback, resetTimestep, clearCurrentTrajectory]);
-    
+
     return {
         trajectory,
         currentTimestep,

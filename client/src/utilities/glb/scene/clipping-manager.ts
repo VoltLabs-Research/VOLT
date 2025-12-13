@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -42,12 +42,12 @@ export default class ClippingManager{
                 material.uniforms.clippingPlanes.value = planes;
                 material.uniformsNeedUpdate = true;
             }
-        }else if('clippingPlanes' in (material as any)){
+        }else if('clippingPlanes' in(material as any)){
             material.clippingPlanes = planes;
             material.needsUpdate = true;
         }
     }
-    
+
     applyToModel(root: Group | null, planes: Plane[]){
         if(!root) return;
         if(this.gl){
@@ -60,7 +60,7 @@ export default class ClippingManager{
             const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
             mats.forEach((material: Material) => {
                 this.applyToMaterial(material, planes);
-                
+
                 if(obj instanceof Points && material instanceof ShaderMaterial){
                     material.needsUpdate = true;
                     obj.geometry.attributes.position.needsUpdate = true;

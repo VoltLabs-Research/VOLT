@@ -7,8 +7,8 @@ import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
 
-export default class ContainerController {
-    public getAllContainers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export default class ContainerController{
+    public getAllContainers = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const userTeams = await Team.find({ members: (req.user as any)._id });
         const teamIds = userTeams.map((t) => t._id);
 
@@ -22,14 +22,14 @@ export default class ContainerController {
             .populate('team', 'name')
             .populate('createdBy', 'firstName lastName email');
 
-        const syncedContainers = await Promise.all(containers.map(async (doc) => {
-            try {
+        const syncedContainers = await Promise.all(containers.map(async(doc) => {
+            try{
                 const info = await dockerService.inspectContainer(doc.containerId);
-                if (info.State.Status !== doc.status) {
+                if(info.State.Status !== doc.status){
                     doc.status = info.State.Status;
                     await doc.save();
                 }
-            } catch (e) {
+            }catch(e){
                 doc.status = 'missing';
                 await doc.save();
             }
@@ -39,7 +39,7 @@ export default class ContainerController {
         res.status(200).json({ status: 'success', data: { containers: syncedContainers } });
     });
 
-    public createContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public createContainer = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const { name, image, env, ports } = req.body;
         const team = res.locals.team;
 
@@ -47,7 +47,7 @@ export default class ContainerController {
         const PortBindings: Record<string, any> = {};
         const ExposedPorts: Record<string, any> = {};
 
-        if (ports) {
+        if(ports){
             ports.forEach((p: any) => {
                 const portKey = `${p.private}/tcp`;
                 ExposedPorts[portKey] = {};
@@ -90,15 +90,15 @@ export default class ContainerController {
         res.status(201).json({ status: 'success', data: { container: newContainer } });
     });
 
-    public controlContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public controlContainer = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const { action } = req.body;
         const container = res.locals.container;
 
-        if (action === 'start') {
+        if(action === 'start'){
             await dockerService.startContainer(container.containerId);
-        } else if (action === 'stop') {
+        }else if(action === 'stop'){
             await dockerService.stopContainer(container.containerId);
-        } else {
+        }else{
             return next(new RuntimeError(ErrorCodes.CONTAINER_INVALID_ACTION, 400));
         }
 
@@ -109,7 +109,7 @@ export default class ContainerController {
         res.status(200).json({ status: 'success', data: { container } });
     });
 
-    public deleteContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public deleteContainer = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const container = res.locals.container;
 
         await dockerService.stopContainer(container.containerId);
@@ -119,7 +119,7 @@ export default class ContainerController {
         res.status(204).json({ status: 'success', data: null });
     });
 
-    public getContainerStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public getContainerStats = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const container = res.locals.container;
 
         const stats = await dockerService.getContainerStats(container.containerId);
@@ -131,7 +131,7 @@ export default class ContainerController {
         res.status(200).json({ status: 'success', data: { stats, limits } });
     });
 
-    public restartContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public restartContainer = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const container = res.locals.container;
 
         await dockerService.stopContainer(container.containerId);
@@ -143,7 +143,7 @@ export default class ContainerController {
         res.status(200).json({ status: 'success', data: { container } });
     });
 
-    public getContainerFiles = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public getContainerFiles = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const { path = '/' } = req.query;
         const container = res.locals.container;
 
@@ -151,11 +151,11 @@ export default class ContainerController {
         const lines = output.split('\n').slice(1);
         const files = lines.map((line: string) => {
             const parts = line.trim().split(/\s+/);
-            if (parts.length < 9) return null;
+            if(parts.length < 9) return null;
 
             const isDir = parts[0].startsWith('d');
             const name = parts.slice(8).join(' ');
-            if (name === '.' || name === '..') return null;
+            if(name === '.' || name === '..') return null;
 
             return {
                 name,
@@ -169,35 +169,35 @@ export default class ContainerController {
         res.status(200).json({ status: 'success', data: { files } });
     });
 
-    public readContainerFile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public readContainerFile = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const { path } = req.query;
-        if (!path || typeof path !== 'string') return next(new RuntimeError(ErrorCodes.CONTAINER_FILE_PATH_REQUIRED, 400));
+        if(!path || typeof path !== 'string') return next(new RuntimeError(ErrorCodes.CONTAINER_FILE_PATH_REQUIRED, 400));
 
         const container = res.locals.container;
         const content = await dockerService.execCommand(container.containerId, ['cat', path]);
         res.status(200).json({ status: 'success', data: { content } });
     });
 
-    public getContainerProcesses = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public getContainerProcesses = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const container = res.locals.container;
         const processes = await dockerService.getContainerProcesses(container.containerId);
         res.status(200).json({ status: 'success', data: { processes } });
     });
 
     public handleContainerTerminal = (socket: Socket) => {
-        socket.on('container:terminal:attach', async (data: { containerId: string }) => {
+        socket.on('container:terminal:attach', async(data: { containerId: string }) => {
             await terminalManager.attach(socket, data.containerId);
         });
     };
 
-    public updateContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public updateContainer = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const { env, ports } = req.body;
         const container = res.locals.container;
 
-        try {
+        try{
             await dockerService.stopContainer(container.containerId);
             await dockerService.removeContainer(container.containerId);
-        } catch (e) {
+        }catch(e){
             /* container may already be gone */
         }
 
@@ -205,7 +205,7 @@ export default class ContainerController {
         const PortBindings: Record<string, any> = {};
         const ExposedPorts: Record<string, any> = {};
 
-        if (ports) {
+        if(ports){
             ports.forEach((p: any) => {
                 const portKey = `${p.private}/tcp`;
                 ExposedPorts[portKey] = {};
@@ -234,8 +234,8 @@ export default class ContainerController {
         container.status = containerInfo.State.Status;
         container.env = env || [];
         container.ports = ports || [];
-        if (req.body.memory) container.memory = req.body.memory;
-        if (req.body.cpus) container.cpus = req.body.cpus;
+        if(req.body.memory) container.memory = req.body.memory;
+        if(req.body.cpus) container.cpus = req.body.cpus;
         await container.save();
 
         res.status(200).json({ status: 'success', data: { container } });

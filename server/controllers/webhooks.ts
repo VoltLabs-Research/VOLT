@@ -5,8 +5,8 @@ import { catchAsync } from '@/utilities/runtime/runtime';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 
-export default class WebhooksController {
-    public getMyWebhooks = catchAsync(async (req: Request, res: Response): Promise<void> => {
+export default class WebhooksController{
+    public getMyWebhooks = catchAsync(async(req: Request, res: Response): Promise<void> =>{
         const user = (req as any).user;
 
         const webhooks = await Webhook.findByUser(user.id);
@@ -18,7 +18,7 @@ export default class WebhooksController {
         });
     });
 
-    public createWebhook = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public createWebhook = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const user = (req as any).user;
         const { name, url, events } = req.body;
 
@@ -32,11 +32,11 @@ export default class WebhooksController {
             'user.logout'
         ];
 
-        if (!events || !Array.isArray(events) || events.length === 0) {
+        if(!events || !Array.isArray(events) || events.length === 0) {
             return next(new RuntimeError(ErrorCodes.WEBHOOK_EVENTS_AT_LEAST_ONE_REQUIRED, 400));
         }
 
-        if (!events.every((event: string) => validEvents.includes(event))) {
+        if(!events.every((event: string) => validEvents.includes(event))) {
             return next(new RuntimeError(ErrorCodes.WEBHOOK_EVENT_INVALID, 400));
         }
 
@@ -56,13 +56,13 @@ export default class WebhooksController {
         });
     });
 
-    public getWebhook = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public getWebhook = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const user = (req as any).user;
         const { id } = req.params;
 
         const webhook = await Webhook.findOne({ _id: id, createdBy: user.id });
 
-        if (!webhook) {
+        if(!webhook){
             return next(new RuntimeError(ErrorCodes.WEBHOOK_NOT_FOUND, 404));
         }
 
@@ -72,20 +72,20 @@ export default class WebhooksController {
         });
     });
 
-    public updateWebhook = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public updateWebhook = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const user = (req as any).user;
         const { id } = req.params;
         const { name, url, events, isActive } = req.body;
 
         const webhook = await Webhook.findOne({ _id: id, createdBy: user.id });
 
-        if (!webhook) {
+        if(!webhook){
             return next(new RuntimeError(ErrorCodes.WEBHOOK_NOT_FOUND, 404));
         }
 
-        if (name !== undefined) webhook.name = name;
-        if (url !== undefined) webhook.url = url;
-        if (events !== undefined) {
+        if(name !== undefined) webhook.name = name;
+        if(url !== undefined) webhook.url = url;
+        if(events !== undefined){
             const validEvents = [
                 'trajectory.created',
                 'trajectory.updated',
@@ -96,13 +96,13 @@ export default class WebhooksController {
                 'user.logout'
             ];
 
-            if (!events.every((event: string) => validEvents.includes(event))) {
+            if(!events.every((event: string) => validEvents.includes(event))) {
                 return next(new RuntimeError(ErrorCodes.WEBHOOK_INVALID_EVENT_TYPE, 400));
             }
 
             webhook.events = events;
         }
-        if (isActive !== undefined) webhook.isActive = isActive;
+        if(isActive !== undefined) webhook.isActive = isActive;
 
         await webhook.save();
 
@@ -112,13 +112,13 @@ export default class WebhooksController {
         });
     });
 
-    public deleteWebhook = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public deleteWebhook = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const user = (req as any).user;
         const { id } = req.params;
 
         const webhook = await Webhook.findOne({ _id: id, createdBy: user.id });
 
-        if (!webhook) {
+        if(!webhook){
             return next(new RuntimeError(ErrorCodes.WEBHOOK_NOT_FOUND, 404));
         }
 
@@ -130,13 +130,13 @@ export default class WebhooksController {
         });
     });
 
-    public testWebhook = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public testWebhook = catchAsync(async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
         const user = (req as any).user;
         const { id } = req.params;
 
         const webhook = await Webhook.findOne({ _id: id, createdBy: user.id });
 
-        if (!webhook) {
+        if(!webhook){
             return next(new RuntimeError(ErrorCodes.WEBHOOK_NOT_FOUND, 404));
         }
 
@@ -150,14 +150,14 @@ export default class WebhooksController {
             }
         };
 
-        try {
+        try{
             await webhook.trigger(testPayload);
 
             res.status(200).json({
                 status: 'success',
                 message: 'Webhook test successful'
             });
-        } catch (error: any) {
+        }catch(error: any){
             res.status(400).json({
                 status: 'error',
                 message: 'Webhook test failed',
@@ -166,7 +166,7 @@ export default class WebhooksController {
         }
     });
 
-    public getWebhookStats = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    public getWebhookStats = catchAsync(async(req: Request, res: Response): Promise<void> =>{
         const user = (req as any).user;
 
         const stats = await Webhook.aggregate([

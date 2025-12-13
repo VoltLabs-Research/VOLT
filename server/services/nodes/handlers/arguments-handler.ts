@@ -34,7 +34,7 @@ class ArgumentsHandler implements NodeHandler{
         return {
             as_str: argsArray.join(' '),
             as_array: argsArray,
-            ...values
+                ...values
         };
     }
 };

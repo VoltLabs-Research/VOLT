@@ -6,7 +6,7 @@ class Logger{
     constructor(name: string){
         this.name = name;
     }
-    
+
     private formatMessage(level: string, ...args: any[]){
         return [`[${this.name}] - ${level}:`, ...args];
     }

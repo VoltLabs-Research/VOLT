@@ -33,13 +33,13 @@ const Containers: React.FC = () => {
     const navigate = useNavigate();
     const searchQuery = useDashboardSearchStore((s) => s.query);
 
-    const fetchContainers = useCallback(async () => {
-        try {
+    const fetchContainers = useCallback(async() => {
+        try{
             const containers = await containerApi.getAll({ q: searchQuery });
             setContainers(containers);
-        } catch (error) {
+        }catch(error){
             console.error('Failed to fetch containers:', error);
-        } finally {
+        }finally{
             setLoading(false);
         }
     }, [searchQuery]);
@@ -47,41 +47,41 @@ const Containers: React.FC = () => {
     useEffect(() => {
         fetchContainers();
         const interval = setInterval(fetchContainers, 5000);
-        return () => clearInterval(interval);
+        return() => clearInterval(interval);
     }, [fetchContainers]);
 
-    const handleControl = async (container: Container, action: 'start' | 'stop') => {
-        try {
+    const handleControl = async(container: Container, action: 'start' | 'stop') => {
+        try{
             await containerApi.control(container._id, action);
             showSuccess(`Container ${action}ed successfully`);
             fetchContainers();
-        } catch (error: any) {
+        }catch(error: any){
             showError(error.response?.data?.message || `Failed to ${action} container`);
         }
     };
 
-    const handleDelete = async (container: Container) => {
-        if (!window.confirm(`Are you sure you want to delete container "${container.name}"?`)) {
+    const handleDelete = async(container: Container) => {
+        if(!window.confirm(`Are you sure you want to delete container "${container.name}"?`)) {
             return;
         }
-        try {
+        try{
             await containerApi.delete(container._id);
             showSuccess('Container deleted successfully');
             fetchContainers();
-        } catch (error: any) {
+        }catch(error: any){
             showError(error.response?.data?.message || 'Failed to delete container');
         }
     };
 
-    const handleMenuAction = useCallback(async (action: string, item: Container) => {
-        switch (action) {
+    const handleMenuAction = useCallback(async(action: string, item: Container) => {
+        switch(action){
             case 'view':
                 navigate(`/dashboard/containers/${item._id}`);
                 break;
             case 'terminal':
-                if (item.status === 'running') {
+                if(item.status === 'running'){
                     setTerminalContainer(item);
-                } else {
+                }else{
                     showError('Container must be running to open terminal');
                 }
                 break;
@@ -102,12 +102,12 @@ const Containers: React.FC = () => {
             ['View Details', RiEyeLine, () => handleMenuAction('view', item)]
         ];
 
-        if (item.status === 'running') {
+        if(item.status === 'running'){
             options.push(
                 ['Open Terminal', RiTerminalLine, () => handleMenuAction('terminal', item)],
                 ['Stop', Square, () => handleMenuAction('stop', item)]
             );
-        } else {
+        }else{
             options.push(['Start', Play, () => handleMenuAction('start', item)]);
         }
 
@@ -168,9 +168,9 @@ const Containers: React.FC = () => {
             title: 'Ports',
             key: 'ports',
             render: (value) => {
-                if (!value || value.length === 0) return <span className='text-muted'>-</span>;
+                if(!value || value.length === 0) return <span className='text-muted'>-</span>;
                 const port = value[0];
-                return (
+                return(
                     <span className='container-port-text'>
                         {port.private} → {port.public}
                     </span>
@@ -191,7 +191,7 @@ const Containers: React.FC = () => {
         }
     ], []);
 
-    return (
+    return(
         <DashboardContainer pageName='Containers' className='containers-page-wrapper'>
             <div className='containers-listing-header'>
                 <button
@@ -204,7 +204,7 @@ const Containers: React.FC = () => {
             </div>
 
             <DocumentListing
-                title={`Containers (${containers.length})`}
+                title={`Containers(${containers.length})`}
                 breadcrumbs={['Dashboard', 'Containers']}
                 columns={columns}
                 data={containers}

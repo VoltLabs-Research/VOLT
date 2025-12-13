@@ -4,7 +4,7 @@ import type { EnvironmentConfigStore } from '@/types/stores/editor/environment-c
 import { ENVIRONMENT_DEFAULT_CONFIG } from '@/types/stores/editor/environment-config';
 
 const useEnvironmentConfigStore = create<EnvironmentConfigStore>()(persist((set) => ({
-     ...ENVIRONMENT_DEFAULT_CONFIG,
+    ...ENVIRONMENT_DEFAULT_CONFIG,
 
     setBackgroundColor: (color) => {
         set({ backgroundColor: color });

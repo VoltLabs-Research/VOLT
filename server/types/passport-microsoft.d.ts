@@ -29,7 +29,7 @@ declare module 'passport-microsoft' {
         done: VerifyCallback
     ) => void;
 
-    export class Strategy extends PassportStrategy {
+    export class Strategy extends PassportStrategy{
         constructor(options: StrategyOptions, verify: VerifyFunction);
     }
 }

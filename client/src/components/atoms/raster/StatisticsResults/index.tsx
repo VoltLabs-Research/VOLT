@@ -16,8 +16,8 @@ export interface StatisticsResultsProps {
 const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) => {
     // Transform data if it's an object with keys as type names
     const processData = (): any[] => {
-        // Check if data has structure_types (from C++ backend structure statistics)
-        if (data?.structure_types && typeof data.structure_types === 'object') {
+        // Check if data has structure_types(from C++ backend structure statistics)
+        if(data?.structure_types && typeof data.structure_types === 'object'){
             // Transform structure_types object into array format
             // Example: { FCC: { count: 500, percentage: 50.0 }, HCP: { count: 300, percentage: 30.0 } }
             // becomes: [{ name: 'FCC', count: 500, percentage: 50.0 }, { name: 'HCP', count: 300, percentage: 30.0 }]
@@ -29,14 +29,14 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
         }
 
         // Check if data has a 'types' or 'statistics' array already
-        if (data?.types || data?.statistics || data?.groups) {
+        if(data?.types || data?.statistics || data?.groups){
             return data.types || data.statistics || data.groups;
         }
 
         // Otherwise, transform object keys into statistics
-        // Example: { FCC: [...], HCP: [...], OTHER: [...] } 
+        // Example: { FCC: [...], HCP: [...], OTHER: [...] }
         // becomes: [{ name: 'FCC', count: X, percentage: Y }, ...]
-        if (typeof data === 'object' && !Array.isArray(data)) {
+        if(typeof data === 'object' && !Array.isArray(data)) {
             const entries = Object.entries(data).filter(([_key, value]) =>
                 Array.isArray(value) || typeof value === 'number'
             );
@@ -67,7 +67,7 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
 
     // Get colors from config or use defaults
     const getColor = (name: string): string => {
-        if (config.colors) {
+        if(config.colors){
             const normalized = name.toUpperCase().replace(/ /g, '_');
             return config.colors[normalized] || config.colors['DEFAULT'] || '#6b7280';
         }
@@ -76,9 +76,9 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
 
     // Format numbers
     const formatNumber = (num: number, format?: string): string => {
-        if (typeof num !== 'number' || isNaN(num)) return 'N/A';
+        if(typeof num !== 'number' || isNaN(num)) return 'N/A';
 
-        switch (format) {
+        switch(format){
             case 'percentage':
                 return `${num.toFixed(2)}%`;
             case 'decimal':
@@ -102,7 +102,7 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
         ? sortedStats.slice(0, config.maxItems)
         : sortedStats;
 
-    return (
+    return(
         <EditorWidget draggable={false} className='statistics-results-container'>
             {config.title && (
                 <div className='statistics-results-header'>
@@ -116,7 +116,7 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
                     const value = stat[config.valueKey || 'count'];
                     const percentage = stat[config.percentageKey || 'percentage'];
 
-                    return (
+                    return(
                         <div key={`${name}-${index}`} className='type-legend-item'>
                             <div
                                 style={{ backgroundColor: getColor(name) }}
@@ -145,4 +145,3 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
 };
 
 export default StatisticsResults;
-    

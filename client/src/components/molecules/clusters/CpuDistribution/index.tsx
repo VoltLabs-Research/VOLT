@@ -13,25 +13,25 @@ const MAX_POINTS = 60
 // Generate colors for individual cores
 const generateCoreColors = (numCores: number): string[] => {
   const colors: string[] = []
-  for (let i = 0; i < numCores; i++) {
+  for(let i = 0; i < numCores; i++){
     const hue = (i * 360) / numCores
     colors.push(`hsl(${hue}, 80%, 65%)`)
   }
   return colors
 }
 
-export function CpuDistribution() {
+export function CpuDistribution(){
   const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics()
   const [history, setHistory] = useState<DataPoint[]>([])
 
   // Preload with historical data
   useEffect(() => {
-    if (isHistoryLoaded && metricsHistory.length > 0 && history.length === 0) {
+    if(isHistoryLoaded && metricsHistory.length > 0 && history.length === 0){
       console.log('[CpuDistribution] Preloading with', metricsHistory.length, 'historical points')
       const historicalData = metricsHistory
-        .filter(m => m.cpu)
-        .slice(-MAX_POINTS)
-        .map(m => ({
+          .filter(m => m.cpu)
+          .slice(-MAX_POINTS)
+          .map(m => ({
           coresUsage: m.cpu.coresUsage
         }))
       setHistory(historicalData)
@@ -39,14 +39,14 @@ export function CpuDistribution() {
   }, [isHistoryLoaded, metricsHistory])
 
   useEffect(() => {
-    if (!metrics?.cpu) return
+    if(!metrics?.cpu) return
 
     setHistory(prev => {
       const newHistory = [...prev, {
         coresUsage: metrics.cpu.coresUsage
       }]
 
-      if (newHistory.length > MAX_POINTS) {
+      if(newHistory.length > MAX_POINTS){
         newHistory.shift()
       }
 
@@ -63,29 +63,29 @@ export function CpuDistribution() {
   const coreColors = generateCoreColors(numCores)
 
   const getX = (index: number, length: number) => {
-    if (length <= 1) return 50
-    return (index / (length - 1)) * 100
+    if(length <= 1) return 50
+    return(index / (length - 1)) * 100
   }
-  
+
   const createPath = (values: number[], maxVal: number) => {
-    if (values.length === 0) return ''
-    
+    if(values.length === 0) return ''
+
     const getY = (value: number) => {
       const scaledValue = (value / maxVal) * (100 - padding * 2)
       return 100 - scaledValue - padding
     }
-    
+
     let path = `M ${getX(0, values.length)} ${getY(values[0])}`
-    for (let i = 1; i < values.length; i++) {
+    for(let i = 1; i < values.length; i++){
       path += ` L ${getX(i, values.length)} ${getY(values[i])}`
     }
     return path
   }
 
   const hasCoreData = history.some(d => d.coresUsage && d.coresUsage.length > 0)
-  
-  if (!hasCoreData && !isLoading) {
-    return (
+
+  if(!hasCoreData && !isLoading){
+    return(
       <ChartContainer
         icon={Cpu}
         title="CPU"
@@ -101,10 +101,10 @@ export function CpuDistribution() {
   // Calculate average usage per core
   const coreAverages = Array(numCores).fill(0).map((_, coreIndex) => {
     const values = history
-      .filter(d => d.coresUsage && d.coresUsage[coreIndex] !== undefined)
-      .map(d => d.coresUsage![coreIndex])
-    
-    if (values.length === 0) return 0
+        .filter(d => d.coresUsage && d.coresUsage[coreIndex] !== undefined)
+        .map(d => d.coresUsage![coreIndex])
+
+    if(values.length === 0) return 0
     return values.reduce((sum, val) => sum + val, 0) / values.length
   })
 
@@ -116,14 +116,14 @@ export function CpuDistribution() {
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="cpu-distribution-chart">
       {history.length > 0 && coreColors.map((color, coreIndex) => {
         const points = history
-          .filter(d => d.coresUsage && d.coresUsage[coreIndex] !== undefined)
-          .map(d => d.coresUsage![coreIndex])
-        
-        if (points.length === 0) return null
-        
+            .filter(d => d.coresUsage && d.coresUsage[coreIndex] !== undefined)
+            .map(d => d.coresUsage![coreIndex])
+
+        if(points.length === 0) return null
+
         const pathData = createPath(points, maxValue)
-        
-        return (
+
+        return(
           <path
             key={`core-${coreIndex}`}
             d={pathData}
@@ -138,7 +138,7 @@ export function CpuDistribution() {
     </svg>
   )
 
-  return (
+  return(
     <ChartContainer
       icon={Cpu}
       title="CPU"

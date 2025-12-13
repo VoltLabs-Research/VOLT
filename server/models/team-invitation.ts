@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -105,12 +105,12 @@ const TeamInvitationSchema: Schema<ITeamInvitation> = new Schema({
 
 // Generate token before saving
 TeamInvitationSchema.pre('save', function(next) {
-    if (!this.isNew) return next();
-    
+    if(!this.isNew) return next();
+
     const token = crypto.randomBytes(32).toString('hex');
     this.token = token;
     this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
-    
+
     next();
 });
 

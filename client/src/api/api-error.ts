@@ -18,7 +18,7 @@ export class ApiError extends Error{
      * Get user-friendly message for UI display
      * Safe to show directly to end users
      */
-    getUserMessage(): string {
+    getUserMessage(): string{
         return ERROR_CODE_MESSAGES[this.code] || 'Unknown error';
     }
 }

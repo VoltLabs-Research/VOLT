@@ -8,7 +8,7 @@ const ForEachNode = memo((props: NodeProps) => {
     const { data } = props;
     const iterableSource = data.forEach?.iterableSource;
 
-    return (
+    return(
         <BaseNode {...props} nodeType={NodeType.FOREACH}>
             <NodeField
                 label='Iterable Source'

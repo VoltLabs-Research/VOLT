@@ -1,7 +1,7 @@
 /**
-Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
+of this software and associated documentation files(the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
@@ -33,7 +33,7 @@ const initialState = {
 
 const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
     const logger = new Logger('use-team-job-store');
-    
+
     let connectionUnsubscribe: (() => void) | null = null;
     let teamJobsUnsubscribe: (() => void) | null = null;
     let jobUpdateUnsubscribe: (() => void) | null = null;
@@ -95,9 +95,9 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
             const { _handleConnect, _handleTeamJobs, _handleJobUpdate } = get();
             logger.log('Initializing socket listeners...');
 
-            if (connectionUnsubscribe) connectionUnsubscribe();
-            if (teamJobsUnsubscribe) teamJobsUnsubscribe();
-            if (jobUpdateUnsubscribe) jobUpdateUnsubscribe();
+            if(connectionUnsubscribe) connectionUnsubscribe();
+            if(teamJobsUnsubscribe) teamJobsUnsubscribe();
+            if(jobUpdateUnsubscribe) jobUpdateUnsubscribe();
 
             connectionUnsubscribe = socketService.onConnectionChange(_handleConnect);
             teamJobsUnsubscribe = socketService.on('team_jobs', _handleTeamJobs);
@@ -116,7 +116,7 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
 
         subscribeToTeam: (teamId: string, previousTeamId: string | null = null) => {
             const { currentTeamId, _initializeSocket } = get();
-            
+
             if(currentTeamId === teamId){
                 logger.log(`Already subscribed to team ${teamId}`);
                 return;
@@ -124,7 +124,7 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
 
             logger.log(`Subscribing to team: ${teamId}`);
             _initializeSocket();
-            
+
             set({
                 currentTeamId: teamId,
                 jobs: [],
@@ -132,23 +132,23 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
                 isLoading: true
             });
 
-            if (!socketService.isConnected()) {
+            if(!socketService.isConnected()) {
                 socketService.connect()
                     .then(() => {
                         socketService.subscribeToTeam(teamId, previousTeamId || currentTeamId!);
                     })
-                    .catch((error) => {
+                        .catch((error) => {
                         logger.error('Failed to connect and subscribe', error);
                         set({ isLoading: false });
                     });
-            } else {
+            }else{
                 socketService.subscribeToTeam(teamId, previousTeamId || currentTeamId!);
             }
         },
 
         unsubscribeFromTeam: () => {
             const { currentTeamId } = get();
-            if (currentTeamId) {
+            if(currentTeamId){
                 logger.log(`Unsubscribing from team: ${currentTeamId}`);
                 set({
                     currentTeamId: null,
@@ -161,20 +161,20 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
 
         disconnect: () => {
             logger.log('Disconnecting socket...');
-            if (connectionUnsubscribe) {
+            if(connectionUnsubscribe){
                 connectionUnsubscribe();
                 connectionUnsubscribe = null;
             }
-            if (teamJobsUnsubscribe) {
+            if(teamJobsUnsubscribe){
                 teamJobsUnsubscribe();
                 teamJobsUnsubscribe = null;
             }
-            if (jobUpdateUnsubscribe) {
+            if(jobUpdateUnsubscribe){
                 jobUpdateUnsubscribe();
                 jobUpdateUnsubscribe = null;
             }
             socketService.disconnect();
-            set({ 
+            set({
                 isConnected: false,
                 currentTeamId: null,
                 jobs: [],

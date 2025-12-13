@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -57,7 +57,7 @@ interface StackItem {
 };
 
 /**
- * 2D triangle (screen space) with average color and depth.
+ * 2D triangle(screen space) with average color and depth.
  */
 type Tri2D = {
     a: { x: number, y: number },
@@ -80,11 +80,11 @@ export interface HeadlessRasterizerOptions {
     height: number;
     /** Canvas background as CSS color or 'transparent'. */
     background: string;
-    /** Vertical field of view (degress).  */
+    /** Vertical field of view(degress).  */
     fov: number;
-    /** Maximum number of points to draw (point clouds). If '0' or less, all points are used. */
+    /** Maximum number of points to draw(point clouds). If '0' or less, all points are used. */
     maxPoints: number;
-    /** Up axis, 'z' or anything else (defaults to a Y-up like behavior). */
+    /** Up axis, 'z' or anything else(defaults to a Y-up like behavior). */
     up: string;
     /** Azimuth angle in degress. */
     az: number;
@@ -254,7 +254,7 @@ const LIGHTS = {
  */
 const nodeLocalMatrix = (node: GNode): mat4 => {
     const matrix = node.getMatrix();
-    if (matrix) {
+    if(matrix){
         return mat4.clone(matrix);
     }
 
@@ -275,7 +275,7 @@ const collectTrianglesFromPrimitive = (prim: Primitive, world: mat4, into: Trian
     const mode = prim.getMode();
 
     const posAcc = prim.getAttribute('POSITION');
-    if (!posAcc) return;
+    if(!posAcc) return;
 
     const colAcc = prim.getAttribute('COLOR_0') ?? null;
 
@@ -290,14 +290,14 @@ const collectTrianglesFromPrimitive = (prim: Primitive, world: mat4, into: Trian
     const colorTmp = [1, 1, 1] as [number, number, number];
 
     // color extraction
-    const getColor = (i: number): [number, number, number] => {
-        if (!colArr) return [1, 1, 1];
+    const getColor = (i: number): [number, number, number] =>{
+        if(!colArr) return [1, 1, 1];
 
         let r = colArr[i * colSize] ?? 1;
         let g = colArr[i * colSize + 1] ?? 1;
         let b = colArr[i * colSize + 2] ?? 1;
 
-        if (r > 1 || g > 1 || b > 1) {
+        if(r > 1 || g > 1 || b > 1){
             r /= 255;
             g /= 255;
             b /= 255;
@@ -331,7 +331,7 @@ const collectTrianglesFromPrimitive = (prim: Primitive, world: mat4, into: Trian
     // Batch triangle creation for better memory performance
     const triangleBatch: Triangle3D[] = [];
     const pushTri = (i0: number, i1: number, i2: number) => {
-        if (i0 >= count || i1 >= count || i2 >= count) return;
+        if(i0 >= count || i1 >= count || i2 >= count) return;
         triangleBatch.push({
             a: mkV(i0),
             b: mkV(i1),
@@ -339,7 +339,7 @@ const collectTrianglesFromPrimitive = (prim: Primitive, world: mat4, into: Trian
         });
 
         // Flush batch when it gets large enough
-        if (triangleBatch.length >= 1024) {
+        if(triangleBatch.length >= 1024){
             into.push(...triangleBatch);
             triangleBatch.length = 0;
         }
@@ -350,79 +350,79 @@ const collectTrianglesFromPrimitive = (prim: Primitive, world: mat4, into: Trian
     const FAN = (mode === 6);
 
     const idxAcc = prim.getIndices();
-    if (idxAcc) {
+    if(idxAcc){
         const idx = idxAcc.getArray() as Uint16Array | Uint32Array | number[];
 
-        if (TRIANGLES) {
+        if(TRIANGLES){
             const idxLen = idx.length;
-            for (let i = 0; i + 2 < idxLen; i += 3) {
+            for(let i = 0; i + 2 < idxLen; i += 3){
                 pushTri(idx[i], idx[i + 1], idx[i + 2]);
             }
-        } else if (STRIP) {
+        }else if(STRIP){
             const idxLen = idx.length;
-            for (let i = 0; i + 2 < idxLen; i++) {
+            for(let i = 0; i + 2 < idxLen; i++){
                 pushTri(idx[i], idx[i + 1], idx[i + 2]);
             }
-        } else if (FAN) {
+        }else if(FAN){
             const base = idx[0];
             const idxLen = idx.length;
-            for (let i = 1; i + 1 < idxLen; i++) {
+            for(let i = 1; i + 1 < idxLen; i++){
                 pushTri(base, idx[i], idx[i + 1]);
             }
         }
-    } else {
-        if (TRIANGLES) {
-            for (let i = 0; i + 2 < count; i += 3) {
+    }else{
+        if(TRIANGLES){
+            for(let i = 0; i + 2 < count; i += 3){
                 pushTri(i, i + 1, i + 2);
             }
-        } else if (STRIP) {
-            for (let i = 0; i + 2 < count; i++) {
-                if (i % 2 === 0) {
+        }else if(STRIP){
+            for(let i = 0; i + 2 < count; i++){
+                if(i % 2 === 0){
                     pushTri(i, i + 1, i + 2);
-                } else {
+                }else{
                     pushTri(i + 1, i, i + 2);
                 }
             }
-        } else if (FAN) {
-            for (let i = 1; i + 1 < count; i++) {
+        }else if(FAN){
+            for(let i = 1; i + 1 < count; i++){
                 pushTri(0, i, i + 1);
             }
         }
     }
 
     // Push any remaining triangles
-    if (triangleBatch.length > 0) {
+    if(triangleBatch.length > 0){
         into.push(...triangleBatch);
     }
 };
 
 /**
- * Heuristic to decide if a node should be drawn as mesh (triangles) instead of points.
+ * Heuristic to decide if a node should be drawn as mesh(triangles) instead of points.
  * @param node - glTF node.
  */
 const shouldRenderAsMesh = (node: GNode): boolean => {
     const names = new Set(['meshgeometry', 'dislocations']);
     const name = (node.getName() || '').toLowerCase();
-    if (name && names.has(name)) return true;
+    if(name && names.has(name)) return true;
 
     const mesh = node.getMesh();
     const meshName = (mesh?.getName() || '').toLowerCase();
-    if (meshName && names.has(meshName)) return true;
+    if(meshName && names.has(meshName)) return true;
 
     return false;
 };
 
 // TODO: experimental
 const adaptivePointSize = (particleCount: number, width: number, height: number) => {
-    if (particleCount <= 0) return 0.0;
+    if(particleCount <= 0) return 0.0;
 
     const pixels = width * height;
     const density = particleCount / pixels;
 
-    if (density <= 0.25) return 4.0;
-    if (density <= 1.0) return 3.0;
-    if (density <= 3.0) return 2.0;
-    if (density <= 6.0) return 1.5;
+    if(density <= 0.25) return 4.0;
+    if(density <= 1.0) return 3.0;
+    if(density <= 3.0) return 2.0;
+    if(density <= 6.0) return 1.5;
     return 1.0;
 };
 
@@ -444,30 +444,30 @@ const computeBoundsAndCountForNode = (
     const tmp = vec3.create();
     let countTotal = 0;
 
-    while (stack.length > 0) {
+    while(stack.length > 0){
         const { node, worldMatrix } = stack.pop()!;
         const local = nodeLocalMatrix(node);
         const world = mat4.create();
         mat4.multiply(world, worldMatrix, local);
 
         const mesh = node.getMesh();
-        if (mesh) {
+        if(mesh){
             const primitives = mesh.listPrimitives();
             const asMesh = shouldRenderAsMesh(node);
 
-            for (let p = 0; p < primitives.length; p++) {
+            for(let p = 0; p < primitives.length; p++){
                 const prim = primitives[p];
                 const posAcc = prim.getAttribute('POSITION');
-                if (!posAcc) continue;
+                if(!posAcc) continue;
 
                 const posArr = posAcc.getArray() as Float32Array | number[];
                 const count = posAcc.getCount();
 
-                if (!asMesh) {
+                if(!asMesh){
                     countTotal += count;
                 }
 
-                for (let i = 0; i < count; i++) {
+                for(let i = 0; i < count; i++){
                     const idx = i * 3;
                     vec3.set(
                         tmp,
@@ -477,19 +477,19 @@ const computeBoundsAndCountForNode = (
                     );
                     vec3.transformMat4(tmp, tmp, world);
 
-                    if (tmp[0] < min[0]) min[0] = tmp[0];
-                    if (tmp[1] < min[1]) min[1] = tmp[1];
-                    if (tmp[2] < min[2]) min[2] = tmp[2];
+                    if(tmp[0] < min[0]) min[0] = tmp[0];
+                    if(tmp[1] < min[1]) min[1] = tmp[1];
+                    if(tmp[2] < min[2]) min[2] = tmp[2];
 
-                    if (tmp[0] > max[0]) max[0] = tmp[0];
-                    if (tmp[1] > max[1]) max[1] = tmp[1];
-                    if (tmp[2] > max[2]) max[2] = tmp[2];
+                    if(tmp[0] > max[0]) max[0] = tmp[0];
+                    if(tmp[1] > max[1]) max[1] = tmp[1];
+                    if(tmp[2] > max[2]) max[2] = tmp[2];
                 }
             }
         }
 
         const children = node.listChildren();
-        for (let i = children.length - 1; i >= 0; i--) {
+        for(let i = children.length - 1; i >= 0; i--){
             stack.push({
                 node: children[i],
                 worldMatrix: mat4.clone(world)
@@ -510,7 +510,7 @@ const rasterizePointsForNode = (
     colorBuffer: Uint8ClampedArray,
     pointRadius: number,
 ) => {
-    if (pointRadius <= 0) return;
+    if(pointRadius <= 0) return;
 
     const stack: StackItem[] = [{
         node: rootNode,
@@ -530,25 +530,25 @@ const rasterizePointsForNode = (
 
     const packRGBA = (R: number, G: number, B: number, A: number) => {
         // Little endian: [R, G, B, A]
-        return (A << 24) | (B << 16) | (G << 8) | (R);
+        return(A << 24) | (B << 16) | (G << 8) | (R);
     };
 
-    while (stack.length > 0) {
+    while(stack.length > 0){
         const { node, worldMatrix } = stack.pop()!;
         const local = nodeLocalMatrix(node);
         const world = mat4.create();
         mat4.multiply(world, worldMatrix, local);
 
         const mesh = node.getMesh();
-        if (mesh) {
+        if(mesh){
             const asMesh = shouldRenderAsMesh(node);
-            if (!asMesh) {
+            if(!asMesh){
                 const primitives = mesh.listPrimitives();
-                for (let p = 0; p < primitives.length; p++) {
+                for(let p = 0; p < primitives.length; p++){
                     const prim = primitives[p];
 
                     const posAcc = prim.getAttribute('POSITION');
-                    if (!posAcc) continue;
+                    if(!posAcc) continue;
 
                     const colAcc = prim.getAttribute('COLOR_0') ?? null;
 
@@ -557,7 +557,7 @@ const rasterizePointsForNode = (
                     const colArr = colAcc ? (colAcc.getArray() as Float32Array | number[]) : null;
                     const colSize = colAcc ? colAcc.getElementSize() : 0;
 
-                    for (let i = 0; i < count; i++) {
+                    for(let i = 0; i < count; i++){
                         const idx = i * 3;
 
                         vec3.set(
@@ -572,14 +572,14 @@ const rasterizePointsForNode = (
                         vec4.transformMat4(tmp4, tmp4, vp);
 
                         const w = tmp4[3];
-                        if (w === 0) continue;
+                        if(w === 0) continue;
 
                         const invW = 1 / w;
                         const ndcX = tmp4[0] * invW;
                         const ndcY = tmp4[1] * invW;
                         const ndcZ = tmp4[2] * invW;
 
-                        if (ndcX < -1 || ndcX > 1 || ndcY < -1 || ndcY > 1 || ndcZ < -1 || ndcZ > 1) {
+                        if(ndcX < -1 || ndcX > 1 || ndcY < -1 || ndcY > 1 || ndcZ < -1 || ndcZ > 1){
                             continue;
                         }
 
@@ -589,18 +589,18 @@ const rasterizePointsForNode = (
                         const ix = px | 0;
                         const iy = py | 0;
 
-                        if (ix < 0 || ix >= width || iy < 0 || iy >= height) continue;
+                        if(ix < 0 || ix >= width || iy < 0 || iy >= height) continue;
 
                         const depth = (ndcZ + 1) * 0.5;
 
                         let rCol = 1, gCol = 1, bCol = 1;
-                        if (colArr) {
+                        if(colArr){
                             const base = i * colSize;
                             rCol = (colArr as any)[base] ?? 1;
                             gCol = (colArr as any)[base + 1] ?? 1;
                             bCol = (colArr as any)[base + 2] ?? 1;
 
-                            if (rCol > 1 || gCol > 1 || bCol > 1) {
+                            if(rCol > 1 || gCol > 1 || bCol > 1){
                                 rCol *= 1 / 255;
                                 gCol *= 1 / 255;
                                 bCol *= 1 / 255;
@@ -621,29 +621,29 @@ const rasterizePointsForNode = (
 
                         const centerIndex = iy * width + ix;
 
-                        if (r === 1) {
-                            if (depth < depthBuffer[centerIndex]) {
+                        if(r === 1){
+                            if(depth < depthBuffer[centerIndex]){
                                 depthBuffer[centerIndex] = depth;
                                 buf32[centerIndex] = packed;
                             }
                             continue;
                         }
 
-                        for (let dy = -r; dy <= r; dy++) {
+                        for(let dy = -r; dy <= r; dy++){
                             const yy = iy + dy;
-                            if (yy < 0 || yy >= height) continue;
+                            if(yy < 0 || yy >= height) continue;
 
                             const rowIndex = yy * width;
 
-                            for (let dx = -r; dx <= r; dx++) {
+                            for(let dx = -r; dx <= r; dx++){
                                 const xx = ix + dx;
-                                if (xx < 0 || xx >= width) continue;
+                                if(xx < 0 || xx >= width) continue;
 
-                                if (dx * dx + dy * dy > r2) continue;
+                                if(dx * dx + dy * dy > r2) continue;
 
                                 const index = rowIndex + xx;
 
-                                if (depth >= depthBuffer[index]) continue;
+                                if(depth >= depthBuffer[index]) continue;
                                 depthBuffer[index] = depth;
                                 buf32[index] = packed;
                             }
@@ -654,7 +654,7 @@ const rasterizePointsForNode = (
         }
 
         const children = node.listChildren();
-        for (let i = children.length - 1; i >= 0; i--) {
+        for(let i = children.length - 1; i >= 0; i--){
             stack.push({ node: children[i], worldMatrix: mat4.clone(world) });
         }
     }
@@ -670,23 +670,23 @@ const collectMeshTriangles = (
         worldMatrix: mat4.clone(parentWorld)
     }];
 
-    while (stack.length > 0) {
+    while(stack.length > 0){
         const { node, worldMatrix } = stack.pop()!;
         const local = nodeLocalMatrix(node);
         const world = mat4.create();
         mat4.multiply(world, worldMatrix, local);
 
         const mesh = node.getMesh();
-        if (mesh && shouldRenderAsMesh(node)) {
+        if(mesh && shouldRenderAsMesh(node)) {
             const primitives = mesh.listPrimitives();
-            for (let i = 0; i < primitives.length; i++) {
+            for(let i = 0; i < primitives.length; i++){
                 const prim = primitives[i];
                 collectTrianglesFromPrimitive(prim, world, trisOut);
             }
         }
 
         const children = node.listChildren();
-        for (let i = children.length - 1; i >= 0; i--) {
+        for(let i = children.length - 1; i >= 0; i--){
             stack.push({ node: children[i], worldMatrix: mat4.clone(world) });
         }
     }
@@ -694,18 +694,18 @@ const collectMeshTriangles = (
 
 /**
  * Headless GLB/GLTF rasterizer that renders points and selected meshes into a PNG.
- * Points are drawn with AO and simple lighting hints. Triangles are drawn with a tri-light rig 
+ * Points are drawn with AO and simple lighting hints. Triangles are drawn with a tri-light rig
  * (ambient, key, fill, rim) and screen-projected shadows and traverses all scenes in the document.
  * @public
  */
-class HeadlessRasterizer {
+class HeadlessRasterizer{
     private opts: HeadlessRasterizerOptions;
 
     /**
      * Create a new rasterizer instance.
      * @param opts - Configuration options.
      */
-    constructor(opts: HeadlessRasterizerOptions) {
+    constructor(opts: HeadlessRasterizerOptions){
         this.opts = {
             inputPath: opts.inputPath,
             width: opts?.width ?? 1600,
@@ -723,10 +723,10 @@ class HeadlessRasterizer {
     /**
      * Create a NodeIO and register meshopt decoder/extension when available.
      */
-    private async makeIOWithCodecs(): Promise<NodeIO> {
+    private async makeIOWithCodecs(): Promise<NodeIO>{
         const io = new NodeIO();
 
-        if (EXTMeshoptCompression && MeshoptDecoder) {
+        if(EXTMeshoptCompression && MeshoptDecoder){
             await MeshoptDecoder.ready;
             io.registerExtensions([EXTMeshoptCompression])
                 .registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
@@ -739,11 +739,11 @@ class HeadlessRasterizer {
      * Load a glTF document from disk.
      * @throws If the GLTF/GLB cannot be read.
      */
-    private async loadDocument(): Promise<Document> {
+    private async loadDocument(): Promise<Document>{
         const io = await this.makeIOWithCodecs();
-        try {
+        try{
             return await io.read(this.opts.inputPath);
-        } catch (err: any) {
+        }catch(err: any){
             logger.error(err);
             throw err;
         }
@@ -755,14 +755,14 @@ class HeadlessRasterizer {
      */
     /**
  * Render del GLB/GLTF a PNG.
- * - Átomos (nodos no-mesh): z-buffer por punto con discos de radio adaptativo.
- * - Meshes (meshgeometry, dislocations, etc.): triángulos con luces/sombras como antes.
+ * - Átomos(nodos no-mesh): z-buffer por punto con discos de radio adaptativo.
+ * - Meshes(meshgeometry, dislocations, etc.): triángulos con luces/sombras como antes.
  */
-    public async render(): Promise<Buffer> {
+    public async render(): Promise<Buffer>{
         const document = await this.loadDocument();
         const root = document.getRoot();
         const scenes = root.listScenes();
-        if (!scenes.length) {
+        if(!scenes.length){
             throw new Error('GLB_WITHOUT_SCENES');
         }
 
@@ -773,13 +773,13 @@ class HeadlessRasterizer {
         const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
         let totalPoints = 0;
 
-        for (const scene of scenes) {
-            for (const node of scene.listChildren()) {
+        for(const scene of scenes){
+            for(const node of scene.listChildren()) {
                 totalPoints += computeBoundsAndCountForNode(node, mat4.create(), min, max);
             }
         }
 
-        if (
+        if(
             !isFinite(min[0]) || !isFinite(min[1]) || !isFinite(min[2]) ||
             !isFinite(max[0]) || !isFinite(max[1]) || !isFinite(max[2])
         ) {
@@ -795,7 +795,7 @@ class HeadlessRasterizer {
         const dz = max[2] - min[2];
         const r = 0.5 * Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-        if (!isFinite(r) || r <= 0) {
+        if(!isFinite(r) || r <= 0) {
             throw new Error('INVALID_RADIUS');
         }
 
@@ -821,11 +821,11 @@ class HeadlessRasterizer {
         let dirX = 0, dirY = 0, dirZ = 0;
         const isZUp = this.opts.up === 'z';
 
-        if (isZUp) {
+        if(isZUp){
             dirX = Math.cos(elRad) * Math.cos(azRad);
             dirY = Math.cos(elRad) * Math.sin(azRad);
             dirZ = Math.sin(elRad);
-        } else {
+        }else{
             dirX = Math.cos(elRad) * Math.cos(azRad);
             dirY = Math.sin(elRad);
             dirZ = Math.cos(elRad) * Math.sin(azRad);
@@ -849,20 +849,20 @@ class HeadlessRasterizer {
         const vp = mat4.create();
         mat4.multiply(vp, proj, view);
 
-        const lightKeyView = (() => {
+        const lightKeyView = (() =>{
             const v = vec4.fromValues(LIGHTS.key.dir[0], LIGHTS.key.dir[1], LIGHTS.key.dir[2], 0);
             vec4.transformMat4(v, v, view);
             return vnorm([v[0], v[1], v[2]]);
         })();
 
         const tris: Triangle3D[] = [];
-        for (const scene of scenes) {
-            for (const node of scene.listChildren()) {
+        for(const scene of scenes){
+            for(const node of scene.listChildren()) {
                 collectMeshTriangles(node, mat4.create(), tris);
             }
         }
 
-        if (totalPoints === 0 && tris.length === 0) {
+        if(totalPoints === 0 && tris.length === 0){
             throw new Error('NO_GEOMETRY');
         }
 
@@ -876,7 +876,7 @@ class HeadlessRasterizer {
 
         let bgColor: Uint8ClampedArray | null = null;
 
-        if (this.opts.background !== 'transparent') {
+        if(this.opts.background !== 'transparent'){
             ctx.fillStyle = this.opts.background;
             ctx.fillRect(0, 0, width, height);
 
@@ -884,7 +884,7 @@ class HeadlessRasterizer {
             bgColor = new Uint8ClampedArray([bgPixel[0], bgPixel[1], bgPixel[2], bgPixel[3]]);
 
             const totalPixels = width * height;
-            for (let i = 0, o = 0; i < totalPixels; i++, o += 4) {
+            for(let i = 0, o = 0; i < totalPixels; i++, o += 4){
                 colorBuffer[o + 0] = bgColor[0];
                 colorBuffer[o + 1] = bgColor[1];
                 colorBuffer[o + 2] = bgColor[2];
@@ -895,9 +895,9 @@ class HeadlessRasterizer {
         const pointRadius = adaptivePointSize(totalPoints, width, height);
         const intRadius = Math.max(1, Math.round(pointRadius));
 
-        if (totalPoints > 0 && pointRadius > 0) {
-            for (const scene of scenes) {
-                for (const node of scene.listChildren()) {
+        if(totalPoints > 0 && pointRadius > 0){
+            for(const scene of scenes){
+                for(const node of scene.listChildren()) {
                     rasterizePointsForNode(
                         node,
                         mat4.create(),
@@ -913,8 +913,8 @@ class HeadlessRasterizer {
         }
 
         /*let anyHit = false;
-        for (let i = 0; i < depthBuffer.length; i++){
-            if (depthBuffer[i] !== Number.POSITIVE_INFINITY) {
+        for(let i = 0; i < depthBuffer.length; i++){
+            if(depthBuffer[i] !== Number.POSITIVE_INFINITY){
                 anyHit = true;
                 break;
             }
@@ -932,14 +932,14 @@ class HeadlessRasterizer {
             vec4.transformMat4(v4, v4, vp);
 
             const w = v4[3];
-            if (w === 0) return null;
+            if(w === 0) return null;
 
             const invW = 1 / w;
             const ndcX = v4[0] * invW;
             const ndcY = v4[1] * invW;
             const ndcZ = v4[2] * invW;
 
-            if (ndcX < -1 || ndcX > 1 || ndcY < -1 || ndcY > 1 || ndcZ < -1 || ndcZ > 1) return null;
+            if(ndcX < -1 || ndcX > 1 || ndcY < -1 || ndcY > 1 || ndcZ < -1 || ndcZ > 1) return null;
 
             return {
                 sx: (ndcX * 0.5 + 0.5) * width,
@@ -951,17 +951,17 @@ class HeadlessRasterizer {
         const outTris2D: Tri2DPlus[] = [];
         const TRIANGLE_BATCH_SIZE = 512;
 
-        for (let batchStart = 0; batchStart < tris.length; batchStart += TRIANGLE_BATCH_SIZE) {
+        for(let batchStart = 0; batchStart < tris.length; batchStart += TRIANGLE_BATCH_SIZE){
             const batchEnd = Math.min(batchStart + TRIANGLE_BATCH_SIZE, tris.length);
 
-            for (let i = batchStart; i < batchEnd; i++) {
+            for(let i = batchStart; i < batchEnd; i++){
                 const triangle = tris[i];
 
                 const A = projV(triangle.a.x, triangle.a.y, triangle.a.z);
                 const B = projV(triangle.b.x, triangle.b.y, triangle.b.z);
                 const C = projV(triangle.c.x, triangle.c.y, triangle.c.z);
 
-                if (!A || !B || !C) continue;
+                if(!A || !B || !C) continue;
 
                 // Backface culling
                 const abx = B.sx - A.sx;
@@ -969,7 +969,7 @@ class HeadlessRasterizer {
                 const acx = C.sx - A.sx;
                 const acy = C.sy - A.sy;
                 const cross = abx * acy - aby * acx;
-                if (cross >= 0) continue;
+                if(cross >= 0) continue;
 
                 const zAvg = (A.z + B.z + C.z) / 3;
                 const cAvg: [number, number, number] = [
@@ -989,14 +989,14 @@ class HeadlessRasterizer {
             }
         }
 
-        if (outTris2D.length > 5000) {
+        if(outTris2D.length > 5000){
             const indices = new Uint32Array(outTris2D.length);
-            for (let i = 0; i < indices.length; i++) indices[i] = i;
+            for(let i = 0; i < indices.length; i++) indices[i] = i;
             indices.sort((a, b) => outTris2D[b].z - outTris2D[a].z);
             const sorted: Tri2DPlus[] = new Array(outTris2D.length);
-            for (let i = 0; i < indices.length; i++) sorted[i] = outTris2D[indices[i]];
-            for (let i = 0; i < sorted.length; i++) outTris2D[i] = sorted[i];
-        } else {
+            for(let i = 0; i < indices.length; i++) sorted[i] = outTris2D[indices[i]];
+            for(let i = 0; i < sorted.length; i++) outTris2D[i] = sorted[i];
+        }else{
             outTris2D.sort((a, b) => b.z - a.z);
         }
 
@@ -1076,11 +1076,11 @@ class HeadlessRasterizer {
 
         const [ox, oy] = screenShadowOffset;
 
-        for (let i = 0; i < outTris2D.length; i++) {
+        for(let i = 0; i < outTris2D.length; i++){
             const t2 = outTris2D[i];
             const shaded = shadeTriangle(t2.tri3D, t2.cAvg);
 
-            if (LIGHTS.shadow.softness > 0) {
+            if(LIGHTS.shadow.softness > 0){
                 ctx.fillStyle = shadowStyle1;
                 // @ts-ignore
                 drawTriangle(ctx, t2, ox * 1.2, oy * 1.2);
@@ -1098,7 +1098,7 @@ class HeadlessRasterizer {
             ctx.fill();
         }
 
-        return new Promise<Buffer>(async (resolve, reject) => {
+        return new Promise<Buffer>(async(resolve, reject) => {
             const pngStream = canvas.createPNGStream();
             const chunks: Buffer[] = [];
 

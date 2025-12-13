@@ -23,7 +23,7 @@ class StorageService{
 
     constructor(){
         this.client = getMinioClient();
-        
+
         const endpoint = process.env.MINIO_ENDPOINT || 'localhost';
         const port = parseInt(process.env.MINIO_PORT || '9000', 10);
         const protocol = process.env.MINIO_USE_SSL === 'true' ? 'https' : 'http';
@@ -53,10 +53,10 @@ class StorageService{
             // Delegates stream handling and checksums to the native driver/OS
             await this.client.fPutObject(bucket, objectName, source, metadata);
         }else if(Buffer.isBuffer(source)){
-            // Buffer (Memory already allocated)
+            // Buffer(Memory already allocated)
             await this.client.putObject(bucket, objectName, source, source.length, metadata);
         }else{
-            // Generic Stream (TODO: check this)
+            // Generic Stream(TODO: check this)
             await this.client.putObject(bucket, objectName, source, undefined, metadata);
         }
     }
@@ -64,7 +64,7 @@ class StorageService{
     /**
      * Downloads an object directly to the local filesystem.
      * Avoids loading the file into the Node.js Heap, allowing multi-GB downloads
-     * with negligible RAM consumption (restricted only by internal I/O buffers).
+     * with negligible RAM consumption(restricted only by internal I/O buffers).
      * @param bucket - The bucket name.
      * @param objectName - The object key.
      * @param destPath - Local filesystem path where the file will be saved.
@@ -94,14 +94,14 @@ class StorageService{
     public async getBuffer(bucket: string, objectName: string): Promise<Buffer>{
         const stream = await this.client.getObject(bucket, objectName);
         const chunks: Buffer[] = [];
-        for await(const chunk of stream){
+        for await (const chunk of stream){
             chunks.push(chunk as Buffer);
         }
         return Buffer.concat(chunks);
     }
 
     /**
-     * Verifies object existence by checking metadata only (HEAD request).
+     * Verifies object existence by checking metadata only(HEAD request).
      * @param bucket - The target bucket.
      * @param objectName - The object key.
      * @returns True if exists, false otherwise.
@@ -117,7 +117,7 @@ class StorageService{
     }
 
     /**
-     * Retrieves technical metadata (size, etag, contentType, lastModified).
+     * Retrieves technical metadata(size, etag, contentType, lastModified).
      * @param bucket - The target bucket.
      * @param objectName - The object key.
      */
@@ -142,29 +142,29 @@ class StorageService{
      * @param bucket - Target bucket.
      * @param prefix - Filter prefix.
      * @param recursive - Whether to list sub-folders recursively. Defaults to true.
-     * @returns An AsyncIterable that yields object keys (strings).
+     * @returns An AsyncIterable that yields object keys(strings).
      */
     public async *listByPrefix(bucket: string, prefix: string, recursive: boolean = true): AsyncIterable<string>{
         const stream = this.client.listObjectsV2(bucket, prefix, recursive);
         // Pass-through the stream, extracting only the name to save CPU/RAM
         // from holding the full BucketItem object structure.
-        for await(const obj of stream){
+        for await (const obj of stream){
             if(obj.name) yield obj.name;
         }
     }
 
     /**
      * Efficiently deletes multiple objects by prefix using Batch & Drain strategy.
-     * It does not list all keys at once. It uses an async iterator to fill a fixed-size 
-     * bucket (1000 items). Once full, it pauses listing, deletes the batch, frees memory, and continues.
+     * It does not list all keys at once. It uses an async iterator to fill a fixed-size
+     * bucket(1000 items). Once full, it pauses listing, deletes the batch, frees memory, and continues.
      * @param bucket - Target bucket.
-     * @param prefix - Folder prefix (e.g., "temp/").
+     * @param prefix - Folder prefix(e.g., "temp/").
      */
     public async deleteByPrefix(bucket: string, prefix: string): Promise<void>{
         const stream = this.client.listObjectsV2(bucket, prefix, true);
         const BATCH_SIZE = 1000;
         let batch: string[] = [];
-        for await(const obj of stream){
+        for await (const obj of stream){
             if(obj.name) batch.push(obj.name);
             // Drain batch if limit reached
             if(batch.length >= BATCH_SIZE){

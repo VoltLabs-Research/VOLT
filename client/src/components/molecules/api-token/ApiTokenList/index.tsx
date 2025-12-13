@@ -25,27 +25,27 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
     const toggleTokenVisibility = (tokenId: string) => {
         setVisibleTokens(prev => {
             const newSet = new Set(prev);
-            if (newSet.has(tokenId)) {
+            if(newSet.has(tokenId)) {
                 newSet.delete(tokenId);
-            } else {
+            }else{
                 newSet.add(tokenId);
             }
             return newSet;
         });
     };
 
-    const copyToClipboard = async (text: string, tokenId: string) => {
-        try {
+    const copyToClipboard = async(text: string, tokenId: string) => {
+        try{
             await navigator.clipboard.writeText(text);
             setCopiedToken(tokenId);
             setTimeout(() => setCopiedToken(null), 2000);
-        } catch (err) {
+        }catch(err){
             console.error('Failed to copy to clipboard:', err);
         }
     };
 
     const getStatusColor = (status: string) => {
-        switch (status) {
+        switch(status){
             case 'active': return 'var(--color-success)';
             case 'inactive': return 'var(--color-warning)';
             case 'expired': return 'var(--color-error)';
@@ -54,16 +54,16 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
     };
 
     const formatDate = (dateString: string) => {
-        try {
+        try{
             const date = new Date(dateString);
             return isValid(date) ? formatDistanceToNow(date, { addSuffix: true }) : 'Unknown';
-        } catch {
+        } catch{
             return 'Unknown';
         }
     };
 
-    if (loading) {
-        return (
+    if(loading){
+        return(
             <div className="api-token-list-loading">
                 <div className="api-token-skeleton">
                     <div className="skeleton-icon"></div>
@@ -91,8 +91,8 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
         );
     }
 
-    if (tokens.length === 0) {
-        return (
+    if(tokens.length === 0){
+        return(
             <div className="api-token-list-empty">
                 <div className="empty-icon">
                     <TbKey size={48} />
@@ -103,7 +103,7 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
         );
     }
 
-    return (
+    return(
         <div className="api-token-list">
             {tokens.map((token) => (
                 <div key={token._id} className="api-token-item">
@@ -114,7 +114,7 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
                         <div className="api-token-details">
                             <div className="api-token-header">
                                 <span className="api-token-name">{token.name}</span>
-                                <span 
+                                <span
                                     className="api-token-status"
                                     style={{ color: getStatusColor(token.status) }}
                                 >
@@ -123,8 +123,8 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
                             </div>
                             <div className="api-token-meta">
                                 <span className="api-token-key">
-                                    {visibleTokens.has(token._id) && token.token 
-                                        ? token.token 
+                                    {visibleTokens.has(token._id) && token.token
+                                        ? token.token
                                         : token.maskedToken
                                     }
                                 </span>

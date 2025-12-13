@@ -1,8 +1,8 @@
 /**
- * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+ * Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -24,14 +24,14 @@ import { Request, Response, NextFunction } from 'express';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 
 /**
- * Extracts error code from error message (format: "Category::Subcategory::Type")
+ * Extracts error code from error message(format: "Category::Subcategory::Type")
  * or uses the error message as the code if it's already in that format
  */
 const extractErrorCode = (error: Error | RuntimeError): string | null => {
     const message = error.message || '';
 
     // If message contains :: separators, it's likely an error code
-    if (message.includes('::')) {
+    if(message.includes('::')) {
         return message;
     }
 
@@ -56,13 +56,13 @@ export const globalErrorHandler = (
     let details: any = undefined;
 
     // Handle RuntimeError
-    if (err instanceof RuntimeError) {
+    if(err instanceof RuntimeError){
         statusCode = err.statusCode;
         code = err.code;
         message = err.message;
     }
     // Handle Mongoose Validation Error
-    else if (err.name === 'ValidationError') {
+    else if(err.name === 'ValidationError'){
         statusCode = 400;
         code = 'Validation::Failed';
         message = 'Validation failed for one or more fields';
@@ -70,24 +70,24 @@ export const globalErrorHandler = (
         const validationErrors = (err as any).errors || {};
         details = {};
 
-        for (const field in validationErrors) {
+        for(const field in validationErrors){
             details[field] = validationErrors[field].message;
         }
     }
     // Handle Mongoose Duplicate Key Error
-    else if (err.name === 'MongoServerError' && (err as any).code === 11000) {
+    else if(err.name === 'MongoServerError' && (err as any).code === 11000) {
         statusCode = 409;
         code = 'Database::DuplicateKey';
         message = 'A record with this value already exists';
 
         // Extract the duplicate field if possible
         const keyPattern = (err as any).keyPattern;
-        if (keyPattern) {
+        if(keyPattern){
             details = { field: Object.keys(keyPattern)[0] };
         }
     }
-    // Handle Mongoose Cast Error (Invalid ID)
-    else if (err.name === 'CastError') {
+    // Handle Mongoose Cast Error(Invalid ID)
+    else if(err.name === 'CastError'){
         statusCode = 400;
         code = 'Database::InvalidId';
         message = 'Invalid resource identifier format';
@@ -97,18 +97,17 @@ export const globalErrorHandler = (
         };
     }
     // Handle JWT Errors
-    else if (err.name === 'JsonWebTokenError') {
+    else if(err.name === 'JsonWebTokenError'){
         statusCode = 401;
         code = 'Auth::InvalidToken';
         message = 'Invalid authentication token';
-    }
-    else if (err.name === 'TokenExpiredError') {
+    }else if(err.name === 'TokenExpiredError'){
         statusCode = 401;
         code = 'Auth::TokenExpired';
         message = 'Authentication token has expired';
     }
     // Handle generic Errors
-    else {
+    else{
         message = err.message || message;
     }
 
@@ -118,12 +117,12 @@ export const globalErrorHandler = (
         code
     };
 
-    if (details) {
+    if(details){
         response.details = details;
     }
 
     // Include stack trace in development
-    if (process.env.NODE_ENV === 'development') {
+    if(process.env.NODE_ENV === 'development'){
         response.stack = err.stack;
         response.rawError = err;
         // Keep message in dev for easier debugging

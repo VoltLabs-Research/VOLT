@@ -22,12 +22,12 @@ interface CanvasSidebarOptionProps{
 
 const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSelect, activeOption, isLoading }) => {
 
-    return (
+    return(
         <>
-            <div 
+            <div
                 className={`editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''}`}
                 onClick={() => onSelect(option)}
-                
+
             >
                 <div className='editor-sidebar-scene-option-left-container'>
                     <i className='editor-sidebar-scene-option-icon-container'>
@@ -48,11 +48,11 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSel
                     </div>
                 )}
             </div>
-                
+
             {(option.options && activeOption && !isLoading) && (
                 <div className={`editor-sidebar-scene-option-select-container`}>
                     {option.options.map(({ title, modifierId }, index) => (
-                        <div 
+                        <div
                             className={`editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''}`}
                             onClick={() => onSelect({ title, modifierId })}
                             key={title + '-' + index}

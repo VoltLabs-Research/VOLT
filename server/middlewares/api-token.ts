@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -31,11 +31,11 @@ import logger from '@/logger';
  * Middleware to validate API tokens
  * Can be used as an alternative to JWT authentication
  */
-export const validateApiToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
+export const validateApiToken = async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
+    try{
         const authHeader = req.headers.authorization;
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if(!authHeader || !authHeader.startsWith('Bearer ')) {
             throw new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401);
         }
 
@@ -48,23 +48,22 @@ export const validateApiToken = async (req: Request, res: Response, next: NextFu
             isActive: true
         }).select('+tokenHash');
 
-        if (!apiToken) {
+        if(!apiToken){
             throw new RuntimeError(ErrorCodes.API_TOKEN_INVALID, 401);
         }
 
-        if (apiToken.isExpired()) {
+        if(apiToken.isExpired()) {
             throw new RuntimeError(ErrorCodes.API_TOKEN_EXPIRED, 401);
         }
 
         // Update last used timestamp
         await apiToken.updateLastUsed();
 
-        // Add token info to request
-        (req as any).apiToken = apiToken;
+        // Add token info to request(req as any).apiToken = apiToken;
         (req as any).user = { id: apiToken.createdBy };
 
         next();
-    } catch (error) {
+    }catch(error){
         next(error);
     }
 };
@@ -73,14 +72,14 @@ export const validateApiToken = async (req: Request, res: Response, next: NextFu
  * Middleware to check if API token has specific permission
  */
 export const requireApiTokenPermission = (requiredPermission: string) => {
-    return (req: Request, res: Response, next: NextFunction): void => {
+    return(req: Request, res: Response, next: NextFunction): void =>{
         const apiToken = (req as any).apiToken;
 
-        if (!apiToken) {
+        if(!apiToken){
             return next(new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401));
         }
 
-        if (!apiToken.hasPermission(requiredPermission)) {
+        if(!apiToken.hasPermission(requiredPermission)) {
             return next(new RuntimeError(ErrorCodes.API_TOKEN_INSUFFICIENT_PERMISSIONS, 403));
         }
 
@@ -92,10 +91,10 @@ export const requireApiTokenPermission = (requiredPermission: string) => {
  * Middleware to check if API token has any of the specified permissions
  */
 export const requireAnyApiTokenPermission = (permissions: string[]) => {
-    return (req: Request, res: Response, next: NextFunction): void => {
+    return(req: Request, res: Response, next: NextFunction): void =>{
         const apiToken = (req as any).apiToken;
 
-        if (!apiToken) {
+        if(!apiToken){
             return next(new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401));
         }
 
@@ -103,7 +102,7 @@ export const requireAnyApiTokenPermission = (permissions: string[]) => {
             apiToken.hasPermission(permission)
         );
 
-        if (!hasPermission) {
+        if(!hasPermission){
             return next(new RuntimeError(ErrorCodes.API_TOKEN_INSUFFICIENT_PERMISSIONS, 403));
         }
 
@@ -115,10 +114,10 @@ export const requireAnyApiTokenPermission = (permissions: string[]) => {
  * Middleware to check if API token has all of the specified permissions
  */
 export const requireAllApiTokenPermissions = (permissions: string[]) => {
-    return (req: Request, res: Response, next: NextFunction): void => {
+    return(req: Request, res: Response, next: NextFunction): void =>{
         const apiToken = (req as any).apiToken;
 
-        if (!apiToken) {
+        if(!apiToken){
             return next(new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401));
         }
 
@@ -126,7 +125,7 @@ export const requireAllApiTokenPermissions = (permissions: string[]) => {
             apiToken.hasPermission(permission)
         );
 
-        if (!hasAllPermissions) {
+        if(!hasAllPermissions){
             return next(new RuntimeError(ErrorCodes.API_TOKEN_INSUFFICIENT_PERMISSIONS, 403));
         }
 
@@ -140,7 +139,7 @@ export const requireAllApiTokenPermissions = (permissions: string[]) => {
 export const logApiTokenUsage = (req: Request, res: Response, next: NextFunction): void => {
     const apiToken = (req as any).apiToken;
 
-    if (apiToken) {
+    if(apiToken){
         logger.info(`API Token ${apiToken.name} used for ${req.method} ${req.path}`);
     }
 
@@ -150,20 +149,20 @@ export const logApiTokenUsage = (req: Request, res: Response, next: NextFunction
 /**
  * Middleware to load and verify API token ownership
  */
-export const loadAndVerifyApiTokenOwnership = async (req: Request, res: Response, next: NextFunction) => {
+export const loadAndVerifyApiTokenOwnership = async(req: Request, res: Response, next: NextFunction) => {
     const userId = (req as any).user._id || (req as any).user.id;
     const { id } = req.params;
 
-    try {
+    try{
         const token = await ApiToken.findOne({ _id: id, createdBy: userId });
 
-        if (!token) {
+        if(!token){
             return next(new RuntimeError(ErrorCodes.API_TOKEN_NOT_FOUND, 404));
         }
 
         res.locals.apiToken = token;
         next();
-    } catch (err: any) {
+    }catch(err: any){
         return next(new RuntimeError(ErrorCodes.API_TOKEN_LOAD_ERROR, 500));
     }
 };
@@ -172,10 +171,10 @@ export const loadAndVerifyApiTokenOwnership = async (req: Request, res: Response
  * Middleware to validate API token permissions in request body
  */
 export const validateApiTokenPermissionsInBody = (validPermissions: string[]) => {
-    return (req: Request, res: Response, next: NextFunction) => {
+    return(req: Request, res: Response, next: NextFunction) => {
         const { permissions } = req.body;
 
-        if (permissions && !permissions.every((p: string) => validPermissions.includes(p))) {
+        if(permissions && !permissions.every((p: string) => validPermissions.includes(p))) {
             return next(new RuntimeError(ErrorCodes.API_TOKEN_INVALID_PERMISSIONS, 400));
         }
 

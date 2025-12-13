@@ -35,8 +35,8 @@ export type UseGlbSceneParams = {
     updateThrottle: number;
     useFixedReference?: boolean;
     referencePoint?: 'origin' | 'initial' | 'custom';
-    customReference?: { x: number; y: number; z: number }; 
-    preserveInitialTransform?: boolean; 
+    customReference?: { x: number; y: number; z: number };
+    preserveInitialTransform?: boolean;
 };
 
 export interface ExtendedSceneState extends SceneState{

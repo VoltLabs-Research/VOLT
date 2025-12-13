@@ -15,10 +15,10 @@ type FilePreviewsBarProps = {
 const FilePreviewsBar = ({ items, onClear, onRemove }: FilePreviewsBarProps) => {
     if(!items.length) return null;
 
-    return (
+    return(
         <div className='chat-file-previews-container'>
             <div className='chat-file-previews-header'>
-                <span>Archivos seleccionados ({items.length})</span>
+                <span>Archivos seleccionados({items.length})</span>
                 <button
                     type='button'
                     className='chat-clear-files'
@@ -40,9 +40,9 @@ const FilePreviewsBar = ({ items, onClear, onRemove }: FilePreviewsBarProps) => 
                         <span className='chat-file-preview-size'>{formatSize(item.file.size)}</span>
                     </div>
 
-                    <button 
-                        type='button' 
-                        className='chat-file-preview-remove' 
+                    <button
+                        type='button'
+                        className='chat-file-preview-remove'
                         onClick={() => onRemove(index)}
                     >
                         <IoCloseCircleOutline/>

@@ -19,7 +19,7 @@ export class StringScanner{
     }
 
     /**
-     * Skips N tokens (words/numbers) without parsing them.
+     * Skips N tokens(words/numbers) without parsing them.
      */
     public jump(count: number){
         for(let i = 0; i < count; i++){

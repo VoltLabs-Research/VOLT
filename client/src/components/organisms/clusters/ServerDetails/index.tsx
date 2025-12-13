@@ -16,11 +16,11 @@ interface ServerDetailsProps {
   onClose: () => void
 }
 
-export function ServerDetails({ server, onClose }: ServerDetailsProps) {
-  if (!server) return null
+export function ServerDetails({ server, onClose }: ServerDetailsProps){
+  if(!server) return null
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch(status){
       case 'Healthy': return '#30D158'
       case 'Warning': return '#FF9F0A'
       case 'Critical': return '#FF453A'
@@ -51,7 +51,7 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
     freeDisk: '250.00',
   }
 
-  return (
+  return(
     <div className="server-details-overlay" onClick={onClose}>
       <div className="server-details-panel" onClick={(e) => e.stopPropagation()}>
         <div className="server-details-header">
@@ -67,7 +67,7 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
           <div className="server-details-header-right">
             <div className="server-details-badges">
               <span className="server-details-badge">{server.region}</span>
-              <span className="server-details-badge" style={{ 
+              <span className="server-details-badge" style={{
                 background: getStatusColor(server.status) + '20',
                 borderColor: getStatusColor(server.status) + '40',
                 color: getStatusColor(server.status)
@@ -111,7 +111,7 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
               </div>
               <div className="server-details-info-card">
                 <span className="server-details-info-label">Memory</span>
-                <span className="server-details-info-value">{osInfo.usedMemory}GB / {osInfo.totalMemory}GB ({server.memory}%)</span>
+                <span className="server-details-info-value">{osInfo.usedMemory}GB / {osInfo.totalMemory}GB({server.memory}%)</span>
               </div>
               <div className="server-details-info-card">
                 <span className="server-details-info-label">Disk</span>

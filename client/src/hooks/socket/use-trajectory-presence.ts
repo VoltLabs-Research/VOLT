@@ -1,6 +1,6 @@
 /**
- * Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
- * 
+ * Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
+ *
  * Centralized hook for managing trajectory presence subscriptions
  * This prevents multiple subscriptions to the same trajectory
  */
@@ -25,20 +25,20 @@ const activeSubscriptions = new Map<string, {
     isEmitting: boolean; // Track if we're currently emitting observe events
 }>();
 
-// Global socket listeners (only one per event)
+// Global socket listeners(only one per event)
 let globalListenersInitialized = false;
 
 const initializeGlobalListeners = () => {
-    if (globalListenersInitialized) return;
+    if(globalListenersInitialized) return;
     globalListenersInitialized = true;
 
     // Listen to ALL canvas user updates
     socketService.on('canvas_users_update', (data: { trajectoryId: string; users: CardPresenceUser[] }) => {
         const sub = activeSubscriptions.get(data.trajectoryId);
-        if (sub) {
+        if(sub){
             sub.canvasUsers = data.users;
             const combined = [...sub.canvasUsers, ...sub.rasterUsers];
-            const unique = combined.filter((user, index, self) => 
+            const unique = combined.filter((user, index, self) =>
                 index === self.findIndex(u => u.id === user.id)
             );
             sub.listeners.forEach(listener => listener(unique));
@@ -48,10 +48,10 @@ const initializeGlobalListeners = () => {
     // Listen to ALL raster user updates
     socketService.on('raster_users_update', (data: { trajectoryId: string; users: CardPresenceUser[] }) => {
         const sub = activeSubscriptions.get(data.trajectoryId);
-        if (sub) {
+        if(sub){
             sub.rasterUsers = data.users;
             const combined = [...sub.canvasUsers, ...sub.rasterUsers];
-            const unique = combined.filter((user, index, self) => 
+            const unique = combined.filter((user, index, self) =>
                 index === self.findIndex(u => u.id === user.id)
             );
             sub.listeners.forEach(listener => listener(unique));
@@ -76,7 +76,7 @@ export const useTrajectoryPresence = (trajectoryId: string) => {
 
     // Subscribe to trajectory presence
     useEffect(() => {
-        if (!isConnected || !trajectoryId) {
+        if(!isConnected || !trajectoryId){
             return;
         }
 
@@ -86,7 +86,7 @@ export const useTrajectoryPresence = (trajectoryId: string) => {
         // Create or get subscription
         let sub = activeSubscriptions.get(trajectoryId);
 
-        if (!sub) {
+        if(!sub){
             sub = {
                 count: 0,
                 canvasUsers: [],
@@ -108,37 +108,37 @@ export const useTrajectoryPresence = (trajectoryId: string) => {
 
         // Only emit observe events if we're the first subscription AND not currently emitting
         // Check count === 1 to ensure we're truly the first component to subscribe
-        if (sub.count === 1 && !sub.isEmitting) {
-            // Mark as emitting IMMEDIATELY (synchronously) to prevent race conditions
+        if(sub.count === 1 && !sub.isEmitting){
+            // Mark as emitting IMMEDIATELY(synchronously) to prevent race conditions
             sub.isEmitting = true;
-            
+
             // Emit both presence observe events
             Promise.all([
                 socketService.emit('observe_canvas_presence', { trajectoryId }),
                 socketService.emit('observe_raster_presence', { trajectoryId })
             ]).then(() => {
                 const currentSub = activeSubscriptions.get(trajectoryId);
-                if (currentSub) {
+                if(currentSub){
                     currentSub.isEmitting = false;
                 }
             }).catch((error) => {
                 console.error('[useTrajectoryPresence] Failed to observe:', error);
                 const currentSub = activeSubscriptions.get(trajectoryId);
-                if (currentSub) {
+                if(currentSub){
                     currentSub.isEmitting = false;
                 }
             });
         }
 
         // Cleanup
-        return () => {
+        return() => {
             const sub = activeSubscriptions.get(trajectoryId);
-            if (sub && listenerRef.current) {
+            if(sub && listenerRef.current){
                 sub.listeners.delete(listenerRef.current);
                 sub.count--;
 
                 // Clean up subscription if no more listeners
-                if (sub.count <= 0) {
+                if(sub.count <= 0){
                     activeSubscriptions.delete(trajectoryId);
                 }
             }
@@ -147,4 +147,3 @@ export const useTrajectoryPresence = (trajectoryId: string) => {
 
     return { users, isConnected };
 };
-

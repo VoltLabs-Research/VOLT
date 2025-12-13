@@ -2,7 +2,7 @@ import React from 'react';
 import { Skeleton } from '@mui/material';
 
 const DashboardStatsSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => {
-    return (
+    return(
         <div className='dashboard-stats-container'>
             {Array.from({ length: count }).map((_, i) => (
                 <div className='dashboard-stat-container' key={i}>

@@ -7,11 +7,11 @@ const EditableTrajectoryName = ({ trajectory, className }) => {
     const user = useAuthStore((state) => state.user);
     const isAuthenticated = !!user;
 
-    const handleNameUpdate = async (newName: string) => {
-        if (!isAuthenticated) return; // No permitir editar si no hay usuario autenticado
-        try {
+    const handleNameUpdate = async(newName: string) => {
+        if(!isAuthenticated) return; // No permitir editar si no hay usuario autenticado
+        try{
             await updateTrajectoryById(trajectory._id, { name: newName });
-        } catch (error: any) {
+        }catch(error: any){
             const errorContext = {
                 endpoint: `/trajectories/${trajectory._id}`,
                 method: 'PATCH',
@@ -26,7 +26,7 @@ const EditableTrajectoryName = ({ trajectory, className }) => {
         }
     };
 
-    return (
+    return(
         isAuthenticated ? (
             <EditableTag
                 as='h3'

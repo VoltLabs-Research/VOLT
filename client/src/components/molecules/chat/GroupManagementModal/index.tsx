@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -74,29 +74,29 @@ const GroupManagementModal = () => {
         editGroupDescription: { maxLength: 250, message: 'Description cannot exceed 250 characters' }
     });
 
-    if (!currentChat || !currentChat.isGroup) return null;
+    if(!currentChat || !currentChat.isGroup) return null;
 
     const isAdmin = currentChat.admins?.some(admin => admin._id === user?._id) || false;
     const isOwner = currentChat.createdBy?._id === user?._id;
 
     // Initialize form with current group data
     useEffect(() => {
-        if (currentChat) {
+        if(currentChat){
             setEditGroupName(currentChat.groupName || '');
             setEditGroupDescription(currentChat.groupDescription || '');
         }
     }, [currentChat, setEditGroupName, setEditGroupDescription]);
 
-    const handleLeaveGroup = async () => {
-        if (!confirm('Are you sure you want to leave this group?')) return;
+    const handleLeaveGroup = async() => {
+        if(!confirm('Are you sure you want to leave this group?')) return;
 
         setIsLoading(true);
-        try {
+        try{
             await leaveGroup(currentChat._id);
             setShowGroupManagement(false);
-        } catch (error) {
+        }catch(error){
             console.error('Failed to leave group:', error);
-        } finally {
+        }finally{
             setIsLoading(false);
         }
     };
@@ -108,7 +108,7 @@ const GroupManagementModal = () => {
             const nameError = validateField('editGroupName', editGroupName);
             const descError = validateField('editGroupDescription', editGroupDescription);
 
-            if (!nameError && !descError && editGroupName.trim() && editGroupName !== currentChat?.groupName) {
+            if(!nameError && !descError && editGroupName.trim() && editGroupName !== currentChat?.groupName) {
                 updateGroupInfo(
                     currentChat._id,
                     editGroupName.trim(),
@@ -117,28 +117,28 @@ const GroupManagementModal = () => {
             }
         }, 1000); // 1 second delay
 
-        return () => clearTimeout(timeoutId);
+        return() => clearTimeout(timeoutId);
     }, [editGroupName, editGroupDescription, currentChat, updateGroupInfo]);
 
     // Add Members functions
     const handleAddMembers = () => {
         setShowAddMembers(true);
-        if (currentChat?.team?._id) {
+        if(currentChat?.team?._id){
             loadTeamMembers(currentChat.team._id);
         }
     };
 
-    const handleAddSelectedMembers = async () => {
-        if (selectedMembers.length === 0) return;
+    const handleAddSelectedMembers = async() => {
+        if(selectedMembers.length === 0) return;
 
         setIsLoading(true);
-        try {
+        try{
             await addUsersToGroup(currentChat!._id, selectedMembers);
             setSelectedMembers([]);
             setShowAddMembers(false);
-        } catch (error) {
+        }catch(error){
             console.error('Failed to add members:', error);
-        } finally {
+        }finally{
             setIsLoading(false);
         }
     };
@@ -152,18 +152,18 @@ const GroupManagementModal = () => {
     };
 
     // Manage Admins functions
-    const handleManageAdmins = () => {
+    const handleManageAdmins = () =>{
         setShowManageAdmins(true);
         // Initialize with current admins
         const currentAdminIds = currentChat?.admins?.map(admin => admin._id) || [];
         setSelectedAdmins(currentAdminIds);
     };
 
-    const handleSaveAdmins = async () => {
-        if (!currentChat) return;
+    const handleSaveAdmins = async() => {
+        if(!currentChat) return;
 
         setIsLoading(true);
-        try {
+        try{
             // Get current admin IDs
             const currentAdminIds = currentChat.admins?.map(admin => admin._id) || [];
 
@@ -178,20 +178,20 @@ const GroupManagementModal = () => {
             );
 
             // Add new admins
-            if (membersToAdd.length > 0) {
+            if(membersToAdd.length > 0){
                 await updateGroupAdmins(currentChat._id, membersToAdd, 'add');
             }
 
             // Remove admins
-            if (membersToRemove.length > 0) {
+            if(membersToRemove.length > 0){
                 await updateGroupAdmins(currentChat._id, membersToRemove, 'remove');
             }
 
             setSelectedAdmins([]);
             setShowManageAdmins(false);
-        } catch (error) {
+        }catch(error){
             console.error('Failed to update admins:', error);
-        } finally {
+        }finally{
             setIsLoading(false);
         }
     };
@@ -205,7 +205,7 @@ const GroupManagementModal = () => {
     };
 
     const navigationItems = [
-        {
+     {
             id: 'general',
             title: 'General',
             icon: IoSettingsOutline
@@ -233,9 +233,9 @@ const GroupManagementModal = () => {
     };
 
     const renderContent = () => {
-        switch (activeSection) {
+        switch(activeSection){
             case 'general':
-                return (
+                return(
                     <div className='group-management-content'>
                         <div className='group-management-section'>
                             <div className='group-management-section-header'>
@@ -259,7 +259,7 @@ const GroupManagementModal = () => {
                                         label='Group Description'
                                         value={editGroupDescription}
                                         onChange={handleDescriptionChange}
-                                        placeholder='Enter group description (optional)'
+                                        placeholder='Enter group description(optional)'
                                         disabled={isLoading}
                                         error={errors.editGroupDescription}
                                     />
@@ -286,7 +286,7 @@ const GroupManagementModal = () => {
                 );
 
             case 'members':
-                return (
+                return(
                     <div className='group-management-content'>
                         <div className='group-management-section'>
                             {!showAddMembers && (
@@ -312,7 +312,7 @@ const GroupManagementModal = () => {
                                         const isMemberAdmin = currentChat.admins?.some(admin => admin._id === member._id) || false;
                                         const isMemberOwner = currentChat.createdBy?._id === member._id;
 
-                                        return (
+                                        return(
                                             <div key={member._id} className='group-management-member'>
                                                 <div className='group-management-member-avatar'>
                                                     {getInitials(member.firstName, member.lastName)}
@@ -375,12 +375,12 @@ const GroupManagementModal = () => {
                                                 return fullName.includes(searchQuery.toLowerCase());
                                             });
 
-                                            return (
+                                            return(
                                                 <div className='group-management-members-list'>
                                                     {filteredMembers.map((member) => {
                                                         const isSelected = selectedMembers.includes(member._id);
 
-                                                        return (
+                                                        return(
                                                             <div
                                                                 key={member._id}
                                                                 className={`group-management-member ${isSelected ? 'selected' : ''}`}
@@ -437,7 +437,7 @@ const GroupManagementModal = () => {
                 );
 
             case 'administrators':
-                return (
+                return(
                     <div className='group-management-content'>
                         <div className='group-management-section'>
                             {!showManageAdmins && (
@@ -525,7 +525,7 @@ const GroupManagementModal = () => {
                                                     <span className='group-management-admin-name'>
                                                         {currentChat.createdBy?.firstName} {currentChat.createdBy?.lastName}
                                                     </span>
-                                                    <span className='group-management-admin-role'>Owner (Cannot be changed)</span>
+                                                    <span className='group-management-admin-role'>Owner(Cannot be changed)</span>
                                                 </div>
                                                 <div className='group-management-admin-badge owner'>
                                                     <IoStarOutline />
@@ -540,7 +540,7 @@ const GroupManagementModal = () => {
                                                     const isSelected = selectedAdmins.includes(member._id);
                                                     const isCurrentAdmin = currentChat.admins?.some(admin => admin._id === member._id) || false;
 
-                                                    return (
+                                                    return(
                                                         <div
                                                             key={member._id}
                                                             className={`group-management-admin ${isSelected ? 'selected' : ''} ${isCurrentAdmin ? 'current-admin' : ''}`}
@@ -602,7 +602,7 @@ const GroupManagementModal = () => {
         }
     };
 
-    return (
+    return(
         <Draggable className='group-management-container primary-surface'>
             <div className='group-management-left-container'>
                 <div className='group-management-left-top-container'>
@@ -651,4 +651,4 @@ const GroupManagementModal = () => {
     );
 };
 
-export default GroupManagementModal;    
+export default GroupManagementModal;

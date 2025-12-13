@@ -26,7 +26,7 @@ const Draggable = forwardRef<DraggableHandle, DraggableProps>((props, ref) => {
         minHeight = 200,
         maxWidth,
         maxHeight,
-        ...opts
+            ...opts
     } = props;
 
     const api = useDraggable(opts);
@@ -35,7 +35,7 @@ const Draggable = forwardRef<DraggableHandle, DraggableProps>((props, ref) => {
     const [isResizing, setIsResizing] = useState(false);
 
     useEffect(() => {
-        if (!resizable || !api.nodeRef.current) return;
+        if(!resizable || !api.nodeRef.current) return;
 
         const element = api.nodeRef.current;
         const rect = element.getBoundingClientRect();
@@ -43,7 +43,7 @@ const Draggable = forwardRef<DraggableHandle, DraggableProps>((props, ref) => {
     }, [resizable, api.nodeRef]);
 
     useEffect(() => {
-        if (!resizable || !resizeRef.current) return;
+        if(!resizable || !resizeRef.current) return;
 
         const resizeHandle = resizeRef.current;
         let startX = 0;
@@ -54,7 +54,7 @@ const Draggable = forwardRef<DraggableHandle, DraggableProps>((props, ref) => {
         const onResizeStart = (e: PointerEvent) => {
             e.stopPropagation();
             e.preventDefault();
-            
+
             setIsResizing(true);
             startX = e.clientX;
             startY = e.clientY;
@@ -66,7 +66,7 @@ const Draggable = forwardRef<DraggableHandle, DraggableProps>((props, ref) => {
         };
 
         const onResizeMove = (e: PointerEvent) => {
-            if (!isResizing) return;
+            if(!isResizing) return;
 
             const deltaX = e.clientX - startX;
             const deltaY = e.clientY - startY;
@@ -77,20 +77,20 @@ const Draggable = forwardRef<DraggableHandle, DraggableProps>((props, ref) => {
             // Apply constraints
             newWidth = Math.max(minWidth, newWidth);
             newHeight = Math.max(minHeight, newHeight);
-            
-            if (maxWidth) newWidth = Math.min(maxWidth, newWidth);
-            if (maxHeight) newHeight = Math.min(maxHeight, newHeight);
+
+            if(maxWidth) newWidth = Math.min(maxWidth, newWidth);
+            if(maxHeight) newHeight = Math.min(maxHeight, newHeight);
 
             setSize({ width: newWidth, height: newHeight });
         };
 
         const onResizeEnd = (e: PointerEvent) => {
-            if (!isResizing) return;
-            
+            if(!isResizing) return;
+
             setIsResizing(false);
             document.body.style.cursor = '';
-            
-            try {
+
+            try{
                 resizeHandle.releasePointerCapture(e.pointerId);
             } catch {}
         };
@@ -99,7 +99,7 @@ const Draggable = forwardRef<DraggableHandle, DraggableProps>((props, ref) => {
         window.addEventListener('pointermove', onResizeMove);
         window.addEventListener('pointerup', onResizeEnd);
 
-        return () => {
+        return() => {
             resizeHandle.removeEventListener('pointerdown', onResizeStart);
             window.removeEventListener('pointermove', onResizeMove);
             window.removeEventListener('pointerup', onResizeEnd);
@@ -116,15 +116,15 @@ const Draggable = forwardRef<DraggableHandle, DraggableProps>((props, ref) => {
     const containerStyle: React.CSSProperties = {
         willChange: 'transform',
         touchAction: 'none',
-        ...style,
-        ...(resizable && size.width > 0 ? {
+            ...style,
+            ...(resizable && size.width > 0 ? {
             width: `${size.width}px`,
             height: `${size.height}px`,
             position: 'relative'
         } : {})
     };
 
-    return (
+    return(
         <div
             ref={api.nodeRef}
             className={className}

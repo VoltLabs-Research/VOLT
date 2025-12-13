@@ -9,7 +9,7 @@ type EmojiPickerProps = {
 }
 
 const EmojiPicker = ({ onSelect, onClose, emojis = DEFAULT_EMOJIS }: EmojiPickerProps) => {
-    return (
+    return(
         <div className='chat-emoji-picker'>
             <div className='chat-emoji-picker-header'>
                 <span>Select an emoji</span>

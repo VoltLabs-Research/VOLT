@@ -1,15 +1,15 @@
-import { 
-    Group, 
-    Mesh, 
-    Points, 
-    ShaderMaterial, 
-    Box3, 
-    Vector3, 
-    MeshBasicMaterial, 
-    Euler, 
-    LineSegments, 
-    EdgesGeometry, 
-    BoxGeometry 
+import {
+    Group,
+    Mesh,
+    Points,
+    ShaderMaterial,
+    Box3,
+    Vector3,
+    MeshBasicMaterial,
+    Euler,
+    LineSegments,
+    EdgesGeometry,
+    BoxGeometry
 } from 'three';
 
 export type SelectionRefs = {

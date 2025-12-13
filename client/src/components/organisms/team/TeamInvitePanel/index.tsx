@@ -1,5 +1,5 @@
 /**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+* Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
 */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -55,11 +55,11 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
     // Fetch team members when panel opens
     useEffect(() => {
-        const fetchMembers = async () => {
-            if (!isOpen || !teamId) return;
+        const fetchMembers = async() => {
+            if(!isOpen || !teamId) return;
 
             setLoadingMembers(true);
-            try {
+            try{
                 const membersData = await teamApi.members.getAll(teamId);
 
                 // Map members to the expected format
@@ -71,9 +71,9 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 })) || [];
 
                 setMembers(formattedMembers);
-            } catch (err) {
+            }catch(err){
                 console.error('Error fetching team members:', err);
-            } finally {
+            }finally{
                 setLoadingMembers(false);
             }
         };
@@ -83,7 +83,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
     // Initialize position when panel opens
     useEffect(() => {
-        if (isOpen) {
+        if(isOpen){
             setInitialPosition();
             // Auto-focus input when panel opens
             setTimeout(() => {
@@ -95,33 +95,33 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     // Close when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-                if (triggerRef?.current && !triggerRef.current.contains(event.target as Node)) {
+            if(panelRef.current && !panelRef.current.contains(event.target as Node)) {
+                if(triggerRef?.current && !triggerRef.current.contains(event.target as Node)) {
                     onClose();
                 }
             }
         };
 
-        if (isOpen) {
+        if(isOpen){
             document.addEventListener('mousedown', handleClickOutside);
         }
 
-        return () => {
+        return() => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [isOpen, onClose, triggerRef]);
 
-    const handleAddMember = async (e: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>) => {
+    const handleAddMember = async(e: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>) => {
         // Handle both Enter key and button click
-        if ('key' in e && e.key !== 'Enter') return;
-        if ('key' in e) e.preventDefault();
+        if('key' in e && e.key !== 'Enter') return;
+        if('key' in e) e.preventDefault();
 
-        if (!email.trim()) return;
+        if(!email.trim()) return;
 
         setButtonState('idle');
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.trim())) {
+        if(!emailRegex.test(email.trim())) {
             const errorMsg = 'Invalid email format';
             showError(errorMsg);
             setButtonState('error');
@@ -129,7 +129,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             return;
         }
 
-        if (members.find(m => m.email === email.trim())) {
+        if(members.find(m => m.email === email.trim())) {
             const errorMsg = 'This email is already invited';
             showError(errorMsg);
             setButtonState('error');
@@ -139,7 +139,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
         setLoading(true);
         setButtonState('loading');
-        try {
+        try{
             await teamApi.invitations.send(teamId, email.trim(), 'Can view' as any);
 
             setMembers([...members, { email: email.trim(), role: 'Can view' }]);
@@ -151,30 +151,30 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             setTimeout(() => {
                 setButtonState('idle');
             }, 2500);
-        } catch (err) {
+        }catch(err){
             const errorMessage = err instanceof Error ? err.message : 'An error occurred';
             showError(errorMessage);
             setButtonState('error');
             setTimeout(() => setButtonState('idle'), 2000);
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
-    const handleRemoveMember = async (emailToRemove: string) => {
-        try {
+    const handleRemoveMember = async(emailToRemove: string) => {
+        try{
             await teamApi.members.remove(teamId, { email: emailToRemove });
 
             setMembers(members.filter(m => m.email !== emailToRemove));
             showSuccess(`Member ${emailToRemove} removed successfully`);
-        } catch (err) {
+        }catch(err){
             const errorMessage = err instanceof Error ? err.message : 'Failed to remove member';
             showError(errorMessage);
         }
     };
 
-    const handleRoleChange = async (email: string, newRole: 'Can view' | 'Full access' | 'Can edit' | 'Remove') => {
-        if (newRole === 'Remove') {
+    const handleRoleChange = async(email: string, newRole: 'Can view' | 'Full access' | 'Can edit' | 'Remove') => {
+        if(newRole === 'Remove'){
             handleRemoveMember(email);
             return;
         }
@@ -194,9 +194,9 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         return email.split('@')[0].charAt(0).toUpperCase();
     };
 
-    if (!isOpen) return null;
+    if(!isOpen) return null;
 
-    return (
+    return(
         <div
             ref={panelRef}
             className='team-invite-panel'
@@ -360,5 +360,3 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 };
 
 export default TeamInvitePanel;
-
-

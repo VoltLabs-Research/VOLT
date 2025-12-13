@@ -22,11 +22,11 @@ export const useToastStore = create<ToastState>((set, get) => ({
   addToast: (message: string, type: ToastType, duration = 5000) => {
     const id = `toast-${Date.now()}-${Math.random()}`;
     const toast: Toast = { id, type, message, duration, createdAt: Date.now() };
-    
+
     set((state) => ({ toasts: [...state.toasts, toast] }));
-    
-    // Auto-remove after duration (if duration > 0)
-    if (duration > 0) {
+
+    // Auto-remove after duration(if duration > 0)
+    if(duration > 0){
       setTimeout(() => {
         get().removeToast(id);
       }, duration);

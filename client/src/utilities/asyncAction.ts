@@ -41,15 +41,15 @@ export const createAsyncAction = <TState extends BaseState>(
         }catch(err: any){
             // Handle classified ApiError from interceptors
             let errorMessage = 'An unknown error occurred';
-            
-            if (err instanceof ApiError) {
+
+            if(err instanceof ApiError){
                 errorMessage = err.getUserMessage();
-            } else if (err.response?.data?.message) {
+            }else if(err.response?.data?.message){
                 errorMessage = err.response.data.message;
-            } else if (err.message) {
+            }else if(err.message){
                 errorMessage = err.message;
             }
-            
+
             set({ error: errorMessage, [options.loadingKey]: false } as Partial<TState>);
             throw errorMessage;
         }

@@ -10,7 +10,7 @@ interface SettingsSidebarProps {
 }
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection, navOptions, onChange }) => {
-	return (
+	return(
 		<aside className='settings-sidebar'>
 			<div className='sidebar-header'>
 				<button className='back-button'>
@@ -23,7 +23,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection, navOpt
 				{navOptions.map((option) => {
 					const Icon = option.icon;
 					const isActive = activeSection === option.title;
-					return (
+					return(
 						<button
 							key={option.title}
 							className={`nav-item ${isActive ? 'active' : ''}`}
@@ -40,5 +40,3 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection, navOpt
 };
 
 export default SettingsSidebar;
-
-

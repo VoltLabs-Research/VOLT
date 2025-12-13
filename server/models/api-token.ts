@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -36,14 +36,14 @@ export interface IApiToken extends Document {
     createdBy: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
-    
+
     generateToken(): string;
     isExpired(): boolean;
     hasPermission(permission: string): boolean;
     updateLastUsed(): Promise<void>;
 }
 
-export interface IApiTokenModel extends Model<IApiToken> {
+export interface IApiTokenModel extends Model<IApiToken>{
     findByToken(token: string): Promise<IApiToken | null>;
     findByUser(userId: string): Promise<IApiToken[]>;
 }
@@ -64,7 +64,7 @@ const apiTokenSchema = new Schema<IApiToken>({
         type: String,
         required: true,
         unique: true,
-        select: false 
+        select: false
     },
     tokenHash: {
         type: String,
@@ -113,31 +113,30 @@ apiTokenSchema.index({ tokenHash: 1 });
 apiTokenSchema.index({ expiresAt: 1 });
 
 apiTokenSchema.virtual('maskedToken').get(function() {
-    if (!this.token) return '';
+    if(!this.token) return '';
     return `${this.token.substring(0, 8)}...${this.token.substring(this.token.length - 4)}`;
 });
 
 apiTokenSchema.virtual('status').get(function() {
-    if (!this.isActive) return 'inactive';
-    if (this.isExpired()) return 'expired';
+    if(!this.isActive) return 'inactive';
+    if(this.isExpired()) return 'expired';
     return 'active';
 });
 
-
-apiTokenSchema.methods.generateToken = function(): string {
+apiTokenSchema.methods.generateToken = function(): string{
     return `opendxa_${crypto.randomBytes(32).toString('hex')}`;
 };
 
-apiTokenSchema.methods.isExpired = function(): boolean {
-    if (!this.expiresAt) return false;
+apiTokenSchema.methods.isExpired = function(): boolean{
+    if(!this.expiresAt) return false;
     return new Date() > this.expiresAt;
 };
 
-apiTokenSchema.methods.hasPermission = function(permission: string): boolean {
+apiTokenSchema.methods.hasPermission = function(permission: string): boolean{
     return this.permissions.includes(permission) || this.permissions.includes('admin:all');
 };
 
-apiTokenSchema.methods.updateLastUsed = async function(): Promise<void> {
+apiTokenSchema.methods.updateLastUsed = async function(): Promise<void>{
     this.lastUsedAt = new Date();
     await this.save();
 };
@@ -153,9 +152,9 @@ apiTokenSchema.statics.findByUser = function(this: mongoose.Model<IApiToken>, us
 
 apiTokenSchema.post('save', function() {
     // Clean up expired tokens in background
-    mongoose.model('ApiToken').deleteMany({ 
+    mongoose.model('ApiToken').deleteMany({
         expiresAt: { $lt: new Date() },
-        isActive: true 
+        isActive: true
     }).exec();
 });
 

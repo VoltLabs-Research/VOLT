@@ -17,7 +17,7 @@ const useModelStore = create<ModelStore>()((set, get) => ({
     setModelBounds(modelBounds: any){
         const { activeModel } = get();
         if(!activeModel) return;
-        
+
         set({
             activeModel: { ...activeModel, modelBounds }
         });

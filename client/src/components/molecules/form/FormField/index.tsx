@@ -19,14 +19,14 @@ interface FormFieldProps {
     options?: SelectOption[];
     isLoading?: boolean;
     renderInPortal?: boolean;
-    // Expression support (for plugin builder)
+    // Expression support(for plugin builder)
     expressionEnabled?: boolean;
     expressionNodeId?: string;
     expressionMultiline?: boolean;
     expressionRows?: number;
 }
 
-// Cache schemas at module level (same pattern as useTemplateAutocomplete)
+// Cache schemas at module level(same pattern as useTemplateAutocomplete)
 let schemasCache: Record<NodeType, NodeOutputSchema> | null = null;
 
 // Stable selectors outside component
@@ -57,7 +57,7 @@ const FormField: React.FC<FormFieldProps> = ({
 
     // Fetch schemas from backend if not cached
     useEffect(() => {
-        if (schemasCache || !expressionEnabled) return;
+        if(schemasCache || !expressionEnabled) return;
 
         pluginApi.getNodeSchemas().then(data => {
             schemasCache = data as Record<NodeType, NodeOutputSchema>;
@@ -75,7 +75,7 @@ const FormField: React.FC<FormFieldProps> = ({
 
     // Create expression autocomplete config if enabled
     const expressionAutocomplete = useMemo(() => {
-        if (!expressionEnabled || !expressionNodeId) return undefined;
+        if(!expressionEnabled || !expressionNodeId) return undefined;
 
         return {
             nodeId: expressionNodeId,
@@ -85,9 +85,9 @@ const FormField: React.FC<FormFieldProps> = ({
     }, [expressionEnabled, expressionNodeId, nodes, edges]);
 
     const renderInput = () => {
-        switch (fieldType) {
+        switch(fieldType){
             case 'select':
-                return (
+                return(
                     <Select
                         options={options || []}
                         value={String(fieldValue)}
@@ -98,7 +98,7 @@ const FormField: React.FC<FormFieldProps> = ({
                 );
 
             case 'checkbox':
-                return (
+                return(
                     <LiquidToggle
                         pressed={Boolean(fieldValue)}
                         onChange={(next) => onFieldChange(fieldKey, next)}
@@ -106,7 +106,7 @@ const FormField: React.FC<FormFieldProps> = ({
                 );
 
             case 'color':
-                return (
+                return(
                     <input
                         type="color"
                         value={typeof fieldValue === 'string' ? fieldValue : String(fieldValue)}
@@ -118,7 +118,7 @@ const FormField: React.FC<FormFieldProps> = ({
 
             case 'input':
             default:
-                return (
+                return(
                     <Input
                         {...inputProps}
                         value={String(fieldValue)}
@@ -132,7 +132,7 @@ const FormField: React.FC<FormFieldProps> = ({
         }
     };
 
-    return (
+    return(
         <div className={`labeled-input-container ${fieldType === 'checkbox' ? 'checkbox-container' : ''} ${isLoading ? 'is-loading' : ''}`}>
             <h4 className='labeled-input-label'>{label}</h4>
             <div className='labeled-input-tag-container'>
@@ -143,4 +143,3 @@ const FormField: React.FC<FormFieldProps> = ({
 };
 
 export default FormField;
-    

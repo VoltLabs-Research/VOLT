@@ -20,7 +20,7 @@ const BaseNode: React.FC<BaseNodeProps> = memo(({
 }) => {
     const config = NODE_CONFIGS[nodeType];
 
-    return (
+    return(
         <div className={`workflow-node ${selected ? 'workflow-node--selected' : ''}`}>
             {config.inputs > 0 && (
                 <Handle

@@ -125,7 +125,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
     const [showTemplates, setShowTemplates] = useState(false);
 
     const isValidJson = useMemo(() => {
-        try {
+        try{
             JSON.parse(jsonText);
             return true;
         } catch {
@@ -136,22 +136,22 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
     const handleJsonChange = useCallback((newText: string) => {
         setJsonText(newText);
 
-        try {
+        try{
             const parsed = JSON.parse(newText);
             setError(null);
             updateNodeData(node.id, { schema: { definition: parsed } });
-        } catch (err: any) {
+        }catch(err: any){
             setError(err.message);
         }
     }, [node.id, updateNodeData]);
 
     const formatJson = useCallback(() => {
-        try {
+        try{
             const parsed = JSON.parse(jsonText);
             const formatted = JSON.stringify(parsed, null, 2);
             setJsonText(formatted);
             setError(null);
-        } catch (err: any) {
+        }catch(err: any){
             setError(err.message);
         }
     }, [jsonText]);
@@ -168,7 +168,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
         navigator.clipboard.writeText(jsonText);
     }, [jsonText]);
 
-    return (
+    return(
         <>
             <CollapsibleSection title='Schema Definition' defaultExpanded>
                 <div className="schema-editor">

@@ -65,7 +65,7 @@ class PreviewCacheService{
             this.cache.forEach((url) => URL.revokeObjectURL(url));
             this.cache.clear();
             this.timestamps.clear();
-            this.loadingSet.clear(); 
+            this.loadingSet.clear();
         }
     }
 
@@ -91,11 +91,11 @@ class PreviewCacheService{
             const response = await api.get(`/trajectories/${id}/preview`, {
                 responseType: 'blob'
             });
-            
+
             const imageUrl = URL.createObjectURL(response.data);
             this.set(id, imageUrl);
             this.loadingSet.delete(id);
-            
+
             return imageUrl;
         }catch(error){
             this.logger.error('Error loading authenticated preview:', error);
@@ -112,7 +112,7 @@ class PreviewCacheService{
         return Date.now() - timestamp > this.ttl;
     }
 
-    private evictOldest(): void {
+    private evictOldest(): void{
         let oldestId: string | null = null;
         let oldestTimestamp = Date.now();
 

@@ -4,11 +4,11 @@ import MetricsCollector from '@/services/metrics-collector';
 
 const metricsCollector = new MetricsCollector();
 
-export default class SystemController {
-    public getSystemStats = catchAsync(async (_req: Request, res: Response) => {
+export default class SystemController{
+    public getSystemStats = catchAsync(async(_req: Request, res: Response) => {
         let stats = await metricsCollector.getLatestFromRedis();
 
-        if (!stats) {
+        if(!stats){
             stats = await metricsCollector.collect();
         }
 

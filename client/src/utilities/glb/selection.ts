@@ -31,5 +31,5 @@ export const updateSelectionGeometry = (selection: SelectionRefs, size: THREE.Ve
 
     const material = selection.base.material as THREE.LineBasicMaterial;
     material.color = new THREE.Color(hover ? COLORS.BORDER_HOVER : COLORS.BORDER);
-    material.opacity = hover ? 0.9 : 0.75;    
+    material.opacity = hover ? 0.9 : 0.75;
 };

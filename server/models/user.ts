@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -98,31 +98,31 @@ UserSchema.plugin(useCascadeDelete);
 UserSchema.index({ email: 'text' });
 UserSchema.index({ oauthProvider: 1, oauthId: 1 }, { unique: true, sparse: true });
 
-UserSchema.pre('save', async function (this: IUser & { isNew: boolean }, next) {
-    if (!this.isModified('password')) return next();
+UserSchema.pre('save', async function(this: IUser & { isNew: boolean }, next) {
+    if(!this.isModified('password')) return next();
 
     // Skip password hashing for OAuth users without password
-    if (!this.password) return next();
+    if(!this.password) return next();
 
     this.password = await bcrypt.hash(this.password, 12);
 
-    if (!this.isNew) {
+    if(!this.isNew){
         this.passwordChangedAt = new Date(Date.now() - 1000);
     }
 
     next();
 });
 
-UserSchema.pre('save', async function (this: IUser & { isNew: boolean }, next) {
-    if (this.isNew && !this.avatar) {
-        try {
+UserSchema.pre('save', async function(this: IUser & { isNew: boolean }, next) {
+    if(this.isNew && !this.avatar){
+        try{
             // Generate default avatar using email as seed
             const { AvatarService } = await import('@services/avatar');
             this.avatar = await AvatarService.generateAndUploadDefaultAvatar(
                 this._id.toString(),
                 this.email
             );
-        } catch (error) {
+        }catch(error){
             console.error('Failed to generate default avatar:', error);
             // Don't block user creation if avatar generation fails
         }
@@ -130,10 +130,10 @@ UserSchema.pre('save', async function (this: IUser & { isNew: boolean }, next) {
     next();
 });
 
-UserSchema.post('save', async function (doc, next) {
+UserSchema.post('save', async function(doc, next) {
     // Can we use this.isNew?
     const isNewUser = this.createdAt.getTime() === this.updatedAt.getTime();
-    if (isNewUser) {
+    if(isNewUser){
         const capitalizedFirstName = this.firstName.charAt(0).toUpperCase() + this.firstName.slice(1);
         const newTeam = await Team.create({
             name: `${capitalizedFirstName}'s Team`,
@@ -168,7 +168,7 @@ UserSchema.methods.isCorrectPassword = function (candidatePassword: string): Pro
 };
 
 UserSchema.methods.isPasswordChangedAfterJWFWasIssued = function (jwtTimestamp: number): boolean {
-    if (this.passwordChangedAt) {
+    if(this.passwordChangedAt){
         const changedTimestamp = Math.floor(this.passwordChangedAt.getTime() / 1000);
         return jwtTimestamp < changedTimestamp;
     }

@@ -42,8 +42,8 @@ const CameraRig: React.FC<Props> = ({ orbitRef }) => {
         oNear, oFar, oZoom
     ]);
 
-    if (type === 'orthographic') {
-        return (
+    if(type === 'orthographic'){
+        return(
             <OrthographicCamera
                 key="ortho"
                 makeDefault
@@ -59,7 +59,7 @@ const CameraRig: React.FC<Props> = ({ orbitRef }) => {
         );
     }
 
-    return (
+    return(
         <PerspectiveCamera
             key="persp"
             makeDefault

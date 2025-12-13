@@ -65,11 +65,11 @@ export const getAllAutocompletePaths = (
         if(!schema) continue;
         const paths = flattenSchema(schema, node.id);
         for(const { path, description } of paths){
-            suggestions.push({ 
-                path, 
-                nodeId: node.id, 
-                nodeType: node.type, 
-                description 
+            suggestions.push({
+                path,
+                nodeId: node.id,
+                nodeType: node.type,
+                description
             });
         }
     }

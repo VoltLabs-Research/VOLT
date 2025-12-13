@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -31,7 +31,7 @@ type Pointer = {
     createdAt?: string;
 };
 
-export const getMetricsByTeamId = async (teamId: string) => {
+export const getMetricsByTeamId = async(teamId: string) => {
     const trajectoryDocs = await Trajectory.find({ team: teamId }).select('_id').lean();
     if(!trajectoryDocs.length){
         return { totals: {}, lastMonth: {}, weekly: { labels: [] } };
@@ -57,7 +57,7 @@ export const getMetricsByTeamId = async (teamId: string) => {
     const analyses = await Analysis.find({ trajectory: { $in: trajectoryObjectIds } })
         .select('_id plugin modifier trajectory createdAt')
         .lean();
-    
+
     const pointersByPlugin = new Map<string, Pointer[]>();
     for(const analysis of analyses){
         if(!analysis.plugin || !analysis.trajectory) continue;
@@ -107,12 +107,12 @@ export const getMetricsByTeamId = async (teamId: string) => {
                     pluginId: slug,
                     displayName,
                     listingUrl,
-                    analysisPointers 
+                    analysisPointers
                 }, { metricKey: listingKey }),
                 key: listingKey
             });
         }
     }
-    
+
     return MongoListingCountAggregator.merge(aggregators);
 };

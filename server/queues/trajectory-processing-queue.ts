@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -41,7 +41,7 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
             ramLoadThreshold: 70,
             useStreamingAdd: true
         };
-        
+
         super(options);
 
         // Listen for job completion to trigger preview generation
@@ -52,10 +52,10 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
         });
     }
 
-    private async onJobCompleted(data: any): Promise<void> {
+    private async onJobCompleted(data: any): Promise<void>{
         const job = data.job as TrajectoryProcessingJob;
-        
-        // Only process if this is the first chunk (index 0)
+
+        // Only process if this is the first chunk(index 0)
         if(job.chunkIndex !== 0) return;
 
         const trackingKey = `${job.trajectoryId}:preview-scheduled`;
@@ -73,7 +73,7 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
             const frameGLB = `trajectory-${job.trajectoryId}/previews/timestep-${firstFrame.frameInfo.timestep}.glb`;
             const trajectory = await Trajectory.findById(job.trajectoryId);
             if(!trajectory) throw Error('Trajectory::NotFound');
-            
+
             await rasterizeGLBs(frameGLB, SYS_BUCKETS.MODELS, SYS_BUCKETS.RASTERIZER, trajectory);
 
             // If this is part of a session, increment the remaining counter to include this rasterizer job
@@ -88,7 +88,7 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
         }
     }
 
-    protected deserializeJob(rawData: string): TrajectoryProcessingJob {
+    protected deserializeJob(rawData: string): TrajectoryProcessingJob{
         try{
             return JSON.parse(rawData) as TrajectoryProcessingJob;
         }catch(error){

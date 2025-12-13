@@ -22,7 +22,7 @@ const SceneColumn: React.FC<SceneColumnProps> = ({
 }) => {
   const shouldShowSkeleton = isLoading && (!scene || !scene.data);
 
-  return (
+  return(
     <motion.div
       className={`raster-scene-column-  container ${scene?.model === 'dislocations' && 'theme-dark'}`}
       style={{ flex: 1, minWidth: 0 }}
@@ -31,11 +31,11 @@ const SceneColumn: React.FC<SceneColumnProps> = ({
       transition={{ delay }}
     >
       {availableExposures?.map((exposure) => {
-        if (!activeExposures[exposure.exposureId]) return null;
+        if(!activeExposures[exposure.exposureId]) return null;
 
         // Render RasterResultsRenderer for any exposure with raster config
-        if (exposure.raster && timestep !== undefined && configId && trajectoryId) {
-          return (
+        if(exposure.raster && timestep !== undefined && configId && trajectoryId){
+          return(
             <RasterResultsRenderer
               key={exposure.exposureId}
               exposure={exposure}

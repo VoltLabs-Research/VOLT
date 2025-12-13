@@ -20,27 +20,27 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     error: undefined,
     unreadCount: 0,
 
-    fetch: async (opts) => {
-        if (get().loading) return;
-        if (!opts?.force && get().notifications.length) return;
+    fetch: async(opts) => {
+        if(get().loading) return;
+        if(!opts?.force && get().notifications.length) return;
         set({ loading: true, error: undefined });
-        try {
+        try{
             const notifications = await notificationApi.getAll({ limit: 20 });
             const unreadCount = notifications.filter(n => !n.read).length;
             set({ notifications, unreadCount, loading: false });
-        } catch (err: any) {
+        }catch(err: any){
             set({ loading: false, error: err?.message || 'Failed to load notifications' });
         }
     },
 
-    markAsRead: async (id: string) => {
-        try {
+    markAsRead: async(id: string) => {
+        try{
             await api.patch<ApiResponse<Notification>>(`/notifications/${id}`, { read: true });
             set((s) => ({
                 notifications: s.notifications.map(n => n._id === id ? { ...n, read: true } : n),
                 unreadCount: Math.max(0, s.unreadCount - 1)
             }));
-        } catch (err) { /* noop */ }
+        }catch(err){ /* noop */ }
     },
 
     addNotification: (notification: Notification) => {

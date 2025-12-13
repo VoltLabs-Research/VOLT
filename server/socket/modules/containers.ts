@@ -3,21 +3,21 @@ import BaseSocketModule from '@/socket/base-socket-module';
 import ContainerController from '@/controllers/container';
 import logger from '@/logger';
 
-class ContainerModule extends BaseSocketModule {
+class ContainerModule extends BaseSocketModule{
     private containerController: ContainerController;
 
-    constructor() {
+    constructor(){
         super('ContainerModule');
         this.containerController = new ContainerController();
     }
 
-    onInit(io: Server): void {
+    onInit(io: Server): void{
         this.io = io;
     }
 
-    onConnection(socket: Socket): void {
+    onConnection(socket: Socket): void{
         const user = (socket as any).user;
-        if (!user) {
+        if(!user){
             return;
         }
 

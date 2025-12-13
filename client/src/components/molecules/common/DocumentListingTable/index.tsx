@@ -8,7 +8,7 @@ import { List, type ListImperativeAPI } from 'react-window';
 const ROW_HEIGHT = 48;
 
 const SkeletonRow = ({ columns }: { columns: ColumnConfig[] }) => {
-    return (
+    return(
         <div className='document-listing-table-row-container skeleton-row'>
             {columns.map((col) => (
                 <div className='document-listing-cell' data-label={col.title} key={col.key}>
@@ -36,7 +36,7 @@ const VirtualizedRow = (props: any) => {
     const item = data[index];
     const rowKey = keyExtractor ? keyExtractor(item, index) : `item-${index}`;
 
-    return (
+    return(
         <div style={style}>
             <ActionBasedFloatingContainer
                 key={rowKey}
@@ -64,7 +64,7 @@ const VirtualizedRow = (props: any) => {
     );
 };
 
-type InfiniteProps = {
+type InfiniteProps ={
     enableInfinite?: boolean;
     hasMore?: boolean;
     onLoadMore?: () => void;
@@ -105,15 +105,15 @@ const DocumentListingTable = ({
 
     // Observe intersection of the sentinel within the provided scroll container
     useEffect(() => {
-        if (!enableInfinite || useVirtualization) return;
+        if(!enableInfinite || useVirtualization) return;
         const root = scrollContainerRef && 'current' in scrollContainerRef ? (scrollContainerRef.current as any) : null;
         const sentinel = sentinelRef.current;
-        if (!sentinel) return;
+        if(!sentinel) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
                 const entry = entries[0];
-                if (entry.isIntersecting && hasMore && !isFetchingMore) {
+                if(entry.isIntersecting && hasMore && !isFetchingMore){
                     onLoadMore && onLoadMore();
                 }
             },
@@ -121,12 +121,12 @@ const DocumentListingTable = ({
         );
 
         observer.observe(sentinel);
-        return () => observer.disconnect();
+        return() => observer.disconnect();
     }, [enableInfinite, hasMore, isFetchingMore, onLoadMore, scrollContainerRef, useVirtualization]);
 
     // Handle infinite scroll for virtualized list
     const handleScroll = (event: any) => {
-        if (!enableInfinite || !useVirtualization) return;
+        if(!enableInfinite || !useVirtualization) return;
 
         const target = event.target as HTMLElement;
         const scrollOffset = target.scrollTop;
@@ -135,7 +135,7 @@ const DocumentListingTable = ({
         const scrollThreshold = totalHeight - visibleHeight - 200; // 200px before end
 
         // Only trigger when scrolling down
-        if (scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold && hasMore && !isFetchingMore) {
+        if(scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold && hasMore && !isFetchingMore){
             onLoadMore && onLoadMore();
         }
         lastScrollOffset.current = scrollOffset;
@@ -145,7 +145,7 @@ const DocumentListingTable = ({
     const hasNoData = data.length === 0;
     const shouldShowEmptyState = hasNoData && !isLoading;
 
-    return (
+    return(
         <div className='document-listing-table-container'>
             {columns.length > 0 && (
                 <div className='document-listing-table-header-container'>
@@ -180,11 +180,11 @@ const DocumentListingTable = ({
                         />
                     </div>
                 ) : !hasNoData ? (
-                    // Non-virtualized rendering (fallback)
+                    // Non-virtualized rendering(fallback)
                     <>
                         {data.map((item: any, idx: number) => {
                             const rowKey = keyExtractor ? keyExtractor(item, idx) : `item-${idx}`;
-                            return (
+                            return(
                                 <ActionBasedFloatingContainer
                                     key={rowKey}
                                     options={getMenuOptions ? getMenuOptions(item) : []}
@@ -212,13 +212,13 @@ const DocumentListingTable = ({
                     </>
                 ) : null}
 
-                {!hasNoData && enableInfinite && hasMore && isFetchingMore && (
+             {!hasNoData && enableInfinite && hasMore && isFetchingMore && (
                     Array.from({ length: skeletonRowsCount }).map((_, index) => (
                         <SkeletonRow key={`append-skeleton-${index}`} columns={columns} />
                     ))
                 )}
 
-                {/* Infinite scroll sentinel (for non-virtualized) */}
+                {/* Infinite scroll sentinel(for non-virtualized) */}
                 {enableInfinite && !useVirtualization && <div ref={sentinelRef} style={{ height: 1 }} />}
 
                 {shouldShowEmptyState && (

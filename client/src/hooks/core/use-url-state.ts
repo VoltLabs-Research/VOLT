@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router';
 
 const useUrlState = () => {
     const [searchParams, setSearchParams] = useSearchParams();
-    
+
     const updateUrlParams = useCallback((updates: Record<string, string | null>) => {
         setSearchParams((current) => {
             const newParams = new URLSearchParams(current);
@@ -19,7 +19,7 @@ const useUrlState = () => {
         }, { replace: true });
     }, [setSearchParams]);
 
-    const getUrlParam = useCallback((key: string): string | null => {
+    const getUrlParam = useCallback((key: string): string | null =>{
         return searchParams.get(key);
     }, [searchParams]);
 

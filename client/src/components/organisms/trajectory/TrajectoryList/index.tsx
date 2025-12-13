@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -38,7 +38,7 @@ const TrajectoryList: React.FC<TrajectoryListProps> = ({ onFileSelect }) => {
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const isLoading = useTrajectoryStore((state) => state.isLoading);
     const trajectories = useTrajectoryStore((state) => state.trajectories);
-    const selectedTrajectoryId = useTrajectoryStore(state => state.trajectory?._id); 
+    const selectedTrajectoryId = useTrajectoryStore(state => state.trajectory?._id);
     const logger = useLogger('trajectory-list');
 
     useEffect(() => {
@@ -47,8 +47,7 @@ const TrajectoryList: React.FC<TrajectoryListProps> = ({ onFileSelect }) => {
         }
     }, []);
 
-
-    const handleDelete = async (trajectoryId: string, e: React.MouseEvent) => {
+    const handleDelete = async(trajectoryId: string, e: React.MouseEvent) => {
         e.stopPropagation();
         try{
             await deleteTrajectoryById(trajectoryId);
@@ -57,11 +56,11 @@ const TrajectoryList: React.FC<TrajectoryListProps> = ({ onFileSelect }) => {
         }
     };
 
-    return (
+    return(
         <EditorWidget className='editor-file-list-container'>
             <div className='editor-floating-header-container'>
                 <h3 className='editor-floating-header-title'>
-                    Uploaded Trajectories ({trajectories?.length || 0})
+                    Uploaded Trajectories({trajectories?.length || 0})
                 </h3>
                 <IoIosArrowDown className='editor-floating-header-icon' />
             </div>

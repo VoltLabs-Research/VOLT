@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 
-const ScreenshotHandler: React.FC<{ 
+const ScreenshotHandler: React.FC<{
     onToolsReady: (tools: { captureScreenshot: (options?: any) => Promise<string>; waitForVisibleFrame: () => Promise<void>; markContentReady: () => void; waitForContentFrame: () => Promise<void> }) => void;
     backgroundColor: string;
 }> = ({ onToolsReady, backgroundColor }) => {
@@ -18,9 +18,9 @@ const ScreenshotHandler: React.FC<{
             const el = gl.domElement;
             const okSize = () => el.clientWidth > 0 && el.clientHeight > 0;
             const tick = () => {
-                if (okSize() && hasRenderedRef.current) {
+                if(okSize() && hasRenderedRef.current) {
                     requestAnimationFrame(() => requestAnimationFrame(resolve));
-                } else {
+                }else{
                     requestAnimationFrame(tick);
                 }
             };
@@ -28,13 +28,13 @@ const ScreenshotHandler: React.FC<{
         });
     }, [gl]);
 
-    const waitForContentFrame = useCallback(async () => {
+    const waitForContentFrame = useCallback(async() => {
         await waitForVisibleFrame();
         return new Promise<void>((resolve) => {
             const tick = () => {
-                if (contentReadyRef.current && hasRenderedRef.current) {
+                if(contentReadyRef.current && hasRenderedRef.current){
                     requestAnimationFrame(() => requestAnimationFrame(resolve));
-                } else {
+                }else{
                     requestAnimationFrame(tick);
                 }
             };

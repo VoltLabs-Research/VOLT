@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -50,7 +50,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         handleDragEnter();
     }, [handleDragEnter]);
 
-    const handleDrop = useCallback(async (event: React.DragEvent<HTMLDivElement>) => {
+    const handleDrop = useCallback(async(event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
         resetDragState();
 
@@ -64,7 +64,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             const allFiles: FileWithPath[] = [];
             let commonFolderName: string | null = null;
 
-            const processPromises = Array.from(items).map(async (item) => {
+            const processPromises = Array.from(items).map(async(item) => {
                 const entry = item.webkitGetAsEntry();
                 if(!entry) return { files: [], folderName: null };
 
@@ -107,14 +107,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
     useEffect(() => {
         window.addEventListener('dragenter', handleWindowDragEnter);
 
-        return () => {
+        return() => {
             window.removeEventListener('dragenter', handleWindowDragEnter);
         };
     }, [handleWindowDragEnter]);
 
     const containerClasses = useMemo(() => {
         const classes = ['file-upload-container'];
-        
+
         if(isDraggingOver) classes.push('is-dragging-over');
 
         return classes.filter(Boolean).join(' ');
@@ -132,7 +132,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         />
     );
 
-    return (
+    return(
         <>
             {children}
             {createPortal(dropZone, document.body)}

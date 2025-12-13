@@ -1,11 +1,11 @@
 import type { Chat, Message, Participant } from '@/types/chat';
 import { getInitials } from '@/utilities/guest';
 import MessageSkeleton from '@/components/atoms/chat/MessageSkeleton';
-import { 
-    IoChatbubblesOutline, 
-    IoCallOutline, 
-    IoVideocamOutline, 
-    IoPeopleOutline, 
+import {
+    IoChatbubblesOutline,
+    IoCallOutline,
+    IoVideocamOutline,
+    IoPeopleOutline,
     IoInformationCircleOutline } from 'react-icons/io5';
 import SharedFilesList from '@/components/molecules/chat/SharedFilesList';
 
@@ -26,7 +26,7 @@ const DetailsPanel = ({
     onOpenGroupManagement,
     currentParticipant
 }: DetailsPanelProps) => {
-    return (
+    return(
         <div className='chat-details-container'>
             <div className='chat-details-header'>
                 <h3 className='chat-details-title'>{chat?.isGroup ? 'Group Info' : 'Contact Info'}</h3>
@@ -60,7 +60,7 @@ const DetailsPanel = ({
                                 {currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
                             </div>
                             <h4 className='chat-details-name'>
-                                {currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
+                             {currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
                             </h4>
                             <div className='chat-details-status'>
                                 {presence === 'online' ? 'Online' : presence === 'offline' ? 'Offline' : 'Connecting...'}

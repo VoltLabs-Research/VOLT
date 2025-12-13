@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -54,23 +54,23 @@ const CursorPositionedContainer: React.FC<CursorPositionedContainerProps> = ({
         let x = cursorX + offsetX;
         let y = cursorY + offsetY;
 
-        if (preventOverflow && containerRef.current) {
+        if(preventOverflow && containerRef.current){
             const rect = containerRef.current.getBoundingClientRect();
             const padding = 16;
 
             // Adjust horizontal position
-            if (x + rect.width > window.innerWidth - padding) {
+            if(x + rect.width > window.innerWidth - padding){
                 x = window.innerWidth - rect.width - padding;
             }
-            if (x < padding) {
+            if(x < padding){
                 x = padding;
             }
 
             // Adjust vertical position
-            if (y + rect.height > window.innerHeight - padding) {
+            if(y + rect.height > window.innerHeight - padding){
                 y = window.innerHeight - rect.height - padding;
             }
-            if (y < padding) {
+            if(y < padding){
                 y = padding;
             }
         }
@@ -83,7 +83,7 @@ const CursorPositionedContainer: React.FC<CursorPositionedContainerProps> = ({
         const modalWidth = containerRef.current?.offsetWidth || 320;
         const modalHeight = containerRef.current?.offsetHeight || 400;
 
-        switch (fallbackPosition) {
+        switch(fallbackPosition){
             case 'top-left':
                 return { x: 16, y: 16 };
             case 'top-right':
@@ -94,21 +94,21 @@ const CursorPositionedContainer: React.FC<CursorPositionedContainerProps> = ({
                 return { x: window.innerWidth - modalWidth - 16, y: window.innerHeight - modalHeight - 16 };
             case 'center':
             default:
-                return { 
-                    x: (window.innerWidth - modalWidth) / 2, 
-                    y: (window.innerHeight - modalHeight) / 2 
+                return {
+                    x: (window.innerWidth - modalWidth) / 2,
+                    y: (window.innerHeight - modalHeight) / 2
                 };
         }
     };
 
     // Update position when container becomes visible
     useEffect(() => {
-        if (isVisible) {
+        if(isVisible){
             const lastMouseEvent = (window as any).lastMouseEvent;
-            if (lastMouseEvent) {
+            if(lastMouseEvent){
                 const newPosition = calculatePosition(lastMouseEvent.clientX, lastMouseEvent.clientY);
                 setPosition(newPosition);
-            } else {
+            }else{
                 setPosition(getFallbackPosition());
             }
         }
@@ -116,19 +116,19 @@ const CursorPositionedContainer: React.FC<CursorPositionedContainerProps> = ({
 
     // Handle clicks outside the container
     useEffect(() => {
-        if (!isVisible) return;
+        if(!isVisible) return;
 
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as Element;
-            
+
             // Don't close if clicking inside the container
-            if (containerRef.current && containerRef.current.contains(target)) {
+            if(containerRef.current && containerRef.current.contains(target)) {
                 return;
             }
 
-            // Don't close if clicking on other modals or dropdowns (but allow closing on regular page elements)
+            // Don't close if clicking on other modals or dropdowns(but allow closing on regular page elements)
             const isOtherModal = target.closest('[role="dialog"], [role="menu"], [role="listbox"], .modal, .dropdown, .popover');
-            if (isOtherModal && !containerRef.current?.contains(isOtherModal)) {
+            if(isOtherModal && !containerRef.current?.contains(isOtherModal)) {
                 return;
             }
 
@@ -137,24 +137,24 @@ const CursorPositionedContainer: React.FC<CursorPositionedContainerProps> = ({
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return() => document.removeEventListener('mousedown', handleClickOutside);
     }, [isVisible, onClose]);
 
     // Handle escape key
     useEffect(() => {
-        if (!isVisible) return;
+        if(!isVisible) return;
 
         const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
+            if(e.key === 'Escape'){
                 onClose();
             }
         };
 
         document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
+        return() => document.removeEventListener('keydown', handleEscape);
     }, [isVisible, onClose]);
 
-    if (!isVisible) return null;
+    if(!isVisible) return null;
 
     const styles: React.CSSProperties = {
         position: 'fixed',
@@ -164,7 +164,7 @@ const CursorPositionedContainer: React.FC<CursorPositionedContainerProps> = ({
     };
 
     return createPortal(
-        <div 
+        <div
             ref={containerRef}
             className={className}
             style={styles}

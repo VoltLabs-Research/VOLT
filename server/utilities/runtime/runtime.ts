@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -36,7 +36,7 @@ type AsyncRequestHandler = (
 // MongoDB ObjectId validation regex
 const MONGODB_OBJECTID_REGEX = /^[0-9a-fA-F]{24}$/;
 
-// Slug validation regex (alphanumeric, hyphens, underscores)
+// Slug validation regex(alphanumeric, hyphens, underscores)
 const SLUG_REGEX = /^[a-zA-Z0-9_-]+$/;
 
 // Maximum slug length for security
@@ -48,7 +48,7 @@ export const slugify = (value: string) => value
     .replace(/^-+/, '')
     .replace(/-+$/, '');
 
-export const createTempDir = async (prefix: string = 'opendxa-'): Promise<string> => {
+export const createTempDir = async(prefix: string = 'opendxa-'): Promise<string> =>{
     const tempDir = await mkdtemp(join(tmpdir(), prefix));
     return tempDir;
 };
@@ -56,13 +56,13 @@ export const createTempDir = async (prefix: string = 'opendxa-'): Promise<string
 /**
  * Catches async errors in Express route handlers and passes them to the error middleware.
  * This eliminate the need for try-catch blocks in every async route handler.
- * 
+ *
  * @template T - The type of the async function
  * @param asyncFn - The async function to wrap
- * @returns A wrapped Express RequestHandler that catches async errors 
+ * @returns A wrapped Express RequestHandler that catches async errors
 */
 export const catchAsync = <T extends AsyncRequestHandler>(asyncFn: T): RequestHandler => {
-    return (req: Request, res: Response, next: NextFunction): void => {
+    return(req: Request, res: Response, next: NextFunction): void =>{
         // Execute the async function and catch any rejected promises
         Promise.resolve(asyncFn(req, res, next)).catch(next);
     };
@@ -70,8 +70,8 @@ export const catchAsync = <T extends AsyncRequestHandler>(asyncFn: T): RequestHa
 
 /**
  * Filters an object to only include specified fields, providing type safety
- * and protection against prototype pollution. 
- * 
+ * and protection against prototype pollution.
+ *
  * @template T - The type of the input object
  * @param obj - The object to filter
  * @param allowedFields - Array of field names to include
@@ -79,7 +79,7 @@ export const catchAsync = <T extends AsyncRequestHandler>(asyncFn: T): RequestHa
 */
 export const filterObject = <T extends object>(
     obj: T,
-    ...allowedFields: readonly string[]
+        ...allowedFields: readonly string[]
 ): Partial<T> => {
     // Input validation
     if(!obj || typeof obj !== 'object'){
@@ -103,8 +103,7 @@ export const filterObject = <T extends object>(
                 continue;
             }
 
-            // Type assertion is safe here as we're copying from the original object
-            (filteredObject as any)[key] = value;
+            // Type assertion is safe here as we're copying from the original object(filteredObject as any)[key] = value;
         }
     }
 
@@ -112,9 +111,9 @@ export const filterObject = <T extends object>(
 };
 
 /**
- * Check if a property name is potentially dangerous (prototype pollution protection)
+ * Check if a property name is potentially dangerous(prototype pollution protection)
  * @param propertyName - The property name to check
- * @returns True if the property is dangerous, false otherwise 
+ * @returns True if the property is dangerous, false otherwise
 */
 const isDangerousProperty = (propertyName: string): boolean => {
     const dangerousProperties = new Set([
@@ -132,9 +131,9 @@ const isDangerousProperty = (propertyName: string): boolean => {
 /**
  * Determines wheter a given identifier is a MongoDB ObjectId or a slug,
  * and returns the appropiate MongoDB filter query.
- * @param identifier - The identifier to check (either ObjectId string or slug)
+ * @param identifier - The identifier to check(either ObjectId string or slug)
  * @returns MongoDB FilterQuery object for finding documents
- * @throws Error if the identifier is invalid 
+ * @throws Error if the identifier is invalid
 */
 export const checkIfSlugOrId = (identifier: unknown): FilterQuery<any> => {
     // Input validation
@@ -160,11 +159,11 @@ export const checkIfSlugOrId = (identifier: unknown): FilterQuery<any> => {
     }
 
     // If neither ObjectId nor valid slug
-    throw new Error('Identifier must be either a valid MongoDB ObjectId or a valid slug (alphanumeric characters, hyphens, and undescores only)');
+    throw new Error('Identifier must be either a valid MongoDB ObjectId or a valid slug(alphanumeric characters, hyphens, and undescores only)');
 };
 
 /**
- * Validates if a string is a valid MongoDB ObjectId 
+ * Validates if a string is a valid MongoDB ObjectId
  * @param str - String to validate
  * @returns True if valid ObjectId, false otherwise
 */
@@ -173,12 +172,12 @@ const isValidObjectId = (str: string): boolean => {
 };
 
 /**
- * Validates if a string is a valid slug 
+ * Validates if a string is a valid slug
  * @param str - String to validate
  * @returns True if valid slug, false otherwise
 */
 const isValidSlug = (str: string): boolean => {
-    return (
+    return(
         str.length > 0 &&
         str.length <= MAX_SLUG_LENGTH &&
         SLUG_REGEX.test(str) &&

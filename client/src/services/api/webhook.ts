@@ -15,16 +15,16 @@ interface CreateWebhookPayload {
 }
 
 const webhookApi = {
-    async create(data: CreateWebhookPayload): Promise<Webhook> {
+    async create(data: CreateWebhookPayload): Promise<Webhook>{
         const response = await api.post<{ status: string; data: Webhook }>('/webhooks', data);
         return response.data.data;
     },
 
-    async delete(id: string): Promise<void> {
+    async delete(id: string): Promise<void>{
         await api.delete(`/webhooks/${id}`);
     },
 
-    async test(id: string): Promise<void> {
+    async test(id: string): Promise<void>{
         await api.post(`/webhooks/${id}/test`);
     }
 };

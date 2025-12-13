@@ -4,7 +4,7 @@ import EmojiPicker from '@/components/atoms/chat/EmojiPicker';
 
 type Preview = {
     file: File;
-    preview: string 
+    preview: string
 };
 
 export type ChatInputProps = {
@@ -27,10 +27,9 @@ const ChatInput = ({
 
     const fileRef = useRef<HTMLInputElement>(null);
 
-
     const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newFiles = Array.from(e.target.files || []);
-        if (!newFiles.length) return;
+        if(!newFiles.length) return;
         setFiles((prev) => [...prev, ...newFiles]);
 
         newFiles.filter(f => f.type.startsWith('image/')).forEach(file => {
@@ -40,12 +39,12 @@ const ChatInput = ({
         });
     };
 
-      const handleSend = async (e: React.FormEvent) => {
+      const handleSend = async(e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if(!message.trim() && files.length === 0) return;
-        
-        if(files.length) {
+
+        if(files.length){
             await onSendFiles(files);
             setFiles([]);
             setPreviews([]);
@@ -67,20 +66,20 @@ const ChatInput = ({
         setPreviews([]);
     };
 
-    return (
+    return(
         <form onSubmit={handleSend} className='chat-input-container'>
             <div className='chat-input-wrapper'>
                 <input
                     type='file'
-                    ref={fileRef} 
-                    onChange={handleSelectFiles} 
-                    multiple 
+                    ref={fileRef}
+                    onChange={handleSelectFiles}
+                    multiple
                     style={{ display: 'none' }} />
 
-                <button 
-                    type='button' 
-                    className='chat-header-action' 
-                    title='Attach File' 
+                <button
+                    type='button'
+                    className='chat-header-action'
+                    title='Attach File'
                     onClick={() => fileRef.current?.click()}
                 >
                     <IoAttachOutline/>
@@ -124,10 +123,10 @@ const ChatInput = ({
             {previews.length > 0 && (
                 <div className='chat-file-previews-container'>
                     <div className='chat-file-previews-header'>
-                        <span>Archivos seleccionados ({previews.length})</span>
+                        <span>Archivos seleccionados({previews.length})</span>
                         <button
                             type='button'
-                            className='chat-clear-files' 
+                            className='chat-clear-files'
                             onClick={handleClearFiles}
                         >✕</button>
                     </div>

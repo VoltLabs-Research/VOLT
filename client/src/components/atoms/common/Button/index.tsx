@@ -9,12 +9,12 @@ const Button = ({ title = '', isLoading = false, className = '', to = null, onCl
     const handleClick = () => {
         onClick();
 
-        if (to) {
+        if(to){
             navigate(to);
         }
     };
 
-    return (
+    return(
         <button
             {...props}
             className={`button ${isLoading ? 'is-loading' : ''} ${className}`}

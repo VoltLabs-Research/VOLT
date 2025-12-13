@@ -18,32 +18,32 @@ export const useFormValidation = <T extends Record<string, any>>(schema: Validat
 
     const validateField = useCallback((name: string, value: any, formData?: Partial<T>) => {
         const rules = schema[name];
-        if (!rules) return '';
+        if(!rules) return '';
 
         const rulesArray = Array.isArray(rules) ? rules : [rules];
 
-        for (const rule of rulesArray) {
-            if (rule.required && !value) {
+        for(const rule of rulesArray){
+            if(rule.required && !value){
                 return rule.message || 'This field is required';
             }
 
-            if (value) {
-                if (rule.minLength && value.length < rule.minLength) {
+            if(value){
+                if(rule.minLength && value.length < rule.minLength){
                     return rule.message || `Must be at least ${rule.minLength} characters`;
                 }
 
-                if (rule.maxLength && value.length > rule.maxLength) {
+                if(rule.maxLength && value.length > rule.maxLength){
                     return rule.message || `Must be no more than ${rule.maxLength} characters`;
                 }
 
-                if (rule.pattern && !rule.pattern.test(value)) {
+                if(rule.pattern && !rule.pattern.test(value)) {
                     return rule.message || 'Invalid format';
                 }
 
-                if (rule.validate) {
+                if(rule.validate){
                     const result = rule.validate(value, formData);
-                    if (typeof result === 'string') return result;
-                    if (!result) return rule.message || 'Invalid value';
+                    if(typeof result === 'string') return result;
+                    if(!result) return rule.message || 'Invalid value';
                 }
             }
         }
@@ -54,11 +54,11 @@ export const useFormValidation = <T extends Record<string, any>>(schema: Validat
     const checkField = useCallback((name: string, value: any, formData?: Partial<T>) => {
         const error = validateField(name, value, formData);
         setErrors((prev) => {
-            if (prev[name] === error) return prev;
+            if(prev[name] === error) return prev;
             const newErrors = { ...prev };
-            if (error) {
+            if(error){
                 newErrors[name] = error;
-            } else {
+            }else{
                 delete newErrors[name];
             }
             return newErrors;
@@ -74,7 +74,7 @@ export const useFormValidation = <T extends Record<string, any>>(schema: Validat
 
         fields.forEach((key) => {
             const error = validateField(key, formData[key], formData);
-            if (error) {
+            if(error){
                 newErrors[key] = error;
                 isValid = false;
             }

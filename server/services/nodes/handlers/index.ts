@@ -10,7 +10,7 @@ import schemaHandler from './schema-handler';
 import visualizersHandler from './visualizers-handler';
 import exportHandler from './export-handler';
 
-// TODO: I think this is too verbose; perhaps we can read 
+// TODO: I think this is too verbose; perhaps we can read
 // the directory directly and take what's exported by default to load it.
 export const registerAllHandlers = (): void => {
     nodeRegistry.register(modifierHandler);

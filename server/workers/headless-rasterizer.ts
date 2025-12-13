@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -34,10 +34,10 @@ const CONTENT_TYPE = 'image/png';
 
 /**
  * Process a single rasterization job.
- * 
+ *
  * @param job - The payload containing input paths and render options.
  */
-const processJob = async (job: RasterizerJob): Promise<void> => {
+const processJob = async(job: RasterizerJob): Promise<void> =>{
     const start = performance.now();
     const inputPath = job.opts.inputPath as string;
 
@@ -86,15 +86,15 @@ const processJob = async (job: RasterizerJob): Promise<void> => {
 /**
  * Worker Entry Point.
  */
-const main = async () => {
+const main = async() => {
     try{
         await initializeMinio();
         logger.info(`[Worker #${process.pid}] Online - Headless Rasterizer Ready`);
 
-        parentPort?.on('message', async (message: { job: RasterizerJob }) => {
+        parentPort?.on('message', async(message: { job: RasterizerJob }) => {
             if(!message || !message.job){
                 logger.error(`[Worker #${process.pid}] Received invalid message payload`);
-                return;    
+                return;
             }
 
             try{

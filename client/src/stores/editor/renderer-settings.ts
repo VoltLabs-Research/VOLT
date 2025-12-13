@@ -26,7 +26,7 @@ const INITIAL: RendererSettingsState = {
 const useRendererSettings = create<RendererSettingsStore>()(
 	persist(
 		(set) => ({
-			...INITIAL,
+      ...INITIAL,
 			setCreate: (partial) => set((s) => ({ create: { ...s.create, ...partial } })),
 			setRuntime: (partial) => set((s) => ({ runtime: { ...s.runtime, ...partial } })),
 			resetCreate: () => set((s) => ({ create: { ...INITIAL.create } })),
@@ -46,4 +46,3 @@ const useRendererSettings = create<RendererSettingsStore>()(
 // Provide both named and default exports for compatibility
 export { useRendererSettings };
 export default useRendererSettings;
-

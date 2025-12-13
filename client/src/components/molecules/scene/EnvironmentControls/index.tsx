@@ -109,9 +109,9 @@ const EnvironmentControls: React.FC = () => {
         )
     };
 
-    return (
-        <CollapsibleSection 
-            title="Environment" 
+    return(
+        <CollapsibleSection
+            title="Environment"
             icon={<MdNature size={16} />}
         >
             <div style={{ display: 'grid', gap: 12 }}>

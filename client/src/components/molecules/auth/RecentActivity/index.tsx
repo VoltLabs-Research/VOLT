@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -21,10 +21,10 @@
  */
 
 import React, { useState } from 'react';
-import { 
-    HiChartBar, 
-    HiClock, 
-    HiLightningBolt, 
+import {
+    HiChartBar,
+    HiClock,
+    HiLightningBolt,
     HiGlobeAlt,
     HiEye,
     HiRefresh
@@ -39,32 +39,32 @@ interface RecentActivityProps {
     className?: string;
 }
 
-const RecentActivity: React.FC<RecentActivityProps> = ({ 
-    limit = 10, 
+const RecentActivity: React.FC<RecentActivityProps> = ({
+    limit = 10,
     showStats = true,
-    className = '' 
+    className = ''
 }) => {
     const [refreshing, setRefreshing] = useState(false);
-    const { data, loading, error, refetch } = useApiTracker({ 
-        limit, 
-        sort: '-createdAt' 
+    const { data, loading, error, refetch } = useApiTracker({
+        limit,
+        sort: '-createdAt'
     });
 
-    const handleRefresh = async () => {
+    const handleRefresh = async() => {
         setRefreshing(true);
         await refetch();
         setRefreshing(false);
     };
 
     const getStatusCodeClass = (statusCode: number) => {
-        if (statusCode >= 200 && statusCode < 300) return 'success';
-        if (statusCode >= 400 && statusCode < 500) return 'client-error';
-        if (statusCode >= 500) return 'server-error';
+        if(statusCode >= 200 && statusCode < 300) return 'success';
+        if(statusCode >= 400 && statusCode < 500) return 'client-error';
+        if(statusCode >= 500) return 'server-error';
         return 'success';
     };
 
     const formatResponseTime = (time: number) => {
-        if (time < 1000) return `${time}ms`;
+        if(time < 1000) return `${time}ms`;
         return `${(time / 1000).toFixed(1)}s`;
     };
 
@@ -79,8 +79,8 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         return colors[method as keyof typeof colors] || 'var(--accent-gray)';
     };
 
-    if (loading && !data) {
-        return (    
+    if(loading && !data){
+        return(
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header">
                     <h3 className="recent-activity-title">
@@ -103,8 +103,8 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         );
     }
 
-    if (error) {
-        return (
+    if(error){
+        return(
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header">
                     <h3 className="recent-activity-title">
@@ -123,12 +123,12 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         );
     }
 
-    // Handle HandlerFactory response format (data is an array)
+    // Handle HandlerFactory response format(data is an array)
     const requests = Array.isArray(data?.data) ? data.data : [];
     const summary = data?.data?.summary;
 
-    if (requests.length === 0) {
-        return (
+    if(requests.length === 0){
+        return(
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header">
                     <h3 className="recent-activity-title">
@@ -147,14 +147,14 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         );
     }
 
-    return (
+    return(
         <div className={`recent-activity-container ${className}`}>
             <div className="recent-activity-header">
                 <h3 className="recent-activity-title">
                     <HiChartBar className="recent-activity-icon" />
                     Recent Activity
                 </h3>
-                
+
                 {showStats && summary && (
                     <div className="recent-activity-stats">
                         <div className="recent-activity-stat">
@@ -184,9 +184,9 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                     <div key={request._id} className="recent-activity-item">
                         <div className="recent-activity-item-content">
                             <div className="recent-activity-item-header">
-                                <span 
+                                <span
                                     className="recent-activity-method-badge"
-                                    style={{ 
+                                    style={{
                                         backgroundColor: getMethodColor(request.method),
                                         color: 'white'
                                     }}
@@ -197,33 +197,33 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                                     {request.url}
                                 </span>
                             </div>
-                            
+
                             <div className="recent-activity-item-meta">
                                 <div className={`recent-activity-status-code ${getStatusCodeClass(request.statusCode)}`}>
                                     <HiLightningBolt />
                                     {request.statusCode}
                                 </div>
-                                
+
                                 <div className="recent-activity-response-time">
                                     <HiClock />
                                     {formatResponseTime(request.responseTime)}
                                 </div>
-                                
+
                                 <div className="recent-activity-time">
                                     <HiGlobeAlt />
                                     {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div className="recent-activity-item-actions">
-                            <button 
+                            <button
                                 className="recent-activity-action-button"
                                 title="View details"
                             >
                                 <HiEye />
                             </button>
-                            <button 
+                            <button
                                 className="recent-activity-action-button"
                                 title="Refresh"
                                 onClick={handleRefresh}

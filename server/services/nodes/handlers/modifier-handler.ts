@@ -19,7 +19,7 @@ class ModifierHandler implements NodeHandler{
         const data = node.data.modifier!;
         const [trajectory, analysis] = await Promise.all([
             Trajectory.findById(context.trajectoryId).lean(),
-            Analysis.findById(context.analysisId).lean() 
+            Analysis.findById(context.analysisId).lean()
         ]);
 
         return {

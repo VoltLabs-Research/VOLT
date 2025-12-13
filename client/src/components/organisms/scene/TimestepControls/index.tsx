@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -39,16 +39,16 @@ const TimestepControls: React.FC = () => {
         setPlaySpeed,
         setCurrentTimestep
     } = usePlaybackStore();
-    
+
     if(currentTimestep === undefined) return null;
 
-    return (
+    return(
         <EditorWidget className='editor-timestep-controls' draggable={false}>
             <PlayControls
                 isPlaying={isPlaying}
                 onPlayPause={togglePlay}
             />
-            
+
             <TimestepSlider
                 currentTimestep={currentTimestep}
                 maxTimestep={timestepData.maxTimestep}
@@ -56,7 +56,7 @@ const TimestepControls: React.FC = () => {
                 onTimestepChange={setCurrentTimestep}
                 disabled={false}
             />
-            
+
             <SpeedControl
                 playSpeed={playSpeed}
                 onSpeedChange={setPlaySpeed}

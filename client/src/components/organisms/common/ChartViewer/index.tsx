@@ -48,10 +48,10 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
     useEffect(() => {
         let mounted = true;
 
-        const fetchData = async () => {
+        const fetchData = async() => {
             setLoading(true);
             setError(null);
-            try {
+            try{
                 const response = await pluginApi.getFile(
                     trajectoryId,
                     analysisId,
@@ -60,16 +60,16 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
                     filename
                 );
                 const decoded = decode(new Uint8Array(response));
-                if (mounted) {
+                if(mounted){
                     setData(decoded);
                 }
-            } catch (err: any) {
+            }catch(err: any){
                 console.error('Failed to fetch chart data:', err);
-                if (mounted) {
+                if(mounted){
                     setError(err.message || 'Failed to load data');
                 }
-            } finally {
-                if (mounted) {
+            }finally{
+                if(mounted){
                     setLoading(false);
                 }
             }
@@ -77,23 +77,23 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
 
         fetchData();
 
-        return () => {
+        return() => {
             mounted = false;
         };
     }, [trajectoryId, analysisId, exposureId, timestep, filename]);
 
     const chartData = useMemo(() => {
-        if (!data) return [];
+        if(!data) return [];
 
         const xKey = options.xAxis?.key || 'x';
         const yKey = options.yAxis?.key || 'y';
 
-        if (Array.isArray(data)) {
+        if(Array.isArray(data)) {
             return data.map((d: any) => ({
                 x: d[xKey],
                 y: d[yKey]
             }));
-        } else if (data && typeof data === 'object') {
+        }else if(data && typeof data === 'object'){
             const xValues = data[xKey] || [];
             const yValues = data[yKey] || [];
             return xValues.map((x: any, index: number) => ({
@@ -106,7 +106,7 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
     }, [data, options]);
 
     const xMeta = useMemo(() => {
-        if (!chartData || chartData.length === 0) {
+        if(!chartData || chartData.length === 0){
             return {
                 isNumeric: false,
                 interval: 'preserveStartEnd' as const,
@@ -122,7 +122,7 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
 
         const n = chartData.length;
 
-        // show ~8–12 ticks max (avoid clutter)
+        // show ~8–12 ticks max(avoid clutter)
         const desiredTicks = 10;
         const step = n > desiredTicks ? Math.ceil(n / desiredTicks) : 0;
 
@@ -130,7 +130,7 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
         const tickAngle = n > 12 ? -35 : 0;
         const tickHeight = tickAngle !== 0 ? 55 : 30;
 
-        return {
+        return{
             isNumeric,
             interval: step === 0 ? 0 : step,
             tickAngle,
@@ -139,26 +139,26 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
     }, [chartData]);
 
     const formatTick = (value: any) => {
-        if (value == null) return '';
+        if(value == null) return '';
 
         // numeric formatting
-        if (xMeta.isNumeric) {
+        if(xMeta.isNumeric){
             const num = Number(value);
-            if (!Number.isFinite(num)) return String(value);
+            if(!Number.isFinite(num)) return String(value);
             // keep compact but readable
-            if (Math.abs(num) >= 10000) return num.toExponential(2);
-            if (Math.abs(num) < 0.01 && num !== 0) return num.toExponential(2);
+            if(Math.abs(num) >= 10000) return num.toExponential(2);
+            if(Math.abs(num) < 0.01 && num !== 0) return num.toExponential(2);
             return Number.isInteger(num) ? num.toString() : num.toFixed(3);
         }
 
         // string/category formatting
         const str = String(value);
-        if (str.length <= 10) return str;
+        if(str.length <= 10) return str;
         return `${str.slice(0, 8)}…`;
     };
 
-    if (loading) {
-        return (
+    if(loading){
+        return(
             <div
                 style={{
                     display: 'flex',
@@ -173,8 +173,8 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
         );
     }
 
-    if (error) {
-        return (
+    if(error){
+        return(
             <div
                 style={{
                     display: 'flex',
@@ -189,12 +189,12 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
         );
     }
 
-    if (!data || chartData.length === 0) return null;
+    if(!data || chartData.length === 0) return null;
 
     const chartColor = options.color || '#3b82f6';
     const ChartComponent = options.fill ? AreaChart : LineChart;
 
-    return (
+    return(
         <div
             style={{
                 width: '100%',

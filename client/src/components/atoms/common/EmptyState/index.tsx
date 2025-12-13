@@ -19,7 +19,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
     className
 }: EmptyStateProps) => {
 
-    return (
+    return(
         <div className={`empty-state-container ${className || ''}`}>
             <div className='empty-state-content'>
                 {icon && (
@@ -30,7 +30,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                 <h2 className='empty-state-title'>{title}</h2>
                 <p className='empty-state-description'>{description}</p>
                 {buttonText && buttonOnClick && (
-                    <button 
+                    <button
                         className='empty-state-button'
                         onClick={buttonOnClick}
                     >

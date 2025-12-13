@@ -58,7 +58,7 @@ export const buildParentMap = (edges: any[]): Map<string, string[]> => {
     return map;
 };
 
-// find exposure connected to a node (bfs with early exit)
+// find exposure connected to a node(bfs with early exit)
 const findExposure = (nodeId: string, parentMap: Map<string, string[]>, nodeMap: Map<string, any>): string | null => {
     const queue = [nodeId];
     const visited = new Set<string>();
@@ -101,14 +101,14 @@ export const resolve = (path: string, ctx: ResolveContext): any => {
                 : getPath(ctx.trajectory, propPath);
 
         case NodeType.FOREACH:
-            return (propPath === 'currentValue.frame' || propPath === 'currentIndex') ? ctx.timestep : undefined;
-            
+            return(propPath === 'currentValue.frame' || propPath === 'currentIndex') ? ctx.timestep : undefined;
+
         case NodeType.SCHEMA:
             const exposureId = findExposure(ref.nodeId, ctx.parentMap, ctx.nodeMap);
             if(!exposureId) return undefined;
             const data = ctx.exposureData.get(exposureId);
             return data ? getPath(data, propPath.replace(/^definition\./, '')) : undefined;
-    
+
         case NodeType.EXPOSURE:
             return getPath(ctx.exposureData.get(ref.nodeId), propPath);
 
@@ -118,12 +118,12 @@ export const resolve = (path: string, ctx: ResolveContext): any => {
 };
 
 // load single exposure, returns [id, data] or null
-const loadExposure = async (
+const loadExposure = async(
     exposureId: string,
     trajectoryId: string,
     analysisId: string,
     timestep: number
-): Promise<[string, any] | null> => {
+): Promise<[string, any] | null> =>{
     const key = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
     try{
         const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, key);
@@ -134,12 +134,12 @@ const loadExposure = async (
 };
 
 // load all exposures in parallel
-export const loadExposuresParallel = async (
+export const loadExposuresParallel = async(
     exposureIds: string[],
     trajectoryId: string,
     analysisId: string,
     timestep: number
-): Promise<Map<string, any>> => {
+): Promise<Map<string, any>> =>{
     const results = await Promise.all(exposureIds.map((id) => loadExposure(id, trajectoryId, analysisId, timestep)));
     const map = new Map<string, any>();
     for(const result of results){

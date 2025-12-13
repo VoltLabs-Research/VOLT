@@ -40,7 +40,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
     const handleEditorMount = useCallback((editorInstance: editor.IStandaloneCodeEditor, monaco: Monaco) => {
         // Disable JSON completion provider to avoid weird behavior with numbers
-        if (language === 'json') {
+        if(language === 'json'){
             monaco.languages.json.jsonDefaults.setModeConfiguration({
                 documentFormattingEdits: false,
                 documentRangeFormattingEdits: false,
@@ -62,7 +62,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
     const editorHeight = typeof height === 'number' ? `${height}px` : height;
 
-    return (
+    return(
         <div className={`code-editor-wrapper ${className} ${error ? 'has-error' : ''}`}>
             {label && <label className="code-editor-label">{label}</label>}
             {description && <p className="code-editor-description">{description}</p>}

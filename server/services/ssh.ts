@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -84,7 +84,7 @@ class SSHService{
 
     constructor(){
         // Periodic cleaning of inactive connections
-        setInterval(() => this.cleanupIdleConnections(), 1000 * 60);        
+        setInterval(() => this.cleanupIdleConnections(), 1000 * 60);
     }
 
     private cleanupIdleConnections(){
@@ -126,19 +126,19 @@ class SSHService{
     }
 
     private async executeWithRetry<T>(
-        connection: ISSHConnection, 
-        operation: (sftp: SFTPWrapper) => Promise<T>, 
+        connection: ISSHConnection,
+        operation: (sftp: SFTPWrapper) => Promise<T>,
         attempt = 1
     ): Promise<T>{
         try{
             const { sftp } = await this.getConnection(connection);
             return await operation(sftp);
         }catch(error: any){
-            const shouldRetry = attempt <= this.MAX_RETRIES && 
+            const shouldRetry = attempt <= this.MAX_RETRIES &&
                 (error.code === 'ECONNRESET' || error.message.includes('No SFTP') || !error.code);
 
             if(!shouldRetry) throw error;
-            logger.warn(`Retrying SSH operation (Attempt ${attempt}/${this.MAX_RETRIES}) for ${connection.host}`);
+            logger.warn(`Retrying SSH operation(Attempt ${attempt}/${this.MAX_RETRIES}) for ${connection.host}`);
             // force reconnection by clearing cache
             const connectionId = connection._id.toString();
             this.closeConnection(connectionId);
@@ -175,17 +175,17 @@ class SSHService{
     }
 
     async listFiles(connection: ISSHConnection, remotePath: string = '.'): Promise<SSHFileEntry[]>{
-        return this.executeWithRetry(connection, async (sftp) => {
+        return this.executeWithRetry(connection, async(sftp) => {
             return new Promise((resolve, reject) => {
                 sftp.readdir(remotePath, (err, list) => {
                     if(err) return reject(err);
-                    
+
                     const entries: SSHFileEntry[] = list.map((item) => ({
                         name: item.filename,
                         path: path.posix.join(remotePath, item.filename),
                         isDirectory: item.attrs.isDirectory(),
                         size: item.attrs.size,
-                        mtime: new Date(item.attrs.mtime * 1000)  
+                        mtime: new Date(item.attrs.mtime * 1000)
                     }));
 
                     resolve(entries);
@@ -195,7 +195,7 @@ class SSHService{
     }
 
     async getFileStats(connection: ISSHConnection, remotePath: string): Promise<SSHFileEntry | null>{
-        return this.executeWithRetry(connection, async (sftp) => {
+        return this.executeWithRetry(connection, async(sftp) => {
             return new Promise((resolve) => {
                 sftp.stat(remotePath, (err, stats) => {
                     if(err) return resolve(null);
@@ -212,7 +212,7 @@ class SSHService{
     }
 
     async downloadFile(connection: ISSHConnection, remotePath: string, localPath: string): Promise<void>{
-        return this.executeWithRetry(connection, async (sftp) => {
+        return this.executeWithRetry(connection, async(sftp) => {
             // ensure local dir
             await fs.mkdir(path.dirname(localPath), { recursive: true });
             await pipeline(sftp.createReadStream(remotePath), createWriteStream(localPath));
@@ -220,9 +220,9 @@ class SSHService{
     }
 
     async calculateDirectorySize(connection: ISSHConnection, remotePath: string): Promise<number>{
-        return this.executeWithRetry(connection, async (sftp) => {
+        return this.executeWithRetry(connection, async(sftp) => {
             let totalSize = 0;
-            // array as a queue to avoid deep stack recursion (stack overflow)
+            // array as a queue to avoid deep stack recursion(stack overflow)
             const queue = [remotePath];
             while(queue.length > 0){
                 const currentDir = queue.shift()!;
@@ -283,7 +283,7 @@ class SSHService{
                 for(const item of list){
                     const itemRemote = path.posix.join(remote, item.filename);
                     const itemLocal = path.join(local, item.filename);
-                    
+
                     if(item.attrs.isDirectory()){
                         await fs.mkdir(itemLocal, { recursive: true });
                         dirQueue.push({ remote: itemRemote, local: itemLocal });
@@ -302,7 +302,7 @@ class SSHService{
             }
         }
 
-        const downloadWorker = async (task: FileTask) => {
+        const downloadWorker = async(task: FileTask) => {
             return new Promise<void>((resolve, reject) => {
                 const readStream = sftp.createReadStream(task.remote);
                 const writeStream = createWriteStream(task.local);
@@ -335,14 +335,14 @@ class SSHService{
             });
         };
 
-        const runQueue = async () => {
+        const runQueue = async() => {
             const results: Promise<void>[] = [];
             const executing: Promise<void>[] = [];
 
             for(const task of tasks){
                 const promise = downloadWorker(task);
                 results.push(promise);
-                
+
                 const e: Promise<void> = promise.then(() => {
                     executing.splice(executing.indexOf(e), 1);
                 });
@@ -418,7 +418,7 @@ class SSHService{
 
             client.on('error', (err) => {
                 clearTimeout(timeoutTimer);
-                logger.error(`SSH Error (${connection.host}): ${err.message}`);
+                logger.error(`SSH Error(${connection.host}): ${err.message}`);
             });
 
             client.on('close', () => {
@@ -434,7 +434,7 @@ class SSHService{
             }
         });
 
-        // save the promise so others can reuse it while connecting 
+        // save the promise so others can reuse it while connecting
         this.connectionPromises.set(connectionId, connectPromise);
 
         try{

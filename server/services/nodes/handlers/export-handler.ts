@@ -60,10 +60,10 @@ class ExportHandler implements NodeHandler{
                 });
             }catch(error: any){
                 logger.error(`[ExportHandler] Failed for item ${item.index}: ${error.message}`);
-                exportResults.push({ 
-                    index: item.index, 
-                    success: false, 
-                    error: error.message 
+                exportResults.push({
+                    index: item.index,
+                    success: false,
+                    error: error.message
                 });
             }
         }

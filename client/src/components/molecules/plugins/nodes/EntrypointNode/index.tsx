@@ -14,7 +14,7 @@ const EntrypointNode = memo((props: NodeProps) => {
         ? (entrypoint.binaryFileName || entrypoint.binary || 'Binary attached')
         : undefined;
 
-    return (
+    return(
         <BaseNode {...props} nodeType={NodeType.ENTRYPOINT}>
             <NodeField label='Binary' value={binaryDisplay} code empty='No binary attached' />
             <NodeField label='Arguments Template' value={entrypoint.arguments || 'Not set'} />

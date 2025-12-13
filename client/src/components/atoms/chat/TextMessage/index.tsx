@@ -19,7 +19,7 @@ const TextMessage = ({ msg, onSave }: TextMessageProps) => {
         if(draft.trim()){
             onSave(draft);
         }
-        
+
         setIsEditing(false);
     };
 
@@ -28,12 +28,12 @@ const TextMessage = ({ msg, onSave }: TextMessageProps) => {
         setDraft(msg.content);
     };
 
-    return (
+    return(
         <div className='chat-message-edit'>
             <textarea value={draft} onChange={(e) => setDraft(e.target.value)} className='chat-message-edit-input' autoFocus />
             <div className='chat-message-edit-actions'>
-                <button 
-                    className='chat-message-edit-save' 
+                <button
+                    className='chat-message-edit-save'
                     onClick={handleEditSave}
                 >
                     <IoCheckmarkOutline />

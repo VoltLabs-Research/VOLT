@@ -13,7 +13,7 @@ export interface BaseControllerConfig {
     fields?: string[];
     /** Default population configuration */
     populate?: PopulateOptions | string | (PopulateOptions | string)[];
-    /** Resource name for error messages (e.g, 'Trajectory', 'User') */
+    /** Resource name for error messages(e.g, 'Trajectory', 'User') */
     resourceName?: string;
 };
 
@@ -26,7 +26,7 @@ export default abstract class BaseController<T extends Document> {
     protected readonly defaultPopulate?: PopulateOptions | string | (PopulateOptions | string)[];
     protected readonly resourceName: string;
 
-    constructor(model: Model<T>, config: BaseControllerConfig = {}) {
+    constructor(model: Model<T>, config: BaseControllerConfig = {}){
         this.model = model;
         this.allowedFields = config.fields || [];
         this.defaultPopulate = config.populate;
@@ -34,37 +34,37 @@ export default abstract class BaseController<T extends Document> {
     }
 
     /**
-     * Return specific filter for GetOne/Update/Delete (e.g, limit to user ID)
+     * Return specific filter for GetOne/Update/Delete(e.g, limit to user ID)
      */
-    protected async getFilter(req: Request): Promise<FilterQuery<T>> {
+    protected async getFilter(req: Request): Promise<FilterQuery<T>>{
         return {};
     }
 
     /** Modify data before creation. Return the data to be saved. */
-    protected async onBeforeCreate(data: Partial<T>, req: Request): Promise<Partial<T>> {
+    protected async onBeforeCreate(data: Partial<T>, req: Request): Promise<Partial<T>>{
         return data;
     }
 
-    /** Action after creation (e.g., logging, related updates) */
-    protected async onAfterCreate(doc: T, req: Request): Promise<void> { }
+    /** Action after creation(e.g., logging, related updates) */
+    protected async onAfterCreate(doc: T, req: Request): Promise<void>{ }
 
     /** Modify data before update. Return the data to be updated. */
-    protected async onBeforeUpdate(data: Partial<T>, req: Request, currentDoc: T): Promise<Partial<T>> {
+    protected async onBeforeUpdate(data: Partial<T>, req: Request, currentDoc: T): Promise<Partial<T>>{
         return data;
     }
 
     /** Action after update */
-    protected async onAfterUpdate(doc: T, req: Request): Promise<void> { }
+    protected async onAfterUpdate(doc: T, req: Request): Promise<void>{ }
 
-    /** Action before delete (e.g., cleanup related resources) */
-    protected async onBeforeDelete(doc: T, req: Request): Promise<void> { }
+    /** Action before delete(e.g., cleanup related resources) */
+    protected async onBeforeDelete(doc: T, req: Request): Promise<void>{ }
 
     /** Resolve populate options dinamically from requests or defaults */
-    protected getPopulate(req: Request): PopulateOptions | string | (PopulateOptions | string)[] | undefined {
+    protected getPopulate(req: Request): PopulateOptions | string | (PopulateOptions | string)[] | undefined{
         return this.defaultPopulate;
     }
 
-    public createOne = catchAsync(async (req: Request, res: Response) => {
+    public createOne = catchAsync(async(req: Request, res: Response) => {
         // Filter allowed fields from body
         let data = this.allowedFields.length > 0
             ? filterObject(req.body, ...this.allowedFields) as Partial<T>
@@ -80,9 +80,9 @@ export default abstract class BaseController<T extends Document> {
         });
     });
 
-    public getOne = catchAsync(async (req: Request, res: Response) => {
-        if (!req.params.id) throw new RuntimeError(ErrorCodes.VALIDATION_ID_REQUIRED, 400);
-        // Determine filter (ID/Slug + Custom Security Filter)
+    public getOne = catchAsync(async(req: Request, res: Response) => {
+        if(!req.params.id) throw new RuntimeError(ErrorCodes.VALIDATION_ID_REQUIRED, 400);
+        // Determine filter(ID/Slug + Custom Security Filter)
         const idFilter = checkIfSlugOrId(req.params.id);
         const securityFilter = await this.getFilter(req);
         const finalFilter = { ...idFilter, ...securityFilter };
@@ -90,10 +90,10 @@ export default abstract class BaseController<T extends Document> {
         // Query
         let query = this.model.findOne(finalFilter);
         const populate = this.getPopulate(req);
-        if (populate) query = query.populate(populate as any)
+        if(populate) query = query.populate(populate as any)
 
         const doc = await query.exec();
-        if (!doc) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
+        if(!doc) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
 
         res.status(200).json({
             status: 'success',
@@ -101,7 +101,7 @@ export default abstract class BaseController<T extends Document> {
         });
     });
 
-    public getAll = catchAsync(async (req: Request, res: Response) => {
+    public getAll = catchAsync(async(req: Request, res: Response) => {
         const securityFilter = await this.getFilter(req);
 
         const features = new APIFeatures({
@@ -130,14 +130,14 @@ export default abstract class BaseController<T extends Document> {
         });
     });
 
-    public updateOne = catchAsync(async (req: Request, res: Response) => {
-        if (!req.params.id) throw new RuntimeError(ErrorCodes.VALIDATION_ID_REQUIRED, 400);
+    public updateOne = catchAsync(async(req: Request, res: Response) => {
+        if(!req.params.id) throw new RuntimeError(ErrorCodes.VALIDATION_ID_REQUIRED, 400);
 
         const idFilter = checkIfSlugOrId(req.params.id);
         const securityFilter = await this.getFilter(req);
         const docToUpdate = await this.model.findOne({ ...idFilter, ...securityFilter });
 
-        if (!docToUpdate) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
+        if(!docToUpdate) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
 
         let data = this.allowedFields.length > 0
             ? filterObject(req.body, ...this.allowedFields)
@@ -145,11 +145,11 @@ export default abstract class BaseController<T extends Document> {
 
         data = await this.onBeforeUpdate(data, req, docToUpdate);
         const updatedDoc = await this.model.findOneAndUpdate(
-            { _id: docToUpdate._id },
+         { _id: docToUpdate._id },
             data,
             { new: true, runValidators: true });
 
-        if (updatedDoc) await this.onAfterUpdate(updatedDoc, req);
+        if(updatedDoc) await this.onAfterUpdate(updatedDoc, req);
 
         res.status(200).json({
             status: 'success',
@@ -157,14 +157,14 @@ export default abstract class BaseController<T extends Document> {
         });
     });
 
-    public deleteOne = catchAsync(async (req: Request, res: Response) => {
-        if (!req.params.id) throw new RuntimeError(ErrorCodes.VALIDATION_ID_REQUIRED, 400);
+    public deleteOne = catchAsync(async(req: Request, res: Response) => {
+        if(!req.params.id) throw new RuntimeError(ErrorCodes.VALIDATION_ID_REQUIRED, 400);
 
         const idFilter = checkIfSlugOrId(req.params.id);
         const securityFilter = await this.getFilter(req);
         const doc = await this.model.findOne({ ...idFilter, ...securityFilter });
 
-        if (!doc) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
+        if(!doc) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
 
         await this.onBeforeDelete(doc, req);
         await this.model.deleteOne({ _id: doc._id });

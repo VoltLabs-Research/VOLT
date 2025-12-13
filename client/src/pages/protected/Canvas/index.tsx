@@ -37,14 +37,14 @@ const EditorPage: React.FC = () => {
     const reset = useModelStore((state) => state.reset);
 
     useEffect(() => {
-        return () => {
+        return() => {
             reset();
             usePlaybackStore.getState().reset();
             useModelStore.getState().reset();
         };
     }, [reset]);
 
-    return (
+    return(
         <div className="editor-container">
             <AnimatePresence>
                 <PreloadingOverlay key="preloading-overlay" />

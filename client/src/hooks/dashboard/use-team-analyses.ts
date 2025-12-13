@@ -27,7 +27,7 @@ export const useTeamAnalyses = (teamId?: string, opts?: { limit?: number; force?
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (!teamId) {
+    if(!teamId){
       setItems([]);
       setError(null);
       setLoading(false);
@@ -40,33 +40,33 @@ export const useTeamAnalyses = (teamId?: string, opts?: { limit?: number; force?
     setLoading(true);
     setError(null);
 
-    (async () => {
-      try {
+    (async() => {
+      try{
         const res = await api.get<{ status: string; data: TeamAnalysesResponse }>(
           `/structure-analysis/team/${teamId}`,
           { params: { page: 1, limit, sort: '-createdAt' }, signal: controller.signal }
         );
-        if (controller.signal.aborted) return;
+        if(controller.signal.aborted) return;
         const data = res.data?.data;
         const map = data?.analysesByTrajectory || {};
         const flattened: TeamAnalysesItem[] = Object.values(map).flat();
-        // Sort by createdAt desc as a guard (server already sorts)
+        // Sort by createdAt desc as a guard(server already sorts)
         flattened.sort((a, b) => (new Date(b.createdAt || 0).getTime()) - (new Date(a.createdAt || 0).getTime()));
         setItems(flattened.slice(0, limit));
-      } catch (err: any) {
-        if (controller.signal.aborted) {
+      }catch(err: any){
+        if(controller.signal.aborted){
           setLoading(false);
           return;
         }
         console.error('Error loading team analyses');
         const message = err?.response?.data?.message || err?.message || 'Failed to load analyses';
         setError(message);
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
+      }finally{
+        if(!controller.signal.aborted) setLoading(false);
       }
     })();
 
-    return () => controller.abort();
+    return() => controller.abort();
   }, [teamId, limit, opts?.force]);
 
   const compact = useMemo(() => items.map((it) => ({

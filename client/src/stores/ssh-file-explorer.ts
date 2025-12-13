@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -74,7 +74,7 @@ const buildBreadcrumbs = (relPath: string) => {
     const parts = relPath.split('/').filter(Boolean);
     const crumbs = [{ name: 'root', relPath: '.' }];
     let acc = '.';
-    for (const part of parts) {
+    for(const part of parts){
         acc = acc === '.' ? part : `${acc}/${part}`;
         crumbs.push({ name: part, relPath: acc });
     }
@@ -113,13 +113,13 @@ const useSSHFileExplorer = create<SSHFileExplorerState>((set, get) => ({
 
     async open(relPath: string = '.') {
         const { connectionId } = get();
-        if (!connectionId) {
+        if(!connectionId){
             set({ error: 'No SSH connection selected' });
             return;
         }
 
         set({ loading: true, error: null });
-        try {
+        try{
             const data = await get()._fetchFileList(connectionId, relPath);
             set((state) => {
                 const newHist = state.history.slice(0, state.historyIndex + 1);
@@ -136,7 +136,7 @@ const useSSHFileExplorer = create<SSHFileExplorerState>((set, get) => ({
                     historyIndex: newHist.length - 1
                 };
             });
-        } catch (e: any) {
+        }catch(e: any){
             const errorMessage = e?.response?.data?.data?.error || e?.message || 'Error loading files';
             set({ loading: false, error: errorMessage });
         }
@@ -150,14 +150,14 @@ const useSSHFileExplorer = create<SSHFileExplorerState>((set, get) => ({
 
     async up() {
         const { cwd } = get();
-        if (cwd === '.') return;
+        if(cwd === '.') return;
         const parent = cwd.split('/').slice(0, -1).join('/') || '.';
         await get().open(parent);
     },
 
     async back() {
         const { historyIndex, history } = get();
-        if (historyIndex <= 0) return;
+        if(historyIndex <= 0) return;
         const nextIndex = historyIndex - 1;
         const target = history[nextIndex];
         set({ historyIndex: nextIndex });
@@ -166,7 +166,7 @@ const useSSHFileExplorer = create<SSHFileExplorerState>((set, get) => ({
 
     async forward() {
         const { historyIndex, history } = get();
-        if (historyIndex >= history.length - 1) return;
+        if(historyIndex >= history.length - 1) return;
         const nextIndex = historyIndex + 1;
         const target = history[nextIndex];
         set({ historyIndex: nextIndex });
@@ -175,7 +175,7 @@ const useSSHFileExplorer = create<SSHFileExplorerState>((set, get) => ({
 
     async refresh() {
         const { cwd, connectionId } = get();
-        if (!connectionId) return;
+        if(!connectionId) return;
         await get()._gotoWithoutPush(connectionId, cwd);
     },
 
@@ -185,19 +185,19 @@ const useSSHFileExplorer = create<SSHFileExplorerState>((set, get) => ({
 
     async importTrajectory(teamId: string, name?: string) {
         const { connectionId, selected } = get();
-        if (!connectionId || !selected) {
+        if(!connectionId || !selected){
             throw new Error('No connection or file selected');
         }
 
         set({ importing: true, error: null });
-        try {
+        try{
             const data = await sshApi.fileExplorer.import({
                 connectionId,
                 remotePath: selected
             });
             set({ importing: false });
             return data;
-        } catch (e: any) {
+        }catch(e: any){
             const errorMessage = e?.response?.data?.data?.error || e?.message || 'Error importing trajectory';
             set({ importing: false, error: errorMessage });
             throw new Error(errorMessage);
@@ -221,7 +221,7 @@ const useSSHFileExplorer = create<SSHFileExplorerState>((set, get) => ({
 
     async _gotoWithoutPush(connectionId: string, cwd: string) {
         set({ loading: true, error: null });
-        try {
+        try{
             const data = await get()._fetchFileList(connectionId, cwd);
             set({
                 cwd: data.cwd,
@@ -231,7 +231,7 @@ const useSSHFileExplorer = create<SSHFileExplorerState>((set, get) => ({
                 loading: false,
                 error: null
             });
-        } catch (e: any) {
+        }catch(e: any){
             const errorMessage = e?.response?.data?.data?.error || e?.message || 'Error loading files';
             set({ loading: false, error: errorMessage });
         }

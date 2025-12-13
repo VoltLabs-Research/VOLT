@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -91,9 +91,9 @@ const SSHConnectionSchema: Schema<ISSHConnection> = new Schema({
 // Index for efficient querying
 SSHConnectionSchema.index({ user: 1, name: 1 });
 
-// Method to set password (encrypts it)
+// Method to set password(encrypts it)
 SSHConnectionSchema.methods.setPassword = function (this: ISSHConnection, password: string): void {
-    if (!password || typeof password !== 'string') {
+    if(!password || typeof password !== 'string'){
         throw new Error('Password must be a non-empty string');
     }
     this.encryptedPassword = encrypt(password);
@@ -101,22 +101,22 @@ SSHConnectionSchema.methods.setPassword = function (this: ISSHConnection, passwo
 
 // Method to get decrypted password
 SSHConnectionSchema.methods.getPassword = function (this: ISSHConnection): string {
-    if (!this.encryptedPassword) {
+    if(!this.encryptedPassword){
         throw new Error('No password stored');
     }
     return decrypt(this.encryptedPassword);
 };
 
 // Pre-save hook to ensure name uniqueness per user
-SSHConnectionSchema.pre('save', async function (next) {
-    if (this.isNew || this.isModified('name')) {
-        const existing = await (this.constructor as Model<ISSHConnection>).findOne({
+SSHConnectionSchema.pre('save', async function(next) {
+    if(this.isNew || this.isModified('name')) {
+        const existing = await(this.constructor as Model<ISSHConnection>).findOne({
             user: this.user,
             name: this.name,
             _id: { $ne: this._id }
         });
 
-        if (existing) {
+        if(existing){
             const error = new Error(ValidationCodes.SSH_CONNECTION_NAME_DUPLICATED);
             return next(error);
         }
@@ -127,8 +127,8 @@ SSHConnectionSchema.pre('save', async function (next) {
 // Transform output to hide sensitive data
 SSHConnectionSchema.set('toJSON', {
     transform: function (doc, ret) {
-        delete (ret as any).encryptedPassword;
-        delete (ret as any).__v;
+        delete(ret as any).encryptedPassword;
+        delete(ret as any).__v;
         return ret;
     }
 });

@@ -11,7 +11,7 @@ export type MessageListProps = {
 };
 
 const MessageList = ({ messages, isLoading, endRef, renderItem, selfId }: MessageListProps) => {
-    return (
+    return(
         <div className='chat-box-messages-container'>
             {isLoading ? (
                 Array.from({ length: 5 }).map((_, index) => (

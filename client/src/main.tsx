@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -37,16 +37,16 @@ import './assets/stylesheets/general.css';
 
 self.MonacoEnvironment = {
     getWorker(_, label) {
-        if (label === 'json') {
+        if(label === 'json'){
             return new jsonWorker();
         }
-        if (label === 'css' || label === 'scss' || label === 'less') {
+        if(label === 'css' || label === 'scss' || label === 'less'){
             return new cssWorker();
         }
-        if (label === 'html' || label === 'handlebars' || label === 'razor') {
+        if(label === 'html' || label === 'handlebars' || label === 'razor'){
             return new htmlWorker();
         }
-        if (label === 'typescript' || label === 'javascript') {
+        if(label === 'typescript' || label === 'javascript'){
             return new tsWorker();
         }
         return new editorWorker();
@@ -55,47 +55,10 @@ self.MonacoEnvironment = {
 
 loader.config({ monaco });
 
-// Force dark mode if VITE_FORCE_DARK_MODE is set
-if (import.meta.env.VITE_FORCE_DARK_MODE === 'true') {
-    try {
-        localStorage.setItem('theme', 'dark');
-    } catch (e) {
-        // Ignore localStorage errors
-    }
-}
-
-// Theme bootstrap: set data-theme attribute based on localStorage or system preference
-(() => {
-    const root = document.documentElement;
-    const apply = (mode: 'light' | 'dark') => root.setAttribute('data-theme', mode);
-    const forceDarkMode = import.meta.env.VITE_FORCE_DARK_MODE === 'true';
-    
-    // Check localStorage first, then fall back to system preference
-    const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    if (storedTheme) {
-        apply(storedTheme);
-    } else {
-        const mq = window.matchMedia('(prefers-color-scheme: light)');
-        apply(mq.matches ? 'light' : 'dark');
-        // Only listen to system preference changes if dark mode is not forced
-        if (!forceDarkMode) {
-            mq.addEventListener?.('change', (e) => apply(e.matches ? 'light' : 'dark'));
-        }
-    }
-    
-    // Optional: expose quick toggle for future settings panel
-    (window as any).__setTheme = (mode: 'light' | 'dark') => {
-        // Prevent changing theme if dark mode is forced
-        if (forceDarkMode && mode !== 'dark') return;
-        localStorage.setItem('theme', mode);
-        apply(mode);
-    };
-})();
-
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <BrowserRouter>
             <App />
         </BrowserRouter>
     </StrictMode>,
-)
+);

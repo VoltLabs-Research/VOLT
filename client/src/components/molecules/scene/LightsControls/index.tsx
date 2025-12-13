@@ -22,8 +22,8 @@ const LightsControls: React.FC = () => {
         onToggle: () => {},
         rows: [
             { label: 'Intensity', min: 0, max: 10, step: 0.01, get: () => st.global.envIntensity, set: (v: number) => setGlobal({ envIntensity: v }), format: (v: number) => v.toFixed(2) },
-            { label: 'Yaw (rad)', min: -Math.PI, max: Math.PI, step: 0.01, get: () => st.global.envRotationYaw, set: (v: number) => setGlobal({ envRotationYaw: v }), format: (v: number) => v.toFixed(2) },
-            { label: 'Pitch (rad)', min: -Math.PI / 2, max: Math.PI / 2, step: 0.01, get: () => st.global.envRotationPitch, set: (v: number) => setGlobal({ envRotationPitch: v }), format: (v: number) => v.toFixed(2) },
+            { label: 'Yaw(rad)', min: -Math.PI, max: Math.PI, step: 0.01, get: () => st.global.envRotationYaw, set: (v: number) => setGlobal({ envRotationYaw: v }), format: (v: number) => v.toFixed(2) },
+            { label: 'Pitch(rad)', min: -Math.PI / 2, max: Math.PI / 2, step: 0.01, get: () => st.global.envRotationPitch, set: (v: number) => setGlobal({ envRotationPitch: v }), format: (v: number) => v.toFixed(2) },
             { label: 'Blur', min: 0, max: 1, step: 0.01, get: () => st.global.envBlur, set: (v: number) => setGlobal({ envBlur: v }), format: (v: number) => v.toFixed(2) }
         ]
     };
@@ -149,34 +149,34 @@ const LightsControls: React.FC = () => {
         )
     };
 
-    return (
-        <CollapsibleSection 
-            title="Lights" 
+    return(
+        <CollapsibleSection
+            title="Lights"
             icon={<MdLightbulb size={16} />}
         >
             <div style={{ display: 'grid', gap: 12 }}>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Global IBL (Image Based Lighting)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Global IBL(Image Based Lighting)</div>
                     <FormSchema sections={[global]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Directional Light (Sun-like)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Directional Light(Sun-like)</div>
                     <FormSchema sections={[dir]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Point Light (Omnidirectional)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Point Light(Omnidirectional)</div>
                     <FormSchema sections={[point]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Spot Light (Cone-shaped)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Spot Light(Cone-shaped)</div>
                     <FormSchema sections={[spot]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Hemisphere Light (Sky + Ground)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Hemisphere Light(Sky + Ground)</div>
                     <FormSchema sections={[hemi]} />
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Rect Area Light (Rectangular)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Rect Area Light(Rectangular)</div>
                     <FormSchema sections={[rect]} />
                 </div>
             </div>

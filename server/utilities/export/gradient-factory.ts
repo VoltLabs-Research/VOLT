@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -98,7 +98,7 @@ export default class GradientFactory{
             c1[0] + (c2[0] - c1[0]) * localT,
             c1[1] + (c2[1] - c1[1]) * localT,
             c1[2] + (c2[2] - c1[2]) * localT
-        ];  
+        ];
     }
 
     private static blueRed(t: number): RGB{

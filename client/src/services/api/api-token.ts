@@ -40,31 +40,31 @@ interface UpdateApiTokenPayload {
 }
 
 const apiTokenApi = {
-    async getAll(): Promise<ApiToken[]> {
+    async getAll(): Promise<ApiToken[]>{
         const response = await api.get<{ status: string; data: ApiToken[] }>('/api-tokens');
         return response.data.data;
     },
 
-    async getStats(): Promise<ApiTokenStats> {
+    async getStats(): Promise<ApiTokenStats>{
         const response = await api.get<{ status: string; data: ApiTokenStats }>('/api-tokens/stats');
         return response.data.data;
     },
 
-    async create(data: CreateApiTokenPayload): Promise<ApiToken> {
+    async create(data: CreateApiTokenPayload): Promise<ApiToken>{
         const response = await api.post<{ status: string; data: ApiToken }>('/api-tokens', data);
         return response.data.data;
     },
 
-    async update(id: string, data: UpdateApiTokenPayload): Promise<ApiToken> {
+    async update(id: string, data: UpdateApiTokenPayload): Promise<ApiToken>{
         const response = await api.patch<{ status: string; data: ApiToken }>(`/api-tokens/${id}`, data);
         return response.data.data;
     },
 
-    async delete(id: string): Promise<void> {
+    async delete(id: string): Promise<void>{
         await api.delete(`/api-tokens/${id}`);
     },
 
-    async regenerate(id: string): Promise<ApiToken> {
+    async regenerate(id: string): Promise<ApiToken>{
         const response = await api.post<{ status: string; data: ApiToken }>(`/api-tokens/${id}/regenerate`);
         return response.data.data;
     }

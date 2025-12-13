@@ -46,7 +46,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ node }) => {
         selectNode(null);
     };
 
-    return (
+    return(
         <div className='node-editor-container'>
             <div className='node-editor-section'>
                 {EditorComponent ? (

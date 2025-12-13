@@ -38,7 +38,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
     const showAvatar = isGroupChat && !isOwn;
     const sender = msg.sender;
 
-    return (
+    return(
         <div className={`chat-message ${isOwn ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''} ${showAvatar ? 'with-avatar' : ''}`}>
             {showAvatar && (
                 <div className='chat-message-avatar'>
@@ -46,7 +46,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                         <img src={sender.avatar} alt="Sender Avatar" className='chat-avatar-img' />
                     ) : (
                         <span className='chat-avatar-initial'>
-                            {sender?.firstName?.[0]?.toUpperCase() || '?'}
+                          {sender?.firstName?.[0]?.toUpperCase() || '?'}
                         </span>
                     )}
                 </div>

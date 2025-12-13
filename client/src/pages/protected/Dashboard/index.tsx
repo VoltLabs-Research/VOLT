@@ -21,21 +21,21 @@ import './Dashboard.css';
 const getGreeting = (): string => {
     const hour = new Date().getHours();
 
-    if (hour >= 5 && hour < 12) {
+    if(hour >= 5 && hour < 12){
         return 'Good Morning';
-    } else if (hour >= 12 && hour < 17) {
+    }else if(hour >= 12 && hour < 17){
         return 'Good Afternoon';
-    } else if (hour >= 17 && hour < 21) {
+    }else if(hour >= 17 && hour < 21){
         return 'Good Evening';
-    } else {
+    }else{
         return 'Good Night';
     }
 };
 
 const capitalize = (name?: string) => {
-    if (!name) return '';
+    if(!name) return '';
     const trimmed = String(name).trim();
-    if (!trimmed) return '';
+    if(!trimmed) return '';
     return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 };
 
@@ -53,7 +53,7 @@ const DashboardPage: React.FC = memo(() => {
     const scene3DRef = useRef<Scene3DRef>(null)
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
 
-    // Check if there are any trajectories being processed (not completed)
+    // Check if there are any trajectories being processed(not completed)
     const isProcessing = useMemo(() => trajectories.some(t => t.status !== 'completed'), [trajectories]);
     const completedTrajectories = useMemo(() => trajectories.filter(t => t.status === 'completed'), [trajectories]);
     const lastCompletedTrajectory = completedTrajectories[0]; // Get most recent completed
@@ -71,7 +71,7 @@ const DashboardPage: React.FC = memo(() => {
 
     // Update background color in environment config when theme changes
     useEffect(() => {
-        if (typeof document === 'undefined') return;
+        if(typeof document === 'undefined') return;
         const root = document.documentElement;
         const update = () => {
             const isLightTheme = root.getAttribute('data-theme') === 'light';
@@ -81,10 +81,10 @@ const DashboardPage: React.FC = memo(() => {
         update();
         const observer = new MutationObserver(update);
         observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-        return () => observer.disconnect();
+        return() => observer.disconnect();
     }, [setBackgroundColor]);
 
-    return (
+    return(
         <FileUpload>
             <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
                 <div className='dashboard-body-left-container'>
@@ -177,7 +177,6 @@ const DashboardPage: React.FC = memo(() => {
 
                     <SimulationGrid />
                 </div>
-
 
             </DashboardContainer>
         </FileUpload>

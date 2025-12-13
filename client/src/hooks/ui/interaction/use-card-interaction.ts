@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -23,36 +23,36 @@
 import { useState } from 'react';
 
 const useCardInteractions = (
-    onSelect?: (itemId: string) => void, 
-    onNavigate?: (itemId: string) => void, 
+    onSelect?: (itemId: string) => void,
+    onNavigate?: (itemId: string) => void,
     isNavigationDisable?: boolean
 ): any => {
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const handleClick = (event: React.MouseEvent, itemId: string): void => {
         const target = event.target as HTMLElement;
-        
+
         // Don't process if clicking on interactive elements
-        if(target.closest('.simulation-options-icon-container') || 
+        if(target.closest('.simulation-options-icon-container') ||
             target.closest('.simulation-caption-title') ||
             target.closest('.action-based-floating-container-element-wrapper')
         ){
             return;
         }
 
-        // Check if we're clicking on an image (should still allow Ctrl+Click)
+        // Check if we're clicking on an image(should still allow Ctrl+Click)
         // Only prevent normal navigation on image, but allow selection
         const isImageClick = target instanceof HTMLImageElement || target.closest('.simulation-image');
-        
-        // Handle Ctrl+Click for selection (always allowed)
+
+        // Handle Ctrl+Click for selection(always allowed)
         if(event.ctrlKey || event.metaKey){
             event.preventDefault();
             onSelect?.(itemId);
             return;
         }
-        
-        // Handle normal click for navigation (disabled on processing or image)
-        if(!isNavigationDisable && !isImageClick) {
+
+        // Handle normal click for navigation(disabled on processing or image)
+        if(!isNavigationDisable && !isImageClick){
             onNavigate?.(itemId);
         }
     };

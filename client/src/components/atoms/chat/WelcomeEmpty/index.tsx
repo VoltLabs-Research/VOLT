@@ -3,7 +3,7 @@ type WelcomeEmptyProps = {
 };
 
 const WelcomeEmpty = ({ isConnected }: WelcomeEmptyProps) => {
-    return (
+    return(
         <div className='chat-welcome-container'>
             <div className='chat-welcome-content'>
                 <h2>Welcome to Chat</h2>

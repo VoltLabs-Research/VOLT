@@ -19,7 +19,7 @@ const initialState: TimestepState = {
 };
 
 const extractTimesteps = (trajectory: Trajectory | null): number[] => {
-    if (!trajectory?.frames || trajectory.frames.length === 0) {
+    if(!trajectory?.frames || trajectory.frames.length === 0){
         return [];
     }
     return trajectory.frames
@@ -38,7 +38,7 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
     ...initialState,
 
     async loadModels(
-        preloadBehavior?: boolean, 
+        preloadBehavior?: boolean,
         onProgress?: (p: number, m?: { bps: number }) => void,
         maxFramesToPreload?: number,
         currentFrameIndex?: number
@@ -82,17 +82,17 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
             // Obtener el ID del análisis actual del store, no del trajectory
             const currentAnalysis = useAnalysisConfigStore.getState().analysisConfig;
             const analysisId = currentAnalysis?._id || '';
-                
+
             // Si no hay análisis, usar un ID por defecto para permitir la carga del GLB
             const finalAnalysisId = analysisId || 'default';
-            
+
             const glbs = createTrajectoryGLBs(
                 trajectory._id,
                 currentTimestep,
                 finalAnalysisId,
                 cacheBuster
             );
-            
+
             // Only update model and load GLB when trajectory is completed
             useModelStore.getState().selectModel(glbs);
         }

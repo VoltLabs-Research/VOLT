@@ -20,7 +20,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
     const { showSuccess, showError } = useToast();
 
     useEffect(() => {
-        if (container) {
+        if(container){
             setEnv(container.env || []);
             setPorts(container.ports || []);
             setMemory(container.memory || 512);
@@ -28,7 +28,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
         }
     }, [container]);
 
-    if (!isOpen) return null;
+    if(!isOpen) return null;
 
     const handleAddEnv = () => setEnv([...env, { key: '', value: '' }]);
     const handleRemoveEnv = (index: number) => setEnv(env.filter((_, i) => i !== index));
@@ -46,10 +46,10 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
         setPorts(newPorts);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async(e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        try {
+        try{
             await containerApi.update(container._id, {
                 environment: Object.fromEntries(env.filter(e => e.key).map(e => [e.key, e.value])),
                 ports: Object.fromEntries(ports.map(p => [p.private.toString(), p.public])),
@@ -59,14 +59,14 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
             showSuccess('Container updated successfully');
             onSuccess();
             onClose();
-        } catch (error: any) {
+        }catch(error: any){
             showError(error.response?.data?.message || 'Failed to update container');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
-    return (
+    return(
         <div className="modal-overlay">
             <div className="modal-content">
                 <div className="modal-header">
@@ -123,7 +123,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
                     <div className="modal-actions">
                         <button type="button" onClick={onClose} className="cancel-btn">Cancel</button>
                         <button type="submit" disabled={loading} className="submit-btn">
-                            {loading ? 'Updating...' : 'Save Changes (Recreate)'}
+                            {loading ? 'Updating...' : 'Save Changes(Recreate)'}
                         </button>
                     </div>
                 </form>

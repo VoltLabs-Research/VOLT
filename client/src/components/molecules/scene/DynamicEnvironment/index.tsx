@@ -18,7 +18,7 @@ const DynamicEnvironment = () => {
             scene.fog = null;
         }
 
-        return () => {
+        return() => {
             scene.fog = null;
         };
     }, [scene, enableFog, fogColor, fogNear, fogFar]);

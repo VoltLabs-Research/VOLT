@@ -2,11 +2,11 @@ import { Skeleton } from '@mui/material';
 
 const FilePreviewSkeleton = () => (
     <div className='chat-shared-file-item'>
-        <Skeleton 
-            variant="rectangular" 
-            width={56} 
-            height={56} 
-            sx={{ 
+        <Skeleton
+            variant="rectangular"
+            width={56}
+            height={56}
+            sx={{
                 borderRadius: 1,
                 backgroundColor: 'var(--color-surface-3)',
                 '&::after': {
@@ -15,22 +15,22 @@ const FilePreviewSkeleton = () => (
             }}
         />
         <div className='chat-shared-file-info'>
-            <Skeleton 
-                variant="text" 
-                width={120} 
+            <Skeleton
+                variant="text"
+                width={120}
                 height={16}
-                sx={{ 
+                sx={{
                     backgroundColor: 'var(--color-surface-3)',
                     '&::after': {
                         background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
                     }
                 }}
             />
-            <Skeleton 
-                variant="text" 
-                width={80} 
+            <Skeleton
+                variant="text"
+                width={80}
                 height={12}
-                sx={{ 
+                sx={{
                     backgroundColor: 'var(--color-surface-3)',
                     '&::after': {
                         background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'
@@ -38,11 +38,11 @@ const FilePreviewSkeleton = () => (
                 }}
             />
         </div>
-        <Skeleton 
-            variant="circular" 
-            width={24} 
+        <Skeleton
+            variant="circular"
+            width={24}
             height={24}
-            sx={{ 
+            sx={{
                 backgroundColor: 'var(--color-surface-3)',
                 '&::after': {
                     background: 'linear-gradient(90deg, transparent, var(--color-surface-4), transparent)'

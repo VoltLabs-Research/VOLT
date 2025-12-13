@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -37,7 +37,7 @@ const EditableTag: React.FC<EditableTagProps> = React.memo(({ as: Tag, onSave, c
     const elementRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
-        if (isEditing && elementRef.current) {
+        if(isEditing && elementRef.current){
             elementRef.current.focus();
             // select text without execCommand
             const range = document.createRange();
@@ -55,26 +55,26 @@ const EditableTag: React.FC<EditableTagProps> = React.memo(({ as: Tag, onSave, c
     const handleSave = () => {
         setIsEditing(false);
         const newText = elementRef.current?.innerText.trim();
-        if (newText && newText !== String(children)) {
+        if(newText && newText !== String(children)) {
             onSave(newText);
-        } else if (elementRef.current) {
+        }else if(elementRef.current){
             elementRef.current.innerText = String(children);
         }
     };
 
     const handleKeyDown = (event: React.KeyboardEvent) => {
-        if (event.key === 'Enter') {
+        if(event.key === 'Enter'){
             event.preventDefault();
             handleSave();
-        } else if (event.key === 'Escape') {
-            if (elementRef.current) {
+        }else if(event.key === 'Escape'){
+            if(elementRef.current){
                 elementRef.current.innerText = String(children);
             }
             setIsEditing(false);
         }
     };
 
-    return (
+    return(
         <Tag
             ref={elementRef as React.RefObject<any>}
             className={`${className || ''} ${isEditing ? 'is-editing' : ''}`}

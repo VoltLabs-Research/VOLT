@@ -10,7 +10,7 @@ import { catchAsync } from '@/utilities/runtime/runtime';
 import { ErrorCodes } from '@/constants/error-codes';
 
 export default class ColorCodingController{
-    public getProperties = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public getProperties = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const { trajectoryId, analysisId } = req.params;
         const { timestep } = req.query;
 
@@ -38,7 +38,7 @@ export default class ColorCodingController{
         });
     });
 
-    public getStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public getStats = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const { trajectoryId, analysisId } = req.params;
         const { timestep, property, type, exposureId } = req.query;
 
@@ -57,7 +57,7 @@ export default class ColorCodingController{
             if(values){
                 for(let i = 0; i < values.length; i++){
                     const value = values[i];
-                    // value === value is NaN check 
+                    // value === value is NaN check
                     if(value === value && value < Infinity && value > -Infinity){
                         if(value < min) min = value;
                         if(value > max) max = value;
@@ -77,11 +77,11 @@ export default class ColorCodingController{
 
         if(min === Infinity) min = 0;
         if(max === -Infinity) max = 0;
-        
+
         res.status(200).json({ status: 'success', data: { min, max } });
     });
 
-    public create = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public create = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const { trajectoryId, analysisId } = req.params;
         const { timestep } = req.query;
         const { property, exposureId, startValue, endValue, gradient } = req.body;
@@ -90,7 +90,7 @@ export default class ColorCodingController{
         }
 
         const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${startValue}-${endValue}/${gradient}.glb`;
-        // already exists 
+        // already exists
         if(await storage.exists(SYS_BUCKETS.MODELS, objectName)){
             return res.status(200).json({ status: 'success' });
         }
@@ -124,7 +124,7 @@ export default class ColorCodingController{
         res.status(200).json({ status: 'success' });
     });
 
-    public get = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    public get = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const { trajectoryId, analysisId } = req.params;
         const { property, startValue, endValue, gradient, timestep, exposureId } = req.query;
         const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${startValue}-${endValue}/${gradient}.glb`;
@@ -136,7 +136,7 @@ export default class ColorCodingController{
         const stream = await storage.getStream(SYS_BUCKETS.MODELS, objectName);
         res.setHeader('Content-Type', 'model/gltf-binary');
         res.setHeader('Cache-Control', 'public, max-age=31536000');
-        
+
         stream.pipe(res);
     });
 };

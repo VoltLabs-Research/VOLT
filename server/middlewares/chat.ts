@@ -2,7 +2,7 @@ import { ErrorCodes } from '@/constants/error-codes';
 import { Team, Chat, Message } from '@/models';
 import { NextFunction, Request, Response } from 'express';
 
-export const verifyTeamAccess = async (req: Request, res: Response, next: NextFunction) => {
+export const verifyTeamAccess = async(req: Request, res: Response, next: NextFunction) => {
     try{
         const user = (req as any).user;
         const { teamId } = req.params;
@@ -29,12 +29,12 @@ export const verifyTeamAccess = async (req: Request, res: Response, next: NextFu
     }
 };
 
-export const verifyChatAccess = async (req: Request, res: Response, next: NextFunction) => {
+export const verifyChatAccess = async(req: Request, res: Response, next: NextFunction) => {
     try{
         const user = (req as any).user;
         const { chatId } = req.params;
 
-        // Verify user has access to this chat (TODO: MAYBE A MIDDLEWARE FOR THIS???)
+        // Verify user has access to this chat(TODO: MAYBE A MIDDLEWARE FOR THIS???)
         // For direct chats, allow access even if not active.
         // For group chats, only allow if active.
         const chat = await Chat.findOne({
@@ -60,7 +60,7 @@ export const verifyChatAccess = async (req: Request, res: Response, next: NextFu
     }
 };
 
-export const verifyParticipantInTeam = async (req: Request, res: Response, next: NextFunction) => {
+export const verifyParticipantInTeam = async(req: Request, res: Response, next: NextFunction) => {
     try{
         const { teamId, participantId } = req.params;
 
@@ -70,30 +70,30 @@ export const verifyParticipantInTeam = async (req: Request, res: Response, next:
         });
 
         if(!exists){
-            return res.status(403).json({ 
+            return res.status(403).json({
                 status: 'error',
                 message: ErrorCodes.CHAT_PARTICIPANTS_NOT_IN_TEAM
             });
         }
-        
+
         next();
     }catch(err){
         next(err);
     }
 };
 
-export const loadMessage = async (req: Request, res: Response, next: NextFunction) => {
+export const loadMessage = async(req: Request, res: Response, next: NextFunction) => {
     try{
         const { messageId, chatId } = req.params;
         const message = await Message.findOne({ _id: messageId, chat: chatId });
 
         if(!message){
             return res.status(404).json({
-                status: 'error', 
+                status: 'error',
                 message: ErrorCodes.MESSAGE_NOT_FOUND
             });
         }
-        
+
         (req as any).message = message;
         next();
     }catch(err){
@@ -107,7 +107,7 @@ export const requireMessageOwner = (req: Request, res: Response, next: NextFunct
 
     if(message.sender.toString() !== user._id.toString()){
         return res.status(403).json({
-            status: 'error', 
+            status: 'error',
             message: ErrorCodes.MESSAGE_FORBIDDEN
         });
     }

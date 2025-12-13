@@ -4,24 +4,24 @@ import { Skeleton } from '@mui/material'
 import './MetricsCards.css'
 
 function formatNetworkSpeed(kbs: number): { value: string; unit: string } {
-  if (kbs < 1) {
+  if(kbs < 1){
     return { value: (kbs * 1024).toFixed(0), unit: 'B/s' };
-  } else if (kbs < 1024) {
+  }else if(kbs < 1024){
     return { value: kbs.toFixed(1), unit: 'KB/s' };
-  } else if (kbs < 1024 * 1024) {
+  }else if(kbs < 1024 * 1024){
     return { value: (kbs / 1024).toFixed(2), unit: 'MB/s' };
-  } else {
+  }else{
     return { value: (kbs / (1024 * 1024)).toFixed(2), unit: 'GB/s' };
   }
 }
 
-export function MetricsCards() {
+export function MetricsCards(){
   const { metrics, isHistoryLoaded } = useServerMetrics()
 
   const isLoading = !metrics || !isHistoryLoaded
 
-  if (isLoading) {
-    return (
+  if(isLoading){
+    return(
       <div className="metrics-cards">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="metric-card">
@@ -59,7 +59,7 @@ export function MetricsCards() {
       icon: Cpu,
       title: 'CPU Load',
       value: metrics ? (() => {
-        if (metrics.cpu.coresUsage && metrics.cpu.coresUsage.length > 0) {
+        if(metrics.cpu.coresUsage && metrics.cpu.coresUsage.length > 0){
           const avgCoreUsage = metrics.cpu.coresUsage.reduce((sum, val) => sum + val, 0) / metrics.cpu.coresUsage.length;
           return `${avgCoreUsage.toFixed(1)}%`;
         }
@@ -87,7 +87,7 @@ export function MetricsCards() {
       subtitle: 'Total Traffic'
     },
   ]
-  return (
+  return(
     <div className="metrics-cards">
       {cards.map((metric) => (
         <div key={metric.title} className="metric-card">

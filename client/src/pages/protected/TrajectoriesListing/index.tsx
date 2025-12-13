@@ -22,34 +22,34 @@ const TrajectoriesListing = () => {
     const searchQuery = useDashboardSearchStore((s) => s.query);
 
     useEffect(() => {
-        if (!team?._id) return;
+        if(!team?._id) return;
         // Keep store fetch for cache/other UI only when not searching
-        if (!searchQuery.trim()) {
+        if(!searchQuery.trim()) {
             getTrajectories(team._id);
         }
         let canceled = false;
-        (async () => {
-            try {
+        (async() => {
+            try{
                 const res = await trajectoryApi.getAllPaginated({
                     teamId: team._id, page: 1, limit, sort: '-createdAt', populate: 'analysis,createdBy', q: searchQuery
                 });
-                if (canceled) return;
+                if(canceled) return;
                 const rows = res?.data || [];
                 const totalResults = res?.total ?? rows.length;
                 setData(rows);
                 setTotal(totalResults);
                 setPage(1);
-            } catch (_e) { /* noop */ }
+            }catch(_e){ /* noop */ }
         })();
-        return () => { canceled = true; };
+        return() => { canceled = true; };
     }, [team?._id, limit, searchQuery])
 
     useEffect(() => {
-        if (!isLoading && !searchQuery.trim()) setData(trajectories || [])
+        if(!isLoading && !searchQuery.trim()) setData(trajectories || [])
     }, [isLoading, trajectories, searchQuery])
 
-    const handleMenuAction = useCallback(async (action: string, item: any) => {
-        if (action === 'delete') await deleteTrajectoryById(item._id)
+    const handleMenuAction = useCallback(async(action: string, item: any) => {
+        if(action === 'delete') await deleteTrajectoryById(item._id)
     }, [deleteTrajectoryById]);
 
     const getMenuOptions = useCallback((item: any) => ([
@@ -114,7 +114,7 @@ const TrajectoriesListing = () => {
         }
     ], [])
 
-    return (
+    return(
         <DocumentListing
             title='Trajectories'
             breadcrumbs={['Dashboard', 'Trajectories']}
@@ -127,11 +127,11 @@ const TrajectoriesListing = () => {
             enableInfinite
             hasMore={data.length < total}
             isFetchingMore={isLoading && data.length > 0}
-            onLoadMore={useCallback(async () => {
-                if (!team?._id) return;
-                if (data.length >= total) return;
+            onLoadMore={useCallback(async() => {
+                if(!team?._id) return;
+                if(data.length >= total) return;
                 const next = page + 1;
-                try {
+                try{
                     const res = await trajectoryApi.getAllPaginated({
                         teamId: team._id, page: next, limit, sort: '-createdAt', populate: 'analysis,createdBy', q: searchQuery
                     });
@@ -139,7 +139,7 @@ const TrajectoriesListing = () => {
                     setData((prev) => [...prev, ...rows]);
                     setTotal(res?.total ?? total);
                     setPage(next);
-                } catch (_e) { /* noop */ }
+                }catch(_e){ /* noop */ }
             }, [team?._id, data.length, total, page, limit, searchQuery])}
         />
     )

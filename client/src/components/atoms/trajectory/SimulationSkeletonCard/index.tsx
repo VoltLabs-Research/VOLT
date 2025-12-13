@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -20,14 +20,14 @@
  * SOFTWARE.
  */
 
-import { Skeleton } from '@mui/material'; 
+import { Skeleton } from '@mui/material';
 import './SimulationSkeletonCard.css';
 
 type Props = { n?: number };
 
 const SimulationSkeletonCard: React.FC<Props> = ({ n = 8 }) => {
 
-    return (new Array(n).fill(0)).map((_, index) => (
+    return(new Array(n).fill(0)).map((_, index) => (
         <div className='simulation-container' key={index}>
             <Skeleton variant='rounded' width='100%' height={200} />
             <div className='simulation-caption-container'>

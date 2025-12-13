@@ -20,30 +20,26 @@
  * SOFTWARE.
  */
 
-export function formatTryCatch(code: string): string {
+export function formatAsyncAwait(code: string): string {
     let result = code;
 
-    // try { -> try{
-    result = result.replace(/\btry\s+\{/g, 'try{');
+    // async function name () -> async function name()
+    // Use [ \t]+ to avoid consuming newlines
+    result = result.replace(/\basync[ \t]+function[ \t]+(\w+)[ \t]*\(/g, 'async function $1(');
 
-    // Fix } catch pattern - no line breaks
-    // } \n catch(e) { -> }catch(e){
-    result = result.replace(/\}\s*\n\s*catch\s*\(/g, '}catch(');
-    result = result.replace(/\}\s+catch\s*\(/g, '}catch(');
+    // async function name() { -> async function name(){
+    result = result.replace(/(async[ \t]+function[ \t]+\w+\([^)]*\))[ \t]+\{/g, '$1{');
+    result = result.replace(/(async[ \t]+function[ \t]+\w+\([^)]*\))[ \t]*\n[ \t]*\{/g, '$1{');
 
-    // Remove space before ( in catch
-    // catch (e) -> catch(e)
-    result = result.replace(/\bcatch\s+\(/g, 'catch(');
+    // async methodName( in class - only on same line
+    // Use [ \t]+ instead of \s+ to not merge lines
+    result = result.replace(/\basync[ \t]+(\w+)[ \t]*\(/g, 'async $1(');
 
-    // Remove space before { in catch
-    // catch(e) { -> catch(e){
-    result = result.replace(/(catch\([^)]*\))\s+\{/g, '$1{');
-    result = result.replace(/(catch\([^)]*\))\s*\n\s*\{/g, '$1{');
-
-    // Fix } finally { pattern
-    result = result.replace(/\}\s*\n\s*finally\s*\{/g, '}finally{');
-    result = result.replace(/\}\s+finally\s*\{/g, '}finally{');
-    result = result.replace(/\bfinally\s+\{/g, 'finally{');
+    // "for await(" must become "for await (" because forawait is invalid
+    // First, normalize any incorrect spacing
+    result = result.replace(/\bfor[ \t]+await[ \t]*\(/g, 'for await (');
+    // Ensure no space before for
+    result = result.replace(/\bfor[ \t]+await/g, 'for await');
 
     return result;
 }

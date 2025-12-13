@@ -10,7 +10,7 @@ const PageOverlay = ({ isSameLayout }: PageOverlayProps) => {
 
     const overlayVariants = createOverlayVariants(isSameLayout);
 
-    return (
+    return(
         <motion.div
             variants={overlayVariants}
             initial="initial"

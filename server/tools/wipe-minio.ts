@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -24,12 +24,12 @@ import '@/config/env';
 import { getMinioClient, initializeMinio } from '@/config/minio';
 import logger from '@/logger';
 
-const wipeMinIO = async () => {
+const wipeMinIO = async() => {
     await initializeMinio();
 
     const client = getMinioClient();
     const buckets = await client.listBuckets();
-    const promises = buckets.map(async ({ name }) => {
+    const promises = buckets.map(async({ name }) => {
         const objectsStream = client.listObjects(name, '', true);
         const objects: any[] = [];
 
@@ -37,7 +37,7 @@ const wipeMinIO = async () => {
             objects.push({ name: obj.name });
         }
 
-        if (objects.length) {
+        if(objects.length){
             await client.removeObjects(name, objects);
         }
 

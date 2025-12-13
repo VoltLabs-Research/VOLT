@@ -1,5 +1,5 @@
 /**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
+* Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
 */
 
 import React, { useCallback, memo } from 'react';
@@ -43,7 +43,7 @@ interface SimulationCardProps {
 type ProcessingStage = 'idle' | 'queued' | 'processing' | 'rendering' | 'completed' | 'failed' | 'analyzing';
 
 const getMessageForStage = (stage: ProcessingStage): string => {
-    switch (stage) {
+    switch(stage){
         case 'idle':
             return '';
         case 'queued':
@@ -62,14 +62,14 @@ const getMessageForStage = (stage: ProcessingStage): string => {
 };
 
 const getInitialsFromUser = (user): string => {
-    if (!user) return '?';
-    if (user.firstName && user.lastName) {
-        return (user.firstName[0] + user.lastName[0]).toUpperCase();
+    if(!user) return '?';
+    if(user.firstName && user.lastName){
+        return(user.firstName[0] + user.lastName[0]).toUpperCase();
     }
-    if (user.email) {
+    if(user.email){
         const parts = user.email.split('@')[0].split('.');
-        if (parts.length >= 2) {
-            return (parts[0][0] + parts[1][0]).toUpperCase();
+        if(parts.length >= 2){
+            return(parts[0][0] + parts[1][0]).toUpperCase();
         }
         return user.email[0].toUpperCase();
     }
@@ -77,11 +77,11 @@ const getInitialsFromUser = (user): string => {
 };
 
 const getUserDisplayName = (user): string => {
-    if (!user) return 'Unknown';
-    if (user.firstName && user.lastName) {
+    if(!user) return 'Unknown';
+    if(user.firstName && user.lastName){
         return `${user.firstName} ${user.lastName}`;
     }
-    if (user.email) {
+    if(user.email){
         return user.email.split('@')[0];
     }
     return 'Unknown';
@@ -92,14 +92,14 @@ const useTrajectoryProcessingStatus = ({ trajectoryId }: any) => {
     const traj = trajectories.find((t) => t._id == trajectoryId);
     const stage = (traj?.status || 'idle') as ProcessingStage;
 
-    return { 
-        isProcessing: traj?.status !== 'completed' && traj?.status !== undefined, 
-        message: getMessageForStage(stage) 
+    return {
+        isProcessing: traj?.status !== 'completed' && traj?.status !== undefined,
+        message: getMessageForStage(stage)
     };
 };
 
-const SimulationCard: React.FC<SimulationCardProps> = memo(({ 
-    trajectory, 
+const SimulationCard: React.FC<SimulationCardProps> = memo(({
+    trajectory,
     isSelected,
     onSelect
 }) => {
@@ -144,12 +144,12 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
     const handleShare = (): void => {
     };
 
-    const handleRasterize = useCallback(async () => {
-        try {
-            if (rasterize) {
+    const handleRasterize = useCallback(async() => {
+        try{
+            if(rasterize){
                 await rasterize(trajectory._id);
             }
-        } catch (error: any) {
+        }catch(error: any){
             console.error('Rasterize failed:', error);
         }
     }, [trajectory._id, rasterize]);
@@ -158,10 +158,10 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
     const shouldShowPlaceholder = !shouldShowPreview || previewLoading;
     const showProcessingLoader = processingStatus.isProcessing;
 
-    return (
+    return(
         <>
-        <figure 
-            className={containerClasses} 
+        <figure
+            className={containerClasses}
             onClick={(e) => handleClick(e, trajectory._id)}
         >
             <div className='container-content'>
@@ -171,10 +171,10 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                             <PiAtomThin />
                         </i>
                     )}
-                    
+
                     {shouldShowPreview && (
-                        <img 
-                            className='simulation-image' 
+                        <img
+                            className='simulation-image'
                             src={previewBlobUrl}
                             alt={`Preview of ${trajectory.name || 'Trajectory'}`}
                             key={`${trajectory._id}-${trajectory.preview}-${trajectory.updatedAt}`}
@@ -183,11 +183,11 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                             }}
                         />
                     )}
-                    
+
                 </div>
             </div>
 
-            <motion.figcaption 
+            <motion.figcaption
                 className='simulation-caption-container'
                 initial={false}
                 whileHover="hover"
@@ -203,27 +203,27 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             >
                 {trajectory?.createdBy?.firstName && (
-                    <motion.div 
+                    <motion.div
                         className='simulation-caption-header'
                         variants={{
-                            normal: { 
+                            normal: {
                                 padding: 0
                             },
-                            hover: { 
+                            hover: {
                                 padding: '0.3rem 0.5rem'
                             }
                         }}
                         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                     >
-                        <motion.div 
+                        <motion.div
                             className='simulation-user-avatar'
                             variants={{
-                                normal: { 
-                                    scale: 0.8, 
+                                normal: {
+                                    scale: 0.8,
                                     opacity: 0.9
                                 },
-                                hover: { 
-                                    scale: 1, 
+                                hover: {
+                                    scale: 1,
                                     opacity: 1
                                 }
                             }}
@@ -233,17 +233,17 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                                 {trajectory.createdBy ? getInitialsFromUser(trajectory.createdBy) : '?'}
                             </span>
                         </motion.div>
-                        <motion.div 
+                        <motion.div
                             className='simulation-user-info'
                             variants={{
-                                normal: { 
-                                    width: 0, 
+                                normal: {
+                                    width: 0,
                                     opacity: 0,
                                     marginLeft: 0,
                                     scale: 0.8
                                 },
-                                hover: { 
-                                    width: 'auto', 
+                                hover: {
+                                    width: 'auto',
                                     opacity: 1,
                                     marginLeft: '0.75rem',
                                     scale: 1
@@ -263,10 +263,10 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
             <div className='simulation-info-footer'>
                 <div className='simulation-caption-left-container'>
                     <EditableTrajectoryName
-                        trajectory={trajectory} 
-                        className='simulation-caption-title' 
+                        trajectory={trajectory}
+                        className='simulation-caption-title'
                     />
-                    
+
                     <div className='simulation-caption-left-bottom-container'>
                         {showProcessingLoader ? (
                             <ProcessingLoader

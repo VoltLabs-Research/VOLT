@@ -3,7 +3,7 @@ import useEditorUIStore from '@/stores/ui/editor';
 import Draggable from '@/components/atoms/common/Draggable';
 import './EditorWidget.css';
 
-interface EditorWidgetProps {   
+interface EditorWidgetProps {
     children: React.ReactNode;
     className?: string;
     style?: React.CSSProperties;
@@ -30,7 +30,7 @@ const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>((
         getPosition: () => innerRef.current?.getPosition() ?? { x: 0, y: 0 },
     }), []);
 
-    return (
+    return(
         <Draggable
             ref={innerRef}
             enabled={draggable}

@@ -12,18 +12,18 @@ interface DataPoint {
 
 const MAX_POINTS = 60; // 60 seconds
 
-export function DiskOperations() {
+export function DiskOperations(){
   const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics();
   const [history, setHistory] = useState<DataPoint[]>([]);
 
   // Preload with historical data
   useEffect(() => {
-    if (isHistoryLoaded && metricsHistory.length > 0 && history.length === 0) {
+    if(isHistoryLoaded && metricsHistory.length > 0 && history.length === 0){
       console.log('[DiskOperations] Preloading with', metricsHistory.length, 'historical points')
       const historicalData = metricsHistory
-        .filter(m => m.diskOperations)
-        .slice(-MAX_POINTS)
-        .map(m => ({
+          .filter(m => m.diskOperations)
+          .slice(-MAX_POINTS)
+          .map(m => ({
           read: m.diskOperations!.read,
           write: m.diskOperations!.write,
           speed: m.diskOperations!.speed
@@ -33,7 +33,7 @@ export function DiskOperations() {
   }, [isHistoryLoaded, metricsHistory])
 
   useEffect(() => {
-    if (!metrics?.diskOperations) return;
+    if(!metrics?.diskOperations) return;
 
     setHistory(prev => {
       const newHistory = [...prev, {
@@ -42,7 +42,7 @@ export function DiskOperations() {
         speed: metrics.diskOperations!.speed
       }];
 
-      if (newHistory.length > MAX_POINTS) {
+      if(newHistory.length > MAX_POINTS){
         newHistory.shift();
       }
 
@@ -65,10 +65,10 @@ export function DiskOperations() {
   const getY = (value: number) => 100 - ((value / maxValue) * (100 - padding * 2) + padding);
 
   const createPath = (values: number[]) => {
-    if (values.length === 0) return '';
-    
+    if(values.length === 0) return '';
+
     let path = `M ${getX(0)} ${getY(values[0])}`;
-    for (let i = 1; i < values.length; i++) {
+    for(let i = 1; i < values.length; i++){
       path += ` L ${getX(i)} ${getY(values[i])}`;
     }
     return path;
@@ -144,21 +144,21 @@ export function DiskOperations() {
       <div className="disk-ops-legend">
         <div className="disk-ops-legend-item">
           <span className="disk-ops-legend-dot" style={{ backgroundColor: '#0A84FF' }}></span>
-          <span className="disk-ops-legend-label">Read (MB/s)</span>
+          <span className="disk-ops-legend-label">Read(MB/s)</span>
         </div>
         <div className="disk-ops-legend-item">
           <span className="disk-ops-legend-dot" style={{ backgroundColor: '#30D158' }}></span>
-          <span className="disk-ops-legend-label">Write (MB/s)</span>
+          <span className="disk-ops-legend-label">Write(MB/s)</span>
         </div>
         <div className="disk-ops-legend-item">
           <span className="disk-ops-legend-dot" style={{ backgroundColor: '#FF9F0A' }}></span>
-          <span className="disk-ops-legend-label">IOPS (x10)</span>
+          <span className="disk-ops-legend-label">IOPS(x10)</span>
         </div>
       </div>
     </div>
   );
 
-  return (
+  return(
     <ChartContainer
       icon={HardDrive}
       title="Disk Operations"

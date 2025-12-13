@@ -21,19 +21,19 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
 
     const { showSuccess, showError } = useToast();
 
-    // Get user's teams (mock/simplified for now, ideally fetch from store or API)
-    // Assuming the user object has teams or we fetch them. 
-    // For this implementation, we'll fetch teams on mount if needed, 
+    // Get user's teams(mock/simplified for now, ideally fetch from store or API)
+    // Assuming the user object has teams or we fetch them.
+    // For this implementation, we'll fetch teams on mount if needed,
     // but let's assume we can get them from the auth store or a hook.
     // Since we don't have a global teams store ready in the context provided,
     // we'll fetch them when the modal opens.
     const [teams, setTeams] = useState<{ _id: string; name: string }[]>([]);
 
     React.useEffect(() => {
-        if (isOpen) {
+        if(isOpen){
             teamApi.getAll().then(teamsList => {
                 setTeams(teamsList as { _id: string; name: string }[]);
-                if (teamsList.length > 0) {
+                if(teamsList.length > 0){
                     setTeamId(teamsList[0]._id);
                 }
             });
@@ -68,11 +68,11 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
         setPorts(newPorts);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async(e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
-        try {
+        try{
             await containerApi.create({
                 name,
                 image,
@@ -89,16 +89,16 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
             setImage('');
             setEnvVars([]);
             setPorts([]);
-        } catch (error: any) {
+        }catch(error: any){
             showError(error.response?.data?.message || 'Failed to create container');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
-    if (!isOpen) return null;
+    if(!isOpen) return null;
 
-    return (
+    return(
         <div className='modal-overlay'>
             <div className='create-container-modal'>
                 <div className='modal-header'>

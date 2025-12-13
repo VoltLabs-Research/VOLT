@@ -96,7 +96,6 @@ export interface MetricsBarProps {
     onToggleTool: (toolId: string) => void;
 }
 
-
 export interface ThumbnailItemProps {
     scene: Scene;
     timestep: number;
@@ -138,6 +137,6 @@ export interface RasterPage {
     page: number;
     pageSize: number;
     total: number;
-    // Map of timestep -> metadata (e.g., available models)
+    // Map of timestep -> metadata(e.g., available models)
     frames: Record<string, any>;
 }

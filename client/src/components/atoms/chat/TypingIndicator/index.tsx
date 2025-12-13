@@ -5,7 +5,7 @@ type TypingIndicator = {
 const TypingIndicator = ({ users }: TypingIndicator) => {
     if(!users.length) return null;
 
-      return (
+      return(
         <div className='chat-message received'>
             <div className='chat-typing-indicator'>
                 <div className='chat-typing-dots'>

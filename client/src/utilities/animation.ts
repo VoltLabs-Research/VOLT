@@ -41,7 +41,7 @@ export const createPageVariants = ({ reducedMotion, isSameLayout }: PageVariants
             transition: {
                 duration: timings.enter,
                 ease: BALANCED_EASING,
-                opacity: { 
+                opacity: {
                     duration: timings.opacity,
                     ease: BALANCED_EASING,
                 },
@@ -66,10 +66,9 @@ export const createPageVariants = ({ reducedMotion, isSameLayout }: PageVariants
     };
 };
 
-
 export const createOverlayVariants = (isSameLayout: boolean): Variants => {
     const timings = isSameLayout ? ANIMATION_TIMINGS.sameLayout : ANIMATION_TIMINGS.differentLayout;
-    
+
     return {
         initial: {
             opacity: 0,
@@ -95,7 +94,7 @@ export const createOverlayVariants = (isSameLayout: boolean): Variants => {
 
 export const createContentVariants = (isSameLayout: boolean): Variants => {
     const timings = isSameLayout ? ANIMATION_TIMINGS.sameLayout : ANIMATION_TIMINGS.differentLayout;
-    
+
     return {
         initial: { opacity: 0, y: isSameLayout ? 10 : 18 },
         animate: {

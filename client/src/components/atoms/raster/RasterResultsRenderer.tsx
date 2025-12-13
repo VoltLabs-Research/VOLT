@@ -43,8 +43,8 @@ const RasterResultsRenderer: React.FC<RasterResultsRendererProps> = ({
     const Component = RASTER_COMPONENTS[componentName];
 
     useEffect(() => {
-        const fetchData = async () => {
-            if (!rasterConfig) {
+        const fetchData = async() => {
+            if(!rasterConfig){
                 setIsLoading(false);
                 return;
             }
@@ -52,7 +52,7 @@ const RasterResultsRenderer: React.FC<RasterResultsRendererProps> = ({
             setIsLoading(true);
             setError(null);
 
-            try {
+            try{
                 const response = await pluginApi.getExposureData(
                     exposure.pluginId,
                     trajectoryId,
@@ -69,10 +69,10 @@ const RasterResultsRenderer: React.FC<RasterResultsRendererProps> = ({
                 console.log('First item sample:', decodedData?.data?.[0] || decodedData?.dislocations?.[0]);
 
                 setData(decodedData);
-            } catch (err: any) {
+            }catch(err: any){
                 console.error('Failed to fetch raster data:', err);
                 setError(err.message || 'Failed to load data');
-            } finally {
+            }finally{
                 setIsLoading(false);
             }
         };
@@ -80,47 +80,47 @@ const RasterResultsRenderer: React.FC<RasterResultsRendererProps> = ({
         fetchData();
     }, [exposure, timestep, analysisId, trajectoryId, rasterConfig]);
 
-    if (!rasterConfig) {
-        return (
+    if(!rasterConfig){
+        return(
             <div style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
                 No raster configuration available
             </div>
         );
     }
 
-    if (!Component) {
-        return (
+    if(!Component){
+        return(
             <div style={{ padding: '1rem', color: 'var(--error-color)' }}>
                 Unknown component: {componentName}
             </div>
         );
     }
 
-    if (isLoading) {
-        return (
+    if(isLoading){
+        return(
             <div style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
                 Loading {rasterConfig.title || 'data'}...
             </div>
         );
     }
 
-    if (error) {
-        return (
+    if(error){
+        return(
             <div style={{ padding: '1rem', color: 'var(--error-color)' }}>
                 Error: {error}
             </div>
         );
     }
 
-    if (!data) {
-        return (
+    if(!data){
+        return(
             <div style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
                 No data available
             </div>
         );
     }
 
-    return (
+    return(
         <Suspense fallback={<div style={{ padding: '1rem' }}>Loading component...</div>}>
             <Component
                 data={data}

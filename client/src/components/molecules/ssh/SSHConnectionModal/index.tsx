@@ -55,7 +55,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
     });
 
     useEffect(() => {
-        if (mode === 'edit' && connection) {
+        if(mode === 'edit' && connection){
             setFormData({
                 name: connection.name,
                 host: connection.host,
@@ -63,7 +63,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                 username: connection.username,
                 password: '' // Don't populate password for security
             });
-        } else {
+        }else{
             setFormData({
                 name: '',
                 host: '',
@@ -81,24 +81,24 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
         checkField(field, value);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async(e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!validate(formData)) {
+        if(!validate(formData)) {
             return;
         }
 
-        try {
+        try{
             setLoading(true);
             setError(null);
 
-            if (mode === 'create') {
+            if(mode === 'create'){
                 const createData: CreateSSHConnectionData = {
                     ...formData,
                     port: typeof formData.port === 'string' ? parseInt(formData.port) : formData.port
                 };
                 await createConnection(createData);
-            } else if (connection) {
+            }else if(connection){
                 const updateData: UpdateSSHConnectionData = {
                     name: formData.name,
                     host: formData.host,
@@ -106,44 +106,44 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                     username: formData.username
                 };
                 // Only include password if it was changed
-                if (formData.password.trim()) {
+                if(formData.password.trim()){
                     updateData.password = formData.password;
                 }
                 await updateConnection(connection._id, updateData);
             }
 
             onClose();
-        } catch (err: any) {
+        }catch(err: any){
             setError(err.message || 'Failed to save SSH connection');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
-    const handleTest = async () => {
-        if (!connection && mode === 'edit') return;
+    const handleTest = async() => {
+        if(!connection && mode === 'edit') return;
 
         // If creating, we need to save first
-        if (mode === 'create') {
+        if(mode === 'create'){
             setError('Please save the connection first before testing');
             return;
         }
 
-        try {
+        try{
             setTesting(true);
             setTestResult(null);
             const result = await testConnection(connection!._id);
             setTestResult(result);
-        } catch (err: any) {
+        }catch(err: any){
             setTestResult({ valid: false, error: err.message });
-        } finally {
+        }finally{
             setTesting(false);
         }
     };
 
-    if (!isOpen) return null;
+    if(!isOpen) return null;
 
-    return (
+    return(
         <div className="ssh-connection-modal-overlay" onClick={onClose}>
             <div className="ssh-connection-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="ssh-connection-modal-header">

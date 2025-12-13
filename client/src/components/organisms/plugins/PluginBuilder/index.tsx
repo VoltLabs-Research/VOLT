@@ -57,29 +57,29 @@ const PluginBuilder = () => {
         );
 
     // Handle save workflow
-    const handleSave = useCallback(async () => {
-        if (isSaving) return;
+    const handleSave = useCallback(async() => {
+        if(isSaving) return;
         setSaveStatus('saving');
         const result = await saveWorkflow();
-        if (result) {
+        if(result){
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 2000);
-        } else {
+        }else{
             setSaveStatus('error');
             setTimeout(() => setSaveStatus('idle'), 3000);
         }
     }, [saveWorkflow, isSaving]);
 
-    // Keyboard shortcuts (Ctrl+S to save)
+    // Keyboard shortcuts(Ctrl+S to save)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            if((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
                 handleSave();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        return() => window.removeEventListener('keydown', handleKeyDown);
     }, [handleSave]);
 
     // Suscripción separada para el sidebar
@@ -98,7 +98,7 @@ const PluginBuilder = () => {
     }, [modifierNode]);
 
     const handlePluginNameChange = useCallback((newName: string) => {
-        if (modifierNode) {
+        if(modifierNode){
             const currentData = modifierNode.data as { modifier?: Record<string, any> } | undefined;
             updateNodeData(modifierNode.id, {
                 modifier: { ...currentData?.modifier, name: newName }
@@ -114,7 +114,7 @@ const PluginBuilder = () => {
     const onDrop = useCallback((event: React.DragEvent) => {
         event.preventDefault();
         const type = event.dataTransfer.getData('application/reactflow') as NodeType;
-        if (!type || !reactFlowInstance || !reactFlowWrapper.current) return;
+        if(!type || !reactFlowInstance || !reactFlowWrapper.current) return;
         const bounds = reactFlowWrapper.current.getBoundingClientRect();
         const position = reactFlowInstance.screenToFlowPosition({
             x: event.clientX - bounds.left,
@@ -152,7 +152,7 @@ const PluginBuilder = () => {
 
     const selectedNodeConfig = selectedNode ? NODE_CONFIGS[selectedNode.type as NodeType] : null;
 
-    return (
+    return(
         <div className='plugin-builder-container'>
             <Sidebar
                 tags={SIDEBAR_TAGS}

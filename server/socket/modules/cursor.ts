@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -36,10 +36,10 @@ class CursorModule extends BaseSocketModule{
          * Join a cursor room and announce presence.
          */
         socket.on('cursor:join', ({ room, user }: { room?: string; user?: any }) => {
-            if (!room) return;
-            if (socket.data.cursorRoom === room && socket.data.user) return;
+            if(!room) return;
+            if(socket.data.cursorRoom === room && socket.data.user) return;
             socket.data.cursorRoom = room;
-            if (user) socket.data.user = user;
+            if(user) socket.data.user = user;
             this.joinRoom(socket, room);
             socket.to(room).emit('cursor:user-joined', { id: socket.id, user: socket.data.user });
         });
@@ -66,10 +66,10 @@ class CursorModule extends BaseSocketModule{
         socket.on('cursor:click', ({ room, nx, ny, ts }) => {
             if(!room) return;
             socket.to(room).emit('cursor:click', {
-                id: socket.id, 
-                nx, 
-                ny, 
-                ts: ts ?? Date.now(), 
+                id: socket.id,
+                nx,
+                ny,
+                ts: ts ?? Date.now(),
                 user: socket.data.user
             });
         });

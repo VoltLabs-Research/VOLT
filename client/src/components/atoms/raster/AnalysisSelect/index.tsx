@@ -14,7 +14,7 @@ const AnalysisSelect: React.FC<AnalysisSelectProps> = ({
 
     const options = useMemo(() => {
         const modifiers = getModifiers();
-        return (analysesNames || []).map((analysis: any) => {
+        return(analysesNames || []).map((analysis: any) => {
             const modifier = modifiers.find(m => m.pluginSlug === analysis.plugin);
             return {
                 value: analysis._id,
@@ -24,7 +24,7 @@ const AnalysisSelect: React.FC<AnalysisSelectProps> = ({
         });
     }, [analysesNames, getModifiers]);
 
-    return (
+    return(
         <div className='raster-analyses-selection-container'>
             <Select
                 onDark

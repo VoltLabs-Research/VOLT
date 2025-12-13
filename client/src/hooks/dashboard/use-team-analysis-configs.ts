@@ -25,26 +25,26 @@ export const useTeamAnalysisConfigs = (teamId?: string, opts?: { limit?: number 
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (!teamId) { setItems([]); setError(null); setLoading(false); return; }
+    if(!teamId){ setItems([]); setError(null); setLoading(false); return; }
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true);
     setError(null);
-    (async () => {
-      try {
+    (async() => {
+      try{
         const res = await analysisConfigApi.getByTeamId(teamId, { page: 1, limit });
-        if (controller.signal.aborted) return;
+        if(controller.signal.aborted) return;
         setItems((res?.configs ?? []) as ConfigItem[]);
-      } catch (err: any) {
-        if (controller.signal.aborted) { setLoading(false); return; }
+      }catch(err: any){
+        if(controller.signal.aborted){ setLoading(false); return; }
         const message = err?.response?.data?.message || err?.message || 'Failed to load analysis configs';
         setError(message);
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
+      }finally{
+        if(!controller.signal.aborted) setLoading(false);
       }
     })();
-    return () => controller.abort();
+    return() => controller.abort();
   }, [teamId, limit]);
 
   return { items, loading, error };

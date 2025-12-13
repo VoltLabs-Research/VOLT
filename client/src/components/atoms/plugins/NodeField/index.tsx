@@ -8,7 +8,7 @@ export interface NodeFieldProps{
 };
 
 const NodeField = ({ label, value, code, empty }: NodeFieldProps) => {
-    return (
+    return(
         <div className='workflow-node-field-container'>
             <div className='workflow-node-field-label-container'>
                 <h3 className='workflow-node-field-label'>{label}</h3>

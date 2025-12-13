@@ -8,14 +8,14 @@ const PreloadingOverlay: React.FC = () => {
     const isPreloading = usePlaybackStore((state) => state.isPreloading ?? false);
     const preloadProgress = usePlaybackStore((state) => state.preloadProgress ?? 0);
 
-    if (!isPreloading) return null;
+    if(!isPreloading) return null;
 
     const ringVars = {
         ['--p' as any]: preloadProgress,
         ['--stroke' as any]: '1px'
     };
 
-    return (
+    return(
         <motion.div
             className="editor-model-loading-wrapper"
             initial={{ opacity: 0, scale: 1 }}
@@ -39,4 +39,3 @@ const PreloadingOverlay: React.FC = () => {
 };
 
 export default React.memo(PreloadingOverlay);
-

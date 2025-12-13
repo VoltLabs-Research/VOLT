@@ -32,13 +32,13 @@ const TrajectoryPreview = () => {
     }, [trajectories, trajectory]);
 
     useEffect(() => {
-        return () => {
+        return() => {
             cleanupPreview();
             setTrajectory(null);
         };
     }, [cleanupPreview]);
 
-    return (
+    return(
         <div className='trajectory-preview-container'>
             {(previewLoading || trajectories.length === 0) ? (
                 <div className='trajectory-preview-loading-container'>
@@ -59,11 +59,11 @@ const TrajectoryPreview = () => {
                     </div>
                 </>
             )}
-            
+
             <div className='trajectory-preview-scene-container'>
                 {(previewBlobUrl && !previewError) && (
-                    <img 
-                        className='simulation-image' 
+                    <img
+                        className='simulation-image'
                         src={previewBlobUrl}
                         alt={`Preview of ${trajectory?.name || 'Trajectory'}`}
                         key={`${trajectory?._id}-${trajectory?.preview}-${trajectory?.updatedAt}`}
@@ -72,7 +72,7 @@ const TrajectoryPreview = () => {
                         }}
                     />
                 )}
-            </div>      
+            </div>
         </div>
     );
 };

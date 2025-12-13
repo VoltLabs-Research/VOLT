@@ -26,20 +26,20 @@ interface GetLoginActivityParams {
 }
 
 const sessionApi = {
-    async getAll(): Promise<Session[]> {
+    async getAll(): Promise<Session[]>{
         const response = await api.get<{ status: string; data: Session[] }>('/sessions');
         return response.data.data;
     },
 
-    async delete(id: string): Promise<void> {
+    async delete(id: string): Promise<void>{
         await api.delete(`/sessions/${id}`);
     },
 
-    async deleteOthers(): Promise<void> {
+    async deleteOthers(): Promise<void>{
         await api.delete('/sessions/all/others');
     },
 
-    async getLoginActivity(params?: GetLoginActivityParams): Promise<LoginActivity[]> {
+    async getLoginActivity(params?: GetLoginActivityParams): Promise<LoginActivity[]>{
         const queryString = params
             ? `?${new URLSearchParams(params as any).toString()}`
             : '';

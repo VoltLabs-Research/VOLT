@@ -6,19 +6,19 @@ import useAuthStore from '@/stores/authentication';
 import { TokenStorage } from '@/utilities/storage';
 import './OAuthCallback.css';
 
-export default function OAuthCallback() {
+export default function OAuthCallback(){
     const navigate = useNavigate();
     const initializeAuth = useAuthStore((state) => state.initializeAuth);
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
     useEffect(() => {
-        const handleOAuthCallback = async () => {
-            try {
+        const handleOAuthCallback = async() => {
+            try{
                 // Get token from URL query parameters
                 const params = new URLSearchParams(window.location.search);
                 const token = params.get('token');
 
-                if (!token) {
+                if(!token){
                     throw new Error('No token received from OAuth provider');
                 }
 
@@ -34,7 +34,7 @@ export default function OAuthCallback() {
                 setTimeout(() => {
                     navigate('/dashboard');
                 }, 1500);
-            } catch (error) {
+            }catch(error){
                 console.error('OAuth callback error:', error);
                 setStatus('error');
                 setTimeout(() => {
@@ -46,7 +46,7 @@ export default function OAuthCallback() {
         handleOAuthCallback();
     }, [navigate, initializeAuth]);
 
-    return (
+    return(
         <div className="oauth-callback-container">
             {/* Background Elements */}
             <div className="absolute inset-0 overflow-hidden">

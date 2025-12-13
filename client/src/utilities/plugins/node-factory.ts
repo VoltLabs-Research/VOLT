@@ -19,7 +19,7 @@ export const createNode = (type: NodeType, position: { x: number; y: number }): 
         position,
         data: {
             name: `${config.label}_${nodeIdCounter}`,
-            ...getDefaultDataForType(type)
+                ...getDefaultDataForType(type)
         }
     };
 };
@@ -78,7 +78,7 @@ export const getDefaultDataForType = (type: NodeType): Record<string, any> => {
                 }
             };
 
-        case NodeType.SCHEMA: 
+        case NodeType.SCHEMA:
             return {
                 schema: {
                     definition: {}

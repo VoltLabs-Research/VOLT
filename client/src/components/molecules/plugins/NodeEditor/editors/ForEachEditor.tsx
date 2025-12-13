@@ -14,7 +14,7 @@ const DEFAULT_FOREACH: IForEachData = { iterableSource: '' };
 const ForEachEditor: React.FC<ForEachEditorProps> = ({ node }) => {
     const { data: forEach, updateField, nodeId } = useNodeData(node, 'forEach', DEFAULT_FOREACH);
 
-    return (
+    return(
         <CollapsibleSection title='Iteration' defaultExpanded>
             <FormField
                 label='Iterable Source'

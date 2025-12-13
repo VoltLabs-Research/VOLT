@@ -26,14 +26,14 @@ const useTeamStore = create<TeamStore>((set, get) => {
                     const storedTeamId = typeof window !== 'undefined' ? localStorage.getItem('selectedTeamId') : null;
                     let selectedTeam = null;
 
-                    if (storedTeamId) {
+                    if(storedTeamId){
                         const storedTeam = teams.find((t) => t._id === storedTeamId);
-                        if (storedTeam) {
+                        if(storedTeam){
                             selectedTeam = storedTeam;
                         }
                     }
 
-                    if (!selectedTeam) {
+                    if(!selectedTeam){
                         selectedTeam = currentSelected && teams.find((t) => t._id === currentSelected._id)
                             ? teams.find((t) => t._id === currentSelected._id)!
                             : teams[0] || null;
@@ -47,7 +47,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 },
                 onError: (error) => {
                     const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to load teams';
-                    if (error?.context) {
+                    if(error?.context){
                         error.context.operation = 'getUserTeams';
                     }
                     return {
@@ -59,9 +59,9 @@ const useTeamStore = create<TeamStore>((set, get) => {
 
         setSelectedTeam: (teamId: string) => {
             const team = get().teams.find((t) => t._id === teamId);
-            if (team) {
+            if(team){
                 set({ selectedTeam: team });
-                if (typeof window !== 'undefined') {
+                if(typeof window !== 'undefined'){
                     localStorage.setItem('selectedTeamId', teamId);
                 }
             }
@@ -80,7 +80,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 },
                 onError: (error) => {
                     const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to create team';
-                    if (error?.context) {
+                    if(error?.context){
                         error.context.operation = 'createTeam';
                     }
                     return {
@@ -105,7 +105,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 },
                 onError: (error) => {
                     const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to update team';
-                    if (error?.context) {
+                    if(error?.context){
                         error.context.teamId = teamId;
                         error.context.operation = 'updateTeam';
                     }
@@ -132,7 +132,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 },
                 onError: (error) => {
                     const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to delete team';
-                    if (error?.context) {
+                    if(error?.context){
                         error.context.teamId = teamId;
                         error.context.operation = 'deleteTeam';
                     }
@@ -158,7 +158,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 },
                 onError: (error) => {
                     const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to leave team';
-                    if (error?.context) {
+                    if(error?.context){
                         error.context.teamId = teamId;
                         error.context.operation = 'leaveTeam';
                     }

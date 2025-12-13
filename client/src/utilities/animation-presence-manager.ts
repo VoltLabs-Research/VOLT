@@ -70,8 +70,8 @@ class AnimationPresenceManager{
     private createFadeInAnimation(element: HTMLElement): () => void{
         element.style.opacity = '0';
         element.style.transform = 'scale(0.98)';
-        
-        return () => {
+
+        return() => {
             Object.assign(element.style, {
                 transition: `all ${this.config.duration}ms ${this.config.easing}`,
                 opacity: '1',
@@ -84,7 +84,7 @@ class AnimationPresenceManager{
         element: HTMLElement,
         oldRect: ElementRect,
         newRect: ElementRect
-    ): any {
+    ): any{
         const deltaX = oldRect.left - newRect.left;
         const deltaY = oldRect.top - newRect.top;
 
@@ -95,7 +95,7 @@ class AnimationPresenceManager{
         element.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
         element.style.transition = 'none';
 
-        return () => {
+        return() => {
             Object.assign(element.style, {
                 transition: `transform ${this.config.duration}ms ${this.config.easing}`,
                 transform: 'none'

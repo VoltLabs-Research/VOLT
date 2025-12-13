@@ -4,12 +4,12 @@ import DockerManager from './docker-manager.js'
 let mainWindow: BrowserWindow | null = null;
 let dockerManager: DockerManager | null = null;
 
-const createWindow = async () => {
+const createWindow = async() => {
     dockerManager = new DockerManager();
-    
+
     console.log('[Volterra] Starting Docker services...');
     const dockerStarted = await dockerManager.start();
-    
+
     if(!dockerStarted){
         console.error('[Volterra] Failed to start Docker services');
         app.quit();
@@ -17,7 +17,7 @@ const createWindow = async () => {
     }
 
     const servicesReady = await dockerManager.waitForServices();
-    
+
     if(!servicesReady){
         console.error('[Volterra] Services did not start properly');
         app.quit();
@@ -29,7 +29,7 @@ const createWindow = async () => {
     const viteUrl = 'http://localhost:5173';
     const maxRetries = 30;
     let viteReady = false;
-    
+
     for(let i = 0; i < maxRetries; i++){
         try{
             const response = await fetch(viteUrl);
@@ -77,8 +77,8 @@ const createWindow = async () => {
 
 app.whenReady().then(createWindow);
 
-app.on('window-all-closed', async () => {
-    // Stop Docker services (including client container)
+app.on('window-all-closed', async() => {
+    // Stop Docker services(including client container)
     if(dockerManager){
         console.log('[OpenDXA] Stopping Docker services...');
         await dockerManager.stop();
@@ -90,7 +90,7 @@ app.on('window-all-closed', async () => {
     }
 });
 
-app.on('before-quit', async (event) => {
+app.on('before-quit', async(event) => {
     if(dockerManager && await dockerManager.getIsRunning()){
         event.preventDefault();
         await dockerManager.stop();

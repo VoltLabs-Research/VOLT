@@ -5,7 +5,7 @@ import { IoCloseOutline } from 'react-icons/io5';
 
 const ToggleOption: React.FC<any> = ({ className, label, isVisible, onToggle }) => {
 
-    return (
+    return(
         <motion.button
             type='button'
             onClick={onToggle}

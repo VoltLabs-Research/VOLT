@@ -20,7 +20,7 @@ const WebhookList: React.FC<WebhookListProps> = ({
     onTest
 }) => {
     const getStatusColor = (status: string) => {
-        switch (status) {
+        switch(status){
             case 'active': return 'var(--color-success)';
             case 'inactive': return 'var(--color-warning)';
             case 'failed': return 'var(--color-error)';
@@ -29,7 +29,7 @@ const WebhookList: React.FC<WebhookListProps> = ({
     };
 
     const getStatusIcon = (status: string) => {
-        switch (status) {
+        switch(status){
             case 'active': return <TbCheck size={16} />;
             case 'inactive': return <TbX size={16} />;
             case 'failed': return <TbX size={16} />;
@@ -38,16 +38,16 @@ const WebhookList: React.FC<WebhookListProps> = ({
     };
 
     const formatDate = (dateString: string) => {
-        try {
+        try{
             const date = new Date(dateString);
             return isValid(date) ? formatDistanceToNow(date, { addSuffix: true }) : 'Unknown';
-        } catch {
+        } catch{
             return 'Unknown';
         }
     };
 
-    if (loading) {
-        return (
+    if(loading){
+        return(
             <div className="webhook-list-loading">
                 <div className="webhook-skeleton">
                     <div className="skeleton-icon"></div>
@@ -75,8 +75,8 @@ const WebhookList: React.FC<WebhookListProps> = ({
         );
     }
 
-    if (webhooks.length === 0) {
-        return (
+    if(webhooks.length === 0){
+        return(
             <div className="webhook-list-empty">
                 <div className="empty-icon">
                     <TbWebhook size={48} />
@@ -87,7 +87,7 @@ const WebhookList: React.FC<WebhookListProps> = ({
         );
     }
 
-    return (
+    return(
         <div className="webhook-list">
             {webhooks.map((webhook) => (
                 <div key={webhook._id} className="webhook-item">
@@ -98,7 +98,7 @@ const WebhookList: React.FC<WebhookListProps> = ({
                         <div className="webhook-details">
                             <div className="webhook-header">
                                 <span className="webhook-name">{webhook.name}</span>
-                                <span 
+                                <span
                                     className="webhook-status"
                                     style={{ color: getStatusColor(webhook.status) }}
                                 >

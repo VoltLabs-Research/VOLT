@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -30,20 +30,20 @@ import './SideImageForm.css';
 
 const renderInput = (inputProps, formState, handleChange) => {
     if(inputProps.container){
-        return (
+        return(
             <div key={inputProps.id} className={inputProps.container.className}>
-                {inputProps.container.children.map(childProps => 
+                {inputProps.container.children.map(childProps =>
                     renderInput(childProps, formState, handleChange)
                 )}
             </div>
         );
     }
 
-    return (
+    return(
         <FormInput
             key={inputProps.name}
             {...inputProps}
-            value={formState[inputProps.name] || ''} 
+            value={formState[inputProps.name] || ''}
             onChange={handleChange}
         />
     );
@@ -63,7 +63,7 @@ const SideImageForm = ({
 }) => {
     const [formState, setFormState] = useState(initialState);
     const navigate = useNavigate();
-    
+
     const rightContainerRef = useRef<HTMLDivElement | null>(null);
     const [isOverflowing, setIsOverflowing] = useState(false);
 
@@ -76,7 +76,7 @@ const SideImageForm = ({
             setIsOverflowing(overflow);
         };
 
-        const ro = new (window as any).ResizeObserver(() => checkOverflow());
+        const ro = new(window as any).ResizeObserver(() => checkOverflow());
         if(ro) ro.observe(el);
 
         const mo = new MutationObserver(() => checkOverflow());
@@ -85,7 +85,7 @@ const SideImageForm = ({
         checkOverflow();
         window.addEventListener('resize', checkOverflow);
 
-        return () => {
+        return() => {
             if(ro) ro.disconnect();
             mo.disconnect();
             window.removeEventListener('resize', checkOverflow);
@@ -105,7 +105,7 @@ const SideImageForm = ({
         onSubmit(formState);
     };
 
-    return (
+    return(
         <form className='side-image-form' onSubmit={handleFormSubmit}>
             <Button
                 type='submit'
@@ -135,13 +135,12 @@ const SideImageForm = ({
                     {FormOpts && <FormOpts />}
 
                     <div className='side-image-form-submit-btn-container'>
-                        <Button 
+                        <Button
                             type='submit'
                             className='sm-radius'
                             title='Continue'
                             isLoading={isLoading} />
-                            
-            
+
                         <p className='auth-agree-text'>By joining, you agree to our <span>Terms of Service</span> and <span>Privacy Policy</span></p>
                     </div>
                 </div>

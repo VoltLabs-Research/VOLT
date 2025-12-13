@@ -12,12 +12,12 @@ const TrajectoryVisibilityStatusFloatIcon = () => {
     const isPublic = !!trajectory?.isPublic;
     const id = trajectory?._id;
 
-    const onToggle = useCallback(async () => {
+    const onToggle = useCallback(async() => {
         if(isUpdating || !id) return;
         setIsUpdating(true);
         try{
             await updateTrajectoryById(id, { isPublic: !isPublic });
-        } catch (error: any) {
+        }catch(error: any){
             const errorContext = {
                 endpoint: `/trajectories/${id}`,
                 method: 'PATCH',
@@ -28,18 +28,18 @@ const TrajectoryVisibilityStatusFloatIcon = () => {
                 timestamp: new Date().toISOString()
             };
             console.error('Failed to toggle trajectory visibility:', errorContext);
-        } finally {
+        }finally{
             setIsUpdating(false);
         }
     }, [isUpdating, updateTrajectoryById, id, isPublic]);
 
     if(!trajectory) return null;
 
-    return (
-        <EditorWidget 
+    return(
+        <EditorWidget
             className={`trajectory-share-status-container ${isUpdating ? 'is-disabled' : ''}`}
         >
-            <button 
+            <button
                 className='trajectory-share-status-icon-container'
                 onClick={onToggle}
                 title={isPublic ? 'Public · Click to make Private' : 'Private · Click to make Public'}

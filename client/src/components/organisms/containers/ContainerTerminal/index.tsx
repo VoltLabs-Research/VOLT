@@ -32,13 +32,13 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
         const id = container._id;
 
         // Initialize state for this container if needed
-        if (!connectionState[id]) {
+        if(!connectionState[id]){
             connectionState[id] = { count: 0, isAttached: false, detachTimer: null };
         }
         const state = connectionState[id];
 
         // Cancel any pending detach
-        if (state.detachTimer) {
+        if(state.detachTimer){
             clearTimeout(state.detachTimer);
             state.detachTimer = null;
         }
@@ -49,7 +49,7 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
         socketService.connect();
 
         // Initialize xterm.js
-        if (terminalRef.current && !xtermRef.current) {
+        if(terminalRef.current && !xtermRef.current){
             const term = new Terminal({
                 cursorBlink: true,
                 fontSize: 14,
@@ -82,7 +82,7 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
                 fitAddon.fit();
                 // Optional: Send resize to backend if supported
                 // const dims = fitAddon.proposeDimensions();
-                // if (dims) socketService.emit('container:terminal:resize', dims);
+                // if(dims) socketService.emit('container:terminal:resize', dims);
             };
 
             window.addEventListener('resize', handleResize);
@@ -91,7 +91,7 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
             setTimeout(() => fitAddon.fit(), 100);
 
             // Cleanup for this instance
-            return () => {
+            return() => {
                 window.removeEventListener('resize', handleResize);
                 term.dispose();
                 xtermRef.current = null;
@@ -104,7 +104,7 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
         const state = connectionState[id];
 
         // Attach to container if not already attached
-        if (!state.isAttached) {
+        if(!state.isAttached){
             socketService.emit('container:terminal:attach', { containerId: id });
             state.isAttached = true;
         }
@@ -121,15 +121,15 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
         socketService.on('container:terminal:data', handleData);
         socketService.on('container:error', handleError);
 
-        return () => {
+        return() => {
             socketService.off('container:terminal:data', handleData);
             socketService.off('container:error', handleError);
 
             state.count--;
 
-            if (state.count === 0) {
+            if(state.count === 0){
                 state.detachTimer = setTimeout(() => {
-                    if (state.count === 0) {
+                    if(state.count === 0){
                         socketService.emit('container:terminal:detach');
                         state.isAttached = false;
                         delete connectionState[id];
@@ -155,9 +155,9 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
         </div>
     );
 
-    if (embedded) return content;
+    if(embedded) return content;
 
-    return (
+    return(
         <div className='terminal-overlay'>
             {content}
         </div>

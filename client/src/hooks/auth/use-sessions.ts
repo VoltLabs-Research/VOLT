@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -46,33 +46,33 @@ export const useSessions = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchSessions = async () => {
-        try {
+    const fetchSessions = async() => {
+        try{
             setLoading(true);
             setError(null);
             const data = await sessionApi.getAll();
             setSessions(data);
-        } catch (err: any) {
+        }catch(err: any){
             setError(err.response?.data?.message || 'Failed to fetch sessions');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
-    const revokeSession = async (sessionId: string) => {
-        try {
+    const revokeSession = async(sessionId: string) => {
+        try{
             await sessionApi.delete(sessionId);
             setSessions(prev => prev.filter(session => session._id !== sessionId));
-        } catch (err: any) {
+        }catch(err: any){
             setError(err.response?.data?.message || 'Failed to revoke session');
         }
     };
 
-    const revokeAllOtherSessions = async () => {
-        try {
+    const revokeAllOtherSessions = async() => {
+        try{
             await sessionApi.deleteOthers();
             setSessions(prev => prev.slice(0, 1));
-        } catch (err: any) {
+        }catch(err: any){
             setError(err.response?.data?.message || 'Failed to revoke other sessions');
         }
     };

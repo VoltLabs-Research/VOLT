@@ -8,18 +8,18 @@ const LoadingShimmer = () => {
     const shouldReduceMotion = useReducedMotion();
     const location = useLocation();
     const currentLayoutKey = getLayoutKey(location.pathname);
-    const isSameLayout = useMemo(() => 
-        detectSameLayout(currentLayoutKey, 'shimmerPreviousLayoutKey'), 
+    const isSameLayout = useMemo(() =>
+        detectSameLayout(currentLayoutKey, 'shimmerPreviousLayoutKey'),
         [currentLayoutKey]
     );
 
     if(shouldReduceMotion) return null;
 
-    return (
+    return(
         <motion.div
             initial={{ x: '-100%', opacity: 0 }}
-            animate={{ 
-                x: '100%', 
+            animate={{
+                x: '100%',
                 opacity: isSameLayout ? 0.4 : 1,
                 transition: {
                     x: {

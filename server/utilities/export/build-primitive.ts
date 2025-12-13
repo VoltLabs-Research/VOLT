@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -35,7 +35,7 @@ export type BuildGLBParams = {
     // VEC4
     colors?: Float32Array;
     indices?: Uint16Array | Uint32Array;
-    // 0=POINTS, 4=TRIANGLES (4 default)
+    // 0=POINTS, 4=TRIANGLES(4 default)
     mode?: number;
     nodeName?: string;
     meshName?: string;
@@ -94,7 +94,7 @@ export const buildPrimitiveGLB = ({
         asset: {
         version: "2.0",
         generator,
-        ...(copyright ? { copyright } : {})
+            ...(copyright ? { copyright } : {})
         },
         scene: 0,
         scenes: [{ nodes: [0] }],
@@ -113,7 +113,7 @@ export const buildPrimitiveGLB = ({
         accessors: [],
         bufferViews: [],
         buffers: [{ byteLength: totalSize }],
-        ...(extras ? { extras } : {})
+            ...(extras ? { extras } : {})
     };
 
     // BufferViews
@@ -131,7 +131,7 @@ export const buildPrimitiveGLB = ({
         accNorm = glb.accessors.length;
         glb.accessors.push({ bufferView: bvNorm, componentType: 5126, count: vertexCount, type: "VEC3" });
     }
-    
+
     let accCol: number | undefined;
     if(colors){
         const bvCol = glb.bufferViews.length;
@@ -166,7 +166,7 @@ export const buildPrimitiveGLB = ({
         name: meshName,
         primitives: [{
         attributes,
-        ...(accIdx !== undefined ? { indices: accIdx } : {}),
+            ...(accIdx !== undefined ? { indices: accIdx } : {}),
         material: 0,
         mode // 0 POINTS, 4 TRIANGLES
         }]

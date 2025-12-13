@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -59,7 +59,7 @@ export default class ChatSocketManager{
         this.refCount++;
 
         if(this.registered){
-            console.log(`[Chat] Socket listeners already registered (refs: ${this.refCount})`);
+            console.log(`[Chat] Socket listeners already registered(refs: ${this.refCount})`);
             return;
         }
 
@@ -73,7 +73,7 @@ export default class ChatSocketManager{
 
     unregister(): void{
         this.refCount--;
-        console.log(`[Chat] Unregister called (refs remaining: ${this.refCount})`);
+        console.log(`[Chat] Unregister called(refs remaining: ${this.refCount})`);
 
         if(this.refCount <= 0){
             this.cleanup();
@@ -111,9 +111,9 @@ export default class ChatSocketManager{
 
         const updatedMessages = messages.map((msg) => {
             const alreadyRead = msg.readBy.some((u) => u._id === data.readBy);
-            
-            return alreadyRead 
-                ? msg 
+
+            return alreadyRead
+                ? msg
                 : { ...msg, readBy: [...msg.readBy, { _id: data.readBy } as any] };
         });
 
@@ -121,7 +121,7 @@ export default class ChatSocketManager{
     }
 
     private createMessageEditedHandler(currentChatIdRef: RefObject<string | null>){
-        return (payload: { chatId: string; message: any }): void => {
+        return(payload: { chatId: string; message: any }): void =>{
             if(currentChatIdRef.current !== payload.chatId) return;
             const { messages, setMessages } = useChatStore.getState();
             setMessages(messages.map((m) => m._id === payload.message._id ? payload.message : m));
@@ -129,7 +129,7 @@ export default class ChatSocketManager{
     }
 
     private createMessageDeletedHandler(currentChatIdRef: RefObject<string | null>){
-        return (payload: { chatId: string; messageId: string }): void => {
+        return(payload: { chatId: string; messageId: string }): void =>{
             if(currentChatIdRef.current !== payload.chatId) return;
 
             const { messages, setMessages } = useChatStore.getState();
@@ -138,7 +138,7 @@ export default class ChatSocketManager{
     }
 
     private createReactionUpdatedHandler(currentChatIdRef: RefObject<string | null>){
-        return (payload: { chatId: string; message: any }): void => {
+        return(payload: { chatId: string; message: any }): void =>{
             if(currentChatIdRef.current !== payload.chatId || !payload.message) return;
             const { messages, setMessages } = useChatStore.getState();
             const updatedMessage = this.deduplicateReactions(payload.message);
@@ -162,9 +162,9 @@ export default class ChatSocketManager{
     }
 
     private handleUserPresenceUpdate = (payload: {
-        userId: string; 
-        status: 'online' | 'offline'; 
-        timestamp: string 
+        userId: string;
+        status: 'online' | 'offline';
+        timestamp: string
     }): void => {
         useChatStore.getState().setUserPresence(payload.userId, payload.status);
     }
@@ -172,7 +172,7 @@ export default class ChatSocketManager{
     private handleError = (error: string): void => {
         console.error('[Chat] Socket error:', error);
     }
-    
+
     private ensureConnection(): void{
         if(!socketService.isConnected()){
             socketService.connect().catch((error) => {
@@ -184,7 +184,7 @@ export default class ChatSocketManager{
     }
 
     private cleanup(): void{
-        console.log('[Chat] Cleaning up socket listeners (last ref)');
+        console.log('[Chat] Cleaning up socket listeners(last ref)');
 
         this.unsubscribers.forEach((unsubscribe) => {
             try{
@@ -200,7 +200,7 @@ export default class ChatSocketManager{
     }
 
     private createNewMessageHandler(currentChatIdRef: RefObject<string | null>){
-        return (data: { message: any, chatId: string }): void => {
+        return(data: { message: any, chatId: string }): void =>{
             console.log('[Chat] New message received:', data);
 
             if(currentChatIdRef.current === data.chatId){

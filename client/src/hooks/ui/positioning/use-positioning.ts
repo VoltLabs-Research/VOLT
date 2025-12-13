@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -47,7 +47,7 @@ const usePositioning = (
         height: window.innerHeight
     }), []);
 
-    const calculatePosition = useCallback((): Partial<PositionStyles> => {
+    const calculatePosition = useCallback((): Partial<PositionStyles> =>{
         if(!triggerRef.current || !menuRef.current) return {};
 
         const triggerRect = triggerRef.current.getBoundingClientRect();
@@ -67,7 +67,7 @@ const usePositioning = (
 
         if(top + menuRect.height > viewport.height){
             const topAlternative = triggerRect.top - menuRect.height - 20;
-            
+
             if(topAlternative >= 10){
                 top = topAlternative;
             }else{
@@ -87,14 +87,14 @@ const usePositioning = (
         };
     }, [triggerRef, menuRef, getViewportDimensions]);
 
-    const updatePosition = useCallback((): void => {
+    const updatePosition = useCallback((): void =>{
         if(isVisible && menuRef.current){
             const newStyles = calculatePosition();
             setStyles((prev) => ({ ...prev, ...newStyles, opacity: 1 }));
         }
     }, [isVisible, calculatePosition, menuRef]);
 
-    const setInitialPosition = useCallback((): void => {
+    const setInitialPosition = useCallback((): void =>{
         if(!triggerRef.current) return;
 
         const { top, left, height } = triggerRef.current.getBoundingClientRect();
@@ -119,7 +119,7 @@ const usePositioning = (
         const handleResize = (): void => updatePosition();
         window.addEventListener('resize', handleResize);
 
-        return () => {
+        return() => {
             window.removeEventListener('resize', handleResize);
         };
     }, []);
@@ -130,7 +130,7 @@ const usePositioning = (
         const handleScroll = (): void => updatePosition();
         window.addEventListener('scroll', handleScroll, true);
 
-        return () => {
+        return() => {
             window.removeEventListener('scroll', handleScroll, true);
         };
     }, [isVisible, updatePosition]);

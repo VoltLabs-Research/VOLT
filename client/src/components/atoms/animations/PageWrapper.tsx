@@ -13,17 +13,17 @@ const PageWrapper = ({ children }: PageWrapperProps) => {
     const shouldReduceMotion = useReducedMotion();
     const { isSameLayout } = useLayoutDetection();
 
-    const pageVariants = useMemo(() => 
-        createPageVariants({ reducedMotion: shouldReduceMotion || false, isSameLayout }), 
+    const pageVariants = useMemo(() =>
+        createPageVariants({ reducedMotion: shouldReduceMotion || false, isSameLayout }),
         [shouldReduceMotion, isSameLayout]
     );
 
-    const contentVariants = useMemo(() => 
-        createContentVariants(isSameLayout), 
+    const contentVariants = useMemo(() =>
+        createContentVariants(isSameLayout),
         [isSameLayout]
     );
 
-    return (
+    return(
         <motion.div
             initial="initial"
             animate="enter"

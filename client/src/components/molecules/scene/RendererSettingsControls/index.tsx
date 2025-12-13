@@ -16,7 +16,7 @@ const RendererSettingsControls: React.FC = () => {
 
 	const contextSection = {
 		key: 'context',
-		title: 'Context (GL Create)',
+		title: 'Context(GL Create)',
 		enabled: true,
 		onToggle: () => {},
 		rows: [],
@@ -24,15 +24,15 @@ const RendererSettingsControls: React.FC = () => {
 			<div style={{ display: 'grid', gap: 12 }}>
 				<div>
 					<FormField fieldKey="antialias" label="Antialias" fieldType="checkbox" fieldValue={create.antialias} onFieldChange={(_, v) => setCreate({ antialias: Boolean(v) })} />
-					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Smooth jagged edges on geometry (MSAA)</div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Smooth jagged edges on geometry(MSAA)</div>
 				</div>
 				<div>
 					<FormField fieldKey="alpha" label="Alpha" fieldType="checkbox" fieldValue={create.alpha} onFieldChange={(_, v) => setCreate({ alpha: Boolean(v) })} />
-					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Enable transparency support (RGBA)</div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Enable transparency support(RGBA)</div>
 				</div>
 				<div>
 					<FormField fieldKey="depth" label="Depth" fieldType="checkbox" fieldValue={create.depth} onFieldChange={(_, v) => setCreate({ depth: Boolean(v) })} />
-					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Enable depth testing for 3D rendering (Z-buffer)</div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Enable depth testing for 3D rendering(Z-buffer)</div>
 				</div>
 				<div>
 					<FormField fieldKey="stencil" label="Stencil" fieldType="checkbox" fieldValue={create.stencil} onFieldChange={(_, v) => setCreate({ stencil: Boolean(v) })} />
@@ -40,11 +40,11 @@ const RendererSettingsControls: React.FC = () => {
 				</div>
 				<div>
 					<FormField fieldKey="logDepth" label="Logarithmic Depth Buffer" fieldType="checkbox" fieldValue={create.logarithmicDepthBuffer} onFieldChange={(_, v) => setCreate({ logarithmicDepthBuffer: Boolean(v) })} />
-					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Improve depth precision for large scenes (Z-fighting fix)</div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Improve depth precision for large scenes(Z-fighting fix)</div>
 				</div>
 				<div>
 					<FormField fieldKey="preserve" label="Preserve Drawing Buffer" fieldType="checkbox" fieldValue={create.preserveDrawingBuffer} onFieldChange={(_, v) => setCreate({ preserveDrawingBuffer: Boolean(v) })} />
-					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Keep frame buffer between renders (screenshots)</div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Keep frame buffer between renders(screenshots)</div>
 				</div>
 				<button type="button" onClick={() => reset()} style={{ justifySelf: 'start' }}>Reset Renderer</button>
 			</div>
@@ -118,15 +118,15 @@ const RendererSettingsControls: React.FC = () => {
 			<div style={{ display: 'grid', gap: 12 }}>
 				<div>
 					<FormField fieldKey="pcl" label="Physically Correct Lights" fieldType="checkbox" fieldValue={runtime.physicallyCorrectLights} onFieldChange={(_, v) => setRuntime({ physicallyCorrectLights: Boolean(v) })} />
-					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Use realistic light falloff calculations (1/r²)</div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Use realistic light falloff calculations(1/r²)</div>
 				</div>
 				<div>
 					<FormField fieldKey="localClip" label="Local Clipping" fieldType="checkbox" fieldValue={runtime.localClippingEnabled} onFieldChange={(_, v) => setRuntime({ localClippingEnabled: Boolean(v) })} />
-					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Enable local clipping planes (cutting geometry)</div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Enable local clipping planes(cutting geometry)</div>
 				</div>
 				<div>
 					<FormField fieldKey="autoClear" label="Auto Clear" fieldType="checkbox" fieldValue={runtime.autoClear} onFieldChange={(_, v) => setRuntime({ autoClear: Boolean(v) })} />
-					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Clear canvas before each frame (prevents artifacts)</div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Clear canvas before each frame(prevents artifacts)</div>
 				</div>
 			</div>
 		)
@@ -142,7 +142,7 @@ const RendererSettingsControls: React.FC = () => {
 			<div style={{ display: 'grid', gap: 12 }}>
 				<div>
 					<FormField fieldKey="shadowEnabled" label="Enabled" fieldType="checkbox" fieldValue={runtime.shadowEnabled} onFieldChange={(_, v) => setRuntime({ shadowEnabled: Boolean(v) })} />
-					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Enable shadow rendering (performance impact)</div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Enable shadow rendering(performance impact)</div>
 				</div>
 				<div>
 					<Select
@@ -156,15 +156,15 @@ const RendererSettingsControls: React.FC = () => {
 							{ title: 'VSM', value: 'VSM', description: 'Variance Shadow Maps, highest quality' }
 						]}
 					/>
-					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Shadow filtering algorithm (PCF = softer edges)</div>
+					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Shadow filtering algorithm(PCF = softer edges)</div>
 				</div>
 			</div>
 		)
 	};
 
-	return (
-		<CollapsibleSection 
-			title="Renderer Settings" 
+	return(
+		<CollapsibleSection
+			title="Renderer Settings"
 			icon={<MdTune size={16} />}
 		>
 			<FormSchema sections={[contextSection, toneSection, lightingSection, shadowSection]} />

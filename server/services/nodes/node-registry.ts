@@ -60,7 +60,7 @@ class NodeRegistry{
         const schemas: Record<string, NodeOutputSchema> = {};
         for(const [type, handler] of this.handlers){
             schemas[type] = handler.outputSchema;
-        }   
+        }
         return schemas;
     }
 };

@@ -12,12 +12,12 @@ export interface IWebhook extends Document {
     createdBy: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
-    
+
     trigger(payload: any): Promise<void>;
     isHealthy(): boolean;
 }
 
-export interface IWebhookModel extends Model<IWebhook> {
+export interface IWebhookModel extends Model<IWebhook>{
     findByUser(userId: string): Promise<IWebhook[]>;
     findByEvent(event: string): Promise<IWebhook[]>;
 }
@@ -86,22 +86,21 @@ webhookSchema.index({ events: 1 });
 webhookSchema.index({ lastTriggered: -1 });
 
 webhookSchema.virtual('status').get(function() {
-    if (!this.isActive) return 'inactive';
-    if (this.failureCount >= 5) return 'failed';
+    if(!this.isActive) return 'inactive';
+    if(this.failureCount >= 5) return 'failed';
     return 'active';
 });
 
-
-webhookSchema.methods.trigger = async function(payload: any): Promise<void> {
+webhookSchema.methods.trigger = async function(payload: any): Promise<void>{
     const crypto = require('crypto');
     const axios = require('axios');
-    
+
     const signature = crypto
         .createHmac('sha256', this.secret)
         .update(JSON.stringify(payload))
         .digest('hex');
-    
-    try {
+
+    try{
         await axios.post(this.url, payload, {
             headers: {
                 'X-Webhook-Signature': `sha256=${signature}`,
@@ -109,18 +108,18 @@ webhookSchema.methods.trigger = async function(payload: any): Promise<void> {
             },
             timeout: 10000
         });
-        
+
         this.lastTriggered = new Date();
         this.failureCount = 0;
         await this.save();
-    } catch (error) {
+    }catch(error){
         this.failureCount += 1;
         await this.save();
         throw error;
     }
 };
 
-webhookSchema.methods.isHealthy = function(): boolean {
+webhookSchema.methods.isHealthy = function(): boolean{
     return this.failureCount < 5;
 };
 

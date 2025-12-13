@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files(the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -27,7 +27,7 @@ import { ErrorCodes } from '@/constants/error-codes';
 import logger from '@/logger';
 
 /**
- * Interface for the request query string 
+ * Interface for the request query string
 */
 interface RequestQueryString {
     // Search query
@@ -96,7 +96,7 @@ const DEFAULT_CONFIG = {
 /**
  * Class for handling API features such as search, filter, sort, pagination,
  * and field selection with improved type safety and perfomance.
- * @template T - The document type extending Mongoose Document 
+ * @template T - The document type extending Mongoose Document
 */
 class APIFeatures<T extends Document = Document> {
     private readonly model: Model<T>;
@@ -116,7 +116,7 @@ class APIFeatures<T extends Document = Document> {
         fields = [],
         baseFilter = {},
         populate = null
-    }: APIFeaturesOptions<T>) {
+    }: APIFeaturesOptions<T>){
         this.model = model;
         this.requestQueryString = Object.freeze({ ...requestQueryString });
         this.fields = Object.freeze([...fields]);
@@ -139,18 +139,18 @@ class APIFeatures<T extends Document = Document> {
 
     /**
      * Performs the query and returns the result with improved error handling.
-     * @returns Promise resolving to query results and pagination data 
+     * @returns Promise resolving to query results and pagination data
     */
-    public async perform(): Promise<QueryResult<T>> {
+    public async perform(): Promise<QueryResult<T>>{
         const { find, sort, select, skip, limit, totalResults, skippedResults, page, totalPages } = this.buffer;
-        try {
+        try{
             let query: Query<T[], T> = this.model
                 .find(find)
                 .skip(skip)
                 .limit(limit)
                 .sort(sort);
 
-            if (select) {
+            if(select){
                 query = query.select(select);
             }
 
@@ -166,7 +166,7 @@ class APIFeatures<T extends Document = Document> {
                 limit,
                 totalPages
             }
-        } catch (error) {
+        }catch(error){
             throw new RuntimeError(ErrorCodes.CORE_API_FEATURES_QUERY_FAILED, 500);
         }
     }
@@ -176,17 +176,17 @@ class APIFeatures<T extends Document = Document> {
      * @param query - The Mongoose query to apply population to
      * @returns The query with population applied
     */
-    private applyPopulation(query: Query<T[], T>): Query<T[], T> {
-        if (!this.populate) {
+    private applyPopulation(query: Query<T[], T>): Query<T[], T>{
+        if(!this.populate){
             return query;
         }
 
-        if (typeof this.populate === 'string') {
+        if(typeof this.populate === 'string'){
             return query.populate(this.populate);
         }
 
-        if (Array.isArray(this.populate)) {
-            const arr = [...this.populate] as (string | PopulateOptions)[];
+        if(Array.isArray(this.populate)) {
+            const arr = [...this.populate] as(string | PopulateOptions)[];
             return arr.reduce((q, popOption) => q.populate(popOption as any), query);
         }
 
@@ -197,22 +197,22 @@ class APIFeatures<T extends Document = Document> {
      * Applies text search with improved error handling and escaping.
      * @returns The current instance for method chaining
     */
-    public search(): this {
+    public search(): this{
         const searchTerm = this.requestQueryString.q || this.requestQueryString.search;
-        if (!searchTerm || typeof searchTerm !== 'string') {
+        if(!searchTerm || typeof searchTerm !== 'string'){
             return this;
         }
 
-        try {
+        try{
             const escapedTerm = searchTerm.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            if (escapedTerm) {
+            if(escapedTerm){
                 this.buffer.find = {
                     ...this.buffer.find,
                     $text: { $search: escapedTerm }
                 };
                 this.buffer.sort = { score: { $meta: 'textScore' } } as any;
             }
-        } catch (error) {
+        }catch(error){
             logger.warn('APIFeatures: Text search failed, continuing without search');
         }
 
@@ -223,17 +223,17 @@ class APIFeatures<T extends Document = Document> {
      * Applies filtering with improved type safety and validation.
      * @returns The current instance for method chaining
     */
-    public filter(): this {
+    public filter(): this{
         const queryObject = { ...this.requestQueryString };
         DEFAULT_CONFIG.EXCLUDED_QUERY_FIELDS.forEach((field) => delete queryObject[field]);
-        if (Object.keys(queryObject).length === 0) {
+        if(Object.keys(queryObject).length === 0) {
             return this;
         }
 
-        try {
+        try{
             const filteredQuery = filterObject(queryObject, ...this.fields);
             this.buffer.find = { ...this.buffer.find, ...filteredQuery };
-        } catch (error) {
+        }catch(error){
             logger.warn('APIFeatures: Filtering failed, continuing without additional filters');
         }
 
@@ -244,14 +244,14 @@ class APIFeatures<T extends Document = Document> {
      * Applies sorting with validation and fallback.
      * @returns The current instance for method chaining
     */
-    public sort(): this {
+    public sort(): this{
         const sortParam = this.requestQueryString.sort;
-        if (!sortParam || typeof sortParam !== 'string') {
+        if(!sortParam || typeof sortParam !== 'string'){
             this.buffer.sort = DEFAULT_CONFIG.DEFAULT_SORT;
             return this;
         }
 
-        try {
+        try{
             // Convert comma-separated string to space-separated for Mongoose
             const sortFields = sortParam
                 .split(',')
@@ -260,7 +260,7 @@ class APIFeatures<T extends Document = Document> {
                 .join(' ');
 
             this.buffer.sort = sortFields || DEFAULT_CONFIG.DEFAULT_SORT;
-        } catch (error) {
+        }catch(error){
             this.buffer.sort = DEFAULT_CONFIG.DEFAULT_SORT;
         }
 
@@ -271,22 +271,22 @@ class APIFeatures<T extends Document = Document> {
      * Applies field selection with validation.
      * @returns The current instance for method chaining
     */
-    public limitFields(): this {
+    public limitFields(): this{
         const fieldsParam = this.requestQueryString.fields;
-        if (!fieldsParam || typeof fieldsParam !== 'string') {
+        if(!fieldsParam || typeof fieldsParam !== 'string'){
             return this;
         }
 
-        try {
+        try{
             const selectedFields = fieldsParam
                 .split(',')
                 .map((field) => field.trim())
                 .filter((field) => field.length > 0)
                 .join(' ');
-            if (selectedFields) {
+            if(selectedFields){
                 this.buffer.select = selectedFields;
             }
-        } catch (error) {
+        }catch(error){
             logger.warn('APIFeatures: Field selection failed, returning all fields');
         }
 
@@ -298,13 +298,13 @@ class APIFeatures<T extends Document = Document> {
      * @returns Promise resolving to the current instance
      * @throws RuntimeError if the requested page is out of range
     */
-    public async paginate(): Promise<this> {
+    public async paginate(): Promise<this>{
         const limitParam = this.requestQueryString.limit;
         const pageParam = this.requestQueryString.page;
 
         // Parse and validate limit
         const limit = this.parseLimit(limitParam);
-        if (limit === DEFAULT_CONFIG.UNLIMITED_RESULTS) {
+        if(limit === DEFAULT_CONFIG.UNLIMITED_RESULTS){
             // No pagination requested
             this.buffer.limit = 0;
             return this;
@@ -320,18 +320,18 @@ class APIFeatures<T extends Document = Document> {
         this.buffer.page = page;
         this.buffer.skippedResults = skip;
 
-        try {
+        try{
             // Get total count for pagination calculations
             const totalCount = await this.model.countDocuments(this.buffer.find);
             this.buffer.totalResults = totalCount;
             this.buffer.totalPages = Math.ceil(totalCount / limit) || 1;
 
             // validate requested page is within range
-            if (pageParam && skip >= totalCount && totalCount > 0) {
+            if(pageParam && skip >= totalCount && totalCount > 0){
                 throw new RuntimeError(ErrorCodes.CORE_PAGE_OUT_OF_RANGE, 404);
             }
-        } catch (error) {
-            if (error instanceof RuntimeError) {
+        }catch(error){
+            if(error instanceof RuntimeError){
                 throw error;
             }
             throw new RuntimeError(ErrorCodes.CORE_PAGINATION_ERROR, 500);
@@ -345,18 +345,18 @@ class APIFeatures<T extends Document = Document> {
      * @param limitParam - The limit parameter from query string
      * @returns Validated limit value
     */
-    private parseLimit(limitParam: unknown): number {
-        if (!limitParam || typeof limitParam !== 'string') {
+    private parseLimit(limitParam: unknown): number{
+        if(!limitParam || typeof limitParam !== 'string'){
             return DEFAULT_CONFIG.DEFAULT_LIMIT;
         }
 
         const parsedLimit = parseInt(limitParam, 10);
 
-        if (parsedLimit === -1) {
+        if(parsedLimit === -1){
             return DEFAULT_CONFIG.UNLIMITED_RESULTS;
         }
 
-        if (isNaN(parsedLimit) || parsedLimit < 1) {
+        if(isNaN(parsedLimit) || parsedLimit < 1) {
             return DEFAULT_CONFIG.DEFAULT_LIMIT;
         }
 
@@ -369,8 +369,8 @@ class APIFeatures<T extends Document = Document> {
      * @param pageParam - The page parameter from query string
      * @returns Validated page value
     */
-    private parsePage(pageParam: unknown): number {
-        if (!pageParam || typeof pageParam !== 'string') {
+    private parsePage(pageParam: unknown): number{
+        if(!pageParam || typeof pageParam !== 'string'){
             return DEFAULT_CONFIG.DEFAULT_PAGE;
         }
 

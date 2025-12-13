@@ -11,7 +11,7 @@ export async function *decodeArrayStreamFromFile<T = unknown>(
 ): AsyncIterable<T[]>{
     const { iterableKey, chunkSize } = options;
 
-    for await(const msg of decodeMultiStreamFromFile(filePath)){
+    for await (const msg of decodeMultiStreamFromFile(filePath)){
         const m = msg as any;
 
         let arr: unknown;

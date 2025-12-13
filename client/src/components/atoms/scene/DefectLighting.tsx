@@ -4,7 +4,7 @@ import useRenderConfigStore from '@/stores/editor/render-config';
 const DefectLighting = () => {
     const ssaoConfig = useRenderConfigStore((state) => state.SSAO);
 
-    return (
+    return(
         <>
             <ambientLight intensity={0.15} />
             <directionalLight
