@@ -1,21 +1,41 @@
 import { NextFunction, Request, Response } from 'express';
-import { catchAsync, slugify } from '@/utilities/runtime/runtime';
+import { slugify } from '@/utilities/runtime/runtime';
 import { getAnalysisQueue } from '@/queues';
 import { Analysis } from '@/models';
-import PluginRegistry from '@/services/plugins/plugins-registry';
-import RuntimeError from '@/utilities/runtime/runtime-error';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
-import TrajectoryVFS from '@/services/trajectory-vfs';
-import storage from '@/services/storage';
 import { SYS_BUCKETS } from '@/config/minio';
-import ManifestService from '@/services/plugins/manifest-service';
 import { decode as decodeMsgpack } from '@msgpack/msgpack';
+import { IWorkflowNode, IPlugin } from '@/types/models/modifier';
+import { NodeType, PluginStatus } from '@/types/models/plugin';
+import { v4 as uuidv4 } from 'uuid';
+import Plugin from '@/models/plugin';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 import DumpStorage from '@/services/dump-storage';
+import storage from '@/services/storage';
 import logger from '@/logger';
+import multer from 'multer';
+import path from 'path';
+import BaseController from './base-controller';
+import nodeRegistry from '@/services/nodes/node-registry';
+import workflowValidator from '@/services/nodes/workflow-validator';
+import { IAnalysis } from '@/models/analysis';
+import { 
+    buildNodeMap, 
+    buildParentMap, 
+    loadExposuresParallel, 
+    resolveRow } from '@/utilities/plugins/listing-resolver';
 
+const binaryUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 100 * 1024 * 1024
+    }
+});
+
+// TODO: dupicated code
 const getValueByPath = (obj: any, path: string) => {
-    if (!obj || !path) return undefined;
-    if (!path.includes('.')) {
+    if(!obj || !path) return undefined;
+    if(!path.includes('.')){
         return obj?.[path];
     }
     return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj);
@@ -26,71 +46,159 @@ const resolveValueByPath = (
     path: string,
     reserved: Record<string, any>
 ) => {
-    if (!path) return undefined;
+    if(!path) return undefined;
     const [root, ...rest] = path.split('.');
-    if (reserved[root]) {
+    if(reserved[root]){
         const subPath = rest.join('.');
         return subPath ? getValueByPath(reserved[root], subPath) : reserved[root];
     }
-
     return getValueByPath(payload, path);
 };
 
-export default class PluginsController {
-    // /api/plugins/:pluginId/modifier/:modifierId/trajectory/:trajectoryId { config }
-    public evaluateModifier = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { pluginId, modifierId, id: trajectoryId } = req.params;
+export default class PluginsController extends BaseController<IPlugin>{
+    constructor(){
+        super(Plugin, {
+            fields: ['slug', 'workflow', 'status'],
+            resourceName: 'Plugin'
+        });
+    }
+
+    protected async onBeforeCreate(data: Partial<IPlugin>, req: Request): Promise<Partial<IPlugin>> {
+        // auto-generate slug from modifier name if not provided
+        if(!data.slug && data.workflow?.nodes){
+            const modifierNode = data.workflow.nodes.find((node: IWorkflowNode) => node.type === NodeType.MODIFIER);
+            if(modifierNode?.data?.modifier?.name){
+                data.slug = slugify(modifierNode.data.modifier.name);
+            }
+        }
+
+        // Validate workflow
+        if(data.workflow){
+            const { valid, errors } = workflowValidator.validateStructure(data.workflow);
+            data.validated = valid;
+            data.validationErrors = errors;
+        }
+        
+        return data;
+    }
+
+    protected async onBeforeUpdate(data: Partial<IPlugin>){
+        // Revalidate workflow on update
+        if(data.workflow){
+            const { valid, errors } = workflowValidator.validateStructure(data.workflow);
+            data.validated = valid;
+            data.validationErrors = errors;
+        }
+        return data;
+    }
+
+    /**
+     * Validate a workflow without saving
+     */
+    public validateWorkflow = async (req: Request, res: Response) => {
+        const { workflow } = req.body;
+        if(!workflow){
+            throw new RuntimeError('Plugin::Workflow::Required', 400);
+        }
+
+        const { valid, errors } = workflowValidator.validateStructure(workflow);
+
+        res.status(200).json({
+            status: 'success',
+            data: { valid, errors }
+        });
+    };
+
+    /**
+     * Publish a plugin (change status from draft to published)
+     */
+    public publishPlugin = async (req: Request, res: Response, next: NextFunction) => {
+        const { id } = req.params;
+        const plugin = await Plugin.findOne({ $or: [{ _id: id }, { slug: id }] });
+
+        if(!plugin){
+            return next(new RuntimeError('Plugin::NotFound', 404));
+        }
+
+        if(!plugin.validated){
+            return next(new RuntimeError('Plugin::NotValid::CannotPublish', 400));
+        }
+
+        plugin.status = PluginStatus.PUBLISHED;
+        await plugin.save();
+
+        res.status(200).json({
+            status: 'success',
+            data: plugin
+        });
+    };
+
+    /**
+     * Get all published plugins
+     */
+    public getPublishedPlugins = async (req: Request, res: Response) => {
+        const plugins = await Plugin.find({ status: PluginStatus.PUBLISHED }).lean();
+
+        res.status(200).json({
+            status: 'success',
+            data: plugins
+        });
+    };
+
+    /**
+     * Get all node output schemas for template autocomplete
+     */
+    public getNodeSchemas = async (req: Request, res: Response) => {
+        const schemas = nodeRegistry.getSchemas();
+
+        res.status(200).json({
+            status: 'success',
+            data: schemas
+        });
+    };
+
+    /**
+     * Execute a plugin on a trajectory
+     */
+    public evaluatePlugin = async (req: Request, res: Response, next: NextFunction) => {
+        const { pluginSlug, id: trajectoryId } = req.params;
         const { config, timestep } = req.body;
         const { trajectory } = res.locals;
 
-        const registry = new PluginRegistry();
-        if (!registry.exists(pluginId) || !registry.modifierExists(pluginId, modifierId)) {
-            return next(new RuntimeError('Plugin::Registry::NotFound', 404));
+        const plugin = await Plugin.findOne({
+            slug: pluginSlug,
+            status: PluginStatus.PUBLISHED
+        });
+
+        if(!plugin){
+            return next(new RuntimeError('Plugin::NotFound', 404));
+        }
+
+        if(!plugin.validated){
+            return next(new RuntimeError('Plugin::NotValid::CannotExecute', 400));
         }
 
         const analysis = await Analysis.create({
-            plugin: pluginId,
-            modifier: modifierId,
+            plugin: plugin.slug,
             config,
             trajectory: trajectoryId
         });
 
         const analysisId = analysis._id.toString();
-        const trajectoryFS = new TrajectoryVFS(trajectoryId);
-
-        const manifest = await new ManifestService(pluginId).get();
-        const modifierConfig = manifest?.modifiers?.[modifierId];
-
-        let modifierName = modifierId;
-        if (modifierConfig?.exposure) {
-            const exposure = modifierConfig.exposure[modifierId] || Object.values(modifierConfig.exposure)[0];
-            modifierName = exposure?.displayName || modifierId;
-        }
-
-        const trajectoryName = trajectory?.name || trajectoryId;
-
         let framesToProcess = trajectory!.frames;
 
-        if (modifierConfig?.singleFrameAnalysis) {
-            if (timestep === undefined) {
-                return next(new RuntimeError('Modifier::SingleFrameAnalysis::TimestepRequired', 400));
-            }
-            const targetFrame = framesToProcess.find((f: any) => f.timestep === Number(timestep));
-            if (!targetFrame) {
-                return next(new RuntimeError('Trajectory::Frame::NotFound', 404));
-            }
-            framesToProcess = [targetFrame];
-        }
-
+        const argumentsNode = plugin.workflow.nodes.find((node: IWorkflowNode) => node.type === NodeType.ARGUMENTS);
         const jobs: AnalysisJob[] = [];
         const promises = framesToProcess.map(async ({ timestep }: any) => {
             const inputFile = await DumpStorage.getDump(trajectoryId, timestep);
-            if (!inputFile) {
-                throw new RuntimeError('Trajectory::Dump::NotFound', 404);
+            if(!inputFile){
+                return new RuntimeError('Trajectory::Dump::NotFound', 404);
             }
+
             const teamId = (trajectory.team && typeof trajectory.team !== 'string')
                 ? trajectory.team.toString()
                 : String(trajectory.team);
+
             const jobId = `${analysisId}-${timestep}`;
             jobs.push({
                 jobId,
@@ -99,10 +207,10 @@ export default class PluginsController {
                 config,
                 inputFile,
                 analysisId,
-                modifierId,
-                plugin: pluginId,
-                name: modifierName,
-                message: `${trajectoryName} - Frame ${timestep}`
+                modifierId: plugin.slug,
+                plugin: plugin.slug,
+                name: plugin.modifier?.name || plugin.slug,
+                message: `${trajectory.name} - Frame ${timestep}`
             });
         });
 
@@ -111,16 +219,22 @@ export default class PluginsController {
         const analysisQueue = getAnalysisQueue();
         analysisQueue.addJobs(jobs);
 
-        res.status(200).json({ status: 'success' });
-    });
+        res.status(200).json({
+            status: 'success',
+            data: { analysisId }
+        });
+    };
 
-    public getPluginExposureGLB = catchAsync(async (req: Request, res: Response) => {
+    /**
+     * Get GLB model for an exposure
+     */
+    public getPluginExposureGLB = async (req: Request, res: Response) => {
         const { timestep, analysisId, exposureId } = req.params;
         const { trajectory } = res.locals;
         const trajectoryId = trajectory._id.toString();
         const exposureKey = slugify(exposureId);
 
-        try {
+        try{
             const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/${exposureKey}.glb`;
             const stat = await storage.getStat(SYS_BUCKETS.MODELS, objectName);
             const stream = await storage.getStream(SYS_BUCKETS.MODELS, objectName);
@@ -129,23 +243,22 @@ export default class PluginsController {
             res.setHeader('Content-Disposition', `inline; filename="${exposureId}_${timestep}.glb"`);
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
             stream.pipe(res);
-        } catch (err) {
+        }catch(err){
             logger.error(`[getPluginExposureGLB] Error: ${err}`);
             return res.status(404).json({
                 status: 'error',
                 data: { error: `GLB not found for exposure ${exposureId} at timestep ${timestep}` }
             });
         }
-    });
+    };
 
-    public getPluginExposureFile = catchAsync(async (req: Request, res: Response) => {
+    public getPluginExposureFile = async (req: Request, res: Response) => {
         const { timestep, analysisId, exposureId } = req.params;
         const filename = req.params.filename || 'file.msgpack';
         const { trajectory } = res.locals;
         const trajectoryId = trajectory._id.toString();
-        const exposureKey = slugify(exposureId);
 
-        try {
+        try{
             const objectName = [
                 'plugins',
                 `trajectory-${trajectoryId}`,
@@ -161,225 +274,150 @@ export default class PluginsController {
             res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
 
-            if (filename.endsWith('.msgpack')) {
+            if(filename.endsWith('.msgpack')){
                 res.setHeader('Content-Type', 'application/x-msgpack');
-            } else if (filename.endsWith('.json')) {
+            }else if(filename.endsWith('.json')){
                 res.setHeader('Content-Type', 'application/json');
-            } else {
+            }else{
                 res.setHeader('Content-Type', 'application/octet-stream');
             }
 
             stream.pipe(res);
-        } catch (err) {
+        }catch(err: any){
             logger.error(`[getPluginExposureFile] Error: ${err}`);
             return res.status(404).json({
                 status: 'error',
                 data: { error: `File not found for exposure ${exposureId} at timestep ${timestep}` }
             });
         }
-    });
+    }
 
-    public getPluginListingDocuments = catchAsync(async (req: Request, res: Response) => {
-        const { pluginId, listingKey } = req.params as { pluginId: string; listingKey: string };
+    /**
+     * Get listing documents for a plugin
+     */
+    public getPluginListingDocuments = async (req: Request, res: Response) => {
+        const { pluginSlug, listingSlug } = req.params;
         const trajectory = res.locals.trajectory;
-        if (!trajectory) {
-            throw new RuntimeError('Trajectory::NotFound', 404);
-        }
+        if(!trajectory) throw new RuntimeError('Trajectory::NotFound', 404);
+
         const trajectoryId = trajectory._id.toString();
-        const pageNum = Math.max(1, parseInt(String(req.query.page ?? '1'), 10) || 1);
-        const limitNum = Math.min(200, Math.max(1, parseInt(String(req.query.limit ?? '50'), 10) || 50));
-        const sortDir = String(req.query.sort ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+        const pageNum = Math.max(1, +(req.query.page ?? 1) || 1);
+        const limitNum = Math.min(200, Math.max(1, +(req.query.limit ?? 50) || 50));
+        const sortAsc = String(req.query.sort ?? 'desc').toLowerCase() === 'asc';
 
-        const manifest = await new ManifestService(pluginId).get();
-        const listingDef = manifest.listing?.[listingKey];
-        if (!listingDef) {
-            throw new RuntimeError('Plugin::Listing::NotFound', 404);
-        }
+        const [plugin, analyses] = await Promise.all([
+            Plugin.findOne({ slug: pluginSlug }).lean(),
+            Analysis.find({ trajectory: trajectoryId, plugin: pluginSlug })
+                .select('_id config createdAt').lean()
+        ]);
 
-        let queryModifier: any;
-        let defaultExposureId: string;
+        if(!plugin) throw new RuntimeError('Plugin::NotFound', 404);
 
-        if (listingDef.modifiers && Array.isArray(listingDef.modifiers)) {
-            queryModifier = { $in: listingDef.modifiers };
-            defaultExposureId = listingKey;
-        } else {
-            const [modifierId, ...rest] = listingKey.split('_');
-            const exposureId = rest.length ? rest.join('_') : modifierId;
-            queryModifier = modifierId;
-            defaultExposureId = exposureId;
-        }
+        const { nodes, edges } = plugin.workflow;
+        const visualizersNode = nodes.find((node: IWorkflowNode) => node.type === NodeType.VISUALIZERS);
+        const exposureNodes = nodes.filter((node: IWorkflowNode) => node.type === NodeType.EXPOSURE);
 
-        const analyses = await Analysis.find({
-            trajectory: trajectoryId,
-            plugin: pluginId,
-            modifier: queryModifier
-        })
-            .select('_id plugin modifier trajectory config createdAt updatedAt')
-            .lean();
+        const visualizersData = visualizersNode?.data?.visualizers || {};
+        const displayName = visualizersData.listingTitle || pluginSlug;
 
-        if (!analyses.length) {
+        const listingDef = visualizersData.listing || {};
+        const columns = Object.entries(listingDef).map(([ path, label ]) => ({ path, label: String(label) }));
+        const exposureIds = exposureNodes.map((node: IWorkflowNode) => node.id);
+
+        const meta = {
+            displayName,
+            listingSlug,
+            pluginSlug,
+            trajectoryName: trajectory.name || trajectoryId,
+            columns
+        };
+
+        if(!analyses.length){
             return res.status(200).json({
                 status: 'success',
-                data: {
-                    meta: {
-                        displayName: listingDef.aggregators?.displayName ?? listingKey,
-                        listingKey,
-                        pluginId,
-                        listingUrl:
-                            listingDef.aggregators?.listingUrl ?? `/dashboard/trajectory/${trajectoryId}/plugin/${pluginId}/listing/${listingKey}`,
-                        trajectoryName: trajectory?.name || trajectoryId,
-                        columns: []
-                    },
-                    rows: [],
-                    page: pageNum,
-                    limit: limitNum,
-                    total: 0,
-                    hasMore: false
-                }
+                data: { meta, rows: [], page: pageNum, limit: limitNum, total: 0, hasMore: false }
             });
         }
 
-        let columns: any[] = [];
-        if (listingDef.columns && Array.isArray(listingDef.columns)) {
-            columns = listingDef.columns.map((col: any) => ({ path: col.key, label: col.label }));
-        } else {
-            columns = Object.entries(listingDef)
-                .filter(([key]) => key !== 'aggregators' && key !== 'modifiers' && key !== 'perFrameListing' && key !== 'columns')
-                .map(([path, label]) => ({
-                    path,
-                    label: typeof label === 'string' ? label : String(label)
-                }));
-        }
+        const analysisMap = new Map(analyses.map((a: IAnalysis) => [a._id.toString(), { ...a, trajectory }]));
 
-        const entryRecords: Array<{ key: string; analysis: any }> = [];
-
-        for (const analysisDoc of analyses) {
-            const analysisReserved = {
-                ...analysisDoc,
-                trajectory
-            };
-
-            let exposureId = defaultExposureId;
-            const modifierDef = manifest.modifiers?.[analysisDoc.modifier];
-
-            if (modifierDef) {
-                if (!modifierDef.exposure[exposureId]) {
-                    const [keyModId, ...rest] = listingKey.split('_');
-                    const derivedFromKey = rest.length ? rest.join('_') : keyModId;
-
-                    if (modifierDef.exposure[derivedFromKey]) {
-                        exposureId = derivedFromKey;
-                    } else if (modifierDef.exposure[analysisDoc.modifier]) {
-                        exposureId = analysisDoc.modifier;
-                    } else {
-                        const firstExposure = Object.keys(modifierDef.exposure)[0];
-                        if (firstExposure) exposureId = firstExposure;
-                    }
-                }
+        const timestepPromises = analyses.map(async (analysis: IAnalysis) => {
+            const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysis._id}/`;
+            const seen = new Set<number>();
+            for await(const key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, prefix)){
+                const match = key.match(/timestep-(\d+)\.msgpack$/);
+                if(match) seen.add(+match[1]);
             }
-
-            const exposureSlug = slugify(exposureId);
-
-            const prefix = [
-                'plugins',
-                `trajectory-${trajectoryId}`,
-                `analysis-${analysisDoc._id.toString()}`,
-                exposureSlug
-            ].join('/');
-
-            for await (const key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, prefix)) {
-                entryRecords.push({ key, analysis: analysisReserved });
-            }
-        }
-
-        const parseTimestep = (key: string) => {
-            const match = key.match(/timestep-(\d+)/i);
-            return match ? parseInt(match[1], 10) : 0;
-        };
-
-        const sortedEntries = entryRecords.sort((a, b) => {
-            const aTime = parseTimestep(a.key);
-            const bTime = parseTimestep(b.key);
-            const delta = sortDir === 'asc' ? aTime - bTime : bTime - aTime;
-            return delta !== 0 ? delta : a.key.localeCompare(b.key);
+            return Array.from(seen).map((timestep) => ({
+                analysisId: analysis._id.toString(),
+                timestep
+            }));
         });
 
-        const total = sortedEntries.length;
+        const allTimesteps = (await Promise.all(timestepPromises)).flat();
+        allTimesteps.sort((a: any, b: any) => sortAsc ? a.timestep - b.timestep : b.timestep - a.timestep);
+        
+        const total = allTimesteps.length;
         const offset = (pageNum - 1) * limitNum;
-        const pagedEntries = sortedEntries.slice(offset, offset + limitNum);
+        const pagedEntries = allTimesteps.slice(offset, offset + limitNum);
 
-        const rows = [];
-        for (const { key, analysis: analysisReserved } of pagedEntries) {
-            const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, key);
-            const payload = decodeMsgpack(buffer) as any;
-            const row: Record<string, any> = { ...payload };
+        if(!pagedEntries){
+            return res.status(200).json({
+                status: 'success',
+                data: { meta, rows: [], page: pageNum, limit: limitNum, total, hasMore: false }
+            });
+        }
 
-            const parsedTimestep =
-                payload?.timestep ??
-                row?.timestep ??
-                (() => {
-                    const match = key.match(/timestep-(\d+)/i);
-                    return match ? Number(match[1]) : undefined;
-                })();
-            if (parsedTimestep !== undefined) {
-                row.timestep = parsedTimestep;
-                payload.timestep = parsedTimestep;
-            }
-            row._objectKey = key;
-            row._id = row._id ?? row.timestep ?? key;
-            row.analysis = analysisReserved;
-            row.trajectory = trajectory;
+        const nodeMap = buildNodeMap(nodes);
+        const parentMap = buildParentMap(edges);
 
-            const reservedSources: Record<string, any> = {
-                analysis: analysisReserved,
-                trajectory
-            };
+        const BATCH_SIZE = 10;
+        const rows: any[] = [];
 
-            for (const col of columns) {
-                const resolved = resolveValueByPath(payload, col.path, reservedSources);
-                row[col.path] = resolved;
-            }
+        for(let i = 0; i < pagedEntries.length; i += BATCH_SIZE){
+            const batch = pagedEntries.slice(i, i + BATCH_SIZE);
 
-            rows.push(row);
+            const batchRows = await Promise.all(batch.map(async (entry) => {
+                const exposureData = await loadExposuresParallel(
+                    exposureIds, trajectoryId, entry.analysisId, entry.timestep);
+                
+                const context = {
+                    nodeMap,
+                    parentMap,
+                    exposureData,
+                    trajectory,
+                    analysis: analysisMap.get(entry.analysisId),
+                    timestep: entry.timestep
+                };
+
+                return {
+                    _id: `${entry.analysisId}-${entry.timestep}`,
+                    timestep: entry.timestep,
+                    analysisId: entry.analysisId,
+                    ...resolveRow(columns, context)
+                };
+            }));
+
+            rows.push(...batchRows);
         }
 
         res.status(200).json({
             status: 'success',
             data: {
-                meta: {
-                    displayName: listingDef.aggregators?.displayName ?? listingKey,
-                    listingKey,
-                    pluginId,
-                    listingUrl:
-                        listingDef.aggregators?.listingUrl ??
-                        `/dashboard/trajectory/${trajectoryId}/plugin/${pluginId}/listing/${listingKey}`,
-                    trajectoryName: (rows[0]?.trajectory?.name ?? trajectory?.name) || trajectoryId,
-                    columns
-                },
-                rows,
-                page: pageNum,
-                limit: limitNum,
-                total,
-                hasMore: offset + rows.length < total
+                meta, 
+                rows, 
+                page: pageNum, 
+                limit: limitNum, 
+                total, 
+                hasMore: offset + rows.length < total 
             }
         });
-    });
+    };
 
-    public getManifests = catchAsync(async (_req: Request, res: Response) => {
-        const registry = new PluginRegistry();
-        const manifests = await registry.getManifests();
-        const pluginIds = Object.keys(manifests);
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                manifests,
-                pluginIds
-            }
-        });
-    });
-
-    public getPerFrameListing = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    /**
+     * Get per-frame listing data
+     */
+    public getPerFrameListing = async (req: Request, res: Response, next: NextFunction) => {
         const { id: trajectoryId, analysisId, exposureId, timestep } = req.params;
         const page = Math.max(1, parseInt(req.query.page as string) || 1);
         const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit as string) || 50));
@@ -392,30 +430,33 @@ export default class PluginsController {
             `timestep-${timestep}.msgpack`
         ].join('/');
 
-        try {
+        try{
             const analysis = await Analysis.findById(analysisId);
-            if (!analysis) {
+            if(!analysis){
                 return next(new RuntimeError('Analysis::NotFound', 404));
             }
 
-            const manifest = await new ManifestService(analysis.plugin).get();
-            const modifier = manifest.modifiers[analysis.modifier];
-            const exposure = modifier.exposure[exposureId];
-            const iterableKey = exposure?.iterable || 'data';
+            const plugin = await Plugin.findOne({ slug: analysis.plugin });
+            if(!plugin){
+                return next(new RuntimeError('Plugin::NotFound', 404));
+            }
 
+            const exposureNode = plugin.workflow.nodes.find((node: IWorkflowNode) => node.type === NodeType.EXPOSURE && node.id === exposureId);
+            const iterableKey = exposureNode?.data?.exposure?.iterable || 'data';
             const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, objectName);
             const payload = decodeMsgpack(buffer) as any;
 
             let items: any[] = [];
-            if (Array.isArray(payload)) {
+            if(Array.isArray(payload)){
                 items = payload;
-            } else if (payload[iterableKey] && Array.isArray(payload[iterableKey])) {
+            }else if(payload[iterableKey] && Array.isArray(payload[iterableKey])){
                 items = payload[iterableKey];
-            } else if (payload.data && Array.isArray(payload.data)) {
+            }else if(payload.data && Array.isArray(payload.data)){
                 items = payload.data;
-            } else {
-                for (const key in payload) {
-                    if (Array.isArray(payload[key])) {
+            }else{
+                // auto-detect
+                for(const key in payload){
+                    if(Array.isArray(payload[key])){
                         items = payload[key];
                         break;
                     }
@@ -436,12 +477,71 @@ export default class PluginsController {
                     hasMore: offset + pagedItems.length < total
                 }
             });
-        } catch (err) {
+        }catch(err: any){
             logger.error(`[getPerFrameListing] Error: ${err}`);
             return res.status(404).json({
                 status: 'error',
                 data: { error: `Data not found for analysis ${analysisId}` }
             });
         }
-    });
-}
+    };
+
+    /**
+     * Upload a binary file for a plugin
+     * The binary is stored in MinIO and the path is saved in the plugin
+     */
+    public uploadBinaryMiddleware = binaryUpload.single('binary');
+
+    public uploadBinary = async (req: Request, res: Response) => {
+        const plugin = res.locals.plugin;
+        if(!plugin) throw new RuntimeError('Plugin::NotLoaded', 500);
+
+        if(!req.file){
+            throw new RuntimeError('NoBinaryFileProvided', 400);
+        }
+
+        const file = req.file;
+        const fileExtension = path.extname(file.originalname) || '';
+        const uniqueName = `${uuidv4()}${fileExtension}`;
+        const objectPath = `plugin-binaries/${plugin._id}/${uniqueName}`;
+
+        await storage.put(SYS_BUCKETS.PLUGINS, objectPath, file.buffer, {
+            'Content-Type': file.mimetype || 'application/octet-stream',
+            'x-amz-meta-original-name': file.originalname
+        });
+
+        logger.info(`[PluginsController] Binary uploaded: ${objectPath} (${file.size} bytes)`);
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                objectPath,
+                fileName: file.originalname,
+                size: file.size
+            }
+        });
+    };
+
+    /**
+     * Delete a plugin's uploaded binary from MinIO
+     */
+    public deleteBinary = async (req: Request, res: Response) => {
+        const plugin = res.locals.plugin;
+        const { objectPath } = req.body;
+
+        if(!plugin) throw new RuntimeError('Plugin::NotLoaded', 500);
+        if(!objectPath) throw new RuntimeError('MissingObjectPath', 400);
+
+        if(!objectPath.startsWith(`plugin-binaries/${plugin._id}/`)){
+            throw new RuntimeError('InvalidObjectPath', 403);
+        }
+
+        await storage.delete(SYS_BUCKETS.PLUGINS, objectPath);
+        logger.info(`[PluginsController] Binary deleted: ${objectPath}`);
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Binary deleted successfully'
+        });
+    }
+};
