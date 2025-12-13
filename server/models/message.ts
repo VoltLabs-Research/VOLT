@@ -23,6 +23,7 @@
 import mongoose, { Schema, Model } from 'mongoose';
 import { IMessage } from '@/types/models/chat';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import { ValidationCodes } from '@/constants/validation-codes';
 
 const MessageSchema: Schema<IMessage> = new Schema({
     chat: {
@@ -38,9 +39,9 @@ const MessageSchema: Schema<IMessage> = new Schema({
     },
     content: {
         type: String,
-        required: [true, 'Message::Content::Required'],
+        required: [true, ValidationCodes.MESSAGE_CONTENT_REQUIRED],
         trim: true,
-        maxlength: [2000, 'Message::Content::MaxLength']
+        maxlength: [2000, ValidationCodes.MESSAGE_CONTENT_MAXLEN]
     },
     messageType: {
         type: String,

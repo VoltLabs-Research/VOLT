@@ -1,3 +1,4 @@
+import { ValidationCodes } from '@/constants/validation-codes';
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IWebhook extends Document {
@@ -24,19 +25,19 @@ export interface IWebhookModel extends Model<IWebhook> {
 const webhookSchema = new Schema<IWebhook>({
     name: {
         type: String,
-        required: [true, 'Webhook name is required'],
+        required: [true, ValidationCodes.WEBHOOK_NAME_REQUIRED],
         trim: true,
-        maxlength: [100, 'Webhook name cannot exceed 100 characters']
+        maxlength: [100, ValidationCodes.WEBHOOK_NAME_MAXLEN]
     },
     url: {
         type: String,
-        required: [true, 'Webhook URL is required'],
+        required: [true, ValidationCodes.WEBHOOK_URL_REQUIRED],
         trim: true,
         validate: {
             validator: function(v: string) {
                 return /^https?:\/\/.+/.test(v);
             },
-            message: 'Webhook URL must be a valid HTTP/HTTPS URL'
+            message: ValidationCodes.WEBHOOK_URL_INVALID
         }
     },
     events: [{

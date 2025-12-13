@@ -23,6 +23,7 @@
 import mongoose, { Schema, Model } from 'mongoose';
 import crypto from 'crypto';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import { ValidationCodes } from '@/constants/validation-codes';
 
 export interface ITeamInvitation extends Document {
     team: mongoose.Types.ObjectId;
@@ -42,14 +43,14 @@ const TeamInvitationSchema: Schema<ITeamInvitation> = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: [true, 'TeamInvitation::Team::Required'],
+        required: [true, ValidationCodes.TEAM_INVITATION_TEAM_REQUIRED],
         cascade: 'delete',
         index: true
     },
     invitedBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: [true, 'TeamInvitation::InvitedBy::Required'],
+        required: [true, ValidationCodes.TEAM_INVITATION_INVITED_BY_REQUIRED],
         cascade: 'delete'
     },
     invitedUser: {
@@ -60,15 +61,15 @@ const TeamInvitationSchema: Schema<ITeamInvitation> = new Schema({
     },
     email: {
         type: String,
-        required: [true, 'TeamInvitation::Email::Required'],
+        required: [true, ValidationCodes.TEAM_INVITATION_EMAIL_REQUIRED],
         lowercase: true,
         trim: true,
-        match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'TeamInvitation::Email::Invalid'],
+        match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, ValidationCodes.TEAM_INVITATION_EMAIL_INVALID],
         index: true
     },
     token: {
         type: String,
-        required: [true, 'TeamInvitation::Token::Required'],
+        required: [true, ValidationCodes.TEAM_INVITATION_TOKEN_REQUIRED],
         unique: true,
         index: true
     },
@@ -76,14 +77,14 @@ const TeamInvitationSchema: Schema<ITeamInvitation> = new Schema({
         type: String,
         enum: {
             values: ['Can view', 'Can edit', 'Full access'],
-            message: 'TeamInvitation::Role::Invalid'
+            message: ValidationCodes.TEAM_INVITATION_ROLE_INVALID
         },
         default: 'Can view',
         required: true
     },
     expiresAt: {
         type: Date,
-        required: [true, 'TeamInvitation::ExpiresAt::Required']
+        required: [true, ValidationCodes.TEAM_INVITATION_EXPIRES_AT_REQUIRED]
     },
     acceptedAt: {
         type: Date
@@ -92,7 +93,7 @@ const TeamInvitationSchema: Schema<ITeamInvitation> = new Schema({
         type: String,
         enum: {
             values: ['pending', 'accepted', 'rejected'],
-            message: 'TeamInvitation::Status::Invalid'
+            message: ValidationCodes.TEAM_INVITATION_STATUS_INVALID
         },
         default: 'pending',
         required: true,

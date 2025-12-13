@@ -21,12 +21,10 @@
  */
 
 export const ErrorCodes = {
-    // Auth
     AUTH_UNAUTHORIZED: 'Auth::Unauthorized',
     AUTH_CREDENTIALS_MISSING: 'Auth::Credentials::Missing',
     AUTH_CREDENTIALS_INVALID: 'Auth::Credentials::Invalid',
 
-    // Authentication
     AUTHENTICATION_REQUIRED: 'Authentication::Required',
     AUTHENTICATION_UNAUTHORIZED: 'Authentication::Unauthorized',
     AUTHENTICATION_USER_NOT_FOUND: 'Authentication::User::NotFound',
@@ -36,15 +34,12 @@ export const ErrorCodes = {
     AUTHENTICATION_UPDATE_AVATAR_FAILED: 'Authentication::Update::AvatarUploadFailed',
     AUTHENTICATION_UPDATE_PASSWORD_INCORRECT: 'Authentication::Update::PasswordCurrentIncorrect',
 
-    // User
     USER_NOT_FOUND: 'User::NotFound',
 
-    // Validation
     VALIDATION_ID_REQUIRED: 'Validation::IdRequired',
     VALIDATION_INVALID_OBJECT_ID: 'Validation::InvalidObjectId',
     VALIDATION_INVALID_TEAM_ID: 'Validation::InvalidTeamId',
 
-    // Team
     TEAM_NOT_FOUND: 'Team::NotFound',
     TEAM_ID_REQUIRED: 'Team::IdRequired',
     TEAM_ACCESS_DENIED: 'Team::AccessDenied',
@@ -54,7 +49,6 @@ export const ErrorCodes = {
     TEAM_CANNOT_REMOVE_OWNER: 'Team::CannotRemoveOwner',
     TEAM_USER_NOT_MEMBER: 'Team::UserNotAMember',
 
-    // Container
     CONTAINER_NOT_FOUND: 'Container::NotFound',
     CONTAINER_ACCESS_DENIED: 'Container::AccessDenied',
     CONTAINER_LOAD_ERROR: 'Container::LoadError',
@@ -64,7 +58,6 @@ export const ErrorCodes = {
     CONTAINER_INVALID_ACTION: 'Container::InvalidAction',
     CONTAINER_FILE_PATH_REQUIRED: 'Container::File::PathRequired',
 
-    // ApiToken
     API_TOKEN_REQUIRED: 'ApiToken::Required',
     API_TOKEN_INVALID: 'ApiToken::Invalid',
     API_TOKEN_EXPIRED: 'ApiToken::Expired',
@@ -74,7 +67,6 @@ export const ErrorCodes = {
     API_TOKEN_NOT_FOUND: 'ApiToken::NotFound',
     API_TOKEN_LOAD_ERROR: 'ApiToken::LoadError',
 
-    // SSH Connection
     SSH_CONNECTION_ID_REQUIRED: 'SSH::ConnectionId::Required',
     SSH_CONNECTION_NOT_FOUND: 'SSHConnection::NotFound',
     SSH_CONNECTION_LOAD_ERROR: 'SSHConnection::LoadError',
@@ -90,14 +82,12 @@ export const ErrorCodes = {
     SSH_IMPORT_NO_FILES: 'SSH::Import::NoFiles',
     SSH_IMPORT_ERROR: 'SSH::Import::Error',
 
-    // Session
     SESSION_NOT_FOUND: 'Session::NotFound',
     SESSION_GET_SESSIONS_FAILED: 'Session::GetSessions::Failed',
     SESSION_GET_LOGIN_ACTIVITY_FAILED: 'Session::GetLoginActivity::Failed',
     SESSION_REVOKE_FAILED: 'Session::RevokeSession::Failed',
     SESSION_REVOKE_ALL_FAILED: 'Session::RevokeAllOtherSessions::Failed',
 
-    // Password
     PASSWORD_VALIDATION_MISSING_FIELDS: 'Password::Validation::MissingFields',
     PASSWORD_VALIDATION_MISMATCH: 'Password::Validation::PasswordsDoNotMatch',
     PASSWORD_VALIDATION_TOO_SHORT: 'Password::Validation::PasswordTooShort',
@@ -107,13 +97,11 @@ export const ErrorCodes = {
     PASSWORD_CHANGE_FAILED: 'Password::ChangePassword::Failed',
     PASSWORD_GET_INFO_FAILED: 'Password::GetInfo::Failed',
 
-    // Trajectory
     TRAJECTORY_TEAM_ID_REQUIRED: 'Trajectory::TeamIdRequired',
     TRAJECTORY_FILE_NOT_FOUND: 'Trajectory::File::NotFound',
     TRAJECTORY_FILES_NOT_FOUND: 'Trajectory::Files::NotFound',
     TRAJECTORY_CREATION_NO_VALID_FILES: 'Trajectory::Creation::NoValidFiles',
 
-    // TrajectoryVFS
     TRAJECTORY_VFS_PATH_NOT_FOUND: 'TrajectoryVFS::PathNotFound',
     TRAJECTORY_VFS_INVALID_PATH: 'TrajectoryVFS::InvalidPath',
     TRAJECTORY_VFS_FILE_NOT_FOUND: 'TrajectoryVFS::FileNotFound',
@@ -121,11 +109,9 @@ export const ErrorCodes = {
     TRAJECTORY_VFS_DOWNLOAD_ERROR: 'TrajectoryVFS::DownloadError',
     TRAJECTORY_VFS_FETCH_ERROR: 'TrajectoryVFS::FetchError',
 
-    // Analysis
     ANALYSIS_NOT_FOUND: 'Analysis::NotFound',
     ANALYSIS_EXECUTION_FAILED: 'Analysis::ExecutionFailed',
 
-    // Plugin
     PLUGIN_NOT_FOUND: 'Plugin::NotFound',
     PLUGIN_NOT_LOADED: 'Plugin::NotLoaded',
     PLUGIN_VALIDATION_FAILED: 'Plugin::Validation::Failed',
@@ -134,11 +120,9 @@ export const ErrorCodes = {
     PLUGIN_BINARY_PATH_REQUIRED: 'Plugin::Binary::PathRequired',
     PLUGIN_BINARY_INVALID_PATH: 'Plugin::Binary::InvalidPath',
 
-    // Webhook
     WEBHOOK_NOT_FOUND: 'Webhook::NotFound',
     WEBHOOK_INVALID_EVENT_TYPE: 'Webhook::InvalidEventType',
 
-    // Chat
     CHAT_NOT_FOUND: 'Chat::NotFound',
     CHAT_PARTICIPANTS_NOT_IN_TEAM: 'Chat::Participants::NotInTeam',
     CHAT_USERS_NOT_IN_TEAM: 'Chat::Users::NotInTeam',
@@ -147,25 +131,20 @@ export const ErrorCodes = {
     CHAT_GROUP_MIN_ADMINS: 'Chat::Group::MinAdmins',
     CHAT_INVALID_ACTION: 'Chat::InvalidAction',
 
-    // Message
     MESSAGE_NOT_FOUND: 'Message::NotFound',
     MESSAGE_FORBIDDEN: 'Message:Forbidden',
 
-    // File
     FILE_NOT_FOUND: 'File::NotFound',
     FILE_READ_ERROR: 'File::ReadError',
 
-    // ColorCoding
     COLOR_CODING_MISSING_PARAMS: 'ColorCoding::MissingParams',
     COLOR_CODING_DUMP_NOT_FOUND: 'ColorCoding::DumpNotFound',
     COLOR_CODING_NOT_FOUND: 'ColorCoding::NotFound',
 
-    // Raster
     RASTER_INVALID_TYPE: 'Raster::InvalidType',
     RASTER_NOT_FOUND: 'Raster::NotFound',
     RASTER_FAILED: 'Raster::Failed',
 
-    // Docker
     DOCKER_CREATE_MISSING_IMAGE: 'Docker::Create::MissingImage',
     DOCKER_CREATE_ERROR: 'Docker::Create::Error',
     DOCKER_STOP_ERROR: 'Docker::Stop::Error',
@@ -177,17 +156,14 @@ export const ErrorCodes = {
     DOCKER_EXEC_ERROR: 'Docker::Exec::Error',
     DOCKER_STREAM_ERROR: 'Docker::Stream::Error',
 
-    // Core / API
     CORE_API_FEATURES_QUERY_FAILED: 'Core::APIFeatures::QueryExecutionFailed',
     CORE_PAGE_OUT_OF_RANGE: 'Core::PageOutOfRange',
     CORE_PAGINATION_ERROR: 'Core::PaginationError',
 
-    // Resource
     RESOURCE_NOT_FOUND: 'Resource::NotFound',
     RESOURCE_LOAD_ERROR: 'Resource::LoadError',
     VALIDATION_MISSING_REQUIRED_FIELDS: 'Validation::MissingRequiredFields',
 
-    // TeamInvitation
     TEAM_INVITATION_TOKEN_REQUIRED: 'TeamInvitation::Token::Required',
     TEAM_INVITATION_NOT_FOUND: 'TeamInvitation::NotFound',
     TEAM_INVITATION_ALREADY_PROCESSED: 'TeamInvitation::AlreadyProcessed',
@@ -199,16 +175,13 @@ export const ErrorCodes = {
     TEAM_INVITATION_INVALID_EMAIL: 'TeamInvitation::InvalidEmail',
     TEAM_INVITATION_OWNER_ONLY: 'TeamInvitation::OwnerOnly',
 
-    // Plugin (additional)
     PLUGIN_WORKFLOW_REQUIRED: 'Plugin::Workflow::Required',
     PLUGIN_NOT_VALID_CANNOT_PUBLISH: 'Plugin::NotValid::CannotPublish',
     PLUGIN_NOT_VALID_CANNOT_EXECUTE: 'Plugin::NotValid::CannotExecute',
 
-    // Trajectory (additional)
     TRAJECTORY_NOT_FOUND: 'Trajectory::NotFound',
     TRAJECTORY_DUMP_NOT_FOUND: 'Trajectory::Dump::NotFound',
 
-    // Webhook (additional)
     WEBHOOK_EVENTS_AT_LEAST_ONE_REQUIRED: 'Webhook::Events::AtLeastOneRequired',
     WEBHOOK_EVENT_INVALID: 'Webhook::Event::Invalid',
 } as const;

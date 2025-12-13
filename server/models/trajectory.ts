@@ -33,6 +33,7 @@ import storage from '@/services/storage';
 import { SYS_BUCKETS } from '@/config/minio';
 import DumpStorage from '@/services/dump-storage';
 import logger from '@/logger';
+import { ValidationCodes } from '@/constants/validation-codes';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
@@ -50,9 +51,9 @@ const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
 const TrajectorySchema: Schema<ITrajectory> = new Schema({
     name: {
         type: String,
-        required: [true, 'Trajectory::Name::Required'],
-        minlength: [4, 'Trajectory::Name::MinLength'],
-        maxlength: [64, 'Trajectory::Name::MaxLength'],
+        required: [true, ValidationCodes.TRAJECTORY_NAME_REQUIRED],
+        minlength: [4, ValidationCodes.TRAJECTORY_NAME_MINLEN],
+        maxlength: [64, ValidationCodes.TRAJECTORY_NAME_MAXLEN],
         trim: true
     },
     team: {

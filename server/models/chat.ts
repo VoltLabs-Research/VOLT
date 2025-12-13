@@ -23,17 +23,18 @@
 import mongoose, { Schema, Model } from 'mongoose';
 import { IChat } from '@/types/models/chat';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import { ValidationCodes } from '@/constants/validation-codes';
 
 const ChatSchema: Schema<IChat> = new Schema({
     participants: [{
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: [true, ValidationCodes.CHAT_PARTICIPANTS_REQUIRED]
     }],
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: true,
+        required: [true ValidationCodes.CHAT_TEAM_REQUIRED],
         cascade: 'delete'
     },
     lastMessage: {

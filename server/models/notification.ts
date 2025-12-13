@@ -23,6 +23,7 @@
 import mongoose, { Schema, Model } from 'mongoose';
 import { INotification } from '@/types/models/notification';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import { ValidationCodes } from '@/constants/validation-codes';
 
 const NotificationSchema: Schema<INotification> = new Schema({
     recipient: {
@@ -34,12 +35,12 @@ const NotificationSchema: Schema<INotification> = new Schema({
     },
     title: {
         type: String,
-        required: [true, 'Notification::Title::Required'],
+        required: [true, ValidationCodes.NOTIFICATION_TITLE_REQUIRED],
         trim: true
     },
     content: {
         type: String,
-        required: [true, 'Notification::Content::Required'],
+        required: [true, ValidationCodes.NOTIFICATION_CONTENT_REQUIRED],
         trim: true
     },
     read: {

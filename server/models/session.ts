@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 
+import { ValidationCodes } from '@/constants/validation-codes';
 import mongoose, { Schema, Model } from 'mongoose';
 
 export interface ISession {
@@ -42,21 +43,31 @@ const SessionSchema: Schema<ISession> = new Schema({
     user: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: [function (this: any) { return this.action !== 'failed_login'; }, 'Session::User::Required']
+        required: [
+            function (this: any){
+                return this.action !== 'failed_login'; 
+            }, 
+            ValidationCodes.SESSION_SUCCESS_REQUIRED
+        ]
     },
     token: {
         type: String,
         // Allow missing token on failed logins
-        required: [function (this: any) { return this.action !== 'failed_login'; }, 'Session::Token::Required']
+        required: [
+            function (this: any){
+                return this.action !== 'failed_login'; 
+            }, 
+            ValidationCodes.SESSION_TOKEN_REQUIRED
+        ]
     },
     userAgent: {
         type: String,
-        required: [true, 'Session::UserAgent::Required'],
+        required: [true, ValidationCodes.SESSION_USER_AGENT_REQUIRED],
         trim: true
     },
     ip: {
         type: String,
-        required: [true, 'Session::Ip::Required'],
+        required: [true, ValidationCodes.SESSION_IP_REQUIRED],
         trim: true
     },
     isActive: {
@@ -70,13 +81,13 @@ const SessionSchema: Schema<ISession> = new Schema({
     // Login activity fields
     action: {
         type: String,
-        required: [true, 'Session::Action::Required'],
+        required: [true, ValidationCodes.SESSION_ACTION_REQUIRED],
         enum: ['login', 'logout', 'failed_login', 'oauth_login'],
         default: 'login'
     },
     success: {
         type: Boolean,
-        required: [true, 'Session::Success::Required'],
+        required: [true, ValidationCodes.SESSION_SUCCESS_REQUIRED],
         default: true
     },
     failureReason: {

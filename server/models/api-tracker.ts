@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 
+import { ValidationCodes } from '@/constants/validation-codes';
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
 export interface IApiTracker extends Document {
@@ -42,13 +43,13 @@ export interface IApiTracker extends Document {
 const ApiTrackerSchema: Schema<IApiTracker> = new Schema({
     method: {
         type: String,
-        required: [true, 'ApiTracker::Method::Required'],
+        required: [true, ValidationCodes.API_TRACKER_METHOD_REQUIRED],
         enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
         uppercase: true
     },
     url: {
         type: String,
-        required: [true, 'ApiTracker::Url::Required'],
+        required: [true, ValidationCodes.API_TRACKER_URL_REQUIRED],
         trim: true
     },
     userAgent: {
@@ -57,7 +58,7 @@ const ApiTrackerSchema: Schema<IApiTracker> = new Schema({
     },
     ip: {
         type: String,
-        required: [true, 'ApiTracker::Ip::Required'],
+        required: [true, ValidationCodes.API_TRACKER_IP_REQUIRED],
         trim: true
     },
     user: {
@@ -67,14 +68,14 @@ const ApiTrackerSchema: Schema<IApiTracker> = new Schema({
     },
     statusCode: {
         type: Number,
-        required: [true, 'ApiTracker::StatusCode::Required'],
-        min: [100, 'ApiTracker::StatusCode::Min'],
-        max: [599, 'ApiTracker::StatusCode::Max']
+        required: [true, ValidationCodes.API_TRACKER_STATUS_CODE_REQUIRED],
+        min: [100, ValidationCodes.API_TRACKER_STATUS_CODE_MIN],
+        max: [599, ValidationCodes.API_TRACKER_STATUS_CODE_MAX]
     },
     responseTime: {
         type: Number,
-        required: [true, 'ApiTracker::ResponseTime::Required'],
-        min: [0, 'ApiTracker::ResponseTime::Min']
+        required: [true, ValidationCodes.API_TRACKER_RESPONSE_TIME_REQUIRED],
+        min: [0, ValidationCodes.API_TRACKER_RESPONSE_TIME_MIN]
     },
     requestBody: {
         type: Schema.Types.Mixed,

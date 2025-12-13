@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { Team } from '@/models/index';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import { ValidationCodes } from '@/constants/validation-codes';
 
 export interface IContainer extends Document {
     name: string;
@@ -20,17 +21,17 @@ export interface IContainer extends Document {
 const ContainerSchema = new Schema<IContainer>({
     name: {
         type: String,
-        required: [true, 'Container::Name::Required'],
+        required: [true, ValidationCodes.CONTAINER_NAME_REQUIRED],
         trim: true
     },
     image: {
         type: String,
-        required: [true, 'Container::Image::Required'],
+        required: [true, ValidationCodes.CONTAINER_IMAGE_REQUIRED],
         trim: true
     },
     containerId: {
         type: String,
-        required: [true, 'Container::ContainerId::Required'],
+        required: [true, ValidationCodes.CONTAINER_ID_REQUIRED],
         unique: true
     },
     team: {
@@ -44,7 +45,7 @@ const ContainerSchema = new Schema<IContainer>({
     },
     memory: {
         type: Number,
-        default: 512 // MB
+        default: 512
     },
     cpus: {
         type: Number,
@@ -61,7 +62,7 @@ const ContainerSchema = new Schema<IContainer>({
     createdBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: [true, 'Container::CreatedBy::Required']
+        required: [true, ValidationCodes.CONTAINER_CREATED_BY_REQUIRED]
     }
 }, {
     timestamps: true

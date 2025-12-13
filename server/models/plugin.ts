@@ -1,3 +1,4 @@
+import { ValidationCodes } from '@/constants/validation-codes';
 import { IPlugin, IPluginModel, IWorkflow, IWorkflowNode } from '@/types/models/modifier';
 import { ArgumentType, NodeType, ModifierContext, Exporter, ExportType, PluginStatus } from '@/types/models/plugin';
 import mongoose, { Schema } from 'mongoose';
@@ -5,27 +6,27 @@ import mongoose, { Schema } from 'mongoose';
 const ArgumentOptionSchema = new Schema({
     key: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_ARGUMENT_OPT_KEY_REQUIRED]
     },
     label: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_ARGUMENT_OPT_LABEL_REQUIRED]
     }
 }, { _id: false });
 
 const ArgumentDefinitionSchema = new Schema({
     argument: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_ARGUMENT_DEF_ARGUMENT_REQUIRED]
     },
     type: {
         type: String,
         enum: Object.values(ArgumentType),
-        required: true
+        required: [true, ValidationCodes.PLUGIN_ARGUMENT_DEF_TYPE_REQUIRED]
     },
     label: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_ARGUMENT_DEF_LABEL_REQUIRED]
     },
     default: {
         type: Schema.Types.Mixed
@@ -48,7 +49,7 @@ const ArgumentDefinitionSchema = new Schema({
 const ModifierDataSchema = new Schema({
     name: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_MODIFIER_NAME_REQUIRED]
     },
     icon: {
         type: String
@@ -80,7 +81,7 @@ const ContextDataSchema = new Schema({
     source: {
         type: String,
         enum: Object.values(ModifierContext),
-        required: true,
+        required: [true, ValidationCodes.PLUGIN_CONTEXT_SOURCE_REQUIRED],
         default: ModifierContext.TRAJECTORY_DUMPS
     }
 }, { _id: false });
@@ -88,14 +89,14 @@ const ContextDataSchema = new Schema({
 const ForEachDataSchema = new Schema({
     iterableSource: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_FOREACH_ITERABLE_SOURCE_REQUIRED]
     }
 }, { _id: false });
 
 const EntrypointDataSchema = new Schema({
     binary: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_ENTRYPOINT_BINARY_REQUIRED]
     },
     // MinIO object path for the uploaded binary
     binaryObjectPath: {
@@ -111,7 +112,7 @@ const EntrypointDataSchema = new Schema({
     },
     arguments: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_ENTRYPOINT_ARGUMENTS_REQUIRED]
     },
     timeout: {
         type: Number,
@@ -122,11 +123,11 @@ const EntrypointDataSchema = new Schema({
 const ExposureDataSchema = new Schema({
     name: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_EXPOSURE_NAME_REQUIRED]
     },
     results: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_EXPOSURE_RESULTS_REQUIRED]
     },
     iterable: {
         type: String
@@ -140,7 +141,7 @@ const ExposureDataSchema = new Schema({
 const SchemaDataSchema = new Schema({
     definition: {
         type: Schema.Types.Mixed,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_SCHEMA_DEFINITION_REQUIRED]
     }
 });
 
@@ -166,12 +167,12 @@ const ExportDataSchema = new Schema({
     exporter: {
         type: String,
         enum: Object.values(Exporter),
-        required: true
+        required: [true, ValidationCodes.PLUGIN_EXPORT_EXPORTER_REQUIRED]
     },
     type: {
         type: String,
         enum: Object.values(ExportType),
-        required: true
+        required: [true, ValidationCodes.PLUGIN_EXPORT_TYPE_REQUIRED]
     },
     options: {
         type: Schema.Types.Mixed,
@@ -182,12 +183,12 @@ const ExportDataSchema = new Schema({
 const PositionSchema = new Schema({
     x: {
         type: Number,
-        required: true,
+        required: [true, ValidationCodes.PLUGIN_POSITION_X_REQUIRED],
         default: 0
     },
     y: {
         type: Number,
-        required: true,
+        required: [true, ValidationCodes.PLUGIN_POSITION_Y_REQUIRED],
         default: 0
     }
 });
@@ -207,16 +208,16 @@ const NodeDataSchema = new Schema({
 const WorkflowNodeSchema = new Schema({
     id: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_WORKFLOW_NODE_ID_REQUIRED]
     },
     type: {
         type: String,
         enum: Object.values(NodeType),
-        required: true
+        required: [true, ValidationCodes.PLUGIN_WORKFLOW_NODE_TYPE_REQUIRED]
     },
     position: {
         type: PositionSchema,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_WORKFLOW_NODE_POSITION_REQUIRED]
     },
     data: {
         type: NodeDataSchema,
@@ -227,18 +228,18 @@ const WorkflowNodeSchema = new Schema({
 const WorkflowEdgeSchema = new Schema({
     id: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_WORKFLOW_EDGE_ID_REQUIRED]
     },
     source: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_WORKFLOW_EDGE_SOURCE_REQUIRED]
     },
     sourceHandle: {
         type: String
     },
     target: {
         type: String,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_WORKFLOW_EDGE_TARGET_REQUIRED]
     },
     targetHandle: {
         type: String
@@ -272,14 +273,14 @@ const WorkflowSchema = new Schema({
 const PluginSchema = new Schema({
     slug: {
         type: String,
-        required: true,
+        required: [true, ValidationCodes.PLUGIN_SLUG_REQUIRED],
         unique: true,
         lowercase: true,
         trim: true
     },
     workflow: {
         type: WorkflowSchema,
-        required: true
+        required: [true, ValidationCodes.PLUGIN_WORKFLOW_REQUIRED]
     },
     status: {
         type: String,

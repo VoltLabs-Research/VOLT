@@ -27,15 +27,16 @@ import bcrypt from 'bcryptjs';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 // @ts-ignore
 import { IUser } from '@types/models/user';
+import { ValidationCodes } from '@/constants/validation-codes';
 
 const UserSchema: Schema<IUser> = new Schema({
     email: {
         type: String,
-        required: [true, 'User::Email::Required'],
+        required: [true, ValidationCodes.USER_EMAIL_REQUIRED],
         unique: true,
         lowercase: true,
         trim: true,
-        validate: [validator.isEmail, 'User::Email::Validate']
+        validate: [validator.isEmail, ValidationCodes.USER_EMAIL_INVALID]
     },
     password: {
         type: String,
@@ -43,8 +44,8 @@ const UserSchema: Schema<IUser> = new Schema({
             // Password only required for non-OAuth users
             return !this.oauthProvider;
         },
-        minlength: [8, 'User::Password::MinLength'],
-        maxlength: [16, 'User::Password::MaxLength'],
+        minlength: [8, ValidationCodes.USER_PASSWORD_MINLEN],
+        maxlength: [16, ValidationCodes.USER_PASSWORD_MAXLEN],
         select: false
     },
     role: {
@@ -56,17 +57,17 @@ const UserSchema: Schema<IUser> = new Schema({
     passwordChangedAt: Date,
     firstName: {
         type: String,
-        minlength: [4, 'User::FirstName::MinLength'],
-        maxlength: [64, 'User::FirstName::MaxLength'],
-        required: [true, 'User::Username::Required'],
+        minlength: [4, ValidationCodes.USER_FIRST_NAME_MINLEN],
+        maxlength: [64, ValidationCodes.USER_FIRST_NAME_MAXLEN],
+        required: [true, ValidationCodes.USER_FIRST_NAME_REQUIRED],
         lowercase: true,
         trim: true
     },
     lastName: {
         type: String,
-        minlength: [4, 'User::LastName::MinLength'],
-        maxlength: [64, 'User::LastName::MaxLength'],
-        required: [true, 'User::LastName::Required'],
+        minlength: [4, ValidationCodes.USER_LAST_NAME_MINLEN],
+        maxlength: [64, ValidationCodes.USER_LAST_NAME_MAXLEN],
+        required: [true, ValidationCodes.USER_LAST_NAME_REQUIRED],
         lowercase: true,
         trim: true
     },
@@ -83,7 +84,7 @@ const UserSchema: Schema<IUser> = new Schema({
     },
     oauthId: {
         type: String,
-        sparse: true // Allow null values but enforce uniqueness when present
+        sparse: true
     },
     avatar: {
         type: String,

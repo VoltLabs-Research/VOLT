@@ -22,6 +22,7 @@
 
 import mongoose, { Schema, Model, Document } from 'mongoose';
 import { encrypt, decrypt } from '@/utilities/crypto-utils';
+import { ValidationCodes } from '@/constants/validation-codes';
 
 export interface ISSHConnection extends Document {
     name: string;
@@ -41,46 +42,46 @@ export interface ISSHConnection extends Document {
 const SSHConnectionSchema: Schema<ISSHConnection> = new Schema({
     name: {
         type: String,
-        required: [true, 'SSHConnection::Name::Required'],
-        minlength: [2, 'SSHConnection::Name::MinLength'],
-        maxlength: [64, 'SSHConnection::Name::MaxLength'],
+        required: [true, ValidationCodes.SSH_CONNECTION_NAME_REQUIRED],
+        minlength: [2, ValidationCodes.SSH_CONNECTION_MINLEN],
+        maxlength: [64, ValidationCodes.SSH_CONNECTION_MAXLEN],
         trim: true
     },
     host: {
         type: String,
-        required: [true, 'SSHConnection::Host::Required'],
+        required: [true, ValidationCodes.SSH_CONNECTION_HOST],
         trim: true,
         validate: {
             validator: function (v: string) {
                 // Basic validation for hostname or IP
                 return /^[a-zA-Z0-9.-]+$/.test(v) || /^(\d{1,3}\.){3}\d{1,3}$/.test(v);
             },
-            message: 'SSHConnection::Host::Invalid'
+            message: ValidationCodes.SSH_CONNECTION_HOST_INVALID
         }
     },
     port: {
         type: Number,
-        required: [true, 'SSHConnection::Port::Required'],
-        min: [1, 'SSHConnection::Port::Min'],
-        max: [65535, 'SSHConnection::Port::Max'],
+        required: [true, ValidationCodes.SSH_CONNECTION_PORT_REQUIRED],
+        min: [1, ValidationCodes.SSH_CONNECTION_PORT_MIN],
+        max: [65535, ValidationCodes.SSH_CONNECTION_PORT_MAX],
         default: 22
     },
     username: {
         type: String,
-        required: [true, 'SSHConnection::Username::Required'],
+        required: [true, ValidationCodes.SSH_CONNECTION_USERNAME_REQUIRED],
         trim: true,
-        minlength: [1, 'SSHConnection::Username::MinLength'],
-        maxlength: [64, 'SSHConnection::Username::MaxLength']
+        minlength: [1, ValidationCodes.SSH_CONNECTION_USERNAME_MINLEN],
+        maxlength: [64, ValidationCodes.SSH_CONNECTION_USERNAME_MAXLEN]
     },
     encryptedPassword: {
         type: String,
-        required: [true, 'SSHConnection::Password::Required'],
-        select: false  // Don't include in queries by default
+        required: [true, ValidationCodes.SSH_CONNECTION_ENCRYPTED_PASSWORD],
+        select: false
     },
     user: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: [true, 'SSHConnection::User::Required'],
+        required: [true, ValidationCodes.SSH_CONNECTION_USER],
         index: true
     }
 }, {
@@ -116,7 +117,7 @@ SSHConnectionSchema.pre('save', async function (next) {
         });
 
         if (existing) {
-            const error = new Error('SSHConnection::Name::Duplicate');
+            const error = new Error(ValidationCodes.SSH_CONNECTION_NAME_DUPLICATED);
             return next(error);
         }
     }

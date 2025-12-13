@@ -22,6 +22,7 @@
 
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import crypto from 'crypto';
+import { ValidationCodes } from '@/constants/validation-codes';
 
 export interface IApiToken extends Document {
     name: string;
@@ -50,14 +51,14 @@ export interface IApiTokenModel extends Model<IApiToken> {
 const apiTokenSchema = new Schema<IApiToken>({
     name: {
         type: String,
-        required: [true, 'Token name is required'],
+        required: [true, ValidationCodes.API_TOKEN_NAME_REQUIRED],
         trim: true,
-        maxlength: [100, 'Token name cannot exceed 100 characters']
+        maxlength: [100, ValidationCodes.API_TOKEN_NAME_MAXLEN]
     },
     description: {
         type: String,
         trim: true,
-        maxlength: [500, 'Description cannot exceed 500 characters']
+        maxlength: [500, ValidationCodes.API_TOKEN_DESCRIPTION_MAXLEN]
     },
     token: {
         type: String,

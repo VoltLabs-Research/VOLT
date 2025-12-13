@@ -21,29 +21,28 @@
  */
 
 import mongoose, { Schema, Model } from 'mongoose';
-// @ts-ignore
-import { ITeam } from '@types/models/team';
-import { User, Trajectory } from '@/models/index';
+import { ITeam } from '@/types/models/team';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
+import { ValidationCodes } from '@/constants/validation-codes';
 
 const TeamSchema = new Schema({
     name: {
         type: String,
-        required: [true, 'Team::Name::Required'],
+        required: [true, ValidationCodes.TEAM_NAME_REQUIRED],
         trim: true,
-        minlength: [3, 'Team::Name::MinLength'],
-        maxlength: [50, 'Team::Name::MaxLength']
+        minlength: [3, ValidationCodes.TEAM_NAME_MINLEN],
+        maxlength: [50, ValidationCodes.TEAM_NAME_MAXLEN]
     },
     description: {
         type: String,
         trim: true,
-        maxlength: [250, 'Team::Description::MaxLength']
+        maxlength: [250, ValidationCodes.TEAM_NAME_DESCRIPTION_MAXLEN]
     },
     owner: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: [true, 'Team::Owner::Required'],
+        required: [true, ValidationCodes.TEAM_OWNER_REQUIRED],
         cascade: 'delete'
     },
     members: [{
