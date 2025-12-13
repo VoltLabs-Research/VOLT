@@ -13,7 +13,7 @@ interface CollapsibleSectionProps {
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   title,
   children,
-  defaultExpanded = false,  
+  defaultExpanded = false,
   className = ''
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
@@ -31,7 +31,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
       gsap.set(bodyElement, { height: 'auto' });
       const height = bodyElement.offsetHeight;
       gsap.set(bodyElement, { height: 0 });
-      
+
       gsap.to(bodyElement, {
         height: height,
         duration: 0.25,
@@ -50,7 +50,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
       // Simple collapse animation
       const height = bodyElement.offsetHeight;
       gsap.set(bodyElement, { height: height });
-      
+
       gsap.to(bodyElement, {
         height: 0,
         duration: 0.25,
@@ -78,20 +78,20 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 
   return (
     <div className={`editor-sidebar-item-container ${className}`}>
-      <div 
+      <div
         className="editor-sidebar-item-header-container"
         onClick={handleToggle}
         style={{ cursor: 'pointer' }}
       >
         <h3 className="editor-sidebar-item-header-title">{title}</h3>
-        <div 
+        <div
           ref={arrowRef}
           className="editor-sidebar-item-arrow"
         >
           <MdKeyboardArrowDown size={20} />
         </div>
       </div>
-      <div 
+      <div
         ref={bodyRef}
         className="editor-sidebar-item-body-container"
         style={{ overflow: 'hidden' }}

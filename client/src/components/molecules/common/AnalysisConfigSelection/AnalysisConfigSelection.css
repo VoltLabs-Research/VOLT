@@ -1,17 +1,17 @@
-    .analysis-config-selection-container{
-        position: absolute;
-        padding: 0;
-        right: 7rem;
-        top: 2.5rem;
-        z-index: 999999;
-        width: 240px;
-    }
+.analysis-config-selection-container{
+    position: absolute;
+    padding: 0;
+    right: 7rem;
+    top: 2.5rem;
+    z-index: 999999;
+    width: 240px;
+}
 
-    .analysis-config-select-container option{
-        color: #000;
-    }
+.analysis-config-select-container option{
+    color: #000;
+}
 
-    /* Canvas override: make the Select trigger text color #dadada */
-    .analysis-config-selection-container .rh-select-trigger{
-        color: #dadada !important;
-    }
+/* Canvas override: make the Select trigger text color #dadada */
+.analysis-config-selection-container .rh-select-trigger{
+    color: #dadada !important;
+}

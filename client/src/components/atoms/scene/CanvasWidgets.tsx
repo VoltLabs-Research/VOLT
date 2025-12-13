@@ -33,28 +33,44 @@ import ModifierConfiguration from '@/components/organisms/form/ModifierConfigura
 import ChartViewer from '@/components/organisms/common/ChartViewer';
 import Draggable from '@/components/atoms/common/Draggable';
 import useModelStore from '@/stores/editor/model';
-import usePluginStore from '@/stores/plugins';
+import usePluginStore from '@/stores/plugins/plugin';
 import ColorCoding from '@/components/organisms/scene/ColorCoding';
 
 const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimestep, scene3DRef }) => {
     const showWidgets = useEditorUIStore((store) => store.showEditorWidgets);
     const activeModifiers = useEditorUIStore((store) => store.activeModifiers);
     const activeScene = useModelStore((state) => state.activeScene);
-    const manifests = usePluginStore((state) => state.manifests);
+    const plugins = usePluginStore((state) => state.plugins);
 
     const activeExposure = useMemo(() => {
         if (activeScene.source !== 'plugin') return null;
-        for (const manifest of Object.values(manifests)) {
-            const modifiers = manifest.modifiers ?? {};
-            for (const modifier of Object.values(modifiers)) {
-                const exposure = modifier.exposure?.[activeScene.exposureId];
-                if (exposure) return exposure;
-            }
+        const { exposureId } = activeScene;
+
+        for (const plugin of plugins) {
+            // Find exposure node
+            const exposureNode = plugin.workflow.nodes.find((n: any) => n.id === exposureId);
+            if (!exposureNode) continue;
+
+            // Find connected export node
+            const exportNode = plugin.workflow.nodes.find((n: any) =>
+                n.type === 'export' &&
+                plugin.workflow.edges.some((e: any) =>
+                    e.target === n.id && (
+                        e.source === exposureId ||
+                        plugin.workflow.edges.some((e2: any) => e2.source === exposureId && e2.target === e.source)
+                    )
+                )
+            );
+
+            return {
+                results: exposureNode.data?.exposure?.results,
+                export: exportNode?.data?.export
+            };
         }
         return null;
-    }, [activeScene, manifests]);
+    }, [activeScene, plugins]);
 
-    const isChart = activeExposure?.export?.name === 'ChartExporter';
+    const isChart = activeExposure?.export?.exporter === 'ChartExporter';
     const [showChart, setShowChart] = useState(false);
 
     useEffect(() => {

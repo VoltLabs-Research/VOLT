@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
-import usePluginBuilderStore from '@/stores/plugin-builder';
+import CodeEditor from '@/components/atoms/common/CodeEditor';
+import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import type { ISchemaData } from '@/types/plugin';
-import { TbAlertCircle, TbCheck, TbCopy, TbSparkles } from 'react-icons/tb';
+import { TbCheck, TbCopy, TbSparkles } from 'react-icons/tb';
 import './SchemaEditor.css';
 
 interface SchemaEditorProps {
@@ -14,27 +15,101 @@ const SCHEMA_TEMPLATES = [
     {
         name: 'Atomic Data',
         schema: {
-            atoms: { type: 'array', items: { type: 'object', properties: { x: 'number', y: 'number', z: 'number', type: 'number' } } },
-            total_atoms: 'number',
-            timestep: 'number'
+            metadata: {
+                total_atoms: 'int',
+                timestep: 'int'
+            },
+            data: {
+                type: 'array',
+                items: {
+                    x: 'float',
+                    y: 'float',
+                    z: 'float',
+                    type: 'int'
+                }
+            }
         }
     },
     {
         name: 'Analysis Results',
         schema: {
-            values: { type: 'array', items: 'number' },
-            mean: 'number',
-            std: 'number',
-            min: 'number',
-            max: 'number'
+            metadata: {
+                count: 'int'
+            },
+            summary: {
+                mean: 'float',
+                std: 'float',
+                min: 'float',
+                max: 'float'
+            },
+            data: {
+                type: 'array',
+                items: 'float'
+            }
+        }
+    },
+    {
+        name: 'Dislocation Segments',
+        schema: {
+            metadata: {
+                count: 'int'
+            },
+            summary: {
+                total_length: 'float',
+                average_segment_length: 'float',
+                max_segment_length: 'float',
+                min_segment_length: 'float'
+            },
+            data: {
+                type: 'array',
+                items: {
+                    segment_id: 'int',
+                    length: 'float',
+                    num_points: 'int',
+                    burgers: {
+                        vector: { type: 'array', items: 'float' },
+                        magnitude: 'float',
+                        fractional: 'string'
+                    }
+                }
+            }
         }
     },
     {
         name: 'Mesh Data',
         schema: {
-            vertices: { type: 'array', items: { x: 'number', y: 'number', z: 'number' } },
-            faces: { type: 'array', items: { type: 'array', items: 'number' } },
-            normals: { type: 'array', items: { x: 'number', y: 'number', z: 'number' } }
+            metadata: {
+                vertex_count: 'int',
+                face_count: 'int'
+            },
+            vertices: {
+                type: 'array',
+                items: { x: 'float', y: 'float', z: 'float' }
+            },
+            faces: {
+                type: 'array',
+                items: { type: 'array', items: 'int' }
+            },
+            normals: {
+                type: 'array',
+                items: { x: 'float', y: 'float', z: 'float' }
+            }
+        }
+    },
+    {
+        name: 'Structure Analysis',
+        schema: {
+            total_atoms: 'int',
+            analysis_method: 'string',
+            structure_types: {
+                type: 'object',
+                schema: {
+                    count: 'int',
+                    percentage: 'float',
+                    type_id: 'int'
+                },
+                keys: ['OTHER', 'FCC', 'HCP', 'BCC', 'ICO', 'SC', 'CUBIC_DIAMOND', 'HEX_DIAMOND', 'GRAPHENE', 'UNKNOWN']
+            }
         }
     }
 ];
@@ -42,7 +117,7 @@ const SCHEMA_TEMPLATES = [
 const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const schemaData = (node.data?.schema || { definition: {} }) as ISchemaData;
-    
+
     const [jsonText, setJsonText] = useState(() => {
         return JSON.stringify(schemaData.definition || {}, null, 2);
     });
@@ -58,10 +133,9 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
         }
     }, [jsonText]);
 
-    const handleJsonChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const newText = e.target.value;
+    const handleJsonChange = useCallback((newText: string) => {
         setJsonText(newText);
-        
+
         try {
             const parsed = JSON.parse(newText);
             setError(null);
@@ -99,12 +173,12 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
             <CollapsibleSection title='Schema Definition' defaultExpanded>
                 <div className="schema-editor">
                     <p className="schema-editor-description">
-                        Define the JSON structure of your output data. This schema describes the shape of results 
+                        Define the JSON structure of your output data. This schema describes the shape of results
                         from your analysis and enables downstream nodes to reference specific fields.
                     </p>
 
                     <div className="schema-editor-toolbar">
-                        <button 
+                        <button
                             className="schema-editor-btn"
                             onClick={() => setShowTemplates(!showTemplates)}
                             title="Use template"
@@ -112,7 +186,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
                             <TbSparkles size={14} />
                             Templates
                         </button>
-                        <button 
+                        <button
                             className="schema-editor-btn"
                             onClick={formatJson}
                             disabled={!isValidJson}
@@ -121,7 +195,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
                             <TbCheck size={14} />
                             Format
                         </button>
-                        <button 
+                        <button
                             className="schema-editor-btn"
                             onClick={copyToClipboard}
                             title="Copy to clipboard"
@@ -145,27 +219,13 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
                         </div>
                     )}
 
-                    <div className={`schema-editor-container ${error ? 'schema-editor-container--error' : ''}`}>
-                        <div className="schema-editor-line-numbers">
-                            {jsonText.split('\n').map((_, i) => (
-                                <span key={i}>{i + 1}</span>
-                            ))}
-                        </div>
-                        <textarea
-                            className="schema-editor-textarea"
-                            value={jsonText}
-                            onChange={handleJsonChange}
-                            placeholder='{\n  "field_name": "type",\n  "array_field": {\n    "type": "array",\n    "items": "number"\n  }\n}'
-                            spellCheck={false}
-                        />
-                    </div>
-
-                    {error && (
-                        <div className="schema-editor-error">
-                            <TbAlertCircle size={14} />
-                            <span>{error}</span>
-                        </div>
-                    )}
+                    <CodeEditor
+                        value={jsonText}
+                        onChange={handleJsonChange}
+                        language="json"
+                        height={200}
+                        error={error}
+                    />
 
                     {isValidJson && !error && (
                         <div className="schema-editor-status">

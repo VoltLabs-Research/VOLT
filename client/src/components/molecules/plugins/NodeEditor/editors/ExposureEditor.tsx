@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
@@ -9,10 +9,21 @@ interface ExposureEditorProps {
     node: Node;
 }
 
-const DEFAULT_EXPOSURE: IExposureData = { name: '', results: '' };
+const DEFAULT_EXPOSURE: IExposureData = { name: '', results: '', perAtomProperties: [] };
 
 const ExposureEditor: React.FC<ExposureEditorProps> = ({ node }) => {
     const { data: exposure, updateField, nodeId } = useNodeData(node, 'exposure', DEFAULT_EXPOSURE);
+
+    // Handle perAtomProperties as comma-separated string
+    const perAtomPropertiesStr = (exposure.perAtomProperties || []).join(', ');
+
+    const handlePerAtomPropertiesChange = useCallback((key: string, value: string) => {
+        const props = value
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean);
+        updateField('perAtomProperties', props);
+    }, [updateField]);
 
     return (
         <CollapsibleSection title='Results Exposure' defaultExpanded>
@@ -45,6 +56,14 @@ const ExposureEditor: React.FC<ExposureEditorProps> = ({ node }) => {
                 inputProps={{ placeholder: 'data.atoms' }}
                 expressionEnabled
                 expressionNodeId={nodeId}
+            />
+            <FormField
+                label='Per-Atom Properties'
+                fieldKey='perAtomProperties'
+                fieldType='input'
+                fieldValue={perAtomPropertiesStr}
+                onFieldChange={handlePerAtomPropertiesChange}
+                inputProps={{ placeholder: 'shear_strain, volumetric_strain' }}
             />
         </CollapsibleSection>
     );

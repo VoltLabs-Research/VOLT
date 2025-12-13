@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import type { Node } from '@xyflow/react';
-import usePluginBuilderStore from '@/stores/plugin-builder';
+import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 
 /**
  * Hook to manage node data for plugin builder editors.

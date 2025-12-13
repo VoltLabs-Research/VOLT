@@ -1,8 +1,8 @@
 import React from 'react';
 import type { AnalysisSelectProps } from '@/types/raster';
 import Select from '@/components/atoms/form/Select';
-import usePluginStore from '@/stores/plugins';
-import { useAnalysisFormatting } from '@/hooks/useAnalysisFormatting';
+import usePluginStore from '@/stores/plugins/plugin';
+import { useMemo } from 'react';
 
 const AnalysisSelect: React.FC<AnalysisSelectProps> = ({
     analysesNames,
@@ -10,8 +10,19 @@ const AnalysisSelect: React.FC<AnalysisSelectProps> = ({
     onAnalysisChange,
     isLoading
 }) => {
-    const manifests = usePluginStore((s) => s.manifests);
-    const options = useAnalysisFormatting(analysesNames || [], manifests);
+    const getModifiers = usePluginStore((s) => s.getModifiers);
+
+    const options = useMemo(() => {
+        const modifiers = getModifiers();
+        return (analysesNames || []).map((analysis: any) => {
+            const modifier = modifiers.find(m => m.pluginSlug === analysis.plugin);
+            return {
+                value: analysis._id,
+                label: modifier?.name || analysis.plugin || 'Analysis',
+                title: modifier?.name || analysis.plugin || 'Analysis'
+            };
+        });
+    }, [analysesNames, getModifiers]);
 
     return (
         <div className='raster-analyses-selection-container'>

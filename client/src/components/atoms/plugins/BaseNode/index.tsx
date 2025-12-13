@@ -8,13 +8,15 @@ import './BaseNode.css';
 interface BaseNodeProps extends NodeProps{
     children: ReactNode;
     nodeType: NodeType;
+    nodeTitle: undefined;
 };
 
 const BaseNode: React.FC<BaseNodeProps> = memo(({
     data,
     selected,
     children,
-    nodeType
+    nodeType,
+    nodeTitle,
 }) => {
     const config = NODE_CONFIGS[nodeType];
 
@@ -33,7 +35,9 @@ const BaseNode: React.FC<BaseNodeProps> = memo(({
                     <DynamicIcon iconName={config.icon} />
                 </span>
                 <div className='workflow-node-header-content'>
-                    <h3 className='workflow-node-header-title'>{(data.name as string) || config.label}</h3>
+                    <h3 className='workflow-node-header-title'>
+                        {nodeTitle ? nodeTitle : data.name as string || config.label}
+                    </h3>
                     <p className='workflow-node-header-type'>{config.label}</p>
                 </div>
             </div>

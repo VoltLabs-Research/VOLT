@@ -1,4 +1,4 @@
-.labeled-input{
+.labeled-input {
     width: 160px;
     height: 2rem;
     padding: 0 1rem;
@@ -7,16 +7,16 @@
     border-radius: .5rem;
 }
 
-.labeled-input.rh-select{
+.labeled-input.rh-select {
     padding: 0;
 }
 
-.labeled-input:focus{
+.labeled-input:focus {
     outline: 2px solid var(--input-focus-ring);
     outline-offset: 2px;
 }
 
-.labeled-input:disabled{
+.labeled-input:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }

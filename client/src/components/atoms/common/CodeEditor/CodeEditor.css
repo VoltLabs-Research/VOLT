@@ -1,0 +1,52 @@
+.code-editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.code-editor-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-primary, #fff);
+    margin: 0;
+}
+
+.code-editor-description {
+    font-size: 0.7rem;
+    color: var(--text-secondary, #888);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.code-editor-container {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    transition: border-color 0.2s ease;
+}
+
+.code-editor-wrapper:focus-within .code-editor-container {
+    border-color: var(--accent-color, #3b82f6);
+}
+
+.code-editor-wrapper.has-error .code-editor-container {
+    border-color: var(--error-color, #ef4444);
+}
+
+.code-editor-error {
+    font-size: 0.7rem;
+    color: var(--error-color, #ef4444);
+    margin: 0;
+}
+
+/* Monaco background only - don't override syntax colors */
+.code-editor-container .monaco-editor,
+.code-editor-container .monaco-editor-background,
+.code-editor-container .monaco-editor .margin {
+    background-color: #1e1e1e !important;
+}
+
+.code-editor-container .monaco-editor .line-numbers {
+    color: #858585 !important;
+}

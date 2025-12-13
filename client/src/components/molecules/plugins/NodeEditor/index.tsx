@@ -3,7 +3,7 @@ import type { Node } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import { TbTrash } from 'react-icons/tb';
-import usePluginBuilderStore from '@/stores/plugin-builder';
+import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import {
     ModifierEditor,
     ArgumentsEditor,

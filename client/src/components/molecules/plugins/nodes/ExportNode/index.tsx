@@ -10,7 +10,7 @@ const ExportNode = memo((props: NodeProps) => {
     const optionsCount = Object.keys(exportData.options || {}).length;
 
     return (
-        <BaseNode {...props} nodeType={NodeType.EXPORT}>
+        <BaseNode {...props} nodeType={NodeType.EXPORT} nodeTitle={exportData.exporter}>
             <NodeField label='Exporter' value={exportData.exporter} />
             <NodeField label='Type' value={exportData.type} />
             <NodeField label='Options' value={`${optionsCount} options`} />

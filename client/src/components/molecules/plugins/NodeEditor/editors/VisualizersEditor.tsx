@@ -3,7 +3,7 @@ import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
 import KeyValueEditor from '@/components/molecules/plugins/KeyValueEditor';
-import usePluginBuilderStore from '@/stores/plugin-builder';
+import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import { useKeyValueHandlers } from '@/hooks/plugins/use-node-data';
 import type { IVisualizersData } from '@/types/plugin';
 
